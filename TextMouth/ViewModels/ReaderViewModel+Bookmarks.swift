@@ -255,37 +255,48 @@ extension ReaderViewModel {
 
     // MARK: - Metadata Editing
 
-    /// Save edited EPUB metadata. Optionally writes changes back to the EPUB file.
-    func saveEPUBMetadata(_ metadata: EPUBMetadata, writeToFile: Bool) {
-        epubMetadata = metadata
-
-        book.title = metadata.title
-        book.author = metadata.author
-        book.epubPublisher = metadata.publisher
-        book.epubPublicationDate = metadata.publicationDate
-
-        if writeToFile && book.format == .epub {
-            do {
-                let url = URL(fileURLWithPath: book.filePath)
-                let newHash = try EPUBParser.writeMetadata(metadata, to: url)
-                book.md5Hash = newHash
-                libraryViewModel.updateBookMetadata(book)
-                announceToVoiceOver("Metadata saved to file")
-            } catch {
-                errorMessage = error.localizedDescription
-                announceToVoiceOver("Failed to save metadata to file")
-            }
-        } else {
-            libraryViewModel.updateBookMetadata(book)
-            announceToVoiceOver("Metadata updated")
-        }
-
-        // Update NowPlaying with the new metadata
-        nowPlayingService.updateNowPlayingInfo(
-            title: book.title,
-            author: book.author,
-            isPlaying: isCurrentlyPlaying && !isCurrentlyPaused
+    /// Saves edited EPUB metadata through the library, which writes the
+    /// library's copy of the EPUB file first when `writeToFile` asks (TODO
+    /// A09), and returns what happened for the metadata editor: it closes
+    /// after a success, and otherwise stays open with the user's edits beside
+    /// the reason, so the user can save to the library only or try again.
+    ///
+    /// Only a save that succeeded changes this reader: its metadata, its
+    /// book, and Now Playing then show exactly what the library row and the
+    /// book's record hold, content hash included. After a failure all of them
+    /// stay as they were. Either way VoiceOver hears the outcome, which names
+    /// the library's copy of the EPUB file whenever that file was, or could
+    /// not be, written. A failure is not also set as `errorMessage`: the open
+    /// editor shows it, and the reader's alert, waiting behind the editor,
+    /// would report it again after the user had already acted on it.
+    ///
+    /// - Parameters:
+    ///   - metadata: The edited metadata.
+    ///   - writeToFile: Whether to write the library's copy of the EPUB file.
+    ///   - writer: Writes the file; tests pass one that fails.
+    @discardableResult
+    func saveEPUBMetadata(
+        _ metadata: EPUBMetadata,
+        writeToFile: Bool,
+        writer: EPUBMetadataWriter = .system
+    ) -> OperationOutcome {
+        let save = libraryViewModel.saveEPUBMetadata(
+            metadata,
+            for: book,
+            writingToFile: writeToFile,
+            writer: writer
         )
+        if let saved = save.savedBook {
+            epubMetadata = metadata
+            book.applyEditableMetadata(from: saved)
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title,
+                author: book.author,
+                isPlaying: isCurrentlyPlaying && !isCurrentlyPaused
+            )
+        }
+        announceToVoiceOver(save.message)
+        return save.outcome
     }
 
     /// Save edited audio metadata. Updates the book's title/author and persists

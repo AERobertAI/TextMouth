@@ -171,6 +171,34 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         XCTAssertEqual(reader.settingsViewModel.wordsPerMinute, oldSpeed)
     }
 
+    /// Copying a book's settings to the global defaults applies them and
+    /// says they were applied, not saved (TODO A09).
+    func testSavingToGlobalSettingsSaysTheSettingsWereApplied() throws {
+        let settings = try makeIsolatedSettings()
+        let reader = makeReader(format: .txt, localWPM: 310, settingsViewModel: settings)
+        defer { reader.close() }
+
+        let recorder = recordingAnnouncements { reader.saveSettingsToGlobal() }
+
+        XCTAssertEqual(settings.wordsPerMinute, 310)
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Settings applied as global defaults"])
+    }
+
+    /// A save of those settings that fails is the settings model's to
+    /// report, and it is: config.json's failure reaches the failure banner,
+    /// which announces it on its own. The reader adds no second message.
+    func testAFailedSettingsSaveIsLeftToTheFailureBanner() throws {
+        let center = cleanSharedFailureCenter()
+        let settings = try makeIsolatedSettings(configWrite: { _, _ in throw WriteRefused() })
+        let reader = makeReader(format: .txt, localWPM: 310, settingsViewModel: settings)
+        defer { reader.close() }
+
+        let recorder = recordingAnnouncements { reader.saveSettingsToGlobal() }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Settings applied as global defaults"])
+        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.configuration])
+    }
+
     // MARK: - Audio speed snapping and clamping
 
     /// Quarter steps saved by earlier releases, including both range bounds,
@@ -464,11 +492,14 @@ final class PlaybackSettingsAuditTests: XCTestCase {
     /// Use an isolated notification center and a nonexistent file: these
     /// settings operations do not need parsing or an active audio device.
     /// `localWPM` holds words per minute for text books and the playback
-    /// multiplier for audio books, matching the persisted schema.
+    /// multiplier for audio books, matching the persisted schema. A test
+    /// that changes the global settings passes a settings model of its own
+    /// (`makeIsolatedSettings`).
     private func makeReader(
         format: BookFormat,
         localWPM: Double? = nil,
-        audioDuration: TimeInterval? = nil
+        audioDuration: TimeInterval? = nil,
+        settingsViewModel: SettingsViewModel? = nil
     ) -> ReaderViewModel {
         let book = Book(
             title: "Playback Settings",
@@ -483,10 +514,33 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         return ReaderViewModel(
             book: book,
             libraryViewModel: library,
-            settingsViewModel: SettingsViewModel(
+            settingsViewModel: settingsViewModel ?? SettingsViewModel(
                 notificationCenter: NotificationCenter(),
                 initializeServices: false
             )
+        )
+    }
+
+    /// A settings model of the test's own, so changing the global settings
+    /// touches neither this process's preferences nor its config.json: the
+    /// preferences are a sandboxed store, and config.json is a file in a
+    /// folder of the test's, written with `configWrite`.
+    private func makeIsolatedSettings(
+        configWrite: @escaping @MainActor (Data, URL) throws -> Void = { data, url in
+            try data.write(to: url, options: .atomic)
+        }
+    ) throws -> SettingsViewModel {
+        let configFile = try makeTestDirectory("GlobalSettings").appendingPathComponent("config.json")
+        let configService = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
+            write: configWrite,
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ))
+        return SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: makeSandboxedPreferences("global-settings"),
+            configService: configService
         )
     }
 }

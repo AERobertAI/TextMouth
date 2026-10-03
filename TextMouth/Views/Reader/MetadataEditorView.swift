@@ -2,22 +2,31 @@ import SwiftUI
 
 /// Unified metadata editor for both EPUB and audio books.
 /// Shows editable fields appropriate to the book format and read-only fields
-/// extracted from the file. For EPUBs, optionally writes changes back to the file.
+/// extracted from the file. For EPUBs, optionally writes changes back to the
+/// library's copy of the EPUB file, never to the file it was imported from;
+/// a save that fails keeps the editor open with the edits and shows why
+/// (TODO A09).
 struct MetadataEditorView: View {
     @State private var editedEPUBMetadata: EPUBMetadata
     @State private var editedAudioMetadata: AudioMetadata
     @State private var writeToFile = false
+    /// Why the last EPUB save failed, shown above the buttons until the user
+    /// changes an edit or the choice to write the file.
+    @State private var failureMessage: String?
     @Environment(\.dismiss) private var dismiss
 
     let isEPUB: Bool
     let isAudio: Bool
-    /// Called when saving EPUB metadata. The Bool indicates whether to write back to the EPUB file.
-    let onSaveEPUB: ((EPUBMetadata, Bool) -> Void)?
+    /// Saves EPUB metadata, writing the library's copy of the EPUB file too
+    /// when the Bool is true, and returns what happened, which the caller has
+    /// announced. The editor closes after a success; after a failure it stays
+    /// open with the edits and shows why.
+    let onSaveEPUB: ((EPUBMetadata, Bool) -> OperationOutcome)?
     /// Called when saving audio metadata.
     let onSaveAudio: ((AudioMetadata) -> Void)?
 
     /// Initialize for an EPUB book
-    init(metadata: EPUBMetadata, isEPUB: Bool, onSave: @escaping (EPUBMetadata, Bool) -> Void) {
+    init(metadata: EPUBMetadata, isEPUB: Bool, onSave: @escaping (EPUBMetadata, Bool) -> OperationOutcome) {
         self._editedEPUBMetadata = State(initialValue: metadata)
         self._editedAudioMetadata = State(initialValue: AudioMetadata())
         self.isEPUB = isEPUB
@@ -65,38 +74,89 @@ struct MetadataEditorView: View {
 
             Divider()
 
+            // Why the last save failed, beside the buttons that can try again.
+            if let failureMessage {
+                OperationFailureNotice(message: failureMessage)
+                    .padding([.horizontal, .top])
+            }
+
             HStack {
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
-                Button("Save") {
-                    // Capture edited values before dismissing
-                    let audioMeta = editedAudioMetadata
-                    let epubMeta = editedEPUBMetadata
-                    let shouldWriteToFile = writeToFile
-                    let saveAudio = onSaveAudio
-                    let saveEPUB = onSaveEPUB
-                    let isAudioBook = isAudio
-
-                    // Dismiss first so the sheet closes before the save callback
-                    // triggers shared state updates that could steal window focus
-                    dismiss()
-
-                    DispatchQueue.main.async {
-                        if isAudioBook {
-                            saveAudio?(audioMeta)
-                        } else {
-                            saveEPUB?(epubMeta, shouldWriteToFile)
-                        }
-                    }
-                }
-                .keyboardShortcut(.return, modifiers: .command)
-                .accessibilityLabel("Save metadata changes")
+                Button("Save", action: save)
+                    .keyboardShortcut(.return, modifiers: .command)
+                    .accessibilityLabel(saveButtonAccessibilityLabel)
             }
             .padding()
         }
         .frame(width: 450, height: 550)
         .navigationTitle("Info: \(isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title)")
+        // A reason that no longer applies is never read beside new input.
+        .clearingFailure($failureMessage, whenChanged: editedEPUBFields)
+        .clearingFailure($failureMessage, whenChanged: writesToFile)
+    }
+
+    // MARK: - Saving
+
+    /// Saves the edits the way the book's format needs.
+    private func save() {
+        if isAudio {
+            saveAudioAfterClosing()
+        } else {
+            saveEPUB()
+        }
+    }
+
+    /// Saves EPUB edits while the editor is still open, because writing the
+    /// library's copy of the file can fail (TODO A09). The editor closes only
+    /// after a success. After a failure it stays open with the user's edits
+    /// and shows why, so the user can turn off writing to the file or try
+    /// again; the caller has already announced the failure.
+    private func saveEPUB() {
+        guard let onSaveEPUB else { return }
+        let outcome = onSaveEPUB(editedEPUBMetadata, writesToFile)
+        if outcome.succeeded {
+            dismiss()
+        } else {
+            failureMessage = outcome.failureMessage
+        }
+    }
+
+    /// Saves audio edits, which write no file, after closing the editor, so
+    /// the sheet closes before the shared update can move window focus.
+    private func saveAudioAfterClosing() {
+        // Capture the edits before dismissing.
+        let audioMeta = editedAudioMetadata
+        let saveAudio = onSaveAudio
+        dismiss()
+        DispatchQueue.main.async {
+            saveAudio?(audioMeta)
+        }
+    }
+
+    /// Whether Save writes the library's copy of the EPUB file too: only an
+    /// EPUB's can be written, and only when the user asks.
+    private var writesToFile: Bool {
+        isEPUB && writeToFile
+    }
+
+    /// What VoiceOver says for Save. For an EPUB it says where the metadata
+    /// goes, following the choice to write the file; audio metadata only
+    /// ever goes to the library.
+    private var saveButtonAccessibilityLabel: String {
+        isAudio ? "Save metadata changes" : EPUBMetadataSaveWording.saveButtonLabel(writesToFile: writesToFile)
+    }
+
+    /// The EPUB edits a failure is about, so its message clears as soon as
+    /// one of them changes.
+    private var editedEPUBFields: [String] {
+        [
+            editedEPUBMetadata.title,
+            editedEPUBMetadata.author,
+            editedEPUBMetadata.publisher,
+            editedEPUBMetadata.publicationDate
+        ]
     }
 
     // MARK: - Audio Sections
@@ -206,17 +266,20 @@ struct MetadataEditorView: View {
         }
     }
 
-    /// Optional toggle to write EPUB metadata changes back to the original file
+    /// The choice to write the edits into the library's copy of the EPUB
+    /// file as well. Its title, which VoiceOver reads as its label, its
+    /// hint, and its note all say which file that is: the copy TextMouth
+    /// keeps in its library, never the file the book was imported from
+    /// (TODO A09).
     @ViewBuilder
     private var epubWriteBackSection: some View {
         if isEPUB {
             Section {
-                Toggle("Also save changes to the EPUB file", isOn: $writeToFile)
-                    .accessibilityLabel("Save changes to original EPUB file")
-                    .accessibilityHint("When enabled, the original EPUB file on disk will be modified and its hash recalculated")
+                Toggle(EPUBMetadataSaveWording.writeBackToggleTitle, isOn: $writeToFile)
+                    .accessibilityHint(EPUBMetadataSaveWording.writeBackToggleHint)
 
                 if writeToFile {
-                    Text("Warning: This will modify the original file and recalculate its MD5 hash.")
+                    Text(EPUBMetadataSaveWording.writeBackNote)
                         .font(.caption)
                         .foregroundColor(.orange)
                 }

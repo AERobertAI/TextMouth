@@ -94,7 +94,13 @@ extension ReaderViewModel {
         )
     }
 
-    /// Copy this book's local voice, speed, and pitch to the global settings
+    /// Copy this book's local voice, speed, and pitch to the global settings.
+    ///
+    /// VoiceOver hears that the settings were applied, not that they were
+    /// saved (TODO A09): the settings model saves them to config.json itself,
+    /// and a save that fails is reported to `PersistenceFailureCenter`, whose
+    /// banner in the Library window announces it, so no second message is
+    /// needed here.
     func saveSettingsToGlobal() {
         // Global speed is measured in WPM; audio multipliers cannot be copied
         // into it. Audio speed remains a per-book setting.
@@ -109,7 +115,7 @@ extension ReaderViewModel {
         if let localVoiceID = localSettings.voiceID {
             settingsViewModel.selectedVoiceID = localVoiceID
         }
-        announceToVoiceOver("Settings saved to global defaults")
+        announceToVoiceOver("Settings applied as global defaults")
     }
 
     /// Reset this book to use global voice, speed, and pitch settings

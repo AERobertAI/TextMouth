@@ -444,6 +444,68 @@ extension LibraryViewModel {
         }
     }
 
+    /// Saves edited EPUB metadata from the reader's or the library's
+    /// metadata editor, and returns what it did for the editor to report
+    /// (TODO A09).
+    ///
+    /// With `writingToFile`, the library's copy of the book's EPUB file is
+    /// written first, and only a write that succeeded is published: the
+    /// library row, the book's record in its package (bookInfo.json), and
+    /// the content hash then change together. A write that fails changes
+    /// nothing, so every view of the book keeps agreeing, and the failure
+    /// names the file and why. Without `writingToFile`, only the library's
+    /// record of the book changes; the EPUB file is left as it is.
+    ///
+    /// The edit applies to the book as the library holds it now, found by
+    /// its ID, so an editor opened before the book moved writes the file
+    /// where it is now, and a book that has left the library is not saved at
+    /// all. Nothing is presented or announced here: the caller reports the
+    /// result where the user is working.
+    ///
+    /// - Parameters:
+    ///   - metadata: The edited metadata. Its title, author, publisher, and
+    ///     publication date are saved; its other fields are read-only.
+    ///   - book: The book being edited, as the editor knows it.
+    ///   - writingToFile: Whether to write the library's copy of the EPUB
+    ///     file too.
+    ///   - writer: Writes the file; tests pass one that fails.
+    func saveEPUBMetadata(
+        _ metadata: EPUBMetadata,
+        for book: Book,
+        writingToFile: Bool,
+        writer: EPUBMetadataWriter = .system
+    ) -> EPUBMetadataSave {
+        guard var updated = bookByID(book.id) else {
+            return .failed(message: EPUBMetadataSaveWording.notInLibrary(title: book.title))
+        }
+        updated.title = metadata.title
+        updated.author = metadata.author
+        updated.epubPublisher = metadata.publisher
+        updated.epubPublicationDate = metadata.publicationDate
+
+        let message: String
+        if writingToFile && updated.format == .epub {
+            let wording = EPUBMetadataSaveWording(filePath: updated.filePath)
+            do {
+                // The new hash describes the written file, so it is recorded
+                // only once the write has succeeded.
+                updated.md5Hash = try writer.write(metadata, URL(fileURLWithPath: updated.filePath))
+            } catch {
+                TextMouthPaths.appendLog(
+                    to: TextMouthPaths.debugLogFile,
+                    message: "EPUB_METADATA_WRITE_FAILED: book=\(book.id.uuidString.prefix(8)) "
+                        + "file=\(updated.filePath): \(error)"
+                )
+                return .failed(message: wording.writeFailed(reason: error.localizedDescription))
+            }
+            message = wording.savedToFile
+        } else {
+            message = EPUBMetadataSaveWording.savedToLibraryOnly
+        }
+        updateBookMetadata(updated)
+        return .saved(updated, message: message)
+    }
+
     func updatePlaybackTimestamps(bookID: UUID, started: Date?, stopped: Date?) {
         updateBook(id: bookID) { book in
             book.lastPlaybackStarted = started
