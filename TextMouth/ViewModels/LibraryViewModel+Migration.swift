@@ -524,7 +524,10 @@ extension LibraryViewModel {
         let books = library.books
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let booksNeedingCache = Self.booksNeedingCacheUpdate(books, access: access)
-            DispatchQueue.main.async {
+            // The hop back takes its own weak reference, rather than sharing
+            // the variable this closure captured with code that runs on
+            // another thread.
+            DispatchQueue.main.async { [weak self] in
                 guard let self, !self.isExtracting else { return }
                 self.rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _ in
                     completion?()
