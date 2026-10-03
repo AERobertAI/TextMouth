@@ -9,6 +9,14 @@ struct TextMouthApp: App {
     @StateObject private var soundEffectService = SoundEffectService()
     @StateObject private var libraryWindowRouter = LibraryWindowRouter.shared
 
+    /// Installs the real cloud services (FR02) before anything else runs.
+    /// The app's initializer is the earliest point: SwiftUI creates the
+    /// library model above before `applicationWillFinishLaunching`, and the
+    /// library's launch checks use the services.
+    init() {
+        CloudServices.installSystemServices()
+    }
+
     var body: some Scene {
         // Library window — only one opens on launch; Cmd+N can still create additional ones.
         WindowGroup {

@@ -641,6 +641,27 @@ final class BookCloudStorageServiceTests: XCTestCase {
         }
     }
 
+    // MARK: - Installation
+
+    /// The app installs the real services at launch, and the hosted tests'
+    /// library, in their sandbox on the startup disk, still reads as local.
+    @MainActor
+    func testTheInstalledServicesSeeALocalLibrary() async throws {
+        XCTAssertTrue(CloudServices.itemStatus is UbiquitousItemStatusProvider)
+        XCTAssertTrue(CloudServices.bookStorage is BookCloudStorageService)
+        let items = CloudServices.itemStatus
+        let storage = CloudServices.bookStorage
+        let book = try makePackage(["content.md"])
+
+        let (rootLocation, libraryLocation, state) = await Task.detached {
+            (items.location(of: TextMouthPaths.root), storage.libraryLocation(), storage.state(of: book.package))
+        }.value
+
+        XCTAssertEqual(rootLocation, .local)
+        XCTAssertEqual(libraryLocation, .local)
+        XCTAssertEqual(state, .local)
+    }
+
     // MARK: - Performance
 
     /// Reading the state of 700 books of three files each reads metadata

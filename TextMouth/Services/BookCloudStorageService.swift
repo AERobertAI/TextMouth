@@ -499,6 +499,20 @@ final class BookCloudStorageService: BookCloudStorage {
     }
 }
 
+// MARK: - Installation
+
+extension CloudServices {
+    /// Puts the real cloud services in place of the local placeholders:
+    /// called once at launch, before the library model is created, because
+    /// the library's launch checks use them. The hosted tests' data
+    /// directory is in their sandbox on the startup disk, so their libraries
+    /// still read as local.
+    static func installSystemServices() {
+        itemStatus = UbiquitousItemStatusProvider()
+        bookStorage = BookCloudStorageService(items: itemStatus)
+    }
+}
+
 // MARK: - Helpers
 
 private extension CloudItemState {
