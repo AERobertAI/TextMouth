@@ -107,7 +107,14 @@ final class TranscriptionLanguageChoices: ObservableObject {
 struct TranscriptionSettingsSection: View {
     @EnvironmentObject var settingsViewModel: SettingsViewModel
     /// The languages the pop-up offers.
-    @StateObject private var languages = TranscriptionLanguageChoices()
+    @StateObject private var languages: TranscriptionLanguageChoices
+
+    /// The group, offering the languages this Mac's system reports, or
+    /// `languages` (a test's own, which asks no recognizer). Made once, for
+    /// the view's lifetime, as any state object is.
+    init(languages: @autoclosure @escaping () -> TranscriptionLanguageChoices = TranscriptionLanguageChoices()) {
+        _languages = StateObject(wrappedValue: languages())
+    }
 
     var body: some View {
         Section {
