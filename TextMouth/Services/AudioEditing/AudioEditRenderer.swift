@@ -497,6 +497,7 @@ enum AudioEditRenderer {
     ) async throws -> Outcome {
         guard let ffmpeg else { throw AudioEditError.mp3NeedsFFmpeg }
         let settings = AudioRenderSettings.make(.mp3, for: sources.base)
+        try AudioEditScratch.make(sources.scratch)
         let intermediate = sources.scratch.appendingPathComponent(".\(UUID().uuidString).mp3-source.caf")
         defer { try? FileManager.default.removeItem(at: intermediate) }
         let rendered = try await render(

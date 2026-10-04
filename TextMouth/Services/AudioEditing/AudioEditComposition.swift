@@ -233,8 +233,16 @@ enum AudioEditScratch {
     /// The scratch folder of the book `bookID`, made when missing.
     static func folder(for bookID: UUID) throws -> URL {
         let folder = root.appendingPathComponent(bookID.uuidString, isDirectory: true)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try make(folder)
         return folder
+    }
+
+    /// Makes the scratch folder `folder` when it is missing. Whatever writes
+    /// there makes it first: a save removes the folder once it has rendered
+    /// the edits, while the editor stays open to edit on, and macOS may
+    /// empty the Caches folder at any time.
+    static func make(_ folder: URL) throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
 
     /// Removes the scratch folder of the book `bookID`, when there is one.
@@ -263,6 +271,7 @@ enum AudioEditScratch {
         }
         // Written beside its final name and moved there, so a reader never
         // meets a silent file half written.
+        try make(folder)
         let partial = folder.appendingPathComponent(".\(UUID().uuidString).caf")
         do {
             let file = try AVAudioFile(forWriting: partial, settings: format.settings, commonFormat: .pcmFormatFloat32, interleaved: false)

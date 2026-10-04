@@ -44,6 +44,35 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertEqual(harness.announcements.sentences.last, "There's nothing to save: the book's audio already holds every edit.")
     }
 
+    /// A save that renders a filter and a silence, the book keeping its
+    /// original, lets the editor edit on: the scratch folder the save
+    /// cleared is made again as the edits are read back, so a silence
+    /// inserted after it, and an export, find every stretch they need.
+    func testEditingGoesOnAfterSavingAFilterAndASilence() async throws {
+        let fixture = try AudioEditorTestBook.ramp(seconds: 4, for: self)
+        fixture.library.audioFilterEngine = { .builtIn }
+        let harness = try await EditorHarness.open(fixture, for: self)
+        let model = harness.model
+        addTeardownBlock { @MainActor in model.windowClosed() }
+        AudioEditorPreferences.playAfterMoves.write(false, to: harness.store)
+        await model.loadPreview()
+        await model.applyFilter(AudioFilterPreset(id: UUID(), name: "Quieter", chain: "volume=-6dB"), to: .wholeFile)
+        await model.insertSilence(1)
+        await model.setPolicy(.keep, days: 1)
+
+        let saved = await model.save()
+        XCTAssertTrue(saved, "\(harness.announcements.sentences)")
+        XCTAssertEqual(harness.announcements.sentences.last, "Saved. The book's audio is now 5 seconds long.")
+        await model.insertSilence(0.5)
+        XCTAssertEqual(harness.announcements.sentences.last, "Inserted 0.5 seconds of silence. Now 5.5 seconds long.")
+
+        let destination = FileManager.default.temporaryDirectory.appendingPathComponent("after-save-\(UUID().uuidString).wav")
+        addTeardownBlock { try? FileManager.default.removeItem(at: destination) }
+        await model.export(as: .wav, to: destination)
+        XCTAssertEqual(harness.announcements.sentences.last, "Exported “\(destination.lastPathComponent)”.")
+        XCTAssertEqual(try AVAudioFile(forReading: destination).length, 44_000)
+    }
+
     /// A save the library refuses, as it refuses one for a book open in a
     /// reader, is said, and the edits stay waiting.
     func testARefusedSaveIsSaidAndTheEditsWait() async throws {
