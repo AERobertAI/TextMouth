@@ -1128,8 +1128,10 @@ final class ConfigSyncTests: XCTestCase {
             "repeatedSymbolSet": "*=~",
             // Recording, kept by the Record window.
             "recordingInputDeviceID": "AppleUSBAudioEngine:Studio Microphone:4100000:1",
-            "recordingOriginalPolicy": RecordingOriginalPolicy.Choice.keep.rawValue,
+            "recordingOriginalPolicy": AudioOriginalPolicy.Choice.keep.rawValue,
             "recordingOriginalDays": 14.0,
+            // Audio editing: whether an installed ffmpeg is used (FR04).
+            "useInstalledFFmpeg": false,
             "soundEffectsEnabled": false,
             "soundEffectsVolume": Float(0.35),
             "soundEffectAssignments": try JSONEncoder().encode(sounds.keyedByRawValue),

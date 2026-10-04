@@ -766,7 +766,7 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Preferences other services keep
     //
     // The sound effects service, the substitution service, recording (the
-    // Record window and the original-take policy), the shortcut manager,
+    // Record window), audio editing (the original policy), the shortcut manager,
     // the log writer, transcription, and Export keep their preferences in
     // the same store as this model, and follow them there. The mirror reads
     // and writes them there through each service's own definitions: a value
@@ -780,6 +780,7 @@ final class SettingsViewModel: ObservableObject {
             + FeedSettings.preferenceKeys
             + TextSubstitutionService.preferenceKeys
             + RecordingPreferences.keys
+            + AudioEditingPreferences.keys
             + [KeyboardShortcutManager.bindingsPreference.key, LogLocation.preference.key]
             + [TranscriptionLanguage.preference.key, TranscriptionPreferences.offerAfterImport.key]
             + [BookExportPreferences.showInReaderToolbar.key]
@@ -904,8 +905,9 @@ final class SettingsViewModel: ObservableObject {
         config.repeatedSymbolThreshold = TextSubstitutionService.repeatedSymbolThresholdPreference.read(from: preferences)
         config.repeatedSymbolSet = TextSubstitutionService.repeatedSymbolSetPreference.read(from: preferences)
         config.recordingInputDeviceID = RecordingInputChoice.preference.read(from: preferences)
-        config.recordingOriginalPolicy = RecordingOriginalPolicy.choicePreference.read(from: preferences).rawValue
-        config.recordingOriginalDays = RecordingOriginalPolicy.daysPreference.read(from: preferences)
+        config.recordingOriginalPolicy = AudioOriginalPolicy.choicePreference.read(from: preferences).rawValue
+        config.recordingOriginalDays = AudioOriginalPolicy.daysPreference.read(from: preferences)
+        config.useInstalledFFmpeg = AudioFilterEngine.usePreference.read(from: preferences)
         config.showExportInReaderToolbar = BookExportPreferences.showInReaderToolbar.read(from: preferences)
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.bindingsPreference.read(from: preferences)
@@ -957,12 +959,13 @@ final class SettingsViewModel: ObservableObject {
         adopt(config.recordingInputDeviceID.nonEmpty, into: RecordingInputChoice.preference)
         adopt(
             SettingsPolicy.recordingOriginalPolicy.requestedValue(fromConfig: config.recordingOriginalPolicy),
-            into: RecordingOriginalPolicy.choicePreference
+            into: AudioOriginalPolicy.choicePreference
         )
         adopt(
             config.recordingOriginalDays.flatMap { SettingsPolicy.recordingOriginalDays.requestedValue(fromConfig: $0) },
-            into: RecordingOriginalPolicy.daysPreference
+            into: AudioOriginalPolicy.daysPreference
         )
+        adopt(config.useInstalledFFmpeg, into: AudioFilterEngine.usePreference)
         adopt(config.showExportInReaderToolbar, into: BookExportPreferences.showInReaderToolbar)
         adopt(
             entries: SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),

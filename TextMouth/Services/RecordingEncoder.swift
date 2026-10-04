@@ -47,14 +47,8 @@ enum RecordingEncoder {
     /// 8 kHz it refuses 48 kbit/s). Nil when it names none, so the encoder
     /// picks its own.
     static func bitRate(forSampleRate sampleRate: Double) -> Int? {
-        guard let pcm = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false),
-              let aac = AVAudioFormat(settings: [
-                  AVFormatIDKey: kAudioFormatMPEG4AAC,
-                  AVSampleRateKey: sampleRate,
-                  AVNumberOfChannelsKey: 1,
-              ]),
-              let converter = AVAudioConverter(from: pcm, to: aac),
-              let accepted = converter.applicableEncodeBitRates?.map(\.intValue), !accepted.isEmpty else { return nil }
+        let accepted = AudioRenderSettings.acceptedAACBitRates(sampleRate: sampleRate, channels: 1)
+        guard !accepted.isEmpty else { return nil }
         return accepted.filter { $0 <= speechBitRate }.max() ?? accepted.min()
     }
 

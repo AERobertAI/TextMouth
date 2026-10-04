@@ -37,9 +37,12 @@ enum StorageWork: Sendable, CaseIterable {
     /// One import from the import queue, from choosing where its package
     /// goes to adding its book to the library.
     case importing
-    /// Deleting recordings' original takes whose time is up, at launch and
-    /// after each recording is saved (`RecordingTakeSweep`).
-    case recordingTakes
+    /// Audio editing's writes into books' packages (FR04): an edit history
+    /// changed, an edit rendered into a book's audio, and the original
+    /// policy's sweep deleting the originals whose time is up, at launch and
+    /// after each save or render (`AudioEditHistoryStore`,
+    /// `AudioOriginalSweep`).
+    case audioEditing
     /// Writing a book's text cache: startup maintenance, Redo Text
     /// Extraction, or a reader rebuilding a stale cache.
     case textExtraction
@@ -56,8 +59,8 @@ enum StorageWork: Sendable, CaseIterable {
         switch self {
         case .importing:
             return "Waiting for the current import to finish..."
-        case .recordingTakes:
-            return "Waiting for old recording takes to be removed..."
+        case .audioEditing:
+            return "Waiting for audio editing to finish..."
         case .textExtraction:
             return "Waiting for text extraction to finish..."
         case .contentAnalysis:

@@ -59,8 +59,9 @@ extension ConfigService.AppConfig {
         config.repeatedSymbolThreshold = 7
         config.repeatedSymbolSet = "*=~"
         config.recordingInputDeviceID = "AppleUSBAudioEngine:Studio Microphone:4100000:1"
-        config.recordingOriginalPolicy = RecordingOriginalPolicy.Choice.keep.rawValue
+        config.recordingOriginalPolicy = AudioOriginalPolicy.Choice.keep.rawValue
         config.recordingOriginalDays = 14
+        config.useInstalledFFmpeg = false
         // Every action, as TextMouth writes them, three of them changed.
         var shortcuts = ShortcutAction.defaultBindings
         shortcuts[.togglePlayback] = [KeyBinding(key: "space"), KeyBinding(key: "p", control: true)]

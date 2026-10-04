@@ -86,7 +86,7 @@ final class RecordingEndToEndTests: XCTestCase {
         let swept = expectation(description: "the sweep finished")
         swept.assertForOverFulfill = false
         let dayLater = try XCTUnwrap(origin.originalTake?.lastEditedAt).addingTimeInterval(24 * 60 * 60 + 1)
-        library.sweepRecordingTakesInBackground(now: dayLater) { _ in swept.fulfill() }
+        library.sweepAudioOriginalsInBackground(now: dayLater) { _ in swept.fulfill() }
         await fulfillment(of: [swept], timeout: 20)
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: take.path), "the take outlived its day")

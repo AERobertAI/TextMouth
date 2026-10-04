@@ -36,14 +36,14 @@ struct BookOrigin: Codable, Equatable, Sendable {
         /// edit is saved. A deletion after some days counts from here.
         var lastEditedAt: Date
         /// This book's own policy, which wins over the global setting
-        /// (`RecordingOriginalPolicy.global(in:)`); nil follows the global
+        /// (`AudioOriginalPolicy.global(in:)`); nil follows the global
         /// setting. Nothing sets one yet: the per-book override the user
         /// asked for comes with the editor.
-        var policyOverride: RecordingOriginalPolicy?
+        var policyOverride: AudioOriginalPolicy?
 
         /// The policy this take is kept under: its book's own, or else
         /// `global`.
-        func effectivePolicy(global: RecordingOriginalPolicy) -> RecordingOriginalPolicy {
+        func effectivePolicy(global: AudioOriginalPolicy) -> AudioOriginalPolicy {
             policyOverride ?? global
         }
     }

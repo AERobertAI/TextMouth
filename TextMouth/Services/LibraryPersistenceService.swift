@@ -291,6 +291,20 @@ enum LibraryPersistenceService {
         }
     }
 
+    /// Writes the record of the book `bookID` still waiting in the debounce,
+    /// if one is, at once, on the metadata queue, and waits for it: for a
+    /// change that must be on disk before what it replaced is removed, as
+    /// saving edited audio under a new file name removes the old file only
+    /// once the book's record names the new one (FR04). A failure is
+    /// reported as any queued write's is. Call it off the main thread, after
+    /// queuing the save.
+    static func writePendingBookInfoNow(bookID: UUID) {
+        bookInfoSaveQueue.sync {
+            guard let update = pendingBookInfos.removeValue(forKey: bookID) else { return }
+            writeQueuedBookInfo(update.book, contentIndex: update.contentIndex)
+        }
+    }
+
     /// Write a snapshot to library.json. Must run on saveQueue. Debounced saves
     /// and flushes both end here, so this check also stops a snapshot that was
     /// queued before the index was found unreadable.

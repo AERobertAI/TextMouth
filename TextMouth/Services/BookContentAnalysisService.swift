@@ -497,7 +497,12 @@ enum BookContentAnalysisService {
         DiagnosticLog.event(.storage, "\(tag): \(book.title): \(detail)")
     }
 
-    private static func analyzeAudio(book: Book, url: URL) throws -> Result {
+    /// Analyzes `book`'s audio afresh from its file, or its folder of tracks,
+    /// at `url`, ignoring any saved index: what a load does when no saved index
+    /// can be trusted, and what saving edited audio does once the book's file
+    /// has changed (FR04). Waits for AVFoundation, so call it off the main
+    /// thread and outside Swift concurrency.
+    static func analyzeAudio(book: Book, url: URL) throws -> Result {
         var isDirectory: ObjCBool = false
         let parsed: (
             content: DocumentContent,

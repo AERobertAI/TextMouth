@@ -1,0 +1,191 @@
+import AVFoundation
+import XCTest
+@testable import TextMouth
+
+/// Audio files for the audio editor's tests (FR04), kept with the other
+/// fixture writers (`AudioTestFixtures`), so each kind of fixture has one
+/// writer.
+///
+/// The editor must place every sample exactly, so these files say where
+/// each of their samples came from, the research prototype's method: in an
+/// identity ramp, sample n of a book's audio holds (n + 1) / 2^24 and sample
+/// n of a take holds -(n + 1) / 2^24. A 32-bit float holds those values
+/// exactly, so reading an edited result back as floats names the source
+/// and the frame of every sample, and silence reads as 0, which no ramp
+/// sample is.
+extension AudioTestFixtures {
+    /// The scale of an identity ramp: one step per frame.
+    static let rampStep = 1.0 / 16_777_216.0
+
+    /// Which source an identity ramp stands for.
+    enum RampSource: Equatable {
+        /// The book's own audio: positive samples.
+        case book
+        /// A punch-in's take: negative samples.
+        case take
+    }
+
+    /// What a sample of an edited identity ramp turns out to be.
+    enum RampSample: Equatable, CustomStringConvertible {
+        /// Frame `frame` of `source`.
+        case frame(RampSource, Int)
+        /// Silence.
+        case silence
+
+        var description: String {
+            switch self {
+            case .frame(let source, let frame): return "\(source)[\(frame)]"
+            case .silence: return "silence"
+            }
+        }
+    }
+
+    /// Writes `frames` frames of an identity ramp for `source` to `url` as
+    /// 32-bit float linear PCM, mono, at `sampleRate`; the file type follows
+    /// the extension (".caf", ".wav").
+    static func writeIdentityRamp(
+        to url: URL,
+        frames: Int,
+        sampleRate: Double = 8_000,
+        source: RampSource = .book
+    ) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let format = try XCTUnwrap(AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: sampleRate,
+            channels: 1,
+            interleaved: false
+        ))
+        let file = try AVAudioFile(forWriting: url, settings: format.settings, commonFormat: .pcmFormatFloat32, interleaved: false)
+        let sign: Float = source == .book ? 1 : -1
+        let chunk = 65_536
+        var written = 0
+        while written < frames {
+            let count = min(chunk, frames - written)
+            let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(count)))
+            buffer.frameLength = AVAudioFrameCount(count)
+            let samples = try XCTUnwrap(buffer.floatChannelData)[0]
+            for index in 0..<count {
+                samples[index] = sign * Float(Double(written + index + 1) * rampStep)
+            }
+            try file.write(from: buffer)
+            written += count
+        }
+    }
+
+    /// What `sample`, read from an edited identity ramp, is.
+    static func rampSample(_ sample: Float) -> RampSample {
+        if sample == 0 { return .silence }
+        let frame = Int((Double(abs(sample)) / rampStep).rounded()) - 1
+        return .frame(sample > 0 ? .book : .take, frame)
+    }
+
+    /// Writes `frames` frames of 16-bit integer PCM, mono, at `sampleRate`,
+    /// to `url`, each sample a different value from its neighbours
+    /// (frame n holds n × 31 + 7, wrapping), so a lossless copy can be told
+    /// from a lossy one sample by sample.
+    static func writeInt16Pattern(to url: URL, frames: Int, sampleRate: Double = 8_000) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let format = try XCTUnwrap(AVAudioFormat(
+            commonFormat: .pcmFormatInt16,
+            sampleRate: sampleRate,
+            channels: 1,
+            interleaved: true
+        ))
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)))
+        buffer.frameLength = AVAudioFrameCount(frames)
+        let samples = try XCTUnwrap(buffer.int16ChannelData)[0]
+        for index in 0..<frames {
+            samples[index] = Int16(truncatingIfNeeded: index &* 31 &+ 7)
+        }
+        let file = try AVAudioFile(forWriting: url, settings: format.settings, commonFormat: .pcmFormatInt16, interleaved: true)
+        try file.write(from: buffer)
+    }
+
+    /// One stretch of a test signal: `seconds` long, a sine of `frequency`
+    /// hertz at peak `amplitude`, or, at frequency 0, a steady level of
+    /// `amplitude` (0 for silence).
+    struct Tone {
+        let seconds: Double
+        let frequency: Double
+        let amplitude: Float
+
+        /// Silence lasting `seconds`.
+        static func silence(_ seconds: Double) -> Tone {
+            Tone(seconds: seconds, frequency: 0, amplitude: 0)
+        }
+    }
+
+    /// Writes `tones`, one after another, to `url` as 32-bit float linear
+    /// PCM, mono, at `sampleRate`: a signal whose levels and frequencies a
+    /// filter's effect can be measured on.
+    static func writeTones(_ tones: [Tone], to url: URL, sampleRate: Double = 8_000) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let format = try XCTUnwrap(AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false))
+        let file = try AVAudioFile(forWriting: url, settings: format.settings, commonFormat: .pcmFormatFloat32, interleaved: false)
+        for tone in tones {
+            let frames = Int((tone.seconds * sampleRate).rounded())
+            let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(max(frames, 1))))
+            buffer.frameLength = AVAudioFrameCount(frames)
+            let samples = try XCTUnwrap(buffer.floatChannelData)[0]
+            for index in 0..<frames {
+                samples[index] = tone.frequency == 0
+                    ? tone.amplitude
+                    : tone.amplitude * Float(sin(2 * Double.pi * tone.frequency * Double(index) / sampleRate))
+            }
+            try file.write(from: buffer)
+        }
+    }
+
+    /// The largest magnitude among `samples`.
+    static func peak<Samples: Collection>(_ samples: Samples) -> Float where Samples.Element == Float {
+        samples.reduce(0) { max($0, abs($1)) }
+    }
+
+    /// The root mean square of `samples`.
+    static func rms<Samples: Collection>(_ samples: Samples) -> Float where Samples.Element == Float {
+        guard !samples.isEmpty else { return 0 }
+        return sqrt(samples.reduce(0) { $0 + $1 * $1 } / Float(samples.count))
+    }
+
+    /// Every sample of the first channel of the audio file at `url`, as
+    /// 32-bit floats: for the short files of these tests only. Read a piece
+    /// at a time to the end, since one read of AVAudioFile can return fewer
+    /// frames than asked (it returned 15,360 of 16,000 from a float WAVE file).
+    static func floatSamples(of url: URL) throws -> [Float] {
+        let file = try AVAudioFile(forReading: url, commonFormat: .pcmFormatFloat32, interleaved: false)
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: 16_384))
+        var samples: [Float] = []
+        while file.framePosition < file.length {
+            try file.read(into: buffer)
+            guard buffer.frameLength > 0 else { break }
+            let channel = try XCTUnwrap(buffer.floatChannelData)[0]
+            samples.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+        }
+        return samples
+    }
+
+    /// Every sample of the first channel of the audio file at `url`, as
+    /// 16-bit integers, read a piece at a time to the end.
+    static func int16Samples(of url: URL) throws -> [Int16] {
+        let file = try AVAudioFile(forReading: url, commonFormat: .pcmFormatInt16, interleaved: true)
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: 16_384))
+        var samples: [Int16] = []
+        while file.framePosition < file.length {
+            try file.read(into: buffer)
+            guard buffer.frameLength > 0 else { break }
+            let channel = try XCTUnwrap(buffer.int16ChannelData)[0]
+            samples.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+        }
+        return samples
+    }
+}
+
+extension Array {
+    /// The element at `index`, or nil when there is none, so a test reading
+    /// a sample its audio turned out not to have fails instead of stopping
+    /// the test host.
+    subscript(checked index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
