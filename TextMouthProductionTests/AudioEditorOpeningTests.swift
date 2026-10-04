@@ -252,15 +252,7 @@ final class AudioEditorOpeningTests: XCTestCase {
         let harness = try await EditorHarness.open(fixture, for: self)
         defer { harness.model.windowClosed() }
 
-        withHostedView(AudioEditorView(model: harness.model), size: NSSize(width: 760, height: 640), until: {
-            !self.descendants(of: $0, as: VoiceOverFocusTriggerView.self).isEmpty
-        }) { hosting in
-            XCTAssertEqual(descendants(of: hosting, as: VoiceOverFocusTriggerView.self).count, 1)
-            let targets = elements(identified: voiceOverFocusID, in: hosting)
-            if !targets.isEmpty {
-                XCTAssertEqual(targets.map { $0.accessibilityLabel() ?? "" }, [AudioEditorWording.positionLabel])
-            }
-        }
+        checkVoiceOverStarts(on: AudioEditorWording.positionLabel, in: AudioEditorView(model: harness.model), size: NSSize(width: 760, height: 640))
     }
 
     // MARK: - Menus
@@ -305,14 +297,6 @@ final class AudioEditorOpeningTests: XCTestCase {
             }
             try JSONEncoder().encode(manifest).write(to: folder.appendingPathComponent("manifest.json"))
         }
-    }
-
-    /// Every accessibility element below `root` whose identifier is
-    /// `identifier`.
-    private func elements(identified identifier: String, in root: Any) -> [NSAccessibilityProtocol] {
-        guard let node = root as? NSAccessibilityProtocol else { return [] }
-        let match = node.accessibilityIdentifier() == identifier ? [node] : []
-        return match + (node.accessibilityChildren() ?? []).flatMap { elements(identified: identifier, in: $0) }
     }
 }
 
@@ -440,6 +424,20 @@ struct EditorHarness {
         permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized)
     ) async throws -> EditorHarness {
         let session = try await AudioEditSession.open(bookID: fixture.book.id, audioFile: track?.path, in: fixture.library)
+        return try make(session: session, of: fixture, for: test, track: track, permission: permission)
+    }
+
+    /// A model of its own for `session`, an edit session of `fixture`'s
+    /// book, or its `track`, already open, as the launcher opens one, with
+    /// `test`'s own sandboxed preferences store, and microphones that say
+    /// yes unless `permission` says otherwise.
+    static func make(
+        session: AudioEditSession,
+        of fixture: AudioEditorTestBook,
+        for test: XCTestCase,
+        track: AudioEditorTrack? = nil,
+        permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized)
+    ) throws -> EditorHarness {
         let player = FakeAudioEditorPlayer()
         let announcements = EditorAnnouncements()
         let store = test.makeSandboxedPreferences("audio-editor")

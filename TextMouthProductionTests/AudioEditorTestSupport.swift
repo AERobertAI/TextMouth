@@ -1,4 +1,6 @@
 import AVFoundation
+import AppKit
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -166,17 +168,58 @@ struct AudioEditorTestBook {
 
 extension XCTestCase {
     /// An editor on `seconds` seconds of an identity ramp in a WAVE file
-    /// (`AudioEditorTestBook.ramp`), its preview loaded, playing half a
-    /// second after each move only when `playsAfterMoves` says so. The
-    /// harness, its library and its recorder of sentences among it, which
-    /// the model holds only weakly, is kept until the test ends, when the
-    /// editor is closed.
+    /// (`AudioEditorTestBook.ramp`), playing half a second after each move
+    /// only when `playsAfterMoves` says so. Its preview is loaded, and its
+    /// levels measured, unless `loadsPreview` is false: then, until an edit
+    /// loads it, it has found no pauses. The harness, its library and its
+    /// recorder of sentences among it, which the model holds only weakly,
+    /// is kept until the test ends, when the editor is closed.
     @MainActor
-    func openRamp(seconds: Double, playsAfterMoves: Bool = false) async throws -> EditorHarness {
+    func openRamp(seconds: Double, playsAfterMoves: Bool = false, loadsPreview: Bool = true) async throws -> EditorHarness {
         let harness = try await EditorHarness.open(try AudioEditorTestBook.ramp(seconds: seconds, for: self), for: self)
         AudioEditorPreferences.playAfterMoves.write(playsAfterMoves, to: harness.store)
-        await harness.model.loadPreview()
+        if loadsPreview {
+            await harness.model.loadPreview()
+        }
         addTeardownBlock { @MainActor in harness.model.windowClosed() }
         return harness
+    }
+}
+
+// MARK: - Where VoiceOver Starts
+
+extension XCTestCase {
+    /// Every accessibility element below `root` carrying the identifier a
+    /// VoiceOver focus request looks for (`InitialVoiceOverFocusModifier`):
+    /// where this session exposes SwiftUI's elements, the one VoiceOver
+    /// starts on.
+    @MainActor
+    func voiceOverTargets(in root: Any) -> [NSAccessibilityProtocol] {
+        guard let node = root as? NSAccessibilityProtocol else { return [] }
+        let match = node.accessibilityIdentifier() == voiceOverFocusID ? [node] : []
+        return match + (node.accessibilityChildren() ?? []).flatMap { voiceOverTargets(in: $0) }
+    }
+
+    /// Hosts `view` until it has made its VoiceOver focus request, and
+    /// checks that it makes exactly one, and that, where this session
+    /// exposes the element the request looks for, that element is labelled
+    /// `label`. SwiftUI exposes its own text, buttons, and rows only to a
+    /// connected assistive app, so for those the count alone is checked.
+    @MainActor
+    func checkVoiceOverStarts<Content: View>(
+        on label: String,
+        in view: Content,
+        size: NSSize = NSSize(width: 600, height: 520),
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        withHostedView(view, size: size, until: { !self.descendants(of: $0, as: VoiceOverFocusTriggerView.self).isEmpty }) { hosting in
+            let requests = descendants(of: hosting, as: VoiceOverFocusTriggerView.self).count
+            XCTAssertEqual(requests, 1, "VoiceOver should start on \(label) alone", file: file, line: line)
+            let targets = voiceOverTargets(in: hosting)
+            if !targets.isEmpty {
+                XCTAssertEqual(targets.map { $0.accessibilityLabel() ?? "" }, [label], file: file, line: line)
+            }
+        }
     }
 }

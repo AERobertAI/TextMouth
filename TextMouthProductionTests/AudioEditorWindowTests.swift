@@ -1,0 +1,256 @@
+import AppKit
+import Combine
+import SwiftUI
+import XCTest
+@testable import TextMouth
+
+/// The audio editor window's controls as VoiceOver, a braille display, and
+/// the keyboard meet them (FR04): every command has one button, in a group
+/// under its heading, titled as Settings lists it, with a hint saying what
+/// it does and the shortcuts in force, which follows a change in Settings;
+/// each pop-up lists its choices by name; the window and each sheet start
+/// VoiceOver on one control; and, wherever this session exposes the AppKit
+/// controls SwiftUI draws, VoiceOver reads each by its label, hint, and
+/// value. SwiftUI builds its own buttons and text for VoiceOver only while
+/// an assistive app is connected, so their words are checked through the
+/// model functions that give them. No test shows a window, plays a sound,
+/// or records.
+@MainActor
+final class AudioEditorWindowTests: XCTestCase {
+
+    /// A size the whole editor window fits in.
+    private static let windowSize = NSSize(width: 820, height: 1_000)
+
+    /// The editor's commands, in the order Settings lists them.
+    private var editorActions: [ShortcutAction] {
+        ShortcutAction.allCases.filter { $0.scope == .audioEditor }
+    }
+
+    // MARK: - The Buttons
+
+    /// Every editor command has exactly one button, in one of the window's
+    /// four groups, each under a heading of its own.
+    func testEveryCommandHasOneButtonInAGroup() {
+        let listed = AudioEditorView.groups.flatMap(\.actions)
+        XCTAssertEqual(Set(listed), Set(editorActions), "a command has no button, or a button no command")
+        XCTAssertEqual(listed.count, editorActions.count, "a command has two buttons")
+        XCTAssertEqual(AudioEditorView.groups.map(\.heading), ["Listen and Move", "Select and Mark", "Edit", "Save and Export"])
+    }
+
+    /// Every button is titled as Settings lists its command, and its hint
+    /// says what it does, then its shortcuts in words, then, for an Undo
+    /// that can't, why.
+    func testEveryButtonSaysWhatItDoesAndItsShortcuts() async throws {
+        let model = try await openRamp(seconds: 4, loadsPreview: false).model
+
+        for action in editorActions {
+            XCTAssertEqual(model.title(for: action), action.title)
+            let shortcuts = AudioEditorWording.shortcutSentence(ShortcutAction.defaultBindings[action] ?? [])
+            let hint = "\(AudioEditorWording.explanation(of: action)) \(shortcuts)"
+            XCTAssertEqual(model.hint(for: action), action == .editorUndo ? "\(hint) There's nothing to undo." : hint)
+        }
+        XCTAssertEqual(model.hint(for: .editorSkipBack), "Moves the cursor back one second. Shortcuts: J or Comma.")
+    }
+
+    /// A shortcut changed in Settings reaches its button's hint, and the
+    /// window hears of it, so the button is drawn again with the new one.
+    func testAChangedShortcutReachesItsButtonsHint() async throws {
+        let harness = try await openRamp(seconds: 4, loadsPreview: false)
+        let model = harness.model
+        let changes = Tally()
+        let watching = model.objectWillChange.sink { _ in changes.count += 1 }
+        defer { watching.cancel() }
+
+        var bindings = KeyboardShortcutManager.bindingsPreference.read(from: harness.store)
+        bindings[.editorSkipBack] = [KeyBinding(key: "h", shift: true)]
+        KeyboardShortcutManager.bindingsPreference.write(bindings, to: harness.store)
+
+        XCTAssertEqual(model.hint(for: .editorSkipBack), "Moves the cursor back one second. Shortcut: Shift-H.")
+        let heard = await eventually { changes.count > 0 }
+        XCTAssertTrue(heard, "the window never heard the shortcut change")
+    }
+
+    // MARK: - The Pop-Ups
+
+    /// The window's microphone pop-up lists the microphones by name; with
+    /// none connected it says so, and can't be changed.
+    func testTheMicrophonePopUpListsTheMicrophonesByName() async throws {
+        let harness = try await openRamp(seconds: 4, loadsPreview: false)
+        let window = AudioEditorView(model: harness.model)
+
+        checkPopUp(in: window, size: Self.windowSize, lists: ["MacBook Air Microphone", "AirPods Pro"], isEnabled: true)
+        harness.catalog.change(to: [])
+        checkPopUp(in: window, size: Self.windowSize, lists: [AudioEditorWording.noMicrophoneItem], isEnabled: false)
+    }
+
+    /// Apply Filter lists the presets by name, as Settings keeps them;
+    /// Export lists the formats TextMouth can write; and Audio Info lists
+    /// what may happen to the book's original audio, the global setting
+    /// first, named.
+    func testTheSheetsPopUpsListTheirChoicesByName() async throws {
+        let model = try await openRamp(seconds: 4, loadsPreview: false).model
+
+        let presets = AudioFilterPresetLibrary().presets.map(\.name)
+        XCTAssertFalse(presets.isEmpty)
+        checkPopUp(in: AudioEditorFilterSheet(model: model), lists: presets)
+        let formats = model.session.exportFormats.map(\.title)
+        XCTAssertEqual(Array(formats.prefix(6)), ["M4A (AAC)", "M4B Audiobook (AAC)", "Apple Lossless (M4A)", "WAV", "AIFF", "CAF"])
+        checkPopUp(in: AudioEditorExportSheet(model: model), lists: formats)
+        checkPopUp(in: AudioEditorInfoSheet(model: model), lists: [
+            AudioEditorWording.useGlobal(model.globalPolicy), "Keep", "Don't keep", "Keep for a number of days",
+        ])
+    }
+
+    // MARK: - Where VoiceOver Starts
+
+    /// Each sheet starts VoiceOver on one control: a question's on its
+    /// field; Apply Filter's on the Filter pop-up; Export's on the Format
+    /// pop-up; Audio Info's on its policy pop-up; a save's on its progress
+    /// bar; and the list's on its first marker, or on Close while it lists
+    /// nothing at all.
+    func testEachSheetStartsVoiceOverOnOneControl() async throws {
+        let model = try await openRamp(seconds: 4, loadsPreview: false).model
+
+        for prompt in [AudioEditorPrompt.goToTime, .insertSilence, .insertChapter] {
+            checkVoiceOverStarts(on: prompt.fieldLabel, in: promptSheet(prompt, of: model))
+        }
+        checkVoiceOverStarts(on: AudioEditorWording.presetLabel, in: AudioEditorFilterSheet(model: model))
+        checkVoiceOverStarts(on: AudioEditorWording.formatLabel, in: AudioEditorExportSheet(model: model))
+        checkVoiceOverStarts(on: AudioEditorWording.policyLabel, in: AudioEditorInfoSheet(model: model))
+        model.progress = AudioEditorProgress(title: AudioEditorWording.savingTitle, detail: "", fraction: 0.5)
+        checkVoiceOverStarts(on: AudioEditorWording.progressLabel, in: AudioEditorProgressSheet(model: model))
+
+        // Its preview never loaded, the audio has no pauses found yet.
+        XCTAssertTrue(model.markers.isEmpty && model.chapters.isEmpty && model.pauses.isEmpty)
+        checkVoiceOverStarts(on: AudioEditorWording.closeButton, in: AudioEditorMarkersSheet(model: model))
+        model.addMarker()
+        let marker = try XCTUnwrap(model.orderedMarkers.first)
+        checkVoiceOverStarts(
+            on: AudioEditorWording.marker(1, named: marker.name, at: marker.time),
+            in: AudioEditorMarkersSheet(model: model)
+        )
+    }
+
+    // MARK: - As VoiceOver Reads Them
+
+    /// VoiceOver reads each AppKit control by its label, hint, and value:
+    /// the window's microphone pop-up, with the microphone in use; a
+    /// question's field, with what to type; the sheets' pop-ups, with the
+    /// choice made; and Audio Info's stepper, once the book keeps its
+    /// original for some days, with the days in words.
+    func testVoiceOverReadsEachControlByItsLabel() async throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let harness = try await openRamp(seconds: 4, loadsPreview: false)
+        let model = harness.model
+
+        try readControls(of: AudioEditorView(model: model), size: Self.windowSize, drawn: NSPopUpButton.self) { controls in
+            let microphone = try control(labelled: AudioEditorWording.microphoneLabel, in: controls)
+            XCTAssertEqual(microphone.hint, AudioEditorWording.microphoneHint)
+            XCTAssertEqual(microphone.element.accessibilityValue() as? String, "MacBook Air Microphone")
+        }
+        for prompt in [AudioEditorPrompt.goToTime, .insertSilence, .insertChapter] {
+            try readControls(of: promptSheet(prompt, of: model), drawn: NSTextField.self) { controls in
+                let field = try control(labelled: prompt.fieldLabel, in: controls)
+                XCTAssertEqual(field.hint, prompt.explanation)
+            }
+        }
+        try readControls(of: AudioEditorFilterSheet(model: model), drawn: NSPopUpButton.self) { controls in
+            let preset = try control(labelled: AudioEditorWording.presetLabel, in: controls)
+            XCTAssertEqual(preset.element.accessibilityValue() as? String, AudioFilterPresetLibrary().presets.first?.name)
+        }
+        try readControls(of: AudioEditorExportSheet(model: model), drawn: NSPopUpButton.self) { controls in
+            let format = try control(labelled: AudioEditorWording.formatLabel, in: controls)
+            XCTAssertEqual(format.element.accessibilityValue() as? String, model.session.exportFormats.first?.title)
+        }
+
+        await model.setPolicy(.deleteAfterDays, days: 3)
+        XCTAssertEqual(model.policyChoice, .deleteAfterDays, "\(harness.announcements.sentences)")
+        try readControls(of: AudioEditorInfoSheet(model: model), drawn: NSStepper.self) { controls in
+            let policy = try control(labelled: AudioEditorWording.policyLabel, in: controls)
+            XCTAssertEqual(policy.hint, AudioEditingSettingsWording.policyHint)
+            XCTAssertEqual(policy.element.accessibilityValue() as? String, "Keep for a number of days")
+            let days = try control(labelled: AudioEditingSettingsWording.daysLabel, in: controls)
+            XCTAssertEqual(days.valueDescription, "3 days")
+        }
+    }
+
+    /// A save's sheet draws a native progress bar, which VoiceOver reads as
+    /// the progress indicator it is, at how far the save is. AppKit exposes
+    /// no progress bar among a hosted window's elements, so its words, the
+    /// label and the percent, are pinned where they are made
+    /// (`AudioEditorWording`).
+    func testASavesSheetDrawsItsProgressBarAtHowFarItIs() async throws {
+        let model = try await openRamp(seconds: 4, loadsPreview: false).model
+        model.progress = AudioEditorProgress(title: AudioEditorWording.savingTitle, detail: "Saving.", fraction: 0.5)
+
+        withHostedView(AudioEditorProgressSheet(model: model), until: { !self.descendants(of: $0, as: NSProgressIndicator.self).isEmpty }) { hosting in
+            guard let bar = descendants(of: hosting, as: NSProgressIndicator.self).first else {
+                return XCTFail("no progress bar was drawn")
+            }
+            XCTAssertEqual(bar.accessibilityRole(), .progressIndicator)
+            XCTAssertFalse(bar.isIndeterminate)
+            XCTAssertEqual(bar.doubleValue / bar.maxValue, 0.5, accuracy: 0.000_1)
+        }
+        XCTAssertEqual(AudioEditorWording.progressLabel, "Progress")
+    }
+
+    // MARK: - Helpers
+
+    /// `prompt`'s sheet for `model`, as the window builds it.
+    private func promptSheet(_ prompt: AudioEditorPrompt, of model: AudioEditorModel) -> AudioEditorPromptSheet {
+        AudioEditorPromptSheet(
+            prompt: prompt,
+            initialText: model.initialText(for: prompt),
+            submit: { model.answer(prompt, with: $0) },
+            cancel: { model.sheet = nil }
+        )
+    }
+
+    /// Hosts `view`, and checks that it draws a pop-up listing `titles`, in
+    /// order, enabled as `isEnabled` says when it is given.
+    private func checkPopUp<Content: View>(
+        in view: Content,
+        size: NSSize = NSSize(width: 600, height: 520),
+        lists titles: [String],
+        isEnabled: Bool? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        withHostedView(view, size: size, until: { !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty }) { hosting in
+            let popUps = descendants(of: hosting, as: NSPopUpButton.self)
+            guard let popUp = popUps.first(where: { $0.itemTitles == titles }) else {
+                return XCTFail("no pop-up lists \(titles): \(popUps.map(\.itemTitles))", file: file, line: line)
+            }
+            if let isEnabled {
+                XCTAssertEqual(popUp.isEnabled, isEnabled, "\(titles)", file: file, line: line)
+            }
+        }
+    }
+
+    /// Hosts `view` until it has drawn a control of `type`, and passes the
+    /// controls VoiceOver can land on to `body` while the window lives.
+    private func readControls<Content: View, Control: NSView>(
+        of view: Content,
+        size: NSSize = NSSize(width: 600, height: 520),
+        drawn type: Control.Type,
+        _ body: ([AccessibleControl]) throws -> Void
+    ) throws {
+        try withHostedView(view, size: size, until: {
+            !self.descendants(of: $0, as: type).isEmpty && !self.accessibleControls(in: $0).isEmpty
+        }) { hosting in
+            try body(accessibleControls(in: hosting))
+        }
+    }
+
+    /// The control labelled `label` among `controls`; fails the test,
+    /// listing the labels there are, when there is none.
+    private func control(labelled label: String, in controls: [AccessibleControl]) throws -> AccessibleControl {
+        try XCTUnwrap(controls.first { $0.label == label }, "no control is labelled \(label): \(controls.map(\.label))")
+    }
+}
+
+/// Counts what a publisher sends.
+@MainActor
+private final class Tally {
+    var count = 0
+}
