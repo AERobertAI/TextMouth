@@ -82,6 +82,10 @@ targets:
           DEPLOYMENT_POSTPROCESSING: true
           STRIP_INSTALLED_PRODUCT: true
           STRIP_STYLE: all
+          # Leave out of the link the code and data that nothing in the app
+          # can reach, such as the parts of the Swift packages' public API
+          # that TextMouth never calls.
+          DEAD_CODE_STRIPPING: true
     dependencies:
       - package: ZIPFoundation
       - package: SwiftSoup
