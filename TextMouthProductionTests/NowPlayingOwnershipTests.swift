@@ -662,6 +662,40 @@ final class NowPlayingOwnershipTests: XCTestCase {
         await fulfillment(of: [restartPosted], timeout: 0.1)
     }
 
+    // MARK: - The Test Host Stays Out of the System's Media Session
+
+    /// Board #958: only the app takes part in the system's media session. A
+    /// process hosting the tests is TextMouth.app with the bundle identifier
+    /// of the developer's own copy, so its shared coordinator must never
+    /// register MediaPlayer command targets, listen to CoreAudio, or tell the
+    /// system's Now Playing center that TextMouth plays, even once a reader
+    /// has joined it: macOS would then send the developer's AirPods presses
+    /// to the test host instead of to the copy being listened to.
+    ///
+    /// Before the repair the shared coordinator took part in every process:
+    /// a reader joining it registered MediaPlayer command targets in the
+    /// test host, and a reader playing published "playing" as TextMouth.
+    func testOnlyTheAppTakesPartInTheSystemMediaSession() {
+        let home = FileManager.default.temporaryDirectory
+        let preferences = makeSandboxedPreferences("media-session-runtime")
+        let app = TextMouthRuntime(isHostedTest: false, homeDirectory: home, preferences: preferences)
+        let testHost = TextMouthRuntime(isHostedTest: true, homeDirectory: home, preferences: preferences)
+        XCTAssertTrue(NowPlayingService.installsSystemIntegrations(in: app))
+        XCTAssertFalse(NowPlayingService.installsSystemIntegrations(in: testHost))
+
+        // This process hosts the tests, so the shared coordinator stays out
+        // of the system's session even once a reader that monitors Bluetooth
+        // joins it, which is when the app registers its command targets.
+        XCTAssertTrue(TextMouthRuntime.current.isHostedTest)
+        let shared = NowPlayingService.shared
+        let session = makeSession(coordinator: shared, bluetoothMonitoring: true)
+        defer { session.close() }
+
+        XCTAssertFalse(shared.installsSystemIntegrations, "The test host joined the system's media session")
+        XCTAssertFalse(shared.remoteCommandsActive, "The test host registered MediaPlayer command targets")
+        XCTAssertFalse(shared.isListeningForDeviceChanges, "The test host listens to CoreAudio")
+    }
+
     private func makeSession(
         coordinator: NowPlayingService,
         onPlay: @escaping () -> Void = {},

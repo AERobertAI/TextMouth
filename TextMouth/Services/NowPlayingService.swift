@@ -178,7 +178,28 @@ final class NowPlayingSession {
 ///    flip a paused book into playback through the speakers.
 @MainActor
 final class NowPlayingService {
-    static let shared = NowPlayingService()
+    /// The app's one coordinator. In a process hosting the tests it takes no
+    /// part in the system's media session (`installsSystemIntegrations(in:)`).
+    static let shared = NowPlayingService(
+        installsSystemIntegrations: installsSystemIntegrations(in: .current)
+    )
+
+    /// Whether a coordinator made for a process with `runtime` takes part in
+    /// the system's media session: MediaPlayer's command targets, which the
+    /// AirPods and the media keys reach, the system's Now Playing center,
+    /// and CoreAudio's device listeners. The app does; a process hosting the
+    /// tests never does.
+    ///
+    /// The test host is TextMouth.app itself, with the bundle identifier of
+    /// the developer's own copy. Taking part, its readers playing silent test
+    /// audio told the system that TextMouth was playing, so macOS sent the
+    /// developer's AirPods presses to the test host, where they paused and
+    /// skipped test readers, instead of to the copy the developer was
+    /// listening to, which then heard nothing until it next told the system
+    /// it played (board #958).
+    nonisolated static func installsSystemIntegrations(in runtime: TextMouthRuntime) -> Bool {
+        !runtime.isHostedTest
+    }
 
     struct Handlers {
         let onPlay: () -> Void
@@ -208,7 +229,10 @@ final class NowPlayingService {
     private var activeHandlers: Handlers? {
         activeOwnerID.flatMap { handlersByOwner[$0] }
     }
-    private let installsSystemIntegrations: Bool
+    /// Whether this coordinator takes part in the system's media session
+    /// (see `installsSystemIntegrations(in:)`). Without it, it still routes
+    /// the commands handed to `acceptRemoteCommand(_:)` among its readers.
+    let installsSystemIntegrations: Bool
     /// Receives each routing diagnostic: by default the debug log, as a
     /// `MEDIA_ROUTE` playback trace line, since every focus change, command,
     /// and device change writes one. Tests pass a sink of their own.
