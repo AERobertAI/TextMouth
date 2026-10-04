@@ -93,7 +93,7 @@ final class AudioOriginalPolicyTests: XCTestCase {
         store.set("forever", forKey: "recordingOriginalPolicy")
         store.set(-4, forKey: "recordingOriginalDays")
         XCTAssertEqual(AudioOriginalPolicy.global(in: store), .deleteAfter(days: 1))
-        XCTAssertEqual(AudioEditingPreferences.keys, ["recordingOriginalPolicy", "recordingOriginalDays"])
+        XCTAssertEqual(AudioEditingPreferences.keys, ["recordingOriginalPolicy", "recordingOriginalDays", "useInstalledFFmpeg"])
         XCTAssertFalse(RecordingPreferences.keys.contains("recordingOriginalPolicy"))
     }
 

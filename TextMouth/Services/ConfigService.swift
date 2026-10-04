@@ -328,6 +328,9 @@ final class ConfigService: ObservableObject {
         /// How many days an original is kept when the choice is
         /// "deleteAfterDays", from 1 to 365.
         var recordingOriginalDays: Double?
+        /// Whether an installed ffmpeg, when TextMouth finds one, runs the
+        /// audio editor's filters and writes MP3 (`AudioFilterEngine`).
+        var useInstalledFFmpeg: Bool?
         /// The keyboard shortcuts of each action, keyed by the action's name
         /// as Settings shows it, each a list of shortcuts such as
         /// "option+shift+command+b" (`KeyBinding.configText`); an empty list
@@ -447,6 +450,7 @@ final class ConfigService: ObservableObject {
             recordingInputDeviceID = fields.value(.recordingInputDeviceID, default: fallback.recordingInputDeviceID)
             recordingOriginalPolicy = fields.rawChoice(.recordingOriginalPolicy, rule: SettingsPolicy.recordingOriginalPolicy)
             recordingOriginalDays = fields.optionalNumber(.recordingOriginalDays, rule: SettingsPolicy.recordingOriginalDays)
+            useInstalledFFmpeg = fields.optionalFlag(.useInstalledFFmpeg)
             keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
             feedRefreshAtLaunch = fields.optionalFlag(.feedRefreshAtLaunch)
             feedRefreshIntervalHours = fields.optionalThreshold(
@@ -523,7 +527,8 @@ final class ConfigService: ObservableObject {
                 // Recording: the microphone the Record window remembers.
                 mirrored += sameNames(RecordingPreferences.keys)
                 // Audio editing: how long the original audio of recordings and
-                // edited audiobooks is kept.
+                // edited audiobooks is kept, and whether an installed ffmpeg
+                // runs filters and writes MP3.
                 mirrored += sameNames(AudioEditingPreferences.keys)
                 // Miscellaneous.
                 mirrored += sameNames([

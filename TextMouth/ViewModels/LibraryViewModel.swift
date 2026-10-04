@@ -82,6 +82,10 @@ final class LibraryViewModel: ObservableObject {
     /// open in a reader (mirrored from `openBookIDs`), or being edited or
     /// rendered (FR04, `AudioOriginalSweep`).
     let audioEditActivity = AudioEditActivity()
+    /// Which engine runs the filters of audio edits: the installed ffmpeg or
+    /// TextMouth's own, as the setting and this Mac say (FR04); a test can
+    /// choose one, so its results never depend on what this Mac has.
+    var audioFilterEngine: () -> AudioFilterEngine = { AudioFilterEngine.current() }
 
     /// The questions imports are waiting to ask, one at a time and in the
     /// order they arose (TODO I01): whether to replace or keep a duplicate,

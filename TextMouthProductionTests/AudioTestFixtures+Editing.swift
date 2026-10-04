@@ -102,6 +102,52 @@ extension AudioTestFixtures {
         try file.write(from: buffer)
     }
 
+    /// One stretch of a test signal: `seconds` long, a sine of `frequency`
+    /// hertz at peak `amplitude`, or, at frequency 0, a steady level of
+    /// `amplitude` (0 for silence).
+    struct Tone {
+        let seconds: Double
+        let frequency: Double
+        let amplitude: Float
+
+        /// Silence lasting `seconds`.
+        static func silence(_ seconds: Double) -> Tone {
+            Tone(seconds: seconds, frequency: 0, amplitude: 0)
+        }
+    }
+
+    /// Writes `tones`, one after another, to `url` as 32-bit float linear
+    /// PCM, mono, at `sampleRate`: a signal whose levels and frequencies a
+    /// filter's effect can be measured on.
+    static func writeTones(_ tones: [Tone], to url: URL, sampleRate: Double = 8_000) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let format = try XCTUnwrap(AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false))
+        let file = try AVAudioFile(forWriting: url, settings: format.settings, commonFormat: .pcmFormatFloat32, interleaved: false)
+        for tone in tones {
+            let frames = Int((tone.seconds * sampleRate).rounded())
+            let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(max(frames, 1))))
+            buffer.frameLength = AVAudioFrameCount(frames)
+            let samples = try XCTUnwrap(buffer.floatChannelData)[0]
+            for index in 0..<frames {
+                samples[index] = tone.frequency == 0
+                    ? tone.amplitude
+                    : tone.amplitude * Float(sin(2 * Double.pi * tone.frequency * Double(index) / sampleRate))
+            }
+            try file.write(from: buffer)
+        }
+    }
+
+    /// The largest magnitude among `samples`.
+    static func peak<Samples: Collection>(_ samples: Samples) -> Float where Samples.Element == Float {
+        samples.reduce(0) { max($0, abs($1)) }
+    }
+
+    /// The root mean square of `samples`.
+    static func rms<Samples: Collection>(_ samples: Samples) -> Float where Samples.Element == Float {
+        guard !samples.isEmpty else { return 0 }
+        return sqrt(samples.reduce(0) { $0 + $1 * $1 } / Float(samples.count))
+    }
+
     /// Every sample of the first channel of the audio file at `url`, as
     /// 32-bit floats: for the short files of these tests only. Read a piece
     /// at a time to the end, since one read of AVAudioFile can return fewer

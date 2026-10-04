@@ -907,6 +907,7 @@ final class SettingsViewModel: ObservableObject {
         config.recordingInputDeviceID = RecordingInputChoice.preference.read(from: preferences)
         config.recordingOriginalPolicy = AudioOriginalPolicy.choicePreference.read(from: preferences).rawValue
         config.recordingOriginalDays = AudioOriginalPolicy.daysPreference.read(from: preferences)
+        config.useInstalledFFmpeg = AudioFilterEngine.usePreference.read(from: preferences)
         config.showExportInReaderToolbar = BookExportPreferences.showInReaderToolbar.read(from: preferences)
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.bindingsPreference.read(from: preferences)
@@ -964,6 +965,7 @@ final class SettingsViewModel: ObservableObject {
             config.recordingOriginalDays.flatMap { SettingsPolicy.recordingOriginalDays.requestedValue(fromConfig: $0) },
             into: AudioOriginalPolicy.daysPreference
         )
+        adopt(config.useInstalledFFmpeg, into: AudioFilterEngine.usePreference)
         adopt(config.showExportInReaderToolbar, into: BookExportPreferences.showInReaderToolbar)
         adopt(
             entries: SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),

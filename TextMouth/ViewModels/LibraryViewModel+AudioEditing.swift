@@ -174,9 +174,12 @@ extension LibraryViewModel {
     }
 
     /// Makes what renders the filters and gain changes of a book's edits:
-    /// nothing yet, which refuses them.
+    /// the installed ffmpeg when the setting allows and one is found, or
+    /// TextMouth's own filters (`audioFilterEngine`), chosen now, so
+    /// one session or save runs every filter on the same engine.
     func audioEditProcessorFactory() -> AudioEditProcessorFactory {
-        { _ in nil }
+        let engine = audioFilterEngine()
+        return { sources in AudioFilterProcessor(sources: sources, engine: engine) }
     }
 
     /// What rendering a book's edits and analyzing the result gave.

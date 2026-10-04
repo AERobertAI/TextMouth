@@ -5,8 +5,9 @@ import Foundation
 /// in config.json under the same names (`ConfigService.AppConfig.Portability`).
 enum AudioEditingPreferences {
     /// Their keys: what happens to the original audio of recordings and
-    /// edited audiobooks (`AudioOriginalPolicy`).
+    /// edited audiobooks (`AudioOriginalPolicy`), and whether an installed
+    /// ffmpeg runs filters and writes MP3 (`AudioFilterEngine`).
     static var keys: [String] {
-        AudioOriginalPolicy.preferenceKeys
+        AudioOriginalPolicy.preferenceKeys + [AudioFilterEngine.usePreference.key]
     }
 }
