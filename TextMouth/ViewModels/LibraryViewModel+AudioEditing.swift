@@ -60,6 +60,207 @@ extension LibraryViewModel {
     }
 }
 
+// MARK: - Saving Edited Audio (FR04)
+
+/// What saving a book's edited audio did.
+struct AudioEditSaveOutcome: Equatable, Sendable {
+    /// The book as the library lists it now.
+    let book: Book
+    /// The audio file saved, by its path inside the package: another name
+    /// when its format's extension changed.
+    let audioFile: String
+    /// How long the saved file lasts, in seconds.
+    let duration: TimeInterval
+    /// Whether anything was rendered: false when the file already held
+    /// every applied edit.
+    let rendered: Bool
+}
+
+extension LibraryViewModel {
+    /// Renders the edits of the audio file `audioFile` (by its path inside
+    /// the package; the book's own file when nil) of the book `bookID` into
+    /// that file, replacing it, and publishes the book as its files are now
+    /// (`AudioEditBookRender`): its file, its fingerprint, its duration, and
+    /// its content index, chapters included, measured afresh. A transcript
+    /// made of the old audio no longer matches its fingerprints, so the
+    /// transcription engine treats it as stale; the reading text kept of the
+    /// book is dropped. The render runs off the main thread as storage work,
+    /// holding a use of the book so the original policy keeps its original,
+    /// and the original policy is applied afterwards ("don't keep" deletes
+    /// the original at once).
+    ///
+    /// A file written under a new name, as an MP3 book's becomes an .m4a,
+    /// replaces the old one only once the book's record names it: the old
+    /// file is deleted after the record is written, so a crash between them
+    /// leaves the book playable.
+    /// - Throws: `AudioEditError.bookNotInLibrary`, `.bookIsOpen` for a book
+    ///   open in a reader, or the render's errors.
+    func saveAudioEdits(
+        ofBook bookID: UUID,
+        audioFile: String? = nil,
+        now: Date = Date(),
+        progress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> AudioEditSaveOutcome {
+        guard let book = bookByID(bookID), book.format.isAudio, !book.tmbDirectoryName.isEmpty else {
+            throw AudioEditError.bookNotInLibrary
+        }
+        guard !openBookIDs.contains(bookID) else { throw AudioEditError.bookIsOpen }
+        let place = AudioBookPlace(book: book)
+        let file = audioFile ?? place.bookFile
+        let global = AudioOriginalPolicy.global(in: TextMouthRuntime.current.preferences)
+        let metadata = AudioRenderMetadata(title: book.title, author: book.author)
+        let makeProcessor = audioEditProcessorFactory()
+        let activity = audioEditActivity
+
+        // The use begins before the render reads the history, so the
+        // original policy keeps the original it renders from.
+        activity.beginUse(of: bookID)
+        defer { activity.endUse(of: bookID) }
+        let saved = try await OffMainWork.runThrowing {
+            try StorageBoundary.shared.perform(.audioEditing) { _ in
+                try Self.renderAndAnalyze(
+                    book: book,
+                    place: place,
+                    request: AudioEditBookRender.Request(
+                        package: place.package,
+                        bookFile: place.bookFile,
+                        audioFile: file,
+                        globalPolicy: global,
+                        metadata: metadata,
+                        scratch: try AudioEditScratch.folder(for: bookID),
+                        makeProcessor: makeProcessor,
+                        mayReplace: { !activity.isOpenInReader(bookID) }
+                    ),
+                    now: now,
+                    progress: progress
+                )
+            }
+        }
+
+        guard let analysis = saved.analysis,
+              let row = library.books.firstIndex(where: { $0.id == bookID }) else {
+            return AudioEditSaveOutcome(
+                book: bookByID(bookID) ?? book,
+                audioFile: saved.render.audioFile,
+                duration: saved.render.duration,
+                rendered: saved.render.rendered
+            )
+        }
+        library.books[row].filePath = saved.bookFilePath
+        if let hash = saved.hash {
+            library.books[row].md5Hash = hash
+        }
+        library.books[row].applyContentAnalysis(analysis, cacheFormatVersion: nil)
+        let updated = library.books[row]
+        save()
+        LibraryPersistenceService.saveBookInfo(for: updated, contentIndex: analysis)
+        ReadingTextCache.shared.remove(bookID: bookID)
+        AudioEditScratch.remove(for: bookID)
+        DiagnosticLog.event(
+            .storage,
+            "AUDIO_EDITS_SAVED: \(updated.title): \(String(format: "%.3f", saved.render.duration)) seconds"
+                + (saved.render.replacedFile == nil ? "" : ", written under a new name")
+        )
+        if let replaced = saved.render.replacedFile {
+            await retireReplacedAudio(replaced, of: updated, place: place, savedAs: saved.render.audioFile)
+        }
+        sweepAudioOriginalsInBackground()
+        return AudioEditSaveOutcome(
+            book: updated,
+            audioFile: saved.render.audioFile,
+            duration: saved.render.duration,
+            rendered: true
+        )
+    }
+
+    /// Makes what renders the filters and gain changes of a book's edits:
+    /// nothing yet, which refuses them.
+    func audioEditProcessorFactory() -> AudioEditProcessorFactory {
+        { _ in nil }
+    }
+
+    /// What rendering a book's edits and analyzing the result gave.
+    private struct RenderedBook: Sendable {
+        /// What the render did.
+        let render: AudioEditBookRender.Result
+        /// The book's content index, measured afresh; nil when nothing was
+        /// rendered.
+        let analysis: BookContentIndex?
+        /// The book's file, or folder of tracks, as a full path now.
+        let bookFilePath: String
+        /// The MD5 of a book of one file, now; nil for a book of several.
+        let hash: String?
+    }
+
+    /// Renders `request` and, when anything was rendered, analyzes `book`'s
+    /// audio afresh from its files: storage work's body, on a background
+    /// thread, which waits for the asynchronous render.
+    nonisolated private static func renderAndAnalyze(
+        book: Book,
+        place: AudioBookPlace,
+        request: AudioEditBookRender.Request,
+        now: Date,
+        progress: (@Sendable (Double) -> Void)?
+    ) throws -> RenderedBook {
+        let render = try AsyncBridge.waitForResult {
+            try await AudioEditBookRender.run(request, now: now, progress: progress)
+        }
+        let isOneFile = request.audioFile == place.bookFile
+        let bookFile = isOneFile ? render.audioFile : place.bookFile
+        let bookURL = request.package.appendingPathComponent(bookFile)
+        guard render.rendered else {
+            return RenderedBook(render: render, analysis: nil, bookFilePath: bookURL.path, hash: nil)
+        }
+        if !isOneFile, let replaced = render.replacedFile {
+            // A track of a book of several, renamed: its folder's manifest
+            // follows it, so the book keeps its order and its sections.
+            try AudioEditBookRender.renameTrack(
+                replaced,
+                to: render.audioFile,
+                inManifestOf: request.package.appendingPathComponent(place.bookFile),
+                folderInPackage: place.bookFile
+            )
+        }
+        var analyzed = book
+        analyzed.filePath = bookURL.path
+        let analysis = try BookContentAnalysisService.analyzeAudio(book: analyzed, url: bookURL)
+        return RenderedBook(
+            render: render,
+            analysis: analysis.index,
+            bookFilePath: bookURL.path,
+            hash: isOneFile ? try FileImportService.md5Hash(of: bookURL) : nil
+        )
+    }
+
+    /// Deletes `replaced`, the path inside `book`'s package of the audio file
+    /// the render wrote anew as `savedAs`, once the book's record names the
+    /// new file: the record queued for the book is written at once, read
+    /// back, and checked first. A record that doesn't name it keeps the old
+    /// file, with a line in the debug log; a later save removes it.
+    private func retireReplacedAudio(_ replaced: String, of book: Book, place: AudioBookPlace, savedAs: String) async {
+        let bookID = book.id
+        // The record names a book of one file by that file's name, and a
+        // book of several by its folder's.
+        let expected = ((place.bookFile == replaced ? savedAs : place.bookFile) as NSString).lastPathComponent
+        await OffMainWork.run {
+            StorageBoundary.shared.perform(.audioEditing) { _ in
+                LibraryPersistenceService.writePendingBookInfoNow(bookID: bookID)
+                let package = place.package
+                let recorded = (try? StoredBookRecord.read(from: package))?.info.metadata.originalFileName
+                guard recorded == expected,
+                      let old = AudioEditPackage.url(of: replaced, in: package) else {
+                    DiagnosticLog.event(
+                        .storage,
+                        "AUDIO_EDITS_SAVED: \(book.title): the replaced audio file stays until the book's record names its new file"
+                    )
+                    return
+                }
+                try? FileManager.default.removeItem(at: old)
+            }
+        }
+    }
+}
+
 /// Where an audiobook's package is in the library: its folder and its
 /// package's name, the two parts that do not change with the data
 /// directory's location, and the book's file inside the package.

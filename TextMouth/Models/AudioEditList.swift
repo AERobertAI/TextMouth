@@ -68,8 +68,9 @@ enum AudioEditUndoLimit: Equatable, Sendable {
 struct AudioEditList: Hashable, Sendable {
     /// The audio file the list edits, by its path inside the package:
     /// "Interview.m4a" for a book of one file, "audio/Disc 2/03.mp3" for one
-    /// track of a book of several.
-    let audioFile: String
+    /// track of a book of several. It changes only when a render writes the
+    /// file under another name (`renameFile(to:)`).
+    private(set) var audioFile: String
     /// The audio as imported or recorded, while it is kept; nil when the
     /// policy deleted it or never kept one.
     private(set) var original: AudioOriginal?
@@ -234,6 +235,13 @@ struct AudioEditList: Hashable, Sendable {
         }
         renderedCursor = entryIDs.count
         return true
+    }
+
+    /// Follows the audio file to `path`, its path inside the package once a
+    /// render wrote it in a format of another extension, as an MP3 book's
+    /// file becomes an .m4a one.
+    mutating func renameFile(to path: String) {
+        audioFile = path
     }
 
     /// Keeps `original` as the audio the edits start from: a copy of the

@@ -248,13 +248,15 @@ enum AudioEditHistoryStore {
     ) throws -> Result {
         lock.lock()
         defer { lock.unlock() }
-        var (history, source) = try readable(
-            read(fromPackage: package, bookFile: bookFile, using: reader, loadOrigin: loadOrigin),
-            startingOver: startingOver
-        )
+        let lookup = read(fromPackage: package, bookFile: bookFile, using: reader, loadOrigin: loadOrigin)
+        var (history, source) = try readable(lookup, startingOver: startingOver)
         let before = history
         let result = try change(&history)
-        if history != before {
+        // A history started over is written even unchanged, so the damaged
+        // file, already preserved, is replaced and not read again.
+        var startedOver = false
+        if case .unusable = lookup { startedOver = true }
+        if history != before || startedOver {
             try write(history, source: source, toPackage: package, bookFile: bookFile, loadOrigin: loadOrigin)
         }
         AudioEditPackage.removeUnusedTakes(of: history, inPackage: package)

@@ -50,17 +50,53 @@ final class AudioEditActivity: Sendable {
         }
     }
 
-    /// Runs `body` as a use of `bookID`'s audio: begun before it, ended
-    /// after it, however it ends.
-    func withUse<Result>(of bookID: UUID, _ body: () async throws -> Result) async rethrows -> Result {
+    /// A use of `bookID`'s audio that ends when the lease is ended or
+    /// released, whichever comes first: for an edit session, which lasts as
+    /// long as its window.
+    func lease(_ bookID: UUID) -> Lease {
         beginUse(of: bookID)
-        defer { endUse(of: bookID) }
-        return try await body()
+        return Lease(activity: self, bookID: bookID)
+    }
+
+    /// One use of a book's audio, ended exactly once: by `end()`, or when the
+    /// lease is released.
+    final class Lease: Sendable {
+        /// The activity the use is noted in.
+        private let activity: AudioEditActivity
+        /// The book whose audio is in use.
+        let bookID: UUID
+        /// Whether the use has ended, behind a lock, so it ends once.
+        private let ended = OSAllocatedUnfairLock(initialState: false)
+
+        fileprivate init(activity: AudioEditActivity, bookID: UUID) {
+            self.activity = activity
+            self.bookID = bookID
+        }
+
+        /// Ends the use, unless it has ended already.
+        func end() {
+            let wasEnded = ended.withLock { ended in
+                defer { ended = true }
+                return ended
+            }
+            if !wasEnded {
+                activity.endUse(of: bookID)
+            }
+        }
+
+        deinit {
+            end()
+        }
     }
 
     /// Whether `bookID`'s audio is being edited or rendered.
     func isBeingEdited(_ bookID: UUID) -> Bool {
         state.withLock { $0.uses[bookID] != nil }
+    }
+
+    /// Whether `bookID` is open in a reader.
+    func isOpenInReader(_ bookID: UUID) -> Bool {
+        state.withLock { $0.openInReaders.contains(bookID) }
     }
 
     /// Whether `bookID` is in use: open in a reader, or its audio being

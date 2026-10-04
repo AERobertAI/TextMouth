@@ -103,22 +103,43 @@ extension AudioTestFixtures {
     }
 
     /// Every sample of the first channel of the audio file at `url`, as
-    /// 32-bit floats, read whole: for the short files of these tests only.
+    /// 32-bit floats: for the short files of these tests only. Read a piece
+    /// at a time to the end, since one read of AVAudioFile can return fewer
+    /// frames than asked (it returned 15,360 of 16,000 from a float WAVE file).
     static func floatSamples(of url: URL) throws -> [Float] {
         let file = try AVAudioFile(forReading: url, commonFormat: .pcmFormatFloat32, interleaved: false)
-        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)))
-        try file.read(into: buffer)
-        let samples = try XCTUnwrap(buffer.floatChannelData)[0]
-        return Array(UnsafeBufferPointer(start: samples, count: Int(buffer.frameLength)))
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: 16_384))
+        var samples: [Float] = []
+        while file.framePosition < file.length {
+            try file.read(into: buffer)
+            guard buffer.frameLength > 0 else { break }
+            let channel = try XCTUnwrap(buffer.floatChannelData)[0]
+            samples.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+        }
+        return samples
     }
 
     /// Every sample of the first channel of the audio file at `url`, as
-    /// 16-bit integers, read whole.
+    /// 16-bit integers, read a piece at a time to the end.
     static func int16Samples(of url: URL) throws -> [Int16] {
         let file = try AVAudioFile(forReading: url, commonFormat: .pcmFormatInt16, interleaved: true)
-        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)))
-        try file.read(into: buffer)
-        let samples = try XCTUnwrap(buffer.int16ChannelData)[0]
-        return Array(UnsafeBufferPointer(start: samples, count: Int(buffer.frameLength)))
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: 16_384))
+        var samples: [Int16] = []
+        while file.framePosition < file.length {
+            try file.read(into: buffer)
+            guard buffer.frameLength > 0 else { break }
+            let channel = try XCTUnwrap(buffer.int16ChannelData)[0]
+            samples.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+        }
+        return samples
+    }
+}
+
+extension Array {
+    /// The element at `index`, or nil when there is none, so a test reading
+    /// a sample its audio turned out not to have fails instead of stopping
+    /// the test host.
+    subscript(checked index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }

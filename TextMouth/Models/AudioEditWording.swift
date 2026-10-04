@@ -10,7 +10,9 @@ enum AudioEditWording {
     /// second keeps hundredths, so it never reads as nothing. With
     /// `titleCase`, as menu items are written: "2.5 Seconds".
     static func duration(_ seconds: TimeInterval, titleCase: Bool = false) -> String {
-        guard seconds.isFinite, seconds >= 0 else { return titleCase ? "Unknown Length" : "unknown length" }
+        // A length beyond a million hours is no length of audio, and would
+        // overflow the whole numbers below.
+        guard seconds.isFinite, seconds >= 0, seconds < 3.6e9 else { return titleCase ? "Unknown Length" : "unknown length" }
         let tenths = (seconds * 10).rounded() / 10
         let shown = tenths == 0 && seconds > 0 ? (seconds * 100).rounded() / 100 : tenths
         let hours = Int(shown / 3_600)
