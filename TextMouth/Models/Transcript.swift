@@ -49,6 +49,15 @@ struct Transcript: Codable, Equatable, Sendable {
     func file(at path: String) -> TranscriptFile? {
         files.first { $0.path == path }
     }
+
+    /// How many words the transcript holds, every file's sentences counted
+    /// (`TranscriptSentence.wordCount`), as a finished transcription
+    /// announces it.
+    var wordCount: Int {
+        files.reduce(0) { total, file in
+            file.sentences.reduce(total) { $0 + $1.wordCount }
+        }
+    }
 }
 
 /// The recognizer that made a transcript, and what the system reported
@@ -119,6 +128,12 @@ struct TranscriptSentence: Codable, Equatable, Sendable {
     /// The sentence's words, in order, each where it lies in `text` and
     /// when it was spoken. Empty when the recognizer timed none.
     var words: [TranscriptWord]
+
+    /// How many words the sentence holds: its timed words, or, when none
+    /// were timed, the runs of its text between spaces.
+    var wordCount: Int {
+        words.isEmpty ? text.split(whereSeparator: \.isWhitespace).count : words.count
+    }
 }
 
 /// One word of a transcript's sentence: where it lies in the sentence's text

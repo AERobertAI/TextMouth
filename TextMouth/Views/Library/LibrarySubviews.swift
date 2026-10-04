@@ -284,6 +284,12 @@ struct BookRow: View {
     var cloudCommands: [LibraryCloudCommand] = []
     /// Runs one of `cloudCommands`.
     var performCloudCommand: (LibraryCloudCommand) -> Void = { _ in }
+    /// The transcription commands of the row's context menu, which are also
+    /// its VoiceOver actions, after the cloud commands, under the same names
+    /// (FR05).
+    var transcriptionCommands: [LibraryTranscriptionCommand] = []
+    /// Runs one of `transcriptionCommands`.
+    var performTranscriptionCommand: (LibraryTranscriptionCommand) -> Void = { _ in }
     /// The book's live position while a reader plays it (TODO PERF11). The
     /// row observes this one entry, so it redraws when its own book's
     /// reader moves and no other row does. The inert entry, the default,
@@ -381,13 +387,16 @@ struct BookRow: View {
             ForEach(cloudCommands) { command in
                 Button(command.title) { performCloudCommand(command) }
             }
+            ForEach(transcriptionCommands) { command in
+                Button(command.title) { performTranscriptionCommand(command) }
+            }
         }
     }
 
     /// The names of the row's own VoiceOver actions, in the order VoiceOver
     /// lists them.
     var accessibilityActionNames: [String] {
-        cloudCommands.map(\.title)
+        cloudCommands.map(\.title) + transcriptionCommands.map(\.title)
     }
 
     /// Spoken label for the whole row, replacing its combined children.
@@ -501,11 +510,14 @@ struct LibraryBookRowActions {
     /// true, in an app they choose (FR05). Doing nothing unless the list
     /// supplies it.
     var editText: (Book, _ choosingApp: Bool) -> Void = { _, _ in }
+    /// Runs a transcription command (FR05). Doing nothing unless the list
+    /// supplies it.
+    var performTranscriptionCommand: (LibraryTranscriptionCommand) -> Void = { _ in }
 }
 
 /// One book's row in the library list: the row, its context menu, its
-/// default action, and its cloud commands as VoiceOver actions, which act on
-/// the same books (FR02).
+/// default action, and its cloud commands (FR02) and transcription commands
+/// (FR05) as VoiceOver actions, which act on the same books.
 ///
 /// Equatable on everything it shows (PERF28). When a change to the library
 /// draws the list again, SwiftUI skips every row the change left as it was,
@@ -546,6 +558,9 @@ struct LibraryBookListRow: View, Equatable {
     /// object for the book all session, compared by identity. `BookRow`
     /// observes it, so its changes redraw the row's progress alone.
     let livePosition: LiveReadingPosition
+    /// The transcription commands for `targets` (FR05): context menu items
+    /// and VoiceOver actions alike.
+    var transcriptionCommands: [LibraryTranscriptionCommand] = []
     /// What the commands do. Never compared.
     let actions: LibraryBookRowActions
 
@@ -563,6 +578,7 @@ struct LibraryBookListRow: View, Equatable {
             && lhs.manualMoves == rhs.manualMoves
             && lhs.removalPreferences == rhs.removalPreferences
             && lhs.livePosition === rhs.livePosition
+            && lhs.transcriptionCommands == rhs.transcriptionCommands
     }
 
     var body: some View {
@@ -577,6 +593,8 @@ struct LibraryBookListRow: View, Equatable {
             isKeptOnThisMac: isKeptOnThisMac,
             cloudCommands: cloudCommands,
             performCloudCommand: actions.performCloudCommand,
+            transcriptionCommands: transcriptionCommands,
+            performTranscriptionCommand: actions.performTranscriptionCommand,
             livePosition: livePosition
         )
         .accessibilityAction(.default) {
@@ -593,7 +611,8 @@ struct LibraryBookListRow: View, Equatable {
 
     /// The row's context menu. Its commands act on `targets`: the selection
     /// when the row belongs to one, otherwise the row's book. The cloud
-    /// commands (FR02) are also the row's VoiceOver actions.
+    /// commands (FR02) and the transcription commands (FR05) are also the
+    /// row's VoiceOver actions.
     @ViewBuilder
     private var menu: some View {
         let isMulti = targets.count > 1
@@ -625,6 +644,12 @@ struct LibraryBookListRow: View, Equatable {
             }
             Button(BookTextEditWording.editWithTitle) {
                 actions.editText(book, true)
+            }
+        }
+        // Transcribe Audio… for an audiobook (FR05), also a VoiceOver action.
+        ForEach(transcriptionCommands) { command in
+            Button(command.title) {
+                actions.performTranscriptionCommand(command)
             }
         }
         // Manual order move commands: single book only, where

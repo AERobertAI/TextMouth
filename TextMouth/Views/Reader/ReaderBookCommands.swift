@@ -6,7 +6,8 @@ import SwiftUI
 /// toolbar does the same. The Export dialog opens as a sheet on the reader.
 /// The Book menu's Edit Text in Default Editor and Edit Text With… open the
 /// book's text in the user's own editor (`BookTextEditor`), and are
-/// available only while the reader's book has text to edit.
+/// available only while the reader's book has text to edit. Its Transcribe
+/// Audio… opens the Transcribe Audio sheet on the reader for an audiobook.
 ///
 /// ReaderView attaches this in one line: its body sits at the type
 /// checker's limit (board #829), so everything here lives in views of its
@@ -19,6 +20,8 @@ struct ReaderBookCommandsSupport: ViewModifier {
     @ObservedObject private var settings: SettingsViewModel
     /// The Export dialog showing, or nil.
     @State private var exportModel: BookExportModel?
+    /// The reader's transcription dialogs (FR05).
+    @StateObject private var transcription = TranscriptionPresenter()
 
     init(viewModel: ReaderViewModel) {
         self.viewModel = viewModel
@@ -46,14 +49,28 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 editText(choosingApp: true)
             }
-            // A scene value, published whenever this reader's window is
-            // key, even while none of its views has keyboard focus, as when
+            .onReceive(NotificationCenter.default.publisher(for: .transcribeBookAudio)) { notification in
+                guard takesCommand(notification) else { return }
+                transcribe()
+            }
+            // Scene values, published whenever this reader's window is key,
+            // even while none of its views has keyboard focus, as when
             // VoiceOver reads its text: a focused value would leave the Book
             // menu's commands unavailable then.
             .focusedSceneValue(\.canEditBookText, BookTextEditor.canEditText(of: viewModel.book))
+            .focusedSceneValue(\.canTranscribeBookAudio, LibraryTranscriptionCommand.isTranscribable(viewModel.book))
             .sheet(item: $exportModel) { model in
                 BookExportSheet(model: model, close: { exportModel = nil })
             }
+            .modifier(TranscriptionPresentation(presenter: transcription))
+    }
+
+    /// Opens the Transcribe Audio sheet for the reader's audiobook, as the
+    /// library holds the book now (FR05).
+    private func transcribe() {
+        let library = viewModel.libraryViewModel
+        let book = library.bookByID(viewModel.book.id) ?? viewModel.book
+        transcription.transcribe([book], library: library, window: viewModel.hostWindow)
     }
 
     /// Opens the reader's book's text in the user's own editor, or in an

@@ -266,15 +266,31 @@ extension FocusedValues {
     }
 }
 
+/// Whether the book of the reader whose window is key is an audiobook that
+/// Transcribe Audio… can transcribe (FR05). The reader publishes it as a
+/// scene value (`ReaderBookCommandsSupport`).
+struct CanTranscribeBookAudioKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var canTranscribeBookAudio: Bool? {
+        get { self[CanTranscribeBookAudioKey.self] }
+        set { self[CanTranscribeBookAudioKey.self] = newValue }
+    }
+}
+
 /// The commands that act on a book as a whole, wherever it was chosen
 /// (FR05). File > Export… exports the book of the reader that is key, or
 /// the books selected in the Library window that is key, which each
 /// decides for itself through `WindowCommandRouting`. The reader's Book
-/// menu opens its book's text in the user's own editor; MenuVisibilityManager
-/// shows it only while a reader is in front, and its commands are
-/// unavailable for an audiobook, whose text is not edited here yet.
+/// menu opens its book's text in the user's own editor, and transcribes an
+/// audiobook's audio; MenuVisibilityManager shows it only while a reader is
+/// in front. Edit Text is unavailable for an audiobook, whose text is not
+/// edited here yet, and Transcribe Audio… for a text book.
 struct BookCommands: Commands {
     @FocusedValue(\.canEditBookText) var canEditBookText
+    @FocusedValue(\.canTranscribeBookAudio) var canTranscribeBookAudio
 
     var body: some Commands {
         CommandGroup(after: .importExport) {
@@ -295,6 +311,13 @@ struct BookCommands: Commands {
                 NotificationCenter.default.post(name: .editBookTextWith, object: nil)
             }
             .disabled(canEditBookText != true)
+
+            Divider()
+
+            Button(TranscriptionWording.transcribeCommandTitle) {
+                NotificationCenter.default.post(name: .transcribeBookAudio, object: nil)
+            }
+            .disabled(canTranscribeBookAudio != true)
         }
     }
 }
@@ -367,4 +390,7 @@ extension Notification.Name {
     /// Posted by Book > Edit Text With… (FR05): the key reader asks which
     /// app to open its book's text in.
     static let editBookTextWith = Notification.Name("editBookTextWith")
+    /// Posted by Book > Transcribe Audio… (FR05): the key reader opens the
+    /// Transcribe Audio sheet for its audiobook.
+    static let transcribeBookAudio = Notification.Name("transcribeBookAudio")
 }
