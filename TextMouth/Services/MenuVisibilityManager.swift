@@ -103,7 +103,7 @@ final class MenuVisibilityManager {
     // passed to CommandMenu("...") in MenuCommands.swift.
 
     /// Menu titles that should only appear when a reader window is focused
-    static let readerMenuTitles: Set<String> = ["Playback", "Navigate", "Bookmarks"]
+    static let readerMenuTitles: Set<String> = ["Playback", "Navigate", "Bookmarks", "Book"]
 
     /// Menu titles that should only appear when a library window is focused
     static let libraryMenuTitles: Set<String> = ["Library"]

@@ -11,11 +11,16 @@ enum LibraryBookEvent {
     /// The move announced by `packageWillMove` is over, whether the package
     /// moved or was put back. Any update the move made arrived before this.
     case packageMoveEnded(bookID: UUID)
+    /// The book's text was replaced by an edit the user made in their own
+    /// editor (FR05): readers show `content`, the edited text, parsed and
+    /// indexed, near where they were reading. The row's new analysis
+    /// arrived before this, as an update.
+    case textReplaced(bookID: UUID, content: DocumentContent)
 
     /// The book the event is about.
     var bookID: UUID {
         switch self {
-        case .packageWillMove(let bookID), .packageMoveEnded(let bookID):
+        case .packageWillMove(let bookID), .packageMoveEnded(let bookID), .textReplaced(let bookID, _):
             return bookID
         case .updated(let update):
             return update.book.id
@@ -159,6 +164,17 @@ final class LibraryBookUpdates {
             revisions[bookID] = revision
             events.send(.updated(LibraryBookUpdate(book: row, revision: revision)))
         }
+    }
+
+    // MARK: - Edited Text
+
+    /// Tells the readers of the book `bookID`, when it is watched, that its
+    /// text is now `content`, an edit the user made in their own editor
+    /// (FR05). Call it after the library holds the book's new analysis, so
+    /// the readers' copies of the book agree with the text they show.
+    func textReplaced(bookID: UUID, with content: DocumentContent) {
+        guard watches[bookID] != nil else { return }
+        events.send(.textReplaced(bookID: bookID, content: content))
     }
 
     // MARK: - Package Moves

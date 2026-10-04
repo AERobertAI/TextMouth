@@ -225,6 +225,10 @@ final class ReaderViewModel: ObservableObject {
     /// about to move, set aside until the move ends and playback goes on
     /// from the cursor (TODO P10); nil the rest of the time.
     var audioPausedForMove: AudioPausedForMove?
+    /// The book's edited text when the user's edit was taken while this
+    /// reader was still loading the text it had (FR05): shown once loading
+    /// ends (`showEditedTextWaitingForLoad()`); nil the rest of the time.
+    var editedTextWaitingForLoad: DocumentContent?
     /// True after the user explicitly releases Now Playing / headphone media
     /// controls for this open reader. Starting playback in TextMouth clears it.
     @Published var mediaControlsReleased = false
@@ -924,8 +928,17 @@ final class ReaderViewModel: ObservableObject {
         audioTagsFrom tagsURL: URL? = nil,
         readingTexts: ReadingTextCache? = .shared
     ) throws -> LoadedContent {
+        var book = book
         let url = book.bookFileURL
         let format = book.format
+        // A text being edited in the user's editor has a saved edit taken
+        // first (FR05), so the read finds content.md and the record that
+        // describes it, never an edit that would look like a stale cache
+        // and be rebuilt from the source (TODO T07); the read then goes by
+        // the edit's analysis, its cache format current.
+        if !format.isAudio, let committed = BookTextEditSessions.shared.settlePendingEdit(of: book) {
+            book.contentAnalysisFields = committed.contentAnalysisFields
+        }
         let cacheOutdated = !format.isAudio
             && MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
         let analysis = try BookContentAnalysisService.load(
@@ -1046,6 +1059,9 @@ final class ReaderViewModel: ObservableObject {
         // Otherwise get the speech of the chapter the cursor is in ready
         // off the main thread, so Play finds it prepared.
         prepareOpenedChapterSpeech()
+        // An edit of the book's text taken while it loaded replaces the
+        // text it loaded (FR05).
+        showEditedTextWaitingForLoad()
     }
 
     /// Shows why the book at `filePath` could not be read, in place of the
@@ -1199,8 +1215,10 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Update the displayed offset and cached reader text using a snapshot of
-    /// the current playback position.
-    private func refreshPlaybackUI(
+    /// the current playback position. Showing a book's edited text calls it
+    /// too, forcing the visible text to be drawn from the new chapters
+    /// (`ReaderViewModel+EditedText`).
+    func refreshPlaybackUI(
         chapterIndex: Int? = nil,
         offset: Int? = nil,
         forceVisibleTextRefresh: Bool = false

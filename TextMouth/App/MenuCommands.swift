@@ -252,16 +252,47 @@ struct BookmarkCommands: Commands {
     }
 }
 
+/// Whether the book of the reader whose window is key has text that Edit
+/// Text can open (FR05): a text book's, for now. The reader publishes it as
+/// a scene value (`ReaderBookCommandsSupport`).
+struct CanEditBookTextKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var canEditBookText: Bool? {
+        get { self[CanEditBookTextKey.self] }
+        set { self[CanEditBookTextKey.self] = newValue }
+    }
+}
+
 /// The commands that act on a book as a whole, wherever it was chosen
 /// (FR05). File > Export… exports the book of the reader that is key, or
 /// the books selected in the Library window that is key, which each
-/// decides for itself through `WindowCommandRouting`.
+/// decides for itself through `WindowCommandRouting`. The reader's Book
+/// menu opens its book's text in the user's own editor; MenuVisibilityManager
+/// shows it only while a reader is in front, and its commands are
+/// unavailable for an audiobook, whose text is not edited here yet.
 struct BookCommands: Commands {
+    @FocusedValue(\.canEditBookText) var canEditBookText
+
     var body: some Commands {
         CommandGroup(after: .importExport) {
             Button(BookExportWording.commandTitle) {
                 NotificationCenter.default.post(name: .exportBooks, object: nil)
             }
+        }
+
+        CommandMenu("Book") {
+            Button(BookTextEditWording.editTitle) {
+                NotificationCenter.default.post(name: .editBookText, object: nil)
+            }
+            .disabled(canEditBookText != true)
+
+            Button(BookTextEditWording.editWithTitle) {
+                NotificationCenter.default.post(name: .editBookTextWith, object: nil)
+            }
+            .disabled(canEditBookText != true)
         }
     }
 }
@@ -328,4 +359,10 @@ extension Notification.Name {
     /// Posted by File > Export… (FR05): the key reader opens the Export
     /// dialog for its book, or the key Library window for its selection.
     static let exportBooks = Notification.Name("exportBooks")
+    /// Posted by Book > Edit Text in Default Editor (FR05): the key reader
+    /// opens its book's text in the default app for Markdown.
+    static let editBookText = Notification.Name("editBookText")
+    /// Posted by Book > Edit Text With… (FR05): the key reader asks which
+    /// app to open its book's text in.
+    static let editBookTextWith = Notification.Name("editBookTextWith")
 }

@@ -4,6 +4,9 @@ import SwiftUI
 /// whole (FR05): File > Export… exports the book of the reader that takes
 /// the command, and, when Playback settings say so, an Export button in the
 /// toolbar does the same. The Export dialog opens as a sheet on the reader.
+/// The Book menu's Edit Text in Default Editor and Edit Text With… open the
+/// book's text in the user's own editor (`BookTextEditor`), and are
+/// available only while the reader's book has text to edit.
 ///
 /// ReaderView attaches this in one line: its body sits at the type
 /// checker's limit (board #829), so everything here lives in views of its
@@ -35,9 +38,33 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 openExport()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .editBookText)) { notification in
+                guard takesCommand(notification) else { return }
+                editText(choosingApp: false)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .editBookTextWith)) { notification in
+                guard takesCommand(notification) else { return }
+                editText(choosingApp: true)
+            }
+            // A scene value, published whenever this reader's window is
+            // key, even while none of its views has keyboard focus, as when
+            // VoiceOver reads its text: a focused value would leave the Book
+            // menu's commands unavailable then.
+            .focusedSceneValue(\.canEditBookText, BookTextEditor.canEditText(of: viewModel.book))
             .sheet(item: $exportModel) { model in
                 BookExportSheet(model: model, close: { exportModel = nil })
             }
+    }
+
+    /// Opens the reader's book's text in the user's own editor, or in an
+    /// app they choose, as the library holds the book now.
+    private func editText(choosingApp: Bool) {
+        let library = viewModel.libraryViewModel
+        let book = library.bookByID(viewModel.book.id) ?? viewModel.book
+        let window = viewModel.hostWindow
+        Task {
+            await BookTextEditor.shared.edit(book, choosingApp: choosingApp, in: library, from: window)
+        }
     }
 
     /// Opens the Export dialog for the reader's book, as the library holds

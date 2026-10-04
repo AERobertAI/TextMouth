@@ -911,7 +911,7 @@ struct LibraryView: View {
 
     /// What the rows' commands do, on this list's state as it is when they
     /// run: open, Book Info, Select, Move to Folder, Move Up and Move Down,
-    /// the cloud commands, removal, and Export (FR05).
+    /// the cloud commands, removal, Export, and Edit Text (FR05).
     private var rowActions: LibraryBookRowActions {
         LibraryBookRowActions(
             open: onOpenBook,
@@ -942,6 +942,12 @@ struct LibraryView: View {
             export: { books in
                 if exportModel == nil {
                     exportModel = BookExportModel(books: books, library: libraryViewModel)
+                }
+            },
+            editText: { book, choosingApp in
+                let window = hostWindow
+                Task {
+                    await BookTextEditor.shared.edit(book, choosingApp: choosingApp, in: libraryViewModel, from: window)
                 }
             }
         )

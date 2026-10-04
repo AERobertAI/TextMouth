@@ -210,6 +210,7 @@ final class LibraryBookUpdatesTests: XCTestCase {
                 case .packageWillMove: return "will move"
                 case .updated(let update): return "updated \(update.revision)"
                 case .packageMoveEnded: return "move ended"
+                case .textReplaced: return "text replaced"
                 }
             }
         }
