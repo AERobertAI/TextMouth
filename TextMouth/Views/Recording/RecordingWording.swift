@@ -200,10 +200,12 @@ enum RecordingWording {
         + "VoiceOver's speech can be recorded."
     /// The stepper choosing how often.
     static let announceIntervalLabel = "Seconds between level announcements"
-    /// The intervals the stepper offers, in seconds.
-    static let announceIntervals = 5...60
-    /// The interval until the user picks another.
-    static let defaultAnnounceInterval = 10
+    /// The intervals the stepper offers, in seconds: the setting's
+    /// (`SettingsPolicy.recordingLevelAnnouncementSeconds`).
+    static var announceIntervals: ClosedRange<Int> {
+        let range = SettingsPolicy.recordingLevelAnnouncementSeconds.range
+        return Int(range.lowerBound)...Int(range.upperBound)
+    }
 
     // MARK: - Status and Announcements
 
@@ -220,6 +222,23 @@ enum RecordingWording {
     static let paused = "Paused."
     /// What VoiceOver announces before capture resumes.
     static let resuming = "Resuming."
+
+    /// What starting or resuming a recording says when it paused books that
+    /// were playing, so the microphone would not pick them up: "Paused the
+    /// book that was playing." or "Paused 2 books that were playing."; nil
+    /// when it paused none.
+    static func pausedReaders(_ count: Int) -> String? {
+        guard count > 0 else { return nil }
+        return count == 1 ? "Paused the book that was playing." : "Paused \(count) books that were playing."
+    }
+
+    /// `sentence`, after the one saying `pausedReaders` books were paused,
+    /// when any were: one announcement, so VoiceOver speaks both, the books'
+    /// first.
+    static func afterPausingReaders(_ pausedReaders: Int, _ sentence: String) -> String {
+        guard let paused = Self.pausedReaders(pausedReaders) else { return sentence }
+        return "\(paused) \(sentence)"
+    }
     /// What the window says while saving, and VoiceOver announces when a
     /// save takes more than a moment.
     static let saving = "Saving the recording…"
@@ -240,6 +259,21 @@ enum RecordingWording {
     static func rememberedMicrophoneMissing(fallback: String) -> String {
         "The microphone TextMouth used last isn't connected, so recordings use \(fallback)."
     }
+    /// What the window says, and VoiceOver announces, when a microphone
+    /// connects while the window is open and recordings now use it: the one
+    /// TextMouth remembers, back, or the first connected at all.
+    static func microphoneConnectedAndChosen(_ name: String) -> String {
+        "\(name) was connected, so recordings use it."
+    }
+    /// What the window says, and VoiceOver announces, when microphones
+    /// connect while the window is open and are added to the Microphone
+    /// pop-up, recordings still using the one chosen.
+    static func microphonesConnected(_ names: [String]) -> String {
+        let list = ListFormatter.localizedString(byJoining: names)
+        return names.count == 1
+            ? "\(list) was connected; choose it in the Microphone pop-up to record from it."
+            : "\(list) were connected; choose one in the Microphone pop-up to record from it."
+    }
     /// What the window says, and VoiceOver announces, when the chosen
     /// microphone goes away while nothing is recording.
     static func microphoneDisconnected(_ name: String, fallback: String?) -> String {
@@ -248,6 +282,56 @@ enum RecordingWording {
     }
     /// What the window says when the recording was discarded.
     static let discarded = "The recording was discarded."
+
+    // MARK: - Recovered Recordings
+
+    /// The heading of the takes recordings left behind, as a crash leaves
+    /// one (`RecoveredTake`).
+    static let recoveredHeading = "Recovered recordings"
+
+    /// What the window says, and VoiceOver announces, when it finds takes
+    /// left behind: how many, where they are listed, and what can be done
+    /// with them.
+    static func recoveredAnnouncement(count: Int) -> String {
+        guard count != 1 else {
+            return "TextMouth kept a recording from before it last quit, listed under Recovered recordings. "
+                + "Save it as an audiobook, or discard it."
+        }
+        return "TextMouth kept \(count) recordings from before it last quit, listed under Recovered recordings. "
+            + "Save each as an audiobook, or discard it."
+    }
+
+    /// A take left behind as the list shows it and VoiceOver reads it: when
+    /// it was recorded and how long it lasts, as "Recording of October 4,
+    /// 2026 at 6:30 AM, 1 minute, 4 seconds", or that it holds no sound.
+    static func recoveredTake(startedAt: Date, duration: TimeInterval?) -> String {
+        let when = startedAt.formatted(date: .long, time: .shortened)
+        guard let duration, duration > 0 else { return "Recording of \(when), which holds no sound" }
+        return "Recording of \(when), \(TimeFormatting.spoken(duration))"
+    }
+
+    /// The button that saves a take left behind.
+    static let saveRecoveredTitle = "Save as Audiobook"
+    /// Its label, naming the take, since the list can hold several.
+    static func saveRecoveredLabel(_ take: String) -> String {
+        "Save as Audiobook: \(take)"
+    }
+    /// Its hint.
+    static let saveRecoveredHint = "Saves this recording as an audiobook in the folder chosen in Save in, "
+        + "titled for when it was recorded."
+    /// The button that deletes a take left behind.
+    static let discardRecoveredTitle = "Discard"
+    /// Its label, naming the take.
+    static func discardRecoveredLabel(_ take: String) -> String {
+        "Discard: \(take)"
+    }
+    /// Its hint.
+    static let discardRecoveredHint = "Deletes this recording without saving it."
+    /// What the window says, and VoiceOver announces, when a take left
+    /// behind was discarded.
+    static func recoveredDiscarded(_ take: String) -> String {
+        "Discarded the \(take.lowercasedFirst)."
+    }
 
     // MARK: - Closing While Recording
 

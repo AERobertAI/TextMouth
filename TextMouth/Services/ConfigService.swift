@@ -320,6 +320,11 @@ final class ConfigService: ObservableObject {
         /// until one is chosen, when recordings use macOS's default input;
         /// empty, like any empty text here, keeps the current choice.
         var recordingInputDeviceID: String = ""
+        /// Whether the Record window announces the level while recording
+        /// (`RecordingLevelAnnouncements`).
+        var recordingAnnouncesLevel: Bool?
+        /// How many seconds apart it announces it, from 5 to 60.
+        var recordingLevelAnnouncementSeconds: Double?
         /// What happens to the original audio of recordings and edited
         /// audiobooks (`AudioOriginalPolicy.Choice`): "keep", "delete", or
         /// "deleteAfterDays". Empty keeps the current choice. The name is
@@ -329,7 +334,8 @@ final class ConfigService: ObservableObject {
         /// "deleteAfterDays", from 1 to 365.
         var recordingOriginalDays: Double?
         /// Whether an installed ffmpeg, when TextMouth finds one, runs the
-        /// audio editor's filters and writes MP3 (`AudioFilterEngine`).
+        /// audio editor's filters (`AudioFilterEngine`), and writes MP3
+        /// should TextMouth's own encoder be unavailable (`MP3Route`).
         var useInstalledFFmpeg: Bool?
         /// Whether the audio editor's Apply Filter plays a preview before
         /// applying a filter (`AudioEditorPreferences.previewFiltersFirst`).
@@ -454,6 +460,11 @@ final class ConfigService: ObservableObject {
             )
             repeatedSymbolSet = fields.optionalCharacterSet(.repeatedSymbolSet, rule: SettingsPolicy.repeatedSymbolSet)
             recordingInputDeviceID = fields.value(.recordingInputDeviceID, default: fallback.recordingInputDeviceID)
+            recordingAnnouncesLevel = fields.optionalFlag(.recordingAnnouncesLevel)
+            recordingLevelAnnouncementSeconds = fields.optionalNumber(
+                .recordingLevelAnnouncementSeconds,
+                rule: SettingsPolicy.recordingLevelAnnouncementSeconds
+            )
             recordingOriginalPolicy = fields.rawChoice(.recordingOriginalPolicy, rule: SettingsPolicy.recordingOriginalPolicy)
             recordingOriginalDays = fields.optionalNumber(.recordingOriginalDays, rule: SettingsPolicy.recordingOriginalDays)
             useInstalledFFmpeg = fields.optionalFlag(.useInstalledFFmpeg)
@@ -532,11 +543,12 @@ final class ConfigService: ObservableObject {
                 ])
                 // Sounds.
                 mirrored += sameNames(["soundEffectsEnabled", "soundEffectsVolume", "soundEffectAssignments"])
-                // Recording: the microphone the Record window remembers.
+                // Recording: the microphone the Record window remembers, and
+                // its level announcements.
                 mirrored += sameNames(RecordingPreferences.keys)
                 // Audio editing: how long the original audio of recordings and
                 // edited audiobooks is kept, whether an installed ffmpeg runs
-                // filters and writes MP3, and whether the editor previews a
+                // filters, and whether the editor previews a
                 // filter before applying it and plays half a second after
                 // each move.
                 mirrored += sameNames(AudioEditingPreferences.keys)

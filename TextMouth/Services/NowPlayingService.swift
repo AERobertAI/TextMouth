@@ -520,6 +520,31 @@ final class NowPlayingService {
         }
     }
 
+    /// Pauses every reader that is playing, each as its own Pause would,
+    /// and returns how many it paused: what starting or resuming a recording
+    /// asks (FR04), so the microphone does not pick up a book. A reader that
+    /// is paused already is left alone, as pausing it again would play the
+    /// pause sound for nothing. Nothing resumes them afterwards: that is the
+    /// listener's to do.
+    @discardableResult
+    func pauseEveryPlayingReader() -> Int {
+        // Taken before any handler runs, so a handler that closes a reader
+        // cannot change the owners while they are gone through.
+        let playing = handlersByOwner.filter { $0.value.isCurrentlyPlaying() }
+        guard !playing.isEmpty else { return 0 }
+        // A Play accepted before this and still queued must not restart a
+        // book after it.
+        noteExternalRoutingChange()
+        for (ownerID, handlers) in playing {
+            handlers.onPause()
+            if playingOwnerID == ownerID, !handlers.isCurrentlyPlaying() {
+                playingOwnerID = nil
+            }
+        }
+        diagnostic("readers paused count=\(playing.count) trigger=recording")
+        return playing.count
+    }
+
     func activateRemoteCommandsIfNeeded() {
         guard installsSystemIntegrations else { return }
         guard !remoteCommandsActive else { return }

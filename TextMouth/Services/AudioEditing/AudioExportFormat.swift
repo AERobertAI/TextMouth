@@ -1,10 +1,11 @@
 import Foundation
 
 /// A format the audio editor exports edited audio in (FR04), as Export
-/// lists them: those TextMouth writes itself, and MP3, which Core Audio
-/// can't encode, only when an installed ffmpeg is found and the setting
-/// allows it (`AudioFilterEngine`). The user's answer of October 4: M4A and
-/// WAV are fine, and MP3 is welcome without bundling an encoder.
+/// lists them: those Core Audio writes, and MP3, which it can't, written
+/// with the LAME encoder built into TextMouth, or, should that somehow be
+/// unavailable, through an installed ffmpeg the setting allows
+/// (`MP3Route`). The user's answer of October 4: MP3 is wanted, whatever the
+/// encoder adds to the app.
 enum AudioExportFormat: String, CaseIterable, Sendable {
     /// AAC in an .m4a file, with chapter markers.
     case m4a
@@ -18,8 +19,7 @@ enum AudioExportFormat: String, CaseIterable, Sendable {
     case aiff
     /// Linear PCM in a CAF file.
     case caf
-    /// MP3 through the installed ffmpeg, with chapter markers as ID3
-    /// chapter frames.
+    /// MP3, with chapter markers as ID3 chapter frames.
     case mp3
 
     /// The format's name as Export lists it and VoiceOver reads it.
@@ -31,7 +31,7 @@ enum AudioExportFormat: String, CaseIterable, Sendable {
         case .wav: return "WAV"
         case .aiff: return "AIFF"
         case .caf: return "CAF"
-        case .mp3: return "MP3 (needs ffmpeg)"
+        case .mp3: return "MP3"
         }
     }
 
@@ -53,15 +53,18 @@ enum AudioExportFormat: String, CaseIterable, Sendable {
         renderFormat.fileExtension
     }
 
-    /// Whether it needs an installed ffmpeg.
+    /// Whether it needs an installed ffmpeg: MP3, only should the LAME built
+    /// into TextMouth be unavailable.
     var needsFFmpeg: Bool {
-        self == .mp3
+        self == .mp3 && !MP3Encoder.isAvailable
     }
 
     /// The formats Export offers when `ffmpeg` is the installed ffmpeg
-    /// TextMouth may use, or nil: every one TextMouth writes itself, and MP3
-    /// only with ffmpeg.
-    static func available(ffmpeg: FFmpeg?) -> [AudioExportFormat] {
-        allCases.filter { !$0.needsFFmpeg || ffmpeg != nil }
+    /// TextMouth may use, or nil: every one Core Audio writes, and MP3 when
+    /// an encoder can write it (`MP3Route.preferred`), which the LAME built
+    /// in always can, unless `builtInMP3` says it is unavailable.
+    static func available(ffmpeg: FFmpeg?, builtInMP3: Bool = MP3Encoder.isAvailable) -> [AudioExportFormat] {
+        let writesMP3 = MP3Route.preferred(ffmpeg: ffmpeg, builtInIsAvailable: builtInMP3) != nil
+        return allCases.filter { $0 != .mp3 || writesMP3 }
     }
 }

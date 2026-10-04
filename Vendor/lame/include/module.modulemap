@@ -1,0 +1,8 @@
+// The Clang module Swift imports LAME's encoder by: `import LAME`, in
+// TextMouth's MP3Encoder. Its one header, lame.h, is LAME's own public API,
+// as LAME 3.100 ships it; TextMouth adds only this file beside it. The
+// library itself is the LAME target in project.yml, which the app links.
+module LAME {
+    header "lame.h"
+    export *
+}

@@ -34,7 +34,7 @@ struct AudioEditorProgressSheet: View {
 // MARK: - Export
 
 /// Export (FR04): the formats TextMouth can write the edited audio in, MP3
-/// among them only with an installed ffmpeg, then Export…, which asks where
+/// among them, which TextMouth writes itself, then Export…, which asks where
 /// in a save panel and writes the file there, the book's own file left as
 /// it is. VoiceOver starts on the Format pop-up.
 struct AudioEditorExportSheet: View {

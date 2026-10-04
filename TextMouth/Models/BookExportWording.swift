@@ -12,6 +12,7 @@ enum BookExportWording {
         switch kind {
         case .audio: return "Audio"
         case .originalRecording: return "Original recording"
+        case .originalAudio: return "Original audio (before edits)"
         case .transcript: return "Transcript"
         case .originalFile: return "Original file"
         case .markdown: return "Text as Markdown"
@@ -32,6 +33,9 @@ enum BookExportWording {
             return "The words TextMouth reads aloud, as plain text, each chapter under its title."
         case .originalRecording:
             return "The recording as it was made, before any edits."
+        case .originalAudio:
+            return "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio "
+                + "setting does."
         case .transcript:
             return "The transcript, with its text as Markdown for an audiobook."
         }

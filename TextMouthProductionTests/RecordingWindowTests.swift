@@ -13,7 +13,7 @@ import XCTest
 final class RecordingWindowTests: XCTestCase {
 
     /// When every window in these tests opened.
-    private nonisolated static let opened = Date(timeIntervalSince1970: 1_791_000_000)
+    private nonisolated static let opened = RecordingWindowHarness.opensAt
 
     // MARK: - Words
 
@@ -84,7 +84,7 @@ final class RecordingWindowTests: XCTestCase {
     /// The window opens on the remembered microphone, saying nothing about
     /// it, and is ready to record from it.
     func testTheWindowOpensOnTheRememberedMicrophone() throws {
-        let harness = try Harness(test: self, remembered: TestMicrophones.usb.id)
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.usb.id)
 
         XCTAssertEqual(harness.model.selectedDeviceID, TestMicrophones.usb.id)
         XCTAssertEqual(harness.model.status, "Ready to record from Studio Microphone.")
@@ -95,7 +95,7 @@ final class RecordingWindowTests: XCTestCase {
     /// A remembered microphone that is not connected falls back to the
     /// default, says so, and stays remembered for when it is back.
     func testAMissingMicrophoneFallsBackAndIsStillRemembered() throws {
-        let harness = try Harness(
+        let harness = try RecordingWindowHarness(
             test: self,
             devices: [TestMicrophones.builtIn, TestMicrophones.airPods],
             systemDefault: TestMicrophones.airPods.id,
@@ -110,12 +110,97 @@ final class RecordingWindowTests: XCTestCase {
 
         harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb])
         XCTAssertEqual(harness.model.selectedDeviceID, TestMicrophones.usb.id, "the remembered microphone was not used again")
+        XCTAssertEqual(harness.announcements.sentences.last, "Studio Microphone was connected, so recordings use it.")
+    }
+
+    /// A microphone connected while the window is open is listed at once and
+    /// said to be there, recordings still using the one chosen; one
+    /// connected when there was none is used; and nothing is said while a
+    /// recording could pick it up, though the list follows.
+    func testAMicrophoneConnectedWhileTheWindowIsOpenIsListedAndSaid() async throws {
+        let harness = try RecordingWindowHarness(test: self, devices: [], remembered: "")
+        XCTAssertNil(harness.model.selectedDevice)
+
+        harness.catalog.change(to: [TestMicrophones.builtIn])
+        XCTAssertEqual(harness.model.selectedDeviceID, TestMicrophones.builtIn.id)
+        XCTAssertEqual(harness.announcements.sentences.last, "MacBook Air Microphone was connected, so recordings use it.")
+
+        harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb])
+        XCTAssertEqual(harness.model.devices.map(\.name), ["MacBook Air Microphone", "AirPods Pro", "Studio Microphone"])
+        XCTAssertEqual(harness.model.selectedDeviceID, TestMicrophones.builtIn.id, "a new microphone was chosen for the user")
+        XCTAssertEqual(
+            harness.announcements.sentences.last,
+            RecordingWording.microphonesConnected(["AirPods Pro", "Studio Microphone"])
+        )
+        XCTAssertTrue(harness.announcements.sentences.last?.hasSuffix("were connected; choose one in the Microphone pop-up to record from it.") ?? false)
+
+        harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods])
+        XCTAssertEqual(harness.model.devices.map(\.name), ["MacBook Air Microphone", "AirPods Pro"])
+        XCTAssertEqual(harness.model.status, "Ready to record from MacBook Air Microphone.")
+
+        await harness.model.record()
+        let said = harness.announcements.sentences.count
+        harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb])
+        XCTAssertEqual(harness.model.devices.count, 3, "the list stopped following while recording")
+        XCTAssertEqual(harness.announcements.sentences.count, said, "a connection was announced while recording")
+        await harness.model.stop()
+    }
+
+    /// The Microphone pop-up itself follows a microphone connected while
+    /// the window is open, as the catalog reports it.
+    func testTheMicrophonePopUpListsAMicrophoneConnectedWhileOpen() throws {
+        let harness = try RecordingWindowHarness(test: self, devices: [TestMicrophones.builtIn])
+
+        withHostedView(RecordingWindowView(model: harness.model), size: NSSize(width: 520, height: 640), until: {
+            !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty
+        }) { hosting in
+            let microphone = { () -> NSPopUpButton? in
+                self.descendants(of: hosting, as: NSPopUpButton.self).first { $0.itemTitles.contains("MacBook Air Microphone") }
+            }
+            XCTAssertEqual(microphone()?.itemTitles, ["MacBook Air Microphone"])
+
+            harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods])
+
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hosting.layoutSubtreeIfNeeded()
+                return microphone()?.itemTitles == ["MacBook Air Microphone", "AirPods Pro"]
+            }, "the pop-up lists \(microphone()?.itemTitles ?? [])")
+        }
+    }
+
+    /// The level announcement is remembered: a window opened later, as on
+    /// the next launch, announces the level as the last one was left, at its
+    /// interval, kept within 5 to 60 seconds.
+    func testTheLevelAnnouncementIsRememberedByTheNextWindow() async throws {
+        let store = makeSandboxedPreferences("recording-level")
+        let first = try RecordingWindowHarness(test: self, store: store)
+        XCTAssertFalse(first.model.announcesLevel)
+        XCTAssertEqual(first.model.levelAnnouncementInterval, 10)
+
+        first.model.announcesLevel = true
+        first.model.levelAnnouncementInterval = 20
+        first.model.windowClosed()
+        let second = try RecordingWindowHarness(test: self, store: store)
+
+        XCTAssertTrue(second.model.announcesLevel)
+        XCTAssertEqual(second.model.levelAnnouncementInterval, 20)
+        XCTAssertEqual(RecordingWording.announceIntervals, 5...60)
+        RecordingLevelAnnouncements.interval.write(500, to: store)
+        XCTAssertEqual(RecordingLevelAnnouncements.interval.read(from: store), 60)
+
+        await second.model.record()
+        await second.backend.record(seconds: 1, levels: RecordingLevels(average: -30, peak: -15))
+        await second.model.service.refresh()
+        let before = second.announcements.sentences.count
+        for _ in 0..<20 { second.model.tick() }
+        XCTAssertEqual(Array(second.announcements.sentences.dropFirst(before)), ["Level minus 15 decibels, good"])
+        await second.model.stop()
     }
 
     /// Choosing a microphone uses it and remembers it, apart from macOS's
     /// input.
     func testAChosenMicrophoneIsRemembered() throws {
-        let harness = try Harness(test: self)
+        let harness = try RecordingWindowHarness(test: self)
 
         harness.model.chooseDevice(TestMicrophones.airPods.id)
 
@@ -128,7 +213,7 @@ final class RecordingWindowTests: XCTestCase {
     /// The microphone in use unplugged while nothing records falls back to
     /// the default, saying why; with none left, Record cannot be pressed.
     func testAnUnpluggedMicrophoneFallsBackSayingWhy() throws {
-        let harness = try Harness(test: self, systemDefault: TestMicrophones.builtIn.id, remembered: TestMicrophones.usb.id)
+        let harness = try RecordingWindowHarness(test: self, systemDefault: TestMicrophones.builtIn.id, remembered: TestMicrophones.usb.id)
 
         harness.catalog.change(to: [TestMicrophones.builtIn])
         XCTAssertEqual(harness.model.selectedDeviceID, TestMicrophones.builtIn.id)
@@ -147,7 +232,7 @@ final class RecordingWindowTests: XCTestCase {
     /// chosen under the global policy, announces "Saved Recording as", and
     /// gets ready for another recording.
     func testARecordingIsMadeAndSaved() async throws {
-        let harness = try Harness(test: self, remembered: TestMicrophones.airPods.id)
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.airPods.id)
         harness.model.title = "Kitchen Notes"
         harness.model.folderPath = "Fiction"
         AudioOriginalPolicy.saveGlobal(.keep, in: harness.store)
@@ -187,7 +272,7 @@ final class RecordingWindowTests: XCTestCase {
 
     /// An empty title is saved as "Untitled", as New from Text names one.
     func testAnEmptyTitleIsSavedAsUntitled() async throws {
-        let harness = try Harness(test: self)
+        let harness = try RecordingWindowHarness(test: self)
         harness.model.title = "   "
 
         await harness.model.record()
@@ -201,7 +286,7 @@ final class RecordingWindowTests: XCTestCase {
     /// until the take is saved or discarded, Save Again saves it, and
     /// Discard Recording deletes it.
     func testAFailedSaveKeepsTheTakeUntilSavedOrDiscarded() async throws {
-        let harness = try Harness(test: self)
+        let harness = try RecordingWindowHarness(test: self)
         harness.saver.failure = CocoaError(.fileWriteOutOfSpace)
         await harness.model.record()
         await harness.backend.record(seconds: 1)
@@ -241,7 +326,7 @@ final class RecordingWindowTests: XCTestCase {
     /// A microphone lost while recording is announced with its reason, and
     /// what was recorded is saved.
     func testALostMicrophoneIsAnnouncedAndTheTakeSaved() async throws {
-        let harness = try Harness(test: self, remembered: TestMicrophones.airPods.id)
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.airPods.id)
         await harness.model.record()
         await harness.backend.record(seconds: 2)
 
@@ -261,7 +346,7 @@ final class RecordingWindowTests: XCTestCase {
     /// A no to the microphone is announced, the window offers to open the
     /// privacy settings, and Record can be tried again.
     func testADenialIsAnnouncedAndOffersThePrivacySettings() async throws {
-        let harness = try Harness(test: self, permission: FakeMicrophonePermission(.denied))
+        let harness = try RecordingWindowHarness(test: self, permission: FakeMicrophonePermission(.denied))
 
         await harness.model.record()
 
@@ -276,7 +361,7 @@ final class RecordingWindowTests: XCTestCase {
     /// Once a second the window reads the time and the level; when asked,
     /// it announces the level every so many seconds, and never otherwise.
     func testTheLevelIsAnnouncedOnlyWhenAsked() async throws {
-        let harness = try Harness(test: self)
+        let harness = try RecordingWindowHarness(test: self)
         await harness.model.record()
         await harness.backend.record(seconds: 3, levels: RecordingLevels(average: -30, peak: -15))
         await harness.model.service.refresh()
@@ -301,7 +386,7 @@ final class RecordingWindowTests: XCTestCase {
     /// is announced once, after five seconds of it, so a user who cannot see
     /// a meter learns of it; a voice, however quiet, never is.
     func testSilenceIsAnnouncedOnceAfterFiveSeconds() async throws {
-        let harness = try Harness(test: self, remembered: TestMicrophones.usb.id)
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.usb.id)
         await harness.model.record()
         let warning = "No sound is reaching TextMouth from Studio Microphone. Check that the microphone is on and not muted."
 
@@ -322,10 +407,72 @@ final class RecordingWindowTests: XCTestCase {
         await harness.model.stop()
     }
 
+    // MARK: - Readers Playing
+
+    /// Starting a recording pauses every reader that is playing, here two,
+    /// each as its own Pause would, so the microphone doesn't pick up a
+    /// book, and says so once, before "Recording from"; a reader already
+    /// paused is left alone; and nothing resumes them afterwards.
+    func testStartingARecordingPausesEveryPlayingReader() async throws {
+        let readers = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let first = FakeReader(playing: true, in: readers)
+        let second = FakeReader(playing: true, in: readers)
+        let paused = FakeReader(playing: false, in: readers)
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.airPods.id, readers: readers)
+
+        await harness.model.record()
+
+        XCTAssertEqual(harness.model.service.state, .recording)
+        XCTAssertEqual([first.pauses, second.pauses, paused.pauses], [1, 1, 0])
+        XCTAssertFalse(first.isPlaying || second.isPlaying)
+        XCTAssertEqual(harness.announcements.sentences, ["Paused 2 books that were playing. Recording from AirPods Pro."])
+
+        await harness.backend.record(seconds: 1)
+        await harness.model.stop()
+        XCTAssertFalse(first.isPlaying || second.isPlaying || paused.isPlaying, "a book was resumed")
+        XCTAssertEqual([first.pauses, second.pauses, paused.pauses], [1, 1, 0])
+    }
+
+    /// With no book playing, a recording starts as it always did, saying
+    /// nothing of books; resuming it pauses a book started meanwhile, saying
+    /// so before "Resuming".
+    func testResumingARecordingPausesABookStartedMeanwhile() async throws {
+        let readers = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let reader = FakeReader(playing: false, in: readers)
+        let other = FakeReader(playing: false, in: readers)
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.airPods.id, readers: readers)
+
+        await harness.model.record()
+        XCTAssertEqual(harness.announcements.sentences, ["Recording from AirPods Pro."])
+        await harness.model.togglePause()
+        reader.isPlaying = true
+        await harness.model.togglePause()
+
+        XCTAssertEqual(harness.model.service.state, .recording)
+        XCTAssertEqual([reader.pauses, other.pauses], [1, 0])
+        XCTAssertEqual(harness.announcements.sentences.suffix(2), ["Paused.", "Paused the book that was playing. Resuming."])
+        await harness.model.stop()
+    }
+
+    /// The coordinator pauses only the readers playing, once each, and says
+    /// how many; with none playing it does nothing.
+    func testOnlyPlayingReadersArePaused() {
+        let readers = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let playing = [FakeReader(playing: true, in: readers), FakeReader(playing: true, in: readers)]
+        let idle = FakeReader(playing: false, in: readers)
+
+        XCTAssertEqual(readers.pauseEveryPlayingReader(), 2)
+        XCTAssertEqual(readers.pauseEveryPlayingReader(), 0)
+        XCTAssertEqual(playing.map(\.pauses), [1, 1])
+        XCTAssertEqual(idle.pauses, 0)
+        XCTAssertEqual(RecordingWording.pausedReaders(0), nil)
+        XCTAssertEqual(RecordingWording.afterPausingReaders(1, "Resuming."), "Paused the book that was playing. Resuming.")
+    }
+
     /// Closing needs nothing while idle, a question while recording, and
     /// another while a take waits to be saved.
     func testWhatClosingNeeds() async throws {
-        let harness = try Harness(test: self)
+        let harness = try RecordingWindowHarness(test: self)
         XCTAssertEqual(harness.model.closeNeed, .nothing)
 
         await harness.model.record()
@@ -345,7 +492,7 @@ final class RecordingWindowTests: XCTestCase {
     /// the microphones by name as its items, and the one in use as its
     /// value; the Save in pop-up and the stepper have labels of their own.
     func testTheControlsAreLabelled() throws {
-        let harness = try Harness(test: self, remembered: TestMicrophones.airPods.id)
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.airPods.id)
         try skipUnlessHostedWindowsExposeAccessibility()
 
         try withHostedView(RecordingWindowView(model: harness.model), size: NSSize(width: 520, height: 640), until: {
@@ -370,7 +517,7 @@ final class RecordingWindowTests: XCTestCase {
     /// element carrying the identifier that request looks for is the
     /// pop-up.
     func testVoiceOverStartsOnTheMicrophonePopUp() throws {
-        let harness = try Harness(test: self)
+        let harness = try RecordingWindowHarness(test: self)
 
         withHostedView(RecordingWindowView(model: harness.model), size: NSSize(width: 520, height: 640), until: {
             !self.descendants(of: $0, as: VoiceOverFocusTriggerView.self).isEmpty
@@ -446,104 +593,6 @@ final class RecordingWindowTests: XCTestCase {
     }
 }
 
-// MARK: - The Window's Collaborators
-
-/// A Record window model with fakes for everything outside it: a recorder
-/// that needs no microphone, a fixed list of microphones, a preferences
-/// store of the test's own, a save that records what it was asked, and
-/// announcements and opened books caught in lists.
-@MainActor
-private struct Harness {
-    let model: RecordingWindowModel
-    let backend: FakeCaptureBackend
-    let catalog: FakeRecordingInputCatalog
-    let store: UserDefaults
-    let saver: FakeRecordingSaver
-    let announcements: SentenceLog
-    private let opened: BookLog
-
-    /// The books the window opened in a reader.
-    var openedBooks: [UUID] { opened.ids }
-
-    init(
-        test: XCTestCase,
-        devices: [AudioInputDevice] = [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb],
-        systemDefault: String? = nil,
-        remembered: String = "",
-        permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized)
-    ) throws {
-        let backend = FakeCaptureBackend()
-        let catalog = FakeRecordingInputCatalog(devices, systemDefault: systemDefault)
-        let store = test.makeSandboxedPreferences("recording-window")
-        RecordingInputChoice.preference.write(remembered, to: store)
-        let saver = FakeRecordingSaver()
-        let announcements = SentenceLog()
-        let opened = BookLog()
-        let service = RecordingService(
-            backend: backend,
-            permission: permission.permission,
-            takesFolder: try RecordingAudioFixtures.makeTakesFolder(for: test),
-            pollInterval: nil
-        )
-        let opensAt = Date(timeIntervalSince1970: 1_791_000_000)
-        model = RecordingWindowModel(
-            service: service,
-            catalog: catalog,
-            store: store,
-            saver: saver.saver,
-            folderPaths: { ["Fiction/Sci-Fi", "Fiction"] },
-            announce: { announcements.sentences.append($0) },
-            openBook: { opened.ids.append($0) },
-            now: { opensAt },
-            announcementLead: .zero
-        )
-        self.backend = backend
-        self.catalog = catalog
-        self.store = store
-        self.saver = saver
-        self.announcements = announcements
-        self.opened = opened
-    }
-}
-
-/// The sentences a window announced, in order.
-@MainActor
-private final class SentenceLog {
-    var sentences: [String] = []
-}
-
-/// The books a window opened, in order.
-@MainActor
-private final class BookLog {
-    var ids: [UUID] = []
-}
-
-/// A save that records what it was asked and fails when told to.
-@MainActor
-private final class FakeRecordingSaver {
-    /// One save asked of it.
-    struct Call {
-        let take: RecordedTake
-        let title: String
-        let folderPath: String
-        let policy: AudioOriginalPolicy
-    }
-
-    /// The saves asked, in order.
-    private(set) var calls: [Call] = []
-    /// The error the next saves throw, while set.
-    var failure: Error?
-
-    /// The save to hand the window.
-    var saver: RecordingWindowModel.Saver {
-        { [unowned self] take, title, folderPath, policy in
-            calls.append(Call(take: take, title: title, folderPath: folderPath, policy: policy))
-            if let failure { throw failure }
-            return Book(title: title, format: .audio, filePath: "/Recordings/\(title).m4a", md5Hash: UUID().uuidString, folderPath: folderPath)
-        }
-    }
-}
-
 private extension Array {
     /// The element at `index`, or nil when there is none.
     subscript(safe index: Int) -> Element? {
@@ -551,15 +600,34 @@ private extension Array {
     }
 }
 
-private extension XCTestCase {
-    /// Every accessibility element below `root` whose identifier is
-    /// `identifier`.
-    @MainActor
-    func accessibilityElements(identified identifier: String, in root: Any) -> [NSAccessibilityProtocol] {
-        guard let node = root as? NSAccessibilityProtocol else { return [] }
-        let match = node.accessibilityIdentifier() == identifier ? [node] : []
-        return match + (node.accessibilityChildren() ?? []).flatMap {
-            accessibilityElements(identified: identifier, in: $0)
-        }
+/// A reader as the Now Playing coordinator knows one: whether it plays, and
+/// how often it was paused, registered with a coordinator of the test's
+/// own, never the app's. Its handlers hold it weakly, so a coordinator
+/// outliving it reaches nothing.
+@MainActor
+private final class FakeReader {
+    /// Whether it is playing.
+    var isPlaying: Bool
+    /// How many times it was paused.
+    private(set) var pauses = 0
+
+    /// A reader playing or not, registered with `readers`.
+    init(playing: Bool, in readers: NowPlayingService) {
+        isPlaying = playing
+        readers.setup(
+            ownerID: UUID(),
+            onPlay: { [weak self] in self?.isPlaying = true },
+            onPause: { [weak self] in
+                self?.isPlaying = false
+                self?.pauses += 1
+            },
+            onAudioRouteInvalidated: {},
+            onAudioRouteChangePause: {},
+            onTogglePlayPause: {},
+            onSkipForward: {},
+            onSkipBackward: {},
+            isCurrentlyPlaying: { [weak self] in self?.isPlaying ?? false },
+            bluetoothMonitoring: false
+        )
     }
 }

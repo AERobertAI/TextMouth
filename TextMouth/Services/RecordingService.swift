@@ -96,12 +96,32 @@ final class RecordingService: ObservableObject {
         state == .idle
     }
 
+    /// The take file this recorder holds: the one starting, the one under
+    /// way, or the one that ended and is not yet saved or discarded; nil
+    /// when it holds none. A take in the folder that no recorder holds was
+    /// left behind (`RecoveredTake`).
+    var takeInUse: URL? {
+        if let current {
+            return current.url
+        }
+        if let startingTake {
+            return startingTake
+        }
+        switch state {
+        case .finished(let take), .failed(_, let take?):
+            return take.url
+        default:
+            return nil
+        }
+    }
+
     /// The capture backend: AVFoundation's in the app, a fake in tests.
     private let backend: any RecordingCaptureBackend
     /// Whether TextMouth may use microphones.
     private let permission: AudioInputPermission
-    /// The folder takes are recorded into.
-    private let takesFolder: URL
+    /// The folder takes are recorded into, where takes left behind are
+    /// found too.
+    let takesFolder: URL
     /// How often the time and levels are read while recording; nil reads
     /// them only when asked (`refresh()`), as tests do.
     private let pollInterval: Duration?
@@ -117,6 +137,9 @@ final class RecordingService: ObservableObject {
 
     /// The take under way, from its start until it is finished.
     private var current: Take?
+    /// The file of a take starting, from when it is named until capture has
+    /// started into it, or could not.
+    private var startingTake: URL?
     /// Reads the time and levels while a take is under way.
     private var pollTask: Task<Void, Never>?
     /// An event the backend reported before `start` had finished, such as a
@@ -137,6 +160,20 @@ final class RecordingService: ObservableObject {
         self.takesFolder = takesFolder
         self.pollInterval = pollInterval
         self.now = now
+        Self.everyRecorder.add(self)
+    }
+
+    // MARK: Every Recorder
+
+    /// Every recorder alive, held weakly: the Record window's, and each
+    /// audio editor's, whose punch-ins are recorded into the same folder.
+    private static let everyRecorder = NSHashTable<RecordingService>.weakObjects()
+
+    /// The take files every recorder alive holds (`takeInUse`), whichever
+    /// window's it is: none of them was left behind, as an audio editor's
+    /// punch-in being recorded is not.
+    static var takesInUse: Set<URL> {
+        Set(everyRecorder.allObjects.compactMap { $0.takeInUse?.standardizedFileURL })
     }
 
     /// The app's recorder: AVFoundation's capture session and macOS's
@@ -174,12 +211,15 @@ final class RecordingService: ObservableObject {
         let url: URL
         do {
             url = try RecordingTakeFiles.newTakeURL(startedAt: startedAt, in: takesFolder)
+            startingTake = url
         } catch {
             DiagnosticLog.event(.playback, "RECORDING_START_FAILED: the Recordings folder could not be made (\(CaptureSessionRecordingBackend.describe(error)))")
             state = .failed(.couldNotStart(device.name), nil)
             return
         }
 
+        // Capture has started into the file, or could not, either way.
+        defer { startingTake = nil }
         do {
             try await backend.start(deviceID: device.id, writingTo: url) { [weak self] event in
                 Task { @MainActor in self?.handle(event) }

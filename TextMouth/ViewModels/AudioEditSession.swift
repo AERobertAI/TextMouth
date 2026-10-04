@@ -468,8 +468,10 @@ final class AudioEditSession: ObservableObject {
         return AudioRenderFormat.inPlace(forFileNamed: url.lastPathComponent, stored: current.format, ffmpeg: library.audioFilterEngine().ffmpeg)
     }
 
-    /// The formats Export offers for the edited audio: MP3 only when an
-    /// installed ffmpeg is found and the setting allows it.
+    /// The formats Export offers for the edited audio: every one, MP3
+    /// among them, which the LAME built into TextMouth writes, or, should
+    /// that be unavailable, an installed ffmpeg the setting allows
+    /// (`AudioExportFormat.available`).
     var exportFormats: [AudioExportFormat] {
         AudioExportFormat.available(ffmpeg: library?.audioFilterEngine().ffmpeg)
     }
@@ -478,9 +480,10 @@ final class AudioEditSession: ObservableObject {
     /// `url` in `format`, with its chapter markers where the format holds
     /// them, tagged with the book's title and author, telling `progress` how
     /// far it is. The book's own file is left as it is. MP3 is encoded by the
-    /// installed ffmpeg.
-    /// - Throws: `AudioEditError.mp3NeedsFFmpeg` for MP3 without ffmpeg, or
-    ///   the render's errors.
+    /// LAME built into TextMouth, or, should that be unavailable, by the
+    /// installed ffmpeg (`MP3Route`).
+    /// - Throws: `AudioEditError.mp3NeedsFFmpeg` for MP3 with neither
+    ///   encoder, or the render's errors.
     func export(to url: URL, as format: AudioExportFormat, progress: (@Sendable (Double) -> Void)? = nil) async throws {
         guard let library, let book = library.bookByID(bookID) else { throw AudioEditError.bookNotInLibrary }
         let ffmpeg = library.audioFilterEngine().ffmpeg

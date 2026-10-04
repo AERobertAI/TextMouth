@@ -194,7 +194,10 @@ final class BookExportSheetTests: XCTestCase {
         XCTAssertEqual(BookExportWording.commandTitle(count: 3), "Export 3 Books…")
         XCTAssertEqual(
             BookExportKind.allCases.map(BookExportWording.name(of:)),
-            ["Audio", "Original file", "Text as Markdown", "Text as plain text", "Original recording", "Transcript"]
+            [
+                "Audio", "Original file", "Text as Markdown", "Text as plain text", "Original recording",
+                "Original audio (before edits)", "Transcript",
+            ]
         )
         XCTAssertEqual(Set(BookExportKind.allCases.map(BookExportWording.hint(for:))).count, BookExportKind.allCases.count)
         XCTAssertEqual(BookExportWording.destination(folderName: "Documents"), "Export to: Documents")

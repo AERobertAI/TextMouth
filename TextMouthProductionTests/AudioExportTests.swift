@@ -1,13 +1,15 @@
 import AVFoundation
+import os
 import XCTest
 @testable import TextMouth
 
 /// Exporting edited audio (FR04): the formats Export offers, MP3 among them
-/// only with an installed ffmpeg TextMouth may use; MP3 encoded through
-/// ffmpeg with LAME, tagged, its chapter markers as ID3 chapter frames, as
-/// a stub ffmpeg on PATH records; an MP3 book kept MP3 when saved only with
-/// ffmpeg; and a session exporting its edits, sample-exact. Two tests run a
-/// real ffmpeg when this Mac has one and are skipped otherwise.
+/// through the LAME encoder built into TextMouth; MP3 encoded with it,
+/// tagged, its chapter markers as ID3 chapter frames, read back through the
+/// app's parser; should LAME be unavailable, MP3 through an installed ffmpeg,
+/// as a stub ffmpeg records, and refused with neither; an MP3 book kept MP3
+/// when saved; and a session exporting its edits, sample-exact. One test
+/// runs a real ffmpeg when this Mac has one and is skipped otherwise.
 final class AudioExportTests: XCTestCase {
 
     /// Frames a second of the audio.
@@ -15,35 +17,77 @@ final class AudioExportTests: XCTestCase {
 
     // MARK: - The Formats Offered
 
-    /// Export offers every format TextMouth writes itself, and MP3 only when
-    /// an installed ffmpeg may be used, under the name the user asked for.
-    func testMP3IsOfferedOnlyWithFFmpeg() {
-        XCTAssertEqual(AudioExportFormat.available(ffmpeg: nil), [.m4a, .m4b, .appleLossless, .wav, .aiff, .caf])
+    /// Export offers every format Core Audio writes and MP3, written by the
+    /// LAME built in, under its plain name, with no ffmpeg needed; only were
+    /// LAME unavailable would MP3 wait for an installed ffmpeg.
+    func testMP3IsOfferedThroughTheBuiltInEncoder() {
+        let all: [AudioExportFormat] = [.m4a, .m4b, .appleLossless, .wav, .aiff, .caf, .mp3]
+        XCTAssertEqual(AudioExportFormat.available(ffmpeg: nil), all)
+        XCTAssertEqual(AudioExportFormat.mp3.title, "MP3")
+        XCTAssertFalse(AudioExportFormat.mp3.needsFFmpeg)
+        XCTAssertEqual(AudioExportFormat.available(ffmpeg: nil, builtInMP3: false), Array(all.dropLast()))
         let ffmpeg = FFmpeg(executable: URL(fileURLWithPath: "/opt/homebrew/bin/ffmpeg"))
-        XCTAssertEqual(AudioExportFormat.available(ffmpeg: ffmpeg).last, .mp3)
-        XCTAssertEqual(AudioExportFormat.mp3.title, "MP3 (needs ffmpeg)")
+        XCTAssertEqual(AudioExportFormat.available(ffmpeg: ffmpeg, builtInMP3: false), all)
         XCTAssertEqual(AudioExportFormat.allCases.map(\.fileExtension), ["m4a", "m4b", "m4a", "wav", "aiff", "caf", "mp3"])
     }
 
-    /// An MP3 book is saved as MP3 when ffmpeg may write it, and as AAC in
-    /// an .m4a file otherwise; other formats keep their own.
-    func testAnMP3BookStaysMP3OnlyWithFFmpeg() {
+    /// An MP3 book is saved as MP3, by the LAME built in; only with neither
+    /// it nor an installed ffmpeg would it become AAC in an .m4a file. Other
+    /// formats keep their own.
+    func testAnMP3BookStaysMP3() {
         var mp3 = AudioStreamBasicDescription()
         mp3.mFormatID = kAudioFormatMPEGLayer3
         let ffmpeg = FFmpeg(executable: URL(fileURLWithPath: "/opt/homebrew/bin/ffmpeg"))
-        XCTAssertEqual(AudioRenderFormat.inPlace(forFileNamed: "Weir.mp3", stored: mp3, ffmpeg: ffmpeg), .mp3)
-        XCTAssertEqual(AudioRenderFormat.inPlace(forFileNamed: "Weir.mp3", stored: mp3, ffmpeg: nil), .aacM4A)
+        XCTAssertEqual(AudioRenderFormat.inPlace(forFileNamed: "Weir.mp3", stored: mp3, ffmpeg: nil), .mp3)
+        XCTAssertEqual(AudioRenderFormat.inPlace(forFileNamed: "Weir.mp3", stored: mp3, ffmpeg: ffmpeg, builtInMP3: false), .mp3)
+        XCTAssertEqual(AudioRenderFormat.inPlace(forFileNamed: "Weir.mp3", stored: mp3, ffmpeg: nil, builtInMP3: false), .aacM4A)
         XCTAssertEqual(AudioRenderFormat.mp3.fileName(replacing: "Weir.mp3"), "Weir.mp3")
         XCTAssertEqual(AudioRenderFormat.aacM4A.fileName(replacing: "Weir.mp3"), "Weir.m4a")
         XCTAssertEqual(AudioRenderFormat.pcmAIFF.fileName(replacing: "Weir.aif"), "Weir.aif")
     }
 
-    // MARK: - MP3 Through ffmpeg
+    // MARK: - MP3 With the Built-In LAME
 
-    /// MP3 is rendered to PCM, then encoded by ffmpeg with LAME at 64 kbit/s
-    /// a channel, tagged with the title and author, with every chapter
-    /// marker as an ID3 chapter frame from a metadata file.
-    func testMP3IsEncodedThroughFFmpegWithTagsAndChapters() async throws {
+    /// MP3 is encoded with the LAME built in, without ffmpeg: a file that
+    /// lasts as long as the edits, at 64 kbit/s a channel, whose title,
+    /// author, and chapter markers, the sound before the first marker in a
+    /// chapter of the book's title, read back through the app's parser.
+    func testMP3IsEncodedWithTheBuiltInLAMEWithTagsAndChapters() async throws {
+        let (sources, folder) = try await makeSources(seconds: 3)
+        var timeline = sources.base.timeline
+        try timeline.applyRearranging(.setChapter(at: 1, title: "Locks; Weirs = Water"))
+        let output = folder.appendingPathComponent("Canal Survey.mp3")
+        let progress = ProgressLog()
+
+        let outcome = try await AudioEditRenderer.render(
+            timeline,
+            sources: sources,
+            to: output,
+            format: .mp3,
+            metadata: AudioRenderMetadata(title: "Canal Survey", author: "Ferry Office"),
+            progress: { progress.record($0) }
+        )
+
+        XCTAssertEqual(outcome, AudioEditRenderer.Outcome(frames: 24_000, copiedSamples: false))
+        XCTAssertEqual(progress.last, 1)
+        XCTAssertEqual(
+            AudioEditRenderer.mp3EncoderSettings(for: sources.base),
+            MP3EncoderSettings(sampleRate: 8_000, channels: 1, kilobitsPerSecond: 64)
+        )
+        XCTAssertEqual(try AVAudioFile(forReading: output).length, 24_000, "the MP3 does not last as long as the edits")
+        let content = try await AudioBookParser.parse(url: output)
+        XCTAssertEqual(content.title, "Canal Survey")
+        XCTAssertEqual(content.author, "Ferry Office")
+        XCTAssertEqual(content.chapters.map(\.title), ["Canal Survey", "Locks; Weirs = Water"])
+    }
+
+    // MARK: - MP3 Through ffmpeg, Without LAME
+
+    /// Were LAME unavailable, MP3 would be rendered to PCM, then encoded by
+    /// an installed ffmpeg with LAME at 64 kbit/s a channel, tagged with the
+    /// title and author, with every chapter marker as an ID3 chapter frame
+    /// from a metadata file.
+    func testWithoutLAMEMP3IsEncodedThroughFFmpegWithTagsAndChapters() async throws {
         let (sources, folder) = try await makeSources(seconds: 3)
         let arguments = folder.appendingPathComponent("arguments.txt")
         let chapters = folder.appendingPathComponent("chapters.txt")
@@ -60,13 +104,13 @@ final class AudioExportTests: XCTestCase {
         try timeline.applyRearranging(.setChapter(at: 1, title: "Locks; Weirs = Water"))
         let output = folder.appendingPathComponent("Canal Survey.mp3")
 
-        _ = try await AudioEditRenderer.render(
+        _ = try await AudioEditRenderer.renderMP3(
             timeline,
             sources: sources,
             to: output,
-            format: .mp3,
             metadata: AudioRenderMetadata(title: "Canal Survey", author: "Ferry Office"),
-            ffmpeg: FFmpeg(executable: ffmpeg)
+            route: MP3Route.preferred(ffmpeg: FFmpeg(executable: ffmpeg), builtInIsAvailable: false),
+            progress: nil
         )
 
         XCTAssertEqual(try String(contentsOf: output, encoding: .utf8), "ID3")
@@ -96,28 +140,34 @@ final class AudioExportTests: XCTestCase {
             """)
     }
 
-    /// MP3 without ffmpeg is refused with a sentence saying what it needs.
-    func testMP3WithoutFFmpegIsRefused() async throws {
+    /// MP3 with neither LAME nor ffmpeg is refused with a sentence saying
+    /// why.
+    func testMP3WithNeitherEncoderIsRefused() async throws {
         let (sources, folder) = try await makeSources(seconds: 1)
         do {
-            _ = try await AudioEditRenderer.render(
+            _ = try await AudioEditRenderer.renderMP3(
                 sources.base.timeline,
                 sources: sources,
                 to: folder.appendingPathComponent("out.mp3"),
-                format: .mp3,
-                metadata: AudioRenderMetadata(title: "Canal Survey", author: nil)
+                metadata: AudioRenderMetadata(title: "Canal Survey", author: nil),
+                route: MP3Route.preferred(ffmpeg: nil, builtInIsAvailable: false),
+                progress: nil
             )
-            XCTFail("MP3 was written without ffmpeg")
+            XCTFail("MP3 was written with no encoder")
         } catch {
             XCTAssertEqual(error as? AudioEditError, .mp3NeedsFFmpeg)
-            XCTAssertEqual(error.localizedDescription, "MP3 needs ffmpeg, which isn't installed, or is turned off in Storage settings.")
+            XCTAssertEqual(
+                error.localizedDescription,
+                "MP3 can't be written: TextMouth's own encoder couldn't start, and ffmpeg isn't installed, "
+                    + "or is turned off in Storage settings."
+            )
         }
     }
 
-    /// With ffmpeg installed on this Mac, MP3 really is written: a file that
-    /// plays and lasts as long as the edits, LAME's delay and padding aside,
-    /// which AVFoundation counts (`FFmpeg.mp3Excess`). Skipped on a Mac
-    /// without ffmpeg.
+    /// With ffmpeg installed on this Mac, its route really writes MP3: a
+    /// file that plays and lasts as long as the edits, LAME's delay and
+    /// padding aside, which AVFoundation counts (`FFmpeg.mp3Excess`).
+    /// Skipped on a Mac without ffmpeg.
     func testAnInstalledFFmpegWritesAnMP3ThatPlays() async throws {
         guard let ffmpeg = FFmpeg.locate() else { throw XCTSkip("ffmpeg isn't installed on this Mac") }
         let (sources, folder) = try await makeSources(seconds: 2)
@@ -125,13 +175,13 @@ final class AudioExportTests: XCTestCase {
         try timeline.applyRearranging(.cut(AudioTimeRange(start: 0.5, end: 1)))
         let output = folder.appendingPathComponent("Canal Survey.mp3")
 
-        _ = try await AudioEditRenderer.render(
+        _ = try await AudioEditRenderer.renderMP3(
             timeline,
             sources: sources,
             to: output,
-            format: .mp3,
             metadata: AudioRenderMetadata(title: "Canal Survey", author: nil),
-            ffmpeg: ffmpeg
+            route: .ffmpeg(ffmpeg),
+            progress: nil
         )
 
         let asset = AVURLAsset(url: output, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
@@ -142,29 +192,21 @@ final class AudioExportTests: XCTestCase {
         XCTAssertLessThanOrEqual(duration, 1.5 + FFmpeg.mp3Excess(sampleRate: Self.rate) + AudioEditBookRender.lengthTolerance)
     }
 
-    /// An MP3 book's edits are saved into its file as MP3 through an
-    /// installed ffmpeg: the file keeps its name and its format, and lasts as
-    /// long as the edits, LAME's delay and padding aside. Skipped on a Mac
-    /// without ffmpeg.
+    /// An MP3 book's edits are saved into its file as MP3 by the LAME built
+    /// in, with no ffmpeg: the file keeps its name and its format, and lasts
+    /// as long as the edits.
     @MainActor
-    func testAnMP3BookIsSavedAsMP3ThroughAnInstalledFFmpeg() async throws {
-        guard let ffmpeg = FFmpeg.locate() else { throw XCTSkip("ffmpeg isn't installed on this Mac") }
+    func testAnMP3BookIsSavedAsMP3() async throws {
         let (model, book) = try makeLibrary(withBookNamed: "Canal Survey.mp3")
-        let folder = try AudioTestFixtures.makeTemporaryDirectory()
-        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
-        let tone = folder.appendingPathComponent("tone.caf")
-        try AudioTestFixtures.writeTones([.init(seconds: 3, frequency: 440, amplitude: 0.3)], to: tone, sampleRate: Self.rate)
-        try await ffmpeg.encodeMP3(
-            tone,
-            to: book.bookFileURL,
-            bitRate: 32_000,
-            sampleRate: Self.rate,
-            channels: 1,
-            metadata: AudioRenderMetadata(title: "Canal Survey", author: nil),
-            chapters: [],
-            scratch: folder
+        let tone = (0..<24_000).map { 0.3 * Float(sin(2 * Double.pi * 440 * Double($0) / Self.rate)) }
+        let encoder = try MP3Encoder(
+            writingTo: book.bookFileURL,
+            settings: MP3EncoderSettings(sampleRate: Int(Self.rate), channels: 1, kilobitsPerSecond: 32),
+            tag: MP3Tag(title: "Canal Survey")
         )
-        model.audioFilterEngine = { .ffmpeg(ffmpeg) }
+        try tone.withUnsafeBufferPointer { try encoder.encode(interleaved: $0) }
+        try encoder.finish()
+        model.audioFilterEngine = { .builtIn }
         let session = try await AudioEditSession.open(bookID: book.id, in: model)
         defer { session.close() }
         let edited = session.duration - 1
@@ -177,8 +219,7 @@ final class AudioExportTests: XCTestCase {
             .loadTracks(withMediaType: .audio)
         let format = try await tracks.first?.load(.formatDescriptions).first?.audioStreamBasicDescription
         XCTAssertEqual(format?.mFormatID, kAudioFormatMPEGLayer3)
-        XCTAssertGreaterThanOrEqual(outcome.duration, edited - AudioEditBookRender.lengthTolerance)
-        XCTAssertLessThanOrEqual(outcome.duration, edited + FFmpeg.mp3Excess(sampleRate: Self.rate) + AudioEditBookRender.lengthTolerance)
+        XCTAssertEqual(outcome.duration, edited, accuracy: AudioEditBookRender.lengthTolerance)
     }
 
     // MARK: - A Session's Export
@@ -205,17 +246,32 @@ final class AudioExportTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: book.bookFileURL), before, "the book's file changed")
         XCTAssertTrue(session.hasUnsavedEdits)
 
+        // MP3 needs no ffmpeg: the LAME built in writes it.
         model.audioFilterEngine = { .builtIn }
-        XCTAssertFalse(session.exportFormats.contains(.mp3))
-        do {
-            try await session.export(to: folder.appendingPathComponent("x.mp3"), as: .mp3)
-            XCTFail("MP3 was exported without ffmpeg")
-        } catch {
-            XCTAssertEqual(error as? AudioEditError, .mp3NeedsFFmpeg)
-        }
+        XCTAssertTrue(session.exportFormats.contains(.mp3))
+        let mp3 = folder.appendingPathComponent("Canal Survey.mp3")
+        try await session.export(to: mp3, as: .mp3)
+        XCTAssertEqual(try AVAudioFile(forReading: mp3).length, 16_000, "the MP3 does not last as long as the edits")
     }
 
     // MARK: - Helpers
+
+    /// The progress a render reported, in order, from whatever thread it
+    /// reports on.
+    private final class ProgressLog: Sendable {
+        /// The values reported, behind a lock.
+        private let values = OSAllocatedUnfairLock<[Double]>(initialState: [])
+
+        /// Notes `value`.
+        func record(_ value: Double) {
+            values.withLock { $0.append(value) }
+        }
+
+        /// The last value reported, if any.
+        var last: Double? {
+            values.withLock { $0.last }
+        }
+    }
 
     /// The sources of an edit whose base is an identity ramp lasting
     /// `seconds`, in a folder of this test's own serving as package and
