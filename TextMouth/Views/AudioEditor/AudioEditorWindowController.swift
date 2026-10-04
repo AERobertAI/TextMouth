@@ -24,7 +24,13 @@ final class AudioEditorWindowController: NSObject, NSWindowDelegate {
     private struct Editor {
         let window: NSWindow
         let model: AudioEditorModel
+        /// What the main Edit menu's Undo and Redo reach in its window.
+        let undoManager: AudioEditorUndoManager
     }
+
+    /// The window receiving keys, which the main Edit menu's commands act
+    /// in (`AudioEditorEditMenu`): AppKit's, unless a test sets its own.
+    var keyWindow: @MainActor () -> NSWindow? = { NSApp.keyWindow }
 
     /// The open editors, by book.
     private var editors: [UUID: Editor] = [:]
@@ -105,7 +111,17 @@ final class AudioEditorWindowController: NSObject, NSWindowDelegate {
     func attach(_ model: AudioEditorModel, to window: NSWindow) {
         window.delegate = self
         model.hostWindow = window
-        editors[model.bookID] = Editor(window: window, model: model)
+        editors[model.bookID] = Editor(
+            window: window,
+            model: model,
+            undoManager: AudioEditorUndoManager(model: model, window: window)
+        )
+    }
+
+    /// The model and the undo manager of the editor whose window is
+    /// `window`, if it is an editor's.
+    func editor(in window: NSWindow) -> (model: AudioEditorModel, undoManager: AudioEditorUndoManager)? {
+        editors.values.first { $0.window === window }.map { ($0.model, $0.undoManager) }
     }
 
     // MARK: Closing
