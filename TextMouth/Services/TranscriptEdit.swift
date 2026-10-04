@@ -70,10 +70,7 @@ enum TranscriptEditing {
                 // two words: an edit's line or paragraph break inside it
                 // reads as one.
                 let words = text.substring(with: range).split(whereSeparator: \.isWhitespace).joined(separator: " ")
-                if words != edited.files[address.file].sentences[address.sentence].text {
-                    edited.files[address.file].sentences[address.sentence].text = words
-                    edited.files[address.file].sentences[address.sentence].words = []
-                }
+                edited.files[address.file].sentences[address.sentence].rewrite(as: words)
                 chapterSentences.append(BookContentSentenceIndex(
                     characterOffset: range.location,
                     characterCount: range.length,

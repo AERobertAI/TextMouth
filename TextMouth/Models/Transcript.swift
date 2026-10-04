@@ -141,6 +141,17 @@ struct TranscriptSentence: Codable, Equatable, Sendable {
     var wordCount: Int {
         words.isEmpty ? text.split(whereSeparator: \.isWhitespace).count : words.count
     }
+
+    /// Gives the sentence `text` in place of its own, as an edit in the
+    /// user's editor (`TranscriptEditing`) or a cleanup
+    /// (`TranscriptCleanup`) rewrites it: the sentence keeps its time in the
+    /// audio, and its words' timings, which no longer fit the new text, go.
+    /// The text it has already changes nothing.
+    mutating func rewrite(as text: String) {
+        guard text != self.text else { return }
+        self.text = text
+        words = []
+    }
 }
 
 /// One word of a transcript's sentence: where it lies in the sentence's text
