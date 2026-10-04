@@ -68,19 +68,30 @@ struct TranscriptionPresentation: ViewModifier {
 }
 
 /// What a Library window does for transcription (FR05): shows its
-/// transcription dialogs, and keeps the rows' notes current, looking for
-/// the books' transcripts again as the window appears, as the number of
-/// books changes, and as TextMouth becomes active, when another Mac sharing
-/// the library may have transcribed a book (`TranscribedBooks`).
+/// transcription dialogs; opens the Transcribe Audio sheet for an audiobook
+/// whose offer after an import the user accepted in this window; and keeps
+/// the rows' notes current, looking for the books' transcripts again as the
+/// window appears, as the number of books changes, and as TextMouth becomes
+/// active, when another Mac sharing the library may have transcribed a book
+/// (`TranscribedBooks`).
 struct LibraryTranscriptionSupport: ViewModifier {
     /// The window's dialogs.
     @ObservedObject var presenter: TranscriptionPresenter
     /// The library whose books are looked at.
     let library: LibraryViewModel
+    /// The Library window, which asks the questions of the imports started
+    /// in it, and which announcements come from.
+    let hostWindow: NSWindow?
 
     func body(content: Content) -> some View {
         content
             .modifier(TranscriptionPresentation(presenter: presenter))
+            .onReceive(library.acceptedTranscriptionOffers) { acceptance in
+                // The offer's own sheet, pressing Transcribe for the user
+                // once it can: the same process as the command's.
+                guard Self.asks(acceptance, in: hostWindow), let book = library.bookByID(acceptance.bookID) else { return }
+                presenter.transcribe([book], library: library, window: hostWindow, startsAtOnce: true)
+            }
             .task(id: library.library.books.count) {
                 await TranscribedBooks.shared.refresh(library.library.books)
             }
@@ -89,5 +100,20 @@ struct LibraryTranscriptionSupport: ViewModifier {
                     await TranscribedBooks.shared.refresh(library.library.books)
                 }
             }
+    }
+
+    /// Whether `window` is the Library window that asked the offer
+    /// `acceptance` answers: the window its import started in while that is
+    /// open, or else the first open Library window, as for every import
+    /// question (`ImportDecisionQueue.askingWindow(for:among:)`).
+    @MainActor
+    static func asks(
+        _ acceptance: TranscriptionOfferAcceptance,
+        in window: NSWindow?,
+        router: LibraryWindowRouter = .shared
+    ) -> Bool {
+        guard let thisWindow = ImportOrigin(window: window) else { return false }
+        let openWindows = router.registeredLibraryWindows.compactMap { ImportOrigin(window: $0) }
+        return ImportDecisionQueue.askingWindow(for: acceptance.origin, among: openWindows) == thisWindow
     }
 }

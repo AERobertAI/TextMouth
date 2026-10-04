@@ -557,9 +557,9 @@ struct LibraryView: View {
             selectedBooks: { selectedBooks },
             hostWindow: hostWindow
         ))
-        // The Transcribe Audio sheet the rows' commands open, and the rows'
-        // transcription notes kept current (FR05).
-        .modifier(LibraryTranscriptionSupport(presenter: transcription, library: libraryViewModel))
+        // The Transcribe Audio sheet the rows' commands and the offers after
+        // imports open, and the rows' transcription notes kept current (FR05).
+        .modifier(LibraryTranscriptionSupport(presenter: transcription, library: libraryViewModel, hostWindow: hostWindow))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {

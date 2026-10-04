@@ -360,6 +360,9 @@ final class ConfigService: ObservableObject {
         /// locale identifier such as "en-US" or "en-GB". Empty keeps the
         /// current choice, as does an identifier that cannot be one.
         var transcriptionLocale: String = ""
+        /// Whether TextMouth offers to transcribe each audiobook just
+        /// imported (`TranscriptionPreferences.offerAfterImport`).
+        var offerTranscriptionAfterImport: Bool?
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -463,6 +466,7 @@ final class ConfigService: ObservableObject {
             transcriptionLocale = fields.value(.transcriptionLocale, default: fallback.transcriptionLocale) {
                 TranscriptionLanguage.validated($0) ?? ""
             }
+            offerTranscriptionAfterImport = fields.optionalFlag(.offerTranscriptionAfterImport)
         }
 
         init() {}
@@ -532,8 +536,9 @@ final class ConfigService: ObservableObject {
                 // keeps. The tab's other choices config.json alone holds.
                 mirrored += sameNames(["logLocation"])
                 // Transcription: the language it uses, which
-                // TranscriptionLanguage keeps (FR05).
-                mirrored += sameNames(["transcriptionLocale"])
+                // TranscriptionLanguage keeps, and whether it is offered
+                // after an import (FR05).
+                mirrored += sameNames(["transcriptionLocale", "offerTranscriptionAfterImport"])
                 return mirrored
             }()
 

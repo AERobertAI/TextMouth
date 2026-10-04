@@ -232,6 +232,56 @@ enum TranscriptionWording {
         return "Transcription stopped: \(error.localizedDescription)"
     }
 
+    // MARK: Settings
+
+    /// The group's heading in Playback settings.
+    static let settingsSection = "Transcription"
+    /// The language pop-up's label.
+    static let languageLabel = "Transcription language"
+    /// What the pop-up chooses.
+    static let languagePickerHint = "The language audiobooks are transcribed in. A language marked needs download "
+        + "is downloaded from the Transcribe Audio sheet, only when you ask."
+    /// One language in the pop-up: "English (United States), installed".
+    static func languageChoice(name: String, status: String?) -> String {
+        status.map { "\(name), \($0)" } ?? name
+    }
+    /// The checkbox that offers a transcription after each audiobook import.
+    static let offerTitle = "Offer to transcribe after importing an audiobook"
+    /// What the checkbox does.
+    static let offerHint = "After each audiobook is imported, TextMouth asks whether to transcribe it. "
+        + "Off, audiobooks are transcribed only when you choose Transcribe Audio."
+    /// Where the language is chosen, said under the sheet's language line.
+    static let languageHint = "The language is chosen in Settings, under Playback, Transcription."
+
+    // MARK: The Offer After an Import
+
+    /// The offer's title, as the import question sheet shows it.
+    static let offerQuestionTitle = "Transcribe the Audiobook?"
+
+    /// What the offer asks: "“Moby-Dick” was imported, with 6 hours, 12
+    /// minutes of audio. Transcribing it takes about 6 minutes. Transcribe
+    /// it now?"
+    static func offerMessage(bookTitle: String, audioSeconds: TimeInterval?) -> String {
+        var sentences: [String] = []
+        if let audioSeconds, audioSeconds.isFinite, audioSeconds > 0 {
+            sentences.append("“\(bookTitle)” was imported, with \(TimeFormatting.spoken(audioSeconds)) of audio.")
+        } else {
+            sentences.append("“\(bookTitle)” was imported.")
+        }
+        if let estimate = TranscriptionEstimate.words(forAudio: audioSeconds) {
+            sentences.append("Transcribing it takes \(estimate).")
+        }
+        sentences.append("Transcribe it now?")
+        return sentences.joined(separator: " ")
+    }
+
+    /// The offer's buttons and what they do.
+    static let offerTranscribeTitle = "Transcribe"
+    static let offerTranscribeHint = "Opens Transcribe Audio for the book, which starts transcribing once its "
+        + "language's speech model is on this Mac."
+    static let offerNotNowTitle = "Not Now"
+    static let offerNotNowHint = "Leaves the audiobook as it is. You can transcribe it later with Transcribe Audio."
+
     // MARK: The Library Row
 
     /// The note after a transcribed book's title, shown and spoken.

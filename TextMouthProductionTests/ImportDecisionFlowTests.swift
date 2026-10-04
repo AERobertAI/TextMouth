@@ -623,6 +623,8 @@ final class ImportDecisionFlowTests: XCTestCase {
                 return "original: \(original.url.lastPathComponent)"
             case .zipFolder(let batch):
                 return "folder: \(batch.archiveURL.lastPathComponent)"
+            case .transcriptionOffer(let offer):
+                return "transcribe: \(offer.bookTitle)"
             }
         }
     }

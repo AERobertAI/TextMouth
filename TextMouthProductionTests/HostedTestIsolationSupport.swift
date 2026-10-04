@@ -54,7 +54,8 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "sleepTimer.lastUsedDuration",
         "customKeyboardBindings",
         "logLocation",
-        "transcriptionLocale"
+        "transcriptionLocale",
+        "offerTranscriptionAfterImport"
     ]
 
     /// Each key's digest, or "absent" when the user has no value for it.

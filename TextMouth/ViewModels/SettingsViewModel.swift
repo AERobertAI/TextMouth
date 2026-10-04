@@ -781,18 +781,47 @@ final class SettingsViewModel: ObservableObject {
             + TextSubstitutionService.preferenceKeys
             + RecordingPreferences.keys
             + [KeyboardShortcutManager.bindingsPreference.key, LogLocation.preference.key]
-            + [TranscriptionLanguage.preference.key]
+            + [TranscriptionLanguage.preference.key, TranscriptionPreferences.offerAfterImport.key]
             + [BookExportPreferences.showInReaderToolbar.key]
     }
 
     /// The keys of the preferences other services keep that this model
-    /// shows (the log location, the reader toolbar's Export button, and the
-    /// feed settings), whose changes it announces wherever they are made,
-    /// such as in config.json, so the controls showing them follow.
+    /// shows (the log location, the reader toolbar's Export button, the
+    /// feed settings, and the transcription settings), whose changes it
+    /// announces wherever they are made, such as in config.json, so the
+    /// controls showing them follow.
     private static let shownServicePreferenceKeys = Set([
         LogLocation.preference.key,
         BookExportPreferences.showInReaderToolbar.key,
+        TranscriptionLanguage.preference.key,
+        TranscriptionPreferences.offerAfterImport.key,
     ] + FeedSettings.preferenceKeys)
+
+    /// The language transcription uses (FR05), in Playback settings'
+    /// Transcription group, as a locale identifier. Transcription keeps it
+    /// (`TranscriptionLanguage`), and config.json follows it through the
+    /// observer below, which also announces a change made anywhere else.
+    var transcriptionLanguage: String {
+        get { TranscriptionLanguage.preference.read(from: preferences) }
+        set {
+            guard let chosen = TranscriptionLanguage.validated(newValue), chosen != transcriptionLanguage else { return }
+            objectWillChange.send()
+            TranscriptionLanguage.preference.write(chosen, to: preferences)
+        }
+    }
+
+    /// Whether TextMouth offers to transcribe each audiobook just imported
+    /// (FR05), in Playback settings' Transcription group. Imports read it
+    /// (`TranscriptionPreferences.offerAfterImport`), and config.json
+    /// follows it through the observer below.
+    var offerTranscriptionAfterImport: Bool {
+        get { TranscriptionPreferences.offerAfterImport.read(from: preferences) }
+        set {
+            guard newValue != offerTranscriptionAfterImport else { return }
+            objectWillChange.send()
+            TranscriptionPreferences.offerAfterImport.write(newValue, to: preferences)
+        }
+    }
 
     /// Whether the reader's toolbar shows an Export button (FR05), in
     /// Playback settings. Export keeps it (`BookExportPreferences`), and
@@ -842,9 +871,9 @@ final class SettingsViewModel: ObservableObject {
     /// in the store. A change this model makes while applying config.json
     /// saves nothing, like every other change made then. A change of a
     /// preference this model shows, the log location, the reader toolbar's
-    /// Export button, or a feed setting, is announced, so Storage settings,
-    /// Playback settings, the feed settings, and open readers follow it
-    /// wherever it was made.
+    /// Export button, a feed setting, or a transcription setting, is
+    /// announced, so Storage settings, Playback settings, the feed settings,
+    /// and open readers follow it wherever it was made.
     private func saveServicePreferenceChanges() {
         servicePreferencesObserver = PreferenceObserver(keys: Self.servicePreferenceKeys, in: preferences) { [weak self] key in
             if Self.shownServicePreferenceKeys.contains(key) {
@@ -883,6 +912,7 @@ final class SettingsViewModel: ObservableObject {
         )
         config.logLocation = LogLocation.preference.read(from: preferences).rawValue
         config.transcriptionLocale = TranscriptionLanguage.preference.read(from: preferences)
+        config.offerTranscriptionAfterImport = TranscriptionPreferences.offerAfterImport.read(from: preferences)
     }
 
     /// Writes the values config.json asks for into the store, where their
@@ -943,6 +973,7 @@ final class SettingsViewModel: ObservableObject {
         adopt(SettingsPolicy.logLocation.requestedValue(fromConfig: config.logLocation), into: LogLocation.preference)
         // So does an empty language, or one that cannot be an identifier.
         adopt(TranscriptionLanguage.validated(config.transcriptionLocale), into: TranscriptionLanguage.preference)
+        adopt(config.offerTranscriptionAfterImport, into: TranscriptionPreferences.offerAfterImport)
     }
 
     /// Writes a value config.json asks for into the store when it differs

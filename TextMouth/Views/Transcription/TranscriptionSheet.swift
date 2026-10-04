@@ -88,6 +88,9 @@ struct TranscriptionSheet: View {
             Text(model.audioLine)
             Text(model.estimateLine)
             Text(model.languageLine)
+            Text(TranscriptionWording.languageHint)
+                .font(.caption)
+                .foregroundColor(.secondary)
             downloadControls
             ForEach(model.noticeLines, id: \.self) { line in
                 Text(line)
