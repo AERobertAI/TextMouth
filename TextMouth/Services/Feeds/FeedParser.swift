@@ -14,6 +14,8 @@ struct ParsedFeed: Equatable, Sendable {
         case rdf
         /// Atom (RFC 4287), or the Atom 0.3 that preceded it.
         case atom
+        /// JSON Feed 1.1, or the 1.0 that preceded it (`JSONFeedParser`).
+        case json
     }
 
     /// The document's format.
@@ -79,6 +81,23 @@ struct ParsedItem: Equatable, Sendable {
             title: title,
             summaryHTML: summary?.text
         )
+    }
+
+    /// The most characters of an item's text that stand in for a title it
+    /// lacks.
+    static let standInTitleLength = 80
+
+    /// The title an item that gives none is listed by: the start of its
+    /// text `text`, as one line of plain text.
+    static func standInTitle(from text: String, isHTML: Bool) -> String {
+        String(FeedTextConverter.plainLine(text, isHTML: isHTML).prefix(standInTitleLength))
+    }
+
+    /// Whether `content` only repeats `summary`, whitespace aside, so the
+    /// item keeps the summary alone.
+    static func isRepeating(_ content: FeedTextSource, _ summary: FeedTextSource?) -> Bool {
+        content.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            == summary?.text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
@@ -174,9 +193,12 @@ enum FeedNamespace {
 // MARK: - Parsing
 
 /// Reads RSS 2.0, RSS 1.0, and Atom feeds, with Apple's iTunes and
-/// Podcasting 2.0 elements (FR03).
+/// Podcasting 2.0 elements, and JSON Feed (FR03).
 ///
-/// A document is read first by `XMLParser`, streaming, with namespaces on
+/// A document whose first character is "{" is JSON, read by
+/// `JSONFeedParser` into the same kind of feed. Any other is XML.
+///
+/// An XML document is read first by `XMLParser`, streaming, with namespaces on
 /// and external entities never resolved. Real feeds are often not
 /// well-formed (an HTML entity such as `&nbsp;`, a bare ampersand, a blank
 /// line before the XML declaration, a control character, a Latin-1 byte in
@@ -204,6 +226,9 @@ enum FeedParser {
     static func parse(_ data: Data, baseURL: URL?, maximumItems: Int = maximumItems) throws -> ParsedFeed {
         guard data.count <= maximumBytes else { throw FeedParseError.tooLarge }
         guard data.contains(where: { !isXMLWhitespace($0) }) else { throw FeedParseError.empty }
+        if JSONFeedParser.looksLikeJSON(data) {
+            return try JSONFeedParser.parse(data, baseURL: baseURL, maximumItems: maximumItems)
+        }
 
         let strict = StrictFeedReading(data: data, reader: FeedDocumentReader(baseURL: baseURL, itemLimit: maximumItems))
         switch strict.read() {
@@ -930,19 +955,16 @@ private struct ItemFields {
 
     /// The item these fields make, or nil when they give nothing to list.
     ///
-    /// - The enclosure is the first audio among the item's enclosures and
-    ///   then its Media RSS contents, the smaller download for a listener,
-    ///   else the first video, else its first enclosure of any kind.
+    /// - The enclosure is chosen among the item's enclosures and then its
+    ///   Media RSS contents (`FeedEnclosure.preferred(among:otherwise:)`),
+    ///   else it is its first enclosure of any kind.
     /// - The page is the link, or a permalink guid that is an address.
     /// - The title is the title, `itunes:title`, or the start of the summary.
     /// - The date is the publication date, from the first element that gives
     ///   one that reads.
     /// - The content is kept only when it differs from the summary.
     func build(baseURL: URL?) -> ParsedItem? {
-        let candidates = enclosures + mediaContents
-        let enclosure = candidates.first { $0.kind == .audio }
-            ?? candidates.first { $0.kind == .video }
-            ?? enclosures.first
+        let enclosure = FeedEnclosure.preferred(among: enclosures + mediaContents, otherwise: enclosures.first)
         var page = link
         if page == nil, guidIsPermaLink, let guid, let address = URL(string: guid, relativeTo: baseURL)?.absoluteURL,
            FeedTransport.isWebAddress(address) {
@@ -952,13 +974,10 @@ private struct ItemFields {
         // The title was read as one line already; `itunes:title` is read now.
         var resolvedTitle = title ?? itunesTitle.map { FeedTextConverter.plainLine($0) } ?? ""
         if resolvedTitle.isEmpty, let summaryText {
-            resolvedTitle = String(FeedTextConverter.plainLine(summaryText.text, isHTML: true).prefix(80))
+            resolvedTitle = ParsedItem.standInTitle(from: summaryText.text, isHTML: true)
         }
         guard !resolvedTitle.isEmpty || guid != nil || enclosure != nil || page != nil else { return nil }
-        let content = self.content.flatMap { content in
-            content.text.trimmingCharacters(in: .whitespacesAndNewlines)
-                == summaryText?.text.trimmingCharacters(in: .whitespacesAndNewlines) ? nil : content
-        }
+        let content = self.content.flatMap { ParsedItem.isRepeating($0, summaryText) ? nil : $0 }
         return ParsedItem(
             guid: guid,
             title: resolvedTitle,
@@ -988,8 +1007,9 @@ private struct ItemFields {
     }
 }
 
-private extension Array where Element == String {
-    /// The non-empty names, joined by commas, or nil when there are none.
+extension Array where Element == String {
+    /// The non-empty names, joined by commas, or nil when there are none: a
+    /// feed's or an item's authors, whichever format lists them.
     var joinedNames: String? {
         let names = filter { !$0.isEmpty }
         return names.isEmpty ? nil : names.joined(separator: ", ")

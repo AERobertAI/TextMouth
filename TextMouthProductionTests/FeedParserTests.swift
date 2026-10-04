@@ -2,7 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// Reading feeds (FR03): RSS 2.0, RSS 1.0, and Atom, with Apple's iTunes and
-/// Podcasting 2.0 elements under any prefix; every fault the research found
+/// Podcasting 2.0 elements under any prefix, and JSON Feed; every fault the research found
 /// in real feeds, read through the tidy fallback; dates and durations in
 /// the forms seen in the wild; the feeds a web page names; and how a feed's
 /// text is read. The fixtures are in TestData/feeds: LibriVox's feed as it
@@ -287,7 +287,8 @@ final class FeedParserTests: XCTestCase {
     }
 
     /// An empty document, one larger than TextMouth reads, a web page, and
-    /// a JSON document are each refused for what they are.
+    /// a JSON document that is no JSON Feed, such as an API's error, are
+    /// each refused for what they are.
     func testDocumentsThatAreNoFeedAreRefused() throws {
         XCTAssertThrowsError(try Self.parse("fault-empty.xml")) { error in
             XCTAssertEqual(error as? FeedParseError, .empty)
@@ -302,10 +303,7 @@ final class FeedParserTests: XCTestCase {
             XCTAssertEqual(error as? FeedParseError, .notAFeed)
         }
         XCTAssertThrowsError(try Self.parse("not-a-feed.json")) { error in
-            switch error as? FeedParseError {
-            case .notAFeed?, .damaged?: break
-            default: XCTFail("a JSON document read as \(error)")
-            }
+            XCTAssertEqual(error as? FeedParseError, .notAFeed)
         }
     }
 
@@ -341,6 +339,128 @@ final class FeedParserTests: XCTestCase {
         XCTAssertNil(feed.items[0].enclosure)
         XCTAssertEqual(feed.items[1].title, "Only a description, which names the item when the title is missing.")
         XCTAssertTrue(feed.items[1].identity.hasPrefix("link:"))
+    }
+
+    // MARK: - JSON Feed
+
+    /// A JSON Feed 1.1 podcast: the feed's own fields; each item's id, page,
+    /// title, summary, and content (kept beside a summary it adds to); a
+    /// date with an offset, or the date modified when none was published;
+    /// its authors; its attachments as enclosures, audio chosen over a
+    /// video listed first, with sizes (one written as a string still
+    /// counts, 0 counts as none) and durations; an attachment that is no web
+    /// address never taken; and a numeric id, as JSON Feed 1.0 allowed,
+    /// read as its digits.
+    func testJSONFeedPodcast() throws {
+        let feed = try Self.parse("jsonfeed-podcast.json", from: "https://shows.example/kitchen-table-braille/feed.json")
+
+        XCTAssertEqual(feed.format, .json)
+        XCTAssertNil(feed.repair)
+        XCTAssertFalse(feed.reachedItemLimit)
+        XCTAssertEqual(feed.title, "Kitchen Table Braille")
+        XCTAssertEqual(feed.siteLink?.absoluteString, "https://shows.example/kitchen-table-braille/")
+        XCTAssertEqual(feed.summary, FeedTextSource(text: "Short episodes about reading braille at home.", kind: .plain))
+        XCTAssertEqual(feed.author, "Small Hours Audio")
+        XCTAssertFalse(feed.isSerial)
+        XCTAssertNil(feed.newFeedURL, "a JSON feed's own feed_url is no move")
+        XCTAssertEqual(feed.items.map(\.position), [0, 1, 2])
+
+        let first = feed.items[0]
+        XCTAssertEqual(first.guid, "kitchen-table-3")
+        XCTAssertEqual(first.identity, "guid:kitchen-table-3")
+        XCTAssertEqual(first.title, "Labelling the spice rack")
+        XCTAssertEqual(first.link?.absoluteString, "https://shows.example/kitchen-table-braille/3")
+        XCTAssertEqual(first.summary, FeedTextSource(text: "Dymo tape, clear dots, and which jars to label first.", kind: .plain))
+        XCTAssertEqual(first.content?.kind, .html)
+        XCTAssertTrue(first.content?.text.contains("<em>contracted</em>") ?? false)
+        XCTAssertEqual(first.published, try Self.date("2026-09-30T12:00:00Z"))
+        XCTAssertEqual(first.author, "Ines Okafor, Dov Halloran")
+        XCTAssertEqual(first.enclosure, FeedEnclosure(
+            url: try XCTUnwrap(URL(string: "https://media.example/ktb/3.m4a")),
+            mimeType: "audio/x-m4a",
+            length: 19_465_239
+        ))
+        XCTAssertEqual(first.duration, 1_203)
+
+        let second = feed.items[1]
+        XCTAssertNil(second.summary)
+        XCTAssertEqual(second.content, FeedTextSource(
+            text: "Thermoform or paper?\n\nWe compare both after a month in a busy kitchen.",
+            kind: .plain
+        ))
+        XCTAssertEqual(second.enclosure?.length, 12_000_000)
+        XCTAssertEqual(second.duration, 905.5)
+        XCTAssertNil(second.author)
+
+        let third = feed.items[2]
+        XCTAssertEqual(third.guid, "1")
+        XCTAssertEqual(third.published, try Self.date("2026-09-16T08:00:00Z"))
+        XCTAssertEqual(third.enclosure?.url.absoluteString, "https://media.example/ktb/1.mp3")
+        XCTAssertNil(third.enclosure?.length, "a size of 0 counts as none")
+        XCTAssertNil(third.duration)
+    }
+
+    /// A JSON Feed 1.0 of articles: its single author; an item without a
+    /// title, listed by the start of its text; an item whose page is
+    /// another site's (external_url); and entries that are no item skipped.
+    func testJSONFeedArticles() throws {
+        let feed = try Self.parse("jsonfeed-articles.json", from: "https://quill-lang.example/feed.json")
+
+        XCTAssertEqual(feed.format, .json)
+        XCTAssertEqual(feed.title, "Quill Notes")
+        XCTAssertEqual(feed.author, "The Quill Team")
+        XCTAssertEqual(feed.items.count, 2)
+        let note = feed.items[0]
+        XCTAssertEqual(note.title, "Quill 3.2 reads .qnb notebooks aloud, cell by cell, and says which cell failed.")
+        XCTAssertEqual(note.guid, "https://quill-lang.example/notes/2026/10/02/")
+        XCTAssertEqual(note.link?.absoluteString, "https://quill-lang.example/notes/2026/10/02/")
+        XCTAssertEqual(note.published, try Self.date("2026-10-02T10:30:00Z"))
+        XCTAssertNil(note.enclosure)
+        let review = feed.items[1]
+        XCTAssertEqual(review.title, "A review worth reading")
+        XCTAssertEqual(review.link?.absoluteString, "https://other.example/review-of-quill")
+        XCTAssertEqual(review.content?.kind, .plain)
+    }
+
+    /// JSON that is no JSON Feed is refused: without a version, with
+    /// another's version address, or cut short. A byte order mark before a
+    /// feed is read past, and items past the limit are left out.
+    func testJSONThatIsNoJSONFeedIsRefused() throws {
+        let refused = [
+            #"{"title": "No version", "items": []}"#,
+            #"{"version": "https://feeds.example/version/1", "items": []}"#,
+            #"{"version": "https://jsonfeed.org/version/1.1", "title": "Cut"#,
+        ]
+        for json in refused {
+            XCTAssertThrowsError(try FeedParser.parse(Data(json.utf8), baseURL: nil), json) { error in
+                XCTAssertEqual(error as? FeedParseError, .notAFeed, json)
+            }
+        }
+
+        let items = (1...4).map { #"{"id": "n\#($0)", "title": "Note \#($0)"}"# }.joined(separator: ",")
+        let document = #"{"version": "https://jsonfeed.org/version/1.1", "title": "Notes", "items": [\#(items)]}"#
+        let marked = Data([0xEF, 0xBB, 0xBF]) + Data(("\n " + document).utf8)
+        let feed = try FeedParser.parse(marked, baseURL: nil, maximumItems: 3)
+        XCTAssertEqual(feed.items.map(\.title), ["Note 1", "Note 2", "Note 3"])
+        XCTAssertTrue(feed.reachedItemLimit)
+    }
+
+    /// A page naming a JSON Feed (application/feed+json) offers it; a link
+    /// to plain JSON, such as WordPress's REST API, is no feed.
+    func testAPageNamingAJSONFeedOffersIt() throws {
+        let page = """
+        <html><head>
+        <link rel="alternate" type="application/json" href="/wp-json/wp/v2/pages/12">
+        <link rel="alternate" type="application/feed+json" title="Notes as JSON" href="/feed.json">
+        </head><body></body></html>
+        """
+        let links = FeedDiscovery.feedLinks(inPage: page, pageURL: try XCTUnwrap(URL(string: "https://quill-lang.example/")))
+
+        XCTAssertEqual(links, [FeedLink(
+            url: try XCTUnwrap(URL(string: "https://quill-lang.example/feed.json")),
+            title: "Notes as JSON",
+            mimeType: "application/feed+json"
+        )])
     }
 
     // MARK: - Dates and Durations

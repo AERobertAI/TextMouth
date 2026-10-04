@@ -252,6 +252,13 @@ struct FeedEnclosure: Codable, Equatable, Sendable {
     var isPlayable: Bool {
         kind != .other
     }
+
+    /// The file an item offers among the files it lists, `candidates`: the
+    /// first audio, the smaller download for a listener, else the first
+    /// video, else `fallback`. RSS, Atom, and JSON Feed items all choose so.
+    static func preferred(among candidates: [FeedEnclosure], otherwise fallback: FeedEnclosure?) -> FeedEnclosure? {
+        candidates.first { $0.kind == .audio } ?? candidates.first { $0.kind == .video } ?? fallback
+    }
 }
 
 /// What kind of file an enclosure is.

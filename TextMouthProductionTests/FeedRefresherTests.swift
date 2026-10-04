@@ -559,6 +559,40 @@ final class FeedRefresherTests: XCTestCase {
         XCTAssertFalse(debugLogLines(containing: "FEED_PARSE_REPAIRED: Fault Lines (\(world.server.host))").isEmpty)
     }
 
+    // MARK: - JSON Feed
+
+    /// A JSON Feed is subscribed to and refreshed through the same merge as
+    /// an RSS feed: its items are kept newest first, by their ids; a refresh
+    /// that lists a new item announces it; and what the listener did with
+    /// an item stays.
+    func testAJSONFeedMergesAsAnRSSFeedDoes() async throws {
+        let world = try FeedTestWorld(self, label: "FeedJSONFeed")
+        let old = (1...2).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)),
+                         enclosure: "https://atlas.example/audio/\(number).mp3")
+        }
+        let new = FeedXML.Item(guid: "ep-new", title: "A new episode", published: world.day(0.5),
+                               enclosure: "https://atlas.example/audio/new.mp3")
+        world.server.serve("/feed.json", try .jsonFeed(items: old), try .jsonFeed(items: [new] + old))
+        let feed = try await world.subscribe("/feed.json")
+        XCTAssertEqual(feed.title, "The Tactile Atlas")
+        XCTAssertEqual(feed.siteLink?.absoluteString, "https://show.example/")
+        XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.id), ["guid:ep-1", "guid:ep-2"])
+        XCTAssertTrue(world.center.listedItems(of: feed.id).allSatisfy { $0.state == .notDownloaded && !$0.isArticle })
+        let played = world.day(-0.5)
+        world.center.store.updateItem("guid:ep-1", of: feed.id) { $0.playedDate = played }
+        world.advance(by: 86_400)
+
+        let report = try await unwrap(world.center.refresh(feed.id))
+
+        XCTAssertEqual(report.outcome, .updated(newItemIDs: ["guid:ep-new"]))
+        let record = try XCTUnwrap(world.center.store.record(of: feed.id))
+        XCTAssertEqual(record.items.map(\.title), ["A new episode", "Episode 1", "Episode 2"])
+        XCTAssertEqual(record.item("guid:ep-1")?.playedDate, played)
+        XCTAssertEqual(record.item("guid:ep-new")?.enclosure?.url.absoluteString, "https://atlas.example/audio/new.mp3")
+        XCTAssertEqual(record.feed.newestItemDate, world.day(0.5))
+    }
+
     // MARK: - Launch and the Schedule
 
     /// At launch the engine starts at once and refreshes in the background:

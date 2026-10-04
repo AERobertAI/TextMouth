@@ -1,0 +1,50 @@
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "Kitchen Table Braille",
+  "home_page_url": "https://shows.example/kitchen-table-braille/",
+  "feed_url": "https://shows.example/kitchen-table-braille/feed.json",
+  "description": "Short episodes about reading braille at home.",
+  "language": "en",
+  "authors": [
+    { "name": "Small Hours Audio", "url": "https://shows.example/" }
+  ],
+  "items": [
+    {
+      "id": "kitchen-table-3",
+      "url": "https://shows.example/kitchen-table-braille/3",
+      "title": "Labelling the spice rack",
+      "summary": "Dymo tape, clear dots, and which jars to label first.",
+      "content_html": "<p>Dymo tape, clear dots, and which jars to label first.</p><p>We also try a label maker that prints <em>contracted</em> braille.</p>",
+      "date_published": "2026-09-30T08:00:00-04:00",
+      "date_modified": "2026-10-01T10:00:00Z",
+      "authors": [
+        { "name": "Ines Okafor" },
+        { "name": "Dov Halloran" }
+      ],
+      "attachments": [
+        { "url": "https://media.example/ktb/3.mp4", "mime_type": "video/mp4", "size_in_bytes": 48000000, "duration_in_seconds": 1500 },
+        { "url": "https://media.example/ktb/3.m4a", "mime_type": "audio/x-m4a", "size_in_bytes": 19465239, "duration_in_seconds": 1203 }
+      ]
+    },
+    {
+      "id": "kitchen-table-2",
+      "url": "https://shows.example/kitchen-table-braille/2",
+      "title": "Recipe cards that last",
+      "content_text": "Thermoform or paper?\n\nWe compare both after a month in a busy kitchen.",
+      "date_published": "2026-09-23T08:00:00Z",
+      "attachments": [
+        { "url": "https://media.example/ktb/2.mp3", "mime_type": "audio/mpeg", "size_in_bytes": "12000000", "duration_in_seconds": 905.5 }
+      ]
+    },
+    {
+      "id": 1,
+      "title": "Welcome",
+      "content_html": "<p>Why we started the show.</p>",
+      "date_modified": "2026-09-16T08:00:00Z",
+      "attachments": [
+        { "url": "ftp://media.example/ktb/1.mp3", "mime_type": "audio/mpeg" },
+        { "url": "https://media.example/ktb/1.mp3", "mime_type": "audio/mpeg", "size_in_bytes": 0 }
+      ]
+    }
+  ]
+}

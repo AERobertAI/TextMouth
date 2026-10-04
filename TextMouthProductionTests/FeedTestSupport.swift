@@ -54,6 +54,33 @@ struct StubResponse: Sendable {
         return StubResponse(headers: ["Content-Type": "text/javascript; charset=utf-8"], body: Data(moved.utf8))
     }
 
+    /// A JSON Feed 1.1 titled `title` listing `items` in order, as a server
+    /// serves one (application/feed+json): each item's guid is its id, its
+    /// date its date_published, its enclosure an attachment, its
+    /// description its content_html, and its link its url.
+    static func jsonFeed(title: String = "The Tactile Atlas", items: [FeedXML.Item]) throws -> StubResponse {
+        let dates = ISO8601DateFormatter()
+        let entries: [[String: Any]] = items.map { item in
+            var entry: [String: Any] = ["title": item.title]
+            entry["id"] = item.guid
+            entry["date_published"] = item.published.map(dates.string(from:))
+            entry["content_html"] = item.description
+            entry["url"] = item.link
+            if let enclosure = item.enclosure {
+                entry["attachments"] = [["url": enclosure, "mime_type": item.enclosureType, "size_in_bytes": item.enclosureLength]]
+            }
+            return entry
+        }
+        let document: [String: Any] = [
+            "version": "https://jsonfeed.org/version/1.1",
+            "title": title,
+            "home_page_url": "https://show.example/",
+            "items": entries,
+        ]
+        let body = try JSONSerialization.data(withJSONObject: document, options: [.sortedKeys])
+        return StubResponse(headers: ["Content-Type": "application/feed+json"], body: body)
+    }
+
     /// A feed document built by `FeedXML`.
     static func feed(_ markup: String, headers: [String: String] = [:]) -> StubResponse {
         var allHeaders = ["Content-Type": "application/rss+xml; charset=utf-8"]

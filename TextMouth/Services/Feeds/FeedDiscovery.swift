@@ -15,16 +15,20 @@ struct FeedLink: Equatable, Sendable {
 }
 
 /// Finds the feeds a web page names (FR03): its `link` elements whose
-/// relation is "alternate" and whose type is an RSS or Atom feed's, as RSS
-/// autodiscovery and the HTML standard describe them, in the page's order,
-/// the first being the site's main feed.
+/// relation is "alternate" and whose type is an RSS, Atom, or JSON feed's,
+/// as RSS autodiscovery, JSON Feed 1.1, and the HTML standard describe
+/// them, in the page's order, the first being the site's main feed.
 ///
 /// The page's elements are walked directly, as `HTMLToMarkdownConverter`
 /// walks a document, rather than through a SwiftSoup selector, whose cached
 /// results hold on to the document. Nothing the page links to is fetched.
 enum FeedDiscovery {
-    /// The MIME types of the feeds TextMouth reads.
-    static let feedTypes: Set<String> = ["application/rss+xml", "application/atom+xml", "application/rdf+xml"]
+    /// The MIME types of the feeds TextMouth reads. A JSON Feed's is
+    /// application/feed+json; plain application/json is left out, since
+    /// pages use it for other alternates, such as WordPress's REST API.
+    static let feedTypes: Set<String> = [
+        "application/rss+xml", "application/atom+xml", "application/rdf+xml", "application/feed+json",
+    ]
 
     /// The feeds the page `html`, fetched from `pageURL`, names, each once,
     /// with relative addresses resolved from the page's base address.
