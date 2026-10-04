@@ -1109,8 +1109,9 @@ final class ReaderViewModel: ObservableObject {
     /// from, without making the open wait for it: from the book's row, with
     /// the book, when the row keeps all of it (`Book.keptEPUBMetadata`), and
     /// otherwise read from the EPUB off the main thread, arriving once the
-    /// book shows (`readEPUBMetadataInBackground()`). Shows nothing for any
-    /// other format, and reads nothing again once metadata shows.
+    /// book shows (`readEPUBMetadataInBackground()`), and kept on the row
+    /// then, so that it is read once. Shows nothing for any other format,
+    /// and reads nothing again once metadata shows.
     func showEPUBMetadata() {
         guard book.format == .epub else { return }
         if let kept = book.keptEPUBMetadata {
@@ -1122,23 +1123,46 @@ final class ReaderViewModel: ObservableObject {
 
     /// Reads the EPUB's package metadata from its file off the main thread
     /// (`readEPUBMetadata`), at a priority below the work the listener waits
-    /// for, and shows it with the book's own edits laid over it, from the
-    /// reader's copy of the book as it is by then, so an edit the library
-    /// made meanwhile is shown too (TODO P10). Nothing is shown when the
-    /// reader has closed, when it shows metadata by then (its metadata
-    /// editor saved an edit), or when the file cannot be read: the metadata
-    /// editor then opens the library's Book Info, as for any book without
-    /// metadata of its own.
+    /// for, keeps it on the book's row and record so that no later open
+    /// reads it again (`keepEPUBMetadataReadFromFile(_:)`), and shows it with
+    /// the book's own edits laid over it, from the reader's copy of the book
+    /// as it is by then, so an edit the library made meanwhile is shown too
+    /// (TODO P10). Nothing is shown when the reader has closed, when it
+    /// shows metadata by then (its metadata editor saved an edit), or when
+    /// the file cannot be read: the metadata editor then opens the library's
+    /// Book Info, as for any book without metadata of its own. A file only
+    /// in the cloud is never downloaded for this: its read is refused at
+    /// once, so nothing is shown or kept for it.
     private func readEPUBMetadataInBackground() {
         let file = book.bookFileURL
         let read = readEPUBMetadata
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let metadata = try? read(file)
             DispatchQueue.main.async { [weak self] in
-                guard let self, let metadata, !self.hasClosed, self.epubMetadata == nil else { return }
+                guard let self, let metadata, !self.hasClosed else { return }
+                self.keepEPUBMetadataReadFromFile(metadata)
+                guard self.epubMetadata == nil else { return }
                 self.epubMetadata = self.book.mergingEditableEPUBMetadata(metadata)
             }
         }
+    }
+
+    /// Keeps `metadata`, read from the book's EPUB file because the book's
+    /// row lacked some of it, on the library's row and in the book's record
+    /// (bookInfo.json), as an import keeps a new book's
+    /// (`Book.keepEPUBMetadata(readFromFile:)`), so that every later open
+    /// shows it from the row with the book and reads nothing. Only the
+    /// fields the row lacks are given, so an edit made meanwhile stands, and
+    /// the book is saved once: a row that keeps all of it by now, or a book
+    /// no longer in the library, is not saved. A record only in the cloud is
+    /// not written; the library index alone takes the fields then, as for
+    /// any save (`LibraryPersistenceService`). The reader's own copy of the
+    /// book takes the same fields.
+    private func keepEPUBMetadataReadFromFile(_ metadata: EPUBMetadata) {
+        book.keepEPUBMetadata(readFromFile: metadata)
+        guard let row = libraryViewModel.bookByID(book.id), row.format == .epub,
+              row.keptEPUBMetadata == nil else { return }
+        libraryViewModel.updateBook(id: book.id) { $0.keepEPUBMetadata(readFromFile: metadata) }
     }
 
     // MARK: - Text Display Window
