@@ -293,6 +293,8 @@ final class LogContentPolicyTests: XCTestCase {
         "READER_DOWNLOAD_STARTED", "READER_READ_REFUSED",
         "WORKING_COPIES_SWEPT", "WORKING_COPY_LEFT", "WORKING_COPY_MADE", "WORKING_COPY_REMOVED",
         "WORKING_COPY_SKIPPED", "MAINTENANCE_SKIPPED_IN_CLOUD",
+        // Podcast and article feeds (FR03): their records and this Mac's fetch details.
+        "FEED_RECORD_IN_CLOUD", "FEED_RECORD_SAVE_FAILED", "FEED_RECORD_UNREADABLE", "FEED_FETCH_STATE_SAVE_FAILED",
         // The logs themselves (the user's decision of October 3): lines changing place between the
         // data directory's Logs folder and this Mac's, and a log started over because it could not
         // be renamed to its older generation.
