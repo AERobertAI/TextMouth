@@ -160,7 +160,8 @@ struct ChapterSpeechCache {
     var awaitedByLookAhead: ChapterSpeechInputs?
 
     /// The inputs of the long chapter Play waits for while it is prepared in
-    /// the background, or nil (`ReaderViewModel.isWaitingForChapterSpeech`).
+    /// the background, and, once prepared, while a Where Am I announcement
+    /// holds the play, or nil (`ReaderViewModel.isWaitingForChapterSpeech`).
     var awaitedByPlay: ChapterSpeechInputs?
 
     /// The inputs of the long chapters being prepared in the background.

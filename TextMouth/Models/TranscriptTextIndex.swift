@@ -269,9 +269,36 @@ struct TranscriptText: Sendable {
 
     /// Where in chapter `chapterIndex`'s text the narration is at
     /// `audioOffset`, a reader's audio cursor in that chapter, which counts
-    /// `ReaderViewModel.audioCharsPerSecond` characters a second.
+    /// `ReaderViewModel.audioCharsPerSecond` characters a second: the start
+    /// of the sentence heard then (`sentence(atAudioOffset:inChapter:)`),
+    /// or the chapter's start before its first sentence.
     func textOffset(atAudioOffset audioOffset: Int, inChapter chapterIndex: Int) -> Int {
-        textOffset(atChapterTime: AudioBookParser.time(forCharacterOffset: audioOffset), inChapter: chapterIndex)
+        sentence(atAudioOffset: audioOffset, inChapter: chapterIndex)?.characterOffset ?? 0
+    }
+
+    /// The sentence of chapter `chapterIndex` heard at `audioOffset`, a
+    /// reader's audio cursor in that chapter, which counts
+    /// `ReaderViewModel.audioCharsPerSecond` characters a second
+    /// (`sentence(atMilliseconds:inChapter:)`). The reader's text is shown
+    /// around its start, and Where Am I quotes it, so both name the same
+    /// sentence.
+    func sentence(atAudioOffset audioOffset: Int, inChapter chapterIndex: Int) -> BookContentSentenceIndex? {
+        let seconds = AudioBookParser.time(forCharacterOffset: audioOffset)
+        return sentence(atMilliseconds: Transcript.milliseconds(seconds), inChapter: chapterIndex)
+    }
+
+    /// The words of the sentence of chapter `chapterIndex` heard at
+    /// `audioOffset` (`sentence(atAudioOffset:inChapter:)`), as the
+    /// chapter's reading text holds them. Nil before the chapter's first
+    /// sentence, for a chapter without sentences or text, and for a
+    /// sentence reaching past the end of the text.
+    func sentenceText(atAudioOffset audioOffset: Int, inChapter chapterIndex: Int) -> String? {
+        guard let sentence = sentence(atAudioOffset: audioOffset, inChapter: chapterIndex),
+              let text = chapterText(chapterIndex),
+              sentence.characterEnd <= text.utf16Length else { return nil }
+        let start = text.index(atUTF16Offset: sentence.characterOffset)
+        let end = text.index(atUTF16Offset: sentence.characterEnd)
+        return String(text[start..<end])
     }
 
     /// The reader's audio cursor in chapter `chapterIndex` for the place
