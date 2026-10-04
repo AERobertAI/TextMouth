@@ -80,12 +80,8 @@ final class NowPlayingSession {
     private let diagnosticLabel: String?
     private let coordinator: NowPlayingService
 
-    init(ownerID: UUID, diagnosticLabel: String? = nil) {
-        self.ownerID = ownerID
-        self.diagnosticLabel = diagnosticLabel
-        self.coordinator = .shared
-    }
-
+    /// A session for the reader `ownerID` in `coordinator`: the app's shared
+    /// one (`NowPlayingService.shared`) for a reader window, or a test's own.
     init(
         ownerID: UUID,
         diagnosticLabel: String? = nil,

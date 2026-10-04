@@ -134,8 +134,14 @@ final class ReaderViewModel: ObservableObject {
     /// windows happen to show the same book.
     lazy var nowPlayingService = NowPlayingSession(
         ownerID: readerID,
-        diagnosticLabel: "book-\(book.id.uuidString.prefix(8))"
+        diagnosticLabel: "book-\(book.id.uuidString.prefix(8))",
+        coordinator: nowPlayingCoordinator
     )
+    /// The Now Playing coordinator this reader's media session joins, which
+    /// hands it the system's media commands (the AirPods, the media keys):
+    /// the app's shared one, unless the reader was created with its own, as
+    /// tests do to send it commands as MediaPlayer does.
+    let nowPlayingCoordinator: NowPlayingService
     /// Text substitution rules applied to every chapter before it is spoken:
     /// the shared rules edited in Substitutions settings, unless the reader
     /// was created with its own.
@@ -317,6 +323,9 @@ final class ReaderViewModel: ObservableObject {
     ///     until they let it start and finish.
     ///   - cloud: The cloud services that get a book in a cloud library ready
     ///     to read (FR02). Nil uses the app's; tests pass fakes.
+    ///   - nowPlaying: The Now Playing coordinator the reader's media session
+    ///     joins. Nil uses the app's shared one; tests pass their own, made
+    ///     without system integrations, to send it the system's commands.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
@@ -325,7 +334,8 @@ final class ReaderViewModel: ObservableObject {
         autoplayRequests: ReaderAutoplayRequests? = nil,
         notificationCenter: NotificationCenter = .default,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
-        cloud: ReaderCloudServices? = nil
+        cloud: ReaderCloudServices? = nil,
+        nowPlaying: NowPlayingService? = nil
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
@@ -337,6 +347,7 @@ final class ReaderViewModel: ObservableObject {
         self.notificationCenter = notificationCenter
         self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
         self.cloudServices = cloud ?? .app
+        self.nowPlayingCoordinator = nowPlaying ?? .shared
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)

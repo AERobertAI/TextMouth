@@ -102,11 +102,16 @@ final class IntegrationWorld {
     /// Opens a reader for `book`, which starts loading its content at once,
     /// as a reader window's model does.
     ///
-    /// - Parameter renderScheduler: Renders the reader's look-ahead; nil uses
-    ///   the app's shared render queue.
+    /// - Parameters:
+    ///   - renderScheduler: Renders the reader's look-ahead; nil uses the
+    ///     app's shared render queue.
+    ///   - nowPlaying: The Now Playing coordinator the reader joins, which a
+    ///     test sends the system's media commands through; nil uses the
+    ///     app's shared one.
     func openReader(
         for book: Book,
-        renderScheduler: (any SpeechRenderScheduling)? = nil
+        renderScheduler: (any SpeechRenderScheduling)? = nil,
+        nowPlaying: NowPlayingService? = nil
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -115,7 +120,8 @@ final class IntegrationWorld {
             substitutionService: TextSubstitutionService(rules: []),
             autoplayRequests: autoplayRequests,
             notificationCenter: notifications,
-            renderScheduler: renderScheduler
+            renderScheduler: renderScheduler,
+            nowPlaying: nowPlaying
         )
         readers.append(reader)
         return reader
