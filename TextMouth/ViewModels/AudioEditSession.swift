@@ -48,12 +48,21 @@ final class AudioEditSession: ObservableObject {
     /// The timelines made so far, by the newest applied edit over the base
     /// ("" for none), so undo and redo need not apply the list again.
     private var timelines: [String: AudioEditTimeline] = [:]
+    /// The way from the book's file, as last saved, to the edited audio as
+    /// it is now: what a save moves the book's bookmarks and its saved
+    /// reading position along (`LibraryViewModel.saveAudioEdits`). Every
+    /// edit, undo, and redo extends it, and a save starts it afresh. Nil
+    /// when it isn't known, as when the file holds edits the history no
+    /// longer has (`AudioEditList.renderedCursor`): a save then leaves the
+    /// bookmarks and the position where they are.
+    private(set) var savedFileRoute: AudioEditorTimeMap.Route?
 
     private init(
         bookID: UUID,
         audioFile: String,
         list: AudioEditList,
         timeline: AudioEditTimeline,
+        savedFileRoute: AudioEditorTimeMap.Route?,
         policyOverride: AudioOriginalPolicy?,
         library: LibraryViewModel,
         place: AudioBookPlace,
@@ -66,6 +75,7 @@ final class AudioEditSession: ObservableObject {
         self.audioFile = audioFile
         self.list = list
         self.timeline = timeline
+        self.savedFileRoute = savedFileRoute
         self.policyOverride = policyOverride
         self.library = library
         self.place = place
@@ -108,12 +118,13 @@ final class AudioEditSession: ObservableObject {
             let scratch = try AudioEditScratch.folder(for: bookID)
             let makeProcessor = library.audioEditProcessorFactory()
             let processor = makeProcessor(AudioEditComposition.Sources(base: base, package: place.package, scratch: scratch))
-            let timeline = try await Self.timeline(of: list, over: base, processor: processor)
+            let (timeline, route) = try await Self.timelineAndRoute(of: list, over: base, processor: processor)
             return AudioEditSession(
                 bookID: bookID,
                 audioFile: file,
                 list: list,
                 timeline: timeline,
+                savedFileRoute: route,
                 policyOverride: policy,
                 library: library,
                 place: place,
@@ -181,13 +192,15 @@ final class AudioEditSession: ObservableObject {
         try await next.apply(edit, processor: processor)
         let file = audioFile
         let before = list
+        let length = duration
         let (list, entry) = try await Self.changeHistory(place: place) { history in
             var list = history.listOrNew(for: file)
             let entry = list.record(edit, at: Date())
             history.setList(list)
             return (list, entry)
         }
-        try await adopt(list, expecting: next, after: before)
+        try await follow(list, expecting: next, after: before)
+        noteMade(entry, from: length)
         return entry
     }
 
@@ -232,6 +245,7 @@ final class AudioEditSession: ObservableObject {
         let file = audioFile
         let package = place.package
         let before = list
+        let length = duration
         let (list, entry) = try await Self.changeHistory(place: place) { history in
             let take = AudioEditTake(file: try AudioEditPackage.keepTake(from: url, inPackage: package), range: used)
             var list = history.listOrNew(for: file)
@@ -241,7 +255,8 @@ final class AudioEditSession: ObservableObject {
         }
         var next = timeline
         try await next.apply(entry.edit, processor: processor)
-        try await adopt(list, expecting: next, after: before)
+        try await follow(list, expecting: next, after: before)
+        noteMade(entry, from: length)
         return entry
     }
 
@@ -251,13 +266,17 @@ final class AudioEditSession: ObservableObject {
     func undo() async throws -> AudioEditEntry? {
         guard list.canUndo else { return nil }
         let file = audioFile
+        let edited = duration
         let (list, entry) = try await Self.changeHistory(place: place) { history in
             var list = history.listOrNew(for: file)
             let entry = list.undo(at: Date())
             history.setList(list)
             return (list, entry)
         }
-        try await adopt(list)
+        try await follow(list)
+        if let entry {
+            noteUndone(entry, from: edited)
+        }
         return entry
     }
 
@@ -266,13 +285,17 @@ final class AudioEditSession: ObservableObject {
     func redo() async throws -> AudioEditEntry? {
         guard list.canRedo else { return nil }
         let file = audioFile
+        let length = duration
         let (list, entry) = try await Self.changeHistory(place: place) { history in
             var list = history.listOrNew(for: file)
             let entry = list.redo(at: Date())
             history.setList(list)
             return (list, entry)
         }
-        try await adopt(list)
+        try await follow(list)
+        if let entry {
+            noteMade(entry, from: length)
+        }
         return entry
     }
 
@@ -329,13 +352,17 @@ final class AudioEditSession: ObservableObject {
     }
 
     /// Saves the edits into the book's file (`LibraryViewModel.saveAudioEdits`),
-    /// telling `progress` how far it is, then reads the history and the
-    /// audio the edits start from again: without an original, that is the
-    /// file just saved.
+    /// telling `progress` how far it is, the book's bookmarks and reading
+    /// position following the sound along `savedFileRoute`, then reads the
+    /// history and the audio the edits start from again: without an
+    /// original, that is the file just saved.
     @discardableResult
     func save(progress: (@Sendable (Double) -> Void)? = nil) async throws -> AudioEditSaveOutcome {
         guard let library else { throw AudioEditError.bookNotInLibrary }
-        let outcome = try await library.saveAudioEdits(ofBook: bookID, audioFile: audioFile, progress: progress)
+        let outcome = try await library.saveAudioEdits(ofBook: bookID, audioFile: audioFile, timeRoute: savedFileRoute, progress: progress)
+        // The file holds the audio as edited now, so the route starts here,
+        // whatever reading the history back does.
+        savedFileRoute = AudioEditorTimeMap.Route()
         audioFile = outcome.audioFile
         let file = audioFile
         let (list, policy) = try await Self.changeHistory(place: place) { history in
@@ -421,6 +448,85 @@ final class AudioEditSession: ObservableObject {
     /// base, or "" for none.
     private static func key(of list: AudioEditList) -> String {
         list.entriesOverBase.last?.id.uuidString ?? ""
+    }
+
+    // MARK: The Route From the Saved File
+
+    /// Takes `newList`, which the history now holds after an edit, an undo,
+    /// or a redo, as `adopt` does. When that fails, the history has changed
+    /// in a way the route didn't follow, so the route is no longer known.
+    private func follow(_ newList: AudioEditList, expecting expected: AudioEditTimeline? = nil, after before: AudioEditList? = nil) async throws {
+        do {
+            try await adopt(newList, expecting: expected, after: before)
+        } catch {
+            savedFileRoute = nil
+            throw error
+        }
+    }
+
+    /// Extends `savedFileRoute` by `entry`, just made or redone, which took
+    /// the audio from `before` seconds to its length now.
+    private func noteMade(_ entry: AudioEditEntry, from before: TimeInterval) {
+        savedFileRoute?.make(AudioEditorTimeMap.Crossing(entry, before: before, after: duration))
+    }
+
+    /// Extends `savedFileRoute` by `entry`, just undone, which had made the
+    /// audio `edited` seconds long; a route the undo doesn't fit no longer
+    /// describes the audio, and is dropped.
+    private func noteUndone(_ entry: AudioEditEntry, from edited: TimeInterval) {
+        guard var route = savedFileRoute else { return }
+        savedFileRoute = route.undo(AudioEditorTimeMap.Crossing(entry, before: duration, after: edited)) ? route : nil
+    }
+
+    /// The timeline `list` leaves `base` as, and the route from the book's
+    /// file, as the list says it was last saved, to that timeline
+    /// (`savedFileRoute`). The edits made since the save are crossed as they
+    /// are applied; the edits the file holds that are undone now are applied
+    /// again past the end, only to learn the lengths around them, and then
+    /// crossed as undone. The route is nil when the file holds edits the
+    /// list no longer has, or when an undone edit can't be applied again;
+    /// the timeline is made all the same.
+    private static func timelineAndRoute(
+        of list: AudioEditList,
+        over base: AudioEditBase,
+        processor: (any AudioEditProcessing)?
+    ) async throws -> (AudioEditTimeline, AudioEditorTimeMap.Route?) {
+        var timeline = base.timeline
+        // One crossing for each applied edit over the base, oldest first.
+        var crossings: [AudioEditorTimeMap.Crossing] = []
+        for entry in list.entriesOverBase {
+            let before = timeline.duration
+            try await timeline.apply(entry.edit, processor: processor)
+            crossings.append(AudioEditorTimeMap.Crossing(entry, before: before, after: timeline.duration))
+        }
+        // The file holds the list's first `saved` entries, and the base
+        // those before the first crossing, which the file therefore holds.
+        let first = min(list.baseCursor, list.cursor)
+        guard let saved = list.renderedCursor, saved >= first else { return (timeline, nil) }
+        var route = AudioEditorTimeMap.Route()
+        if saved <= list.cursor {
+            for crossing in crossings[(saved - first)...] {
+                route.make(crossing)
+            }
+            return (timeline, route)
+        }
+        var ahead = timeline
+        var held: [AudioEditorTimeMap.Crossing] = []
+        for entry in list.entries[list.cursor..<saved] {
+            let before = ahead.duration
+            do {
+                try await ahead.apply(entry.edit, processor: processor)
+            } catch {
+                return (timeline, nil)
+            }
+            held.append(AudioEditorTimeMap.Crossing(entry, before: before, after: ahead.duration))
+        }
+        // Undone newest first; with nothing made, each undo is one more of
+        // the file's edits, which a route always takes.
+        for crossing in held.reversed() {
+            _ = route.undo(crossing)
+        }
+        return (timeline, route)
     }
 
     // MARK: Helpers
