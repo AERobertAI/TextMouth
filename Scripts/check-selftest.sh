@@ -11,7 +11,13 @@
 # start a real build: the gate reaches build tools only through PATH, every
 # build tool on that PATH is a stub, and the stubs for tools the gate must
 # never call directly fail loudly. Two cases run the Makefile's own test
-# target, whose swift command is then a stub that records what it was handed.
+# target, whose swift command is then a stub that records what it was handed,
+# and one prints its build target's commands (make -n) without running them.
+# The install cases run the Makefile's install and uninstall targets, and the
+# Scripts/keep-installed-dsym.sh that install runs, without building (make -o
+# build) and never touching /Applications: the app goes to the case's own
+# Applications folder, Launch Services' tool is a stub that records its call,
+# and dwarfdump is a stub that reads the UUIDs the case planted.
 #
 # Usage: Scripts/check-selftest.sh   (or: make check-selftest)
 #
@@ -30,6 +36,27 @@ readonly RESOLVED="TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 REAL_MAKE=$(command -v make) || { echo "check-selftest: make is required" >&2; exit 1; }
 readonly REAL_MAKE
 
+# The Release app's size limit, read from check.sh, which defines it once, so
+# these cases follow the limit when it changes. The expected reports below
+# write a size of a whole number of megabytes as "<limit>.0 MB (<limit>,000,000
+# bytes)", which holds for a limit under 1,000 MB.
+APP_SIZE_LIMIT_MB=$(sed -n -E 's/^readonly APP_SIZE_LIMIT_MB=([0-9]+)$/\1/p' "$ROOT/Scripts/check.sh")
+if [[ ! $APP_SIZE_LIMIT_MB =~ ^[1-9][0-9]{0,2}$ ]]; then
+  echo "check-selftest: Scripts/check.sh must set APP_SIZE_LIMIT_MB to a whole number from 1 to 999" >&2
+  exit 1
+fi
+readonly APP_SIZE_LIMIT_MB
+readonly APP_SIZE_LIMIT_BYTES=$(( APP_SIZE_LIMIT_MB * 1000000 ))
+
+# How many installs keep their dSYMs, read from the Makefile, which defines it
+# once, so the install cases follow it when it changes.
+INSTALLED_DSYMS_KEPT=$(sed -n -E 's/^INSTALLED_DSYMS_KEPT = ([0-9]+)$/\1/p' "$ROOT/Makefile")
+if [[ ! $INSTALLED_DSYMS_KEPT =~ ^[1-9][0-9]?$ ]]; then
+  echo "check-selftest: the Makefile must set INSTALLED_DSYMS_KEPT to a whole number from 1 to 99" >&2
+  exit 1
+fi
+readonly INSTALLED_DSYMS_KEPT
+
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/textmouth-check-selftest.XXXXXX") || exit 1
 readonly WORK
 trap 'rm -rf "$WORK"' EXIT
@@ -41,6 +68,11 @@ readonly CLAUDE_TMP="$WORK/claude-tmp"        # stands in for /tmp/claude-<uid>
 readonly SESSION="selftest-session"           # stands in for a Claude Code session id
 readonly SESSION_SLOT="$CLAUDE_TMP/-selftest-project/$SESSION/scratchpad/build-slot.sh"
 readonly SWIFT_RECORDER="$WORK/swift-recorder" # a swift that records, for the Makefile cases
+# The size of the app the make stub packages unless a case says otherwise:
+# within any limit, and a number whose report shows its rounding and digit
+# groups.
+readonly DEFAULT_APP_BYTES=12345678
+readonly DEFAULT_APP_TEXT="12.3 MB (12,345,678 bytes)"
 
 first_identity=""  # identity of the committed file's first pin
 first_version=""   # that pin's version, as the gate prints it
@@ -71,6 +103,8 @@ write_stubs() {
 #   STUB_BUILD_WRITES=<file>    build copies <file> over Package.resolved
 #   STUB_BUILD_LOG=<file>       build writes <file> as xcodebuild's Release log,
 #                               build/xcodebuild-Release.log; empty writes none
+#   STUB_APP_BYTES=<number>     build packages build/TextMouth.app, of <number>
+#                               bytes (at least 600); empty packages none
 #   STUB_TEST_OUTPUT=<file>     test prints <file>
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
 # In the log and output files, @ROOT@ stands for the repository root, since
@@ -99,6 +133,16 @@ case $target in
     if [ -n "${STUB_BUILD_LOG:-}" ]; then
       mkdir -p build
       with_root "$STUB_BUILD_LOG" > build/xcodebuild-Release.log
+    fi
+    if [ -n "${STUB_APP_BYTES:-}" ]; then
+      # Like make build, replace the packaged app: a 600-byte Info.plist and
+      # an executable that brings the bundle to STUB_APP_BYTES bytes, written
+      # sparse, so that even an app over the limit takes no disk space.
+      rm -rf build/TextMouth.app
+      mkdir -p build/TextMouth.app/Contents/MacOS
+      head -c 600 /dev/zero > build/TextMouth.app/Contents/Info.plist
+      dd if=/dev/zero of=build/TextMouth.app/Contents/MacOS/TextMouth bs=1 count=0 \
+        seek=$(( STUB_APP_BYTES - 600 )) 2>/dev/null
     fi
     if [ -n "${STUB_BUILD_WRITES:-}" ]; then cp "$STUB_BUILD_WRITES" "$STUB_RESOLVED"; fi ;;
   test)
@@ -131,6 +175,37 @@ echo "TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=${TEST_RUNNER_TEXTMOUTH_PERFORMAN
 exit 0
 STUB
   chmod +x "$SWIFT_RECORDER/swift"
+
+  # A dwarfdump for the install cases: `dwarfdump --uuid <path>` prints, as
+  # a real one does for an arm64 binary, one UUID line for each line of the
+  # file a real one would read, an app's executable or a dSYM's DWARF file,
+  # where the cases write the UUIDs. It records nothing; it only answers.
+  cat > "$STUBS/dwarfdump" <<'STUB'
+#!/bin/bash
+# Stub dwarfdump for check-selftest.sh's install cases.
+path=${!#}
+case $path in
+  *.dSYM) file="$path/Contents/Resources/DWARF/TextMouth" ;;
+  *) file=$path ;;
+esac
+if [ ! -f "$file" ]; then
+  echo "error: $path: No such file or directory" >&2
+  exit 1
+fi
+while IFS= read -r uuid; do
+  [ -n "$uuid" ] && echo "UUID: $uuid (arm64) $file"
+done < "$file"
+exit 0
+STUB
+
+  # Launch Services' registration tool for the install cases, which the
+  # Makefile is handed in its place: it records the call and does nothing.
+  cat > "$STUBS/lsregister" <<'STUB'
+#!/bin/bash
+# Stub lsregister for check-selftest.sh's install cases.
+echo "lsregister $*" >> "$STUB_LOG"
+exit 0
+STUB
 
   cat > "$SLOT_STUB" <<'STUB'
 #!/bin/bash
@@ -292,6 +367,7 @@ run_gate() {
       -u TEXTMOUTH_CHECK_SIMULATE_FAILURE -u TEXTMOUTH_CHECK_SIMULATE_RESOLVED \
       PATH="$STUBS:$PATH" STUB_LOG="$stub_log" STUB_RESOLVED="$RESOLVED" \
       STUB_BUILD_LOG="$FIXTURES/build-clean.log" STUB_TEST_OUTPUT="$FIXTURES/tests-pass.log" \
+      STUB_APP_BYTES="$DEFAULT_APP_BYTES" \
       ${settings[@]+"${settings[@]}"} "${command[@]}" "$@" 2>&1)
   status=$?
 }
@@ -327,10 +403,11 @@ expect_verdict() {
 
 # plant_earlier_builds: fills the sandbox with stand-ins for what earlier
 # builds leave: Xcode's compiled code, SwiftPM's build of the test runner,
-# and the package checkouts that resolution made.
+# the package checkouts that resolution made, and the app make build
+# packaged.
 plant_earlier_builds() {
   local folder
-  for folder in build/DerivedData/Build/Products TextMouthTests/.build/debug build/DerivedData/SourcePackages/checkouts; do
+  for folder in build/DerivedData/Build/Products TextMouthTests/.build/debug build/DerivedData/SourcePackages/checkouts build/TextMouth.app/Contents; do
     mkdir -p "$sandbox/$folder"
     : > "$sandbox/$folder/stand-in"
   done
@@ -386,6 +463,7 @@ dry_run_cases() {
   expect_report "would remove the compiled code of earlier builds: build/DerivedData/Build and TextMouthTests/.build"
   expect_report "would run: make build"
   expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
+  expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB"
   expect_report "would run: make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "would repeat the performance tests' warnings and skips from build/check/test.log"
   expect_report "would require no Swift warnings in build/check/test.log"
@@ -401,6 +479,7 @@ dry_run_cases() {
   expect_status 0
   expect_present build/DerivedData/Build/Products/stand-in
   expect_present TextMouthTests/.build/debug/stand-in
+  expect_present build/TextMouth.app/Contents/stand-in
   end_case
 
   begin_case "a dry run fails when the resolution changes a version"
@@ -584,9 +663,36 @@ real_run_cases() {
   expect_report "Executed 3 tests, with 1 test skipped and 0 failures"
   refute_report "Executed 2 tests"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
+  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_LIMIT_MB MB limit"
   expect_report "no Swift warnings in build/check/test.log"
   expect_report "Package.resolved still holds the committed pins"
   expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app of exactly the size limit passes"
+  run_gate STUB_APP_BYTES="$APP_SIZE_LIMIT_BYTES"
+  expect_status 0
+  expect_report "build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,000 bytes), within the $APP_SIZE_LIMIT_MB MB limit"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app one byte over the size limit fails the gate before the tests"
+  run_gate STUB_APP_BYTES=$(( APP_SIZE_LIMIT_BYTES + 1 ))
+  expect_status 1
+  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_report "no Swift warnings in build/xcodebuild-Release.log"
+  expect_report "the limit is APP_SIZE_LIMIT_MB in Scripts/check.sh; find what grew before raising it"
+  refute_report "within the $APP_SIZE_LIMIT_MB MB limit"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,001 bytes), more than the $APP_SIZE_LIMIT_MB MB limit"
+  end_case
+
+  begin_case "a Release build that packages no app fails the gate, never measuring an earlier build's"
+  plant_earlier_builds
+  run_gate STUB_APP_BYTES=
+  expect_status 1
+  expect_commands "make generate" "make resolve-packages" "make build"
+  refute_report " MB ("
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app is missing, so the app's size is unknown"
   end_case
 
   begin_case "a Swift warning in the Release build fails the gate before the tests, naming the first five"
@@ -639,6 +745,7 @@ real_run_cases() {
   expect_absent build/DerivedData/Build
   expect_absent TextMouthTests/.build
   expect_present build/DerivedData/SourcePackages/checkouts/stand-in
+  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT"
   expect_verdict "check: PASSED"
   end_case
 
@@ -746,6 +853,166 @@ makefile_cases() {
     "TEXTMOUTH_TEST_DERIVED_DATA=" \
     "TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=(unset)"
   end_case
+
+  # make -n prints the build's commands and runs none of them.
+  begin_case "make build turns off the code coverage the scheme would build into the app"
+  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n build 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "-configuration Release"
+  expect_report "CLANG_COVERAGE_MAPPING=NO"
+  end_case
+}
+
+# A UUID of the form dwarfdump prints, made from a number, so each planted
+# build has one of its own: fake_uuid 7 is 00000007-0000-4000-8000-000000000007.
+fake_uuid() {
+  printf '%08X-0000-4000-8000-%012X' "$1" "$1"
+}
+
+# A build number of the form make build stamps, YYYYMMDDHHMMSS, made from a
+# number below 60: fake_build 7 is 20260101000007.
+fake_build() {
+  printf '202601010000%02d' "$1"
+}
+
+# plant_install_products <build number> <UUID>...: fills the sandbox with
+# what make build leaves for make install: the packaged app, build/TextMouth.app,
+# with <build number> as its CFBundleVersion, and its build's dSYM in the
+# build products. The stub dwarfdump reads each one's UUIDs, one for each
+# architecture, from its executable or DWARF file.
+plant_install_products() {
+  local build=$1
+  shift
+  local app="$sandbox/build/TextMouth.app"
+  local dsym="$sandbox/build/DerivedData/Build/Products/Release/TextMouth.app.dSYM"
+  rm -rf "$app" "$dsym"
+  mkdir -p "$app/Contents/MacOS" "$dsym/Contents/Resources/DWARF"
+  printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>CFBundleVersion</key><string>%s</string></dict></plist>\n' \
+    "$build" > "$app/Contents/Info.plist"
+  printf '%s\n' "$@" > "$app/Contents/MacOS/TextMouth"
+  printf '%s\n' "$@" > "$dsym/Contents/Resources/DWARF/TextMouth"
+}
+
+# kept_dsym <build number> <UUIDs joined by "-">: the path, in the sandbox, of
+# the dSYM make install keeps for that build.
+kept_dsym() {
+  printf 'build/installed-dSYMs/TextMouth-%s-%s.app.dSYM' "$1" "$2"
+}
+
+# run_make_install <target>: runs the Makefile's install or uninstall target
+# in the case's sandbox without building it (make -o build) and without ever
+# reaching /Applications: the app goes to the sandbox's own Applications
+# folder, Launch Services' tool is the recording stub, and dwarfdump is the
+# stub that reads the planted UUIDs. Stores the report in $output and the
+# exit status in $status.
+run_make_install() {
+  local target=$1
+  # INSTALL_DIR below must lie inside this case's sandbox, which is checked
+  # here first, so no mistake in a case can reach the real /Applications.
+  if [[ -z $sandbox || $sandbox != "$WORK"/case-* ]]; then
+    problem "refused to run make $target outside a case's sandbox: '$sandbox'"
+    output=""
+    status=1
+    return
+  fi
+  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  mkdir -p "$sandbox/Scripts" "$sandbox/Applications"
+  cp "$ROOT/Scripts/keep-installed-dsym.sh" "$sandbox/Scripts/keep-installed-dsym.sh"
+  output=$(cd "$sandbox" && env PATH="$STUBS:$PATH" STUB_LOG="$stub_log" \
+      "$REAL_MAKE" -s -o build "$target" \
+      INSTALL_DIR="$sandbox/Applications" LSREGISTER="$STUBS/lsregister" 2>&1)
+  status=$?
+}
+
+# install_cases: make install keeps the installed build's dSYM where later
+# builds leave it, for the last few installs, and make uninstall leaves them.
+install_cases() {
+  local uuid build number
+
+  begin_case "make install installs the app and keeps its dSYM, named by build number and UUID"
+  plant_install_products "$(fake_build 1)" "$(fake_uuid 1)"
+  run_make_install install
+  expect_status 0
+  expect_present Applications/TextMouth.app/Contents/MacOS/TextMouth
+  expect_present "$(kept_dsym "$(fake_build 1)" "$(fake_uuid 1)")/Contents/Resources/DWARF/TextMouth"
+  expect_commands "lsregister -f $sandbox/Applications/TextMouth.app"
+  expect_report "kept this build's dSYM, for its crash reports: $(kept_dsym "$(fake_build 1)" "$(fake_uuid 1)")"
+  expect_report "==> Installed."
+  end_case
+
+  begin_case "make install keeps the dSYMs of the last $INSTALLED_DSYMS_KEPT installs and nothing else in their folder goes"
+  mkdir -p "$sandbox/build/installed-dSYMs/Other.app.dSYM"
+  : > "$sandbox/build/installed-dSYMs/notes.txt"
+  for (( number = 1; number <= INSTALLED_DSYMS_KEPT + 2; number++ )); do
+    plant_install_products "$(fake_build "$number")" "$(fake_uuid "$number")"
+    run_make_install install
+    expect_status 0
+  done
+  for (( number = 1; number <= INSTALLED_DSYMS_KEPT + 2; number++ )); do
+    if (( number <= 2 )); then
+      expect_absent "$(kept_dsym "$(fake_build "$number")" "$(fake_uuid "$number")")"
+    else
+      expect_present "$(kept_dsym "$(fake_build "$number")" "$(fake_uuid "$number")")"
+    fi
+  done
+  expect_present build/installed-dSYMs/Other.app.dSYM
+  expect_present build/installed-dSYMs/notes.txt
+  expect_report "removed an older install's dSYM, keeping the last $INSTALLED_DSYMS_KEPT: $(kept_dsym "$(fake_build 2)" "$(fake_uuid 2)")"
+  end_case
+
+  begin_case "make install always keeps the dSYM it just kept, even beside dSYMs of later build numbers"
+  for (( number = 11; number <= 10 + INSTALLED_DSYMS_KEPT; number++ )); do
+    plant_install_products "$(fake_build "$number")" "$(fake_uuid "$number")"
+    run_make_install install
+  done
+  plant_install_products "$(fake_build 1)" "$(fake_uuid 1)"
+  run_make_install install
+  expect_status 0
+  expect_present "$(kept_dsym "$(fake_build 1)" "$(fake_uuid 1)")"
+  expect_absent "$(kept_dsym "$(fake_build 11)" "$(fake_uuid 11)")"
+  expect_present "$(kept_dsym "$(fake_build 12)" "$(fake_uuid 12)")"
+  end_case
+
+  begin_case "make install names a universal build's dSYM by all its UUIDs"
+  plant_install_products "$(fake_build 1)" "$(fake_uuid 2)" "$(fake_uuid 1)"
+  run_make_install install
+  expect_status 0
+  expect_present "$(kept_dsym "$(fake_build 1)" "$(fake_uuid 1)-$(fake_uuid 2)")"
+  end_case
+
+  begin_case "make install keeps no dSYM of another build, and still installs"
+  plant_install_products "$(fake_build 1)" "$(fake_uuid 1)"
+  printf '%s\n' "$(fake_uuid 2)" > "$sandbox/build/DerivedData/Build/Products/Release/TextMouth.app.dSYM/Contents/Resources/DWARF/TextMouth"
+  run_make_install install
+  expect_status 0
+  expect_present Applications/TextMouth.app/Contents/MacOS/TextMouth
+  expect_absent "$(kept_dsym "$(fake_build 1)" "$(fake_uuid 1)")"
+  expect_report "warning: kept no dSYM for the installed app: build/DerivedData/Build/Products/Release/TextMouth.app.dSYM is another build's (UUID $(fake_uuid 2); the installed app's is $(fake_uuid 1))"
+  end_case
+
+  begin_case "make install of a build that made no dSYM installs and says it kept none"
+  plant_install_products "$(fake_build 1)" "$(fake_uuid 1)"
+  rm -rf "$sandbox/build/DerivedData/Build/Products/Release/TextMouth.app.dSYM"
+  run_make_install install
+  expect_status 0
+  expect_present Applications/TextMouth.app/Contents/MacOS/TextMouth
+  expect_absent build/installed-dSYMs
+  expect_report "warning: kept no dSYM for the installed app: the build made no dSYM at build/DerivedData/Build/Products/Release/TextMouth.app.dSYM"
+  end_case
+
+  begin_case "make uninstall removes the installed app and leaves the kept dSYMs"
+  plant_install_products "$(fake_build 1)" "$(fake_uuid 1)"
+  run_make_install install
+  : > "$stub_log"
+  run_make_install uninstall
+  expect_status 0
+  expect_absent Applications/TextMouth.app
+  expect_present "$(kept_dsym "$(fake_build 1)" "$(fake_uuid 1)")/Contents/Resources/DWARF/TextMouth"
+  expect_commands
+  expect_report "The dSYMs in build/installed-dSYMs stay"
+  end_case
 }
 
 # main: runs every case and prints the totals; succeeds only when all pass.
@@ -757,6 +1024,7 @@ main() {
   build_slot_cases
   real_run_cases
   makefile_cases
+  install_cases
   printf '%d passed, %d failed\n' "$passed" "$failed"
   (( failed == 0 ))
 }

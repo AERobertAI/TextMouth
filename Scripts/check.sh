@@ -8,7 +8,11 @@
 #      them (make resolve-packages) and verifies that every pin's package,
 #      version, revision, and URL still matches the committed file;
 #   3. builds the Release app from scratch (make build) and requires that
-#      the build reports no Swift warning;
+#      the build reports no Swift warning, and that the app it packages,
+#      build/TextMouth.app, which `make install` copies, is no larger than
+#      APP_SIZE_LIMIT_MB megabytes, a limit this script sets once. It reports
+#      the app's size either way, so growth is noticed long before the limit
+#      is reached;
 #   4. runs the hosted XCTest suite with the Makefile's flags (make test),
 #      built from scratch in the same folder, and requires that this build
 #      reports no Swift warning either. The performance baselines tests run
@@ -18,8 +22,13 @@
 #      and why they skipped, if they did, as on a Mac other than the one the
 #      baselines were recorded on; neither fails it;
 # and finally confirms that no step changed the pins. It fails on any
-# generation, resolution, compile, or test error, on any Swift warning, and
-# when the test run reports no executed tests.
+# generation, resolution, compile, or test error, on any Swift warning, on a
+# Release app larger than its limit, and when the test run reports no
+# executed tests.
+#
+# The app's size is the sum of the sizes of the files in it, the number
+# Finder gives as its size in bytes, and a megabyte is a million bytes, as
+# Finder counts them.
 #
 # A Swift warning is a line in which the Swift compiler reports one, as
 # "<file>.swift:<line>:<column>: warning: ..." or, about its own settings,
@@ -93,6 +102,15 @@ readonly EARLIER_RUNNER_BUILD="TextMouthTests/.build"
 # The log `make build` keeps xcodebuild's output in (BUILD_LOG in the
 # Makefile, for the Release configuration).
 readonly RELEASE_BUILD_LOG="build/xcodebuild-Release.log"
+# The app `make build` packages (APP_BUNDLE in the Makefile), which `make
+# install` copies to /Applications.
+readonly RELEASE_APP="build/TextMouth.app"
+# The largest the Release app may be, in megabytes of a million bytes. Its
+# developer wants it no larger than 50 MB, with 25 MB or less the aim; it
+# was 33 MB before the size work of October 2026 and 11 MB after it. The
+# gate fails above this limit, so the app cannot quietly grow past it. This
+# is the limit's only definition: Scripts/check-selftest.sh reads it here.
+readonly APP_SIZE_LIMIT_MB=50
 # A line in which the Swift compiler reports a warning (see the header).
 readonly SWIFT_WARNING_PATTERN='^(.+\.swift:[0-9]+:[0-9]+|<unknown>:0): warning: '
 # How many warnings a step that fails on them names.
@@ -361,16 +379,16 @@ run_step() {
 }
 
 # remove_earlier_builds: removes the compiled code earlier builds left, so
-# every source compiles in this run, and the Release log an earlier build
-# left, so no warning check can read it. A dry run only says what it would
-# remove.
+# every source compiles in this run, and the Release log and app an earlier
+# build left, so no warning or size check can read them. A dry run only says
+# what it would remove.
 remove_earlier_builds() {
   local removed="$EARLIER_XCODE_BUILD and $EARLIER_RUNNER_BUILD"
   if (( dry_run )); then
     detail "would remove the compiled code of earlier builds: $removed"
     return 0
   fi
-  rm -rf "$EARLIER_XCODE_BUILD" "$EARLIER_RUNNER_BUILD" "$RELEASE_BUILD_LOG" ||
+  rm -rf "$EARLIER_XCODE_BUILD" "$EARLIER_RUNNER_BUILD" "$RELEASE_BUILD_LOG" "$RELEASE_APP" ||
     fail "step $step_number of $STEP_COUNT ($step_title): cannot remove the compiled code of earlier builds: $removed"
   detail "removed the compiled code of earlier builds, so every source compiles: $removed"
 }
@@ -413,6 +431,52 @@ require_no_swift_warnings() {
   detail_lines "| " "$(head -n "$WARNINGS_NAMED" <<<"$warnings")"
   detail "the gate allows no Swift warning, about concurrency or anything else"
   fail "step $step_number of $STEP_COUNT ($step_title): $(count_of "$count" "Swift warning")"
+}
+
+# grouped <whole number>: prints the number with a comma between groups of
+# three digits, such as 12,345,678, so that it reads clearly in speech and
+# braille.
+grouped() {
+  local digits=$1 groups=""
+  while (( ${#digits} > 3 )); do
+    groups=",${digits: -3}$groups"
+    digits=${digits:0:${#digits}-3}
+  done
+  printf '%s%s' "$digits" "$groups"
+}
+
+# describe_size <bytes>: prints a size in megabytes, to a tenth, followed by
+# the exact bytes, such as "12.3 MB (12,345,678 bytes)". The bytes settle a
+# size that rounds to the limit itself.
+describe_size() {
+  printf '%s MB (%s bytes)' "$(awk -v bytes="$1" 'BEGIN { printf "%.1f", bytes / 1000000 }')" "$(grouped "$1")"
+}
+
+# app_size <app>: prints the size of the app bundle at <app> in bytes: the
+# sum of the sizes of the regular files in it, as Finder adds them up.
+app_size() {
+  find "$1" -type f -exec stat -f %z {} + | awk '{ total += $1 } END { printf "%.0f\n", total }'
+}
+
+# require_app_within_size_limit: reports the size of the app the Release
+# build packaged, and fails the gate when the app is missing, cannot be
+# measured, or is larger than APP_SIZE_LIMIT_MB megabytes.
+require_app_within_size_limit() {
+  local bytes limit=$(( APP_SIZE_LIMIT_MB * 1000000 ))
+  if (( dry_run )); then
+    detail "would require $RELEASE_APP to be no larger than $APP_SIZE_LIMIT_MB MB"
+    return 0
+  fi
+  [[ -d $RELEASE_APP ]] ||
+    fail "step $step_number of $STEP_COUNT ($step_title): $RELEASE_APP is missing, so the app's size is unknown"
+  if ! bytes=$(app_size "$RELEASE_APP") || [[ ! $bytes =~ ^[0-9]+$ ]]; then
+    fail "step $step_number of $STEP_COUNT ($step_title): cannot measure the size of $RELEASE_APP"
+  fi
+  if (( bytes > limit )); then
+    detail "the limit is APP_SIZE_LIMIT_MB in Scripts/check.sh; find what grew before raising it"
+    fail "step $step_number of $STEP_COUNT ($step_title): $RELEASE_APP is $(describe_size "$bytes"), more than the $APP_SIZE_LIMIT_MB MB limit"
+  fi
+  detail "$RELEASE_APP is $(describe_size "$bytes"), within the $APP_SIZE_LIMIT_MB MB limit"
 }
 
 # show_failure_lines <log>: prints the lines of a failed step's log a reader
@@ -544,6 +608,7 @@ main() {
   remove_earlier_builds
   run_step build yes make build || step_failed build $?
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
+  require_app_within_size_limit
 
   begin_step 4 "run the hosted XCTest suite"
   run_step test yes make test "TEST_DERIVED_DATA=$DERIVED_DATA" PERFORMANCE_STRICT=1 || step_failed test $?
