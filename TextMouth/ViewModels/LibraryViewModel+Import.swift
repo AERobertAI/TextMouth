@@ -171,8 +171,10 @@ extension LibraryViewModel {
 
     /// Queues `operation`, one import, on the import queue. While a
     /// data-directory move holds imports back, the overlay says why this one
-    /// waits, until it starts and says what it imports.
-    private func enqueueImport(_ operation: @escaping @Sendable () -> Void) {
+    /// waits, until it starts and says what it imports. Internal, not
+    /// private, so a recording's save queues the same way
+    /// (LibraryViewModel+Recording).
+    func enqueueImport(_ operation: @escaping @Sendable () -> Void) {
         importOperationQueue.enqueue(whileHeld: { [weak self] in
             guard let self else { return }
             DispatchQueue.main.async {

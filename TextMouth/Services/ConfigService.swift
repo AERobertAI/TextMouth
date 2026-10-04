@@ -313,6 +313,18 @@ final class ConfigService: ObservableObject {
         /// "*-=_~#"; spaces, letters, and digits are ignored. Empty, like
         /// any empty text here, keeps the current symbols.
         var repeatedSymbolSet: String?
+        /// The microphone the Record window records from, by its unique
+        /// identifier (`RecordingInputChoice`). TextMouth writes it empty
+        /// until one is chosen, when recordings use macOS's default input;
+        /// empty, like any empty text here, keeps the current choice.
+        var recordingInputDeviceID: String = ""
+        /// What happens to a recording's original take once the recording
+        /// is saved as a book (`RecordingOriginalPolicy.Choice`): "keep",
+        /// "delete", or "deleteAfterDays". Empty keeps the current choice.
+        var recordingOriginalPolicy: String = ""
+        /// How many days an original take is kept when the choice is
+        /// "deleteAfterDays", from 1 to 365.
+        var recordingOriginalDays: Double?
         /// The keyboard shortcuts of each action, keyed by the action's name
         /// as Settings shows it, each a list of shortcuts such as
         /// "option+shift+command+b" (`KeyBinding.configText`); an empty list
@@ -407,6 +419,9 @@ final class ConfigService: ObservableObject {
                 rule: SettingsPolicy.repeatedSymbolThreshold
             )
             repeatedSymbolSet = fields.optionalCharacterSet(.repeatedSymbolSet, rule: SettingsPolicy.repeatedSymbolSet)
+            recordingInputDeviceID = fields.value(.recordingInputDeviceID, default: fallback.recordingInputDeviceID)
+            recordingOriginalPolicy = fields.rawChoice(.recordingOriginalPolicy, rule: SettingsPolicy.recordingOriginalPolicy)
+            recordingOriginalDays = fields.optionalNumber(.recordingOriginalDays, rule: SettingsPolicy.recordingOriginalDays)
             keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
             logLocation = fields.rawChoice(.logLocation, rule: SettingsPolicy.logLocation)
             // An identifier that cannot be one is repaired to empty, and
@@ -466,6 +481,9 @@ final class ConfigService: ObservableObject {
                 ])
                 // Sounds.
                 mirrored += sameNames(["soundEffectsEnabled", "soundEffectsVolume", "soundEffectAssignments"])
+                // Recording: the microphone the Record window remembers, and
+                // how long a recording's original take is kept.
+                mirrored += sameNames(RecordingPreferences.keys)
                 // Miscellaneous.
                 mirrored += sameNames([
                     "bluetoothMonitoringEnabled", "bluetoothDisconnectDelay", "restartTimerGestureEnabled",

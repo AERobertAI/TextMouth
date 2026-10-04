@@ -3,10 +3,17 @@ import AppKit
 
 enum TextImportPolicy {
     static func defaultTitle(for date: Date = Date()) -> String {
+        timestampedTitle("Paste", at: date)
+    }
+
+    /// `name` followed by `date` to the minute, as "Paste 2026-10-04 06:30":
+    /// the default title of a book TextMouth makes itself, from pasted text
+    /// or from a recording, so each is told apart by when it was made.
+    static func timestampedTitle(_ name: String, at date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        return "Paste \(formatter.string(from: date))"
+        return "\(name) \(formatter.string(from: date))"
     }
 
     static func canAdd(text: String) -> Bool {
@@ -20,10 +27,19 @@ enum TextImportPolicy {
     /// Produces a single safe path component while keeping the book's
     /// display title unchanged in metadata.
     static func textFilename(for title: String) -> String {
+        fileName(for: title, extension: "txt")
+    }
+
+    /// A single safe path component for the file of a book titled `title`,
+    /// ending in `fileExtension`: the title, with each run of characters a
+    /// file name cannot hold, or that Finder shows differently, made a
+    /// hyphen, and "Untitled" for a title of none of the others. The book's
+    /// display title stays as it was, in its record.
+    static func fileName(for title: String, extension fileExtension: String) -> String {
         let forbidden = CharacterSet(charactersIn: "/\\:?%*|\"<>")
         let pieces = resolvedTitle(title).components(separatedBy: forbidden)
         let base = pieces.filter { !$0.isEmpty }.joined(separator: "-")
-        return "\(base.isEmpty ? "Untitled" : base).txt"
+        return "\(base.isEmpty ? "Untitled" : base).\(fileExtension)"
     }
 }
 

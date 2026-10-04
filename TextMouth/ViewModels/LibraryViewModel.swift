@@ -197,8 +197,9 @@ final class LibraryViewModel: ObservableObject {
     /// The startup the launch check defers until the library is there (FR02):
     /// the directory structure, the library's identity, the sweep of what
     /// interrupted imports left and of the reading texts this Mac kept that
-    /// went unused for a day, the index with its repair, the observers,
-    /// and the background maintenance. It runs once: at launch, or on the
+    /// went unused for a day, the index with its repair, the sweep of the
+    /// recordings' original takes whose time is up, the observers, and the
+    /// background maintenance. It runs once: at launch, or on the
     /// Try Again that first finds the library.
     func startLibrary() {
         guard !hasStartedLibrary else { return }
@@ -217,6 +218,9 @@ final class LibraryViewModel: ObservableObject {
         // enters recovery with a provisional library and saves nothing.
         loadLibraryIndex()
         setupDataDirectoryChangeHandler()
+        // Delete the recordings' original takes whose time is up, off the
+        // main thread, downloading nothing (FR04).
+        sweepRecordingTakesInBackground()
         importOperationQueue.onActivityChanged = { [weak self] activeCount in
             guard let self else { return }
             self.isImporting = activeCount > 0

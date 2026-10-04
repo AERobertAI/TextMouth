@@ -118,7 +118,10 @@ final class StorageDestinationSettingsTests: XCTestCase {
         let view = makeStorageSettingsShowingAMove(copiedPercent: 60)
 
         try withHostedControls(view) { controls in
-            let labels = controls.filter { $0.role == .button }.map(\.label)
+            // A stepper's arrows, such as the Recordings group's days
+            // stepper has, are AppKit buttons without labels: they say
+            // nothing about whether SwiftUI exposes its own buttons.
+            let labels = controls.filter { $0.role == .button && !$0.label.isEmpty }.map(\.label)
             guard !labels.isEmpty else {
                 throw XCTSkip("SwiftUI exposed no AppKit button to accessibility in this run")
             }

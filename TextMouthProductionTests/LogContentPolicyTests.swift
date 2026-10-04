@@ -273,6 +273,12 @@ final class LogContentPolicyTests: XCTestCase {
         "DATA_DIRECTORY_AVAILABLE", "DATA_DIRECTORY_FOUND", "DATA_DIRECTORY_LOST", "DATA_DIRECTORY_MOVE",
         "DATA_DIRECTORY_SWITCH", "DATA_DIRECTORY_UNAVAILABLE", "DATA_DIRECTORY_UNMOUNTED",
         "LIBRARY_IDENTITY", "LIBRARY_SESSION", "READING_STATS_FILE", "SUBSTITUTIONS_FILE",
+        // Recording from a microphone (FR04): a take starting, stopping, or ending on its own, and
+        // a capture that fell back to the microphone's own format; a take saved as a book, and the
+        // original takes the policy removed.
+        "RECORDING_CAPTURE_FAILED", "RECORDING_FORMAT_FALLBACK", "RECORDING_INTERRUPTED", "RECORDING_STARTED",
+        "RECORDING_START_FAILED", "RECORDING_STOPPED", "RECORDING_STOP_FAILED",
+        "RECORDING_SAVED", "RECORDING_TAKES_SWEPT", "RECORDING_TAKE_REMOVAL_FAILED", "RECORDING_WINDOW_REFUSED",
         // Cloud libraries (FR02): a book's download and the removal of its download, the library's
         // Download Now and Remove Download, Keep on This Mac and the downloads of kept books, the
         // reader's downloads and working copies, a maintenance pass leaving books in the cloud,

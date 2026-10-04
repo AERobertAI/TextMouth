@@ -435,13 +435,16 @@ extension FileImportService {
     /// Whether the entry `name` in a package can be the book's own content:
     /// anything that is not hidden and is not one of the files TextMouth
     /// keeps beside the content (bookInfo.json and the content index beside
-    /// it, the content.md text cache, the cachedAudio folder, and the
-    /// removal marker).
+    /// it, the content.md text cache, a recording's origin record and its
+    /// original take (`BookOrigin`), the cachedAudio folder, and the removal
+    /// marker).
     static func isPackageContentName(_ name: String) -> Bool {
         !name.hasPrefix(".")
             && name != "bookInfo.json"
             && name != TextMouthPaths.contentIndexFileName
             && name != "content.md"
+            && name != BookOrigin.fileName
+            && name != BookOrigin.originalTakeFileName
             && name != "cachedAudio"
             && name != TextMouthPaths.removedFromLibraryMarkerName
     }

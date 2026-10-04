@@ -64,6 +64,16 @@ TEST_DERIVED_DATA =
 # which reaches the test host without its TEST_RUNNER_ prefix.
 PERFORMANCE_STRICT =
 
+# Signs an app with this Mac's "TextMouth Developer" identity, which
+# `make signing-identity` makes once, or leaves its ad hoc signature with a
+# note when there is none. macOS keeps the microphone permission of an app
+# signed with the same certificate from one build to the next; an ad hoc
+# signature changes with every build, so macOS would ask again each time.
+# `make build` signs the app it packages, so `make install`, `make run`, and
+# `make open` all use the signed app. The hosted tests build their own app
+# with signing off, as before.
+SIGN_APP = Scripts/make-signing-identity.sh --sign-app
+
 # Package resolution uses the same derived data folder as `make build`, so the
 # build reuses the package checkouts that resolution creates.
 RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
@@ -71,7 +81,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest perf-baselines open xcode help
+.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -91,6 +101,7 @@ help:
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
 	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, and the baseline-recording script in seconds, without building"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
+	@echo "  make signing-identity - Once per Mac: make the identity builds are signed with, so macOS remembers the microphone permission"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
 	@echo "  make resolve-packages - Resolve Swift packages exactly as Package.resolved pins them"
 	@echo "  make update-packages  - Re-resolve after changing a package version in project.yml"
@@ -142,6 +153,8 @@ build: generate
 	@test -d "$(BUILT_APP)"
 	@rm -rf "$(APP_BUNDLE)"
 	cp -R "$(BUILT_APP)" "$(APP_BUNDLE)"
+	@# Sign the packaged copy, leaving the build products as Xcode made them.
+	@$(SIGN_APP) "$(APP_BUNDLE)"
 	@echo "==> App built: $(APP_BUNDLE)"
 
 ## Build Debug
@@ -205,6 +218,12 @@ check-selftest:
 ## TEST_DERIVED_DATA when it names a folder.
 perf-baselines: generate
 	@TEXTMOUTH_TEST_DERIVED_DATA="$(TEST_DERIVED_DATA)" Scripts/perf-baselines.sh
+
+## Make the self-signed code-signing identity "TextMouth Developer" in the
+## login keychain, once per Mac, so that every build make build signs keeps
+## macOS's microphone permission; safe to run again, when it changes nothing
+signing-identity:
+	@Scripts/make-signing-identity.sh
 
 ## Open the project in Xcode
 xcode: generate
