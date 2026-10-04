@@ -1,5 +1,22 @@
 import Foundation
 
+/// A sheet over the audio editor window (FR04). One shows at a time, so a
+/// sheet never opens over another, and VoiceOver always knows where it is.
+enum AudioEditorSheet: Identifiable, Equatable {
+    /// A question with one text field.
+    case prompt(AudioEditorPrompt)
+    /// The list of markers and pauses, each with its commands.
+    case markers
+
+    /// Tells sheets apart.
+    var id: String {
+        switch self {
+        case .prompt(let prompt): return "prompt-\(prompt.id)"
+        case .markers: return "markers"
+        }
+    }
+}
+
 /// A question the audio editor asks in a sheet with one text field (FR04):
 /// a time to go to. The sheet shows the question's title, labels its field,
 /// explains what to type, and says what's wrong with an answer without

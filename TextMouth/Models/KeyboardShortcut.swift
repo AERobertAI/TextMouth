@@ -55,6 +55,17 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case editorPreviousPause = "Audio Editor: Previous Pause"
     case editorNextPause = "Audio Editor: Next Pause"
     case editorWhereAmI = "Audio Editor: Where Am I?"
+    case editorMarkIn = "Audio Editor: Mark In"
+    case editorMarkOut = "Audio Editor: Mark Out"
+    case editorSelectToPreviousPause = "Audio Editor: Select to Previous Pause"
+    case editorSelectToNextPause = "Audio Editor: Select to Next Pause"
+    case editorSelectChapter = "Audio Editor: Select Chapter"
+    case editorSelectAll = "Audio Editor: Select All"
+    case editorClearSelection = "Audio Editor: Clear Selection"
+    case editorSpeakSelection = "Audio Editor: Speak Selection"
+    case editorPlaySelection = "Audio Editor: Play Selection"
+    case editorAddMarker = "Audio Editor: Add Marker"
+    case editorShowMarkers = "Audio Editor: Markers and Pauses…"
 
     var id: String { rawValue }
 
@@ -115,7 +126,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
              .editorSkipBackLong, .editorSkipForwardLong, .editorSkipBackShort, .editorSkipForwardShort,
              .editorGoToStart, .editorGoToEnd, .editorGoToTime, .editorPreviousChapter, .editorNextChapter,
-             .editorPreviousPause, .editorNextPause, .editorWhereAmI:
+             .editorPreviousPause, .editorNextPause, .editorWhereAmI,
+             .editorMarkIn, .editorMarkOut, .editorSelectToPreviousPause, .editorSelectToNextPause,
+             .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
+             .editorPlaySelection, .editorAddMarker, .editorShowMarkers:
             return .audioEditorShortcut
         }
     }
@@ -140,7 +154,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
              .editorSkipBackLong, .editorSkipForwardLong, .editorSkipBackShort, .editorSkipForwardShort,
              .editorGoToStart, .editorGoToEnd, .editorGoToTime, .editorPreviousChapter, .editorNextChapter,
-             .editorPreviousPause, .editorNextPause, .editorWhereAmI:
+             .editorPreviousPause, .editorNextPause, .editorWhereAmI,
+             .editorMarkIn, .editorMarkOut, .editorSelectToPreviousPause, .editorSelectToNextPause,
+             .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
+             .editorPlaySelection, .editorAddMarker, .editorShowMarkers:
             return Self.audioEditorCategory
         }
     }
@@ -537,6 +554,19 @@ extension ShortcutAction {
             .editorPreviousPause: [KeyBinding(key: "n", shift: true)],
             .editorNextPause: [KeyBinding(key: "n")],
             .editorWhereAmI: [KeyBinding(key: "w")],
+            // In and Out, as in video editors; the selection said in full
+            // with Shift-W, beside Where Am I.
+            .editorMarkIn: [KeyBinding(key: "i")],
+            .editorMarkOut: [KeyBinding(key: "o")],
+            .editorSelectToPreviousPause: [KeyBinding(key: "n", option: true, shift: true)],
+            .editorSelectToNextPause: [KeyBinding(key: "n", option: true)],
+            .editorSelectChapter: [KeyBinding(key: "c")],
+            .editorSelectAll: [KeyBinding(key: "a", command: true)],
+            .editorClearSelection: [KeyBinding(key: "escape")],
+            .editorSpeakSelection: [KeyBinding(key: "w", shift: true)],
+            .editorPlaySelection: [KeyBinding(key: "p")],
+            .editorAddMarker: [KeyBinding(key: "m")],
+            .editorShowMarkers: [KeyBinding(key: "m", shift: true)],
         ]
     }
 }

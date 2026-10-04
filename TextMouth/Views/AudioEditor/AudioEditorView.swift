@@ -20,31 +20,45 @@ struct AudioEditorView: View {
                 timeDisplay
                 statusLine
                 messageLine
-                AudioEditorCommandGroup(heading: AudioEditorWording.listenHeading, actions: Self.listenActions, model: model)
+                ForEach(Self.groups) { group in
+                    AudioEditorCommandGroup(heading: group.heading, actions: group.actions, model: model)
+                }
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minWidth: 640, idealWidth: 760, minHeight: 520, idealHeight: 640)
-        .sheet(item: $model.prompt) { prompt in
-            AudioEditorPromptSheet(
-                prompt: prompt,
-                initialText: model.initialText(for: prompt),
-                submit: { model.answer(prompt, with: $0) },
-                cancel: { model.prompt = nil }
-            )
+        .sheet(item: $model.sheet) { sheet in
+            switch sheet {
+            case .prompt(let prompt):
+                AudioEditorPromptSheet(
+                    prompt: prompt,
+                    initialText: model.initialText(for: prompt),
+                    submit: { model.answer(prompt, with: $0) },
+                    cancel: { model.sheet = nil }
+                )
+            case .markers:
+                AudioEditorMarkersSheet(model: model)
+            }
         }
     }
 
-    /// The commands that play and move the cursor, in the order their
-    /// buttons show.
-    static let listenActions: [ShortcutAction] = [
-        .editorPlayPause, .editorStop,
-        .editorSkipBack, .editorSkipForward, .editorSkipBackLong, .editorSkipForwardLong,
-        .editorSkipBackShort, .editorSkipForwardShort,
-        .editorGoToStart, .editorGoToEnd, .editorGoToTime,
-        .editorPreviousChapter, .editorNextChapter, .editorPreviousPause, .editorNextPause,
-        .editorWhereAmI,
+    /// The window's groups of command buttons, in order, each under its
+    /// heading: every editor command has a button in one of them.
+    static let groups: [AudioEditorCommandList] = [
+        AudioEditorCommandList(heading: AudioEditorWording.listenHeading, actions: [
+            .editorPlayPause, .editorStop,
+            .editorSkipBack, .editorSkipForward, .editorSkipBackLong, .editorSkipForwardLong,
+            .editorSkipBackShort, .editorSkipForwardShort,
+            .editorGoToStart, .editorGoToEnd, .editorGoToTime,
+            .editorPreviousChapter, .editorNextChapter, .editorPreviousPause, .editorNextPause,
+            .editorWhereAmI,
+        ]),
+        AudioEditorCommandList(heading: AudioEditorWording.selectHeading, actions: [
+            .editorMarkIn, .editorMarkOut, .editorSelectToPreviousPause, .editorSelectToNextPause,
+            .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
+            .editorPlaySelection, .editorAddMarker, .editorShowMarkers,
+        ]),
     ]
 
     // MARK: - Pieces

@@ -22,6 +22,18 @@ struct AudioEditorCommandButton: View {
     }
 }
 
+/// The commands of one of the window's groups of buttons, under its
+/// heading (FR04).
+struct AudioEditorCommandList: Identifiable, Sendable {
+    /// The group's heading.
+    let heading: String
+    /// Its commands, in the order their buttons show.
+    let actions: [ShortcutAction]
+
+    /// Groups are told apart by their headings.
+    var id: String { heading }
+}
+
 /// A group of the editor's command buttons under a heading (FR04), laid out
 /// in as many columns as the window's width allows. VoiceOver meets the
 /// heading, then the buttons in order, so its heading navigation moves

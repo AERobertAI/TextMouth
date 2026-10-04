@@ -252,10 +252,127 @@ enum AudioEditorWording {
         "Problem: \(problem)"
     }
 
+    // MARK: - The Selection
+
+    /// The selection as the status line says it, in clock times, which a
+    /// braille display shows in few cells: "selection from 11:58 to
+    /// 12:04.3, 6.3 seconds".
+    static func selectionPart(_ range: AudioTimeRange) -> String {
+        "selection from \(clock(range.start)) to \(clock(range.end)), \(spoken(range.duration))"
+    }
+
+    /// The selection said in full, in words, as Speak Selection says it.
+    static func selectionSentence(_ range: AudioTimeRange) -> String {
+        "Selection from \(spoken(range.start)) to \(spoken(range.end)); \(spoken(range.duration)) long."
+    }
+
+    /// Said as a selection is made: how long it is.
+    static func selected(_ range: AudioTimeRange) -> String {
+        "Selected \(spoken(range.duration))."
+    }
+
+    /// Said as In is marked, with the selection it makes, if any.
+    static func markedIn(at time: TimeInterval, selection: AudioTimeRange?) -> String {
+        "In at \(spoken(time)).\(selection.map { " " + selected($0) } ?? "")"
+    }
+
+    /// Said as Out is marked, with the selection it makes, if any.
+    static func markedOut(at time: TimeInterval, selection: AudioTimeRange?) -> String {
+        "Out at \(spoken(time)).\(selection.map { " " + selected($0) } ?? "")"
+    }
+
+    /// Said as Select Chapter selects a chapter.
+    static func selectedChapter(number: Int, title: String, length: TimeInterval) -> String {
+        "Selected chapter \(number): \(title), \(spoken(length))."
+    }
+
+    /// Said as Select Chapter selects the audio before the first marker.
+    static func selectedBeforeFirstChapter(_ length: TimeInterval) -> String {
+        "Selected the \(spoken(length)) before chapter 1."
+    }
+
+    /// Said as Select All selects everything.
+    static func selectedAll(_ duration: TimeInterval) -> String {
+        "Selected all \(spoken(duration))."
+    }
+
+    /// Said when a command needs a selection and there is none.
+    static let noSelection = "Nothing is selected."
+
+    /// Said as the selection is cleared.
+    static let selectionCleared = "Selection cleared."
+
+    // MARK: - Markers
+
+    /// A marker as the list and the announcements name it: "Marker 3" or
+    /// "Marker 3, Intro".
+    static func markerName(_ number: Int, named name: String) -> String {
+        name.isEmpty ? "Marker \(number)" : "Marker \(number), \(name)"
+    }
+
+    /// Said as a marker is dropped.
+    static func markerAdded(_ number: Int, at time: TimeInterval) -> String {
+        "Marker \(number) at \(spoken(time))."
+    }
+
+    /// Said as the cursor goes to a marker, and its row's label.
+    static func marker(_ number: Int, named name: String, at time: TimeInterval) -> String {
+        "\(markerName(number, named: name)), at \(spoken(time))."
+    }
+
+    /// Said as a marker is named, or its name taken away.
+    static func markerRenamed(_ number: Int, named name: String) -> String {
+        name.isEmpty ? "Marker \(number) has no name now." : "Marker \(number) named \(name)."
+    }
+
+    /// Said as a marker is deleted.
+    static func markerDeleted(_ number: Int, named name: String) -> String {
+        "\(markerName(number, named: name)) deleted."
+    }
+
+    /// A pause's row in the list: "Pause 2, 1.3 seconds, at 1 minute, 4.2
+    /// seconds".
+    static func pauseRow(_ number: Int, _ pause: AudioEditorPause) -> String {
+        "Pause \(number), \(spoken(pause.duration)), at \(spoken(pause.start))"
+    }
+
+    /// The marker list's title.
+    static let markersTitle = "Markers and Pauses"
+    /// The heading of the markers in the list.
+    static let markersHeading = "Markers"
+    /// The heading of the pauses in the list.
+    static let pausesHeading = "Pauses"
+    /// Shown when no marker has been dropped.
+    static let noMarkers = "No markers yet. Add Marker drops one at the cursor, even while the audio plays."
+    /// Shown when the audio has no pauses.
+    static let noPauses = "No pauses were found."
+    /// The button that goes to a marker or a pause.
+    static let goToButton = "Go To"
+    /// The button that selects a pause.
+    static let selectButton = "Select"
+    /// The button that names a marker.
+    static let renameButton = "Rename"
+    /// The button that deletes a marker.
+    static let deleteButton = "Delete"
+    /// The button that closes a list.
+    static let closeButton = "Close"
+    /// The button that keeps a new name.
+    static let saveNameButton = "Save Name"
+    /// The label of a marker's name field.
+    static let nameFieldLabel = "Name"
+
+    /// A button of a row's, named with the row's subject, so VoiceOver
+    /// tells one row's Delete from the next: "Delete Marker 3".
+    static func rowButton(_ title: String, _ subject: String) -> String {
+        "\(title) \(subject)"
+    }
+
     // MARK: - The Commands
 
     /// The names of the editor's groups of buttons, as headings.
     static let listenHeading = "Listen and Move"
+    /// The heading of the selection's and the markers' buttons.
+    static let selectHeading = "Select and Mark"
 
     /// What `action`'s button does, as its hint says, before its shortcut;
     /// empty for an action that isn't the editor's.
@@ -277,6 +394,19 @@ enum AudioEditorWording {
         case .editorPreviousPause: return "Moves the cursor to where the sound after the previous pause begins."
         case .editorNextPause: return "Moves the cursor to where the sound after the next pause begins."
         case .editorWhereAmI: return "Says where the cursor is, in which chapter, and what is selected."
+        case .editorMarkIn: return "Marks the selection's start at the cursor."
+        case .editorMarkOut: return "Marks the selection's end at the cursor."
+        case .editorSelectToPreviousPause:
+            return "Selects from where the sound after the previous pause begins to the cursor."
+        case .editorSelectToNextPause:
+            return "Selects from the cursor to where the sound after the next pause begins."
+        case .editorSelectChapter: return "Selects the chapter the cursor is in."
+        case .editorSelectAll: return "Selects all of the audio."
+        case .editorClearSelection: return "Clears the selection."
+        case .editorSpeakSelection: return "Says where the selection starts and ends, and how long it is."
+        case .editorPlaySelection: return "Plays the selection, and stops at its end."
+        case .editorAddMarker: return "Drops a marker at the cursor, even while the audio plays."
+        case .editorShowMarkers: return "Lists the markers and the pauses, to go to, name, select, or delete them."
         default: return ""
         }
     }

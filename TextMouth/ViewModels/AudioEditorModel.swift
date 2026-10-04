@@ -15,8 +15,10 @@ import Combine
 /// player the new preview at the same place.
 ///
 /// The commands live in extensions by what they do: listening and moving
-/// (`AudioEditorModel+Listening`). The state they change is declared here,
-/// and only the model's own commands change it.
+/// (`AudioEditorModel+Listening`), selecting and markers
+/// (`AudioEditorModel+Selecting`), and the dispatch of commands from
+/// buttons and shortcuts (`AudioEditorModel+Commands`). The state they
+/// change is declared here, and only the model's own commands change it.
 @MainActor
 final class AudioEditorModel: ObservableObject {
     // MARK: The Book
@@ -60,9 +62,18 @@ final class AudioEditorModel: ObservableObject {
     @Published var pauses: [AudioEditorPause] = []
     /// Where the search for pauses is.
     @Published var pauseSearch: PauseSearch = .finding
-    /// The question a sheet asks now, such as the time Go to Time goes to;
-    /// nil while none is asked.
-    @Published var prompt: AudioEditorPrompt?
+    /// The sheet over the window now, if any: a question with one field,
+    /// or a list. One at a time, so a sheet never opens over another.
+    @Published var sheet: AudioEditorSheet?
+    /// The selection's start, marked with In; nil while unmarked, when a
+    /// marked Out selects from the start of the audio.
+    @Published var selectionStart: TimeInterval?
+    /// The selection's end, marked with Out; nil while unmarked, when a
+    /// marked In selects to the end of the audio.
+    @Published var selectionEnd: TimeInterval?
+    /// The markers dropped, in the order they were dropped; listed in time
+    /// order (`orderedMarkers`).
+    @Published var markers: [AudioEditorMarker] = []
 
     /// Where the search for pauses is.
     enum PauseSearch: Equatable {
@@ -180,14 +191,37 @@ final class AudioEditorModel: ObservableObject {
     }
 
     /// The status line: whether the audio is playing, where the cursor is,
-    /// of how long the audio lasts, and in which chapter.
+    /// of how long the audio lasts, in which chapter, and what is selected.
     var statusSentence: String {
         var parts = isPlaying ? [AudioEditorWording.playing] : []
         parts.append(positionValue)
         if let index = chapterIndex(at: cursor), chapters.indices.contains(index) {
             parts.append(AudioEditorWording.inChapter(number: index + 1, title: chapters[index].title))
         }
+        if let selection {
+            parts.append(AudioEditorWording.selectionPart(selection))
+        }
         return AudioEditorWording.status(parts)
+    }
+
+    /// The question asked in a sheet now, if the sheet asks one.
+    var prompt: AudioEditorPrompt? {
+        get {
+            if case .prompt(let prompt) = sheet { return prompt }
+            return nil
+        }
+        set { sheet = newValue.map(AudioEditorSheet.prompt) }
+    }
+
+    /// What is selected: from In, or the start, to Out, or the end, once
+    /// either is marked and they make a stretch of some length; nil
+    /// otherwise.
+    var selection: AudioTimeRange? {
+        guard selectionStart != nil || selectionEnd != nil else { return nil }
+        let start = clamped(selectionStart ?? 0)
+        let end = clamped(selectionEnd ?? duration)
+        guard end - start > Self.timeTolerance else { return nil }
+        return AudioTimeRange(start: start, end: end)
     }
 
     /// How close two times must be to count as the same place: half a
