@@ -417,8 +417,15 @@ final class FeedTestWorld {
     let center: FeedCenter
 
     /// A world whose engine works on its own when `worksOnItsOwn`, made in
-    /// folders `test` removes when it ends.
-    init(_ test: XCTestCase, label: String, worksOnItsOwn: Bool = false) throws {
+    /// folders `test` removes when it ends. Finished books mark items played
+    /// as `statistics` counts them, or, without it, as a statistics service
+    /// of the world's own does.
+    init(
+        _ test: XCTestCase,
+        label: String,
+        worksOnItsOwn: Bool = false,
+        statistics: ReadingStatsService? = nil
+    ) throws {
         // Registered first, so it runs last, once the engine has stopped.
         let index = try LibraryIndexSandbox.capture()
         test.addTeardownBlock { index.restore() }
@@ -436,7 +443,7 @@ final class FeedTestWorld {
         let lowPowerMode = lowPowerMode
         let freeSpace = freeSpace
         let cloud = cloud
-        stats = ReadingStatsService(fileURL: sandbox.appendingPathComponent("reading_stats.json"))
+        stats = statistics ?? ReadingStatsService(fileURL: sandbox.appendingPathComponent("reading_stats.json"))
         let stats = stats
         resumeFolder = sandbox.appendingPathComponent("Resume Data", isDirectory: true)
         downloadsFolder = sandbox.appendingPathComponent("Feed Downloads", isDirectory: true)
