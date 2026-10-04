@@ -129,7 +129,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    Settings and substitution rules are written as they change. Each
     ///    write's failure reaches the failure center before its flush ends.
     /// 2. With nothing unsaved, TextMouth quits: `applicationWillTerminate`
-    ///    then shuts down as it always has, in its order: menu observation
+    ///    then shuts down as it always has, in its order: a transcription
+    ///    under way is cancelled (FR05), menu observation
     ///    stops, the config watcher stops, pending saves are flushed again,
     ///    the listening session ends, the statistics are flushed, and their
     ///    timer stops.
@@ -147,6 +148,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        // A transcription under way stops, asking nothing: it writes
+        // nothing until its transcript is saved, so the book is left as it
+        // was (FR05).
+        TranscriptionJobCenter.shared.cancel()
         menuVisibilityManager.stopObserving()
         ConfigService.shared.shutdown()
         // Another Mac sharing the library no longer sees this one as open.

@@ -229,6 +229,10 @@ final class ReaderViewModel: ObservableObject {
     /// reader was still loading the text it had (FR05): shown once loading
     /// ends (`showEditedTextWaitingForLoad()`); nil the rest of the time.
     var editedTextWaitingForLoad: DocumentContent?
+    /// An audiobook's transcript text when it changed while this reader was
+    /// still loading (FR05): shown once loading ends
+    /// (`showTranscriptWaitingForLoad()`); nil the rest of the time.
+    var transcriptWaitingForLoad: TranscriptTextChange?
     /// Whether this reader's last load stopped because the book's content.md
     /// held an edit TextMouth could not take (`BookTextEditPending`, FR05),
     /// so the reader opens the book with the edit taken next
@@ -1073,8 +1077,10 @@ final class ReaderViewModel: ObservableObject {
         // off the main thread, so Play finds it prepared.
         prepareOpenedChapterSpeech()
         // An edit of the book's text taken while it loaded replaces the
-        // text it loaded (FR05).
+        // text it loaded (FR05), as does an audiobook's transcript text
+        // saved or deleted meanwhile.
         showEditedTextWaitingForLoad()
+        showTranscriptWaitingForLoad()
     }
 
     /// Shows why the book at `filePath` could not be read, in place of the

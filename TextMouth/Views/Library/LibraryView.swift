@@ -180,6 +180,9 @@ struct LibraryView: View {
     @State private var exportModel: BookExportModel?
     /// This window's transcription dialogs (FR05).
     @StateObject private var transcription = TranscriptionPresenter()
+    /// Which audiobooks are transcribed or being transcribed (FR05),
+    /// observed so the rows' notes follow.
+    @ObservedObject private var transcribedBooks = TranscribedBooks.shared
     /// Whether this Library window has closed. SwiftUI keeps a closed window
     /// and its views for the rest of the session, and every change to the
     /// library would still rebuild this list nobody can see, so a closed
@@ -554,8 +557,9 @@ struct LibraryView: View {
             selectedBooks: { selectedBooks },
             hostWindow: hostWindow
         ))
-        // The Transcribe Audio sheet the rows' commands open (FR05).
-        .modifier(TranscriptionPresentation(presenter: transcription))
+        // The Transcribe Audio sheet the rows' commands open, and the rows'
+        // transcription notes kept current (FR05).
+        .modifier(LibraryTranscriptionSupport(presenter: transcription, library: libraryViewModel))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {
@@ -894,6 +898,7 @@ struct LibraryView: View {
             removalPreferences: removalPreferences,
             livePosition: libraryViewModel.livePositions.entry(for: book.id),
             transcriptionCommands: LibraryTranscriptionCommand.commands(for: targets),
+            transcriptionNote: transcribedBooks.note(for: book.id),
             actions: actions
         )
         .equatable()

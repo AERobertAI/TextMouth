@@ -422,6 +422,8 @@ final class ReaderRefreshTests: XCTestCase {
                 log?.entries.append("move ended")
             case .textReplaced:
                 log?.entries.append("text replaced")
+            case .transcriptReplaced:
+                log?.entries.append("transcript replaced")
             }
         }
         defer { log.subscription?.cancel() }

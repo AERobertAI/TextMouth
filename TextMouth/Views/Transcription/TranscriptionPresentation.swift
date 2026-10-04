@@ -66,3 +66,28 @@ struct TranscriptionPresentation: ViewModifier {
             }
     }
 }
+
+/// What a Library window does for transcription (FR05): shows its
+/// transcription dialogs, and keeps the rows' notes current, looking for
+/// the books' transcripts again as the window appears, as the number of
+/// books changes, and as TextMouth becomes active, when another Mac sharing
+/// the library may have transcribed a book (`TranscribedBooks`).
+struct LibraryTranscriptionSupport: ViewModifier {
+    /// The window's dialogs.
+    @ObservedObject var presenter: TranscriptionPresenter
+    /// The library whose books are looked at.
+    let library: LibraryViewModel
+
+    func body(content: Content) -> some View {
+        content
+            .modifier(TranscriptionPresentation(presenter: presenter))
+            .task(id: library.library.books.count) {
+                await TranscribedBooks.shared.refresh(library.library.books)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                Task {
+                    await TranscribedBooks.shared.refresh(library.library.books)
+                }
+            }
+    }
+}

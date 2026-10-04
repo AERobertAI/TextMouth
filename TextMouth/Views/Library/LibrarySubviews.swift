@@ -278,6 +278,9 @@ struct BookRow: View {
     /// "Kept on this Mac", shown and spoken after the cloud note. The list
     /// passes true only for a kept book in a cloud library.
     var isKeptOnThisMac: Bool = false
+    /// The book's transcription note (FR05): "Transcribed" or
+    /// "Transcribing", shown and spoken after the cloud notes; nil for none.
+    var transcriptionNote: TranscriptionRowNote? = nil
     /// The cloud commands of the row's context menu, which are also the
     /// row's VoiceOver actions (VO-Command-Space), under the same names
     /// (FR02).
@@ -346,6 +349,11 @@ struct BookRow: View {
                     // "Kept on this Mac", after the cloud note.
                     if isKeptOnThisMac {
                         BookKeptNote()
+                    }
+
+                    // "Transcribed" or "Transcribing", after the cloud notes (FR05).
+                    if let transcriptionNote {
+                        RowNoteBadge(symbolName: transcriptionNote.symbolName, text: transcriptionNote.text)
                     }
                 }
                 HStack {
@@ -417,6 +425,9 @@ struct BookRow: View {
         }
         if isKeptOnThisMac {
             parts.append(KeptOnThisMacNote.text)
+        }
+        if let transcriptionNote {
+            parts.append(transcriptionNote.text)
         }
         let besideDownloadPercentage = cloudState?.speaksPercentage ?? false
         if let progress = Self.spokenProgress(for: shownBook, besideDownloadPercentage: besideDownloadPercentage) {
@@ -561,6 +572,9 @@ struct LibraryBookListRow: View, Equatable {
     /// The transcription commands for `targets` (FR05): context menu items
     /// and VoiceOver actions alike.
     var transcriptionCommands: [LibraryTranscriptionCommand] = []
+    /// The book's transcription note, "Transcribed" or "Transcribing"
+    /// (FR05), or nil for none.
+    var transcriptionNote: TranscriptionRowNote? = nil
     /// What the commands do. Never compared.
     let actions: LibraryBookRowActions
 
@@ -579,6 +593,7 @@ struct LibraryBookListRow: View, Equatable {
             && lhs.removalPreferences == rhs.removalPreferences
             && lhs.livePosition === rhs.livePosition
             && lhs.transcriptionCommands == rhs.transcriptionCommands
+            && lhs.transcriptionNote == rhs.transcriptionNote
     }
 
     var body: some View {
@@ -591,6 +606,7 @@ struct LibraryBookListRow: View, Equatable {
             isEditSelected: isEditSelected,
             cloudState: cloudState,
             isKeptOnThisMac: isKeptOnThisMac,
+            transcriptionNote: transcriptionNote,
             cloudCommands: cloudCommands,
             performCloudCommand: actions.performCloudCommand,
             transcriptionCommands: transcriptionCommands,

@@ -65,8 +65,7 @@ struct TranscriptionSheet: View {
                 transcribeButton
             }
         case .transcribing:
-            ProgressView(TranscriptionWording.transcribing)
-                .progressViewStyle(.linear)
+            transcriptionProgress
             buttonRow {
                 stopButton
             }
@@ -135,6 +134,46 @@ struct TranscriptionSheet: View {
         }
         .progressViewStyle(.linear)
         .accessibilityLabel(line)
+    }
+
+    /// The transcription under way: the file being transcribed and how much
+    /// of the audio is done, how long it has run, and its progress bar,
+    /// which VoiceOver moves to and reads as "40 percent, file 3 of 12".
+    @ViewBuilder
+    private var transcriptionProgress: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(model.progressLines, id: \.self) { line in
+                Text(line)
+            }
+            if let started = model.transcriptionStartedAt {
+                // Ticks once a second, so the time shown keeps up between
+                // the transcription's reports.
+                TimelineView(.periodic(from: started, by: 1)) { context in
+                    Text(TranscriptionWording.elapsedLine(context.date.timeIntervalSince(started)))
+                }
+            }
+            transcriptionProgressBar
+                .focusing(.progress, first: model.focusTarget, $focused)
+        }
+    }
+
+    /// The transcription's progress bar: how much of the book's audio is
+    /// done, or, before its first file begins, a bar that only moves.
+    private var transcriptionProgressBar: some View {
+        Group {
+            if let progress = model.progress {
+                ProgressView(value: progress.fractionDone) {
+                    Text(TranscriptionWording.progressLabel)
+                }
+            } else {
+                ProgressView {
+                    Text(TranscriptionWording.progressLabel)
+                }
+            }
+        }
+        .progressViewStyle(.linear)
+        .accessibilityLabel(TranscriptionWording.progressLabel)
+        .accessibilityValue(model.progressValue)
     }
 
     /// The row of buttons at the sheet's foot, to the right.

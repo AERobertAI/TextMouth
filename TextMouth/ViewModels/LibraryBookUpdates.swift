@@ -16,11 +16,17 @@ enum LibraryBookEvent {
     /// indexed, near where they were reading. The row's new analysis
     /// arrived before this, as an update.
     case textReplaced(bookID: UUID, content: DocumentContent)
+    /// An audiobook's transcript text changed (FR05): it was transcribed,
+    /// transcribed again, or its transcript deleted, which leaves `text`
+    /// nil. Readers show the text as the book plays on, its audio and
+    /// position untouched.
+    case transcriptReplaced(bookID: UUID, text: TranscriptText?)
 
     /// The book the event is about.
     var bookID: UUID {
         switch self {
-        case .packageWillMove(let bookID), .packageMoveEnded(let bookID), .textReplaced(let bookID, _):
+        case .packageWillMove(let bookID), .packageMoveEnded(let bookID), .textReplaced(let bookID, _),
+             .transcriptReplaced(let bookID, _):
             return bookID
         case .updated(let update):
             return update.book.id
@@ -175,6 +181,14 @@ final class LibraryBookUpdates {
     func textReplaced(bookID: UUID, with content: DocumentContent) {
         guard watches[bookID] != nil else { return }
         events.send(.textReplaced(bookID: bookID, content: content))
+    }
+
+    /// Tells the readers of the audiobook `bookID`, when it is watched, that
+    /// its transcript text is now `text`, or that it has none (FR05). Call
+    /// it once the transcript is saved, or deleted, in the book's package.
+    func transcriptReplaced(bookID: UUID, with text: TranscriptText?) {
+        guard watches[bookID] != nil else { return }
+        events.send(.transcriptReplaced(bookID: bookID, text: text))
     }
 
     // MARK: - Package Moves

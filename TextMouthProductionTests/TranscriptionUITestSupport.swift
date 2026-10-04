@@ -134,17 +134,23 @@ extension XCTestCase {
 
     /// A transcription center whose engine follows `script`, each file's
     /// sentences by the file's name, saying each after `pause`, or refusing
-    /// with `refusal`: it never reaches the system's recognizer.
+    /// with `refusal`: it never reaches the system's recognizer. It records
+    /// transcribed books in `transcribedBooks`, a store of the test's own
+    /// unless given, never the app's.
     @MainActor
     func makeScriptedCenter(
         script: [String: [TranscriptSentence]],
         pause: Duration = .zero,
-        refusal: TranscriptionError? = nil
+        refusal: TranscriptionError? = nil,
+        transcribedBooks: TranscribedBooks = TranscribedBooks()
     ) -> TranscriptionJobCenter {
-        TranscriptionJobCenter(service: TranscriptionService(
-            engine: ScriptedTranscriptionEngine(sentences: script, pause: pause, refusal: refusal),
-            languagesToTry: { ["en-US"] }
-        ))
+        TranscriptionJobCenter(
+            service: TranscriptionService(
+                engine: ScriptedTranscriptionEngine(sentences: script, pause: pause, refusal: refusal),
+                languagesToTry: { ["en-US"] }
+            ),
+            transcribedBooks: transcribedBooks
+        )
     }
 
     /// Waits, yielding the main actor, until `condition` holds or `timeout`

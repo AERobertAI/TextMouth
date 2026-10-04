@@ -96,7 +96,7 @@ struct BookCloudNote: View {
 
     var body: some View {
         if let note = state.visibleNote {
-            CloudNoteBadge(symbolName: state.noteSymbolName, text: note)
+            RowNoteBadge(symbolName: state.noteSymbolName, text: note)
         }
     }
 }
@@ -106,14 +106,14 @@ struct BookCloudNote: View {
 /// this view adds nothing to what VoiceOver reads.
 struct BookKeptNote: View {
     var body: some View {
-        CloudNoteBadge(symbolName: KeptOnThisMacNote.symbolName, text: KeptOnThisMacNote.text)
+        RowNoteBadge(symbolName: KeptOnThisMacNote.symbolName, text: KeptOnThisMacNote.text)
     }
 }
 
-/// The outlined badge a library row's cloud notes are drawn in: a small
-/// picture, hidden from VoiceOver since it only repeats the words, and the
-/// words themselves.
-private struct CloudNoteBadge: View {
+/// The outlined badge a library row's notes are drawn in, its cloud notes
+/// and its transcription note (FR05): a small picture, hidden from
+/// VoiceOver since it only repeats the words, and the words themselves.
+struct RowNoteBadge: View {
     /// The SF Symbol drawn before the words, if any.
     let symbolName: String?
     /// The note's words.

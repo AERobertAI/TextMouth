@@ -157,13 +157,63 @@ enum TranscriptionWording {
 
     // MARK: Progress
 
-    /// The sheet's line while the book is transcribed.
-    static let transcribing = "Transcribing…"
+    /// Which file is being transcribed: "File 3 of 12", or, once every file
+    /// is done, "All 12 files".
+    static func fileLine(_ progress: TranscriptionProgress) -> String {
+        guard progress.fileIndex < progress.fileCount else {
+            return "All \(CountWording.phrase(progress.fileCount, singular: "file", plural: "files"))"
+        }
+        return "File \(progress.fileIndex + 1) of \(progress.fileCount)"
+    }
+
+    /// How much of the audio is done: "40 minutes of 6 hours, 12 minutes
+    /// transcribed".
+    static func secondsLine(_ progress: TranscriptionProgress) -> String {
+        "\(TimeFormatting.spoken(progress.secondsDone)) of \(TimeFormatting.spoken(progress.secondsTotal)) transcribed"
+    }
+
+    /// How long the transcription has run: "Elapsed: 12 seconds".
+    static func elapsedLine(_ seconds: TimeInterval) -> String {
+        "Elapsed: \(TimeFormatting.spoken(seconds))"
+    }
+
+    /// What the sheet says before the first file has begun, while the
+    /// system loads its speech model.
+    static let starting = "Starting…"
+
+    /// The progress bar's label.
+    static let progressLabel = "Transcription progress"
+
+    /// The progress bar's value, which VoiceOver reads: "40 percent, file 3
+    /// of 12", or "Starting" before the first file has begun.
+    static func progressValue(_ progress: TranscriptionProgress?) -> String {
+        guard let progress else { return "Starting" }
+        let file = fileLine(progress)
+        return "\(progress.percentDone) percent, \(file.prefix(1).lowercased() + file.dropFirst())"
+    }
 
     /// What the sheet's Cancel does while the book is transcribed.
     static let stopHint = "Stops transcribing. The book stays as it was."
 
     // MARK: What VoiceOver Hears
+
+    /// A transcription began: "Transcribing Moby-Dick, about 1 minute.", or,
+    /// before the audio's length is known, "Transcribing Moby-Dick."
+    static func started(bookTitle: String, audioSeconds: TimeInterval?) -> String {
+        guard let estimate = TranscriptionEstimate.words(forAudio: audioSeconds) else {
+            return "Transcribing \(bookTitle)."
+        }
+        return "Transcribing \(bookTitle), \(estimate)."
+    }
+
+    /// The quarters a transcription is announced at, in percent.
+    static let milestones = [25, 50, 75]
+
+    /// A transcription passed a quarter: "Moby-Dick: 25 percent
+    /// transcribed."
+    static func milestone(bookTitle: String, percent: Int) -> String {
+        "\(bookTitle): \(percent) percent transcribed."
+    }
 
     /// A transcription ended with the transcript saved: "Transcribed
     /// Moby-Dick: 7,077 words in 51 seconds." The count is written with the
@@ -181,6 +231,13 @@ enum TranscriptionWording {
         }
         return "Transcription stopped: \(error.localizedDescription)"
     }
+
+    // MARK: The Library Row
+
+    /// The note after a transcribed book's title, shown and spoken.
+    static let transcribedNote = "Transcribed"
+    /// The note while the book is being transcribed.
+    static let transcribingNote = "Transcribing"
 
     // MARK: Helpers
 

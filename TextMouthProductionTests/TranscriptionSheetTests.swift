@@ -355,7 +355,7 @@ final class TranscriptionSheetTests: XCTestCase {
 
         XCTAssertEqual(model.phase, .transcribing)
         XCTAssertEqual(model.heading, "Transcribing Breakwater Notes")
-        XCTAssertEqual(model.focusTarget, .stop)
+        XCTAssertEqual(model.focusTarget, .progress)
         XCTAssertEqual(center.current?.bookID, book.id)
         let ended = await eventuallyHolds { closed }
         XCTAssertTrue(ended, "the sheet never closed")
@@ -365,9 +365,9 @@ final class TranscriptionSheetTests: XCTestCase {
         }
         XCTAssertEqual(transcript.wordCount, 17)
         XCTAssertEqual(transcript.files.flatMap(\.sentences).count, 3)
-        XCTAssertEqual(announcements.messages.count, 1)
+        XCTAssertEqual(announcements.messages.first, "Transcribing Breakwater Notes.")
         XCTAssertTrue(
-            announcements.messages.first?.hasPrefix("Transcribed Breakwater Notes: 17 words in ") == true,
+            announcements.messages.last?.hasPrefix("Transcribed Breakwater Notes: 17 words in ") == true,
             "\(announcements.messages)"
         )
         guard case .finished(let words, _)? = center.lastEnding?.ending else {
@@ -395,7 +395,7 @@ final class TranscriptionSheetTests: XCTestCase {
         let ended = await eventuallyHolds { closed }
         XCTAssertTrue(ended, "the sheet never closed")
         XCTAssertEqual(center.lastEnding?.ending, .cancelled)
-        XCTAssertEqual(announcements.messages, ["Transcription was cancelled."])
+        XCTAssertEqual(announcements.messages, ["Transcribing Long Pier Recordings.", "Transcription was cancelled."])
         XCTAssertFalse(FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: book.tmbDirectory).path))
     }
 
@@ -419,7 +419,10 @@ final class TranscriptionSheetTests: XCTestCase {
         XCTAssertEqual(model.phase, .failed("Transcription stopped: the recognizer stopped."))
         XCTAssertEqual(model.focusTarget, .close)
         XCTAssertNil(model.announcement, "the center announced it already")
-        XCTAssertEqual(announcements.messages, ["Transcription stopped: the recognizer stopped."])
+        XCTAssertEqual(announcements.messages, [
+            "Transcribing Breakwater Notes.",
+            "Transcription stopped: the recognizer stopped.",
+        ])
         XCTAssertFalse(closed)
         model.escape()
         XCTAssertTrue(closed)

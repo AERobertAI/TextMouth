@@ -122,6 +122,8 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         case transcribe
         /// Cancel, closing the sheet without transcribing.
         case cancel
+        /// The progress bar of the transcription under way.
+        case progress
         /// Cancel, stopping the transcription under way.
         case stop
         /// OK, closing a sheet that says why nothing can be transcribed.
@@ -160,6 +162,11 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     /// The title of another book being transcribed, which keeps Transcribe
     /// unavailable until it finishes.
     @Published private(set) var busyTitle: String?
+    /// How far the book's transcription has come, while the sheet shows
+    /// it: nil until its first file begins.
+    @Published private(set) var progress: TranscriptionProgress?
+    /// When the book's transcription began, while the sheet shows it.
+    @Published private(set) var transcriptionStartedAt: Date?
 
     /// The window the sheet sits on, where announcements come from.
     weak var window: NSWindow?
@@ -239,8 +246,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         }
         if let job = services.center.current {
             if job.bookID == book.id {
-                watchedJobID = job.id
-                phase = .transcribing
+                watch(job)
                 return
             }
             busyTitle = job.bookTitle
@@ -336,6 +342,20 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         busyTitle.map(TranscriptionWording.busy(bookTitle:))
     }
 
+    /// The transcription's progress lines, shown above its progress bar:
+    /// the file being transcribed, then how much of the audio is done; or,
+    /// before the first file begins, that it is starting.
+    var progressLines: [String] {
+        guard let progress else { return [TranscriptionWording.starting] }
+        return [TranscriptionWording.fileLine(progress), TranscriptionWording.secondsLine(progress)]
+    }
+
+    /// The progress bar's value, which VoiceOver reads: "40 percent, file 3
+    /// of 12".
+    var progressValue: String {
+        TranscriptionWording.progressValue(progress)
+    }
+
     /// The download's progress line, while the model downloads.
     var downloadLine: String? {
         guard case .downloading(let fraction) = modelState else { return nil }
@@ -382,8 +402,8 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     /// of the sheet as it is now, which does what the sheet is there for.
     /// Download while the model is missing, Cancel Download while it
     /// downloads, Transcribe once it can be pressed and Cancel until then,
-    /// Cancel while a transcription runs, and the one button of a sheet
-    /// that says why. Nil while the sheet checks the model.
+    /// the progress bar while a transcription runs, and the one button of a
+    /// sheet that says why. Nil while the sheet checks the model.
     var focusTarget: FocusTarget? {
         switch phase {
         case .checking:
@@ -393,7 +413,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         case .failed:
             return .close
         case .transcribing:
-            return .stop
+            return .progress
         case .ready:
             if offersDownload { return .download }
             if downloadLine != nil { return .cancelDownload }
@@ -433,12 +453,19 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     func transcribe() {
         guard canTranscribe, let book, let language, let library else { return }
         let started = services.center.start(book, language: language, library: library, window: window)
-        if started {
-            watchedJobID = services.center.current?.id
-            phase = .transcribing
+        if started, let job = services.center.current {
+            watch(job)
         } else {
             busyTitle = services.center.current?.bookTitle
         }
+    }
+
+    /// Shows `job`, the book's transcription under way, until it ends.
+    private func watch(_ job: TranscriptionJob) {
+        watchedJobID = job.id
+        transcriptionStartedAt = job.startedAt
+        progress = job.progress
+        phase = .transcribing
     }
 
     /// Cancels the book's transcription under way. The sheet closes once it
@@ -448,9 +475,13 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         services.center.cancel()
     }
 
-    /// Follows the transcription under way: another book's finishing frees
-    /// Transcribe for this one.
+    /// Follows the transcription under way: the book's own moves the
+    /// progress shown, and another book's finishing frees Transcribe for
+    /// this one.
     private func transcriptionChanged(_ job: TranscriptionJob?) {
+        if let job, job.id == watchedJobID, progress != job.progress {
+            progress = job.progress
+        }
         if job == nil, busyTitle != nil {
             busyTitle = nil
         }
