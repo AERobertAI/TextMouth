@@ -17,7 +17,11 @@
 # Scripts/keep-installed-dsym.sh that install runs, without building (make -o
 # build) and never touching /Applications: the app goes to the case's own
 # Applications folder, Launch Services' tool is a stub that records its call,
-# and dwarfdump is a stub that reads the UUIDs the case planted.
+# and dwarfdump is a stub that reads the UUIDs the case planted. The signing
+# cases run Scripts/make-signing-identity.sh: one for real, twice, against a
+# throwaway keychain the case creates unlocked, so no password is ever asked
+# for and the login keychain is never touched; the others with stub security
+# and codesign commands.
 #
 # Usage: Scripts/check-selftest.sh   (or: make check-selftest)
 #
@@ -68,6 +72,7 @@ readonly CLAUDE_TMP="$WORK/claude-tmp"        # stands in for /tmp/claude-<uid>
 readonly SESSION="selftest-session"           # stands in for a Claude Code session id
 readonly SESSION_SLOT="$CLAUDE_TMP/-selftest-project/$SESSION/scratchpad/build-slot.sh"
 readonly SWIFT_RECORDER="$WORK/swift-recorder" # a swift that records, for the Makefile cases
+readonly SIGNING_STUBS="$WORK/signing-stubs"   # security and codesign, for the signing cases
 # The size of the app the make stub packages unless a case says otherwise:
 # within any limit, and a number whose report shows its rounding and digit
 # groups.
@@ -1015,6 +1020,154 @@ install_cases() {
   end_case
 }
 
+# write_signing_stubs: creates the security and codesign stubs for the
+# signing cases, in a folder of their own, so no other case meets them. The
+# security stub answers `find-identity` as the real one does, with one
+# "TextMouth Developer" identity whose SHA-1 is STUB_IDENTITY_HASH, or none
+# when that is empty. The codesign stub records its call; it signs, exiting
+# with STUB_CODESIGN_STATUS (default 0), and displays the designated
+# requirement a self-signed identity gives.
+write_signing_stubs() {
+  mkdir -p "$SIGNING_STUBS"
+  cat > "$SIGNING_STUBS/security" <<'STUB'
+#!/bin/bash
+# Stub security for check-selftest.sh's signing cases.
+echo "security $*" >> "$STUB_LOG"
+if [ "${1:-}" = find-identity ]; then
+  echo "Policy: Code Signing"
+  echo "  Matching identities"
+  if [ -n "${STUB_IDENTITY_HASH:-}" ]; then
+    echo "  1) $STUB_IDENTITY_HASH \"TextMouth Developer\" (CSSMERR_TP_NOT_TRUSTED)"
+    echo "     1 identities found"
+  else
+    echo "     0 identities found"
+  fi
+  echo ""
+  echo "  Valid identities only"
+  echo "     0 valid identities found"
+  exit 0
+fi
+echo "stub: the signing script must not run security $1 when it signs" >&2
+exit 97
+STUB
+  cat > "$SIGNING_STUBS/codesign" <<'STUB'
+#!/bin/bash
+# Stub codesign for check-selftest.sh's signing cases.
+echo "codesign $*" >> "$STUB_LOG"
+case " $* " in
+  *" --display "*)
+    hash=$(tr 'A-F' 'a-f' <<<"${STUB_IDENTITY_HASH:-}")
+    echo "designated => identifier \"com.textmouth.TextMouth\" and certificate leaf = H\"$hash\"" ;;
+  *)
+    exit "${STUB_CODESIGN_STATUS:-0}" ;;
+esac
+exit 0
+STUB
+  chmod +x "$SIGNING_STUBS"/*
+}
+
+# run_signing_script [NAME=value...] -- [arguments...]: runs the case's copy of
+# make-signing-identity.sh with the signing stubs first on PATH and the given
+# variables, storing the report in $output and the exit status in $status.
+run_signing_script() {
+  local -a settings=()
+  while [[ $# -gt 0 && $1 != -- ]]; do
+    settings+=("$1")
+    shift
+  done
+  [[ $# -gt 0 ]] && shift
+  mkdir -p "$sandbox/Scripts"
+  cp "$ROOT/Scripts/make-signing-identity.sh" "$sandbox/Scripts/make-signing-identity.sh"
+  output=$(cd "$sandbox" && env PATH="$SIGNING_STUBS:$PATH" STUB_LOG="$stub_log" \
+      ${settings[@]+"${settings[@]}"} ./Scripts/make-signing-identity.sh "$@" 2>&1)
+  status=$?
+}
+
+# identities_in <keychain>: prints how many "TextMouth Developer" code-signing
+# identities <keychain> holds, and the SHA-1 of the first, if any.
+identities_in() {
+  security find-identity -p codesigning "$1" 2>/dev/null |
+    awk '/"TextMouth Developer"/ { count++; if (count == 1) first = $2 } END { print count + 0, first }'
+}
+
+# signing_identity_cases: make-signing-identity.sh makes the identity once,
+# in a throwaway keychain that no prompt can guard, and signs an app with it
+# or leaves the app's ad hoc signature; make build runs it on the app it
+# packages.
+signing_identity_cases() {
+  local keychain first second
+  write_signing_stubs
+
+  begin_case "make-signing-identity.sh makes the identity once, and a second run changes nothing"
+  # The real security and OpenSSL, on a keychain of the case's own: created
+  # with a known password, unlocked, and never locked by a timeout, so
+  # nothing can ask for a password. The login keychain is never touched.
+  keychain="$sandbox/selftest.keychain-db"
+  if security create-keychain -p selftest "$keychain" >/dev/null 2>&1 &&
+     security set-keychain-settings "$keychain" >/dev/null 2>&1; then
+    mkdir -p "$sandbox/Scripts"
+    cp "$ROOT/Scripts/make-signing-identity.sh" "$sandbox/Scripts/make-signing-identity.sh"
+    output=$(cd "$sandbox" && TEXTMOUTH_SIGNING_KEYCHAIN="$keychain" ./Scripts/make-signing-identity.sh 2>&1)
+    status=$?
+    expect_status 0
+    expect_report "Created the signing identity \"TextMouth Developer\""
+    first=$(identities_in "$keychain")
+    [[ $first == 1\ * ]] || problem "after the first run the keychain held '$first' identities, expected 1"
+
+    output=$(cd "$sandbox" && TEXTMOUTH_SIGNING_KEYCHAIN="$keychain" ./Scripts/make-signing-identity.sh 2>&1)
+    status=$?
+    expect_status 0
+    expect_report "is already in $keychain"
+    expect_report "nothing to do"
+    second=$(identities_in "$keychain")
+    [[ $second == "$first" ]] || problem "the second run changed the keychain's identities from '$first' to '$second'"
+    security delete-keychain "$keychain" >/dev/null 2>&1
+  else
+    problem "security could not make a throwaway keychain at $keychain"
+  fi
+  end_case
+
+  begin_case "make-signing-identity.sh --sign-app leaves the ad hoc signature, with a note, when there is no identity"
+  mkdir -p "$sandbox/TextMouth.app/Contents/MacOS"
+  run_signing_script STUB_IDENTITY_HASH= -- --sign-app TextMouth.app
+  expect_status 0
+  expect_report "note: this Mac has no \"TextMouth Developer\" signing identity, so TextMouth.app keeps its ad hoc"
+  expect_report "Run make signing-identity once to make one."
+  expect_commands "security find-identity -p codesigning"
+  end_case
+
+  begin_case "make-signing-identity.sh --sign-app signs by the identity's hash, keeping the build's entitlements"
+  mkdir -p "$sandbox/TextMouth.app/Contents/MacOS"
+  run_signing_script STUB_IDENTITY_HASH=E534CDBBF5662D052E8EF84D0781B0E89FC70D8D -- --sign-app TextMouth.app
+  expect_status 0
+  expect_commands "security find-identity -p codesigning" \
+    "codesign --force --sign E534CDBBF5662D052E8EF84D0781B0E89FC70D8D --preserve-metadata=entitlements --timestamp=none TextMouth.app" \
+    "codesign --display --requirements - TextMouth.app"
+  expect_report "==> Signed TextMouth.app with \"TextMouth Developer\"; its designated requirement: identifier \"com.textmouth.TextMouth\" and certificate leaf = H\"e534cdbbf5662d052e8ef84d0781b0e89fc70d8d\""
+  end_case
+
+  begin_case "make-signing-identity.sh --sign-app fails, saying why, when codesign cannot use the identity"
+  mkdir -p "$sandbox/TextMouth.app/Contents/MacOS"
+  run_signing_script STUB_IDENTITY_HASH=E534CDBBF5662D052E8EF84D0781B0E89FC70D8D STUB_CODESIGN_STATUS=1 -- --sign-app TextMouth.app
+  expect_status 1
+  expect_report "codesign could not sign TextMouth.app with \"TextMouth Developer\""
+  expect_report "security unlock-keychain"
+  refute_report "==> Signed"
+  end_case
+
+  # make -n prints the targets' commands and runs none of them.
+  begin_case "make build signs the app it packages, and make signing-identity makes the identity"
+  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n build signing-identity 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "Scripts/make-signing-identity.sh --sign-app \"build/TextMouth.app\""
+  # make signing-identity runs the script with no arguments: a line of its own.
+  grep -x -F -q "Scripts/make-signing-identity.sh" <<<"$output" ||
+    problem "make signing-identity does not run Scripts/make-signing-identity.sh on its own"
+  end_case
+}
+
 # main: runs every case and prints the totals; succeeds only when all pass.
 main() {
   write_stubs
@@ -1025,6 +1178,7 @@ main() {
   real_run_cases
   makefile_cases
   install_cases
+  signing_identity_cases
   printf '%d passed, %d failed\n' "$passed" "$failed"
   (( failed == 0 ))
 }
