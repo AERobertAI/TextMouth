@@ -45,6 +45,11 @@ struct Transcript: Codable, Equatable, Sendable {
     /// any other. Transcribing again replaces an edited transcript only
     /// after the Transcribe Audio sheet has said so.
     var editedAt: Date? = nil
+    /// When the transcript was last cleaned up by rule (Clean Up Transcript,
+    /// `TranscriptCleanup`), with which rules and how many corrections; nil
+    /// for a transcript never cleaned up. transcript.json leaves it out
+    /// until then, as it leaves out `editedAt`.
+    var cleanedUp: TranscriptCleanupNote? = nil
 
     /// What a book's record notes about this transcript (`BookState.transcript`).
     var note: TranscriptNote {
