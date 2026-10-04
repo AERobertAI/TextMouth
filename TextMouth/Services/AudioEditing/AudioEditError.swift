@@ -4,6 +4,9 @@ import Foundation
 /// description is a sentence the editor can show and VoiceOver can read as
 /// it stands: it names what happened and, where there is one, what to do.
 enum AudioEditError: LocalizedError, Equatable, Sendable {
+    /// The book is no longer in the library, or is not an audiobook kept in
+    /// a package of its own.
+    case bookNotInLibrary
     /// A path in the edit history would reach outside the book's package.
     case fileOutsidePackage
     /// An audio file the edits need could not be read as audio.
@@ -22,6 +25,8 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
 
     var errorDescription: String? {
         switch self {
+        case .bookNotInLibrary:
+            return "The book is no longer in the library."
         case .fileOutsidePackage:
             return "The book's edit history names a file outside the book, so TextMouth won't use it."
         case .unreadableAudio:

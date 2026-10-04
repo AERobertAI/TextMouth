@@ -1,24 +1,35 @@
 import Foundation
 
-/// What happens to a recording's original take once the take is saved as
-/// an audiobook (the user's decision of October 4).
+/// What happens to the original audio of a recording or of an edited
+/// audiobook (the user's decisions of October 4): keep it, delete it and
+/// edit in place, or delete it some days after the last edit.
 ///
-/// The book's audio is AAC, encoded from the take. The take itself, 16-bit
-/// PCM, can stay in the book's package as `original-take.caf`
-/// (`BookOrigin.originalTakeFileName`), so that an edit can always start
-/// again from the original without a loss of quality, at about 345 MB an
-/// hour. The policy says how long it stays: for good, not at all (edits
-/// then work on the book's audio in place), or for a number of days after
-/// the book's audio was last made from it. A global setting holds the
-/// policy for every recording; a book's own origin record can hold one of
-/// its own, which wins (`BookOrigin.OriginalTake.policyOverride`).
+/// An original is the audio as it was recorded or imported (`AudioOriginal`):
+/// a recording's take, 16-bit PCM, kept in its package as `original-take.caf`
+/// (`BookOrigin.originalTakeFileName`) from the moment it is saved as an
+/// audiobook, and for an imported audiobook a copy of its file, kept from
+/// just before edits are first written into it
+/// (`AudioEditPackage.originalFile(forAudioFile:)`). While it is kept every
+/// edit can be undone, and made again without a loss of quality; a
+/// recording's costs about 345 MB an hour. The policy says how long it
+/// stays: for good, not at all (edits then change the book's audio in
+/// place), or for a number of days after the book's audio was last edited.
+/// A global setting holds the policy for every book; a book's edit history
+/// can hold one of its own, which wins (`AudioEditHistory.policyOverride`,
+/// or, for a recording never edited, `BookOrigin.OriginalTake.policyOverride`).
+/// The sweep that applies it is `AudioOriginalSweep`.
+///
+/// The global setting keeps the names it had when only recordings kept an
+/// original (`recordingOriginalPolicy`, `recordingOriginalDays`), so the
+/// preferences and config.json files already written keep their meaning.
 enum AudioOriginalPolicy: Equatable, Sendable {
-    /// Keep the original take for good.
+    /// Keep the original for good.
     case keep
-    /// Keep no original take: the book's audio is all there is.
+    /// Keep no original: the book's audio is all there is, and edits change
+    /// it in place.
     case delete
-    /// Keep the original take for this many days after the book's audio
-    /// was last made from it, then delete it.
+    /// Keep the original for this many days after the book's audio
+    /// was last edited, then delete it.
     case deleteAfter(days: Double)
 
     /// The choice, as Settings and config.json name it, apart from the
@@ -52,7 +63,7 @@ enum AudioOriginalPolicy: Equatable, Sendable {
         }
     }
 
-    /// When an original take whose book's audio was last made from it at
+    /// When an original whose book's audio was last edited at
     /// `lastEdited` is to be deleted: never for `keep`, at once for
     /// `delete`, and `days` days later for `deleteAfter`.
     func deletionDate(lastEdited: Date) -> Date? {
@@ -66,7 +77,7 @@ enum AudioOriginalPolicy: Equatable, Sendable {
         }
     }
 
-    /// Whether, at `now`, an original take last edited at `lastEdited` is
+    /// Whether, at `now`, an original last edited at `lastEdited` is
     /// due to be deleted.
     func isDue(lastEdited: Date, now: Date) -> Bool {
         guard let deletion = deletionDate(lastEdited: lastEdited) else { return false }
@@ -77,16 +88,16 @@ enum AudioOriginalPolicy: Equatable, Sendable {
 // MARK: - The Global Setting
 
 extension SettingsPolicy {
-    /// What happens to a recording's original take (Storage settings,
-    /// Recordings picker): deleted some days after saving until the user
-    /// picks another choice.
+    /// What happens to the original audio of recordings and edited
+    /// audiobooks (Storage settings, Audio Editing picker): deleted some days
+    /// after the last edit until the user picks another choice.
     static let recordingOriginalPolicy = EnumSettingRule(
         key: "recordingOriginalPolicy",
         defaultValue: AudioOriginalPolicy.Choice.deleteAfterDays
     )
-    /// How many days an original take is kept when it is deleted after
-    /// some days (Storage settings, Recordings stepper): 1 to 365, and 1
-    /// until the user picks another number.
+    /// How many days an original is kept when it is deleted after some days
+    /// (Storage settings, Audio Editing stepper): 1 to 365, and 1 until the
+    /// user picks another number.
     static let recordingOriginalDays = NumericSettingRule(
         key: "recordingOriginalDays",
         range: 1...365,
@@ -136,7 +147,8 @@ extension AudioOriginalPolicy {
 
 // MARK: - A Book's Own Policy
 
-/// A policy is kept in a book's origin record (origin.json) as its choice
+/// A book's own policy is kept in its edit history (edits.json), or, for a
+/// recording never edited, in its origin record (origin.json), as its choice
 /// and, for a deletion after some days, the number of days:
 /// `{"choice": "deleteAfterDays", "days": 3}`. A number of days the global
 /// rule would not accept is brought within it as the record is read.

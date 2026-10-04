@@ -320,11 +320,12 @@ final class ConfigService: ObservableObject {
         /// until one is chosen, when recordings use macOS's default input;
         /// empty, like any empty text here, keeps the current choice.
         var recordingInputDeviceID: String = ""
-        /// What happens to a recording's original take once the recording
-        /// is saved as a book (`AudioOriginalPolicy.Choice`): "keep",
-        /// "delete", or "deleteAfterDays". Empty keeps the current choice.
+        /// What happens to the original audio of recordings and edited
+        /// audiobooks (`AudioOriginalPolicy.Choice`): "keep", "delete", or
+        /// "deleteAfterDays". Empty keeps the current choice. The name is
+        /// from when only recordings kept an original.
         var recordingOriginalPolicy: String = ""
-        /// How many days an original take is kept when the choice is
+        /// How many days an original is kept when the choice is
         /// "deleteAfterDays", from 1 to 365.
         var recordingOriginalDays: Double?
         /// The keyboard shortcuts of each action, keyed by the action's name
@@ -519,9 +520,11 @@ final class ConfigService: ObservableObject {
                 ])
                 // Sounds.
                 mirrored += sameNames(["soundEffectsEnabled", "soundEffectsVolume", "soundEffectAssignments"])
-                // Recording: the microphone the Record window remembers, and
-                // how long a recording's original take is kept.
+                // Recording: the microphone the Record window remembers.
                 mirrored += sameNames(RecordingPreferences.keys)
+                // Audio editing: how long the original audio of recordings and
+                // edited audiobooks is kept.
+                mirrored += sameNames(AudioEditingPreferences.keys)
                 // Miscellaneous.
                 mirrored += sameNames([
                     "bluetoothMonitoringEnabled", "bluetoothDisconnectDelay", "restartTimerGestureEnabled",

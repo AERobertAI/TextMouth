@@ -766,7 +766,7 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Preferences other services keep
     //
     // The sound effects service, the substitution service, recording (the
-    // Record window and the original-take policy), the shortcut manager,
+    // Record window), audio editing (the original policy), the shortcut manager,
     // the log writer, transcription, and Export keep their preferences in
     // the same store as this model, and follow them there. The mirror reads
     // and writes them there through each service's own definitions: a value
@@ -780,6 +780,7 @@ final class SettingsViewModel: ObservableObject {
             + FeedSettings.preferenceKeys
             + TextSubstitutionService.preferenceKeys
             + RecordingPreferences.keys
+            + AudioEditingPreferences.keys
             + [KeyboardShortcutManager.bindingsPreference.key, LogLocation.preference.key]
             + [TranscriptionLanguage.preference.key, TranscriptionPreferences.offerAfterImport.key]
             + [BookExportPreferences.showInReaderToolbar.key]

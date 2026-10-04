@@ -1,18 +1,18 @@
 import SwiftUI
 
-/// The words of Storage settings' Recordings group (FR04), shared by the
+/// The words of Storage settings' Audio Editing group (FR04), shared by the
 /// controls and their tests.
-enum RecordingSettingsWording {
+enum AudioEditingSettingsWording {
     /// The group's heading.
-    static let title = "Recordings"
+    static let title = "Audio Editing"
     /// The policy picker's label.
-    static let policyLabel = "Original recordings"
+    static let policyLabel = "Original audio"
     /// The policy picker's hint: what an original is, what it costs, and
     /// whom a change reaches.
-    static let policyHint = "What happens to a recording's original take, the lossless audio a recording is saved "
-        + "from, once it is an audiobook. Keeping it lets an edit start again from it without loss, at about 345 MB "
-        + "an hour. A change applies to the originals already kept, too. In a library in the cloud, an original syncs "
-        + "with its book."
+    static let policyHint = "What happens to the original audio of recordings and edited audiobooks: the lossless "
+        + "take a recording is saved from, and a copy of an audiobook's file from before its first edit. Keeping an "
+        + "original lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change "
+        + "applies to the originals already kept, too. In a library in the cloud, an original syncs with its book."
     /// The days stepper's label.
     static let daysLabel = "Days to keep an original"
 
@@ -34,23 +34,23 @@ enum RecordingSettingsWording {
     static func explanation(_ policy: AudioOriginalPolicy) -> String {
         switch policy {
         case .keep:
-            return "Each recording keeps its original take until the book is removed."
+            return "Each recording and edited audiobook keeps its original audio until the book is removed."
         case .delete:
-            return "Recordings keep no original take: the audiobook's audio is all there is."
+            return "No original audio is kept: edits change a book's audio in place, and saved edits can't be undone."
         case .deleteAfter(let count):
-            return "Each recording keeps its original take for \(days(Int(count.rounded()))) after it was saved "
-                + "or last edited; then the original is deleted."
+            return "Each recording and edited audiobook keeps its original audio for \(days(Int(count.rounded()))) "
+                + "after it was saved or last edited; then the original is deleted."
         }
     }
 }
 
-/// The global original-take policy as Storage settings shows and changes
+/// The global original policy as Storage settings shows and changes
 /// it: read from and written to the preferences store through the policy's
 /// own definitions (`AudioOriginalPolicy`), where the settings model
 /// mirrors it in config.json, and redrawn whenever it changes there,
 /// wherever it was changed.
 @MainActor
-final class RecordingSettingsModel: ObservableObject {
+final class AudioEditingSettingsModel: ObservableObject {
     /// The store the policy is kept in.
     private let store: UserDefaults
     /// Follows the policy's keys in the store.
@@ -91,55 +91,55 @@ final class RecordingSettingsModel: ObservableObject {
     }
 }
 
-/// Storage settings' Recordings group (FR04): what happens to a recording's
-/// original take once it is saved as an audiobook. A picker chooses keep,
+/// Storage settings' Audio Editing group (FR04): what happens to the original
+/// audio of recordings and edited audiobooks. A picker chooses keep,
 /// don't keep, or keep for a number of days, and a stepper the days when
 /// that is the choice; the line under them says what the choice does. Each
 /// control carries its own label, value, and hint, so VoiceOver and a
 /// braille display meet each on its own.
-struct RecordingSettingsSection: View {
+struct AudioEditingSettingsSection: View {
     /// The policy, in the app's preferences store unless a test hands in
     /// one of its own.
-    @StateObject private var settings: RecordingSettingsModel
+    @StateObject private var settings: AudioEditingSettingsModel
 
     /// The group for the policy kept in `store`.
     init(store: UserDefaults = TextMouthRuntime.current.preferences) {
-        _settings = StateObject(wrappedValue: RecordingSettingsModel(store: store))
+        _settings = StateObject(wrappedValue: AudioEditingSettingsModel(store: store))
     }
 
     var body: some View {
         Section {
-            Picker(RecordingSettingsWording.policyLabel, selection: Binding(
+            Picker(AudioEditingSettingsWording.policyLabel, selection: Binding(
                 get: { settings.choice },
                 set: { settings.choice = $0 }
             )) {
                 ForEach(AudioOriginalPolicy.Choice.allCases, id: \.self) { choice in
-                    Text(RecordingSettingsWording.choiceTitle(choice)).tag(choice)
+                    Text(AudioEditingSettingsWording.choiceTitle(choice)).tag(choice)
                 }
             }
             .pickerStyle(.menu)
-            .accessibilityLabel(RecordingSettingsWording.policyLabel)
-            .accessibilityHint(RecordingSettingsWording.policyHint)
-            .help(RecordingSettingsWording.policyHint)
+            .accessibilityLabel(AudioEditingSettingsWording.policyLabel)
+            .accessibilityHint(AudioEditingSettingsWording.policyHint)
+            .help(AudioEditingSettingsWording.policyHint)
 
             if settings.choice == .deleteAfterDays {
                 Stepper(
                     value: Binding(get: { settings.days }, set: { settings.days = $0 }),
                     in: Int(SettingsPolicy.recordingOriginalDays.range.lowerBound)...Int(SettingsPolicy.recordingOriginalDays.range.upperBound)
                 ) {
-                    Text("\(RecordingSettingsWording.daysLabel): \(RecordingSettingsWording.days(settings.days))")
+                    Text("\(AudioEditingSettingsWording.daysLabel): \(AudioEditingSettingsWording.days(settings.days))")
                 }
                 // A stepper's title does not become its accessibility label.
-                .accessibilityLabel(RecordingSettingsWording.daysLabel)
-                .accessibilityValue(RecordingSettingsWording.days(settings.days))
+                .accessibilityLabel(AudioEditingSettingsWording.daysLabel)
+                .accessibilityValue(AudioEditingSettingsWording.days(settings.days))
             }
 
-            Text(RecordingSettingsWording.explanation(settings.policy))
+            Text(AudioEditingSettingsWording.explanation(settings.policy))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         } header: {
-            Text(RecordingSettingsWording.title)
+            Text(AudioEditingSettingsWording.title)
         }
     }
 }

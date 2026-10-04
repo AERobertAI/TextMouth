@@ -438,44 +438,6 @@ final class RecordingWindowTests: XCTestCase {
         XCTAssertNil(MenuVisibilityManager.detectWindowType(for: window))
     }
 
-    // MARK: - Storage Settings' Recordings Group
-
-    /// The policy picker names each choice, explains them, and follows a
-    /// change made anywhere, as config.json makes one; the days stepper
-    /// shows only for a choice of days, with its own label.
-    func testTheRecordingsGroupIsLabelledAndFollowsTheStore() throws {
-        let store = makeSandboxedPreferences("recording-settings")
-        XCTAssertEqual(AudioOriginalPolicy.Choice.allCases.map(RecordingSettingsWording.choiceTitle), [
-            "Keep", "Don't keep", "Keep for a number of days",
-        ])
-        XCTAssertEqual(
-            RecordingSettingsWording.explanation(.deleteAfter(days: 1)),
-            "Each recording keeps its original take for 1 day after it was saved or last edited; then the original is deleted."
-        )
-        let model = RecordingSettingsModel(store: store)
-        var changes = 0
-        let subscription = model.objectWillChange.sink { changes += 1 }
-        defer { subscription.cancel() }
-        AudioOriginalPolicy.saveGlobal(.deleteAfter(days: 3), in: store)
-        XCTAssertGreaterThan(changes, 0, "a change made in the store was not shown")
-        XCTAssertEqual(model.days, 3)
-        model.choice = .keep
-        XCTAssertEqual(AudioOriginalPolicy.global(in: store), .keep)
-
-        try skipUnlessHostedWindowsExposeAccessibility()
-        model.choice = .deleteAfterDays
-        let section = Form { RecordingSettingsSection(store: store) }
-        try withHostedView(section, size: NSSize(width: 600, height: 400), until: {
-            !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty && !self.descendants(of: $0, as: NSStepper.self).isEmpty
-        }) { hosting in
-            let controls = accessibleControls(in: hosting)
-            let picker = try XCTUnwrap(controls.first { $0.label == RecordingSettingsWording.policyLabel }, "\(controls.map(\.label))")
-            XCTAssertEqual(picker.hint, RecordingSettingsWording.policyHint)
-            let stepper = try XCTUnwrap(controls.first { $0.label == RecordingSettingsWording.daysLabel }, "\(controls.map(\.label))")
-            XCTAssertEqual(stepper.valueDescription, "3 days")
-        }
-    }
-
     // MARK: - Helpers
 
     /// Every item of `menu` and of its submenus.
