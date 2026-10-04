@@ -429,5 +429,7 @@
 	</array>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>TextMouth needs access to speak text content.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>TextMouth records from the microphone you choose only while you record, and saves each recording in your library as an audiobook.</string>
 </dict>
 </plist>
