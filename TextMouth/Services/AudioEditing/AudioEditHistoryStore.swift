@@ -203,15 +203,16 @@ enum AudioEditHistoryStore {
     }
 
     /// What a recording's origin record can hold of `history`, whose
-    /// recording's file is `bookFile`: all of it while there is no edit and
-    /// no render of that file, no other file, and a policy of the book's own
-    /// only beside a take kept at the package root, as the Record window
-    /// keeps it.
+    /// recording's file is `bookFile`: all of it while there is no edit, no
+    /// marker, and no render of that file, no other file, and a policy of
+    /// the book's own only beside a take kept at the package root, as the
+    /// Record window keeps it.
     private static func originRecord(of history: AudioEditHistory, bookFile: String) -> OriginRecord {
-        // An origin record describes one file, the recording's, unedited.
+        // An origin record describes one file, the recording's, unedited
+        // and without markers, which it has no place for.
         guard history.files.count <= 1 else { return .needsEditsFile }
         let list = history.files.first
-        if let list, list.audioFile != bookFile || !list.entries.isEmpty || list.lastRenderedAt != nil {
+        if let list, list.audioFile != bookFile || !list.entries.isEmpty || list.lastRenderedAt != nil || !list.markers.isEmpty {
             return .needsEditsFile
         }
         guard let original = list?.original else {

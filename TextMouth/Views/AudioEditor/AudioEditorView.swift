@@ -65,7 +65,7 @@ struct AudioEditorView: View {
             }
             Button(AudioEditorWording.cancelButton, role: .cancel) {}
         } message: {
-            Text(AudioEditorWording.revertExplanation(model.session.list.cursor))
+            Text(AudioEditorWording.revertExplanation(model.session.list.cursor, markers: model.markers.count))
         }
     }
 

@@ -625,11 +625,13 @@ enum AudioEditorWording {
 
     // MARK: - Saving and Exporting
 
-    /// A format a save or an export writes, by name.
+    /// A format a save or an export writes, by name: the name Export lists
+    /// it by (`AudioExportFormat.title`), but for MP3, whose name there says
+    /// what it needs.
     static func formatName(_ format: AudioRenderFormat) -> String {
         switch format {
         case .aacM4A: return "M4A (AAC)"
-        case .aacM4B: return "M4B audiobook (AAC)"
+        case .aacM4B: return "M4B Audiobook (AAC)"
         case .alacM4A: return "Apple Lossless (M4A)"
         case .pcmCAF: return "CAF"
         case .pcmWAV: return "WAV"
@@ -711,17 +713,29 @@ enum AudioEditorWording {
     /// Revert's confirmation question.
     static let revertQuestion = "Revert to the original audio?"
 
-    /// What reverting does, with how many edits it undoes.
-    static func revertExplanation(_ count: Int) -> String {
-        "\(CountWording.phrase(count, singular: "edit is", plural: "edits are")) undone. Redo brings them back until you make another edit."
+    /// What reverting does, with how many edits it undoes and how many
+    /// markers it deletes.
+    static func revertExplanation(_ count: Int, markers: Int = 0) -> String {
+        let undone = "\(CountWording.phrase(count, singular: "edit is", plural: "edits are")) undone. Redo brings them back until you make another edit."
+        switch markers {
+        case 0: return undone
+        case 1: return undone + " The marker is deleted, and Redo doesn't bring it back."
+        default: return undone + " The \(markers) markers are deleted, and Redo doesn't bring them back."
+        }
     }
 
     /// The button that reverts.
     static let revertButton = "Revert"
 
-    /// Said as Revert to Original ends.
-    static func reverted(_ count: Int) -> String {
-        "Reverted to the original audio. Redo brings back the \(CountWording.phrase(count, singular: "edit", plural: "edits"))."
+    /// Said as Revert to Original ends, having undone `count` edits and
+    /// deleted `markers` markers.
+    static func reverted(_ count: Int, markers: Int = 0) -> String {
+        let reverted = "Reverted to the original audio. Redo brings back the \(CountWording.phrase(count, singular: "edit", plural: "edits"))."
+        switch markers {
+        case 0: return reverted
+        case 1: return reverted + " The marker is deleted."
+        default: return reverted + " The \(markers) markers are deleted."
+        }
     }
 
     /// Said by Revert to Original with nothing to undo.
@@ -812,6 +826,25 @@ enum AudioEditorWording {
     /// Said when Discard can't reach the audio as saved.
     static let discardKept = "The book's audio holds edits its history no longer has, so the edits stay, "
         + "to be saved or undone the next time you edit this book."
+
+    // MARK: - Quitting
+
+    /// What the question about an editor's unsaved edits explains as
+    /// TextMouth quits.
+    static let quitExplanation = "TextMouth is quitting, and the book's audio doesn't hold these edits yet. Discard undoes them; "
+        + "the next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open."
+
+    /// Said, in the editor of `book`, when TextMouth can't quit while its
+    /// work is under way.
+    static func quitWhileWorking(book: String) -> String {
+        "The editor of “\(book)” is still working. Quit TextMouth once the change is done."
+    }
+
+    /// Said, in the editor of `book`, when TextMouth can't quit while a
+    /// punch-in records there.
+    static func quitWhileRecording(book: String) -> String {
+        "A recording is under way in the editor of “\(book)”. Stop it, or discard it with Clear Selection, then quit TextMouth."
+    }
 
     // MARK: - The Commands
 

@@ -125,9 +125,17 @@ final class AudioEditorSavingTests: XCTestCase {
                 + "since TextMouth can't write its old format."
         )
         XCTAssertEqual(AudioEditorWording.savingDetail(5, format: nil), "Saving 5 seconds of audio into the book.")
-        XCTAssertEqual(AudioEditorWording.formatName(.aacM4B), "M4B audiobook (AAC)")
+        XCTAssertEqual(AudioEditorWording.formatName(.aacM4B), "M4B Audiobook (AAC)")
         XCTAssertEqual(AudioEditorWording.formatName(.mp3), "MP3")
         XCTAssertEqual(AudioEditorWording.percentDone(75), "75 percent")
+    }
+
+    /// A save and an export name each format alike, by the name Export
+    /// lists it by; only MP3's there adds what it needs.
+    func testSavesAndExportsNameEachFormatAlike() {
+        for format in AudioExportFormat.allCases where format != .mp3 {
+            XCTAssertEqual(AudioEditorWording.formatName(format.renderFormat), format.title, format.rawValue)
+        }
     }
 
     /// A save or an export in a format with no place for chapter markers
@@ -280,4 +288,186 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertEqual(model.closeNeed, .unsavedEdits)
         XCTAssertEqual(AudioEditorWording.closeQuestion(book: "Harbour Survey"), "Save the edits to “Harbour Survey”?")
     }
+
+    /// An alert's buttons answer the question about unsaved edits in order:
+    /// Save, Discard, then Cancel, as anything else is.
+    func testTheQuestionsButtonsAnswerInOrder() {
+        XCTAssertEqual(AudioEditorUnsavedEditsAnswer(.alertFirstButtonReturn), .save)
+        XCTAssertEqual(AudioEditorUnsavedEditsAnswer(.alertSecondButtonReturn), .discard)
+        XCTAssertEqual(AudioEditorUnsavedEditsAnswer(.alertThirdButtonReturn), .cancel)
+        XCTAssertEqual(AudioEditorUnsavedEditsAnswer(.abort), .cancel)
+    }
+
+    // MARK: - Quitting
+
+    /// A quit through the app delegate asks about each editor with unsaved
+    /// edits in turn, by its book's title, and carries out each answer, Save
+    /// for one and Discard for the other, then asks to quit again; an editor
+    /// with nothing unsaved isn't asked, and a request while the questions
+    /// are asked asks nothing more.
+    func testQuittingAsksAboutEachEditorsUnsavedEdits() async throws {
+        let ferry = try await quittingEditor(named: "Ferry Log.wav")
+        let weir = try await quittingEditor(named: "Weir Notes.wav")
+        let tides = try await quittingEditor(named: "Tide Tables.wav")
+        ferry.model.select(AudioTimeRange(start: 1, end: 2))
+        await ferry.model.cut()
+        weir.model.select(AudioTimeRange(start: 0, end: 1))
+        await weir.model.cut()
+        let (delegate, controller, recorder) = quitting([weir, tides, ferry])
+        recorder.answers = ["Ferry Log": .save, "Weir Notes": .discard]
+
+        XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateCancel)
+        XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateCancel, "a request while asking")
+        await controller.quitReview?.value
+
+        XCTAssertEqual(recorder.asked, ["Ferry Log", "Weir Notes"])
+        XCTAssertEqual(recorder.quits, 1)
+        XCTAssertFalse(ferry.model.session.hasUnsavedEdits)
+        XCTAssertEqual(try AVAudioFile(forReading: ferry.fixture.book.bookFileURL).length, 24_000, "Save wrote the cut")
+        XCTAssertFalse(weir.model.session.hasUnsavedEdits)
+        XCTAssertEqual(weir.model.duration, 4, accuracy: 0.000_1, "Discard went back to the audio as saved")
+        XCTAssertTrue(weir.model.session.canRedo, "the discarded edit waits in edits.json for Redo")
+        XCTAssertFalse(controller.holdQuit(then: { XCTFail("asked to quit again with nothing to ask") }))
+    }
+
+    /// Cancel keeps TextMouth open and asks about no other editor; a save
+    /// that fails does too, saying why; the next quit asks again.
+    func testCancelOrAFailedSaveKeepsTextMouthOpen() async throws {
+        let ferry = try await quittingEditor(named: "Ferry Log.wav")
+        let weir = try await quittingEditor(named: "Weir Notes.wav")
+        await ferry.model.insertSilence(1)
+        await weir.model.insertSilence(1)
+        let (delegate, controller, recorder) = quitting([ferry, weir])
+        recorder.answers = ["Ferry Log": .cancel]
+
+        XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateCancel)
+        await controller.quitReview?.value
+        XCTAssertEqual(recorder.asked, ["Ferry Log"])
+        XCTAssertEqual(recorder.quits, 0)
+        XCTAssertTrue(ferry.model.session.hasUnsavedEdits)
+        XCTAssertTrue(weir.model.session.hasUnsavedEdits)
+
+        recorder.answers = ["Ferry Log": .save]
+        ferry.fixture.library.openBookIDs = [ferry.fixture.book.id]
+        XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateCancel)
+        await controller.quitReview?.value
+        XCTAssertEqual(recorder.asked, ["Ferry Log", "Ferry Log"])
+        XCTAssertEqual(recorder.quits, 0)
+        XCTAssertTrue(ferry.announcements.sentences.last?.hasPrefix("The edits couldn't be saved.") == true)
+    }
+
+    /// An editor still working, or recording a punch-in, holds the quit and
+    /// says so, naming its book, and nothing is asked.
+    func testAnEditorWorkingOrRecordingHoldsTheQuit() async throws {
+        let ferry = try await quittingEditor(named: "Ferry Log.wav")
+        await ferry.model.insertSilence(1)
+        let (delegate, controller, recorder) = quitting([ferry])
+
+        ferry.model.isWorking = true
+        XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateCancel)
+        XCTAssertEqual(ferry.announcements.sentences.last, "The editor of “Ferry Log” is still working. Quit TextMouth once the change is done.")
+        ferry.model.isWorking = false
+
+        await ferry.model.startPunchIn()
+        XCTAssertTrue(controller.holdQuit(then: { XCTFail("quit while recording") }))
+        XCTAssertEqual(
+            ferry.announcements.sentences.last,
+            "A recording is under way in the editor of “Ferry Log”. Stop it, or discard it with Clear Selection, then quit TextMouth."
+        )
+        await ferry.model.cancelPunchIn()
+        XCTAssertNil(controller.quitReview)
+        XCTAssertTrue(recorder.asked.isEmpty)
+        XCTAssertEqual(recorder.quits, 0)
+    }
+
+    /// A Discard that can't reach the audio as saved keeps the edits, says
+    /// so, and still lets TextMouth quit: the request the review makes is
+    /// not asked about again, though a later one is.
+    func testADiscardThatKeepsTheEditsStillLetsTextMouthQuit() async throws {
+        let ferry = try await quittingEditor(named: "Ferry Log.wav")
+        ferry.model.select(AudioTimeRange(start: 1, end: 2))
+        await ferry.model.cut()
+        await ferry.model.save()
+        await ferry.model.undo()
+        ferry.model.select(AudioTimeRange(start: 0, end: 1))
+        await ferry.model.cut()
+        let (_, controller, recorder) = quitting([ferry])
+        recorder.answers = ["Ferry Log": .discard]
+        let repeated = QuitRecorder()
+
+        XCTAssertTrue(controller.holdQuit(then: {
+            repeated.quits += 1
+            repeated.held.append(controller.holdQuit(then: {}))
+        }))
+        await controller.quitReview?.value
+
+        XCTAssertEqual(ferry.announcements.sentences.last, AudioEditorWording.discardKept)
+        XCTAssertTrue(ferry.model.session.hasUnsavedEdits)
+        XCTAssertEqual(repeated.quits, 1)
+        XCTAssertEqual(repeated.held, [false], "the request the review made quits")
+        XCTAssertTrue(controller.holdQuit(then: {}), "a later request asks again")
+        await controller.quitReview?.value
+    }
+
+    /// Markers waiting to be written hold the quit until they are in
+    /// edits.json, asking nothing.
+    func testMarkersWaitingToBeKeptHoldTheQuitUntilWritten() async throws {
+        let ferry = try await quittingEditor(named: "Ferry Log.wav")
+        let (delegate, controller, recorder) = quitting([ferry])
+        ferry.model.move(to: 2)
+        ferry.model.addMarker()
+
+        XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateCancel)
+        await controller.quitReview?.value
+
+        XCTAssertTrue(recorder.asked.isEmpty)
+        XCTAssertEqual(recorder.quits, 1)
+        let file = ferry.fixture.book.fileInPackage
+        guard case .found(let history, _) = AudioEditHistoryStore.read(fromPackage: ferry.fixture.package, bookFile: file) else {
+            return XCTFail("the history couldn't be read")
+        }
+        XCTAssertEqual(history.list(for: file)?.markers.map(\.time), [2])
+    }
+
+    // MARK: - Helpers
+
+    /// An editor on a 4-second ramp in a book named `name` (its file's
+    /// name), its preview loaded, closed as the test ends.
+    private func quittingEditor(named name: String) async throws -> EditorHarness {
+        let harness = try await EditorHarness.open(try AudioEditorTestBook.ramp(seconds: 4, named: name, for: self), for: self)
+        AudioEditorPreferences.playAfterMoves.write(false, to: harness.store)
+        await harness.model.loadPreview()
+        addTeardownBlock { @MainActor in harness.model.windowClosed() }
+        return harness
+    }
+
+    /// An app delegate whose quits go through a controller of its own over
+    /// `editors`, each in a window never shown, which a recorder answers
+    /// for: what it asked, and how often TextMouth asked to quit again.
+    private func quitting(_ editors: [EditorHarness]) -> (AppDelegate, AudioEditorWindowController, QuitRecorder) {
+        let controller = AudioEditorWindowController()
+        for editor in editors {
+            controller.attach(editor.model, to: NSWindow())
+        }
+        let recorder = QuitRecorder()
+        controller.askBeforeQuitting = { model, _ in
+            recorder.asked.append(model.bookTitle)
+            return recorder.answers[model.bookTitle] ?? .cancel
+        }
+        let delegate = AppDelegate()
+        delegate.audioEditors = controller
+        delegate.requestTermination = { recorder.quits += 1 }
+        return (delegate, controller, recorder)
+    }
+}
+
+/// What the quit tests' stand-ins heard: the books asked about, the answers
+/// to give by title, the requests to quit again, and what holding them
+/// said.
+@MainActor
+private final class QuitRecorder {
+    var asked: [String] = []
+    var answers: [String: AudioEditorUnsavedEditsAnswer] = [:]
+    var quits = 0
+    var held: [Bool] = []
 }

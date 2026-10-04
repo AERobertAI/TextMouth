@@ -48,12 +48,32 @@ final class AudioEditSession: ObservableObject {
     /// The timelines made so far, by the newest applied edit over the base
     /// ("" for none), so undo and redo need not apply the list again.
     private var timelines: [String: AudioEditTimeline] = [:]
+    /// The way from the book's file, as last saved, to the edited audio as
+    /// it is now: what a save moves the book's bookmarks and its saved
+    /// reading position along (`LibraryViewModel.saveAudioEdits`). Every
+    /// edit, undo, and redo extends it, and a save starts it afresh. Nil
+    /// when it isn't known, as when the file holds edits the history no
+    /// longer has (`AudioEditList.renderedCursor`): a save then leaves the
+    /// bookmarks and the position where they are.
+    private(set) var savedFileRoute: AudioEditorTimeMap.Route?
+    /// The editor's markers as last asked to be kept, waiting to be
+    /// written; nil once every request is written or being written.
+    private var markersToKeep: [AudioEditMarker]?
+    /// The write of markers under way, if any.
+    private var markersWrite: Task<Void, Never>?
+    /// Whether a save is under way: markers asked to be kept meanwhile wait
+    /// for it, as it may rename the file their list is kept under.
+    private var isSaving = false
+    /// The rebuild of processed stretches the caches lost, under way for the
+    /// list state keyed (`key(of:)`), which other callers share.
+    private var purgedRebuild: (key: String, task: Task<AudioEditTimeline, Error>)?
 
     private init(
         bookID: UUID,
         audioFile: String,
         list: AudioEditList,
         timeline: AudioEditTimeline,
+        savedFileRoute: AudioEditorTimeMap.Route?,
         policyOverride: AudioOriginalPolicy?,
         library: LibraryViewModel,
         place: AudioBookPlace,
@@ -66,6 +86,7 @@ final class AudioEditSession: ObservableObject {
         self.audioFile = audioFile
         self.list = list
         self.timeline = timeline
+        self.savedFileRoute = savedFileRoute
         self.policyOverride = policyOverride
         self.library = library
         self.place = place
@@ -108,12 +129,13 @@ final class AudioEditSession: ObservableObject {
             let scratch = try AudioEditScratch.folder(for: bookID)
             let makeProcessor = library.audioEditProcessorFactory()
             let processor = makeProcessor(AudioEditComposition.Sources(base: base, package: place.package, scratch: scratch))
-            let timeline = try await Self.timeline(of: list, over: base, processor: processor)
+            let (timeline, route) = try await Self.timelineAndRoute(of: list, over: base, processor: processor)
             return AudioEditSession(
                 bookID: bookID,
                 audioFile: file,
                 list: list,
                 timeline: timeline,
+                savedFileRoute: route,
                 policyOverride: policy,
                 library: library,
                 place: place,
@@ -177,17 +199,21 @@ final class AudioEditSession: ObservableObject {
     ///   doesn't fit, a filter's errors, or the history store's.
     @discardableResult
     func perform(_ edit: AudioEdit) async throws -> AudioEditEntry {
+        // A filter over a processed stretch reads its sound.
+        try await restorePurgedStretches()
         var next = timeline
         try await next.apply(edit, processor: processor)
         let file = audioFile
         let before = list
+        let length = duration
         let (list, entry) = try await Self.changeHistory(place: place) { history in
             var list = history.listOrNew(for: file)
             let entry = list.record(edit, at: Date())
             history.setList(list)
             return (list, entry)
         }
-        try await adopt(list, expecting: next, after: before)
+        try await follow(list, expecting: next, after: before)
+        noteMade(entry, from: length)
         return entry
     }
 
@@ -232,6 +258,7 @@ final class AudioEditSession: ObservableObject {
         let file = audioFile
         let package = place.package
         let before = list
+        let length = duration
         let (list, entry) = try await Self.changeHistory(place: place) { history in
             let take = AudioEditTake(file: try AudioEditPackage.keepTake(from: url, inPackage: package), range: used)
             var list = history.listOrNew(for: file)
@@ -241,7 +268,8 @@ final class AudioEditSession: ObservableObject {
         }
         var next = timeline
         try await next.apply(entry.edit, processor: processor)
-        try await adopt(list, expecting: next, after: before)
+        try await follow(list, expecting: next, after: before)
+        noteMade(entry, from: length)
         return entry
     }
 
@@ -251,13 +279,17 @@ final class AudioEditSession: ObservableObject {
     func undo() async throws -> AudioEditEntry? {
         guard list.canUndo else { return nil }
         let file = audioFile
+        let edited = duration
         let (list, entry) = try await Self.changeHistory(place: place) { history in
             var list = history.listOrNew(for: file)
             let entry = list.undo(at: Date())
             history.setList(list)
             return (list, entry)
         }
-        try await adopt(list)
+        try await follow(list)
+        if let entry {
+            noteUndone(entry, from: edited)
+        }
         return entry
     }
 
@@ -266,13 +298,17 @@ final class AudioEditSession: ObservableObject {
     func redo() async throws -> AudioEditEntry? {
         guard list.canRedo else { return nil }
         let file = audioFile
+        let length = duration
         let (list, entry) = try await Self.changeHistory(place: place) { history in
             var list = history.listOrNew(for: file)
             let entry = list.redo(at: Date())
             history.setList(list)
             return (list, entry)
         }
-        try await adopt(list)
+        try await follow(list)
+        if let entry {
+            noteMade(entry, from: length)
+        }
         return entry
     }
 
@@ -284,13 +320,70 @@ final class AudioEditSession: ObservableObject {
         policyOverride = policy
     }
 
+    // MARK: Markers
+
+    /// Keeps `markers`, the editor's markers at their times on the edited
+    /// audio as it is now, in the file's edit list (`AudioEditList.markers`),
+    /// so a window opened later shows them again. They are written off the
+    /// main thread, one write at a time, in the order asked: a request made
+    /// while another is written waits, and a newer one takes its place, so
+    /// the last markers asked for are the ones kept. The list read when the
+    /// session opened (`list`) is not changed: the editor's own markers are
+    /// the ones that count while it is open.
+    func keepMarkers(_ markers: [AudioEditMarker]) {
+        markersToKeep = markers
+        writeMarkersIfIdle()
+    }
+
+    /// Waits until every marker asked to be kept so far is written, or has
+    /// failed to be, which the debug log records.
+    func markersKept() async {
+        while let write = markersWrite {
+            await write.value
+        }
+    }
+
+    /// Whether markers asked to be kept are still to be written.
+    var isKeepingMarkers: Bool {
+        markersWrite != nil || markersToKeep != nil
+    }
+
+    /// Starts writing the markers waiting, unless a write or a save is
+    /// under way, each of which starts the next write as it ends.
+    private func writeMarkersIfIdle() {
+        guard markersWrite == nil, !isSaving, let markers = markersToKeep else { return }
+        markersToKeep = nil
+        let place = place
+        let file = audioFile
+        markersWrite = Task {
+            do {
+                try await Self.changeHistory(place: place) { history in
+                    // A book removed meanwhile keeps nothing: its package
+                    // isn't made again only to hold markers.
+                    guard FileManager.default.fileExists(atPath: place.package.path) else { return }
+                    var list = history.listOrNew(for: file)
+                    list.setMarkers(markers)
+                    history.setList(list)
+                }
+            } catch {
+                // Described by kind, as the editor's other lines are, never
+                // by the markers' names.
+                let title = library?.bookByID(bookID)?.title ?? bookID.uuidString
+                DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(title): the markers couldn't be kept (\(AudioEditorLauncher.describe(error)))")
+            }
+            markersWrite = nil
+            writeMarkersIfIdle()
+        }
+    }
+
     // MARK: Previewing and Saving
 
     /// A composition of the edited audio, for an `AVPlayer` to play
     /// sample-exact: the window's preview. Each call makes a new one, which
     /// the caller owns and may hand to any actor.
     func makePreview() async throws -> sending AudioEditComposition {
-        try await AudioEditComposition.make(timeline, sources: sources)
+        try await restorePurgedStretches()
+        return try await AudioEditComposition.make(timeline, sources: sources)
     }
 
     /// A composition of the edited audio as it would be with `edit` made,
@@ -300,6 +393,7 @@ final class AudioEditSession: ObservableObject {
     /// - Throws: as `perform(_:)` does when the edit doesn't fit, or the
     ///   composition's errors.
     func makePreview(applying edit: AudioEdit) async throws -> sending AudioEditComposition {
+        try await restorePurgedStretches()
         var next = timeline
         try await next.apply(edit, processor: processor)
         return try await AudioEditComposition.make(next, sources: sources)
@@ -312,6 +406,7 @@ final class AudioEditSession: ObservableObject {
     /// - Throws: `AudioEditError.invalidEdit` for a range outside the audio,
     ///   or the render's errors.
     func renderStretch(_ range: AudioTimeRange, to url: URL) async throws {
+        try await restorePurgedStretches()
         let frames = try timeline.frameRange(range)
         _ = try await AudioEditRenderer.render(
             timeline.excerpt(frames),
@@ -329,13 +424,25 @@ final class AudioEditSession: ObservableObject {
     }
 
     /// Saves the edits into the book's file (`LibraryViewModel.saveAudioEdits`),
-    /// telling `progress` how far it is, then reads the history and the
-    /// audio the edits start from again: without an original, that is the
-    /// file just saved.
+    /// telling `progress` how far it is, the book's bookmarks and reading
+    /// position following the sound along `savedFileRoute`, then reads the
+    /// history and the audio the edits start from again: without an
+    /// original, that is the file just saved.
     @discardableResult
     func save(progress: (@Sendable (Double) -> Void)? = nil) async throws -> AudioEditSaveOutcome {
         guard let library else { throw AudioEditError.bookNotInLibrary }
-        let outcome = try await library.saveAudioEdits(ofBook: bookID, audioFile: audioFile, progress: progress)
+        // Markers asked to be kept before the save are written under the
+        // file's name now; those asked for during it wait for its name after.
+        isSaving = true
+        defer {
+            isSaving = false
+            writeMarkersIfIdle()
+        }
+        await markersKept()
+        let outcome = try await library.saveAudioEdits(ofBook: bookID, audioFile: audioFile, timeRoute: savedFileRoute, progress: progress)
+        // The file holds the audio as edited now, so the route starts here,
+        // whatever reading the history back does.
+        savedFileRoute = AudioEditorTimeMap.Route()
         audioFile = outcome.audioFile
         let file = audioFile
         let (list, policy) = try await Self.changeHistory(place: place) { history in
@@ -378,6 +485,7 @@ final class AudioEditSession: ObservableObject {
         guard let library, let book = library.bookByID(bookID) else { throw AudioEditError.bookNotInLibrary }
         let ffmpeg = library.audioFilterEngine().ffmpeg
         guard !format.needsFFmpeg || ffmpeg != nil else { throw AudioEditError.mp3NeedsFFmpeg }
+        try await restorePurgedStretches()
         _ = try await AudioEditRenderer.render(
             timeline,
             sources: sources,
@@ -421,6 +529,133 @@ final class AudioEditSession: ObservableObject {
     /// base, or "" for none.
     private static func key(of list: AudioEditList) -> String {
         list.entriesOverBase.last?.id.uuidString ?? ""
+    }
+
+    /// Makes the processed stretches of the timeline again when this Mac's
+    /// caches no longer hold one of them, as when macOS empties the Caches
+    /// folder while the editor is open: what reads the edited audio calls
+    /// it first, so a filter's stretch is made again when it is next needed
+    /// (a preview, a stretch copied, an export, or a filter over it) rather
+    /// than failing. The list is applied again; the processor finds every
+    /// stretch it still holds and renders only the missing ones, under the
+    /// names they had (`AudioFilterProcessor`), so the timelines kept for
+    /// undo and redo stay good too.
+    ///
+    /// Callers at once, as a preview and the level measurement of the one
+    /// before it, share one rebuild of the list as it is. A rebuild made for
+    /// a list that changed meanwhile is not taken: the timeline follows the
+    /// list as it is now, which is looked at again.
+    private func restorePurgedStretches() async throws {
+        while lacksProcessedStretch(timeline) {
+            let key = Self.key(of: list)
+            let rebuild: Task<AudioEditTimeline, Error>
+            if let shared = purgedRebuild, shared.key == key {
+                rebuild = shared.task
+            } else {
+                let (list, base, processor) = (list, base, processor)
+                rebuild = Task { try await Self.timeline(of: list, over: base, processor: processor) }
+                purgedRebuild = (key, rebuild)
+            }
+            let rebuilt: AudioEditTimeline
+            do {
+                rebuilt = try await rebuild.value
+            } catch {
+                if purgedRebuild?.task == rebuild { purgedRebuild = nil }
+                throw error
+            }
+            if purgedRebuild?.task == rebuild { purgedRebuild = nil }
+            guard Self.key(of: list) == key else { continue }
+            timelines[key] = rebuilt
+            timeline = rebuilt
+        }
+    }
+
+    /// Whether `timeline` holds a processed stretch whose file this Mac's
+    /// caches no longer hold.
+    private func lacksProcessedStretch(_ timeline: AudioEditTimeline) -> Bool {
+        timeline.segments.contains { segment in
+            guard case .processed(let name) = segment.source else { return false }
+            return !FileManager.default.fileExists(atPath: scratch.appendingPathComponent(name).path)
+        }
+    }
+
+    // MARK: The Route From the Saved File
+
+    /// Takes `newList`, which the history now holds after an edit, an undo,
+    /// or a redo, as `adopt` does. When that fails, the history has changed
+    /// in a way the route didn't follow, so the route is no longer known.
+    private func follow(_ newList: AudioEditList, expecting expected: AudioEditTimeline? = nil, after before: AudioEditList? = nil) async throws {
+        do {
+            try await adopt(newList, expecting: expected, after: before)
+        } catch {
+            savedFileRoute = nil
+            throw error
+        }
+    }
+
+    /// Extends `savedFileRoute` by `entry`, just made or redone, which took
+    /// the audio from `before` seconds to its length now.
+    private func noteMade(_ entry: AudioEditEntry, from before: TimeInterval) {
+        savedFileRoute?.make(AudioEditorTimeMap.Crossing(entry, before: before, after: duration))
+    }
+
+    /// Extends `savedFileRoute` by `entry`, just undone, which had made the
+    /// audio `edited` seconds long; a route the undo doesn't fit no longer
+    /// describes the audio, and is dropped.
+    private func noteUndone(_ entry: AudioEditEntry, from edited: TimeInterval) {
+        guard var route = savedFileRoute else { return }
+        savedFileRoute = route.undo(AudioEditorTimeMap.Crossing(entry, before: duration, after: edited)) ? route : nil
+    }
+
+    /// The timeline `list` leaves `base` as, and the route from the book's
+    /// file, as the list says it was last saved, to that timeline
+    /// (`savedFileRoute`). The edits made since the save are crossed as they
+    /// are applied; the edits the file holds that are undone now are applied
+    /// again past the end, only to learn the lengths around them, and then
+    /// crossed as undone. The route is nil when the file holds edits the
+    /// list no longer has, or when an undone edit can't be applied again;
+    /// the timeline is made all the same.
+    private static func timelineAndRoute(
+        of list: AudioEditList,
+        over base: AudioEditBase,
+        processor: (any AudioEditProcessing)?
+    ) async throws -> (AudioEditTimeline, AudioEditorTimeMap.Route?) {
+        var timeline = base.timeline
+        // One crossing for each applied edit over the base, oldest first.
+        var crossings: [AudioEditorTimeMap.Crossing] = []
+        for entry in list.entriesOverBase {
+            let before = timeline.duration
+            try await timeline.apply(entry.edit, processor: processor)
+            crossings.append(AudioEditorTimeMap.Crossing(entry, before: before, after: timeline.duration))
+        }
+        // The file holds the list's first `saved` entries, and the base
+        // those before the first crossing, which the file therefore holds.
+        let first = min(list.baseCursor, list.cursor)
+        guard let saved = list.renderedCursor, saved >= first else { return (timeline, nil) }
+        var route = AudioEditorTimeMap.Route()
+        if saved <= list.cursor {
+            for crossing in crossings[(saved - first)...] {
+                route.make(crossing)
+            }
+            return (timeline, route)
+        }
+        var ahead = timeline
+        var held: [AudioEditorTimeMap.Crossing] = []
+        for entry in list.entries[list.cursor..<saved] {
+            let before = ahead.duration
+            do {
+                try await ahead.apply(entry.edit, processor: processor)
+            } catch {
+                return (timeline, nil)
+            }
+            held.append(AudioEditorTimeMap.Crossing(entry, before: before, after: ahead.duration))
+        }
+        // Undone newest first; with nothing made, each undo is one more of
+        // the file's edits, which a route always takes.
+        for crossing in held.reversed() {
+            _ = route.undo(crossing)
+        }
+        return (timeline, route)
     }
 
     // MARK: Helpers

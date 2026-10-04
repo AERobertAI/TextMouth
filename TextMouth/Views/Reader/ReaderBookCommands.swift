@@ -87,7 +87,7 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 \.canEditBookText,
                 BookTextEditor.canEditText(of: viewModel.book, isTranscribed: transcribedBooks.contains(viewModel.book.id))
             )
-            .focusedSceneValue(\.canTranscribeBookAudio, LibraryTranscriptionCommand.isTranscribable(viewModel.book))
+            .focusedSceneValue(\.canTranscribeBookAudio, LibraryAudioCommand.isTranscribable(viewModel.book))
             .focusedSceneValue(\.canCleanUpBookTranscript, hasTranscript)
             .focusedSceneValue(\.canDeleteBookTranscript, hasTranscript)
             .focusedSceneValue(\.canEditBookAudio, AudioEditorLauncher.canEdit(viewModel.book))
@@ -101,7 +101,7 @@ struct ReaderBookCommandsSupport: ViewModifier {
     /// transcript Clean Up Transcript (Experimental)… and Delete Transcript…
     /// act on.
     private var hasTranscript: Bool {
-        LibraryTranscriptionCommand.isTranscribable(viewModel.book) && transcribedBooks.contains(viewModel.book.id)
+        LibraryAudioCommand.isTranscribable(viewModel.book) && transcribedBooks.contains(viewModel.book.id)
     }
 
     /// Opens the Transcribe Audio sheet for the reader's audiobook, as the

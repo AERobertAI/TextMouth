@@ -194,7 +194,104 @@ final class AudioEditorWindowTests: XCTestCase {
         XCTAssertEqual(AudioEditorWording.progressLabel, "Progress")
     }
 
+    // MARK: - The Main Edit Menu
+
+    /// The main Edit menu sends the actions an editor window answers: Undo
+    /// and Redo, which its window takes, and Cut, Copy, Paste, and Select
+    /// All, which stand for the editor's own commands.
+    func testTheEditMenuSendsWhatAnEditorWindowAnswers() throws {
+        let menu = try XCTUnwrap(NSApp.mainMenu)
+        let edit = try XCTUnwrap(menu.items.first { $0.title == "Edit" }?.submenu, "the menu bar has no Edit menu")
+        let sent = Set(edit.items.compactMap(\.action).map(NSStringFromSelector))
+        for action in ["undo:", "redo:", "cut:", "copy:", "paste:", "selectAll:"] {
+            XCTAssertTrue(sent.contains(action), "the Edit menu sends no \(action): \(sent.sorted())")
+        }
+        let standsFor = ["cut:", "copy:", "paste:", "selectAll:"].map { AudioEditorEditMenu.command(for: NSSelectorFromString($0)) }
+        XCTAssertEqual(standsFor, [.editorCut, .editorCopy, .editorPaste, .editorSelectAll])
+        XCTAssertNil(AudioEditorEditMenu.command(for: #selector(NSText.delete(_:))))
+    }
+
+    /// While the editor's window is the key window, the Edit menu's Cut,
+    /// Copy, Paste, and Select All are the editor's, available as its
+    /// buttons are; while another window is in front, as a sheet over the
+    /// editor is, they are not, and do nothing to it.
+    func testTheEditMenusCommandsActOnTheEditorInFront() async throws {
+        let model = try await openRamp(seconds: 4).model
+        let (controller, _, front) = editMenu(over: model)
+        let cut = menuItem(#selector(NSText.cut(_:)))
+        let paste = menuItem(#selector(NSText.paste(_:)))
+        let selectAll = menuItem(#selector(NSText.selectAll(_:)))
+        XCTAssertFalse(controller.validateMenuItem(cut), "nothing is selected")
+        XCTAssertFalse(controller.validateMenuItem(paste), "nothing was copied")
+        XCTAssertTrue(controller.validateMenuItem(selectAll))
+
+        controller.selectAll(nil)
+        let selectedAll = await eventually { model.selection == AudioTimeRange(start: 0, end: 4) }
+        XCTAssertTrue(selectedAll, "Select All didn't select the audio")
+        XCTAssertTrue(controller.validateMenuItem(cut))
+        model.select(AudioTimeRange(start: 1, end: 2))
+        controller.cut(nil)
+        let didCut = await eventually { abs(model.duration - 3) < 0.000_1 && !model.isWorking }
+        XCTAssertTrue(didCut, "Cut didn't cut the selection")
+        XCTAssertTrue(controller.validateMenuItem(paste), "the cut audio waits to be pasted")
+
+        front.window = NSWindow()
+        XCTAssertFalse(controller.validateMenuItem(selectAll))
+        XCTAssertFalse(controller.validateMenuItem(paste))
+        controller.selectAll(nil)
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertNil(model.selection, "another window's Select All reached the editor")
+    }
+
+    /// The editor window's undo manager stands for the editor's Undo and
+    /// Redo: the window gives it to the Edit menu, which then titles its
+    /// items as the editor's buttons are titled and undoes and redoes
+    /// through them.
+    func testTheEditMenusUndoAndRedoAreTheEditors() async throws {
+        let model = try await openRamp(seconds: 4).model
+        let (controller, window, _) = editMenu(over: model)
+        let undoManager = try XCTUnwrap(controller.editor(in: window)?.undoManager)
+        XCTAssertTrue(window.undoManager === undoManager, "the window doesn't give the menu the editor's undo manager")
+        XCTAssertEqual(undoManager.undoMenuItemTitle, "Undo")
+
+        model.select(AudioTimeRange(start: 1, end: 2))
+        await model.cut()
+        let undoItem = NSMenuItem(title: "Undo", action: NSSelectorFromString("undo:"), keyEquivalent: "z")
+        XCTAssertTrue(window.validateMenuItem(undoItem))
+        XCTAssertEqual(undoItem.title, "Undo Cut 1 Second")
+
+        window.perform(NSSelectorFromString("undo:"), with: nil)
+        let undone = await eventually { abs(model.duration - 4) < 0.000_1 && !model.isWorking }
+        XCTAssertTrue(undone, "Undo didn't undo the cut")
+        XCTAssertTrue(undoManager.canRedo)
+        XCTAssertEqual(undoManager.redoMenuItemTitle, "Redo Cut 1 Second")
+        undoManager.redo()
+        let redone = await eventually { abs(model.duration - 3) < 0.000_1 && !model.isWorking }
+        XCTAssertTrue(redone, "Redo didn't redo the cut")
+
+        model.isWorking = true
+        XCTAssertFalse(undoManager.canUndo, "Undo waits for work under way, as its button does")
+        model.isWorking = false
+    }
+
     // MARK: - Helpers
+
+    /// A controller of its own over `model`'s editor, in a window never
+    /// shown, which it takes as the key window until `front.window` names
+    /// another.
+    private func editMenu(over model: AudioEditorModel) -> (AudioEditorWindowController, NSWindow, KeyWindowStandIn) {
+        let controller = AudioEditorWindowController()
+        let window = NSWindow()
+        controller.attach(model, to: window)
+        let front = KeyWindowStandIn(window)
+        controller.keyWindow = { front.window }
+        return (controller, window, front)
+    }
+
+    /// An Edit menu item sending `action`.
+    private func menuItem(_ action: Selector) -> NSMenuItem {
+        NSMenuItem(title: "", action: action, keyEquivalent: "")
+    }
 
     /// `prompt`'s sheet for `model`, as the window builds it.
     private func promptSheet(_ prompt: AudioEditorPrompt, of model: AudioEditorModel) -> AudioEditorPromptSheet {
@@ -253,4 +350,14 @@ final class AudioEditorWindowTests: XCTestCase {
 @MainActor
 private final class Tally {
     var count = 0
+}
+
+/// The window a test says is in front, for a controller's Edit menu.
+@MainActor
+private final class KeyWindowStandIn {
+    var window: NSWindow?
+
+    init(_ window: NSWindow?) {
+        self.window = window
+    }
 }

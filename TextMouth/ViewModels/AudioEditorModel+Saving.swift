@@ -211,7 +211,7 @@ extension AudioEditorModel {
     }
 
     /// Undoes every edit, back to the original, saying how many Redo brings
-    /// back.
+    /// back; the markers are deleted, and said to be.
     func revertToOriginal() async {
         confirmingRevert = false
         guard canRevert else { return announce(AudioEditorWording.nothingToRevert) }
@@ -226,10 +226,14 @@ extension AudioEditorModel {
         } catch {
             announce(error.localizedDescription)
         }
+        let markersDeleted = markers.count
+        if markersDeleted > 0 {
+            markers = []
+        }
         clearSelectionQuietly()
         cursor = clamped(cursor)
         await loadPreview()
-        announce(AudioEditorWording.reverted(count))
+        announce(AudioEditorWording.reverted(count, markers: markersDeleted))
     }
 
     /// Undoes, or redoes, back to the edits the book's file holds, as

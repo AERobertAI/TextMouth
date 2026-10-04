@@ -37,6 +37,26 @@ extension LibraryViewModel {
         }
     }
 
+    /// Removes what audio editing left in this Mac's caches when TextMouth
+    /// last ended with editors open, as a crash leaves it
+    /// (`AudioEditCaches.removeStale`): off the main thread, never a folder
+    /// an open editor or a save uses, with one AUDIO_EDIT_CACHES_SWEPT line
+    /// in the debug log when anything was removed. The library runs it at
+    /// launch; tests hand it a completion, which gets what it did there.
+    func removeStaleAudioEditCachesInBackground(completion: (@Sendable (AudioEditCaches.Result) -> Void)? = nil) {
+        let activity = audioEditActivity
+        DispatchQueue.global(qos: .utility).async {
+            let result = AudioEditCaches.removeStale(isBookInUse: activity.isBeingEdited)
+            if result.removed > 0 {
+                DiagnosticLog.event(
+                    .storage,
+                    "AUDIO_EDIT_CACHES_SWEPT: removed \(result.removed) folder(s) a crash left in this Mac's audio editing caches"
+                )
+            }
+            completion?(result)
+        }
+    }
+
     /// Gives the book `bookID` an original policy of its own, or, for nil,
     /// has it follow the global setting again, then applies the policy, so
     /// "don't keep" deletes the book's original at once when nothing needs
@@ -93,11 +113,18 @@ extension LibraryViewModel {
     /// replaces the old one only once the book's record names it: the old
     /// file is deleted after the record is written, so a crash between them
     /// leaves the book playable.
+    ///
+    /// The book's bookmarks and saved reading position follow the sound
+    /// along `timeRoute`, the way from the file as it is to the edited audio
+    /// being saved (`AudioEditSession.savedFileRoute`), through the book's
+    /// chapters as they lay over the file before the save and after it
+    /// (`AudioEditPlaces`); without a route they stay where they are.
     /// - Throws: `AudioEditError.bookNotInLibrary`, `.bookIsOpen` for a book
     ///   open in a reader, or the render's errors.
     func saveAudioEdits(
         ofBook bookID: UUID,
         audioFile: String? = nil,
+        timeRoute: AudioEditorTimeMap.Route? = nil,
         now: Date = Date(),
         progress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> AudioEditSaveOutcome {
@@ -112,6 +139,10 @@ extension LibraryViewModel {
         let engine = audioFilterEngine()
         let makeProcessor = audioEditProcessorFactory(engine: engine)
         let activity = audioEditActivity
+        // The chapters as they lay over the file before the save are read
+        // only when a route will move places along them.
+        let hasPlaces = !book.bookmarks.isEmpty || book.readingPosition != nil
+        let readsLayout = hasPlaces && timeRoute.map { !$0.isEmpty } == true
 
         // The use begins before the render reads the history, so the
         // original policy keeps the original it renders from.
@@ -133,6 +164,7 @@ extension LibraryViewModel {
                         ffmpeg: engine.ffmpeg,
                         mayReplace: { !activity.isOpenInReader(bookID) }
                     ),
+                    readsLayout: readsLayout,
                     now: now,
                     progress: progress
                 )
@@ -153,6 +185,14 @@ extension LibraryViewModel {
             library.books[row].md5Hash = hash
         }
         library.books[row].applyContentAnalysis(analysis, cacheFormatVersion: nil)
+        movePlaces(
+            ofBookAt: row,
+            along: timeRoute,
+            from: saved.previousLayout,
+            to: analysis,
+            track: Self.track(file, savedAs: saved.render.audioFile, in: place),
+            now: now
+        )
         let updated = library.books[row]
         save()
         LibraryPersistenceService.saveBookInfo(for: updated, contentIndex: analysis)
@@ -192,6 +232,10 @@ extension LibraryViewModel {
         /// The book's content index, measured afresh; nil when nothing was
         /// rendered.
         let analysis: BookContentIndex?
+        /// The book's content index as it was before the render, which says
+        /// how its chapters lay over the file then; nil unless asked for, or
+        /// when it couldn't be read.
+        let previousLayout: BookContentIndex?
         /// The book's file, or folder of tracks, as a full path now.
         let bookFilePath: String
         /// The MD5 of a book of one file, now; nil for a book of several.
@@ -200,14 +244,18 @@ extension LibraryViewModel {
 
     /// Renders `request` and, when anything was rendered, analyzes `book`'s
     /// audio afresh from its files: storage work's body, on a background
-    /// thread, which waits for the asynchronous render.
+    /// thread, which waits for the asynchronous render. With `readsLayout`,
+    /// the book's content index as it is before the render is read first,
+    /// as the reader reads it (`BookContentAnalysisService.load`).
     nonisolated private static func renderAndAnalyze(
         book: Book,
         place: AudioBookPlace,
         request: AudioEditBookRender.Request,
+        readsLayout: Bool,
         now: Date,
         progress: (@Sendable (Double) -> Void)?
     ) throws -> RenderedBook {
+        let previousLayout = readsLayout ? try? BookContentAnalysisService.load(book: book).index : nil
         let render = try AsyncBridge.waitForResult {
             try await AudioEditBookRender.run(request, now: now, progress: progress)
         }
@@ -215,7 +263,7 @@ extension LibraryViewModel {
         let bookFile = isOneFile ? render.audioFile : place.bookFile
         let bookURL = request.package.appendingPathComponent(bookFile)
         guard render.rendered else {
-            return RenderedBook(render: render, analysis: nil, bookFilePath: bookURL.path, hash: nil)
+            return RenderedBook(render: render, analysis: nil, previousLayout: previousLayout, bookFilePath: bookURL.path, hash: nil)
         }
         if !isOneFile, let replaced = render.replacedFile {
             // A track of a book of several, renamed: its folder's manifest
@@ -233,9 +281,59 @@ extension LibraryViewModel {
         return RenderedBook(
             render: render,
             analysis: analysis.index,
+            previousLayout: previousLayout,
             bookFilePath: bookURL.path,
             hash: isOneFile ? try FileImportService.md5Hash(of: bookURL) : nil
         )
+    }
+
+    // MARK: The Book's Places
+
+    /// Moves the bookmarks and the saved reading position of the book at
+    /// `row` along `route`, through `previous`, its content index before the
+    /// save, and `current`, its index now (`AudioEditPlaces`); `track` names
+    /// the track saved in a book of several. Without a route, or without the
+    /// index from before, they stay where they are, with a line in the debug
+    /// log when there were any to move.
+    private func movePlaces(
+        ofBookAt row: Int,
+        along route: AudioEditorTimeMap.Route?,
+        from previous: BookContentIndex?,
+        to current: BookContentIndex,
+        track: AudioEditPlaces.Track?,
+        now: Date
+    ) {
+        let book = library.books[row]
+        guard !book.bookmarks.isEmpty || book.readingPosition != nil, route?.isEmpty != true else { return }
+        guard let route, let previous else {
+            DiagnosticLog.event(
+                .storage,
+                "AUDIO_EDITS_SAVED: \(book.title): the bookmarks and the reading position stay where they were, "
+                    + (route == nil ? "as how the edits moved the sound isn't known" : "as the book's chapters couldn't be read before the save")
+            )
+            return
+        }
+        let moved = AudioEditPlaces.follow(
+            route,
+            bookmarks: book.bookmarks,
+            position: book.readingPosition,
+            track: track,
+            from: previous,
+            to: current,
+            at: now
+        )
+        library.books[row].bookmarks = moved.bookmarks
+        library.books[row].readingPosition = moved.position
+    }
+
+    /// The track saved as `savedAs`, from `file` (both paths inside the
+    /// package), as a book of several tracks names it inside its folder of
+    /// tracks; nil for a book of one file, which `file` is when it is the
+    /// book's own.
+    nonisolated static func track(_ file: String, savedAs: String, in place: AudioBookPlace) -> AudioEditPlaces.Track? {
+        let folder = place.bookFile + "/"
+        guard file != place.bookFile, file.hasPrefix(folder), savedAs.hasPrefix(folder) else { return nil }
+        return AudioEditPlaces.Track(before: String(file.dropFirst(folder.count)), after: String(savedAs.dropFirst(folder.count)))
     }
 
     /// Deletes `replaced`, the path inside `book`'s package of the audio file

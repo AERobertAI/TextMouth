@@ -72,8 +72,12 @@ final class AudioEditorModel: ObservableObject {
     /// marked In selects to the end of the audio.
     @Published var selectionEnd: TimeInterval?
     /// The markers dropped, in the order they were dropped; listed in time
-    /// order (`orderedMarkers`).
-    @Published var markers: [AudioEditorMarker] = []
+    /// order (`orderedMarkers`). They come back from the file's edit list
+    /// as the window opens, and every change to them is kept there again
+    /// (`AudioEditSession.keepMarkers`).
+    @Published var markers: [AudioEditMarker] = [] {
+        didSet { session.keepMarkers(markers) }
+    }
     /// Whether an edit, a save, or an export is under way: every other
     /// command that would change the audio waits for it, saying so.
     @Published var isWorking = false
@@ -111,7 +115,8 @@ final class AudioEditorModel: ObservableObject {
     /// level the status line shows while recording.
     var recorderSubscriptions: Set<AnyCancellable> = []
     /// This window's folder for audio copied or cut, made when first used
-    /// and removed as the window closes.
+    /// and removed as the window closes; the launch sweep of this Mac's
+    /// caches leaves it alone until then (`AudioEditCaches`).
     let clipFolder: URL
 
     /// Where the search for pauses is.
@@ -176,7 +181,7 @@ final class AudioEditorModel: ObservableObject {
         player: AudioEditorPlayback,
         store: UserDefaults,
         recorder: AudioEditorRecorder,
-        clipFolder: URL = AudioEditorClip.newFolder(),
+        clipFolder: URL = AudioEditCaches.newClipFolder(),
         announce: @escaping @MainActor (String) -> Void
     ) {
         self.bookID = bookID
@@ -207,6 +212,13 @@ final class AudioEditorModel: ObservableObject {
             self?.objectWillChange.send()
         }
         followRecorder()
+        // The markers the edit list kept, inside the audio. Set here, in
+        // the initializer, so they aren't written straight back.
+        markers = session.list.markers.map { marker in
+            var restored = marker
+            restored.time = clamped(marker.time)
+            return restored
+        }
     }
 
     // MARK: State
@@ -364,6 +376,6 @@ final class AudioEditorModel: ObservableObject {
         }
         bindingsObserver = nil
         clip = nil
-        try? FileManager.default.removeItem(at: clipFolder)
+        AudioEditCaches.endClipFolder(clipFolder)
     }
 }

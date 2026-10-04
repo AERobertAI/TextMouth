@@ -7,7 +7,8 @@ import XCTest
 /// whole said on request; a phrase, from the cursor to a pause; the
 /// chapter the cursor is in; everything, or nothing; playing the
 /// selection; and markers dropped, named, gone to, and deleted, beside the
-/// pauses in the list.
+/// pauses in the list, kept in the file's edit list for the next window,
+/// and deleted by Revert to Original.
 @MainActor
 final class AudioEditorSelectingTests: XCTestCase {
 
@@ -198,5 +199,98 @@ final class AudioEditorSelectingTests: XCTestCase {
         XCTAssertEqual(harness.announcements.sentences.last, "After a pause of 1.5 seconds, at 5.5 seconds.")
         XCTAssertEqual(AudioEditorWording.pauseRow(2, pause), "Pause 2, 1.5 seconds, at 4 seconds")
         XCTAssertEqual(AudioEditorWording.rowButton("Delete", "Marker 3"), "Delete Marker 3")
+    }
+
+    // MARK: - Markers Kept
+
+    /// Markers dropped and named are kept in the file's edit list, and the
+    /// next window on the book shows them again, in its list too.
+    func testMarkersAreKeptAndComeBackWhenTheWindowReopens() async throws {
+        let fixture = try AudioEditorTestBook.ramp(seconds: 10, for: self)
+        let first = try await EditorHarness.open(fixture, for: self)
+        AudioEditorPreferences.playAfterMoves.write(false, to: first.store)
+        first.model.move(to: 7)
+        first.model.addMarker()
+        first.model.move(to: 3)
+        first.model.addMarker()
+        let later = try XCTUnwrap(first.model.orderedMarkers.last)
+        first.model.renameMarker(later.id, to: "Weir")
+        await first.model.session.markersKept()
+        XCTAssertFalse(first.model.session.isKeepingMarkers)
+        first.model.windowClosed()
+
+        XCTAssertEqual(try keptMarkers(of: fixture).map(\.time), [7, 3], "kept in the order they were dropped")
+        let second = try await EditorHarness.open(fixture, for: self)
+        addTeardownBlock { @MainActor in second.model.windowClosed() }
+        XCTAssertEqual(second.model.orderedMarkers.map(\.time), [3, 7])
+        XCTAssertEqual(second.model.orderedMarkers.map(\.name), ["", "Weir"])
+        XCTAssertEqual(second.model.orderedMarkers.map(\.id), first.model.orderedMarkers.map(\.id))
+        second.model.perform(.editorShowMarkers)
+        XCTAssertEqual(second.model.sheet, .markers)
+        let restored = try XCTUnwrap(second.model.orderedMarkers.last)
+        second.model.goToMarker(restored.id)
+        XCTAssertEqual(second.announcements.sentences.last, "Marker 2, Weir, at 7 seconds.")
+    }
+
+    /// Markers moved by an edit, and back by its undo, are kept where they
+    /// moved; markers dropped just before a save are kept with it.
+    func testMarkersMovedByEditsAreKeptWhereTheyMoved() async throws {
+        let harness = try await openRamp(seconds: 10)
+        let model = harness.model
+        model.move(to: 3)
+        model.addMarker()
+        model.move(to: 6)
+        model.addMarker()
+        model.select(AudioTimeRange(start: 2, end: 4))
+
+        await model.cut()
+        await model.session.markersKept()
+        XCTAssertEqual(try keptMarkers(of: harness.fixture).map(\.time), [2, 4])
+        await model.undo()
+        await model.session.markersKept()
+        XCTAssertEqual(try keptMarkers(of: harness.fixture).map(\.time), [2, 6])
+
+        await model.redo()
+        model.move(to: 7)
+        model.addMarker()
+        let saved = await model.save()
+        XCTAssertTrue(saved, "\(harness.announcements.sentences)")
+        XCTAssertEqual(try keptMarkers(of: harness.fixture).map(\.time), [2, 4, 7], "a save waits for the markers asked to be kept")
+    }
+
+    /// Revert to Original deletes the markers, says so first and after, and
+    /// Redo doesn't bring them back.
+    func testRevertToOriginalDeletesTheMarkers() async throws {
+        let harness = try await openRamp(seconds: 10)
+        let model = harness.model
+        model.move(to: 5)
+        model.addMarker()
+        model.select(AudioTimeRange(start: 1, end: 2))
+        await model.cut()
+        XCTAssertEqual(AudioEditorWording.revertExplanation(1, markers: 1), "1 edit is undone. Redo brings them back until you make another edit. The marker is deleted, and Redo doesn't bring it back.")
+        XCTAssertEqual(AudioEditorWording.revertExplanation(2, markers: 3), "2 edits are undone. Redo brings them back until you make another edit. The 3 markers are deleted, and Redo doesn't bring them back.")
+
+        await model.revertToOriginal()
+
+        XCTAssertTrue(model.markers.isEmpty)
+        XCTAssertEqual(harness.announcements.sentences.last, "Reverted to the original audio. Redo brings back the 1 edit. The marker is deleted.")
+        await model.session.markersKept()
+        XCTAssertEqual(try keptMarkers(of: harness.fixture), [])
+        await model.redo()
+        XCTAssertTrue(model.markers.isEmpty)
+        XCTAssertEqual(AudioEditorWording.reverted(2, markers: 4), "Reverted to the original audio. Redo brings back the 2 edits. The 4 markers are deleted.")
+    }
+
+    // MARK: - Helpers
+
+    /// The markers the edit list of `fixture`'s book file keeps, as its
+    /// edits.json holds them.
+    private func keptMarkers(of fixture: AudioEditorTestBook) throws -> [AudioEditMarker] {
+        let file = fixture.book.fileInPackage
+        guard case .found(let history, _) = AudioEditHistoryStore.read(fromPackage: fixture.package, bookFile: file) else {
+            XCTFail("the book's edit history couldn't be read")
+            return []
+        }
+        return history.list(for: file)?.markers ?? []
     }
 }

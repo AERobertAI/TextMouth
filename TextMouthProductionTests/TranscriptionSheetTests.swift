@@ -28,12 +28,12 @@ final class TranscriptionSheetTests: XCTestCase {
                             tmbDirectoryName: "lock.tmb")
         let unpackaged = Book(title: "Loose Track", format: .audio, filePath: "/nonexistent/loose.mp3", md5Hash: "loose")
 
-        XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [audiobook]), [.editAudio(audiobook), .transcribe([audiobook])])
-        XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [textBook, audiobook]), [.transcribe([textBook, audiobook])])
-        XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [textBook]), [])
-        XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [unpackaged]), [])
-        XCTAssertEqual(LibraryTranscriptionCommand.transcribe([audiobook]).title, "Transcribe Audio…")
-        let row = BookRow(book: audiobook, transcriptionCommands: LibraryTranscriptionCommand.commands(for: [audiobook]))
+        XCTAssertEqual(LibraryAudioCommand.commands(for: [audiobook]), [.editAudio(audiobook), .transcribe([audiobook])])
+        XCTAssertEqual(LibraryAudioCommand.commands(for: [textBook, audiobook]), [.transcribe([textBook, audiobook])])
+        XCTAssertEqual(LibraryAudioCommand.commands(for: [textBook]), [])
+        XCTAssertEqual(LibraryAudioCommand.commands(for: [unpackaged]), [])
+        XCTAssertEqual(LibraryAudioCommand.transcribe([audiobook]).title, "Transcribe Audio…")
+        let row = BookRow(book: audiobook, audioCommands: LibraryAudioCommand.commands(for: [audiobook]))
         XCTAssertEqual(row.accessibilityActionNames, ["Edit Audio…", "Transcribe Audio…"])
     }
 

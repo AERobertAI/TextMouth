@@ -218,8 +218,9 @@ final class LibraryViewModel: ObservableObject {
     /// the directory structure, the library's identity, the sweep of what
     /// interrupted imports left and of the reading texts this Mac kept that
     /// went unused for a day, the index with its repair, the sweep of the
-    /// recordings' original takes whose time is up, the observers, and the
-    /// background maintenance. It runs once: at launch, or on the
+    /// recordings' original takes whose time is up and of the audio
+    /// editor's caches a crash left, the observers, and the background
+    /// maintenance. It runs once: at launch, or on the
     /// Try Again that first finds the library.
     func startLibrary() {
         guard !hasStartedLibrary else { return }
@@ -241,6 +242,9 @@ final class LibraryViewModel: ObservableObject {
         // Delete the originals of recordings and edited audiobooks whose
         // time is up, off the main thread, downloading nothing (FR04).
         sweepAudioOriginalsInBackground()
+        // Clear what the audio editor left in this Mac's caches when
+        // TextMouth last ended with editors open, off the main thread.
+        removeStaleAudioEditCachesInBackground()
         importOperationQueue.onActivityChanged = { [weak self] activeCount in
             guard let self else { return }
             self.isImporting = activeCount > 0

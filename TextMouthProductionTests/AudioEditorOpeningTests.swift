@@ -459,6 +459,10 @@ struct EditorHarness {
             recorder: AudioEditorRecorder(service: service, catalog: catalog, countIn: {}, announcementLead: .zero),
             announce: announcements.announce
         )
+        // The markers asked to be kept are written before the book's folder,
+        // which the fixture's own teardown removes, is gone: teardowns run
+        // newest first, so this runs after the test's own and before that.
+        test.addTeardownBlock { @MainActor in await session.markersKept() }
         return EditorHarness(
             model: model,
             player: player,

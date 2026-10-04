@@ -24,22 +24,22 @@ final class TranscriptDeletionTests: XCTestCase {
         let transcribed: (UUID) -> Bool = { $0 == book.id }
 
         XCTAssertEqual(
-            LibraryTranscriptionCommand.commands(for: [book], isTranscribed: transcribed),
+            LibraryAudioCommand.commands(for: [book], isTranscribed: transcribed),
             [.editAudio(book), .transcribe([book]), .cleanUpTranscript(book), .deleteTranscript(book)]
         )
         XCTAssertEqual(
-            LibraryTranscriptionCommand.commands(for: [other], isTranscribed: transcribed),
+            LibraryAudioCommand.commands(for: [other], isTranscribed: transcribed),
             [.editAudio(other), .transcribe([other])]
         )
         XCTAssertEqual(
-            LibraryTranscriptionCommand.commands(for: [book, other], isTranscribed: transcribed),
+            LibraryAudioCommand.commands(for: [book, other], isTranscribed: transcribed),
             [.transcribe([book, other])]
         )
-        XCTAssertEqual(LibraryTranscriptionCommand.deleteTranscript(book).title, "Delete Transcript…")
+        XCTAssertEqual(LibraryAudioCommand.deleteTranscript(book).title, "Delete Transcript…")
         let row = BookRow(
             book: book,
             transcriptionNote: .transcribed,
-            transcriptionCommands: LibraryTranscriptionCommand.commands(for: [book], isTranscribed: transcribed)
+            audioCommands: LibraryAudioCommand.commands(for: [book], isTranscribed: transcribed)
         )
         XCTAssertEqual(
             row.accessibilityActionNames,

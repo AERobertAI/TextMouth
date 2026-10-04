@@ -59,7 +59,14 @@ struct AudioFilterProcessor: AudioEditProcessing {
             )
         }
         try? FileManager.default.removeItem(at: result)
-        try FileManager.default.moveItem(at: partial, to: result)
+        do {
+            try FileManager.default.moveItem(at: partial, to: result)
+        } catch where FileManager.default.fileExists(atPath: result.path) {
+            // Another render of this very stretch, as a preview and a level
+            // measurement can ask for at once, moved its result here first:
+            // the same sound, by its name, so it stands, and this one's
+            // partial file goes with the others.
+        }
         return AudioEditTimeline.Segment(
             source: .processed(name),
             sourceStart: 0,

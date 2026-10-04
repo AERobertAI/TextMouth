@@ -21,7 +21,7 @@ enum TranscriptionRequest: Equatable {
             self = .refused(TranscriptionWording.oneBookAtATime)
             return
         }
-        guard LibraryTranscriptionCommand.isTranscribable(book) else {
+        guard LibraryAudioCommand.isTranscribable(book) else {
             self = .refused(TranscriptionWording.notAnAudiobook(bookTitle: book.title))
             return
         }

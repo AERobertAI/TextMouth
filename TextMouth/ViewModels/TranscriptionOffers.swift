@@ -22,7 +22,7 @@ enum TranscriptionOffers {
     /// Whether an import offers to transcribe `book`, as the setting in the
     /// app's preferences store and this Mac's system decide.
     static func offersTranscription(of book: Book) -> Bool {
-        LibraryTranscriptionCommand.isTranscribable(book)
+        LibraryAudioCommand.isTranscribable(book)
             && TranscriptionPreferences.offerAfterImport.read(from: TextMouthRuntime.current.preferences)
             && TranscriptionAvailability.systemSupport == .available
     }

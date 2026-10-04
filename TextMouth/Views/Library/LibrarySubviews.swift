@@ -316,12 +316,12 @@ struct BookRow: View {
     var cloudCommands: [LibraryCloudCommand] = []
     /// Runs one of `cloudCommands`.
     var performCloudCommand: (LibraryCloudCommand) -> Void = { _ in }
-    /// The transcription commands of the row's context menu, which are also
-    /// its VoiceOver actions, after the cloud commands, under the same names
-    /// (FR05).
-    var transcriptionCommands: [LibraryTranscriptionCommand] = []
-    /// Runs one of `transcriptionCommands`.
-    var performTranscriptionCommand: (LibraryTranscriptionCommand) -> Void = { _ in }
+    /// The audio commands of the row's context menu, Edit Audio… (FR04) and
+    /// the transcription commands (FR05), which are also its VoiceOver
+    /// actions, after the cloud commands, under the same names.
+    var audioCommands: [LibraryAudioCommand] = []
+    /// Runs one of `audioCommands`.
+    var performAudioCommand: (LibraryAudioCommand) -> Void = { _ in }
     /// The commands of the feed item the book was downloaded from, in its
     /// feed's folder (FR03), which follow the cloud commands as VoiceOver
     /// actions; none for any other book.
@@ -430,8 +430,8 @@ struct BookRow: View {
             ForEach(cloudCommands) { command in
                 Button(command.title) { performCloudCommand(command) }
             }
-            ForEach(transcriptionCommands) { command in
-                Button(command.title) { performTranscriptionCommand(command) }
+            ForEach(audioCommands) { command in
+                Button(command.title) { performAudioCommand(command) }
             }
             ForEach(feedActions) { action in
                 Button(action.title) { performFeedAction(action) }
@@ -442,7 +442,7 @@ struct BookRow: View {
     /// The names of the row's own VoiceOver actions, in the order VoiceOver
     /// lists them.
     var accessibilityActionNames: [String] {
-        cloudCommands.map(\.title) + transcriptionCommands.map(\.title) + feedActions.map(\.title)
+        cloudCommands.map(\.title) + audioCommands.map(\.title) + feedActions.map(\.title)
     }
 
     /// Spoken label for the whole row, replacing its combined children.
@@ -559,17 +559,18 @@ struct LibraryBookRowActions {
     /// true, in an app they choose (FR05). Doing nothing unless the list
     /// supplies it.
     var editText: (Book, _ choosingApp: Bool) -> Void = { _, _ in }
-    /// Runs a transcription command (FR05). Doing nothing unless the list
-    /// supplies it.
-    var performTranscriptionCommand: (LibraryTranscriptionCommand) -> Void = { _ in }
+    /// Runs an audio command: Edit Audio… (FR04) or a transcription command
+    /// (FR05). Doing nothing unless the list supplies it.
+    var performAudioCommand: (LibraryAudioCommand) -> Void = { _ in }
     /// Runs a command of the feed item a book was downloaded from (FR03).
     /// Doing nothing unless the list supplies it.
     var performFeedAction: (FeedItemAction) -> Void = { _ in }
 }
 
 /// One book's row in the library list: the row, its context menu, its
-/// default action, and its cloud commands (FR02) and transcription commands
-/// (FR05) as VoiceOver actions, which act on the same books.
+/// default action, and its cloud commands (FR02) and audio commands (Edit
+/// Audio…, FR04, and transcription's, FR05) as VoiceOver actions, which
+/// act on the same books.
 ///
 /// Equatable on everything it shows (PERF28). When a change to the library
 /// draws the list again, SwiftUI skips every row the change left as it was,
@@ -610,9 +611,10 @@ struct LibraryBookListRow: View, Equatable {
     /// object for the book all session, compared by identity. `BookRow`
     /// observes it, so its changes redraw the row's progress alone.
     let livePosition: LiveReadingPosition
-    /// The transcription commands for `targets` (FR05): context menu items
-    /// and VoiceOver actions alike.
-    var transcriptionCommands: [LibraryTranscriptionCommand] = []
+    /// The audio commands for `targets`, Edit Audio… (FR04) and the
+    /// transcription commands (FR05): context menu items and VoiceOver
+    /// actions alike.
+    var audioCommands: [LibraryAudioCommand] = []
     /// The book's transcription note, "Transcribed" or "Transcribing"
     /// (FR05), or nil for none.
     var transcriptionNote: TranscriptionRowNote? = nil
@@ -636,7 +638,7 @@ struct LibraryBookListRow: View, Equatable {
             && lhs.manualMoves == rhs.manualMoves
             && lhs.removalPreferences == rhs.removalPreferences
             && lhs.livePosition === rhs.livePosition
-            && lhs.transcriptionCommands == rhs.transcriptionCommands
+            && lhs.audioCommands == rhs.audioCommands
             && lhs.transcriptionNote == rhs.transcriptionNote
             && lhs.feedActions == rhs.feedActions
     }
@@ -654,8 +656,8 @@ struct LibraryBookListRow: View, Equatable {
             transcriptionNote: transcriptionNote,
             cloudCommands: cloudCommands,
             performCloudCommand: actions.performCloudCommand,
-            transcriptionCommands: transcriptionCommands,
-            performTranscriptionCommand: actions.performTranscriptionCommand,
+            audioCommands: audioCommands,
+            performAudioCommand: actions.performAudioCommand,
             feedActions: feedActions,
             performFeedAction: actions.performFeedAction,
             livePosition: livePosition
@@ -674,7 +676,7 @@ struct LibraryBookListRow: View, Equatable {
 
     /// The row's context menu. Its commands act on `targets`: the selection
     /// when the row belongs to one, otherwise the row's book. The cloud
-    /// commands (FR02) and the transcription commands (FR05) are also the
+    /// commands (FR02) and the audio commands (FR04, FR05) are also the
     /// row's VoiceOver actions.
     @ViewBuilder
     private var menu: some View {
@@ -710,11 +712,12 @@ struct LibraryBookListRow: View, Equatable {
                 actions.editText(book, true)
             }
         }
-        // Transcribe Audio… for an audiobook, and Delete Transcript… for a transcribed
-        // one (FR05), also VoiceOver actions.
-        ForEach(transcriptionCommands) { command in
+        // Edit Audio… (FR04) and Transcribe Audio… for an audiobook, and Clean Up
+        // Transcript (Experimental)… and Delete Transcript… for a transcribed one
+        // (FR05), also VoiceOver actions.
+        ForEach(audioCommands) { command in
             Button(command.title) {
-                actions.performTranscriptionCommand(command)
+                actions.performAudioCommand(command)
             }
         }
         // Manual order move commands: single book only, where

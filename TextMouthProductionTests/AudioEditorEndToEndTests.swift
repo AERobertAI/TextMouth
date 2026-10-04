@@ -143,7 +143,7 @@ final class AudioEditorEndToEndTests: XCTestCase {
 
         XCTAssertTrue(saved)
         let saving = try XCTUnwrap(harness.announcements.sentences.first { $0.hasPrefix("Saving ") })
-        XCTAssertTrue(saving.hasSuffix(" of audio as M4B audiobook (AAC), the format this book keeps."), saving)
+        XCTAssertTrue(saving.hasSuffix(" of audio as M4B Audiobook (AAC), the format this book keeps."), saving)
         let chapters = await AudioPlaybackService.extractChapters(from: fixture.book.bookFileURL)
         XCTAssertEqual(chapters.map(\.title), ["Quay", "Locks", "Weir"])
         XCTAssertEqual(chapters[checked: 2]?.startTime ?? -1, 4.5, accuracy: 0.05)
