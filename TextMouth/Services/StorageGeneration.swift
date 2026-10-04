@@ -46,6 +46,9 @@ enum StorageWork: Sendable, CaseIterable {
     /// Analyzing a book for its statistics and index, in the background
     /// pass that follows the text caches.
     case contentAnalysis
+    /// Writing or removing a feed's record in the data directory's Feeds
+    /// folder (FR03).
+    case savingFeeds
 
     /// What a move's status line says while it waits for this work, as the
     /// screen shows it and VoiceOver reads it.
@@ -59,6 +62,8 @@ enum StorageWork: Sendable, CaseIterable {
             return "Waiting for text extraction to finish..."
         case .contentAnalysis:
             return "Waiting for book analysis to finish..."
+        case .savingFeeds:
+            return "Waiting for feed records to be saved..."
         }
     }
 }

@@ -662,6 +662,10 @@ struct Book: Identifiable, Codable, Hashable {
     /// that index's transcript text, or none, and any other write keeps the
     /// note the stored record holds, as it keeps the stored index.
     ///
+    /// The feed item a downloaded episode or article came from
+    /// (`BookMetadata.feedLink`, FR03) belongs to the package alone as well,
+    /// and every write keeps the one the stored record holds.
+    ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
@@ -681,6 +685,8 @@ struct Book: Identifiable, Codable, Hashable {
             info.state.transcript = stored?.info.state.transcript
         }
         info.state.revision = BookState.revision(after: max(stored?.info.state.revision ?? 0, revisionFloor))
+        // The feed item, which a library row never carries (FR03).
+        info.metadata.feedLink = stored?.info.metadata.feedLink
         return info
     }
 

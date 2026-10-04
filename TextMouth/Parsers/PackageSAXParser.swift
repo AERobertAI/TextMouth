@@ -82,8 +82,9 @@ class PackageSAXParser: NSObject, XMLParserDelegate {
         return "\(Self.problem(forCode: firstError.code)) (line \(firstError.line), column \(firstError.column))"
     }
 
-    /// Plain-language descriptions of the errors damaged package files produce.
-    private static func problem(forCode code: Int) -> String {
+    /// Plain-language descriptions of the errors damaged package files
+    /// produce. A damaged feed is described in the same words (`FeedParser`).
+    static func problem(forCode code: Int) -> String {
         switch XMLParser.ErrorCode(rawValue: code) {
         case .prematureDocumentEndError?:
             // libxml2 reports this code both for a file that stops inside an

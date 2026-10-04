@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:i="http://www.itunes.com/DTDs/Podcast-1.0.dtd" xmlns:c="http://purl.org/rss/1.0/modules/content/" xmlns:d="http://purl.org/dc/elements/1.1/" xmlns:pc="https://podcastindex.org/namespace/1.0">
+<channel><title>Odd Prefixes</title><link>https://prefixes.example/</link><description>Every namespace under a prefix of its own.</description>
+<i:author>Lucinda Ferraro</i:author><i:type>serial</i:type>
+<i:new-feed-url>https://moved.example/odd-prefixes.xml</i:new-feed-url>
+<item><title>Part one</title><description>Short.</description><c:encoded><![CDATA[<p>Longer, with <em>emphasis</em>.</p>]]></c:encoded>
+<d:creator>Lucinda Ferraro</d:creator><d:date>2026-09-30T08:15:00+02:00</d:date>
+<enclosure url="https://cdn.example/odd/1.m4a" length="2048" type="audio/x-m4a"/>
+<i:duration>12:34</i:duration><i:episode>1</i:episode>
+<pc:transcript url="https://cdn.example/odd/1.vtt" type="text/vtt"/>
+<pc:chapters url="https://cdn.example/odd/1-chapters.json" type="application/json+chapters"/>
+<guid isPermaLink="false">odd-1</guid></item>
+</channel></rss>

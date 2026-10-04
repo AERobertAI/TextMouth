@@ -333,6 +333,24 @@ final class ConfigService: ObservableObject {
         /// leaves the action without one. TextMouth writes every action; an
         /// action the file leaves out keeps its shortcuts.
         var keyboardShortcuts: [String: [String]] = [:]
+        /// Whether every feed is refreshed when TextMouth opens (FR03,
+        /// `FeedSettings`).
+        var feedRefreshAtLaunch: Bool?
+        /// Hours between feed refreshes while TextMouth runs, 1 to 168, or 0
+        /// to refresh only at launch and when asked.
+        var feedRefreshIntervalHours: Int?
+        /// How many of each feed's newest entries are kept besides its
+        /// downloads, 0 to 2,000, or -1 for every entry.
+        var feedKeepEntries: Int?
+        /// Whether new episodes download by themselves.
+        var feedAutoDownload: Bool?
+        /// Days after an episode plays to the end that its download is
+        /// deleted, 0 (at once) to 365, or -1 never.
+        var feedDeleteDownloadsDaysAfterPlayed: Int?
+        /// Whether a refresh is announced in an alert.
+        var feedRefreshAlert: Bool?
+        /// Whether new episodes are announced in a notification.
+        var feedNotifications: Bool?
         /// Where the diagnostic logs are written (`LogLocation`):
         /// "dataDirectory", in the data directory's Logs folder, or
         /// "machine", in this Mac's ~/Library/Logs/TextMouth. Empty keeps
@@ -426,6 +444,19 @@ final class ConfigService: ObservableObject {
             recordingOriginalPolicy = fields.rawChoice(.recordingOriginalPolicy, rule: SettingsPolicy.recordingOriginalPolicy)
             recordingOriginalDays = fields.optionalNumber(.recordingOriginalDays, rule: SettingsPolicy.recordingOriginalDays)
             keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
+            feedRefreshAtLaunch = fields.optionalFlag(.feedRefreshAtLaunch)
+            feedRefreshIntervalHours = fields.optionalThreshold(
+                .feedRefreshIntervalHours,
+                rule: SettingsPolicy.feedRefreshIntervalHours
+            )
+            feedKeepEntries = fields.optionalThreshold(.feedKeepEntries, rule: SettingsPolicy.feedKeepEntries)
+            feedAutoDownload = fields.optionalFlag(.feedAutoDownload)
+            feedDeleteDownloadsDaysAfterPlayed = fields.optionalThreshold(
+                .feedDeleteDownloadsDaysAfterPlayed,
+                rule: SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed
+            )
+            feedRefreshAlert = fields.optionalFlag(.feedRefreshAlert)
+            feedNotifications = fields.optionalFlag(.feedNotifications)
             logLocation = fields.rawChoice(.logLocation, rule: SettingsPolicy.logLocation)
             // An identifier that cannot be one is repaired to empty, and
             // logged, so it leaves the current language alone.
@@ -491,6 +522,11 @@ final class ConfigService: ObservableObject {
                 mirrored += sameNames([
                     "bluetoothMonitoringEnabled", "bluetoothDisconnectDelay", "restartTimerGestureEnabled",
                     "restartTimerGesturePattern", "restartTimerGestureWindow",
+                ])
+                // Feeds (FR03), which the feed engine keeps.
+                mirrored += sameNames([
+                    "feedRefreshAtLaunch", "feedRefreshIntervalHours", "feedKeepEntries", "feedAutoDownload",
+                    "feedDeleteDownloadsDaysAfterPlayed", "feedRefreshAlert", "feedNotifications",
                 ])
                 // Storage: where the logs are written, which the log writer
                 // keeps. The tab's other choices config.json alone holds.

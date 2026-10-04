@@ -231,6 +231,8 @@ final class LibraryViewModel: ObservableObject {
             }
         }
         updateContentCachesAndStatistics()
+        // The podcast and article feeds start in the background (FR03).
+        startFeeds()
         // In a library another Mac can open, say this Mac has it open.
         dataDirectoryEnvironment.sessionLease?.begin()
     }

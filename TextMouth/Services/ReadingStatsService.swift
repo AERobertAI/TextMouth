@@ -378,7 +378,13 @@ final class ReadingStatsService: ObservableObject {
         )
         stats.finishedBooks.append(entry)
         save()
+        // Whoever follows finished books hears of this one, as the feed
+        // engine marks a downloaded episode or article played (FR03).
+        NotificationCenter.default.post(name: .bookDidFinish, object: self, userInfo: [Self.finishedBookIDKey: bookID])
     }
+
+    /// The key of the finished book's ID in a `.bookDidFinish` notification.
+    nonisolated static let finishedBookIDKey = "bookID"
 
     // MARK: - Computed Stats
 
@@ -661,4 +667,12 @@ struct FinishedBookEntry: Codable {
     var bookID: String
     var title: String
     var dateFinished: Date
+}
+
+extension Notification.Name {
+    /// A book played or was read to its end, as Books Finished counts it
+    /// (`ReadingStatsService.markBookFinished(bookID:title:)`): posted by the
+    /// statistics service that counted it, naming the book under
+    /// `ReadingStatsService.finishedBookIDKey`.
+    static let bookDidFinish = Notification.Name("bookDidFinish")
 }

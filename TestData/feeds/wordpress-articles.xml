@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>Corkboard Project News</title>
+	<atom:link href="https://news.corkboard.example/feed/" rel="self" type="application/rss+xml" />
+	<link>https://news.corkboard.example</link>
+	<description>The latest news about Corkboard and the people who build it</description>
+	<lastBuildDate>Wed, 23 Sep 2026 14:04:10 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://corkboard.example/?v=7.2-alpha-64071</generator>
+
+<image>
+	<url>https://corkboard.example/favicon.ico?2</url>
+	<title>Corkboard Project News</title>
+	<link>https://news.corkboard.example</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+<site xmlns="com-wordpress:feed-additions:1">4242</site>	<item>
+		<title>Corkboard 7.1.2 Security Release</title>
+		<link>https://news.corkboard.example/2026/09/corkboard-7-1-2-security-release/</link>
+		
+		<dc:creator><![CDATA[Odile Varga]]></dc:creator>
+		<pubDate>Tue, 22 Sep 2026 14:01:20 +0000</pubDate>
+				<category><![CDATA[Releases]]></category>
+		<category><![CDATA[Security]]></category>
+		<guid isPermaLink="false">https://news.corkboard.example/?p=21731</guid>
+
+					<description><![CDATA[This security release fixes one critical issue. Update your boards today, or let automatic updates do it for you, [&#8230;]]]></description>
+										<content:encoded><![CDATA[
+<p class="wp-block-paragraph">This security release fixes one critical issue.</p>
+
+
+
+<p class="wp-block-paragraph"><strong>Because this is a security release, update your boards today.</strong></p>
+
+
+
+<h2 class="wp-block-heading">What changed</h2>
+
+
+
+<p class="wp-block-paragraph">A pinned note could include a file from the server under rare conditions. Thanks to <a href="https://security.example/">Henrik Solvang</a> for reporting it privately.</p>
+
+
+
+<ul class="wp-block-list">
+<li>Pinned notes check the files they include.</li>
+
+
+
+<li>Uploads keep their original names out of the page.</li>
+</ul>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">21731</post-id>	</item>
+	<item>
+		<title>Meet the people behind the pins</title>
+		<link>https://news.corkboard.example/2026/09/meet-the-people-behind-the-pins/</link>
+		
+		<dc:creator><![CDATA[Pilar Ezquerra]]></dc:creator>
+		<pubDate>Mon, 21 Sep 2026 14:28:41 +0000</pubDate>
+				<category><![CDATA[General]]></category>
+		<category><![CDATA[Open Website Alliance]]></category>
+		<category><![CDATA[owa]]></category>
+		<guid isPermaLink="false">https://news.corkboard.example/?p=21732</guid>
+
+					<description><![CDATA[Four contributors describe their first patch, their worst bug, and the one feature they would delete [&#8230;]]]></description>
+										<content:encoded><![CDATA[
+<p class="wp-block-paragraph">Four contributors describe their first patch, their worst bug, and the one feature they would delete if nobody was watching.</p>
+
+
+
+<figure class="wp-block-image"><img src="https://news.corkboard.example/team.jpg" alt="Four contributors around a corkboard covered in index cards"/><figcaption>The release team in March.</figcaption></figure>
+
+
+
+<blockquote class="wp-block-quote"><p>Read the bug report twice before you answer it once.</p></blockquote>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">21732</post-id>	</item>
+	</channel>
+</rss>

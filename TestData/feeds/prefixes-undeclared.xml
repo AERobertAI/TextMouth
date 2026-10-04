@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel><title>Forgotten Declarations</title><link>https://undeclared.example/</link><description>Prefixes used without declaring them.</description>
+<itunes:author>Henrik Solvang</itunes:author>
+<item><title>Undeclared</title><description>The prefix is never declared.</description>
+<enclosure url="https://cdn.example/undeclared/1.mp3" length="4096" type="audio/mpeg"/>
+<itunes:duration>00:20:03</itunes:duration>
+<guid>undeclared-1</guid><pubDate>Sat, 26 Sep 2026 19:19:33 GMT</pubDate></item>
+</channel></rss>

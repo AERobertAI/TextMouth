@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<title type="html">Field &amp;amp; Fork</title>
+<subtitle type="text">Recipes read aloud, one ingredient at a time.</subtitle>
+<link rel="self" href="https://atom.example/feed.atom"/>
+<link href="https://atom.example/"/>
+<id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
+<updated>2026-10-03T10:00:00Z</updated>
+<author><name>Dev Raghunathan</name></author>
+<entry>
+<title type="text">Bread &lt;without&gt; yeast</title>
+<id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+<link rel="alternate" type="text/html" href="/episodes/bread"/>
+<link rel="enclosure" type="video/mp4" length="5000" href="https://media.example/bread.mp4"/>
+<link rel="enclosure" type="audio/mpeg" length="1200" href="https://media.example/bread.mp3"/>
+<published>2026-10-02T07:30:00-04:00</published>
+<updated>2026-10-03T07:30:00-04:00</updated>
+<summary type="text">Soda bread, two ways.
+A note on buttermilk.</summary>
+<content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>Mix the <em>flour</em> &amp; soda.</p><p>Bake at 200 &lt;degrees&gt;.</p></div></content>
+<itunes:duration>842</itunes:duration>
+</entry>
+<entry>
+<title type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">Soup <b>for</b> one</div></title>
+<id>urn:uuid:5d3b3b8a-1111-4a4a-9b9b-0003939e0af6</id>
+<link href="https://atom.example/episodes/soup"/>
+<link rel="enclosure" type="video/quicktime" href="https://media.example/soup.mov"/>
+<updated>2026-09-28T07:30:00Z</updated>
+<content type="html">&lt;p&gt;Leeks, potatoes, and patience.&lt;/p&gt;</content>
+</entry>
+</feed>

@@ -24,10 +24,10 @@ enum RealUserAccount {
 /// is byte-for-byte the same, absent values included.
 struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
     /// The keys TextMouth itself saves outside its settings window: the ones
-    /// a test exercising the data directory, sounds, substitutions, repeated
-    /// symbols, window restoration, the sleep timer, shortcuts, recording, or
-    /// where the logs are written would change if it reached the user's
-    /// preferences.
+    /// a test exercising the data directory, sounds, feeds, substitutions,
+    /// repeated symbols, window restoration, the sleep timer, shortcuts,
+    /// recording, or where the logs are written would change if it reached
+    /// the user's preferences.
     static let textMouthKeys = [
         "textMouthDataDirectory",
         "textMouthDataDirectoryBookmark",
@@ -36,6 +36,13 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "soundEffectsEnabled",
         "soundEffectsVolume",
         "soundEffectAssignments",
+        "feedRefreshAtLaunch",
+        "feedRefreshIntervalHours",
+        "feedKeepEntries",
+        "feedAutoDownload",
+        "feedDeleteDownloadsDaysAfterPlayed",
+        "feedRefreshAlert",
+        "feedNotifications",
         "substitutionsEnabled",
         "repeatedSymbolStyle",
         "repeatedSymbolThreshold",

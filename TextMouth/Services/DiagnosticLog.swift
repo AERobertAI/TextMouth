@@ -75,6 +75,10 @@ enum DiagnosticLog {
         /// The app as a whole: its launch, and the app-wide actions it
         /// routes to its windows (`LibraryWindowRouter`).
         case app
+        /// Podcast and article feeds (FR03): their records, refreshes, and
+        /// downloads. Lines name a feed's host, never its whole address,
+        /// which can carry a private feed's token.
+        case feeds
     }
 
     /// The log files, all in one folder: the data directory's Logs folder,

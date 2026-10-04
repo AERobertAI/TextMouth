@@ -24,6 +24,17 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<!-- TextMouth loads nothing from the network but the podcast and
+	     article feeds a listener subscribes to, the episodes and pages they
+	     list, and the web page a listener gives to find a feed (FR03). Many
+	     feeds and episode hosts still use plain http, so App Transport
+	     Security allows arbitrary loads; a feed that uses http is flagged
+	     when it is added (Feed.usesInsecureTransport). -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

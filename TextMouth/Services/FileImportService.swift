@@ -874,18 +874,20 @@ enum FileImportService {
     /// content as the reader will, saves its record and reads it back, and
     /// publishes the package under its final name. `staged` describes the
     /// book inside the staged package; the book returned describes it where
-    /// it was published.
+    /// it was published. A feed download names the feed item the book comes
+    /// from in `feedLink`, which its record keeps (FR03).
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
-        run: inout ImportRun
+        run: inout ImportRun,
+        feedLink: FeedBookLink? = nil
     ) throws -> ImportedBook {
         var staged = staged
         let content = try readableContent(of: &staged, run: &run)
         let book = staging.published(staged)
 
         try run.begin(.savingRecord, in: staging.directory)
-        try writeVerifiedRecord(of: book, contentIndex: content.index, into: staging.directory)
+        try writeVerifiedRecord(of: book, contentIndex: content.index, into: staging.directory, feedLink: feedLink)
 
         try run.begin(.publishing, in: staging.directory)
         try staging.publish()
@@ -948,9 +950,16 @@ enum FileImportService {
     /// and reads it back, so that a package is published only with a record
     /// that is on disk and names its book. `package` is where the record goes
     /// now, which for a staged package is not yet the book's own location.
-    static func writeVerifiedRecord(of book: Book, contentIndex: BookContentIndex, into package: URL) throws {
+    /// `feedLink` names the feed item a downloaded book comes from (FR03).
+    static func writeVerifiedRecord(
+        of book: Book,
+        contentIndex: BookContentIndex,
+        into package: URL,
+        feedLink: FeedBookLink? = nil
+    ) throws {
         var info = book.makeBookInfo()
         info.contentIndex = contentIndex
+        info.metadata.feedLink = feedLink
         try info.save(to: package)
 
         let saved = try BookInfo.load(from: package)
@@ -958,6 +967,7 @@ enum FileImportService {
               saved.metadata.md5Hash == book.md5Hash,
               saved.metadata.format == book.format,
               saved.metadata.originalFileName == info.metadata.originalFileName,
+              saved.metadata.feedLink == feedLink,
               saved.contentIndex != nil else {
             throw FileImportError.recordNotReadBack
         }

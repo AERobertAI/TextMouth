@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title type="text" xml:lang="en">Quill Language Blog</title>
+  <link type="application/atom+xml" href="https://quill-lang.example/atom.xml" rel="self"/>
+  <link type="text/html" href="" rel="alternate"/>
+  <updated>2026-10-03T09:04:53-04:00</updated>
+  <id>tag:quill-lang.example,2015-12-03:Quill</id>
+
+  
+  
+  <entry>
+    <title>Quill 6.4 Released</title>
+    
+      
+        
+        <author>
+        
+          <name>Tunde Bakare</name>
+        
+        </author>
+      
+        
+        <author>
+        
+          <name>Pilar Ezquerra</name>
+        
+        </author>
+      
+    
+    <link href="https://quill-lang.example/blog/quill-6.4-released/"/>
+    <updated>2026-09-15T03:30:00-04:00</updated>
+    <id>https://quill-lang.example/blog/quill-6.4-released/</id>
+    <content type="html">&lt;p&gt;Quill 6.4 is now available. Highlights include:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Faster builds&lt;/strong&gt;, with the new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--incremental&lt;/code&gt; mode on by default.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Clearer errors&lt;/strong&gt; for mismatched brackets.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Try it today by following the instructions on the &lt;a href=&quot;/install/&quot;&gt;Install Quill&lt;/a&gt; page.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Writing a parser in an afternoon</title>
+    
+      
+        
+        <author>
+        
+          <name>Margit Huhta</name>
+        
+        </author>
+      
+    
+    <link href="https://quill-lang.example/blog/parser-in-an-afternoon/"/>
+    <updated>2026-09-11T11:30:00-04:00</updated>
+    <id>https://quill-lang.example/blog/parser-in-an-afternoon/</id>
+    <content type="html">&lt;p&gt;A walk through a small recursive-descent parser for arithmetic, from tokens to a tree, in under two hundred lines.&lt;/p&gt;
+</content>
+  </entry>
+</feed>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0" xmlns:anchor="https://anchor.example/xmlns" xmlns:podcast="https://podcastindex.org/namespace/1.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:psc="http://podlove.org/simple-chapters">
+	<channel>
+		<title><![CDATA[Dots and Dashes: Braille at the Kitchen Table]]></title>
+		<description><![CDATA[<p>A weekly conversation about reading with your fingers, from slate-and-stylus drills to refreshable displays.&nbsp; Bring your questions and your favorite dot patterns.</p>]]></description>
+		<link>https://podcasts.example/dots-and-dashes</link>
+		<generator>Anchor Podcasts</generator>
+		<lastBuildDate>Sat, 03 Oct 2026 19:59:32 GMT</lastBuildDate>
+		<atom:link href="https://feeds.example/dots-and-dashes/rss" rel="self" type="application/rss+xml"/>
+		<author><![CDATA[Small Hours Audio]]></author>
+		<copyright><![CDATA[Small Hours Audio]]></copyright>
+		<language><![CDATA[en]]></language>
+		<atom:link rel="hub" href="https://hub.example/"/>
+		<itunes:author>Small Hours Audio</itunes:author>
+		<itunes:summary>&lt;p&gt;A weekly conversation about reading with your fingers, from slate-and-stylus drills to refreshable displays.&amp;nbsp; Bring your questions and your favorite dot patterns.&lt;/p&gt;</itunes:summary>
+		<itunes:type>episodic</itunes:type>
+		<itunes:owner>
+			<itunes:name>Small Hours Audio</itunes:name>
+			<itunes:email>hello@podcasts.example</itunes:email>
+		</itunes:owner>
+		<itunes:explicit>false</itunes:explicit>
+		<itunes:category text="Education"/>
+		<itunes:image href="https://images.example/dots-and-dashes.jpg"/>
+		<item>
+			<title><![CDATA[Tactile graphics on a budget]]></title>
+			<description><![CDATA[<p>Swell paper, a heat pen, and a borrowed laminator: three ways to make a raised map of your street for less than a takeaway dinner.</p><p><br></p><p>Odile Varga walks through the <strong>tools</strong> and the mistakes.</p>]]></description>
+			<link>https://podcasts.example/dots-and-dashes/episodes/tactile-graphics-on-a-budget</link>
+			<guid isPermaLink="false">80744121-c93d-4b74-ba0c-8edccb381992</guid>
+			<dc:creator><![CDATA[Small Hours Audio]]></dc:creator>
+			<pubDate>Sat, 26 Sep 2026 19:19:33 GMT</pubDate>
+			<enclosure url="https://anchor.example/s/0a1b2c/podcast/play/126346496/https%3A%2F%2Fcdn.example%2Fstaging%2F2026-8-26%2F432718041-44100-2-a1da4dd136925.m4a" length="19465239" type="audio/x-m4a"/>
+			<itunes:summary>&lt;p&gt;Swell paper, a heat pen, and a borrowed laminator: three ways to make a raised map of your street for less than a takeaway dinner.&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;Odile Varga walks through the &lt;strong&gt;tools&lt;/strong&gt; and the mistakes.&lt;/p&gt;</itunes:summary>
+			<itunes:explicit>false</itunes:explicit>
+			<itunes:duration>00:20:03</itunes:duration>
+			<itunes:image href="https://images.example/dots-and-dashes-tactile-graphics-on-a-budget.jpg"/>
+			<itunes:episodeType>full</itunes:episodeType>
+		</item>
+		<item>
+			<title><![CDATA[Learning Nemeth after forty]]></title>
+			<description><![CDATA[<p>Tunde Bakare picked up the braille math code to help his daughter with algebra homework, and found the fractions easier than the friends who warned him.</p>]]></description>
+			<link>https://podcasts.example/dots-and-dashes/episodes/learning-nemeth-after-forty</link>
+			<guid isPermaLink="false">96839864-5e92-11f1-9f13-c3b1c65a7ac9</guid>
+			<dc:creator><![CDATA[Small Hours Audio]]></dc:creator>
+			<pubDate>Tue, 02 Jun 2026 14:51:00 GMT</pubDate>
+			<enclosure url="https://anchor.example/s/0a1b2c/podcast/play/124335428/https%3A%2F%2Fcdn.example%2Fstaging%2F2026-7-17%2F429995526-48000-2-51b9c94abfe0b8a8.mp3" length="40031424" type="audio/mpeg"/>
+			<itunes:summary>&lt;p&gt;Tunde Bakare picked up the braille math code to help his daughter with algebra homework, and found the fractions easier than the friends who warned him.&lt;/p&gt;</itunes:summary>
+			<itunes:explicit>false</itunes:explicit>
+			<itunes:duration>00:27:47</itunes:duration>
+			<itunes:image href="https://images.example/dots-and-dashes-learning-nemeth-after-forty.jpg"/>
+		</item>
+		<item>
+			<title><![CDATA[What the embosser heard]]></title>
+			<description><![CDATA[<p>A listener's letter about an embosser that prints a page of nothing but the letter <em>g</em>, and what it taught us about printer drivers.</p><ul><li>Check the code table</li><li>Then check the cable</li></ul>]]></description>
+			<link>https://podcasts.example/dots-and-dashes/episodes/what-the-embosser-heard</link>
+			<guid isPermaLink="false">28b74c50-376d-11f1-a4f2-0362c06d7add</guid>
+			<dc:creator><![CDATA[Small Hours Audio]]></dc:creator>
+			<pubDate>Mon, 13 Apr 2026 19:15:00 GMT</pubDate>
+			<enclosure url="https://anchor.example/s/0a1b2c/podcast/play/124335431/https%3A%2F%2Fcdn.example%2Fstaging%2F2026-7-17%2F429995537-48000-2-f0ad0117cbbf55e2.mp3" length="36509760" type="audio/mpeg"/>
+			<itunes:summary>&lt;p&gt;A listener&apos;s letter about an embosser that prints a page of nothing but the letter &lt;em&gt;g&lt;/em&gt;, and what it taught us about printer drivers.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Check the code table&lt;/li&gt;&lt;li&gt;Then check the cable&lt;/li&gt;&lt;/ul&gt;</itunes:summary>
+			<itunes:explicit>false</itunes:explicit>
+			<itunes:duration>00:25:21</itunes:duration>
+			<itunes:image href="https://images.example/dots-and-dashes-what-the-embosser-heard.jpg"/>
+		</item>
+	</channel>
+</rss>
