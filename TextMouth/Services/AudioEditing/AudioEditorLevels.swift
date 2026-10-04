@@ -45,11 +45,20 @@ struct AudioEditorLevels: Equatable, Sendable {
     let decibels: [Float]
     /// How long the audio measured lasts, in seconds.
     let duration: TimeInterval
+    /// The loudest level of each of `overviewCount` equal stretches, made
+    /// once as the levels are measured, so the waveform draws from a few
+    /// thousand values however long the audio, and redraws cheaply as the
+    /// cursor moves.
+    let overview: [Float]
+
+    /// How many stretches the overview has: more than any window is wide.
+    static let overviewCount = 4_096
 
     /// The levels `decibels` of audio lasting `duration` seconds.
     init(decibels: [Float], duration: TimeInterval) {
         self.decibels = decibels
         self.duration = duration
+        overview = Self.loudest(of: decibels, in: min(Self.overviewCount, decibels.count))
     }
 
     // MARK: Pauses
@@ -99,14 +108,21 @@ struct AudioEditorLevels: Equatable, Sendable {
     // MARK: The Waveform
 
     /// The loudest level of each of `count` equal stretches of the audio,
-    /// for a waveform `count` points wide; empty when there is nothing to
-    /// draw.
+    /// for a waveform `count` points wide, from the overview; empty when
+    /// there is nothing to draw.
     func envelope(_ count: Int) -> [Float] {
-        guard count > 0, !decibels.isEmpty else { return [] }
+        Self.loudest(of: overview, in: count)
+    }
+
+    /// The loudest of `values` in each of `count` equal stretches of them;
+    /// empty for none. A stretch narrower than one value takes the value it
+    /// falls in.
+    static func loudest(of values: [Float], in count: Int) -> [Float] {
+        guard count > 0, !values.isEmpty else { return [] }
         return (0..<count).map { bucket in
-            let start = decibels.count * bucket / count
-            let end = max(start + 1, decibels.count * (bucket + 1) / count)
-            return decibels[start..<min(end, decibels.count)].max() ?? Self.silence
+            let start = min(values.count - 1, values.count * bucket / count)
+            let end = max(start + 1, values.count * (bucket + 1) / count)
+            return values[start..<min(end, values.count)].max() ?? silence
         }
     }
 

@@ -20,6 +20,15 @@ struct AudioEditorView: View {
                 timeDisplay
                 statusLine
                 messageLine
+                // For sighted helpers; VoiceOver never meets it.
+                AudioEditorWaveform(
+                    levels: model.levels,
+                    duration: model.duration,
+                    cursor: model.cursor,
+                    selection: model.selection,
+                    chapters: model.chapters.map(\.start),
+                    markers: model.markers.map(\.time)
+                )
                 ForEach(Self.groups) { group in
                     AudioEditorCommandGroup(heading: group.heading, actions: group.actions, model: model)
                 }
