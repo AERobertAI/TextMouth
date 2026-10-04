@@ -199,17 +199,4 @@ final class AudioEditorSelectingTests: XCTestCase {
         XCTAssertEqual(AudioEditorWording.pauseRow(2, pause), "Pause 2, 1.5 seconds, at 4 seconds")
         XCTAssertEqual(AudioEditorWording.rowButton("Delete", "Marker 3"), "Delete Marker 3")
     }
-
-    // MARK: - Helpers
-
-    /// An editor on `seconds` seconds of an identity ramp, its preview
-    /// loaded, playing nothing after moves.
-    private func openRamp(seconds: Double) async throws -> EditorHarness {
-        let harness = try await EditorHarness.open(try AudioEditorTestBook.ramp(seconds: seconds, for: self), for: self)
-        AudioEditorPreferences.playAfterMoves.write(false, to: harness.store)
-        await harness.model.loadPreview()
-        let model = harness.model
-        addTeardownBlock { @MainActor in model.windowClosed() }
-        return harness
-    }
 }

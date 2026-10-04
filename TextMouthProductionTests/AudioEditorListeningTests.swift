@@ -17,7 +17,7 @@ final class AudioEditorListeningTests: XCTestCase {
     /// Play starts at the cursor and the cursor follows the audio; Pause
     /// keeps the place and says it; Stop goes back to where playing began.
     func testPlayPauseAndStop() async throws {
-        let harness = try await openRamp(seconds: 10)
+        let harness = try await openRamp(seconds: 10, playsAfterMoves: true)
         let model = harness.model
         model.move(to: 2)
 
@@ -46,7 +46,7 @@ final class AudioEditorListeningTests: XCTestCase {
     /// Playing to the end says so and leaves the cursor there; Play at the
     /// end starts again from the start.
     func testPlayingToTheEndAndPlayingAgain() async throws {
-        let harness = try await openRamp(seconds: 4)
+        let harness = try await openRamp(seconds: 4, playsAfterMoves: true)
         let model = harness.model
         model.togglePlay()
         harness.player.finishPlaying(at: 4)
@@ -67,7 +67,7 @@ final class AudioEditorListeningTests: XCTestCase {
     /// the start and the end, saying so; Go to Start and Go to End say
     /// where they landed.
     func testStepsMoveAndStopAtEitherEnd() async throws {
-        let harness = try await openRamp(seconds: 12, playsAfterMoves: false)
+        let harness = try await openRamp(seconds: 12)
         let model = harness.model
 
         model.perform(.editorSkipForwardLong)
@@ -103,7 +103,7 @@ final class AudioEditorListeningTests: XCTestCase {
     /// which stays put; none plays at the very end. While listening, a
     /// move carries the audio on from the new place.
     func testAMovePlaysHalfASecondThereAsTheSettingSays() async throws {
-        let harness = try await openRamp(seconds: 6)
+        let harness = try await openRamp(seconds: 6, playsAfterMoves: true)
         let model = harness.model
         XCTAssertTrue(model.scrubsAfterMoves, "the setting is on until turned off")
 
@@ -130,7 +130,7 @@ final class AudioEditorListeningTests: XCTestCase {
     /// anything else keeps the sheet open with what's wrong, which
     /// VoiceOver hears too.
     func testGoToTimeTakesATimeOrSaysWhatsWrong() async throws {
-        let harness = try await openRamp(seconds: 90, playsAfterMoves: false)
+        let harness = try await openRamp(seconds: 90)
         let model = harness.model
         model.perform(.editorGoToTime)
         XCTAssertEqual(model.prompt, .goToTime)
@@ -166,7 +166,7 @@ final class AudioEditorListeningTests: XCTestCase {
     /// previous one goes to the start of the chapter the cursor is in
     /// first; past the last and before the first they say so.
     func testChapterMarkersAreVisitedInTurn() async throws {
-        let harness = try await openRamp(seconds: 30, playsAfterMoves: false)
+        let harness = try await openRamp(seconds: 30)
         let model = harness.model
         model.perform(.editorNextChapter)
         XCTAssertEqual(harness.announcements.sentences.last, "This audio has no chapter markers.")
@@ -258,7 +258,7 @@ final class AudioEditorListeningTests: XCTestCase {
 
     /// Where Am I says the status line.
     func testWhereAmISaysTheStatusLine() async throws {
-        let harness = try await openRamp(seconds: 8, playsAfterMoves: false)
+        let harness = try await openRamp(seconds: 8)
         harness.model.move(to: 2.5)
         harness.model.perform(.editorWhereAmI)
         XCTAssertEqual(harness.announcements.sentences.last, "2.5 seconds of 8 seconds")
@@ -266,8 +266,8 @@ final class AudioEditorListeningTests: XCTestCase {
 
     /// A shortcut pressed in an editor's window reaches that editor alone.
     func testAShortcutReachesTheEditorOfItsWindowAlone() async throws {
-        let first = try await openRamp(seconds: 5, playsAfterMoves: false)
-        let second = try await openRamp(seconds: 5, playsAfterMoves: false)
+        let first = try await openRamp(seconds: 5)
+        let second = try await openRamp(seconds: 5)
         let firstWindow = makeWindow()
         first.model.hostWindow = firstWindow
         second.model.hostWindow = makeWindow()
@@ -283,17 +283,6 @@ final class AudioEditorListeningTests: XCTestCase {
     }
 
     // MARK: - Helpers
-
-    /// An editor on `seconds` seconds of an identity ramp, its preview
-    /// loaded, playing half a second after moves as `playsAfterMoves` says.
-    private func openRamp(seconds: Double, playsAfterMoves: Bool = true) async throws -> EditorHarness {
-        let harness = try await EditorHarness.open(try AudioEditorTestBook.ramp(seconds: seconds, for: self), for: self)
-        AudioEditorPreferences.playAfterMoves.write(playsAfterMoves, to: harness.store)
-        await harness.model.loadPreview()
-        let model = harness.model
-        addTeardownBlock { @MainActor in model.windowClosed() }
-        return harness
-    }
 
     /// A window that is never shown, standing for an editor's.
     private func makeWindow() -> NSWindow {

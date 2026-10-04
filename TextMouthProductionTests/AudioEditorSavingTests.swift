@@ -227,17 +227,4 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertEqual(model.closeNeed, .unsavedEdits)
         XCTAssertEqual(AudioEditorWording.closeQuestion(book: "Harbour Survey"), "Save the edits to “Harbour Survey”?")
     }
-
-    // MARK: - Helpers
-
-    /// An editor on `seconds` seconds of an identity ramp in a WAVE file,
-    /// its preview loaded, playing nothing after moves.
-    private func openRamp(seconds: Double) async throws -> EditorHarness {
-        let harness = try await EditorHarness.open(try AudioEditorTestBook.ramp(seconds: seconds, for: self), for: self)
-        AudioEditorPreferences.playAfterMoves.write(false, to: harness.store)
-        await harness.model.loadPreview()
-        let model = harness.model
-        addTeardownBlock { @MainActor in model.windowClosed() }
-        return harness
-    }
 }

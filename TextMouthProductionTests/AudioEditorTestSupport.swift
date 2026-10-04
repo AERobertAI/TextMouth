@@ -158,3 +158,21 @@ struct AudioEditorTestBook {
         }
     }
 }
+
+// MARK: - An Editor on a Ramp
+
+extension XCTestCase {
+    /// An editor on `seconds` seconds of an identity ramp in a WAVE file
+    /// (`AudioEditorTestBook.ramp`), its preview loaded, playing half a
+    /// second after each move only when `playsAfterMoves` says so, and
+    /// closed as the test ends.
+    @MainActor
+    func openRamp(seconds: Double, playsAfterMoves: Bool = false) async throws -> EditorHarness {
+        let harness = try await EditorHarness.open(try AudioEditorTestBook.ramp(seconds: seconds, for: self), for: self)
+        AudioEditorPreferences.playAfterMoves.write(playsAfterMoves, to: harness.store)
+        await harness.model.loadPreview()
+        let model = harness.model
+        addTeardownBlock { @MainActor in model.windowClosed() }
+        return harness
+    }
+}

@@ -421,17 +421,6 @@ final class AudioEditorEditingTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// An editor on `seconds` seconds of an identity ramp, its preview
-    /// loaded, playing nothing after moves.
-    private func openRamp(seconds: Double) async throws -> EditorHarness {
-        let harness = try await EditorHarness.open(try AudioEditorTestBook.ramp(seconds: seconds, for: self), for: self)
-        AudioEditorPreferences.playAfterMoves.write(false, to: harness.store)
-        await harness.model.loadPreview()
-        let model = harness.model
-        addTeardownBlock { @MainActor in model.windowClosed() }
-        return harness
-    }
-
     /// Every sample of `model`'s edited audio as it stands, rendered without
     /// loss.
     private func editedSamples(_ model: AudioEditorModel) async throws -> [Float] {
