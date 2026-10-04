@@ -54,6 +54,20 @@ extension StoredPreference where Value == Bool {
     }
 }
 
+extension StoredPreference where Value == Int {
+    /// A whole number saved under `rule`'s key, read and written through the
+    /// rule, so every reader of the store sees a validated value: the rule's
+    /// default until one is saved, its off value for any negative one, and a
+    /// value clamped into its range otherwise.
+    static func threshold(_ rule: ThresholdSettingRule) -> StoredPreference<Int> {
+        StoredPreference(
+            key: rule.key,
+            read: { store, _ in rule.storedValue(in: store) },
+            write: { value, store, key in store.set(rule.validated(value), forKey: key) }
+        )
+    }
+}
+
 // MARK: - Dictionaries Keyed by Enum Cases
 
 extension Dictionary where Key: RawRepresentable, Key.RawValue == String {

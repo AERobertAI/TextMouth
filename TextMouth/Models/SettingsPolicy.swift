@@ -151,20 +151,25 @@ struct ThresholdSettingRule: Sendable {
         "\(offValue) (off), or \(range.lowerBound)...\(range.upperBound)"
     }
 
-    /// Validates a threshold. Any negative value is the off value, as the
-    /// user who asked for this setting described it ("negative or -1 means
-    /// always repeat everything"); any other value is clamped into `range`,
-    /// so 0 and 1, which every run already reaches, act as the lowest.
+    /// Validates a threshold. Any value at or below `offValue` is the off
+    /// value: with an off value of -1, any negative value, as the user who
+    /// asked for the repeated-symbol threshold described it ("negative or -1
+    /// means always repeat everything"), and with 0, as the feed refresh
+    /// interval's, 0 or less. Any other value is clamped into `range`, so a
+    /// value between the off value and the range (0 and 1 for the
+    /// repeated-symbol threshold, which every run already reaches) acts as
+    /// the lowest.
     func validated(_ value: Int) -> Int {
-        value < 0 ? offValue : min(max(value, range.lowerBound), range.upperBound)
+        value <= offValue ? offValue : min(max(value, range.lowerBound), range.upperBound)
     }
 
     /// Validates a number of any size, such as one `defaults write` stored:
-    /// NaN and infinities become `defaultValue`, and any other number is
+    /// NaN and infinities become `defaultValue`, any number below the whole
+    /// number after `offValue` is the off value, and any other number is
     /// rounded and validated like a whole one.
     func validated(_ value: Double) -> Int {
         guard value.isFinite else { return defaultValue }
-        guard value >= 0 else { return offValue }
+        guard value >= Double(offValue + 1) else { return offValue }
         // Clamp first, so that no number is too large to become an Int.
         return validated(Int(min(value, Double(range.upperBound)).rounded()))
     }
@@ -377,6 +382,29 @@ enum SettingsPolicy {
             + "\u{2010}\u{2012}\u{2013}\u{2014}\u{2015}\u{2026}"  // ‐ ‒ – — ― …
             + "\u{2500}\u{2501}\u{2550}\u{2504}\u{2505}\u{2508}\u{2509}\u{254C}\u{254D}",  // ─ ━ ═ ┄ ┅ ┈ ┉ ╌ ╍
         admits: { RepeatedSymbolRule.canFormRuns($0) }
+    )
+
+    // MARK: Feeds (FR03)
+
+    /// Hours between the refreshes of every feed made while TextMouth runs,
+    /// from 1 to a week, or 0 to refresh only at launch and when asked. Once
+    /// an hour until the listener picks another (the listener's decision of
+    /// October 4).
+    static let feedRefreshIntervalHours = ThresholdSettingRule(
+        key: "feedRefreshIntervalHours", range: 1...168, offValue: 0, defaultValue: 1
+    )
+    /// How many of each feed's newest entries are kept besides its
+    /// downloads, which are always kept: 0 to 2,000, the most a feed's
+    /// document is read for (`FeedParser.maximumItems`), or -1 to keep every
+    /// entry. 10 until the listener picks another.
+    static let feedKeepEntries = ThresholdSettingRule(
+        key: "feedKeepEntries", range: 0...2_000, offValue: -1, defaultValue: 10
+    )
+    /// How many days after an episode plays to the end its download is
+    /// deleted: 0, at once, to a year, or -1 never. A day until the listener
+    /// picks another.
+    static let feedDeleteDownloadsDaysAfterPlayed = ThresholdSettingRule(
+        key: "feedDeleteDownloadsDaysAfterPlayed", range: 0...365, offValue: -1, defaultValue: 1
     )
 
     // MARK: Logs

@@ -1133,6 +1133,14 @@ final class ConfigSyncTests: XCTestCase {
             "soundEffectsEnabled": false,
             "soundEffectsVolume": Float(0.35),
             "soundEffectAssignments": try JSONEncoder().encode(sounds.keyedByRawValue),
+            // Feeds (FR03), kept by the feed engine.
+            "feedRefreshAtLaunch": false,
+            "feedRefreshIntervalHours": 6,
+            "feedKeepEntries": -1,
+            "feedAutoDownload": true,
+            "feedDeleteDownloadsDaysAfterPlayed": 0,
+            "feedRefreshAlert": true,
+            "feedNotifications": true,
             // Miscellaneous.
             "bluetoothMonitoringEnabled": false,
             "bluetoothDisconnectDelay": 7.0,

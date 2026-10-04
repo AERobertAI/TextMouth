@@ -46,6 +46,14 @@ extension ConfigService.AppConfig {
             .play: "Glass", .pause: "None", .skipForward: "Funk",
             .skipBackward: "Bottle", .whereAmIStart: "Hero", .whereAmIEnd: "Purr",
         ] as [SoundEvent: String]).keyedByRawValue
+        // Feeds (FR03), each unlike its default.
+        config.feedRefreshAtLaunch = false
+        config.feedRefreshIntervalHours = 6
+        config.feedKeepEntries = -1
+        config.feedAutoDownload = true
+        config.feedDeleteDownloadsDaysAfterPlayed = 0
+        config.feedRefreshAlert = true
+        config.feedNotifications = true
         config.substitutionsEnabled = false
         config.repeatedSymbolStyle = RepeatedSymbolStyle.leaveOut.rawValue
         config.repeatedSymbolThreshold = 7

@@ -777,6 +777,7 @@ final class SettingsViewModel: ObservableObject {
     /// The store keys of the preferences other services keep.
     static var servicePreferenceKeys: [String] {
         SoundEffectService.preferenceKeys
+            + FeedSettings.preferenceKeys
             + TextSubstitutionService.preferenceKeys
             + RecordingPreferences.keys
             + [KeyboardShortcutManager.bindingsPreference.key, LogLocation.preference.key]
@@ -785,12 +786,13 @@ final class SettingsViewModel: ObservableObject {
     }
 
     /// The keys of the preferences other services keep that this model
-    /// shows, whose changes it announces wherever they are made, such as in
-    /// config.json, so the controls showing them follow.
-    private static let shownServicePreferenceKeys: Set<String> = [
+    /// shows (the log location, the reader toolbar's Export button, and the
+    /// feed settings), whose changes it announces wherever they are made,
+    /// such as in config.json, so the controls showing them follow.
+    private static let shownServicePreferenceKeys = Set([
         LogLocation.preference.key,
         BookExportPreferences.showInReaderToolbar.key,
-    ]
+    ] + FeedSettings.preferenceKeys)
 
     /// Whether the reader's toolbar shows an Export button (FR05), in
     /// Playback settings. Export keeps it (`BookExportPreferences`), and
@@ -821,12 +823,28 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    /// The feed reader's settings (FR03), which the feed engine reads from
+    /// the store (`FeedSettings`), for the Preferences section to show and
+    /// change. A change is saved to the store at once, setting by setting,
+    /// and config.json follows it through the observer below, which also
+    /// announces a change made anywhere else, such as in config.json, so the
+    /// section always shows the settings in force.
+    var feedSettings: FeedSettings {
+        get { FeedSettings.read(from: preferences) }
+        set {
+            guard newValue != feedSettings else { return }
+            objectWillChange.send()
+            newValue.write(to: preferences)
+        }
+    }
+
     /// Saves config.json whenever a preference another service keeps changes
     /// in the store. A change this model makes while applying config.json
     /// saves nothing, like every other change made then. A change of a
-    /// preference this model shows, the log location or the reader
-    /// toolbar's Export button, is announced, so Storage settings, Playback
-    /// settings, and open readers follow it wherever it was made.
+    /// preference this model shows, the log location, the reader toolbar's
+    /// Export button, or a feed setting, is announced, so Storage settings,
+    /// Playback settings, the feed settings, and open readers follow it
+    /// wherever it was made.
     private func saveServicePreferenceChanges() {
         servicePreferencesObserver = PreferenceObserver(keys: Self.servicePreferenceKeys, in: preferences) { [weak self] key in
             if Self.shownServicePreferenceKeys.contains(key) {
@@ -844,6 +862,14 @@ final class SettingsViewModel: ObservableObject {
         config.soundEffectAssignments = SettingsPolicy.soundEffectAssignments.fileEntries(
             SoundEffectService.assignmentsNamingEveryEvent(SoundEffectService.assignmentsPreference.read(from: preferences))
         )
+        let feeds = FeedSettings.read(from: preferences)
+        config.feedRefreshAtLaunch = feeds.refreshAtLaunch
+        config.feedRefreshIntervalHours = feeds.refreshIntervalHours
+        config.feedKeepEntries = feeds.keepEntries
+        config.feedAutoDownload = feeds.autoDownload
+        config.feedDeleteDownloadsDaysAfterPlayed = feeds.deleteDownloadsDaysAfterPlayed
+        config.feedRefreshAlert = feeds.refreshAlert
+        config.feedNotifications = feeds.notifications
         config.substitutionsEnabled = TextSubstitutionService.enabledPreference.read(from: preferences)
         config.repeatedSymbolStyle = TextSubstitutionService.repeatedSymbolStylePreference.read(from: preferences).rawValue
         config.repeatedSymbolThreshold = TextSubstitutionService.repeatedSymbolThresholdPreference.read(from: preferences)
@@ -869,6 +895,19 @@ final class SettingsViewModel: ObservableObject {
             entries: SettingsPolicy.soundEffectAssignments.requestedValues(fromConfig: config.soundEffectAssignments),
             into: SoundEffectService.assignmentsPreference
         )
+        adopt(config.feedRefreshAtLaunch, into: FeedSettings.refreshAtLaunchPreference)
+        adopt(
+            config.feedRefreshIntervalHours.map { SettingsPolicy.feedRefreshIntervalHours.validated($0) },
+            into: FeedSettings.refreshIntervalHoursPreference
+        )
+        adopt(config.feedKeepEntries.map { SettingsPolicy.feedKeepEntries.validated($0) }, into: FeedSettings.keepEntriesPreference)
+        adopt(config.feedAutoDownload, into: FeedSettings.autoDownloadPreference)
+        adopt(
+            config.feedDeleteDownloadsDaysAfterPlayed.map { SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed.validated($0) },
+            into: FeedSettings.deleteDownloadsDaysAfterPlayedPreference
+        )
+        adopt(config.feedRefreshAlert, into: FeedSettings.refreshAlertPreference)
+        adopt(config.feedNotifications, into: FeedSettings.notificationsPreference)
         adopt(config.substitutionsEnabled, into: TextSubstitutionService.enabledPreference)
         adopt(
             SettingsPolicy.repeatedSymbolStyle.requestedValue(fromConfig: config.repeatedSymbolStyle),
