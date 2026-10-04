@@ -825,6 +825,25 @@ enum AudioEditorWording {
     static let discardKept = "The book's audio holds edits its history no longer has, so the edits stay, "
         + "to be saved or undone the next time you edit this book."
 
+    // MARK: - Quitting
+
+    /// What the question about an editor's unsaved edits explains as
+    /// TextMouth quits.
+    static let quitExplanation = "TextMouth is quitting, and the book's audio doesn't hold these edits yet. Discard undoes them; "
+        + "the next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open."
+
+    /// Said, in the editor of `book`, when TextMouth can't quit while its
+    /// work is under way.
+    static func quitWhileWorking(book: String) -> String {
+        "The editor of “\(book)” is still working. Quit TextMouth once the change is done."
+    }
+
+    /// Said, in the editor of `book`, when TextMouth can't quit while a
+    /// punch-in records there.
+    static func quitWhileRecording(book: String) -> String {
+        "A recording is under way in the editor of “\(book)”. Stop it, or discard it with Clear Selection, then quit TextMouth."
+    }
+
     // MARK: - The Commands
 
     /// The names of the editor's groups of buttons, as headings.
