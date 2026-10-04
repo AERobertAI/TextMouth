@@ -87,7 +87,7 @@ final class TranscriptionPresenter: ObservableObject {
     /// Runs a library row's audio command, from its context menu or its
     /// VoiceOver actions: Edit Audio… opens the audio editor (FR04); the
     /// rest are transcription's.
-    func perform(_ command: LibraryTranscriptionCommand, library: LibraryViewModel, window: NSWindow?) {
+    func perform(_ command: LibraryAudioCommand, library: LibraryViewModel, window: NSWindow?) {
         switch command {
         case .editAudio(let book):
             AudioEditorLauncher.edit(book, in: library, from: window)

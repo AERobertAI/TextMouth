@@ -625,11 +625,13 @@ enum AudioEditorWording {
 
     // MARK: - Saving and Exporting
 
-    /// A format a save or an export writes, by name.
+    /// A format a save or an export writes, by name: the name Export lists
+    /// it by (`AudioExportFormat.title`), but for MP3, whose name there says
+    /// what it needs.
     static func formatName(_ format: AudioRenderFormat) -> String {
         switch format {
         case .aacM4A: return "M4A (AAC)"
-        case .aacM4B: return "M4B audiobook (AAC)"
+        case .aacM4B: return "M4B Audiobook (AAC)"
         case .alacM4A: return "Apple Lossless (M4A)"
         case .pcmCAF: return "CAF"
         case .pcmWAV: return "WAV"

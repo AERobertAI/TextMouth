@@ -916,7 +916,7 @@ struct LibraryView: View {
             manualMoves: isSelectionRow ? nil : context.manualMoves[book.id],
             removalPreferences: removalPreferences,
             livePosition: libraryViewModel.livePositions.entry(for: book.id),
-            transcriptionCommands: LibraryTranscriptionCommand.commands(for: targets, isTranscribed: transcribedBooks.contains),
+            audioCommands: LibraryAudioCommand.commands(for: targets, isTranscribed: transcribedBooks.contains),
             transcriptionNote: transcribedBooks.note(for: book.id),
             // The item's commands act on the row's own book alone.
             feedActions: isSelectionRow ? [] : feedActions,
@@ -1126,7 +1126,7 @@ struct LibraryView: View {
                     await BookTextEditor.shared.edit(book, choosingApp: choosingApp, in: libraryViewModel, from: window)
                 }
             },
-            performTranscriptionCommand: { command in
+            performAudioCommand: { command in
                 transcription.perform(command, library: libraryViewModel, window: hostWindow)
             },
             performFeedAction: performFeedItemAction

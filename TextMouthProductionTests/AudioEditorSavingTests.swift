@@ -125,9 +125,17 @@ final class AudioEditorSavingTests: XCTestCase {
                 + "since TextMouth can't write its old format."
         )
         XCTAssertEqual(AudioEditorWording.savingDetail(5, format: nil), "Saving 5 seconds of audio into the book.")
-        XCTAssertEqual(AudioEditorWording.formatName(.aacM4B), "M4B audiobook (AAC)")
+        XCTAssertEqual(AudioEditorWording.formatName(.aacM4B), "M4B Audiobook (AAC)")
         XCTAssertEqual(AudioEditorWording.formatName(.mp3), "MP3")
         XCTAssertEqual(AudioEditorWording.percentDone(75), "75 percent")
+    }
+
+    /// A save and an export name each format alike, by the name Export
+    /// lists it by; only MP3's there adds what it needs.
+    func testSavesAndExportsNameEachFormatAlike() {
+        for format in AudioExportFormat.allCases where format != .mp3 {
+            XCTAssertEqual(AudioEditorWording.formatName(format.renderFormat), format.title, format.rawValue)
+        }
     }
 
     /// A save or an export in a format with no place for chapter markers

@@ -90,7 +90,7 @@ enum AudioEditorLauncher {
     /// of its own, as the edit history and the originals live there, the
     /// same books a transcript can be saved for.
     static func canEdit(_ book: Book) -> Bool {
-        LibraryTranscriptionCommand.isTranscribable(book)
+        LibraryAudioCommand.isTranscribable(book)
     }
 
     /// How opening ended.

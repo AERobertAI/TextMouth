@@ -4,7 +4,7 @@ import Foundation
 /// one of its VoiceOver actions, under the same name, acting on the same
 /// books. Transcription's (FR05), and Edit Audio… (FR04), which opens an
 /// audiobook in the audio editor.
-enum LibraryTranscriptionCommand: Hashable, Identifiable {
+enum LibraryAudioCommand: Hashable, Identifiable {
     /// Edit Audio…, for one audiobook in a package of its own: opens it in
     /// the audio editor (FR04).
     case editAudio(Book)
@@ -45,9 +45,9 @@ enum LibraryTranscriptionCommand: Hashable, Identifiable {
     /// then Clean Up Transcript (Experimental)… and Delete Transcript… when
     /// the row acts on one such audiobook alone and it is transcribed;
     /// nothing for text books alone.
-    static func commands(for targets: [Book], isTranscribed: (UUID) -> Bool = { _ in false }) -> [LibraryTranscriptionCommand] {
+    static func commands(for targets: [Book], isTranscribed: (UUID) -> Bool = { _ in false }) -> [LibraryAudioCommand] {
         guard targets.contains(where: isTranscribable) else { return [] }
-        var commands: [LibraryTranscriptionCommand] = []
+        var commands: [LibraryAudioCommand] = []
         let single = targets.count == 1 ? targets.first : nil
         if let book = single, isTranscribable(book) {
             commands.append(.editAudio(book))

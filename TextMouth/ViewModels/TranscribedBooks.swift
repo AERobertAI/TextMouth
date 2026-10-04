@@ -100,7 +100,7 @@ final class TranscribedBooks: ObservableObject {
         lookCount += 1
         let look = lookCount
         let recordsBefore = recordCount
-        let transcripts = books.filter(LibraryTranscriptionCommand.isTranscribable).map {
+        let transcripts = books.filter(LibraryAudioCommand.isTranscribable).map {
             (id: $0.id, url: TextMouthPaths.transcriptPath(in: $0.tmbDirectory))
         }
         // A look at the folder: never a read, so nothing is downloaded.
