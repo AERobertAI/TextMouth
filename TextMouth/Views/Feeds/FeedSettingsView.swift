@@ -20,9 +20,14 @@ struct FeedSettingsView: View {
     /// Speaks what Refresh All Feeds Now found: through VoiceOver, unless a
     /// test listens instead.
     var announce: @MainActor (String) -> Void = { VoiceOverAnnouncer.announce($0) }
+    /// Asks permission for notifications and says whether they are allowed:
+    /// the system's notification center, unless a test stands in.
+    var notifier: any FeedNotifying = FeedArrivals.shared.notifier
 
     /// Whether Refresh All Feeds Now is refreshing.
     @State private var isRefreshing = false
+    /// Whether TextMouth may post notifications, as last asked.
+    @State private var notificationAuthorization: FeedNotificationAuthorization?
 
     var body: some View {
         Form {
@@ -72,13 +77,52 @@ struct FeedSettingsView: View {
             Section {
                 Toggle(FeedSettingsWording.refreshAlert, isOn: binding(\.refreshAlert))
                     .accessibilityHint(FeedSettingsWording.refreshAlertHint)
-                Toggle(FeedSettingsWording.notifications, isOn: binding(\.notifications))
-                    .accessibilityHint(FeedSettingsWording.notificationsHint)
+                Toggle(FeedSettingsWording.notifications, isOn: notificationsBinding)
+                    .accessibilityHint(notificationsHint)
+                    .help(notificationsHint)
+                if refusesNotifications {
+                    Text(FeedWording.notificationsRefused)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             } header: {
                 Text(FeedSettingsWording.newItemsHeading)
             }
         }
         .padding()
+        .task {
+            notificationAuthorization = await notifier.authorization()
+        }
+    }
+
+    /// The notifications setting: turning it on asks permission the first
+    /// time, and the setting's help then says whether it was refused.
+    private var notificationsBinding: Binding<Bool> {
+        Binding(
+            get: { settingsViewModel.feedSettings.notifications },
+            set: { isOn in
+                binding(\.notifications).wrappedValue = isOn
+                guard isOn else { return }
+                let notifier = notifier
+                Task {
+                    notificationAuthorization = await FeedArrivals.settingTurnedOn(notifier)
+                }
+            }
+        )
+    }
+
+    /// Whether notifications are on but TextMouth may not post them.
+    private var refusesNotifications: Bool {
+        settingsViewModel.feedSettings.notifications && notificationAuthorization == .denied
+    }
+
+    /// The notifications setting's help: what it does, and, while
+    /// notifications are refused, how to allow them.
+    private var notificationsHint: String {
+        refusesNotifications
+            ? "\(FeedSettingsWording.notificationsHint). \(FeedWording.notificationsRefused)"
+            : FeedSettingsWording.notificationsHint
     }
 
     /// A binding to one feed setting, saved as it changes.

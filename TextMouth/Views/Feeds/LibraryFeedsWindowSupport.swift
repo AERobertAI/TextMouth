@@ -116,9 +116,29 @@ struct LibraryFeedsWindowSupport: ViewModifier {
     let shownFolderPath: String?
     /// Whether this window takes the menu command `notification` posts.
     let takesCommand: (Notification) -> Bool
+    /// The alert after a refresh TextMouth made by itself brought new
+    /// items, which one Library window in front shows.
+    @ObservedObject var arrivals: FeedArrivals = .shared
 
     func body(content: Content) -> some View {
         content
+            // The arrivals alert waits for a Library window in front: one
+            // that is key as the alert comes, or the first to become key.
+            .onReceive(arrivals.$pendingAlert) { _ in
+                claimArrivalsAlert()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
+                if let hostWindow, (notification.object as? NSWindow) === hostWindow {
+                    claimArrivalsAlert()
+                }
+            }
+            .alert(arrivals.pendingAlert?.title ?? "", isPresented: isShowingArrivals, presenting: arrivals.pendingAlert) { _ in
+                Button("OK", role: .cancel) {
+                    arrivals.dismissAlert()
+                }
+            } message: { alert in
+                Text(alert.message)
+            }
             .onReceive(NotificationCenter.default.publisher(for: .addFeed)) { notification in
                 guard takesCommand(notification) else { return }
                 showAddFeed()
@@ -174,6 +194,31 @@ struct LibraryFeedsWindowSupport: ViewModifier {
     /// What the feed commands chosen in this window work with.
     private var context: FeedCommandContext {
         FeedCommandContext(center: feedFolders.center, library: library, window: hostWindow)
+    }
+
+    /// Takes the arrivals alert for this window when it is in front and no
+    /// other window has taken it. Run on the next turn, as the alert's
+    /// publisher announces a new alert before it is stored.
+    private func claimArrivalsAlert() {
+        let window = hostWindow
+        let arrivals = arrivals
+        DispatchQueue.main.async {
+            arrivals.claimAlert(by: window.map { ObjectIdentifier($0) }, isKeyWindow: window?.isKeyWindow ?? false)
+        }
+    }
+
+    /// Whether this window shows the arrivals alert: only the window that
+    /// took it; dismissing it forgets it.
+    private var isShowingArrivals: Binding<Bool> {
+        Binding(
+            get: {
+                guard arrivals.pendingAlert != nil, let hostWindow else { return false }
+                return arrivals.alertWindow == ObjectIdentifier(hostWindow)
+            },
+            set: { isPresented in
+                if !isPresented { arrivals.dismissAlert() }
+            }
+        )
     }
 
     /// Whether the confirmation's alert shows; dismissing it forgets the

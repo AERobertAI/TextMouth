@@ -99,7 +99,9 @@ final class FeedUISettingsTests: XCTestCase {
     /// a stepper speaking it with its unit; and a checkbox for each switch
     /// and each off value, showing the settings. Its steppers save what
     /// VoiceOver's increment does with them, and while a number is off, its
-    /// stepper is dimmed and keeps saying the number unchecking restores.
+    /// stepper is dimmed and keeps saying the number unchecking restores. A
+    /// setting changed while the tab is open, as config.json changes it,
+    /// never asks permission for notifications.
     ///
     /// SwiftUI's checkboxes take no press from a test: they have no action
     /// of their own, and join the accessibility tree only for a connected
@@ -109,7 +111,10 @@ final class FeedUISettingsTests: XCTestCase {
     func testTheTabDrawsLabelledControlsThatSave() throws {
         let settings = makeSettings(makeSandboxedPreferences("FeedUISettingsDrawn"))
         let world = try FeedTestWorld(self, label: "FeedUISettingsDrawnWorld")
-        let view = FeedSettingsView(center: world.center, announce: { _ in }).environmentObject(settings)
+        // Notifications not yet asked about: asking would count a request.
+        let notifier = FakeFeedNotifier(authorization: .notDetermined, answer: .denied)
+        let view = FeedSettingsView(center: world.center, announce: { _ in }, notifier: notifier)
+            .environmentObject(settings)
 
         withHostedView(view, size: NSSize(width: 700, height: 700), until: {
             self.descendants(of: $0, as: NSStepper.self).count == 3
@@ -200,6 +205,7 @@ final class FeedUISettingsTests: XCTestCase {
             if !controls.isEmpty {
                 XCTAssertTrue(waitUntil { stepper(.deleteDownloadsAfterPlaying)?.isAccessibilityEnabled() == true }, "a stepper stayed dimmed")
             }
+            XCTAssertEqual(notifier.requests, 0, "notifications turned on elsewhere asked for permission")
         }
     }
 

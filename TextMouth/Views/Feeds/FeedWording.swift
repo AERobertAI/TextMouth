@@ -81,7 +81,7 @@ enum FeedWording {
 
     /// What a feed's items are called: episodes when they all offer audio
     /// or video, articles when none do, and items when the feed mixes them.
-    enum ItemNoun: Equatable, Sendable {
+    enum ItemNoun: Hashable, Sendable {
         case episode
         case article
         case item
