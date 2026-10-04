@@ -124,6 +124,24 @@ struct BookTextEditPending: LocalizedError, Sendable {
     }
 }
 
+/// The books a text-cache batch left as they were because a rebuild was
+/// refused over an edit not taken (`BookTextEditPending`), counted from
+/// the batch's workers, each book once. Redo Text Extraction says how many.
+final class HeldTextEditTally: Sendable {
+    /// The IDs of the books held, guarded by the lock itself.
+    private let books = OSAllocatedUnfairLock<Set<UUID>>(initialState: [])
+
+    /// Counts the book `bookID`, once however often it is recorded.
+    func record(_ bookID: UUID) {
+        _ = books.withLock { $0.insert(bookID) }
+    }
+
+    /// How many books were held.
+    var count: Int {
+        books.withLock { $0.count }
+    }
+}
+
 // MARK: - Sessions
 
 /// The books whose text is being edited in another app, each with its
@@ -142,6 +160,10 @@ struct BookTextEditPending: LocalizedError, Sendable {
 /// neither a reader (`settlePendingEdit(of:)`) nor any rebuild of the text
 /// (`permitTextRebuild(of:writing:)`) replaces it; a rebuild that does
 /// replace text the user saved, taken or not, keeps it the same way first.
+/// Text saved in content.md while no session watched it, as while
+/// TextMouth was closed, is taken by the launch's cache pass when it can be
+/// (`settleEditSavedWhileClosed(of:access:)`), and kept beside content.md
+/// before any rebuild otherwise.
 final class BookTextEditSessions: Sendable {
     /// The sessions of the app's Edit Text commands.
     static let shared = BookTextEditSessions()
@@ -312,8 +334,11 @@ final class BookTextEditSessions: Sendable {
     /// read again from the book's own file (`MarkdownCacheService`), once
     /// what the user saved there is safe.
     ///
-    /// A book not being edited, or whose content.md is gone or holds those
-    /// very bytes, is rebuilt at once. Otherwise content.md holds text the
+    /// A book not being edited is rebuilt at once, once any text saved in
+    /// its content.md while no session watched it, as while TextMouth was
+    /// closed, is kept beside it (`keepTextSavedWithoutSession(of:replacedBy:)`).
+    /// A book being edited whose content.md is gone or holds those very
+    /// bytes is rebuilt at once too. Otherwise content.md holds text the
     /// user saved, taken or not, which is kept beside it first
     /// (`keepCopy(of:bytes:)`). The rebuild may then go on when that text was
     /// taken, or when the book's own file changed since, which the book's
@@ -329,7 +354,10 @@ final class BookTextEditSessions: Sendable {
     /// - Throws: `BookTextEditPending`, saying why and where the edited
     ///   text was kept.
     func permitTextRebuild(of book: Book, writing newBytes: Data) throws {
-        guard let session = sessions.withLock({ $0[book.id] }) else { return }
+        guard let session = sessions.withLock({ $0[book.id] }) else {
+            try keepTextSavedWithoutSession(of: book, replacedBy: newBytes)
+            return
+        }
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         guard FileStamp(of: cacheURL) != nil else { return }
         guard !access.isInCloud(cacheURL) else {
@@ -384,6 +412,88 @@ final class BookTextEditSessions: Sendable {
         if let before, let kept = before.replacedCopy {
             before.report(book.id, .replaced(keptCopy: kept))
         }
+    }
+
+    // MARK: Edits Saved While TextMouth Was Closed
+
+    /// Takes an edit of `book`'s text saved in its content.md while no
+    /// session watched the book, as while TextMouth was closed (FR05). It is
+    /// checked as a session's save is (`check(_:against:access:readingTexts:)`),
+    /// against what the book's record says content.md and the book's own
+    /// file held when TextMouth last wrote or took its text
+    /// (`recordedTextCacheFingerprint(of:access:)`): content.md with other
+    /// bytes beside an unchanged source is an edit, taken as the book's text
+    /// when it parses, indexed and committed to the book's record; one that
+    /// does not parse, or beside a changed source, is kept beside content.md
+    /// first, as an edit refused during a session is, for the rebuild that
+    /// follows. The launch's cache pass asks this before it rebuilds a text
+    /// cache its record no longer describes, at launch and whenever a
+    /// library opens.
+    ///
+    /// Checked as storage work, with `access` reaching the files (FR02).
+    /// - Returns: What the check found; nil for an audiobook, a book without
+    ///   a package, a book being edited now, whose session checks it, and a
+    ///   text whose record keeps no fingerprints to compare with.
+    func settleEditSavedWhileClosed(of book: Book, access: MaintenanceFileAccess) -> BookTextEditCheck? {
+        guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty, !isEditing(book.id) else { return nil }
+        return boundary.perform(.contentAnalysis) { _ in
+            let current = boundary.rebasedToCurrent(book)
+            guard let recorded = Self.recordedTextCacheFingerprint(of: current, access: access) else { return nil }
+            let baseline = BookTextBaseline(source: recorded.source, cache: recorded.cache)
+            return Self.check(current, against: baseline, access: access, readingTexts: readingTexts).found
+        }
+    }
+
+    /// The fingerprints of `book`'s text cache as its record (bookInfo.json)
+    /// keeps them, read with dataless files left in the cloud: what
+    /// content.md and the book's own file held when TextMouth last wrote or
+    /// took its text. The record is read first, since it can be newer than
+    /// the library's row; the book's own fingerprints stand in when it
+    /// cannot be read. Nil when the one read keeps none, as for a cache
+    /// written before fingerprints.
+    static func recordedTextCacheFingerprint(of book: Book, access: MaintenanceFileAccess) -> TextCacheFingerprint? {
+        let package = book.tmbDirectory
+        let record = try? access.read(TextMouthPaths.bookInfoPath(in: package)) {
+            try StoredBookRecord.read(from: package)
+        }
+        guard let record else { return book.textCacheFingerprint }
+        return record.info.state.textCacheFingerprint
+    }
+
+    /// Keeps the text `book`'s content.md holds beside it before a rebuild
+    /// replaces it with `newBytes`, when no session watches the book and
+    /// content.md holds other bytes than its record says TextMouth last
+    /// wrote or took there (`recordedTextCacheFingerprint(of:access:)`): an
+    /// edit saved while TextMouth was closed, or in any app while no Edit
+    /// Text session watched (FR05), which the rebuild would otherwise lose.
+    /// It is kept as an edit refused during a session is
+    /// (`keepCopy(of:bytes:)`), whether or not the book's own file changed
+    /// too, logged as `TEXT_EDIT_KEPT`, and the rebuild goes on, as it
+    /// always did for a book not being edited.
+    ///
+    /// Nothing is kept for a content.md that is gone, only in the cloud,
+    /// holding the bytes about to be written or those its record describes,
+    /// or whose record keeps no fingerprints. content.md is read and
+    /// digested even when stamped as its record says, since an edit can keep
+    /// both its size and its date.
+    /// - Throws: `BookTextEditPending` when no copy could be kept, so the
+    ///   text is left as it is rather than lost.
+    private func keepTextSavedWithoutSession(of book: Book, replacedBy newBytes: Data) throws {
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+        guard FileStamp(of: cacheURL) != nil, !access.isInCloud(cacheURL),
+              let recorded = Self.recordedTextCacheFingerprint(of: book, access: access),
+              let bytes = try? access.read(cacheURL, { try Data(contentsOf: cacheURL) }),
+              bytes != newBytes,
+              access.hasher.digestOfData(bytes) != recorded.cache.digest else { return }
+        guard let kept = Self.keepCopy(of: cacheURL, bytes: bytes) else {
+            throw holding(book, .failed(BookTextEditWording.noCopyKept), keptCopy: nil)
+        }
+        Self.logLine(
+            "TEXT_EDIT_KEPT",
+            about: book,
+            "content.md held text saved while no edit was open; kept as \(kept.lastPathComponent) "
+                + "before its text was read again from the book's own file"
+        )
     }
 
     /// The error that keeps `book`'s text from being rebuilt or read, for

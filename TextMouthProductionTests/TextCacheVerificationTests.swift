@@ -109,7 +109,8 @@ final class TextCacheVerificationTests: XCTestCase {
     /// content.md edited to the same length but other words is caught by its
     /// digest, since its date changed, and rebuilt from the source rather
     /// than trusted: the words, the index, and the fingerprints all follow
-    /// the source again.
+    /// the source again. The edited text is kept beside content.md first
+    /// (FR05), as before any rebuild.
     func testContentMarkdownEditedToTheSameLengthIsRebuiltFromTheSource() throws {
         let book = try makeCachedBook()
         let recorded = try XCTUnwrap(try savedIndex(of: book).textCacheFingerprint)
@@ -127,12 +128,14 @@ final class TextCacheVerificationTests: XCTestCase {
         XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: book).allText.contains("One two three."))
         try assertFingerprint(try XCTUnwrap(result.index.textCacheFingerprint), describesFilesOf: book)
         try assertNextOpenReadsNothing(after: result, for: book)
+        XCTAssertEqual(try keptCopies(of: book).map { try String(contentsOf: $0, encoding: .utf8).contains("Two one three.") }, [true])
     }
 
     /// An edit that kept content.md's size and even its date (as `touch -r`
     /// can) passes the stamps, but not the saved index: a renamed heading
     /// fails alignment, and content.md's digest then shows the edit, so the
-    /// cache is rebuilt rather than indexed again.
+    /// cache is rebuilt rather than indexed again, the edit kept beside it
+    /// first (FR05).
     func testEditKeepingContentMarkdownsSizeAndDateIsCaughtByTheIndex() throws {
         let book = try makeCachedBook()
         let recorded = try XCTUnwrap(try savedIndex(of: book).textCacheFingerprint)
@@ -153,6 +156,7 @@ final class TextCacheVerificationTests: XCTestCase {
         XCTAssertEqual(counter.dataCount, 1, "only the rejected index sends content.md to be digested")
         XCTAssertEqual(result.index.allHeadings.map(\.text), ["First", "Second", "Later"])
         XCTAssertFalse(result.usedPersistedIndex)
+        XCTAssertEqual(try keptCopies(of: book).map { try String(contentsOf: $0, encoding: .utf8).contains("## Never") }, [true])
     }
 
     // MARK: - Replaced Source
@@ -343,9 +347,12 @@ final class TextCacheVerificationTests: XCTestCase {
         XCTAssertEqual(staleReports(for: book).count, 1)
     }
 
-    /// An edited content.md of another size is rebuilt at startup as well.
+    /// An edited content.md of another size, beside an unchanged source, is
+    /// an edit saved while TextMouth was closed (FR05): the startup batch
+    /// reports the cache stale, then takes the edit as the book's text
+    /// rather than rebuild it, fingerprinted as the edited bytes.
     @MainActor
-    func testStartupBatchRebuildsAResizedContentMarkdown() async throws {
+    func testStartupBatchTakesAResizedContentMarkdownAsAnEdit() async throws {
         let book = try makeCachedBook()
         try editCache(of: book, replacing: "Six seven eight.", with: "Six seven eight. Nine ten.")
         let model = makeModel(with: [book])
@@ -353,7 +360,11 @@ final class TextCacheVerificationTests: XCTestCase {
         await runStartupBatch(of: model)
 
         XCTAssertEqual(staleReports(for: book), ["CACHE_STALE: \(book.title): content.md changed"])
-        XCTAssertFalse(try MarkdownCacheService.loadFromCache(for: book).allText.contains("Nine ten."))
+        XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: book).allText.contains("Nine ten."))
+        let fingerprint = try XCTUnwrap(model.bookByID(book.id)?.textCacheFingerprint)
+        try assertFingerprint(fingerprint, describesFilesOf: book)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.textCacheFingerprint, fingerprint)
+        XCTAssertEqual(keptCopies(of: book), [], "a copy was kept of an edit nothing replaced")
     }
 
     /// A library row can lag its package: a crash after the package recorded
@@ -548,6 +559,15 @@ final class TextCacheVerificationTests: XCTestCase {
     /// The index saved in `book`'s package.
     private func savedIndex(of book: Book) throws -> BookContentIndex {
         try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).contentIndex)
+    }
+
+    /// The copies of text kept beside `book`'s content.md before a rebuild
+    /// replaced it (FR05), oldest first.
+    private func keptCopies(of book: Book) -> [URL] {
+        LibraryIndexQuarantine.existingCopies(
+            of: MarkdownCacheService.cacheURL(for: book),
+            marker: TextMouthPaths.keptTextCopyMarker
+        )
     }
 
     /// Replaces `old`, which must be there, with `new` in `book`'s

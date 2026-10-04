@@ -12,7 +12,10 @@ import XCTest
 /// cloud are left alone; one made during a hold on the storage work waits
 /// for the hold. An edit that cannot be taken is kept beside content.md,
 /// and neither a reader nor any rebuild of the text replaces it; a rebuild
-/// that replaces text the user saved keeps it first.
+/// that replaces text the user saved keeps it first. An edit saved while
+/// TextMouth was closed, with no session to see it, is taken by the
+/// launch's cache pass when it parses, and kept beside content.md before
+/// any rebuild otherwise.
 ///
 /// Every editor here is the test's own: it opens no app, shows no dialog,
 /// remembers its explanation in a sandboxed store, and takes TextMouth to
@@ -378,7 +381,11 @@ final class BookTextEditTests: XCTestCase {
         XCTAssertEqual(refusedCopies.count, 1)
 
         let outcome = await world.library.redoAllTextExtractionReturningOutcome()
-        XCTAssertNotNil(outcome, "Redo Text Extraction did not run")
+        XCTAssertEqual(
+            outcome,
+            .success("Done. 1 book whose edited text can't be used yet was skipped."),
+            "Redo Text Extraction did not say it skipped the book held over its edit"
+        )
 
         XCTAssertEqual(try Data(contentsOf: refusedCache), blank, "the text was rebuilt over an edit not taken")
         XCTAssertEqual(keptCopies(of: refused), refusedCopies)
@@ -494,6 +501,180 @@ final class BookTextEditTests: XCTestCase {
         XCTAssertTrue(taken, "the edit was not taken once the hold ended")
     }
 
+    // MARK: - Edits Saved While TextMouth Was Closed
+
+    /// content.md saved in an editor while TextMouth was closed, beside an
+    /// unchanged source, is the book's text once the launch's cache pass
+    /// has run: indexed afresh and fingerprinted as the edited bytes beside
+    /// the source, so neither the pass nor the next open rebuilds it, and
+    /// nothing is kept beside it, since nothing replaced it. The next
+    /// launch has nothing to do for it.
+    func testAnEditSavedWhileClosedIsTakenAtLaunch() async throws {
+        let world = try makeIntegrationWorld("Edit Text Closed Taken")
+        let book = try world.importBook(from: writeSource(named: "Lantern Quay.md", Self.twoChapters))
+        let sourceBefore = try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).state.textCacheFingerprint?.source)
+        let adoptedBefore = debugLogLines(containing: "TEXT_EDIT_ADOPTED: \(book.title):").count
+        let cache = MarkdownCacheService.cacheURL(for: book)
+
+        try Self.editedChapters.write(to: cache, atomically: true, encoding: .utf8)
+        await runLaunchCachePass(of: world.library)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.editedChapters, "the edit was rebuilt over")
+        XCTAssertEqual(keptCopies(of: book), [], "a copy was kept of an edit nothing replaced")
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(try XCTUnwrap(record.contentIndex).allHeadings.map(\.text), ["Harbour", "Channel", "Sandbanks"])
+        let fingerprint = try XCTUnwrap(record.state.textCacheFingerprint)
+        XCTAssertEqual(fingerprint.cache.digest, try FileImportService.md5Hash(of: cache))
+        XCTAssertEqual(fingerprint.source, sourceBefore)
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.textCacheFingerprint, fingerprint)
+        XCTAssertEqual(debugLogLines(containing: "TEXT_EDIT_ADOPTED: \(book.title):").count, adoptedBefore + 1)
+        let reopened = try BookContentAnalysisService.load(book: row)
+        XCTAssertTrue(reopened.usedPersistedIndex, "the next open did not use the edit's index")
+        XCTAssertTrue(reopened.content.chapters[1].text.contains("A pilot boat waits"))
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [], "the next launch would check it again")
+    }
+
+    /// An edit of the same length, which only content.md's date tells
+    /// apart, is found by the launch's cache pass and taken all the same.
+    func testASameLengthEditSavedWhileClosedIsFoundByItsDateAndTaken() async throws {
+        let world = try makeIntegrationWorld("Edit Text Closed Same Length")
+        let book = try world.importBook(from: writeSource(named: "Tide Mill.md", Self.twoChapters))
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        let recorded = try XCTUnwrap(row.textCacheFingerprint)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let text = try String(contentsOf: cache, encoding: .utf8)
+        let edited = text.replacingOccurrences(of: "Buoys mark", with: "Spars mark")
+        XCTAssertEqual(edited.utf8.count, text.utf8.count, "the edit changed the length")
+
+        try edited.write(to: cache, atomically: true, encoding: .utf8)
+        try setModificationTime(of: cache, nanoseconds: recorded.cache.modificationTimeNanoseconds + 2_000_000_000)
+        XCTAssertFalse(LibraryViewModel.hasResizedTextCacheFile(row))
+        XCTAssertTrue(LibraryViewModel.hasRedatedTextCache(row))
+        await runLaunchCachePass(of: world.library)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), edited, "the edit was rebuilt over")
+        let fingerprint = try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).state.textCacheFingerprint)
+        XCTAssertEqual(fingerprint.cache.digest, try FileImportService.md5Hash(of: cache))
+        XCTAssertEqual(world.library.bookByID(book.id)?.textCacheFingerprint, fingerprint)
+        XCTAssertEqual(keptCopies(of: book), [])
+    }
+
+    /// content.md only touched, its bytes the same, is read once for its
+    /// digest and left as it is: nothing is taken, kept, or rewritten, and
+    /// the row records the new date, so the next launch reads nothing.
+    func testATouchedContentMarkdownIsReadOnceAndLeftAsItIs() async throws {
+        let world = try makeIntegrationWorld("Edit Text Closed Touched")
+        let book = try world.importBook(from: writeSource(named: "Ferry Steps.md", Self.twoChapters))
+        let recorded = try XCTUnwrap(world.library.bookByID(book.id)?.textCacheFingerprint)
+        let adoptedBefore = debugLogLines(containing: "TEXT_EDIT_ADOPTED: \(book.title):").count
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let bytes = try Data(contentsOf: cache)
+        try setModificationTime(of: cache, nanoseconds: recorded.cache.modificationTimeNanoseconds + 2_000_000_000)
+        let touched = FileStamp(of: cache)
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate(world.library.library.books, access: .live).map(\.id), [book.id])
+
+        await runLaunchCachePass(of: world.library)
+
+        XCTAssertEqual(try Data(contentsOf: cache), bytes)
+        XCTAssertEqual(FileStamp(of: cache), touched, "content.md was written again")
+        XCTAssertEqual(keptCopies(of: book), [])
+        XCTAssertEqual(debugLogLines(containing: "TEXT_EDIT_ADOPTED: \(book.title):").count, adoptedBefore)
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.textCacheFingerprint?.cache.stamp, touched, "the row did not record the new date")
+        XCTAssertEqual(row.textCacheFingerprint?.cache.digest, recorded.cache.digest)
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [], "the next launch would read it again")
+    }
+
+    /// An edit saved while closed that cannot be taken, holding no chapter
+    /// or bytes that are not UTF-8, is kept beside content.md exactly as
+    /// saved, and only then is the book's text read again from its own
+    /// file.
+    func testAnEditSavedWhileClosedThatCannotBeTakenIsKeptBeforeTheRebuild() async throws {
+        for (name, saved) in [("Pier Lamps", Data("  \n\n\t\n".utf8)), ("Net Lofts", Data([0x48, 0xFF, 0xFE, 0x69]))] {
+            let world = try makeIntegrationWorld("Edit Text Closed Refused \(name)")
+            let book = try world.importBook(from: writeSource(named: "\(name).md", Self.twoChapters))
+            let cache = MarkdownCacheService.cacheURL(for: book)
+            let extracted = try Data(contentsOf: cache)
+
+            try saved.write(to: cache)
+            await runLaunchCachePass(of: world.library)
+
+            let copies = keptCopies(of: book)
+            XCTAssertEqual(copies.count, 1, "\(name): the edit was not kept once")
+            XCTAssertEqual(copies.first.flatMap { try? Data(contentsOf: $0) }, saved, "\(name): the copy is not the edit")
+            XCTAssertEqual(try Data(contentsOf: cache), extracted, "\(name): the text was not read again from the book's file")
+            let fingerprint = try XCTUnwrap(world.library.bookByID(book.id)?.textCacheFingerprint, name)
+            XCTAssertEqual(fingerprint.cache.digest, try FileImportService.md5Hash(of: cache), name)
+        }
+    }
+
+    /// An edit saved while closed beside a source that changed too is kept
+    /// beside content.md, and the book's text is read from the changed file.
+    func testAnEditSavedWhileClosedBesideAChangedSourceIsKeptThenTheFileRead() async throws {
+        let world = try makeIntegrationWorld("Edit Text Closed Source Changed")
+        let book = try world.importBook(from: writeSource(named: "Salt Road.md", Self.twoChapters))
+        let cache = MarkdownCacheService.cacheURL(for: book)
+
+        try Self.editedChapters.write(to: cache, atomically: true, encoding: .utf8)
+        try (Self.twoChapters + "\n\n<!-- chapter: Moorings -->\n# Moorings\n\nChains rust in the shallows.\n")
+            .write(to: book.bookFileURL, atomically: true, encoding: .utf8)
+        await runLaunchCachePass(of: world.library)
+
+        let copy = try XCTUnwrap(keptCopies(of: book).first, "the edit was not kept")
+        XCTAssertEqual(try String(contentsOf: copy, encoding: .utf8), Self.editedChapters)
+        let text = try String(contentsOf: cache, encoding: .utf8)
+        XCTAssertTrue(text.contains("Chains rust in the shallows."), "the changed file was not read")
+        XCTAssertFalse(text.contains("A pilot boat waits"), "the edit beside a changed file was taken")
+    }
+
+    /// Any rebuild keeps text content.md holds that TextMouth did not write
+    /// or take there, though no session saw it saved: Redo Text Extraction
+    /// keeps it beside content.md before reading the book's text from its
+    /// own file again, says nothing was skipped, and keeps nothing for a
+    /// book whose content.md is as TextMouth wrote it.
+    func testEveryRebuildKeepsTextSavedWithoutASession() async throws {
+        let world = try makeIntegrationWorld("Edit Text Closed Redo")
+        let edited = try world.importBook(from: writeSource(named: "Chandlery.md", Self.twoChapters))
+        let untouched = try world.importBook(
+            from: writeSource(named: "Boatyard.md", Self.twoChapters + "\n\nHulls dry on the slip.")
+        )
+        let cache = MarkdownCacheService.cacheURL(for: edited)
+        let extracted = try Data(contentsOf: cache)
+        let keptBefore = debugLogLines(containing: "TEXT_EDIT_KEPT: \(edited.title):").count
+
+        try Self.editedChapters.write(to: cache, atomically: true, encoding: .utf8)
+        let outcome = await world.library.redoAllTextExtractionReturningOutcome()
+
+        XCTAssertEqual(outcome, .success(nil))
+        let copy = try XCTUnwrap(keptCopies(of: edited).first, "the text saved without a session was not kept")
+        XCTAssertEqual(try String(contentsOf: copy, encoding: .utf8), Self.editedChapters)
+        XCTAssertEqual(try Data(contentsOf: cache), extracted, "the text was not read again from the book's file")
+        XCTAssertEqual(debugLogLines(containing: "TEXT_EDIT_KEPT: \(edited.title):").count, keptBefore + 1)
+        XCTAssertEqual(keptCopies(of: untouched), [], "text TextMouth wrote was kept")
+    }
+
+    /// Redo Text Extraction says how many books it skipped, those in the
+    /// cloud and those held over an edit not taken, each in a sentence of
+    /// its own, and says nothing more when it skipped none.
+    func testRedoTextExtractionSaysWhichBooksItSkipped() {
+        typealias Model = LibraryViewModel
+        XCTAssertEqual(Model.textReextractionOutcome(skippedInCloud: 0, heldByEdits: 0), .success(nil))
+        XCTAssertEqual(
+            Model.textReextractionOutcome(skippedInCloud: 0, heldByEdits: 1),
+            .success("Done. 1 book whose edited text can't be used yet was skipped.")
+        )
+        XCTAssertEqual(
+            Model.textReextractionOutcome(skippedInCloud: 0, heldByEdits: 2),
+            .success("Done. 2 books whose edited text can't be used yet were skipped.")
+        )
+        XCTAssertEqual(
+            Model.textReextractionOutcome(skippedInCloud: 12, heldByEdits: 1),
+            .success("Done. 12 books in the cloud were skipped. 1 book whose edited text can't be used yet was skipped.")
+        )
+        XCTAssertEqual(Model.textReextractionOutcome(skippedInCloud: 1), .success("Done. 1 book in the cloud was skipped."))
+    }
+
     // MARK: - Where the Cursor Goes
 
     /// The cursor keeps its place in an unchanged chapter, follows the
@@ -588,6 +769,19 @@ final class BookTextEditTests: XCTestCase {
             try? await Task.sleep(nanoseconds: 20_000_000)
         }
         return true
+    }
+
+    /// Runs the launch's cache pass over `library`
+    /// (`LibraryViewModel.extractMissingContentCaches`), as launch and a
+    /// library opening do, and waits for it to end, yielding the main
+    /// actor; then writes every pending save. A pass that ends after the
+    /// wait only sets a flag.
+    private func runLaunchCachePass(of library: LibraryViewModel) async {
+        let finished = OSAllocatedUnfairLock(initialState: false)
+        library.extractMissingContentCaches { finished.withLock { $0 = true } }
+        let ended = await eventually(timeout: 30) { finished.withLock { $0 } }
+        XCTAssertTrue(ended, "the launch's cache pass never ended")
+        LibraryPersistenceService.flushPendingSave()
     }
 
     /// Waits until `reader` has loaded its book, yielding the main actor
