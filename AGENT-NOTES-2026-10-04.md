@@ -675,3 +675,9 @@ What each task agent of the orchestrated campaign left unverified or undone, in 
 - Not verified: live VoiceOver and the real menu bar; the real quit alerts; bookmarks in an M4B with real chapters; two copies of TextMouth on one Mac; macOS emptying Caches (simulated).
 - Decisions: markers under a `markers` key in edits.json (older builds drop them); a crash between the two writes could leave markers one edit out of place; Revert to Original deletes markers; the Edit menu acts only when the editor window itself is key; "MP3 needs ffmpeg" wording left for recordpolish.
 - Docs: README and ARCHITECTURE wording in the agent's report (tasks/adf06ceb42b00205e).
+
+## From the feedpolish agent (feature/feed-search-and-polish), Oct 4 evening
+- Not verified: live servers (the search fixture copies one real iTunes answer with its text replaced; the directory's rate-limit answer is assumed), a real quit and relaunch, metered-network detection (stub only), VoiceOver live, M4V and MOV by extension only, the type-check time after the #1111 split.
+- Decisions: Return presses Search only in the Search field; up to 50 results, one per feed; content_html before content_text; the quit hold answers "later" after the unsaved-changes check and waits three seconds; video extensions apply to folder and ZIP imports too; the finished book's kind is recorded at finish (deleted episodes cannot be classified later; older entries count by kind while in the library, then as other books).
+- Flake seen once: ViewsAndWindowsReaderSheetTests drawing count over its limit while other agents built (3 of 3 alone; #1170).
+- Docs: README and ARCHITECTURE wording in the agent's report (orchestrator session tasks/ae3a397d3365f52ed).
