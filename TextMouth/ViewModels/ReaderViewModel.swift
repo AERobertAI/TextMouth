@@ -922,6 +922,19 @@ final class ReaderViewModel: ObservableObject {
             regenerateTextCache: cacheOutdated,
             readingTexts: readingTexts
         )
+        // An audiobook with a transcript reads as text too (FR05): the
+        // transcript's text is laid over its chapters for the reader to show,
+        // while the book keeps playing its audio, and its index takes the
+        // text's layer when the text had to be written again.
+        var content = analysis.content
+        var index = analysis.index
+        var transcriptIndexChanged = false
+        if format.isAudio {
+            let transcript = TranscriptTextLoader.load(for: book, audioIndex: analysis.index, readingTexts: readingTexts)
+            content.transcript = transcript.text
+            index = transcript.index
+            transcriptIndexChanged = transcript.indexChanged
+        }
 
         var audioTags: AudioMetadata?
         if format.isAudio {
@@ -930,12 +943,13 @@ final class ReaderViewModel: ObservableObject {
         }
 
         return LoadedContent(
-            content: analysis.content,
-            index: analysis.index,
+            content: content,
+            index: index,
             audioFiles: analysis.audioFilePaths,
             audioSegments: analysis.audioSegments,
             audioTags: audioTags,
             shouldPersistContentIndex: !analysis.usedPersistedIndex
+                || transcriptIndexChanged
                 || book.contentIndexVersion != BookContentIndex.currentVersion
                 || (!format.isAudio
                     && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion),
@@ -1209,14 +1223,18 @@ final class ReaderViewModel: ObservableObject {
             displayCharacterOffset = resolvedOffset
         }
 
+        // What the text area shows: the chapter's own text, or, for an
+        // audiobook with a transcript, the transcript's text at the time
+        // the cursor stands for (FR05).
+        let shown = Self.shownText(of: content, chapterIndex: resolvedChapterIndex, cursorOffset: resolvedOffset)
         let shouldRefreshVisibleText = forceVisibleTextRefresh
             || shouldRefreshVisibleTextWindow(
                 chapterIndex: resolvedChapterIndex,
-                offset: resolvedOffset,
-                chapterTextLength: resolvedChapterText.utf16Length
+                offset: shown.offset,
+                chapterTextLength: shown.text.utf16Length
             )
         if shouldRefreshVisibleText {
-            let window = makeVisibleTextWindow(resolvedChapterText, centeredAt: resolvedOffset)
+            let window = makeVisibleTextWindow(shown.text, centeredAt: shown.offset)
             let nextState = VisibleTextWindowState(
                 chapterIndex: resolvedChapterIndex,
                 startOffset: window.startOffset,
@@ -1227,7 +1245,7 @@ final class ReaderViewModel: ObservableObject {
                 displayVisibleTextWindow = window.text
             }
         } else if visibleTextWindowState == nil {
-            let window = makeVisibleTextWindow(resolvedChapterText, centeredAt: resolvedOffset)
+            let window = makeVisibleTextWindow(shown.text, centeredAt: shown.offset)
             visibleTextWindowState = VisibleTextWindowState(
                 chapterIndex: resolvedChapterIndex,
                 startOffset: window.startOffset,
@@ -1237,6 +1255,25 @@ final class ReaderViewModel: ObservableObject {
                 displayVisibleTextWindow = window.text
             }
         }
+    }
+
+    /// The text the reader shows for chapter `chapterIndex` of `content`,
+    /// and where in it the cursor, at `cursorOffset` in the chapter, falls:
+    /// the chapter's own text and the cursor itself; or, for an audiobook
+    /// with a transcript (FR05), whose chapters stand for time, the
+    /// chapter's transcript text and the start of the sentence heard at the
+    /// time the cursor stands for (`TranscriptText`). The window shown is
+    /// cut from that text around that place, so it follows the narration
+    /// sentence by sentence.
+    nonisolated static func shownText(
+        of content: DocumentContent,
+        chapterIndex: Int,
+        cursorOffset: Int
+    ) -> (text: String, offset: Int) {
+        if let transcript = content.transcript, let text = transcript.chapterText(chapterIndex) {
+            return (text, transcript.textOffset(atAudioOffset: cursorOffset, inChapter: chapterIndex))
+        }
+        return (content.chapters[chapterIndex].text, cursorOffset)
     }
 
     private func shouldRefreshVisibleTextWindow(

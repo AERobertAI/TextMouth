@@ -465,6 +465,41 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertEqual(load.index, index)
     }
 
+    // MARK: - The Reader
+
+    /// A transcribed audiobook opens showing its transcript around the
+    /// time its cursor stands for, and still plays its audio from its
+    /// files: a move to another chapter shows that chapter's text.
+    func testTheReaderShowsTheTranscriptAndStillPlaysTheAudio() throws {
+        let world = try makeIntegrationWorld("Transcript Reader")
+        let book = try world.makeSilentAudioBook(
+            title: "Harbor Notes",
+            trackDurations: [9, 6],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 30)
+        )
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: Self.sentences), for: book)
+
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+
+        let content = try XCTUnwrap(reader.content)
+        XCTAssertNotNil(content.transcript)
+        XCTAssertEqual(reader.currentCharacterOffset, 30, "the position still counts time")
+        XCTAssertTrue(reader.displayVisibleTextWindow.contains("Tide tables hang in the harbor office."), reader.displayVisibleTextWindow)
+        XCTAssertEqual(
+            ReaderViewModel.shownText(of: content, chapterIndex: 0, cursorOffset: 30).offset,
+            39,
+            "three seconds in, the second sentence is heard"
+        )
+        let tracks = URL(fileURLWithPath: book.filePath, isDirectory: true)
+        XCTAssertEqual(reader.chapterAudioSource(forChapterAt: 1), .file(tracks.appendingPathComponent("02.wav")))
+
+        reader.navigateTo(chapterIndex: 1, characterOffset: 25)
+
+        XCTAssertTrue(waitUntil { reader.displayVisibleTextWindow.contains("Carts wait at the toll.") }, reader.displayVisibleTextWindow)
+        XCTAssertFalse(reader.isCurrentlyPlaying)
+    }
+
     // MARK: - Fixtures
 
     /// The sentences heard in the tests' two-track book, by file.
