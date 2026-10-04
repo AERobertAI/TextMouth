@@ -67,7 +67,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" >> "$log" 2>&1 \
   local status=$?
   echo "EXIT=$status" >> "$log"
   echo "--- $slug ---"
-  grep -E "UNMERGED|ABORTING|RESOLVED|^[0-9a-f]{7} |PBXPROJ_|Executed [0-9]+ tests, with|TEST (SUCCEEDED|FAILED)|EXIT=|^Test Case '.*' failed" "$log" | tail -8
+  grep -E "UNMERGED|ABORTING|RESOLVED|^[0-9a-f]{7,} |PBXPROJ_|Executed [0-9]+ tests, with|TEST (SUCCEEDED|FAILED)|EXIT=|^Test Case '.*' failed" "$log" | tail -8
   [ "$status" = 0 ] && grep -q 'TEST SUCCEEDED' "$log"
 }
 
