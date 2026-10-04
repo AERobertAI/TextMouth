@@ -34,6 +34,8 @@ import AppKit
 //    - Settings window: identifier starts with "com_apple_SwiftUI_Settings"
 //      (assigned by SwiftUI's Settings scene — NOT an NSPanel, and its title
 //      is the current tab name like "Shortcuts", not "Settings")
+//    - The Record window: identifier "new-recording", set by
+//      RecordingWindowController — no context menus, as Settings
 //    - Library windows: the fallback — any titled, non-utility window that
 //      didn't match the above checks
 //    - No window (nil): all context menus hidden
@@ -231,6 +233,15 @@ final class MenuVisibilityManager {
         // "SettingsViewModel" — a contains("Settings") check would match
         // library windows too.
         if identifier.hasPrefix("com_apple_SwiftUI_Settings") {
+            return nil
+        }
+
+        // --- The Record window ---
+        // An AppKit window TextMouth makes itself and names exactly
+        // (RecordingWindowController.windowIdentifier, FR04). It is neither
+        // a Library nor a reader window and has no menus of its own, so,
+        // like Settings, it shows no context menu.
+        if identifier == RecordingWindowController.windowIdentifier {
             return nil
         }
 

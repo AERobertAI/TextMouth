@@ -249,6 +249,22 @@ final class RecordingServiceTests: XCTestCase {
         XCTAssertFalse(service.canStart, "the kept take must be saved or discarded first")
     }
 
+    /// A microphone lost while the take is still starting is not missed:
+    /// the loss is handled as soon as the take is under way, and what was
+    /// recorded is kept.
+    func testAMicrophoneLostWhileStartingIsNotMissed() async throws {
+        let backend = FakeCaptureBackend(losesMicrophoneWhileStarting: true)
+        let service = makeService(backend: backend, folder: try RecordingAudioFixtures.makeTakesFolder(for: self))
+
+        await service.start(from: TestMicrophones.airPods)
+
+        let stopped = await eventually {
+            if case .failed(.deviceDisconnected("AirPods Pro"), _?) = service.state { return true }
+            return false
+        }
+        XCTAssertTrue(stopped, "the lost microphone was missed: \(service.state)")
+    }
+
     /// A disk come near full stops the take the same way, keeping it.
     func testAFullDiskStopsTheTakeAndKeepsIt() async throws {
         let backend = FakeCaptureBackend()

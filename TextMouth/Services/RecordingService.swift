@@ -119,6 +119,9 @@ final class RecordingService: ObservableObject {
     private var current: Take?
     /// Reads the time and levels while a take is under way.
     private var pollTask: Task<Void, Never>?
+    /// An event the backend reported before `start` had finished, such as a
+    /// microphone lost at once, handled as soon as the take is under way.
+    private var eventBeforeStart: RecordingCaptureEvent?
 
     /// A recorder using `backend` and `permission`, recording into
     /// `takesFolder`.
@@ -145,13 +148,16 @@ final class RecordingService: ObservableObject {
     // MARK: Recording
 
     /// Starts a take from `device`: asks permission when nobody has
-    /// answered, then records. Afterwards `state` is `.recording`, or
-    /// `.failed` saying why nothing is recorded.
-    func start(from device: AudioInputDevice) async {
+    /// answered, runs `beforeCapture` once permission is there, then
+    /// records. Afterwards `state` is `.recording`, or `.failed` saying why
+    /// nothing is recorded. The Record window's `beforeCapture` announces
+    /// the start and waits a moment, so the announcement is not recorded.
+    func start(from device: AudioInputDevice, beforeCapture: (@MainActor () async -> Void)? = nil) async {
         guard canStart else { return }
         state = .starting
         elapsed = 0
         levels = nil
+        eventBeforeStart = nil
 
         do {
             try await permission.ensureAccess()
@@ -162,6 +168,7 @@ final class RecordingService: ObservableObject {
             state = .failed(.permission(.denied), nil)
             return
         }
+        await beforeCapture?()
 
         let startedAt = now()
         let url: URL
@@ -191,6 +198,10 @@ final class RecordingService: ObservableObject {
         state = .recording
         DiagnosticLog.event(.playback, "RECORDING_STARTED")
         startPolling()
+        if let early = eventBeforeStart {
+            eventBeforeStart = nil
+            handle(early)
+        }
     }
 
     /// Pauses the take: nothing more is written until `resume()`.
@@ -296,6 +307,11 @@ final class RecordingService: ObservableObject {
     /// disk, or a failure. What was recorded is kept, as the failure's
     /// words say.
     private func handle(_ event: RecordingCaptureEvent) {
+        if state == .starting {
+            // `start` is still finishing: the event waits for it.
+            eventBeforeStart = eventBeforeStart ?? event
+            return
+        }
         guard isRecording, let take = current else { return }
         let failure: RecordingFailure
         switch event {

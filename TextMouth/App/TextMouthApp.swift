@@ -26,9 +26,14 @@ struct TextMouthApp: App {
                 .environmentObject(shortcutManager)
                 .environmentObject(soundEffectService)
                 .environmentObject(libraryWindowRouter)
-                // Lists the installed voices once the first window shows,
-                // off the main thread, rather than before it (TODO PERF07).
-                .onAppear { VoiceCatalog.shared.loadIfNeeded() }
+                .onAppear {
+                    // Lists the installed voices once the first window shows,
+                    // off the main thread, rather than before it (TODO PERF07).
+                    VoiceCatalog.shared.loadIfNeeded()
+                    // Recordings are saved into this library, whichever menu
+                    // opens the Record window (FR04).
+                    RecordingWindowController.shared.attach(libraryViewModel)
+                }
         }
         .commands {
             // Keep "Open Book..." alongside the standard "New Window" (Cmd+N)
@@ -42,6 +47,12 @@ struct TextMouthApp: App {
                     NotificationCenter.default.post(name: .newFromText, object: nil)
                 }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
+
+                // Records from a microphone into a new audiobook (FR04).
+                Button(RecordingWording.menuTitle) {
+                    RecordingWindowController.shared.show(library: libraryViewModel)
+                }
+                .keyboardShortcut(RecordingShortcuts.newRecording)
             }
 
             PlaybackCommands()

@@ -144,12 +144,17 @@ actor FakeCaptureBackend: RecordingCaptureBackend {
     private var isPaused = false
     /// Whether its file is finished.
     private var isFinished = false
+    /// Whether its microphone goes away while it is still starting, before
+    /// `start` returns, as a microphone unplugged at that moment does.
+    private let losesMicrophoneWhileStarting: Bool
 
     /// A backend writing files at `sampleRate`, whose first start throws
-    /// `startError` when given.
-    init(sampleRate: Double = 8_000, startError: Error? = nil) {
+    /// `startError` when given, and whose microphone goes away while it
+    /// starts when `losesMicrophoneWhileStarting`.
+    init(sampleRate: Double = 8_000, startError: Error? = nil, losesMicrophoneWhileStarting: Bool = false) {
         self.sampleRate = sampleRate
         self.startError = startError
+        self.losesMicrophoneWhileStarting = losesMicrophoneWhileStarting
     }
 
     func start(
@@ -169,6 +174,10 @@ actor FakeCaptureBackend: RecordingCaptureBackend {
         isFinished = false
         // Capture creates its file at once.
         try RecordingAudioFixtures.writeTake(to: url, duration: 0, sampleRate: sampleRate)
+        if losesMicrophoneWhileStarting {
+            recorded = 0.5
+            try disconnect()
+        }
     }
 
     func pause() async {

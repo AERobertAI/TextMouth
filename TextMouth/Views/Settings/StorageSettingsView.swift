@@ -398,6 +398,10 @@ struct StorageSettingsView: View {
                 Text("Library Maintenance")
             }
 
+            // What happens to a recording's original take once it is saved
+            // as an audiobook (FR04).
+            RecordingSettingsSection()
+
             // Where the diagnostic logs are written, where they are now, and
             // a way to show them in Finder (the user's decision of October 3).
             LogsSettingsSection()

@@ -165,6 +165,12 @@ struct LibraryCommands: Commands {
             }
             .keyboardShortcut("o", modifiers: [.command, .shift])
 
+            // Records from a microphone into a new audiobook (FR04); File >
+            // New Recording… carries the shortcut.
+            Button(RecordingWording.menuTitle) {
+                RecordingWindowController.shared.show()
+            }
+
             Divider()
 
             Button("Edit Mode") {
