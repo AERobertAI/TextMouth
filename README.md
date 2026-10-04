@@ -61,7 +61,7 @@ TextMouth was measured against a library the size of its developer's on October 
 
 - Starting to listen:
   - A session's first Play no longer waits while the system loads the voice: a text book's reader loads its voice silently, in the background, when it opens and whenever the voice changes.
-  - When a text book opens, TextMouth prepares the speech of the chapter you are in (or, after a cover page, the first chapter with words) in the background, with your rules and settings, so Play starts without first preparing it. A setting changed before Play is applied as always.
+  - When a text book opens, TextMouth prepares the speech of the chapter you are in (or, after a cover page, the first chapter with words) in the background, with your rules and settings, so Play starts without first preparing it. A setting changed before Play is applied as always. If you press Play on a long chapter before that is done, Play waits for it instead of preparing the chapter again, and TextMouth stays responsive meanwhile: the button reads Pause at once, and speech begins when the chapter is ready (for a 20 MB book of one chapter, about 4 seconds after it opens). Pressing Play/Pause while it waits stops it. A shorter chapter is prepared at once, as before.
   - Opening a large book again, one whose text is a megabyte or more, reads the text TextMouth kept from the last open instead of reading the book's Markdown again, so the largest books open in about a tenth of the time with far less memory (see Where TextMouth keeps your library).
   - Speech starts with a short passage, so the first word follows Play, a seek, or a skip sooner, and each next passage is handed to the voice while the one before it speaks, so speech runs on without waiting for TextMouth between passages.
   - A reader makes its speech engine only when speech first needs one, so it opens sooner, and an audiobook's reader never makes one.
@@ -86,6 +86,7 @@ TextMouth was measured against a library the size of its developer's on October 
   - Saving a book's place no longer rewrites its index of chapters and headings, which has a file of its own, and library.json is written without line breaks, so listening writes a small fraction of what it did, which matters most in a library in the cloud, where every write is uploaded.
   - A change in Settings is saved to config.json a moment after the last one, so dragging a slider writes the file once.
 - Opening and importing books:
+  - Opening an EPUB no longer reads the book's package metadata from its file. The library keeps it for books imported since it began to, and for an older book the reader reads it in the background once the book shows, so Book Info has it a moment later. Reopening a 1,447-chapter anthology from its kept text went from 112 to 65 milliseconds.
   - Importing a book, and rebuilding the text of the library's books, take far less time for large EPUB, HTML, Word, DAISY, and plain-text books: each EPUB document is parsed once, each file inside a book's archive is found without searching the whole archive, and HTML's emphasis and links, word counts, white space, and plain-text headings take time that grows only with the text. The text TextMouth makes is unchanged, byte for byte.
   - Opening a book whose text is cached copies far less of that text while splitting it into chapters.
   - Launch checks each book's package with fewer file-system calls, and works out in the background which text caches need rebuilding.
@@ -262,7 +263,7 @@ PerformanceBaselineTests keep what the performance work of October 3, 2026 made 
 - launch with a 643-book library: reading library.json, the startup repair, and finding the text caches that need rebuilding;
 - the first sort of the library by File Size, and one derivation of the All Items list for each of the six sorts;
 - one live reading position update, and the bytes one 30-second reading checkpoint writes for a book whose record is as large as the developer's largest;
-- opening a 1 MB EPUB until the speech of its first chapter is prepared, and opening a 3-file audiobook until it has loaded;
+- opening a 1 MB EPUB for the first time until the speech of its first chapter is prepared, and opening it again from the text TextMouth kept, and opening a 3-file audiobook until it has loaded;
 - preparing the speech of a 1,000,000-character chapter with the developer's 16 substitution rules, which TextMouthProductionTests/performance-substitutions.json keeps a copy of;
 - the most memory a 40,000-character chapter's rendered speech takes while it is built, and what it keeps;
 - extracting the 1 MB EPUB's text;
@@ -279,19 +280,19 @@ Recording new baselines:
 
 - After a deliberate change to what they measure, run `make perf-baselines` on an otherwise idle Mac, adding `TEST_DERIVED_DATA=<folder>` to build in a folder of your own. It runs the tests alone with TEST_RUNNER_TEXTMOUTH_PERFORMANCE_RECORD=1: each test waits, for up to five minutes, until the Mac is quiet, and once every number is measured the file is rewritten with this Mac's model and today's date.
 - It prints each old and new number, keeps xcodebuild's output in build/perf-baselines.log, and ends with PASSED or FAILED. Nothing changes unless the whole run succeeds. Review the file's diff and commit it with the change it records.
-- The baselines recorded on October 3, 2026, on the development Mac (a Mac15,12: Apple M3, 8 cores, 8 GB), in a Debug build with VoiceOver running, each the median of five runs:
-  - Launch with 643 books: 132.724 milliseconds.
-  - First sort by File Size: 26.012 milliseconds.
-  - One list derivation, in milliseconds: Title 4.200, Author 4.458, Date Added 1.056, Last Opened 2.874, File Size 2.789, Manual Order 4.172.
-  - One live reading position update: 146.803 microseconds.
+- The baselines recorded on October 3, 2026, on the development Mac (a Mac15,12: Apple M3, 8 cores, 8 GB), in a Debug build, each the median of five runs:
+  - Launch with 643 books: 134.252 milliseconds.
+  - First sort by File Size: 26.243 milliseconds.
+  - One list derivation, in milliseconds: Title 4.221, Author 4.453, Date Added 1.090, Last Opened 2.893, File Size 2.811, Manual Order 4.230.
+  - One live reading position update: 145.621 microseconds.
   - One 30-second checkpoint: 851 bytes.
-  - Opening the 1 MB EPUB to its first chapter's speech: 208.406 milliseconds.
-  - Opening the 3-file audiobook: 4.597 milliseconds.
-  - Speech for the 1,000,000-character chapter with the 16 rules: 236.652 milliseconds.
-  - Rendered speech of a 40,000-character chapter: 43.358 megabytes at its peak, 43.349 megabytes kept.
-  - Extracting the 1 MB EPUB: 1,195.592 milliseconds.
-  - One cloud refresh of a local library: 0.173 milliseconds of processor time.
-  - One reader publish to the Headings sheet: 1.740 milliseconds of main-thread time.
+  - Opening the 1 MB EPUB to its first chapter's speech, the first time: 207.571 milliseconds; again, from its kept text: 11.799 milliseconds.
+  - Opening the 3-file audiobook: 4.539 milliseconds.
+  - Speech for the 1,000,000-character chapter with the 16 rules: 235.522 milliseconds.
+  - Rendered speech of a 40,000-character chapter: 43.358 megabytes at its peak, 43.354 megabytes kept.
+  - Extracting the 1 MB EPUB: 1,193.865 milliseconds.
+  - One cloud refresh of a local library: 0.178 milliseconds of processor time.
+  - One reader publish to the Headings sheet: 1.652 milliseconds of main-thread time.
 
 ### Testing on real cloud drives
 
