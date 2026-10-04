@@ -7,6 +7,9 @@ import Foundation
 struct FeedEnvironment {
     /// Where the feeds' records are kept.
     var records: FeedStore.Location
+    /// Where a record that can't be saved is reported: the app's center, or
+    /// a test's own.
+    var failureCenter: PersistenceFailureCenter
     /// Where this Mac's fetch details are kept, or nil to keep them in memory.
     var fetchStateFolder: URL?
     /// The network.
@@ -50,6 +53,7 @@ struct FeedEnvironment {
     @MainActor static var app: FeedEnvironment {
         FeedEnvironment(
             records: .app,
+            failureCenter: .shared,
             fetchStateFolder: MachineLocalPaths.feedCaches.appendingPathComponent("Fetch State", isDirectory: true),
             network: .app,
             directory: .apple,
@@ -267,7 +271,7 @@ final class FeedCenter: ObservableObject {
     /// An engine working with `environment`, started by `start(library:)`.
     init(environment: FeedEnvironment) {
         self.environment = environment
-        store = FeedStore(location: environment.records)
+        store = FeedStore(location: environment.records, failureCenter: environment.failureCenter)
         fetchStates = FeedFetchStates(folder: environment.fetchStateFolder)
         forwarding = [
             store.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() },
@@ -556,11 +560,17 @@ final class FeedCenter: ObservableObject {
     }
 
     /// Announces the end of one feed's refresh, and, with automatic downloads
-    /// on, downloads the items it found new.
+    /// on, downloads the items it found new. A refresh TextMouth made by
+    /// itself that was not put off reached a network without data limits,
+    /// which such a refresh needs, so the automatic downloads one put off
+    /// are tried again first.
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
         requestSweep()
         guard settings.autoDownload else { return }
+        if report.origin.isDiscretionary, report.outcome != .skipped {
+            downloads.retryPutOffDownloads()
+        }
         for itemID in report.newItemIDs {
             downloads.download(itemID, of: report.feedID, origin: .automatic)
         }

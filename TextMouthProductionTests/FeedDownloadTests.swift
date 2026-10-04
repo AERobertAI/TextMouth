@@ -397,6 +397,54 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(world.server.requests(to: "/audio/new.m4a").map(\.allowsExpensiveNetworkAccess), [false])
     }
 
+    /// An automatic download a network with data limits refuses says it
+    /// waits for one without them, and is tried again at the next refresh
+    /// TextMouth makes by itself that reaches the network, since such a
+    /// refresh is refused on that network too. A refresh the listener asks
+    /// for says nothing of the network's limits, and one put off by them
+    /// shows they are still there: neither tries it again.
+    func testAnAutomaticDownloadPutOffByAMeteredNetworkIsTriedAgainLater() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMetered")
+        FeedSettings.autoDownloadPreference.write(true, to: world.preferences)
+        let audio = try FeedMediaFixtures.silentAAC()
+        world.server.serve("/audio/new.m4a", .refusedOnAMeteredNetwork(), FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        let old = FeedXML.Item(guid: "old", title: "Old", published: world.day(-1),
+                               enclosure: world.server.url("/audio/old.m4a").absoluteString, enclosureType: "audio/mp4")
+        let new = FeedXML.Item(guid: "new", title: "New", published: world.day(0.5),
+                               enclosure: world.server.url("/audio/new.m4a").absoluteString, enclosureType: "audio/mp4")
+        let withNew = StubResponse.feed(FeedXML.rss(items: [new, old]))
+        world.server.serve(
+            "/feed.xml",
+            .feed(FeedXML.rss(items: [old])), withNew, withNew, .refusedOnAMeteredNetwork(), withNew
+        )
+        let feed = try await world.subscribe("/feed.xml")
+        world.advance(by: 86_400)
+
+        _ = await world.center.refreshAll(origin: .scheduled)
+        await waitFor("the new episode's download is put off") {
+            world.center.store.record(of: feed.id)?.item("guid:new")?.state.failureReason != nil
+                && world.center.downloads.current == nil
+        }
+        XCTAssertEqual(
+            world.center.store.record(of: feed.id)?.item("guid:new")?.state.failureReason,
+            "“New” waits for a network without data limits to download by itself."
+        )
+        XCTAssertEqual(world.center.downloads.putOff.map(\.itemID), ["guid:new"])
+
+        _ = await world.center.refresh(feed.id)
+        let skipped = await world.center.refreshAll(origin: .scheduled)
+        XCTAssertEqual(skipped.reports.map(\.outcome), [.skipped])
+        XCTAssertEqual(world.server.requests(to: "/audio/new.m4a").count, 1, "the download was tried again too soon")
+        XCTAssertEqual(world.center.downloads.putOff.map(\.itemID), ["guid:new"])
+
+        _ = await world.center.refreshAll(origin: .scheduled)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:new")
+
+        XCTAssertEqual(world.server.requests(to: "/audio/new.m4a").map(\.allowsExpensiveNetworkAccess), [false, false])
+        XCTAssertTrue(world.center.downloads.putOff.isEmpty)
+        XCTAssertEqual(world.server.requests(to: "/audio/old.m4a"), [])
+    }
+
     // MARK: - Quitting
 
     /// Quitting while an episode downloads and another waits holds the quit

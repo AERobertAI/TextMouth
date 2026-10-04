@@ -305,6 +305,62 @@ final class FeedRecordTests: XCTestCase {
         XCTAssertEqual(store.unsavedFeedIDs, [])
     }
 
+    /// A record that can't be written is reported to the failure center as
+    /// every other save is: naming the feed and its file, with a retry, as
+    /// an unsaved change. A retry that still fails says so; one that works
+    /// writes the record as it is now, settles the failure, and says the
+    /// subscriptions are saved. Unsubscribing withdraws a failure still
+    /// outstanding, since nothing is left to save.
+    func testARecordThatCannotBeSavedIsReportedAndRetried() async throws {
+        let folder = try makeSandboxDirectory("FeedSaveFailure").appendingPathComponent("Feeds", isDirectory: true)
+        let center = PersistenceFailureCenter()
+        let store = FeedStore(location: .folder(folder), failureCenter: center)
+        let record = Self.record(itemCount: 1)
+        let feedID = record.feed.id
+        let itemID = record.items[0].id
+        let file = FeedPaths.recordFile(of: feedID, in: folder)
+        store.add(record)
+        await store.flush()
+        XCTAssertTrue(center.outstandingFailures().isEmpty)
+
+        let obstruction = try WriteObstruction.place(at: file)
+        let played = Date(timeIntervalSince1970: 1_790_100_000)
+        store.updateItem(itemID, of: feedID) { $0.playedDate = played }
+        await store.flush()
+
+        let failure = try XCTUnwrap(center.outstandingFailures().first)
+        XCTAssertEqual(failure.subject, .feedRecord(feedID: feedID, title: "The Tactile Atlas"))
+        XCTAssertEqual(failure.subsystem, .feedRecords)
+        XCTAssertEqual(failure.path, file.path)
+        XCTAssertNotNil(failure.retry)
+        XCTAssertTrue(
+            failure.sentence.hasPrefix("Changes to the feed “The Tactile Atlas” could not be saved: "),
+            failure.sentence
+        )
+        XCTAssertTrue(center.hasUnsavedChanges, "quitting would not ask about the feed")
+        XCTAssertEqual(store.unsavedFeedIDs, [feedID])
+
+        let stillFailing = recordingAnnouncements { center.retry(.feedRecords) }
+        XCTAssertEqual(center.outstandingFailures().count, 1)
+        XCTAssertEqual(stillFailing.announcements.first?.message.hasPrefix("Retry did not succeed."), true)
+
+        obstruction.clear()
+        let saved = recordingAnnouncements { center.retry(.feedRecords) }
+        XCTAssertTrue(center.outstandingFailures().isEmpty)
+        XCTAssertEqual(saved.announcements.map(\.message), ["Feed subscriptions saved."])
+        let written = try FeedRecordCoding.decoder().decode(FeedRecord.self, from: Data(contentsOf: file))
+        XCTAssertEqual(written.items[0].playedDate, played)
+        XCTAssertEqual(store.unsavedFeedIDs, [])
+
+        let again = try WriteObstruction.place(at: file)
+        store.updateItem(itemID, of: feedID) { $0.playedDate = nil }
+        await store.flush()
+        XCTAssertEqual(center.outstandingFailures().count, 1)
+        store.remove(feedID)
+        XCTAssertTrue(center.outstandingFailures().isEmpty, "an unsubscribed feed's failure stayed")
+        again.clear()
+    }
+
     // MARK: - This Mac's Fetch Details
 
     /// Fetch details round-trip through this Mac's folder, one file per

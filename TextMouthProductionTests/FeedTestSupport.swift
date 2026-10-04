@@ -28,6 +28,10 @@ struct StubResponse: Sendable {
     var pause: TimeInterval = 0
     /// A failure before any answer, such as a host not found.
     var failure: URLError.Code?
+    /// Why the network refused the request, given with `failure`, as the
+    /// system says when a request that may not use an expensive or
+    /// constrained network meets one.
+    var unavailableReason: URLError.NetworkUnavailableReason?
     /// A failure after this many bytes of the body, as a connection that
     /// drops partway.
     var failAfterBytes: Int?
@@ -92,6 +96,15 @@ struct StubResponse: Sendable {
     static func failing(_ code: URLError.Code) -> StubResponse {
         var response = StubResponse()
         response.failure = code
+        return response
+    }
+
+    /// The refusal a request that may not use an expensive network meets on
+    /// one, such as a phone's hotspot: the system fails it at once, saying
+    /// why.
+    static func refusedOnAMeteredNetwork() -> StubResponse {
+        var response = failing(.notConnectedToInternet)
+        response.unavailableReason = .expensive
         return response
     }
 
@@ -250,6 +263,8 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
         case data(Data)
         case finish
         case fail(URLError.Code)
+        /// A failure the network gave its reason for.
+        case refuse(URLError)
     }
 
     /// `response` as it answers a request for the bytes `range` names
@@ -273,7 +288,10 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
     /// in order.
     private static func steps(of response: StubResponse, for url: URL) -> [Step] {
         if let failure = response.failure {
-            return [.fail(failure)]
+            guard let reason = response.unavailableReason else { return [.fail(failure)] }
+            // The reason a network refused the request travels in the error's
+            // information, where `URLError.networkUnavailableReason` reads it.
+            return [.refuse(URLError(failure, userInfo: [NSURLErrorNetworkUnavailableReasonKey: reason.rawValue]))]
         }
         var headers = response.headers
         if headers["Content-Length"] == nil {
@@ -315,6 +333,8 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
             client?.urlProtocolDidFinishLoading(self)
         case .fail(let code):
             client?.urlProtocol(self, didFailWithError: URLError(code))
+        case .refuse(let error):
+            client?.urlProtocol(self, didFailWithError: error)
         }
     }
 }
@@ -450,6 +470,9 @@ final class FeedTestWorld {
     let folder: IntegrationLibraryFolder
     /// That folder's row.
     let bookFolder: BookFolder
+    /// Where the engine reports a record it can't save: the world's own, so
+    /// the app's is never disturbed.
+    let failures = PersistenceFailureCenter()
     /// What the engine works with, which an engine made for the next launch
     /// works with too (`relaunch(_:)`).
     let environment: FeedEnvironment
@@ -489,6 +512,7 @@ final class FeedTestWorld {
         downloadsFolder = sandbox.appendingPathComponent("Feed Downloads", isDirectory: true)
         environment = FeedEnvironment(
             records: .folder(recordsFolder),
+            failureCenter: failures,
             fetchStateFolder: fetchStateFolder,
             network: .stubbed(
                 protocolClasses: [FeedStubProtocol.self],
