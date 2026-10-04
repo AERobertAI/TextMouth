@@ -68,8 +68,11 @@ enum TranscriptTextLoader {
             } else {
                 switch audioCheck(of: layer.audioFiles, for: book, audioIndex: audioIndex, isDataless: isDataless, hasher: hasher) {
                 case .changed(let reason):
-                    reportStale(book, reason)
-                    return unchanged
+                    // transcript.json may be newer than the index, as when
+                    // another Mac transcribed the edited audio again: the
+                    // rebuild checks the audio against it, and reports a
+                    // transcript that is stale there too.
+                    rebuildReason = "its index describes other audio: \(reason)"
                 case .current(let audioFiles):
                     if let load = readSavedText(
                         of: book,
@@ -77,7 +80,6 @@ enum TranscriptTextLoader {
                         audioFiles: audioFiles,
                         audioIndex: audioIndex,
                         readingTexts: readingTexts,
-                        isDataless: isDataless,
                         hasher: hasher,
                         rebuildReason: &rebuildReason
                     ) {
@@ -95,13 +97,13 @@ enum TranscriptTextLoader {
     /// whose audio files, as checked now, are `audioFiles`; nil, with
     /// `rebuildReason` saying why, when transcript.json or content.md is not
     /// what the layer was made from, or content.md does not line up with it.
+    /// Neither file is dataless: the load has checked.
     private static func readSavedText(
         of book: Book,
         layer: BookContentTranscriptIndex,
         audioFiles: [TranscriptAudioFile],
         audioIndex: BookContentIndex,
         readingTexts: ReadingTextCache?,
-        isDataless: (URL) -> Bool,
         hasher: FingerprintHasher,
         rebuildReason: inout String
     ) -> Load? {

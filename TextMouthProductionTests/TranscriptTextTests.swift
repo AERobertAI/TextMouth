@@ -418,6 +418,31 @@ final class TranscriptTextTests: XCTestCase {
         }
     }
 
+    /// A transcript made again for edited audio, as another Mac sharing the
+    /// library makes one, is read even while the index still describes the
+    /// old audio: the book is stale only when transcript.json is too.
+    func testATranscriptMadeAgainForEditedAudioIsReadBeforeTheIndexCatchesUp() throws {
+        let world = try makeIntegrationWorld("Transcript Made Again")
+        let title = uniqueTitle("Harbor Notes")
+        let book = try world.makeSilentAudioBook(title: title, trackDurations: [9, 6])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: Self.sentences), for: book)
+        let oldIndex = try savedIndex(of: book)
+        try AudioTestFixtures.writeSilence(to: URL(fileURLWithPath: book.filePath).appendingPathComponent("02.wav"), duration: 7)
+        let again = try TranscriptFixtures.transcript(of: book, sentences: [
+            "02.wav": [TranscriptFixtures.sentence("The salt road bends east again.", from: 0, to: 2_400)],
+        ])
+        try TranscriptStore.write(again, into: book.tmbDirectory)
+
+        let load = TranscriptTextLoader.load(for: book, audioIndex: oldIndex)
+
+        XCTAssertEqual(load.text?.chapterText(1), "02\n\nThe salt road bends east again.")
+        XCTAssertTrue(load.indexChanged)
+        XCTAssertEqual(load.index.transcript?.audioFiles, again.audioFiles)
+        XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_STALE: \(title):"), [])
+        XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_TEXT_REBUILT: \(title): content.md and its index were written "
+            + "again from transcript.json: its index describes other audio: 02.wav changed since it was transcribed").count, 1)
+    }
+
     /// An audio file only touched, its date moved but its contents the
     /// same, keeps its transcript, and its new date is recorded so it is
     /// not read for its digest again.
