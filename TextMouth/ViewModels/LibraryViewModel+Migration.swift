@@ -511,7 +511,7 @@ extension LibraryViewModel {
             // another thread.
             DispatchQueue.main.async { [weak self] in
                 guard let self, !self.isExtracting else { return }
-                self.rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _ in
+                self.rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _, _ in
                     completion?()
                 }
             }
@@ -519,8 +519,10 @@ extension LibraryViewModel {
     }
 
     /// The text books of `books` whose caches the startup batch makes or
-    /// rebuilds: those with no cache, an outdated one, or a source or cache
-    /// of another size than when the cache was written. Run on any thread.
+    /// rebuilds: those with no cache, an outdated one, a source or cache of
+    /// another size than when the cache was written, or a cache of the same
+    /// size with another date, which may hold an edit saved while
+    /// TextMouth was closed (FR05). Run on any thread.
     ///
     /// The checks stat every book's files with dataless files left in the
     /// cloud (FR02): one that would download a folder's listing fails at
@@ -534,6 +536,7 @@ extension LibraryViewModel {
                 if !MarkdownCacheService.cacheExists(for: book) { return true }
                 if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
                 return hasResizedTextCacheFile(book, isDataless: access.isDataless)
+                    || hasRedatedTextCache(book, isDataless: access.isDataless)
             }
         }
     }
@@ -544,10 +547,11 @@ extension LibraryViewModel {
     /// every book at startup reads no file. The batch then checks the
     /// fingerprints its package recorded (`completedTextCacheIndex`), which
     /// reports the stale cache and has it rebuilt like an outdated one; a
-    /// package newer than the row is recovered instead. A file that only has
-    /// a new date is left to the next open, which reads it for its digest
-    /// and keeps a cache that did not change. A book without fingerprints
-    /// has nothing to compare.
+    /// package newer than the row is recovered instead. A source that only
+    /// has a new date is left to the next open, which reads it for its
+    /// digest and keeps a cache that did not change; a content.md that only
+    /// has a new date is found by `hasRedatedTextCache(_:isDataless:)`. A
+    /// book without fingerprints has nothing to compare.
     ///
     /// A dataless file is never resized by the size it reports (FR02): an
     /// evicted iCloud Drive file reports 0 bytes, which would otherwise call
@@ -569,12 +573,34 @@ extension LibraryViewModel {
         )
     }
 
+    /// Whether `book`'s content.md has the size its library row recorded
+    /// when the cache was written but another modification date: a file
+    /// written again in place, which may hold an edit of the same length
+    /// saved while TextMouth was closed (FR05). The batch reads only such a
+    /// content.md for its digest, which tells an edit, taken as the book's
+    /// text when it parses, from a file only touched, whose new date the
+    /// row then records so that the next launch reads nothing. A dataless
+    /// content.md, and a book without fingerprints, have no date to judge.
+    /// - Parameter isDataless: Whether a file is dataless: the maintenance
+    ///   access's check.
+    nonisolated static func hasRedatedTextCache(
+        _ book: Book,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> Bool {
+        guard let recorded = book.textCacheFingerprint else { return false }
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        if case .redated = recorded.cache.comparison(with: FileStamp(of: cache), isDataless: isDataless(cache)) {
+            return true
+        }
+        return false
+    }
+
     /// Re-extract content.md caches for all non-audio books.
     /// Called from the "Redo Text Extraction" button in Storage Settings.
     /// - Parameters:
     ///   - access: How the pass reaches the books' files (FR02).
     ///   - completion: Told on the main actor, once every book is done, what
-    ///     the pass did (`textReextractionOutcome(skippedInCloud:)`).
+    ///     the pass did (`textReextractionOutcome(skippedInCloud:heldByEdits:)`).
     /// - Returns: Whether the pass started: false while another text
     ///   extraction runs, when nothing is done and `completion` is not told.
     @discardableResult
@@ -586,8 +612,8 @@ extension LibraryViewModel {
         let booksToExtract = library.books.filter { book in
             !book.format.isAudio && !book.tmbDirectoryName.isEmpty
         }
-        rebuildTextCaches(books: booksToExtract, force: true, access: access) { skippedInCloud in
-            completion?(Self.textReextractionOutcome(skippedInCloud: skippedInCloud))
+        rebuildTextCaches(books: booksToExtract, force: true, access: access) { skippedInCloud, heldByEdits in
+            completion?(Self.textReextractionOutcome(skippedInCloud: skippedInCloud, heldByEdits: heldByEdits))
         }
         return true
     }
@@ -611,11 +637,27 @@ extension LibraryViewModel {
     /// What Redo Text Extraction says once it is done: "Done.", and, when it
     /// left books as they were because their files are only in the cloud
     /// (FR02), how many, as in "Done. 12 books in the cloud were skipped."
-    /// Before, only its MAINTENANCE_SKIPPED_IN_CLOUD log line told.
-    nonisolated static func textReextractionOutcome(skippedInCloud: Int) -> OperationOutcome {
-        guard skippedInCloud > 0 else { return .success(nil) }
-        let books = CountWording.phrase(skippedInCloud, singular: "book in the cloud was", plural: "books in the cloud were")
-        return .success("Done. \(books) skipped.")
+    /// Before, only its MAINTENANCE_SKIPPED_IN_CLOUD log line told. Books it
+    /// left because their content.md holds an edit TextMouth can't take yet
+    /// (FR05), which a rebuild would replace, are counted in a sentence of
+    /// their own: "Done. 1 book whose edited text can't be used yet was
+    /// skipped." Before, only their TEXT_EDIT_HELD log lines told.
+    nonisolated static func textReextractionOutcome(skippedInCloud: Int, heldByEdits: Int = 0) -> OperationOutcome {
+        var sentences: [String] = []
+        if skippedInCloud > 0 {
+            let books = CountWording.phrase(skippedInCloud, singular: "book in the cloud was", plural: "books in the cloud were")
+            sentences.append("\(books) skipped.")
+        }
+        if heldByEdits > 0 {
+            let books = CountWording.phrase(
+                heldByEdits,
+                singular: "book whose edited text can't be used yet was",
+                plural: "books whose edited text can't be used yet were"
+            )
+            sentences.append("\(books) skipped.")
+        }
+        guard !sentences.isEmpty else { return .success(nil) }
+        return .success((["Done."] + sentences).joined(separator: " "))
     }
 
     /// Share automatic and manual extraction, releasing large parser results per
@@ -628,17 +670,18 @@ extension LibraryViewModel {
     /// `access` is how each book's files are reached (FR02): a book whose
     /// files are in the cloud counts toward the progress, is left as it is,
     /// and is counted in the batch's one `MAINTENANCE_SKIPPED_IN_CLOUD` line.
-    /// `completion` is told, on the main actor once every book is done and
-    /// every summary has reached the library, how many books the batch left
-    /// in the cloud.
+    /// A book whose rebuild was refused over an edit not taken (FR05) is
+    /// left as it is and counted. `completion` is told, on the main actor
+    /// once every book is done and every summary has reached the library,
+    /// how many books the batch left in the cloud, and how many over edits.
     private func rebuildTextCaches(
         books: [Book],
         force: Bool,
         access: MaintenanceFileAccess,
-        completion: (@MainActor @Sendable (_ skippedInCloud: Int) -> Void)? = nil
+        completion: (@MainActor @Sendable (_ skippedInCloud: Int, _ heldByEdits: Int) -> Void)? = nil
     ) {
         guard !books.isEmpty else {
-            completion?(0)
+            completion?(0, 0)
             return
         }
 
@@ -656,13 +699,14 @@ extension LibraryViewModel {
         }
 
         let skips = CloudSkips(force ? .textReextraction : .textCacheUpdate)
+        let held = HeldTextEditTally()
         // What the pass reads of each book. Redo Text Extraction writes a new
         // text cache without reading the one it replaces.
         let files: MaintainedFiles = force ? [.content, .record] : .all
 
         TextCacheUpdateQueue.run(books: books, update: { book in
             let summary = autoreleasepool {
-                Self.updateTextCache(of: book, force: force, reading: files, access: access, skips: skips)
+                Self.updateTextCache(of: book, force: force, reading: files, access: access, skips: skips, held: held)
             }
             releaseBatchParserMemory()
             DispatchQueue.main.async { updateProgress(summary) }
@@ -670,13 +714,14 @@ extension LibraryViewModel {
             // Every worker has returned, so the tally is complete.
             skips.log()
             let skippedInCloud = skips.count
+            let heldByEdits = held.count
             // Each worker enqueues its progress before returning, so this final
             // main-queue block follows all completed-book notifications: the
             // summaries still waiting reach the library before the batch ends.
             DispatchQueue.main.async { [weak self] in
                 self?.analysisSummaries.flush()
                 self?.textExtraction.end()
-                completion?(skippedInCloud)
+                completion?(skippedInCloud, heldByEdits)
             }
         })
     }
@@ -693,13 +738,16 @@ extension LibraryViewModel {
     /// loads. Every read runs with dataless files left in the cloud, and a
     /// read refused because it met a dataless file leaves the book the same
     /// way: it is never logged as a failure, never rebuilds a cache, and
-    /// never reaches the book's record.
+    /// never reaches the book's record. A book whose content.md holds an
+    /// edit not taken, which the rebuild refused to replace (FR05), is left
+    /// the same way and counted in `held`; its TEXT_EDIT_HELD line says why.
     nonisolated private static func updateTextCache(
         of book: Book,
         force: Bool,
         reading files: MaintainedFiles,
         access: MaintenanceFileAccess,
-        skips: CloudSkips
+        skips: CloudSkips,
+        held: HeldTextEditTally
     ) -> ContentAnalysisSummary? {
         do {
             try access.requireOnThisMac(book, reading: files)
@@ -709,16 +757,21 @@ extension LibraryViewModel {
         } catch where DatalessFiles.isDownloadRefusal(error) {
             skips.record(book)
             return nil
+        } catch is BookTextEditPending {
+            held.record(book.id)
+            return nil
         } catch {
             MarkdownCacheService.logGenerationFailure(error, for: book)
             return nil
         }
     }
 
-    /// The work of `updateTextCache(of:force:reading:access:skips:)` for a
-    /// book whose `files` were on this Mac when it began: recovers the cache
-    /// an earlier run committed, or writes the cache from the source and
-    /// commits its analysis to the book's record.
+    /// The work of `updateTextCache(of:force:reading:access:skips:held:)` for
+    /// a book whose `files` were on this Mac when it began: recovers the
+    /// cache an earlier run committed, takes an edit of content.md saved
+    /// while TextMouth was closed (`editSavedWhileClosed(of:access:)`), or
+    /// writes the cache from the source and commits its analysis to the
+    /// book's record.
     /// - Throws: why no cache could be written, including the refusal of a
     ///   read that met a file which went to the cloud meanwhile.
     nonisolated private static func committedTextCache(
@@ -728,17 +781,25 @@ extension LibraryViewModel {
         access: MaintenanceFileAccess
     ) throws -> ContentAnalysisSummary? {
         let currentVersion = MarkdownCacheService.currentCacheVersion
-        if !force, let savedIndex = try BookContentAnalysisService.recoveredTextCacheIndex(
-            for: book,
-            hasher: access.hasher,
-            isDataless: access.isDataless
-        ) {
-            // An earlier run already committed this book; repairing
-            // the library summary requires no source parsing or writes.
-            // The package records this index with the current version.
-            var recovered = book
-            recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
-            return ContentAnalysisSummary(committed: recovered)
+        if !force {
+            if let savedIndex = try BookContentAnalysisService.recoveredTextCacheIndex(
+                for: book,
+                hasher: access.hasher,
+                isDataless: access.isDataless
+            ) {
+                // An earlier run already committed this book; repairing
+                // the library summary requires no source parsing or writes.
+                // The package records this index with the current version.
+                var recovered = book
+                recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
+                return ContentAnalysisSummary(committed: recovered)
+            }
+            // The record no longer describes content.md: it may hold an
+            // edit saved while TextMouth was closed, taken now when it
+            // parses, and otherwise kept beside it before the rebuild below.
+            if let taken = try editSavedWhileClosed(of: book, access: access) {
+                return taken
+            }
         }
         var updatedBook = book
         guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &updatedBook) else {
@@ -759,6 +820,31 @@ extension LibraryViewModel {
         } catch {
             // Leave the library version unchanged so startup retries
             // a book whose new index could not be committed.
+            return nil
+        }
+    }
+
+    /// What the launch's cache pass makes of an edit of `book`'s content.md
+    /// saved while TextMouth was closed (FR05,
+    /// `BookTextEditSessions.settleEditSavedWhileClosed(of:access:)`): the
+    /// summary of the book with the edit taken as its text, committed to
+    /// its record; or nil when there was none to take, or it could not be
+    /// taken and was kept beside content.md, so the cache is rebuilt from
+    /// the source as before.
+    /// - Throws: a refusal for a content.md only in the cloud, which leaves
+    ///   the book as it is, as any file only in the cloud does (FR02).
+    nonisolated private static func editSavedWhileClosed(
+        of book: Book,
+        access: MaintenanceFileAccess
+    ) throws -> ContentAnalysisSummary? {
+        switch BookTextEditSessions.shared.settleEditSavedWhileClosed(of: book, access: access) {
+        case .adopted(let edit)?:
+            return ContentAnalysisSummary(committed: edit.committed)
+        case .inCloud?:
+            throw MaintenanceFileAccess.refusal(of: MarkdownCacheService.cacheURL(for: book))
+        default:
+            // Nothing to take: content.md holds what its record describes,
+            // or the edit was kept beside it for the rebuild that follows.
             return nil
         }
     }

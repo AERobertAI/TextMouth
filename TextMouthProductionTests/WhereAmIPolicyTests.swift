@@ -9,19 +9,22 @@ final class WhereAmIPolicyTests: XCTestCase {
         return HeadingPosition(in: headings, chapterIndex: 0, characterOffset: 450)
     }
 
-    /// Brief announcement for the shared fixture position.
-    private func briefSummary(locationTitle: String? = "The Battle") -> String {
+    /// Brief announcement for the shared fixture position, quoting
+    /// `heardSentence` as a transcribed audiobook's.
+    private func briefSummary(locationTitle: String? = "The Battle", heardSentence: String? = nil) -> String {
         ReaderViewModel.briefWhereAmISummary(
             bookTitle: "My Book",
             locationTitle: locationTitle,
             headingPosition: fifthOfTwentyHeadings,
             percentComplete: 25,
-            timeRemaining: 10_800
+            timeRemaining: 10_800,
+            heardSentence: heardSentence
         )
     }
 
-    /// Full announcement for the shared fixture position.
-    private func fullSummary(timeRemainingInHeading: TimeInterval? = 900) -> String {
+    /// Full announcement for the shared fixture position, quoting
+    /// `heardSentence` as a transcribed audiobook's.
+    private func fullSummary(timeRemainingInHeading: TimeInterval? = 900, heardSentence: String? = nil) -> String {
         ReaderViewModel.fullWhereAmISummary(
             bookTitle: "My Book",
             locationTitle: "The Battle",
@@ -29,7 +32,8 @@ final class WhereAmIPolicyTests: XCTestCase {
             percentComplete: 25,
             timeRemaining: 10_800,
             timeRemainingInHeading: timeRemainingInHeading,
-            totalTime: 14_400
+            totalTime: 14_400,
+            heardSentence: heardSentence
         )
     }
 
@@ -55,6 +59,49 @@ final class WhereAmIPolicyTests: XCTestCase {
                 + "3 hours remaining. 15 minutes remaining in this heading. Total book time: 4 hours."
         )
         XCTAssertEqual(summary.components(separatedBy: "The Battle").count - 1, 1)
+    }
+
+    /// A transcribed audiobook's sentence being heard is quoted after the
+    /// times, as it is, with its own punctuation, in both announcements.
+    func testSummariesQuoteTheSentenceHeardAfterTheTimes() {
+        let heard = "The salt road bends east."
+
+        XCTAssertEqual(
+            briefSummary(heardSentence: heard),
+            "My Book. The Battle. Heading 5 of 20. 25 percent. 3 hours remaining. The salt road bends east."
+        )
+        XCTAssertEqual(
+            fullSummary(heardSentence: heard),
+            "My Book. The Battle. Heading 5 of 20. 25 percent through the book. "
+                + "3 hours remaining. 15 minutes remaining in this heading. Total book time: 4 hours. "
+                + "The salt road bends east."
+        )
+    }
+
+    /// Without a sentence to quote, or with an empty one, the
+    /// announcements end with their times, as before.
+    func testSummariesWithoutASentenceEndWithTheTimes() {
+        XCTAssertEqual(briefSummary(heardSentence: ""), briefSummary())
+        XCTAssertTrue(briefSummary().hasSuffix("3 hours remaining."))
+        XCTAssertTrue(fullSummary().hasSuffix("Total book time: 4 hours."))
+    }
+
+    /// A quoted sentence is read as one line, its words one space apart, as
+    /// a sentence wrapped across lines is read, and a run-on sentence stops
+    /// at the word limit with an ellipsis. A sentence of no words is not
+    /// quoted.
+    func testAQuotedSentenceIsOneLineAndStopsAtTheWordLimit() {
+        XCTAssertEqual(
+            ReaderViewModel.whereAmIQuote(of: "  Tide tables\nhang  in the\toffice. "),
+            "Tide tables hang in the office."
+        )
+        XCTAssertNil(ReaderViewModel.whereAmIQuote(of: " \n "))
+
+        let limit = ReaderViewModel.whereAmIQuoteWordLimit
+        let atLimit = (1...limit).map { "w\($0)" }.joined(separator: " ")
+        XCTAssertEqual(ReaderViewModel.whereAmIQuote(of: atLimit), atLimit)
+        let runOn = (1...(limit + 5)).map { "w\($0)" }.joined(separator: " ")
+        XCTAssertEqual(ReaderViewModel.whereAmIQuote(of: runOn), atLimit + "…")
     }
 
     func testFullSummaryOmitsHeadingTimeWhenItCannotBeMeasured() {

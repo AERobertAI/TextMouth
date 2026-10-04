@@ -219,6 +219,12 @@ extension ReaderViewModel {
             isWhereAmISpeaking = false
             // Don't resume book — user explicitly pressed play/pause, not "dismiss Where Am I"
             wasPlayingBeforeWhereAmI = false
+            // Nor start a play waiting for its chapter's speech, which shows
+            // Playing: it pauses, as a book the announcement paused stays
+            // paused, whether its speech is ready or still being prepared.
+            if isWaitingForChapterSpeech {
+                pause(playingPauseSound: false)
+            }
             return
         }
 
@@ -1268,7 +1274,9 @@ extension ReaderViewModel {
     /// Whether the reader waits for the speech of the chapter Play starts
     /// in, a long one being prepared off the main thread: it shows Playing,
     /// as an audiobook waiting for its chapter's files to download does, but
-    /// says nothing until the speech is ready (`continueWaitingPlay()`).
+    /// says nothing until the speech is ready (`continueWaitingPlay()`), or,
+    /// when the speech is ready while a Where Am I announcement speaks, until
+    /// the announcement ends (`startPlayHeldByWhereAmI()`).
     var isWaitingForChapterSpeech: Bool {
         chapterSpeechCache.awaitedByPlay != nil
     }
@@ -1306,12 +1314,11 @@ extension ReaderViewModel {
     /// then prepared afresh from the settings in force, at once, unless a
     /// preparation of exactly those is under way, which the play waits for
     /// in turn. A book with nothing left to say ends. Nothing is said over a
-    /// Where Am I announcement: the play stops instead, as a pause stops
-    /// it, and Play starts it again.
+    /// Where Am I announcement: the play goes on waiting, showing Playing,
+    /// and starts once the announcement ends (`startPlayHeldByWhereAmI()`).
     private func continueWaitingPlay() {
         guard !WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: isWhereAmISpeaking) else {
-            DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks; not starting it")
-            pause(playingPauseSound: false)
+            DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks; starting it once the announcement ends")
             return
         }
         chapterSpeechCache.awaitedByPlay = nil
@@ -1323,6 +1330,20 @@ extension ReaderViewModel {
         case .noneLeft:
             endBookWithNothingLeftToSpeak()
         }
+    }
+
+    /// Start the play a Where Am I announcement held, now that the
+    /// announcement has ended: a play that waited for its chapter's speech,
+    /// which was ready while the announcement spoke (`continueWaitingPlay()`),
+    /// starts from the cursor as it is now. Nothing starts while an
+    /// announcement speaks, when no play waits, or while the speech the play
+    /// waits for is still being prepared, whose end starts the play itself.
+    func startPlayHeldByWhereAmI() {
+        guard !hasClosed, !isWhereAmISpeaking,
+              let awaited = chapterSpeechCache.awaitedByPlay,
+              !chapterSpeechCache.isPreparingInBackground(awaited) else { return }
+        DiagnosticLog.trace(.playback, "play: Where Am I ended; starting the chapter's speech it held")
+        continueWaitingPlay()
     }
 
     /// Stops waiting for the speech of the chapter Play starts in, when the

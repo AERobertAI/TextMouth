@@ -60,6 +60,33 @@ enum EPUBMetadataSave {
     }
 }
 
+// MARK: - Keeping Metadata Read from the File
+
+extension Book {
+    /// Gives each EPUB metadata field this book's row lacks the value read
+    /// from its file, `metadata`, as an import gives a new book's row every
+    /// one of them (`ImportedFileMetadata`), so that the row then keeps all
+    /// of it (`keptEPUBMetadata`). A field the row keeps already stays as it
+    /// is: an edit of the publisher or the publication date, even one that
+    /// cleared it, and any field kept before. The title and author are the
+    /// library's own names for the book and are not touched, and a book in
+    /// any other format is left as it is.
+    ///
+    /// - Returns: Whether any field changed.
+    @discardableResult
+    mutating func keepEPUBMetadata(readFromFile metadata: EPUBMetadata) -> Bool {
+        guard format == .epub else { return false }
+        let before = [epubPublisher, epubPublicationDate, epubISBN, epubLanguage, epubIdentifier, epubVersion]
+        epubPublisher = epubPublisher ?? metadata.publisher
+        epubPublicationDate = epubPublicationDate ?? metadata.publicationDate
+        epubISBN = epubISBN ?? metadata.isbn
+        epubLanguage = epubLanguage ?? metadata.language
+        epubIdentifier = epubIdentifier ?? metadata.identifier
+        epubVersion = epubVersion ?? metadata.epubVersion
+        return before != [epubPublisher, epubPublicationDate, epubISBN, epubLanguage, epubIdentifier, epubVersion]
+    }
+}
+
 // MARK: - Wording
 
 /// The words that report a save of edited EPUB metadata. Every sentence that

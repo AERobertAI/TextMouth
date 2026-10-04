@@ -221,6 +221,29 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertEqual(text.audioOffset(atTextOffset: 0, inChapter: 0), 0)
     }
 
+    /// The sentence heard at the reader's audio cursor is the one whose
+    /// start the cursor converts to, so Where Am I quotes the sentence the
+    /// reader's text is shown around: none before the first sentence, the
+    /// next one in a pause, the last one after it, and none in a chapter
+    /// without sentences.
+    func testTheSentenceHeardAtTheReadersAudioCursorIsTheOneTheTextShows() {
+        let text = Self.timedText
+        XCTAssertNil(text.sentenceText(atAudioOffset: 5, inChapter: 0), "before the first sentence")
+        XCTAssertEqual(text.sentenceText(atAudioOffset: 12, inChapter: 0), "First one.")
+        XCTAssertEqual(text.sentenceText(atAudioOffset: 35, inChapter: 0), "Second one.", "in the pause before it")
+        XCTAssertEqual(text.sentenceText(atAudioOffset: 41, inChapter: 0), "Second one.")
+        XCTAssertEqual(text.sentenceText(atAudioOffset: 600, inChapter: 0), "Third one.", "past the last sentence")
+        XCTAssertNil(text.sentenceText(atAudioOffset: 50, inChapter: 1), "a chapter without sentences")
+        XCTAssertNil(text.sentenceText(atAudioOffset: 50, inChapter: 7), "no such chapter")
+        for audioOffset in 0...70 {
+            XCTAssertEqual(
+                text.sentence(atAudioOffset: audioOffset, inChapter: 0)?.characterOffset ?? 0,
+                text.textOffset(atAudioOffset: audioOffset, inChapter: 0),
+                "audio offset \(audioOffset)"
+            )
+        }
+    }
+
     // MARK: - Saving a Transcript into Its Book
 
     /// Saving a transcript writes transcript.json and, from it, content.md;
@@ -523,6 +546,48 @@ final class TranscriptTextTests: XCTestCase {
 
         XCTAssertTrue(waitUntil { reader.displayVisibleTextWindow.contains("Carts wait at the toll.") }, reader.displayVisibleTextWindow)
         XCTAssertFalse(reader.isCurrentlyPlaying)
+    }
+
+    /// Where Am I on a transcribed audiobook quotes the sentence being
+    /// heard after the times, the sentence the reader's text is shown
+    /// around, in its brief and its full announcement alike. A move to
+    /// another chapter quotes that chapter's sentence, and once the
+    /// transcript is gone, nothing is quoted. Only the announcements' words
+    /// are built: nothing is spoken.
+    func testWhereAmIQuotesTheSentenceTheReaderShows() throws {
+        let world = try makeIntegrationWorld("Transcript Where Am I")
+        let book = try world.makeSilentAudioBook(
+            title: "Harbor Notes",
+            trackDurations: [9, 6],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 30)
+        )
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: Self.sentences), for: book)
+
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let content = try XCTUnwrap(reader.content)
+
+        // Three seconds in, the second sentence is heard.
+        let heard = "Tide tables hang in the harbor office."
+        XCTAssertTrue(reader.displayVisibleTextWindow.contains(heard), reader.displayVisibleTextWindow)
+        XCTAssertEqual(reader.heardTranscriptSentence, heard)
+        let brief = reader.buildBriefWhereAmI()
+        XCTAssertTrue(brief.hasSuffix(" remaining. \(heard)"), brief)
+        let full = reader.buildFullWhereAmI(content: content)
+        XCTAssertTrue(full.hasPrefix(reader.book.title + "."), full)
+        XCTAssertTrue(full.contains("Total book time: "), full)
+        XCTAssertTrue(full.hasSuffix(". \(heard)"), full)
+
+        reader.navigateTo(chapterIndex: 1, characterOffset: 25)
+
+        XCTAssertTrue(waitUntil { reader.displayVisibleTextWindow.contains("Carts wait at the toll.") }, reader.displayVisibleTextWindow)
+        XCTAssertEqual(reader.heardTranscriptSentence, "Carts wait at the toll.")
+        XCTAssertTrue(reader.buildBriefWhereAmI().hasSuffix(" Carts wait at the toll."), reader.buildBriefWhereAmI())
+
+        reader.showTranscript(nil)
+
+        XCTAssertNil(reader.heardTranscriptSentence)
+        XCTAssertTrue(reader.buildBriefWhereAmI().hasSuffix(" remaining."), reader.buildBriefWhereAmI())
     }
 
     // MARK: - Fixtures

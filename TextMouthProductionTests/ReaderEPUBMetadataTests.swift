@@ -7,9 +7,11 @@ import XCTest
 /// starts from, without the open ever waiting for it. A book whose row
 /// keeps the metadata, as the row of every book imported since rows kept it
 /// does, shows it with the book and never reads the EPUB for it; any other
-/// EPUB has it read from its file off the main thread once the book shows.
-/// Either way the reader shows exactly what it showed when every open read
-/// the file: the file's metadata with the book's own edits laid over it.
+/// EPUB has it read from its file off the main thread once the book shows,
+/// and kept on its row and in its record then, as the import keeps it, so
+/// that it is read once. Either way the reader shows exactly what it showed
+/// when every open read the file: the file's metadata with the book's own
+/// edits laid over it.
 ///
 /// Each book is a copy of TestData's Alice EPUB, imported into a world of
 /// the test's own. Nothing plays.
@@ -130,20 +132,103 @@ final class ReaderEPUBMetadataTests: XCTestCase {
     }
 
     /// An EPUB whose metadata cannot be read shows none, as when every open
-    /// read it: the metadata editor then opens the library's Book Info.
-    func testAnEPUBWhoseMetadataCannotBeReadShowsNone() throws {
-        let world = try makeIntegrationWorld("Reader EPUB Metadata Unreadable")
-        let book = withoutKeptMetadata(try importAlice(into: world), in: world)
-        let failing = HeldMetadataRead(failing: true)
-        failing.release()
-        let reader = world.openReader(for: book)
-        reader.readEPUBMetadata = failing.read
-        waitForReaderToLoad(reader)
+    /// read it: the metadata editor then opens the library's Book Info. An
+    /// EPUB only in the cloud, whose read is refused rather than download
+    /// it, is left alone the same way. Neither keeps anything: the row and
+    /// the record still lack the metadata, so the next open tries again.
+    func testAnEPUBWhoseMetadataCannotBeReadShowsNoneAndKeepsNothing() throws {
+        for ending in [HeldMetadataRead.Ending.failing, .refusedAsOnlyInCloud] {
+            let world = try makeIntegrationWorld("Reader EPUB Metadata Unread \(ending)")
+            let book = try withoutKeptMetadataInItsRecordToo(try importAlice(into: world), in: world)
+            let failing = HeldMetadataRead(ending: ending)
+            failing.release()
+            let reader = world.openReader(for: book)
+            reader.readEPUBMetadata = failing.read
+            waitForReaderToLoad(reader)
 
-        XCTAssertNil(reader.errorMessage, "the book did not open")
-        XCTAssertTrue(waitUntil(timeout: 10) { failing.hasEnded }, "the read never ended")
+            XCTAssertNil(reader.errorMessage, "\(ending): the book did not open")
+            XCTAssertTrue(waitUntil(timeout: 10) { failing.hasEnded }, "\(ending): the read never ended")
+            settle()
+            XCTAssertNil(reader.epubMetadata, "\(ending)")
+            XCTAssertNil(world.library.bookByID(book.id)?.keptEPUBMetadata, "\(ending): the row took metadata")
+            LibraryPersistenceService.flushPendingSave()
+            XCTAssertEqual(try Self.recordedEPUBFields(of: book), Self.noFields, "\(ending): the record took metadata")
+            reader.close()
+        }
+    }
+
+    // MARK: - Kept Once Read
+
+    /// Metadata read from the file because the book's row lacked it is kept
+    /// on the row and in the book's record, as the import keeps it: each
+    /// field the row lacked takes the file's value, and an edit the row
+    /// keeps stands. The next open shows it with the book and reads nothing.
+    func testMetadataReadFromTheFileIsKeptSoTheNextOpenReadsNothing() throws {
+        let world = try makeIntegrationWorld("Reader EPUB Metadata Kept Once Read")
+        var book = try withoutKeptMetadataInItsRecordToo(try importAlice(into: world), in: world)
+        // A publisher edited before rows kept the rest of the metadata.
+        book.epubPublisher = "Harbour Steps Press"
+        world.library.updateBook(id: book.id) { $0.epubPublisher = "Harbour Steps Press" }
+        let file = try EPUBParser.readMetadata(url: book.bookFileURL)
+        let reads = MetadataReads()
+
+        let reader = world.openReader(for: book)
+        reader.readEPUBMetadata = reads.counting(reader.readEPUBMetadata)
+        XCTAssertTrue(waitUntil(timeout: 10) { reader.epubMetadata != nil }, "the metadata never showed")
         settle()
-        XCTAssertNil(reader.epubMetadata)
+
+        let kept = [
+            "Harbour Steps Press", file.publicationDate, file.isbn, file.language, file.identifier, file.epubVersion,
+        ]
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(Self.epubFields(of: row), kept, "the row did not keep the metadata as the import keeps it")
+        XCTAssertEqual(row.keptEPUBMetadata?.allFields, reader.epubMetadata?.allFields)
+        XCTAssertEqual(reader.epubMetadata?.publisher, "Harbour Steps Press", "the edit did not stand")
+        XCTAssertEqual(Self.epubFields(of: reader.book), kept, "the reader's copy of the book differs from its row")
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(try Self.recordedEPUBFields(of: row), kept, "the record did not keep the metadata")
+        XCTAssertEqual(reads.made, 1)
+        reader.close()
+
+        let again = MetadataReads()
+        let reopened = world.openReader(for: row)
+        reopened.readEPUBMetadata = again.counting(reopened.readEPUBMetadata)
+        XCTAssertEqual(metadataAsTheBookShows(in: reopened)?.allFields, row.keptEPUBMetadata?.allFields)
+        settle()
+        XCTAssertEqual(again.made, 0, "the next open read the EPUB again")
+        reopened.close()
+    }
+
+    /// Keeping metadata read from the file gives only the fields a row
+    /// lacks, says whether it gave any, and gives nothing a second time: an
+    /// edit, even one that cleared the publisher, and the title and author
+    /// stay, and a book in another format takes nothing.
+    func testKeepingMetadataReadFromTheFileGivesOnlyWhatTheRowLacks() {
+        let file = EPUBMetadata(
+            title: "From the File",
+            author: "File Author",
+            publisher: "Ferry Slip Books",
+            publicationDate: "1865",
+            isbn: "978-0-00-000000-0",
+            language: "en",
+            identifier: "urn:uuid:ferry",
+            epubVersion: "3.0"
+        )
+        var book = Book(title: "Library Title", author: "Library Author", format: .epub, filePath: "/tmp/ferry.epub", md5Hash: "ferry")
+        book.epubPublisher = ""
+        book.epubLanguage = "fr"
+
+        XCTAssertTrue(book.keepEPUBMetadata(readFromFile: file))
+
+        XCTAssertEqual(Self.epubFields(of: book), ["", "1865", "978-0-00-000000-0", "fr", "urn:uuid:ferry", "3.0"])
+        XCTAssertEqual(book.title, "Library Title")
+        XCTAssertEqual(book.author, "Library Author")
+        XCTAssertNotNil(book.keptEPUBMetadata)
+        XCTAssertFalse(book.keepEPUBMetadata(readFromFile: file), "a row that keeps every field changed again")
+
+        var text = Book(title: "Notes", format: .txt, filePath: "/tmp/notes.txt", md5Hash: "notes")
+        XCTAssertFalse(text.keepEPUBMetadata(readFromFile: file))
+        XCTAssertEqual(Self.epubFields(of: text), Self.noFields)
     }
 
     // MARK: - Fixtures
@@ -177,6 +262,37 @@ final class ReaderEPUBMetadataTests: XCTestCase {
         }
         XCTAssertNil(legacy.keptEPUBMetadata, "the row still keeps the EPUB's metadata")
         return legacy
+    }
+
+    /// `book` as `withoutKeptMetadata(_:in:)` leaves it, with its record in
+    /// its package written the same way, as a book imported before records
+    /// kept an EPUB's metadata has it.
+    private func withoutKeptMetadataInItsRecordToo(_ book: Book, in world: IntegrationWorld) throws -> Book {
+        let legacy = withoutKeptMetadata(book, in: world)
+        LibraryPersistenceService.saveBookInfo(for: legacy)
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(try Self.recordedEPUBFields(of: legacy), Self.noFields, "the record still keeps the EPUB's metadata")
+        return legacy
+    }
+
+    /// No EPUB metadata field at all, as `epubFields(of:)` lists them.
+    private static let noFields: [String?] = Array(repeating: nil, count: 6)
+
+    /// The EPUB metadata fields `book`'s row keeps: the publisher, the
+    /// publication date, the ISBN, the language, the identifier, and the
+    /// EPUB version, nil where it keeps none.
+    private static func epubFields(of book: Book) -> [String?] {
+        [book.epubPublisher, book.epubPublicationDate, book.epubISBN, book.epubLanguage, book.epubIdentifier, book.epubVersion]
+    }
+
+    /// The same fields as `book`'s record in its package (bookInfo.json)
+    /// keeps them, read from the record on disk.
+    private static func recordedEPUBFields(of book: Book) throws -> [String?] {
+        let metadata = try BookInfo.load(from: book.tmbDirectory).metadata
+        return [
+            metadata.publisher, metadata.publicationDate, metadata.isbn, metadata.language,
+            metadata.epubIdentifier, metadata.epubVersion,
+        ]
     }
 
     /// The metadata a reader showed for `book` when every open read it from
@@ -243,16 +359,35 @@ private final class MetadataReads: Sendable {
 /// can act while a reader's read is under way, and that says when it has
 /// ended. Safe to use from any thread.
 private final class HeldMetadataRead: Sendable {
+    /// How a held read ends once it is let go.
+    enum Ending: Sendable, CustomStringConvertible {
+        /// It reads the file.
+        case reading
+        /// It fails, as the read of a damaged EPUB does.
+        case failing
+        /// It is refused, as the read of an EPUB only in the cloud is with
+        /// downloading switched off (`LocalBookFiles.downloadRefusal`).
+        case refusedAsOnlyInCloud
+
+        var description: String {
+            switch self {
+            case .reading: return "read"
+            case .failing: return "unreadable"
+            case .refusedAsOnlyInCloud: return "only in the cloud"
+            }
+        }
+    }
+
     /// Opened by `release()`; the read waits for it.
     private let gate = DispatchSemaphore(value: 0)
     /// Whether the read has ended, with metadata or failing.
     private let ended = OSAllocatedUnfairLock(initialState: false)
-    /// Whether the read fails, as the read of a damaged EPUB does.
-    private let fails: Bool
+    /// How the read ends.
+    private let ending: Ending
 
-    /// A held read that reads the file, or fails when `fails`.
-    init(failing fails: Bool = false) {
-        self.fails = fails
+    /// A held read that ends as `ending` says.
+    init(ending: Ending = .reading) {
+        self.ending = ending
     }
 
     /// Whether the read has ended.
@@ -261,15 +396,19 @@ private final class HeldMetadataRead: Sendable {
     }
 
     /// The read to hand a reader: it waits for `release()`, then reads the
-    /// EPUB at the URL it is given, or fails.
+    /// EPUB at the URL it is given, or fails as `ending` says.
     var read: @Sendable (URL) throws -> EPUBMetadata {
         { [self] url in
             gate.wait()
             defer { ended.withLock { $0 = true } }
-            if fails {
+            switch ending {
+            case .reading:
+                return try EPUBParser.readMetadata(url: url)
+            case .failing:
                 throw CocoaError(.fileReadCorruptFile)
+            case .refusedAsOnlyInCloud:
+                throw LocalBookFiles.downloadRefusal
             }
-            return try EPUBParser.readMetadata(url: url)
         }
     }
 

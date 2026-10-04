@@ -114,6 +114,96 @@ final class TranscriptionProgressTests: XCTestCase {
         XCTAssertEqual(shown.first?.fileIndex, 0)
     }
 
+    // MARK: - The Debug Log
+
+    /// A transcription writes one line as it starts, with its language, and
+    /// one as it finishes, with the words it found and the seconds it took,
+    /// each naming the book by its title and never quoting a word heard.
+    func testATranscriptionLogsItsStartAndItsWordsAndSeconds() async throws {
+        let title = "Gull Rock Soundings \(UUID().uuidString.prefix(8))"
+        let world = try makeIntegrationWorld("Transcription Log Finished")
+        let book = try world.makeSilentAudioBook(title: title, trackDurations: [3, 2])
+        let center = makeScriptedCenter(script: TranscriptionUIScripts.twoTracks)
+
+        XCTAssertTrue(center.start(book, language: "en-US", library: world.library, window: nil))
+        let ended = await eventuallyHolds { center.current == nil }
+
+        XCTAssertTrue(ended, "the transcription never ended")
+        let lines = debugLogLines(containing: title)
+        XCTAssertEqual(lines.filter { $0.contains("TRANSCRIPTION_STARTED: \(title): en-US") }.count, 1, "\(lines)")
+        let finished = lines.filter { $0.contains("TRANSCRIPTION_FINISHED: \(title): 17 words in ") }
+        XCTAssertEqual(finished.count, 1, "\(lines)")
+        XCTAssertTrue(finished.first?.hasSuffix(" seconds") == true, "\(finished)")
+        assertQuotesNothingHeard(lines)
+    }
+
+    /// A transcription cancelled, or one that fails, writes how long it ran
+    /// and, for a failure, why, in the words VoiceOver hears; neither
+    /// quotes a word heard.
+    func testACancelledOrFailedTranscriptionLogsHowItEnded() async throws {
+        let world = try makeIntegrationWorld("Transcription Log Ended")
+        let cancelledTitle = "Long Pier Recordings \(UUID().uuidString.prefix(8))"
+        let cancelled = try world.makeSilentAudioBook(title: cancelledTitle, trackDurations: [20])
+        let slow = makeScriptedCenter(script: TranscriptionUIScripts.longTrack, pause: .milliseconds(50))
+        XCTAssertTrue(slow.start(cancelled, language: "en-US", library: world.library, window: nil))
+        slow.cancel()
+        let cancelEnded = await eventuallyHolds { slow.current == nil }
+        XCTAssertTrue(cancelEnded, "the cancelled transcription never ended")
+
+        let failedTitle = "Breakwater Notes \(UUID().uuidString.prefix(8))"
+        let failing = try world.makeSilentAudioBook(title: failedTitle, trackDurations: [3, 2])
+        let refusing = makeScriptedCenter(script: [:], refusal: .recognitionFailed("the recognizer stopped"))
+        XCTAssertTrue(refusing.start(failing, language: "en-US", library: world.library, window: nil))
+        let failEnded = await eventuallyHolds { refusing.current == nil }
+        XCTAssertTrue(failEnded, "the failing transcription never ended")
+
+        let cancelledLines = debugLogLines(containing: cancelledTitle)
+        XCTAssertEqual(
+            cancelledLines.filter { $0.contains("TRANSCRIPTION_CANCELLED: \(cancelledTitle): after ") && $0.hasSuffix(" seconds") }.count,
+            1,
+            "\(cancelledLines)"
+        )
+        let failedLines = debugLogLines(containing: failedTitle)
+        XCTAssertEqual(
+            failedLines.filter {
+                $0.contains("TRANSCRIPTION_FAILED: \(failedTitle): after ")
+                    && $0.hasSuffix(" seconds: Transcription stopped: the recognizer stopped.")
+            }.count,
+            1,
+            "\(failedLines)"
+        )
+        assertQuotesNothingHeard(cancelledLines + failedLines)
+    }
+
+    /// The lines' words: the word count in words, one word or many, and
+    /// every time to a tenth of a second.
+    func testTheLogLinesSayTheWordsAndTheTime() {
+        XCTAssertEqual(TranscriptionLog.started(bookTitle: "Harbor Notes", language: "en-GB"), "TRANSCRIPTION_STARTED: Harbor Notes: en-GB")
+        XCTAssertEqual(
+            TranscriptionLog.ended(.finished(wordCount: 1, seconds: 2.44), bookTitle: "Harbor Notes", elapsed: 9),
+            "TRANSCRIPTION_FINISHED: Harbor Notes: 1 word in 2.4 seconds"
+        )
+        XCTAssertEqual(
+            TranscriptionLog.ended(.finished(wordCount: 1_204, seconds: 61), bookTitle: "Harbor Notes", elapsed: 9),
+            "TRANSCRIPTION_FINISHED: Harbor Notes: 1204 words in 61.0 seconds"
+        )
+        XCTAssertEqual(
+            TranscriptionLog.ended(.cancelled, bookTitle: "Harbor Notes", elapsed: 0.96),
+            "TRANSCRIPTION_CANCELLED: Harbor Notes: after 1.0 seconds"
+        )
+        XCTAssertEqual(
+            TranscriptionLog.ended(.failed("Transcription stopped: the recognizer stopped."), bookTitle: "Harbor Notes", elapsed: 0.3),
+            "TRANSCRIPTION_FAILED: Harbor Notes: after 0.3 seconds: Transcription stopped: the recognizer stopped."
+        )
+    }
+
+    /// Fails when any of `lines` quotes a word the scripted narration says.
+    private func assertQuotesNothingHeard(_ lines: [String], file: StaticString = #filePath, line: UInt = #line) {
+        for word in ["Gannet", "breakwater.", "coils", "ferry", "Buoy", "tilts"] {
+            XCTAssertFalse(lines.contains { $0.contains(word) }, "\(word) reached the log: \(lines)", file: file, line: line)
+        }
+    }
+
     // MARK: - After the Transcript Is Saved
 
     /// A reader with the book open shows the transcript's text once it is

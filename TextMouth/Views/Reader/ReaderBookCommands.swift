@@ -14,9 +14,9 @@ import SwiftUI
 /// editor (FR04), which first asks this reader to close, since editing
 /// changes the audio it plays.
 ///
-/// ReaderView attaches this in one line: its body sits at the type
-/// checker's limit (board #829), so everything here lives in views of its
-/// own. The reader itself is not observed, so a playing reader's frequent
+/// ReaderView attaches this in one line, as it attaches each of its parts,
+/// so that its body stays well clear of the type checker's limit (board
+/// #829). The reader itself is not observed, so a playing reader's frequent
 /// publishes never draw this again; only the settings it shows, and which
 /// books are transcribed, are.
 struct ReaderBookCommandsSupport: ViewModifier {

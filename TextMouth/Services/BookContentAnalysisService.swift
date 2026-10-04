@@ -384,7 +384,9 @@ enum BookContentAnalysisService {
     /// cache whose source or content.md changed since it was written, by the
     /// fingerprints the package recorded (which is reported as
     /// `CACHE_STALE: <title>: <reason>`). A file with a new date but the
-    /// recorded size is read for its digest, which decides. `isDataless`
+    /// recorded size is read for its digest, which decides; one that kept
+    /// its digest is current, and the index returned carries its new
+    /// stamps. `isDataless`
     /// says whether a file is dataless (FR02): a dataless file is never read
     /// for its digest nor judged by the size and date it reports, and a
     /// check that met one gives no index, as any unreadable file does.
@@ -440,8 +442,14 @@ enum BookContentAnalysisService {
             return nil
         }
         switch verification {
-        case .current:
-            return trustedIndex
+        case .current(let verified):
+            // A file written again with the same bytes keeps its digests
+            // with its new stamps, which the row takes, so the launch's
+            // check of the file's date has nothing to read next time.
+            guard verified != recorded else { return trustedIndex }
+            var refreshed = trustedIndex
+            refreshed.textCacheFingerprint = verified
+            return refreshed
         case .stale(let staleness):
             reportStaleCache(of: book, staleness)
             return nil

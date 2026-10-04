@@ -577,28 +577,144 @@ final class SpeechPreparationCacheTests: XCTestCase {
         }
     }
 
-    /// Speech that is ready while a Where Am I announcement speaks is not
-    /// spoken over it: the play ends, as a pause ends it, and the next Play
-    /// speaks the speech kept meanwhile, without preparing it again.
-    func testSpeechReadyWhileWhereAmISpeaksIsNotSpokenOverIt() throws {
-        try withReader(chapters: Self.chaptersEndingInALongOne(seed: 83)) { reader, _ in
-            reader.currentChapterIndex = 1
-            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
-            XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs))
-            reader.play()
-            reader.isWhereAmISpeaking = true
+    // MARK: - Play waiting while Where Am I speaks
 
-            reader.finishPreparingInBackground(inputs.prepare())
+    /// Speech that is ready while a Where Am I announcement speaks is not
+    /// spoken over it, and the play does not end: it goes on waiting,
+    /// showing Playing, and when the announcement ends by itself, the
+    /// speech starts once the end sound has had its moment, exactly the
+    /// speech prepared in the background.
+    ///
+    /// The speech starts while the run loop turns, so the speech service
+    /// hands its utterances to a recorder instead of the synthesizer, and
+    /// nothing is heard.
+    func testSpeechReadyWhileWhereAmISpeaksStartsOnceTheAnnouncementEnds() throws {
+        try withReader(chapters: Self.chaptersEndingInALongOne(seed: 83)) { reader, _ in
+            let inputs = try waitingPlay(of: reader, whileWhereAmISpeaks: true)
+            let prepared = inputs.prepare()
+
+            reader.finishPreparingInBackground(prepared)
 
             XCTAssertFalse(reader.speechService.isSpeaking, "the speech started over Where Am I")
+            XCTAssertTrue(reader.isWaitingForChapterSpeech, "the play stopped waiting while Where Am I spoke")
+            XCTAssertTrue(reader.isCurrentlyPlaying, "Playing no longer shows while Where Am I speaks")
+            XCTAssertFalse(reader.isCurrentlyPaused)
+
+            reader.whereAmIAnnouncementFinished()
+
+            XCTAssertFalse(reader.isWhereAmISpeaking)
+            XCTAssertFalse(reader.speechService.isSpeaking, "the speech started before the end sound")
+            XCTAssertTrue(
+                waitUntil(timeout: ReaderViewModel.whereAmIEndSoundDelay + 5) { reader.speechService.isSpeaking },
+                "the speech never started after the announcement"
+            )
             XCTAssertFalse(reader.isWaitingForChapterSpeech)
-            XCTAssertFalse(reader.isCurrentlyPlaying)
-            reader.isWhereAmISpeaking = false
-            reader.play()
-            XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "the next Play prepared the chapter on the main thread")
-            assertSpeaks(reader, try legacyPreparedSpeech(reader, chapterIndex: 1))
+            assertSpeaks(reader, (prepared.text, prepared.offsetMap))
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "the chapter was prepared on the main thread")
             silence(reader)
         }
+    }
+
+    /// An announcement ended by hand, by Where Am I pressed again or by a
+    /// command that interrupts it, starts the play it held at once.
+    func testWhereAmIEndedByHandStartsTheHeldPlayAtOnce() throws {
+        let endings: [(name: String, end: (ReaderViewModel) -> Void)] = [
+            ("Where Am I again", { $0.whereAmI() }),
+            ("an interrupting command", { $0.cancelWhereAmIIfActive() }),
+        ]
+        for (number, ending) in endings.enumerated() {
+            try withReader(chapters: Self.chaptersEndingInALongOne(seed: UInt64(89 + number))) { reader, _ in
+                let inputs = try waitingPlay(of: reader, whileWhereAmISpeaks: true)
+                let prepared = inputs.prepare()
+                reader.finishPreparingInBackground(prepared)
+                XCTAssertFalse(reader.speechService.isSpeaking, ending.name)
+
+                ending.end(reader)
+
+                XCTAssertFalse(reader.isWhereAmISpeaking, ending.name)
+                XCTAssertFalse(reader.isWaitingForChapterSpeech, ending.name)
+                assertSpeaks(reader, (prepared.text, prepared.offsetMap), ending.name)
+                silence(reader)
+            }
+        }
+    }
+
+    /// Play/Pause pressed while Where Am I speaks ends the announcement and
+    /// leaves the book paused, as it leaves a book the announcement paused:
+    /// a play waiting for its chapter's speech stops waiting, whether the
+    /// speech is ready or still being prepared, and nothing is spoken. Speech
+    /// ready by then is kept, so the next Play speaks it without preparing
+    /// it again.
+    func testPlayPauseDuringWhereAmIPausesAWaitingPlay() throws {
+        for speechIsReady in [true, false] {
+            let label = speechIsReady ? "speech ready" : "speech still being prepared"
+            try withReader(chapters: Self.chaptersEndingInALongOne(seed: speechIsReady ? 97 : 101)) { reader, _ in
+                let inputs = try waitingPlay(of: reader, whileWhereAmISpeaks: true)
+                if speechIsReady {
+                    reader.finishPreparingInBackground(inputs.prepare())
+                }
+
+                reader.togglePlayPause()
+
+                XCTAssertFalse(reader.isWhereAmISpeaking, label)
+                XCTAssertFalse(reader.isWaitingForChapterSpeech, "\(label): the play still waits")
+                XCTAssertFalse(reader.isCurrentlyPlaying, "\(label): Playing shows")
+                if !speechIsReady {
+                    reader.finishPreparingInBackground(inputs.prepare())
+                }
+                XCTAssertFalse(reader.speechService.isSpeaking, "\(label): the speech started")
+
+                reader.play()
+
+                XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "\(label): the next Play prepared the chapter on the main thread")
+                assertSpeaks(reader, try legacyPreparedSpeech(reader, chapterIndex: 1), label)
+                silence(reader)
+            }
+        }
+    }
+
+    /// An announcement that ends before the speech is ready leaves the play
+    /// waiting for the speech, which starts it as soon as it is ready.
+    func testAnAnnouncementEndingBeforeTheSpeechIsReadyLeavesThePlayWaiting() throws {
+        try withReader(chapters: Self.chaptersEndingInALongOne(seed: 103)) { reader, _ in
+            let inputs = try waitingPlay(of: reader, whileWhereAmISpeaks: true)
+
+            reader.whereAmIAnnouncementFinished()
+            // The end sound's moment passes with the speech still being
+            // prepared: nothing starts.
+            spinMainRunLoop(for: ReaderViewModel.whereAmIEndSoundDelay + 0.2)
+
+            XCTAssertFalse(reader.speechService.isSpeaking, "speech started before it was ready")
+            XCTAssertTrue(reader.isWaitingForChapterSpeech, "the play stopped waiting")
+            let prepared = inputs.prepare()
+            reader.finishPreparingInBackground(prepared)
+            assertSpeaks(reader, (prepared.text, prepared.offsetMap))
+            silence(reader)
+        }
+    }
+
+    /// Has `reader`, over the long chapter of `chaptersEndingInALongOne`,
+    /// wait for that chapter's speech after Play, as Play waits for a
+    /// preparation the test finishes itself, with a Where Am I
+    /// announcement speaking, or not, as `whileWhereAmISpeaks` says. The
+    /// speech service hands what it would say to a recorder rather than
+    /// the synthesizer, so speech that starts while the run loop turns is
+    /// never heard.
+    ///
+    /// - Returns: The inputs the play waits for.
+    private func waitingPlay(of reader: ReaderViewModel, whileWhereAmISpeaks: Bool) throws -> ChapterSpeechInputs {
+        reader.speechService._directUtteranceRecorderForTesting = { _ in }
+        reader.currentChapterIndex = 1
+        let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+        XCTAssertTrue(inputs.isLong)
+        XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs))
+        reader.play()
+        XCTAssertTrue(reader.isWaitingForChapterSpeech, "Play did not wait for the speech")
+        // Where Am I pressed now, as an announcement starting would leave
+        // it: nothing was playing to pause, and its synthesizer speaks
+        // nothing in a test.
+        reader.isWhereAmISpeaking = whileWhereAmISpeaks
+        return inputs
     }
 
     /// Shows the reader's content as a finished load shows it, with the

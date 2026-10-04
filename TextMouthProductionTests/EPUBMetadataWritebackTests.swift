@@ -92,6 +92,7 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         let book = try makePackagedEPUB()
         let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
         let metadataBefore = editableFields(of: reader.epubMetadata)
+        let savedBefore = try agreedMetadata(of: reader)
         let fileBefore = try Data(contentsOf: book.bookFileURL)
         let edited = try editedMetadata(of: book)
 
@@ -104,7 +105,7 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         XCTAssertEqual(recorder.announcements.map(\.message), [Self.refusedWriteMessage])
         XCTAssertNil(reader.errorMessage, "the open editor shows the failure; no alert waits behind it")
         XCTAssertEqual(editableFields(of: reader.epubMetadata), metadataBefore)
-        XCTAssertEqual(try agreedMetadata(of: reader), SavedMetadata(book))
+        XCTAssertEqual(try agreedMetadata(of: reader), savedBefore)
         XCTAssertEqual(try Data(contentsOf: book.bookFileURL), fileBefore)
     }
 
@@ -163,6 +164,7 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         let book = try makePackagedEPUB()
         let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
         let edited = try editedMetadata(of: book)
+        let savedBefore = try agreedMetadata(of: reader)
         let fileBefore = try Data(contentsOf: book.bookFileURL)
         makeReadOnly(book.tmbDirectory)
 
@@ -172,7 +174,7 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         XCTAssertTrue(failure.hasPrefix("Could not save metadata to the library's copy of “alice.epub”: "), failure)
         XCTAssertTrue(failure.hasSuffix(" Nothing was changed."), failure)
         XCTAssertEqual(reader.lastAnnouncement, failure)
-        XCTAssertEqual(try agreedMetadata(of: reader), SavedMetadata(book))
+        XCTAssertEqual(try agreedMetadata(of: reader), savedBefore)
         XCTAssertEqual(try Data(contentsOf: book.bookFileURL), fileBefore)
         XCTAssertTrue(center.outstandingFailures().isEmpty, "\(center.outstandingFailures().map(\.sentence))")
     }
@@ -269,7 +271,9 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         await fulfillment(of: [loaded], timeout: 10)
         XCTAssertNil(reader.errorMessage, "the fixture did not load")
         // The fixture's row keeps none of the EPUB's metadata, so the reader
-        // reads it from the file once the book shows (`showEPUBMetadata()`).
+        // reads it from the file once the book shows (`showEPUBMetadata()`),
+        // and keeps it on the row and in the record then, as the import
+        // would have: that is the state a save then starts from.
         let metadataShown = expectation(description: "EPUB metadata shown")
         let metadataSubscription = reader.$epubMetadata.compactMap { $0 }.prefix(1).sink { _ in
             metadataShown.fulfill()

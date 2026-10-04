@@ -23,7 +23,8 @@ extension ReaderViewModel {
     /// using a separate synthesizer so the book engine state is preserved.
     /// First press: brief summary (heading, heading number, percentage).
     /// Quick second press (within 3 seconds): full details including time estimates.
-    /// If already speaking: stops the announcement.
+    /// If already speaking: stops the announcement, resuming the book it
+    /// paused or starting the play it held (`startPlayHeldByWhereAmI()`).
     func whereAmI() {
         // If already speaking a Where Am I announcement, stop it
         if isWhereAmISpeaking {
@@ -31,15 +32,9 @@ extension ReaderViewModel {
             isWhereAmISpeaking = false
             if wasPlayingBeforeWhereAmI {
                 wasPlayingBeforeWhereAmI = false
-                if isAudioBook {
-                    audioPlaybackService.resume()
-                } else {
-                    speechService.resume()
-                }
-                nowPlayingService.updateNowPlayingInfo(
-                    title: book.title, author: book.author, isPlaying: true
-                )
+                resumeBookPausedForWhereAmI()
             }
+            startPlayHeldByWhereAmI()
             return
         }
 
@@ -83,7 +78,8 @@ extension ReaderViewModel {
     }
 
     /// Brief summary: book title, current heading, heading number,
-    /// percentage, and time remaining.
+    /// percentage, and time remaining, then, for a transcribed audiobook,
+    /// the sentence being heard.
     func buildBriefWhereAmI() -> String {
         let position = currentHeadingPosition
         return Self.briefWhereAmISummary(
@@ -91,18 +87,22 @@ extension ReaderViewModel {
             locationTitle: locationTitle(for: position, chapterIndex: currentChapterIndex),
             headingPosition: position,
             percentComplete: percentComplete,
-            timeRemaining: timeRemaining
+            timeRemaining: timeRemaining,
+            heardSentence: heardTranscriptSentence
         )
     }
 
     /// Pure formatter for the brief announcement, shared with regression tests.
     /// Example: "My Book. The Battle. Heading 26 of 412. 30 percent. 3 hours remaining."
+    /// A transcribed audiobook's `heardSentence` follows, quoted as it is:
+    /// "… 3 hours remaining. The salt road bends east."
     nonisolated static func briefWhereAmISummary(
         bookTitle: String,
         locationTitle: String?,
         headingPosition: HeadingPosition,
         percentComplete: Double,
-        timeRemaining: TimeInterval
+        timeRemaining: TimeInterval,
+        heardSentence: String? = nil
     ) -> String {
         let parts = whereAmILocationParts(
             bookTitle: bookTitle,
@@ -112,11 +112,12 @@ extension ReaderViewModel {
             String(format: "%.0f percent", percentComplete),
             "\(TimeFormatting.spoken(timeRemaining)) remaining",
         ]
-        return whereAmISummary(parts: parts)
+        return whereAmISummary(parts: parts, quoting: heardSentence)
     }
 
     /// Full summary: the brief summary's location, then time remaining in the
-    /// book and in the current heading, and the total book time.
+    /// book and in the current heading, and the total book time, then, for a
+    /// transcribed audiobook, the sentence being heard.
     func buildFullWhereAmI(content: DocumentContent) -> String {
         let position = currentHeadingPosition
         return Self.fullWhereAmISummary(
@@ -126,13 +127,15 @@ extension ReaderViewModel {
             percentComplete: percentComplete,
             timeRemaining: timeRemaining,
             timeRemainingInHeading: position.heading.flatMap { remainingTime(inHeading: $0, content: content) },
-            totalTime: totalEstimatedTime
+            totalTime: totalEstimatedTime,
+            heardSentence: heardTranscriptSentence
         )
     }
 
     /// Pure formatter for the full announcement, shared with regression tests.
     /// The heading is named exactly once, followed by its number, so the
-    /// listener never hears two different names for the same place.
+    /// listener never hears two different names for the same place. A
+    /// transcribed audiobook's `heardSentence` follows the times.
     nonisolated static func fullWhereAmISummary(
         bookTitle: String,
         locationTitle: String?,
@@ -140,7 +143,8 @@ extension ReaderViewModel {
         percentComplete: Double,
         timeRemaining: TimeInterval,
         timeRemainingInHeading: TimeInterval?,
-        totalTime: TimeInterval
+        totalTime: TimeInterval,
+        heardSentence: String? = nil
     ) -> String {
         var parts = whereAmILocationParts(
             bookTitle: bookTitle,
@@ -153,7 +157,7 @@ extension ReaderViewModel {
             parts.append("\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading")
         }
         parts.append("Total book time: \(TimeFormatting.spoken(totalTime))")
-        return whereAmISummary(parts: parts)
+        return whereAmISummary(parts: parts, quoting: heardSentence)
     }
 
     /// Opening shared by both announcements: the book, the heading being read
@@ -167,9 +171,48 @@ extension ReaderViewModel {
     }
 
     /// Joins announcement fields into spoken sentences, dropping empty fields
-    /// so a missing heading or label never becomes an audible pause.
-    nonisolated static func whereAmISummary(parts: [String]) -> String {
-        parts.filter { !$0.isEmpty }.joined(separator: ". ") + "."
+    /// so a missing heading or label never becomes an audible pause, then
+    /// quotes `heardSentence`, when there is one, after them as it is, with
+    /// its own punctuation.
+    nonisolated static func whereAmISummary(parts: [String], quoting heardSentence: String? = nil) -> String {
+        let summary = parts.filter { !$0.isEmpty }.joined(separator: ". ") + "."
+        guard let heardSentence, !heardSentence.isEmpty else { return summary }
+        return summary + " " + heardSentence
+    }
+
+    // MARK: - The Transcript Sentence Being Heard
+
+    /// The most words of the sentence being heard that Where Am I quotes. A
+    /// recognizer's sentence can run on for a paragraph, and Where Am I is
+    /// for finding one's place in a few seconds.
+    nonisolated static let whereAmIQuoteWordLimit = 40
+
+    /// For a transcribed audiobook (FR05), the transcript's sentence being
+    /// heard at the cursor, as Where Am I quotes it (`whereAmIQuote(of:)`):
+    /// the sentence the reader's text is shown around
+    /// (`shownText(of:chapterIndex:cursorOffset:)`). Nil for any other
+    /// book, before a chapter's first sentence, and in a chapter the
+    /// transcript has no sentences for.
+    var heardTranscriptSentence: String? {
+        guard isAudioBook,
+              let sentence = content?.transcript?.sentenceText(
+                  atAudioOffset: currentCharacterOffset,
+                  inChapter: currentChapterIndex
+              ) else { return nil }
+        return Self.whereAmIQuote(of: sentence)
+    }
+
+    /// `sentence` as Where Am I quotes it: its words, one space apart, as a
+    /// sentence wrapped across lines is read; past `whereAmIQuoteWordLimit`
+    /// words, the first that many and an ellipsis. Nil when it holds no
+    /// words.
+    nonisolated static func whereAmIQuote(of sentence: String) -> String? {
+        let words = sentence.split(whereSeparator: \.isWhitespace)
+        guard !words.isEmpty else { return nil }
+        guard words.count > whereAmIQuoteWordLimit else {
+            return words.joined(separator: " ")
+        }
+        return words.prefix(whereAmIQuoteWordLimit).joined(separator: " ") + "…"
     }
 
     /// Time left in `heading` from the live cursor at the current speed, or
@@ -183,7 +226,9 @@ extension ReaderViewModel {
         return timeEstimateForHeading(heading) * fractionRemaining
     }
 
-    /// Cancel a Where Am I announcement if one is active, resuming book playback if it was playing before.
+    /// Cancel a Where Am I announcement if one is active, resuming book
+    /// playback if it was playing before, or starting the play the
+    /// announcement held (`startPlayHeldByWhereAmI()`).
     /// Used by skip/play/pause to cleanly interrupt an announcement.
     func cancelWhereAmIIfActive() {
         guard isWhereAmISpeaking else { return }
@@ -195,16 +240,15 @@ extension ReaderViewModel {
             reason: .navigationOrRepeatedCommand
         ) {
             wasPlayingBeforeWhereAmI = false
-            if isAudioBook {
-                audioPlaybackService.resume()
-            } else {
-                speechService.resume()
-            }
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title, author: book.author, isPlaying: true
-            )
+            resumeBookPausedForWhereAmI()
         }
+        startPlayHeldByWhereAmI()
     }
+
+    /// How long after a Where Am I announcement ends by itself the book
+    /// resumes, or the play it held starts: long enough for the end sound
+    /// to play first.
+    nonisolated static let whereAmIEndSoundDelay: TimeInterval = 0.3
 
     /// Speak a Where Am I announcement using the dedicated synthesizer (not the book reader).
     /// Sets up a delegate to resume book playback when the announcement finishes.
@@ -213,27 +257,7 @@ extension ReaderViewModel {
 
         // Set self as delegate via the WhereAmIDelegateHelper
         let delegate = WhereAmIDelegateHelper { [weak self] in
-            guard let self = self else { return }
-            self.isWhereAmISpeaking = false
-            self.soundEffectService?.play(for: .whereAmIEnd)
-            if WhereAmIInterruptionPolicy.shouldResume(
-                wasPlayingBeforeAnnouncement: self.wasPlayingBeforeWhereAmI,
-                reason: .naturalCompletion
-            ) {
-                self.wasPlayingBeforeWhereAmI = false
-                // Small delay to let sound effect play
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                    guard let self = self else { return }
-                    if self.isAudioBook {
-                        self.audioPlaybackService.resume()
-                    } else {
-                        self.speechService.resume()
-                    }
-                    self.nowPlayingService.updateNowPlayingInfo(
-                        title: self.book.title, author: self.book.author, isPlaying: true
-                    )
-                }
-            }
+            self?.whereAmIAnnouncementFinished()
         }
         self.whereAmIDelegate = delegate
         whereAmISynth.delegate = delegate
@@ -245,6 +269,46 @@ extension ReaderViewModel {
 
         isWhereAmISpeaking = true
         whereAmISynth.speak(utterance)
+    }
+
+    /// End a Where Am I announcement that finished by itself: play the end
+    /// sound, then, once it has played (`whereAmIEndSoundDelay`), resume
+    /// the book the announcement paused, or start the play it held
+    /// (`startPlayHeldByWhereAmI()`). The synthesizer's delegate calls it
+    /// on the main queue; tests call it in the announcement's place.
+    func whereAmIAnnouncementFinished() {
+        isWhereAmISpeaking = false
+        soundEffectService?.play(for: .whereAmIEnd)
+        let resumesBook = WhereAmIInterruptionPolicy.shouldResume(
+            wasPlayingBeforeAnnouncement: wasPlayingBeforeWhereAmI,
+            reason: .naturalCompletion
+        )
+        if resumesBook {
+            wasPlayingBeforeWhereAmI = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.whereAmIEndSoundDelay) { [weak self] in
+            guard let self else { return }
+            if resumesBook {
+                self.resumeBookPausedForWhereAmI()
+            }
+            // Asked only now: a pause, or another announcement, since the
+            // end leaves no play to start.
+            self.startPlayHeldByWhereAmI()
+        }
+    }
+
+    /// Resume the book a Where Am I announcement paused, as it was paused:
+    /// directly, without the play sound or a new listening session, and
+    /// tell Now Playing it plays again.
+    private func resumeBookPausedForWhereAmI() {
+        if isAudioBook {
+            audioPlaybackService.resume()
+        } else {
+            speechService.resume()
+        }
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: true
+        )
     }
 
     // MARK: - Heading Location
