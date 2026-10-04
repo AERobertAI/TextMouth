@@ -15,7 +15,9 @@ struct AudioEditorMarkersSheet: View {
 
     /// The marker whose name is being typed, if any.
     @State private var renaming: UUID?
-    /// The name typed.
+    /// The chapter marker whose title is being typed, by its place, if any.
+    @State private var renamingChapter: TimeInterval?
+    /// The name or title typed.
     @State private var newName = ""
     /// Puts the keyboard in the name field as it opens.
     @FocusState private var nameFocused: Bool
@@ -36,6 +38,16 @@ struct AudioEditorMarkersSheet: View {
                             .modifier(InitialVoiceOverFocusModifier(isTarget: index == 0))
                     }
                 }
+                Section(AudioEditorWording.chaptersHeading) {
+                    if model.chapters.isEmpty {
+                        Text(AudioEditorWording.noChapters)
+                            .foregroundColor(.secondary)
+                    }
+                    ForEach(Array(model.chapters.enumerated()), id: \.offset) { index, chapter in
+                        chapterRow(start: chapter.start, title: chapter.title, index: index)
+                            .modifier(InitialVoiceOverFocusModifier(isTarget: index == 0 && model.markers.isEmpty))
+                    }
+                }
                 Section(AudioEditorWording.pausesHeading) {
                     pauseRows
                 }
@@ -45,7 +57,9 @@ struct AudioEditorMarkersSheet: View {
                 Spacer()
                 Button(AudioEditorWording.closeButton) { model.sheet = nil }
                     .keyboardShortcut(.cancelAction)
-                    .modifier(InitialVoiceOverFocusModifier(isTarget: model.markers.isEmpty && model.pauses.isEmpty))
+                    .modifier(InitialVoiceOverFocusModifier(
+                        isTarget: model.markers.isEmpty && model.chapters.isEmpty && model.pauses.isEmpty
+                    ))
             }
         }
         .padding()
@@ -94,6 +108,7 @@ struct AudioEditorMarkersSheet: View {
 
     /// Opens `marker`'s name field, holding its name.
     private func startRenaming(_ marker: AudioEditorMarker) {
+        renamingChapter = nil
         newName = marker.name
         renaming = marker.id
     }
@@ -102,6 +117,69 @@ struct AudioEditorMarkersSheet: View {
     private func saveName(of marker: AudioEditorMarker) {
         model.renameMarker(marker.id, to: newName)
         renaming = nil
+    }
+
+    // MARK: - Chapter Markers
+
+    /// A chapter marker's row: its number, title, and place, then Go To,
+    /// Rename, and Remove, which are edits, undone as any edit is; while it
+    /// is being renamed, the title field, Save Name, and Cancel.
+    @ViewBuilder
+    private func chapterRow(start: TimeInterval, title: String, index: Int) -> some View {
+        let label = AudioEditorWording.chapterRow(index + 1, title: title, at: start)
+        let subject = "Chapter \(index + 1)"
+        if renamingChapter == start {
+            HStack {
+                TextField(AudioEditorWording.titleFieldLabel, text: $newName)
+                    .focused($nameFocused)
+                    .onSubmit { saveTitle(at: start) }
+                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.titleFieldLabel, subject))
+                Button(AudioEditorWording.saveNameButton) { saveTitle(at: start) }
+                    .keyboardShortcut(.defaultAction)
+                Button(AudioEditorWording.cancelButton) { renamingChapter = nil }
+            }
+            .onAppear { nameFocused = true }
+        } else {
+            HStack {
+                Text(label)
+                Spacer()
+                Button(AudioEditorWording.goToButton) { model.goToChapter(index) }
+                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.goToButton, subject))
+                Button(AudioEditorWording.renameButton) { startRenamingChapter(at: start, title: title) }
+                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.renameButton, subject))
+                Button(AudioEditorWording.removeButton, role: .destructive) { removeChapter(at: start, title: title) }
+                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.removeButton, subject))
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(label)
+            .accessibilityActions {
+                Button(AudioEditorWording.goToButton) { model.goToChapter(index) }
+                Button(AudioEditorWording.renameButton) { startRenamingChapter(at: start, title: title) }
+                Button(AudioEditorWording.removeButton) { removeChapter(at: start, title: title) }
+            }
+        }
+    }
+
+    /// Opens the title field of the chapter marker at `start`, holding its
+    /// title.
+    private func startRenamingChapter(at start: TimeInterval, title: String) {
+        renaming = nil
+        newName = title
+        renamingChapter = start
+    }
+
+    /// Renames the chapter marker at `start` as typed, and closes the field;
+    /// a blank title is refused, saying why.
+    private func saveTitle(at start: TimeInterval) {
+        let title = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return model.announce(AudioEditorWording.chapterNeedsTitle) }
+        renamingChapter = nil
+        Task { await model.renameChapter(at: start, to: title) }
+    }
+
+    /// Removes the chapter marker at `start`.
+    private func removeChapter(at start: TimeInterval, title: String) {
+        Task { await model.removeChapter(at: start, titled: title) }
     }
 
     // MARK: - Pauses
@@ -124,7 +202,7 @@ struct AudioEditorMarkersSheet: View {
             }
             ForEach(Array(model.pauses.enumerated()), id: \.element.id) { index, pause in
                 pauseRow(pause, number: index + 1)
-                    .modifier(InitialVoiceOverFocusModifier(isTarget: index == 0 && model.markers.isEmpty))
+                    .modifier(InitialVoiceOverFocusModifier(isTarget: index == 0 && model.markers.isEmpty && model.chapters.isEmpty))
             }
         }
     }

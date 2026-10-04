@@ -405,7 +405,8 @@ final class LauncherScript {
 // MARK: - An Open Editor
 
 /// An editor model over a real edit session of a test book, playing
-/// through a player that makes no sound, with its announcements caught.
+/// through a player that makes no sound, recording through a capture
+/// backend that needs no microphone, with its announcements caught.
 @MainActor
 struct EditorHarness {
     let model: AudioEditorModel
@@ -413,14 +414,34 @@ struct EditorHarness {
     let announcements: EditorAnnouncements
     let store: UserDefaults
     let fixture: AudioEditorTestBook
+    /// The capture backend punch-ins record through.
+    let backend: FakeCaptureBackend
+    /// The microphones punch-ins choose from.
+    let catalog: FakeRecordingInputCatalog
+    /// The permission punch-ins ask.
+    let permission: FakeMicrophonePermission
 
     /// Opens `fixture`'s book, or its `track`, in a model of its own, with
-    /// `test`'s own sandboxed preferences store.
-    static func open(_ fixture: AudioEditorTestBook, for test: XCTestCase, track: AudioEditorTrack? = nil) async throws -> EditorHarness {
+    /// `test`'s own sandboxed preferences store, and microphones that say
+    /// yes unless `permission` says otherwise.
+    static func open(
+        _ fixture: AudioEditorTestBook,
+        for test: XCTestCase,
+        track: AudioEditorTrack? = nil,
+        permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized)
+    ) async throws -> EditorHarness {
         let session = try await AudioEditSession.open(bookID: fixture.book.id, audioFile: track?.path, in: fixture.library)
         let player = FakeAudioEditorPlayer()
         let announcements = EditorAnnouncements()
         let store = test.makeSandboxedPreferences("audio-editor")
+        let backend = FakeCaptureBackend(sampleRate: AudioEditorTestBook.rate)
+        let catalog = FakeRecordingInputCatalog([TestMicrophones.builtIn, TestMicrophones.airPods])
+        let service = RecordingService(
+            backend: backend,
+            permission: permission.permission,
+            takesFolder: try RecordingAudioFixtures.makeTakesFolder(for: test),
+            pollInterval: nil
+        )
         let model = AudioEditorModel(
             bookID: fixture.book.id,
             bookTitle: fixture.book.title,
@@ -428,8 +449,18 @@ struct EditorHarness {
             session: session,
             player: player,
             store: store,
+            recorder: AudioEditorRecorder(service: service, catalog: catalog, countIn: {}, announcementLead: .zero),
             announce: announcements.announce
         )
-        return EditorHarness(model: model, player: player, announcements: announcements, store: store, fixture: fixture)
+        return EditorHarness(
+            model: model,
+            player: player,
+            announcements: announcements,
+            store: store,
+            fixture: fixture,
+            backend: backend,
+            catalog: catalog,
+            permission: permission
+        )
     }
 }

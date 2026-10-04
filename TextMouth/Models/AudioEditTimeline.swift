@@ -204,12 +204,12 @@ struct AudioEditTimeline: Equatable, Sendable {
             splice(place..<place, with: [Segment(source: .silence, sourceStart: 0, length: frames)])
         case .replace(let range, let take):
             let frames = try frameRange(range)
-            guard take.range.isWellFormed else { throw invalid("The replacement's stretch has to start before it ends.") }
-            let takeStart = frame(at: take.range.start)
-            let takeLength = frame(at: take.range.end) - takeStart
-            guard takeLength > 0 else { throw invalid("The replacement has to last at least one sample.") }
-            guard take.range.duration <= Self.longestInsertion else { throw invalid("A replacement can last at most a day.") }
-            splice(frames, with: [Segment(source: .take(take.file), sourceStart: takeStart, length: takeLength)])
+            splice(frames, with: [try segment(of: take)])
+        case .insert(let at, let take):
+            // Inserted like silence: a marker at the place stays before the
+            // new sound, so it belongs to that marker's chapter.
+            let place = try point(at)
+            splice(place..<place, with: [try segment(of: take)])
         case .setChapter(let at, let title):
             let place = try point(at)
             let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -294,6 +294,18 @@ struct AudioEditTimeline: Equatable, Sendable {
     /// The error refusing an edit, `reason` saying why.
     private func invalid(_ reason: String) -> AudioEditError {
         .invalidEdit(reason)
+    }
+
+    /// The stretch of sound `take` puts in the audio: a punch-in's
+    /// replacement, or audio inserted, which must start before it ends,
+    /// hold at least one sample, and last at most a day.
+    private func segment(of take: AudioEditTake) throws -> Segment {
+        guard take.range.isWellFormed else { throw invalid("The new audio's stretch has to start before it ends.") }
+        let takeStart = frame(at: take.range.start)
+        let takeLength = frame(at: take.range.end) - takeStart
+        guard takeLength > 0 else { throw invalid("The new audio has to last at least one sample.") }
+        guard take.range.duration <= Self.longestInsertion else { throw invalid("New audio can last at most a day.") }
+        return Segment(source: .take(take.file), sourceStart: takeStart, length: takeLength)
     }
 
     // MARK: Stretches

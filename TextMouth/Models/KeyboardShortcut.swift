@@ -66,6 +66,16 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case editorPlaySelection = "Audio Editor: Play Selection"
     case editorAddMarker = "Audio Editor: Add Marker"
     case editorShowMarkers = "Audio Editor: Markers and Pauses…"
+    case editorUndo = "Audio Editor: Undo"
+    case editorRedo = "Audio Editor: Redo"
+    case editorCut = "Audio Editor: Cut"
+    case editorCopy = "Audio Editor: Copy"
+    case editorPaste = "Audio Editor: Paste"
+    case editorTrimToSelection = "Audio Editor: Trim to Selection"
+    case editorInsertSilence = "Audio Editor: Insert Silence…"
+    case editorInsertChapter = "Audio Editor: Insert Chapter Marker…"
+    case editorApplyFilter = "Audio Editor: Apply Filter…"
+    case editorPunchIn = "Audio Editor: Punch In"
 
     var id: String { rawValue }
 
@@ -129,7 +139,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
              .editorPreviousPause, .editorNextPause, .editorWhereAmI,
              .editorMarkIn, .editorMarkOut, .editorSelectToPreviousPause, .editorSelectToNextPause,
              .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
-             .editorPlaySelection, .editorAddMarker, .editorShowMarkers:
+             .editorPlaySelection, .editorAddMarker, .editorShowMarkers,
+             .editorUndo, .editorRedo, .editorCut, .editorCopy, .editorPaste, .editorTrimToSelection,
+             .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn:
             return .audioEditorShortcut
         }
     }
@@ -157,7 +169,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
              .editorPreviousPause, .editorNextPause, .editorWhereAmI,
              .editorMarkIn, .editorMarkOut, .editorSelectToPreviousPause, .editorSelectToNextPause,
              .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
-             .editorPlaySelection, .editorAddMarker, .editorShowMarkers:
+             .editorPlaySelection, .editorAddMarker, .editorShowMarkers,
+             .editorUndo, .editorRedo, .editorCut, .editorCopy, .editorPaste, .editorTrimToSelection,
+             .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn:
             return Self.audioEditorCategory
         }
     }
@@ -567,6 +581,18 @@ extension ShortcutAction {
             .editorPlaySelection: [KeyBinding(key: "p")],
             .editorAddMarker: [KeyBinding(key: "m")],
             .editorShowMarkers: [KeyBinding(key: "m", shift: true)],
+            // The Edit menu's keys, which the editor answers itself, and
+            // Delete for Cut, as the user asked.
+            .editorUndo: [KeyBinding(key: "z", command: true)],
+            .editorRedo: [KeyBinding(key: "z", command: true, shift: true)],
+            .editorCut: [KeyBinding(key: "delete"), KeyBinding(key: "x", command: true)],
+            .editorCopy: [KeyBinding(key: "c", command: true)],
+            .editorPaste: [KeyBinding(key: "v", command: true)],
+            .editorTrimToSelection: [KeyBinding(key: "t")],
+            .editorInsertSilence: [KeyBinding(key: "s", shift: true)],
+            .editorInsertChapter: [KeyBinding(key: "c", shift: true)],
+            .editorApplyFilter: [KeyBinding(key: "f")],
+            .editorPunchIn: [KeyBinding(key: "r")],
         ]
     }
 }

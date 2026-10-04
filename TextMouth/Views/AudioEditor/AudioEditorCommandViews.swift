@@ -1,12 +1,13 @@
 import SwiftUI
 
 /// One of the editor's commands as a button (FR04): titled as Settings
-/// lists the command, with a hint saying what it does and the shortcuts in
-/// force, dimmed when it can't act. The same command runs whether it is
-/// pressed here, chosen by its shortcut, or chosen from VoiceOver.
+/// lists the command, or by what it would do now ("Undo Cut 2.5 Seconds"),
+/// with a hint saying what it does and the shortcuts in force, dimmed when
+/// it can't act. The same command runs whether it is pressed here, chosen
+/// by its shortcut, or chosen from VoiceOver.
 struct AudioEditorCommandButton: View {
-    /// The command.
-    let action: ShortcutAction
+    /// The button's title.
+    let title: String
     /// What it does and its shortcuts, as its hint and tooltip.
     let hint: String
     /// Whether it can act now.
@@ -15,7 +16,7 @@ struct AudioEditorCommandButton: View {
     let perform: () -> Void
 
     var body: some View {
-        Button(action.title, action: perform)
+        Button(title, action: perform)
             .disabled(!isEnabled)
             .accessibilityHint(hint)
             .help(hint)
@@ -54,8 +55,8 @@ struct AudioEditorCommandGroup: View {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 190), alignment: .leading)], alignment: .leading, spacing: 6) {
                 ForEach(actions) { action in
                     AudioEditorCommandButton(
-                        action: action,
-                        hint: AudioEditorWording.hint(for: action, bindings: model.bindings(for: action)),
+                        title: model.title(for: action),
+                        hint: model.hint(for: action),
                         isEnabled: model.canPerform(action),
                         perform: { model.perform(action) }
                     )

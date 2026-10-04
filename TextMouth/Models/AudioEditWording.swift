@@ -57,6 +57,8 @@ enum AudioEditWording {
             return "Insert \(duration(length, titleCase: true)) of Silence"
         case .replace(let range, _):
             return "Replace \(duration(range.duration, titleCase: true))"
+        case .insert(_, let take):
+            return "Insert \(duration(take.range.duration, titleCase: true)) of Audio"
         case .setChapter:
             return "Set Chapter Marker"
         case .removeChapter:

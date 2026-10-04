@@ -16,6 +16,10 @@ extension AudioEditorModel {
     /// At the very end it plays from the start.
     func togglePlay() {
         guard hasPreview else { return announce(AudioEditorWording.notReadyToPlay) }
+        if playing == .previewing {
+            // Play stops a filter's preview, as Stop does.
+            return endFilterPreview()
+        }
         if case .listening = playing {
             player.pause()
             cursor = clamped(player.currentTime)
@@ -49,6 +53,8 @@ extension AudioEditorModel {
         case .scrubbing:
             player.pause()
             playing = .idle
+        case .previewing:
+            endFilterPreview()
         case .idle:
             announce(AudioEditorWording.notPlaying)
         }
@@ -75,6 +81,9 @@ extension AudioEditorModel {
             }
         case .scrubbing:
             playing = .idle
+        case .previewing:
+            // The preview played to its end: the edited audio comes back.
+            endFilterPreview()
         case .idle:
             break
         }
@@ -95,10 +104,18 @@ extension AudioEditorModel {
     func move(to time: TimeInterval, saying sentence: String? = nil) {
         let target = clamped(time)
         cursor = target
+        if playing == .previewing {
+            // The edited audio comes back, at the new place.
+            endFilterPreview()
+            if let sentence {
+                announce(sentence)
+            }
+            return
+        }
         switch playing {
         case .listening:
             player.play(from: target, until: nil)
-        case .scrubbing, .idle:
+        case .scrubbing, .previewing, .idle:
             if scrubsAfterMoves, target < duration - Self.timeTolerance {
                 playing = .scrubbing
                 player.play(from: target, until: min(duration, target + AudioEditorModel.scrubLength))
@@ -177,9 +194,13 @@ extension AudioEditorModel {
         goToChapter(index)
     }
 
-    /// Moves the cursor to chapter marker `index`, saying which.
-    private func goToChapter(_ index: Int) {
+    /// Moves the cursor to chapter marker `index`, saying which, closing the
+    /// list it may have been chosen in.
+    func goToChapter(_ index: Int) {
         guard chapters.indices.contains(index) else { return }
+        if sheet == .markers {
+            sheet = nil
+        }
         let chapter = chapters[index]
         move(to: chapter.start, saying: AudioEditorWording.chapter(number: index + 1, title: chapter.title, at: chapter.start))
     }

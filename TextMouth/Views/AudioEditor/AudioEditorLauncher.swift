@@ -283,6 +283,7 @@ extension AudioEditorLauncher.Services {
                     session: session,
                     player: AVAudioEditorPlayer(),
                     store: TextMouthRuntime.current.preferences,
+                    recorder: .system(),
                     announce: { [weak controller] sentence in
                         VoiceOverAnnouncer.announce(sentence, from: controller?.window(for: book.id))
                     }

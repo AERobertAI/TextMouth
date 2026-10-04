@@ -74,6 +74,32 @@ final class AudioEditorModel: ObservableObject {
     /// The markers dropped, in the order they were dropped; listed in time
     /// order (`orderedMarkers`).
     @Published var markers: [AudioEditorMarker] = []
+    /// Whether an edit, a save, or an export is under way: every other
+    /// command that would change the audio waits for it, saying so.
+    @Published var isWorking = false
+    /// The punch-in under way, from its count-in to its take, if any.
+    @Published var punchIn: AudioEditorPunchIn?
+    /// The microphones a punch-in can record from, distinctly named.
+    @Published var microphones: [AudioInputDevice] = []
+    /// The microphone a punch-in records from: the one TextMouth remembers,
+    /// or macOS's default input; empty with none connected.
+    @Published var microphoneID = ""
+    /// What Apply Filter's Preview is playing, if anything.
+    @Published var filterPreview: AudioEditorFilterPreview?
+
+    /// What Copy or Cut kept for Paste.
+    var clip: AudioEditorClip?
+    /// The second edit of each Trim to Selection made of two, by its
+    /// identity, with the first's: undone and redone as one.
+    var pairedEdits: [UUID: UUID] = [:]
+    /// What punch-ins record with.
+    let recorder: AudioEditorRecorder
+    /// Follow the recorder: a take that ends on its own, and the time and
+    /// level the status line shows while recording.
+    var recorderSubscriptions: Set<AnyCancellable> = []
+    /// This window's folder for audio copied or cut, made when first used
+    /// and removed as the window closes.
+    let clipFolder: URL
 
     /// Where the search for pauses is.
     enum PauseSearch: Equatable {
@@ -93,6 +119,9 @@ final class AudioEditorModel: ObservableObject {
         case listening(from: TimeInterval)
         /// Playing half a second after a move, the cursor staying put.
         case scrubbing
+        /// Playing Apply Filter's preview of processed sound, in place of
+        /// the edited audio, until it stops.
+        case previewing
     }
 
     /// What the player is doing for the editor.
@@ -112,13 +141,19 @@ final class AudioEditorModel: ObservableObject {
     private var bindingsObserver: PreferenceObserver?
     /// The measurement of the edited audio's levels under way.
     var measuring: Task<Void, Never>?
+    /// Counts what the player is handed, so only the newest load of the
+    /// preview reaches it, and a filter's preview stops any older load.
+    var previewLoads = 0
 
     /// A model for the editor window of the book `bookID`, titled
     /// `bookTitle`, editing through `session` and playing through `player`.
     /// - Parameters:
     ///   - trackTitle: The track's chapter name in a book of several tracks.
-    ///   - store: The preferences store the editor's settings and the
-    ///     shortcuts are read from.
+    ///   - store: The preferences store the editor's settings, the
+    ///     shortcuts, and the microphone chosen are read from.
+    ///   - recorder: What punch-ins record with.
+    ///   - clipFolder: Where the window keeps audio copied or cut; a folder
+    ///     of its own in this Mac's caches unless a test gives one.
     ///   - announce: Makes VoiceOver speak.
     init(
         bookID: UUID,
@@ -127,6 +162,8 @@ final class AudioEditorModel: ObservableObject {
         session: AudioEditSession,
         player: AudioEditorPlayback,
         store: UserDefaults,
+        recorder: AudioEditorRecorder,
+        clipFolder: URL = AudioEditorClip.newFolder(),
         announce: @escaping @MainActor (String) -> Void
     ) {
         self.bookID = bookID
@@ -135,6 +172,8 @@ final class AudioEditorModel: ObservableObject {
         self.session = session
         self.player = player
         self.store = store
+        self.recorder = recorder
+        self.clipFolder = clipFolder
         announcer = announce
         sessionChanges = session.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
@@ -154,6 +193,7 @@ final class AudioEditorModel: ObservableObject {
         bindingsObserver = PreferenceObserver(keys: [KeyboardShortcutManager.bindingsPreference.key], in: store) { [weak self] _ in
             self?.objectWillChange.send()
         }
+        followRecorder()
     }
 
     // MARK: State
@@ -194,6 +234,9 @@ final class AudioEditorModel: ObservableObject {
     /// of how long the audio lasts, in which chapter, and what is selected.
     var statusSentence: String {
         var parts = isPlaying ? [AudioEditorWording.playing] : []
+        if let punchInStatus {
+            parts.append(punchInStatus)
+        }
         parts.append(positionValue)
         if let index = chapterIndex(at: cursor), chapters.indices.contains(index) {
             parts.append(AudioEditorWording.inChapter(number: index + 1, title: chapters[index].title))
@@ -253,12 +296,18 @@ final class AudioEditorModel: ObservableObject {
     // MARK: The Preview
 
     /// Hands the player the edited audio as it now is, at the cursor, kept
-    /// inside the audio, then measures its levels again for the pauses. A
-    /// preview that can't be made is announced: the window stays open, and
-    /// the next edit or undo tries again.
-    func loadPreview() async {
+    /// inside the audio, then, when `measuring`, measures its levels again
+    /// for the pauses: after an edit, not after a filter's preview, which
+    /// changed nothing. A preview that can't be made is announced: the
+    /// window stays open, and the next edit or undo tries again.
+    func loadPreview(measuring: Bool = true) async {
+        // Only the newest load hands the player its audio: an older one
+        // still making its composition was of audio since changed.
+        previewLoads += 1
+        let load = previewLoads
         do {
             let preview = try await session.makePreview()
+            guard load == previewLoads else { return }
             cursor = clamped(cursor)
             playing = .idle
             isPlaying = false
@@ -268,7 +317,9 @@ final class AudioEditorModel: ObservableObject {
             hasPreview = false
             announce(error.localizedDescription)
         }
-        measureLevels()
+        if measuring {
+            measureLevels()
+        }
     }
 
     // MARK: Announcing
@@ -281,19 +332,25 @@ final class AudioEditorModel: ObservableObject {
 
     // MARK: Closing
 
-    /// Lets go of everything the window holds as it closes: the player, the
-    /// measurement under way, the observers, and the edit session, whose use
+    /// Lets go of everything the window holds as it closes: a punch-in
+    /// under way, discarded; the player; the measurement under way; the
+    /// observers; the audio kept for Paste; and the edit session, whose use
     /// of the book ends.
     func windowClosed() {
         measuring?.cancel()
         measuring = nil
+        abandonPunchIn()
         player.close()
         session.close()
         sessionChanges = nil
+        recorderSubscriptions = []
+        recorder.catalog.onChange = nil
         if let shortcutObserver {
             NotificationCenter.default.removeObserver(shortcutObserver)
             self.shortcutObserver = nil
         }
         bindingsObserver = nil
+        clip = nil
+        try? FileManager.default.removeItem(at: clipFolder)
     }
 }

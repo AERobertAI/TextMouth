@@ -367,12 +367,258 @@ enum AudioEditorWording {
         "\(title) \(subject)"
     }
 
+    // MARK: - Editing
+
+    /// The audio's new length, after an edit: "Now 12 minutes, 27.5 seconds
+    /// long."
+    static func nowLong(_ duration: TimeInterval) -> String {
+        "Now \(spoken(duration)) long."
+    }
+
+    /// Said when a command would change the audio while another change, a
+    /// save, or an export is under way.
+    static let stillWorking = "Still working on the last change."
+
+    /// Said when a command other than the punch-in's own is chosen while it
+    /// records.
+    static let stillRecording = "Recording. Stop the recording first."
+
+    /// Said as Cut cuts.
+    static func cut(_ length: TimeInterval, now duration: TimeInterval) -> String {
+        "Cut \(spoken(length)). \(nowLong(duration))"
+    }
+
+    /// Said as Copy copies.
+    static func copied(_ length: TimeInterval) -> String {
+        "Copied \(spoken(length))."
+    }
+
+    /// Said when the selection is too long to copy.
+    static let copyTooLong = "Copy at most 10 minutes at a time."
+
+    /// Said by Paste with nothing cut or copied.
+    static let nothingToPaste = "Nothing has been cut or copied."
+
+    /// Said by Paste when the audio cut was too long to keep.
+    static let cutTooLongToPaste = "The audio cut was too long to keep for pasting. To move a long stretch, paste right after cutting it."
+
+    /// Said when the disk is too full to keep audio for Paste.
+    static let diskTooFullToKeepClip = "The disk is too full to keep this audio for pasting."
+
+    /// Said as Paste pastes, at the cursor or over a selection `replaced`
+    /// seconds long.
+    static func pasted(_ length: TimeInterval, replacing replaced: TimeInterval?, now duration: TimeInterval) -> String {
+        guard let replaced else { return "Pasted \(spoken(length)). \(nowLong(duration))" }
+        return "Pasted \(spoken(length)) over \(spoken(replaced)). \(nowLong(duration))"
+    }
+
+    /// Said as a Paste right after a Cut, at the cut's own place, puts the
+    /// audio back.
+    static func pastedBack(_ length: TimeInterval) -> String {
+        "Pasted \(spoken(length)) back where they were cut."
+    }
+
+    /// Said as a Paste right after a Cut moves the audio.
+    static func moved(_ length: TimeInterval, to time: TimeInterval) -> String {
+        "Moved \(spoken(length)) to \(spoken(time))."
+    }
+
+    /// Said by Trim to Selection when the selection is all of the audio.
+    static let selectionIsEverything = "The selection is all of the audio, so there's nothing to trim."
+
+    /// Said as Trim to Selection trims.
+    static func trimmed(keeping length: TimeInterval) -> String {
+        "Trimmed to the selection: \(spoken(length)) kept."
+    }
+
+    /// The name Undo and Redo give the two trims of a Trim to Selection.
+    static let trimToSelectionName = "Trim to Selection"
+
+    /// Said as silence is inserted.
+    static func insertedSilence(_ length: TimeInterval, now duration: TimeInterval) -> String {
+        "Inserted \(spoken(length)) of silence. \(nowLong(duration))"
+    }
+
+    /// Said as a chapter marker is set.
+    static func chapterSet(_ title: String, at time: TimeInterval) -> String {
+        "Chapter marker “\(title)” set at \(spoken(time))."
+    }
+
+    /// Said as a chapter marker is renamed.
+    static func chapterRenamed(_ title: String) -> String {
+        "Chapter marker renamed “\(title)”."
+    }
+
+    /// Said as a chapter marker is removed.
+    static func chapterRemoved(_ title: String) -> String {
+        "Chapter marker “\(title)” removed."
+    }
+
+    /// Undo's button title: "Undo Cut 2.5 Seconds".
+    static func undoTitle(_ name: String) -> String {
+        "Undo \(name)"
+    }
+
+    /// Redo's button title.
+    static func redoTitle(_ name: String) -> String {
+        "Redo \(name)"
+    }
+
+    /// Said as Undo undoes.
+    static func undid(_ name: String, now duration: TimeInterval) -> String {
+        "Undid \(name). \(nowLong(duration))"
+    }
+
+    /// Said as Redo redoes.
+    static func redid(_ name: String, now duration: TimeInterval) -> String {
+        "Redid \(name). \(nowLong(duration))"
+    }
+
+    /// Said by Redo with nothing undone.
+    static let nothingToRedo = "There's nothing to redo."
+
+    // MARK: - Insert Silence and Chapter Markers
+
+    /// Insert Silence's sheet title.
+    static let insertSilenceTitle = "Insert Silence"
+    /// Insert Chapter Marker's sheet title.
+    static let insertChapterTitle = "Insert Chapter Marker"
+    /// The label of the silence's length field.
+    static let lengthFieldLabel = "Length"
+    /// The label of a chapter marker's title field.
+    static let titleFieldLabel = "Title"
+    /// What the silence's length field takes.
+    static let silenceExplanation = "How long a silence to insert at the cursor: seconds, such as 2.5, or minutes and seconds, such as 1:30."
+    /// What the chapter marker's title field takes.
+    static let chapterExplanation = "The title of a chapter marker at the cursor. A chapter marker already at the cursor is renamed."
+    /// The button that inserts.
+    static let insertButton = "Insert"
+    /// Why a silence of no length can't be inserted.
+    static let silenceTooShort = "Silence has to last longer than no time at all."
+    /// Why a silence of more than a day can't be inserted.
+    static let silenceTooLong = "Silence can last at most a day."
+    /// Why a blank title can't be a chapter marker's.
+    static let chapterNeedsTitle = "A chapter marker needs a title."
+
+    /// The title Insert Chapter Marker offers: "Chapter 4".
+    static func defaultChapterTitle(_ number: Int) -> String {
+        "Chapter \(number)"
+    }
+
+    /// The heading of the chapter markers in the list.
+    static let chaptersHeading = "Chapter Markers"
+    /// The button that removes a chapter marker.
+    static let removeButton = "Remove"
+
+    /// A chapter marker's row in the list: "Chapter 3: Tide Tables, at 12
+    /// minutes, 4 seconds".
+    static func chapterRow(_ number: Int, title: String, at time: TimeInterval) -> String {
+        "Chapter \(number): \(title), at \(spoken(time))"
+    }
+
+    // MARK: - Punch In
+
+    /// Punch In's title while it records.
+    static let stopRecordingTitle = "Stop Recording"
+
+    /// The microphone pop-up's label.
+    static let microphoneLabel = "Microphone for Punch In"
+
+    /// The microphone pop-up's hint.
+    static let microphoneHint = "The microphone Punch In records from. TextMouth remembers it, as the Record window does, "
+        + "apart from the input macOS uses for everything else."
+
+    /// Shown in the microphone pop-up with none connected.
+    static let noMicrophoneItem = "No microphone"
+
+    /// Said by Punch In with no microphone connected.
+    static let noMicrophone = "No microphone is connected. Connect one to punch in."
+
+    /// Said before the count-in: what will be recorded, from where, and how
+    /// it ends.
+    static func punchInStarting(_ punch: AudioEditorPunchIn) -> String {
+        let what = punch.range.map { "Recording over \(spoken($0.duration)) at \(spoken(punch.place))" }
+            ?? "Recording to insert at \(spoken(punch.place))"
+        return "\(what), from \(punch.microphone), after the beep. Punch In or Stop ends it; Clear Selection discards it."
+    }
+
+    /// The status line's part while a punch-in gets ready.
+    static let punchInStartingStatus = "Getting ready to record"
+
+    /// The status line's part while a punch-in records: the time recorded
+    /// and the level.
+    static func punchInStatus(elapsed: TimeInterval, level: String) -> String {
+        "Recording, \(spoken(elapsed)), level \(level)"
+    }
+
+    /// Said as a take under way is discarded.
+    static let punchInDiscarded = "Recording discarded."
+
+    /// Said as a take replaces the selection.
+    static func punchedIn(_ length: TimeInterval, replacing replaced: TimeInterval, now duration: TimeInterval) -> String {
+        "Replaced \(spoken(replaced)) with \(spoken(length)) of new recording, which is selected. \(nowLong(duration))"
+    }
+
+    /// Said as a take is inserted at the cursor.
+    static func recordingInserted(_ length: TimeInterval, now duration: TimeInterval) -> String {
+        "Inserted \(spoken(length)) of new recording, which is selected. \(nowLong(duration))"
+    }
+
+    // MARK: - Apply Filter
+
+    /// Apply Filter's sheet title.
+    static let filterTitle = "Apply Filter"
+    /// The preset pop-up's label.
+    static let presetLabel = "Filter"
+    /// The label of the line showing a preset's chain.
+    static let chainLabel = "Chain"
+    /// The label of the choice of what to filter.
+    static let applyToLabel = "Apply to"
+    /// The button that plays the processed sound.
+    static let previewButton = "Preview"
+    /// The button that stops a preview.
+    static let stopPreviewButton = "Stop Preview"
+    /// The button that applies the filter.
+    static let applyButton = "Apply"
+    /// Shown when there are no presets.
+    static let noPresets = "There are no filter presets. Add some in Storage settings, under Audio Editing."
+
+    /// How the choice of what to filter names `target`.
+    static func targetTitle(_ target: AudioEditorFilterTarget) -> String {
+        switch target {
+        case .selection: return "Selection"
+        case .wholeFile: return "Whole File"
+        }
+    }
+
+    /// Said as a preview begins.
+    static func previewingFilter(_ name: String) -> String {
+        "Previewing \(name)."
+    }
+
+    /// Said when there is nothing after the cursor to preview.
+    static let nothingToPreview = "There's no audio after the cursor to preview."
+
+    /// Said as a filter begins.
+    static func applyingFilter(_ name: String) -> String {
+        "Applying \(name)."
+    }
+
+    /// Said as a filter has been applied, to a selection `length` seconds
+    /// long, or to the whole file for nil.
+    static func appliedFilter(_ name: String, to length: TimeInterval?, now duration: TimeInterval) -> String {
+        let what = length.map { spoken($0) } ?? "all of the audio"
+        return "Applied \(name) to \(what). \(nowLong(duration))"
+    }
+
     // MARK: - The Commands
 
     /// The names of the editor's groups of buttons, as headings.
     static let listenHeading = "Listen and Move"
     /// The heading of the selection's and the markers' buttons.
     static let selectHeading = "Select and Mark"
+    /// The heading of the editing buttons.
+    static let editHeading = "Edit"
 
     /// What `action`'s button does, as its hint says, before its shortcut;
     /// empty for an action that isn't the editor's.
@@ -406,7 +652,20 @@ enum AudioEditorWording {
         case .editorSpeakSelection: return "Says where the selection starts and ends, and how long it is."
         case .editorPlaySelection: return "Plays the selection, and stops at its end."
         case .editorAddMarker: return "Drops a marker at the cursor, even while the audio plays."
-        case .editorShowMarkers: return "Lists the markers and the pauses, to go to, name, select, or delete them."
+        case .editorShowMarkers:
+            return "Lists the markers, the chapter markers, and the pauses, to go to, name, select, or delete them."
+        case .editorUndo: return "Undoes the newest edit."
+        case .editorRedo: return "Redoes the edit undone last."
+        case .editorCut: return "Cuts the selection out, and keeps it for Paste."
+        case .editorCopy: return "Copies the selection for Paste."
+        case .editorPaste:
+            return "Pastes the audio cut or copied at the cursor, or over the selection. Right after a cut, it moves the audio cut."
+        case .editorTrimToSelection: return "Keeps only the selection, removing the audio before and after it."
+        case .editorInsertSilence: return "Inserts a silence of a length you type at the cursor."
+        case .editorInsertChapter: return "Sets a chapter marker at the cursor, with a title you type."
+        case .editorApplyFilter: return "Runs a filter preset over the selection or the whole file, with a preview first."
+        case .editorPunchIn:
+            return "Records from the microphone over the selection, or at the cursor, after a beep. Again, or Stop, ends it."
         default: return ""
         }
     }

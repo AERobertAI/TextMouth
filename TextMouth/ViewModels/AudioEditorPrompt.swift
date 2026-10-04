@@ -5,30 +5,41 @@ import Foundation
 enum AudioEditorSheet: Identifiable, Equatable {
     /// A question with one text field.
     case prompt(AudioEditorPrompt)
-    /// The list of markers and pauses, each with its commands.
+    /// The list of markers, chapter markers, and pauses, each with its
+    /// commands.
     case markers
+    /// Apply Filter: the presets, what to apply one to, Preview, and Apply.
+    case filter
 
     /// Tells sheets apart.
     var id: String {
         switch self {
         case .prompt(let prompt): return "prompt-\(prompt.id)"
         case .markers: return "markers"
+        case .filter: return "filter"
         }
     }
 }
 
 /// A question the audio editor asks in a sheet with one text field (FR04):
-/// a time to go to. The sheet shows the question's title, labels its field,
-/// explains what to type, and says what's wrong with an answer without
-/// closing, so the answer can be corrected where it was typed.
+/// a time to go to, a length of silence, or a chapter marker's title. The
+/// sheet shows the question's title, labels its field, explains what to
+/// type, and says what's wrong with an answer without closing, so the
+/// answer can be corrected where it was typed.
 enum AudioEditorPrompt: Identifiable, Equatable {
     /// Go to Time: where to move the cursor.
     case goToTime
+    /// Insert Silence: how long a silence to insert at the cursor.
+    case insertSilence
+    /// Insert Chapter Marker: the title of a marker at the cursor.
+    case insertChapter
 
     /// Tells sheets apart.
     var id: String {
         switch self {
         case .goToTime: return "goToTime"
+        case .insertSilence: return "insertSilence"
+        case .insertChapter: return "insertChapter"
         }
     }
 
@@ -36,6 +47,8 @@ enum AudioEditorPrompt: Identifiable, Equatable {
     var title: String {
         switch self {
         case .goToTime: return AudioEditorWording.goToTimeTitle
+        case .insertSilence: return AudioEditorWording.insertSilenceTitle
+        case .insertChapter: return AudioEditorWording.insertChapterTitle
         }
     }
 
@@ -43,6 +56,8 @@ enum AudioEditorPrompt: Identifiable, Equatable {
     var fieldLabel: String {
         switch self {
         case .goToTime: return AudioEditorWording.timeFieldLabel
+        case .insertSilence: return AudioEditorWording.lengthFieldLabel
+        case .insertChapter: return AudioEditorWording.titleFieldLabel
         }
     }
 
@@ -50,6 +65,8 @@ enum AudioEditorPrompt: Identifiable, Equatable {
     var explanation: String {
         switch self {
         case .goToTime: return AudioEditorTimeEntry.howToType
+        case .insertSilence: return AudioEditorWording.silenceExplanation
+        case .insertChapter: return AudioEditorWording.chapterExplanation
         }
     }
 
@@ -57,6 +74,7 @@ enum AudioEditorPrompt: Identifiable, Equatable {
     var actionTitle: String {
         switch self {
         case .goToTime: return AudioEditorWording.goButton
+        case .insertSilence, .insertChapter: return AudioEditorWording.insertButton
         }
     }
 }

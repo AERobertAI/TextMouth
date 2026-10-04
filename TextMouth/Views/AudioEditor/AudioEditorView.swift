@@ -23,6 +23,7 @@ struct AudioEditorView: View {
                 ForEach(Self.groups) { group in
                     AudioEditorCommandGroup(heading: group.heading, actions: group.actions, model: model)
                 }
+                microphonePicker
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -39,6 +40,8 @@ struct AudioEditorView: View {
                 )
             case .markers:
                 AudioEditorMarkersSheet(model: model)
+            case .filter:
+                AudioEditorFilterSheet(model: model)
             }
         }
     }
@@ -59,9 +62,36 @@ struct AudioEditorView: View {
             .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
             .editorPlaySelection, .editorAddMarker, .editorShowMarkers,
         ]),
+        AudioEditorCommandList(heading: AudioEditorWording.editHeading, actions: [
+            .editorUndo, .editorRedo, .editorCut, .editorCopy, .editorPaste, .editorTrimToSelection,
+            .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn,
+        ]),
     ]
 
     // MARK: - Pieces
+
+    /// The microphone Punch In records from: the microphones connected, the
+    /// one in use chosen, remembered as the Record window remembers it. It
+    /// can't change while a punch-in records.
+    private var microphonePicker: some View {
+        Picker(AudioEditorWording.microphoneLabel, selection: Binding(
+            get: { model.microphoneID },
+            set: { model.chooseMicrophone($0) }
+        )) {
+            if model.microphones.isEmpty {
+                Text(AudioEditorWording.noMicrophoneItem).tag("")
+            }
+            ForEach(model.microphones) { device in
+                Text(device.name).tag(device.id)
+            }
+        }
+        .pickerStyle(.menu)
+        .frame(maxWidth: 420)
+        .disabled(model.microphones.isEmpty || model.punchIn != nil)
+        .accessibilityLabel(AudioEditorWording.microphoneLabel)
+        .accessibilityHint(AudioEditorWording.microphoneHint)
+        .help(AudioEditorWording.microphoneHint)
+    }
 
     /// The book's title as the window's heading, and the track's name in a
     /// book of several.
