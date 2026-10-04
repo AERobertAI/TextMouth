@@ -324,6 +324,10 @@ final class ConfigService: ObservableObject {
         /// "machine", in this Mac's ~/Library/Logs/TextMouth. Empty keeps
         /// the current choice.
         var logLocation: String = ""
+        /// The language transcription uses (`TranscriptionLanguage`), as a
+        /// locale identifier such as "en-US" or "en-GB". Empty keeps the
+        /// current choice, as does an identifier that cannot be one.
+        var transcriptionLocale: String = ""
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -405,6 +409,11 @@ final class ConfigService: ObservableObject {
             repeatedSymbolSet = fields.optionalCharacterSet(.repeatedSymbolSet, rule: SettingsPolicy.repeatedSymbolSet)
             keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
             logLocation = fields.rawChoice(.logLocation, rule: SettingsPolicy.logLocation)
+            // An identifier that cannot be one is repaired to empty, and
+            // logged, so it leaves the current language alone.
+            transcriptionLocale = fields.value(.transcriptionLocale, default: fallback.transcriptionLocale) {
+                TranscriptionLanguage.validated($0) ?? ""
+            }
         }
 
         init() {}
@@ -465,6 +474,9 @@ final class ConfigService: ObservableObject {
                 // Storage: where the logs are written, which the log writer
                 // keeps. The tab's other choices config.json alone holds.
                 mirrored += sameNames(["logLocation"])
+                // Transcription: the language it uses, which
+                // TranscriptionLanguage keeps (FR05).
+                mirrored += sameNames(["transcriptionLocale"])
                 return mirrored
             }()
 

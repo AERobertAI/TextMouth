@@ -9,6 +9,13 @@ enum TranscriptFixtures {
     /// so a transcript read back equals the one written.
     static let date = Date(timeIntervalSince1970: 1_790_000_000)
 
+    /// A transcription language other than the one this Mac's region makes
+    /// the default (`TranscriptionLanguage.defaultIdentifier`), so a test
+    /// that sets it always changes the setting, wherever it runs.
+    static var languageOtherThanTheDefault: String {
+        TranscriptionLanguage.defaultIdentifier == "en-NZ" ? "en-IE" : "en-NZ"
+    }
+
     /// A sentence of `text` spoken from `start` to `end` milliseconds into
     /// its file: one word per run of non-space characters, each lasting an
     /// equal share of the sentence and starting where the one before it

@@ -766,17 +766,19 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Preferences other services keep
     //
     // The sound effects service, the substitution service, the shortcut
-    // manager, and the log writer keep their preferences in the same store as
-    // this model, and follow them there. The mirror reads and writes them
-    // there through each service's own definitions: a value applied from
-    // config.json reaches its service at once, and a change made through a
-    // service's controls is saved to config.json by the observer below.
+    // manager, the log writer, and transcription keep their preferences in
+    // the same store as this model, and follow them there. The mirror reads
+    // and writes them there through each service's own definitions: a value
+    // applied from config.json reaches its service at once, and a change made
+    // through a service's controls is saved to config.json by the observer
+    // below.
 
     /// The store keys of the preferences other services keep.
     static var servicePreferenceKeys: [String] {
         SoundEffectService.preferenceKeys
             + TextSubstitutionService.preferenceKeys
             + [KeyboardShortcutManager.bindingsPreference.key, LogLocation.preference.key]
+            + [TranscriptionLanguage.preference.key]
     }
 
     /// Where the diagnostic logs are written (Storage settings' Logs group).
@@ -824,6 +826,7 @@ final class SettingsViewModel: ObservableObject {
             KeyboardShortcutManager.bindingsPreference.read(from: preferences)
         )
         config.logLocation = LogLocation.preference.read(from: preferences).rawValue
+        config.transcriptionLocale = TranscriptionLanguage.preference.read(from: preferences)
     }
 
     /// Writes the values config.json asks for into the store, where their
@@ -858,6 +861,8 @@ final class SettingsViewModel: ObservableObject {
         )
         // An empty or unsupported choice leaves the current one alone.
         adopt(SettingsPolicy.logLocation.requestedValue(fromConfig: config.logLocation), into: LogLocation.preference)
+        // So does an empty language, or one that cannot be an identifier.
+        adopt(TranscriptionLanguage.validated(config.transcriptionLocale), into: TranscriptionLanguage.preference)
     }
 
     /// Writes a value config.json asks for into the store when it differs
