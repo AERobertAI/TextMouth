@@ -76,33 +76,63 @@ enum TranscriptTextBuilder {
         }
     }
 
+    /// Where a sentence is in its transcript: its file's place among the
+    /// transcript's files, and its own among the file's sentences.
+    struct SentenceAddress: Hashable, Comparable, Sendable {
+        var file: Int
+        var sentence: Int
+
+        static func < (lhs: SentenceAddress, rhs: SentenceAddress) -> Bool {
+            (lhs.file, lhs.sentence) < (rhs.file, rhs.sentence)
+        }
+    }
+
+    /// One sentence of a transcript laid over a chapter, with where it is
+    /// in the transcript, so an edit of the chapter's text can be taken back
+    /// into the transcript (`TranscriptEditing`).
+    struct PlacedSentence: Equatable, Sendable {
+        /// Where the sentence is in the transcript.
+        var address: SentenceAddress
+        /// The sentence as the chapter has it.
+        var sentence: ChapterSentence
+    }
+
     /// The transcript of each chapter of `audio`, the book's audio index,
     /// in order: each chapter's title and the sentences of `transcript` it
     /// plays. `bookFileName` names a single-file book's one file, as its
     /// transcript does.
     static func chapters(of transcript: Transcript, over audio: BookContentIndex, bookFileName: String) -> [ChapterTranscript] {
+        let placed = placedSentences(of: transcript, over: audio, bookFileName: bookFileName)
+        return zip(audio.chapters, placed).map { chapter, sentences in
+            ChapterTranscript(title: chapter.title, sentences: sentences.map(\.sentence))
+        }
+    }
+
+    /// The sentences of `transcript` each chapter of `audio` plays, in the
+    /// order the chapter plays them, each with where it is in the
+    /// transcript; sentences heard at the same moment keep the transcript's
+    /// order. A sentence no chapter plays is left out.
+    static func placedSentences(of transcript: Transcript, over audio: BookContentIndex, bookFileName: String) -> [[PlacedSentence]] {
         let stretchesByFile = Dictionary(grouping: stretches(of: audio, bookFileName: bookFileName), by: \.file)
-        var placed: [[(order: Int, sentence: ChapterSentence)]] = Array(repeating: [], count: audio.chapters.count)
-        var order = 0
-        for file in transcript.files {
+        var placed: [[PlacedSentence]] = Array(repeating: [], count: audio.chapters.count)
+        for (fileNumber, file) in transcript.files.enumerated() {
             let stretches = stretchesByFile[file.path] ?? []
-            for sentence in file.sentences {
-                order += 1
+            for (sentenceNumber, sentence) in file.sentences.enumerated() {
                 guard let stretch = bestStretch(for: sentence, among: stretches) else { continue }
-                placed[stretch.chapter].append((order, ChapterSentence(
-                    text: sentence.text,
-                    startMilliseconds: stretch.chapterTime(of: sentence.startMilliseconds),
-                    endMilliseconds: stretch.chapterTime(of: sentence.endMilliseconds)
-                )))
+                placed[stretch.chapter].append(PlacedSentence(
+                    address: SentenceAddress(file: fileNumber, sentence: sentenceNumber),
+                    sentence: ChapterSentence(
+                        text: sentence.text,
+                        startMilliseconds: stretch.chapterTime(of: sentence.startMilliseconds),
+                        endMilliseconds: stretch.chapterTime(of: sentence.endMilliseconds)
+                    )
+                ))
             }
         }
-        return zip(audio.chapters, placed).map { chapter, sentences in
-            // In the order the chapter plays them; sentences heard at the
-            // same moment keep the transcript's order.
-            let ordered = sentences.sorted {
-                ($0.sentence.startMilliseconds, $0.order) < ($1.sentence.startMilliseconds, $1.order)
+        return placed.map { sentences in
+            sentences.sorted {
+                ($0.sentence.startMilliseconds, $0.address) < ($1.sentence.startMilliseconds, $1.address)
             }
-            return ChapterTranscript(title: chapter.title, sentences: ordered.map(\.sentence))
         }
     }
 

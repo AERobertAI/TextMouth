@@ -653,8 +653,9 @@ struct LibraryBookListRow: View, Equatable {
         Button(BookExportWording.commandTitle(count: targets.count)) {
             actions.export(targets)
         }
-        // A text book's text in the user's own editor (FR05).
-        if !isMulti && BookTextEditor.canEditText(of: book) {
+        // A text book's text, or a transcribed audiobook's, in the user's
+        // own editor (FR05).
+        if !isMulti && BookTextEditor.canEditText(of: book, isTranscribed: transcriptionNote == .transcribed) {
             Button(BookTextEditWording.editTitle) {
                 actions.editText(book, false)
             }

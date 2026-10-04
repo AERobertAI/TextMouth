@@ -131,6 +131,13 @@ enum TranscriptionWording {
         "Transcribed on \(day(date)), in \(languageName). Transcribing again replaces this transcript."
     }
 
+    /// The line warning that transcribing again replaces the user's own
+    /// edits: "You edited this transcript on October 5, 2026. Transcribing
+    /// again replaces your edits."
+    static func editedTranscript(on date: Date) -> String {
+        "You edited this transcript on \(day(date)). Transcribing again replaces your edits."
+    }
+
     /// The line saying another book is being transcribed, which keeps
     /// Transcribe unavailable until it finishes.
     static func busy(bookTitle: String) -> String {

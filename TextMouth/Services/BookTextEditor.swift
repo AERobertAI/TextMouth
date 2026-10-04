@@ -16,6 +16,12 @@ import UniformTypeIdentifiers
 /// library row its new counts, refreshes the book's open readers near
 /// where they were, and announces "Text updated" (at once while TextMouth
 /// is active, or when it becomes active).
+///
+/// A transcribed audiobook's text is edited the same way: its content.md is
+/// its transcript's text, and an edit is taken while its transcript.json
+/// has not changed, into the transcript itself (`TranscriptStore.takeEdit`),
+/// so the text written from the transcript is the edit from then on; its
+/// open readers show the edited text as the book plays on.
 @MainActor
 final class BookTextEditor {
     /// The app's editor.
@@ -92,14 +98,15 @@ final class BookTextEditor {
 
     /// Opens `book`'s text for editing, in the default app for Markdown or,
     /// with `choosingApp`, in an app the user chooses, after explaining
-    /// what will happen the first time. A book already being edited keeps
-    /// its session, so an edit it has not taken yet is never lost. Says why
-    /// nothing opened: an audiobook, whose text is not edited here yet, a
+    /// what will happen the first time. A transcribed audiobook's text is
+    /// its transcript's, which takes the edit (FR05). A book already being
+    /// edited keeps its session, so an edit it has not taken yet is never
+    /// lost. Says why nothing opened: an audiobook without a transcript, a
     /// text that is only in the cloud (FR02) or not written yet, or an
     /// editor that could not open it. `window` is where the dialogs and
     /// announcements appear.
     func edit(_ book: Book, choosingApp: Bool, in library: LibraryViewModel, from window: NSWindow?) async {
-        guard !book.format.isAudio else {
+        guard await Self.hasText(book) else {
             announce(BookTextEditWording.noText(bookTitle: book.title), from: window)
             return
         }
@@ -134,11 +141,29 @@ final class BookTextEditor {
         }
     }
 
-    /// Whether `book`'s text can be edited here: a text book's, for now.
-    /// An audiobook's content.md, its transcript's text, is written from
-    /// its transcript, which a later task makes editable.
+    /// Whether `book`'s text can be edited here, as the app knows which
+    /// audiobooks are transcribed (`TranscribedBooks`): a text book's, or a
+    /// transcribed audiobook's transcript text (FR05).
     static func canEditText(of book: Book) -> Bool {
-        !book.format.isAudio && !book.tmbDirectoryName.isEmpty
+        canEditText(of: book, isTranscribed: TranscribedBooks.shared.contains(book.id))
+    }
+
+    /// Whether `book`'s text can be edited here, given whether it is
+    /// `isTranscribed`: a text book's, or a transcribed audiobook's, whose
+    /// content.md is its transcript's text and whose transcript takes the
+    /// edit (`TranscriptStore.takeEdit`).
+    static func canEditText(of book: Book, isTranscribed: Bool) -> Bool {
+        !book.tmbDirectoryName.isEmpty && (!book.format.isAudio || isTranscribed)
+    }
+
+    /// Whether `book` has text to edit now: a text book always, an
+    /// audiobook once its package holds a transcript, looked for off the
+    /// main thread without reading it.
+    private static func hasText(_ book: Book) async -> Bool {
+        guard book.format.isAudio else { return true }
+        guard !book.tmbDirectoryName.isEmpty else { return false }
+        let transcript = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        return await OffMainWork.run { FileManager.default.fileExists(atPath: transcript.path) }
     }
 
     // MARK: Sessions

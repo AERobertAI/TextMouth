@@ -8,9 +8,11 @@ import os
 /// with other bytes, beside a source still holding these, is an edit the
 /// user made.
 struct BookTextBaseline: Equatable, Sendable {
-    /// The book's own file, or nil when it could not be fingerprinted (it is
-    /// only in the cloud, or gone), which then counts as unchanged, as a
-    /// source that cannot be examined does for every text cache (TODO T07).
+    /// The file the text is written from (`BookTextEditSessions.sourceURL(of:)`):
+    /// a text book's own file, or a transcribed audiobook's transcript.json;
+    /// nil when it could not be fingerprinted (it is only in the cloud, or
+    /// gone), which then counts as unchanged, as a source that cannot be
+    /// examined does for every text cache (TODO T07).
     var source: FileFingerprint?
     /// content.md.
     var cache: FileFingerprint
@@ -26,26 +28,43 @@ enum BookTextEditRefusal: Equatable, Sendable {
     /// text is read from that file again, as any stale text cache is
     /// rebuilt (TODO T07).
     case sourceChanged
+    /// A transcribed audiobook's transcript changed too since the edit
+    /// began, as when it is transcribed again, so its text is written from
+    /// the new transcript again.
+    case transcriptChanged
+    /// A transcribed audiobook's edited text holds `found` chapters, where
+    /// the audiobook has `expected`: its text keeps one chapter for each of
+    /// the audio's.
+    case chaptersChanged(found: Int, expected: Int)
     /// It could not be read, or the book's record could not take it, or a
     /// rebuild found it before any check had, with why: a sentence.
     case failed(String)
 
     /// Whether the book keeps the text it had while this edit stands, and
     /// nothing rebuilds its content.md over the edit (FR05): true but for a
-    /// changed source, which the book's text is read from again once the
-    /// edit is kept beside content.md.
+    /// changed source or transcript, which the book's text is written from
+    /// again once the edit is kept beside content.md.
     var keepsEarlierText: Bool {
-        self != .sourceChanged
+        self != .sourceChanged && self != .transcriptChanged
     }
 }
 
 /// An edit taken as the book's text: committed to its record, with the
 /// text readers show.
 struct BookTextEdit: Sendable {
+    /// What readers show of an edit.
+    enum Text: Sendable {
+        /// A text book's edited text, parsed and indexed.
+        case document(DocumentContent)
+        /// A transcribed audiobook's edited transcript text (FR05), laid
+        /// over the audio it plays on.
+        case transcript(TranscriptText)
+    }
+
     /// The book as its record now records it, with the edit's analysis.
     let committed: Book
-    /// The edited text, parsed and indexed as a reader shows it.
-    let content: DocumentContent
+    /// The edited text, as a reader shows it.
+    let text: Text
 }
 
 /// What checking a book's content.md for an edit found, or what a rebuild
@@ -322,7 +341,7 @@ final class BookTextEditSessions: Sendable {
         let kept = Self.keepCopy(of: cacheURL, bytes: bytes)
         let digest = bytes.map { access.hasher.digestOfData($0) }
         let wasTaken = digest != nil && digest == session.baseline.cache.digest
-        let mayReplace = wasTaken || Self.hasChanged(session.baseline.source, at: book.bookFileURL, access: access)
+        let mayReplace = wasTaken || Self.hasChanged(session.baseline.source, at: Self.sourceURL(of: book), access: access)
         if let kept, mayReplace {
             sessions.withLock { $0[book.id]?.replacedCopy = kept }
             Self.logLine("TEXT_EDIT_KEPT", about: book, "content.md kept as \(kept.lastPathComponent) before its text was read again from the book's own file")
@@ -351,8 +370,9 @@ final class BookTextEditSessions: Sendable {
         let hasher = access.hasher
         guard let cache = fingerprint?.cache
             ?? FileStamp(of: cacheURL).map({ FileFingerprint(stamp: $0, digest: hasher.digestOfData(bytes)) }) else { return }
+        let sourceURL = Self.sourceURL(of: book)
         let source = fingerprint?.source
-            ?? (access.isInCloud(book.bookFileURL) ? nil : FileFingerprint(of: book.bookFileURL, hasher: hasher))
+            ?? (access.isInCloud(sourceURL) ? nil : FileFingerprint(of: sourceURL, hasher: hasher))
         // The session as it was, with the copy to report, once it is reset.
         let before = sessions.withLock { all -> Session? in
             guard let session = all[book.id] else { return nil }
@@ -392,16 +412,23 @@ final class BookTextEditSessions: Sendable {
 
     // MARK: The Check
 
+    /// The file `book`'s text is written from, which an edit is taken
+    /// beside only while it holds what it held: a text book's own file, or,
+    /// for a transcribed audiobook, its transcript.json (FR05).
+    static func sourceURL(of book: Book) -> URL {
+        book.format.isAudio ? TextMouthPaths.transcriptPath(in: book.tmbDirectory) : book.bookFileURL
+    }
+
     /// What `book`'s files hold now, as the baseline an edit is checked
-    /// against: content.md's fingerprint and its source's, read with
-    /// dataless files left in the cloud (FR02). A source only in the cloud,
-    /// or gone, is left unfingerprinted.
+    /// against: content.md's fingerprint and its source's
+    /// (`sourceURL(of:)`), read with dataless files left in the cloud
+    /// (FR02). A source only in the cloud, or gone, is left unfingerprinted.
     /// - Returns: The baseline, or why editing cannot begin: content.md, or
     ///   its package, is in the cloud, or content.md is missing or cannot
     ///   be read.
     static func baseline(of book: Book, access: MaintenanceFileAccess) -> Result<BookTextBaseline, BookTextEditStartFailure> {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
-        let sourceURL = book.bookFileURL
+        let sourceURL = sourceURL(of: book)
         if access.isInCloud(book.tmbDirectory) || access.isInCloud(cacheURL) {
             return .failure(.inCloud)
         }
@@ -431,6 +458,12 @@ final class BookTextEditSessions: Sendable {
     ///   index is committed to the book's record at once, its cache format
     ///   current (`LibraryPersistenceService.saveContentAnalysis`). The
     ///   reading text this Mac kept for the book is removed.
+    /// - A transcribed audiobook's edit is taken into its transcript
+    ///   instead (`TranscriptStore.takeEdit`): transcript.json takes the
+    ///   edit, so the text written from it is the edit from then on, and the
+    ///   book's audio index takes the text's layer. An edit that changes the
+    ///   number of chapters, or of an audiobook whose audio changed since it
+    ///   was transcribed, is refused as any other is.
     ///
     /// - Returns: What was found, and the baseline from now on when it
     ///   changed.
@@ -440,9 +473,9 @@ final class BookTextEditSessions: Sendable {
         access: MaintenanceFileAccess,
         readingTexts: ReadingTextCache
     ) -> (found: BookTextEditCheck, baseline: BookTextBaseline?) {
-        guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return (.missing, nil) }
+        guard !book.tmbDirectoryName.isEmpty else { return (.missing, nil) }
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
-        let sourceURL = book.bookFileURL
+        let sourceURL = sourceURL(of: book)
         if access.isInCloud(book.tmbDirectory) || access.isInCloud(cacheURL) {
             return (.inCloud, nil)
         }
@@ -469,30 +502,40 @@ final class BookTextEditSessions: Sendable {
             // Rewritten with the same bytes: nothing was edited.
             return (.unchanged, BookTextBaseline(source: baseline.source, cache: cache))
         }
+        /// Refuses the edit for `refusal`, keeping it beside content.md
+        /// first, with one line tagged `tag` saying `why`.
+        func refuse(_ refusal: BookTextEditRefusal, tag: String, _ why: String) -> (found: BookTextEditCheck, baseline: BookTextBaseline?) {
+            let kept = keepCopy(of: cacheURL, bytes: bytes)
+            logLine(tag, about: book, "\(why)\(keptNote(kept))")
+            return (.refused(refusal, digest: digest, keptCopy: kept), nil)
+        }
         let source: FileFingerprint?
         switch checkSource(baseline.source, at: sourceURL, access: access) {
-        case .changed:
-            let kept = keepCopy(of: cacheURL, bytes: bytes)
-            logLine(
-                "TEXT_EDIT_SOURCE_CHANGED",
-                about: book,
-                "the book's own file changed too; its text will be read from that file again\(keptNote(kept))"
+        case .changed where book.format.isAudio:
+            return refuse(
+                .transcriptChanged,
+                tag: "TEXT_EDIT_SOURCE_CHANGED",
+                "the book's transcript changed too; its text will be written from that transcript again"
             )
-            return (.refused(.sourceChanged, digest: digest, keptCopy: kept), nil)
+        case .changed:
+            return refuse(
+                .sourceChanged,
+                tag: "TEXT_EDIT_SOURCE_CHANGED",
+                "the book's own file changed too; its text will be read from that file again"
+            )
         case .unchanged(let fingerprint):
             source = fingerprint
         }
 
         guard let text = try? MarkdownCacheService.cacheText(from: bytes, at: cacheURL) else {
-            let kept = keepCopy(of: cacheURL, bytes: bytes)
-            logLine("TEXT_EDIT_REFUSED", about: book, "content.md is not UTF-8 text\(keptNote(kept))")
-            return (.refused(.notText, digest: digest, keptCopy: kept), nil)
+            return refuse(.notText, tag: "TEXT_EDIT_REFUSED", "content.md is not UTF-8 text")
         }
         let parsed = MarkdownCacheService.parseMultiChapterMarkdown(text, bookTitle: book.title, bookAuthor: book.author)
         guard parsed.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) else {
-            let kept = keepCopy(of: cacheURL, bytes: bytes)
-            logLine("TEXT_EDIT_REFUSED", about: book, "content.md holds no chapter with anything in it\(keptNote(kept))")
-            return (.refused(.noChapters, digest: digest, keptCopy: kept), nil)
+            return refuse(.noChapters, tag: "TEXT_EDIT_REFUSED", "content.md holds no chapter with anything in it")
+        }
+        if book.format.isAudio {
+            return takeTranscriptEdit(of: book, parsed: parsed, markdown: text, cache: cache, readingTexts: readingTexts, access: access, refuse: refuse)
         }
 
         var index = parsed.contentIndex.replacingFormat(book.format)
@@ -505,16 +548,16 @@ final class BookTextEditSessions: Sendable {
                 cacheFormatVersion: MarkdownCacheService.currentCacheVersion
             )
         } catch {
-            let kept = keepCopy(of: cacheURL, bytes: bytes)
-            logLine("TEXT_EDIT_FAILED", about: book, "\(error.localizedDescription)\(keptNote(kept))")
-            return (.refused(.failed(error.localizedDescription), digest: digest, keptCopy: kept), nil)
+            return refuse(.failed(error.localizedDescription), tag: "TEXT_EDIT_FAILED", error.localizedDescription)
         }
         guard let committed else {
             // The record could not take it now (it is only in the cloud, or
             // the book moved meanwhile); the next check tries again.
-            let kept = keepCopy(of: cacheURL, bytes: bytes)
-            logLine("TEXT_EDIT_FAILED", about: book, "the book's record could not take the edit now\(keptNote(kept))")
-            return (.refused(.failed(BookTextEditWording.recordUnavailable), digest: digest, keptCopy: kept), nil)
+            return refuse(
+                .failed(BookTextEditWording.recordUnavailable),
+                tag: "TEXT_EDIT_FAILED",
+                "the book's record could not take the edit now"
+            )
         }
         // The kept reading text was read from the content.md just replaced.
         readingTexts.remove(bookID: book.id)
@@ -524,7 +567,67 @@ final class BookTextEditSessions: Sendable {
             "\(index.chapters.count) chapter(s), \(index.totalWordCount) word(s), \(index.allHeadings.count) heading(s)"
         )
         let content = DocumentContent(title: parsed.title, author: parsed.author, chapters: parsed.chapters, contentIndex: index)
-        return (.adopted(BookTextEdit(committed: committed, content: content)), BookTextBaseline(source: source, cache: cache))
+        return (.adopted(BookTextEdit(committed: committed, text: .document(content))), BookTextBaseline(source: source, cache: cache))
+    }
+
+    /// Takes the edit `parsed`, content.md as the user saved it, holding
+    /// `markdown`, fingerprinted as `cache`, into the transcript of `book`,
+    /// a transcribed audiobook (FR05, `TranscriptStore.takeEdit`), or
+    /// refuses it through `refuse`, which keeps it beside content.md. The
+    /// baseline from then on is the transcript.json the edit wrote, beside
+    /// the user's content.md.
+    private static func takeTranscriptEdit(
+        of book: Book,
+        parsed: DocumentContent,
+        markdown: String,
+        cache: FileFingerprint,
+        readingTexts: ReadingTextCache,
+        access: MaintenanceFileAccess,
+        refuse: (BookTextEditRefusal, String, String) -> (found: BookTextEditCheck, baseline: BookTextBaseline?)
+    ) -> (found: BookTextEditCheck, baseline: BookTextBaseline?) {
+        let taken: TranscriptStore.TakenEdit?
+        do {
+            taken = try TranscriptStore.takeEdit(
+                parsed.chapters,
+                markdown: markdown,
+                cache: cache,
+                of: book,
+                isDataless: access.isInCloud,
+                hasher: access.hasher
+            )
+        } catch TranscriptEditError.chaptersChanged(let found, let expected) {
+            return refuse(
+                .chaptersChanged(found: found, expected: expected),
+                "TEXT_EDIT_REFUSED",
+                "the edited transcript holds \(found) chapter(s), where the audiobook has \(expected)"
+            )
+        } catch TranscriptEditError.audioChanged(let reason) {
+            return refuse(
+                .failed(BookTextEditWording.transcriptStale),
+                "TEXT_EDIT_REFUSED",
+                "the transcript no longer describes the audio: \(reason)"
+            )
+        } catch TranscriptEditError.transcriptUnavailable {
+            return refuse(.failed(BookTextEditWording.transcriptUnavailable), "TEXT_EDIT_FAILED", "transcript.json could not be read")
+        } catch TranscriptEditError.unindexable(let failure) {
+            return refuse(.failed(BookTextEditWording.transcriptUnindexable), "TEXT_EDIT_FAILED", "the edit could not be indexed: \(failure)")
+        } catch {
+            return refuse(.failed(error.localizedDescription), "TEXT_EDIT_FAILED", error.localizedDescription)
+        }
+        guard let taken else {
+            // The record could not take it now (it is only in the cloud, or
+            // the book moved meanwhile); the next check tries again.
+            return refuse(.failed(BookTextEditWording.recordUnavailable), "TEXT_EDIT_FAILED", "the book's record could not take the edit now")
+        }
+        // The kept reading text was read from the content.md just replaced.
+        readingTexts.remove(bookID: book.id)
+        let chapterCount = taken.text.chapters.count
+        let wordCount = taken.text.index.totalWordCount
+        logLine("TEXT_EDIT_ADOPTED", about: book, "the transcript took it: \(chapterCount) chapter(s), \(wordCount) word(s)")
+        return (
+            .adopted(BookTextEdit(committed: taken.committed, text: .transcript(taken.text))),
+            BookTextBaseline(source: taken.source, cache: cache)
+        )
     }
 
     /// What checking a book's source against its baseline found.

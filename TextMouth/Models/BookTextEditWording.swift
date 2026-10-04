@@ -67,9 +67,21 @@ enum BookTextEditWording {
         case .sourceChanged:
             return "Text not updated: the original file of \(bookTitle) changed too, "
                 + "so TextMouth reads the book's text from that file again the next time the book opens."
+        case .transcriptChanged:
+            return "Text not updated: the transcript of \(bookTitle) changed too, as when it is transcribed again, "
+                + "so TextMouth writes the book's text from that transcript again the next time the book opens."
+        case .chaptersChanged(let found, let expected):
+            return "Text not updated: the edited transcript of \(bookTitle) has \(chapters(found)), "
+                + "but the audiobook has \(chapters(expected)). Keep every line beginning with <!-- chapter: "
+                + "and save again; until then, the book keeps the text it had."
         case .failed(let reason):
             return "Text not updated: \(reason)"
         }
+    }
+
+    /// `count` chapters, in words: "1 chapter", "3 chapters".
+    private static func chapters(_ count: Int) -> String {
+        CountWording.phrase(count, singular: "chapter", plural: "chapters")
     }
 
     /// Where the edited text was kept, beside content.md: "Your edited text
@@ -99,6 +111,11 @@ enum BookTextEditWording {
                 + "and the book opens."
         case .sourceChanged:
             why = "the book's own file changed too. Open the book again to read its text from that file."
+        case .transcriptChanged:
+            why = "the book's transcript changed too. Open the book again to read its text from that transcript."
+        case .chaptersChanged(let found, let expected):
+            why = "it has \(chapters(found)), where the audiobook has \(chapters(expected)). "
+                + "Keep every line beginning with <!-- chapter: and save again, and the text shows."
         case .failed(let reason):
             why = reason
         }
@@ -144,10 +161,24 @@ enum BookTextEditWording {
         }
     }
 
-    /// An audiobook has no text to edit, for now.
+    /// An audiobook without a transcript has no text to edit (FR05).
     static func noText(bookTitle: String) -> String {
-        "\(bookTitle) is an audiobook, which has no text to edit."
+        "\(bookTitle) is an audiobook without a transcript, so it has no text to edit. "
+            + "Transcribe it first, with Transcribe Audio."
     }
+
+    /// Why a transcribed audiobook's edit was not taken while its audio is
+    /// not the audio transcribed any more (FR05).
+    static let transcriptStale = "the audiobook's audio changed since it was transcribed, "
+        + "so its transcript no longer fits it. Transcribe it again, then edit the new transcript."
+
+    /// Why a transcribed audiobook's edit was not taken while its
+    /// transcript cannot be read (FR05).
+    static let transcriptUnavailable = "the audiobook's transcript can't be read now, so the edit can't be taken into it."
+
+    /// Why a transcribed audiobook's edit could not be laid over its audio
+    /// (FR05).
+    static let transcriptUnindexable = "the edited transcript can't be laid over the audiobook's audio."
 
     /// The editor could not be opened, with why.
     static func openFailed(bookTitle: String, reason: String) -> String {

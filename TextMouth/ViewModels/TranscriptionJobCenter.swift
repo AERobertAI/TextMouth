@@ -99,6 +99,9 @@ final class TranscriptionJobCenter: ObservableObject {
     private let install: @Sendable (Transcript, Book) throws -> TranscriptInstallation
     /// Which books the library rows call transcribed.
     private let transcribedBooks: TranscribedBooks
+    /// Ends the Edit Text session of a book, whose edits of the transcript
+    /// being replaced are no longer taken (`BookTextEditor.end(_:)`).
+    private let endTextEdit: @MainActor (UUID) -> Void
     /// The task running the transcription under way.
     private var task: Task<Void, Never>?
     /// The window that started the transcription under way, where what
@@ -109,19 +112,22 @@ final class TranscriptionJobCenter: ObservableObject {
     /// When the transcription's progress was last shown.
     private var progressShownAt: ContinuousClock.Instant?
 
-    /// A center transcribing with `service`, saving with `install`, and
-    /// recording transcribed books in `transcribedBooks`: the app's own
-    /// unless a test passes others.
+    /// A center transcribing with `service`, saving with `install`,
+    /// recording transcribed books in `transcribedBooks`, and ending a
+    /// replaced transcript's Edit Text session with `endTextEdit`: the
+    /// app's own unless a test passes others.
     init(
         service: TranscriptionService = .shared,
         install: @escaping @Sendable (Transcript, Book) throws -> TranscriptInstallation = {
             try TranscriptStore.install($0, for: $1)
         },
-        transcribedBooks: TranscribedBooks = .shared
+        transcribedBooks: TranscribedBooks = .shared,
+        endTextEdit: @escaping @MainActor (UUID) -> Void = { BookTextEditor.shared.end($0) }
     ) {
         self.service = service
         self.install = install
         self.transcribedBooks = transcribedBooks
+        self.endTextEdit = endTextEdit
     }
 
     /// Starts transcribing `book` in `language`, a locale identifier the
@@ -161,6 +167,11 @@ final class TranscriptionJobCenter: ObservableObject {
                 // takes minutes, and the book may have moved meanwhile.
                 guard let current = library?.bookByID(book.id) else { throw TranscriptionError.bookRemoved }
                 guard !Task.isCancelled else { throw TranscriptionError.cancelled }
+                // The new transcript replaces the one the user may be
+                // editing, as the sheet said it would: that edit is no
+                // longer taken, and a text it held but no check took is
+                // kept beside content.md as it is replaced.
+                self?.endTextEdit(book.id)
                 let installation = try await OffMainWork.runThrowing { try install(transcript, current) }
                 self?.saved(installation, of: book.id, in: library)
                 ending = .finished(wordCount: transcript.wordCount, seconds: Self.seconds(clock.now - started))

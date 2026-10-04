@@ -130,6 +130,7 @@ extension XCTestCase {
             readTranscript: { _ in transcript },
             center: center ?? makeScriptedCenter(script: [:]),
             transcribedBooks: transcribedBooks,
+            endTextEdit: { _ in },
             announce: { message, window in announcements.record(message, window) }
         )
     }
@@ -138,20 +139,23 @@ extension XCTestCase {
     /// sentences by the file's name, saying each after `pause`, or refusing
     /// with `refusal`: it never reaches the system's recognizer. It records
     /// transcribed books in `transcribedBooks`, a store of the test's own
-    /// unless given, never the app's.
+    /// unless given, never the app's, and ends a replaced transcript's Edit
+    /// Text session with `endTextEdit`, which ends none unless given.
     @MainActor
     func makeScriptedCenter(
         script: [String: [TranscriptSentence]],
         pause: Duration = .zero,
         refusal: TranscriptionError? = nil,
-        transcribedBooks: TranscribedBooks = TranscribedBooks()
+        transcribedBooks: TranscribedBooks = TranscribedBooks(),
+        endTextEdit: @escaping @MainActor (UUID) -> Void = { _ in }
     ) -> TranscriptionJobCenter {
         TranscriptionJobCenter(
             service: TranscriptionService(
                 engine: ScriptedTranscriptionEngine(sentences: script, pause: pause, refusal: refusal),
                 languagesToTry: { ["en-US"] }
             ),
-            transcribedBooks: transcribedBooks
+            transcribedBooks: transcribedBooks,
+            endTextEdit: endTextEdit
         )
     }
 

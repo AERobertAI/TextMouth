@@ -91,8 +91,9 @@ final class TranscriptionPresenter: ObservableObject {
 
     /// Asks to delete `book`'s transcript, in `library`, announcing from
     /// `window`: a confirmation naming the book, and saying when the user's
-    /// edits go too. While the same book is being transcribed, a notice
-    /// says to wait instead.
+    /// edits go too, as the transcript, read off the main thread, records.
+    /// While the same book is being transcribed, a notice says to wait
+    /// instead.
     func confirmDeletion(of book: Book, library: LibraryViewModel, window: NSWindow?) async {
         guard deletion == nil else { return }
         let services = services()
@@ -103,9 +104,16 @@ final class TranscriptionPresenter: ObservableObject {
             )
             return
         }
+        var isEdited = false
+        if case .found(let transcript) = await services.readTranscript(book) {
+            isEdited = transcript.editedAt != nil
+        }
+        // Asked once, even when the command came twice while the
+        // transcript was read.
+        guard deletion == nil else { return }
         deletionLibrary = library
         deletionWindow = window
-        deletion = TranscriptDeletionRequest(book: book, isEdited: false)
+        deletion = TranscriptDeletionRequest(book: book, isEdited: isEdited)
     }
 
     /// Deletes the transcript the confirmation named, once the user has
@@ -120,6 +128,9 @@ final class TranscriptionPresenter: ObservableObject {
             deletion = nil
         }
         let book = library.bookByID(request.book.id) ?? request.book
+        // The transcript's text goes with it: an edit of it is no longer
+        // taken.
+        services.endTextEdit(book.id)
         do {
             _ = try await OffMainWork.runThrowing { try TranscriptStore.delete(for: book) }
         } catch {

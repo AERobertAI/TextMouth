@@ -945,16 +945,18 @@ final class ReaderViewModel: ObservableObject {
         // a stale cache and be rebuilt from the source (TODO T07). An edit
         // taken now is read by its analysis, its cache format current; an
         // edit that cannot be taken stops the read, which says why and where
-        // the edit was kept, rather than rebuild the text over it.
-        if !format.isAudio {
-            switch BookTextEditSessions.shared.settlePendingEdit(of: book) {
-            case .readTaken(let committed):
-                book.contentAnalysisFields = committed.contentAnalysisFields
-            case .hold(let pending):
-                throw pending
-            case .readAsUsual:
-                break
-            }
+        // the edit was kept, rather than rebuild the text over it. An
+        // audiobook's transcript text is edited the same way, but its audio
+        // still plays while such an edit stands: only its text is left out.
+        var holdsTranscriptText = false
+        switch BookTextEditSessions.shared.settlePendingEdit(of: book) {
+        case .readTaken(let committed):
+            book.contentAnalysisFields = committed.contentAnalysisFields
+        case .hold(let pending):
+            guard format.isAudio else { throw pending }
+            holdsTranscriptText = true
+        case .readAsUsual:
+            break
         }
         let cacheOutdated = !format.isAudio
             && MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
@@ -970,7 +972,7 @@ final class ReaderViewModel: ObservableObject {
         var content = analysis.content
         var index = analysis.index
         var transcriptIndexChanged = false
-        if format.isAudio {
+        if format.isAudio && !holdsTranscriptText {
             let transcript = TranscriptTextLoader.load(for: book, audioIndex: analysis.index, readingTexts: readingTexts)
             content.transcript = transcript.text
             index = transcript.index

@@ -38,6 +38,13 @@ struct Transcript: Codable, Equatable, Sendable {
     var createdAt: Date
     /// Each of the book's audio files, in the order the book plays them.
     var files: [TranscriptFile]
+    /// When the user last edited the transcript's text in their own editor
+    /// (Edit Text, `TranscriptEditing`), in whole seconds; nil for a
+    /// transcript as the recognizer made it. transcript.json leaves it out
+    /// until then, so an earlier TextMouth reads an edited transcript as
+    /// any other. Transcribing again replaces an edited transcript only
+    /// after the Transcribe Audio sheet has said so.
+    var editedAt: Date? = nil
 
     /// What a book's record notes about this transcript (`BookState.transcript`).
     var note: TranscriptNote {

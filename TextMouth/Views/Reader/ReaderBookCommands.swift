@@ -25,8 +25,8 @@ struct ReaderBookCommandsSupport: ViewModifier {
     @State private var exportModel: BookExportModel?
     /// The reader's transcription dialogs (FR05).
     @StateObject private var transcription = TranscriptionPresenter()
-    /// Which audiobooks are transcribed (FR05), observed so Delete
-    /// Transcript… follows the reader's book.
+    /// Which audiobooks are transcribed (FR05), observed so Edit Text and
+    /// Delete Transcript… follow the reader's book.
     @ObservedObject private var transcribedBooks = TranscribedBooks.shared
 
     init(viewModel: ReaderViewModel) {
@@ -67,7 +67,10 @@ struct ReaderBookCommandsSupport: ViewModifier {
             // even while none of its views has keyboard focus, as when
             // VoiceOver reads its text: a focused value would leave the Book
             // menu's commands unavailable then.
-            .focusedSceneValue(\.canEditBookText, BookTextEditor.canEditText(of: viewModel.book))
+            .focusedSceneValue(
+                \.canEditBookText,
+                BookTextEditor.canEditText(of: viewModel.book, isTranscribed: transcribedBooks.contains(viewModel.book.id))
+            )
             .focusedSceneValue(\.canTranscribeBookAudio, LibraryTranscriptionCommand.isTranscribable(viewModel.book))
             .focusedSceneValue(
                 \.canDeleteBookTranscript,

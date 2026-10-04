@@ -52,6 +52,8 @@ struct TranscriptionSheetServices {
     var center: TranscriptionJobCenter
     /// Which books the library rows call transcribed.
     var transcribedBooks: TranscribedBooks
+    /// Ends the Edit Text session of a book whose transcript goes.
+    var endTextEdit: @MainActor (UUID) -> Void
     /// Asks VoiceOver to speak a message from a window.
     var announce: @MainActor (String, NSWindow?) -> Void
 
@@ -69,6 +71,7 @@ struct TranscriptionSheetServices {
             },
             center: .shared,
             transcribedBooks: .shared,
+            endTextEdit: { BookTextEditor.shared.end($0) },
             announce: { message, window in VoiceOverAnnouncer.announce(message, from: window) }
         )
     }
@@ -141,6 +144,8 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         let createdAt: Date
         /// The language it is in, as a locale identifier.
         let locale: String
+        /// When the user last edited it, or nil when they never have.
+        var editedAt: Date? = nil
     }
 
     /// Tells sheets presenting different requests apart.
@@ -245,7 +250,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         language = identifier
         modelState = Self.modelState(for: status)
         if case .found(let transcript) = await services.readTranscript(book) {
-            existing = ExistingTranscript(createdAt: transcript.createdAt, locale: transcript.locale)
+            existing = ExistingTranscript(createdAt: transcript.createdAt, locale: transcript.locale, editedAt: transcript.editedAt)
         }
         if let job = services.center.current {
             if job.bookID == book.id {
@@ -340,6 +345,13 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         }
     }
 
+    /// The line warning that transcribing again replaces the user's own
+    /// edits, whenever the book's transcript was edited, so Transcribe
+    /// Again never replaces an edit unannounced (FR05).
+    var editedLine: String? {
+        existing?.editedAt.map(TranscriptionWording.editedTranscript(on:))
+    }
+
     /// The line saying another book is being transcribed, while one is.
     var busyLine: String? {
         busyTitle.map(TranscriptionWording.busy(bookTitle:))
@@ -392,7 +404,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     /// transcript, another transcription under way, and how the last
     /// download ended.
     var noticeLines: [String] {
-        [existingLine, busyLine, downloadNotice].compactMap { $0 }
+        [existingLine, editedLine, busyLine, downloadNotice].compactMap { $0 }
     }
 
     /// Every line the ready sheet shows, in order, as VoiceOver hears them

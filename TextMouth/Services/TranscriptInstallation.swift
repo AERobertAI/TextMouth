@@ -48,6 +48,9 @@ extension TranscriptStore {
                 throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: book.tmbDirectory.lastPathComponent])
             }
             var audioIndex = try BookContentAnalysisService.load(book: book).index
+            // The text the book's transcript wrote last: other text in
+            // content.md, which the user saved, is kept before it goes.
+            let writtenDigest = audioIndex.transcript?.textCacheFingerprint.cache.digest
             audioIndex.transcript = nil
             switch TranscriptTextLoader.audioCheck(
                 of: transcript.audioFiles,
@@ -62,7 +65,13 @@ extension TranscriptStore {
                 break
             }
             try write(transcript, into: book.tmbDirectory)
-            let written = try TranscriptTextLoader.writeText(of: transcript, for: book, over: audioIndex, hasher: hasher)
+            let written = try TranscriptTextLoader.writeText(
+                of: transcript,
+                for: book,
+                over: audioIndex,
+                replacing: writtenDigest,
+                hasher: hasher
+            )
             // A transcription again replaces the text whatever its bytes,
             // so the reading text kept for the old one goes too.
             ReadingTextCache.shared.remove(bookID: book.id)

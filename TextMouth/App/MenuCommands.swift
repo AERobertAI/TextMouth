@@ -253,8 +253,8 @@ struct BookmarkCommands: Commands {
 }
 
 /// Whether the book of the reader whose window is key has text that Edit
-/// Text can open (FR05): a text book's, for now. The reader publishes it as
-/// a scene value (`ReaderBookCommandsSupport`).
+/// Text can open (FR05): a text book's, or a transcribed audiobook's. The
+/// reader publishes it as a scene value (`ReaderBookCommandsSupport`).
 struct CanEditBookTextKey: FocusedValueKey {
     typealias Value = Bool
 }
@@ -301,8 +301,8 @@ extension FocusedValues {
 /// menu opens its book's text in the user's own editor, and transcribes an
 /// audiobook's audio or deletes its transcript; MenuVisibilityManager shows
 /// it only while a reader is in front. Edit Text is unavailable for an
-/// audiobook, whose text is not edited here yet, Transcribe Audio… for a
-/// text book, and Delete Transcript… for a book without a transcript.
+/// audiobook without a transcript, Transcribe Audio… for a text book, and
+/// Delete Transcript… for a book without a transcript.
 struct BookCommands: Commands {
     @FocusedValue(\.canEditBookText) var canEditBookText
     @FocusedValue(\.canTranscribeBookAudio) var canTranscribeBookAudio
