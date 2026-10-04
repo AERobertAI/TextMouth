@@ -120,6 +120,8 @@ final class RecordingWindowModel: ObservableObject {
     private var recoveredTitles: [URL: String] = [:]
     /// Whether the takes left behind were announced, which happens once.
     private var hasAnnouncedRecoveredTakes = false
+    /// Those waiting for the work under way to end (`settle()`).
+    private var settleWaiters: [CheckedContinuation<Void, Never>] = []
 
     /// How many seconds of digital silence, in a row, make the window say
     /// that no sound is reaching it: once per take.
@@ -328,9 +330,52 @@ final class RecordingWindowModel: ObservableObject {
         await save(take, recoveredTitle: recoveredTitles[take.url])
     }
 
+    /// What Stop and Save, or Save, does as the Record window closes or
+    /// TextMouth quits: lets a take that is starting begin and a save under
+    /// way end, then stops and saves the take under way, or saves again the
+    /// one that could not be saved. Returns once it is saved, or could not
+    /// be, a take that ended with an error while stopping included.
+    func stopAndSave() async {
+        await settle()
+        if service.isRecording {
+            await stop()
+        } else {
+            await saveAgain()
+        }
+        await settle()
+    }
+
+    // MARK: Waiting Out Work Under Way
+
+    /// Whether a take is starting, is stopping or ended and waits for its
+    /// save, or is being saved: work that closing and quitting wait out.
+    var isSettling: Bool {
+        service.state == .starting || isSaving || (!service.isRecording && service.takeInUse != nil)
+    }
+
+    /// Returns once no take is starting, ending, or being saved: at once,
+    /// or when the work under way is over, however it ended.
+    func settle() async {
+        while isSettling {
+            await withCheckedContinuation { settleWaiters.append($0) }
+        }
+    }
+
+    /// Wakes everyone waiting in `settle()`, each of whom looks again: as
+    /// the recorder changes and as a save ends.
+    private func resumeSettleWaiters() {
+        let waiters = settleWaiters
+        settleWaiters = []
+        waiters.forEach { $0.resume() }
+    }
+
     /// Deletes the take that could not be saved, or the one under way, and
-    /// gets ready for another recording.
+    /// gets ready for another recording. A take that is starting is let
+    /// begin first, and a save under way is let end: a take it saved is
+    /// kept, and nothing is said to be discarded.
     func discard() async {
+        await settle()
+        guard service.isRecording || hasUnsavedTake else { return }
         if service.isRecording {
             await service.stop()
         }
@@ -354,6 +399,8 @@ final class RecordingWindowModel: ObservableObject {
     /// failed is announced, and the recorder made ready again. A finished
     /// take is saved by `stop()`, which waits for it.
     private func recorderChanged(to state: RecordingService.State) {
+        // Whoever waits for work under way to end looks again.
+        defer { resumeSettleWaiters() }
         // A state already left, as one Discard ended, needs nothing more.
         guard service.state == state else { return }
         switch state {
@@ -397,6 +444,7 @@ final class RecordingWindowModel: ObservableObject {
         defer {
             slowNotice.cancel()
             takeBeingSaved = nil
+            resumeSettleWaiters()
         }
         do {
             let book = try await saver(take, bookTitle, folderPath, policy)

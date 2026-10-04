@@ -113,6 +113,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// has ended; tests replace it, so nothing quits.
     var requestTermination: @MainActor @Sendable () -> Void = { NSApplication.shared.terminate(nil) }
 
+    /// The Record window's controller, which a quit asks about its take
+    /// first (FR04): the app's, unless a test sets its own.
+    var recordingWindows = RecordingWindowController.shared
+
     /// The audio editor's windows, whose unsaved edits a quit asks about
     /// first (FR04): the app's controller, unless a test sets its own.
     var audioEditors = AudioEditorWindowController.shared
@@ -124,12 +128,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    its copy is complete, let finish; this request is cancelled, and
     ///    TextMouth asks to quit again once the move has ended, which starts
     ///    over here. A move that has not started copying has written
-    ///    nothing, and is no reason to wait. Then each audio editor window
-    ///    with unsaved edits asks Save, Discard, or Cancel, one at a time,
-    ///    and an editor still working or recording says so instead; this
-    ///    request is cancelled, and once every editor is answered for,
-    ///    TextMouth asks to quit again, which goes on past the editors
-    ///    (`AudioEditorWindowController.holdQuit`, FR04).
+    ///    nothing, and is no reason to wait. Then, while the Record window
+    ///    holds a take (FR04), this request is cancelled and the window asks
+    ///    whether to stop and save it, discard it, or cancel; TextMouth asks
+    ///    to quit again only once the take is saved or discarded, so a save
+    ///    finishes before TextMouth ends (`RecordingWindowController.holdQuit`).
+    ///    Then each audio editor window with unsaved edits asks Save,
+    ///    Discard, or Cancel, one at a time, and an editor still working or
+    ///    recording says so instead; this request is cancelled, and once
+    ///    every editor is answered for, TextMouth asks to quit again, which
+    ///    goes on past the editors (`AudioEditorWindowController.holdQuit`,
+    ///    FR04).
     /// 1. Here, everything pending is flushed as the termination path
     ///    flushes it, but nothing is ended: the library index and every
     ///    queued book record (`LibraryPersistenceService.flushPendingSave`),
@@ -155,6 +164,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    then TextMouth quits, after three seconds at most.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if DataDirectoryMoveProgress.stopForQuit(then: requestTermination) {
+            return .terminateCancel
+        }
+        if recordingWindows.holdQuit(then: requestTermination) {
             return .terminateCancel
         }
         if audioEditors.holdQuit(then: requestTermination) {

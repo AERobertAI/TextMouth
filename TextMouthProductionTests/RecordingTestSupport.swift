@@ -394,6 +394,24 @@ final class FakeRecordingSaver {
     private(set) var calls: [Call] = []
     /// The error the next saves throw, while set.
     var failure: Error?
+    /// Whether saves wait, once asked, until `releaseSaves()`, as a slow
+    /// save does, so a test can act while one is under way.
+    var holdsSaves = false
+    /// The saves waiting for `releaseSaves()`.
+    private var heldSaves: [CheckedContinuation<Void, Never>] = []
+
+    /// Whether a save is waiting for `releaseSaves()`.
+    var isHoldingASave: Bool {
+        !heldSaves.isEmpty
+    }
+
+    /// Lets every save waiting go on, and the saves after them too.
+    func releaseSaves() {
+        holdsSaves = false
+        let held = heldSaves
+        heldSaves = []
+        held.forEach { $0.resume() }
+    }
 
     /// The save to hand the window. It holds the saver weakly, so a save a
     /// window starts after its test ended fails rather than reaching a
@@ -402,6 +420,9 @@ final class FakeRecordingSaver {
         { [weak self] take, title, folderPath, policy in
             guard let self else { throw CancellationError() }
             calls.append(Call(take: take, title: title, folderPath: folderPath, policy: policy))
+            if holdsSaves {
+                await withCheckedContinuation { heldSaves.append($0) }
+            }
             if let failure { throw failure }
             RecordingTakeFiles.remove(take.url)
             return Book(title: title, format: .audio, filePath: "/Recordings/\(title).m4a", md5Hash: UUID().uuidString, folderPath: folderPath)
