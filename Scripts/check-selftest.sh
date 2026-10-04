@@ -807,6 +807,16 @@ makefile_cases() {
     "TEXTMOUTH_TEST_DERIVED_DATA=" \
     "TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=(unset)"
   end_case
+
+  # make -n prints the build's commands and runs none of them.
+  begin_case "make build turns off the code coverage the scheme would build into the app"
+  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n build 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "-configuration Release"
+  expect_report "CLANG_COVERAGE_MAPPING=NO"
+  end_case
 }
 
 # main: runs every case and prints the totals; succeeds only when all pass.
