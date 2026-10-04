@@ -122,6 +122,12 @@ enum AudioTestFixtures {
         let textFormat = try chapterTextFormat()
         let chapterInput = AVAssetWriterInput(mediaType: .text, outputSettings: nil, sourceFormatHint: textFormat)
         chapterInput.marksOutputTrackAsEnabled = false
+        // The titles are laid out ahead of the audio, not interleaved with
+        // it: they are all appended before any audio, and an interleaving
+        // writer stops taking titles that run too far ahead of the audio
+        // written so far (a first chapter of three seconds already does),
+        // which would stall the loop below forever.
+        chapterInput.mediaDataLocation = .beforeMainMediaDataNotInterleaved
         writer.add(audioInput)
         writer.add(chapterInput)
         audioInput.addTrackAssociation(withTrackOf: chapterInput, type: AVAssetTrack.AssociationType.chapterList.rawValue)

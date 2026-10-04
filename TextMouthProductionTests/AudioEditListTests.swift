@@ -498,7 +498,7 @@ final class AudioEditListTests: XCTestCase {
         XCTAssertEqual(format.mFormatID, kAudioFormatAppleLossless)
         XCTAssertEqual(try AudioTestFixtures.int16Samples(of: kept), try AudioTestFixtures.int16Samples(of: source))
         let sizes = try [source, kept].map { try XCTUnwrap($0.resourceValues(forKeys: [.fileSizeKey]).fileSize) }
-        XCTAssertLessThan(sizes[1], sizes[0])
+        XCTAssertLessThan(try XCTUnwrap(sizes.last), try XCTUnwrap(sizes.first))
     }
 
     /// A take of floating-point samples, which Apple Lossless cannot hold,
