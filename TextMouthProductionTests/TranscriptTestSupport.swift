@@ -119,3 +119,31 @@ enum TranscriptFixtures {
         ])
     }
 }
+
+// MARK: - This Mac's Recognizer
+
+extension XCTestCase {
+    /// The English model's locale, skipping the test unless this Mac can
+    /// transcribe English now: macOS 26, a Mac that runs the recognizer,
+    /// and the English model installed. Nothing is downloaded to get it.
+    /// On the main actor, as the tests that transcribe run.
+    @MainActor
+    func requireInstalledEnglishModel() async throws -> Locale {
+        try XCTSkipUnless(
+            TranscriptionAvailability.systemSupport == .available,
+            "transcription needs macOS 26 on a Mac that runs its model"
+        )
+        guard case .installed(let locale) = await TranscriptionAvailability.modelStatus(for: Locale(identifier: "en-US")) else {
+            throw XCTSkip("the English speech model is not installed on this Mac, and the tests never download it")
+        }
+        return locale
+    }
+
+    /// The TestData archive `name`, skipping the test when this checkout
+    /// does not keep it (git ignores the DAISY audio archives).
+    func optionalTestDataArchive(_ name: String) throws -> URL {
+        let url = URL(fileURLWithPath: testFilePath(name))
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: url.path), "\(name) is not in this checkout's TestData")
+        return url
+    }
+}
