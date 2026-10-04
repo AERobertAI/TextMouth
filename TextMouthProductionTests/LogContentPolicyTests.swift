@@ -327,8 +327,9 @@ final class LogContentPolicyTests: XCTestCase {
         // Transcripts of audiobooks (FR05): a transcript.json that cannot be used, preserved beside itself;
         // a transcript whose audio changed since; and a transcript text written again from its transcript.
         "TRANSCRIPT_FILE", "TRANSCRIPT_STALE", "TRANSCRIPT_TEXT_REBUILT",
-        // The experimental transcript cleanup (FR05): a cleanup saved, and a cleanup undone.
-        "TRANSCRIPT_CLEANED_UP", "TRANSCRIPT_CLEANUP_UNDONE",
+        // The experimental transcript cleanup (FR05): the user's copy of its rules, unusable or only in the
+        // cloud; a cleanup saved; and a cleanup undone.
+        "TRANSCRIPT_CLEANUP_RULES", "TRANSCRIPT_CLEANED_UP", "TRANSCRIPT_CLEANUP_UNDONE",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

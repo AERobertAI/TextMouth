@@ -1,0 +1,23 @@
+{
+  "format": 1,
+  "version": 1,
+  "date": "2026-10-04",
+  "about": "The rules of TextMouth's experimental Clean Up Transcript command. Each rule writes its replacement wherever a transcript's sentence holds its pattern: as whole words, the punctuation around them and a possessive 's after them kept, or inside words too when wholeWord is false. Matching ignores case and the kind of apostrophe, and the replacement takes the case of the words it replaces. The rules apply in order, and evidence says how many places in the measurements a rule was right in. TextMouth's own list is empty: measured on 38,834 words read aloud, no correction was right everywhere it applied without also being a name, a number, a page announcement, a book's own spelling or hyphenation, or a real word that other books mean (see TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md). For British spelling, choose English (United Kingdom) as the transcription language instead. Add rules of your own to the list, such as a name the recognizer always spells another way in a series. The examples below show how; TextMouth uses them only once you move them into rules.",
+  "rules": [],
+  "examples": [
+    {
+      "pattern": "Bennett",
+      "replacement": "Bennet",
+      "wholeWord": true,
+      "evidence": 29,
+      "note": "A name: reading the first five chapters of Pride and Prejudice, the recognizer wrote the common spelling, Bennett, in 29 of the 37 places the book has Bennet. Right for that book, and wrong for a book about someone called Bennett, so a name belongs only in your own copy, while you read the books it fits."
+    },
+    {
+      "pattern": "neighbor",
+      "replacement": "neighbour",
+      "wholeWord": false,
+      "evidence": 7,
+      "note": "A spelling inside words, which also writes neighbours and neighbourhood: listening in English (United States), the recognizer wrote neighbor or neighborhood in 7 places where the books have the British spelling. Choosing English (United Kingdom) as the transcription language writes British spelling without a rule."
+    }
+  ]
+}
