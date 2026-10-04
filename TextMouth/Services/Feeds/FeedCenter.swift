@@ -292,8 +292,9 @@ final class FeedCenter: ObservableObject {
 
     /// Starts the engine in `library`, once: reads the records and this
     /// Mac's fetch details off the main thread, then, when the engine works
-    /// on its own, refreshes every feed if the settings say to, and starts
-    /// the scheduled refreshes. Returns at once.
+    /// on its own, asks again for the downloads TextMouth quit during,
+    /// refreshes every feed if the settings say to, and starts the scheduled
+    /// refreshes. Returns at once.
     /// - Returns: The work started, which tests may await.
     @discardableResult
     func start(library: FeedLibraryHost) -> Task<Void, Never>? {
@@ -305,6 +306,9 @@ final class FeedCenter: ObservableObject {
             await fetchStates.load()
             await downloads.sweepLeftovers()
             guard environment.worksOnItsOwn else { return }
+            // The downloads under way when TextMouth last quit go on, the
+            // one that ran from where it stopped.
+            await downloads.resumeDownloadsSavedAtQuit()
             // A reader closing lets a played download it held be deleted.
             lifecycleObservers.append(
                 library.feedBooksOpenInReadersChanges.sink { [weak self] _ in self?.requestSweep() }

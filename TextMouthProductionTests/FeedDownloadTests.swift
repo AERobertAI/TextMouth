@@ -6,8 +6,9 @@ import XCTest
 /// an audiobook in its feed's folder through the import pipeline, a video
 /// episode too, and an article an HTML book; progress is published as the
 /// bytes arrive; a download that stops partway goes on from where it
-/// stopped; failures keep their reason; downloads run one at a time; and
-/// opening an item downloads it first. No episode is ever played.
+/// stopped; failures keep their reason; downloads run one at a time;
+/// opening an item downloads it first; and quitting keeps each download's
+/// place for the next launch. No episode is ever played.
 @MainActor
 final class FeedDownloadTests: XCTestCase {
 
@@ -350,6 +351,116 @@ final class FeedDownloadTests: XCTestCase {
 
         XCTAssertEqual(world.server.requests(to: "/audio/old.m4a"), [])
         XCTAssertEqual(world.server.requests(to: "/audio/new.m4a").map(\.allowsExpensiveNetworkAccess), [false])
+    }
+
+    // MARK: - Quitting
+
+    /// Quitting while an episode downloads and another waits holds the quit
+    /// until both have kept their place: the one under way keeps its resume
+    /// data in this Mac's folder, both are listed there in order, and the
+    /// quit is answered once, with yes. At the next launch both download
+    /// again, the first going on from where it stopped, asking only for the
+    /// rest, and the list is gone.
+    func testDownloadsUnderWayAtQuitGoOnAtTheNextLaunch() async throws {
+        let world = try FeedTestWorld(self, label: "FeedQuitResume")
+        let audio = try FeedMediaFixtures.silentAAC(duration: 4)
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.1
+        world.server.serve("/audio/1.m4a", slow, FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        world.server.serve("/audio/2.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        await world.start()
+        let items = (1...2).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)),
+                         enclosure: world.server.url("/audio/\(number).m4a").absoluteString, enclosureType: "audio/mp4")
+        }
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: items)))
+        let feed = try await world.subscribe("/feed.xml")
+        world.center.download("guid:ep-1", of: feed.id)
+        world.center.download("guid:ep-2", of: feed.id)
+        await waitFor("some of the first episode arrives") {
+            guard case .downloading(let progress)? = world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state else {
+                return false
+            }
+            return progress.completedBytes > 0
+        }
+
+        var replies: [Bool] = []
+        XCTAssertTrue(FeedQuitHold.hold(world.center.downloads) { replies.append($0) })
+        await waitFor("the quit is answered") { !replies.isEmpty }
+
+        XCTAssertEqual(replies, [true])
+        let downloads = world.center.downloads
+        XCTAssertTrue(downloads.isStoppedForQuit)
+        let resumeFile = downloads.resumeDataFile(for: "guid:ep-1", of: feed.id)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: resumeFile.path), "the download under way kept no resume data")
+        let listed = try JSONDecoder().decode(
+            [FeedDownloadManager.SavedDownload].self,
+            from: Data(contentsOf: downloads.savedAtQuitFile)
+        )
+        XCTAssertEqual(listed, [
+            FeedDownloadManager.SavedDownload(feedID: feed.id, itemID: "guid:ep-1", origin: .listener),
+            FeedDownloadManager.SavedDownload(feedID: feed.id, itemID: "guid:ep-2", origin: .listener),
+        ])
+        XCTAssertEqual(world.server.requests(to: "/audio/2.m4a"), [], "a download started while TextMouth quit")
+        // A second hold finds nothing left to hold.
+        XCTAssertFalse(FeedQuitHold.hold(downloads) { _ in XCTFail("a stopped engine held the quit again") })
+        await world.center.store.flush()
+
+        let relaunched = await world.relaunch(self)
+        let first = try await downloadedBook(world, center: relaunched, feed: feed, item: "guid:ep-1")
+        let second = try await downloadedBook(world, center: relaunched, feed: feed, item: "guid:ep-2")
+
+        let resumed = try XCTUnwrap(world.server.requests(to: "/audio/1.m4a").last)
+        let range = try XCTUnwrap(resumed.value(forHTTPHeaderField: "Range"), "the download started over")
+        XCTAssertTrue(range.hasPrefix("bytes=") && range != "bytes=0-", range)
+        XCTAssertEqual(try Data(contentsOf: first.bookFileURL), audio, "the resumed file differs from the original")
+        XCTAssertEqual(try Data(contentsOf: second.bookFileURL), audio)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: relaunched.downloads.savedAtQuitFile.path), "the list stayed")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: resumeFile.path), "the resume data stayed")
+    }
+
+    /// A quit with no download waiting or running is not held, and the next
+    /// launch finds nothing to ask for again.
+    func testAQuitWithNoDownloadIsNotHeld() async throws {
+        let world = try FeedTestWorld(self, label: "FeedQuitIdle")
+        await world.start()
+
+        XCTAssertFalse(FeedQuitHold.hold(world.center.downloads) { _ in XCTFail("an idle engine held the quit") })
+        XCTAssertFalse(world.center.downloads.isStoppedForQuit)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: world.center.downloads.savedAtQuitFile.path))
+
+        let relaunched = await world.relaunch(self)
+        XCTAssertNil(relaunched.downloads.current)
+        XCTAssertTrue(relaunched.downloads.queue.isEmpty)
+    }
+
+    /// A download listed at quit is not asked for again at the next launch
+    /// when its item was deleted meanwhile, or its feed is no longer
+    /// subscribed; the list goes either way.
+    func testTheNextLaunchSkipsItemsNoLongerWanted() async throws {
+        let world = try FeedTestWorld(self, label: "FeedQuitSkipped")
+        let items = (1...2).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)),
+                         enclosure: world.server.url("/audio/\(number).m4a").absoluteString, enclosureType: "audio/mp4")
+        }
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: items)))
+        let feed = try await world.subscribe("/feed.xml")
+        let list = world.center.downloads.savedAtQuitFile
+        try FileManager.default.createDirectory(at: list.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try JSONEncoder().encode([
+            FeedDownloadManager.SavedDownload(feedID: feed.id, itemID: "guid:ep-1", origin: .automatic),
+            FeedDownloadManager.SavedDownload(feedID: UUID(), itemID: "guid:ep-1", origin: .listener),
+        ]).write(to: list)
+        try world.center.deleteItem("guid:ep-1", of: feed.id)
+        await world.center.store.flush()
+
+        let relaunched = await world.relaunch(self)
+
+        XCTAssertNil(relaunched.downloads.current, "a deleted item downloaded again")
+        XCTAssertTrue(relaunched.downloads.queue.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: list.path), "the list stayed")
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [])
     }
 
     // MARK: - Leftovers

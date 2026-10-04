@@ -450,6 +450,9 @@ final class FeedTestWorld {
     let folder: IntegrationLibraryFolder
     /// That folder's row.
     let bookFolder: BookFolder
+    /// What the engine works with, which an engine made for the next launch
+    /// works with too (`relaunch(_:)`).
+    let environment: FeedEnvironment
     /// The engine.
     let center: FeedCenter
 
@@ -484,7 +487,7 @@ final class FeedTestWorld {
         let stats = stats
         resumeFolder = sandbox.appendingPathComponent("Resume Data", isDirectory: true)
         downloadsFolder = sandbox.appendingPathComponent("Feed Downloads", isDirectory: true)
-        center = FeedCenter(environment: FeedEnvironment(
+        environment = FeedEnvironment(
             records: .folder(recordsFolder),
             fetchStateFolder: fetchStateFolder,
             network: .stubbed(
@@ -506,7 +509,8 @@ final class FeedTestWorld {
             finishedBooksSource: stats,
             // Never the Trash in a test: the package is deleted for good.
             deleteBookPackage: { try FileManager.default.removeItem(at: $0.tmbDirectory) }
-        ))
+        )
+        center = FeedCenter(environment: environment)
         let server = server
         let center = center
         test.addTeardownBlock {
@@ -519,6 +523,21 @@ final class FeedTestWorld {
     /// starts to finish.
     func start() async {
         await center.start(library: library)?.value
+    }
+
+    /// The engine the next launch makes: a new one on the world's folders,
+    /// network, clock, and library, working on its own as the app's does,
+    /// started, with what its start begins finished. `test` stops it when
+    /// it ends.
+    func relaunch(_ test: XCTestCase) async -> FeedCenter {
+        var next = environment
+        next.worksOnItsOwn = true
+        let relaunched = FeedCenter(environment: next)
+        test.addTeardownBlock {
+            await MainActor.run { relaunched.stop() }
+        }
+        await relaunched.start(library: library)?.value
+        return relaunched
     }
 
     /// Subscribes to the feed served at `path`, which must succeed, starting
@@ -670,26 +689,29 @@ enum FeedMediaFixtures {
 // MARK: - Downloads
 
 extension XCTestCase {
-    /// The book the item `itemID` of `feed` downloads as in `world`, once
-    /// its download has ended, announcing its end, and its book is in the
-    /// library; fails the test when the download fails or takes longer than
-    /// 20 seconds.
+    /// The book the item `itemID` of `feed` downloads as in `world`, through
+    /// `center` (the world's own engine unless a relaunched one is given),
+    /// once its download has ended, announcing its end, and its book is in
+    /// the library; fails the test when the download fails or takes longer
+    /// than 20 seconds.
     @MainActor
     func downloadedBook(
         _ world: FeedTestWorld,
+        center: FeedCenter? = nil,
         feed: Feed,
         item itemID: FeedItem.ID,
         file: StaticString = #filePath,
         line: UInt = #line
     ) async throws -> Book {
+        let center = center ?? world.center
         // The item is marked downloaded as its book is listed, a moment
         // before the download ends and announces it.
         await waitFor("\(itemID) downloads", timeout: 20, file: file, line: line) {
-            let state = world.center.store.record(of: feed.id)?.item(itemID)?.state
+            let state = center.store.record(of: feed.id)?.item(itemID)?.state
             let settled = state?.bookID != nil || state?.failureReason != nil
-            return settled && !world.center.downloads.isDownloading(itemID, of: feed.id)
+            return settled && !center.downloads.isDownloading(itemID, of: feed.id)
         }
-        let state = world.center.store.record(of: feed.id)?.item(itemID)?.state
+        let state = center.store.record(of: feed.id)?.item(itemID)?.state
         if let reason = state?.failureReason {
             XCTFail("the download of \(itemID) failed: \(reason)", file: file, line: line)
         }
