@@ -1149,8 +1149,10 @@ final class ConfigSyncTests: XCTestCase {
             "restartTimerGestureWindow": 3.5,
             // Storage: where the log writer writes.
             "logLocation": LogLocation.machine.rawValue,
-            // Transcription: the language it uses.
+            // Transcription: the language it uses, and the offer after an
+            // import.
             "transcriptionLocale": TranscriptFixtures.languageOtherThanTheDefault,
+            "offerTranscriptionAfterImport": true,
         ]
     }
 

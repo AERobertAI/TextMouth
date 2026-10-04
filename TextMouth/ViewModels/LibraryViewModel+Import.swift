@@ -534,7 +534,8 @@ extension LibraryViewModel {
     /// The batch's questions, whether to delete the archive and whether to
     /// put several books in a folder of their own, are queued in that order
     /// behind any already waiting, each holding this archive and these books
-    /// and `request` (TODO I01).
+    /// and `request` (TODO I01); then, when the offer after importing is on,
+    /// whether to transcribe each audiobook among them (FR05).
     func completeZIPImport(
         _ result: ZipImportResult,
         originalURL: URL,
@@ -558,6 +559,11 @@ extension LibraryViewModel {
         if acceptedBooks.count > 1 {
             let batch = ImportDecision.ZipBatch(archiveURL: originalURL, books: acceptedBooks, folderPath: folderPath)
             ask(ImportDecision(kind: .zipFolder(batch), request: request))
+        }
+        // Each audiobook the archive held is offered for transcription, one
+        // at a time, after the archive's own questions (FR05).
+        for book in acceptedBooks {
+            offerTranscription(of: book, request: request)
         }
     }
 

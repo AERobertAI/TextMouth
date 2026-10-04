@@ -13,8 +13,11 @@ import Foundation
 /// text until the book is transcribed again. Otherwise a text that cannot
 /// be trusted is written again from transcript.json, as a stale text cache
 /// is extracted again from its source, and logged (TRANSCRIPT_TEXT_REBUILT);
-/// a hand edit of content.md is undone this way. A file only in the cloud is
-/// never read: the text waits until it is on this Mac.
+/// a hand edit of content.md that Edit Text did not take is undone this way,
+/// after it is kept beside content.md (`writeText`). Edit Text takes an edit
+/// into transcript.json itself (`TranscriptStore.takeEdit`), so the text
+/// written from it is the edit. A file only in the cloud is never read: the
+/// text waits until it is on this Mac.
 enum TranscriptTextLoader {
     /// What reading a book's transcript text found.
     struct Load {
@@ -214,7 +217,13 @@ enum TranscriptTextLoader {
                 break
             }
             do {
-                let written = try writeText(of: transcript, for: book, over: withoutText, hasher: hasher)
+                let written = try writeText(
+                    of: transcript,
+                    for: book,
+                    over: withoutText,
+                    replacing: audioIndex.transcript?.textCacheFingerprint.cache.digest,
+                    hasher: hasher
+                )
                 logLine(rebuiltTag, about: book, "content.md and its index were written again from transcript.json: \(reason)")
                 var index = withoutText
                 index.transcript = written.layer
@@ -239,11 +248,19 @@ enum TranscriptTextLoader {
     /// these bytes, and the layer describing it, fingerprinted with the
     /// package's transcript.json as its source. A content.md that changes
     /// takes the reading text this Mac kept for the book with it (PERF22).
+    ///
+    /// A content.md holding text TextMouth did not write, as the user may
+    /// have saved in their own editor without the edit being taken (FR05),
+    /// is kept beside it first (`BookTextEditSessions.keepCopy(of:bytes:)`),
+    /// so nothing the user saved is lost: text other than the new bytes,
+    /// and, when `writtenDigest` names the digest of the content.md
+    /// TextMouth last wrote or took, other than that too.
     /// - Throws: why content.md or the fingerprints could not be written.
     static func writeText(
         of transcript: Transcript,
         for book: Book,
         over audioIndex: BookContentIndex,
+        replacing writtenDigest: String? = nil,
         hasher: FingerprintHasher
     ) throws -> (layer: BookContentTranscriptIndex, text: TranscriptText) {
         let chapters = TranscriptTextBuilder.chapters(
@@ -260,7 +277,11 @@ enum TranscriptTextLoader {
             let transcriptURL = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
             let cacheURL = TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)
             let bytes = Data(text.markdown.utf8)
-            if (try? Data(contentsOf: cacheURL)) != bytes {
+            let existing = try? Data(contentsOf: cacheURL)
+            if existing != bytes {
+                if let existing, hasher.digestOfData(existing) != writtenDigest {
+                    keepUnwrittenText(of: book, at: cacheURL, bytes: existing)
+                }
                 try bytes.write(to: cacheURL, options: .atomic)
                 ReadingTextCache.shared.remove(bookID: book.id)
             }
@@ -323,6 +344,17 @@ enum TranscriptTextLoader {
             checked.append(current)
         }
         return .current(checked)
+    }
+
+    /// Keeps `bytes`, the content.md at `url` of `book`, beside it before
+    /// its text is written again: text the user saved that no edit took,
+    /// logged once as TEXT_EDIT_KEPT, as Edit Text keeps an edit it could
+    /// not take (FR05).
+    private static func keepUnwrittenText(of book: Book, at url: URL, bytes: Data) {
+        let kept = BookTextEditSessions.keepCopy(of: url, bytes: bytes)
+        let detail = kept.map { "content.md kept as \($0.lastPathComponent) before its text was written again from transcript.json" }
+            ?? "content.md could not be kept before its text was written again from transcript.json"
+        logLine("TEXT_EDIT_KEPT", about: book, detail)
     }
 
     // MARK: - Logging

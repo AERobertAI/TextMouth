@@ -54,6 +54,23 @@ struct ImportDecision: Identifiable {
         /// A ZIP archive added several books: put them in a new folder, or
         /// leave them where they are.
         case zipFolder(ZipBatch)
+        /// An audiobook was imported while "Offer to transcribe after
+        /// importing an audiobook" is on (FR05): transcribe it, or not now.
+        /// Asked after the import's own questions, as the last of them.
+        case transcriptionOffer(TranscriptionOffer)
+    }
+
+    /// An audiobook just imported, which TextMouth offers to transcribe
+    /// (FR05).
+    struct TranscriptionOffer {
+        /// The book, by ID, as the library lists it: Transcribe opens the
+        /// Transcribe Audio sheet for the book as the library holds it then.
+        let bookID: UUID
+        /// Its title, which the question names.
+        let bookTitle: String
+        /// How long its audio plays, in seconds, for the estimate, or nil
+        /// when not known.
+        let audioSeconds: TimeInterval?
     }
 
     /// A book imported as a copy of one already in the library.
@@ -117,7 +134,9 @@ struct ImportDecision: Identifiable {
                 originalURL: duplicate.originalURL,
                 warning: duplicate.warning
             ))
-        case .originalFile:
+        case .originalFile, .transcriptionOffer:
+            // Neither holds a book's paths: an original file is outside
+            // the library, and an offer names its book by ID.
             break
         case .zipFolder(let batch):
             mapped.kind = .zipFolder(ZipBatch(
@@ -140,6 +159,8 @@ struct ImportDecision: Identifiable {
             return original.bookID
         case .zipFolder:
             return nil
+        case .transcriptionOffer(let offer):
+            return offer.bookID
         }
     }
 }
@@ -158,9 +179,12 @@ enum ImportDecisionAnswer: Equatable {
     /// A ZIP archive's books: put them in a new folder of this name, inside
     /// the folder they were imported into.
     case createFolder(named: String)
-    /// Any question: the sheet's Cancel, Keep, or No Thanks, which Escape
-    /// presses too. A duplicate's new copy is discarded, an original file is
-    /// kept, and a ZIP archive's books stay where they are.
+    /// An audiobook just imported: transcribe it (FR05).
+    case transcribe
+    /// Any question: the sheet's Cancel, Keep, No Thanks, or Not Now, which
+    /// Escape presses too. A duplicate's new copy is discarded, an original
+    /// file is kept, a ZIP archive's books stay where they are, and an
+    /// audiobook is left untranscribed.
     case cancel
 
     /// Whether this answer is one a question of `kind` takes.
@@ -169,7 +193,8 @@ enum ImportDecisionAnswer: Equatable {
         case (.cancel, _),
              (.replaceExisting, .duplicate), (.keepBoth, .duplicate),
              (.deleteOriginal, .originalFile),
-             (.createFolder, .zipFolder):
+             (.createFolder, .zipFolder),
+             (.transcribe, .transcriptionOffer):
             return true
         default:
             return false
@@ -231,6 +256,10 @@ struct ImportDecisionWording: Equatable {
             message = "\(CountWording.books(batch.books.count)) were imported from "
                 + "“\(batch.archiveURL.lastPathComponent)”. "
                 + "Would you like to create a new folder to hold them?"
+            originalFile = nil
+        case .transcriptionOffer(let offer):
+            title = Self.counted(TranscriptionWording.offerQuestionTitle, position: position, total: total)
+            message = TranscriptionWording.offerMessage(bookTitle: offer.bookTitle, audioSeconds: offer.audioSeconds)
             originalFile = nil
         }
     }

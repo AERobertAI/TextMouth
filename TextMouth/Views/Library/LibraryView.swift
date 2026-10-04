@@ -178,6 +178,11 @@ struct LibraryView: View {
     @State private var cloudRefusal: LibraryCloudRefusal?
     /// The Export dialog showing on this window, or nil (FR05).
     @State private var exportModel: BookExportModel?
+    /// This window's transcription dialogs (FR05).
+    @StateObject private var transcription = TranscriptionPresenter()
+    /// Which audiobooks are transcribed or being transcribed (FR05),
+    /// observed so the rows' notes follow.
+    @ObservedObject private var transcribedBooks = TranscribedBooks.shared
     /// Whether this Library window has closed. SwiftUI keeps a closed window
     /// and its views for the rest of the session, and every change to the
     /// library would still rebuild this list nobody can see, so a closed
@@ -552,6 +557,9 @@ struct LibraryView: View {
             selectedBooks: { selectedBooks },
             hostWindow: hostWindow
         ))
+        // The Transcribe Audio sheet the rows' commands and the offers after
+        // imports open, and the rows' transcription notes kept current (FR05).
+        .modifier(LibraryTranscriptionSupport(presenter: transcription, library: libraryViewModel, hostWindow: hostWindow))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {
@@ -889,6 +897,8 @@ struct LibraryView: View {
             manualMoves: isSelectionRow ? nil : manualMoves[book.id],
             removalPreferences: removalPreferences,
             livePosition: libraryViewModel.livePositions.entry(for: book.id),
+            transcriptionCommands: LibraryTranscriptionCommand.commands(for: targets, isTranscribed: transcribedBooks.contains),
+            transcriptionNote: transcribedBooks.note(for: book.id),
             actions: actions
         )
         .equatable()
@@ -911,7 +921,8 @@ struct LibraryView: View {
 
     /// What the rows' commands do, on this list's state as it is when they
     /// run: open, Book Info, Select, Move to Folder, Move Up and Move Down,
-    /// the cloud commands, removal, Export, and Edit Text (FR05).
+    /// the cloud commands, removal, Export, Edit Text, and the transcription
+    /// commands (FR05).
     private var rowActions: LibraryBookRowActions {
         LibraryBookRowActions(
             open: onOpenBook,
@@ -949,6 +960,9 @@ struct LibraryView: View {
                 Task {
                     await BookTextEditor.shared.edit(book, choosingApp: choosingApp, in: libraryViewModel, from: window)
                 }
+            },
+            performTranscriptionCommand: { command in
+                transcription.perform(command, library: libraryViewModel, window: hostWindow)
             }
         )
     }

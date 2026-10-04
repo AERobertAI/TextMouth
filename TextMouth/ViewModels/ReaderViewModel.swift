@@ -229,6 +229,10 @@ final class ReaderViewModel: ObservableObject {
     /// reader was still loading the text it had (FR05): shown once loading
     /// ends (`showEditedTextWaitingForLoad()`); nil the rest of the time.
     var editedTextWaitingForLoad: DocumentContent?
+    /// An audiobook's transcript text when it changed while this reader was
+    /// still loading (FR05): shown once loading ends
+    /// (`showTranscriptWaitingForLoad()`); nil the rest of the time.
+    var transcriptWaitingForLoad: TranscriptTextChange?
     /// Whether this reader's last load stopped because the book's content.md
     /// held an edit TextMouth could not take (`BookTextEditPending`, FR05),
     /// so the reader opens the book with the edit taken next
@@ -941,16 +945,18 @@ final class ReaderViewModel: ObservableObject {
         // a stale cache and be rebuilt from the source (TODO T07). An edit
         // taken now is read by its analysis, its cache format current; an
         // edit that cannot be taken stops the read, which says why and where
-        // the edit was kept, rather than rebuild the text over it.
-        if !format.isAudio {
-            switch BookTextEditSessions.shared.settlePendingEdit(of: book) {
-            case .readTaken(let committed):
-                book.contentAnalysisFields = committed.contentAnalysisFields
-            case .hold(let pending):
-                throw pending
-            case .readAsUsual:
-                break
-            }
+        // the edit was kept, rather than rebuild the text over it. An
+        // audiobook's transcript text is edited the same way, but its audio
+        // still plays while such an edit stands: only its text is left out.
+        var holdsTranscriptText = false
+        switch BookTextEditSessions.shared.settlePendingEdit(of: book) {
+        case .readTaken(let committed):
+            book.contentAnalysisFields = committed.contentAnalysisFields
+        case .hold(let pending):
+            guard format.isAudio else { throw pending }
+            holdsTranscriptText = true
+        case .readAsUsual:
+            break
         }
         let cacheOutdated = !format.isAudio
             && MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
@@ -966,7 +972,7 @@ final class ReaderViewModel: ObservableObject {
         var content = analysis.content
         var index = analysis.index
         var transcriptIndexChanged = false
-        if format.isAudio {
+        if format.isAudio && !holdsTranscriptText {
             let transcript = TranscriptTextLoader.load(for: book, audioIndex: analysis.index, readingTexts: readingTexts)
             content.transcript = transcript.text
             index = transcript.index
@@ -1073,8 +1079,10 @@ final class ReaderViewModel: ObservableObject {
         // off the main thread, so Play finds it prepared.
         prepareOpenedChapterSpeech()
         // An edit of the book's text taken while it loaded replaces the
-        // text it loaded (FR05).
+        // text it loaded (FR05), as does an audiobook's transcript text
+        // saved or deleted meanwhile.
         showEditedTextWaitingForLoad()
+        showTranscriptWaitingForLoad()
     }
 
     /// Shows why the book at `filePath` could not be read, in place of the

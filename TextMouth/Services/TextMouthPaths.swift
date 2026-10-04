@@ -325,6 +325,15 @@ enum TextMouthPaths {
         tmbDir.appendingPathComponent(transcriptFileName)
     }
 
+    /// Whether `name`, an entry at the top of a package, is the audiobook's
+    /// transcript, or a copy kept beside it of one that could not be used
+    /// (`TranscriptStore`, as in "transcript.json.unreadable-20261004T101500Z"):
+    /// TextMouth's own files, never part of the book
+    /// (`FileImportService.isPackageContentName`).
+    static func isTranscriptFile(_ name: String) -> Bool {
+        name == transcriptFileName || name.hasPrefix(transcriptFileName + LibraryIndexQuarantine.nameMarker)
+    }
+
     /// Path to the per-book cached audio directory inside a .tmb package
     static func cachedAudioDir(in tmbDir: URL) -> URL {
         tmbDir.appendingPathComponent("cachedAudio", isDirectory: true)

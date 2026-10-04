@@ -38,6 +38,8 @@ extension ReaderViewModel {
             resumeAudioAfterPackageMove()
         case .textReplaced(_, let content):
             showEditedText(content)
+        case .transcriptReplaced(_, let text):
+            showTranscript(text)
         }
     }
 

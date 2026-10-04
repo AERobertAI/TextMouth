@@ -212,6 +212,36 @@ final class TranscriptModelTests: XCTestCase {
         XCTAssertTrue(lines.allSatisfy { !$0.contains("Quillwort") }, "\(lines)")
     }
 
+    /// A transcript, and a copy kept of one that could not be read, are
+    /// TextMouth's own files, never taken for the book: a package whose
+    /// record is lost still recovers its one audio file beside them, and a
+    /// loose DAISY book never counts them among its files.
+    func testATranscriptIsNeverTakenForPartOfTheBook() throws {
+        let package = try makeSandboxDirectory("transcript-not-the-book")
+        let audio = package.appendingPathComponent("Harbour Talk.m4a")
+        try Data("audio".utf8).write(to: audio)
+        // A transcript cut short is kept as a copy once read; the usable
+        // one written next stands beside that copy.
+        let whole = try TranscriptStore.encoded(TranscriptFixtures.twoFiles)
+        try whole.prefix(whole.count / 2).write(to: package.appendingPathComponent(TextMouthPaths.transcriptFileName))
+        XCTAssertEqual(TranscriptStore.read(from: package), .unusable("it is not valid JSON"))
+        _ = try TranscriptStore.write(TranscriptFixtures.twoFiles, into: package)
+        let names = try FileManager.default.contentsOfDirectory(atPath: package.path)
+        let copy = try XCTUnwrap(names.first { $0.hasPrefix("transcript.json.unreadable-") }, "\(names)")
+
+        for name in [TextMouthPaths.transcriptFileName, copy] {
+            XCTAssertTrue(TextMouthPaths.isTranscriptFile(name), name)
+            XCTAssertFalse(FileImportService.isPackageContentName(name), name)
+            XCTAssertFalse(DAISYPackageInventory.isBookPath(name), name)
+        }
+        XCTAssertEqual(
+            try FileImportService.retainedContentURL(in: package).standardizedFileURL,
+            audio.standardizedFileURL
+        )
+        XCTAssertFalse(TextMouthPaths.isTranscriptFile("transcript.json notes.txt"))
+        XCTAssertTrue(FileImportService.isPackageContentName("transcript.json notes.txt"), "a book file of another name was refused")
+    }
+
     /// A transcript that decodes but fails validation is preserved and
     /// ignored the same way, for the reason validation gives.
     func testATranscriptFailingValidationIsPreservedAndIgnored() throws {

@@ -69,6 +69,7 @@ extension ConfigService.AppConfig {
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(shortcuts)
         config.logLocation = LogLocation.machine.rawValue
         config.transcriptionLocale = TranscriptFixtures.languageOtherThanTheDefault
+        config.offerTranscriptionAfterImport = true
         return config
     }
 }

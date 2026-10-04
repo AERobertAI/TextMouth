@@ -211,6 +211,7 @@ final class LibraryBookUpdatesTests: XCTestCase {
                 case .updated(let update): return "updated \(update.revision)"
                 case .packageMoveEnded: return "move ended"
                 case .textReplaced: return "text replaced"
+                case .transcriptReplaced: return "transcript replaced"
                 }
             }
         }

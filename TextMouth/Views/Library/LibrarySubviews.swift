@@ -278,12 +278,21 @@ struct BookRow: View {
     /// "Kept on this Mac", shown and spoken after the cloud note. The list
     /// passes true only for a kept book in a cloud library.
     var isKeptOnThisMac: Bool = false
+    /// The book's transcription note (FR05): "Transcribed" or
+    /// "Transcribing", shown and spoken after the cloud notes; nil for none.
+    var transcriptionNote: TranscriptionRowNote? = nil
     /// The cloud commands of the row's context menu, which are also the
     /// row's VoiceOver actions (VO-Command-Space), under the same names
     /// (FR02).
     var cloudCommands: [LibraryCloudCommand] = []
     /// Runs one of `cloudCommands`.
     var performCloudCommand: (LibraryCloudCommand) -> Void = { _ in }
+    /// The transcription commands of the row's context menu, which are also
+    /// its VoiceOver actions, after the cloud commands, under the same names
+    /// (FR05).
+    var transcriptionCommands: [LibraryTranscriptionCommand] = []
+    /// Runs one of `transcriptionCommands`.
+    var performTranscriptionCommand: (LibraryTranscriptionCommand) -> Void = { _ in }
     /// The book's live position while a reader plays it (TODO PERF11). The
     /// row observes this one entry, so it redraws when its own book's
     /// reader moves and no other row does. The inert entry, the default,
@@ -341,6 +350,11 @@ struct BookRow: View {
                     if isKeptOnThisMac {
                         BookKeptNote()
                     }
+
+                    // "Transcribed" or "Transcribing", after the cloud notes (FR05).
+                    if let transcriptionNote {
+                        RowNoteBadge(symbolName: transcriptionNote.symbolName, text: transcriptionNote.text)
+                    }
                 }
                 HStack {
                     Text(book.author)
@@ -381,13 +395,16 @@ struct BookRow: View {
             ForEach(cloudCommands) { command in
                 Button(command.title) { performCloudCommand(command) }
             }
+            ForEach(transcriptionCommands) { command in
+                Button(command.title) { performTranscriptionCommand(command) }
+            }
         }
     }
 
     /// The names of the row's own VoiceOver actions, in the order VoiceOver
     /// lists them.
     var accessibilityActionNames: [String] {
-        cloudCommands.map(\.title)
+        cloudCommands.map(\.title) + transcriptionCommands.map(\.title)
     }
 
     /// Spoken label for the whole row, replacing its combined children.
@@ -408,6 +425,9 @@ struct BookRow: View {
         }
         if isKeptOnThisMac {
             parts.append(KeptOnThisMacNote.text)
+        }
+        if let transcriptionNote {
+            parts.append(transcriptionNote.text)
         }
         let besideDownloadPercentage = cloudState?.speaksPercentage ?? false
         if let progress = Self.spokenProgress(for: shownBook, besideDownloadPercentage: besideDownloadPercentage) {
@@ -501,11 +521,14 @@ struct LibraryBookRowActions {
     /// true, in an app they choose (FR05). Doing nothing unless the list
     /// supplies it.
     var editText: (Book, _ choosingApp: Bool) -> Void = { _, _ in }
+    /// Runs a transcription command (FR05). Doing nothing unless the list
+    /// supplies it.
+    var performTranscriptionCommand: (LibraryTranscriptionCommand) -> Void = { _ in }
 }
 
 /// One book's row in the library list: the row, its context menu, its
-/// default action, and its cloud commands as VoiceOver actions, which act on
-/// the same books (FR02).
+/// default action, and its cloud commands (FR02) and transcription commands
+/// (FR05) as VoiceOver actions, which act on the same books.
 ///
 /// Equatable on everything it shows (PERF28). When a change to the library
 /// draws the list again, SwiftUI skips every row the change left as it was,
@@ -546,6 +569,12 @@ struct LibraryBookListRow: View, Equatable {
     /// object for the book all session, compared by identity. `BookRow`
     /// observes it, so its changes redraw the row's progress alone.
     let livePosition: LiveReadingPosition
+    /// The transcription commands for `targets` (FR05): context menu items
+    /// and VoiceOver actions alike.
+    var transcriptionCommands: [LibraryTranscriptionCommand] = []
+    /// The book's transcription note, "Transcribed" or "Transcribing"
+    /// (FR05), or nil for none.
+    var transcriptionNote: TranscriptionRowNote? = nil
     /// What the commands do. Never compared.
     let actions: LibraryBookRowActions
 
@@ -563,6 +592,8 @@ struct LibraryBookListRow: View, Equatable {
             && lhs.manualMoves == rhs.manualMoves
             && lhs.removalPreferences == rhs.removalPreferences
             && lhs.livePosition === rhs.livePosition
+            && lhs.transcriptionCommands == rhs.transcriptionCommands
+            && lhs.transcriptionNote == rhs.transcriptionNote
     }
 
     var body: some View {
@@ -575,8 +606,11 @@ struct LibraryBookListRow: View, Equatable {
             isEditSelected: isEditSelected,
             cloudState: cloudState,
             isKeptOnThisMac: isKeptOnThisMac,
+            transcriptionNote: transcriptionNote,
             cloudCommands: cloudCommands,
             performCloudCommand: actions.performCloudCommand,
+            transcriptionCommands: transcriptionCommands,
+            performTranscriptionCommand: actions.performTranscriptionCommand,
             livePosition: livePosition
         )
         .accessibilityAction(.default) {
@@ -593,7 +627,8 @@ struct LibraryBookListRow: View, Equatable {
 
     /// The row's context menu. Its commands act on `targets`: the selection
     /// when the row belongs to one, otherwise the row's book. The cloud
-    /// commands (FR02) are also the row's VoiceOver actions.
+    /// commands (FR02) and the transcription commands (FR05) are also the
+    /// row's VoiceOver actions.
     @ViewBuilder
     private var menu: some View {
         let isMulti = targets.count > 1
@@ -618,13 +653,21 @@ struct LibraryBookListRow: View, Equatable {
         Button(BookExportWording.commandTitle(count: targets.count)) {
             actions.export(targets)
         }
-        // A text book's text in the user's own editor (FR05).
-        if !isMulti && BookTextEditor.canEditText(of: book) {
+        // A text book's text, or a transcribed audiobook's, in the user's
+        // own editor (FR05).
+        if !isMulti && BookTextEditor.canEditText(of: book, isTranscribed: transcriptionNote == .transcribed) {
             Button(BookTextEditWording.editTitle) {
                 actions.editText(book, false)
             }
             Button(BookTextEditWording.editWithTitle) {
                 actions.editText(book, true)
+            }
+        }
+        // Transcribe Audio… for an audiobook, and Delete Transcript… for a transcribed
+        // one (FR05), also VoiceOver actions.
+        ForEach(transcriptionCommands) { command in
+            Button(command.title) {
+                actions.performTranscriptionCommand(command)
             }
         }
         // Manual order move commands: single book only, where

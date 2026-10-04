@@ -404,6 +404,10 @@ struct PlaybackSettingsView: View {
             } header: {
                 Text(BookExportWording.settingSection)
             }
+
+            // Transcribing audiobooks (FR05): the language and the offer
+            // after an import.
+            TranscriptionSettingsSection()
         }
         .padding()
     }

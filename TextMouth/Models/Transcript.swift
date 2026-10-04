@@ -38,6 +38,13 @@ struct Transcript: Codable, Equatable, Sendable {
     var createdAt: Date
     /// Each of the book's audio files, in the order the book plays them.
     var files: [TranscriptFile]
+    /// When the user last edited the transcript's text in their own editor
+    /// (Edit Text, `TranscriptEditing`), in whole seconds; nil for a
+    /// transcript as the recognizer made it. transcript.json leaves it out
+    /// until then, so an earlier TextMouth reads an edited transcript as
+    /// any other. Transcribing again replaces an edited transcript only
+    /// after the Transcribe Audio sheet has said so.
+    var editedAt: Date? = nil
 
     /// What a book's record notes about this transcript (`BookState.transcript`).
     var note: TranscriptNote {
@@ -48,6 +55,15 @@ struct Transcript: Codable, Equatable, Sendable {
     /// or nil when the transcript holds none.
     func file(at path: String) -> TranscriptFile? {
         files.first { $0.path == path }
+    }
+
+    /// How many words the transcript holds, every file's sentences counted
+    /// (`TranscriptSentence.wordCount`), as a finished transcription
+    /// announces it.
+    var wordCount: Int {
+        files.reduce(0) { total, file in
+            file.sentences.reduce(total) { $0 + $1.wordCount }
+        }
     }
 }
 
@@ -119,6 +135,12 @@ struct TranscriptSentence: Codable, Equatable, Sendable {
     /// The sentence's words, in order, each where it lies in `text` and
     /// when it was spoken. Empty when the recognizer timed none.
     var words: [TranscriptWord]
+
+    /// How many words the sentence holds: its timed words, or, when none
+    /// were timed, the runs of its text between spaces.
+    var wordCount: Int {
+        words.isEmpty ? text.split(whereSeparator: \.isWhitespace).count : words.count
+    }
 }
 
 /// One word of a transcript's sentence: where it lies in the sentence's text

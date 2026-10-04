@@ -113,6 +113,14 @@ struct ImportDecisionSheet: View {
                 Spacer()
                 choiceButton(.declineFolder, shortcut: .cancelAction, answer: .cancel)
             }
+        case .transcriptionOffer:
+            OperationFailureNotice(message: failureMessage)
+            HStack {
+                choiceButton(.transcribe, shortcut: .defaultAction, answer: .transcribe)
+                    .firstQuestionControl($firstControlFocused, movingVoiceOver: takesFocus, after: voiceOverDelay)
+                Spacer()
+                choiceButton(.notNow, shortcut: .cancelAction, answer: .cancel)
+            }
         }
     }
 
@@ -209,6 +217,16 @@ struct ImportDecisionChoiceWording: Equatable {
     )
     /// The label of a ZIP archive's folder name field.
     static let folderNameLabel = "Folder name"
+    /// An audiobook just imported: transcribe it (FR05).
+    static let transcribe = ImportDecisionChoiceWording(
+        title: TranscriptionWording.offerTranscribeTitle,
+        hint: TranscriptionWording.offerTranscribeHint
+    )
+    /// An audiobook just imported: leave it untranscribed for now.
+    static let notNow = ImportDecisionChoiceWording(
+        title: TranscriptionWording.offerNotNowTitle,
+        hint: TranscriptionWording.offerNotNowHint
+    )
 }
 
 extension ImportDecision.ZipBatch {

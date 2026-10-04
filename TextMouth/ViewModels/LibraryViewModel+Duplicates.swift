@@ -135,9 +135,20 @@ extension LibraryViewModel {
         } else if let question {
             ask(question)
         }
+        offerTranscription(of: book, request: request)
         if question == nil {
             openAfterImport(book.id, request: request)
         }
+    }
+
+    /// Asks whether to transcribe `book`, just added to the library by an
+    /// import made with `request`, when the import offers that (FR05): an
+    /// audiobook, while "Offer to transcribe after importing an audiobook"
+    /// is on. The offer waits behind every question already waiting, so it
+    /// follows the import's own; it never holds up the book's opening.
+    func offerTranscription(of book: Book, request: ImportRequest) {
+        guard offersTranscription(book) else { return }
+        ask(TranscriptionOffers.question(for: book, request: request))
     }
 
     /// Opens the reader of `bookID`, a book an import added, when `request`
@@ -188,7 +199,29 @@ extension LibraryViewModel {
             return settle(original, of: decision, with: answer)
         case .zipFolder(let batch):
             return settle(batch, with: answer)
+        case .transcriptionOffer(let offer):
+            return settle(offer, of: decision, with: answer)
         }
+    }
+
+    /// Answers an offer to transcribe an audiobook just imported (FR05):
+    /// Transcribe hands the book to the Library window that asked, which
+    /// opens the Transcribe Audio sheet for it and starts once it can; Not
+    /// Now leaves the book as it is. A book that left the library meanwhile
+    /// is not transcribed.
+    private func settle(
+        _ offer: ImportDecision.TranscriptionOffer,
+        of decision: ImportDecision,
+        with answer: ImportDecisionAnswer
+    ) -> OperationOutcome {
+        importDecisions.settleCurrent()
+        if answer == .transcribe, bookByID(offer.bookID) != nil {
+            acceptedTranscriptionOffers.send(TranscriptionOfferAcceptance(
+                bookID: offer.bookID,
+                origin: decision.request.origin
+            ))
+        }
+        return .success(nil)
     }
 
     /// Answers a duplicate's question. Replace removes the library's copy
@@ -222,7 +255,7 @@ extension LibraryViewModel {
             }
             importDecisions.settleCurrent()
             return .success(nil)
-        case .deleteOriginal, .createFolder:
+        case .deleteOriginal, .createFolder, .transcribe:
             // A duplicate does not take these (`ImportDecisionAnswer.fits`).
             return .success(nil)
         }

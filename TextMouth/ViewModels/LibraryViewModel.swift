@@ -110,6 +110,13 @@ final class LibraryViewModel: ObservableObject {
     var readerOpener: @MainActor (UUID) -> Void = { bookID in
         NotificationCenter.default.post(name: .openBookWindow, object: bookID)
     }
+    /// Whether an import offers to transcribe the book it added (FR05):
+    /// the setting and this Mac's system decide (`TranscriptionOffers`);
+    /// tests replace it to offer without either.
+    var offersTranscription: @MainActor (Book) -> Bool = { TranscriptionOffers.offersTranscription(of: $0) }
+    /// The offers to transcribe that the user accepted (FR05), for the
+    /// Library window that asked to open the Transcribe Audio sheet.
+    let acceptedTranscriptionOffers = PassthroughSubject<TranscriptionOfferAcceptance, Never>()
 
     /// The text extraction batch's progress (startup cache generation and
     /// re-extraction), an object of its own so that each finished book
