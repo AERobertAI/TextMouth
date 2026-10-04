@@ -96,9 +96,12 @@ final class EditorAnnouncements {
     /// Every sentence, oldest first.
     var sentences: [String] = []
 
-    /// The announcer to hand a model.
+    /// The announcer to hand a model. It holds the recorder weakly, as the
+    /// model must not keep it; a model that outlives its recorder, as one a
+    /// teardown closes does, says its sentences to no one, and never stops
+    /// the test host.
     var announce: @MainActor (String) -> Void {
-        { [unowned self] sentence in sentences.append(sentence) }
+        { [weak self] sentence in self?.sentences.append(sentence) }
     }
 }
 
@@ -164,15 +167,16 @@ struct AudioEditorTestBook {
 extension XCTestCase {
     /// An editor on `seconds` seconds of an identity ramp in a WAVE file
     /// (`AudioEditorTestBook.ramp`), its preview loaded, playing half a
-    /// second after each move only when `playsAfterMoves` says so, and
-    /// closed as the test ends.
+    /// second after each move only when `playsAfterMoves` says so. The
+    /// harness, its library and its recorder of sentences among it, which
+    /// the model holds only weakly, is kept until the test ends, when the
+    /// editor is closed.
     @MainActor
     func openRamp(seconds: Double, playsAfterMoves: Bool = false) async throws -> EditorHarness {
         let harness = try await EditorHarness.open(try AudioEditorTestBook.ramp(seconds: seconds, for: self), for: self)
         AudioEditorPreferences.playAfterMoves.write(playsAfterMoves, to: harness.store)
         await harness.model.loadPreview()
-        let model = harness.model
-        addTeardownBlock { @MainActor in model.windowClosed() }
+        addTeardownBlock { @MainActor in harness.model.windowClosed() }
         return harness
     }
 }

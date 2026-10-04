@@ -372,34 +372,40 @@ final class LauncherScript {
     /// whether the book's reader was closed to open it.
     private(set) var presented: [(book: Book, track: AudioEditorTrack?, session: AudioEditSession, closedReader: Bool)] = []
 
-    /// The services to hand the launcher.
+    /// The services to hand the launcher. Each holds the script weakly, so
+    /// a service called after the script is gone does nothing, or declines,
+    /// and never stops the test host.
     var services: AudioEditorLauncher.Services {
         AudioEditorLauncher.Services(
             readTracks: { try AudioEditorTracks.of($0) },
-            chooseTrack: { [unowned self] _, tracks, _ in
+            chooseTrack: { [weak self] _, tracks, _ in
+                guard let self else { return nil }
                 questions.append(tracks.map(\.title).joined(separator: "|"))
                 return choose(tracks)
             },
-            confirmStartOver: { [unowned self] _, _ in
+            confirmStartOver: { [weak self] _, _ in
+                guard let self else { return false }
                 questions.append("start over")
                 return startsOver
             },
-            closeReader: { [unowned self] bookID in
+            closeReader: { [weak self] bookID in
+                guard let self else { return }
                 closedReaders.append(bookID)
                 closesReaders(bookID)
             },
-            openSession: { [unowned self] bookID, audioFile, library, startingOver in
+            openSession: { [weak self] bookID, audioFile, library, startingOver in
+                guard let self else { throw CancellationError() }
                 sessionsAskedFor.append(startingOver)
                 if historyIsUnusable, !startingOver {
                     throw AudioEditError.historyUnusable("a test said so")
                 }
                 return try await AudioEditSession.open(bookID: bookID, audioFile: audioFile, in: library, startingOver: startingOver)
             },
-            present: { [unowned self] book, track, session, closedReader in
-                presented.append((book, track, session, closedReader))
+            present: { [weak self] book, track, session, closedReader in
+                self?.presented.append((book, track, session, closedReader))
             },
-            announce: { [unowned self] sentence, _ in announced.append(sentence) },
-            showFailure: { [unowned self] message, _ in failures.append(message) },
+            announce: { [weak self] sentence, _ in self?.announced.append(sentence) },
+            showFailure: { [weak self] message, _ in self?.failures.append(message) },
             readerCloseTimeout: readerCloseTimeout
         )
     }
