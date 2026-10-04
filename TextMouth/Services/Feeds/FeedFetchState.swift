@@ -22,6 +22,12 @@ struct FeedFetchState: Codable, Equatable, Sendable {
     /// with the same digest is neither read again nor saved, for the servers
     /// that answer every request in full.
     var bodyDigest: String?
+    /// How many of the feed's newest entries the record kept when the body
+    /// last read was merged (`Feed.keepEntries(under:)`). Under another
+    /// number, the next refresh reads the feed whole again, sending no
+    /// validators, so a changed setting applies at once even to a feed that
+    /// has not changed.
+    var keptEntriesOfLastBody: Int?
     /// When this Mac last checked the feed, however the check ended.
     var lastCheck: Date?
     /// When a check last succeeded.
@@ -43,6 +49,7 @@ struct FeedFetchState: Codable, Equatable, Sendable {
         etag = try? container.decodeIfPresent(String.self, forKey: .etag)
         lastModified = try? container.decodeIfPresent(String.self, forKey: .lastModified)
         bodyDigest = try? container.decodeIfPresent(String.self, forKey: .bodyDigest)
+        keptEntriesOfLastBody = try? container.decodeIfPresent(Int.self, forKey: .keptEntriesOfLastBody)
         lastCheck = try? container.decodeIfPresent(Date.self, forKey: .lastCheck)
         lastSuccess = try? container.decodeIfPresent(Date.self, forKey: .lastSuccess)
         lastError = try? container.decodeIfPresent(FeedRefreshFailure.self, forKey: .lastError)
