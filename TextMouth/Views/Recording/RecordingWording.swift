@@ -200,10 +200,12 @@ enum RecordingWording {
         + "VoiceOver's speech can be recorded."
     /// The stepper choosing how often.
     static let announceIntervalLabel = "Seconds between level announcements"
-    /// The intervals the stepper offers, in seconds.
-    static let announceIntervals = 5...60
-    /// The interval until the user picks another.
-    static let defaultAnnounceInterval = 10
+    /// The intervals the stepper offers, in seconds: the setting's
+    /// (`SettingsPolicy.recordingLevelAnnouncementSeconds`).
+    static var announceIntervals: ClosedRange<Int> {
+        let range = SettingsPolicy.recordingLevelAnnouncementSeconds.range
+        return Int(range.lowerBound)...Int(range.upperBound)
+    }
 
     // MARK: - Status and Announcements
 
@@ -256,6 +258,21 @@ enum RecordingWording {
     /// TextMouth remembers is not connected when the window opens.
     static func rememberedMicrophoneMissing(fallback: String) -> String {
         "The microphone TextMouth used last isn't connected, so recordings use \(fallback)."
+    }
+    /// What the window says, and VoiceOver announces, when a microphone
+    /// connects while the window is open and recordings now use it: the one
+    /// TextMouth remembers, back, or the first connected at all.
+    static func microphoneConnectedAndChosen(_ name: String) -> String {
+        "\(name) was connected, so recordings use it."
+    }
+    /// What the window says, and VoiceOver announces, when microphones
+    /// connect while the window is open and are added to the Microphone
+    /// pop-up, recordings still using the one chosen.
+    static func microphonesConnected(_ names: [String]) -> String {
+        let list = ListFormatter.localizedString(byJoining: names)
+        return names.count == 1
+            ? "\(list) was connected; choose it in the Microphone pop-up to record from it."
+            : "\(list) were connected; choose one in the Microphone pop-up to record from it."
     }
     /// What the window says, and VoiceOver announces, when the chosen
     /// microphone goes away while nothing is recording.

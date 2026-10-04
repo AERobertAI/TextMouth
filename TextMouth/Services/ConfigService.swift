@@ -320,6 +320,11 @@ final class ConfigService: ObservableObject {
         /// until one is chosen, when recordings use macOS's default input;
         /// empty, like any empty text here, keeps the current choice.
         var recordingInputDeviceID: String = ""
+        /// Whether the Record window announces the level while recording
+        /// (`RecordingLevelAnnouncements`).
+        var recordingAnnouncesLevel: Bool?
+        /// How many seconds apart it announces it, from 5 to 60.
+        var recordingLevelAnnouncementSeconds: Double?
         /// What happens to the original audio of recordings and edited
         /// audiobooks (`AudioOriginalPolicy.Choice`): "keep", "delete", or
         /// "deleteAfterDays". Empty keeps the current choice. The name is
@@ -455,6 +460,11 @@ final class ConfigService: ObservableObject {
             )
             repeatedSymbolSet = fields.optionalCharacterSet(.repeatedSymbolSet, rule: SettingsPolicy.repeatedSymbolSet)
             recordingInputDeviceID = fields.value(.recordingInputDeviceID, default: fallback.recordingInputDeviceID)
+            recordingAnnouncesLevel = fields.optionalFlag(.recordingAnnouncesLevel)
+            recordingLevelAnnouncementSeconds = fields.optionalNumber(
+                .recordingLevelAnnouncementSeconds,
+                rule: SettingsPolicy.recordingLevelAnnouncementSeconds
+            )
             recordingOriginalPolicy = fields.rawChoice(.recordingOriginalPolicy, rule: SettingsPolicy.recordingOriginalPolicy)
             recordingOriginalDays = fields.optionalNumber(.recordingOriginalDays, rule: SettingsPolicy.recordingOriginalDays)
             useInstalledFFmpeg = fields.optionalFlag(.useInstalledFFmpeg)
@@ -533,7 +543,8 @@ final class ConfigService: ObservableObject {
                 ])
                 // Sounds.
                 mirrored += sameNames(["soundEffectsEnabled", "soundEffectsVolume", "soundEffectAssignments"])
-                // Recording: the microphone the Record window remembers.
+                // Recording: the microphone the Record window remembers, and
+                // its level announcements.
                 mirrored += sameNames(RecordingPreferences.keys)
                 // Audio editing: how long the original audio of recordings and
                 // edited audiobooks is kept, whether an installed ffmpeg runs

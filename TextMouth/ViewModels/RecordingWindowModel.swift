@@ -63,12 +63,18 @@ final class RecordingWindowModel: ObservableObject {
     /// The levels, read once a second while recording or paused.
     @Published private(set) var levels: RecordingLevels?
     /// Whether VoiceOver announces the level every few seconds while
-    /// recording. Off until the user turns it on.
-    @Published var announcesLevel = false {
-        didSet { secondsSinceLevelAnnouncement = 0 }
+    /// recording: off until the user turns it on, and remembered from one
+    /// window to the next (`RecordingLevelAnnouncements`).
+    @Published var announcesLevel: Bool {
+        didSet {
+            secondsSinceLevelAnnouncement = 0
+            RecordingLevelAnnouncements.enabled.write(announcesLevel, to: store)
+        }
     }
-    /// How many seconds apart the level is announced.
-    @Published var levelAnnouncementInterval = RecordingWording.defaultAnnounceInterval
+    /// How many seconds apart the level is announced, remembered too.
+    @Published var levelAnnouncementInterval: Int {
+        didSet { RecordingLevelAnnouncements.interval.write(levelAnnouncementInterval, to: store) }
+    }
     /// Whether the window offers to open the Microphone privacy settings:
     /// after a no that the user can change there.
     @Published private(set) var offersPrivacySettings = false
@@ -86,7 +92,8 @@ final class RecordingWindowModel: ObservableObject {
 
     /// Lists the microphones and says when they change.
     private let catalog: RecordingInputCatalog
-    /// Where the chosen microphone and the policy are kept.
+    /// Where the chosen microphone, the level announcements, and the
+    /// policy are kept.
     private let store: UserDefaults
     /// Saves a take as an audiobook.
     private let saver: Saver
@@ -173,6 +180,8 @@ final class RecordingWindowModel: ObservableObject {
         self.now = now
         self.announcementLead = announcementLead
         self.pauseReaders = pauseReaders
+        announcesLevel = RecordingLevelAnnouncements.enabled.read(from: store)
+        levelAnnouncementInterval = RecordingLevelAnnouncements.interval.read(from: store)
         recoveredTakes = recovered
         recoveredTakeFocusedAtOpen = recovered.first?.id
         title = RecordingWording.defaultTitle(at: now())
@@ -208,28 +217,38 @@ final class RecordingWindowModel: ObservableObject {
         status = RecordingWording.ready(device: selectedDevice?.name)
     }
 
-    /// Reads the microphones again: the remembered one is chosen when it is
-    /// connected, otherwise the default, which is never remembered in its
-    /// place, so the remembered one is used again once it is back. When the
-    /// choice falls back, VoiceOver hears why: when the window opens, if the
-    /// remembered one is missing, and later, if `announcingChanges`, when
-    /// the microphone in use goes away while nothing is recording.
+    /// Reads the microphones again, so the Microphone pop-up lists those
+    /// connected now: the remembered one is chosen when it is connected,
+    /// otherwise the default, which is never remembered in its place, so
+    /// the remembered one is used again once it is back. When the window
+    /// opens, VoiceOver hears if the remembered one is missing; later, if
+    /// `announcingChanges`, as the catalog reports microphones connecting
+    /// and disconnecting while nothing is recording, it hears that the one
+    /// in use went away and what is used instead, that one connected is
+    /// used now, or that others connected and are in the pop-up.
     private func refreshDevices(announcingChanges: Bool) {
         let previous = selectedDevice
+        let listedBefore = Set(devices.map(\.id))
         devices = RecordingInputChoice.distinctlyNamed(catalog.devices())
         let resolution = RecordingInputChoice.resolve(
             remembered: RecordingInputChoice.preference.read(from: store),
             among: devices,
             systemDefault: catalog.systemDefaultDeviceID()
         )
-        // While a take is under way the microphone in use stays; the
-        // recorder reports a lost one itself.
+        // While a take is under way the microphone in use stays, and nothing
+        // is said that the microphone could record; the recorder reports a
+        // lost one itself.
         guard !service.isRecording, service.state != .starting else { return }
         selectedDeviceID = resolution.device?.id ?? ""
         let fallback = resolution.device?.name
         if announcingChanges {
-            if let previous, previous.id != selectedDeviceID {
+            let connected = devices.filter { !listedBefore.contains($0.id) }
+            if let previous, !devices.contains(where: { $0.id == previous.id }) {
                 tell(RecordingWording.microphoneDisconnected(previous.name, fallback: fallback))
+            } else if let chosen = resolution.device, chosen.id != previous?.id {
+                tell(RecordingWording.microphoneConnectedAndChosen(chosen.name))
+            } else if !connected.isEmpty {
+                tell(RecordingWording.microphonesConnected(connected.map(\.name)))
             } else if phase == .recordingControls, service.canStart {
                 status = RecordingWording.ready(device: fallback)
             }

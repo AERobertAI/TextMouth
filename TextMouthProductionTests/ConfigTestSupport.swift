@@ -59,6 +59,8 @@ extension ConfigService.AppConfig {
         config.repeatedSymbolThreshold = 7
         config.repeatedSymbolSet = "*=~"
         config.recordingInputDeviceID = "AppleUSBAudioEngine:Studio Microphone:4100000:1"
+        config.recordingAnnouncesLevel = true
+        config.recordingLevelAnnouncementSeconds = 25
         config.recordingOriginalPolicy = AudioOriginalPolicy.Choice.keep.rawValue
         config.recordingOriginalDays = 14
         config.useInstalledFFmpeg = false

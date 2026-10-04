@@ -318,8 +318,9 @@ struct RecordingWindowHarness {
     /// `permission`'s answer; recording into `takesFolder`, a new folder
     /// unless given; pausing the readers of `readers`, a coordinator of the
     /// test's own, as a recording starts, and none without one, so no reader
-    /// of another test is ever touched; and opening on `recovered`, as
-    /// launch opens it.
+    /// of another test is ever touched; keeping its preferences in `store`,
+    /// a new sandboxed store unless given, as a window opened again finds
+    /// the last one's; and opening on `recovered`, as launch opens it.
     init(
         test: XCTestCase,
         devices: [AudioInputDevice] = [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb],
@@ -328,11 +329,12 @@ struct RecordingWindowHarness {
         permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized),
         takesFolder: URL? = nil,
         readers: NowPlayingService? = nil,
+        store: UserDefaults? = nil,
         recovered: [RecoveredTake] = []
     ) throws {
         let backend = FakeCaptureBackend()
         let catalog = FakeRecordingInputCatalog(devices, systemDefault: systemDefault)
-        let store = test.makeSandboxedPreferences("recording-window")
+        let store = store ?? test.makeSandboxedPreferences("recording-window")
         RecordingInputChoice.preference.write(remembered, to: store)
         let saver = FakeRecordingSaver()
         let announcements = SentenceLog()

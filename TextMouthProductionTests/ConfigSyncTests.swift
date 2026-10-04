@@ -1126,8 +1126,11 @@ final class ConfigSyncTests: XCTestCase {
             "repeatedSymbolStyle": RepeatedSymbolStyle.leaveOut.rawValue,
             "repeatedSymbolThreshold": 7,
             "repeatedSymbolSet": "*=~",
-            // Recording, kept by the Record window.
+            // Recording, kept by the Record window: its microphone and its
+            // level announcements.
             "recordingInputDeviceID": "AppleUSBAudioEngine:Studio Microphone:4100000:1",
+            "recordingAnnouncesLevel": true,
+            "recordingLevelAnnouncementSeconds": 25,
             "recordingOriginalPolicy": AudioOriginalPolicy.Choice.keep.rawValue,
             "recordingOriginalDays": 14.0,
             // Audio editing: whether an installed ffmpeg is used, and the

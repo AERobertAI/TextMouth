@@ -905,6 +905,8 @@ final class SettingsViewModel: ObservableObject {
         config.repeatedSymbolThreshold = TextSubstitutionService.repeatedSymbolThresholdPreference.read(from: preferences)
         config.repeatedSymbolSet = TextSubstitutionService.repeatedSymbolSetPreference.read(from: preferences)
         config.recordingInputDeviceID = RecordingInputChoice.preference.read(from: preferences)
+        config.recordingAnnouncesLevel = RecordingLevelAnnouncements.enabled.read(from: preferences)
+        config.recordingLevelAnnouncementSeconds = Double(RecordingLevelAnnouncements.interval.read(from: preferences))
         config.recordingOriginalPolicy = AudioOriginalPolicy.choicePreference.read(from: preferences).rawValue
         config.recordingOriginalDays = AudioOriginalPolicy.daysPreference.read(from: preferences)
         config.useInstalledFFmpeg = AudioFilterEngine.usePreference.read(from: preferences)
@@ -959,6 +961,13 @@ final class SettingsViewModel: ObservableObject {
         )
         // Empty, like any empty text in the file, keeps the microphone chosen.
         adopt(config.recordingInputDeviceID.nonEmpty, into: RecordingInputChoice.preference)
+        adopt(config.recordingAnnouncesLevel, into: RecordingLevelAnnouncements.enabled)
+        adopt(
+            config.recordingLevelAnnouncementSeconds
+                .flatMap { SettingsPolicy.recordingLevelAnnouncementSeconds.requestedValue(fromConfig: $0) }
+                .map { Int($0.rounded()) },
+            into: RecordingLevelAnnouncements.interval
+        )
         adopt(
             SettingsPolicy.recordingOriginalPolicy.requestedValue(fromConfig: config.recordingOriginalPolicy),
             into: AudioOriginalPolicy.choicePreference

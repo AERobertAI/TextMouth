@@ -151,6 +151,40 @@ final class RecordingInputTests: XCTestCase {
         withExtendedLifetime(settings) {}
     }
 
+    /// The Record window's level announcements are kept under their names,
+    /// off and 10 seconds apart until changed, and mirrored in config.json:
+    /// written, applied, kept within 5 to 60 seconds, and kept as they are
+    /// for a missing or unreadable value.
+    @MainActor
+    func testTheLevelAnnouncementsAreMirroredInConfigJSON() throws {
+        let store = makeSandboxedPreferences("recording-level-config")
+        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: store)
+        XCTAssertEqual(RecordingLevelAnnouncements.preferenceKeys, ["recordingAnnouncesLevel", "recordingLevelAnnouncementSeconds"])
+        XCTAssertTrue(Set(RecordingLevelAnnouncements.preferenceKeys).isSubset(of: RecordingPreferences.keys))
+        XCTAssertFalse(RecordingLevelAnnouncements.enabled.read(from: store))
+        XCTAssertEqual(RecordingLevelAnnouncements.interval.read(from: store), 10)
+
+        RecordingLevelAnnouncements.enabled.write(true, to: store)
+        RecordingLevelAnnouncements.interval.write(15, to: store)
+        var written = ConfigService.AppConfig()
+        settings.writePreferences(into: &written)
+        let object = try configObject(written)
+        XCTAssertEqual(object["recordingAnnouncesLevel"] as? Bool, true)
+        XCTAssertEqual(object["recordingLevelAnnouncementSeconds"] as? Double, 15)
+
+        settings.applyConfigChanges(try config(#"{"recordingAnnouncesLevel": false, "recordingLevelAnnouncementSeconds": 45}"#))
+        XCTAssertFalse(RecordingLevelAnnouncements.enabled.read(from: store))
+        XCTAssertEqual(RecordingLevelAnnouncements.interval.read(from: store), 45)
+
+        settings.applyConfigChanges(try config(#"{"recordingLevelAnnouncementSeconds": 2}"#))
+        XCTAssertEqual(RecordingLevelAnnouncements.interval.read(from: store), 5)
+        for json in ["{}", #"{"recordingAnnouncesLevel": null, "recordingLevelAnnouncementSeconds": "often"}"#] {
+            settings.applyConfigChanges(try config(json))
+            XCTAssertFalse(RecordingLevelAnnouncements.enabled.read(from: store), json)
+            XCTAssertEqual(RecordingLevelAnnouncements.interval.read(from: store), 5, json)
+        }
+    }
+
     // MARK: - Helpers
 
     /// Decodes config.json text as `ConfigService` does.

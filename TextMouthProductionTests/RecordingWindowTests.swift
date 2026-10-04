@@ -110,6 +110,91 @@ final class RecordingWindowTests: XCTestCase {
 
         harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb])
         XCTAssertEqual(harness.model.selectedDeviceID, TestMicrophones.usb.id, "the remembered microphone was not used again")
+        XCTAssertEqual(harness.announcements.sentences.last, "Studio Microphone was connected, so recordings use it.")
+    }
+
+    /// A microphone connected while the window is open is listed at once and
+    /// said to be there, recordings still using the one chosen; one
+    /// connected when there was none is used; and nothing is said while a
+    /// recording could pick it up, though the list follows.
+    func testAMicrophoneConnectedWhileTheWindowIsOpenIsListedAndSaid() async throws {
+        let harness = try RecordingWindowHarness(test: self, devices: [], remembered: "")
+        XCTAssertNil(harness.model.selectedDevice)
+
+        harness.catalog.change(to: [TestMicrophones.builtIn])
+        XCTAssertEqual(harness.model.selectedDeviceID, TestMicrophones.builtIn.id)
+        XCTAssertEqual(harness.announcements.sentences.last, "MacBook Air Microphone was connected, so recordings use it.")
+
+        harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb])
+        XCTAssertEqual(harness.model.devices.map(\.name), ["MacBook Air Microphone", "AirPods Pro", "Studio Microphone"])
+        XCTAssertEqual(harness.model.selectedDeviceID, TestMicrophones.builtIn.id, "a new microphone was chosen for the user")
+        XCTAssertEqual(
+            harness.announcements.sentences.last,
+            RecordingWording.microphonesConnected(["AirPods Pro", "Studio Microphone"])
+        )
+        XCTAssertTrue(harness.announcements.sentences.last?.hasSuffix("were connected; choose one in the Microphone pop-up to record from it.") ?? false)
+
+        harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods])
+        XCTAssertEqual(harness.model.devices.map(\.name), ["MacBook Air Microphone", "AirPods Pro"])
+        XCTAssertEqual(harness.model.status, "Ready to record from MacBook Air Microphone.")
+
+        await harness.model.record()
+        let said = harness.announcements.sentences.count
+        harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb])
+        XCTAssertEqual(harness.model.devices.count, 3, "the list stopped following while recording")
+        XCTAssertEqual(harness.announcements.sentences.count, said, "a connection was announced while recording")
+        await harness.model.stop()
+    }
+
+    /// The Microphone pop-up itself follows a microphone connected while
+    /// the window is open, as the catalog reports it.
+    func testTheMicrophonePopUpListsAMicrophoneConnectedWhileOpen() throws {
+        let harness = try RecordingWindowHarness(test: self, devices: [TestMicrophones.builtIn])
+
+        withHostedView(RecordingWindowView(model: harness.model), size: NSSize(width: 520, height: 640), until: {
+            !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty
+        }) { hosting in
+            let microphone = { () -> NSPopUpButton? in
+                self.descendants(of: hosting, as: NSPopUpButton.self).first { $0.itemTitles.contains("MacBook Air Microphone") }
+            }
+            XCTAssertEqual(microphone()?.itemTitles, ["MacBook Air Microphone"])
+
+            harness.catalog.change(to: [TestMicrophones.builtIn, TestMicrophones.airPods])
+
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hosting.layoutSubtreeIfNeeded()
+                return microphone()?.itemTitles == ["MacBook Air Microphone", "AirPods Pro"]
+            }, "the pop-up lists \(microphone()?.itemTitles ?? [])")
+        }
+    }
+
+    /// The level announcement is remembered: a window opened later, as on
+    /// the next launch, announces the level as the last one was left, at its
+    /// interval, kept within 5 to 60 seconds.
+    func testTheLevelAnnouncementIsRememberedByTheNextWindow() async throws {
+        let store = makeSandboxedPreferences("recording-level")
+        let first = try RecordingWindowHarness(test: self, store: store)
+        XCTAssertFalse(first.model.announcesLevel)
+        XCTAssertEqual(first.model.levelAnnouncementInterval, 10)
+
+        first.model.announcesLevel = true
+        first.model.levelAnnouncementInterval = 20
+        first.model.windowClosed()
+        let second = try RecordingWindowHarness(test: self, store: store)
+
+        XCTAssertTrue(second.model.announcesLevel)
+        XCTAssertEqual(second.model.levelAnnouncementInterval, 20)
+        XCTAssertEqual(RecordingWording.announceIntervals, 5...60)
+        RecordingLevelAnnouncements.interval.write(500, to: store)
+        XCTAssertEqual(RecordingLevelAnnouncements.interval.read(from: store), 60)
+
+        await second.model.record()
+        await second.backend.record(seconds: 1, levels: RecordingLevels(average: -30, peak: -15))
+        await second.model.service.refresh()
+        let before = second.announcements.sentences.count
+        for _ in 0..<20 { second.model.tick() }
+        XCTAssertEqual(Array(second.announcements.sentences.dropFirst(before)), ["Level minus 15 decibels, good"])
+        await second.model.stop()
     }
 
     /// Choosing a microphone uses it and remembers it, apart from macOS's
