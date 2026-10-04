@@ -113,10 +113,23 @@ extension PerformanceMeasure {
         unit: .bytes
     )
 
-    /// Opening a text book, through the speech of the chapter it opens at.
+    /// Opening a text book for the first time, through the speech of the
+    /// chapter it opens at: nothing of it is kept on this Mac yet, so its
+    /// content.md is parsed (`ReadingTextCache`).
     static let openTextBook = PerformanceMeasure(
         name: "open.textBook",
-        summary: "Opening the 1 MB EPUB in a reader until the speech of its first chapter is prepared.",
+        summary: "Opening the 1 MB EPUB in a reader for the first time, parsing its content.md, "
+            + "until the speech of its first chapter is prepared.",
+        unit: .milliseconds
+    )
+
+    /// Opening the same text book again, through the speech of the chapter
+    /// it opens at: from the reading text this Mac kept when it was first
+    /// opened, as every later open of a book of a megabyte or more reads it.
+    static let openTextBookCached = PerformanceMeasure(
+        name: "open.textBookCached",
+        summary: "Opening the 1 MB EPUB in a reader again, from the reading text this Mac kept, "
+            + "until the speech of its first chapter is prepared.",
         unit: .milliseconds
     )
 
@@ -175,8 +188,9 @@ extension PerformanceMeasure {
     static let all: [PerformanceMeasure] = [
         launch, firstSortByFileSize,
     ] + LibrarySortField.allCases.map(listDerivation) + [
-        liveReadingPosition, checkpointBytes, openTextBook, openAudiobook, speechPreparation,
-        renderPeakMemory, renderKeptMemory, epubExtraction, cloudRefresh, headingSheetPublish,
+        liveReadingPosition, checkpointBytes, openTextBook, openTextBookCached, openAudiobook,
+        speechPreparation, renderPeakMemory, renderKeptMemory, epubExtraction, cloudRefresh,
+        headingSheetPublish,
     ]
 }
 

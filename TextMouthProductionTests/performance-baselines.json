@@ -72,9 +72,14 @@
       "value" : 4.597
     },
     "open.textBook" : {
-      "summary" : "Opening the 1 MB EPUB in a reader until the speech of its first chapter is prepared.",
+      "summary" : "Opening the 1 MB EPUB in a reader for the first time, parsing its content.md, until the speech of its first chapter is prepared.",
       "unit" : "milliseconds",
       "value" : 208.406
+    },
+    "open.textBookCached" : {
+      "summary" : "Opening the 1 MB EPUB in a reader again, from the reading text this Mac kept, until the speech of its first chapter is prepared.",
+      "unit" : "milliseconds",
+      "value" : 16.8
     },
     "render.keptMemory" : {
       "summary" : "The memory a 40,000-character chapter's rendered speech keeps once built.",
