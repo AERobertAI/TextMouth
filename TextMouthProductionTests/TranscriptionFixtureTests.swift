@@ -25,8 +25,8 @@ final class TranscriptionFixtureTests: XCTestCase {
     /// The opening of Fire Safety, a person reading its title and author,
     /// is transcribed into sentences with timed words, as progress rises.
     func testTheOpeningOfFireSafetyIsTranscribedWithTimedWords() async throws {
-        let locale = try await requireEnglishModel()
-        let file = try extract(Self.fireSafetyOpening, from: try fixture(Self.fireSafety))
+        let locale = try await requireInstalledEnglishModel()
+        let file = try extract(Self.fireSafetyOpening, from: try optionalTestDataArchive(Self.fireSafety))
 
         let (sentences, progress) = try await transcribe(file, in: locale)
 
@@ -38,8 +38,8 @@ final class TranscriptionFixtureTests: XCTestCase {
     /// A warning from Are You Ready, read by a synthetic voice, is
     /// transcribed the same way.
     func testAWarningFromAreYouReadyIsTranscribedWithTimedWords() async throws {
-        let locale = try await requireEnglishModel()
-        let file = try extract(Self.areYouReadyWarning, from: try fixture(Self.areYouReady))
+        let locale = try await requireInstalledEnglishModel()
+        let file = try extract(Self.areYouReadyWarning, from: try optionalTestDataArchive(Self.areYouReady))
 
         let (sentences, _) = try await transcribe(file, in: locale)
 
@@ -51,12 +51,12 @@ final class TranscriptionFixtureTests: XCTestCase {
     /// its content.md holds what was heard under the book's heading, and a
     /// reader opening it shows that text while it keeps the book's audio.
     func testATranscribedRecordingReadsAsText() async throws {
-        let locale = try await requireEnglishModel()
+        let locale = try await requireInstalledEnglishModel()
         let world = try makeIntegrationWorld("Transcription Fixture Book")
         let book = try await makeSingleFileBook(
             in: world,
             title: "Fire Safety",
-            copying: try extract(Self.fireSafetyOpening, from: try fixture(Self.fireSafety))
+            copying: try extract(Self.fireSafetyOpening, from: try optionalTestDataArchive(Self.fireSafety))
         )
         let service = TranscriptionService(languagesToTry: { [locale.identifier(.bcp47)] })
         let progress = ProgressRecorder()
@@ -96,7 +96,7 @@ final class TranscriptionFixtureTests: XCTestCase {
             ProcessInfo.processInfo.environment["TEXTMOUTH_TRANSCRIPTION_LONG"] == "1",
             "set TEST_RUNNER_TEXTMOUTH_TRANSCRIPTION_LONG=1 to transcribe both fixture books whole"
         )
-        let locale = try await requireEnglishModel()
+        let locale = try await requireInstalledEnglishModel()
         let world = try makeIntegrationWorld("Transcription Whole Books")
         let service = TranscriptionService(languagesToTry: { [locale.identifier(.bcp47)] })
 
@@ -104,7 +104,7 @@ final class TranscriptionFixtureTests: XCTestCase {
             // Imported as the library imports a DAISY ZIP that holds audio,
             // as an audiobook, off the main thread, which reading and
             // hashing the audio would hold up.
-            let source = try fixture(name)
+            let source = try optionalTestDataArchive(name)
             let folder = world.folder.path
             let book = try await OffMainWork.runThrowing {
                 try FileImportService.importDAISYAudioZipWithReport(from: source, toFolder: folder).book
@@ -142,28 +142,6 @@ final class TranscriptionFixtureTests: XCTestCase {
     /// seconds long.
     static let areYouReady = "are-you-ready-d3-audio.zip"
     static let areYouReadyWarning = "Are_you_ready_z3986/speechgen0029.mp3"
-
-    /// The English model's locale, skipping the test unless this Mac can
-    /// transcribe English now: macOS 26, a Mac that runs the recognizer,
-    /// and the English model installed. Nothing is downloaded to get it.
-    private func requireEnglishModel() async throws -> Locale {
-        try XCTSkipUnless(
-            TranscriptionAvailability.systemSupport == .available,
-            "transcription needs macOS 26 on a Mac that runs its model"
-        )
-        guard case .installed(let locale) = await TranscriptionAvailability.modelStatus(for: Locale(identifier: "en-US")) else {
-            throw XCTSkip("the English speech model is not installed on this Mac, and the tests never download it")
-        }
-        return locale
-    }
-
-    /// The TestData archive `name`, skipping the test when this checkout
-    /// does not keep it (git ignores these archives).
-    private func fixture(_ name: String) throws -> URL {
-        let url = URL(fileURLWithPath: testFilePath(name))
-        try XCTSkipUnless(FileManager.default.fileExists(atPath: url.path), "\(name) is not in this checkout's TestData")
-        return url
-    }
 
     /// The archive entry `path`, extracted from the archive at `archive`
     /// into a sandbox folder of this test's own.

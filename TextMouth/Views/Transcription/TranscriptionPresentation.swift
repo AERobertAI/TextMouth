@@ -25,14 +25,16 @@ struct TranscriptionNotice: Identifiable, Equatable {
 }
 
 /// The transcription dialogs of one window (FR05), a Library window or a
-/// book's: the Transcribe Audio sheet its commands open, the confirmation
-/// before Delete Transcript, and a notice saying why a command did nothing.
-/// The window's commands ask here, and `TranscriptionPresentation` shows
-/// what is asked.
+/// book's: the Transcribe Audio sheet its commands open, the Clean Up sheet,
+/// the confirmation before Delete Transcript, and a notice saying why a
+/// command did nothing. The window's commands ask here, and
+/// `TranscriptionPresentation` shows what is asked.
 @MainActor
 final class TranscriptionPresenter: ObservableObject {
     /// The Transcribe Audio sheet showing, or nil.
     @Published var sheet: TranscriptionSheetModel?
+    /// The Clean Up sheet showing, or nil.
+    @Published var cleanup: TranscriptCleanupSheetModel?
     /// The confirmation before deleting a transcript, while it shows.
     @Published var deletion: TranscriptDeletionRequest?
     /// The notice showing, or nil.
@@ -40,14 +42,22 @@ final class TranscriptionPresenter: ObservableObject {
 
     /// What the dialogs reach: the app's own, unless a test passes its own.
     private let services: @MainActor () -> TranscriptionSheetServices
+    /// What the Clean Up sheet reaches: the app's own, unless a test passes
+    /// its own.
+    private let cleanupServices: @MainActor () -> TranscriptCleanupServices
     /// The library a confirmed deletion acts in.
     private weak var deletionLibrary: LibraryViewModel?
     /// The window a confirmed deletion is announced from.
     private weak var deletionWindow: NSWindow?
 
-    /// A presenter whose dialogs reach `services`.
-    init(services: @escaping @MainActor () -> TranscriptionSheetServices = { .live }) {
+    /// A presenter whose dialogs reach `services`, and whose Clean Up sheet
+    /// reaches `cleanupServices`.
+    init(
+        services: @escaping @MainActor () -> TranscriptionSheetServices = { .live },
+        cleanupServices: @escaping @MainActor () -> TranscriptCleanupServices = { .live }
+    ) {
         self.services = services
+        self.cleanupServices = cleanupServices
     }
 
     /// Opens the Transcribe Audio sheet for `books`, the books a command was
@@ -80,11 +90,31 @@ final class TranscriptionPresenter: ObservableObject {
         switch command {
         case .transcribe(let books):
             transcribe(books, library: library, window: window)
+        case .cleanUpTranscript(let book):
+            cleanUp(book, library: library, window: window)
         case .deleteTranscript(let book):
             Task {
                 await confirmDeletion(of: book, library: library, window: window)
             }
         }
+    }
+
+    // MARK: Clean Up Transcript
+
+    /// Opens the Clean Up sheet for `book`'s transcript (FR05,
+    /// experimental), cleaning up through `library` and announcing from
+    /// `window`, unless a Clean Up sheet is open already.
+    func cleanUp(_ book: Book, library: LibraryViewModel, window: NSWindow?) {
+        guard cleanup == nil else { return }
+        let model = TranscriptCleanupSheetModel(book: book, library: library, services: cleanupServices())
+        model.window = window
+        model.onClose = { [weak self, weak model] in
+            // Only the sheet showing closes: a sheet already replaced, or
+            // closed, leaves the next one alone.
+            guard let self, let model, self.cleanup === model else { return }
+            self.cleanup = nil
+        }
+        cleanup = model
     }
 
     // MARK: Delete Transcript
@@ -147,9 +177,9 @@ final class TranscriptionPresenter: ObservableObject {
 }
 
 /// Shows a window's transcription dialogs (FR05): the Transcribe Audio
-/// sheet, the confirmation before Delete Transcript, whose Cancel Escape
-/// presses, and the notice saying why a command did nothing. A modifier of
-/// its own, so a window's body grows by one line.
+/// sheet, the Clean Up sheet, the confirmation before Delete Transcript,
+/// whose Cancel Escape presses, and the notice saying why a command did
+/// nothing. A modifier of its own, so a window's body grows by one line.
 struct TranscriptionPresentation: ViewModifier {
     /// The window's dialogs.
     @ObservedObject var presenter: TranscriptionPresenter
@@ -158,6 +188,9 @@ struct TranscriptionPresentation: ViewModifier {
         content
             .sheet(item: $presenter.sheet) { model in
                 TranscriptionSheet(model: model)
+            }
+            .sheet(item: $presenter.cleanup) { model in
+                TranscriptCleanupSheet(model: model)
             }
             .alert(
                 presenter.deletion.map { TranscriptionWording.deleteConfirmationTitle(bookTitle: $0.book.title) } ?? "",

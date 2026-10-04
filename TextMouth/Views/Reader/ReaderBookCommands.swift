@@ -8,8 +8,9 @@ import SwiftUI
 /// book's text in the user's own editor (`BookTextEditor`), and are
 /// available only while the reader's book has text to edit. Its Transcribe
 /// Audio… opens the Transcribe Audio sheet on the reader for an audiobook,
-/// and Delete Transcript… asks to delete a transcribed audiobook's
-/// transcript.
+/// Clean Up Transcript (Experimental)… opens the Clean Up sheet for a
+/// transcribed one, and Delete Transcript… asks to delete a transcribed
+/// audiobook's transcript.
 ///
 /// ReaderView attaches this in one line: its body sits at the type
 /// checker's limit (board #829), so everything here lives in views of its
@@ -59,6 +60,10 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 transcribe()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .cleanUpBookTranscript)) { notification in
+                guard takesCommand(notification) else { return }
+                cleanUpTranscript()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .deleteBookTranscript)) { notification in
                 guard takesCommand(notification) else { return }
                 deleteTranscript()
@@ -72,14 +77,19 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 BookTextEditor.canEditText(of: viewModel.book, isTranscribed: transcribedBooks.contains(viewModel.book.id))
             )
             .focusedSceneValue(\.canTranscribeBookAudio, LibraryTranscriptionCommand.isTranscribable(viewModel.book))
-            .focusedSceneValue(
-                \.canDeleteBookTranscript,
-                LibraryTranscriptionCommand.isTranscribable(viewModel.book) && transcribedBooks.contains(viewModel.book.id)
-            )
+            .focusedSceneValue(\.canCleanUpBookTranscript, hasTranscript)
+            .focusedSceneValue(\.canDeleteBookTranscript, hasTranscript)
             .sheet(item: $exportModel) { model in
                 BookExportSheet(model: model, close: { exportModel = nil })
             }
             .modifier(TranscriptionPresentation(presenter: transcription))
+    }
+
+    /// Whether the reader's book is a transcribed audiobook, whose
+    /// transcript Clean Up Transcript (Experimental)… and Delete Transcript…
+    /// act on.
+    private var hasTranscript: Bool {
+        LibraryTranscriptionCommand.isTranscribable(viewModel.book) && transcribedBooks.contains(viewModel.book.id)
     }
 
     /// Opens the Transcribe Audio sheet for the reader's audiobook, as the
@@ -88,6 +98,14 @@ struct ReaderBookCommandsSupport: ViewModifier {
         let library = viewModel.libraryViewModel
         let book = library.bookByID(viewModel.book.id) ?? viewModel.book
         transcription.transcribe([book], library: library, window: viewModel.hostWindow)
+    }
+
+    /// Opens the Clean Up sheet for the reader's audiobook's transcript, as
+    /// the library holds the book now (FR05, experimental).
+    private func cleanUpTranscript() {
+        let library = viewModel.libraryViewModel
+        let book = library.bookByID(viewModel.book.id) ?? viewModel.book
+        transcription.cleanUp(book, library: library, window: viewModel.hostWindow)
     }
 
     /// Asks to delete the transcript of the reader's audiobook, as the

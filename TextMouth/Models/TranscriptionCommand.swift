@@ -8,6 +8,10 @@ enum LibraryTranscriptionCommand: Hashable, Identifiable {
     /// audiobook opens the Transcribe Audio sheet, and several books are
     /// refused with a sentence, as transcription works on one at a time.
     case transcribe([Book])
+    /// Clean Up Transcript (Experimental)…, for one transcribed audiobook:
+    /// opens the Clean Up sheet, which shows what the rules would change
+    /// before anything does.
+    case cleanUpTranscript(Book)
     /// Delete Transcript…, for one transcribed audiobook, after a
     /// confirmation naming it.
     case deleteTranscript(Book)
@@ -21,6 +25,8 @@ enum LibraryTranscriptionCommand: Hashable, Identifiable {
         switch self {
         case .transcribe:
             return TranscriptionWording.transcribeCommandTitle
+        case .cleanUpTranscript:
+            return TranscriptCleanupWording.commandTitle
         case .deleteTranscript:
             return TranscriptionWording.deleteCommandTitle
         }
@@ -29,13 +35,14 @@ enum LibraryTranscriptionCommand: Hashable, Identifiable {
     /// The commands a row offers for `targets`, the books its commands act
     /// on, given which books `isTranscribed` says have a transcript:
     /// Transcribe Audio… whenever one of them is an audiobook in a package
-    /// of its own, then Delete Transcript… when the row acts on one such
-    /// audiobook alone and it is transcribed; nothing for text books alone.
+    /// of its own, then Clean Up Transcript (Experimental)… and Delete
+    /// Transcript… when the row acts on one such audiobook alone and it is
+    /// transcribed; nothing for text books alone.
     static func commands(for targets: [Book], isTranscribed: (UUID) -> Bool = { _ in false }) -> [LibraryTranscriptionCommand] {
         guard targets.contains(where: isTranscribable) else { return [] }
         var commands: [LibraryTranscriptionCommand] = [.transcribe(targets)]
         if targets.count == 1, let book = targets.first, isTranscribable(book), isTranscribed(book.id) {
-            commands.append(.deleteTranscript(book))
+            commands += [.cleanUpTranscript(book), .deleteTranscript(book)]
         }
         return commands
     }

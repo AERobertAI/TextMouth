@@ -241,14 +241,15 @@ struct TranscriptionSheet: View {
     }
 }
 
-private extension View {
-    /// Marks this control as `target` of a sheet whose first control is now
-    /// `first`: it takes keyboard focus while the sheet's focus is on it,
+extension View {
+    /// Marks this control as `target` of a transcription sheet whose first
+    /// control is now `first`, the Transcribe Audio sheet's or the Clean Up
+    /// sheet's: it takes keyboard focus while the sheet's focus is on it,
     /// and VoiceOver moves to it once when it becomes the first control.
-    func focusing(
-        _ target: TranscriptionSheetModel.FocusTarget,
-        first: TranscriptionSheetModel.FocusTarget?,
-        _ focus: FocusState<TranscriptionSheetModel.FocusTarget?>.Binding
+    func focusing<Target: Hashable>(
+        _ target: Target,
+        first: Target?,
+        _ focus: FocusState<Target?>.Binding
     ) -> some View {
         focused(focus, equals: target)
             .modifier(InitialVoiceOverFocusModifier(

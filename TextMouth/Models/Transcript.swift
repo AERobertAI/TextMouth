@@ -45,6 +45,11 @@ struct Transcript: Codable, Equatable, Sendable {
     /// any other. Transcribing again replaces an edited transcript only
     /// after the Transcribe Audio sheet has said so.
     var editedAt: Date? = nil
+    /// When the transcript was last cleaned up by rule (Clean Up Transcript,
+    /// `TranscriptCleanup`), with which rules and how many corrections; nil
+    /// for a transcript never cleaned up. transcript.json leaves it out
+    /// until then, as it leaves out `editedAt`.
+    var cleanedUp: TranscriptCleanupNote? = nil
 
     /// What a book's record notes about this transcript (`BookState.transcript`).
     var note: TranscriptNote {
@@ -140,6 +145,17 @@ struct TranscriptSentence: Codable, Equatable, Sendable {
     /// were timed, the runs of its text between spaces.
     var wordCount: Int {
         words.isEmpty ? text.split(whereSeparator: \.isWhitespace).count : words.count
+    }
+
+    /// Gives the sentence `text` in place of its own, as an edit in the
+    /// user's editor (`TranscriptEditing`) or a cleanup
+    /// (`TranscriptCleanup`) rewrites it: the sentence keeps its time in the
+    /// audio, and its words' timings, which no longer fit the new text, go.
+    /// The text it has already changes nothing.
+    mutating func rewrite(as text: String) {
+        guard text != self.text else { return }
+        self.text = text
+        words = []
     }
 }
 
