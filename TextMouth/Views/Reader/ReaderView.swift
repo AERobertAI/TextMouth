@@ -1,18 +1,44 @@
 import SwiftUI
 import AVFoundation
 
+/// A reader window's content: the book, its toolbar, and its panels, each a
+/// sheet over the reader that a toolbar button or a menu command opens.
+///
+/// The body only puts the parts together, each a view, a property, or a
+/// modifier of its own (board #829). A view's body is type-checked as one
+/// expression, and when every part was written out inside it, the body sat
+/// at the compiler's limit: one more modifier, or a parameter whose type
+/// changed, failed the build with "unable to type-check this expression in
+/// reasonable time". Each part is type-checked on its own now. The parts
+/// draw what the body drew, in the same order, with the same labels.
 struct ReaderView: View {
     @ObservedObject var viewModel: ReaderViewModel
     @EnvironmentObject var soundEffectService: SoundEffectService
-    @State private var showHeadingNavigator = false
-    @State private var showBookmarks = false
-    @State private var showSleepTimer = false
-    @State private var showMetadataEditor = false
-    @State private var showVoicePicker = false
-    @State private var showSearch = false
+    /// Which of the reader's panels are showing.
+    @State private var panels = ReaderPanels()
     /// Closes this reader's window, for Close in the cloud download view.
     @Environment(\.dismissWindow) private var dismissWindow
+
     var body: some View {
+        readerContent
+            .toolbar { toolbarItems }
+            .onAppear {
+                viewModel.soundEffectService = soundEffectService
+            }
+            // Export and the other commands on the book as a whole (FR05).
+            .modifier(ReaderBookCommandsSupport(viewModel: viewModel))
+            .modifier(ReaderErrorAlert(viewModel: viewModel))
+            .modifier(ReaderPanelSheets(viewModel: viewModel, panels: $panels))
+            .modifier(ReaderPanelCommands(viewModel: viewModel, panels: $panels))
+    }
+
+    // MARK: - Content
+
+    /// What the window shows: the book being got from the cloud, the book
+    /// loading, why it could not be loaded, or, once it has loaded, the
+    /// book itself: where the reader is, the info bar, the text, and the
+    /// playback controls, top to bottom.
+    private var readerContent: some View {
         VStack(spacing: 0) {
             if let phase = viewModel.cloudPhase {
                 // The book, or the chapter about to play, is being got from
@@ -21,101 +47,24 @@ struct ReaderView: View {
                     phase: phase,
                     title: viewModel.book.title,
                     provider: viewModel.cloudProvider,
-                    actions: ReaderCloudPhaseView.Actions(
-                        cancel: { viewModel.cancelDownload() },
-                        download: { viewModel.downloadAgain() },
-                        tryAgain: { viewModel.retryOpening() },
-                        close: { dismissWindow() }
-                    )
+                    actions: cloudPhaseActions
                 )
             } else if viewModel.isLoading {
                 ProgressView("Loading book...")
                     .accessibilityLabel("Loading \(viewModel.book.title)")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let error = viewModel.loadErrorMessage {
-                VStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle)
-                        .foregroundColor(.red)
-                        .accessibilityHidden(true)
-                    Text("Failed to load book")
-                        .font(.headline)
-                    Text(error)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilityElement(children: .combine)
+                ReaderLoadFailureView(message: error)
             } else {
-                // Book info header: the book title, the heading being read,
-                // and that heading's number among all the book's headings —
-                // the same list and numbering the headings panel shows.
-                // Internal content units (spine files, audio files) are
-                // never counted here.
-                VStack(alignment: .leading, spacing: 4) {
-                    if viewModel.content != nil {
-                        Text(viewModel.book.title)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .accessibilityAddTraits(.isHeader)
-
-                        let position = viewModel.displayHeadingPosition
-                        if let title = viewModel.locationTitle(
-                            for: position,
-                            chapterIndex: viewModel.displayChapterIndex
-                        ) {
-                            Text(title)
-                                .font(.title3)
-                                .foregroundColor(.secondary)
-                        }
-
-                        // Empty for a book without headings.
-                        if !position.label.isEmpty {
-                            Text(position.label)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                // The book's title, the heading being read, and its number.
+                ReaderLocationHeader(viewModel: viewModel)
 
                 // Info bar with progress, time remaining, sleep timer
                 BookInfoBar(viewModel: viewModel)
 
                 Divider()
 
-                // Text display area — only render a window of text around the
-                // current position. The full chapter text lives in the model for
-                // TTS; rendering hundreds of thousands of characters in a SwiftUI
-                // Text view freezes the main thread.
-                ScrollView {
-                    if let content = viewModel.content,
-                       viewModel.displayChapterIndex < content.chapters.count {
-                        if viewModel.isPlaybackActivelyAdvancing {
-                            // Keep selection disabled while the playback
-                            // window is still capable of moving. A
-                            // constantly replaced selectable Text view was
-                            // the most likely trigger for the huge
-                            // VoiceOver/AppKit memory spike during live
-                            // playback.
-                            Text(viewModel.displayVisibleTextWindow)
-                                .font(.body)
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .textSelection(.disabled)
-                                .accessibilityLabel("Book content")
-                        } else {
-                            Text(viewModel.displayVisibleTextWindow)
-                                .font(.body)
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .textSelection(.enabled)
-                                .accessibilityLabel("Book content")
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ReaderTextArea(viewModel: viewModel)
 
                 Divider()
 
@@ -123,99 +72,269 @@ struct ReaderView: View {
                 PlaybackControlsView(viewModel: viewModel)
             }
         }
-        .toolbar {
-            ToolbarItemGroup {
-                if viewModel.hasSavedPosition {
-                    Button {
-                        viewModel.returnToSavedPosition()
-                    } label: {
-                        Label("Return", systemImage: "arrow.uturn.backward")
-                    }
-                    .accessibilityLabel("Return to previous reading position")
-                    .accessibilityHint("Go back to where you were before browsing headings or bookmarks")
+    }
+
+    /// What the cloud download view's buttons do: Cancel, Download, and
+    /// Try Again act on the reader, and Close closes its window.
+    private var cloudPhaseActions: ReaderCloudPhaseView.Actions {
+        ReaderCloudPhaseView.Actions(
+            cancel: { viewModel.cancelDownload() },
+            download: { viewModel.downloadAgain() },
+            tryAgain: { viewModel.retryOpening() },
+            close: { dismissWindow() }
+        )
+    }
+
+    // MARK: - Toolbar
+
+    /// The reader's toolbar, in order: Return, while there is a reading
+    /// position to return to; Where Am I?; the buttons that open the
+    /// Headings, Bookmarks, Sleep Timer, Search (a text book's only), Voice
+    /// or Speed, and Book Info panels; and the speed in force.
+    @ToolbarContentBuilder
+    private var toolbarItems: some ToolbarContent {
+        ToolbarItemGroup {
+            if viewModel.hasSavedPosition {
+                toolbarButton(
+                    "Return",
+                    systemImage: "arrow.uturn.backward",
+                    spokenLabel: "Return to previous reading position"
+                ) {
+                    viewModel.returnToSavedPosition()
+                }
+                .accessibilityHint("Go back to where you were before browsing headings or bookmarks")
+            }
+
+            toolbarButton("Where Am I?", systemImage: "location.circle", spokenLabel: whereAmISpokenLabel) {
+                viewModel.whereAmI()
+            }
+
+            toolbarButton("Headings", systemImage: "list.bullet", spokenLabel: "Show heading navigator") {
+                panels.headings.toggle()
+            }
+
+            toolbarButton("Bookmarks", systemImage: "bookmark", spokenLabel: "Show bookmarks") {
+                panels.bookmarks.toggle()
+            }
+
+            toolbarButton("Sleep Timer", systemImage: "moon", spokenLabel: "Sleep timer") {
+                panels.sleepTimer.toggle()
+            }
+
+            if !viewModel.isAudioBook {
+                toolbarButton("Search", systemImage: "magnifyingglass", spokenLabel: "Search in book") {
+                    panels.search.toggle()
+                }
+            }
+
+            toolbarButton(
+                viewModel.isAudioBook ? "Speed" : "Voice",
+                systemImage: Self.bookSettingsSymbol(isAudioBook: viewModel.isAudioBook),
+                spokenLabel: viewModel.isAudioBook ? "Change audio speed for this book" : "Change voice for this book"
+            ) {
+                panels.voice.toggle()
+            }
+
+            toolbarButton("Book Info", systemImage: "info.circle", spokenLabel: "Edit book metadata") {
+                panels.bookInfo.toggle()
+            }
+
+            speedCaption
+        }
+    }
+
+    /// A toolbar button showing `title` beside the SF Symbol `systemImage`,
+    /// which VoiceOver speaks as `spokenLabel`, and which runs `action`.
+    private func toolbarButton(
+        _ title: LocalizedStringKey,
+        systemImage: String,
+        spokenLabel: LocalizedStringKey,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+        }
+        .accessibilityLabel(spokenLabel)
+    }
+
+    /// What VoiceOver calls the Where Am I? button: what pressing it does,
+    /// which is to stop the announcement while one is speaking.
+    private var whereAmISpokenLabel: LocalizedStringKey {
+        viewModel.isWhereAmISpeaking ? "Stop Where Am I announcement" : "Where Am I? Announces current position in the book"
+    }
+
+    /// The speed in force, at the toolbar's end: an audiobook's speed, or a
+    /// text book's words per minute, in the accent color while the book has
+    /// a speed of its own.
+    @ViewBuilder
+    private var speedCaption: some View {
+        if viewModel.isAudioBook {
+            // Shared formatter: "1.25x" on screen, "1.25 times speed" spoken.
+            Text(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))
+                .font(.caption)
+                .foregroundColor(speedCaptionColor)
+                .accessibilityLabel(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
+        } else {
+            Text("\(Int(viewModel.speechService.wordsPerMinute)) WPM")
+                .font(.caption)
+                .foregroundColor(speedCaptionColor)
+                .accessibilityLabel("\(Int(viewModel.speechService.wordsPerMinute)) words per minute\(viewModel.book.localWPM != nil ? ", book-specific speed" : "")")
+        }
+    }
+
+    /// The speed caption's color: the accent color while the book has a
+    /// speed of its own, and otherwise the secondary color.
+    private var speedCaptionColor: Color {
+        viewModel.book.localWPM != nil ? .accentColor : .secondary
+    }
+
+    /// SF Symbol for the toolbar button that opens per-book settings. Audio
+    /// books open speed-only settings, so they show a speed gauge rather
+    /// than the voice icon a sighted user would read as "voice settings".
+    static func bookSettingsSymbol(isAudioBook: Bool) -> String {
+        isAudioBook ? "gauge.with.needle" : "person.wave.2"
+    }
+}
+
+// MARK: - The Reader's Parts
+
+/// Which of a reader's panels are showing, each as a sheet over the reader.
+/// The toolbar's buttons and the menu commands (`ReaderPanelCommands`) open
+/// and close them, and `ReaderPanelSheets` presents them.
+struct ReaderPanels {
+    /// The headings (`HeadingNavigatorView`).
+    var headings = false
+    /// The bookmarks (`BookmarkPanelView`).
+    var bookmarks = false
+    /// The sleep timer (`SleepTimerView`).
+    var sleepTimer = false
+    /// The book's info (`MetadataEditorView`, or `LibraryBookInfoSheet`).
+    var bookInfo = false
+    /// The book's voice and speed, or an audiobook's speed
+    /// (`BookVoicePickerView`).
+    var voice = false
+    /// Search in the book (`BookSearchView`), for a text book only.
+    var search = false
+}
+
+/// Why the book could not be loaded, shown in place of the book, and read
+/// by VoiceOver as one element: "Failed to load book", then the reason.
+struct ReaderLoadFailureView: View {
+    /// What went wrong, the reader's `loadErrorMessage`.
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundColor(.red)
+                .accessibilityHidden(true)
+            Text("Failed to load book")
+                .font(.headline)
+            Text(message)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The header above the info bar, the reader's status line: the book's
+/// title, the heading being read, and that heading's number among all the
+/// book's headings, the same list and numbering the headings panel shows.
+/// Internal content units (spine files, audio files) are never counted
+/// here. It follows the throttled display cursor, so it moves with playback
+/// across headings without drawing again at every word.
+struct ReaderLocationHeader: View {
+    @ObservedObject var viewModel: ReaderViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if viewModel.content != nil {
+                Text(viewModel.book.title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .accessibilityAddTraits(.isHeader)
+
+                let position = viewModel.displayHeadingPosition
+                if let title = viewModel.locationTitle(
+                    for: position,
+                    chapterIndex: viewModel.displayChapterIndex
+                ) {
+                    Text(title)
+                        .font(.title3)
+                        .foregroundColor(.secondary)
                 }
 
-                Button {
-                    viewModel.whereAmI()
-                } label: {
-                    Label("Where Am I?", systemImage: "location.circle")
-                }
-                .accessibilityLabel(viewModel.isWhereAmISpeaking ? "Stop Where Am I announcement" : "Where Am I? Announces current position in the book")
-
-                Button {
-                    showHeadingNavigator.toggle()
-                } label: {
-                    Label("Headings", systemImage: "list.bullet")
-                }
-                .accessibilityLabel("Show heading navigator")
-
-                Button {
-                    showBookmarks.toggle()
-                } label: {
-                    Label("Bookmarks", systemImage: "bookmark")
-                }
-                .accessibilityLabel("Show bookmarks")
-
-                Button {
-                    showSleepTimer.toggle()
-                } label: {
-                    Label("Sleep Timer", systemImage: "moon")
-                }
-                .accessibilityLabel("Sleep timer")
-
-                if !viewModel.isAudioBook {
-                    Button {
-                        showSearch.toggle()
-                    } label: {
-                        Label("Search", systemImage: "magnifyingglass")
-                    }
-                    .accessibilityLabel("Search in book")
-                }
-
-                Button {
-                    showVoicePicker.toggle()
-                } label: {
-                    Label(
-                        viewModel.isAudioBook ? "Speed" : "Voice",
-                        systemImage: Self.bookSettingsSymbol(isAudioBook: viewModel.isAudioBook)
-                    )
-                }
-                .accessibilityLabel(viewModel.isAudioBook ? "Change audio speed for this book" : "Change voice for this book")
-
-                Button {
-                    showMetadataEditor.toggle()
-                } label: {
-                    Label("Book Info", systemImage: "info.circle")
-                }
-                .accessibilityLabel("Edit book metadata")
-
-                if viewModel.isAudioBook {
-                    // Shared formatter: "1.25x" on screen, "1.25 times speed" spoken.
-                    Text(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))
+                // Empty for a book without headings.
+                if !position.label.isEmpty {
+                    Text(position.label)
                         .font(.caption)
-                        .foregroundColor(viewModel.book.localWPM != nil ? .accentColor : .secondary)
-                        .accessibilityLabel(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
-                } else {
-                    Text("\(Int(viewModel.speechService.wordsPerMinute)) WPM")
-                        .font(.caption)
-                        .foregroundColor(viewModel.book.localWPM != nil ? .accentColor : .secondary)
-                        .accessibilityLabel("\(Int(viewModel.speechService.wordsPerMinute)) words per minute\(viewModel.book.localWPM != nil ? ", book-specific speed" : "")")
+                        .foregroundColor(.secondary)
                 }
             }
         }
-        .onAppear {
-            viewModel.soundEffectService = soundEffectService
+        .padding(.horizontal)
+        .padding(.top, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The book's text, which VoiceOver calls "Book content".
+///
+/// Only a window of text around the current position is drawn. The full
+/// chapter text lives in the model for TTS; rendering hundreds of thousands
+/// of characters in a SwiftUI Text view freezes the main thread.
+struct ReaderTextArea: View {
+    @ObservedObject var viewModel: ReaderViewModel
+
+    var body: some View {
+        ScrollView {
+            if let content = viewModel.content,
+               viewModel.displayChapterIndex < content.chapters.count {
+                if viewModel.isPlaybackActivelyAdvancing {
+                    // Keep selection disabled while the playback window is
+                    // still capable of moving. A constantly replaced
+                    // selectable Text view was the most likely trigger for
+                    // the huge VoiceOver/AppKit memory spike during live
+                    // playback.
+                    visibleText
+                        .textSelection(.disabled)
+                        .accessibilityLabel("Book content")
+                } else {
+                    visibleText
+                        .textSelection(.enabled)
+                        .accessibilityLabel("Book content")
+                }
+            }
         }
-        // Export and the other commands on the book as a whole (FR05).
-        .modifier(ReaderBookCommandsSupport(viewModel: viewModel))
-        // A problem met after the book has loaded, such as a chapter whose
-        // audio cannot be played or could not be got from the cloud, is
-        // shown over the reader, which stays usable behind it. Return
-        // chooses the default button, Retry (Try Again for the cloud) or
-        // OK, and Escape cancels.
-        .alert(
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// The window of text around the current position, laid out across the
+    /// area's width.
+    private var visibleText: some View {
+        Text(viewModel.displayVisibleTextWindow)
+            .font(.body)
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// A problem met after the book has loaded, such as a chapter whose audio
+/// cannot be played or could not be got from the cloud, shown as an alert
+/// over the reader, which stays usable behind it. Return chooses the
+/// default button, Retry (Try Again for the cloud) or OK, and Escape
+/// cancels.
+struct ReaderErrorAlert: ViewModifier {
+    /// The reader whose error the alert shows, observed so the alert comes
+    /// and goes with it.
+    @ObservedObject var viewModel: ReaderViewModel
+
+    func body(content: Content) -> some View {
+        content.alert(
             viewModel.errorAlert?.title ?? "",
-            isPresented: errorAlertIsPresented,
+            isPresented: isPresented,
             presenting: viewModel.errorAlert
         ) { alert in
             if alert.offersRetry {
@@ -233,106 +352,12 @@ struct ReaderView: View {
         } message: { alert in
             Text(alert.message)
         }
-        .sheet(isPresented: $showHeadingNavigator) {
-            HeadingNavigatorView(viewModel: viewModel)
-        }
-        .sheet(isPresented: $showBookmarks) {
-            BookmarkPanelView(viewModel: viewModel)
-        }
-        .sheet(isPresented: $showSleepTimer) {
-            SleepTimerView(
-                viewModel: viewModel,
-                sleepTimerService: viewModel.sleepTimerService,
-                onStartPlayback: {
-                    if !viewModel.isCurrentlyPlaying || viewModel.isCurrentlyPaused {
-                        viewModel.togglePlayPause()
-                    }
-                },
-                onClose: {
-                    showSleepTimer = false
-                },
-                autoClose: viewModel.settingsViewModel.sleepTimerAutoClose
-            )
-        }
-        .sheet(isPresented: $showMetadataEditor) {
-            if let metadata = viewModel.epubMetadata {
-                MetadataEditorView(
-                    metadata: metadata,
-                    isEPUB: viewModel.book.format == .epub,
-                    onSave: { updated, writeToFile in
-                        viewModel.saveEPUBMetadata(updated, writeToFile: writeToFile)
-                    }
-                )
-            } else if let audioMeta = viewModel.audioMetadata {
-                MetadataEditorView(
-                    audioMetadata: audioMeta,
-                    onSave: { updated in
-                        viewModel.saveAudioMetadata(updated)
-                    }
-                )
-            } else {
-                // Plain text, markdown, HTML — use the simple info editor
-                LibraryBookInfoSheet(
-                    book: viewModel.book,
-                    libraryViewModel: viewModel.libraryViewModel
-                )
-            }
-        }
-        .sheet(isPresented: $showVoicePicker) {
-            BookVoicePickerView(viewModel: viewModel)
-        }
-        .sheet(isPresented: $showSearch) {
-            if let content = viewModel.content {
-                BookSearchView(
-                    chapterTexts: content.chapters.map { $0.text },
-                    chapterTitles: content.chapters.map { $0.title },
-                    headings: viewModel.headings,
-                    bookTitle: viewModel.book.title,
-                    totalCharacterCount: content.totalCharacterCount,
-                    totalWordCount: content.totalWordCount,
-                    currentWPM: viewModel.speechService.wordsPerMinute,
-                    announce: viewModel.announceToVoiceOver,
-                    onNavigate: { chapterIndex, charOffset in
-                        viewModel.navigateToSearchResult(chapterIndex: chapterIndex, characterOffset: charOffset)
-                        showSearch = false
-                    }
-                )
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .showHeadingList)) { notification in
-            guard shouldAcceptPanelCommand(notification) else { return }
-            showHeadingNavigator.toggle()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .showBookmarkList)) { notification in
-            guard shouldAcceptPanelCommand(notification) else { return }
-            showBookmarks.toggle()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .showSleepTimer)) { notification in
-            guard shouldAcceptPanelCommand(notification) else { return }
-            showSleepTimer.toggle()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .searchInBook)) { notification in
-            // An audio book's text is only placeholder spacing for position
-            // tracking, so the toolbar offers no Search for it; the menu
-            // command must not open it either.
-            guard !viewModel.isAudioBook, shouldAcceptPanelCommand(notification) else { return }
-            showSearch.toggle()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
-            // Only open in the focused reader window
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard sourceWindow === viewModel.hostWindow else { return }
-            } else {
-                guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
-            }
-            showMetadataEditor = true
-        }
     }
 
     /// Whether the error alert is showing: while the reader has an error to
     /// show over its content. Closing the alert by any button, or with
     /// Escape, forgets the error.
-    private var errorAlertIsPresented: Binding<Bool> {
+    private var isPresented: Binding<Bool> {
         Binding(
             get: { viewModel.errorAlert != nil },
             set: { isPresented in
@@ -341,6 +366,149 @@ struct ReaderView: View {
                 }
             }
         )
+    }
+}
+
+/// The reader's panels, each presented as a sheet over the reader while
+/// `panels` says it shows. The reader is observed, as the reader view
+/// observed it when it presented them itself, so a sheet that is showing
+/// is made again with what the reader holds now.
+struct ReaderPanelSheets: ViewModifier {
+    @ObservedObject var viewModel: ReaderViewModel
+    @Binding var panels: ReaderPanels
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(isPresented: $panels.headings) {
+                HeadingNavigatorView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $panels.bookmarks) {
+                BookmarkPanelView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $panels.sleepTimer) {
+                sleepTimerSheet
+            }
+            .sheet(isPresented: $panels.bookInfo) {
+                bookInfoSheet
+            }
+            .sheet(isPresented: $panels.voice) {
+                BookVoicePickerView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $panels.search) {
+                searchSheet
+            }
+    }
+
+    /// The sleep timer, whose start plays the book unless it is playing
+    /// already, and whose Close, or its closing by itself when Settings
+    /// say so, closes the sheet.
+    private var sleepTimerSheet: some View {
+        SleepTimerView(
+            viewModel: viewModel,
+            sleepTimerService: viewModel.sleepTimerService,
+            onStartPlayback: {
+                if !viewModel.isCurrentlyPlaying || viewModel.isCurrentlyPaused {
+                    viewModel.togglePlayPause()
+                }
+            },
+            onClose: {
+                panels.sleepTimer = false
+            },
+            autoClose: viewModel.settingsViewModel.sleepTimerAutoClose
+        )
+    }
+
+    /// The book's info: an EPUB's metadata or an audiobook's, in the
+    /// metadata editor, or for any other book (plain text, Markdown, HTML)
+    /// the simple info editor the library uses.
+    @ViewBuilder
+    private var bookInfoSheet: some View {
+        if let metadata = viewModel.epubMetadata {
+            MetadataEditorView(
+                metadata: metadata,
+                isEPUB: viewModel.book.format == .epub,
+                onSave: { updated, writeToFile in
+                    viewModel.saveEPUBMetadata(updated, writeToFile: writeToFile)
+                }
+            )
+        } else if let audioMeta = viewModel.audioMetadata {
+            MetadataEditorView(
+                audioMetadata: audioMeta,
+                onSave: { updated in
+                    viewModel.saveAudioMetadata(updated)
+                }
+            )
+        } else {
+            // Plain text, markdown, HTML — use the simple info editor
+            LibraryBookInfoSheet(
+                book: viewModel.book,
+                libraryViewModel: viewModel.libraryViewModel
+            )
+        }
+    }
+
+    /// Search in the loaded book. Choosing a result moves the reader there
+    /// and closes the sheet.
+    @ViewBuilder
+    private var searchSheet: some View {
+        if let content = viewModel.content {
+            BookSearchView(
+                chapterTexts: content.chapters.map { $0.text },
+                chapterTitles: content.chapters.map { $0.title },
+                headings: viewModel.headings,
+                bookTitle: viewModel.book.title,
+                totalCharacterCount: content.totalCharacterCount,
+                totalWordCount: content.totalWordCount,
+                currentWPM: viewModel.speechService.wordsPerMinute,
+                announce: viewModel.announceToVoiceOver,
+                onNavigate: { chapterIndex, charOffset in
+                    viewModel.navigateToSearchResult(chapterIndex: chapterIndex, characterOffset: charOffset)
+                    panels.search = false
+                }
+            )
+        }
+    }
+}
+
+/// The menu commands that open and close the reader's panels: Headings,
+/// Bookmarks, Sleep Timer, and Search toggle theirs, and Book Info opens
+/// its own. The reader is read only when a command arrives, so it is not
+/// observed.
+struct ReaderPanelCommands: ViewModifier {
+    /// The reader the panels belong to.
+    let viewModel: ReaderViewModel
+    @Binding var panels: ReaderPanels
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .showHeadingList)) { notification in
+                guard shouldAcceptPanelCommand(notification) else { return }
+                panels.headings.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .showBookmarkList)) { notification in
+                guard shouldAcceptPanelCommand(notification) else { return }
+                panels.bookmarks.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .showSleepTimer)) { notification in
+                guard shouldAcceptPanelCommand(notification) else { return }
+                panels.sleepTimer.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .searchInBook)) { notification in
+                // An audio book's text is only placeholder spacing for position
+                // tracking, so the toolbar offers no Search for it; the menu
+                // command must not open it either.
+                guard !viewModel.isAudioBook, shouldAcceptPanelCommand(notification) else { return }
+                panels.search.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
+                // Only open in the focused reader window
+                if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                    guard sourceWindow === viewModel.hostWindow else { return }
+                } else {
+                    guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
+                }
+                panels.bookInfo = true
+            }
     }
 
     /// Accept panel commands from the reader window itself or from a sheet
@@ -352,13 +520,6 @@ struct ReaderView: View {
             hostWindow: viewModel.hostWindow,
             keyWindow: NSApp.keyWindow
         )
-    }
-
-    /// SF Symbol for the toolbar button that opens per-book settings. Audio
-    /// books open speed-only settings, so they show a speed gauge rather
-    /// than the voice icon a sighted user would read as "voice settings".
-    static func bookSettingsSymbol(isAudioBook: Bool) -> String {
-        isAudioBook ? "gauge.with.needle" : "person.wave.2"
     }
 }
 
