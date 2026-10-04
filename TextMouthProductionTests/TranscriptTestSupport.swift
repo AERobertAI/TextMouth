@@ -86,6 +86,23 @@ enum TranscriptFixtures {
         )
     }
 
+    /// A transcript of `book`'s audio as the transcription service makes
+    /// one: each of the book's files, in the order it plays them, measured
+    /// and fingerprinted as it is now, with `sentences`, by the file's path
+    /// in the book, as what was heard in it.
+    static func transcript(of book: Book, sentences: [String: [TranscriptSentence]]) throws -> Transcript {
+        var transcript = transcript([])
+        transcript.files = try TranscriptionPlan.make(for: book).files.map { file in
+            TranscriptFile(
+                path: file.path,
+                fingerprint: file.fingerprint,
+                durationMilliseconds: Transcript.milliseconds(file.duration),
+                sentences: sentences[file.path] ?? []
+            )
+        }
+        return transcript
+    }
+
     /// Two files of invented narration: three sentences in the first and
     /// two in the second, every word timed.
     static var twoFiles: Transcript {

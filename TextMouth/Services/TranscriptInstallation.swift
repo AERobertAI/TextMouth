@@ -1,0 +1,75 @@
+import Foundation
+
+/// What saving a transcript into its book did (`TranscriptStore.install`).
+struct TranscriptInstallation: Sendable {
+    /// The book's audio index, now carrying the transcript text's layer, as
+    /// the book's record holds it.
+    let index: BookContentIndex
+    /// The transcript text, as a reader opening the book now shows it.
+    let text: TranscriptText
+    /// The book as its record holds it now, or nil when the record could
+    /// not take the index, as when it is only in the cloud; the next open
+    /// of the book then writes the index from transcript.json.
+    let recordedBook: Book?
+}
+
+extension TranscriptStore {
+    /// Saves `transcript` as `book`'s transcript and makes it the book's text
+    /// (FR05): transcript.json, content.md written from it, and the book's
+    /// audio index carrying the text's layer, saved through the book's record
+    /// (`LibraryPersistenceService.saveContentAnalysis`), which also notes
+    /// the transcript in bookInfo.json. A transcript the book had is replaced,
+    /// with its text, and the reading text this Mac kept for the book is
+    /// dropped. The book's reading position, bookmarks, and settings are
+    /// left as they are: they count time, which a transcript does not
+    /// change.
+    ///
+    /// Runs as storage work (`StorageBoundary`), which a data-directory move
+    /// waits for, and blocks while it reads and writes; call it off the main
+    /// thread. Pass the book as the library holds it now: a transcription
+    /// takes minutes, and the book may have moved meanwhile.
+    /// - Throws: `TranscriptionError.notAnAudiobook`, `.audioChanged` when a
+    ///   file of the book is no longer the one transcribed, and the error
+    ///   that kept a file from being written.
+    @discardableResult
+    static func install(
+        _ transcript: Transcript,
+        for book: Book,
+        hasher: FingerprintHasher = .md5
+    ) throws -> TranscriptInstallation {
+        guard book.format.isAudio else { throw TranscriptionError.notAnAudiobook }
+        if let reason = transcript.validationFailure() {
+            throw TranscriptionError.recognitionFailed("the transcript is not usable: \(reason)")
+        }
+        let boundary = StorageBoundary.shared
+        return try boundary.perform(.textExtraction) { _ in
+            let book = boundary.rebasedToCurrent(book)
+            guard FileManager.default.fileExists(atPath: book.tmbDirectory.path) else {
+                throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: book.tmbDirectory.lastPathComponent])
+            }
+            var audioIndex = try BookContentAnalysisService.load(book: book).index
+            audioIndex.transcript = nil
+            switch TranscriptTextLoader.audioCheck(
+                of: transcript.audioFiles,
+                for: book,
+                audioIndex: audioIndex,
+                isDataless: DatalessFiles.isDataless,
+                hasher: hasher
+            ) {
+            case .changed(let reason):
+                throw TranscriptionError.audioChanged(reason)
+            case .current:
+                break
+            }
+            try write(transcript, into: book.tmbDirectory)
+            let written = try TranscriptTextLoader.writeText(of: transcript, for: book, over: audioIndex, hasher: hasher)
+            // A transcription again replaces the text whatever its bytes,
+            // so the reading text kept for the old one goes too.
+            ReadingTextCache.shared.remove(bookID: book.id)
+            var index = audioIndex
+            index.transcript = written.layer
+            let recorded = try LibraryPersistenceService.saveContentAnalysis(for: book, index: index, cacheFormatVersion: nil)
+            return TranscriptInstallation(index: index, text: written.text, recordedBook: recorded)
+        }
+    }
+}

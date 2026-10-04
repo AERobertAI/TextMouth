@@ -45,6 +45,12 @@ enum MarkdownCacheService {
     private static let chapterMarkerPrefix = "<!-- chapter: "
     private static let chapterMarkerSuffix = " -->"
 
+    /// The line that begins a chapter titled `title` in content.md, as
+    /// `splitChapters(_:)` finds it. `title` must be one line.
+    static func chapterMarker(title: String) -> String {
+        "\(chapterMarkerPrefix)\(title)\(chapterMarkerSuffix)"
+    }
+
     /// EPUB extraction already produces reading chapters to resolve heading
     /// coordinates. Keep those results until indexing instead of parsing the
     /// newly written Markdown a second time. Other formats supply Markdown only.
@@ -377,7 +383,7 @@ enum MarkdownCacheService {
     private static func extractFromEPUB(url: URL) throws -> ExtractedCache {
         let book = try EPUBParser.prepareBook(url: url)
         let markdown = book.chapters.map { prepared in
-            "\(chapterMarkerPrefix)\(prepared.chapter.title)\(chapterMarkerSuffix)\n\(prepared.markdown)"
+            "\(chapterMarker(title: prepared.chapter.title))\n\(prepared.markdown)"
         }.joined(separator: "\n\n")
         return ExtractedCache(markdown: markdown, chapters: book.chapters.map(\.chapter), report: book.report)
     }

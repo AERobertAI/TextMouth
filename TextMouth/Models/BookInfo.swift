@@ -192,9 +192,11 @@ struct BookState: Codable {
     var textCacheFingerprint: TextCacheFingerprint?
     /// What the package's transcript is, for a transcribed audiobook
     /// (FR05): its layout version, language, and date, so knowing whether a
-    /// book has a transcript never means reading transcript.json. Only the
-    /// package record holds it; library.json does not, and a library row
-    /// never carries it, so every save of the book's state keeps the note
+    /// book has a transcript never means reading transcript.json or the
+    /// content index. Only the package record holds it; library.json does
+    /// not, and a library row never carries it. It follows the content
+    /// index's transcript text: a write carrying an index notes that index's
+    /// transcript, and every other save of the book's state keeps the note
     /// the record holds (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`).
     /// Nil for any other book.
     var transcript: TranscriptNote?

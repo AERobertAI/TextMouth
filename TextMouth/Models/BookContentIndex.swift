@@ -41,6 +41,13 @@ struct BookContentIndex: Codable, Hashable {
     /// describe the files, not the counts, so adding them leaves
     /// `currentVersion` as it is.
     var textCacheFingerprint: TextCacheFingerprint? = nil
+    /// A transcribed audiobook's transcript text, laid over its chapters
+    /// (FR05, `BookContentTranscriptIndex`); nil for every other book. It
+    /// changes none of the index's own fields, which still describe the
+    /// audio, so it leaves `currentVersion` as it is, validation of the
+    /// audio leaves it to its own check, and an index without one is
+    /// written exactly as before.
+    var transcript: BookContentTranscriptIndex? = nil
 
     var isCurrent: Bool { version == Self.currentVersion }
 

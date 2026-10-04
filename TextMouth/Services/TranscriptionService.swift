@@ -31,6 +31,12 @@ enum TranscriptionError: LocalizedError, Equatable {
     case cancelled
     /// The recognizer failed, for the reason given.
     case recognitionFailed(String)
+    /// A file of the book is not the one transcribed any more, for the
+    /// reason given, so the transcript was not saved.
+    case audioChanged(String)
+    /// The book left the library while it was being transcribed, so its
+    /// transcript was not saved.
+    case bookRemoved
 
     /// Why an audio file that the system cannot open or decode cannot be
     /// read, worded as playback words a damaged file.
@@ -60,6 +66,10 @@ enum TranscriptionError: LocalizedError, Equatable {
             return "Transcription was cancelled."
         case .recognitionFailed(let reason):
             return "Transcription stopped: \(reason)."
+        case .audioChanged(let reason):
+            return "The book's audio changed while it was being transcribed: \(reason). Transcribe it again."
+        case .bookRemoved:
+            return "The book left the library while it was being transcribed, so its transcript wasn't saved."
         }
     }
 }
@@ -214,8 +224,9 @@ extension BookContentIndex {
 
 /// Transcribes audiobooks (FR05): reads a book's audio files in the order it
 /// plays them, has the recognizer transcribe each, and returns the
-/// `Transcript`, writing nothing; saving it into the book's package is
-/// `TranscriptStore`'s.
+/// `Transcript` (`transcribe`), writing nothing, or saves it as the book's
+/// text once it is done (`transcribeAndSave`, through
+/// `TranscriptStore.install`).
 ///
 /// One transcription runs at a time in the app: a second asked for while
 /// one runs is refused (`TranscriptionError.busy`). The work runs off the
@@ -276,12 +287,52 @@ actor TranscriptionService {
         language: String? = nil,
         progress: @escaping @Sendable (TranscriptionProgress) -> Void = { _ in }
     ) async throws -> Transcript {
+        try beginTranscribing(book)
+        defer { titleUnderWay = nil }
+        return try await transcription(of: book, language: language, progress: progress)
+    }
+
+    /// Transcribes `book` and saves the transcript as its text: the whole
+    /// job the Transcribe Audio command runs (FR05). The transcription is
+    /// `transcribe(_:language:progress:)`'s. Once it is done, `currentBook`
+    /// gives the book as the library holds it then, since the book may have
+    /// moved meanwhile, and the transcript is saved into it off the main
+    /// thread (`TranscriptStore.install`). Both happen while this service
+    /// counts as busy, so no other transcription starts in between; a
+    /// cancellation before the transcript is saved leaves the book as it was.
+    /// - Throws: what `transcribe` throws; `.bookRemoved` when the book left
+    ///   the library meanwhile (`currentBook` gives nil); and what saving the
+    ///   transcript throws (`TranscriptStore.install`).
+    func transcribeAndSave(
+        _ book: Book,
+        language: String? = nil,
+        currentBook: @escaping @Sendable () async -> Book?,
+        progress: @escaping @Sendable (TranscriptionProgress) -> Void = { _ in }
+    ) async throws -> TranscriptInstallation {
+        try beginTranscribing(book)
+        defer { titleUnderWay = nil }
+        let transcript = try await transcription(of: book, language: language, progress: progress)
+        guard let current = await currentBook() else { throw TranscriptionError.bookRemoved }
+        guard !Task.isCancelled else { throw TranscriptionError.cancelled }
+        return try await OffMainWork.runThrowing { try TranscriptStore.install(transcript, for: current) }
+    }
+
+    /// Marks `book` as the one being transcribed.
+    /// - Throws: `TranscriptionError.busy` while another book is.
+    private func beginTranscribing(_ book: Book) throws {
         if let titleUnderWay {
             throw TranscriptionError.busy(titleUnderWay)
         }
         titleUnderWay = book.title
-        defer { titleUnderWay = nil }
+    }
 
+    /// The work of `transcribe(_:language:progress:)`, once the book is
+    /// marked as the one being transcribed.
+    private func transcription(
+        of book: Book,
+        language: String?,
+        progress: @escaping @Sendable (TranscriptionProgress) -> Void
+    ) async throws -> Transcript {
         do {
             try Task.checkCancellation()
             let clock = ContinuousClock()
