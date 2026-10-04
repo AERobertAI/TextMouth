@@ -136,7 +136,14 @@ struct LibraryView: View {
     /// whichever window is key (TODO A05).
     @Binding var showTextInput: Bool
     let onOpenBook: (Book) -> Void
+    /// Which library folders hold feeds, and the feed engine they follow
+    /// (FR03): the app's, unless a test shows its own.
+    var feedFolders: LibraryFeedFolders = .shared
 
+    /// What this window shows for the feeds: the Add Feed sheet and the
+    /// notices after its commands (FR03). Kept, not observed: its sheets'
+    /// host observes it, so a sheet opening never redraws the list.
+    @State private var feedPresenter = LibraryFeedsPresenter()
     @State private var showNewFolderSheet = false
     @State private var newFolderName = ""
     @State private var newFolderParentPath = ""
@@ -429,6 +436,20 @@ struct LibraryView: View {
                 .accessibilityLabel("New book from text")
                 .accessibilityHint("Create a new book by pasting or typing text")
 
+                // Library > Add Feed… for this window alone, which it names
+                // as a shortcut names its window (FR03).
+                Button {
+                    var userInfo: [AnyHashable: Any] = [:]
+                    if let hostWindow {
+                        userInfo["sourceWindow"] = hostWindow
+                    }
+                    NotificationCenter.default.post(name: .addFeed, object: nil, userInfo: userInfo)
+                } label: {
+                    Label(FeedWording.addFeedToolbarTitle, systemImage: "dot.radiowaves.up.forward")
+                }
+                .accessibilityLabel(FeedWording.addFeedButtonLabel)
+                .accessibilityHint(FeedWording.addFeedButtonHint)
+
                 // Edit mode toggle
                 Button {
                     if isEditMode {
@@ -560,6 +581,16 @@ struct LibraryView: View {
         // The Transcribe Audio sheet the rows' commands and the offers after
         // imports open, and the rows' transcription notes kept current (FR05).
         .modifier(LibraryTranscriptionSupport(presenter: transcription, library: libraryViewModel, hostWindow: hostWindow))
+        // Library > Add Feed…, the Add Feed sheet, and the notices after
+        // the feed commands (FR03).
+        .modifier(LibraryFeedsWindowSupport(
+            presenter: feedPresenter,
+            feedFolders: feedFolders,
+            library: libraryViewModel,
+            hostWindow: hostWindow,
+            shownFolderPath: category == .folders ? currentFolderPath : nil,
+            takesCommand: takesCommand
+        ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {

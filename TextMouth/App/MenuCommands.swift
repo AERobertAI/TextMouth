@@ -173,6 +173,16 @@ struct LibraryCommands: Commands {
 
             Divider()
 
+            // Subscribes to a podcast or article feed (FR03): the key
+            // Library window opens the Add Feed sheet. Shift-Command-F is
+            // used by no other command or default shortcut.
+            Button(FeedWording.addFeedCommand) {
+                NotificationCenter.default.post(name: .addFeed, object: nil)
+            }
+            .keyboardShortcut(FeedShortcuts.addFeed)
+
+            Divider()
+
             Button("Edit Mode") {
                 NotificationCenter.default.post(name: .toggleEditMode, object: nil)
             }

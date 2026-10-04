@@ -232,6 +232,134 @@ struct NewFolderSheet: View {
     }
 }
 
+// MARK: - Library Folder Picker
+
+/// One place a folder picker offers: what it shows and VoiceOver reads, and
+/// the folder's path, "" for the library's top level.
+struct LibraryFolderOption: Hashable {
+    /// The words shown: "Library Root", or the folder's full path.
+    let label: String
+    /// The folder's path; "" for the library's top level.
+    let path: String
+
+    /// What the library's top level is called in every folder picker.
+    static let rootLabel = "Library Root"
+
+    /// "Library Root", when `includingRoot`, then every folder of `library`
+    /// in tree order that `includes` accepts.
+    static func options(
+        in library: Library,
+        includingRoot: Bool = true,
+        where includes: (BookFolder) -> Bool = { _ in true }
+    ) -> [LibraryFolderOption] {
+        let root = includingRoot ? [LibraryFolderOption(label: rootLabel, path: "")] : []
+        return root + library.folders.sortedTreeOrder().filter(includes).map {
+            LibraryFolderOption(label: $0.fullPath, path: $0.fullPath)
+        }
+    }
+}
+
+/// The folder chooser of the Move dialog, which Add Feed uses as well: a
+/// pop-up of the places offered, a New Folder... button, and, once that is
+/// pressed, the fields that make a new folder, which then becomes the place
+/// chosen. A folder that can't be made keeps the fields open with the name,
+/// and the owner's failure notice says why.
+struct LibraryFolderPicker: View {
+    /// The places the pop-up offers.
+    let options: [LibraryFolderOption]
+    /// The folders a new folder may be made in.
+    let newFolderParents: [LibraryFolderOption]
+    /// The path of the place chosen.
+    @Binding var selection: String
+    /// The pop-up's visible caption.
+    let caption: String
+    /// The pop-up's spoken label.
+    let accessibilityLabel: String
+    /// Makes a folder from a name and a parent path and returns what
+    /// happened.
+    let onCreateFolder: (String, String) -> OperationOutcome
+    /// Why the last folder could not be made, which the owner shows; a new
+    /// name or parent clears it.
+    @Binding var failureMessage: String?
+    /// Whether the controls are unavailable, as while the owner works.
+    var isDisabled = false
+
+    /// Whether the new-folder fields are showing.
+    @State private var showNewFolder = false
+    /// The name typed for the new folder.
+    @State private var newFolderName = ""
+    /// The parent chosen for the new folder.
+    @State private var newFolderParent = ""
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Picker(caption, selection: $selection) {
+                ForEach(options, id: \.path) { option in
+                    Text(option.label).tag(option.path)
+                }
+            }
+            .accessibilityLabel(accessibilityLabel)
+            .disabled(isDisabled)
+
+            if showNewFolder {
+                newFolderFields
+            } else {
+                HStack {
+                    Spacer()
+                    Button("New Folder...") {
+                        showNewFolder = true
+                    }
+                    .disabled(isDisabled)
+                }
+            }
+        }
+        .clearingFailure($failureMessage, whenChanged: newFolderName)
+        .clearingFailure($failureMessage, whenChanged: newFolderParent)
+    }
+
+    /// The new folder's name and parent, with Cancel and Create.
+    private var newFolderFields: some View {
+        GroupBox("New Folder") {
+            VStack(spacing: 8) {
+                TextField("Folder name", text: $newFolderName)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel("New folder name")
+
+                Picker("Parent folder", selection: $newFolderParent) {
+                    ForEach(newFolderParents, id: \.path) { option in
+                        Text(option.label).tag(option.path)
+                    }
+                }
+                .accessibilityLabel("Parent folder for new folder")
+
+                HStack {
+                    Button("Cancel") {
+                        newFolderName = ""
+                        showNewFolder = false
+                    }
+                    Spacer()
+                    Button("Create", action: createFolder)
+                        .disabled(BookFolder.normalizedName(newFolderName) == nil)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+        .disabled(isDisabled)
+    }
+
+    /// Makes the folder named in the fields, and chooses it once it is made.
+    private func createFolder() {
+        guard let name = BookFolder.normalizedName(newFolderName) else { return }
+        failureMessage = OperationFailureNotice.message(after: onCreateFolder(name, newFolderParent))
+        // A refused or failed folder keeps the fields open with the name,
+        // beside the reason.
+        guard failureMessage == nil else { return }
+        selection = newFolderParent.isEmpty ? name : "\(newFolderParent)/\(name)"
+        newFolderName = ""
+        showNewFolder = false
+    }
+}
+
 // MARK: - Move Folder Sheet
 
 struct MoveFolderSheet: View {
@@ -252,12 +380,6 @@ struct MoveFolderSheet: View {
 
     /// The folder path currently selected in the picker
     @State private var selectedPath: String = ""
-    /// Whether the inline new-folder fields are showing
-    @State private var showNewFolder = false
-    /// Name for the new folder being created
-    @State private var newFolderName = ""
-    /// Parent path for the new folder
-    @State private var newFolderParent = ""
     /// Why the last Move or Create failed, until the user changes an input.
     @State private var failureMessage: String?
     /// Whether the books are moving now.
@@ -272,12 +394,8 @@ struct MoveFolderSheet: View {
     }
 
     /// All available destination paths, including "Library Root" (empty string)
-    private var folderOptions: [(label: String, path: String)] {
-        var options: [(String, String)] = [("Library Root", "")]
-        for folder in library.folders.sortedTreeOrder() {
-            options.append((folder.fullPath, folder.fullPath))
-        }
-        return options
+    private var folderOptions: [LibraryFolderOption] {
+        LibraryFolderOption.options(in: library)
     }
 
     var body: some View {
@@ -286,60 +404,17 @@ struct MoveFolderSheet: View {
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            // Folder picker
-            Picker("Destination", selection: $selectedPath) {
-                ForEach(folderOptions, id: \.path) { option in
-                    Text(option.label).tag(option.path)
-                }
-            }
-            .accessibilityLabel("Destination folder")
-            .disabled(isWorking)
-
-            // Inline new folder creation
-            if showNewFolder {
-                GroupBox("New Folder") {
-                    VStack(spacing: 8) {
-                        TextField("Folder name", text: $newFolderName)
-                            .textFieldStyle(.roundedBorder)
-                            .accessibilityLabel("New folder name")
-
-                        Picker("Parent folder", selection: $newFolderParent) {
-                            Text("Library Root").tag("")
-                            ForEach(library.folders.sortedTreeOrder()) { folder in
-                                if folder.depth < BookFolder.maxDepth {
-                                    Text(folder.fullPath).tag(folder.fullPath)
-                                }
-                            }
-                        }
-                        .accessibilityLabel("Parent folder for new folder")
-
-                        HStack {
-                            Button("Cancel") {
-                                newFolderName = ""
-                                showNewFolder = false
-                            }
-                            Spacer()
-                            Button("Create") {
-                                guard let name = BookFolder.normalizedName(newFolderName) else { return }
-                                failureMessage = OperationFailureNotice.message(
-                                    after: onCreateFolder(name, newFolderParent)
-                                )
-                                // A refused or failed folder keeps the fields
-                                // open with the name, beside the reason.
-                                guard failureMessage == nil else { return }
-                                // Select the newly created folder as destination
-                                let newPath = newFolderParent.isEmpty ? name : "\(newFolderParent)/\(name)"
-                                selectedPath = newPath
-                                newFolderName = ""
-                                showNewFolder = false
-                            }
-                            .disabled(BookFolder.normalizedName(newFolderName) == nil)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-                .disabled(isWorking)
-            }
+            // The destination, with New Folder... below it.
+            LibraryFolderPicker(
+                options: folderOptions,
+                newFolderParents: LibraryFolderOption.options(in: library) { $0.depth < BookFolder.maxDepth },
+                selection: $selectedPath,
+                caption: "Destination",
+                accessibilityLabel: "Destination folder",
+                onCreateFolder: onCreateFolder,
+                failureMessage: $failureMessage,
+                isDisabled: isWorking
+            )
 
             OperationFailureNotice(message: failureMessage)
 
@@ -352,12 +427,6 @@ struct MoveFolderSheet: View {
                     .keyboardShortcut(.escape, modifiers: [])
 
                 Spacer()
-
-                if !showNewFolder {
-                    Button("New Folder...") {
-                        showNewFolder = true
-                    }
-                }
 
                 Button("Move") {
                     OperationFailureNotice.run(
@@ -375,8 +444,6 @@ struct MoveFolderSheet: View {
         .navigationTitle(headerTitle)
         .interactiveDismissDisabled(isWorking)
         .clearingFailure($failureMessage, whenChanged: selectedPath)
-        .clearingFailure($failureMessage, whenChanged: newFolderName)
-        .clearingFailure($failureMessage, whenChanged: newFolderParent)
         .onAppear {
             // Default to last moved folder if it still exists, otherwise Library Root
             if !lastMovedFolderPath.isEmpty,
