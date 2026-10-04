@@ -58,6 +58,19 @@ enum RemoteMediaCommandRequest: String, Equatable {
     case previousTrack
 }
 
+/// What TextMouth shows the system as its Now Playing item: the book, and
+/// whether it plays or is paused. macOS sends the AirPods and the media keys
+/// to the app its Now Playing center names, and chooses Play or Pause for a
+/// press by whether that app plays.
+struct NowPlayingItem: Equatable, Sendable {
+    /// The book's title.
+    let title: String
+    /// The book's author.
+    let author: String
+    /// Whether the book plays; false while it is paused.
+    let isPlaying: Bool
+}
+
 /// Reader-scoped facade over the one process-wide Now Playing coordinator.
 /// Keeping the existing call-site API local to a reader prevents an inactive
 /// window from clearing or replacing another window's media session.
@@ -67,12 +80,8 @@ final class NowPlayingSession {
     private let diagnosticLabel: String?
     private let coordinator: NowPlayingService
 
-    init(ownerID: UUID, diagnosticLabel: String? = nil) {
-        self.ownerID = ownerID
-        self.diagnosticLabel = diagnosticLabel
-        self.coordinator = .shared
-    }
-
+    /// A session for the reader `ownerID` in `coordinator`: the app's shared
+    /// one (`NowPlayingService.shared`) for a reader window, or a test's own.
     init(
         ownerID: UUID,
         diagnosticLabel: String? = nil,
@@ -178,7 +187,28 @@ final class NowPlayingSession {
 ///    flip a paused book into playback through the speakers.
 @MainActor
 final class NowPlayingService {
-    static let shared = NowPlayingService()
+    /// The app's one coordinator. In a process hosting the tests it takes no
+    /// part in the system's media session (`installsSystemIntegrations(in:)`).
+    static let shared = NowPlayingService(
+        installsSystemIntegrations: installsSystemIntegrations(in: .current)
+    )
+
+    /// Whether a coordinator made for a process with `runtime` takes part in
+    /// the system's media session: MediaPlayer's command targets, which the
+    /// AirPods and the media keys reach, the system's Now Playing center,
+    /// and CoreAudio's device listeners. The app does; a process hosting the
+    /// tests never does.
+    ///
+    /// The test host is TextMouth.app itself, with the bundle identifier of
+    /// the developer's own copy. Taking part, its readers playing silent test
+    /// audio told the system that TextMouth was playing, so macOS sent the
+    /// developer's AirPods presses to the test host, where they paused and
+    /// skipped test readers, instead of to the copy the developer was
+    /// listening to, which then heard nothing until it next told the system
+    /// it played (board #958).
+    nonisolated static func installsSystemIntegrations(in runtime: TextMouthRuntime) -> Bool {
+        !runtime.isHostedTest
+    }
 
     struct Handlers {
         let onPlay: () -> Void
@@ -194,7 +224,15 @@ final class NowPlayingService {
 
     private var handlersByOwner: [UUID: Handlers] = [:]
     private var ownerRegistrationOrder: [UUID] = []
-    private var nowPlayingInfoByOwner: [UUID: (title: String, author: String, isPlaying: Bool)] = [:]
+    /// The item each reader last asked to show, kept for a reader that is
+    /// not the active one until it becomes so (`publishCachedNowPlayingInfoForActiveOwner()`).
+    private var nowPlayingInfoByOwner: [UUID: NowPlayingItem] = [:]
+    /// The reader whose item the system's Now Playing center shows, or nil
+    /// while it shows none of TextMouth's. Focus moves without changing
+    /// what is shown, so this can differ from the active reader; only this
+    /// reader takes the item down as it stops, releases media controls, or
+    /// closes (`clearNowPlaying(ownerID:)`, `unregister(ownerID:)`).
+    private var shownOwnerID: UUID?
     private(set) var focusedOwnerID: UUID?
     private(set) var playingOwnerID: UUID?
 
@@ -208,7 +246,10 @@ final class NowPlayingService {
     private var activeHandlers: Handlers? {
         activeOwnerID.flatMap { handlersByOwner[$0] }
     }
-    private let installsSystemIntegrations: Bool
+    /// Whether this coordinator takes part in the system's media session
+    /// (see `installsSystemIntegrations(in:)`). Without it, it still routes
+    /// the commands handed to `acceptRemoteCommand(_:)` among its readers.
+    let installsSystemIntegrations: Bool
     /// Receives each routing diagnostic: by default the debug log, as a
     /// `MEDIA_ROUTE` playback trace line, since every focus change, command,
     /// and device change writes one. Tests pass a sink of their own.
@@ -221,6 +262,12 @@ final class NowPlayingService {
     /// The action is @Sendable because the default scheduler hands it to the
     /// main dispatch queue; tests capture it to run when they choose.
     private let scheduleRemoteCommandAction: (@escaping @MainActor @Sendable () -> Void) -> Void
+    /// Writes the system's Now Playing center: shows an item, or, given
+    /// nil, clears the center and reports playback stopped. The center
+    /// decides where macOS sends the AirPods and the media keys. MediaPlayer's
+    /// own center with system integrations, nothing without them, unless a
+    /// test passes a writer of its own to see what the system is told.
+    private let writeSystemNowPlaying: (NowPlayingItem?) -> Void
 
     /// The block-based registration API returns the exact target token that
     /// must later be passed to `removeTarget(_:)`. Retaining those pairs avoids
@@ -297,6 +344,9 @@ final class NowPlayingService {
     /// device yet" (e.g. service just started with no audio output present).
     private(set) var previousDeviceID: AudioDeviceID = 0
 
+    /// - Parameter systemNowPlaying: Writes the system's Now Playing center
+    ///   in place of MediaPlayer's own (`writeSystemNowPlaying`); nil writes
+    ///   MediaPlayer's center with system integrations and nothing without.
     init(
         installsSystemIntegrations: Bool = true,
         diagnosticSink: @escaping (String) -> Void = { DiagnosticLog.trace(.playback, "MEDIA_ROUTE: \($0)") },
@@ -310,7 +360,8 @@ final class NowPlayingService {
             DispatchQueue.main.async {
                 action()
             }
-        }
+        },
+        systemNowPlaying: ((NowPlayingItem?) -> Void)? = nil
     ) {
         self.installsSystemIntegrations = installsSystemIntegrations
         self.diagnosticSink = diagnosticSink
@@ -319,6 +370,13 @@ final class NowPlayingService {
         self.audioDeviceIDsProvider = audioDeviceIDs
         self.bluetoothDeviceProvider = isBluetoothDevice
         self.scheduleRemoteCommandAction = scheduleRemoteCommandAction
+        if let systemNowPlaying {
+            self.writeSystemNowPlaying = systemNowPlaying
+        } else if installsSystemIntegrations {
+            self.writeSystemNowPlaying = { Self.writeMediaPlayerNowPlaying($0) }
+        } else {
+            self.writeSystemNowPlaying = { _ in }
+        }
     }
 
     func setup(
@@ -451,8 +509,14 @@ final class NowPlayingService {
                 + "fallback=\(shortOptionalOwnerID(activeOwnerID))"
         )
         if wasActive {
-            clearSystemNowPlaying()
-            publishCachedNowPlayingInfoForActiveOwner()
+            // As in `clearNowPlaying(ownerID:)`, only this reader's own item
+            // is taken down; the reader now active is shown unless it is.
+            if shownOwnerID == ownerID {
+                clearSystemNowPlaying()
+            }
+            if shownOwnerID != activeOwnerID {
+                publishCachedNowPlayingInfoForActiveOwner()
+            }
         }
     }
 
@@ -544,18 +608,12 @@ final class NowPlayingService {
         // Play command: only resume, never toggle. Suppressed after device changes
         // to prevent macOS from auto-starting playback when Bluetooth disconnects.
         commandCenter.playCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.playCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.play))
-        }
+        registerRemoteCommand(commandCenter.playCommand, for: .play)
 
         // Pause command: only pause, never toggle. Always safe to forward —
         // even during the suppress window, pausing is the correct behaviour.
         commandCenter.pauseCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.pauseCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.pause))
-        }
+        registerRemoteCommand(commandCenter.pauseCommand, for: .pause)
 
         // Toggle command: in normal operation, reflects genuine user intent
         // (media keys, AirPods single-tap). During the suppress window, though,
@@ -563,37 +621,68 @@ final class NowPlayingService {
         // `rcd` forwards. We gate it so the bug cannot flip a paused book into
         // playback on the wrong output device.
         commandCenter.togglePlayPauseCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.togglePlayPauseCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.togglePlayPause))
-        }
+        registerRemoteCommand(commandCenter.togglePlayPauseCommand, for: .togglePlayPause)
 
         commandCenter.skipForwardCommand.isEnabled = true
         commandCenter.skipForwardCommand.preferredIntervals = [30]
-        registerRemoteCommand(commandCenter.skipForwardCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.skipForward))
-        }
+        registerRemoteCommand(commandCenter.skipForwardCommand, for: .skipForward)
 
         commandCenter.skipBackwardCommand.isEnabled = true
         commandCenter.skipBackwardCommand.preferredIntervals = [15]
-        registerRemoteCommand(commandCenter.skipBackwardCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.skipBackward))
-        }
+        registerRemoteCommand(commandCenter.skipBackwardCommand, for: .skipBackward)
 
         // Next/previous track (AirPods double-tap, etc.) maps to skip forward/backward
         // since that's the most common user expectation for a book reader
         commandCenter.nextTrackCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.nextTrackCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.nextTrack))
-        }
+        registerRemoteCommand(commandCenter.nextTrackCommand, for: .nextTrack)
 
         commandCenter.previousTrackCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.previousTrackCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.previousTrack))
+        registerRemoteCommand(commandCenter.previousTrackCommand, for: .previousTrack)
+    }
+
+    /// The handler MediaPlayer calls when the system sends `request`'s
+    /// command, from the AirPods, the media keys, or Control Center.
+    ///
+    /// It is made here, outside the main actor, so that it is not isolated
+    /// to it. MediaPlayer does not say which thread it calls a handler on,
+    /// and in the Swift 6 language mode a handler made in main-actor code
+    /// checks, as it begins, that it runs on the main thread, stopping the
+    /// app anywhere else; the Swift 5 builds before a0bad26 checked nothing.
+    /// The command itself goes to `receiveRemoteCommand(_:by:)`. The service
+    /// is held weakly, as the registration outlives no one but the app.
+    nonisolated private static func remoteCommandHandler(
+        for request: RemoteMediaCommandRequest,
+        of service: NowPlayingService
+    ) -> (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
+        { [weak service] _ in
+            Self.receiveRemoteCommand(request, by: service)
+        }
+    }
+
+    /// Takes `request`, a command MediaPlayer delivered on whichever thread
+    /// it chose, into `service` without ever stopping the app.
+    ///
+    /// On the main thread, where MediaPlayer has delivered every command so
+    /// far, the command is accepted at once (`acceptRemoteCommand(_:)`), and
+    /// MediaPlayer hears whether a reader owns media controls. On any other
+    /// thread the command is accepted on the main queue, in the order it
+    /// arrived, and MediaPlayer hears success, since main-actor state cannot
+    /// be read there and waiting for the main thread could deadlock with it.
+    ///
+    /// - Returns: What MediaPlayer hears; failure when the service is gone.
+    nonisolated static func receiveRemoteCommand(
+        _ request: RemoteMediaCommandRequest,
+        by service: NowPlayingService?
+    ) -> MPRemoteCommandHandlerStatus {
+        guard let service else { return .commandFailed }
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async {
+                _ = service.acceptRemoteCommand(request)
+            }
+            return .success
+        }
+        return MainActor.assumeIsolated {
+            service.mediaPlayerStatus(for: service.acceptRemoteCommand(request))
         }
     }
 
@@ -925,7 +1014,8 @@ final class NowPlayingService {
 
     func updateNowPlayingInfo(ownerID: UUID, title: String, author: String, isPlaying: Bool) {
         guard handlersByOwner[ownerID] != nil else { return }
-        nowPlayingInfoByOwner[ownerID] = (title, author, isPlaying)
+        let item = NowPlayingItem(title: title, author: author, isPlaying: isPlaying)
+        nowPlayingInfoByOwner[ownerID] = item
         let previousPlayingOwnerID = playingOwnerID
         if isPlaying {
             playingOwnerID = ownerID
@@ -938,19 +1028,35 @@ final class NowPlayingService {
         // An inactive reader can update its own paused state, but it must not
         // replace the visible Now Playing item or steal AirPods commands.
         guard activeOwnerID == ownerID else { return }
-        publishNowPlayingInfo(title: title, author: author, isPlaying: isPlaying)
+        showSystemNowPlaying(item, of: ownerID)
     }
 
-    private func publishNowPlayingInfo(title: String, author: String, isPlaying: Bool) {
-        guard installsSystemIntegrations else { return }
-        var info = [String: Any]()
-        info[MPMediaItemPropertyTitle] = title
-        info[MPMediaItemPropertyArtist] = author
-        info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
-        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+    /// Shows `item`, the reader `ownerID`'s, in the system's Now Playing
+    /// center, and remembers whose it is (`shownOwnerID`).
+    private func showSystemNowPlaying(_ item: NowPlayingItem, of ownerID: UUID) {
+        shownOwnerID = ownerID
+        writeSystemNowPlaying(item)
+    }
 
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        MPNowPlayingInfoCenter.default().playbackState = isPlaying ? .playing : .paused
+    /// Shows `item` in MediaPlayer's Now Playing center, playing or paused,
+    /// or, given nil, clears the center and reports playback stopped. It
+    /// touches nothing of the coordinator's, so it needs no isolation; the
+    /// coordinator calls it only from the main actor, as before.
+    nonisolated private static func writeMediaPlayerNowPlaying(_ item: NowPlayingItem?) {
+        let center = MPNowPlayingInfoCenter.default()
+        guard let item else {
+            center.nowPlayingInfo = nil
+            center.playbackState = .stopped
+            return
+        }
+        var info = [String: Any]()
+        info[MPMediaItemPropertyTitle] = item.title
+        info[MPMediaItemPropertyArtist] = item.author
+        info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
+        info[MPNowPlayingInfoPropertyPlaybackRate] = item.isPlaying ? 1.0 : 0.0
+
+        center.nowPlayingInfo = info
+        center.playbackState = item.isPlaying ? .playing : .paused
     }
 
     func clearNowPlaying(ownerID: UUID) {
@@ -962,6 +1068,12 @@ final class NowPlayingService {
             playingOwnerID = nil
         }
         nowPlayingInfoByOwner.removeValue(forKey: ownerID)
+        // Only the item this reader shows is taken down. A reader that shows
+        // none, such as a window that never played closing while another
+        // book waits paused, must not tell the system TextMouth stopped: the
+        // paused book stays shown, so macOS keeps sending the AirPods here.
+        // A reader that stops and then releases media controls clears once.
+        guard shownOwnerID == ownerID else { return }
         clearSystemNowPlaying()
         publishCachedNowPlayingInfoForActiveOwner()
     }
@@ -971,11 +1083,7 @@ final class NowPlayingService {
     private func publishCachedNowPlayingInfoForActiveOwner() {
         guard let ownerID = activeOwnerID,
               let cached = nowPlayingInfoByOwner[ownerID] else { return }
-        publishNowPlayingInfo(
-            title: cached.title,
-            author: cached.author,
-            isPlaying: cached.isPlaying
-        )
+        showSystemNowPlaying(cached, of: ownerID)
     }
 
     private func mediaPlayerStatus(for result: RemoteCommandDispatchResult) -> MPRemoteCommandHandlerStatus {
@@ -983,22 +1091,20 @@ final class NowPlayingService {
     }
 
     private func clearSystemNowPlaying() {
-        guard installsSystemIntegrations else { return }
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
-        MPNowPlayingInfoCenter.default().playbackState = .stopped
+        shownOwnerID = nil
+        writeSystemNowPlaying(nil)
     }
 
     private func shortOptionalOwnerID(_ ownerID: UUID?) -> String {
         ownerID.map(shortOwnerID) ?? "none"
     }
 
-    /// Retains the opaque token returned by MediaPlayer so removal can target
-    /// precisely the block TextMouth installed.
-    private func registerRemoteCommand(
-        _ command: MPRemoteCommand,
-        handler: @escaping (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
-    ) {
-        let target = command.addTarget(handler: handler)
+    /// Gives `command` the handler that delivers `request`
+    /// (`remoteCommandHandler(for:of:)`), and retains the opaque token
+    /// returned by MediaPlayer so removal can target precisely the block
+    /// TextMouth installed.
+    private func registerRemoteCommand(_ command: MPRemoteCommand, for request: RemoteMediaCommandRequest) {
+        let target = command.addTarget(handler: Self.remoteCommandHandler(for: request, of: self))
         remoteCommandRegistrations.append(
             RemoteCommandRegistration(command: command, target: target)
         )

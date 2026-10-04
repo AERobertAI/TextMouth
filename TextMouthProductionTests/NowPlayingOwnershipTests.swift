@@ -1,3 +1,5 @@
+import MediaPlayer
+import os
 import XCTest
 @testable import TextMouth
 
@@ -660,6 +662,161 @@ final class NowPlayingOwnershipTests: XCTestCase {
         scheduledActions[1]()
         XCTAssertEqual(backwardSkips, 2)
         await fulfillment(of: [restartPosted], timeout: 0.1)
+    }
+
+    // MARK: - What the System's Now Playing Center Is Told
+
+    /// The system's Now Playing center, which decides where macOS sends the
+    /// AirPods, is told each item the active reader shows, playing and then
+    /// paused, and is cleared only when that reader releases media controls.
+    /// An inactive reader's paused state is kept for later, not shown.
+    func testSystemNowPlayingCenterIsToldTheActiveReadersItems() {
+        var told: [NowPlayingItem?] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            systemNowPlaying: { told.append($0) }
+        )
+        let first = makeSession(coordinator: coordinator)
+        let second = makeSession(coordinator: coordinator)
+
+        first.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        second.updateNowPlayingInfo(title: "Ferry Log", author: "Purser", isPlaying: false)
+        first.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        first.releaseMediaControls()
+
+        XCTAssertEqual(told, [
+            NowPlayingItem(title: "Tide Tables", author: "Harbour Office", isPlaying: true),
+            NowPlayingItem(title: "Tide Tables", author: "Harbour Office", isPlaying: false),
+            nil,
+        ])
+    }
+
+    /// Only the reader whose item the system shows takes it down. A window
+    /// that never played, focused and then closed while another book waits
+    /// paused, clears nothing: the system goes on showing the paused book,
+    /// never told that TextMouth stopped, so macOS keeps sending the AirPods
+    /// to TextMouth, and the paused book's reader owns the commands again.
+    /// Stopping the shown reader and releasing its media controls then
+    /// clears the center once.
+    ///
+    /// Before the repair, closing the idle window told the system three
+    /// times that TextMouth stopped before showing the paused book again,
+    /// and Release Media Controls cleared the center twice.
+    func testOnlyTheReaderShownTakesDownTheSystemNowPlayingItem() {
+        var told: [NowPlayingItem?] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            systemNowPlaying: { told.append($0) }
+        )
+        let listened = makeSession(coordinator: coordinator)
+        let idle = makeSession(coordinator: coordinator)
+        let paused = NowPlayingItem(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        listened.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        listened.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+
+        // The idle window becomes key, then closes: its reader stops, which
+        // clears its Now Playing, twice as a reader's close does, and leaves.
+        idle.focus()
+        idle.clearNowPlaying()
+        idle.clearNowPlaying()
+        idle.close()
+
+        XCTAssertEqual(told.last, .some(paused))
+        XCTAssertFalse(told.contains(nil), "Closing a window that never played told the system TextMouth stopped")
+        XCTAssertEqual(coordinator.activeOwnerID, listened.ownerID)
+
+        // Release Media Controls stops the reader, which clears its Now
+        // Playing, then releases the controls.
+        listened.clearNowPlaying()
+        listened.releaseMediaControls()
+        XCTAssertEqual(told.last, .some(nil))
+        XCTAssertEqual(told.filter { $0 == nil }.count, 1, "The system was told more than once that TextMouth stopped")
+    }
+
+    // MARK: - Commands Received on Any Thread
+
+    /// MediaPlayer does not say which thread it calls a command's handler
+    /// on, and in the Swift 6 language mode a handler isolated to the main
+    /// actor stops the app on any other. Received on the main thread, where
+    /// MediaPlayer has delivered every command so far, a command is accepted
+    /// at once and MediaPlayer hears whether a reader owns media controls.
+    /// Received on another thread, nothing stops: MediaPlayer hears success
+    /// at once, and the command is accepted on the main queue, reaching the
+    /// reader after the commands received before it.
+    func testCommandsAreReceivedOnWhicheverThreadMediaPlayerChooses() {
+        var scheduledActions: [@MainActor () -> Void] = []
+        var events: [String] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            scheduleRemoteCommandAction: { scheduledActions.append($0) }
+        )
+
+        // On the main thread, with no reader owning media controls, the
+        // command is refused at once; and with no service, always.
+        XCTAssertEqual(NowPlayingService.receiveRemoteCommand(.play, by: coordinator), .commandFailed)
+        XCTAssertEqual(NowPlayingService.receiveRemoteCommand(.play, by: nil), .commandFailed)
+        _ = makeSession(
+            coordinator: coordinator,
+            onPlay: { events.append("play") },
+            onPause: { events.append("pause") }
+        )
+        XCTAssertEqual(NowPlayingService.receiveRemoteCommand(.pause, by: coordinator), .success)
+        XCTAssertEqual(scheduledActions.count, 1, "The main thread's command was not accepted at once")
+
+        // On another thread. A semaphore, unlike an expectation, lets the
+        // main thread wait without running the main queue, so the command
+        // can only have been accepted after the handler returned.
+        let status = OSAllocatedUnfairLock<MPRemoteCommandHandlerStatus?>(initialState: nil)
+        let returned = DispatchSemaphore(value: 0)
+        DispatchQueue.global(qos: .userInitiated).async {
+            let heard = NowPlayingService.receiveRemoteCommand(.play, by: coordinator)
+            status.withLock { $0 = heard }
+            returned.signal()
+        }
+        XCTAssertEqual(returned.wait(timeout: .now() + 5), .success, "The handler never returned")
+        XCTAssertEqual(status.withLock { $0 }, .success)
+        XCTAssertEqual(scheduledActions.count, 1, "The command was accepted off the main thread")
+
+        XCTAssertTrue(waitUntil { scheduledActions.count == 2 }, "The command was never accepted on the main queue")
+        scheduledActions.forEach { $0() }
+        XCTAssertEqual(events, ["pause", "play"])
+    }
+
+    // MARK: - The Test Host Stays Out of the System's Media Session
+
+    /// Board #958: only the app takes part in the system's media session. A
+    /// process hosting the tests is TextMouth.app with the bundle identifier
+    /// of the developer's own copy, so its shared coordinator must never
+    /// register MediaPlayer command targets, listen to CoreAudio, or tell the
+    /// system's Now Playing center that TextMouth plays, even once a reader
+    /// has joined it: macOS would then send the developer's AirPods presses
+    /// to the test host instead of to the copy being listened to.
+    ///
+    /// Before the repair the shared coordinator took part in every process:
+    /// a reader joining it registered MediaPlayer command targets in the
+    /// test host, and a reader playing published "playing" as TextMouth.
+    func testOnlyTheAppTakesPartInTheSystemMediaSession() {
+        let home = FileManager.default.temporaryDirectory
+        let preferences = makeSandboxedPreferences("media-session-runtime")
+        let app = TextMouthRuntime(isHostedTest: false, homeDirectory: home, preferences: preferences)
+        let testHost = TextMouthRuntime(isHostedTest: true, homeDirectory: home, preferences: preferences)
+        XCTAssertTrue(NowPlayingService.installsSystemIntegrations(in: app))
+        XCTAssertFalse(NowPlayingService.installsSystemIntegrations(in: testHost))
+
+        // This process hosts the tests, so the shared coordinator stays out
+        // of the system's session even once a reader that monitors Bluetooth
+        // joins it, which is when the app registers its command targets.
+        XCTAssertTrue(TextMouthRuntime.current.isHostedTest)
+        let shared = NowPlayingService.shared
+        let session = makeSession(coordinator: shared, bluetoothMonitoring: true)
+        defer { session.close() }
+
+        XCTAssertFalse(shared.installsSystemIntegrations, "The test host joined the system's media session")
+        XCTAssertFalse(shared.remoteCommandsActive, "The test host registered MediaPlayer command targets")
+        XCTAssertFalse(shared.isListeningForDeviceChanges, "The test host listens to CoreAudio")
     }
 
     private func makeSession(
