@@ -115,7 +115,8 @@ final class AudioEditorModel: ObservableObject {
     /// level the status line shows while recording.
     var recorderSubscriptions: Set<AnyCancellable> = []
     /// This window's folder for audio copied or cut, made when first used
-    /// and removed as the window closes.
+    /// and removed as the window closes; the launch sweep of this Mac's
+    /// caches leaves it alone until then (`AudioEditCaches`).
     let clipFolder: URL
 
     /// Where the search for pauses is.
@@ -180,7 +181,7 @@ final class AudioEditorModel: ObservableObject {
         player: AudioEditorPlayback,
         store: UserDefaults,
         recorder: AudioEditorRecorder,
-        clipFolder: URL = AudioEditorClip.newFolder(),
+        clipFolder: URL = AudioEditCaches.newClipFolder(),
         announce: @escaping @MainActor (String) -> Void
     ) {
         self.bookID = bookID
@@ -375,6 +376,6 @@ final class AudioEditorModel: ObservableObject {
         }
         bindingsObserver = nil
         clip = nil
-        try? FileManager.default.removeItem(at: clipFolder)
+        AudioEditCaches.endClipFolder(clipFolder)
     }
 }

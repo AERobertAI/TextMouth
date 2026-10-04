@@ -64,6 +64,9 @@ final class AudioEditSession: ObservableObject {
     /// Whether a save is under way: markers asked to be kept meanwhile wait
     /// for it, as it may rename the file their list is kept under.
     private var isSaving = false
+    /// The rebuild of processed stretches the caches lost, under way for the
+    /// list state keyed (`key(of:)`), which other callers share.
+    private var purgedRebuild: (key: String, task: Task<AudioEditTimeline, Error>)?
 
     private init(
         bookID: UUID,
@@ -196,6 +199,8 @@ final class AudioEditSession: ObservableObject {
     ///   doesn't fit, a filter's errors, or the history store's.
     @discardableResult
     func perform(_ edit: AudioEdit) async throws -> AudioEditEntry {
+        // A filter over a processed stretch reads its sound.
+        try await restorePurgedStretches()
         var next = timeline
         try await next.apply(edit, processor: processor)
         let file = audioFile
@@ -377,7 +382,8 @@ final class AudioEditSession: ObservableObject {
     /// sample-exact: the window's preview. Each call makes a new one, which
     /// the caller owns and may hand to any actor.
     func makePreview() async throws -> sending AudioEditComposition {
-        try await AudioEditComposition.make(timeline, sources: sources)
+        try await restorePurgedStretches()
+        return try await AudioEditComposition.make(timeline, sources: sources)
     }
 
     /// A composition of the edited audio as it would be with `edit` made,
@@ -387,6 +393,7 @@ final class AudioEditSession: ObservableObject {
     /// - Throws: as `perform(_:)` does when the edit doesn't fit, or the
     ///   composition's errors.
     func makePreview(applying edit: AudioEdit) async throws -> sending AudioEditComposition {
+        try await restorePurgedStretches()
         var next = timeline
         try await next.apply(edit, processor: processor)
         return try await AudioEditComposition.make(next, sources: sources)
@@ -399,6 +406,7 @@ final class AudioEditSession: ObservableObject {
     /// - Throws: `AudioEditError.invalidEdit` for a range outside the audio,
     ///   or the render's errors.
     func renderStretch(_ range: AudioTimeRange, to url: URL) async throws {
+        try await restorePurgedStretches()
         let frames = try timeline.frameRange(range)
         _ = try await AudioEditRenderer.render(
             timeline.excerpt(frames),
@@ -477,6 +485,7 @@ final class AudioEditSession: ObservableObject {
         guard let library, let book = library.bookByID(bookID) else { throw AudioEditError.bookNotInLibrary }
         let ffmpeg = library.audioFilterEngine().ffmpeg
         guard !format.needsFFmpeg || ffmpeg != nil else { throw AudioEditError.mp3NeedsFFmpeg }
+        try await restorePurgedStretches()
         _ = try await AudioEditRenderer.render(
             timeline,
             sources: sources,
@@ -520,6 +529,54 @@ final class AudioEditSession: ObservableObject {
     /// base, or "" for none.
     private static func key(of list: AudioEditList) -> String {
         list.entriesOverBase.last?.id.uuidString ?? ""
+    }
+
+    /// Makes the processed stretches of the timeline again when this Mac's
+    /// caches no longer hold one of them, as when macOS empties the Caches
+    /// folder while the editor is open: what reads the edited audio calls
+    /// it first, so a filter's stretch is made again when it is next needed
+    /// (a preview, a stretch copied, an export, or a filter over it) rather
+    /// than failing. The list is applied again; the processor finds every
+    /// stretch it still holds and renders only the missing ones, under the
+    /// names they had (`AudioFilterProcessor`), so the timelines kept for
+    /// undo and redo stay good too.
+    ///
+    /// Callers at once, as a preview and the level measurement of the one
+    /// before it, share one rebuild of the list as it is. A rebuild made for
+    /// a list that changed meanwhile is not taken: the timeline follows the
+    /// list as it is now, which is looked at again.
+    private func restorePurgedStretches() async throws {
+        while lacksProcessedStretch(timeline) {
+            let key = Self.key(of: list)
+            let rebuild: Task<AudioEditTimeline, Error>
+            if let shared = purgedRebuild, shared.key == key {
+                rebuild = shared.task
+            } else {
+                let (list, base, processor) = (list, base, processor)
+                rebuild = Task { try await Self.timeline(of: list, over: base, processor: processor) }
+                purgedRebuild = (key, rebuild)
+            }
+            let rebuilt: AudioEditTimeline
+            do {
+                rebuilt = try await rebuild.value
+            } catch {
+                if purgedRebuild?.task == rebuild { purgedRebuild = nil }
+                throw error
+            }
+            if purgedRebuild?.task == rebuild { purgedRebuild = nil }
+            guard Self.key(of: list) == key else { continue }
+            timelines[key] = rebuilt
+            timeline = rebuilt
+        }
+    }
+
+    /// Whether `timeline` holds a processed stretch whose file this Mac's
+    /// caches no longer hold.
+    private func lacksProcessedStretch(_ timeline: AudioEditTimeline) -> Bool {
+        timeline.segments.contains { segment in
+            guard case .processed(let name) = segment.source else { return false }
+            return !FileManager.default.fileExists(atPath: scratch.appendingPathComponent(name).path)
+        }
     }
 
     // MARK: The Route From the Saved File

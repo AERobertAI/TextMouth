@@ -221,20 +221,49 @@ typealias AudioEditProcessorFactory = @Sendable (AudioEditComposition.Sources) -
 /// a filter or a gain change renders, and the silent file silence is
 /// inserted from, one folder for each book in the Caches folder, which never
 /// syncs and which macOS may empty when the disk runs low; everything there
-/// can be made again from the book's package. A book's folder is removed
-/// once its edits are rendered into its audio, and whenever an edit session
-/// closes.
+/// can be made again from the book's package, and an edit session makes a
+/// processed stretch again when it is next needed. A book's folder is
+/// removed once its edits are rendered into its audio, whenever an edit
+/// session closes, and, after a crash, at the next launch
+/// (`AudioEditCaches.removeStale`).
 enum AudioEditScratch {
     /// The folder of all books' scratch folders.
     static var root: URL {
         MachineLocalPaths.caches.appendingPathComponent("Audio Edits", isDirectory: true)
     }
 
-    /// The scratch folder of the book `bookID`, made when missing.
+    /// Serializes making a book's scratch folder for a use of the book with
+    /// the launch sweep's choice to remove it (`setAside`), so the sweep never
+    /// removes a folder an edit session or a save has begun to use.
+    private static let lock = NSLock()
+
+    /// The scratch folder of the book `bookID`, made when missing. Call it
+    /// once a use of the book has begun (`AudioEditActivity`).
     static func folder(for bookID: UUID) throws -> URL {
         let folder = root.appendingPathComponent(bookID.uuidString, isDirectory: true)
+        lock.lock()
+        defer { lock.unlock() }
         try make(folder)
         return folder
+    }
+
+    /// Moves `folder`, a book's scratch folder, aside to be removed, beside
+    /// itself under a name of `AudioEditCaches.setAsidePrefix`, unless
+    /// `isInUse` says its book is in use, both while no scratch folder is
+    /// being made for a use: so a use that begins now makes a new folder.
+    /// Returns where the folder went, or nil when it stays.
+    static func setAside(_ folder: URL, unless isInUse: () -> Bool) -> URL? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !isInUse() else { return nil }
+        let aside = folder.deletingLastPathComponent()
+            .appendingPathComponent(AudioEditCaches.setAsidePrefix + UUID().uuidString, isDirectory: true)
+        do {
+            try FileManager.default.moveItem(at: folder, to: aside)
+            return aside
+        } catch {
+            return nil
+        }
     }
 
     /// Makes the scratch folder `folder` when it is missing. Whatever writes

@@ -29,14 +29,6 @@ struct AudioEditorClip: Equatable {
 
     /// The space left on a disk below which nothing is kept for Paste.
     static let reserve: Int64 = 1_000_000_000
-
-    /// A new folder for one window's clips in this Mac's caches, which never
-    /// sync; made when the first clip is kept.
-    static func newFolder() -> URL {
-        MachineLocalPaths.caches
-            .appendingPathComponent("Audio Editor Clips", isDirectory: true)
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-    }
 }
 
 /// What an edit did: its entry, and the audio's length around it.

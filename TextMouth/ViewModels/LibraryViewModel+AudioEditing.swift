@@ -37,6 +37,26 @@ extension LibraryViewModel {
         }
     }
 
+    /// Removes what audio editing left in this Mac's caches when TextMouth
+    /// last ended with editors open, as a crash leaves it
+    /// (`AudioEditCaches.removeStale`): off the main thread, never a folder
+    /// an open editor or a save uses, with one AUDIO_EDIT_CACHES_SWEPT line
+    /// in the debug log when anything was removed. The library runs it at
+    /// launch; tests hand it a completion, which gets what it did there.
+    func removeStaleAudioEditCachesInBackground(completion: (@Sendable (AudioEditCaches.Result) -> Void)? = nil) {
+        let activity = audioEditActivity
+        DispatchQueue.global(qos: .utility).async {
+            let result = AudioEditCaches.removeStale(isBookInUse: activity.isBeingEdited)
+            if result.removed > 0 {
+                DiagnosticLog.event(
+                    .storage,
+                    "AUDIO_EDIT_CACHES_SWEPT: removed \(result.removed) folder(s) a crash left in this Mac's audio editing caches"
+                )
+            }
+            completion?(result)
+        }
+    }
+
     /// Gives the book `bookID` an original policy of its own, or, for nil,
     /// has it follow the global setting again, then applies the policy, so
     /// "don't keep" deletes the book's original at once when nothing needs
