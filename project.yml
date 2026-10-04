@@ -62,6 +62,26 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         PRODUCT_NAME: TextMouth
         GENERATE_INFOPLIST_FILE: false
+      # The Release app, which `make build` packages and `make install`
+      # copies, is built to be small. Debug, where the hosted tests run, is
+      # left as it is.
+      configs:
+        Release:
+          # Strip the executable's symbol table: the names of its functions
+          # and the debug map, about 8 MB that the app never reads. Xcode
+          # first writes those debug symbols to TextMouth.app.dSYM, beside
+          # the app in the build products, then strips, then signs. A crash
+          # report from the stripped app gives each of its frames as an
+          # offset in TextMouth, and the dSYM whose UUID matches the app's
+          # turns the offsets back into functions, files, and lines (atos,
+          # lldb, or Xcode). DEPLOYMENT_POSTPROCESSING has an ordinary build
+          # strip, as an archive does; STRIP_STYLE all is Xcode's default for
+          # apps, and the dSYM format the Release default, both written here
+          # because the stripped app depends on them.
+          DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+          DEPLOYMENT_POSTPROCESSING: true
+          STRIP_INSTALLED_PRODUCT: true
+          STRIP_STYLE: all
     dependencies:
       - package: ZIPFoundation
       - package: SwiftSoup
