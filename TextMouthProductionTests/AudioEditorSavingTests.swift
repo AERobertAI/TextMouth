@@ -73,6 +73,30 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertEqual(try AVAudioFile(forReading: destination).length, 44_000)
     }
 
+    /// A recording inserted at the very end, kept compressed, is saved to
+    /// the frame: nothing of its last packet's padding follows it, in the
+    /// book's file or in the levels the editor measures.
+    func testARecordingAtTheEndIsSavedToTheFrame() async throws {
+        let harness = try await openRamp(seconds: 2)
+        let model = harness.model
+        model.perform(.editorGoToEnd)
+        await model.startPunchIn()
+        await harness.backend.record(seconds: 0.5)
+        await model.stopPunchIn()
+        XCTAssertEqual(model.duration, 2.5, accuracy: 0.000_1)
+        let measured = await eventually { model.levels?.duration == model.duration }
+        XCTAssertTrue(measured, "the levels were never measured")
+        XCTAssertEqual(model.levels?.decibels.count, 250, "a level for each hundredth of a second")
+
+        let saved = await model.save()
+
+        XCTAssertTrue(saved, "\(harness.announcements.sentences)")
+        let samples = try AudioTestFixtures.floatSamples(of: harness.fixture.book.bookFileURL)
+        XCTAssertEqual(samples.count, 20_000)
+        XCTAssertEqual(samples[checked: 15_999].map(AudioTestFixtures.rampSample), .frame(.book, 15_999))
+        XCTAssertEqual(AudioTestFixtures.peak(samples.suffix(4_000)), 0.25, accuracy: 0.01, "the recording")
+    }
+
     /// A save the library refuses, as it refuses one for a book open in a
     /// reader, is said, and the edits stay waiting.
     func testARefusedSaveIsSaidAndTheEditsWait() async throws {

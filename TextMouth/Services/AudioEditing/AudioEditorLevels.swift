@@ -165,6 +165,10 @@ struct AudioEditorLevels: Equatable, Sendable {
         // Each buffer's samples are copied out, since a block buffer need
         // not hold them in one piece; the copy is reused buffer to buffer.
         var samples: [Float] = []
+        // The frames still to measure: a compressed take that ends the
+        // audio decodes past its end, to the end of its last packet, and
+        // those frames are none of the audio's (`AudioEditRenderer`).
+        var remaining = Int(preview.frames)
         while let buffer = output.copyNextSampleBuffer() {
             do {
                 try Task.checkCancellation()
@@ -173,7 +177,8 @@ struct AudioEditorLevels: Equatable, Sendable {
                 throw error
             }
             guard let block = CMSampleBufferGetDataBuffer(buffer) else { continue }
-            let count = CMBlockBufferGetDataLength(block) / MemoryLayout<Float>.size
+            let count = min(CMBlockBufferGetDataLength(block) / MemoryLayout<Float>.size, remaining)
+            remaining -= count
             guard count > 0 else { continue }
             if samples.count < count {
                 samples = [Float](repeating: 0, count: count)
