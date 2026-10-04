@@ -29,9 +29,9 @@ enum BookExportKind: String, CaseIterable, Sendable {
     /// title: the words TextMouth reads aloud, as plain text.
     case plainText
     /// A recording's original take, kept beside the audio the book plays
-    /// (`BookExportService.originalTakeFileName`).
+    /// (`BookOrigin.originalTakeFileName`).
     case originalRecording
-    /// A transcription's transcript (`BookExportService.transcriptFileName`)
+    /// A transcription's transcript (`TextMouthPaths.transcriptFileName`)
     /// and, for an audiobook, the text written from it, its content.md.
     case transcript
 
@@ -191,17 +191,6 @@ final class BookExportCancellation: Sendable {
 /// item with any file in the cloud is refused instead, named in the words
 /// the library list uses (`LibraryCloudWording.notDownloaded(titles:)`).
 enum BookExportService {
-    /// The file a recording keeps its original take in, at the top of its
-    /// package, beside the audio the book plays. The recording code writes
-    /// it (FR04); Export only reads it, so the name must match the one that
-    /// code writes.
-    static let originalTakeFileName = "original-take.caf"
-
-    /// The file a transcription keeps its transcript in, at the top of the
-    /// book's package (FR05). The transcription code writes it; Export only
-    /// reads it, so the name must match the one that code writes.
-    static let transcriptFileName = "transcript.json"
-
     /// The extensions of the audio files an audiobook's folder of tracks
     /// can hold: the formats TextMouth plays.
     private static let audioExtensions = Set(BookFormat.audio.fileExtensions)
@@ -238,7 +227,7 @@ enum BookExportService {
         if let own = ownFileItem(of: book, stem: stem, access: access) {
             items.append(own)
         }
-        let take = package.appendingPathComponent(originalTakeFileName)
+        let take = package.appendingPathComponent(BookOrigin.originalTakeFileName)
         if access.presence(of: take) == .present {
             let name = "\(stem) - Original Recording.\(take.pathExtension)"
             items.append(standaloneItem(.originalRecording, files: [copy(take, as: name)], access: access))
@@ -290,7 +279,7 @@ enum BookExportService {
         access: MaintenanceFileAccess
     ) -> BookExportItem? {
         var files: [BookExportFile] = []
-        let transcript = book.tmbDirectory.appendingPathComponent(transcriptFileName)
+        let transcript = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
         if access.presence(of: transcript) == .present {
             files.append(copy(transcript, as: "\(stem) - Transcript.json"))
         }
@@ -459,7 +448,7 @@ enum BookExportService {
     /// path inside the package: none of TextMouth's own files, and none
     /// hidden (`DAISYPackageInventory.isBookPath`).
     private static func packageBookFiles(in package: URL) -> [BookExportFile] {
-        let ownFiles: Set<String> = [originalTakeFileName, transcriptFileName]
+        let ownFiles: Set<String> = [BookOrigin.originalTakeFileName, TextMouthPaths.transcriptFileName]
         let paths = (try? FileManager.default.subpathsOfDirectory(atPath: package.path)) ?? []
         return paths
             .filter { path in

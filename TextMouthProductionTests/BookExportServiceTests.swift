@@ -533,8 +533,8 @@ final class BookExportServiceTests: XCTestCase {
     /// given, the transcript's text as its content.md.
     private func addExtraFiles(to book: Book, includingText text: String?) throws {
         let package = book.tmbDirectory
-        try Data(#"{"segments":[]}"#.utf8).write(to: package.appendingPathComponent(BookExportService.transcriptFileName))
-        try Self.takeBytes.write(to: package.appendingPathComponent(BookExportService.originalTakeFileName))
+        try Data(#"{"segments":[]}"#.utf8).write(to: TextMouthPaths.transcriptPath(in: package))
+        try Self.takeBytes.write(to: package.appendingPathComponent(BookOrigin.originalTakeFileName))
         if let text {
             try Data(text.utf8).write(to: MarkdownCacheService.cacheURL(for: book))
         }
