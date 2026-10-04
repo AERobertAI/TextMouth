@@ -56,6 +56,7 @@ extension ConfigService.AppConfig {
         shortcuts[.releaseMediaControls] = [KeyBinding(key: "escape", shift: true)]
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(shortcuts)
         config.logLocation = LogLocation.machine.rawValue
+        config.transcriptionLocale = TranscriptFixtures.languageOtherThanTheDefault
         return config
     }
 }

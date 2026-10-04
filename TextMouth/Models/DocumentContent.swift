@@ -6,6 +6,10 @@ struct DocumentContent {
     var author: String
     var chapters: [Chapter]
     let contentIndex: BookContentIndex
+    /// For an audiobook with a transcript (FR05), the transcript's text,
+    /// laid over `chapters`, which stay the audio's: what the reader shows
+    /// while the book plays its audio. Nil for every other book.
+    var transcript: TranscriptText? = nil
 
     init(
         title: String,

@@ -42,7 +42,8 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "NSQuitAlwaysKeepsWindows",
         "sleepTimer.lastUsedDuration",
         "customKeyboardBindings",
-        "logLocation"
+        "logLocation",
+        "transcriptionLocale"
     ]
 
     /// Each key's digest, or "absent" when the user has no value for it.
