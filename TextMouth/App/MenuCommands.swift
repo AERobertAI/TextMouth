@@ -186,6 +186,18 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .refreshAllFeeds, object: nil)
             }
 
+            // Subscriptions in OPML, the format feed readers exchange them
+            // in: the key Library window asks for the file, or says there
+            // is no subscription to export. The menu never reads the feed
+            // engine itself, which starts with the library.
+            Button(FeedWording.importCommand) {
+                NotificationCenter.default.post(name: .importOPML, object: nil)
+            }
+
+            Button(FeedWording.exportCommand) {
+                NotificationCenter.default.post(name: .exportOPML, object: nil)
+            }
+
             Divider()
 
             Button("Edit Mode") {

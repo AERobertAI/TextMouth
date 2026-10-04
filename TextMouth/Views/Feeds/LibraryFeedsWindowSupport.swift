@@ -36,6 +36,8 @@ final class LibraryFeedsPresenter: ObservableObject {
     /// The confirmation asked before a command that can't be undone, while
     /// it shows.
     @Published var confirmation: FeedConfirmation?
+    /// The Import OPML sheet's work while the sheet shows.
+    @Published var opmlImport: OPMLImportModel?
 
     /// Speaks what a command did, from the window it was chosen in: through
     /// VoiceOver, unless a test listens instead.
@@ -99,8 +101,12 @@ final class LibraryFeedsPresenter: ObservableObject {
 // MARK: - The Window's Part
 
 /// A Library window's part in the feed reader (FR03): it takes the Library
-/// menu's feed commands when the window takes commands, and shows the Add
-/// Feed sheet and the feed notices on the window.
+/// menu's feed commands (Add Feed…, Refresh All Feeds, Import OPML…, Export
+/// OPML…) when the window takes commands, and shows on the window the feed
+/// sheets (Add Feed, Feed Info, an item's description, Import OPML), the
+/// questions before a command that can't be undone, the notices after the
+/// commands, and the alert after a refresh TextMouth made by itself brought
+/// new items, when this window takes it.
 struct LibraryFeedsWindowSupport: ViewModifier {
     /// What the window shows for the feeds.
     @ObservedObject var presenter: LibraryFeedsPresenter
@@ -146,6 +152,25 @@ struct LibraryFeedsWindowSupport: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: .refreshAllFeeds)) { notification in
                 guard takesCommand(notification) else { return }
                 presenter.refreshAll(in: context)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .importOPML)) { notification in
+                guard takesCommand(notification) else { return }
+                presenter.chooseOPMLFile(in: context, parentPath: initialParentPath)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .exportOPML)) { notification in
+                guard takesCommand(notification) else { return }
+                presenter.chooseOPMLDestination(in: context)
+            }
+            .sheet(item: $presenter.opmlImport) { model in
+                OPMLImportSheet(
+                    model: model,
+                    library: library.library,
+                    feedFolders: feedFolders,
+                    onCreateFolder: { name, parentPath in
+                        library.createFolderReturningOutcome(name: name, parentPath: parentPath)
+                    },
+                    onClose: { presenter.opmlImport = nil }
+                )
             }
             .sheet(item: $presenter.addFeed, onDismiss: {
                 presenter.addFeedDidClose(in: hostWindow, center: feedFolders.center)
@@ -235,12 +260,14 @@ struct LibraryFeedsWindowSupport: ViewModifier {
     /// Opens the Add Feed sheet, its feed's folder going first in the folder
     /// the window shows, when that can hold one.
     private func showAddFeed() {
-        let parent = AddFeedPlaces.initialParent(
-            shownPath: shownFolderPath ?? "",
-            in: library.library,
-            feedFolders: feedFolders
-        )
-        presenter.showAddFeed(center: feedFolders.center, parentPath: parent)
+        presenter.showAddFeed(center: feedFolders.center, parentPath: initialParentPath)
+    }
+
+    /// Where Add Feed and Import OPML first offer to put a feed's folder:
+    /// the folder the window shows, when it can hold one, else the top
+    /// level.
+    private var initialParentPath: String {
+        AddFeedPlaces.initialParent(shownPath: shownFolderPath ?? "", in: library.library, feedFolders: feedFolders)
     }
 
     /// Whether the notice's alert shows; dismissing it forgets the notice.
@@ -262,6 +289,12 @@ extension Notification.Name {
     /// Posted by Library > Refresh All Feeds: the Library window that takes
     /// the command refreshes every feed and says what came (FR03).
     static let refreshAllFeeds = Notification.Name("refreshAllFeeds")
+    /// Posted by Library > Import OPML…: the Library window that takes the
+    /// command asks for an OPML file and imports its subscriptions (FR03).
+    static let importOPML = Notification.Name("importOPML")
+    /// Posted by Library > Export OPML…: the Library window that takes the
+    /// command asks where to save the subscriptions as OPML (FR03).
+    static let exportOPML = Notification.Name("exportOPML")
 }
 
 /// The feed reader's keyboard shortcuts (FR03).
