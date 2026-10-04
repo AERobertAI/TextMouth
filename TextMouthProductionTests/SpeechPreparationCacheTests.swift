@@ -377,7 +377,6 @@ final class SpeechPreparationCacheTests: XCTestCase {
                 index: content.contentIndex,
                 audioFiles: nil,
                 audioSegments: nil,
-                fileMetadata: nil,
                 audioTags: nil,
                 shouldPersistContentIndex: false,
                 cacheFormatVersion: nil

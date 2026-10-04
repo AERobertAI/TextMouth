@@ -138,6 +138,80 @@ final class EPUBMetadataTests: XCTestCase {
         XCTAssertEqual(info.metadata.epubVersion, "3.0")
     }
 
+    // MARK: - The Metadata a Book's Row Keeps
+
+    /// An imported EPUB's row keeps its package metadata, which the reader
+    /// shows without reading the file: every field exactly as reading the
+    /// file and laying the book's own edits over it gives.
+    func testTheRowKeepsAnImportedEPUBsMetadataAsReadingTheFileGivesIt() throws {
+        let book = try importedWorkingCopy()
+
+        let kept = try XCTUnwrap(book.keptEPUBMetadata, "the imported book's row keeps no EPUB metadata")
+
+        let read = book.mergingEditableEPUBMetadata(try EPUBParser.readMetadata(url: book.bookFileURL))
+        XCTAssertEqual(kept.allFields, read.allFields)
+        XCTAssertEqual(kept.title, "Alice's Adventures in Wonderland")
+        XCTAssertEqual(kept.author, "Lewis Carroll")
+        XCTAssertEqual(kept.language, "en")
+    }
+
+    /// An edit written into the library's copy of the file, as the metadata
+    /// editor writes it (TODO A09), changes only the fields the row keeps
+    /// the edit in, so the row's metadata is still what reading the file
+    /// and laying the book's edits over it gives.
+    func testTheRowsMetadataStaysTheFilesOnceAnEditIsWrittenIntoIt() throws {
+        var book = try importedWorkingCopy()
+        var edited = try XCTUnwrap(book.keptEPUBMetadata)
+        edited.title = "Under the Hill"
+        edited.author = "Ottoline Pryce-Mbeki"
+        edited.publisher = "Harbour Steps Press"
+        edited.publicationDate = "1907-03-02"
+
+        _ = try EPUBParser.writeMetadata(edited, to: book.bookFileURL)
+        book.title = edited.title
+        book.author = edited.author
+        book.epubPublisher = edited.publisher
+        book.epubPublicationDate = edited.publicationDate
+
+        let read = book.mergingEditableEPUBMetadata(try EPUBParser.readMetadata(url: book.bookFileURL))
+        XCTAssertEqual(book.keptEPUBMetadata?.allFields, read.allFields)
+        XCTAssertEqual(book.keptEPUBMetadata?.allFields, edited.allFields)
+    }
+
+    /// A row without any one of the fields, as the row of a book imported
+    /// before rows kept them is, keeps no metadata, so the reader reads it
+    /// from the file; nor does the row of a book of another format.
+    func testARowWithoutEveryFieldKeepsNoMetadata() throws {
+        let book = try importedWorkingCopy()
+        XCTAssertNotNil(book.keptEPUBMetadata, "the imported book's row keeps no EPUB metadata")
+        let fields: [(name: String, field: WritableKeyPath<Book, String?>)] = [
+            ("publisher", \.epubPublisher),
+            ("publication date", \.epubPublicationDate),
+            ("ISBN", \.epubISBN),
+            ("language", \.epubLanguage),
+            ("identifier", \.epubIdentifier),
+            ("EPUB version", \.epubVersion),
+        ]
+
+        for (name, field) in fields {
+            var missing = book
+            missing[keyPath: field] = nil
+            XCTAssertNil(missing.keptEPUBMetadata, "a row without the \(name)")
+        }
+        var text = book
+        text.format = .txt
+        XCTAssertNil(text.keptEPUBMetadata, "a book that is not an EPUB")
+    }
+
+    /// A working copy of the Alice EPUB, imported as the developer imports a
+    /// book into the hosted tests' library. The copy and the book's package
+    /// are removed when the test ends.
+    private func importedWorkingCopy() throws -> Book {
+        let copy = try makeWorkingCopy()
+        addTeardownBlock { try? FileManager.default.removeItem(at: copy) }
+        return try TextPipelineFixtures.imported(copy, for: self)
+    }
+
     private func makeWorkingCopy() throws -> URL {
         let fixture = repositoryFixture()
         let copy = FileManager.default.temporaryDirectory
@@ -155,3 +229,20 @@ final class EPUBMetadataTests: XCTestCase {
 }
 
 private struct SimulatedReplacementError: Error {}
+
+extension EPUBMetadata {
+    /// Every field, by name, so that comparing two metadata names each field
+    /// that differs.
+    var allFields: [String: String] {
+        [
+            "title": title,
+            "author": author,
+            "publisher": publisher,
+            "publicationDate": publicationDate,
+            "isbn": isbn,
+            "language": language,
+            "identifier": identifier,
+            "epubVersion": epubVersion,
+        ]
+    }
+}
