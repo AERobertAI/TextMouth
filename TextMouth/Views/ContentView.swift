@@ -211,11 +211,14 @@ struct LibraryWindowView: View {
         return location.windowTitle(sortedBy: libraryViewModel.sortState(at: location))
     }
 
-    /// Announce the new folder name and book count to VoiceOver when navigating.
+    /// Announce the new folder name and book count to VoiceOver when
+    /// navigating; a feed's folder is announced with its feed's items
+    /// counted (FR03).
     private func announceFolderChange(_ path: String) {
         let message = FolderNavigationHistory.announcement(
             for: path,
-            library: libraryViewModel.library
+            library: libraryViewModel.library,
+            feedFolders: .shared
         )
 
         guard let window = hostWindow ?? NSApp.keyWindow ?? NSApp.mainWindow else { return }

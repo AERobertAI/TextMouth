@@ -83,10 +83,15 @@ struct TimeRemainingBar: View {
     /// the time left from them and redraws as they move, while the list
     /// around it does not. The inert store, the default, holds none.
     @ObservedObject var livePositions: LiveReadingPositions = .inert
+    /// What the bar says of the feed whose folder it sums up (FR03): the
+    /// feed's items counted in place of the books, and its last check at
+    /// the end. Nil, the default, everywhere else, where the bar is as it
+    /// was; given, the bar shows even before any item is downloaded.
+    var feedSummary: FeedWording.FolderSummary? = nil
 
     var body: some View {
         let (time, known, unknown) = computeTimeRemaining()
-        if known > 0 || unknown > 0 {
+        if known > 0 || unknown > 0 || feedSummary != nil {
             HStack(spacing: 12) {
                 Label {
                     if known > 0 {
@@ -118,7 +123,13 @@ struct TimeRemainingBar: View {
                         .foregroundColor(.secondary)
                 }
 
-                Text(CountWording.books(books.count))
+                if let feedSummary {
+                    Text(feedSummary.check.visible)
+                        .font(.caption)
+                        .foregroundColor(feedSummary.check.failed ? .red : .secondary)
+                }
+
+                Text(feedSummary?.counts ?? CountWording.books(books.count))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -158,7 +169,8 @@ struct TimeRemainingBar: View {
 
     private func accessibilityLabel(time: TimeInterval, known: Int, unknown: Int) -> String {
         var parts: [String] = []
-        parts.append(CountWording.books(books.count))
+        // A feed's folder counts the feed's items in place of the books.
+        parts.append(feedSummary?.counts ?? CountWording.books(books.count))
         if known > 0 {
             parts.append("\(TimeFormatting.spoken(time)) total remaining at current speed")
         }
@@ -170,6 +182,9 @@ struct TimeRemainingBar: View {
         }
         if booksKept > 0 {
             parts.append(Self.spokenCount(booksKept, "kept on this Mac"))
+        }
+        if let feedSummary {
+            parts.append(feedSummary.check.visible)
         }
         return parts.joined(separator: ". ")
     }
@@ -240,6 +255,9 @@ struct BreadcrumbBar: View {
 struct FolderRow: View {
     let folder: BookFolder
     var bookCount: Int = 0
+    /// Whether the folder is a feed's (FR03): its row shows and says the
+    /// note "Feed" after its name.
+    var isFeed = false
 
     var body: some View {
         HStack {
@@ -248,15 +266,26 @@ struct FolderRow: View {
                 .accessibilityHidden(true)
             Text(folder.name)
                 .font(.headline)
+            if isFeed {
+                FeedBadge(text: FeedWording.feedNote, color: .secondary)
+            }
             Spacer()
             Text(CountWording.books(bookCount))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(folder.name), \(CountWording.books(bookCount))")
+        .accessibilityLabel(Self.accessibilityLabel(name: folder.name, bookCount: bookCount, isFeed: isFeed))
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Double-tap to open folder")
+    }
+
+    /// What VoiceOver says for a folder's row and for its entry in the
+    /// Folders rotor, which share it: "Fiction, 12 books", "Poems, 1 book",
+    /// and, for a feed's folder, "Planet Money, Feed, 3 books" (FR03).
+    static func accessibilityLabel(name: String, bookCount: Int, isFeed: Bool) -> String {
+        let note = isFeed ? ", \(FeedWording.feedNote)" : ""
+        return "\(name)\(note), \(CountWording.books(bookCount))"
     }
 }
 

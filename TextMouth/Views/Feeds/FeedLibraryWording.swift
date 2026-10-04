@@ -1,0 +1,189 @@
+import Foundation
+
+// MARK: - How the Library Words Feeds and Their Items (FR03)
+
+extension FeedWording {
+    // MARK: Notes
+
+    /// The note after a feed's title in the Feeds section, and after its
+    /// folder's name in the Folders list and the Folders rotor.
+    static let feedNote = "Feed"
+    /// The note on an item that played to its end, or was marked played.
+    static func playedNote(isArticle: Bool) -> String {
+        isArticle ? "Read" : "Played"
+    }
+    /// The note on an item that is new: published since the subscription
+    /// began, and neither played nor opened.
+    static let newNote = "New"
+    /// What a feed row says when its folder is no longer in the library.
+    static let folderMissingNote = "Folder missing"
+
+    // MARK: Counts
+
+    /// A feed's items counted, as its row, its folder's summary bar, and
+    /// entering its folder say: "12 episodes, 3 downloaded, 1 downloading,
+    /// 2 new", leaving out the counts that are 0, but never the first.
+    static func countsPhrase(_ counts: FeedItemCounts) -> String {
+        var parts = [count(counts.listed, counts.noun)]
+        if counts.downloaded > 0 { parts.append("\(counts.downloaded) downloaded") }
+        if counts.downloading > 0 { parts.append("\(counts.downloading) downloading") }
+        if counts.new > 0 { parts.append("\(counts.new) new") }
+        return parts.joined(separator: ", ")
+    }
+
+    /// A Feeds or feed-folder section's heading: "Episodes (12)".
+    static func sectionTitle(_ noun: ItemNoun, count: Int) -> String {
+        "\(noun.plural.capitalized) (\(count))"
+    }
+
+    /// The heading of a feed's folder's books that came from no item of the
+    /// feed, as every folder's books are headed: "Books (2)".
+    static func otherBooksTitle(count: Int) -> String {
+        "Books (\(count))"
+    }
+
+    /// The heading of the Feeds section.
+    static let feedsSectionTitle = "Feeds"
+
+    // MARK: Checks
+
+    /// How a feed's last check reads, as its row shows it and VoiceOver
+    /// speaks it, the spoken form starting in lower case to follow a comma.
+    struct Check: Equatable, Sendable {
+        /// The words shown: "Checked today at 3:05 PM".
+        let visible: String
+        /// The words spoken: "checked today at 3:05 PM".
+        let spoken: String
+        /// Whether the last check failed.
+        let failed: Bool
+    }
+
+    /// How the feed's last check reads: being checked now, never checked
+    /// on this Mac, failed (with the reason, which names the feed's host,
+    /// never its address), or the day and time of the last check, given as
+    /// a time of day so nothing redraws on a clock.
+    static func check(
+        _ fetch: FeedFetchState,
+        isRefreshing: Bool,
+        now: Date,
+        calendar: Calendar = .current,
+        locale: Locale = .current
+    ) -> Check {
+        if isRefreshing {
+            return Check(visible: "Checking now", spoken: "checking now", failed: false)
+        }
+        if let failure = fetch.lastError {
+            return Check(
+                visible: "Last check failed: \(failure.message)",
+                spoken: "last check failed: \(failure.message)",
+                failed: true
+            )
+        }
+        guard let checked = fetch.lastCheck else {
+            return Check(visible: "Not checked yet", spoken: "not checked yet", failed: false)
+        }
+        let when = moment(checked, now: now, calendar: calendar, locale: locale)
+        return Check(visible: "Checked \(when)", spoken: "checked \(when)", failed: false)
+    }
+
+    /// `date` as "today at 3:05 PM", "yesterday at 9:00 AM", "October 1 at
+    /// 3:05 PM", or, in another year, "October 1, 2025 at 3:05 PM".
+    static func moment(_ date: Date, now: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
+        let time = DateFormatter()
+        time.locale = locale
+        time.timeZone = calendar.timeZone
+        time.dateStyle = .none
+        time.timeStyle = .short
+        let clock = time.string(from: date)
+        if calendar.isDate(date, inSameDayAs: now) {
+            return "today at \(clock)"
+        }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(date, inSameDayAs: yesterday) {
+            return "yesterday at \(clock)"
+        }
+        let day = DateFormatter()
+        day.locale = locale
+        day.timeZone = calendar.timeZone
+        let sameYear = calendar.component(.year, from: date) == calendar.component(.year, from: now)
+        day.setLocalizedDateFormatFromTemplate(sameYear ? "MMMMd" : "MMMMdy")
+        return "\(day.string(from: date)) at \(clock)"
+    }
+
+    // MARK: Feed Rows
+
+    /// A feed's row as VoiceOver speaks it, in one sentence: "Planet Money,
+    /// Feed, 12 episodes, 3 downloaded, 2 new, checked today at 3:05 PM",
+    /// with "Folder missing" after the note when its folder is gone.
+    static func feedRowLabel(title: String, counts: FeedItemCounts, check: Check, folderMissing: Bool) -> String {
+        var parts = [title, feedNote]
+        if folderMissing { parts.append(folderMissingNote) }
+        parts.append(countsPhrase(counts))
+        parts.append(check.spoken)
+        return parts.joined(separator: ", ")
+    }
+
+    /// A feed row's spoken hint.
+    static let feedRowHint = "Opens the feed's folder"
+
+    /// What VoiceOver hears when a feed's row is opened and its folder is
+    /// no longer in the library.
+    static func folderMissing(title: String) -> String {
+        "The folder of \(title) is no longer in the library."
+    }
+
+    /// What VoiceOver hears when an item not downloaded is opened: it
+    /// downloads, and then opens.
+    static func downloadingToOpen(title: String) -> String {
+        "Downloading “\(title)”. It opens once it has downloaded."
+    }
+
+    /// What entering a feed's folder says: "Planet Money, Feed, 12
+    /// episodes, 3 downloaded, 2 new".
+    static func folderAnnouncement(name: String, counts: FeedItemCounts) -> String {
+        "\(name), \(feedNote), \(countsPhrase(counts))"
+    }
+
+    // MARK: Item Rows
+
+    /// An item's date as its row shows and speaks it: "October 1, 2026".
+    static func itemDate(_ date: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = calendar.timeZone
+        formatter.dateStyle = .long
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
+    }
+
+    /// An item's row as VoiceOver speaks it, in one sentence, putting first
+    /// what matters most on a braille display: "How the Fed sets rates,
+    /// Not Downloaded, New, October 1, 2026, 28 minutes", "…, Played,
+    /// Downloading, 40 percent, …", "…, Download Failed, the server says
+    /// the file is gone, …".
+    static func itemRowLabel(_ row: FeedItemRowContent) -> String {
+        var parts = [row.title]
+        if row.isPlayed { parts.append(playedNote(isArticle: row.isArticle)) }
+        parts.append(row.state.spokenNote)
+        if let reason = row.state.failureReason, !reason.isEmpty { parts.append(reason) }
+        if row.isNew { parts.append(newNote) }
+        if let date = row.dateText { parts.append(date) }
+        if let duration = row.duration { parts.append(TimeFormatting.spoken(duration)) }
+        return parts.joined(separator: ", ")
+    }
+
+    /// An item row's spoken hint, which says what its default action does.
+    static func itemRowHint(_ state: FeedItemState) -> String {
+        state.bookID == nil ? "Downloads it, then opens it" : "Opens it"
+    }
+
+    // MARK: The Summary Bar
+
+    /// What a feed's folder's summary bar shows and says before the time
+    /// left in its downloads: the feed's items counted, and its last check.
+    struct FolderSummary: Equatable, Sendable {
+        /// The items counted: "12 episodes, 3 downloaded, 2 new".
+        let counts: String
+        /// The last check.
+        let check: Check
+    }
+}
