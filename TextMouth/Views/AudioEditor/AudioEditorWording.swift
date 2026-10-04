@@ -650,6 +650,14 @@ enum AudioEditorWording {
         return "Saving \(spoken(duration)) of audio as \(format), the format this book keeps."
     }
 
+    /// Said when a save or an export writes a format with no place for
+    /// chapter markers: "WAV files can't hold chapter markers, so its 3
+    /// chapter markers are left out of this file."
+    static func chaptersLeftOut(_ count: Int, format: String) -> String {
+        let markers = count == 1 ? "its chapter marker is" : "its \(count) chapter markers are"
+        return "\(format) files can't hold chapter markers, so \(markers) left out of this file."
+    }
+
     /// Said as a save ends: the new length, and a new file name when the
     /// format's extension changed it.
     static func saved(_ duration: TimeInterval, renamedTo file: String?) -> String {

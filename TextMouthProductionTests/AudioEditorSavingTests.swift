@@ -77,6 +77,36 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertEqual(AudioEditorWording.percentDone(75), "75 percent")
     }
 
+    /// A save or an export in a format with no place for chapter markers
+    /// says they are left out of the file; an export as M4A keeps them, and
+    /// says nothing of them.
+    func testAFormatWithoutChaptersSaysTheyAreLeftOut() async throws {
+        let harness = try await openRamp(seconds: 4)
+        let model = harness.model
+        await model.insertChapter(titled: "Quay")
+
+        await model.save()
+        XCTAssertTrue(harness.announcements.sentences.contains(
+            "Saving 4 seconds of audio as WAV, the format this book keeps. "
+                + "WAV files can't hold chapter markers, so its chapter marker is left out of this file."
+        ), "\(harness.announcements.sentences)")
+        XCTAssertTrue(AudioRenderFormat.aacM4B.holdsChapterMarkers)
+        XCTAssertTrue(AudioRenderFormat.mp3.holdsChapterMarkers)
+        XCTAssertFalse(AudioRenderFormat.pcmAIFF.holdsChapterMarkers)
+        XCTAssertEqual(
+            AudioEditorWording.chaptersLeftOut(3, format: "CAF"),
+            "CAF files can't hold chapter markers, so its 3 chapter markers are left out of this file."
+        )
+
+        let destination = FileManager.default.temporaryDirectory.appendingPathComponent("chapters-\(UUID().uuidString).m4a")
+        addTeardownBlock { try? FileManager.default.removeItem(at: destination) }
+        await model.export(as: .m4a, to: destination)
+        let exporting = harness.announcements.sentences.first { $0.hasPrefix("Exporting 4 seconds of audio as M4A (AAC)") }
+        XCTAssertFalse(exporting?.contains("can't hold") ?? true, "\(harness.announcements.sentences)")
+        let chapters = await AudioPlaybackService.extractChapters(from: destination)
+        XCTAssertEqual(chapters.map(\.title), ["Quay"])
+    }
+
     // MARK: - Exporting
 
     /// Export writes the edited audio, unsaved edits and all, to another

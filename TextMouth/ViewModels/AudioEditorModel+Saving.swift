@@ -28,6 +28,16 @@ enum AudioEditorPolicyChoice: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
 }
 
+extension AudioRenderFormat {
+    /// Whether a file in this format keeps chapter markers: an MPEG-4
+    /// file's chapter track, or the ID3 chapter frames ffmpeg writes into an
+    /// MP3 (`AudioEditRenderer`); WAVE, AIFF, and CAF have no place for
+    /// them.
+    var holdsChapterMarkers: Bool {
+        isMPEG4 || self == .mp3
+    }
+}
+
 /// What closing the editor window needs first (FR04).
 enum AudioEditorCloseNeed: Equatable {
     /// Nothing: it can close.
@@ -67,7 +77,8 @@ extension AudioEditorModel {
         }
         stopPlayingForEdit()
         let format = await readSaveFormat()
-        let detail = AudioEditorWording.savingDetail(duration, format: format)
+        let detail = AudioEditorWording.savingDetail(duration, format: format.map(AudioEditorWording.formatName))
+            + chapterWarning(for: format)
         let fileBefore = session.audioFile
         progress = AudioEditorProgress(title: AudioEditorWording.savingTitle, detail: detail, fraction: 0)
         sheet = .progress
@@ -90,13 +101,22 @@ extension AudioEditorModel {
         }
     }
 
-    /// Reads the name of the format a save writes the book's file in, for
-    /// the save's sheet and Audio Info; nil when the file can't be read.
+    /// Reads the format a save writes the book's file in, for the save's
+    /// sheet, keeping its name for Audio Info; nil when the file can't be
+    /// read.
     @discardableResult
-    func readSaveFormat() async -> String? {
-        let name = (try? await session.saveFormat()).map(AudioEditorWording.formatName)
-        saveFormatName = name
-        return name
+    func readSaveFormat() async -> AudioRenderFormat? {
+        let format = try? await session.saveFormat()
+        saveFormatName = format.map(AudioEditorWording.formatName)
+        return format
+    }
+
+    /// The sentence, after a space, saying the chapter markers are left out
+    /// of a file in `format`, which has no place for them; empty when there
+    /// are none, or the format keeps them, or it isn't known.
+    func chapterWarning(for format: AudioRenderFormat?) -> String {
+        guard let format, !chapters.isEmpty, !format.holdsChapterMarkers else { return "" }
+        return " " + AudioEditorWording.chaptersLeftOut(chapters.count, format: AudioEditorWording.formatName(format))
     }
 
     // MARK: Exporting
@@ -111,6 +131,7 @@ extension AudioEditorModel {
         }
         stopPlayingForEdit()
         let detail = AudioEditorWording.exportingDetail(duration, format: format.title, file: url.lastPathComponent)
+            + chapterWarning(for: format.renderFormat)
         progress = AudioEditorProgress(title: AudioEditorWording.exportingTitle, detail: detail, fraction: 0)
         sheet = .progress
         announce(detail)
