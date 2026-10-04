@@ -329,7 +329,8 @@ final class ConfigService: ObservableObject {
         /// "deleteAfterDays", from 1 to 365.
         var recordingOriginalDays: Double?
         /// Whether an installed ffmpeg, when TextMouth finds one, runs the
-        /// audio editor's filters and writes MP3 (`AudioFilterEngine`).
+        /// audio editor's filters (`AudioFilterEngine`), and writes MP3
+        /// should TextMouth's own encoder be unavailable (`MP3Route`).
         var useInstalledFFmpeg: Bool?
         /// Whether the audio editor's Apply Filter plays a preview before
         /// applying a filter (`AudioEditorPreferences.previewFiltersFirst`).
@@ -536,7 +537,7 @@ final class ConfigService: ObservableObject {
                 mirrored += sameNames(RecordingPreferences.keys)
                 // Audio editing: how long the original audio of recordings and
                 // edited audiobooks is kept, whether an installed ffmpeg runs
-                // filters and writes MP3, and whether the editor previews a
+                // filters, and whether the editor previews a
                 // filter before applying it and plays half a second after
                 // each move.
                 mirrored += sameNames(AudioEditingPreferences.keys)

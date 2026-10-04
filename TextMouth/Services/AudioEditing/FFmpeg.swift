@@ -2,9 +2,10 @@ import Foundation
 import os
 
 /// An ffmpeg executable installed on this Mac (FR04), which TextMouth runs,
-/// when the user's setting allows, for every filter ffmpeg has and to write
-/// MP3, which Core Audio can't. TextMouth bundles nothing of it: it only
-/// looks for one, in Homebrew's and MacPorts' folders and along PATH.
+/// when the user's setting allows, for every filter ffmpeg has, and to write
+/// MP3 should the LAME encoder built into TextMouth be unavailable
+/// (`MP3Route`). TextMouth bundles nothing of ffmpeg: it only looks for one,
+/// in Homebrew's and MacPorts' folders and along PATH.
 ///
 /// It runs as a separate process, never on the main thread, with its
 /// standard input closed and its errors read back: a refusal becomes

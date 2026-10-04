@@ -42,8 +42,9 @@ enum AudioEditBookRender {
         /// Makes what renders filters and gain changes for edits whose
         /// stretches come from the sources given; nil refuses them.
         let makeProcessor: AudioEditProcessorFactory
-        /// The installed ffmpeg TextMouth may use, which keeps an MP3 book's
-        /// file MP3; nil writes it as AAC in an .m4a file.
+        /// The installed ffmpeg TextMouth may use, which writes an MP3
+        /// book's file should the LAME built in be unavailable (`MP3Route`);
+        /// with neither, an MP3 book is written as AAC in an .m4a file.
         let ffmpeg: FFmpeg?
         /// Asked just before the book's file is replaced: false, as when the
         /// book was opened in a reader meanwhile, stops the render with
@@ -156,7 +157,9 @@ enum AudioEditBookRender {
         // 3. The rendered file, read back.
         let written = try await AudioEditBase.load(staged, name: request.audioFile)
         let writtenSeconds = Double(written.frames) / written.sampleRate
-        // An MP3 measures longer than its sound by LAME's delay and padding.
+        // An MP3 the LAME built in writes carries the gapless numbers, so it
+        // measures as long as its sound; one ffmpeg writes measures longer
+        // by LAME's delay and padding, which is allowed for.
         let excess = writtenSeconds - timeline.duration
         let allowed = format == .mp3 ? FFmpeg.mp3Excess(sampleRate: written.sampleRate) : 0
         guard excess >= -Self.lengthTolerance, excess <= allowed + Self.lengthTolerance else {

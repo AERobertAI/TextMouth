@@ -62,6 +62,8 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         PRODUCT_NAME: TextMouth
         GENERATE_INFOPLIST_FILE: false
+        # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap).
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include
       # The Release app, which `make build` packages and `make install`
       # copies, is built to be small. Debug, where the hosted tests run, is
       # left as it is.
@@ -91,6 +93,55 @@ targets:
       - package: SwiftSoup
       - package: swift-markdown
         product: Markdown
+      # The MP3 encoder, linked into the app (MP3Encoder).
+      - target: LAME
+  # LAME 3.100's MP3 encoder (FR04), vendored in Vendor/lame and built as a
+  # static library the app links, so TextMouth writes MP3 itself
+  # (MP3Encoder) rather than only through an installed ffmpeg.
+  #
+  # Vendor/lame holds, unchanged, these files of LAME's release tarball
+  # lame-3.100.tar.gz, from https://sourceforge.net/projects/lame/files/lame/3.100/
+  # (SHA-256 ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e):
+  # COPYING, the GNU Library General Public License, version 2, under which
+  # LAME is distributed; LICENSE and README, LAME's notes on using it; the
+  # public header include/lame.h; and the encoder's sources and headers in
+  # libmp3lame/, the ones LAME's own Makefile builds its library from, less
+  # mpglib_interface.c (the decoder's glue, empty without the decoder) and
+  # the x86 assembly and SSE routines; only the header declaring the SSE
+  # routines, vector/lame_intrin.h, is kept, since fft.c includes it.
+  # TextMouth adds two files: config.h, in place of the one LAME's configure
+  # script writes, and include/module.modulemap, through which Swift imports
+  # lame.h. To update LAME, replace those files from a newer release, compare
+  # config.h with the one its configure writes, and run make check.
+  #
+  # The library is optimized for size in every configuration, as the Release
+  # app is: linked into the app it adds about 0.14 MB on Apple silicon, and
+  # it encodes speech about 100 times faster than real time. Its compiler
+  # warnings are LAME's own and are not shown; the gate counts Swift warnings
+  # only. DEBUG stays undefined, as it would turn on LAME's debugging output.
+  LAME:
+    type: library.static
+    platform: macOS
+    # LAME is C alone, with no Objective-C class or category for the linker
+    # to keep, so the app links it without the -ObjC flag XcodeGen otherwise
+    # adds to every target that links a static library.
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/lame/libmp3lame
+        headerVisibility: project
+      - path: Vendor/lame/config.h
+        headerVisibility: project
+    settings:
+      base:
+        PRODUCT_NAME: mp3lame
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/lame
+          - $(SRCROOT)/Vendor/lame/include
+          - $(SRCROOT)/Vendor/lame/libmp3lame
+        GCC_PREPROCESSOR_DEFINITIONS: HAVE_CONFIG_H=1
+        GCC_OPTIMIZATION_LEVEL: s
+        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+        SKIP_INSTALL: YES
   TextMouthProductionTests:
     type: bundle.unit-test
     platform: macOS
@@ -126,5 +177,7 @@ targets:
         INFOPLIST_FILE: TextMouthProductionTests/Info.plist
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
+        # The LAME module, which `@testable import TextMouth` may load.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include
     dependencies:
       - target: TextMouth

@@ -6,7 +6,7 @@ import Foundation
 enum AudioEditingPreferences {
     /// Their keys: what happens to the original audio of recordings and
     /// edited audiobooks (`AudioOriginalPolicy`), whether an installed
-    /// ffmpeg runs filters and writes MP3 (`AudioFilterEngine`), and the
+    /// ffmpeg runs filters (`AudioFilterEngine`), and the
     /// editor window's own two (`AudioEditorPreferences`).
     static var keys: [String] {
         AudioOriginalPolicy.preferenceKeys + [AudioFilterEngine.usePreference.key] + AudioEditorPreferences.keys

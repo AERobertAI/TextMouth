@@ -16,18 +16,18 @@ enum AudioEditingSettingsWording {
     /// The days stepper's label.
     static let daysLabel = "Days to keep an original"
     /// The ffmpeg switch's label.
-    static let ffmpegLabel = "Use ffmpeg for filters and MP3"
+    static let ffmpegLabel = "Use ffmpeg for filters"
 
     /// The ffmpeg switch's hint: where TextMouth found ffmpeg, and what it
-    /// does when the switch is on.
+    /// does when the switch is on. MP3 needs no ffmpeg: TextMouth writes it
+    /// with the LAME encoder built in (`MP3Route`).
     static func ffmpegHint(path: String) -> String {
         "TextMouth found ffmpeg at \(path). When this is on, the audio editor's filters run through it, with every "
-            + "filter it has, and audio can be exported as MP3."
+            + "filter it has."
     }
 
     /// The line shown when no ffmpeg is installed.
-    static let noFFmpeg = "ffmpeg isn't installed, so the audio editor uses TextMouth's own filters, and MP3 export "
-        + "isn't available."
+    static let noFFmpeg = "ffmpeg isn't installed, so the audio editor uses TextMouth's own filters."
 
     /// The preview switch's label.
     static let previewFiltersLabel = "Preview filters before applying"
@@ -104,7 +104,8 @@ final class AudioEditingSettingsModel: ObservableObject {
         }
     }
 
-    /// Whether an installed ffmpeg runs filters and writes MP3.
+    /// Whether an installed ffmpeg runs filters, and writes MP3 should
+    /// TextMouth's own encoder be unavailable (`MP3Route`).
     var usesFFmpeg: Bool {
         get { AudioFilterEngine.usePreference.read(from: store) }
         set {
