@@ -31,6 +31,15 @@ struct FeedEnvironment {
     var freeSpace: @Sendable (URL) -> Int64?
     /// The boundary imports run through as storage work.
     var boundary: StorageBoundary
+    /// The book storage, which says whether a package in a cloud library is
+    /// wholly on this Mac.
+    var bookStorage: @MainActor () -> any BookCloudStorage
+    /// The statistics service whose finished books (`.bookDidFinish`) mark
+    /// feed items played, or nil for none.
+    var finishedBooksSource: AnyObject?
+    /// Deletes a book's package as the listener's own deletions do, to the
+    /// Trash or for good as the removal setting says (Delete Download).
+    var deleteBookPackage: @MainActor (Book) throws -> Void
 
     /// The app's: the data directory's Feeds folder, this Mac's Caches, the
     /// network, and the app's preferences. A process hosting tests never
@@ -48,7 +57,10 @@ struct FeedEnvironment {
             resumeFolder: MachineLocalPaths.feedCaches.appendingPathComponent("Resume Data", isDirectory: true),
             downloadsFolder: MachineLocalPaths.feedDownloads,
             freeSpace: { ArchiveLimits.volumeFreeSpace(at: $0) },
-            boundary: .shared
+            boundary: .shared,
+            bookStorage: { CloudServices.bookStorage },
+            finishedBooksSource: ReadingStatsService.shared,
+            deleteBookPackage: { try FileImportService.deleteBookPackage($0) }
         )
     }
 }
@@ -66,6 +78,17 @@ protocol FeedLibraryHost: AnyObject {
     func feedBook(withID bookID: UUID) -> Book?
     /// Lists a book a feed download published, and saves the library.
     func addFeedBook(_ book: Book)
+    /// Takes out of the library a book whose package was deleted, and saves
+    /// the library.
+    func removeFeedBook(_ book: Book)
+    /// The books open in readers now, which nothing may delete.
+    var feedBooksOpenInReaders: Set<UUID> { get }
+    /// Publishes the books open in readers whenever they change.
+    var feedBooksOpenInReadersChanges: AnyPublisher<Set<UUID>, Never> { get }
+    /// Whether the library lists every book it holds: not while its index
+    /// is recovered, when its list is provisional and a book missing from it
+    /// may still be on disk.
+    var feedLibraryIsComplete: Bool { get }
     /// Opens the book `bookID` in its reader.
     func openFeedBook(_ bookID: UUID)
 }
@@ -200,6 +223,12 @@ final class FeedCenter: ObservableObject {
     private var intervalObserver: PreferenceObserver?
     /// Passes the stores' changes on to this engine's observers.
     private var forwarding: [AnyCancellable] = []
+    /// Hears finished books, and the readers that open and close.
+    private var lifecycleObservers: [AnyCancellable] = []
+    /// Whether a sweep of played downloads runs (`requestSweep()`).
+    var isSweeping = false
+    /// Whether a sweep was asked for while one ran, so it runs again.
+    var sweepRequestedAgain = false
 
     /// An engine working with `environment`, started by `start(library:)`.
     init(environment: FeedEnvironment) {
@@ -210,6 +239,14 @@ final class FeedCenter: ObservableObject {
             store.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() },
             fetchStates.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() },
         ]
+        if let source = environment.finishedBooksSource {
+            // Posted on the main actor, by the statistics service.
+            lifecycleObservers.append(
+                NotificationCenter.default.publisher(for: .bookDidFinish, object: source)
+                    .compactMap { $0.userInfo?[ReadingStatsService.finishedBookIDKey] as? UUID }
+                    .sink { [weak self] bookID in self?.bookDidFinish(bookID) }
+            )
+        }
     }
 
     /// The feed settings in force.
@@ -234,6 +271,11 @@ final class FeedCenter: ObservableObject {
             await fetchStates.load()
             await downloads.sweepLeftovers()
             guard environment.worksOnItsOwn else { return }
+            // A reader closing lets a played download it held be deleted.
+            lifecycleObservers.append(
+                library.feedBooksOpenInReadersChanges.sink { [weak self] _ in self?.requestSweep() }
+            )
+            requestSweep()
             intervalObserver = PreferenceObserver(
                 keys: [FeedSettings.refreshIntervalHoursPreference.key],
                 in: environment.preferences
@@ -427,6 +469,7 @@ final class FeedCenter: ObservableObject {
     /// on, downloads the items it found new.
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
+        requestSweep()
         guard settings.autoDownload else { return }
         for itemID in report.newItemIDs {
             downloads.download(itemID, of: report.feedID, origin: .automatic)

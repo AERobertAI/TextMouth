@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 /// The library's side of the podcast and article reader (FR03): the feed
@@ -38,6 +39,30 @@ extension LibraryViewModel: FeedLibraryHost {
         guard bookByID(book.id) == nil else { return }
         library.books.append(book)
         save()
+    }
+
+    /// Takes a feed book whose package was deleted out of the library,
+    /// through the same bookkeeping as every removal that deletes a package
+    /// (`removeDeletedBook(_:)`), and saves the library.
+    func removeFeedBook(_ book: Book) {
+        removeDeletedBook(book)
+        save()
+    }
+
+    /// The books open in readers now.
+    var feedBooksOpenInReaders: Set<UUID> {
+        openBookIDs
+    }
+
+    /// Publishes the books open in readers whenever they change.
+    var feedBooksOpenInReadersChanges: AnyPublisher<Set<UUID>, Never> {
+        $openBookIDs.eraseToAnyPublisher()
+    }
+
+    /// Whether the library lists every book it holds: not while its index
+    /// is recovered (`indexRecovery`), when the library is provisional.
+    var feedLibraryIsComplete: Bool {
+        indexRecovery == nil
     }
 
     /// Opens the book `bookID` in its reader, as an import that opens its

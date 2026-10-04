@@ -392,6 +392,11 @@ final class FeedTestWorld {
     let lowPowerMode = LockedValue(false)
     /// The free bytes the library's disk reports.
     let freeSpace = LockedValue<Int64?>(100_000_000_000)
+    /// The book storage, which says the library is on this Mac until a test
+    /// moves it to the cloud.
+    let cloud = FakeBookCloudStorage(location: .local)
+    /// The statistics service whose finished books mark items played.
+    let stats: ReadingStatsService
     /// The folder holding resume data.
     let resumeFolder: URL
     /// The folder holding finished downloads waiting to be imported.
@@ -430,6 +435,9 @@ final class FeedTestWorld {
         let sleep = sleep
         let lowPowerMode = lowPowerMode
         let freeSpace = freeSpace
+        let cloud = cloud
+        stats = ReadingStatsService(fileURL: sandbox.appendingPathComponent("reading_stats.json"))
+        let stats = stats
         resumeFolder = sandbox.appendingPathComponent("Resume Data", isDirectory: true)
         downloadsFolder = sandbox.appendingPathComponent("Feed Downloads", isDirectory: true)
         center = FeedCenter(environment: FeedEnvironment(
@@ -447,7 +455,11 @@ final class FeedTestWorld {
             resumeFolder: resumeFolder,
             downloadsFolder: downloadsFolder,
             freeSpace: { _ in freeSpace.value },
-            boundary: .shared
+            boundary: .shared,
+            bookStorage: { cloud },
+            finishedBooksSource: stats,
+            // Never the Trash in a test: the package is deleted for good.
+            deleteBookPackage: { try FileManager.default.removeItem(at: $0.tmbDirectory) }
         ))
         let server = server
         let center = center
