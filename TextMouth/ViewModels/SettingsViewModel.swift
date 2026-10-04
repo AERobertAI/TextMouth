@@ -765,18 +765,20 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Preferences other services keep
     //
-    // The sound effects service, the substitution service, the shortcut
-    // manager, the log writer, and transcription keep their preferences in
-    // the same store as this model, and follow them there. The mirror reads
-    // and writes them there through each service's own definitions: a value
-    // applied from config.json reaches its service at once, and a change made
-    // through a service's controls is saved to config.json by the observer
-    // below.
+    // The sound effects service, the substitution service, recording (the
+    // Record window and the original-take policy), the shortcut manager,
+    // the log writer, and transcription keep their preferences in the same
+    // store as this model, and follow them there. The mirror reads and
+    // writes them there through each service's own definitions: a value
+    // applied from config.json reaches its service at once, and a change
+    // made through a service's controls is saved to config.json by the
+    // observer below.
 
     /// The store keys of the preferences other services keep.
     static var servicePreferenceKeys: [String] {
         SoundEffectService.preferenceKeys
             + TextSubstitutionService.preferenceKeys
+            + RecordingPreferences.keys
             + [KeyboardShortcutManager.bindingsPreference.key, LogLocation.preference.key]
             + [TranscriptionLanguage.preference.key]
     }
@@ -822,6 +824,7 @@ final class SettingsViewModel: ObservableObject {
         config.repeatedSymbolStyle = TextSubstitutionService.repeatedSymbolStylePreference.read(from: preferences).rawValue
         config.repeatedSymbolThreshold = TextSubstitutionService.repeatedSymbolThresholdPreference.read(from: preferences)
         config.repeatedSymbolSet = TextSubstitutionService.repeatedSymbolSetPreference.read(from: preferences)
+        config.recordingInputDeviceID = RecordingInputChoice.preference.read(from: preferences)
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.bindingsPreference.read(from: preferences)
         )
@@ -854,6 +857,8 @@ final class SettingsViewModel: ObservableObject {
             config.repeatedSymbolSet.map { SettingsPolicy.repeatedSymbolSet.validated($0) }.flatMap(\.nonEmpty),
             into: TextSubstitutionService.repeatedSymbolSetPreference
         )
+        // Empty, like any empty text in the file, keeps the microphone chosen.
+        adopt(config.recordingInputDeviceID.nonEmpty, into: RecordingInputChoice.preference)
         adopt(
             entries: SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),
             into: KeyboardShortcutManager.bindingsPreference,

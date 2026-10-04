@@ -49,6 +49,7 @@ extension ConfigService.AppConfig {
         config.repeatedSymbolStyle = RepeatedSymbolStyle.leaveOut.rawValue
         config.repeatedSymbolThreshold = 7
         config.repeatedSymbolSet = "*=~"
+        config.recordingInputDeviceID = "AppleUSBAudioEngine:Studio Microphone:4100000:1"
         // Every action, as TextMouth writes them, three of them changed.
         var shortcuts = ShortcutAction.defaultBindings
         shortcuts[.togglePlayback] = [KeyBinding(key: "space"), KeyBinding(key: "p", control: true)]
