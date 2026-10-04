@@ -58,6 +58,19 @@ enum RemoteMediaCommandRequest: String, Equatable {
     case previousTrack
 }
 
+/// What TextMouth shows the system as its Now Playing item: the book, and
+/// whether it plays or is paused. macOS sends the AirPods and the media keys
+/// to the app its Now Playing center names, and chooses Play or Pause for a
+/// press by whether that app plays.
+struct NowPlayingItem: Equatable, Sendable {
+    /// The book's title.
+    let title: String
+    /// The book's author.
+    let author: String
+    /// Whether the book plays; false while it is paused.
+    let isPlaying: Bool
+}
+
 /// Reader-scoped facade over the one process-wide Now Playing coordinator.
 /// Keeping the existing call-site API local to a reader prevents an inactive
 /// window from clearing or replacing another window's media session.
@@ -215,7 +228,9 @@ final class NowPlayingService {
 
     private var handlersByOwner: [UUID: Handlers] = [:]
     private var ownerRegistrationOrder: [UUID] = []
-    private var nowPlayingInfoByOwner: [UUID: (title: String, author: String, isPlaying: Bool)] = [:]
+    /// The item each reader last asked to show, kept for a reader that is
+    /// not the active one until it becomes so (`publishCachedNowPlayingInfoForActiveOwner()`).
+    private var nowPlayingInfoByOwner: [UUID: NowPlayingItem] = [:]
     private(set) var focusedOwnerID: UUID?
     private(set) var playingOwnerID: UUID?
 
@@ -245,6 +260,12 @@ final class NowPlayingService {
     /// The action is @Sendable because the default scheduler hands it to the
     /// main dispatch queue; tests capture it to run when they choose.
     private let scheduleRemoteCommandAction: (@escaping @MainActor @Sendable () -> Void) -> Void
+    /// Writes the system's Now Playing center: shows an item, or, given
+    /// nil, clears the center and reports playback stopped. The center
+    /// decides where macOS sends the AirPods and the media keys. MediaPlayer's
+    /// own center with system integrations, nothing without them, unless a
+    /// test passes a writer of its own to see what the system is told.
+    private let writeSystemNowPlaying: (NowPlayingItem?) -> Void
 
     /// The block-based registration API returns the exact target token that
     /// must later be passed to `removeTarget(_:)`. Retaining those pairs avoids
@@ -321,6 +342,9 @@ final class NowPlayingService {
     /// device yet" (e.g. service just started with no audio output present).
     private(set) var previousDeviceID: AudioDeviceID = 0
 
+    /// - Parameter systemNowPlaying: Writes the system's Now Playing center
+    ///   in place of MediaPlayer's own (`writeSystemNowPlaying`); nil writes
+    ///   MediaPlayer's center with system integrations and nothing without.
     init(
         installsSystemIntegrations: Bool = true,
         diagnosticSink: @escaping (String) -> Void = { DiagnosticLog.trace(.playback, "MEDIA_ROUTE: \($0)") },
@@ -334,7 +358,8 @@ final class NowPlayingService {
             DispatchQueue.main.async {
                 action()
             }
-        }
+        },
+        systemNowPlaying: ((NowPlayingItem?) -> Void)? = nil
     ) {
         self.installsSystemIntegrations = installsSystemIntegrations
         self.diagnosticSink = diagnosticSink
@@ -343,6 +368,13 @@ final class NowPlayingService {
         self.audioDeviceIDsProvider = audioDeviceIDs
         self.bluetoothDeviceProvider = isBluetoothDevice
         self.scheduleRemoteCommandAction = scheduleRemoteCommandAction
+        if let systemNowPlaying {
+            self.writeSystemNowPlaying = systemNowPlaying
+        } else if installsSystemIntegrations {
+            self.writeSystemNowPlaying = { Self.writeMediaPlayerNowPlaying($0) }
+        } else {
+            self.writeSystemNowPlaying = { _ in }
+        }
     }
 
     func setup(
@@ -974,7 +1006,8 @@ final class NowPlayingService {
 
     func updateNowPlayingInfo(ownerID: UUID, title: String, author: String, isPlaying: Bool) {
         guard handlersByOwner[ownerID] != nil else { return }
-        nowPlayingInfoByOwner[ownerID] = (title, author, isPlaying)
+        let item = NowPlayingItem(title: title, author: author, isPlaying: isPlaying)
+        nowPlayingInfoByOwner[ownerID] = item
         let previousPlayingOwnerID = playingOwnerID
         if isPlaying {
             playingOwnerID = ownerID
@@ -987,19 +1020,28 @@ final class NowPlayingService {
         // An inactive reader can update its own paused state, but it must not
         // replace the visible Now Playing item or steal AirPods commands.
         guard activeOwnerID == ownerID else { return }
-        publishNowPlayingInfo(title: title, author: author, isPlaying: isPlaying)
+        writeSystemNowPlaying(item)
     }
 
-    private func publishNowPlayingInfo(title: String, author: String, isPlaying: Bool) {
-        guard installsSystemIntegrations else { return }
+    /// Shows `item` in MediaPlayer's Now Playing center, playing or paused,
+    /// or, given nil, clears the center and reports playback stopped. It
+    /// touches nothing of the coordinator's, so it needs no isolation; the
+    /// coordinator calls it only from the main actor, as before.
+    nonisolated private static func writeMediaPlayerNowPlaying(_ item: NowPlayingItem?) {
+        let center = MPNowPlayingInfoCenter.default()
+        guard let item else {
+            center.nowPlayingInfo = nil
+            center.playbackState = .stopped
+            return
+        }
         var info = [String: Any]()
-        info[MPMediaItemPropertyTitle] = title
-        info[MPMediaItemPropertyArtist] = author
+        info[MPMediaItemPropertyTitle] = item.title
+        info[MPMediaItemPropertyArtist] = item.author
         info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
-        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+        info[MPNowPlayingInfoPropertyPlaybackRate] = item.isPlaying ? 1.0 : 0.0
 
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        MPNowPlayingInfoCenter.default().playbackState = isPlaying ? .playing : .paused
+        center.nowPlayingInfo = info
+        center.playbackState = item.isPlaying ? .playing : .paused
     }
 
     func clearNowPlaying(ownerID: UUID) {
@@ -1020,11 +1062,7 @@ final class NowPlayingService {
     private func publishCachedNowPlayingInfoForActiveOwner() {
         guard let ownerID = activeOwnerID,
               let cached = nowPlayingInfoByOwner[ownerID] else { return }
-        publishNowPlayingInfo(
-            title: cached.title,
-            author: cached.author,
-            isPlaying: cached.isPlaying
-        )
+        writeSystemNowPlaying(cached)
     }
 
     private func mediaPlayerStatus(for result: RemoteCommandDispatchResult) -> MPRemoteCommandHandlerStatus {
@@ -1032,9 +1070,7 @@ final class NowPlayingService {
     }
 
     private func clearSystemNowPlaying() {
-        guard installsSystemIntegrations else { return }
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
-        MPNowPlayingInfoCenter.default().playbackState = .stopped
+        writeSystemNowPlaying(nil)
     }
 
     private func shortOptionalOwnerID(_ ownerID: UUID?) -> String {

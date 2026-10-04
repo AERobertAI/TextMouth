@@ -664,6 +664,34 @@ final class NowPlayingOwnershipTests: XCTestCase {
         await fulfillment(of: [restartPosted], timeout: 0.1)
     }
 
+    // MARK: - What the System's Now Playing Center Is Told
+
+    /// The system's Now Playing center, which decides where macOS sends the
+    /// AirPods, is told each item the active reader shows, playing and then
+    /// paused, and is cleared only when that reader releases media controls.
+    /// An inactive reader's paused state is kept for later, not shown.
+    func testSystemNowPlayingCenterIsToldTheActiveReadersItems() {
+        var told: [NowPlayingItem?] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            systemNowPlaying: { told.append($0) }
+        )
+        let first = makeSession(coordinator: coordinator)
+        let second = makeSession(coordinator: coordinator)
+
+        first.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        second.updateNowPlayingInfo(title: "Ferry Log", author: "Purser", isPlaying: false)
+        first.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        first.releaseMediaControls()
+
+        XCTAssertEqual(told, [
+            NowPlayingItem(title: "Tide Tables", author: "Harbour Office", isPlaying: true),
+            NowPlayingItem(title: "Tide Tables", author: "Harbour Office", isPlaying: false),
+            nil,
+        ])
+    }
+
     // MARK: - Commands Received on Any Thread
 
     /// MediaPlayer does not say which thread it calls a command's handler
