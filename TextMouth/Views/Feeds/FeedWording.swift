@@ -77,6 +77,63 @@ enum FeedWording {
         return (url.host ?? url.absoluteString) + path + query
     }
 
+    // MARK: Search
+
+    /// The Search field's visible caption and spoken label.
+    static let searchLabel = "Search for a podcast"
+    /// The Search field's spoken hint.
+    static let searchHint = "Type words from a podcast's title or its publisher's name, then press Return to search Apple's podcast directory"
+    /// The Search button's title.
+    static let searchButtonTitle = "Search"
+    /// What the sheet shows, and VoiceOver hears, while it searches.
+    static let searching = "Searching for podcasts…"
+
+    /// What VoiceOver hears when a search for `term` found `count` podcasts:
+    /// "3 podcasts found for “braille”."
+    static func podcastsFound(count: Int, term: String) -> String {
+        "\(CountWording.phrase(count, singular: "podcast", plural: "podcasts")) found for “\(term)”."
+    }
+
+    /// What the sheet says, and VoiceOver hears, when a search for `term`
+    /// found nothing.
+    static func noPodcastsFound(term: String) -> String {
+        "No podcasts were found for “\(term)”. Try other words, or type the feed's address."
+    }
+
+    /// The spoken label of the list of podcasts found: "Search results, 3
+    /// podcasts".
+    static func searchResultsLabel(count: Int) -> String {
+        "Search results, \(CountWording.phrase(count, singular: "podcast", plural: "podcasts"))"
+    }
+
+    /// The line under a podcast's title in the list: who publishes it and
+    /// how many episodes it has, as far as the directory says ("by Small
+    /// Hours Audio, 23 episodes"); nil when it says neither.
+    static func searchResultDetails(_ result: FeedDirectoryResult) -> String? {
+        var parts: [String] = []
+        if let author = result.author {
+            parts.append("by \(author)")
+        }
+        if let count = result.episodeCount {
+            parts.append(CountWording.phrase(count, singular: "episode", plural: "episodes"))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    }
+
+    /// A podcast found, as VoiceOver reads its row: its title, then the
+    /// line under it ("Dots and Dashes, by Small Hours Audio, 23 episodes").
+    static func searchResultLabel(_ result: FeedDirectoryResult) -> String {
+        [result.title, searchResultDetails(result)].compactMap { $0 }.joined(separator: ", ")
+    }
+
+    /// The spoken label of a podcast's own Subscribe button.
+    static func subscribeToResultLabel(_ result: FeedDirectoryResult) -> String {
+        "Subscribe to \(result.title)"
+    }
+
+    /// The spoken hint of a podcast's own Subscribe button.
+    static let subscribeToResultHint = "Puts this podcast's feed address in the address field and subscribes to it"
+
     // MARK: Nouns
 
     /// What a feed's items are called: episodes when they all offer audio

@@ -44,6 +44,16 @@ struct StubResponse: Sendable {
         StubResponse(headers: headers, body: try Data(contentsOf: try requireFile("feeds/\(name)")))
     }
 
+    /// The podcast directory's saved answer `name` in TestData/feeds, as
+    /// Apple's directory serves it (text/javascript), with the feeds it
+    /// names moved from feeds.example to `server`, so subscribing to a
+    /// result reaches the stub server too.
+    static func directoryAnswer(_ name: String, feedsOn server: FeedStubServer) throws -> StubResponse {
+        let saved = try String(contentsOf: try requireFile("feeds/\(name)"), encoding: .utf8)
+        let moved = saved.replacingOccurrences(of: "feeds.example", with: server.host)
+        return StubResponse(headers: ["Content-Type": "text/javascript; charset=utf-8"], body: Data(moved.utf8))
+    }
+
     /// A feed document built by `FeedXML`.
     static func feed(_ markup: String, headers: [String: String] = [:]) -> StubResponse {
         var allHeaders = ["Content-Type": "application/rss+xml; charset=utf-8"]
@@ -454,6 +464,8 @@ final class FeedTestWorld {
                 protocolClasses: [FeedStubProtocol.self],
                 reachability: NetworkReachability { online.value }
             ),
+            // The podcast directory answers at the stub server's /search.
+            directory: FeedDirectory(searchingAt: server.url("/search")),
             preferences: preferences,
             now: { clock.value },
             sleep: { try await sleep.sleep($0) },

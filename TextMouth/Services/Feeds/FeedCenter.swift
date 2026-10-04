@@ -11,6 +11,9 @@ struct FeedEnvironment {
     var fetchStateFolder: URL?
     /// The network.
     var network: FeedNetwork
+    /// Where Add Feed searches for podcasts: Apple's directory, or a test's
+    /// stub server.
+    var directory: FeedDirectory
     /// The store the feed settings are read from.
     var preferences: UserDefaults
     /// The time now.
@@ -49,6 +52,7 @@ struct FeedEnvironment {
             records: .app,
             fetchStateFolder: MachineLocalPaths.feedCaches.appendingPathComponent("Fetch State", isDirectory: true),
             network: .app,
+            directory: .apple,
             preferences: TextMouthRuntime.current.preferences,
             now: { Date() },
             sleep: { try await Task.sleep(for: $0) },
@@ -378,6 +382,16 @@ final class FeedCenter: ObservableObject {
     /// How this Mac last checked the feed `feedID`.
     func fetchState(of feedID: UUID) -> FeedFetchState {
         fetchStates.state(of: feedID)
+    }
+
+    // MARK: Searching
+
+    /// Searches the podcast directory for `term`, as Add Feed's Search
+    /// does, and returns the podcasts it found that name a feed, in the
+    /// directory's order.
+    /// - Throws: `FeedSearchError`.
+    func searchDirectory(for term: String) async throws -> [FeedDirectoryResult] {
+        try await environment.directory.search(term, through: environment.network)
     }
 
     // MARK: Subscribing
