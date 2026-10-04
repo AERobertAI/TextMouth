@@ -391,6 +391,19 @@ struct PlaybackSettingsView: View {
             } header: {
                 Text("Playback Controls")
             }
+
+            // The reader's toolbar (FR05): File > Export… is always there;
+            // this adds a button for it beside the reader's other tools.
+            Section {
+                Toggle(BookExportWording.settingTitle, isOn: Binding(
+                    get: { settingsViewModel.showExportInReaderToolbar },
+                    set: { settingsViewModel.showExportInReaderToolbar = $0 }
+                ))
+                    .accessibilityLabel(BookExportWording.settingLabel)
+                    .accessibilityHint(BookExportWording.settingHint)
+            } header: {
+                Text(BookExportWording.settingSection)
+            }
         }
         .padding()
     }

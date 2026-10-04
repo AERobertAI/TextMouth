@@ -225,6 +225,15 @@ final class ReaderViewModel: ObservableObject {
     /// about to move, set aside until the move ends and playback goes on
     /// from the cursor (TODO P10); nil the rest of the time.
     var audioPausedForMove: AudioPausedForMove?
+    /// The book's edited text when the user's edit was taken while this
+    /// reader was still loading the text it had (FR05): shown once loading
+    /// ends (`showEditedTextWaitingForLoad()`); nil the rest of the time.
+    var editedTextWaitingForLoad: DocumentContent?
+    /// Whether this reader's last load stopped because the book's content.md
+    /// held an edit TextMouth could not take (`BookTextEditPending`, FR05),
+    /// so the reader opens the book with the edit taken next
+    /// (`showEditedText(_:)`).
+    var loadHeldByTextEdit = false
     /// True after the user explicitly releases Now Playing / headphone media
     /// controls for this open reader. Starting playback in TextMouth clears it.
     @Published var mediaControlsReleased = false
@@ -924,8 +933,25 @@ final class ReaderViewModel: ObservableObject {
         audioTagsFrom tagsURL: URL? = nil,
         readingTexts: ReadingTextCache? = .shared
     ) throws -> LoadedContent {
+        var book = book
         let url = book.bookFileURL
         let format = book.format
+        // A text being edited in the user's editor has a saved edit checked
+        // first (FR05), so the read never finds an edit that would look like
+        // a stale cache and be rebuilt from the source (TODO T07). An edit
+        // taken now is read by its analysis, its cache format current; an
+        // edit that cannot be taken stops the read, which says why and where
+        // the edit was kept, rather than rebuild the text over it.
+        if !format.isAudio {
+            switch BookTextEditSessions.shared.settlePendingEdit(of: book) {
+            case .readTaken(let committed):
+                book.contentAnalysisFields = committed.contentAnalysisFields
+            case .hold(let pending):
+                throw pending
+            case .readAsUsual:
+                break
+            }
+        }
         let cacheOutdated = !format.isAudio
             && MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
         let analysis = try BookContentAnalysisService.load(
@@ -1046,6 +1072,9 @@ final class ReaderViewModel: ObservableObject {
         // Otherwise get the speech of the chapter the cursor is in ready
         // off the main thread, so Play finds it prepared.
         prepareOpenedChapterSpeech()
+        // An edit of the book's text taken while it loaded replaces the
+        // text it loaded (FR05).
+        showEditedTextWaitingForLoad()
     }
 
     /// Shows why the book at `filePath` could not be read, in place of the
@@ -1060,6 +1089,7 @@ final class ReaderViewModel: ObservableObject {
         }
         errorMessage = error.localizedDescription
         isLoading = false
+        loadHeldByTextEdit = error is BookTextEditPending
         // A book that cannot load cannot play for a finished
         // book that continued to it; its error shows instead.
         discardAutoplayRequest()
@@ -1199,8 +1229,10 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Update the displayed offset and cached reader text using a snapshot of
-    /// the current playback position.
-    private func refreshPlaybackUI(
+    /// the current playback position. Showing a book's edited text calls it
+    /// too, forcing the visible text to be drawn from the new chapters
+    /// (`ReaderViewModel+EditedText`).
+    func refreshPlaybackUI(
         chapterIndex: Int? = nil,
         offset: Int? = nil,
         forceVisibleTextRefresh: Bool = false

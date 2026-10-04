@@ -38,6 +38,7 @@ extension ConfigService.AppConfig {
         config.playbackNavigationUnitControlMode = PlaybackNavigationUnitControlMode.separate.rawValue
         config.showBookmarkInPlaybackControls = true
         config.showSpeedInPlaybackControls = false
+        config.showExportInReaderToolbar = true
         config.soundEffectsEnabled = false
         config.soundEffectsVolume = 0.35
         // Every event, as TextMouth writes them, each with another sound.

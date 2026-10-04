@@ -297,6 +297,13 @@ final class LogContentPolicyTests: XCTestCase {
         // data directory's Logs folder and this Mac's, and a log started over because it could not
         // be renamed to its older generation.
         "LOG_LOCATION", "LOG_ROTATION",
+        // Export and Edit Text (FR05): how an export ended and each file it could not write; an edit
+        // made in the user's own editor taken as the book's text, refused, left because the book's own
+        // file changed too, or not committed; a rebuild of the text refused over an edit not taken,
+        // and the user's text kept aside before a rebuild replaced it.
+        "BOOK_EXPORT", "BOOK_EXPORT_FAILED",
+        "TEXT_EDIT_ADOPTED", "TEXT_EDIT_FAILED", "TEXT_EDIT_REFUSED", "TEXT_EDIT_SOURCE_CHANGED",
+        "TEXT_EDIT_HELD", "TEXT_EDIT_KEPT",
         // Every other tag the debug log's events begin with.
         "ARCHIVE_EXTRACTION_LEFT", "ARCHIVE_EXTRACTION_REMOVED",
         "AUDIO_PLAYBACK_FAILED", "BUILD_IDENTITY", "CACHE_STALE", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",

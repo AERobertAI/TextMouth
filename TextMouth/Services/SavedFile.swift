@@ -57,10 +57,17 @@ enum SavedFile {
     /// beside it, before anything replaces it: holding `bytes` when they
     /// could be read, or linked to the file when they couldn't. Earlier
     /// copies are compared with dataless files left in the cloud, so none
-    /// is downloaded. Returns the copy, or nil when none could be made.
-    static func preserveUnusable(_ url: URL, bytes: Data?) -> URL? {
+    /// is downloaded. `marker` separates the file's name from the copy's
+    /// timestamp, ".unreadable-" unless the caller keeps copies of its own,
+    /// as Edit Text does for an edited content.md (FR05). Returns the copy,
+    /// or nil when none could be made.
+    static func preserveUnusable(
+        _ url: URL,
+        bytes: Data?,
+        marker: String = LibraryIndexQuarantine.nameMarker
+    ) -> URL? {
         DatalessFiles.withoutDownloading {
-            LibraryIndexQuarantine.preserve(url, bytes: bytes)
+            LibraryIndexQuarantine.preserve(url, bytes: bytes, marker: marker)
         }
     }
 

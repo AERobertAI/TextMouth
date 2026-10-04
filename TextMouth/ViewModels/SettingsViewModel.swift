@@ -767,9 +767,9 @@ final class SettingsViewModel: ObservableObject {
     //
     // The sound effects service, the substitution service, recording (the
     // Record window and the original-take policy), the shortcut manager,
-    // the log writer, and transcription keep their preferences in the same
-    // store as this model, and follow them there. The mirror reads and
-    // writes them there through each service's own definitions: a value
+    // the log writer, transcription, and Export keep their preferences in
+    // the same store as this model, and follow them there. The mirror reads
+    // and writes them there through each service's own definitions: a value
     // applied from config.json reaches its service at once, and a change
     // made through a service's controls is saved to config.json by the
     // observer below.
@@ -781,6 +781,29 @@ final class SettingsViewModel: ObservableObject {
             + RecordingPreferences.keys
             + [KeyboardShortcutManager.bindingsPreference.key, LogLocation.preference.key]
             + [TranscriptionLanguage.preference.key]
+            + [BookExportPreferences.showInReaderToolbar.key]
+    }
+
+    /// The keys of the preferences other services keep that this model
+    /// shows, whose changes it announces wherever they are made, such as in
+    /// config.json, so the controls showing them follow.
+    private static let shownServicePreferenceKeys: Set<String> = [
+        LogLocation.preference.key,
+        BookExportPreferences.showInReaderToolbar.key,
+    ]
+
+    /// Whether the reader's toolbar shows an Export button (FR05), in
+    /// Playback settings. Export keeps it (`BookExportPreferences`), and
+    /// config.json follows it through the observer below, which also
+    /// announces a change made anywhere else, so open readers show or hide
+    /// the button at once.
+    var showExportInReaderToolbar: Bool {
+        get { BookExportPreferences.showInReaderToolbar.read(from: preferences) }
+        set {
+            guard newValue != showExportInReaderToolbar else { return }
+            objectWillChange.send()
+            BookExportPreferences.showInReaderToolbar.write(newValue, to: preferences)
+        }
     }
 
     /// Where the diagnostic logs are written (Storage settings' Logs group).
@@ -800,12 +823,13 @@ final class SettingsViewModel: ObservableObject {
 
     /// Saves config.json whenever a preference another service keeps changes
     /// in the store. A change this model makes while applying config.json
-    /// saves nothing, like every other change made then. A change of the one
-    /// such preference this model shows, the log location, is announced, so
-    /// Storage settings follow it wherever it was made.
+    /// saves nothing, like every other change made then. A change of a
+    /// preference this model shows, the log location or the reader
+    /// toolbar's Export button, is announced, so Storage settings, Playback
+    /// settings, and open readers follow it wherever it was made.
     private func saveServicePreferenceChanges() {
         servicePreferencesObserver = PreferenceObserver(keys: Self.servicePreferenceKeys, in: preferences) { [weak self] key in
-            if key == LogLocation.preference.key {
+            if Self.shownServicePreferenceKeys.contains(key) {
                 self?.objectWillChange.send()
             }
             self?.syncToConfig()
@@ -827,6 +851,7 @@ final class SettingsViewModel: ObservableObject {
         config.recordingInputDeviceID = RecordingInputChoice.preference.read(from: preferences)
         config.recordingOriginalPolicy = RecordingOriginalPolicy.choicePreference.read(from: preferences).rawValue
         config.recordingOriginalDays = RecordingOriginalPolicy.daysPreference.read(from: preferences)
+        config.showExportInReaderToolbar = BookExportPreferences.showInReaderToolbar.read(from: preferences)
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.bindingsPreference.read(from: preferences)
         )
@@ -869,6 +894,7 @@ final class SettingsViewModel: ObservableObject {
             config.recordingOriginalDays.flatMap { SettingsPolicy.recordingOriginalDays.requestedValue(fromConfig: $0) },
             into: RecordingOriginalPolicy.daysPreference
         )
+        adopt(config.showExportInReaderToolbar, into: BookExportPreferences.showInReaderToolbar)
         adopt(
             entries: SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),
             into: KeyboardShortcutManager.bindingsPreference,

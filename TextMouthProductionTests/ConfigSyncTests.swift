@@ -1119,6 +1119,7 @@ final class ConfigSyncTests: XCTestCase {
             "playbackNavigationUnitControlMode": PlaybackNavigationUnitControlMode.separate.rawValue,
             "showBookmarkInPlaybackControls": true,
             "showSpeedInPlaybackControls": false,
+            "showExportInReaderToolbar": true,
             // Shortcuts, text, and sounds, kept by their services.
             "customKeyboardBindings": try JSONEncoder().encode(shortcuts.keyedByRawValue),
             "substitutionsEnabled": false,

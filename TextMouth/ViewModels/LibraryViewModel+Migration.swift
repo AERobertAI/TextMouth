@@ -418,6 +418,11 @@ extension LibraryViewModel {
         access: MaintenanceFileAccess,
         skips: CloudSkips
     ) -> ContentAnalysisSummary? {
+        // A book whose text is being edited in the user's editor is left to
+        // its edit session (FR05): a load here would read an edit not taken
+        // as it is, when its rebuild is refused, and commit its analysis.
+        // Its analysis is committed as its edit is taken, or as it opens.
+        guard !BookTextEditSessions.shared.isEditing(book.id) else { return nil }
         do {
             try access.requireOnThisMac(book, reading: .all)
             guard access.presence(of: book.bookFileURL) == .present else { return nil }

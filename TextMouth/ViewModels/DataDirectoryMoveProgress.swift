@@ -287,9 +287,8 @@ enum DataDirectoryMoveRefusal: LocalizedError, Equatable {
             return "The library can't move while books are open. Close these first: "
                 + "\(DataDirectoryDestinationChange.listing(quoted))."
         case .booksNotDownloaded(let count):
-            let them = count == 1 ? "it" : "them"
             return "\(CountWording.phrase(count, singular: "book isn't", plural: "books aren't")) downloaded. "
-                + "Download \(them) first: select \(them) in the library, then choose Download Now."
+                + LibraryCloudWording.downloadFirst(count: count)
         }
     }
 }

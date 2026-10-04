@@ -494,6 +494,13 @@ struct LibraryBookRowActions {
     let performCloudCommand: (LibraryCloudCommand) -> Void
     /// Removes books, as the removal preferences say.
     let remove: ([Book]) -> Void
+    /// Opens the Export dialog for books (FR05). Doing nothing unless the
+    /// list supplies it, so rows made only to be compared need not.
+    var export: ([Book]) -> Void = { _ in }
+    /// Opens a book's text in the user's own editor, or, when the flag is
+    /// true, in an app they choose (FR05). Doing nothing unless the list
+    /// supplies it.
+    var editText: (Book, _ choosingApp: Bool) -> Void = { _, _ in }
 }
 
 /// One book's row in the library list: the row, its context menu, its
@@ -606,6 +613,19 @@ struct LibraryBookListRow: View, Equatable {
         }
         Button(isMulti ? "Move \(targets.count) Books to Folder..." : "Move to Folder...") {
             actions.moveToFolder(targets)
+        }
+        // The Export dialog for the row's book or the selection (FR05).
+        Button(BookExportWording.commandTitle(count: targets.count)) {
+            actions.export(targets)
+        }
+        // A text book's text in the user's own editor (FR05).
+        if !isMulti && BookTextEditor.canEditText(of: book) {
+            Button(BookTextEditWording.editTitle) {
+                actions.editText(book, false)
+            }
+            Button(BookTextEditWording.editWithTitle) {
+                actions.editText(book, true)
+            }
         }
         // Manual order move commands: single book only, where
         // the list shows one folder's manual order (TODO A06)

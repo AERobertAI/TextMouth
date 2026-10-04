@@ -110,6 +110,10 @@ enum MarkdownCacheService {
     /// next time, instead of being recorded as the one this cache came from.
     /// Each one also removes the reading text this Mac kept for the book
     /// (`ReadingTextCache`), which the old content.md gave.
+    /// While the book's text is being edited in the user's editor (FR05),
+    /// what the user saved in content.md is kept beside it before anything
+    /// replaces it, and an edit not taken is never replaced at all
+    /// (`BookTextEditSessions.permitTextRebuild(of:writing:)`).
     /// Every generation is storage work (TODO S04): a data-directory move
     /// waits for it, so its cache lands where it chose to write it, and one
     /// started during a move waits until the move has published. A book
@@ -167,6 +171,12 @@ enum MarkdownCacheService {
         // Write exactly the bytes that are digested, as UTF-8 without a
         // byte-order mark, which is how a String's UTF-8 write stores them.
         let bytes = Data(extracted.markdown.utf8)
+        // A book being edited in the user's editor keeps what the user saved
+        // there: copied aside before it is replaced, and an edit not taken
+        // never replaced (FR05). Asked only now, after extraction, so a save
+        // made while the source was read is not missed.
+        let edits = BookTextEditSessions.shared
+        try edits.permitTextRebuild(of: book, writing: bytes)
         try bytes.write(to: cachePath, options: .atomic)
         // The reading text this Mac kept for the book was read from the
         // content.md just replaced, so it goes now rather than at the next
@@ -174,6 +184,8 @@ enum MarkdownCacheService {
         ReadingTextCache.shared.remove(bookID: book.id)
         var index = parsed.contentIndex
         index.textCacheFingerprint = fingerprint(source: sourceFingerprint, written: bytes, to: cachePath)
+        // The user's next save is checked against the text just written.
+        edits.textRebuilt(book, writing: bytes, fingerprint: index.textCacheFingerprint)
         let content = DocumentContent(
             title: parsed.title, author: parsed.author, chapters: parsed.chapters, contentIndex: index
         )

@@ -420,6 +420,8 @@ final class ReaderRefreshTests: XCTestCase {
                 log?.playerFileWhenUpdated = reader?.audioPlaybackService.loadedURL
             case .packageMoveEnded:
                 log?.entries.append("move ended")
+            case .textReplaced:
+                log?.entries.append("text replaced")
             }
         }
         defer { log.subscription?.cancel() }

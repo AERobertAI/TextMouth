@@ -206,6 +206,8 @@ struct ReaderView: View {
         .onAppear {
             viewModel.soundEffectService = soundEffectService
         }
+        // Export and the other commands on the book as a whole (FR05).
+        .modifier(ReaderBookCommandsSupport(viewModel: viewModel))
         // A problem met after the book has loaded, such as a chapter whose
         // audio cannot be played or could not be got from the cloud, is
         // shown over the reader, which stays usable behind it. Return

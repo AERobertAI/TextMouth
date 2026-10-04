@@ -10,7 +10,7 @@ import AppKit
 /// test the visibility logic without needing the full app runtime.
 enum MenuVisibilityManager {
     /// Menu titles that should only appear when a reader window is focused
-    static let readerMenuTitles: Set<String> = ["Playback", "Navigate", "Bookmarks"]
+    static let readerMenuTitles: Set<String> = ["Playback", "Navigate", "Bookmarks", "Book"]
 
     /// Menu titles that should only appear when a library window is focused
     static let libraryMenuTitles: Set<String> = ["Library"]
@@ -74,7 +74,8 @@ test("Reader menu titles contains expected menus") {
     try assertTrue(titles.contains("Playback"), "Should include Playback")
     try assertTrue(titles.contains("Navigate"), "Should include Navigate")
     try assertTrue(titles.contains("Bookmarks"), "Should include Bookmarks")
-    try assertEqual(titles.count, 3, "Should have exactly 3 reader menus")
+    try assertTrue(titles.contains("Book"), "Should include Book (Edit Text, FR05)")
+    try assertEqual(titles.count, 4, "Should have exactly 4 reader menus")
 }
 
 test("Library menu titles contains expected menus") {
@@ -85,7 +86,7 @@ test("Library menu titles contains expected menus") {
 
 test("All context menu titles is union of reader and library") {
     let all = MenuVisibilityManager.allContextMenuTitles
-    try assertEqual(all.count, 4, "Should have 4 total context menus")
+    try assertEqual(all.count, 5, "Should have 5 total context menus")
     for title in MenuVisibilityManager.readerMenuTitles {
         try assertTrue(all.contains(title), "\(title) should be in allContextMenuTitles")
     }
@@ -110,6 +111,7 @@ test("applyVisibility: reader window shows reader menus, hides library menus") {
     menu.addItem(NSMenuItem(title: "Bookmarks", action: nil, keyEquivalent: ""))
     menu.addItem(NSMenuItem(title: "Library", action: nil, keyEquivalent: ""))
     menu.addItem(NSMenuItem(title: "File", action: nil, keyEquivalent: ""))
+    menu.addItem(NSMenuItem(title: "Book", action: nil, keyEquivalent: ""))
 
     MenuVisibilityManager.applyVisibility(for: .reader, to: menu)
 
@@ -118,6 +120,7 @@ test("applyVisibility: reader window shows reader menus, hides library menus") {
     try assertTrue(!menu.items[2].isHidden, "Bookmarks should be visible for reader")
     try assertTrue(menu.items[3].isHidden, "Library should be hidden for reader")
     try assertTrue(!menu.items[4].isHidden, "File should remain visible")
+    try assertTrue(!menu.items[5].isHidden, "Book should be visible for reader")
 }
 
 test("applyVisibility: library window shows library menus, hides reader menus") {
@@ -126,6 +129,7 @@ test("applyVisibility: library window shows library menus, hides reader menus") 
     menu.addItem(NSMenuItem(title: "Navigate", action: nil, keyEquivalent: ""))
     menu.addItem(NSMenuItem(title: "Bookmarks", action: nil, keyEquivalent: ""))
     menu.addItem(NSMenuItem(title: "Library", action: nil, keyEquivalent: ""))
+    menu.addItem(NSMenuItem(title: "Book", action: nil, keyEquivalent: ""))
 
     MenuVisibilityManager.applyVisibility(for: .library, to: menu)
 
@@ -133,6 +137,7 @@ test("applyVisibility: library window shows library menus, hides reader menus") 
     try assertTrue(menu.items[1].isHidden, "Navigate should be hidden for library")
     try assertTrue(menu.items[2].isHidden, "Bookmarks should be hidden for library")
     try assertTrue(!menu.items[3].isHidden, "Library should be visible for library")
+    try assertTrue(menu.items[4].isHidden, "Book should be hidden for library")
 }
 
 test("applyVisibility: nil window type hides all context menus") {
@@ -142,6 +147,7 @@ test("applyVisibility: nil window type hides all context menus") {
     menu.addItem(NSMenuItem(title: "Bookmarks", action: nil, keyEquivalent: ""))
     menu.addItem(NSMenuItem(title: "Library", action: nil, keyEquivalent: ""))
     menu.addItem(NSMenuItem(title: "Edit", action: nil, keyEquivalent: ""))
+    menu.addItem(NSMenuItem(title: "Book", action: nil, keyEquivalent: ""))
 
     MenuVisibilityManager.applyVisibility(for: nil, to: menu)
 
@@ -150,6 +156,7 @@ test("applyVisibility: nil window type hides all context menus") {
     try assertTrue(menu.items[2].isHidden, "Bookmarks should be hidden for nil")
     try assertTrue(menu.items[3].isHidden, "Library should be hidden for nil")
     try assertTrue(!menu.items[4].isHidden, "Edit should remain visible for nil")
+    try assertTrue(menu.items[5].isHidden, "Book should be hidden for nil")
 }
 
 test("applyVisibility: nil menu is safe no-op") {

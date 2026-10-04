@@ -101,7 +101,7 @@ enum LibraryCloudWording {
         guard inCloudLibrary else {
             return "The library isn't in a cloud folder, so its books are always on this Mac."
         }
-        guard !titles.isEmpty else { return "No books are selected." }
+        guard !titles.isEmpty else { return noBooksSelected }
         if titles.count == 1, let title = titles.first {
             return keeping ? "\(title) is already kept on this Mac." : "\(title) isn't kept on this Mac."
         }
@@ -180,6 +180,45 @@ enum LibraryCloudWording {
     /// `refusedCount` books.
     static func removalRefusedTitle(refusedCount: Int) -> String {
         refusedCount == 1 ? "Download Not Removed" : "Downloads Not Removed"
+    }
+
+    // MARK: - No Selection
+
+    /// Why a Library menu command acting on the selected books did nothing:
+    /// none is selected. Keep on This Mac and Export (FR05) say it.
+    static let noBooksSelected = "No books are selected."
+
+    // MARK: - Books Not Downloaded
+
+    /// What to do about `count` books only in the cloud before an operation
+    /// that never downloads can take them, naming the list's own command:
+    /// "Download it first: select it in the library, then choose Download
+    /// Now." for one book, "Download them first: select them in the
+    /// library, then choose Download Now." for several. A move of the
+    /// library and Export (FR05) both refuse such books with it.
+    static func downloadFirst(count: Int) -> String {
+        let them = count == 1 ? "it" : "them"
+        return "Download \(them) first: select \(them) in the library, then choose "
+            + "\(downloadTitle(count: count, forSelection: false))."
+    }
+
+    /// Why the books `titles` were left as they are by an operation that
+    /// never downloads (FR02), such as Export or Edit Text (FR05): their
+    /// files are only in the cloud. Worded as a move of the library words
+    /// the same refusal: "Moby-Dick isn't downloaded. Download it first:
+    /// select it in the library, then choose Download Now." Up to three
+    /// books are named; more are counted.
+    static func notDownloaded(titles: [String]) -> String {
+        let subject: String
+        switch titles.count {
+        case 1:
+            subject = "\(titles[0]) isn't"
+        case 2...3:
+            subject = "\(list(titles)) aren't"
+        default:
+            subject = "\(CountWording.books(titles.count)) aren't"
+        }
+        return "\(subject) downloaded. \(downloadFirst(count: titles.count))"
     }
 
     // MARK: - Helpers
