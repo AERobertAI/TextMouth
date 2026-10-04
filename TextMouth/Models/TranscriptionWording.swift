@@ -287,8 +287,8 @@ enum TranscriptionWording {
 
     /// The offer's buttons and what they do.
     static let offerTranscribeTitle = "Transcribe"
-    static let offerTranscribeHint = "Opens Transcribe Audio for the book, which starts transcribing once its "
-        + "language's speech model is on this Mac."
+    static let offerTranscribeHint = "Opens Transcribe Audio for the book, which starts transcribing at once when its "
+        + "language's speech model is on this Mac; otherwise, download the model there, then choose Transcribe."
     static let offerNotNowTitle = "Not Now"
     static let offerNotNowHint = "Leaves the audiobook as it is. You can transcribe it later with Transcribe Audio."
 

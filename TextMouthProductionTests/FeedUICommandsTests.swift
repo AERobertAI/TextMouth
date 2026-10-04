@@ -352,6 +352,15 @@ final class FeedUICommandsTests: XCTestCase {
         }
     }
 
+    /// Feed Info's "Use the global setting" hint points to Settings, Feeds,
+    /// as every other spoken pointer in the app names the window Settings.
+    func testFeedInfosHintNamesTheSettingsWindow() {
+        XCTAssertEqual(
+            FeedWording.useGlobalHint,
+            "When checked, this feed follows the setting in Settings, Feeds; uncheck it to give the feed its own"
+        )
+    }
+
     /// Show Description… draws the text in a text area that can be read
     /// and selected but not typed in, labelled with the item's title.
     func testTheDescriptionIsATextAreaToRead() throws {
