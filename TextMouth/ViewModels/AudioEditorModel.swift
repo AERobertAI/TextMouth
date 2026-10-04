@@ -86,6 +86,15 @@ final class AudioEditorModel: ObservableObject {
     @Published var microphoneID = ""
     /// What Apply Filter's Preview is playing, if anything.
     @Published var filterPreview: AudioEditorFilterPreview?
+    /// A save or an export under way, as its sheet shows it.
+    @Published var progress: AudioEditorProgress?
+    /// Whether Revert to Original is asking to be confirmed.
+    @Published var confirmingRevert = false
+    /// The format a save writes the book's file in, by name, once read.
+    @Published var saveFormatName: String?
+    /// Whether the window reopens the book's reader as it closes: the
+    /// launcher closed that reader to open the editor.
+    var reopensReaderOnClose = false
 
     /// What Copy or Cut kept for Paste.
     var clip: AudioEditorClip?

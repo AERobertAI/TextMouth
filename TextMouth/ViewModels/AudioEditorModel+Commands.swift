@@ -56,8 +56,25 @@ extension AudioEditorModel {
         case .editorInsertChapter: ask(.insertChapter)
         case .editorApplyFilter: openFilters()
         case .editorPunchIn: Task { await togglePunchIn() }
+        // Saving and the book's audio.
+        case .editorSave: Task { await save() }
+        case .editorExport: openSheet(.export)
+        case .editorRevert: askToRevert()
+        case .editorInfo: openInfo()
         default: break
         }
+    }
+
+    /// Opens `sheet`, unless other work is under way.
+    func openSheet(_ sheet: AudioEditorSheet) {
+        guard !isWorking else { return announce(AudioEditorWording.stillWorking) }
+        self.sheet = sheet
+    }
+
+    /// Opens Audio Info, reading the format the book keeps for it.
+    func openInfo() {
+        openSheet(.info)
+        Task { await readSaveFormat() }
     }
 
     /// Performs `action` while a punch-in records: Stop, Play/Pause, and
@@ -80,8 +97,7 @@ extension AudioEditorModel {
 
     /// Opens Apply Filter, unless other work is under way.
     func openFilters() {
-        guard !isWorking else { return announce(AudioEditorWording.stillWorking) }
-        sheet = .filter
+        openSheet(.filter)
     }
 
     /// Whether `action` can act now, so its button is dimmed when it can't:
@@ -104,7 +120,12 @@ extension AudioEditorModel {
             return selection != nil && !isWorking
         case .editorPaste:
             return clip != nil && !isWorking
-        case .editorUndo, .editorRedo, .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn:
+        case .editorRevert:
+            return canRevert && !isWorking
+        case .editorSave:
+            return session.hasUnsavedEdits && !isWorking
+        case .editorUndo, .editorRedo, .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn,
+             .editorExport, .editorInfo:
             return !isWorking
         default:
             return true
@@ -133,6 +154,9 @@ extension AudioEditorModel {
         let hint = AudioEditorWording.hint(for: action, bindings: bindings(for: action))
         if action == .editorUndo, !session.canUndo, let reason = session.undoLimitExplanation {
             return "\(hint) \(reason)"
+        }
+        if action == .editorRevert, session.canUndo, !canRevert {
+            return "\(hint) \(AudioEditorWording.revertNoOriginal)"
         }
         return hint
     }

@@ -119,8 +119,10 @@ enum AudioEditorLauncher {
         var closeReader: @MainActor (UUID) -> Void
         /// Opens a book's edit session (`AudioEditSession.open`).
         var openSession: @MainActor (_ bookID: UUID, _ audioFile: String?, _ library: LibraryViewModel, _ startingOver: Bool) async throws -> AudioEditSession
-        /// Makes the window's model for an open session and shows it.
-        var present: @MainActor (_ book: Book, _ track: AudioEditorTrack?, _ session: AudioEditSession) -> Void
+        /// Makes the window's model for an open session and shows it;
+        /// `closedReader` says the book's reader was closed to open it, so
+        /// the window reopens it as it closes.
+        var present: @MainActor (_ book: Book, _ track: AudioEditorTrack?, _ session: AudioEditSession, _ closedReader: Bool) -> Void
         /// Says a sentence through VoiceOver, from a window.
         var announce: @MainActor (_ sentence: String, _ window: NSWindow?) -> Void
         /// Shows an alert saying why the editor couldn't open.
@@ -186,7 +188,8 @@ enum AudioEditorLauncher {
         }
 
         // The book's reader closes first: a save replaces the file it plays.
-        if library.openBookIDs.contains(book.id) {
+        let closesReader = library.openBookIDs.contains(book.id)
+        if closesReader {
             services.announce(AudioEditorWording.closingReader(book: book.title), window)
             services.closeReader(book.id)
             let deadline = Date().addingTimeInterval(services.readerCloseTimeout)
@@ -209,7 +212,7 @@ enum AudioEditorLauncher {
             DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(book.title) could not be opened for editing (\(Self.describe(error)))")
             return refuse(AudioEditorWording.openFailed(book: book.title, reason: error.localizedDescription), from: window, services: services, alert: true)
         }
-        services.present(book, track, session)
+        services.present(book, track, session, closesReader)
         return .opened(track: track?.title)
     }
 
@@ -274,7 +277,7 @@ extension AudioEditorLauncher.Services {
             openSession: { bookID, audioFile, library, startingOver in
                 try await AudioEditSession.open(bookID: bookID, audioFile: audioFile, in: library, startingOver: startingOver)
             },
-            present: { book, track, session in
+            present: { book, track, session, closedReader in
                 let controller = AudioEditorWindowController.shared
                 let model = AudioEditorModel(
                     bookID: book.id,
@@ -288,6 +291,7 @@ extension AudioEditorLauncher.Services {
                         VoiceOverAnnouncer.announce(sentence, from: controller?.window(for: book.id))
                     }
                 )
+                model.reopensReaderOnClose = closedReader
                 controller.show(model)
                 Task { await model.loadPreview() }
             },

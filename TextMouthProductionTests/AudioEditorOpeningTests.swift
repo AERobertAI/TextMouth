@@ -117,6 +117,7 @@ final class AudioEditorOpeningTests: XCTestCase {
 
         XCTAssertEqual(outcome, .opened(track: nil))
         XCTAssertEqual(script.questions, [])
+        XCTAssertEqual(script.presented.first?.closedReader, false)
         let session = try XCTUnwrap(script.presented.first?.session)
         XCTAssertEqual(session.audioFile, "Harbour Survey.wav")
         XCTAssertEqual(session.duration, 1, accuracy: 0.000_1)
@@ -158,6 +159,7 @@ final class AudioEditorOpeningTests: XCTestCase {
 
         XCTAssertEqual(outcome, .opened(track: nil))
         XCTAssertEqual(script.closedReaders, [fixture.book.id])
+        XCTAssertEqual(script.presented.first?.closedReader, true, "the reader wouldn't open the book again")
         XCTAssertEqual(script.announced, ["Closing the reader of Harbour Survey, since editing changes its audio."])
         script.presented.first?.session.close()
     }
@@ -366,8 +368,9 @@ final class LauncherScript {
     private(set) var announced: [String] = []
     /// What was shown in an alert.
     private(set) var failures: [String] = []
-    /// The editors presented: the book, the track, and the session.
-    private(set) var presented: [(book: Book, track: AudioEditorTrack?, session: AudioEditSession)] = []
+    /// The editors presented: the book, the track, the session, and
+    /// whether the book's reader was closed to open it.
+    private(set) var presented: [(book: Book, track: AudioEditorTrack?, session: AudioEditSession, closedReader: Bool)] = []
 
     /// The services to hand the launcher.
     var services: AudioEditorLauncher.Services {
@@ -392,8 +395,8 @@ final class LauncherScript {
                 }
                 return try await AudioEditSession.open(bookID: bookID, audioFile: audioFile, in: library, startingOver: startingOver)
             },
-            present: { [unowned self] book, track, session in
-                presented.append((book, track, session))
+            present: { [unowned self] book, track, session, closedReader in
+                presented.append((book, track, session, closedReader))
             },
             announce: { [unowned self] sentence, _ in announced.append(sentence) },
             showFailure: { [unowned self] message, _ in failures.append(message) },

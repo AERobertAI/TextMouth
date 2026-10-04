@@ -349,6 +349,18 @@ final class AudioEditSession: ObservableObject {
         return outcome
     }
 
+    /// The format a save writes the book's file in, by the rule a save
+    /// follows (`AudioRenderFormat.inPlace`): the file's own wherever
+    /// TextMouth can write it. Reads the file's stored format.
+    /// - Throws: `AudioEditError.bookNotInLibrary`, or the file's read
+    ///   errors (`AudioEditBase.load`).
+    func saveFormat() async throws -> AudioRenderFormat {
+        guard let library else { throw AudioEditError.bookNotInLibrary }
+        guard let url = AudioEditPackage.url(of: audioFile, in: place.package) else { throw AudioEditError.fileOutsidePackage }
+        let current = try await AudioEditBase.load(url, name: audioFile)
+        return AudioRenderFormat.inPlace(forFileNamed: url.lastPathComponent, stored: current.format, ffmpeg: library.audioFilterEngine().ffmpeg)
+    }
+
     /// The formats Export offers for the edited audio: MP3 only when an
     /// installed ffmpeg is found and the setting allows it.
     var exportFormats: [AudioExportFormat] {

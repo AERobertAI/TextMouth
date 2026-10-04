@@ -102,13 +102,72 @@ final class AudioEditorWindowController: NSObject, NSWindowDelegate {
 
     // MARK: Closing
 
+    /// Lets the window close unless closing needs something first: work
+    /// under way, or a recording, is said, and the window stays; edits
+    /// waiting to be saved are asked about, Save, Discard, or Cancel, and
+    /// the window closes once the answer is carried out.
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard let model = editors.values.first(where: { $0.window === sender })?.model else { return true }
+        switch model.closeNeed {
+        case .nothing:
+            return true
+        case .working:
+            model.announce(AudioEditorWording.closeWhileWorking)
+            return false
+        case .recording:
+            model.announce(AudioEditorWording.closeWhileRecording)
+            return false
+        case .unsavedEdits:
+            // The question is already on screen: Command-W again changes
+            // nothing.
+            guard sender.attachedSheet == nil else { return false }
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = AudioEditorWording.closeQuestion(book: model.bookTitle)
+            alert.informativeText = AudioEditorWording.closeExplanation
+            alert.addButton(withTitle: AudioEditorWording.saveButton)
+            alert.addButton(withTitle: AudioEditorWording.discardButton)
+            // AppKit gives the button titled Cancel the Escape key.
+            alert.addButton(withTitle: AudioEditorWording.cancelButton)
+            alert.beginSheetModal(for: sender) { [weak self] response in
+                Task { @MainActor in await self?.answer(response, closing: sender, model: model) }
+            }
+            return false
+        }
+    }
+
+    /// Carries out the answer to the close question: save, then close once
+    /// saved (a save that fails leaves the window open to say why); discard,
+    /// then close; or keep the window open.
+    private func answer(_ response: NSApplication.ModalResponse, closing window: NSWindow, model: AudioEditorModel) async {
+        switch response {
+        case .alertFirstButtonReturn:
+            if await model.save() {
+                window.close()
+            }
+        case .alertSecondButtonReturn:
+            let discarded = await model.discardUnsavedEdits()
+            if !discarded {
+                model.announce(AudioEditorWording.discardKept)
+            }
+            window.close()
+        default:
+            break
+        }
+    }
+
     /// Lets go of the window and its model as it closes: playing stops, and
-    /// the edit session's use of the book ends.
+    /// the edit session's use of the book ends. A reader the editor closed
+    /// to open opens the book again.
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow,
               let entry = editors.first(where: { $0.value.window === window }) else { return }
+        let reopensReader = entry.value.model.reopensReaderOnClose
         entry.value.model.windowClosed()
         editors[entry.key] = nil
         NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
+        if reopensReader {
+            NotificationCenter.default.post(name: .openBookWindow, object: entry.key)
+        }
     }
 }

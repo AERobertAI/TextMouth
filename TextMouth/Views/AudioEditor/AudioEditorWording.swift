@@ -611,6 +611,188 @@ enum AudioEditorWording {
         return "Applied \(name) to \(what). \(nowLong(duration))"
     }
 
+    // MARK: - Saving and Exporting
+
+    /// A format a save or an export writes, by name.
+    static func formatName(_ format: AudioRenderFormat) -> String {
+        switch format {
+        case .aacM4A: return "M4A (AAC)"
+        case .aacM4B: return "M4B audiobook (AAC)"
+        case .alacM4A: return "Apple Lossless (M4A)"
+        case .pcmCAF: return "CAF"
+        case .pcmWAV: return "WAV"
+        case .pcmAIFF: return "AIFF"
+        case .mp3: return "MP3"
+        }
+    }
+
+    /// Said by Save with nothing to save.
+    static let nothingToSave = "There's nothing to save: the book's audio already holds every edit."
+
+    /// The save's sheet title.
+    static let savingTitle = "Saving"
+
+    /// What a save writes, said as it begins and shown in its sheet.
+    static func savingDetail(_ duration: TimeInterval, format: String?) -> String {
+        guard let format else { return "Saving \(spoken(duration)) of audio into the book." }
+        return "Saving \(spoken(duration)) of audio as \(format), the format this book keeps."
+    }
+
+    /// Said as a save ends: the new length, and a new file name when the
+    /// format's extension changed it.
+    static func saved(_ duration: TimeInterval, renamedTo file: String?) -> String {
+        let saved = "Saved. The book's audio is now \(spoken(duration)) long."
+        guard let file else { return saved }
+        return "\(saved) Its file is now “\(file)”, since TextMouth can't write its old format."
+    }
+
+    /// Said when a save fails.
+    static func saveFailed(_ reason: String) -> String {
+        "The edits couldn't be saved. \(reason)"
+    }
+
+    /// The export's sheet title while it runs.
+    static let exportingTitle = "Exporting"
+
+    /// What an export writes, said as it begins and shown in its sheet.
+    static func exportingDetail(_ duration: TimeInterval, format: String, file: String) -> String {
+        "Exporting \(spoken(duration)) of audio as \(format) to “\(file)”."
+    }
+
+    /// Said as an export ends.
+    static func exported(file: String) -> String {
+        "Exported “\(file)”."
+    }
+
+    /// Said when an export fails.
+    static func exportFailed(_ reason: String) -> String {
+        "The audio couldn't be exported. \(reason)"
+    }
+
+    /// Said at each quarter of a long save or export.
+    static func percentDone(_ percent: Int) -> String {
+        "\(percent) percent"
+    }
+
+    /// The label of the progress bar.
+    static let progressLabel = "Progress"
+
+    /// Export's sheet title.
+    static let exportTitle = "Export Audio"
+    /// The format pop-up's label.
+    static let formatLabel = "Format"
+    /// The button that asks where to export to.
+    static let exportButton = "Export…"
+    /// What Export… does.
+    static let exportButtonHint = "Asks where to save the file, then writes it. The book's own file stays as it is."
+
+    // MARK: - Reverting
+
+    /// Revert's confirmation question.
+    static let revertQuestion = "Revert to the original audio?"
+
+    /// What reverting does, with how many edits it undoes.
+    static func revertExplanation(_ count: Int) -> String {
+        "\(CountWording.phrase(count, singular: "edit is", plural: "edits are")) undone. Redo brings them back until you make another edit."
+    }
+
+    /// The button that reverts.
+    static let revertButton = "Revert"
+
+    /// Said as Revert to Original ends.
+    static func reverted(_ count: Int) -> String {
+        "Reverted to the original audio. Redo brings back the \(CountWording.phrase(count, singular: "edit", plural: "edits"))."
+    }
+
+    /// Said by Revert to Original with nothing to undo.
+    static let nothingToRevert = "There's nothing to revert: no edit can be undone."
+
+    /// Said by Revert to Original when no original is kept.
+    static let revertNoOriginal = "No original audio is kept for this book, so it can't be reverted. "
+        + "Undo takes back the edits made since it was last saved."
+
+    // MARK: - Audio Info
+
+    /// Audio Info's sheet title.
+    static let infoTitle = "Audio Info"
+    /// The labels of Audio Info's facts.
+    static let lengthLabel = "Length"
+    static let fileLabel = "File"
+    static let savedAsLabel = "Saved as"
+    static let editsLabel = "Edits"
+    static let originalLabel = "Original audio"
+    /// The original policy pop-up's label.
+    static let policyLabel = "Original audio for this book"
+
+    /// The policy pop-up's first choice: the global setting, named.
+    static func useGlobal(_ global: AudioOriginalPolicy) -> String {
+        "Use the global setting (\(AudioEditingSettingsWording.choiceTitle(global.choice)))"
+    }
+
+    /// How the policy pop-up names `choice`.
+    static func choiceTitle(_ choice: AudioEditorPolicyChoice, global: AudioOriginalPolicy) -> String {
+        switch choice {
+        case .global: return useGlobal(global)
+        case .keep: return AudioEditingSettingsWording.choiceTitle(.keep)
+        case .delete: return AudioEditingSettingsWording.choiceTitle(.delete)
+        case .deleteAfterDays: return AudioEditingSettingsWording.choiceTitle(.deleteAfterDays)
+        }
+    }
+
+    /// The edits, as Audio Info says them: "No edits", "3 edits, all
+    /// saved", "3 edits, not all saved".
+    static func edits(_ count: Int, unsaved: Bool) -> String {
+        guard count > 0 else { return unsaved ? "No edits, not saved" : "No edits" }
+        return "\(CountWording.phrase(count, singular: "edit", plural: "edits")), \(unsaved ? "not all saved" : "all saved")"
+    }
+
+    /// Whether the original is kept, as Audio Info says it.
+    static func originalStatus(kept: Bool, deletedAt: Date?) -> String {
+        if kept { return "Kept" }
+        if let deletedAt { return "Deleted on \(deletedAt.formatted(date: .long, time: .omitted))" }
+        return "Not kept"
+    }
+
+    /// Said as the book's own policy changes: what it does now.
+    static func policyChanged(_ policy: AudioOriginalPolicy?, global: AudioOriginalPolicy) -> String {
+        switch policy {
+        case nil:
+            return "This book follows the global setting now. \(AudioEditingSettingsWording.explanation(global))"
+        case .keep?:
+            return "This book keeps its original audio until the book is removed."
+        case .delete?:
+            return "This book keeps no original audio: saved edits change its audio in place, and can't be undone after."
+        case .deleteAfter(let days)?:
+            return "This book keeps its original audio for \(AudioEditingSettingsWording.days(Int(days.rounded()))) "
+                + "after it was saved or last edited."
+        }
+    }
+
+    // MARK: - Closing
+
+    /// The question asked as a window with unsaved edits closes.
+    static func closeQuestion(book: String) -> String {
+        "Save the edits to “\(book)”?"
+    }
+
+    /// What its answers do.
+    static let closeExplanation = "The book's audio doesn't hold them yet. Discard undoes them; the next time you edit "
+        + "this book, Redo brings them back until you make another edit."
+
+    /// The close question's buttons.
+    static let saveButton = "Save"
+    static let discardButton = "Discard"
+
+    /// Said when the window can't close while work is under way.
+    static let closeWhileWorking = "The editor is still working. Close it once the change is done."
+
+    /// Said when the window can't close while a punch-in records.
+    static let closeWhileRecording = "A recording is under way. Stop it, or discard it with Clear Selection, then close the editor."
+
+    /// Said when Discard can't reach the audio as saved.
+    static let discardKept = "The book's audio holds edits its history no longer has, so the edits stay, "
+        + "to be saved or undone the next time you edit this book."
+
     // MARK: - The Commands
 
     /// The names of the editor's groups of buttons, as headings.
@@ -619,6 +801,8 @@ enum AudioEditorWording {
     static let selectHeading = "Select and Mark"
     /// The heading of the editing buttons.
     static let editHeading = "Edit"
+    /// The heading of the saving buttons.
+    static let fileHeading = "Save and Export"
 
     /// What `action`'s button does, as its hint says, before its shortcut;
     /// empty for an action that isn't the editor's.
@@ -666,6 +850,11 @@ enum AudioEditorWording {
         case .editorApplyFilter: return "Runs a filter preset over the selection or the whole file, with a preview first."
         case .editorPunchIn:
             return "Records from the microphone over the selection, or at the cursor, after a beep. Again, or Stop, ends it."
+        case .editorSave: return "Saves the edits into the book's audio file, in the format the book keeps."
+        case .editorExport: return "Exports the edited audio to a file outside the library, in a format you choose."
+        case .editorRevert: return "Undoes every edit, back to the original audio; Redo brings them back."
+        case .editorInfo:
+            return "Shows the audio's length, file, and edits, and sets what happens to this book's original audio."
         default: return ""
         }
     }

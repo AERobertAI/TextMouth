@@ -362,13 +362,7 @@ extension AudioEditorModel {
         stopPlayingForEdit()
         do {
             var place: TimeInterval?
-            while true {
-                // The lengths around the edit as it was made: with it, then
-                // without it.
-                let edited = duration
-                guard let entry = try await session.undo() else { break }
-                let unedited = duration
-                followMarkers { AudioEditorTimeMap.backward($0, through: entry.edit, before: unedited, after: edited) }
+            while let entry = try await stepBack() {
                 place = AudioEditorTimeMap.place(of: entry.edit)
                 // The first edit of a Trim to Selection goes with the second.
                 guard let partner = pairedEdits[entry.id], session.list.nextUndo?.id == partner else { break }
@@ -383,6 +377,28 @@ extension AudioEditorModel {
         }
     }
 
+    /// Undoes the newest edit through the session, the markers following
+    /// the sound back, and returns it; nil when none can be undone.
+    func stepBack() async throws -> AudioEditEntry? {
+        // The lengths around the edit as it was made: with it, then
+        // without it.
+        let edited = duration
+        guard let entry = try await session.undo() else { return nil }
+        let unedited = duration
+        followMarkers { AudioEditorTimeMap.backward($0, through: entry.edit, before: unedited, after: edited) }
+        return entry
+    }
+
+    /// Redoes the oldest undone edit through the session, the markers
+    /// following the sound, and returns it; nil when none was undone.
+    func stepForward() async throws -> AudioEditEntry? {
+        let before = duration
+        guard let entry = try await session.redo() else { return nil }
+        let after = duration
+        followMarkers { AudioEditorTimeMap.forward($0, through: entry.edit, before: before, after: after) }
+        return entry
+    }
+
     /// Redoes the oldest undone edit, both edits of a Trim to Selection,
     /// saying what was redone.
     func redo() async {
@@ -392,11 +408,7 @@ extension AudioEditorModel {
         stopPlayingForEdit()
         do {
             var place: TimeInterval?
-            while true {
-                let before = duration
-                guard let entry = try await session.redo() else { break }
-                let after = duration
-                followMarkers { AudioEditorTimeMap.forward($0, through: entry.edit, before: before, after: after) }
+            while let entry = try await stepForward() {
                 place = AudioEditorTimeMap.place(of: entry.edit)
                 // The second edit of a Trim to Selection goes with the first.
                 guard let next = session.list.nextRedo, pairedEdits[next.id] == entry.id else { break }

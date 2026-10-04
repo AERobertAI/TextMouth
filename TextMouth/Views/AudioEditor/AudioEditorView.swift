@@ -42,7 +42,21 @@ struct AudioEditorView: View {
                 AudioEditorMarkersSheet(model: model)
             case .filter:
                 AudioEditorFilterSheet(model: model)
+            case .progress:
+                AudioEditorProgressSheet(model: model)
+            case .export:
+                AudioEditorExportSheet(model: model)
+            case .info:
+                AudioEditorInfoSheet(model: model)
             }
+        }
+        .alert(AudioEditorWording.revertQuestion, isPresented: $model.confirmingRevert) {
+            Button(AudioEditorWording.revertButton, role: .destructive) {
+                Task { await model.revertToOriginal() }
+            }
+            Button(AudioEditorWording.cancelButton, role: .cancel) {}
+        } message: {
+            Text(AudioEditorWording.revertExplanation(model.session.list.cursor))
         }
     }
 
@@ -65,6 +79,9 @@ struct AudioEditorView: View {
         AudioEditorCommandList(heading: AudioEditorWording.editHeading, actions: [
             .editorUndo, .editorRedo, .editorCut, .editorCopy, .editorPaste, .editorTrimToSelection,
             .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn,
+        ]),
+        AudioEditorCommandList(heading: AudioEditorWording.fileHeading, actions: [
+            .editorSave, .editorExport, .editorRevert, .editorInfo,
         ]),
     ]
 

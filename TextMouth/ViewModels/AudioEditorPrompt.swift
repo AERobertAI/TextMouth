@@ -10,6 +10,12 @@ enum AudioEditorSheet: Identifiable, Equatable {
     case markers
     /// Apply Filter: the presets, what to apply one to, Preview, and Apply.
     case filter
+    /// A save or an export under way, and how far it is.
+    case progress
+    /// Export: the formats, then where to export to.
+    case export
+    /// Audio Info: the audio, its edits, and its original audio policy.
+    case info
 
     /// Tells sheets apart.
     var id: String {
@@ -17,6 +23,9 @@ enum AudioEditorSheet: Identifiable, Equatable {
         case .prompt(let prompt): return "prompt-\(prompt.id)"
         case .markers: return "markers"
         case .filter: return "filter"
+        case .progress: return "progress"
+        case .export: return "export"
+        case .info: return "info"
         }
     }
 }

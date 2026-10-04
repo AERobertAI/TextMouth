@@ -76,6 +76,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case editorInsertChapter = "Audio Editor: Insert Chapter Marker…"
     case editorApplyFilter = "Audio Editor: Apply Filter…"
     case editorPunchIn = "Audio Editor: Punch In"
+    case editorSave = "Audio Editor: Save"
+    case editorExport = "Audio Editor: Export…"
+    case editorRevert = "Audio Editor: Revert to Original…"
+    case editorInfo = "Audio Editor: Audio Info…"
 
     var id: String { rawValue }
 
@@ -141,7 +145,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
              .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
              .editorPlaySelection, .editorAddMarker, .editorShowMarkers,
              .editorUndo, .editorRedo, .editorCut, .editorCopy, .editorPaste, .editorTrimToSelection,
-             .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn:
+             .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn,
+             .editorSave, .editorExport, .editorRevert, .editorInfo:
             return .audioEditorShortcut
         }
     }
@@ -171,7 +176,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
              .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
              .editorPlaySelection, .editorAddMarker, .editorShowMarkers,
              .editorUndo, .editorRedo, .editorCut, .editorCopy, .editorPaste, .editorTrimToSelection,
-             .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn:
+             .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn,
+             .editorSave, .editorExport, .editorRevert, .editorInfo:
             return Self.audioEditorCategory
         }
     }
@@ -593,6 +599,11 @@ extension ShortcutAction {
             .editorInsertChapter: [KeyBinding(key: "c", shift: true)],
             .editorApplyFilter: [KeyBinding(key: "f")],
             .editorPunchIn: [KeyBinding(key: "r")],
+            // Saving, as documents save; Revert beside Undo, asking first.
+            .editorSave: [KeyBinding(key: "s", command: true)],
+            .editorExport: [KeyBinding(key: "e", command: true, shift: true)],
+            .editorRevert: [KeyBinding(key: "z", command: true, option: true)],
+            .editorInfo: [KeyBinding(key: "i", command: true)],
         ]
     }
 }
