@@ -367,17 +367,23 @@ test("Restart Sleep Timer default doesn't collide with any existing binding") {
 }
 
 test("No duplicate bindings across actions in defaults") {
+    // One key press must mean one thing wherever it is pressed: the audio
+    // editor's actions, matched only in its windows, may share keys with
+    // the reader's, but never with each other, and the reader's and the
+    // library's never share one either.
     let defaults = ShortcutAction.defaultBindings
-    var seen: [KeyBinding: ShortcutAction] = [:]
+    var seen: [ShortcutScope: [KeyBinding: ShortcutAction]] = [:]
+    var total = 0
     for (action, bindings) in defaults {
         for binding in bindings {
-            if let existing = seen[binding] {
+            if let existing = seen[action.scope]?[binding] {
                 throw TestError.assertionFailed("Duplicate binding \(binding.displayString) for \(action.rawValue) and \(existing.rawValue)")
             }
-            seen[binding] = action
+            seen[action.scope, default: [:]][binding] = action
+            total += 1
         }
     }
-    print("    No duplicate bindings found across \(seen.count) total bindings")
+    print("    No duplicate bindings found across \(total) total bindings")
 }
 
 test("Full bindings dictionary JSON round-trip") {

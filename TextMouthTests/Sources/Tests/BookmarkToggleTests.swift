@@ -531,18 +531,21 @@ test("Every ShortcutAction has a default binding entry") {
     }
 }
 
-test("No default binding is shared between actions") {
+test("No default binding is shared between actions of one scope") {
+    // The audio editor's actions, matched only in its windows, may share a
+    // key with an action that works everywhere else (ShortcutScope); within
+    // either scope a key means one thing.
     let defaults = ShortcutAction.defaultBindings
-    var seen: [KeyBinding: ShortcutAction] = [:]
+    var seen: [ShortcutScope: [KeyBinding: ShortcutAction]] = [:]
     for (action, bindings) in defaults {
         for binding in bindings {
-            if let existing = seen[binding] {
+            if let existing = seen[action.scope]?[binding] {
                 throw TestError.assertionFailed("Binding \(binding.displayString) is shared by \(action.rawValue) and \(existing.rawValue)")
             }
-            seen[binding] = action
+            seen[action.scope, default: [:]][binding] = action
         }
     }
-    print("    All \(seen.count) bindings are unique across actions")
+    print("    All \(seen.values.map(\.count).reduce(0, +)) bindings are unique within their scope")
 }
 
 test("Panel shortcuts have the expected categories") {

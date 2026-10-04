@@ -152,4 +152,192 @@ enum AudioEditorWording {
     static func status(_ parts: [String]) -> String {
         parts.joined(separator: "; ")
     }
+
+    // MARK: - Listening and Moving
+
+    /// The status line's first part while the audio plays.
+    static let playing = "Playing"
+
+    /// Said as playing pauses: where.
+    static func paused(at time: TimeInterval) -> String {
+        "Paused at \(spoken(time))."
+    }
+
+    /// Said as Play starts again from the start, the cursor having been at
+    /// the end.
+    static let playingFromStart = "Playing from the start."
+
+    /// Said as Stop goes back to where playing began.
+    static func stopped(backAt time: TimeInterval) -> String {
+        "Stopped. Back at \(spoken(time))."
+    }
+
+    /// Said when Stop is pressed with nothing playing.
+    static let notPlaying = "Nothing is playing."
+
+    /// Said when Play is pressed before the edited audio is ready, or after
+    /// it couldn't be made ready.
+    static let notReadyToPlay = "The audio isn't ready to play yet."
+
+    /// Said as playing reaches the end of the audio.
+    static let endOfAudio = "End of the audio."
+
+    /// Said as Go to End lands there: how long the audio is.
+    static func endOfAudio(_ duration: TimeInterval) -> String {
+        "End of the audio, at \(spoken(duration))."
+    }
+
+    /// Said as Go to Start lands there.
+    static let startOfAudio = "Start of the audio."
+
+    /// Said when a step back can go no further.
+    static let atStart = "Already at the start."
+
+    /// Said when a step forward can go no further.
+    static let atEnd = "Already at the end."
+
+    /// Why a time typed can't be gone to.
+    static func afterTheEnd(_ duration: TimeInterval) -> String {
+        "That's after the end of the audio, at \(spoken(duration))."
+    }
+
+    /// Said by the chapter commands for audio without chapter markers.
+    static let noChapters = "This audio has no chapter markers."
+
+    /// Said when no chapter marker follows the cursor.
+    static let noChapterAfter = "No chapter marker after the cursor."
+
+    /// Said when no chapter marker comes before the cursor.
+    static let noChapterBefore = "No chapter marker before the cursor."
+
+    /// Said as the cursor lands on a chapter marker: "Chapter 3: Tide
+    /// Tables, at 12 minutes, 4 seconds."
+    static func chapter(number: Int, title: String, at time: TimeInterval) -> String {
+        "Chapter \(number): \(title), at \(spoken(time))."
+    }
+
+    /// Said as the cursor lands where the sound after a pause begins.
+    static func afterPause(_ pause: AudioEditorPause) -> String {
+        "After a pause of \(spoken(pause.duration)), at \(spoken(pause.end))."
+    }
+
+    /// Said when no pause follows the cursor.
+    static let noPauseAfter = "No pause after the cursor."
+
+    /// Said when no pause comes before the cursor.
+    static let noPauseBefore = "No pause before the cursor."
+
+    /// Said while the pauses are still being found.
+    static let findingPauses = "Still finding the pauses. Try again in a moment."
+
+    /// Said when the pauses couldn't be found.
+    static func pausesFailed(_ reason: String) -> String {
+        "The pauses couldn't be found. \(reason)"
+    }
+
+    // MARK: - Go to Time
+
+    /// Go to Time's sheet title.
+    static let goToTimeTitle = "Go to Time"
+
+    /// The label of a field taking a time.
+    static let timeFieldLabel = "Time"
+
+    /// The button that goes to the time typed.
+    static let goButton = "Go"
+
+    /// How a field's problem is read: "Problem: Seconds must be less than
+    /// 60."
+    static func problemLabel(_ problem: String) -> String {
+        "Problem: \(problem)"
+    }
+
+    // MARK: - The Commands
+
+    /// The names of the editor's groups of buttons, as headings.
+    static let listenHeading = "Listen and Move"
+
+    /// What `action`'s button does, as its hint says, before its shortcut;
+    /// empty for an action that isn't the editor's.
+    static func explanation(of action: ShortcutAction) -> String {
+        switch action {
+        case .editorPlayPause: return "Plays from the cursor, or pauses where the audio is."
+        case .editorStop: return "Stops playing, and goes back to where playing began."
+        case .editorSkipBack: return "Moves the cursor back one second."
+        case .editorSkipForward: return "Moves the cursor forward one second."
+        case .editorSkipBackLong: return "Moves the cursor back ten seconds."
+        case .editorSkipForwardLong: return "Moves the cursor forward ten seconds."
+        case .editorSkipBackShort: return "Moves the cursor back a tenth of a second."
+        case .editorSkipForwardShort: return "Moves the cursor forward a tenth of a second."
+        case .editorGoToStart: return "Moves the cursor to the start of the audio."
+        case .editorGoToEnd: return "Moves the cursor to the end of the audio."
+        case .editorGoToTime: return "Moves the cursor to a time you type."
+        case .editorPreviousChapter: return "Moves the cursor to the previous chapter marker."
+        case .editorNextChapter: return "Moves the cursor to the next chapter marker."
+        case .editorPreviousPause: return "Moves the cursor to where the sound after the previous pause begins."
+        case .editorNextPause: return "Moves the cursor to where the sound after the next pause begins."
+        case .editorWhereAmI: return "Says where the cursor is, in which chapter, and what is selected."
+        default: return ""
+        }
+    }
+
+    /// A button's hint: what it does, then its shortcuts in force.
+    static func hint(for action: ShortcutAction, bindings: [KeyBinding]) -> String {
+        "\(explanation(of: action)) \(shortcutSentence(bindings))"
+    }
+
+    /// The shortcuts of a command in words: "Shortcut: J.", "Shortcuts: J
+    /// or Comma.", "No shortcut."
+    static func shortcutSentence(_ bindings: [KeyBinding]) -> String {
+        guard !bindings.isEmpty else { return "No shortcut." }
+        let names = bindings.map(spokenShortcut)
+        let joined = names.count < 3
+            ? names.joined(separator: " or ")
+            : names.dropLast().joined(separator: ", ") + ", or " + (names.last ?? "")
+        return "\(bindings.count == 1 ? "Shortcut" : "Shortcuts"): \(joined)."
+    }
+
+    /// One shortcut as it is said: its modifiers in the order Settings shows
+    /// them, then its key, joined by hyphens: "Shift-J", "Option-Comma",
+    /// "Command-Up Arrow", "Space".
+    static func spokenShortcut(_ binding: KeyBinding) -> String {
+        var parts: [String] = []
+        if binding.control { parts.append("Control") }
+        if binding.option { parts.append("Option") }
+        if binding.shift { parts.append("Shift") }
+        if binding.command { parts.append("Command") }
+        parts.append(keyName(binding.key))
+        return parts.joined(separator: "-")
+    }
+
+    /// A key's name in words: a special key's or a punctuation mark's name,
+    /// or a letter in capitals.
+    static func keyName(_ key: String) -> String {
+        switch key {
+        case "space": return "Space"
+        case "delete": return "Delete"
+        case "escape": return "Escape"
+        case "return": return "Return"
+        case "tab": return "Tab"
+        case "upArrow": return "Up Arrow"
+        case "downArrow": return "Down Arrow"
+        case "leftArrow": return "Left Arrow"
+        case "rightArrow": return "Right Arrow"
+        case ",": return "Comma"
+        case ".": return "Period"
+        case "<": return "Less Than"
+        case ">": return "Greater Than"
+        case "/": return "Slash"
+        case "\\": return "Backslash"
+        case ";": return "Semicolon"
+        case "'": return "Apostrophe"
+        case "`": return "Grave Accent"
+        case "[": return "Left Bracket"
+        case "]": return "Right Bracket"
+        case "-": return "Minus"
+        case "=": return "Equals"
+        case "+": return "Plus"
+        default: return key.uppercased()
+        }
+    }
 }

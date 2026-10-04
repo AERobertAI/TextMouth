@@ -89,6 +89,9 @@ final class AudioEditorWindowController: NSObject, NSWindowDelegate {
         window.isRestorable = false
         window.delegate = self
         window.center()
+        // The window the editor's shortcuts are pressed in, and its
+        // announcements are posted from.
+        model.hostWindow = window
         editors[model.bookID] = Editor(window: window, model: model)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate()

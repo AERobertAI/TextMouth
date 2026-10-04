@@ -20,12 +20,32 @@ struct AudioEditorView: View {
                 timeDisplay
                 statusLine
                 messageLine
+                AudioEditorCommandGroup(heading: AudioEditorWording.listenHeading, actions: Self.listenActions, model: model)
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minWidth: 640, idealWidth: 760, minHeight: 520, idealHeight: 640)
+        .sheet(item: $model.prompt) { prompt in
+            AudioEditorPromptSheet(
+                prompt: prompt,
+                initialText: model.initialText(for: prompt),
+                submit: { model.answer(prompt, with: $0) },
+                cancel: { model.prompt = nil }
+            )
+        }
     }
+
+    /// The commands that play and move the cursor, in the order their
+    /// buttons show.
+    static let listenActions: [ShortcutAction] = [
+        .editorPlayPause, .editorStop,
+        .editorSkipBack, .editorSkipForward, .editorSkipBackLong, .editorSkipForwardLong,
+        .editorSkipBackShort, .editorSkipForwardShort,
+        .editorGoToStart, .editorGoToEnd, .editorGoToTime,
+        .editorPreviousChapter, .editorNextChapter, .editorPreviousPause, .editorNextPause,
+        .editorWhereAmI,
+    ]
 
     // MARK: - Pieces
 
