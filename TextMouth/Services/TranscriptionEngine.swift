@@ -102,13 +102,21 @@ struct SpeechAnalyzerEngine: TranscriptionEngine {
             return try await transcribeOnce(fileAt: url, locale: locale, progress: progress)
         } catch let error as SFSpeechError where error.code == .assetLocaleNotAllocated {
             // The system wants the language reserved for TextMouth before
-            // its installed model is used: reserving downloads nothing.
+            // its installed model is used, as macOS 26 warns it will: the
+            // reservation downloads nothing, and the file is tried once more.
             _ = try? await AssetInventory.reserve(locale: locale)
-            return try await transcribeOnce(fileAt: url, locale: locale, progress: progress)
+            do {
+                return try await transcribeOnce(fileAt: url, locale: locale, progress: progress)
+            } catch {
+                throw Self.transcriptionError(for: error, fileName: url.lastPathComponent)
+            }
+        } catch {
+            throw Self.transcriptionError(for: error, fileName: url.lastPathComponent)
         }
     }
 
-    /// Transcribes the file at `url` once, as `transcribe` describes.
+    /// Transcribes the file at `url` once, as `transcribe` describes,
+    /// throwing whatever stopped it as it came.
     private func transcribeOnce(
         fileAt url: URL,
         locale: Locale,
@@ -146,11 +154,11 @@ struct SpeechAnalyzerEngine: TranscriptionEngine {
             return sentences
         } catch {
             // The analysis stopped early: finish it, so its results end,
-            // and let the gatherer end with them before saying why.
+            // and let the gatherer end with them before passing on why.
             await analyzer.cancelAndFinishNow()
             gatherer.cancel()
             _ = try? await gatherer.value
-            throw Self.transcriptionError(for: error, fileName: url.lastPathComponent)
+            throw error
         }
     }
 
@@ -190,6 +198,9 @@ struct SpeechAnalyzerEngine: TranscriptionEngine {
             }
             if code == .insufficientResources {
                 return .recognitionFailed("the speech recognizer is busy with other work; try again in a moment")
+            }
+            if code == .assetLocaleNotAllocated || code == .tooManyAssetLocalesAllocated {
+                return .recognitionFailed("the system did not let TextMouth use the language's speech model")
             }
             if [.audioDisordered, .unexpectedAudioFormat, .incompatibleAudioFormats].contains(code) {
                 return .unreadableFile(file: fileName, reason: TranscriptionError.unreadableAudioReason)
