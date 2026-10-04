@@ -17,6 +17,18 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 BUILD_NUMBER := $(shell date -u +"%Y%m%d%H%M%S")
 
+# The app `make build` makes carries no code coverage. Xcode creates the
+# TextMouth scheme itself (none is committed), that scheme gathers coverage
+# when testing (CLANG_COVERAGE_MAPPING), and Xcode builds the scheme's build
+# action the same way. Without this setting every target, the Swift packages
+# too, would be compiled to count how often each piece of its code runs,
+# carry about 3 MB of coverage data, and link the profiling runtime, which
+# writes a default.profraw file when the app quits. Nothing reads coverage
+# from these builds. A setting on the command line outranks the scheme's and
+# reaches the package targets, which project.yml cannot. `make test` builds
+# separately and still gathers coverage.
+NO_COVERAGE = CLANG_COVERAGE_MAPPING=NO
+
 # Xcode records the exact Swift package revisions here. The file is committed,
 # so every checkout and CI run builds the same package versions.
 PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
@@ -100,6 +112,7 @@ build: generate
 		-configuration $(CONFIG) \
 		-derivedDataPath "$(DERIVED_BUILD_DIR)" \
 		-destination 'platform=macOS' \
+		$(NO_COVERAGE) \
 		CURRENT_PROJECT_VERSION="$(BUILD_NUMBER)" \
 		TEXTMOUTH_GIT_COMMIT="$(GIT_COMMIT)" \
 		TEXTMOUTH_BUILD_DATE="$(BUILD_DATE)" \
