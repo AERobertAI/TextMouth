@@ -108,9 +108,13 @@ struct TranscriptionProgress: Equatable, Sendable {
 // MARK: - The Audio of a Book
 
 /// The audio a transcription reads: each of a book's audio files, once, in
-/// the order the book first plays them, each measured and fingerprinted
-/// before any is transcribed, so a file that changes while the book is
-/// transcribed is noticed when the transcript is saved.
+/// the order the book first plays them, each measured before any is
+/// transcribed, so progress can count the whole book's audio from the
+/// start, and an unreadable file is named before any work is done. Each
+/// file is fingerprinted just before it is transcribed
+/// (`TranscriptionService`), so a file that changes while it is transcribed
+/// is noticed when the transcript is saved, and a long book is never hashed
+/// whole before a cancel can take effect.
 struct TranscriptionPlan: Equatable, Sendable {
     /// One audio file of the book.
     struct File: Equatable, Sendable {
@@ -122,8 +126,6 @@ struct TranscriptionPlan: Equatable, Sendable {
         let url: URL
         /// How long the file plays, in seconds.
         let duration: TimeInterval
-        /// The file's size, modification time, and digest now.
-        let fingerprint: FileFingerprint
     }
 
     /// The book's audio files, in the order the book first plays them.
@@ -143,12 +145,11 @@ struct TranscriptionPlan: Equatable, Sendable {
     static func make(
         for book: Book,
         isDataless: (URL) -> Bool = DatalessFiles.isDataless,
-        measure: (URL) throws -> TimeInterval = Self.duration(ofAudioFileAt:),
-        hasher: FingerprintHasher = .md5
+        measure: (URL) throws -> TimeInterval = Self.duration(ofAudioFileAt:)
     ) throws -> TranscriptionPlan {
         guard book.format.isAudio else { throw TranscriptionError.notAnAudiobook }
         let index = try BookContentAnalysisService.load(book: book).index
-        return try make(for: book, index: index, isDataless: isDataless, measure: measure, hasher: hasher)
+        return try make(for: book, index: index, isDataless: isDataless, measure: measure)
     }
 
     /// The plan for `book`, whose content index is `index`.
@@ -156,8 +157,7 @@ struct TranscriptionPlan: Equatable, Sendable {
         for book: Book,
         index: BookContentIndex,
         isDataless: (URL) -> Bool,
-        measure: (URL) throws -> TimeInterval,
-        hasher: FingerprintHasher
+        measure: (URL) throws -> TimeInterval
     ) throws -> TranscriptionPlan {
         let locations = audioFileLocations(of: book, index: index)
         guard !locations.isEmpty else { throw TranscriptionError.noAudio }
@@ -167,14 +167,10 @@ struct TranscriptionPlan: Equatable, Sendable {
             throw TranscriptionError.fileInCloud(inCloud.path)
         }
         return TranscriptionPlan(files: try locations.map { path, url in
-            // Stamped and hashed before measuring: a file that changes
-            // while the book is transcribed then differs from its
-            // fingerprint when the transcript is saved.
-            guard let fingerprint = FileFingerprint(of: url, hasher: hasher),
-                  let duration = try? measure(url), duration.isFinite, duration >= 0 else {
+            guard let duration = try? measure(url), duration.isFinite, duration >= 0 else {
                 throw TranscriptionError.unreadableFile(file: path, reason: TranscriptionError.unreadableAudioReason)
             }
-            return File(path: path, url: url, duration: duration, fingerprint: fingerprint)
+            return File(path: path, url: url, duration: duration)
         })
     }
 
@@ -247,22 +243,27 @@ actor TranscriptionService {
     /// The languages to try for a transcription asked for in no particular
     /// language (`TranscriptionLanguage.languagesToTry(in:)`).
     private let languagesToTry: @Sendable () -> [String]
+    /// Computes the digests of the audio files' fingerprints.
+    private let hasher: FingerprintHasher
     /// The title of the book being transcribed, while one is.
     private var titleUnderWay: String?
 
-    /// A service transcribing with `engine`, planning with `planner`, and
-    /// reading the language setting through `languagesToTry`; the app's
-    /// own unless a test passes others.
+    /// A service transcribing with `engine`, planning with `planner`,
+    /// reading the language setting through `languagesToTry`, and
+    /// fingerprinting files with `hasher`; the app's own unless a test
+    /// passes others.
     init(
         engine: any TranscriptionEngine = SystemTranscriptionEngine(),
         planner: @escaping @Sendable (Book) throws -> TranscriptionPlan = { try TranscriptionPlan.make(for: $0) },
         languagesToTry: @escaping @Sendable () -> [String] = {
             TranscriptionLanguage.languagesToTry(in: TextMouthRuntime.current.preferences)
-        }
+        },
+        hasher: FingerprintHasher = .md5
     ) {
         self.engine = engine
         self.planner = planner
         self.languagesToTry = languagesToTry
+        self.hasher = hasher
     }
 
     /// Whether a transcription is under way.
@@ -357,6 +358,10 @@ actor TranscriptionService {
                     ))
                 }
                 report(0)
+                // Stamped and hashed just before it is read: a file that
+                // changes while it is transcribed then differs from its
+                // fingerprint when the transcript is saved.
+                let fingerprint = try await self.fingerprint(of: file)
                 let sentences = try await engine.transcribe(
                     fileAt: file.url,
                     locale: Locale(identifier: model.locale),
@@ -364,7 +369,7 @@ actor TranscriptionService {
                 )
                 files.append(TranscriptFile(
                     path: file.path,
-                    fingerprint: file.fingerprint,
+                    fingerprint: fingerprint,
                     durationMilliseconds: Transcript.milliseconds(file.duration),
                     sentences: sentences
                 ))
@@ -394,6 +399,18 @@ actor TranscriptionService {
         } catch {
             throw TranscriptionError.recognitionFailed(error.localizedDescription)
         }
+    }
+
+    /// The fingerprint of `file` as it is now, taken off the main thread.
+    /// - Throws: `TranscriptionError.unreadableFile` naming the file when it
+    ///   cannot be stamped or read.
+    private func fingerprint(of file: TranscriptionPlan.File) async throws -> FileFingerprint {
+        let url = file.url
+        let hasher = self.hasher
+        guard let fingerprint = await OffMainWork.run({ FileFingerprint(of: url, hasher: hasher) }) else {
+            throw TranscriptionError.unreadableFile(file: file.path, reason: TranscriptionError.unreadableAudioReason)
+        }
+        return fingerprint
     }
 
     /// The model of the first of `languages` the engine can transcribe

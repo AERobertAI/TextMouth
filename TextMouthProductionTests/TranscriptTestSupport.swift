@@ -95,7 +95,7 @@ enum TranscriptFixtures {
         transcript.files = try TranscriptionPlan.make(for: book).files.map { file in
             TranscriptFile(
                 path: file.path,
-                fingerprint: file.fingerprint,
+                fingerprint: try XCTUnwrap(FileFingerprint(of: file.url, hasher: .md5)),
                 durationMilliseconds: Transcript.milliseconds(file.duration),
                 sentences: sentences[file.path] ?? []
             )
