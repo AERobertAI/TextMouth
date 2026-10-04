@@ -207,8 +207,9 @@ struct FeedItemRowContent: Equatable, Identifiable {
 /// One row of a feed's folder (FR03): an item's book, or an item not
 /// downloaded.
 enum FeedFolderEntry: Equatable, Identifiable {
-    /// A downloaded item, as its book's row, with the item it came from.
-    case book(Book, itemID: FeedItem.ID)
+    /// A downloaded item, as its book's row, with the commands of the item
+    /// it came from, which its row offers beside the book's own.
+    case book(Book, actions: [FeedItemAction])
     /// An item not downloaded, or downloaded into another folder.
     case item(FeedItemRowContent)
 
@@ -260,7 +261,16 @@ struct FeedFolderListing: Equatable {
             if let bookID = state.bookID {
                 itemBookIDs.insert(bookID)
                 if let book = shownByID[bookID] {
-                    listing.entries.append(.book(book, itemID: item.id))
+                    let actions = FeedItemAction.actions(
+                        feedID: feedID,
+                        itemID: item.id,
+                        itemTitle: item.title,
+                        state: state,
+                        isPlayed: item.playedDate != nil,
+                        isArticle: item.isArticle,
+                        onBookRow: true
+                    )
+                    listing.entries.append(.book(book, actions: actions))
                     continue
                 }
                 // In this folder but narrowed out by the search.

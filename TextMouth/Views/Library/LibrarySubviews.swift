@@ -322,6 +322,12 @@ struct BookRow: View {
     var transcriptionCommands: [LibraryTranscriptionCommand] = []
     /// Runs one of `transcriptionCommands`.
     var performTranscriptionCommand: (LibraryTranscriptionCommand) -> Void = { _ in }
+    /// The commands of the feed item the book was downloaded from, in its
+    /// feed's folder (FR03), which follow the cloud commands as VoiceOver
+    /// actions; none for any other book.
+    var feedActions: [FeedItemAction] = []
+    /// Runs one of `feedActions`.
+    var performFeedAction: (FeedItemAction) -> Void = { _ in }
     /// The book's live position while a reader plays it (TODO PERF11). The
     /// row observes this one entry, so it redraws when its own book's
     /// reader moves and no other row does. The inert entry, the default,
@@ -427,13 +433,16 @@ struct BookRow: View {
             ForEach(transcriptionCommands) { command in
                 Button(command.title) { performTranscriptionCommand(command) }
             }
+            ForEach(feedActions) { action in
+                Button(action.title) { performFeedAction(action) }
+            }
         }
     }
 
     /// The names of the row's own VoiceOver actions, in the order VoiceOver
     /// lists them.
     var accessibilityActionNames: [String] {
-        cloudCommands.map(\.title) + transcriptionCommands.map(\.title)
+        cloudCommands.map(\.title) + transcriptionCommands.map(\.title) + feedActions.map(\.title)
     }
 
     /// Spoken label for the whole row, replacing its combined children.
@@ -553,6 +562,9 @@ struct LibraryBookRowActions {
     /// Runs a transcription command (FR05). Doing nothing unless the list
     /// supplies it.
     var performTranscriptionCommand: (LibraryTranscriptionCommand) -> Void = { _ in }
+    /// Runs a command of the feed item a book was downloaded from (FR03).
+    /// Doing nothing unless the list supplies it.
+    var performFeedAction: (FeedItemAction) -> Void = { _ in }
 }
 
 /// One book's row in the library list: the row, its context menu, its
@@ -604,6 +616,9 @@ struct LibraryBookListRow: View, Equatable {
     /// The book's transcription note, "Transcribed" or "Transcribing"
     /// (FR05), or nil for none.
     var transcriptionNote: TranscriptionRowNote? = nil
+    /// The commands of the feed item the book was downloaded from, in its
+    /// feed's folder (FR03); none for any other book.
+    var feedActions: [FeedItemAction] = []
     /// What the commands do. Never compared.
     let actions: LibraryBookRowActions
 
@@ -623,6 +638,7 @@ struct LibraryBookListRow: View, Equatable {
             && lhs.livePosition === rhs.livePosition
             && lhs.transcriptionCommands == rhs.transcriptionCommands
             && lhs.transcriptionNote == rhs.transcriptionNote
+            && lhs.feedActions == rhs.feedActions
     }
 
     var body: some View {
@@ -640,6 +656,8 @@ struct LibraryBookListRow: View, Equatable {
             performCloudCommand: actions.performCloudCommand,
             transcriptionCommands: transcriptionCommands,
             performTranscriptionCommand: actions.performTranscriptionCommand,
+            feedActions: feedActions,
+            performFeedAction: actions.performFeedAction,
             livePosition: livePosition
         )
         .accessibilityAction(.default) {
@@ -721,6 +739,16 @@ struct LibraryBookListRow: View, Equatable {
             ForEach(cloudCommands) { command in
                 Button(command.title) {
                     actions.performCloudCommand(command)
+                }
+            }
+        }
+        // The commands of the feed item the book was downloaded from, in
+        // its feed's folder (FR03).
+        if !feedActions.isEmpty {
+            Divider()
+            ForEach(feedActions) { action in
+                Button(action.title, role: action.role) {
+                    actions.performFeedAction(action)
                 }
             }
         }

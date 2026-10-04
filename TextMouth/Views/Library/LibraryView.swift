@@ -345,7 +345,7 @@ struct LibraryView: View {
                 }
 
                 // Feeds section, only where there are feeds (FR03)
-                LibraryFeedsSection(center: feedFolders.center, location: location, open: openFeed)
+                LibraryFeedsSection(center: feedFolders.center, location: location, open: openFeed, perform: performFeedAction)
 
                 // Books section; in a feed's folder, the feed's items with
                 // the downloaded ones as their books (FR03)
@@ -890,7 +890,9 @@ struct LibraryView: View {
     /// - Parameters:
     ///   - book: The row's book.
     ///   - context: What the list's book rows share.
-    private func bookRow(_ book: Book, context: BookRowContext) -> some View {
+    ///   - feedActions: The commands of the feed item the book was
+    ///     downloaded from, in its feed's folder (FR03).
+    private func bookRow(_ book: Book, context: BookRowContext, feedActions: [FeedItemAction] = []) -> some View {
         let targets = commandTargets(for: book, selectedIDs: context.selectedIDs, selection: context.selection)
         let isSelectionRow = targets.count > 1
         return LibraryBookListRow(
@@ -916,6 +918,8 @@ struct LibraryView: View {
             livePosition: libraryViewModel.livePositions.entry(for: book.id),
             transcriptionCommands: LibraryTranscriptionCommand.commands(for: targets, isTranscribed: transcribedBooks.contains),
             transcriptionNote: transcribedBooks.note(for: book.id),
+            // The item's commands act on the row's own book alone.
+            feedActions: isSelectionRow ? [] : feedActions,
             actions: context.actions
         )
         .equatable()
@@ -926,25 +930,38 @@ struct LibraryView: View {
 
     /// The Folders section: a row for each of `subfolders`, which opens the
     /// folder, with the folder commands in its context menu. A feed's folder
-    /// says "Feed" after its name (FR03).
+    /// says "Feed" after its name, and offers its feed's commands in its
+    /// context menu and as its VoiceOver actions (FR03).
     private func foldersSection(_ subfolders: [BookFolder]) -> some View {
         Section {
             ForEach(subfolders) { folder in
+                let feedActions = feedActions(forFolder: folder)
                 Button {
                     currentFolderPath = folder.fullPath
                 } label: {
                     FolderRow(
                         folder: folder,
                         bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath),
-                        isFeed: feedFolders.holdsFeed(folder)
+                        isFeed: !feedActions.isEmpty
                     )
                 }
                 .buttonStyle(.plain)
                 .accessibilityAction(.default) {
                     currentFolderPath = folder.fullPath
                 }
+                .accessibilityActions {
+                    ForEach(feedActions) { action in
+                        Button(action.title) { performFeedAction(action) }
+                    }
+                }
                 .contextMenu {
                     folderMenu(folder)
+                    if !feedActions.isEmpty {
+                        Divider()
+                        ForEach(feedActions) { action in
+                            Button(action.title, role: action.role) { performFeedAction(action) }
+                        }
+                    }
                 }
             }
         } header: {
@@ -992,8 +1009,8 @@ struct LibraryView: View {
                 shownBooks: books,
                 folderBooks: allBooks,
                 search: searchText,
-                bookRow: { book in bookRow(book, context: context) },
-                openItem: openFeedItem
+                bookRow: { book, actions in bookRow(book, context: context, feedActions: actions) },
+                perform: performFeedItemAction
             )
         } else {
             Section {
@@ -1016,24 +1033,41 @@ struct LibraryView: View {
 
     /// Opens the folder of the feed a Feeds row shows, as a folder's row
     /// opens its folder, from the Folders view; a feed whose folder is gone
-    /// says so (FR03).
+    /// says so and opens its Feed Info, where another folder can be chosen
+    /// (FR03).
     private func openFeed(_ row: FeedRowContent) {
         guard let path = row.folderPath else {
+            // Feed Info is where another folder can be chosen.
             announceToVoiceOver(FeedWording.folderMissing(title: row.title))
+            performFeedAction(FeedAction(command: .feedInfo, feedID: row.id, title: FeedWording.feedInfoTitle))
             return
         }
         category = .folders
         currentFolderPath = path
     }
 
-    /// Opens a feed's item from its row, downloading it first when it is
-    /// not downloaded, as a book in the cloud downloads before it opens; its
-    /// row says how far the download has got (FR03).
-    private func openFeedItem(_ item: FeedItemRowContent) {
-        if item.state.bookID == nil {
-            announceToVoiceOver(FeedWording.downloadingToOpen(title: item.title))
-        }
-        feedFolders.center.open(item.id, of: item.feedID)
+    /// The commands of the feed whose folder `folder` is, or none for any
+    /// other folder (FR03).
+    private func feedActions(forFolder folder: BookFolder) -> [FeedAction] {
+        guard let feedID = feedFolders.feedID(inFolder: folder.id) else { return [] }
+        return FeedAction.actions(for: feedID, noun: .of(feedFolders.center.listedItems(of: feedID)))
+    }
+
+    /// What the feed commands chosen in this window work with (FR03).
+    private var feedCommandContext: FeedCommandContext {
+        FeedCommandContext(center: feedFolders.center, library: libraryViewModel, window: hostWindow)
+    }
+
+    /// Runs a feed's command from its row or its folder's row (FR03).
+    private func performFeedAction(_ action: FeedAction) {
+        feedPresenter.perform(action, in: feedCommandContext)
+    }
+
+    /// Runs a feed item's command from its row or its book's row: Open
+    /// downloads an item first, as a book in the cloud downloads before it
+    /// opens, its row saying how far the download has got (FR03).
+    private func performFeedItemAction(_ action: FeedItemAction) {
+        feedPresenter.perform(action, in: feedCommandContext)
     }
 
     // MARK: - Row Commands
@@ -1094,7 +1128,8 @@ struct LibraryView: View {
             },
             performTranscriptionCommand: { command in
                 transcription.perform(command, library: libraryViewModel, window: hostWindow)
-            }
+            },
+            performFeedAction: performFeedItemAction
         )
     }
 

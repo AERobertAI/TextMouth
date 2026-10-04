@@ -17,9 +17,11 @@ struct FeedNotice: Identifiable, Equatable {
 }
 
 /// What one Library window shows for the feeds (FR03): the Add Feed sheet,
-/// and the notices that follow its commands. Each Library window has its
-/// own, made once and kept for the window's life; the window does not
-/// observe it, so a sheet opening or closing redraws only the sheets' host
+/// Feed Info, an item's description, the questions asked before a command
+/// that can't be undone, and the notices that follow the commands, which it
+/// also runs (`FeedCommandRunner.swift`). Each Library window has its own,
+/// made once and kept for the window's life; the window does not observe
+/// it, so a sheet opening or closing redraws only the sheets' host
 /// (`LibraryFeedsWindowSupport`), never the library list.
 @MainActor
 final class LibraryFeedsPresenter: ObservableObject {
@@ -27,6 +29,24 @@ final class LibraryFeedsPresenter: ObservableObject {
     @Published var addFeed: AddFeedModel?
     /// The notice shown in an alert, if any.
     @Published var notice: FeedNotice?
+    /// The Feed Info sheet's model while the sheet shows.
+    @Published var feedInfo: FeedInfoModel?
+    /// What the Show Description… sheet shows, while it shows.
+    @Published var itemDescription: FeedItemDescription?
+    /// The confirmation asked before a command that can't be undone, while
+    /// it shows.
+    @Published var confirmation: FeedConfirmation?
+
+    /// Speaks what a command did, from the window it was chosen in: through
+    /// VoiceOver, unless a test listens instead.
+    var announce: @MainActor (String, NSWindow?) -> Void = { message, window in
+        VoiceOverAnnouncer.announce(message, from: window)
+    }
+    /// Selects books' packages in Finder (Show in Finder), as the library's
+    /// own command does, unless a test watches instead.
+    var revealBooks: @MainActor ([Book]) -> Void = { books in
+        LibraryCloudCommands.shared.showInFinder(books)
+    }
 
     /// The feed subscribed to through the Add Feed sheet that just closed,
     /// which `addFeedDidClose(in:)` then tells the listener about.
@@ -117,11 +137,50 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                     onCancel: { presenter.cancelAddFeed() }
                 )
             })
+            .sheet(item: $presenter.feedInfo) { model in
+                FeedInfoSheet(
+                    model: model,
+                    feedFolders: feedFolders,
+                    unsubscribeConfirmation: { presenter.unsubscribeConfirmation(for: model.feedID, in: context) },
+                    onUnsubscribe: { presenter.unsubscribe(model.feedID, in: context) },
+                    onDone: { presenter.feedInfo = nil }
+                )
+            }
+            .sheet(item: $presenter.itemDescription) { description in
+                FeedItemDescriptionSheet(description: description) {
+                    presenter.itemDescription = nil
+                }
+            }
             .alert(presenter.notice?.title ?? "", isPresented: isShowingNotice, presenting: presenter.notice) { _ in
                 Button("OK", role: .cancel) {}
             } message: { notice in
                 Text(notice.message)
             }
+            // The question before Delete Episode and Unsubscribe.
+            .alert(presenter.confirmation?.title ?? "", isPresented: isConfirming, presenting: presenter.confirmation) { confirmation in
+                Button(confirmation.confirmTitle, role: .destructive) {
+                    presenter.confirm(confirmation, in: context)
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { confirmation in
+                Text(confirmation.message)
+            }
+    }
+
+    /// What the feed commands chosen in this window work with.
+    private var context: FeedCommandContext {
+        FeedCommandContext(center: feedFolders.center, library: library, window: hostWindow)
+    }
+
+    /// Whether the confirmation's alert shows; dismissing it forgets the
+    /// question.
+    private var isConfirming: Binding<Bool> {
+        Binding(
+            get: { presenter.confirmation != nil },
+            set: { isPresented in
+                if !isPresented { presenter.confirmation = nil }
+            }
+        )
     }
 
     /// Opens the Add Feed sheet, its feed's folder going first in the folder

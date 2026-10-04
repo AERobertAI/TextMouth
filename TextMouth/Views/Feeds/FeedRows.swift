@@ -5,7 +5,8 @@ import SwiftUI
 /// The Feeds section of a Library window's list (FR03), after Folders and
 /// before Books, shown only where there are feeds: a heading VoiceOver's
 /// rotor finds, and a row for each feed that opens the feed's folder, as a
-/// folder's row does.
+/// folder's row does, with the feed's commands in its context menu and as
+/// its VoiceOver actions.
 ///
 /// It observes the feed engine itself, so a download's progress or a
 /// refresh redraws this section and nothing else of the list.
@@ -16,6 +17,8 @@ struct LibraryFeedsSection: View {
     let location: LibraryLocation
     /// Opens a feed's folder, or, when it is gone, says so.
     let open: (FeedRowContent) -> Void
+    /// Runs a feed's command.
+    let perform: (FeedAction) -> Void
 
     var body: some View {
         let _ = ViewBodyCounter.record("LibraryFeedsSection")
@@ -23,6 +26,7 @@ struct LibraryFeedsSection: View {
         if !rows.isEmpty {
             Section {
                 ForEach(rows) { row in
+                    let actions = FeedAction.actions(for: row.id, noun: row.counts.noun)
                     Button {
                         open(row)
                     } label: {
@@ -32,6 +36,16 @@ struct LibraryFeedsSection: View {
                     .buttonStyle(.plain)
                     .accessibilityAction(.default) {
                         open(row)
+                    }
+                    .accessibilityActions {
+                        ForEach(actions) { action in
+                            Button(action.title) { perform(action) }
+                        }
+                    }
+                    .contextMenu {
+                        ForEach(actions) { action in
+                            Button(action.title, role: action.role) { perform(action) }
+                        }
                     }
                 }
             } header: {
@@ -108,9 +122,10 @@ struct FeedBadge: View {
 
 /// What a feed's folder lists instead of its Books section (FR03): the
 /// feed's items, newest first, under a heading counting them ("Episodes
-/// (12)"), each downloaded one as its book's own row, unchanged, and each
-/// other one as an item row; then, under "Books", the folder's books that
-/// came from no item of the feed.
+/// (12)"), each downloaded one as its book's own row, unchanged but for the
+/// item's commands beside the book's, and each other one as an item row
+/// with its commands in its context menu and as its VoiceOver actions; then,
+/// under "Books", the folder's books that came from no item of the feed.
 ///
 /// It observes the feed engine itself, so a download's progress redraws
 /// these rows and nothing else of the list.
@@ -125,10 +140,11 @@ struct FeedFolderSections<BookRowView: View>: View {
     let folderBooks: [Book]
     /// The search narrowing the list.
     let search: String
-    /// A downloaded item's book's row, as the library draws every book.
-    let bookRow: (Book) -> BookRowView
-    /// Opens an item, downloading it first when it is not downloaded.
-    let openItem: (FeedItemRowContent) -> Void
+    /// A book's row, as the library draws every book, with the commands of
+    /// the item it came from, if any.
+    let bookRow: (Book, [FeedItemAction]) -> BookRowView
+    /// Runs an item's command.
+    let perform: (FeedItemAction) -> Void
 
     var body: some View {
         let _ = ViewBodyCounter.record("FeedFolderSections")
@@ -142,14 +158,10 @@ struct FeedFolderSections<BookRowView: View>: View {
         Section {
             ForEach(listing.entries) { entry in
                 switch entry {
-                case .book(let book, _):
-                    bookRow(book)
+                case .book(let book, let actions):
+                    bookRow(book, actions)
                 case .item(let content):
-                    FeedItemRow(content: content)
-                        .equatable()
-                        .accessibilityAction(.default) {
-                            openItem(content)
-                        }
+                    itemRow(content)
                 }
             }
         } header: {
@@ -159,13 +171,41 @@ struct FeedFolderSections<BookRowView: View>: View {
         if !listing.otherBooks.isEmpty {
             Section {
                 ForEach(listing.otherBooks) { book in
-                    bookRow(book)
+                    bookRow(book, [])
                 }
             } header: {
                 Text(FeedWording.otherBooksTitle(count: listing.otherBooks.count))
                     .accessibilityAddTraits(.isHeader)
             }
         }
+    }
+
+    /// An item's row, whose default action opens it, downloading it first,
+    /// with its commands in its context menu and as its VoiceOver actions.
+    private func itemRow(_ content: FeedItemRowContent) -> some View {
+        let actions = FeedItemAction.actions(for: content)
+        return FeedItemRow(content: content)
+            .equatable()
+            .accessibilityAction(.default) {
+                if let open = actions.first(where: { $0.command == .open }) {
+                    perform(open)
+                }
+            }
+            .accessibilityActions {
+                ForEach(actions) { action in
+                    Button(action.title) { perform(action) }
+                }
+            }
+            .contextMenu {
+                ForEach(actions) { action in
+                    if action.command == .deleteItem || action.command == .showDescription {
+                        Divider()
+                    }
+                    Button(action.title, role: action.role) {
+                        perform(action)
+                    }
+                }
+            }
     }
 }
 
