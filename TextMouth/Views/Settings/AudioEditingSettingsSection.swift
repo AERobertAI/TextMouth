@@ -29,6 +29,21 @@ enum AudioEditingSettingsWording {
     static let noFFmpeg = "ffmpeg isn't installed, so the audio editor uses TextMouth's own filters, and MP3 export "
         + "isn't available."
 
+    /// The preview switch's label.
+    static let previewFiltersLabel = "Preview filters before applying"
+    /// What the preview switch does.
+    static let previewFiltersHint = "When this is on, the audio editor's Apply Filter plays the filtered audio first, "
+        + "and applies the filter when you choose Apply again."
+    /// The half-second switch's label.
+    static let playAfterMovesLabel = "Play half a second after each move"
+    /// What the half-second switch does.
+    static let playAfterMovesHint = "When this is on, the audio editor plays half a second at the cursor after each move, "
+        + "so you hear where it landed."
+    /// The button that opens the filter presets.
+    static let presetsButton = "Filter Presets…"
+    /// What it opens.
+    static let presetsHint = "Lists the audio editor's filter presets, to edit, add, reorder, delete, or reset them."
+
     /// How the picker names `choice`.
     static func choiceTitle(_ choice: AudioOriginalPolicy.Choice) -> String {
         switch choice {
@@ -124,6 +139,26 @@ final class AudioEditingSettingsModel: ObservableObject {
     var policy: AudioOriginalPolicy {
         AudioOriginalPolicy.global(in: store)
     }
+
+    /// Whether Apply Filter previews a filter before applying it.
+    var previewsFiltersFirst: Bool {
+        get { AudioEditorPreferences.previewFiltersFirst.read(from: store) }
+        set {
+            guard newValue != previewsFiltersFirst else { return }
+            objectWillChange.send()
+            AudioEditorPreferences.previewFiltersFirst.write(newValue, to: store)
+        }
+    }
+
+    /// Whether the editor plays half a second after each move.
+    var playsAfterMoves: Bool {
+        get { AudioEditorPreferences.playAfterMoves.read(from: store) }
+        set {
+            guard newValue != playsAfterMoves else { return }
+            objectWillChange.send()
+            AudioEditorPreferences.playAfterMoves.write(newValue, to: store)
+        }
+    }
 }
 
 /// Storage settings' Audio Editing group (FR04): what happens to the original
@@ -132,16 +167,21 @@ final class AudioEditingSettingsModel: ObservableObject {
 /// and a stepper the days when that is the choice; the line under them says
 /// what the choice does. A switch turns ffmpeg on or off when TextMouth
 /// finds one, its hint naming where; without one, a line says what that
-/// means. Each control carries its own label, value, and hint, so VoiceOver
-/// and a braille display meet each on its own.
+/// means. Two switches set how the audio editor window behaves, and Filter
+/// Presets… opens the presets it applies. Each control carries its own
+/// label, value, and hint, so VoiceOver and a braille display meet each on
+/// its own.
 struct AudioEditingSettingsSection: View {
     /// The policy, in the app's preferences store unless a test hands in
     /// one of its own.
     @StateObject private var settings: AudioEditingSettingsModel
+    /// Whether the filter presets' sheet is open.
+    @State private var showsPresets = false
 
-    /// The group for the policy kept in `store`.
-    init(store: UserDefaults = TextMouthRuntime.current.preferences) {
-        _settings = StateObject(wrappedValue: AudioEditingSettingsModel(store: store))
+    /// The group for the settings kept in `store`, looking for ffmpeg with
+    /// `locate`: on this Mac's disk, unless a test says what it finds.
+    init(store: UserDefaults = TextMouthRuntime.current.preferences, locate: @escaping @Sendable () -> FFmpeg? = { FFmpeg.locate() }) {
+        _settings = StateObject(wrappedValue: AudioEditingSettingsModel(store: store, locate: locate))
     }
 
     var body: some View {
@@ -189,6 +229,27 @@ struct AudioEditingSettingsSection: View {
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            Toggle(AudioEditingSettingsWording.previewFiltersLabel, isOn: Binding(
+                get: { settings.previewsFiltersFirst },
+                set: { settings.previewsFiltersFirst = $0 }
+            ))
+            .accessibilityHint(AudioEditingSettingsWording.previewFiltersHint)
+            .help(AudioEditingSettingsWording.previewFiltersHint)
+
+            Toggle(AudioEditingSettingsWording.playAfterMovesLabel, isOn: Binding(
+                get: { settings.playsAfterMoves },
+                set: { settings.playsAfterMoves = $0 }
+            ))
+            .accessibilityHint(AudioEditingSettingsWording.playAfterMovesHint)
+            .help(AudioEditingSettingsWording.playAfterMovesHint)
+
+            Button(AudioEditingSettingsWording.presetsButton) { showsPresets = true }
+                .accessibilityHint(AudioEditingSettingsWording.presetsHint)
+                .help(AudioEditingSettingsWording.presetsHint)
+                .sheet(isPresented: $showsPresets) {
+                    AudioFilterPresetsView(close: { showsPresets = false })
+                }
         } header: {
             Text(AudioEditingSettingsWording.title)
         }

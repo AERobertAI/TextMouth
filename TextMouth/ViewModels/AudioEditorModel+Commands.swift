@@ -95,8 +95,10 @@ extension AudioEditorModel {
         }
     }
 
-    /// Opens Apply Filter, unless other work is under way.
+    /// Opens Apply Filter, unless other work is under way, with nothing
+    /// previewed yet.
     func openFilters() {
+        previewedFilter = nil
         openSheet(.filter)
     }
 

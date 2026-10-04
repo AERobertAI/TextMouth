@@ -86,6 +86,10 @@ final class AudioEditorModel: ObservableObject {
     @Published var microphoneID = ""
     /// What Apply Filter's Preview is playing, if anything.
     @Published var filterPreview: AudioEditorFilterPreview?
+    /// What was last previewed since Apply Filter opened, whether or not it
+    /// still plays: with "Preview filters before applying" on, Apply of
+    /// anything else previews first.
+    var previewedFilter: AudioEditorFilterPreview?
     /// A save or an export under way, as its sheet shows it.
     @Published var progress: AudioEditorProgress?
     /// Whether Revert to Original is asking to be confirmed.

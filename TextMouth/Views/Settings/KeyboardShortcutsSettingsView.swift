@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// The Shortcuts settings tab: every action's shortcuts, by group, each
+/// changeable; the audio editor's actions are a group of their own, matched
+/// only in its windows (`ShortcutScope`), so their keys may be the reader's.
 struct KeyboardShortcutsSettingsView: View {
     @EnvironmentObject var shortcutManager: KeyboardShortcutManager
     @State private var showResetConfirmation = false
@@ -58,7 +61,11 @@ struct ShortcutBindingRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(action.rawValue)
+                // Under its group's heading, so the audio editor's actions
+                // show without the group's name their raw values begin with;
+                // VoiceOver's label below keeps it, telling them apart from
+                // the reader's of the same name.
+                Text(action.title)
                     .frame(width: 160, alignment: .leading)
 
                 Spacer()

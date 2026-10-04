@@ -43,9 +43,28 @@ extension AudioEditorModel {
         target == .selection ? selection : nil
     }
 
+    /// Whether Apply previews a filter before applying it: the setting in
+    /// the Audio Editing group, on until turned off.
+    var previewsFiltersFirst: Bool {
+        AudioEditorPreferences.previewFiltersFirst.read(from: store)
+    }
+
+    /// Apply Filter's Apply: with the setting on, the first Apply of a
+    /// preset on a target previews it, saying to choose Apply again; the
+    /// next applies it. With the setting off, it applies at once.
+    func chooseApply(_ preset: AudioFilterPreset, to target: AudioEditorFilterTarget) async {
+        let asked = AudioEditorFilterPreview(presetID: preset.id, target: target)
+        if previewsFiltersFirst, previewedFilter != asked {
+            await previewFilter(preset, on: target, saying: AudioEditorWording.previewingBeforeApplying(preset.name))
+            return
+        }
+        await applyFilter(preset, to: target)
+    }
+
     /// Plays `preset` on `target` without applying it: the selection's
-    /// first stretch, or a stretch from the cursor for the whole file.
-    func previewFilter(_ preset: AudioFilterPreset, on target: AudioEditorFilterTarget) async {
+    /// first stretch, or a stretch from the cursor for the whole file;
+    /// says `sentence` as it begins, or that it is previewing.
+    func previewFilter(_ preset: AudioFilterPreset, on target: AudioEditorFilterTarget, saying sentence: String? = nil) async {
         guard canFilter(target) else { return announce(AudioEditorWording.noSelection) }
         let range = filterRange(for: target)
         let start = range?.start ?? cursor
@@ -55,7 +74,7 @@ extension AudioEditorModel {
         guard beginWork() else { return }
         defer { isWorking = false }
         stopPlayingForEdit()
-        announce(AudioEditorWording.previewingFilter(preset.name))
+        announce(sentence ?? AudioEditorWording.previewingFilter(preset.name))
         do {
             let preview = try await session.makePreview(applying: .filter(chain: preset.chain, range: stretch))
             // The processed stretch may be longer or shorter, as a change of
@@ -66,6 +85,7 @@ extension AudioEditorModel {
             player.load(preview, at: start)
             playing = .previewing
             filterPreview = AudioEditorFilterPreview(presetID: preset.id, target: target)
+            previewedFilter = filterPreview
             player.play(from: start, until: start + max(0, processed))
         } catch {
             announce(error.localizedDescription)

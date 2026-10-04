@@ -62,6 +62,8 @@ extension ConfigService.AppConfig {
         config.recordingOriginalPolicy = AudioOriginalPolicy.Choice.keep.rawValue
         config.recordingOriginalDays = 14
         config.useInstalledFFmpeg = false
+        config.audioEditorPreviewsFilters = false
+        config.audioEditorPlaysAfterMoves = false
         // Every action, as TextMouth writes them, three of them changed.
         var shortcuts = ShortcutAction.defaultBindings
         shortcuts[.togglePlayback] = [KeyBinding(key: "space"), KeyBinding(key: "p", control: true)]

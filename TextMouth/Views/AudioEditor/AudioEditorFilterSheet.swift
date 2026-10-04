@@ -80,10 +80,11 @@ struct AudioEditorFilterSheet: View {
                 .keyboardShortcut(.cancelAction)
                 Button(AudioEditorWording.applyButton) {
                     guard let preset else { return }
-                    Task { await model.applyFilter(preset, to: target) }
+                    Task { await model.chooseApply(preset, to: target) }
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(preset == nil || model.isWorking)
+                .accessibilityHint(model.previewsFiltersFirst ? AudioEditorWording.applyPreviewsFirstHint : AudioEditorWording.applyHint)
             }
         }
         .padding()

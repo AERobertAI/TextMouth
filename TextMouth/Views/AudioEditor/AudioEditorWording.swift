@@ -596,6 +596,18 @@ enum AudioEditorWording {
         "Previewing \(name)."
     }
 
+    /// Said as Apply previews first, as "Preview filters before applying"
+    /// asks.
+    static func previewingBeforeApplying(_ name: String) -> String {
+        "Previewing \(name) first. Choose Apply again to apply it."
+    }
+
+    /// Apply's hint with the preview first.
+    static let applyPreviewsFirstHint = "Plays the filtered audio first; choose Apply again to apply the filter."
+
+    /// Apply's hint without it.
+    static let applyHint = "Applies the filter."
+
     /// Said when there is nothing after the cursor to preview.
     static let nothingToPreview = "There's no audio after the cursor to preview."
 
