@@ -411,8 +411,12 @@ final class ReaderViewModel: ObservableObject {
     /// Forward speechService @Published state to our own @Published properties
     /// so SwiftUI views that observe this ViewModel get updated.
     private func forwardSpeechState() {
+        // A reader waiting for its chapter's speech shows Playing whatever
+        // the idle speech service says meanwhile, as when a move stops it
+        // (`isWaitingForChapterSpeech`).
         speechService.$isSpeaking
             .receive(on: DispatchQueue.main)
+            .map { [weak self] isSpeaking in isSpeaking || self?.isWaitingForChapterSpeech == true }
             .assign(to: &$isCurrentlyPlaying)
         speechService.$isPaused
             .receive(on: DispatchQueue.main)

@@ -5,7 +5,9 @@ import XCTest
 /// A reader prepares each chapter's speech once while everything it is
 /// prepared from stays the same, carries the look-ahead's speech to the
 /// chapter's end, prepares a long chapter for the look-ahead off the main
-/// actor, and refreshes the look-ahead for another voice only (PERF02).
+/// actor, and refreshes the look-ahead for another voice only (PERF02). It
+/// prepares the chapter a book opens at off the main actor too, and Play
+/// waits for that preparation when the chapter is long.
 ///
 /// The oracle (`legacyPreparedSpeech`) is the pipeline as it was before,
 /// with nothing kept: whatever was changed, and in whatever order, what the
@@ -13,7 +15,9 @@ import XCTest
 /// the settings in force.
 ///
 /// Look-ahead renders wait in a stand-in queue, and speech a test starts is
-/// stopped before the main run loop turns, so nothing is heard.
+/// stopped before the main run loop turns, so nothing is heard. A test of
+/// Play waiting for a preparation hands the preparation's result over
+/// itself (`finishPreparingInBackground(_:)`), so speech starts only then.
 @MainActor
 final class SpeechPreparationCacheTests: XCTestCase {
 
@@ -365,6 +369,238 @@ final class SpeechPreparationCacheTests: XCTestCase {
         }
     }
 
+    // MARK: - Play during the opened chapter's preparation
+
+    /// Play pressed while the chapter it starts in, a long one, is still
+    /// being prepared in the background waits for that preparation instead
+    /// of preparing the chapter again on the main thread: Playing shows at
+    /// once, nothing is spoken until the speech is ready, and then exactly
+    /// that speech is spoken, with nothing prepared on the main thread.
+    /// Play pressed again while it waits changes nothing.
+    ///
+    /// The preparation is one the test finishes, so speech starts only when
+    /// the test hands its result over, never while the run loop turns.
+    func testPlayDuringTheOpenedChaptersPreparationWaitsForItAndSpeaksItsResult() throws {
+        try withReader(chapters: Self.chaptersEndingInALongOne(seed: 59), substitutions: [Self.harbourSpelling]) { reader, _ in
+            reader.currentChapterIndex = 1
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+            XCTAssertTrue(inputs.isLong)
+            XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs))
+
+            reader.play()
+
+            XCTAssertTrue(reader.isWaitingForChapterSpeech, "Play did not wait for the speech")
+            XCTAssertTrue(reader.isCurrentlyPlaying, "Playing does not show while Play waits")
+            XCTAssertFalse(reader.isCurrentlyPaused)
+            XCTAssertFalse(reader.speechService.isSpeaking, "speech started before it was ready")
+            reader.play()
+            reader.playOrResume()
+            XCTAssertTrue(reader.isWaitingForChapterSpeech)
+            XCTAssertFalse(reader.speechService.isSpeaking)
+
+            let prepared = inputs.prepare()
+            reader.finishPreparingInBackground(prepared)
+
+            XCTAssertFalse(reader.isWaitingForChapterSpeech)
+            assertSpeaks(reader, (prepared.text, prepared.offsetMap))
+            assertSpeaks(reader, try legacyPreparedSpeech(reader, chapterIndex: 1))
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "the chapter was prepared on the main thread")
+            silence(reader)
+        }
+    }
+
+    /// A change to what the chapter is prepared from, made while Play
+    /// waits, is never missed: the speech the preparation then hands over,
+    /// made from the settings before the change, is neither kept nor
+    /// spoken, and Play prepares the chapter afresh from the settings in
+    /// force, exactly as the old pipeline makes it.
+    func testAChangeWhilePlayWaitsPreparesTheChapterAfresh() throws {
+        let changes: [(name: String, change: (ReaderViewModel) throws -> Void)] = [
+            ("rule added", { $0.substitutionService.rules.append(Self.seabirdsForGulls) }),
+            ("substitutions off", { $0.substitutionService.isEnabled = false }),
+            ("symbol style", { $0.substitutionService.repeatedSymbolStyle = .leaveOut }),
+            ("pause level", { $0.settingsViewModel.punctuationPauseLevel = 2 }),
+            ("section skipped", { reader in
+                reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Market" }))
+            }),
+        ]
+        for (name, change) in changes {
+            try withReader(chapters: Self.chaptersEndingInALongOne(seed: 61), substitutions: [Self.harbourSpelling]) { reader, _ in
+                reader.currentChapterIndex = 1
+                let awaited = try XCTUnwrap(reader.speechInputs(forChapterAt: 1), name)
+                XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(awaited), name)
+                reader.play()
+                XCTAssertTrue(reader.isWaitingForChapterSpeech, name)
+
+                try change(reader)
+                reader.finishPreparingInBackground(awaited.prepare())
+
+                XCTAssertFalse(reader.isWaitingForChapterSpeech, name)
+                XCTAssertEqual(reader.chapterSpeechCache.misses, 1, "\(name): not prepared afresh from the settings in force")
+                assertSpeaks(reader, try legacyPreparedSpeech(reader, chapterIndex: 1), name)
+                silence(reader)
+            }
+        }
+    }
+
+    /// Play on a short chapter whose speech is being prepared in the
+    /// background is unchanged: it prepares the chapter at once, which
+    /// takes a few milliseconds, and speaks without waiting. The chapter
+    /// ends the book, so no look-ahead prepares another.
+    func testPlayOnAShortChapterPreparesItAtOnce() throws {
+        try withReader(chapters: Array(Self.chapters.prefix(2)), substitutions: [Self.harbourSpelling]) { reader, _ in
+            reader.currentChapterIndex = 1
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+            XCTAssertFalse(inputs.isLong)
+            XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs))
+
+            reader.play()
+
+            XCTAssertFalse(reader.isWaitingForChapterSpeech, "Play waited for a short chapter")
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 1, "the chapter was not prepared at once")
+            assertSpeaks(reader, try legacyPreparedSpeech(reader, chapterIndex: 1))
+            silence(reader)
+        }
+    }
+
+    /// A book opening at a chapter without words has the next chapter with
+    /// words prepared in the background; Play, finding nothing to say in
+    /// the cover, waits for that chapter's speech and speaks it from its
+    /// start. Only the empty cover is prepared on the main thread.
+    func testPlayAtACoverPageWaitsForTheFirstChapterWithWords() throws {
+        var chapters = Self.chaptersEndingInALongOne(seed: 79)
+        chapters[0] = Chapter(title: "Cover", text: "")
+        try withReader(chapters: chapters) { reader, _ in
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+            XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs))
+
+            reader.play()
+
+            XCTAssertTrue(reader.isWaitingForChapterSpeech, "Play did not wait for the chapter after the cover")
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 1, "only the empty cover is prepared at Play")
+            reader.finishPreparingInBackground(inputs.prepare())
+
+            XCTAssertEqual(reader.currentChapterIndex, 1)
+            XCTAssertEqual(reader.currentCharacterOffset, 0)
+            assertSpeaks(reader, try legacyPreparedSpeech(reader, chapterIndex: 1))
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 1, "the chapter was prepared on the main thread")
+            silence(reader)
+        }
+    }
+
+    /// Play/Pause pressed while Play waits ends the wait: the reader shows
+    /// nothing playing, and nothing is spoken when the speech is ready.
+    /// The speech is kept, so the next Play speaks it at once without
+    /// preparing it on the main thread. The preparation here is the real
+    /// one a finished load starts.
+    func testPausingWhilePlayWaitsEndsTheWaitAndKeepsTheSpeechForTheNextPlay() throws {
+        try withReader(chapters: Self.chaptersEndingInALongOne(seed: 67), substitutions: [Self.harbourSpelling]) { reader, _ in
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+            try showLoaded(reader, atChapter: 1)
+            XCTAssertTrue(reader.chapterSpeechCache.isPreparingInBackground(inputs), "prepared off the main actor")
+            reader.play()
+            XCTAssertTrue(reader.isWaitingForChapterSpeech, "Play did not wait for the speech")
+
+            reader.togglePlayPause()
+
+            XCTAssertFalse(reader.isWaitingForChapterSpeech, "Play/Pause did not end the wait")
+            XCTAssertFalse(reader.isCurrentlyPlaying)
+            XCTAssertFalse(reader.isCurrentlyPaused)
+            XCTAssertTrue(
+                waitUntil(timeout: Self.backgroundPreparationTimeout) { !reader.chapterSpeechCache.isPreparingInBackground(inputs) },
+                "the speech never arrived"
+            )
+            XCTAssertFalse(reader.speechService.isSpeaking, "the speech started after the wait ended")
+            XCTAssertFalse(reader.isCurrentlyPlaying, "Playing shows after the wait ended")
+
+            reader.play()
+
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "the next Play prepared the chapter on the main thread")
+            assertSpeaks(reader, try legacyPreparedSpeech(reader, chapterIndex: 1))
+            silence(reader)
+        }
+    }
+
+    /// Stopping the reader, or closing it, while Play waits ends the wait,
+    /// and nothing is spoken when the speech is ready.
+    func testStoppingOrClosingWhilePlayWaitsSpeaksNothing() throws {
+        for closing in [false, true] {
+            let label = closing ? "closed" : "stopped"
+            try withReader(chapters: Self.chaptersEndingInALongOne(seed: 73)) { reader, _ in
+                reader.currentChapterIndex = 1
+                let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1), label)
+                XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs), label)
+                reader.play()
+                XCTAssertTrue(reader.isWaitingForChapterSpeech, label)
+
+                if closing {
+                    reader.close()
+                } else {
+                    reader.stop()
+                }
+
+                XCTAssertFalse(reader.isWaitingForChapterSpeech, label)
+                XCTAssertFalse(reader.isCurrentlyPlaying, label)
+                reader.finishPreparingInBackground(inputs.prepare())
+                XCTAssertFalse(reader.speechService.isSpeaking, "\(label): the speech started")
+                XCTAssertFalse(reader.isCurrentlyPlaying, "\(label): Playing shows")
+            }
+        }
+    }
+
+    /// A move made while Play waits keeps Playing showing, although it
+    /// stops the idle speech service, and the speech starts from wherever
+    /// the cursor is when the speech is ready.
+    func testAMoveWhilePlayWaitsKeepsPlayingAndSpeaksFromTheNewPlace() throws {
+        try withReader(chapters: Self.chaptersEndingInALongOne(seed: 71)) { reader, _ in
+            reader.currentChapterIndex = 1
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+            XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs))
+            let market = try XCTUnwrap(reader.headings.first { $0.text == "Market" })
+            reader.play()
+
+            reader.navigateTo(chapterIndex: 1, characterOffset: market.characterOffset)
+            // The speech service's stop reaches the reader's Playing state
+            // on the main queue's next turn. The preparation is the test's
+            // own, so nothing can start meanwhile.
+            settle()
+
+            XCTAssertTrue(reader.isWaitingForChapterSpeech, "the move ended the wait")
+            XCTAssertTrue(reader.isCurrentlyPlaying, "Playing no longer shows")
+            XCTAssertFalse(reader.speechService.isSpeaking)
+            reader.finishPreparingInBackground(inputs.prepare())
+
+            XCTAssertTrue(reader.speechService.isSpeaking, "the speech did not start")
+            XCTAssertEqual(reader.currentChapterIndex, 1)
+            XCTAssertEqual(reader.currentCharacterOffset, market.characterOffset)
+            silence(reader)
+        }
+    }
+
+    /// Speech that is ready while a Where Am I announcement speaks is not
+    /// spoken over it: the play ends, as a pause ends it, and the next Play
+    /// speaks the speech kept meanwhile, without preparing it again.
+    func testSpeechReadyWhileWhereAmISpeaksIsNotSpokenOverIt() throws {
+        try withReader(chapters: Self.chaptersEndingInALongOne(seed: 83)) { reader, _ in
+            reader.currentChapterIndex = 1
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+            XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs))
+            reader.play()
+            reader.isWhereAmISpeaking = true
+
+            reader.finishPreparingInBackground(inputs.prepare())
+
+            XCTAssertFalse(reader.speechService.isSpeaking, "the speech started over Where Am I")
+            XCTAssertFalse(reader.isWaitingForChapterSpeech)
+            XCTAssertFalse(reader.isCurrentlyPlaying)
+            reader.isWhereAmISpeaking = false
+            reader.play()
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "the next Play prepared the chapter on the main thread")
+            assertSpeaks(reader, try legacyPreparedSpeech(reader, chapterIndex: 1))
+            silence(reader)
+        }
+    }
+
     /// Shows the reader's content as a finished load shows it, with the
     /// cursor at the start of chapter `chapterIndex`.
     private func showLoaded(_ reader: ReaderViewModel, atChapter chapterIndex: Int) throws {
@@ -521,6 +757,26 @@ final class SpeechPreparationCacheTests: XCTestCase {
         XCTAssertEqual(speech.offsetMap, expected.offsetMap, "map \(label)", file: file, line: line)
     }
 
+    /// Checks that `reader` is speaking exactly `expected`: the text it
+    /// handed the speech engine, byte for byte, and the map it converts
+    /// offsets with.
+    private func assertSpeaks(
+        _ reader: ReaderViewModel,
+        _ expected: (text: String, offsetMap: ComposedOffsetMap),
+        _ label: String = "",
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertTrue(reader.speechService.isSpeaking, "not speaking \(label)", file: file, line: line)
+        XCTAssertTrue(
+            haveIdenticalBytes(reader.currentTransformation?.modifiedText ?? "", expected.text),
+            "text \(label)",
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(reader.currentOffsetMap, expected.offsetMap, "map \(label)", file: file, line: line)
+    }
+
     /// Checks that two prepared speeches are exactly the same.
     private func assertSameSpeech(
         _ speech: ReaderViewModel.ChapterSpeech,
@@ -556,12 +812,29 @@ final class SpeechPreparationCacheTests: XCTestCase {
             ("Departure", "The ferry left the quay at noon."),
             ("Crossing", "Spray rose over the bow."),
         ]),
-        chapter(sections: [
-            ("Harbour", "Gulls circled the harbour wall. Then rain came, briefly.\n\n* * * * * * *"),
-            ("Market", "Fish sold out by nine at the Caf\u{00E9} Brennan."),
-        ]),
+        chapter(sections: middleChapterSections),
         chapter(sections: [("Evening", "Lamps came on along the pier.")]),
     ]
+
+    /// The middle chapter's sections.
+    private static let middleChapterSections: [(heading: String, body: String)] = [
+        ("Harbour", "Gulls circled the harbour wall. Then rain came, briefly.\n\n* * * * * * *"),
+        ("Market", "Fish sold out by nine at the Caf\u{00E9} Brennan."),
+    ]
+
+    /// The first of `chapters`, then the middle one made too long to render
+    /// ahead: its sections as before, the last followed by prose from
+    /// `seed`, so that everything that shapes the middle chapter's speech
+    /// shapes this one's too. It ends the book, so a play of it looks ahead
+    /// to nothing, and every chapter prepared on the main thread is counted
+    /// by Play alone.
+    private static func chaptersEndingInALongOne(seed: UInt64) -> [Chapter] {
+        var prose = BenchmarkProse(seed: seed)
+        var sections = middleChapterSections
+        let length = SpeechRenderCoordinator.maximumTextLength + 20_000
+        sections[sections.count - 1].body += "\n\n" + prose.text(utf16Length: length)
+        return [chapters[0], chapter(sections: sections)]
+    }
 
     /// `chapters` with `old` replaced by `new` in the middle chapter, as a
     /// book read again with other text would hold it.
@@ -590,6 +863,13 @@ final class SpeechPreparationCacheTests: XCTestCase {
     private func silence(_ reader: ReaderViewModel) {
         reader.stop()
         reader.chapterPlaybackGeneration += 1
+    }
+
+    /// Let queued main-queue work run, such as the speech service's state
+    /// reaching the reader's Playing state. Only for a test whose reader has
+    /// nothing that could start speech meanwhile.
+    private func settle() {
+        RunLoop.main.run(until: Date().addingTimeInterval(0.05))
     }
 
     /// Run `body` with a loaded, in-memory text reader over `chapters`, whose
