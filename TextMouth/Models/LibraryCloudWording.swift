@@ -101,7 +101,7 @@ enum LibraryCloudWording {
         guard inCloudLibrary else {
             return "The library isn't in a cloud folder, so its books are always on this Mac."
         }
-        guard !titles.isEmpty else { return "No books are selected." }
+        guard !titles.isEmpty else { return noBooksSelected }
         if titles.count == 1, let title = titles.first {
             return keeping ? "\(title) is already kept on this Mac." : "\(title) isn't kept on this Mac."
         }
@@ -181,6 +181,12 @@ enum LibraryCloudWording {
     static func removalRefusedTitle(refusedCount: Int) -> String {
         refusedCount == 1 ? "Download Not Removed" : "Downloads Not Removed"
     }
+
+    // MARK: - No Selection
+
+    /// Why a Library menu command acting on the selected books did nothing:
+    /// none is selected. Keep on This Mac and Export (FR05) say it.
+    static let noBooksSelected = "No books are selected."
 
     // MARK: - Books Not Downloaded
 

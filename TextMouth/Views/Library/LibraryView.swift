@@ -176,6 +176,8 @@ struct LibraryView: View {
     @State private var cloudRefreshToken = UUID()
     /// A Remove Download refusal to show in this window (FR02).
     @State private var cloudRefusal: LibraryCloudRefusal?
+    /// The Export dialog showing on this window, or nil (FR05).
+    @State private var exportModel: BookExportModel?
     /// Whether this Library window has closed. SwiftUI keeps a closed window
     /// and its views for the rest of the session, and every change to the
     /// library would still rebuild this list nobody can see, so a closed
@@ -542,6 +544,14 @@ struct LibraryView: View {
             refusal: $cloudRefusal,
             performKeepMenuCommand: performKeepMenuCommand
         ))
+        // File > Export… for the selection, and the Export dialog (FR05).
+        .modifier(LibraryExportSupport(
+            exportModel: $exportModel,
+            library: libraryViewModel,
+            takesCommand: takesCommand,
+            selectedBooks: { selectedBooks },
+            hostWindow: hostWindow
+        ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {
@@ -901,7 +911,7 @@ struct LibraryView: View {
 
     /// What the rows' commands do, on this list's state as it is when they
     /// run: open, Book Info, Select, Move to Folder, Move Up and Move Down,
-    /// the cloud commands, and removal.
+    /// the cloud commands, removal, and Export (FR05).
     private var rowActions: LibraryBookRowActions {
         LibraryBookRowActions(
             open: onOpenBook,
@@ -928,6 +938,11 @@ struct LibraryView: View {
             remove: { books in
                 libraryViewModel.removeBooks(books)
                 clearAllSelections()
+            },
+            export: { books in
+                if exportModel == nil {
+                    exportModel = BookExportModel(books: books, library: libraryViewModel)
+                }
             }
         )
     }

@@ -252,6 +252,20 @@ struct BookmarkCommands: Commands {
     }
 }
 
+/// The commands that act on a book as a whole, wherever it was chosen
+/// (FR05). File > Export… exports the book of the reader that is key, or
+/// the books selected in the Library window that is key, which each
+/// decides for itself through `WindowCommandRouting`.
+struct BookCommands: Commands {
+    var body: some Commands {
+        CommandGroup(after: .importExport) {
+            Button(BookExportWording.commandTitle) {
+                NotificationCenter.default.post(name: .exportBooks, object: nil)
+            }
+        }
+    }
+}
+
 // MARK: - Notification Names
 
 extension Notification.Name {
@@ -311,4 +325,7 @@ extension Notification.Name {
     /// listens and either restarts a running timer or re-arms a new
     /// one with the previous duration.
     static let restartSleepTimer = Notification.Name("restartSleepTimer")
+    /// Posted by File > Export… (FR05): the key reader opens the Export
+    /// dialog for its book, or the key Library window for its selection.
+    static let exportBooks = Notification.Name("exportBooks")
 }

@@ -59,6 +59,7 @@ struct TextMouthApp: App {
             NavigationCommands()
             LibraryCommands()
             BookmarkCommands()
+            BookCommands()
         }
 
         // Book reader windows — opened programmatically via openWindow(id:value:)

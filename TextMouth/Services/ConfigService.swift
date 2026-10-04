@@ -290,6 +290,8 @@ final class ConfigService: ObservableObject {
         var showBookmarkInPlaybackControls: Bool?
         /// Whether the playback bar shows the speed controls.
         var showSpeedInPlaybackControls: Bool?
+        /// Whether the reader's toolbar shows an Export button (FR05).
+        var showExportInReaderToolbar: Bool?
         /// Whether sound effects play.
         var soundEffectsEnabled: Bool?
         /// How loud sound effects play, from 0 to 1, written to the
@@ -406,6 +408,7 @@ final class ConfigService: ObservableObject {
             )
             showBookmarkInPlaybackControls = fields.optionalFlag(.showBookmarkInPlaybackControls)
             showSpeedInPlaybackControls = fields.optionalFlag(.showSpeedInPlaybackControls)
+            showExportInReaderToolbar = fields.optionalFlag(.showExportInReaderToolbar)
             soundEffectsEnabled = fields.optionalFlag(.soundEffectsEnabled)
             soundEffectsVolume = fields.optionalNumber(.soundEffectsVolume, rule: SettingsPolicy.soundEffectsVolume)
             soundEffectAssignments = fields.entries(
@@ -470,7 +473,7 @@ final class ConfigService: ObservableObject {
                     "rewindOnResumeUnit", "rewindSmartMode", "rewindSmartThreshold", "punctuationPauseLevel",
                     "autoPlayOnNavigate", "endOfBookBehavior", "sleepFadeOutDuration", "sleepTimerAutoClose",
                     "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls",
-                    "showSpeedInPlaybackControls",
+                    "showSpeedInPlaybackControls", "showExportInReaderToolbar",
                 ])
                 // Shortcuts: the store's key is older than the file's field.
                 mirrored.append((storeKey: "customKeyboardBindings", field: "keyboardShortcuts"))

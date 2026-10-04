@@ -19,6 +19,148 @@ enum BookExportWording {
         }
     }
 
+    /// What the checkbox of `kind` exports: its hint.
+    static func hint(for kind: BookExportKind) -> String {
+        switch kind {
+        case .audio:
+            return "The book's audio: its file, or its tracks in a folder named after the book, each named for its chapter."
+        case .originalFile:
+            return "The book's own file, as it was imported."
+        case .markdown:
+            return "The book's text as Markdown, the file TextMouth reads it from, with a line marking each chapter."
+        case .plainText:
+            return "The words TextMouth reads aloud, as plain text, each chapter under its title."
+        case .originalRecording:
+            return "The recording as it was made, before any edits."
+        case .transcript:
+            return "The transcript, with its text as Markdown for an audiobook."
+        }
+    }
+
+    // MARK: The Dialog
+
+    /// The commands' title in the File menu and the reader's toolbar.
+    static let commandTitle = "Export…"
+
+    /// The title of the library's context-menu command for `count` books:
+    /// "Export…" for one, "Export 3 Books…" for a selection of several.
+    static func commandTitle(count: Int) -> String {
+        count > 1 ? "Export \(CountWording.phrase(count, singular: "Book", plural: "Books"))…" : commandTitle
+    }
+
+    /// The dialog's title: "Export Moby-Dick" for one book, "Export 3
+    /// Books" for several.
+    static func title(bookTitles: [String]) -> String {
+        guard bookTitles.count == 1, let title = bookTitles.first else {
+            return "Export \(CountWording.phrase(bookTitles.count, singular: "Book", plural: "Books"))"
+        }
+        return "Export \(title)"
+    }
+
+    /// What the dialog shows while it finds what the books hold.
+    static let listing = "Finding what can be exported…"
+
+    /// The name of the group of checkboxes.
+    static let choicesLabel = "What to export"
+
+    /// What the dialog says when the books hold nothing to export.
+    static let nothingToExport = "There is nothing to export."
+
+    /// A kind's checkbox label, which the screen shows and VoiceOver
+    /// speaks: its name, then, for several books, how many hold it on this
+    /// Mac, or, for one book, how many files it is when more than one; its
+    /// size ("about" for reading text, made from the Markdown it is sized
+    /// by); and what is in the cloud. As in "Original file, 1.2 MB", "Audio,
+    /// 12 files, 340 MB", "Audio, 2 books, 680 MB, 1 book in the cloud", or
+    /// "Text as Markdown, in the cloud".
+    /// - Parameters:
+    ///   - kind: The checkbox's kind.
+    ///   - bookCount: How many books the dialog exports from.
+    ///   - availableItemCount: How many of them hold it on this Mac.
+    ///   - fileCount: How many files those items are.
+    ///   - byteCount: Their size in bytes.
+    ///   - inCloudCount: How many books hold it only in the cloud.
+    static func choiceLabel(
+        kind: BookExportKind,
+        bookCount: Int,
+        availableItemCount: Int,
+        fileCount: Int,
+        byteCount: Int64,
+        inCloudCount: Int
+    ) -> String {
+        var parts = [name(of: kind)]
+        if bookCount > 1 {
+            if availableItemCount > 0 {
+                parts.append(CountWording.books(availableItemCount))
+            }
+        } else if fileCount > 1 {
+            parts.append(CountWording.phrase(fileCount, singular: "file", plural: "files"))
+        }
+        if availableItemCount > 0 {
+            let size = ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
+            parts.append(kind == .plainText ? "about \(size)" : size)
+        }
+        if inCloudCount > 0 {
+            parts.append(bookCount > 1 ? "\(CountWording.books(inCloudCount)) in the cloud" : "in the cloud")
+        }
+        return parts.joined(separator: ", ")
+    }
+
+    /// The line naming the folder the items go to: "Export to: Documents".
+    static func destination(folderName: String) -> String {
+        "Export to: \(folderName)"
+    }
+
+    /// The button that chooses the folder, and its hint.
+    static let chooseFolderTitle = "Choose Folder…"
+    static let chooseFolderHint = "Chooses the folder the checked items are exported to."
+
+    /// The button that exports, and its hint.
+    static let exportTitle = "Export"
+    static let exportHint = "Copies the checked items to the folder."
+
+    /// The button that stops an export under way, and its hint.
+    static let stopTitle = "Stop"
+    static let stopHint = "Stops the export before its next item."
+
+    /// The button that closes the dialog without exporting.
+    static let cancelTitle = "Cancel"
+
+    /// The button that closes the dialog after an export that did not do
+    /// everything asked, whose words stay in it.
+    static let closeTitle = "Close"
+
+    /// The progress of an export under way: "Exporting 3 of 40 items…", or
+    /// "Exporting…" before it has counted them.
+    static func progress(done: Int, total: Int) -> String {
+        total > 0 ? "Exporting \(done) of \(items(total))…" : "Exporting…"
+    }
+
+    /// Why Export refuses the folder chosen: it is TextMouth's own data
+    /// directory, or inside it.
+    static let destinationInLibrary = "Export can't write into TextMouth's library folder. Choose another folder."
+
+    /// The folder chooser's title, message, and button.
+    static let panelTitle = "Export To"
+    static let panelMessage = "Choose the folder to export to. New Folder makes one."
+    static let panelPrompt = "Choose"
+
+    // MARK: The Reader's Toolbar
+
+    /// The reader toolbar's Export button: its title, its spoken label, and
+    /// its hint.
+    static let toolbarTitle = "Export"
+    static let toolbarLabel = "Export this book"
+    static let toolbarHint = "Opens the Export dialog: the book's audio, its text, or its own file."
+
+    /// The Playback settings section holding the reader toolbar's options,
+    /// and its checkbox showing the Export button: the title on screen, the
+    /// label VoiceOver speaks, and the hint.
+    static let settingSection = "Reader Toolbar"
+    static let settingTitle = "Show Export in the reader toolbar"
+    static let settingLabel = "Show the Export button in the reader toolbar"
+    static let settingHint = "Adds a button to each reader's toolbar that opens the Export dialog. File, Export is there either way."
+
     // MARK: When an Export Ends
 
     /// How an export names the folder `url`: as Finder shows it, such as
