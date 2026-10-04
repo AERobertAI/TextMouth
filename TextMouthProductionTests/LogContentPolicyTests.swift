@@ -299,6 +299,8 @@ final class LogContentPolicyTests: XCTestCase {
         "IMPORT_STAGING_REMOVED", "LIBRARY_INDEX", "LIBRARY_REMOVAL", "PERSISTENCE_FAILURE",
         "PERSISTENCE_RECOVERED", "PERSISTENCE_WITHDRAWN", "PLAYBACK_RESUME_REJECTED",
         "READING_TEXT_CACHE_REJECTED", "READING_TEXT_CACHE_SWEPT", "TMB_RECONCILE", "TRACE_SUPPRESSED",
+        // Transcripts of audiobooks (FR05): a transcript.json that cannot be used, preserved beside itself.
+        "TRANSCRIPT_FILE",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

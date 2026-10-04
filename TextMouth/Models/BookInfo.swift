@@ -190,6 +190,14 @@ struct BookState: Codable {
     /// `Book.textCacheFingerprint`). A load checks the package's files
     /// against these before it trusts the cache or the index.
     var textCacheFingerprint: TextCacheFingerprint?
+    /// What the package's transcript is, for a transcribed audiobook
+    /// (FR05): its layout version, language, and date, so knowing whether a
+    /// book has a transcript never means reading transcript.json. Only the
+    /// package record holds it; library.json does not, and a library row
+    /// never carries it, so every save of the book's state keeps the note
+    /// the record holds (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`).
+    /// Nil for any other book.
+    var transcript: TranscriptNote?
     /// How many times this record has been written. Every write of
     /// bookInfo.json stores at least one more than the record it replaces
     /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`), so of two
@@ -217,6 +225,7 @@ struct BookState: Codable {
         cacheFormatVersion: String? = nil,
         contentIndexVersion: String? = nil,
         textCacheFingerprint: TextCacheFingerprint? = nil,
+        transcript: TranscriptNote? = nil,
         revision: Int? = nil
     ) {
         self.readingPosition = readingPosition
@@ -238,6 +247,7 @@ struct BookState: Codable {
         self.cacheFormatVersion = cacheFormatVersion
         self.contentIndexVersion = contentIndexVersion
         self.textCacheFingerprint = textCacheFingerprint
+        self.transcript = transcript
         self.revision = revision
     }
 
@@ -272,6 +282,9 @@ struct BookState: Codable {
         // checked as one written before fingerprints and fingerprinted
         // again, instead of the whole record failing.
         textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
+        // A note that cannot be read counts as none, as a fingerprint does:
+        // the book's transcript is still read from transcript.json itself.
+        transcript = fields.optionalValue(.transcript) { $0 }
         // Like a count, a revision is never negative. One that cannot be
         // read counts as none, so the next write numbers from there instead
         // of the whole record failing over a bookkeeping field.

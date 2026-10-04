@@ -303,6 +303,15 @@ enum TextMouthPaths {
         tmbDir.appendingPathComponent("content.md")
     }
 
+    /// Name of a transcribed audiobook's transcript inside its package
+    /// (FR05). See `Transcript` and `TranscriptStore`.
+    static let transcriptFileName = "transcript.json"
+
+    /// Path to the transcript inside a .tmb package
+    static func transcriptPath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent(transcriptFileName)
+    }
+
     /// Path to the per-book cached audio directory inside a .tmb package
     static func cachedAudioDir(in tmbDir: URL) -> URL {
         tmbDir.appendingPathComponent("cachedAudio", isDirectory: true)

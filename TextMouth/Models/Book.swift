@@ -656,6 +656,10 @@ struct Book: Identifiable, Codable, Hashable {
     /// which this write moves into its own file. An index already in its own
     /// file is kept by writing nothing to it.
     ///
+    /// The record's note of the book's transcript (`BookState.transcript`,
+    /// FR05) belongs to the package alone: a library row never carries one,
+    /// so the note the stored record holds is kept.
+    ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
@@ -669,6 +673,7 @@ struct Book: Identifiable, Codable, Hashable {
         }
         var info = recorded.makeBookInfo()
         info.contentIndex = index
+        info.state.transcript = stored?.info.state.transcript
         info.state.revision = BookState.revision(after: max(stored?.info.state.revision ?? 0, revisionFloor))
         return info
     }
