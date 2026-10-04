@@ -5,8 +5,9 @@ import Foundation
 /// config.json under the same names (`ConfigService.AppConfig.Portability`).
 enum RecordingPreferences {
     /// Their keys: the microphone the Record window remembers
-    /// (`RecordingInputChoice`).
+    /// (`RecordingInputChoice`), and what happens to a recording's original
+    /// take (`RecordingOriginalPolicy`).
     static var keys: [String] {
-        RecordingInputChoice.preferenceKeys
+        RecordingInputChoice.preferenceKeys + RecordingOriginalPolicy.preferenceKeys
     }
 }

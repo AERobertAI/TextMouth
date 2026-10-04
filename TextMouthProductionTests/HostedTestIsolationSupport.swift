@@ -41,6 +41,8 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "repeatedSymbolThreshold",
         "repeatedSymbolSet",
         "recordingInputDeviceID",
+        "recordingOriginalPolicy",
+        "recordingOriginalDays",
         "NSQuitAlwaysKeepsWindows",
         "sleepTimer.lastUsedDuration",
         "customKeyboardBindings",

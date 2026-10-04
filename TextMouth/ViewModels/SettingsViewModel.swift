@@ -825,6 +825,8 @@ final class SettingsViewModel: ObservableObject {
         config.repeatedSymbolThreshold = TextSubstitutionService.repeatedSymbolThresholdPreference.read(from: preferences)
         config.repeatedSymbolSet = TextSubstitutionService.repeatedSymbolSetPreference.read(from: preferences)
         config.recordingInputDeviceID = RecordingInputChoice.preference.read(from: preferences)
+        config.recordingOriginalPolicy = RecordingOriginalPolicy.choicePreference.read(from: preferences).rawValue
+        config.recordingOriginalDays = RecordingOriginalPolicy.daysPreference.read(from: preferences)
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.bindingsPreference.read(from: preferences)
         )
@@ -859,6 +861,14 @@ final class SettingsViewModel: ObservableObject {
         )
         // Empty, like any empty text in the file, keeps the microphone chosen.
         adopt(config.recordingInputDeviceID.nonEmpty, into: RecordingInputChoice.preference)
+        adopt(
+            SettingsPolicy.recordingOriginalPolicy.requestedValue(fromConfig: config.recordingOriginalPolicy),
+            into: RecordingOriginalPolicy.choicePreference
+        )
+        adopt(
+            config.recordingOriginalDays.flatMap { SettingsPolicy.recordingOriginalDays.requestedValue(fromConfig: $0) },
+            into: RecordingOriginalPolicy.daysPreference
+        )
         adopt(
             entries: SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),
             into: KeyboardShortcutManager.bindingsPreference,
