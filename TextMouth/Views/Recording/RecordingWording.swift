@@ -220,6 +220,23 @@ enum RecordingWording {
     static let paused = "Paused."
     /// What VoiceOver announces before capture resumes.
     static let resuming = "Resuming."
+
+    /// What starting or resuming a recording says when it paused books that
+    /// were playing, so the microphone would not pick them up: "Paused the
+    /// book that was playing." or "Paused 2 books that were playing."; nil
+    /// when it paused none.
+    static func pausedReaders(_ count: Int) -> String? {
+        guard count > 0 else { return nil }
+        return count == 1 ? "Paused the book that was playing." : "Paused \(count) books that were playing."
+    }
+
+    /// `sentence`, after the one saying `pausedReaders` books were paused,
+    /// when any were: one announcement, so VoiceOver speaks both, the books'
+    /// first.
+    static func afterPausingReaders(_ pausedReaders: Int, _ sentence: String) -> String {
+        guard let paused = Self.pausedReaders(pausedReaders) else { return sentence }
+        return "\(paused) \(sentence)"
+    }
     /// What the window says while saving, and VoiceOver announces when a
     /// save takes more than a moment.
     static let saving = "Saving the recording…"

@@ -100,6 +100,10 @@ final class RecordingWindowModel: ObservableObject {
     private let now: @MainActor () -> Date
     /// How long an announcement is given before capture starts or resumes.
     private let announcementLead: Duration
+    /// Pauses every reader that is playing and says how many it paused:
+    /// the app's readers in the app (`NowPlayingService`), stand-ins in
+    /// tests.
+    private let pauseReaders: @MainActor () -> Int
 
     /// Reads the time and level once a second while a take is under way.
     private var ticker: Task<Void, Never>?
@@ -142,6 +146,8 @@ final class RecordingWindowModel: ObservableObject {
     ///   - announcementLead: How long an announcement made before capture
     ///     starts or resumes is given to finish: a second in the app, none
     ///     in tests.
+    ///   - pauseReaders: Pauses every reader that is playing, returning how
+    ///     many it paused, as a recording starts or resumes.
     ///   - recovered: The takes left behind that launch found, which the
     ///     window opens on; it reads the folder again itself either way.
     init(
@@ -154,6 +160,7 @@ final class RecordingWindowModel: ObservableObject {
         openBook: @escaping @MainActor (UUID) -> Void,
         now: @escaping @MainActor () -> Date = { Date() },
         announcementLead: Duration = .seconds(1),
+        pauseReaders: @escaping @MainActor () -> Int = { NowPlayingService.shared.pauseEveryPlayingReader() },
         recovered: [RecoveredTake] = []
     ) {
         self.service = service
@@ -165,6 +172,7 @@ final class RecordingWindowModel: ObservableObject {
         self.openBook = openBook
         self.now = now
         self.announcementLead = announcementLead
+        self.pauseReaders = pauseReaders
         recoveredTakes = recovered
         recoveredTakeFocusedAtOpen = recovered.first?.id
         title = RecordingWording.defaultTitle(at: now())
@@ -262,14 +270,18 @@ final class RecordingWindowModel: ObservableObject {
     }
 
     /// Starts recording from the chosen microphone. Once permission is
-    /// there, VoiceOver announces it a moment before capture begins.
+    /// there, every reader that is playing is paused, so the microphone does
+    /// not pick up a book, and VoiceOver announces both a moment before
+    /// capture begins. Resuming the books is the listener's to do.
     func record() async {
         guard canRecord, let device = selectedDevice else { return }
         phase = .recordingControls
         offersPrivacySettings = false
         let lead = announcementLead
         await service.start(from: device) { [weak self] in
-            self?.tell(RecordingWording.recording(device: device.name))
+            guard let self else { return }
+            let paused = self.pauseReaders()
+            self.tell(RecordingWording.afterPausingReaders(paused, RecordingWording.recording(device: device.name)))
             try? await Task.sleep(for: lead)
         }
         if service.state == .recording {
@@ -278,8 +290,9 @@ final class RecordingWindowModel: ObservableObject {
     }
 
     /// Pauses a recording, or resumes a paused one: "Paused" is announced
-    /// once capture stops, and "Resuming" a moment before it starts again.
-    /// A second press during that moment does nothing more, and a Stop
+    /// once capture stops, and "Resuming" a moment before it starts again,
+    /// after pausing any reader started meanwhile, as a recording's start
+    /// does. A second press during that moment does nothing more, and a Stop
     /// meanwhile wins: the recorder resumes only a take still paused.
     func togglePause() async {
         switch service.state {
@@ -289,7 +302,7 @@ final class RecordingWindowModel: ObservableObject {
         case .paused where !isResuming:
             isResuming = true
             defer { isResuming = false }
-            tell(RecordingWording.resuming)
+            tell(RecordingWording.afterPausingReaders(pauseReaders(), RecordingWording.resuming))
             try? await Task.sleep(for: announcementLead)
             // `recorderChanged(to:)` shows the recording status once it has
             // resumed.

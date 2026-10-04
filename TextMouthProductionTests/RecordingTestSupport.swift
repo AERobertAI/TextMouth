@@ -316,7 +316,10 @@ struct RecordingWindowHarness {
     /// A window opening at a fixed moment on `devices`, macOS's default
     /// input `systemDefault`, and the microphone `remembered`, with
     /// `permission`'s answer; recording into `takesFolder`, a new folder
-    /// unless given, and opening on `recovered`, as launch opens it.
+    /// unless given; pausing the readers of `readers`, a coordinator of the
+    /// test's own, as a recording starts, and none without one, so no reader
+    /// of another test is ever touched; and opening on `recovered`, as
+    /// launch opens it.
     init(
         test: XCTestCase,
         devices: [AudioInputDevice] = [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb],
@@ -324,6 +327,7 @@ struct RecordingWindowHarness {
         remembered: String = "",
         permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized),
         takesFolder: URL? = nil,
+        readers: NowPlayingService? = nil,
         recovered: [RecoveredTake] = []
     ) throws {
         let backend = FakeCaptureBackend()
@@ -350,6 +354,7 @@ struct RecordingWindowHarness {
             openBook: { opened.ids.append($0) },
             now: { RecordingWindowHarness.opensAt },
             announcementLead: .zero,
+            pauseReaders: { readers?.pauseEveryPlayingReader() ?? 0 },
             recovered: recovered
         )
         self.backend = backend

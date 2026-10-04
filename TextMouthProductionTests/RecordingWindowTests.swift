@@ -322,6 +322,68 @@ final class RecordingWindowTests: XCTestCase {
         await harness.model.stop()
     }
 
+    // MARK: - Readers Playing
+
+    /// Starting a recording pauses every reader that is playing, here two,
+    /// each as its own Pause would, so the microphone doesn't pick up a
+    /// book, and says so once, before "Recording from"; a reader already
+    /// paused is left alone; and nothing resumes them afterwards.
+    func testStartingARecordingPausesEveryPlayingReader() async throws {
+        let readers = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let first = FakeReader(playing: true, in: readers)
+        let second = FakeReader(playing: true, in: readers)
+        let paused = FakeReader(playing: false, in: readers)
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.airPods.id, readers: readers)
+
+        await harness.model.record()
+
+        XCTAssertEqual(harness.model.service.state, .recording)
+        XCTAssertEqual([first.pauses, second.pauses, paused.pauses], [1, 1, 0])
+        XCTAssertFalse(first.isPlaying || second.isPlaying)
+        XCTAssertEqual(harness.announcements.sentences, ["Paused 2 books that were playing. Recording from AirPods Pro."])
+
+        await harness.backend.record(seconds: 1)
+        await harness.model.stop()
+        XCTAssertFalse(first.isPlaying || second.isPlaying || paused.isPlaying, "a book was resumed")
+        XCTAssertEqual([first.pauses, second.pauses, paused.pauses], [1, 1, 0])
+    }
+
+    /// With no book playing, a recording starts as it always did, saying
+    /// nothing of books; resuming it pauses a book started meanwhile, saying
+    /// so before "Resuming".
+    func testResumingARecordingPausesABookStartedMeanwhile() async throws {
+        let readers = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let reader = FakeReader(playing: false, in: readers)
+        let other = FakeReader(playing: false, in: readers)
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.airPods.id, readers: readers)
+
+        await harness.model.record()
+        XCTAssertEqual(harness.announcements.sentences, ["Recording from AirPods Pro."])
+        await harness.model.togglePause()
+        reader.isPlaying = true
+        await harness.model.togglePause()
+
+        XCTAssertEqual(harness.model.service.state, .recording)
+        XCTAssertEqual([reader.pauses, other.pauses], [1, 0])
+        XCTAssertEqual(harness.announcements.sentences.suffix(2), ["Paused.", "Paused the book that was playing. Resuming."])
+        await harness.model.stop()
+    }
+
+    /// The coordinator pauses only the readers playing, once each, and says
+    /// how many; with none playing it does nothing.
+    func testOnlyPlayingReadersArePaused() {
+        let readers = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let playing = [FakeReader(playing: true, in: readers), FakeReader(playing: true, in: readers)]
+        let idle = FakeReader(playing: false, in: readers)
+
+        XCTAssertEqual(readers.pauseEveryPlayingReader(), 2)
+        XCTAssertEqual(readers.pauseEveryPlayingReader(), 0)
+        XCTAssertEqual(playing.map(\.pauses), [1, 1])
+        XCTAssertEqual(idle.pauses, 0)
+        XCTAssertEqual(RecordingWording.pausedReaders(0), nil)
+        XCTAssertEqual(RecordingWording.afterPausingReaders(1, "Resuming."), "Paused the book that was playing. Resuming.")
+    }
+
     /// Closing needs nothing while idle, a question while recording, and
     /// another while a take waits to be saved.
     func testWhatClosingNeeds() async throws {
@@ -450,5 +512,37 @@ private extension Array {
     /// The element at `index`, or nil when there is none.
     subscript(safe index: Int) -> Element? {
         indices.contains(index) ? self[index] : nil
+    }
+}
+
+/// A reader as the Now Playing coordinator knows one: whether it plays, and
+/// how often it was paused, registered with a coordinator of the test's
+/// own, never the app's. Its handlers hold it weakly, so a coordinator
+/// outliving it reaches nothing.
+@MainActor
+private final class FakeReader {
+    /// Whether it is playing.
+    var isPlaying: Bool
+    /// How many times it was paused.
+    private(set) var pauses = 0
+
+    /// A reader playing or not, registered with `readers`.
+    init(playing: Bool, in readers: NowPlayingService) {
+        isPlaying = playing
+        readers.setup(
+            ownerID: UUID(),
+            onPlay: { [weak self] in self?.isPlaying = true },
+            onPause: { [weak self] in
+                self?.isPlaying = false
+                self?.pauses += 1
+            },
+            onAudioRouteInvalidated: {},
+            onAudioRouteChangePause: {},
+            onTogglePlayPause: {},
+            onSkipForward: {},
+            onSkipBackward: {},
+            isCurrentlyPlaying: { [weak self] in self?.isPlaying ?? false },
+            bluetoothMonitoring: false
+        )
     }
 }
