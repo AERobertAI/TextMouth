@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A feed reader's export, trimmed to what matters: two categories, one
+     inside the other; an outline naming its address in lower case
+     (xmlurl), as some readers write it; a category with no feeds; the
+     first feed again under another spelling of its address; an outline
+     whose address is a file, which is never loaded; and a feed: link. -->
+<opml version="2.0">
+  <head>
+    <title>Subscriptions from another reader</title>
+    <dateCreated>Sat, 03 Oct 2026 18:00:00 GMT</dateCreated>
+  </head>
+  <body>
+    <outline text="Podcasts">
+      <outline type="rss" text="The Tactile Atlas" title="The Tactile Atlas" xmlUrl="https://atlas.example/feed.xml" htmlUrl="https://atlas.example/"/>
+      <outline text="Ships">
+        <outline type="rss" text="Harbour Notes &amp; Tides" xmlurl="http://harbour.example/rss"/>
+      </outline>
+    </outline>
+    <outline text="Empty Category"/>
+    <outline type="rss" text="Atlas again" xmlUrl="https://ATLAS.example/feed.xml/"/>
+    <outline type="rss" text="A file on this Mac" xmlUrl="file:///etc/hosts"/>
+    <outline type="rss" title="Night Trams" xmlUrl="feed://trams.example/atom"/>
+  </body>
+</opml>

@@ -91,6 +91,19 @@ protocol FeedLibraryHost: AnyObject {
     var feedLibraryIsComplete: Bool { get }
     /// Opens the book `bookID` in its reader.
     func openFeedBook(_ bookID: UUID)
+    /// Makes a new library folder for a feed titled `title`, inside the
+    /// folder at `parentPath` ("" for the library's top level), named after
+    /// the feed, with " 2", " 3", and so on added when that name is taken
+    /// there, and returns its ID.
+    /// - Throws: `FeedFolderError`, saying why no folder could be made.
+    func makeFeedFolder(named title: String, inParentPath parentPath: String) throws(FeedFolderError) -> UUID
+}
+
+/// Why no folder could be made for a new subscription (FR03), in a sentence
+/// the subscribe sheet shows and VoiceOver speaks.
+struct FeedFolderError: Error, Equatable, Sendable {
+    /// Why, as a sentence.
+    let message: String
 }
 
 // MARK: - What the Engine Announces
@@ -116,6 +129,18 @@ enum FeedEvent: Equatable, Sendable {
 
 // MARK: - Subscribing
 
+/// Where a new subscription's downloads go (FR03).
+enum FeedFolderChoice: Equatable, Sendable {
+    /// The library folder with this ID, which must exist.
+    case folder(UUID)
+    /// A new folder of the feed's own, named after the feed once it has been
+    /// read, made inside the library folder at this path ("" for the
+    /// library's top level): the listener's choice of October 4, "a new
+    /// feed's folder goes anywhere". Nothing is made unless the subscription
+    /// succeeds.
+    case newFolder(inParentPath: String)
+}
+
 /// How subscribing to an address ended (FR03).
 enum FeedSubscribeOutcome: Equatable, Sendable {
     /// The feed is subscribed: its record.
@@ -137,6 +162,9 @@ enum FeedSubscribeError: Error, Equatable, Sendable {
     case pageNamesNoFeed
     /// The feed could not be fetched or read.
     case refreshFailed(FeedRefreshError, host: String)
+    /// The feed was read, but no folder could be made for it, for the
+    /// reason given.
+    case folderNotMade(FeedFolderError)
 
     /// The sentence the subscribe sheet shows and VoiceOver speaks.
     var message: String {
@@ -151,6 +179,8 @@ enum FeedSubscribeError: Error, Equatable, Sendable {
             return "That page doesn't name a feed."
         case let .refreshFailed(error, host):
             return error.message(about: host, host: host)
+        case .folderNotMade(let error):
+            return error.message
         }
     }
 }
@@ -358,14 +388,27 @@ final class FeedCenter: ObservableObject {
     /// several returns them for the listener to choose.
     /// - Throws: `FeedSubscribeError`.
     func subscribe(to address: String, folderID: UUID) async throws -> FeedSubscribeOutcome {
+        try await subscribe(to: address, into: .folder(folderID))
+    }
+
+    /// Subscribes to the feed at `address`, as the listener typed it, its
+    /// downloads going where `choice` says: an existing folder, or a new
+    /// folder named after the feed, made only once the feed has been read.
+    /// An address that is a web page naming one feed subscribes to that
+    /// feed; a page naming several returns them for the listener to choose,
+    /// and nothing is made until one is chosen and subscribed to.
+    /// - Throws: `FeedSubscribeError`.
+    func subscribe(to address: String, into choice: FeedFolderChoice) async throws -> FeedSubscribeOutcome {
         guard let url = FeedAddress.normalized(address) else { throw FeedSubscribeError.invalidAddress }
-        guard library?.feedFolderPath(forFolderID: folderID) != nil else { throw FeedSubscribeError.folderMissing }
-        return try await subscribe(url, folderID: folderID, followingPage: true)
+        if case .folder(let folderID) = choice, library?.feedFolderPath(forFolderID: folderID) == nil {
+            throw FeedSubscribeError.folderMissing
+        }
+        return try await subscribe(url, into: choice, followingPage: true)
     }
 
     /// Subscribes to the feed at `url`; when `followingPage`, an address
     /// that is a web page is searched for the feeds it names.
-    private func subscribe(_ url: URL, folderID: UUID, followingPage: Bool) async throws -> FeedSubscribeOutcome {
+    private func subscribe(_ url: URL, into choice: FeedFolderChoice, followingPage: Bool) async throws -> FeedSubscribeOutcome {
         if let existing = subscribedFeed(at: url) {
             throw FeedSubscribeError.alreadySubscribed(title: existing.title)
         }
@@ -382,10 +425,18 @@ final class FeedCenter: ObservableObject {
         let address = body.permanentURL ?? url
         let now = environment.now()
         let keepEntries = settings.keepEntries
+        // A new folder is made only once the feed has been read, so until
+        // then the record names a stand-in, replaced below.
+        let provisionalFolderID: UUID
+        if case .folder(let folderID) = choice {
+            provisionalFolderID = folderID
+        } else {
+            provisionalFolderID = UUID()
+        }
         let read = await OffMainWork.run(on: .global(qos: .userInitiated)) { () -> Result<FeedRecord, FeedParseError> in
             do {
                 let feed = try FeedParser.parse(body.data, baseURL: body.finalURL)
-                var record = FeedRecord(feed: Feed(feedURL: address, folderID: folderID, subscribedDate: now))
+                var record = FeedRecord(feed: Feed(feedURL: address, folderID: provisionalFolderID, subscribedDate: now))
                 var texts = FeedTextCache()
                 FeedReconciler.merge(feed, into: &record, keepEntries: keepEntries, now: now, texts: &texts)
                 return .success(record)
@@ -394,11 +445,12 @@ final class FeedCenter: ObservableObject {
             }
         }
         switch read {
-        case .success(let record):
+        case .success(var record):
             // Another subscription to the same feed may have finished meanwhile.
             if let existing = subscribedFeed(at: record.feed.feedURL) {
                 throw FeedSubscribeError.alreadySubscribed(title: existing.title)
             }
+            record.feed.folderID = try folderID(for: record.feed, choice: choice)
             store.add(record)
             fetchStates.update(record.feed.id) { state in
                 state.etag = body.etag
@@ -422,12 +474,32 @@ final class FeedCenter: ObservableObject {
             case 0:
                 throw FeedSubscribeError.pageNamesNoFeed
             case 1:
-                return try await subscribe(links[0].url, folderID: folderID, followingPage: false)
+                return try await subscribe(links[0].url, into: choice, followingPage: false)
             default:
                 return .choose(links)
             }
         case .failure(let error):
             throw FeedSubscribeError.refreshFailed(.parse(error), host: host)
+        }
+    }
+
+    /// The folder a new subscription to `feed`, just read, puts its
+    /// downloads in: the existing folder `choice` names, which must still be
+    /// in the library, or a new one named after the feed, made now.
+    /// - Throws: `FeedSubscribeError.folderMissing` or `.folderNotMade`.
+    private func folderID(for feed: Feed, choice: FeedFolderChoice) throws(FeedSubscribeError) -> UUID {
+        guard let library else { throw FeedSubscribeError.folderMissing }
+        switch choice {
+        case .folder(let folderID):
+            // The folder may have gone while the feed was fetched.
+            guard library.feedFolderPath(forFolderID: folderID) != nil else { throw FeedSubscribeError.folderMissing }
+            return folderID
+        case .newFolder(let parentPath):
+            do {
+                return try library.makeFeedFolder(named: feed.title, inParentPath: parentPath)
+            } catch {
+                throw FeedSubscribeError.folderNotMade(error)
+            }
         }
     }
 

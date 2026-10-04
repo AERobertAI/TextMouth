@@ -136,7 +136,16 @@ struct LibraryView: View {
     /// whichever window is key (TODO A05).
     @Binding var showTextInput: Bool
     let onOpenBook: (Book) -> Void
+    /// Which library folders hold feeds, and the feed engine they follow
+    /// (FR03): the app's, unless a test shows its own. Observed, as it
+    /// publishes only when a feed's folder changes; the views showing a
+    /// feed's items and counts observe the engine themselves.
+    @ObservedObject var feedFolders: LibraryFeedFolders = .shared
 
+    /// What this window shows for the feeds: the Add Feed sheet and the
+    /// notices after its commands (FR03). Kept, not observed: its sheets'
+    /// host observes it, so a sheet opening never redraws the list.
+    @State private var feedPresenter = LibraryFeedsPresenter()
     @State private var showNewFolderSheet = false
     @State private var newFolderName = ""
     @State private var newFolderParentPath = ""
@@ -233,9 +242,12 @@ struct LibraryView: View {
         let folders = libraryViewModel.subfoldersOf(currentFolderPath)
         let subfolders = category == .folders ? folders : []
         let lastBook = libraryViewModel.lastOpenedBook
+        // The feed whose folder this is, if it is one (FR03): its items are
+        // listed, and its summary bar counts them, even before any download.
+        let feedID = shownFeedID
         let focusTarget = Self.preferredFocusTarget(
             hasContinueListening: lastBook != nil,
-            hasDisplayedBooks: !allBooks.isEmpty
+            hasDisplayedBooks: !allBooks.isEmpty || feedID != nil
         )
 
         VStack(spacing: 0) {
@@ -308,72 +320,36 @@ struct LibraryView: View {
             }
 
             // Total time remaining bar, with how many of the books shown are
-            // in the cloud (FR02) and kept on this Mac (Keep on This Mac)
-            TimeRemainingBar(
-                books: allBooks,
-                wpm: settingsViewModel.wordsPerMinute,
-                booksInCloud: cloudStates.countInTheCloud(allBooks),
-                booksKept: cloudStates.countKept(allBooks, in: keptBooks),
-                focusIdentifier: focusTarget == .timeSummary ? voiceOverFocusID : nil,
-                shouldTriggerFocus: focusTarget == .timeSummary,
-                livePositions: libraryViewModel.livePositions
-            )
+            // in the cloud (FR02) and kept on this Mac (Keep on This Mac); in
+            // a feed's folder it counts the feed's items first and ends with
+            // the feed's last check (FR03). It is the same view everywhere,
+            // so moving between folders never makes it anew.
+            FeedFolderSummaryBar(center: feedFolders.center, feedID: feedID) { summary in
+                TimeRemainingBar(
+                    books: allBooks,
+                    wpm: settingsViewModel.wordsPerMinute,
+                    booksInCloud: cloudStates.countInTheCloud(allBooks),
+                    booksKept: cloudStates.countKept(allBooks, in: keptBooks),
+                    focusIdentifier: focusTarget == .timeSummary ? voiceOverFocusID : nil,
+                    shouldTriggerFocus: focusTarget == .timeSummary,
+                    livePositions: libraryViewModel.livePositions,
+                    feedSummary: summary
+                )
+            }
 
             // Main list with native selection
             List(selection: $selectedBookIDs) {
                 // Folders section (only in folders category)
-                if category == .folders {
-                    if !subfolders.isEmpty {
-                        Section {
-                            ForEach(subfolders) { folder in
-                                Button {
-                                    currentFolderPath = folder.fullPath
-                                } label: {
-                                    FolderRow(
-                                        folder: folder,
-                                        bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath)
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityAction(.default) {
-                                    currentFolderPath = folder.fullPath
-                                }
-                                .contextMenu {
-                                    Button("Rename Folder...") {
-                                        folderToRename = folder
-                                        renameFolderText = folder.name
-                                        showRenameFolderSheet = true
-                                    }
-                                    Button("Move Folder...") {
-                                        folderToMove = folder
-                                        showMoveFolderSheet = true
-                                    }
-                                    Divider()
-                                    Button("Delete Folder...", role: .destructive) {
-                                        if libraryViewModel.folderHasContents(folder) {
-                                            libraryViewModel.pendingDeleteFolder = folder
-                                            libraryViewModel.showDeleteFolderDialog = true
-                                        } else {
-                                            // Empty folder — just delete it
-                                            libraryViewModel.removeFolder(folder)
-                                        }
-                                    }
-                                }
-                            }
-                        } header: {
-                            Text("Folders")
-                                .accessibilityAddTraits(.isHeader)
-                        }
-                    }
+                if category == .folders && !subfolders.isEmpty {
+                    foldersSection(subfolders)
                 }
 
-                // Books section
-                Section {
-                    bookRows(books, orderedBy: allBooks)
-                } header: {
-                    Text("Books (\(books.count))")
-                        .accessibilityAddTraits(.isHeader)
-                }
+                // Feeds section, only where there are feeds (FR03)
+                LibraryFeedsSection(center: feedFolders.center, location: location, open: openFeed, perform: performFeedAction)
+
+                // Books section; in a feed's folder, the feed's items with
+                // the downloaded ones as their books (FR03)
+                booksSection(books, orderedBy: allBooks, feedID: feedID)
             }
             .searchable(text: $searchText, prompt: "Search books")
             .accessibilityRotor("Books") {
@@ -384,7 +360,11 @@ struct LibraryView: View {
             .accessibilityRotor("Folders") {
                 ForEach(folders) { folder in
                     AccessibilityRotorEntry(
-                        "\(folder.name), \(libraryViewModel.bookCount(inFolderTree: folder.fullPath)) books",
+                        FolderRow.accessibilityLabel(
+                            name: folder.name,
+                            bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath),
+                            isFeed: feedFolders.holdsFeed(folder)
+                        ),
                         id: folder.id
                     )
                 }
@@ -428,6 +408,20 @@ struct LibraryView: View {
                 }
                 .accessibilityLabel("New book from text")
                 .accessibilityHint("Create a new book by pasting or typing text")
+
+                // Library > Add Feed… for this window alone, which it names
+                // as a shortcut names its window (FR03).
+                Button {
+                    var userInfo: [AnyHashable: Any] = [:]
+                    if let hostWindow {
+                        userInfo["sourceWindow"] = hostWindow
+                    }
+                    NotificationCenter.default.post(name: .addFeed, object: nil, userInfo: userInfo)
+                } label: {
+                    Label(FeedWording.addFeedToolbarTitle, systemImage: "dot.radiowaves.up.forward")
+                }
+                .accessibilityLabel(FeedWording.addFeedButtonLabel)
+                .accessibilityHint(FeedWording.addFeedButtonHint)
 
                 // Edit mode toggle
                 Button {
@@ -560,6 +554,16 @@ struct LibraryView: View {
         // The Transcribe Audio sheet the rows' commands and the offers after
         // imports open, and the rows' transcription notes kept current (FR05).
         .modifier(LibraryTranscriptionSupport(presenter: transcription, library: libraryViewModel, hostWindow: hostWindow))
+        // Library > Add Feed…, the Add Feed sheet, and the notices after
+        // the feed commands (FR03).
+        .modifier(LibraryFeedsWindowSupport(
+            presenter: feedPresenter,
+            feedFolders: feedFolders,
+            library: libraryViewModel,
+            hostWindow: hostWindow,
+            shownFolderPath: category == .folders ? currentFolderPath : nil,
+            takesCommand: takesCommand
+        ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {
@@ -829,6 +833,36 @@ struct LibraryView: View {
     ///     the list shows a folder's manual order, that whole order, which
     ///     each row's Move Up and Move Down follow.
     private func bookRows(_ books: [Book], orderedBy allBooks: [Book]) -> some View {
+        let context = bookRowContext(books, orderedBy: allBooks)
+        return ForEach(books) { book in
+            bookRow(book, context: context)
+        }
+        .onMove(perform: dragReorderAction)
+    }
+
+    /// What every book row of one drawing of the list shares, made once for
+    /// all of them (PERF28): the selection and its cloud commands, each
+    /// book's moves in the manual order shown, and what the rows' commands
+    /// do.
+    private struct BookRowContext {
+        /// Every selected book, by either selection.
+        let selectedIDs: Set<UUID>
+        /// The selected books the list shows, in its order.
+        let selection: [Book]
+        /// The cloud commands of `selection`.
+        let selectionCloudCommands: [LibraryCloudCommand]
+        /// Each book's moves in the manual order the list shows, by ID;
+        /// empty when it shows none.
+        let manualMoves: [UUID: LibraryManualMoves]
+        /// What the rows' commands do.
+        let actions: LibraryBookRowActions
+    }
+
+    /// The context the rows of `books` share, for a list whose location
+    /// shows `allBooks`: Move Up and Move Down follow that whole order only
+    /// where `offersManualMoves`, as nowhere a feed's items are listed by
+    /// date (FR03).
+    private func bookRowContext(_ books: [Book], orderedBy allBooks: [Book], offersManualMoves: Bool = true) -> BookRowContext {
         // The selection in list order, and its cloud commands, made once
         // for all the rows that belong to it.
         let selectedIDs = effectiveSelection
@@ -841,40 +875,25 @@ struct LibraryView: View {
         )
         // Every book's moves in the folder's manual order, read from the
         // order shown rather than by sorting the folder again for each row.
-        let manualMoves = reorderableFolder == nil ? [:] : LibraryManualMoves.moves(in: allBooks)
-        let actions = rowActions
-        return ForEach(books) { book in
-            bookRow(
-                book,
-                selectedIDs: selectedIDs,
-                selection: selection,
-                selectionCloudCommands: selectionCloudCommands,
-                manualMoves: manualMoves,
-                actions: actions
-            )
-        }
-        .onMove(perform: dragReorderAction)
+        let manualMoves = reorderableFolder == nil || !offersManualMoves ? [:] : LibraryManualMoves.moves(in: allBooks)
+        return BookRowContext(
+            selectedIDs: selectedIDs,
+            selection: selection,
+            selectionCloudCommands: selectionCloudCommands,
+            manualMoves: manualMoves,
+            actions: rowActions
+        )
     }
 
     /// One book's row, with its context menu and its VoiceOver actions,
     /// which share the books they act on and the cloud commands (FR02).
     /// - Parameters:
     ///   - book: The row's book.
-    ///   - selectedIDs: Every selected book, by either selection.
-    ///   - selection: The selected books the list shows, in its order.
-    ///   - selectionCloudCommands: The cloud commands of `selection`.
-    ///   - manualMoves: Each book's moves in the manual order the list
-    ///     shows, by ID; empty when it shows none.
-    ///   - actions: What the row's commands do.
-    private func bookRow(
-        _ book: Book,
-        selectedIDs: Set<UUID>,
-        selection: [Book],
-        selectionCloudCommands: [LibraryCloudCommand],
-        manualMoves: [UUID: LibraryManualMoves],
-        actions: LibraryBookRowActions
-    ) -> some View {
-        let targets = commandTargets(for: book, selectedIDs: selectedIDs, selection: selection)
+    ///   - context: What the list's book rows share.
+    ///   - feedActions: The commands of the feed item the book was
+    ///     downloaded from, in its feed's folder (FR03).
+    private func bookRow(_ book: Book, context: BookRowContext, feedActions: [FeedItemAction] = []) -> some View {
+        let targets = commandTargets(for: book, selectedIDs: context.selectedIDs, selection: context.selection)
         let isSelectionRow = targets.count > 1
         return LibraryBookListRow(
             book: book,
@@ -886,7 +905,7 @@ struct LibraryView: View {
             isKeptOnThisMac: cloudStates.listsAsKept(book.id, in: keptBooks),
             targets: targets,
             cloudCommands: isSelectionRow
-                ? selectionCloudCommands
+                ? context.selectionCloudCommands
                 : LibraryCloudCommand.commands(
                     for: targets,
                     isSelection: false,
@@ -894,15 +913,161 @@ struct LibraryView: View {
                     kept: keptBooks.bookIDs
                 ),
             // Move Up and Move Down move the row's own book alone (TODO A06).
-            manualMoves: isSelectionRow ? nil : manualMoves[book.id],
+            manualMoves: isSelectionRow ? nil : context.manualMoves[book.id],
             removalPreferences: removalPreferences,
             livePosition: libraryViewModel.livePositions.entry(for: book.id),
             transcriptionCommands: LibraryTranscriptionCommand.commands(for: targets, isTranscribed: transcribedBooks.contains),
             transcriptionNote: transcribedBooks.note(for: book.id),
-            actions: actions
+            // The item's commands act on the row's own book alone.
+            feedActions: isSelectionRow ? [] : feedActions,
+            actions: context.actions
         )
         .equatable()
         .tag(book.id)
+    }
+
+    // MARK: - Folders, Feeds, and Books Sections
+
+    /// The Folders section: a row for each of `subfolders`, which opens the
+    /// folder, with the folder commands in its context menu. A feed's folder
+    /// says "Feed" after its name, and offers its feed's commands in its
+    /// context menu and as its VoiceOver actions (FR03).
+    private func foldersSection(_ subfolders: [BookFolder]) -> some View {
+        Section {
+            ForEach(subfolders) { folder in
+                let feedActions = feedActions(forFolder: folder)
+                Button {
+                    currentFolderPath = folder.fullPath
+                } label: {
+                    FolderRow(
+                        folder: folder,
+                        bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath),
+                        isFeed: !feedActions.isEmpty
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityAction(.default) {
+                    currentFolderPath = folder.fullPath
+                }
+                .accessibilityActions {
+                    ForEach(feedActions) { action in
+                        Button(action.title) { performFeedAction(action) }
+                    }
+                }
+                .contextMenu {
+                    folderMenu(folder)
+                    if !feedActions.isEmpty {
+                        Divider()
+                        ForEach(feedActions) { action in
+                            Button(action.title, role: action.role) { performFeedAction(action) }
+                        }
+                    }
+                }
+            }
+        } header: {
+            Text("Folders")
+                .accessibilityAddTraits(.isHeader)
+        }
+    }
+
+    /// A folder row's context menu: Rename, Move, and Delete.
+    @ViewBuilder
+    private func folderMenu(_ folder: BookFolder) -> some View {
+        Button("Rename Folder...") {
+            folderToRename = folder
+            renameFolderText = folder.name
+            showRenameFolderSheet = true
+        }
+        Button("Move Folder...") {
+            folderToMove = folder
+            showMoveFolderSheet = true
+        }
+        Divider()
+        Button("Delete Folder...", role: .destructive) {
+            if libraryViewModel.folderHasContents(folder) {
+                libraryViewModel.pendingDeleteFolder = folder
+                libraryViewModel.showDeleteFolderDialog = true
+            } else {
+                // Empty folder — just delete it
+                libraryViewModel.removeFolder(folder)
+            }
+        }
+    }
+
+    /// The Books section of the books the list shows, or, in a feed's
+    /// folder (`feedID`), the feed's items with the downloaded ones as their
+    /// books, newest first, then the folder's other books (FR03). A feed's
+    /// items are listed by date, so their rows offer no Move Up or Move
+    /// Down and can't be dragged.
+    @ViewBuilder
+    private func booksSection(_ books: [Book], orderedBy allBooks: [Book], feedID: UUID?) -> some View {
+        if let feedID {
+            let context = bookRowContext(books, orderedBy: allBooks, offersManualMoves: false)
+            FeedFolderSections(
+                center: feedFolders.center,
+                feedID: feedID,
+                shownBooks: books,
+                folderBooks: allBooks,
+                search: searchText,
+                bookRow: { book, actions in bookRow(book, context: context, feedActions: actions) },
+                perform: performFeedItemAction
+            )
+        } else {
+            Section {
+                bookRows(books, orderedBy: allBooks)
+            } header: {
+                Text("Books (\(books.count))")
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
+    }
+
+    /// The feed whose folder the list shows, when it shows one (FR03).
+    private var shownFeedID: UUID? {
+        guard category == .folders, !currentFolderPath.isEmpty,
+              let folder = libraryViewModel.library.folders.first(where: { $0.fullPath == currentFolderPath }) else {
+            return nil
+        }
+        return feedFolders.feedID(inFolder: folder.id)
+    }
+
+    /// Opens the folder of the feed a Feeds row shows, as a folder's row
+    /// opens its folder, from the Folders view; a feed whose folder is gone
+    /// says so and opens its Feed Info, where another folder can be chosen
+    /// (FR03).
+    private func openFeed(_ row: FeedRowContent) {
+        guard let path = row.folderPath else {
+            // Feed Info is where another folder can be chosen.
+            announceToVoiceOver(FeedWording.folderMissing(title: row.title))
+            performFeedAction(FeedAction(command: .feedInfo, feedID: row.id, title: FeedWording.feedInfoTitle))
+            return
+        }
+        category = .folders
+        currentFolderPath = path
+    }
+
+    /// The commands of the feed whose folder `folder` is, or none for any
+    /// other folder (FR03).
+    private func feedActions(forFolder folder: BookFolder) -> [FeedAction] {
+        guard let feedID = feedFolders.feedID(inFolder: folder.id) else { return [] }
+        return FeedAction.actions(for: feedID, noun: .of(feedFolders.center.listedItems(of: feedID)))
+    }
+
+    /// What the feed commands chosen in this window work with (FR03).
+    private var feedCommandContext: FeedCommandContext {
+        FeedCommandContext(center: feedFolders.center, library: libraryViewModel, window: hostWindow)
+    }
+
+    /// Runs a feed's command from its row or its folder's row (FR03).
+    private func performFeedAction(_ action: FeedAction) {
+        feedPresenter.perform(action, in: feedCommandContext)
+    }
+
+    /// Runs a feed item's command from its row or its book's row: Open
+    /// downloads an item first, as a book in the cloud downloads before it
+    /// opens, its row saying how far the download has got (FR03).
+    private func performFeedItemAction(_ action: FeedItemAction) {
+        feedPresenter.perform(action, in: feedCommandContext)
     }
 
     // MARK: - Row Commands
@@ -963,7 +1128,8 @@ struct LibraryView: View {
             },
             performTranscriptionCommand: { command in
                 transcription.perform(command, library: libraryViewModel, window: hostWindow)
-            }
+            },
+            performFeedAction: performFeedItemAction
         )
     }
 

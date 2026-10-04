@@ -25,6 +25,41 @@ extension LibraryViewModel {
     /// directory that cannot be created fails with the file system's reason;
     /// either way the library is unchanged.
     func createFolderReturningOutcome(name: String, parentPath: String) -> OperationOutcome {
+        do {
+            try createFolderReturningFolder(name: name, parentPath: parentPath)
+            return .success(nil)
+        } catch {
+            return error.outcome
+        }
+    }
+
+    /// Why a folder could not be created: the library refused it, or its
+    /// directory could not be made. Either way the library is unchanged.
+    enum FolderCreationFailure: Error {
+        /// The library refused the folder, for the conflict given.
+        case refused(FolderOperationConflict)
+        /// The folder's directory could not be made, for the error given.
+        case directory(any Error)
+
+        /// The failure as an outcome, worded as the library's error alert
+        /// words every failed folder edit.
+        var outcome: OperationOutcome {
+            switch self {
+            case .refused(let conflict):
+                return LibraryViewModel.outcome(refusing: conflict, context: "Could not create folder")
+            case .directory(let error):
+                return .failure("Could not create folder", error)
+            }
+        }
+    }
+
+    /// Creates a folder and returns it, presenting nothing: what
+    /// `createFolderReturningOutcome(name:parentPath:)` does, for a caller
+    /// that goes on to use the new folder, such as a feed subscribing into a
+    /// folder of its own (FR03).
+    /// - Throws: `FolderCreationFailure`; the library is then unchanged.
+    @discardableResult
+    func createFolderReturningFolder(name: String, parentPath: String) throws(FolderCreationFailure) -> BookFolder {
         // Publish the folder only after its directory exists, matching book
         // moves and renames when storage is unavailable or a file collides.
         var proposed = library
@@ -32,16 +67,16 @@ extension LibraryViewModel {
         do {
             folder = try proposed.createFolderThrowing(name: name, parentPath: parentPath)
         } catch {
-            return Self.outcome(refusing: error, context: "Could not create folder")
+            throw .refused(error)
         }
         do {
             try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
-            library = proposed
-            save()
-            return .success(nil)
         } catch {
-            return .failure("Could not create folder", error)
+            throw .directory(error)
         }
+        library = proposed
+        save()
+        return folder
     }
 
     /// Remove a folder, moving its contents to the given destination path.

@@ -59,6 +59,28 @@ extension FeedCenter {
         store.updateItem(itemID, of: feedID) { $0.playedDate = nil }
     }
 
+    /// Marks every item the library lists of the feed `feedID` that is not
+    /// played yet played now, as Mark All Played does, in one change of its
+    /// record, so the record is written once; the delete-after-played rule
+    /// counts from now.
+    /// - Returns: How many items were marked.
+    @discardableResult
+    func markAllPlayed(of feedID: UUID) -> Int {
+        let now = environment.now()
+        var marked = 0
+        store.update(feedID) { record in
+            for index in record.items.indices
+            where record.items[index].deletedDate == nil && record.items[index].playedDate == nil {
+                record.items[index].playedDate = now
+                marked += 1
+            }
+        }
+        if marked > 0 {
+            requestSweep()
+        }
+        return marked
+    }
+
     // MARK: Deleting
 
     /// Deletes the download of the item `itemID` of the feed `feedID`, as

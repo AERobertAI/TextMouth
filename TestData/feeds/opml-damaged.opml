@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head>
+    <title>Exported with a bare ampersand</title>
+  </head>
+  <body>
+    <outline type="rss" text="Q&A Hour" xmlUrl="https://qa.example/feed"/>
+    <outline type="rss" text="Second Show" xmlUrl="https://second.example/feed"/>
+  </body>
+</opml>

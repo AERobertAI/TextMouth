@@ -70,4 +70,72 @@ extension LibraryViewModel: FeedLibraryHost {
     func openFeedBook(_ bookID: UUID) {
         readerOpener(bookID)
     }
+
+    /// Makes a folder for a new subscription to the feed titled `title`
+    /// inside the folder at `parentPath` ("" for the library's top level),
+    /// as New Folder makes one: the feed's title, made a folder name
+    /// (`FeedFolderNaming.baseName(for:)`), followed by " 2", " 3", and so on
+    /// while a folder of that name is there already.
+    /// - Throws: `FeedFolderError` when the parent folder is gone, or no
+    ///   folder could be made there.
+    func makeFeedFolder(named title: String, inParentPath parentPath: String) throws(FeedFolderError) -> UUID {
+        // A parent path naming no folder would leave the new folder outside
+        // the library's tree.
+        guard parentPath.isEmpty || library.existingFolder(equivalentTo: parentPath) != nil else {
+            throw FeedFolderError(message: FeedFolderNaming.parentMissingMessage)
+        }
+        let base = FeedFolderNaming.baseName(for: title)
+        for name in FeedFolderNaming.candidates(for: base) {
+            do {
+                return try createFolderReturningFolder(name: name, parentPath: parentPath).id
+            } catch {
+                switch error {
+                case .refused(.nameInUse):
+                    // Taken: try the next name.
+                    continue
+                default:
+                    throw FeedFolderError(message: error.outcome.failureMessage ?? FeedFolderNaming.notMadeMessage)
+                }
+            }
+        }
+        throw FeedFolderError(message: FeedFolderNaming.notMadeMessage)
+    }
+}
+
+// MARK: - Naming a Feed's Folder (FR03)
+
+/// How a new subscription's folder is named: after the feed, as a folder
+/// name may be written, told apart from folders already there by a number.
+enum FeedFolderNaming {
+    /// The longest name given, in characters: a feed's title can run long,
+    /// and a folder's name is also a directory's name on disk.
+    static let maximumLength = 80
+    /// How many numbered names are tried before giving up: " 2" to " 99".
+    static let maximumNumber = 99
+
+    /// What a new subscription's folder is called, before any number: the
+    /// feed's title as a folder name may hold it (`BookFolder.normalizedName`,
+    /// which turns "/" into "-"), cut to `maximumLength` characters at a
+    /// word where it can be, or "Feed" for a title no folder name can hold.
+    static func baseName(for title: String) -> String {
+        guard let normalized = BookFolder.normalizedName(title) else { return "Feed" }
+        guard normalized.count > maximumLength else { return normalized }
+        let cut = String(normalized.prefix(maximumLength))
+        // Cut at the last space, unless that leaves too little of the title.
+        if let space = cut.lastIndex(of: " "), cut.distance(from: cut.startIndex, to: space) >= maximumLength / 2 {
+            return BookFolder.normalizedName(String(cut[..<space])) ?? cut
+        }
+        return BookFolder.normalizedName(cut) ?? "Feed"
+    }
+
+    /// The names tried in turn for a folder called `base`: `base` itself,
+    /// then "`base` 2", "`base` 3", up to `maximumNumber`.
+    static func candidates(for base: String) -> [String] {
+        [base] + (2...maximumNumber).map { "\(base) \($0)" }
+    }
+
+    /// Why no folder was made when the folder chosen to hold it is gone.
+    static let parentMissingMessage = "The folder chosen to hold the feed's folder is no longer in the library. Choose another one."
+    /// Why no folder was made when no name could be used.
+    static let notMadeMessage = "TextMouth couldn't make a folder for this feed."
 }
