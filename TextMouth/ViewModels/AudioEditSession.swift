@@ -295,6 +295,34 @@ final class AudioEditSession: ObservableObject {
         return outcome
     }
 
+    /// The formats Export offers for the edited audio: MP3 only when an
+    /// installed ffmpeg is found and the setting allows it.
+    var exportFormats: [AudioExportFormat] {
+        AudioExportFormat.available(ffmpeg: library?.audioFilterEngine().ffmpeg)
+    }
+
+    /// Exports the edited audio as it stands, saved or not, to a new file at
+    /// `url` in `format`, with its chapter markers where the format holds
+    /// them, tagged with the book's title and author, telling `progress` how
+    /// far it is. The book's own file is left as it is. MP3 is encoded by the
+    /// installed ffmpeg.
+    /// - Throws: `AudioEditError.mp3NeedsFFmpeg` for MP3 without ffmpeg, or
+    ///   the render's errors.
+    func export(to url: URL, as format: AudioExportFormat, progress: (@Sendable (Double) -> Void)? = nil) async throws {
+        guard let library, let book = library.bookByID(bookID) else { throw AudioEditError.bookNotInLibrary }
+        let ffmpeg = library.audioFilterEngine().ffmpeg
+        guard !format.needsFFmpeg || ffmpeg != nil else { throw AudioEditError.mp3NeedsFFmpeg }
+        _ = try await AudioEditRenderer.render(
+            timeline,
+            sources: AudioEditComposition.Sources(base: base, package: place.package, scratch: scratch),
+            to: url,
+            format: format.renderFormat,
+            metadata: AudioRenderMetadata(title: book.title, author: book.author),
+            ffmpeg: ffmpeg,
+            progress: progress
+        )
+    }
+
     /// Ends the session: its use of the book ends, and its scratch folder is
     /// removed.
     func close() {

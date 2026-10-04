@@ -4,7 +4,8 @@ import AVFoundation
 
 /// A format the audio editor writes (FR04): AAC or Apple Lossless in an
 /// MPEG-4 file, which holds chapter markers the way TextMouth's parser
-/// reads them, or linear PCM in a CAF, WAVE, or AIFF file.
+/// reads them, linear PCM in a CAF, WAVE, or AIFF file, or, through an
+/// installed ffmpeg, MP3, which Core Audio can't encode.
 enum AudioRenderFormat: String, CaseIterable, Sendable {
     /// AAC in an MPEG-4 audio file (.m4a).
     case aacM4A
@@ -18,6 +19,8 @@ enum AudioRenderFormat: String, CaseIterable, Sendable {
     case pcmWAV
     /// Linear PCM in an AIFF file (.aiff).
     case pcmAIFF
+    /// MP3, encoded by an installed ffmpeg with LAME (.mp3).
+    case mp3
 
     /// The extension of a file written in this format.
     var fileExtension: String {
@@ -27,6 +30,7 @@ enum AudioRenderFormat: String, CaseIterable, Sendable {
         case .pcmCAF: return "caf"
         case .pcmWAV: return "wav"
         case .pcmAIFF: return "aiff"
+        case .mp3: return "mp3"
         }
     }
 
@@ -44,6 +48,7 @@ enum AudioRenderFormat: String, CaseIterable, Sendable {
         case .pcmCAF: return .caf
         case .pcmWAV: return .wav
         case .pcmAIFF: return .aiff
+        case .mp3: return .mp3
         }
     }
 
@@ -52,13 +57,16 @@ enum AudioRenderFormat: String, CaseIterable, Sendable {
     var isMPEG4: Bool {
         switch self {
         case .aacM4A, .aacM4B, .alacM4A: return true
-        case .pcmCAF, .pcmWAV, .pcmAIFF: return false
+        case .pcmCAF, .pcmWAV, .pcmAIFF, .mp3: return false
         }
     }
 
     /// Whether its samples are linear PCM.
     var isPCM: Bool {
-        !isMPEG4
+        switch self {
+        case .pcmCAF, .pcmWAV, .pcmAIFF: return true
+        case .aacM4A, .aacM4B, .alacM4A, .mp3: return false
+        }
     }
 
     /// The codec its samples are stored with.
@@ -67,17 +75,21 @@ enum AudioRenderFormat: String, CaseIterable, Sendable {
         case .aacM4A, .aacM4B: return kAudioFormatMPEG4AAC
         case .alacM4A: return kAudioFormatAppleLossless
         case .pcmCAF, .pcmWAV, .pcmAIFF: return kAudioFormatLinearPCM
+        case .mp3: return kAudioFormatMPEGLayer3
         }
     }
 
     /// The format a book's file named `name`, whose samples are stored as
     /// `stored`, is written back in when its edits are rendered: its own,
-    /// wherever TextMouth can write it, so the file keeps its name. A lossless
-    /// file without a writer of its kind (FLAC) becomes Apple Lossless; any
-    /// other becomes AAC in an .m4a file (MP3, which Core Audio cannot
-    /// encode, and raw AAC), as the research recommended.
-    static func inPlace(forFileNamed name: String, stored: AudioStreamBasicDescription) -> AudioRenderFormat {
+    /// wherever TextMouth can write it, so the file keeps its name; MP3 when
+    /// `ffmpeg` may write it. A lossless file without a writer of its kind
+    /// (FLAC) becomes Apple Lossless; any other becomes AAC in an .m4a file
+    /// (MP3 without ffmpeg, which Core Audio cannot encode, and raw AAC), as
+    /// the research recommended.
+    static func inPlace(forFileNamed name: String, stored: AudioStreamBasicDescription, ffmpeg: FFmpeg? = nil) -> AudioRenderFormat {
         switch (name as NSString).pathExtension.lowercased() {
+        case "mp3":
+            return ffmpeg == nil ? .aacM4A : .mp3
         case "m4b":
             return .aacM4B
         case "m4a", "alac":
@@ -151,6 +163,17 @@ struct AudioRenderSettings: Equatable, Sendable {
                 bitRate: nearestAACBitRate(to: target, sampleRate: rate, channels: channels),
                 bitsPerSample: 16, isFloat: false
             )
+        case .mp3:
+            // LAME takes the rates AAC takes; an MP3 keeps its own bit rate,
+            // and anything else gets 64 kbit/s a channel.
+            let channels = min(base.channelCount, 2)
+            let target = stored.mFormatID == kAudioFormatMPEGLayer3
+                ? base.bitRate ?? Double(bitRatePerChannel * channels)
+                : Double(bitRatePerChannel * channels)
+            return AudioRenderSettings(
+                format: format, sampleRate: RecordingEncoder.outputSampleRate(for: base.sampleRate), channels: channels,
+                bitRate: Int(target.rounded()), bitsPerSample: 16, isFloat: false
+            )
         case .alacM4A:
             let depth = !isFloat && [16, 20, 24, 32].contains(bits) ? bits : (isFloat ? 24 : 16)
             return AudioRenderSettings(
@@ -213,7 +236,7 @@ struct AudioRenderSettings: Equatable, Sendable {
             AVNumberOfChannelsKey: channels,
         ]
         switch format {
-        case .aacM4A, .aacM4B:
+        case .aacM4A, .aacM4B, .mp3:
             if let bitRate { settings[AVEncoderBitRateKey] = bitRate }
         case .alacM4A:
             settings[AVEncoderBitDepthHintKey] = bitsPerSample
@@ -430,8 +453,12 @@ enum AudioEditRenderer {
         format: AudioRenderFormat,
         settings requested: AudioRenderSettings? = nil,
         metadata: AudioRenderMetadata,
+        ffmpeg: FFmpeg? = nil,
         progress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> Outcome {
+        if format == .mp3 {
+            return try await renderMP3(timeline, sources: sources, to: destination, metadata: metadata, ffmpeg: ffmpeg, progress: progress)
+        }
         let made = try await AudioEditComposition.make(timeline, sources: sources)
         let standard = AudioRenderSettings.make(format, for: sources.base)
         let settings = requested ?? standard
@@ -455,6 +482,47 @@ enum AudioEditRenderer {
         return Outcome(frames: made.frames, copiedSamples: false)
     }
 
+    /// Renders `timeline` as MP3 at `destination`: to 32-bit float PCM first,
+    /// in the scratch folder, then encoded by `ffmpeg` with the timeline's
+    /// chapter markers as ID3 chapter frames.
+    /// - Throws: `AudioEditError.mp3NeedsFFmpeg` without ffmpeg, the render's
+    ///   errors, or ffmpeg's.
+    private static func renderMP3(
+        _ timeline: AudioEditTimeline,
+        sources: AudioEditComposition.Sources,
+        to destination: URL,
+        metadata: AudioRenderMetadata,
+        ffmpeg: FFmpeg?,
+        progress: (@Sendable (Double) -> Void)?
+    ) async throws -> Outcome {
+        guard let ffmpeg else { throw AudioEditError.mp3NeedsFFmpeg }
+        let settings = AudioRenderSettings.make(.mp3, for: sources.base)
+        let intermediate = sources.scratch.appendingPathComponent(".\(UUID().uuidString).mp3-source.caf")
+        defer { try? FileManager.default.removeItem(at: intermediate) }
+        let rendered = try await render(
+            timeline,
+            sources: sources,
+            to: intermediate,
+            format: .pcmCAF,
+            settings: AudioRenderSettings.floatCAF(for: sources.base),
+            metadata: metadata,
+            progress: { progress?($0 / 2) }
+        )
+        try? FileManager.default.removeItem(at: destination)
+        try await ffmpeg.encodeMP3(
+            intermediate,
+            to: destination,
+            bitRate: settings.bitRate ?? AudioRenderSettings.bitRatePerChannel,
+            sampleRate: settings.sampleRate,
+            channels: settings.channels,
+            metadata: metadata,
+            chapters: chapterList(of: timeline, leadingTitle: metadata.title),
+            scratch: sources.scratch
+        )
+        progress?(1)
+        return Outcome(frames: rendered.frames, copiedSamples: false)
+    }
+
     /// Whether `timeline`'s samples can be copied as `base` stores them into
     /// a file of `format`, as the type describes.
     static func canCopySamples(of timeline: AudioEditTimeline, base: AudioEditBase, into format: AudioRenderFormat) -> Bool {
@@ -469,7 +537,7 @@ enum AudioEditRenderer {
         case .pcmCAF: return true
         case .pcmWAV: return !isBigEndian
         case .pcmAIFF: return isBigEndian && !isFloat
-        case .aacM4A, .aacM4B, .alacM4A: return false
+        case .aacM4A, .aacM4B, .alacM4A, .mp3: return false
         }
     }
 

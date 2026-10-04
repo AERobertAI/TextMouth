@@ -42,6 +42,9 @@ enum AudioEditBookRender {
         /// Makes what renders filters and gain changes for edits whose
         /// stretches come from the sources given; nil refuses them.
         let makeProcessor: AudioEditProcessorFactory
+        /// The installed ffmpeg TextMouth may use, which keeps an MP3 book's
+        /// file MP3; nil writes it as AAC in an .m4a file.
+        let ffmpeg: FFmpeg?
         /// Asked just before the book's file is replaced: false, as when the
         /// book was opened in a reader meanwhile, stops the render with
         /// `AudioEditError.bookIsOpen`.
@@ -128,7 +131,11 @@ enum AudioEditBookRender {
             try await timeline.apply(entry.edit, processor: processor)
         }
         let current = baseFile == request.audioFile ? base : try await AudioEditBase.load(bookFileURL, name: request.audioFile)
-        let format = AudioRenderFormat.inPlace(forFileNamed: bookFileURL.lastPathComponent, stored: current.format)
+        let format = AudioRenderFormat.inPlace(
+            forFileNamed: bookFileURL.lastPathComponent,
+            stored: current.format,
+            ffmpeg: request.ffmpeg
+        )
         let folder = bookFileURL.deletingLastPathComponent()
         let newName = format.fileName(replacing: bookFileURL.lastPathComponent)
         let destination = newName == bookFileURL.lastPathComponent
@@ -142,13 +149,17 @@ enum AudioEditBookRender {
             to: staged,
             format: format,
             metadata: request.metadata,
+            ffmpeg: request.ffmpeg,
             progress: progress
         )
 
         // 3. The rendered file, read back.
         let written = try await AudioEditBase.load(staged, name: request.audioFile)
         let writtenSeconds = Double(written.frames) / written.sampleRate
-        guard abs(writtenSeconds - timeline.duration) <= Self.lengthTolerance else {
+        // An MP3 measures longer than its sound by LAME's delay and padding.
+        let excess = writtenSeconds - timeline.duration
+        let allowed = format == .mp3 ? FFmpeg.mp3Excess(sampleRate: written.sampleRate) : 0
+        guard excess >= -Self.lengthTolerance, excess <= allowed + Self.lengthTolerance else {
             throw AudioEditError.renderFailed(
                 "the rendered file lasts \(writtenSeconds) seconds, not \(timeline.duration)"
             )

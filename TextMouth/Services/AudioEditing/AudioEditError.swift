@@ -36,6 +36,8 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
     /// The audio could not be written, for the reason given: an
     /// AVFoundation error's domain and code, for the debug log.
     case renderFailed(String)
+    /// MP3 was asked for without an installed ffmpeg TextMouth may use.
+    case mp3NeedsFFmpeg
 
     var errorDescription: String? {
         switch self {
@@ -68,6 +70,8 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
                 + "Undo or redo back to the audio as last saved."
         case .renderFailed:
             return "The edited audio couldn't be written."
+        case .mp3NeedsFFmpeg:
+            return "MP3 needs ffmpeg, which isn't installed, or is turned off in Storage settings."
         }
     }
 }

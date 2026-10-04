@@ -109,7 +109,8 @@ extension LibraryViewModel {
         let file = audioFile ?? place.bookFile
         let global = AudioOriginalPolicy.global(in: TextMouthRuntime.current.preferences)
         let metadata = AudioRenderMetadata(title: book.title, author: book.author)
-        let makeProcessor = audioEditProcessorFactory()
+        let engine = audioFilterEngine()
+        let makeProcessor = audioEditProcessorFactory(engine: engine)
         let activity = audioEditActivity
 
         // The use begins before the render reads the history, so the
@@ -129,6 +130,7 @@ extension LibraryViewModel {
                         metadata: metadata,
                         scratch: try AudioEditScratch.folder(for: bookID),
                         makeProcessor: makeProcessor,
+                        ffmpeg: engine.ffmpeg,
                         mayReplace: { !activity.isOpenInReader(bookID) }
                     ),
                     now: now,
@@ -173,12 +175,13 @@ extension LibraryViewModel {
         )
     }
 
-    /// Makes what renders the filters and gain changes of a book's edits:
-    /// the installed ffmpeg when the setting allows and one is found, or
-    /// TextMouth's own filters (`audioFilterEngine`), chosen now, so
-    /// one session or save runs every filter on the same engine.
-    func audioEditProcessorFactory() -> AudioEditProcessorFactory {
-        let engine = audioFilterEngine()
+    /// Makes what renders the filters and gain changes of a book's edits on
+    /// `engine`, or, when nil, on the one in force now: the installed ffmpeg
+    /// when the setting allows and one is found, or TextMouth's own filters
+    /// (`audioFilterEngine`). It is chosen once, so one session or save runs
+    /// every filter on the same engine.
+    func audioEditProcessorFactory(engine: AudioFilterEngine? = nil) -> AudioEditProcessorFactory {
+        let engine = engine ?? audioFilterEngine()
         return { sources in AudioFilterProcessor(sources: sources, engine: engine) }
     }
 
