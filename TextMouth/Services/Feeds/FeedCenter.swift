@@ -7,10 +7,16 @@ import Foundation
 struct FeedEnvironment {
     /// Where the feeds' records are kept.
     var records: FeedStore.Location
+    /// Where a record that can't be saved is reported: the app's center, or
+    /// a test's own.
+    var failureCenter: PersistenceFailureCenter
     /// Where this Mac's fetch details are kept, or nil to keep them in memory.
     var fetchStateFolder: URL?
     /// The network.
     var network: FeedNetwork
+    /// Where Add Feed searches for podcasts: Apple's directory, or a test's
+    /// stub server.
+    var directory: FeedDirectory
     /// The store the feed settings are read from.
     var preferences: UserDefaults
     /// The time now.
@@ -47,8 +53,10 @@ struct FeedEnvironment {
     @MainActor static var app: FeedEnvironment {
         FeedEnvironment(
             records: .app,
+            failureCenter: .shared,
             fetchStateFolder: MachineLocalPaths.feedCaches.appendingPathComponent("Fetch State", isDirectory: true),
             network: .app,
+            directory: .apple,
             preferences: TextMouthRuntime.current.preferences,
             now: { Date() },
             sleep: { try await Task.sleep(for: $0) },
@@ -263,7 +271,7 @@ final class FeedCenter: ObservableObject {
     /// An engine working with `environment`, started by `start(library:)`.
     init(environment: FeedEnvironment) {
         self.environment = environment
-        store = FeedStore(location: environment.records)
+        store = FeedStore(location: environment.records, failureCenter: environment.failureCenter)
         fetchStates = FeedFetchStates(folder: environment.fetchStateFolder)
         forwarding = [
             store.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() },
@@ -276,6 +284,11 @@ final class FeedCenter: ObservableObject {
                     .compactMap { $0.userInfo?[ReadingStatsService.finishedBookIDKey] as? UUID }
                     .sink { [weak self] bookID in self?.bookDidFinish(bookID) }
             )
+            // Books Finished asks this engine what kind of book one is, as
+            // it knows which audiobooks are its episodes.
+            (source as? ReadingStatsService)?.finishedBookKind = { [weak self] bookID in
+                self?.finishedBookKind(of: bookID)
+            }
         }
     }
 
@@ -288,8 +301,9 @@ final class FeedCenter: ObservableObject {
 
     /// Starts the engine in `library`, once: reads the records and this
     /// Mac's fetch details off the main thread, then, when the engine works
-    /// on its own, refreshes every feed if the settings say to, and starts
-    /// the scheduled refreshes. Returns at once.
+    /// on its own, asks again for the downloads TextMouth quit during,
+    /// refreshes every feed if the settings say to, and starts the scheduled
+    /// refreshes. Returns at once.
     /// - Returns: The work started, which tests may await.
     @discardableResult
     func start(library: FeedLibraryHost) -> Task<Void, Never>? {
@@ -301,6 +315,9 @@ final class FeedCenter: ObservableObject {
             await fetchStates.load()
             await downloads.sweepLeftovers()
             guard environment.worksOnItsOwn else { return }
+            // The downloads under way when TextMouth last quit go on, the
+            // one that ran from where it stopped.
+            await downloads.resumeDownloadsSavedAtQuit()
             // A reader closing lets a played download it held be deleted.
             lifecycleObservers.append(
                 library.feedBooksOpenInReadersChanges.sink { [weak self] _ in self?.requestSweep() }
@@ -378,6 +395,16 @@ final class FeedCenter: ObservableObject {
     /// How this Mac last checked the feed `feedID`.
     func fetchState(of feedID: UUID) -> FeedFetchState {
         fetchStates.state(of: feedID)
+    }
+
+    // MARK: Searching
+
+    /// Searches the podcast directory for `term`, as Add Feed's Search
+    /// does, and returns the podcasts it found that name a feed, in the
+    /// directory's order.
+    /// - Throws: `FeedSearchError`.
+    func searchDirectory(for term: String) async throws -> [FeedDirectoryResult] {
+        try await environment.directory.search(term, through: environment.network)
     }
 
     // MARK: Subscribing
@@ -538,11 +565,17 @@ final class FeedCenter: ObservableObject {
     }
 
     /// Announces the end of one feed's refresh, and, with automatic downloads
-    /// on, downloads the items it found new.
+    /// on, downloads the items it found new. A refresh TextMouth made by
+    /// itself that was not put off reached a network without data limits,
+    /// which such a refresh needs, so the automatic downloads one put off
+    /// are tried again first.
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
         requestSweep()
         guard settings.autoDownload else { return }
+        if report.origin.isDiscretionary, report.outcome != .skipped {
+            downloads.retryPutOffDownloads()
+        }
         for itemID in report.newItemIDs {
             downloads.download(itemID, of: report.feedID, origin: .automatic)
         }

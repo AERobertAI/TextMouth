@@ -448,7 +448,7 @@ extension FeedWording {
         "Use the global setting (\(globalCaption))"
     }
     /// A "Use the global setting" checkbox's hint.
-    static let useGlobalHint = "When checked, this feed follows the setting in Preferences, Feeds; uncheck it to give the feed its own"
+    static let useGlobalHint = "When checked, this feed follows the setting in Settings, Feeds; uncheck it to give the feed its own"
     /// The web page's label in Show Description.
     static let webPageLabel = "Web page"
     /// The description text area's spoken label.

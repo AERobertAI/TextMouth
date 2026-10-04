@@ -69,7 +69,7 @@ final class PersistenceFailureCenterTests: XCTestCase {
     func testEverySubsystemButOriginalFileCleanupHoldsUnsavedChanges() {
         XCTAssertEqual(
             PersistenceSubsystem.allCases.filter(\.holdsUnsavedChanges),
-            [.libraryIndex, .bookRecord, .statistics, .configuration, .substitutions]
+            [.libraryIndex, .bookRecord, .statistics, .configuration, .substitutions, .feedRecords]
         )
     }
 
@@ -260,6 +260,10 @@ final class PersistenceFailureCenterTests: XCTestCase {
             (.statistics, "Listening statistics could not be saved: The volume is read-only."),
             (.configuration, "Settings could not be saved: The volume is read-only."),
             (.substitutions, "Text substitution rules could not be saved: The volume is read-only."),
+            (
+                .feedRecord(feedID: book, title: "Ledger Lines"),
+                "Changes to the feed “Ledger Lines” could not be saved: The volume is read-only."
+            ),
         ]
         for (subject, expected) in expectations {
             let center = PersistenceFailureCenter()
@@ -289,6 +293,11 @@ final class PersistenceFailureCenterTests: XCTestCase {
             PersistenceSubsystem.bookRecord.othersSentence(count: 1),
             "Changes to 1 other book could not be saved either."
         )
+        XCTAssertEqual(
+            PersistenceSubsystem.feedRecords.othersSentence(count: 2),
+            "Changes to 2 other feeds could not be saved either."
+        )
+        XCTAssertEqual(PersistenceSubsystem.feedRecords.retryLabel, "Retry saving feed subscriptions")
         XCTAssertNil(PersistenceSubsystem.statistics.othersSentence(count: 0))
     }
 

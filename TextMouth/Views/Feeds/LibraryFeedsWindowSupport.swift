@@ -126,10 +126,18 @@ struct LibraryFeedsWindowSupport: ViewModifier {
     /// items, which one Library window in front shows.
     @ObservedObject var arrivals: FeedArrivals = .shared
 
+    /// The modifiers in four parts, applied in this order, each a function
+    /// of its own: the whole chain as one expression took the compiler about
+    /// eight seconds to type-check (board #1111), the slowest body in the
+    /// app, and near the limit past which it gives up.
     func body(content: Content) -> some View {
-        content
-            // The arrivals alert waits for a Library window in front: one
-            // that is key as the alert comes, or the first to become key.
+        withAlerts(withSheets(withMenuCommands(withArrivalsAlert(content))))
+    }
+
+    /// The arrivals alert, which waits for a Library window in front: one
+    /// that is key as the alert comes, or the first to become key.
+    private func withArrivalsAlert(_ view: some View) -> some View {
+        view
             .onReceive(arrivals.$pendingAlert) { _ in
                 claimArrivalsAlert()
             }
@@ -145,6 +153,12 @@ struct LibraryFeedsWindowSupport: ViewModifier {
             } message: { alert in
                 Text(alert.message)
             }
+    }
+
+    /// The Library menu's feed commands, which this window takes when it
+    /// takes commands.
+    private func withMenuCommands(_ view: some View) -> some View {
+        view
             .onReceive(NotificationCenter.default.publisher(for: .addFeed)) { notification in
                 guard takesCommand(notification) else { return }
                 showAddFeed()
@@ -161,6 +175,12 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 presenter.chooseOPMLDestination(in: context)
             }
+    }
+
+    /// The feed sheets: Import OPML, Add Feed, Feed Info, and an item's
+    /// description.
+    private func withSheets(_ view: some View) -> some View {
+        view
             .sheet(item: $presenter.opmlImport) { model in
                 OPMLImportSheet(
                     model: model,
@@ -200,6 +220,12 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                     presenter.itemDescription = nil
                 }
             }
+    }
+
+    /// The notice after a command, and the question before one that can't
+    /// be undone.
+    private func withAlerts(_ view: some View) -> some View {
+        view
             .alert(presenter.notice?.title ?? "", isPresented: isShowingNotice, presenting: presenter.notice) { _ in
                 Button("OK", role: .cancel) {}
             } message: { notice in

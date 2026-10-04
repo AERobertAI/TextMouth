@@ -93,10 +93,17 @@ extension FeedFetchError {
 /// again; cancelling forgets the download and any part of it. An item asked
 /// for while it waits or downloads is not asked for twice, and opening an
 /// item downloads it first and opens its book once it is in the library.
+///
+/// Quitting stops every download keeping its place (`stopForQuit()`, which
+/// `FeedQuitHold` holds the quit for): the one under way keeps what it
+/// downloaded as resume data, and the downloads asked for are listed in
+/// this Mac's resume folder, so the next launch asks for them again
+/// (`resumeDownloadsSavedAtQuit()`) and the one under way goes on from
+/// where it stopped.
 @MainActor
 final class FeedDownloadManager {
     /// Why a download was asked for.
-    enum Origin: Equatable, Sendable {
+    enum Origin: String, Codable, Equatable, Sendable {
         /// The listener asked: Download, or opening an item.
         case listener
         /// A refresh found the item new, with automatic downloads on: it waits
@@ -144,6 +151,16 @@ final class FeedDownloadManager {
     private(set) var current: Request?
     /// The task running the download under way.
     private var currentTask: Task<Void, Never>?
+    /// The transfer of the download under way, while its file arrives,
+    /// which quitting stops keeping what it downloaded.
+    private var currentTransfer: FeedTransferHandle?
+    /// Whether TextMouth is quitting (`stopForQuit()`): no download starts,
+    /// and none that stops forgets its place.
+    private(set) var isStoppedForQuit = false
+    /// The automatic downloads a network with data limits put off, in the
+    /// order they were, waiting for a refresh TextMouth makes by itself to
+    /// reach a network without them (`retryPutOffDownloads()`).
+    private(set) var putOff: [Request] = []
     /// The whole percent last published for the download under way.
     private var publishedPercent = -1
     /// Runs imports in order, off the main thread.
@@ -169,9 +186,12 @@ final class FeedDownloadManager {
     /// waiting; one the listener opens comes first, and opens once its book
     /// is in the library. An item downloaded already, whose book is in the
     /// library, opens at once when asked. Asking again for an item that
-    /// waits or downloads only adds what the new request adds.
+    /// waits or downloads only adds what the new request adds, and asking
+    /// for one a network with data limits put off takes the place of that
+    /// request. Nothing is asked for while TextMouth quits.
     func download(_ itemID: FeedItem.ID, of feedID: UUID, origin: Origin, opening: Bool = false) {
-        guard let item = store.record(of: feedID)?.item(itemID), item.deletedDate == nil else { return }
+        guard !isStoppedForQuit, let item = store.record(of: feedID)?.item(itemID), item.deletedDate == nil else { return }
+        putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
         if let bookID = item.state.bookID, library()?.feedBook(withID: bookID) != nil {
             if opening {
                 library()?.openFeedBook(bookID)
@@ -202,8 +222,10 @@ final class FeedDownloadManager {
     }
 
     /// Stops the download of the item `itemID`, or takes it out of the
-    /// queue, forgetting any part downloaded; the item is not downloaded.
+    /// queue, or out of the downloads put off, forgetting any part
+    /// downloaded; the item is not downloaded.
     func cancel(_ itemID: FeedItem.ID, of feedID: UUID) {
+        putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
         if let waiting = queue.firstIndex(where: { $0.feedID == feedID && $0.itemID == itemID }) {
             queue.remove(at: waiting)
             store.updateItem(itemID, of: feedID) { $0.state = .notDownloaded }
@@ -219,20 +241,34 @@ final class FeedDownloadManager {
             || queue.contains { $0.feedID == feedID && $0.itemID == itemID }
     }
 
-    /// Takes every waiting and running download of the feed `feedID` away,
-    /// as when it is no longer subscribed.
+    /// Takes every waiting, running, and put-off download of the feed
+    /// `feedID` away, as when it is no longer subscribed.
     func cancelAll(of feedID: UUID) {
         queue.removeAll { $0.feedID == feedID }
+        putOff.removeAll { $0.feedID == feedID }
         if current?.feedID == feedID {
             currentTask?.cancel()
         }
     }
 
+    /// Asks again for the automatic downloads a network with data limits put
+    /// off, in their order, as a refresh TextMouth made by itself, which
+    /// such a network refuses too, has just reached the network: it has no
+    /// data limits now. One refused again is put off again.
+    func retryPutOffDownloads() {
+        let waiting = putOff
+        putOff.removeAll()
+        for request in waiting {
+            download(request.itemID, of: request.feedID, origin: .automatic)
+        }
+    }
+
     // MARK: Running
 
-    /// Starts the next download when none is under way.
+    /// Starts the next download when none is under way, unless TextMouth
+    /// quits.
     private func startNext() {
-        guard current == nil, !queue.isEmpty else { return }
+        guard !isStoppedForQuit, current == nil, !queue.isEmpty else { return }
         let request = queue.removeFirst()
         current = request
         publishedPercent = -1
@@ -267,11 +303,24 @@ final class FeedDownloadManager {
                 library()?.openFeedBook(book.id)
             }
         } catch {
+            if isStoppedForQuit {
+                // Quitting stopped it: it keeps its place, which
+                // `stopForQuit()` saves, and its item stays as it was.
+                DiagnosticLog.trace(.feeds, "a download under way stopped for quitting, keeping its place")
+                return
+            }
             let failure = Self.downloadError(error)
             if failure == .transfer(.cancelled) {
                 store.updateItem(request.itemID, of: request.feedID) { $0.state = .notDownloaded }
                 DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_CANCELLED: \(item.title) (\(feed.title))")
                 return
+            }
+            if failure == .transfer(.constrainedNetwork), request.origin == .automatic,
+               !putOff.contains(where: { $0.feedID == request.feedID && $0.itemID == request.itemID }) {
+                // A network with data limits put it off: its failure says it
+                // waits, and it is tried again once one without them is
+                // reached.
+                putOff.append(request)
             }
             let message = failure.message(about: item.title)
             store.updateItem(request.itemID, of: request.feedID) { $0.state = .failed(message) }
@@ -301,13 +350,17 @@ final class FeedDownloadManager {
         let resumeData = try? Data(contentsOf: resumeFile)
         let holding = environment.holdingFolder.appendingPathComponent("\(UUID().uuidString).download")
         let estimate = enclosure.length
+        let transfer = FeedTransferHandle()
+        currentTransfer = transfer
+        defer { currentTransfer = nil }
         let downloaded: FeedDownloadedFile
         do {
             downloaded = try await environment.network.download(
                 enclosure.url,
                 resumingFrom: resumeData,
                 to: holding,
-                discretionary: request.origin == .automatic
+                discretionary: request.origin == .automatic,
+                handle: transfer
             ) { written, expected in
                 // On the main queue, in the order the bytes arrived.
                 DispatchQueue.main.async {
@@ -315,7 +368,10 @@ final class FeedDownloadManager {
                 }
             }
         } catch let failure as FeedTransferFailure {
-            if let data = failure.resumeData, failure.error != .cancelled {
+            if failure.error == .cancelled, isStoppedForQuit {
+                // Quitting stopped it, and `stopForQuit()` keeps what it
+                // downloaded in the resume file.
+            } else if let data = failure.resumeData, failure.error != .cancelled {
                 Self.saveResumeData(data, to: resumeFile)
             } else {
                 try? FileManager.default.removeItem(at: resumeFile)
@@ -410,6 +466,79 @@ final class FeedDownloadManager {
         return BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: max(0, written), totalBytes: total)
     }
 
+    // MARK: Quitting
+
+    /// A download asked for when TextMouth quit, as the list of them in
+    /// this Mac's resume folder keeps it.
+    struct SavedDownload: Codable, Equatable, Sendable {
+        let feedID: UUID
+        let itemID: FeedItem.ID
+        let origin: Origin
+    }
+
+    /// Whether a download waits, runs, or was put off by a network with data
+    /// limits, which quitting keeps the place of.
+    var hasWork: Bool {
+        current != nil || !queue.isEmpty || !putOff.isEmpty
+    }
+
+    /// Where the downloads asked for when TextMouth quit are listed, beside
+    /// their resume data: this Mac's own, never synced.
+    var savedAtQuitFile: URL {
+        environment.resumeFolder.appendingPathComponent("Downloads at Quit.json")
+    }
+
+    /// Stops every download as TextMouth quits, keeping each one's place for
+    /// the next launch (`resumeDownloadsSavedAtQuit()`): every download asked
+    /// for, the one under way first and those a network with data limits put
+    /// off last, is listed in this Mac's resume folder, and then the one
+    /// under way stops, keeping what it downloaded as resume data when its
+    /// server allows. Nothing starts afterwards. Returns once both are
+    /// written. The list comes first, so a quit that stops waiting for the
+    /// resume data still finds every download again; an article, or an
+    /// import under way, is listed and starts over.
+    func stopForQuit() async {
+        guard !isStoppedForQuit else { return }
+        isStoppedForQuit = true
+        let pending = (current.map { [$0] } ?? []) + queue + putOff
+        guard !pending.isEmpty else { return }
+        let saved = pending.map { SavedDownload(feedID: $0.feedID, itemID: $0.itemID, origin: $0.origin) }
+        let list = savedAtQuitFile
+        await OffMainWork.run(on: .global(qos: .userInitiated)) { Self.saveList(saved, to: list) }
+        guard let running = current, let transfer = currentTransfer, let data = await transfer.stopKeepingResumeData() else {
+            DiagnosticLog.trace(.feeds, "quitting: \(saved.count) download(s) listed for the next launch, without resume data")
+            return
+        }
+        let file = resumeDataFile(for: running.itemID, of: running.feedID)
+        await OffMainWork.run(on: .global(qos: .userInitiated)) { Self.saveResumeData(data, to: file) }
+        DiagnosticLog.trace(.feeds, "quitting: \(saved.count) download(s) listed for the next launch, one with resume data")
+    }
+
+    /// Asks again for the downloads `stopForQuit()` listed when TextMouth
+    /// last quit, in their order and for the reasons first asked, and
+    /// forgets the list: each item still listed and not downloaded downloads
+    /// again, going on from its resume data when it has some. None opens
+    /// its book when done. The engine runs this once as it starts.
+    func resumeDownloadsSavedAtQuit() async {
+        let list = savedAtQuitFile
+        let saved = await OffMainWork.run(on: .global(qos: .utility)) { () -> [SavedDownload] in
+            defer { try? FileManager.default.removeItem(at: list) }
+            guard let data = try? Data(contentsOf: list) else { return [] }
+            return (try? JSONDecoder().decode([SavedDownload].self, from: data)) ?? []
+        }
+        for download in saved {
+            self.download(download.itemID, of: download.feedID, origin: download.origin)
+        }
+    }
+
+    /// Writes the list of downloads `saved` to `file`; a failure only means
+    /// the next launch asks for none of them.
+    nonisolated private static func saveList(_ saved: [SavedDownload], to file: URL) {
+        guard let data = try? JSONEncoder().encode(saved) else { return }
+        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? data.write(to: file, options: .atomic)
+    }
+
     // MARK: Files
 
     /// Where the resume data of the item `itemID` of the feed `feedID` is
@@ -422,7 +551,7 @@ final class FeedDownloadManager {
 
     /// Keeps `data` as resume data at `file`; a failure only means the next
     /// download starts over.
-    private static func saveResumeData(_ data: Data, to file: URL) {
+    nonisolated private static func saveResumeData(_ data: Data, to file: URL) {
         try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? data.write(to: file, options: .atomic)
     }
@@ -466,5 +595,62 @@ final class FeedDownloadManager {
             return .transfer(.cancelled)
         }
         return .importFailed(ImportFailure.reason(for: error))
+    }
+}
+
+// MARK: - Holding a Quit
+
+/// Holds a quit while the feed downloads keep their place (FR03). The
+/// application delegate asks it only once the quit is sure to go ahead,
+/// with nothing unsaved or Quit Anyway chosen, so a quit that leaves
+/// TextMouth open never stops a download.
+@MainActor
+enum FeedQuitHold {
+    /// The longest a quit waits for the downloads: producing resume data
+    /// takes a moment, and past this TextMouth quits anyway, the list of
+    /// downloads written already and the one under way starting over.
+    static let longestWait: Duration = .seconds(3)
+
+    /// Holds the quit while `downloads` stop keeping their place
+    /// (`FeedDownloadManager.stopForQuit()`), when any waits or runs, and
+    /// returns whether it holds it, for the delegate to answer
+    /// `.terminateLater`. `reply` is then called once, with true, as soon as
+    /// the downloads have kept their place or `longestWait` has passed.
+    static func hold(
+        _ downloads: FeedDownloadManager,
+        longestWait: Duration = FeedQuitHold.longestWait,
+        reply: @escaping @MainActor (Bool) -> Void
+    ) -> Bool {
+        guard downloads.hasWork, !downloads.isStoppedForQuit else { return false }
+        let answer = HeldQuitAnswer(reply)
+        Task {
+            await downloads.stopForQuit()
+            answer.give()
+        }
+        Task {
+            try? await Task.sleep(for: longestWait)
+            answer.give()
+        }
+        return true
+    }
+}
+
+/// The answer to one held quit, given once, by whichever of its waits ends
+/// first.
+@MainActor
+private final class HeldQuitAnswer {
+    /// Answers the quit, until it has been answered.
+    private var reply: ((Bool) -> Void)?
+
+    /// An answer given through `reply`.
+    init(_ reply: @escaping @MainActor (Bool) -> Void) {
+        self.reply = reply
+    }
+
+    /// Lets the quit go ahead, unless it was let go already.
+    func give() {
+        guard let reply else { return }
+        self.reply = nil
+        reply(true)
     }
 }

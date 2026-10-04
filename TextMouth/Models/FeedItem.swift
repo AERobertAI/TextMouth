@@ -252,6 +252,13 @@ struct FeedEnclosure: Codable, Equatable, Sendable {
     var isPlayable: Bool {
         kind != .other
     }
+
+    /// The file an item offers among the files it lists, `candidates`: the
+    /// first audio, the smaller download for a listener, else the first
+    /// video, else `fallback`. RSS, Atom, and JSON Feed items all choose so.
+    static func preferred(among candidates: [FeedEnclosure], otherwise fallback: FeedEnclosure?) -> FeedEnclosure? {
+        candidates.first { $0.kind == .audio } ?? candidates.first { $0.kind == .video } ?? fallback
+    }
 }
 
 /// What kind of file an enclosure is.
@@ -265,13 +272,13 @@ enum FeedMediaKind: String, Equatable, Sendable {
     /// download.
     case other
 
-    /// The extensions TextMouth imports as audio, the import pipeline's own.
-    static let audioExtensions = Set(BookFormat.audio.fileExtensions)
-
-    /// The extensions TextMouth imports from feeds as video played as audio.
-    /// Only feed downloads accept them (`FeedEpisodeImporter`): a video file
-    /// chosen in Open Book is still refused.
+    /// The extensions of video files, which TextMouth imports as audiobooks
+    /// whose sound alone plays, from feeds as from Open Book.
     static let videoExtensions: Set<String> = ["mp4", "m4v", "mov"]
+
+    /// The extensions of audio files: those the import pipeline takes as
+    /// audiobooks (`BookFormat.audio`), but for video's.
+    static let audioExtensions = Set(BookFormat.audio.fileExtensions).subtracting(videoExtensions)
 
     /// The kind of a file whose MIME type is `mimeType` and whose address is
     /// `url`: by the type's top-level part when it is audio or video, and

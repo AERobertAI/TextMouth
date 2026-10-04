@@ -22,6 +22,10 @@ struct ReadingStatsFigures: Equatable {
     var booksFinishedThisYear: Int
     /// Books finished ever.
     var booksFinishedAllTime: Int
+    /// Books finished in the year containing the instant, by kind (FR03).
+    var booksFinishedThisYearByKind = FinishedBookCounts()
+    /// Books finished ever, by kind (FR03).
+    var booksFinishedAllTimeByKind = FinishedBookCounts()
 }
 
 extension ReadingStatsFigures {
@@ -36,8 +40,75 @@ extension ReadingStatsFigures {
             allTime: service.allTimeListeningTime(at: now),
             currentStreakDays: service.currentStreak(at: now),
             booksFinishedThisYear: service.booksFinishedThisYear(at: now),
-            booksFinishedAllTime: service.stats.finishedBooks.count
+            booksFinishedAllTime: service.stats.finishedBooks.count,
+            booksFinishedThisYearByKind: service.booksFinishedThisYearByKind(at: now),
+            booksFinishedAllTimeByKind: service.booksFinishedAllTimeByKind
         )
+    }
+}
+
+// MARK: - Books Finished by Kind
+
+/// Books finished, counted by kind (FR03): text books, audiobooks, and
+/// podcast episodes. A book whose kind is not known, which only a book
+/// finished before TextMouth recorded kinds can be, counts in none of
+/// them, so a total may hold more than these three.
+struct FinishedBookCounts: Equatable {
+    var textBooks = 0
+    var audiobooks = 0
+    var episodes = 0
+
+    /// Counts given directly.
+    init(textBooks: Int = 0, audiobooks: Int = 0, episodes: Int = 0) {
+        self.textBooks = textBooks
+        self.audiobooks = audiobooks
+        self.episodes = episodes
+    }
+
+    /// The counts of `kinds`, a book whose kind is not known (nil) counting
+    /// in none.
+    init(kinds: [FinishedBookKind?]) {
+        for kind in kinds {
+            switch kind {
+            case .text?: textBooks += 1
+            case .audiobook?: audiobooks += 1
+            case .episode?: episodes += 1
+            case nil: break
+            }
+        }
+    }
+
+    /// How many books of a known kind there are.
+    var known: Int {
+        textBooks + audiobooks + episodes
+    }
+
+    /// The counts of `total` books as a listener hears them: each kind with
+    /// any books, in a fixed order, and the books of no known kind last, as
+    /// "other books", joined as a list is spoken: "4 text books, 2
+    /// audiobooks, and 1 podcast episode". Nil when there are no books, or
+    /// no kind is known, when the counts would say no more than `total`.
+    func breakdown(of total: Int) -> String? {
+        guard total > 0, known > 0 else { return nil }
+        let parts = [
+            (textBooks, "text book", "text books"),
+            (audiobooks, "audiobook", "audiobooks"),
+            (episodes, "podcast episode", "podcast episodes"),
+            (max(0, total - known), "other book", "other books"),
+        ]
+        .filter { count, _, _ in count > 0 }
+        .map { count, singular, plural in CountWording.phrase(count, singular: singular, plural: plural) }
+        return Self.spokenList(parts)
+    }
+
+    /// `parts` joined as a list is spoken: "a", "a and b", "a, b, and c".
+    private static func spokenList(_ parts: [String]) -> String {
+        switch parts.count {
+        case 0: return ""
+        case 1: return parts[0]
+        case 2: return "\(parts[0]) and \(parts[1])"
+        default: return parts.dropLast().joined(separator: ", ") + ", and " + (parts.last ?? "")
+        }
     }
 }
 
@@ -100,13 +171,9 @@ enum ReadingStatsTile: String, CaseIterable, Identifiable {
                 "Current listening streak: \($0)"
             }
         case .booksFinishedThisYear:
-            return .count(figures.booksFinishedThisYear, singular: "book", plural: "books") {
-                "\($0) finished this year"
-            }
+            return .books(figures.booksFinishedThisYear, byKind: figures.booksFinishedThisYearByKind, finished: "this year")
         case .booksFinishedAllTime:
-            return .count(figures.booksFinishedAllTime, singular: "book", plural: "books") {
-                "\($0) finished all time"
-            }
+            return .books(figures.booksFinishedAllTime, byKind: figures.booksFinishedAllTimeByKind, finished: "all time")
         }
     }
 }
@@ -124,6 +191,9 @@ struct ReadingStatsTileWording: Equatable {
     /// What VoiceOver speaks for the tile: "Listening time today: 1 hour,
     /// 5 minutes, 3 seconds", "Current listening streak: 1 day".
     let accessibilityLabel: String
+    /// A line shown under the value, which the spoken label holds too, or
+    /// nil for none: the books finished of each kind.
+    var detail: String? = nil
 
     /// A listening time, shown in digits as hours, minutes, and seconds and
     /// spoken in words after `subject`: "Listening time today: 1 hour,
@@ -147,5 +217,20 @@ struct ReadingStatsTileWording: Equatable {
     ) -> ReadingStatsTileWording {
         let phrase = CountWording.phrase(count, singular: singular, plural: plural)
         return ReadingStatsTileWording(value: phrase, accessibilityLabel: spoken(phrase))
+    }
+
+    /// Books finished `when` ("this year", "all time"): `total`, shown as
+    /// its phrase ("7 books") with the count of each kind under it when any
+    /// kind is known, and spoken as one sentence holding both: "7 books
+    /// finished this year: 4 text books, 2 audiobooks, and 1 podcast
+    /// episode". With no kind known, only the total is shown and spoken.
+    static func books(_ total: Int, byKind counts: FinishedBookCounts, finished when: String) -> ReadingStatsTileWording {
+        let phrase = CountWording.books(total)
+        let breakdown = counts.breakdown(of: total)
+        return ReadingStatsTileWording(
+            value: phrase,
+            accessibilityLabel: "\(phrase) finished \(when)" + (breakdown.map { ": \($0)" } ?? ""),
+            detail: breakdown
+        )
     }
 }

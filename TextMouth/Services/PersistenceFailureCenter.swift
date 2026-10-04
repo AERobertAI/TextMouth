@@ -20,6 +20,9 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
     case configuration
     /// The text substitution rules.
     case substitutions
+    /// A feed subscription's record, Feeds/<feed ID>.json (FR03): its
+    /// address, settings, and the episodes and articles it keeps.
+    case feedRecords
     /// Deleting the original file of a book just imported, when the "After
     /// Importing a Book" preference asks for it.
     case originalFileCleanup
@@ -40,6 +43,7 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
         case .statistics: return "listening statistics"
         case .configuration: return "settings"
         case .substitutions: return "text substitution rules"
+        case .feedRecords: return "feed subscriptions"
         case .originalFileCleanup: return "original files"
         }
     }
@@ -70,8 +74,8 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
 
     /// The sentence that follows a banner row's failure when `count` more
     /// failures of this subsystem wait behind it, or nil when none do. Only
-    /// book records and original files can fail several at once; every
-    /// other subsystem is one file.
+    /// book records, feed records, and original files can fail several at
+    /// once; every other subsystem is one file.
     func othersSentence(count: Int) -> String? {
         guard count > 0 else { return nil }
         switch self {
@@ -79,6 +83,10 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
             return count == 1
                 ? "Changes to 1 other book could not be saved either."
                 : "Changes to \(count) other books could not be saved either."
+        case .feedRecords:
+            return count == 1
+                ? "Changes to 1 other feed could not be saved either."
+                : "Changes to \(count) other feeds could not be saved either."
         case .originalFileCleanup:
             return count == 1
                 ? "1 other original file could not be removed either."
@@ -122,6 +130,8 @@ struct PersistenceFailure: Identifiable, Sendable {
         case configuration
         /// Writing the substitution rules.
         case substitutions
+        /// Writing the record of the feed `feedID`, titled `title` (FR03).
+        case feedRecord(feedID: UUID, title: String)
         /// Deleting the original file at `path` after its book was imported:
         /// to the Trash when `movesToTrash`, otherwise permanently.
         case originalFile(path: String, movesToTrash: Bool)
@@ -136,6 +146,8 @@ struct PersistenceFailure: Identifiable, Sendable {
         case statistics
         case configuration
         case substitutions
+        /// A feed's record, by the feed's ID.
+        case feed(UUID)
         /// An original file, by its path.
         case originalFile(String)
     }
@@ -186,6 +198,7 @@ extension PersistenceFailure.Subject {
         case .statistics: return .statistics
         case .configuration: return .configuration
         case .substitutions: return .substitutions
+        case .feedRecord: return .feedRecords
         case .originalFile: return .originalFileCleanup
         }
     }
@@ -200,6 +213,7 @@ extension PersistenceFailure.Subject {
         case .statistics: return .statistics
         case .configuration: return .configuration
         case .substitutions: return .substitutions
+        case .feedRecord(let feedID, _): return .feed(feedID)
         case .originalFile(let path, _): return .originalFile(path)
         }
     }
@@ -213,6 +227,7 @@ extension PersistenceFailure.Subject {
         case .statistics: return "the listening statistics"
         case .configuration: return "the settings"
         case .substitutions: return "the text substitution rules"
+        case .feedRecord(_, let title): return "the record of the feed “\(title)”"
         case .originalFile(let path, _): return "the original file at \(path)"
         }
     }
@@ -234,6 +249,8 @@ extension PersistenceFailure.Subject {
             return "Settings could not be saved: \(reason)"
         case .substitutions:
             return "Text substitution rules could not be saved: \(reason)"
+        case .feedRecord(_, let title):
+            return "Changes to the feed “\(title)” could not be saved: \(reason)"
         case .originalFile(let path, let movesToTrash):
             return OriginalFileDeletionWording(
                 movesToTrash: movesToTrash,
@@ -380,9 +397,9 @@ private final class PersistenceFailureLedger: @unchecked Sendable {
 // MARK: - The Center
 
 /// Where every failed write of the library index, a book record, the
-/// statistics, the settings, or the substitution rules, and every failed
-/// cleanup of an imported book's original file, is reported (TODO S09), so
-/// none of them is known only to a log.
+/// statistics, the settings, the substitution rules, or a feed's record,
+/// and every failed cleanup of an imported book's original file, is
+/// reported (TODO S09), so none of them is known only to a log.
 ///
 /// Services report from any thread and are never held up: a report updates
 /// the ledger under a lock and asks the main actor to publish. The center

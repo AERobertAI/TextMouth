@@ -323,8 +323,9 @@ final class FeedUIAddFeedTests: XCTestCase {
     // MARK: - The Sheet as Drawn
 
     /// The sheet draws the address field, labelled, which VoiceOver's one
-    /// focus request is for, and the folder picker offering the top level
-    /// and the folders, labelled; the Move dialog draws the same picker.
+    /// focus request is for, the Search field, labelled, and the folder
+    /// picker offering the top level and the folders, labelled; the Move
+    /// dialog draws the same picker.
     func testTheSheetDrawsItsLabelledControls() throws {
         let world = try FeedTestWorld(self, label: "FeedUISheetDrawn")
         let model = AddFeedModel(center: world.center, parentPath: world.folder.path, announce: { _ in })
@@ -337,10 +338,10 @@ final class FeedUIAddFeedTests: XCTestCase {
             onCancel: {}
         )
 
-        withHostedView(sheet, size: NSSize(width: 520, height: 520), until: {
-            !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty && !self.feedEditableFields(in: $0).isEmpty
+        withHostedView(sheet, size: NSSize(width: 520, height: 600), until: {
+            !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty && self.feedEditableFields(in: $0).count == 2
         }) { hosting in
-            XCTAssertEqual(feedEditableFields(in: hosting).count, 1, "one address field")
+            XCTAssertEqual(feedEditableFields(in: hosting).count, 2, "the address field and the Search field")
             let popUp = descendants(of: hosting, as: NSPopUpButton.self).first
             XCTAssertEqual(popUp?.itemTitles, [LibraryFolderOption.rootLabel, world.folder.path])
             XCTAssertEqual(popUp?.titleOfSelectedItem, world.folder.path)
@@ -353,6 +354,7 @@ final class FeedUIAddFeedTests: XCTestCase {
             if !controls.isEmpty {
                 XCTAssertNotNil(controls.first { $0.label == FeedWording.folderLabel }, "\(controls.map(\.label))")
                 XCTAssertNotNil(controls.first { $0.label == FeedWording.addressLabel }, "\(controls.map(\.label))")
+                XCTAssertNotNil(controls.first { $0.label == FeedWording.searchLabel }, "\(controls.map(\.label))")
             }
         }
 

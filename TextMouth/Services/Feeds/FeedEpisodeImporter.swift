@@ -10,10 +10,10 @@ import SwiftSoup
 /// published with one rename (`FileImportService.publishReadableBook`).
 ///
 /// - An episode, audio or video, becomes an audiobook. Video plays as sound
-///   alone (the listener's decision of October 4). Only these downloads
-///   accept video files: the extensions they keep (`FeedMediaKind
-///   .videoExtensions`) are not among the formats Open Book imports, so the
-///   format is given here rather than read from the extension.
+///   alone (the listener's decision of October 4), and is among the formats
+///   Open Book imports as audiobooks too, so a video episode's package
+///   imports again; the format is given here all the same, since a
+///   download's extension comes from its type or its address.
 /// - An article becomes an HTML book, from an HTML file written here: its
 ///   title as a heading, the author, the date, the text, and the link.
 ///

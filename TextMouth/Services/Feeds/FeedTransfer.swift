@@ -24,19 +24,57 @@ struct FeedTransferFailure: Error, Sendable {
     var resumeData: Data?
 }
 
+/// One download's transfer, which quitting can stop while keeping what it
+/// downloaded (FR03). Cancelling the task that awaits the download forgets
+/// that part, as the listener's Cancel means to; `stopKeepingResumeData()`
+/// keeps it as resume data instead, which a later download goes on from.
+///
+/// Every stored property is a constant: the download task, once the
+/// transfer has started, is kept behind an unfair lock, since the transfer
+/// starts in the download's own task.
+final class FeedTransferHandle: Sendable {
+    /// The transfer's download task, once it has started.
+    private let task = OSAllocatedUnfairLock<URLSessionDownloadTask?>(initialState: nil)
+
+    /// A handle on a transfer that has not started.
+    init() {}
+
+    /// Names `downloadTask` as the transfer's task.
+    func attach(_ downloadTask: URLSessionDownloadTask) {
+        task.withLock { $0 = downloadTask }
+    }
+
+    /// Forgets the transfer's task once the transfer has ended, so stopping
+    /// finds nothing left to stop.
+    func detach() {
+        task.withLock { $0 = nil }
+    }
+
+    /// Stops the transfer, keeping what it downloaded: the resume data the
+    /// server allows, or nil when it allows none, or the transfer never
+    /// started or has ended. The download awaiting the transfer then fails
+    /// as cancelled.
+    func stopKeepingResumeData() async -> Data? {
+        guard let running = task.withLock({ $0 }) else { return nil }
+        return await running.cancelByProducingResumeData()
+    }
+}
+
 extension FeedNetwork {
     /// Downloads the file at `url` into `destination` with
     /// `downloadSession`, or goes on from `resumeData` where a download
     /// stopped. `progress` hears the bytes written and the bytes expected (or
     /// -1), on the session's queue, as they arrive. Redirects are followed
     /// to http and https addresses only, and an answer other than a success
-    /// fails. Cancelling the task that awaits this stops the download.
+    /// fails. Cancelling the task that awaits this stops the download;
+    /// `handle`, when given, can stop it keeping its resume data instead.
     /// - Throws: `FeedTransferFailure`.
     func download(
         _ url: URL,
         resumingFrom resumeData: Data?,
         to destination: URL,
         discretionary: Bool,
+        handle: FeedTransferHandle? = nil,
         progress: @escaping @Sendable (_ written: Int64, _ expected: Int64) -> Void
     ) async throws -> FeedDownloadedFile {
         let host = FeedHost.of(url)
@@ -48,6 +86,8 @@ extension FeedNetwork {
         }
         let task = resumeData.map { downloadSession.downloadTask(withResumeData: $0) }
             ?? downloadSession.downloadTask(with: request(for: url, discretionary: discretionary))
+        handle?.attach(task)
+        defer { handle?.detach() }
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<FeedDownloadedFile, Error>) in
                 task.delegate = FeedDownloadTaskDelegate(

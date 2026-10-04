@@ -28,6 +28,10 @@ struct StubResponse: Sendable {
     var pause: TimeInterval = 0
     /// A failure before any answer, such as a host not found.
     var failure: URLError.Code?
+    /// Why the network refused the request, given with `failure`, as the
+    /// system says when a request that may not use an expensive or
+    /// constrained network meets one.
+    var unavailableReason: URLError.NetworkUnavailableReason?
     /// A failure after this many bytes of the body, as a connection that
     /// drops partway.
     var failAfterBytes: Int?
@@ -44,6 +48,43 @@ struct StubResponse: Sendable {
         StubResponse(headers: headers, body: try Data(contentsOf: try requireFile("feeds/\(name)")))
     }
 
+    /// The podcast directory's saved answer `name` in TestData/feeds, as
+    /// Apple's directory serves it (text/javascript), with the feeds it
+    /// names moved from feeds.example to `server`, so subscribing to a
+    /// result reaches the stub server too.
+    static func directoryAnswer(_ name: String, feedsOn server: FeedStubServer) throws -> StubResponse {
+        let saved = try String(contentsOf: try requireFile("feeds/\(name)"), encoding: .utf8)
+        let moved = saved.replacingOccurrences(of: "feeds.example", with: server.host)
+        return StubResponse(headers: ["Content-Type": "text/javascript; charset=utf-8"], body: Data(moved.utf8))
+    }
+
+    /// A JSON Feed 1.1 titled `title` listing `items` in order, as a server
+    /// serves one (application/feed+json): each item's guid is its id, its
+    /// date its date_published, its enclosure an attachment, its
+    /// description its content_html, and its link its url.
+    static func jsonFeed(title: String = "The Tactile Atlas", items: [FeedXML.Item]) throws -> StubResponse {
+        let dates = ISO8601DateFormatter()
+        let entries: [[String: Any]] = items.map { item in
+            var entry: [String: Any] = ["title": item.title]
+            entry["id"] = item.guid
+            entry["date_published"] = item.published.map(dates.string(from:))
+            entry["content_html"] = item.description
+            entry["url"] = item.link
+            if let enclosure = item.enclosure {
+                entry["attachments"] = [["url": enclosure, "mime_type": item.enclosureType, "size_in_bytes": item.enclosureLength]]
+            }
+            return entry
+        }
+        let document: [String: Any] = [
+            "version": "https://jsonfeed.org/version/1.1",
+            "title": title,
+            "home_page_url": "https://show.example/",
+            "items": entries,
+        ]
+        let body = try JSONSerialization.data(withJSONObject: document, options: [.sortedKeys])
+        return StubResponse(headers: ["Content-Type": "application/feed+json"], body: body)
+    }
+
     /// A feed document built by `FeedXML`.
     static func feed(_ markup: String, headers: [String: String] = [:]) -> StubResponse {
         var allHeaders = ["Content-Type": "application/rss+xml; charset=utf-8"]
@@ -55,6 +96,15 @@ struct StubResponse: Sendable {
     static func failing(_ code: URLError.Code) -> StubResponse {
         var response = StubResponse()
         response.failure = code
+        return response
+    }
+
+    /// The refusal a request that may not use an expensive network meets on
+    /// one, such as a phone's hotspot: the system fails it at once, saying
+    /// why.
+    static func refusedOnAMeteredNetwork() -> StubResponse {
+        var response = failing(.notConnectedToInternet)
+        response.unavailableReason = .expensive
         return response
     }
 
@@ -213,6 +263,8 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
         case data(Data)
         case finish
         case fail(URLError.Code)
+        /// A failure the network gave its reason for.
+        case refuse(URLError)
     }
 
     /// `response` as it answers a request for the bytes `range` names
@@ -236,7 +288,10 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
     /// in order.
     private static func steps(of response: StubResponse, for url: URL) -> [Step] {
         if let failure = response.failure {
-            return [.fail(failure)]
+            guard let reason = response.unavailableReason else { return [.fail(failure)] }
+            // The reason a network refused the request travels in the error's
+            // information, where `URLError.networkUnavailableReason` reads it.
+            return [.refuse(URLError(failure, userInfo: [NSURLErrorNetworkUnavailableReasonKey: reason.rawValue]))]
         }
         var headers = response.headers
         if headers["Content-Length"] == nil {
@@ -278,6 +333,8 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
             client?.urlProtocolDidFinishLoading(self)
         case .fail(let code):
             client?.urlProtocol(self, didFailWithError: URLError(code))
+        case .refuse(let error):
+            client?.urlProtocol(self, didFailWithError: error)
         }
     }
 }
@@ -413,6 +470,12 @@ final class FeedTestWorld {
     let folder: IntegrationLibraryFolder
     /// That folder's row.
     let bookFolder: BookFolder
+    /// Where the engine reports a record it can't save: the world's own, so
+    /// the app's is never disturbed.
+    let failures = PersistenceFailureCenter()
+    /// What the engine works with, which an engine made for the next launch
+    /// works with too (`relaunch(_:)`).
+    let environment: FeedEnvironment
     /// The engine.
     let center: FeedCenter
 
@@ -447,13 +510,16 @@ final class FeedTestWorld {
         let stats = stats
         resumeFolder = sandbox.appendingPathComponent("Resume Data", isDirectory: true)
         downloadsFolder = sandbox.appendingPathComponent("Feed Downloads", isDirectory: true)
-        center = FeedCenter(environment: FeedEnvironment(
+        environment = FeedEnvironment(
             records: .folder(recordsFolder),
+            failureCenter: failures,
             fetchStateFolder: fetchStateFolder,
             network: .stubbed(
                 protocolClasses: [FeedStubProtocol.self],
                 reachability: NetworkReachability { online.value }
             ),
+            // The podcast directory answers at the stub server's /search.
+            directory: FeedDirectory(searchingAt: server.url("/search")),
             preferences: preferences,
             now: { clock.value },
             sleep: { try await sleep.sleep($0) },
@@ -467,7 +533,8 @@ final class FeedTestWorld {
             finishedBooksSource: stats,
             // Never the Trash in a test: the package is deleted for good.
             deleteBookPackage: { try FileManager.default.removeItem(at: $0.tmbDirectory) }
-        ))
+        )
+        center = FeedCenter(environment: environment)
         let server = server
         let center = center
         test.addTeardownBlock {
@@ -480,6 +547,21 @@ final class FeedTestWorld {
     /// starts to finish.
     func start() async {
         await center.start(library: library)?.value
+    }
+
+    /// The engine the next launch makes: a new one on the world's folders,
+    /// network, clock, and library, working on its own as the app's does,
+    /// started, with what its start begins finished. `test` stops it when
+    /// it ends.
+    func relaunch(_ test: XCTestCase) async -> FeedCenter {
+        var next = environment
+        next.worksOnItsOwn = true
+        let relaunched = FeedCenter(environment: next)
+        test.addTeardownBlock {
+            await MainActor.run { relaunched.stop() }
+        }
+        await relaunched.start(library: library)?.value
+        return relaunched
     }
 
     /// Subscribes to the feed served at `path`, which must succeed, starting
@@ -631,26 +713,29 @@ enum FeedMediaFixtures {
 // MARK: - Downloads
 
 extension XCTestCase {
-    /// The book the item `itemID` of `feed` downloads as in `world`, once
-    /// its download has ended, announcing its end, and its book is in the
-    /// library; fails the test when the download fails or takes longer than
-    /// 20 seconds.
+    /// The book the item `itemID` of `feed` downloads as in `world`, through
+    /// `center` (the world's own engine unless a relaunched one is given),
+    /// once its download has ended, announcing its end, and its book is in
+    /// the library; fails the test when the download fails or takes longer
+    /// than 20 seconds.
     @MainActor
     func downloadedBook(
         _ world: FeedTestWorld,
+        center: FeedCenter? = nil,
         feed: Feed,
         item itemID: FeedItem.ID,
         file: StaticString = #filePath,
         line: UInt = #line
     ) async throws -> Book {
+        let center = center ?? world.center
         // The item is marked downloaded as its book is listed, a moment
         // before the download ends and announces it.
         await waitFor("\(itemID) downloads", timeout: 20, file: file, line: line) {
-            let state = world.center.store.record(of: feed.id)?.item(itemID)?.state
+            let state = center.store.record(of: feed.id)?.item(itemID)?.state
             let settled = state?.bookID != nil || state?.failureReason != nil
-            return settled && !world.center.downloads.isDownloading(itemID, of: feed.id)
+            return settled && !center.downloads.isDownloading(itemID, of: feed.id)
         }
-        let state = world.center.store.record(of: feed.id)?.item(itemID)?.state
+        let state = center.store.record(of: feed.id)?.item(itemID)?.state
         if let reason = state?.failureReason {
             XCTFail("the download of \(itemID) failed: \(reason)", file: file, line: line)
         }

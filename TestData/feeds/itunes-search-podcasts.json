@@ -1,0 +1,78 @@
+{
+ "resultCount": 5,
+ "results": [
+  {
+   "wrapperType": "track",
+   "kind": "podcast",
+   "collectionId": 1841245814,
+   "trackId": 1841245814,
+   "artistName": "Small Hours Audio",
+   "collectionName": "Dots and Dashes: Braille at the Kitchen Table",
+   "trackName": "Dots and Dashes: Braille at the Kitchen Table",
+   "collectionViewUrl": "https://podcasts.apple.com/us/podcast/dots-and-dashes/id1841245814?uo=4",
+   "feedUrl": "https://feeds.example/dots-and-dashes/rss",
+   "trackViewUrl": "https://podcasts.apple.com/us/podcast/dots-and-dashes/id1841245814?uo=4",
+   "artworkUrl100": "https://images.example/dots-and-dashes/100x100bb.jpg",
+   "releaseDate": "2026-09-26T19:19:00Z",
+   "collectionExplicitness": "notExplicit",
+   "trackCount": 23,
+   "country": "USA",
+   "primaryGenreName": "Education",
+   "genres": ["Education", "Podcasts"]
+  },
+  {
+   "wrapperType": "track",
+   "kind": "podcast",
+   "collectionId": 1576394499,
+   "trackId": 1576394499,
+   "artistName": "Example Public Radio",
+   "collectionName": "Ledger Lines",
+   "trackName": "Ledger Lines",
+   "collectionViewUrl": "https://podcasts.apple.com/us/podcast/ledger-lines/id1576394499?uo=4",
+   "feedUrl": "https://feeds.example/ledger-lines/podcast.xml",
+   "trackCount": 355,
+   "country": "USA",
+   "primaryGenreName": "Business",
+   "genres": ["Business", "Podcasts"]
+  },
+  {
+   "wrapperType": "track",
+   "kind": "podcast",
+   "collectionId": 1290001122,
+   "trackId": 1290001122,
+   "artistName": "Tactile Press",
+   "collectionName": "Paper Raised Letters",
+   "trackName": "Paper Raised Letters",
+   "collectionViewUrl": "https://podcasts.apple.com/us/podcast/paper-raised-letters/id1290001122?uo=4",
+   "trackCount": 8,
+   "country": "USA",
+   "primaryGenreName": "Arts",
+   "genres": ["Arts", "Podcasts"]
+  },
+  {
+   "wrapperType": "track",
+   "kind": "podcast",
+   "collectionId": 1841245815,
+   "trackId": 1841245815,
+   "artistName": "Small Hours Audio",
+   "collectionName": "Dots and Dashes (old address)",
+   "trackName": "Dots and Dashes (old address)",
+   "feedUrl": "http://feeds.example/dots-and-dashes/rss/",
+   "trackCount": 23,
+   "country": "USA",
+   "primaryGenreName": "Education",
+   "genres": ["Education", "Podcasts"]
+  },
+  {
+   "wrapperType": "track",
+   "kind": "podcast",
+   "collectionId": 1410203040,
+   "trackId": 1410203040,
+   "trackName": "Raised Line Radio",
+   "feedUrl": "https://feeds.example/raised-line-radio.xml",
+   "country": "USA",
+   "primaryGenreName": "Arts",
+   "genres": ["Arts", "Podcasts"]
+  }
+ ]
+}

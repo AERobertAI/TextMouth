@@ -130,6 +130,13 @@ final class TranscriptionOfferTests: XCTestCase {
         XCTAssertEqual(ImportDecisionChoiceWording.notNow.title, "Not Now")
         XCTAssertFalse(ImportDecisionChoiceWording.transcribe.hint.isEmpty)
         XCTAssertFalse(ImportDecisionChoiceWording.notNow.hint.isEmpty)
+        // The sheet starts at once only with the model on this Mac; after a
+        // download there, the listener chooses Transcribe (board #1092).
+        XCTAssertEqual(
+            ImportDecisionChoiceWording.transcribe.hint,
+            "Opens Transcribe Audio for the book, which starts transcribing at once when its language's speech model "
+                + "is on this Mac; otherwise, download the model there, then choose Transcribe."
+        )
     }
 
     // MARK: - Fixtures

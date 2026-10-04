@@ -97,7 +97,11 @@ enum FeedRecordCoding {
 /// left out; a record only in the cloud is asked of the sync service and
 /// read again by `loadRecordsInCloud()`. A write that fails, or that waits
 /// while the data directory is unavailable, is tried again with the feed's
-/// next change and once the data directory is back.
+/// next change and once the data directory is back. A write that fails is
+/// reported to `PersistenceFailureCenter`, as every other save is, with a
+/// retry, so the Library window's banner names the feed and quitting asks
+/// first; the feed's next write that succeeds settles it, and
+/// unsubscribing withdraws it.
 @MainActor
 final class FeedStore: ObservableObject {
     /// Where a store keeps its records.
@@ -147,12 +151,16 @@ final class FeedStore: ObservableObject {
     private(set) var unsavedFeedIDs: Set<UUID> = []
     /// Writes and removes record files in the order asked.
     private let writeQueue = DispatchQueue(label: "com.textmouth.feed-records", qos: .utility)
+    /// Where failed writes are reported.
+    private let failureCenter: PersistenceFailureCenter
     /// Hears when the data directory is available again.
     private var availabilitySubscription: AnyCancellable?
 
-    /// A store keeping its records at `location`, read by `load()`.
-    init(location: Location = .app) {
+    /// A store keeping its records at `location`, read by `load()`, and
+    /// reporting failed writes to `failureCenter`.
+    init(location: Location = .app, failureCenter: PersistenceFailureCenter = .shared) {
         self.location = location
+        self.failureCenter = failureCenter
         availabilitySubscription = NotificationCenter.default
             .publisher(for: .dataDirectoryDidBecomeAvailable)
             .sink { [weak self] _ in self?.saveUnsavedRecords() }
@@ -288,10 +296,12 @@ final class FeedStore: ObservableObject {
     }
 
     /// Removes the feed `feedID` and deletes its record file. Its books stay
-    /// in the library.
+    /// in the library, and a failed write of its record no longer needs
+    /// saving.
     func remove(_ feedID: UUID) {
         guard records.removeValue(forKey: feedID) != nil else { return }
         unsavedFeedIDs.remove(feedID)
+        failureCenter.withdraw(.feed(feedID))
         let location = location
         writeQueue.async {
             location.boundary.perform(.savingFeeds) { generation in
@@ -336,6 +346,12 @@ final class FeedStore: ObservableObject {
 
     // MARK: Writing
 
+    /// A write of a record that failed: why, and the file it was for.
+    private struct WriteFailure: Sendable {
+        let error: any Error
+        let path: String
+    }
+
     /// Writes the record of the feed `feedID` as it is now, on the write
     /// queue, as storage work. The record is encoded there, so a large one
     /// never holds the main thread.
@@ -349,30 +365,65 @@ final class FeedStore: ObservableObject {
         // The store is kept until the write ends, which reports back to it
         // on the main queue.
         writeQueue.async {
-            let failure = location.boundary.perform(.savingFeeds) { generation -> String? in
+            let failure = location.boundary.perform(.savingFeeds) { generation -> WriteFailure? in
                 Self.writeRecord(record, in: location.folder(generation))
             }
             DispatchQueue.main.async {
-                self.noteWrite(of: feedID, failure: failure)
+                self.noteWrite(of: feedID, title: record.feed.title, failure: failure)
             }
         }
     }
 
-    /// Records how the write of the feed `feedID` ended: one that failed
-    /// leaves the feed unsaved, for its next change or the data directory's
-    /// return to write again.
-    private func noteWrite(of feedID: UUID, failure: String?) {
-        if failure == nil {
+    /// Records how the write of the feed `feedID`, titled `title`, ended.
+    /// One that succeeded settles any failure reported for the feed. One
+    /// that failed leaves the feed unsaved, for its next change or the data
+    /// directory's return to write again, and is reported to the failure
+    /// center with a retry, unless the feed was unsubscribed meanwhile.
+    private func noteWrite(of feedID: UUID, title: String, failure: WriteFailure?) {
+        guard let failure else {
             unsavedFeedIDs.remove(feedID)
-        } else if records[feedID] != nil {
-            unsavedFeedIDs.insert(feedID)
+            failureCenter.recordSuccess(.feed(feedID))
+            return
+        }
+        guard records[feedID] != nil else { return }
+        unsavedFeedIDs.insert(feedID)
+        failureCenter.recordFailure(
+            .feedRecord(feedID: feedID, title: title),
+            path: failure.path,
+            error: failure.error
+        ) { [weak self] failureID in
+            self?.retryWrite(of: feedID, failureID: failureID)
+        }
+    }
+
+    /// Writes the record of the feed `feedID` again for a retry of the
+    /// failed write `failureID`, and waits for it, as a retry must, so the
+    /// failure center can say at once how it went. The record is written as
+    /// it is now, after every write asked for before, so an older state
+    /// never lands over a newer one. Nothing is written when a later write
+    /// has settled that failure meanwhile, the feed is gone, or the data
+    /// directory can't be written now, which keeps the feed unsaved for its
+    /// return.
+    private func retryWrite(of feedID: UUID, failureID: PersistenceFailure.ID) {
+        guard let record = records[feedID]?.durable, !location.isUnavailable() else { return }
+        let location = location
+        let failureCenter = failureCenter
+        let attempt: (wrote: Bool, failure: WriteFailure?) = writeQueue.sync {
+            guard failureCenter.isOutstanding(failureID) else { return (false, nil) }
+            let failure = location.boundary.perform(.savingFeeds) { generation -> WriteFailure? in
+                Self.writeRecord(record, in: location.folder(generation))
+            }
+            return (true, failure)
+        }
+        if attempt.wrote {
+            noteWrite(of: feedID, title: record.feed.title, failure: attempt.failure)
         }
     }
 
     /// Writes `record` into `folder`, which is made inside its data directory
     /// when missing, replacing the file atomically. Returns why it failed,
     /// having logged it, or nil once it is written.
-    nonisolated private static func writeRecord(_ record: FeedRecord, in folder: URL) -> String? {
+    nonisolated private static func writeRecord(_ record: FeedRecord, in folder: URL) -> WriteFailure? {
         let file = FeedPaths.recordFile(of: record.feed.id, in: folder)
         do {
             let data = try FeedRecordCoding.encoder().encode(record)
@@ -389,7 +440,7 @@ final class FeedStore: ObservableObject {
                 "FEED_RECORD_SAVE_FAILED: \(record.feed.title): could not write \(file.lastPathComponent): "
                     + error.localizedDescription
             )
-            return error.localizedDescription
+            return WriteFailure(error: error, path: file.path)
         }
     }
 

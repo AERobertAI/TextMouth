@@ -1,0 +1,23 @@
+{
+  "version": "https://jsonfeed.org/version/1",
+  "title": "Quill Notes",
+  "home_page_url": "https://quill-lang.example/",
+  "author": { "name": "The Quill Team" },
+  "items": [
+    {
+      "id": "https://quill-lang.example/notes/2026/10/02/",
+      "url": "https://quill-lang.example/notes/2026/10/02/",
+      "content_html": "<p>Quill 3.2 reads <code>.qnb</code> notebooks aloud, cell by cell, and says which cell failed.</p>",
+      "date_published": "2026-10-02T12:30:00+02:00"
+    },
+    {
+      "id": "https://quill-lang.example/notes/2026/09/18/",
+      "external_url": "https://other.example/review-of-quill",
+      "title": "A review worth reading",
+      "content_text": "Someone tried Quill with a braille display for a week.",
+      "date_published": "2026-09-18T09:00:00Z"
+    },
+    "not an item",
+    {}
+  ]
+}

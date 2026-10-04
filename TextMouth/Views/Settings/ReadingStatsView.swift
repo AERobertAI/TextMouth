@@ -127,8 +127,9 @@ struct ReadingStatsView: View {
     }
 }
 
-/// One tile of the Stats pane: its title beside its value. VoiceOver speaks
-/// the tile's wording as its label.
+/// One tile of the Stats pane: its title beside its value, and any detail
+/// under the value, such as the books finished of each kind. VoiceOver
+/// speaks the tile's wording, which holds the detail too, as its label.
 struct ReadingStatsTileRow: View {
     /// The figure this row shows.
     let tile: ReadingStatsTile
@@ -137,7 +138,16 @@ struct ReadingStatsTileRow: View {
 
     var body: some View {
         LabeledContent(tile.title) {
-            Text(wording.value)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(wording.value)
+                if let detail = wording.detail {
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
         .accessibilityLabel(wording.accessibilityLabel)
         .accessibilityIdentifier(tile.accessibilityIdentifier)

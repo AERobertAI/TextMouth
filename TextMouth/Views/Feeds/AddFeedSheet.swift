@@ -2,9 +2,9 @@ import SwiftUI
 
 // MARK: - Subscribing (FR03)
 
-/// The work of the Add Feed sheet (FR03): the address typed, the folder the
-/// feed's own folder goes in, and subscribing, with the second step that
-/// lists the feeds a web page names.
+/// The work of the Add Feed sheet (FR03): the address typed, a search of the
+/// podcast directory, the folder the feed's own folder goes in, and
+/// subscribing, with the second step that lists the feeds a web page names.
 ///
 /// Subscribing makes a folder named after the feed inside the folder chosen
 /// (`FeedFolderChoice.newFolder`), as the listener decided on October 4 ("a
@@ -12,10 +12,28 @@ import SwiftUI
 /// dialog"), and only once the feed has been read, so a failure leaves the
 /// library as it was. A failure keeps the sheet, its address, and its
 /// choices, and says why in the engine's words (`FeedSubscribeError.message`).
+///
+/// Search asks the podcast directory (`FeedCenter.searchDirectory(for:)`)
+/// and lists what it found; a result's Subscribe puts its feed's address in
+/// the address field and subscribes as Subscribe does for an address typed.
+/// A search that finds nothing, or fails, says so in the sheet and to
+/// VoiceOver.
 @MainActor
 final class AddFeedModel: ObservableObject, Identifiable {
     /// The address as typed or pasted.
     @Published var address = ""
+    /// The words typed into Search.
+    @Published var searchTerm = ""
+    /// The podcasts the last search found, in the directory's order.
+    @Published private(set) var searchResults: [FeedDirectoryResult] = []
+    /// Whether a search runs now.
+    @Published private(set) var isSearching = false
+    /// What the sheet says when the last search found nothing, until the
+    /// words change or another search starts.
+    @Published var searchNote: String?
+    /// Why the last search failed, until the words change or another search
+    /// starts.
+    @Published var searchFailure: String?
     /// The path of the folder the feed's folder goes in; "" for the
     /// library's top level.
     @Published var parentPath: String
@@ -38,6 +56,8 @@ final class AddFeedModel: ObservableObject, Identifiable {
     private let announce: @MainActor (String) -> Void
     /// The subscription under way, which Cancel stops.
     private var subscription: Task<Void, Never>?
+    /// The search under way, which Cancel stops.
+    private var searchWork: Task<Void, Never>?
 
     /// A sheet subscribing through `center`, putting the feed's folder in
     /// the folder at `parentPath`, and saying what happens through
@@ -111,23 +131,82 @@ final class AddFeedModel: ObservableObject, Identifiable {
         failureMessage = nil
     }
 
-    /// Stops the subscription under way, as the sheet closes on Cancel. One
-    /// whose feed has already been read may still finish.
+    /// Stops the subscription and the search under way, as the sheet closes
+    /// on Cancel. A subscription whose feed has already been read may still
+    /// finish.
     func cancel() {
         subscription?.cancel()
         subscription = nil
+        searchWork?.cancel()
+        searchWork = nil
+    }
+
+    // MARK: Searching
+
+    /// Whether Search can run: with words to search for, and not while a
+    /// search or a subscription runs.
+    var canSearch: Bool {
+        !isSearching && !isWorking && !searchTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Searches the podcast directory for the words typed, says it is
+    /// searching, and then lists the podcasts found and says how many, or
+    /// says that none were found or why the search failed. Returns the work,
+    /// which tests await; does nothing when Search can't run.
+    @discardableResult
+    func search() -> Task<Void, Never>? {
+        guard canSearch else { return nil }
+        let term = searchTerm.trimmingCharacters(in: .whitespacesAndNewlines)
+        searchResults = []
+        searchNote = nil
+        searchFailure = nil
+        isSearching = true
+        announce(FeedWording.searching)
+        let work = Task {
+            defer { isSearching = false }
+            do {
+                let found = try await center.searchDirectory(for: term)
+                // Cancel closed the sheet meanwhile: nothing is left to say.
+                guard !Task.isCancelled else { return }
+                searchResults = found
+                if found.isEmpty {
+                    searchNote = FeedWording.noPodcastsFound(term: term)
+                }
+                announce(found.isEmpty ? FeedWording.noPodcastsFound(term: term) : FeedWording.podcastsFound(count: found.count, term: term))
+            } catch {
+                guard !Task.isCancelled else { return }
+                let message = (error as? FeedSearchError)?.message ?? error.localizedDescription
+                searchFailure = message
+                announce(message)
+            }
+        }
+        searchWork = work
+        return work
+    }
+
+    /// Subscribes to the podcast `result` names: its feed's address goes in
+    /// the address field, and subscribing continues as for an address typed.
+    /// Returns the work, which tests await; does nothing while a
+    /// subscription runs, or at the second step, which lists no results.
+    @discardableResult
+    func subscribe(to result: FeedDirectoryResult) -> Task<Void, Never>? {
+        guard !isWorking, !isChoosing else { return nil }
+        address = result.feedURL.absoluteString
+        return subscribe()
     }
 }
 
 // MARK: - The Sheet
 
 /// The Add Feed sheet (FR03): an address field, which VoiceOver's focus and
-/// the keyboard's start in; the Move dialog's folder picker, choosing where
-/// the feed's own folder goes, with New Folder; and Subscribe, which Return
-/// presses, and Cancel, which Escape presses. While the address is read the
-/// sheet says so; a web page naming several feeds turns the sheet to a radio
-/// group of them; a failure stays in the sheet, beside the address, and is
-/// announced.
+/// the keyboard's start in; a Search field with its button, which lists the
+/// podcasts the directory finds, each with a Subscribe button of its own;
+/// the Move dialog's folder picker, choosing where the feed's own folder
+/// goes, with New Folder; and Subscribe, which Return presses, and Cancel,
+/// which Escape presses. In the Search field, Return presses Search instead.
+/// While the address is read the sheet says so; a web page naming several
+/// feeds turns the sheet to a radio group of them; a failure stays in the
+/// sheet, beside the address, and is announced.
 struct AddFeedSheet: View {
     /// The sheet's work.
     @ObservedObject var model: AddFeedModel
@@ -146,6 +225,9 @@ struct AddFeedSheet: View {
 
     /// Whether the address field has keyboard focus.
     @FocusState private var addressFocused: Bool
+    /// Whether the Search field has keyboard focus, which gives Return to
+    /// Search rather than to Subscribe.
+    @FocusState private var searchFocused: Bool
     /// Why the last folder could not be made in the picker.
     @State private var folderFailure: String?
 
@@ -173,6 +255,8 @@ struct AddFeedSheet: View {
         .frame(width: 480)
         .navigationTitle(FeedWording.addFeedTitle)
         .clearingFailure($model.failureMessage, whenChanged: model.address)
+        .clearingFailure($model.searchFailure, whenChanged: model.searchTerm)
+        .clearingFailure($model.searchNote, whenChanged: model.searchTerm)
         .onChange(of: model.subscribedFeed) { _, feed in
             if let feed {
                 onSubscribed(feed)
@@ -188,7 +272,8 @@ struct AddFeedSheet: View {
 
     // MARK: Steps
 
-    /// The address and where the feed's folder goes.
+    /// The address, a search of the podcast directory, and where the feed's
+    /// folder goes.
     private var addressStep: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(FeedWording.addressLabel)
@@ -205,6 +290,8 @@ struct AddFeedSheet: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+
+            searchSection
 
             LibraryFolderPicker(
                 options: AddFeedPlaces.parents(in: library, feedFolders: feedFolders),
@@ -240,7 +327,88 @@ struct AddFeedSheet: View {
         }
     }
 
-    /// Cancel, Back at the second step, and Subscribe.
+    // MARK: Search
+
+    /// The Search field and its button, then what the last search found:
+    /// its podcasts, that it found none, or why it failed.
+    private var searchSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(FeedWording.searchLabel)
+                .accessibilityHidden(true)
+            HStack {
+                TextField(FeedWording.searchLabel, text: $model.searchTerm)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($searchFocused)
+                    .disabled(model.isWorking)
+                    .accessibilityLabel(FeedWording.searchLabel)
+                    .accessibilityHint(FeedWording.searchHint)
+                Button(FeedWording.searchButtonTitle) {
+                    model.search()
+                }
+                // Return in the Search field searches, and only there.
+                .keyboardShortcut(searchFocused ? KeyboardShortcut.defaultAction : nil)
+                .disabled(!model.canSearch)
+            }
+            if model.isSearching {
+                SheetWorkIndicator(label: FeedWording.searching)
+            }
+            if let note = model.searchNote {
+                Text(note)
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            OperationFailureNotice(message: model.searchFailure)
+            if !model.searchResults.isEmpty {
+                searchResults
+            }
+        }
+    }
+
+    /// The podcasts the last search found, one row each, in a scrolling
+    /// list VoiceOver reads as one group of rows.
+    private var searchResults: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(model.searchResults) { result in
+                    searchResultRow(result)
+                }
+            }
+            .padding(.vertical, 4)
+            .padding(.trailing, 8)
+        }
+        .frame(height: 180)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(FeedWording.searchResultsLabel(count: model.searchResults.count))
+    }
+
+    /// One podcast found: its title, then who publishes it and its episodes,
+    /// read as one line, beside a Subscribe button that names it.
+    private func searchResultRow(_ result: FeedDirectoryResult) -> some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(result.title)
+                    .fontWeight(.semibold)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let details = FeedWording.searchResultDetails(result) {
+                    Text(details)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(FeedWording.searchResultLabel(result))
+            Spacer()
+            Button(FeedWording.subscribeTitle) {
+                model.subscribe(to: result)
+            }
+            .disabled(model.isWorking)
+            .accessibilityLabel(FeedWording.subscribeToResultLabel(result))
+            .accessibilityHint(FeedWording.subscribeToResultHint)
+        }
+    }
+
+    /// Cancel, Back at the second step, and Subscribe, which Return presses
+    /// everywhere but in the Search field.
     private var buttons: some View {
         HStack {
             Button("Cancel") {
@@ -258,7 +426,7 @@ struct AddFeedSheet: View {
             Button(FeedWording.subscribeTitle) {
                 model.subscribe()
             }
-            .keyboardShortcut(.defaultAction)
+            .keyboardShortcut(searchFocused ? nil : KeyboardShortcut.defaultAction)
             .disabled(!model.canSubscribe)
         }
     }

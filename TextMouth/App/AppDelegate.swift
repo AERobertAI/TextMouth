@@ -149,6 +149,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    which starts over at step 1. Quit Anyway asks to quit again, and
     ///    that second request quits at step 2, whatever is unsaved. Cancel
     ///    keeps TextMouth open.
+    /// 4. A quit that goes ahead at step 2 while feed downloads wait or run
+    ///    is answered later (FR03): each keeps its place for the next
+    ///    launch, the one under way its resume data (`FeedQuitHold`), and
+    ///    then TextMouth quits, after three seconds at most.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if DataDirectoryMoveProgress.stopForQuit(then: requestTermination) {
             return .terminateCancel
@@ -156,7 +160,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if audioEditors.holdQuit(then: requestTermination) {
             return .terminateCancel
         }
-        return terminationGuard.reply()
+        let reply = terminationGuard.reply()
+        if reply == .terminateNow, FeedQuitHold.hold(FeedCenter.shared.downloads, reply: { sender.reply(toApplicationShouldTerminate: $0) }) {
+            return .terminateLater
+        }
+        return reply
     }
 
     func applicationWillTerminate(_ notification: Notification) {

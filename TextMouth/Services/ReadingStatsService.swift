@@ -23,6 +23,13 @@ final class ReadingStatsService: ObservableObject {
 
     @Published var stats = ReadingStats()
 
+    /// Tells what kind of book the book with an ID is, for Books Finished
+    /// by kind (FR03): a text book, an audiobook, or a podcast episode, or
+    /// nil when it can't tell, as for a book no longer in the library. The
+    /// feed engine gives it, since it knows which audiobooks are its
+    /// episodes (`FeedCenter.finishedBookKind(of:)`); nil until then.
+    var finishedBookKind: (@MainActor (UUID) -> FinishedBookKind?)?
+
     /// The statistics file to use in place of the data directory's, for tests.
     private let customFileURL: URL?
 
@@ -370,11 +377,16 @@ final class ReadingStatsService: ObservableObject {
         activeSession != nil
     }
 
+    /// Counts the book `bookID`, titled `title`, among Books Finished now,
+    /// with what kind of book it is (`finishedBookKind`), told while the
+    /// library still holds it: a podcast episode's download is deleted soon
+    /// after it plays, and nothing could tell its kind later.
     func markBookFinished(bookID: UUID, title: String) {
         let entry = FinishedBookEntry(
             bookID: bookID.uuidString,
             title: title,
-            dateFinished: Date()
+            dateFinished: Date(),
+            kind: finishedBookKind?(bookID)
         )
         stats.finishedBooks.append(entry)
         save()
@@ -440,10 +452,34 @@ final class ReadingStatsService: ObservableObject {
     /// calendar, so a display can read this at the same instant as the
     /// listening times.
     func booksFinishedThisYear(at now: Date) -> Int {
+        finishedBooks(inYearOf: now).count
+    }
+
+    /// The books finished in the year containing `now`, in the system's
+    /// calendar: the year each finish counts in, whatever its kind.
+    private func finishedBooks(inYearOf now: Date) -> [FinishedBookEntry] {
         let year = Calendar.current.component(.year, from: now)
         return stats.finishedBooks.filter {
             Calendar.current.component(.year, from: $0.dateFinished) == year
-        }.count
+        }
+    }
+
+    /// The books finished in the year containing `now`, counted by kind.
+    func booksFinishedThisYearByKind(at now: Date) -> FinishedBookCounts {
+        FinishedBookCounts(kinds: finishedBooks(inYearOf: now).map(kind(of:)))
+    }
+
+    /// The books finished ever, counted by kind.
+    var booksFinishedAllTimeByKind: FinishedBookCounts {
+        FinishedBookCounts(kinds: stats.finishedBooks.map(kind(of:)))
+    }
+
+    /// The kind of the book `entry` counts: the one recorded as it finished,
+    /// or, for a book finished before TextMouth recorded kinds, the one
+    /// `finishedBookKind` tells while the library still holds the book;
+    /// nil when neither knows.
+    private func kind(of entry: FinishedBookEntry) -> FinishedBookKind? {
+        entry.kind ?? UUID(uuidString: entry.bookID).flatMap { finishedBookKind?($0) }
     }
 
     /// The listening streak through today, in the time zone current now.
@@ -663,10 +699,58 @@ struct ReadingStats: Codable {
     }
 }
 
+/// One book counted among Books Finished.
 struct FinishedBookEntry: Codable {
     var bookID: String
     var title: String
     var dateFinished: Date
+    /// What kind of book it was, when known (FR03): told as it finished.
+    /// None for a book finished before TextMouth recorded kinds, or one it
+    /// could not tell, which Books Finished counts by the library's answer
+    /// while the library holds it.
+    var kind: FinishedBookKind?
+
+    /// The keys of an entry in reading_stats.json.
+    private enum CodingKeys: String, CodingKey {
+        case bookID, title, dateFinished, kind
+    }
+
+    /// An entry for the book `bookID`, titled `title`, finished at
+    /// `dateFinished`, of the kind `kind` when known.
+    init(bookID: String, title: String, dateFinished: Date, kind: FinishedBookKind? = nil) {
+        self.bookID = bookID
+        self.title = title
+        self.dateFinished = dateFinished
+        self.kind = kind
+    }
+
+    /// Reads an entry. A kind this version does not know, as a later
+    /// version might write, reads as none, so it never makes the
+    /// statistics unreadable.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        bookID = try container.decode(String.self, forKey: .bookID)
+        title = try container.decode(String.self, forKey: .title)
+        dateFinished = try container.decode(Date.self, forKey: .dateFinished)
+        kind = try? container.decodeIfPresent(FinishedBookKind.self, forKey: .kind)
+    }
+}
+
+/// What kind of book a finished book was, as Books Finished counts them
+/// (FR03): a text book, which an article a feed downloaded is too; an
+/// audiobook; or a podcast episode, an audiobook a feed downloaded.
+enum FinishedBookKind: String, Codable, CaseIterable, Sendable {
+    case text
+    case audiobook
+    case episode
+
+    /// The kind of a book in `format`, which a feed downloaded when
+    /// `isFeedDownload`: a podcast episode for audio a feed downloaded, an
+    /// audiobook for any other audio, and a text book for anything else.
+    static func of(format: BookFormat, isFeedDownload: Bool) -> FinishedBookKind {
+        guard format.isAudio else { return .text }
+        return isFeedDownload ? .episode : .audiobook
+    }
 }
 
 extension Notification.Name {

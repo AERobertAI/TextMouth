@@ -38,6 +38,10 @@ enum BookFormat: String, Codable, CaseIterable {
         }
     }
 
+    /// The extensions of the files imported in this format. An audiobook
+    /// may be a video file too (MPEG-4, M4V, or QuickTime), whose sound
+    /// alone plays, as a video podcast's episode does (FR03): Open Book
+    /// takes one, and a video episode's package imports again.
     var fileExtensions: [String] {
         switch self {
         case .epub: return ["epub"]
@@ -47,7 +51,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .docx: return ["docx"]
         case .daisy: return ["daisy", "opf"]
         case .pdf: return ["pdf"]
-        case .audio: return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac"]
+        case .audio: return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "mp4", "m4v", "mov"]
         }
     }
 
