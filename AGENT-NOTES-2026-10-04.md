@@ -681,3 +681,12 @@ What each task agent of the orchestrated campaign left unverified or undone, in 
 - Decisions: Return presses Search only in the Search field; up to 50 results, one per feed; content_html before content_text; the quit hold answers "later" after the unsaved-changes check and waits three seconds; video extensions apply to folder and ZIP imports too; the finished book's kind is recorded at finish (deleted episodes cannot be classified later; older entries count by kind while in the library, then as other books).
 - Flake seen once: ViewsAndWindowsReaderSheetTests drawing count over its limit while other agents built (3 of 3 alone; #1170).
 - Docs: README and ARCHITECTURE wording in the agent's report (orchestrator session tasks/ae3a397d3365f52ed).
+
+## From the recordpolish agent (feature/recording-polish-and-mp3), Oct 4 evening
+- Not verified: a real microphone, live VoiceOver, a real crash, a real Command-Q; players other than AVFoundation for LAME's own tag; the ffmpeg fallback cannot happen in the real app; Intel (arm64 only here).
+- Gap left: for under a second while an editor applies a punch-in no recorder holds the take, so a Record window opened then could list it (AudioEditorModel+PunchIn.keep is the editor's file).
+- Licence: LAME is LGPL 2; a built app given to someone else must carry its notice and licence (README's "Third-party code" section is the notice).
+- Signing: codesign asked for the "TextMouth Developer" key when the login keychain locked (dialog at 19:22); until codesign can sign without asking, make build, install, and check stop at signing (the last make check ran with SIGN_APP=: and an ad hoc signature).
+- Release app: 15.1 MB on main, 15.4 MB with LAME (0.13 MB of it LAME).
+- Possible follow-up: AudioEditorWording.formatName repeats AudioExportFormat.title.
+- Docs: README (16 numbered edits, including the new "Third-party code" section) and ARCHITECTURE (12) wording in the agent's report (orchestrator session tasks/a1e6da3527c84b7aa).
