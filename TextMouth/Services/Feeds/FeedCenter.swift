@@ -23,6 +23,14 @@ struct FeedEnvironment {
     /// Whether the engine works by itself: refreshing at launch and on the
     /// interval. Never in a process hosting tests, unless a test asks for it.
     var worksOnItsOwn: Bool
+    /// This Mac's folder for the resume data of downloads stopped partway.
+    var resumeFolder: URL
+    /// This Mac's folder for finished downloads waiting to be imported.
+    var downloadsFolder: URL
+    /// The free bytes on the volume holding a location.
+    var freeSpace: @Sendable (URL) -> Int64?
+    /// The boundary imports run through as storage work.
+    var boundary: StorageBoundary
 
     /// The app's: the data directory's Feeds folder, this Mac's Caches, the
     /// network, and the app's preferences. A process hosting tests never
@@ -36,7 +44,11 @@ struct FeedEnvironment {
             now: { Date() },
             sleep: { try await Task.sleep(for: $0) },
             isLowPowerMode: { ProcessInfo.processInfo.isLowPowerModeEnabled },
-            worksOnItsOwn: !TextMouthRuntime.current.isHostedTest
+            worksOnItsOwn: !TextMouthRuntime.current.isHostedTest,
+            resumeFolder: MachineLocalPaths.feedCaches.appendingPathComponent("Resume Data", isDirectory: true),
+            downloadsFolder: MachineLocalPaths.feedDownloads,
+            freeSpace: { ArchiveLimits.volumeFreeSpace(at: $0) },
+            boundary: .shared
         )
     }
 }
@@ -50,6 +62,12 @@ protocol FeedLibraryHost: AnyObject {
     /// The path of the library folder `folderID`, or nil when no folder has
     /// that ID any more.
     func feedFolderPath(forFolderID folderID: UUID) -> String?
+    /// The book `bookID`, when the library lists it.
+    func feedBook(withID bookID: UUID) -> Book?
+    /// Lists a book a feed download published, and saves the library.
+    func addFeedBook(_ book: Book)
+    /// Opens the book `bookID` in its reader.
+    func openFeedBook(_ bookID: UUID)
 }
 
 // MARK: - What the Engine Announces
@@ -65,6 +83,12 @@ enum FeedEvent: Equatable, Sendable {
     case refreshed(FeedRefreshReport)
     /// A refresh of every feed ended.
     case refreshedAll(FeedRefreshSummary)
+    /// An item's download started.
+    case downloadStarted(feedID: UUID, itemID: FeedItem.ID)
+    /// An item's download finished: its book is in the library.
+    case downloadFinished(feedID: UUID, itemID: FeedItem.ID, bookID: UUID)
+    /// An item's download failed, for the reason given.
+    case downloadFailed(feedID: UUID, itemID: FeedItem.ID, reason: String)
 }
 
 // MARK: - Subscribing
@@ -146,6 +170,21 @@ final class FeedCenter: ObservableObject {
         refreshingChanged: { [weak self] feedIDs in self?.refreshingFeedIDs = feedIDs },
         reportRefresh: { [weak self] report in self?.refreshEnded(report) }
     )
+    /// Downloads items, one at a time.
+    private(set) lazy var downloads = FeedDownloadManager(
+        store: store,
+        environment: FeedDownloadManager.Environment(
+            network: environment.network,
+            resumeFolder: environment.resumeFolder,
+            holdingFolder: environment.downloadsFolder,
+            freeSpace: environment.freeSpace,
+            reserve: ArchiveLimits.standard.freeSpaceReserve,
+            boundary: environment.boundary,
+            now: environment.now
+        ),
+        library: { [weak self] in self?.library },
+        announce: { [weak self] event in self?.events.send(event) }
+    )
     /// What the engine announces, delivered on the main actor.
     let events = PassthroughSubject<FeedEvent, Never>()
     /// The feeds being refreshed now.
@@ -193,6 +232,7 @@ final class FeedCenter: ObservableObject {
         return Task {
             await store.load()
             await fetchStates.load()
+            await downloads.sweepLeftovers()
             guard environment.worksOnItsOwn else { return }
             intervalObserver = PreferenceObserver(
                 keys: [FeedSettings.refreshIntervalHoursPreference.key],
@@ -360,6 +400,7 @@ final class FeedCenter: ObservableObject {
     /// details go, and every book it downloaded stays in its folder.
     func unsubscribe(_ feedID: UUID) {
         guard let feed = store.record(of: feedID)?.feed else { return }
+        downloads.cancelAll(of: feedID)
         store.remove(feedID)
         fetchStates.remove(feedID)
         DiagnosticLog.event(.feeds, "FEED_UNSUBSCRIBED: \(feed.title)")
@@ -382,9 +423,45 @@ final class FeedCenter: ObservableObject {
         return summary
     }
 
-    /// Announces the end of one feed's refresh.
+    /// Announces the end of one feed's refresh, and, with automatic downloads
+    /// on, downloads the items it found new.
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
+        guard settings.autoDownload else { return }
+        for itemID in report.newItemIDs {
+            downloads.download(itemID, of: report.feedID, origin: .automatic)
+        }
+    }
+
+    // MARK: Downloading
+
+    /// Downloads the item `itemID` of the feed `feedID` because the listener
+    /// asked (Download, or trying a failed download again).
+    func download(_ itemID: FeedItem.ID, of feedID: UUID) {
+        downloads.download(itemID, of: feedID, origin: .listener)
+    }
+
+    /// Opens the item `itemID` of the feed `feedID`: its book at once when
+    /// it is downloaded, or else once it has downloaded, ahead of the others
+    /// waiting, as a book in the cloud downloads before it opens.
+    func open(_ itemID: FeedItem.ID, of feedID: UUID) {
+        downloads.download(itemID, of: feedID, origin: .listener, opening: true)
+    }
+
+    /// Stops the download of the item `itemID` of the feed `feedID`, or takes
+    /// it out of the queue.
+    func cancelDownload(_ itemID: FeedItem.ID, of feedID: UUID) {
+        downloads.cancel(itemID, of: feedID)
+    }
+
+    /// The state the library shows for `item`: its own, except that an item
+    /// whose book the library no longer lists, as after the book was deleted
+    /// from the library, is not downloaded.
+    func state(of item: FeedItem) -> FeedItemState {
+        if let bookID = item.state.bookID, library?.feedBook(withID: bookID) == nil {
+            return .notDownloaded
+        }
+        return item.state
     }
 
     // MARK: A Feed's Own Settings

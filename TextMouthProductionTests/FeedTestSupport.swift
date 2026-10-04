@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import os
 import XCTest
@@ -178,7 +179,7 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
             client?.urlProtocol(self, didFailWithError: URLError(.cannotFindHost))
             return
         }
-        let steps = Self.steps(of: response, for: url)
+        let steps = Self.steps(of: Self.answering(range: request.value(forHTTPHeaderField: "Range"), with: response), for: url)
         if response.pause <= 0 {
             for step in steps {
                 deliver(step)
@@ -212,6 +213,23 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
         case data(Data)
         case finish
         case fail(URLError.Code)
+    }
+
+    /// `response` as it answers a request for the bytes `range` names
+    /// ("bytes=N-", as a resumed download asks): the bytes from N on, as
+    /// 206 Partial Content, sent whole; `response` itself for a request
+    /// naming no range, or one it cannot serve.
+    private static func answering(range: String?, with response: StubResponse) -> StubResponse {
+        guard let range, range.hasPrefix("bytes="), response.status == 200,
+              let start = Int(range.dropFirst("bytes=".count).split(separator: "-").first ?? ""),
+              start < response.body.count else { return response }
+        var partial = response
+        partial.status = 206
+        partial.body = response.body.subdata(in: start..<response.body.count)
+        partial.headers["Content-Range"] = "bytes \(start)-\(response.body.count - 1)/\(response.body.count)"
+        partial.headers["Content-Length"] = "\(partial.body.count)"
+        partial.failAfterBytes = nil
+        return partial
     }
 
     /// What delivering `response` to a request for `url` tells the client,
@@ -372,6 +390,12 @@ final class FeedTestWorld {
     let sleep = SteppedSleep()
     /// Whether Low Power Mode is on.
     let lowPowerMode = LockedValue(false)
+    /// The free bytes the library's disk reports.
+    let freeSpace = LockedValue<Int64?>(100_000_000_000)
+    /// The folder holding resume data.
+    let resumeFolder: URL
+    /// The folder holding finished downloads waiting to be imported.
+    let downloadsFolder: URL
     /// The settings store.
     let preferences: UserDefaults
     /// The folder holding the records.
@@ -405,6 +429,9 @@ final class FeedTestWorld {
         let clock = clock
         let sleep = sleep
         let lowPowerMode = lowPowerMode
+        let freeSpace = freeSpace
+        resumeFolder = sandbox.appendingPathComponent("Resume Data", isDirectory: true)
+        downloadsFolder = sandbox.appendingPathComponent("Feed Downloads", isDirectory: true)
         center = FeedCenter(environment: FeedEnvironment(
             records: .folder(recordsFolder),
             fetchStateFolder: fetchStateFolder,
@@ -416,7 +443,11 @@ final class FeedTestWorld {
             now: { clock.value },
             sleep: { try await sleep.sleep($0) },
             isLowPowerMode: { lowPowerMode.value },
-            worksOnItsOwn: worksOnItsOwn
+            worksOnItsOwn: worksOnItsOwn,
+            resumeFolder: resumeFolder,
+            downloadsFolder: downloadsFolder,
+            freeSpace: { _ in freeSpace.value },
+            boundary: .shared
         ))
         let server = server
         let center = center
@@ -482,5 +513,129 @@ extension XCTestCase {
             }
             try? await Task.sleep(for: .milliseconds(10))
         }
+    }
+}
+
+// MARK: - Episode Files
+
+/// The files feed downloads serve in tests.
+enum FeedMediaFixtures {
+    /// A response serving `data` as a file of `mimeType`, which a resumed
+    /// download may ask for in part: it names an ETag and serves byte ranges.
+    static func file(_ data: Data, mimeType: String) -> StubResponse {
+        StubResponse(headers: ["Content-Type": mimeType, "ETag": "\"episode-1\"", "Accept-Ranges": "bytes"], body: data)
+    }
+
+    /// `duration` seconds of AAC silence in an MPEG-4 audio file, as bytes.
+    static func silentAAC(duration: TimeInterval = 1) throws -> Data {
+        let folder = try AudioTestFixtures.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appendingPathComponent("silence.m4a")
+        try AudioTestFixtures.writeAACSilence(to: file, duration: duration)
+        return try Data(contentsOf: file)
+    }
+
+    /// A short MPEG-4 video, as bytes: black H.264 frames, one a second, beside
+    /// `duration` seconds of AAC silence, as a video podcast's episode holds
+    /// pictures beside its sound.
+    static func silentVideo(duration: TimeInterval = 2) async throws -> Data {
+        let folder = try AudioTestFixtures.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let audio = folder.appendingPathComponent("audio.m4a")
+        try AudioTestFixtures.writeAACSilence(to: audio, duration: duration)
+        let video = folder.appendingPathComponent("video.mp4")
+        try await writeVideo(to: video, audio: audio, duration: duration)
+        return try Data(contentsOf: video)
+    }
+
+    /// Writes black frames of `duration` seconds beside the audio of the file
+    /// at `audio`, copied as it is, into an MPEG-4 file at `url`.
+    private static func writeVideo(to url: URL, audio: URL, duration: TimeInterval) async throws {
+        let asset = AVURLAsset(url: audio)
+        let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+        let audioTrack = try XCTUnwrap(audioTracks.first)
+        let audioFormat = try await audioTrack.load(.formatDescriptions).first
+        let reader = try AVAssetReader(asset: asset)
+        let audioOutput = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: nil)
+        reader.add(audioOutput)
+
+        let size = 64
+        let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+        let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: [
+            AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: size, AVVideoHeightKey: size,
+        ])
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: videoInput, sourcePixelBufferAttributes: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferWidthKey as String: size,
+            kCVPixelBufferHeightKey as String: size,
+        ])
+        let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: nil, sourceFormatHint: audioFormat)
+        writer.add(videoInput)
+        writer.add(audioInput)
+        guard reader.startReading() else { throw try XCTUnwrap(reader.error) }
+        guard writer.startWriting() else { throw try XCTUnwrap(writer.error) }
+        writer.startSession(atSourceTime: .zero)
+
+        for second in 0..<max(1, Int(duration.rounded(.up))) {
+            while !videoInput.isReadyForMoreMediaData {
+                try await Task.sleep(nanoseconds: 1_000_000)
+            }
+            let pool = try XCTUnwrap(adaptor.pixelBufferPool)
+            var made: CVPixelBuffer?
+            CVPixelBufferPoolCreatePixelBuffer(nil, pool, &made)
+            let frame = try XCTUnwrap(made)
+            // A black frame: every byte zero.
+            CVPixelBufferLockBaseAddress(frame, [])
+            if let base = CVPixelBufferGetBaseAddress(frame) {
+                memset(base, 0, CVPixelBufferGetDataSize(frame))
+            }
+            CVPixelBufferUnlockBaseAddress(frame, [])
+            guard adaptor.append(frame, withPresentationTime: CMTime(seconds: Double(second), preferredTimescale: 600)) else {
+                throw try XCTUnwrap(writer.error)
+            }
+        }
+        videoInput.markAsFinished()
+        while let sample = audioOutput.copyNextSampleBuffer() {
+            while !audioInput.isReadyForMoreMediaData {
+                try await Task.sleep(nanoseconds: 1_000_000)
+            }
+            guard audioInput.append(sample) else { throw try XCTUnwrap(writer.error) }
+        }
+        audioInput.markAsFinished()
+        await writer.finishWriting()
+        if let error = writer.error {
+            throw error
+        }
+    }
+}
+
+// MARK: - Downloads
+
+extension XCTestCase {
+    /// The book the item `itemID` of `feed` downloads as in `world`, once
+    /// its download has ended, announcing its end, and its book is in the
+    /// library; fails the test when the download fails or takes longer than
+    /// 20 seconds.
+    @MainActor
+    func downloadedBook(
+        _ world: FeedTestWorld,
+        feed: Feed,
+        item itemID: FeedItem.ID,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async throws -> Book {
+        // The item is marked downloaded as its book is listed, a moment
+        // before the download ends and announces it.
+        await waitFor("\(itemID) downloads", timeout: 20, file: file, line: line) {
+            let state = world.center.store.record(of: feed.id)?.item(itemID)?.state
+            let settled = state?.bookID != nil || state?.failureReason != nil
+            return settled && !world.center.downloads.isDownloading(itemID, of: feed.id)
+        }
+        let state = world.center.store.record(of: feed.id)?.item(itemID)?.state
+        if let reason = state?.failureReason {
+            XCTFail("the download of \(itemID) failed: \(reason)", file: file, line: line)
+        }
+        let bookID = try XCTUnwrap(state?.bookID, file: file, line: line)
+        return try XCTUnwrap(world.library.bookByID(bookID), file: file, line: line)
     }
 }
