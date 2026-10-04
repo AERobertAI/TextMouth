@@ -45,6 +45,16 @@ extension FeedCenter {
         requestSweep()
     }
 
+    /// What kind of book the book `bookID` is, as Books Finished counts it
+    /// (`ReadingStatsService.finishedBookKind`): a podcast episode when this
+    /// engine downloaded it as an episode, and otherwise an audiobook or a
+    /// text book by its format, an article being a text book; nil when the
+    /// library no longer lists it, or the engine has not started.
+    func finishedBookKind(of bookID: UUID) -> FinishedBookKind? {
+        guard let book = library?.feedBook(withID: bookID) else { return nil }
+        return FinishedBookKind.of(format: book.format, isFeedDownload: store.item(downloadedAs: bookID) != nil)
+    }
+
     /// Marks the item `itemID` of the feed `feedID` played (an article: read)
     /// now, as Mark as Played does; the delete-after-played rule counts from
     /// now.

@@ -86,6 +86,37 @@ final class ReadingStatsViewTests: XCTestCase {
         }
     }
 
+    /// Books finished are counted by kind as well as together (FR03): text
+    /// books, audiobooks, and podcast episodes, shown under the count and
+    /// spoken with it as one sentence. A kind with no books is left out,
+    /// books of no known kind come last as "other books", two parts are
+    /// joined by "and", and with no kind known, or no books, the count is
+    /// said alone.
+    func testBooksFinishedAreCountedByKindInOneSentence() {
+        var counted = figures(booksFinishedThisYear: 7, booksFinishedAllTime: 9)
+        counted.booksFinishedThisYearByKind = FinishedBookCounts(textBooks: 4, audiobooks: 2, episodes: 1)
+        counted.booksFinishedAllTimeByKind = FinishedBookCounts(textBooks: 1, audiobooks: 6)
+
+        XCTAssertEqual(ReadingStatsTile.booksFinishedThisYear.wording(for: counted), ReadingStatsTileWording(
+            value: "7 books",
+            accessibilityLabel: "7 books finished this year: 4 text books, 2 audiobooks, and 1 podcast episode",
+            detail: "4 text books, 2 audiobooks, and 1 podcast episode"
+        ))
+        XCTAssertEqual(ReadingStatsTile.booksFinishedAllTime.wording(for: counted), ReadingStatsTileWording(
+            value: "9 books",
+            accessibilityLabel: "9 books finished all time: 1 text book, 6 audiobooks, and 2 other books",
+            detail: "1 text book, 6 audiobooks, and 2 other books"
+        ))
+        XCTAssertEqual(FinishedBookCounts(audiobooks: 1, episodes: 3).breakdown(of: 4), "1 audiobook and 3 podcast episodes")
+        XCTAssertEqual(FinishedBookCounts(episodes: 1).breakdown(of: 1), "1 podcast episode")
+        XCTAssertNil(FinishedBookCounts().breakdown(of: 5))
+        XCTAssertNil(FinishedBookCounts(textBooks: 2).breakdown(of: 0))
+        XCTAssertEqual(
+            FinishedBookCounts(kinds: [.text, .episode, nil, .episode, .audiobook]),
+            FinishedBookCounts(textBooks: 1, audiobooks: 1, episodes: 2)
+        )
+    }
+
     /// Listening times show in digits and are spoken in words, singular
     /// units included: spoken as digits, "1:05:03" could pass for a time of
     /// day, and until C07 the labels repeated the digits.

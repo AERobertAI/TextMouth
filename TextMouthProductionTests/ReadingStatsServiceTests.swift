@@ -426,6 +426,70 @@ final class ReadingStatsServiceTests: XCTestCase {
 
     /// A service over this test's file, checkpointing every
     /// `checkpointInterval`. Its timer stops when the test ends.
+    // MARK: - Books Finished by Kind
+
+    /// A finished book is saved with the kind the library tells as it
+    /// finishes, which the next launch reads back; a book the library can't
+    /// tell is saved with none. Books are counted by kind all time and in
+    /// the year they finished; one finished before kinds were recorded is
+    /// counted by the library's answer while the library holds it, and in
+    /// no kind after.
+    @MainActor
+    func testFinishedBooksAreRecordedAndCountedByKind() throws {
+        let service = makeService()
+        let (audiobook, episode, article, gone) = (UUID(), UUID(), UUID(), UUID())
+        let kinds: [UUID: FinishedBookKind] = [audiobook: .audiobook, episode: .episode, article: .text]
+        service.finishedBookKind = { kinds[$0] }
+
+        service.markBookFinished(bookID: episode, title: "An episode")
+        service.markBookFinished(bookID: gone, title: "No longer held")
+        XCTAssertEqual(service.stats.finishedBooks.map(\.kind), [.episode, nil])
+        XCTAssertEqual(relaunchedService().stats.finishedBooks.map(\.kind), [.episode, nil])
+
+        let lastYear = try XCTUnwrap(Calendar.current.date(byAdding: .year, value: -1, to: Date()))
+        service.stats.finishedBooks += [
+            FinishedBookEntry(bookID: audiobook.uuidString, title: "Before kinds", dateFinished: lastYear),
+            FinishedBookEntry(bookID: article.uuidString, title: "An article", dateFinished: Date(), kind: .text),
+        ]
+
+        XCTAssertEqual(service.booksFinishedAllTimeByKind, FinishedBookCounts(textBooks: 1, audiobooks: 1, episodes: 1))
+        XCTAssertEqual(service.booksFinishedThisYearByKind(at: Date()), FinishedBookCounts(textBooks: 1, episodes: 1))
+        XCTAssertEqual(service.booksFinishedThisYear(at: Date()), 3)
+        let figures = ReadingStatsFigures(service: service, at: Date())
+        XCTAssertEqual(figures.booksFinishedAllTime, 4)
+        XCTAssertEqual(
+            ReadingStatsTile.booksFinishedAllTime.wording(for: figures).accessibilityLabel,
+            "4 books finished all time: 1 text book, 1 audiobook, 1 podcast episode, and 1 other book"
+        )
+
+        service.finishedBookKind = nil
+        XCTAssertEqual(service.booksFinishedAllTimeByKind, FinishedBookCounts(textBooks: 1, episodes: 1))
+    }
+
+    /// A finished book's kind is written with it. An entry saved before
+    /// kinds were recorded, or with a kind this version does not know, reads
+    /// with none, and the rest of the statistics read as ever.
+    func testFinishedBookKindsRoundTripAndUnknownOnesReadAsNone() throws {
+        let saved = #"""
+        {"dailyListeningSeconds":{},"totalListeningSeconds":12,"bookListeningSeconds":{},"finishedBooks":[
+        {"bookID":"A","title":"Before kinds","dateFinished":0},
+        {"bookID":"B","title":"From a later version","dateFinished":0,"kind":"comic"},
+        {"bookID":"C","title":"An episode","dateFinished":0,"kind":"episode"}]}
+        """#
+
+        let stats = try JSONDecoder().decode(ReadingStats.self, from: Data(saved.utf8))
+        let again = try JSONDecoder().decode(ReadingStats.self, from: JSONEncoder().encode(stats))
+
+        XCTAssertEqual(stats.totalListeningSeconds, 12)
+        XCTAssertEqual(stats.finishedBooks.map(\.title), ["Before kinds", "From a later version", "An episode"])
+        XCTAssertEqual(stats.finishedBooks.map(\.kind), [nil, nil, .episode])
+        XCTAssertEqual(again.finishedBooks.map(\.kind), [nil, nil, .episode])
+        XCTAssertEqual(FinishedBookKind.of(format: .audio, isFeedDownload: true), .episode)
+        XCTAssertEqual(FinishedBookKind.of(format: .audio, isFeedDownload: false), .audiobook)
+        XCTAssertEqual(FinishedBookKind.of(format: .html, isFeedDownload: true), .text, "an article is a text book")
+        XCTAssertEqual(FinishedBookKind.of(format: .epub, isFeedDownload: false), .text)
+    }
+
     @MainActor
     private func makeService(
         checkpointInterval: TimeInterval = ReadingStatsService.defaultCheckpointInterval

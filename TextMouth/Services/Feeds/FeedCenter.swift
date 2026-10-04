@@ -284,6 +284,11 @@ final class FeedCenter: ObservableObject {
                     .compactMap { $0.userInfo?[ReadingStatsService.finishedBookIDKey] as? UUID }
                     .sink { [weak self] bookID in self?.bookDidFinish(bookID) }
             )
+            // Books Finished asks this engine what kind of book one is, as
+            // it knows which audiobooks are its episodes.
+            (source as? ReadingStatsService)?.finishedBookKind = { [weak self] bookID in
+                self?.finishedBookKind(of: bookID)
+            }
         }
     }
 

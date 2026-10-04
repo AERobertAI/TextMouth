@@ -31,6 +31,29 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertEqual(world.stats.stats.finishedBooks.map(\.bookID).last, book.id.uuidString, "the episode no longer counts as a finished book")
     }
 
+    /// Books Finished counts a finished book with its kind, which this engine
+    /// tells as the book finishes: a podcast episode for an episode it
+    /// downloaded, which stays one once its download is deleted; an
+    /// audiobook for any other audio; a text book for anything else; and
+    /// none for a book the library does not hold.
+    func testFinishedBooksAreCountedByKind() async throws {
+        let world = try FeedTestWorld(self, label: "FeedFinishedKinds")
+        let (feed, episode) = try await downloadedEpisode(in: world)
+        let audiobook = Book(title: "Ferry Songs", format: .audio, filePath: "/Ferry Songs.m4a", md5Hash: "")
+        let novel = Book(title: "Harbour Lights", format: .epub, filePath: "/Harbour Lights.epub", md5Hash: "")
+        world.library.library.books += [audiobook, novel]
+
+        for book in [episode, audiobook, novel] {
+            world.stats.markBookFinished(bookID: book.id, title: book.title)
+        }
+        world.stats.markBookFinished(bookID: UUID(), title: "Not in the library")
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+
+        XCTAssertEqual(world.stats.stats.finishedBooks.map(\.kind), [.episode, .audiobook, .text, nil])
+        XCTAssertNil(world.center.finishedBookKind(of: episode.id), "the deleted download is still in the library")
+        XCTAssertEqual(world.stats.booksFinishedAllTimeByKind, FinishedBookCounts(textBooks: 1, audiobooks: 1, episodes: 1))
+    }
+
     /// Mark as Played and Mark as Unplayed set and clear the played date.
     func testMarkingPlayedAndUnplayed() async throws {
         let world = try FeedTestWorld(self, label: "FeedMarkPlayed")
