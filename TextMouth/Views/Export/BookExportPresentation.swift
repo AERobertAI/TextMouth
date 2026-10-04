@@ -37,3 +37,61 @@ struct LibraryExportSupport: ViewModifier {
             }
     }
 }
+
+/// Where File > Export… goes (FR05): to the Library window or the book's
+/// window in front, or a sheet over one, as every menu command routed to the
+/// key window goes (`WindowCommandRouting`). That window exports its
+/// selection or its book. With none in front, as when only Settings is,
+/// VoiceOver hears why instead of nothing happening.
+@MainActor
+enum ExportCommandRouting {
+    /// File > Export…, as the menu asks for it: from the key window, among
+    /// the Library and reader windows open.
+    static func exportFromWindowInFront() {
+        let router = LibraryWindowRouter.shared
+        perform(
+            keyWindow: NSApp.keyWindow,
+            libraryWindows: openWindows(router.registeredLibraryWindows),
+            readerWindows: openWindows(router.registeredReaderWindows),
+            post: { NotificationCenter.default.post(name: .exportBooks, object: nil) }
+        )
+    }
+
+    /// Posts the export command with `post` when a window in front takes it,
+    /// and otherwise announces why nothing can be exported
+    /// (`refusal(keyWindow:libraryWindows:readerWindows:)`).
+    static func perform(
+        keyWindow: NSWindow?,
+        libraryWindows: [NSWindow],
+        readerWindows: [NSWindow],
+        post: () -> Void
+    ) {
+        if let refusal = refusal(keyWindow: keyWindow, libraryWindows: libraryWindows, readerWindows: readerWindows) {
+            VoiceOverAnnouncer.announce(refusal)
+            return
+        }
+        post()
+    }
+
+    /// What VoiceOver hears instead of an export, or nil when the key window,
+    /// or the window a sheet in front belongs to, is one of the open Library
+    /// windows or reader windows given: that none is open
+    /// (`BookExportWording.noWindowOpen`), or, when one is open behind, to
+    /// switch to it (`BookExportWording.noWindowInFront`).
+    static func refusal(keyWindow: NSWindow?, libraryWindows: [NSWindow], readerWindows: [NSWindow]) -> String? {
+        let windows = libraryWindows + readerWindows
+        if let keyWindow {
+            let front = WindowCommandRouting.rootWindow(for: keyWindow)
+            if windows.contains(where: { $0 === front }) {
+                return nil
+            }
+        }
+        return windows.isEmpty ? BookExportWording.noWindowOpen : BookExportWording.noWindowInFront
+    }
+
+    /// The windows of `windows` still open, on screen or in the Dock: a
+    /// window closed but kept by SwiftUI counts as none.
+    static func openWindows(_ windows: [NSWindow]) -> [NSWindow] {
+        windows.filter { $0.isVisible || $0.isMiniaturized }
+    }
+}

@@ -282,6 +282,63 @@ final class BookExportSheetTests: XCTestCase {
         XCTAssertEqual(BookExportWording.settingTitle, "Show Export in the reader toolbar")
     }
 
+    // MARK: - File > Export… Without a Window to Take It
+
+    /// File > Export… goes to the Library window or the book's window in
+    /// front, or the window a sheet in front belongs to; with another window
+    /// in front, such as Settings, or none, it says why instead: that no
+    /// Library window or book is open, or, when one is open behind, to
+    /// switch to it.
+    func testExportSaysWhyWhenNoLibraryOrBookWindowIsInFront() {
+        let settings = makeWindow()
+        let library = makeWindow()
+        let reader = makeWindow()
+        defer { [settings, library, reader].forEach { $0.close() } }
+
+        XCTAssertEqual(
+            ExportCommandRouting.refusal(keyWindow: settings, libraryWindows: [], readerWindows: []),
+            BookExportWording.noWindowOpen
+        )
+        XCTAssertEqual(
+            ExportCommandRouting.refusal(keyWindow: nil, libraryWindows: [], readerWindows: []),
+            BookExportWording.noWindowOpen
+        )
+        XCTAssertEqual(
+            ExportCommandRouting.refusal(keyWindow: settings, libraryWindows: [library], readerWindows: []),
+            BookExportWording.noWindowInFront
+        )
+        XCTAssertEqual(
+            ExportCommandRouting.refusal(keyWindow: nil, libraryWindows: [], readerWindows: [reader]),
+            BookExportWording.noWindowInFront
+        )
+        XCTAssertNil(ExportCommandRouting.refusal(keyWindow: library, libraryWindows: [library], readerWindows: [reader]))
+        XCTAssertNil(ExportCommandRouting.refusal(keyWindow: reader, libraryWindows: [library], readerWindows: [reader]))
+        XCTAssertEqual(BookExportWording.noWindowOpen, "No Library window or book is open, so there is nothing to export.")
+    }
+
+    /// The command announces why it cannot export and posts nothing; taken
+    /// by a window in front, it posts the export command and announces
+    /// nothing. A window closed but kept, as SwiftUI keeps closed windows,
+    /// counts as none.
+    func testExportFromTheMenuPostsOrSaysWhy() {
+        let settings = makeWindow()
+        let library = makeWindow()
+        defer { [settings, library].forEach { $0.close() } }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        var posted = 0
+
+        ExportCommandRouting.perform(keyWindow: settings, libraryWindows: [], readerWindows: [], post: { posted += 1 })
+        XCTAssertEqual(announcements.messages, [BookExportWording.noWindowOpen])
+        XCTAssertEqual(posted, 0, "the command was posted with no window to take it")
+
+        ExportCommandRouting.perform(keyWindow: library, libraryWindows: [library], readerWindows: [], post: { posted += 1 })
+        XCTAssertEqual(posted, 1, "the command was not posted")
+        XCTAssertEqual(announcements.messages.count, 1, "an export taken was announced as refused")
+
+        XCTAssertEqual(ExportCommandRouting.openWindows([library]), [], "a window never shown counted as open")
+    }
+
     // MARK: - Fixtures
 
     /// Two chapters, as a Markdown book with chapter markers holds them.
@@ -303,6 +360,19 @@ final class BookExportSheetTests: XCTestCase {
         let file = try makeSandboxDirectory("Export Dialog Source").appendingPathComponent(name)
         try Data(Self.twoChapters.utf8).write(to: file)
         return file
+    }
+
+    /// A window never shown, standing for one of the app's windows: kept
+    /// alive after it closes, so a test's closing it releases nothing early.
+    private func makeWindow() -> NSWindow {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 200, height: 120),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: true
+        )
+        window.isReleasedWhenClosed = false
+        return window
     }
 
     /// The size of the file at `url` as the dialog words it.

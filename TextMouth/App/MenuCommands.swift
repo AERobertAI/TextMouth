@@ -279,7 +279,9 @@ struct BookCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .importExport) {
             Button(BookExportWording.commandTitle) {
-                NotificationCenter.default.post(name: .exportBooks, object: nil)
+                // The window in front exports, or VoiceOver hears why
+                // nothing can be exported, as when only Settings is open.
+                ExportCommandRouting.exportFromWindowInFront()
             }
         }
 

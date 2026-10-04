@@ -48,6 +48,14 @@ enum BookExportWording {
         count > 1 ? "Export \(CountWording.phrase(count, singular: "Book", plural: "Books"))…" : commandTitle
     }
 
+    /// What File > Export… says when no Library window or book is open, as
+    /// when only Settings is, so there is nothing it could export.
+    static let noWindowOpen = "No Library window or book is open, so there is nothing to export."
+
+    /// What File > Export… says when a Library window or a book is open, but
+    /// another window, such as Settings, is in front.
+    static let noWindowInFront = "To export, switch to a Library window or a book's window, then choose Export again."
+
     /// The dialog's title: "Export Moby-Dick" for one book, "Export 3
     /// Books" for several.
     static func title(bookTitles: [String]) -> String {
