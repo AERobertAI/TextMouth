@@ -540,6 +540,7 @@
 		B71A3F2D7674987FB849B761 /* ImportDecisionQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3793DB43E75D9F8C91B12B10 /* ImportDecisionQueueTests.swift */; };
 		B84E2028895A2043D6A6C2DD /* vbrquantize.c in Sources */ = {isa = PBXBuildFile; fileRef = 22646846170568F7EA58939B /* vbrquantize.c */; };
 		B8E26B1299575D10062B07FA /* BookContentIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A64569FF85BD4A1F7EAF3E /* BookContentIndexTests.swift */; };
+		B8F2FCD0E2C877D98C7A0463 /* RecordingRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12BB9B6A3FA0EE760F38D170 /* RecordingRecoveryTests.swift */; };
 		B90039173F78FEF10EA0A428 /* SpeechPreparationBenchmarkSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BECFBBA93250A8CC776E0B4 /* SpeechPreparationBenchmarkSupport.swift */; };
 		B9B72770686CBA2A6EE3C6E6 /* UnicodeCoordinateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67AB1E7D9F2BA08DEE887BD4 /* UnicodeCoordinateTests.swift */; };
 		B9C351D6F83FC8A30EC7380C /* TranscriptAccuracyMeasurementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D157365B8760016571E853DD /* TranscriptAccuracyMeasurementTests.swift */; };
@@ -823,6 +824,7 @@
 		121744A079015B50882C5937 /* TranscriptStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptStore.swift; sourceTree = "<group>"; };
 		1227F96EDA7AF88D22904A45 /* LegacyBookMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyBookMigration.swift; sourceTree = "<group>"; };
 		126B1A9ADC2BC656A25EB245 /* reservoir.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = reservoir.c; sourceTree = "<group>"; };
+		12BB9B6A3FA0EE760F38D170 /* RecordingRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingRecoveryTests.swift; sourceTree = "<group>"; };
 		12F62EE8E953CBC6B9AC9EED /* LibraryLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryLifecycleTests.swift; sourceTree = "<group>"; };
 		12FF44399DABAB9713EDFA69 /* SoundEffectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEffectService.swift; sourceTree = "<group>"; };
 		131B4789BA97C78E4CCDFD51 /* DataDirectoryMoveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDirectoryMoveTests.swift; sourceTree = "<group>"; };
@@ -2250,6 +2252,7 @@
 				DF123AAC09BC18C47D4CEA08 /* RecordingEndToEndTests.swift */,
 				74FB535DD6F17BC188CA7EE4 /* RecordingInputTests.swift */,
 				BB9CBA46ED16A27265074E40 /* RecordingPermissionTests.swift */,
+				12BB9B6A3FA0EE760F38D170 /* RecordingRecoveryTests.swift */,
 				C3B22286450D9D95120C0D57 /* RecordingSaveTests.swift */,
 				B2145388E3D8977854A47A7F /* RecordingServiceTests.swift */,
 				FD1C69C9713E5669A3247A48 /* RecordingTestSupport.swift */,
@@ -2881,6 +2884,7 @@
 				5BE8569B1CDD956042A1EB76 /* RecordingEndToEndTests.swift in Sources */,
 				8CA1FFD2D738CA09E4F16674 /* RecordingInputTests.swift in Sources */,
 				CB1493D23CA915EBECCB32E5 /* RecordingPermissionTests.swift in Sources */,
+				B8F2FCD0E2C877D98C7A0463 /* RecordingRecoveryTests.swift in Sources */,
 				35A51EE47A31741094F6CA59 /* RecordingSaveTests.swift in Sources */,
 				ECA52EBF55E79A5E862DB66F /* RecordingServiceTests.swift in Sources */,
 				EB6DB4FC9EDAC7E467D76F74 /* RecordingTestSupport.swift in Sources */,

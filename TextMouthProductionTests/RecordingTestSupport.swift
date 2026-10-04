@@ -289,3 +289,135 @@ extension XCTestCase {
         return true
     }
 }
+
+// MARK: - A Record Window Without Hardware
+
+/// A Record window model with fakes for everything outside it: a recorder
+/// that needs no microphone, recording into a folder of the test's own, a
+/// fixed list of microphones, a preferences store of the test's own, a
+/// save that records what it was asked, and announcements and opened books
+/// caught in lists. Nothing is spoken, recorded, or saved for real.
+@MainActor
+struct RecordingWindowHarness {
+    let model: RecordingWindowModel
+    let backend: FakeCaptureBackend
+    let catalog: FakeRecordingInputCatalog
+    let store: UserDefaults
+    let saver: FakeRecordingSaver
+    let announcements: SentenceLog
+    /// The folder the window's recorder records into, where it finds the
+    /// takes recordings left behind.
+    let takesFolder: URL
+    private let opened: BookLog
+
+    /// The books the window opened in a reader.
+    var openedBooks: [UUID] { opened.ids }
+
+    /// A window opening at a fixed moment on `devices`, macOS's default
+    /// input `systemDefault`, and the microphone `remembered`, with
+    /// `permission`'s answer; recording into `takesFolder`, a new folder
+    /// unless given, and opening on `recovered`, as launch opens it.
+    init(
+        test: XCTestCase,
+        devices: [AudioInputDevice] = [TestMicrophones.builtIn, TestMicrophones.airPods, TestMicrophones.usb],
+        systemDefault: String? = nil,
+        remembered: String = "",
+        permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized),
+        takesFolder: URL? = nil,
+        recovered: [RecoveredTake] = []
+    ) throws {
+        let backend = FakeCaptureBackend()
+        let catalog = FakeRecordingInputCatalog(devices, systemDefault: systemDefault)
+        let store = test.makeSandboxedPreferences("recording-window")
+        RecordingInputChoice.preference.write(remembered, to: store)
+        let saver = FakeRecordingSaver()
+        let announcements = SentenceLog()
+        let opened = BookLog()
+        let folder = try takesFolder ?? RecordingAudioFixtures.makeTakesFolder(for: test)
+        let service = RecordingService(
+            backend: backend,
+            permission: permission.permission,
+            takesFolder: folder,
+            pollInterval: nil
+        )
+        model = RecordingWindowModel(
+            service: service,
+            catalog: catalog,
+            store: store,
+            saver: saver.saver,
+            folderPaths: { ["Fiction/Sci-Fi", "Fiction"] },
+            announce: { announcements.sentences.append($0) },
+            openBook: { opened.ids.append($0) },
+            now: { RecordingWindowHarness.opensAt },
+            announcementLead: .zero,
+            recovered: recovered
+        )
+        self.backend = backend
+        self.catalog = catalog
+        self.store = store
+        self.saver = saver
+        self.announcements = announcements
+        self.takesFolder = folder
+        self.opened = opened
+    }
+
+    /// When every window of these tests opens.
+    nonisolated static let opensAt = Date(timeIntervalSince1970: 1_791_000_000)
+}
+
+/// The sentences a window announced, in order.
+@MainActor
+final class SentenceLog {
+    var sentences: [String] = []
+}
+
+/// The books a window opened, in order.
+@MainActor
+final class BookLog {
+    var ids: [UUID] = []
+}
+
+/// A save that records what it was asked and fails when told to. A save
+/// that succeeds removes the take from the Recordings folder, as the
+/// library's save does once the book holds it.
+@MainActor
+final class FakeRecordingSaver {
+    /// One save asked of it.
+    struct Call {
+        let take: RecordedTake
+        let title: String
+        let folderPath: String
+        let policy: AudioOriginalPolicy
+    }
+
+    /// The saves asked, in order.
+    private(set) var calls: [Call] = []
+    /// The error the next saves throw, while set.
+    var failure: Error?
+
+    /// The save to hand the window. It holds the saver weakly, so a save a
+    /// window starts after its test ended fails rather than reaching a
+    /// saver that is gone.
+    var saver: RecordingWindowModel.Saver {
+        { [weak self] take, title, folderPath, policy in
+            guard let self else { throw CancellationError() }
+            calls.append(Call(take: take, title: title, folderPath: folderPath, policy: policy))
+            if let failure { throw failure }
+            RecordingTakeFiles.remove(take.url)
+            return Book(title: title, format: .audio, filePath: "/Recordings/\(title).m4a", md5Hash: UUID().uuidString, folderPath: folderPath)
+        }
+    }
+}
+
+extension XCTestCase {
+    /// Every accessibility element below `root` whose identifier is
+    /// `identifier`.
+    @MainActor
+    func accessibilityElements(identified identifier: String, in root: Any) -> [NSAccessibilityProtocol] {
+        guard let node = root as? NSAccessibilityProtocol else { return [] }
+        let match = node.accessibilityIdentifier() == identifier ? [node] : []
+        return match + (node.accessibilityChildren() ?? []).flatMap {
+            accessibilityElements(identified: identifier, in: $0)
+        }
+    }
+}

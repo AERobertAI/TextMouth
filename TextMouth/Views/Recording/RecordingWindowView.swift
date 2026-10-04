@@ -2,14 +2,16 @@ import SwiftUI
 
 /// The Record window (FR04): choose a microphone, title and place the
 /// recording, then Record, Pause or Resume, and Stop, which saves it as an
-/// audiobook.
+/// audiobook; and, first, the recordings a crash left behind, when there
+/// are any, to save or discard.
 ///
 /// Every control is a native one with an explicit label, value, and hint
 /// from `RecordingWording`, so VoiceOver and a braille display meet the same
 /// words the screen shows, in a plain form whose sections VoiceOver reads in
 /// order, and Tab reaches every control. VoiceOver starts on the Microphone
-/// pop-up. Record, Pause or Resume, and Stop answer Command-R, Command-P,
-/// and Command-Period, which nothing else in TextMouth uses. The elapsed time
+/// pop-up, or, in a window launch opened on recordings left behind, on the
+/// first of them. Record, Pause or Resume, and Stop answer Command-R,
+/// Command-P, and Command-Period, which nothing else in TextMouth uses. The elapsed time
 /// and the level are text that changes once a second and is read when the
 /// user moves to it, never spoken on its own; the drawn meter beside the
 /// level is for sighted helpers and hidden from VoiceOver.
@@ -27,6 +29,10 @@ struct RecordingWindowView: View {
 
     var body: some View {
         Form {
+            if !model.recoveredTakes.isEmpty {
+                recoveredTakesSection
+            }
+
             Section {
                 microphonePicker
                 TextField(RecordingWording.titleLabel, text: $model.title)
@@ -101,7 +107,44 @@ struct RecordingWindowView: View {
         .accessibilityLabel(RecordingWording.microphoneLabel)
         .accessibilityHint(RecordingWording.microphoneHint)
         .help(RecordingWording.microphoneHint)
-        .modifier(InitialVoiceOverFocusModifier(isTarget: true))
+        .modifier(InitialVoiceOverFocusModifier(isTarget: model.recoveredTakeFocusedAtOpen == nil))
+    }
+
+    /// The takes recordings left behind, first in the window, each with
+    /// Save as Audiobook and Discard. Each button names its take, since the
+    /// list can hold several, so the line saying the same is hidden from
+    /// VoiceOver rather than read three times. A window opened on them, as
+    /// launch opens it, starts VoiceOver on the first take's Save button.
+    private var recoveredTakesSection: some View {
+        Section {
+            ForEach(model.recoveredTakes) { recovered in
+                let take = RecordingWording.recoveredTake(startedAt: recovered.startedAt, duration: recovered.duration)
+                HStack {
+                    Text(take)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityHidden(true)
+                    Spacer()
+                    Button(RecordingWording.saveRecoveredTitle) {
+                        Task { await model.saveRecovered(recovered) }
+                    }
+                    .disabled(!model.canHandleRecoveredTakes || recovered.take == nil)
+                    .accessibilityLabel(RecordingWording.saveRecoveredLabel(take))
+                    .accessibilityHint(RecordingWording.saveRecoveredHint)
+                    .help(RecordingWording.saveRecoveredHint)
+                    .modifier(InitialVoiceOverFocusModifier(isTarget: recovered.id == model.recoveredTakeFocusedAtOpen))
+                    Button(RecordingWording.discardRecoveredTitle) {
+                        model.discardRecovered(recovered)
+                    }
+                    .disabled(!model.canHandleRecoveredTakes)
+                    .accessibilityLabel(RecordingWording.discardRecoveredLabel(take))
+                    .accessibilityHint(RecordingWording.discardRecoveredHint)
+                    .help(RecordingWording.discardRecoveredHint)
+                }
+            }
+        } header: {
+            Text(RecordingWording.recoveredHeading)
+                .accessibilityAddTraits(.isHeader)
+        }
     }
 
     /// The Save in pop-up: the top of the library and each of its folders.

@@ -249,6 +249,56 @@ enum RecordingWording {
     /// What the window says when the recording was discarded.
     static let discarded = "The recording was discarded."
 
+    // MARK: - Recovered Recordings
+
+    /// The heading of the takes recordings left behind, as a crash leaves
+    /// one (`RecoveredTake`).
+    static let recoveredHeading = "Recovered recordings"
+
+    /// What the window says, and VoiceOver announces, when it finds takes
+    /// left behind: how many, where they are listed, and what can be done
+    /// with them.
+    static func recoveredAnnouncement(count: Int) -> String {
+        guard count != 1 else {
+            return "TextMouth kept a recording from before it last quit, listed under Recovered recordings. "
+                + "Save it as an audiobook, or discard it."
+        }
+        return "TextMouth kept \(count) recordings from before it last quit, listed under Recovered recordings. "
+            + "Save each as an audiobook, or discard it."
+    }
+
+    /// A take left behind as the list shows it and VoiceOver reads it: when
+    /// it was recorded and how long it lasts, as "Recording of October 4,
+    /// 2026 at 6:30 AM, 1 minute, 4 seconds", or that it holds no sound.
+    static func recoveredTake(startedAt: Date, duration: TimeInterval?) -> String {
+        let when = startedAt.formatted(date: .long, time: .shortened)
+        guard let duration, duration > 0 else { return "Recording of \(when), which holds no sound" }
+        return "Recording of \(when), \(TimeFormatting.spoken(duration))"
+    }
+
+    /// The button that saves a take left behind.
+    static let saveRecoveredTitle = "Save as Audiobook"
+    /// Its label, naming the take, since the list can hold several.
+    static func saveRecoveredLabel(_ take: String) -> String {
+        "Save as Audiobook: \(take)"
+    }
+    /// Its hint.
+    static let saveRecoveredHint = "Saves this recording as an audiobook in the folder chosen in Save in, "
+        + "titled for when it was recorded."
+    /// The button that deletes a take left behind.
+    static let discardRecoveredTitle = "Discard"
+    /// Its label, naming the take.
+    static func discardRecoveredLabel(_ take: String) -> String {
+        "Discard: \(take)"
+    }
+    /// Its hint.
+    static let discardRecoveredHint = "Deletes this recording without saving it."
+    /// What the window says, and VoiceOver announces, when a take left
+    /// behind was discarded.
+    static func recoveredDiscarded(_ take: String) -> String {
+        "Discarded the \(take.lowercasedFirst)."
+    }
+
     // MARK: - Closing While Recording
 
     /// The question asked when the window closes while recording.

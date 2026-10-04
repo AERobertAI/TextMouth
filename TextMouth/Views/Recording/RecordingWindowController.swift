@@ -13,7 +13,9 @@ import SwiftUI
 /// show while it is in front (`MenuVisibilityManager`).
 ///
 /// File > New Recording… hands it the library model; the Library windows
-/// attach it as they appear, so Library > New Recording… finds it too.
+/// attach it as they appear, so Library > New Recording… finds it too. The
+/// first to appear has it look, once, for recordings a crash left behind,
+/// and open the window on them (`lookForRecoveredTakes`).
 @MainActor
 final class RecordingWindowController: NSObject, NSWindowDelegate {
     /// The app's controller.
@@ -28,16 +30,43 @@ final class RecordingWindowController: NSObject, NSWindowDelegate {
     private(set) var window: NSWindow?
     /// The window's model, while it is open.
     private(set) var model: RecordingWindowModel?
+    /// Whether launch has looked for recordings left behind, which it does
+    /// once.
+    private var hasLookedForRecoveredTakes = false
 
-    /// Makes `library` the one recordings are saved into.
+    /// Makes `library` the one recordings are saved into. The first time,
+    /// as the first Library window appears, looks for recordings left behind.
     func attach(_ library: LibraryViewModel) {
         self.library = library
+        lookForRecoveredTakes()
     }
 
-    /// Brings the Record window forward, opening it when it is not open.
+    /// At launch, once: when the Recordings folder holds takes that a crash,
+    /// a forced quit, or a save that failed after its window closed left
+    /// behind, opens the Record window, which lists them and says so, so
+    /// nobody has to know where to look. Reads the folder off the main
+    /// thread, and deletes nothing. A test host's launch never looks: its
+    /// windows are the tests' own.
+    private func lookForRecoveredTakes() {
+        guard !hasLookedForRecoveredTakes, !TextMouthRuntime.current.isHostedTest else { return }
+        hasLookedForRecoveredTakes = true
+        Task { [weak self] in
+            let found = await RecordingTakeFiles.readLeftovers()
+            // A take a recorder holds, as an audio editor's punch-in, is no
+            // recording left behind.
+            let inUse = RecordingService.takesInUse
+            let recovered = found.filter { !inUse.contains($0.url.standardizedFileURL) }
+            guard !recovered.isEmpty, let self, self.window == nil else { return }
+            DiagnosticLog.event(.playback, "RECORDING_TAKES_RECOVERED: \(recovered.count) take(s) left in the Recordings folder")
+            self.show(recovered: recovered)
+        }
+    }
+
+    /// Brings the Record window forward, opening it when it is not open:
+    /// on `recovered`, the takes left behind that launch found, when given.
     /// Does nothing before a library is attached, which happens as the
     /// first Library window appears.
-    func show(library: LibraryViewModel? = nil) {
+    func show(library: LibraryViewModel? = nil, recovered: [RecoveredTake] = []) {
         if let library {
             attach(library)
         }
@@ -50,7 +79,7 @@ final class RecordingWindowController: NSObject, NSWindowDelegate {
             DiagnosticLog.event(.app, "RECORDING_WINDOW_REFUSED: no library to save recordings into yet")
             return
         }
-        let model = makeModel(library: library)
+        let model = makeModel(library: library, recovered: recovered)
         let window = NSWindow(contentViewController: NSHostingController(rootView: RecordingWindowView(model: model)))
         window.title = RecordingWording.windowTitle
         window.identifier = NSUserInterfaceItemIdentifier(Self.windowIdentifier)
@@ -70,8 +99,9 @@ final class RecordingWindowController: NSObject, NSWindowDelegate {
     }
 
     /// The model of a new Record window saving into `library`, with this
-    /// Mac's microphones, the app's preferences, and VoiceOver.
-    private func makeModel(library: LibraryViewModel) -> RecordingWindowModel {
+    /// Mac's microphones, the app's preferences, and VoiceOver, opening on
+    /// `recovered`.
+    private func makeModel(library: LibraryViewModel, recovered: [RecoveredTake]) -> RecordingWindowModel {
         RecordingWindowModel(
             service: RecordingService.system(),
             catalog: SystemRecordingInputCatalog(),
@@ -85,7 +115,8 @@ final class RecordingWindowController: NSObject, NSWindowDelegate {
             },
             openBook: { bookID in
                 NotificationCenter.default.post(name: .openBookWindow, object: bookID)
-            }
+            },
+            recovered: recovered
         )
     }
 

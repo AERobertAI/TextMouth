@@ -3,8 +3,9 @@ import Combine
 
 /// What the Record window shows and does (FR04): the microphones and the
 /// one chosen, the title and folder a recording is saved under, Record,
-/// Pause or Resume, and Stop, the time and level once a second, and, once
-/// stopped, the saved book.
+/// Pause or Resume, and Stop, the time and level once a second, once
+/// stopped, the saved book, and the takes recordings left behind, as a
+/// crash leaves one, to save as audiobooks or discard (`RecoveredTake`).
 ///
 /// Stop asks nothing: it ends capture, saves the take as an audiobook
 /// (`Saver`), and announces "Saved Recording as <title>". A take that ends
@@ -71,6 +72,15 @@ final class RecordingWindowModel: ObservableObject {
     /// Whether the window offers to open the Microphone privacy settings:
     /// after a no that the user can change there.
     @Published private(set) var offersPrivacySettings = false
+    /// The takes recordings left behind that this window does not hold,
+    /// oldest first, listed under "Recovered recordings" (`RecoveredTake`).
+    @Published private(set) var recoveredTakes: [RecoveredTake] = []
+
+    /// The take left behind VoiceOver starts on, when the window opened on
+    /// such takes, as launch opens it: the first of them, rather than the
+    /// Microphone pop-up. Set once, as the window opens, so saving that take
+    /// never moves VoiceOver to the next.
+    let recoveredTakeFocusedAtOpen: URL?
 
     // MARK: Collaborators
 
@@ -102,6 +112,14 @@ final class RecordingWindowModel: ObservableObject {
     private var silentSeconds = 0
     /// Whether this take's silence was already announced.
     private var warnedOfSilence = false
+    /// The take being saved, while it is, so the takes left behind read
+    /// meanwhile leave it out.
+    private var takeBeingSaved: URL?
+    /// The titles of takes left behind whose save failed, by file, so Save
+    /// Again saves each under its own title rather than the Title field's.
+    private var recoveredTitles: [URL: String] = [:]
+    /// Whether the takes left behind were announced, which happens once.
+    private var hasAnnouncedRecoveredTakes = false
 
     /// How many seconds of digital silence, in a row, make the window say
     /// that no sound is reaching it: once per take.
@@ -122,6 +140,8 @@ final class RecordingWindowModel: ObservableObject {
     ///   - announcementLead: How long an announcement made before capture
     ///     starts or resumes is given to finish: a second in the app, none
     ///     in tests.
+    ///   - recovered: The takes left behind that launch found, which the
+    ///     window opens on; it reads the folder again itself either way.
     init(
         service: RecordingService,
         catalog: RecordingInputCatalog,
@@ -131,7 +151,8 @@ final class RecordingWindowModel: ObservableObject {
         announce: @escaping @MainActor (String) -> Void,
         openBook: @escaping @MainActor (UUID) -> Void,
         now: @escaping @MainActor () -> Date = { Date() },
-        announcementLead: Duration = .seconds(1)
+        announcementLead: Duration = .seconds(1),
+        recovered: [RecoveredTake] = []
     ) {
         self.service = service
         self.catalog = catalog
@@ -142,6 +163,8 @@ final class RecordingWindowModel: ObservableObject {
         self.openBook = openBook
         self.now = now
         self.announcementLead = announcementLead
+        recoveredTakes = recovered
+        recoveredTakeFocusedAtOpen = recovered.first?.id
         title = RecordingWording.defaultTitle(at: now())
         folders = Self.folderChoices(folderPaths())
         refreshDevices(announcingChanges: false)
@@ -154,6 +177,9 @@ final class RecordingWindowModel: ObservableObject {
                 // Published before the change: let it land, then respond.
                 Task { @MainActor in self?.recorderChanged(to: state) }
             }
+        // Takes a crash or a forced quit left behind are found as the
+        // window opens, off the main thread.
+        Task { [weak self] in await self?.refreshRecoveredTakes() }
     }
 
     // MARK: Microphones
@@ -295,10 +321,11 @@ final class RecordingWindowModel: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 
-    /// Tries again to save the take that could not be saved.
+    /// Tries again to save the take that could not be saved, under the
+    /// title it was to have: its own, for a take left behind.
     func saveAgain() async {
         guard case .saveFailed(let take, _) = phase else { return }
-        await save(take)
+        await save(take, recoveredTitle: recoveredTitles[take.url])
     }
 
     /// Deletes the take that could not be saved, or the one under way, and
@@ -310,6 +337,7 @@ final class RecordingWindowModel: ObservableObject {
         switch phase {
         case .saveFailed(let take, _):
             RecordingTakeFiles.remove(take.url)
+            recoveredTitles[take.url] = nil
         default:
             break
         }
@@ -349,37 +377,120 @@ final class RecordingWindowModel: ObservableObject {
         }
     }
 
-    /// Saves `take` as an audiobook with the title and folder chosen, under
-    /// the global policy. Announces "Saved Recording as <title>", or, after
-    /// a second still saving, that it is saving. A failure keeps the take.
-    private func save(_ take: RecordedTake) async {
+    /// Saves `take` as an audiobook in the folder chosen, under the global
+    /// policy: titled `recoveredTitle` when it is a take left behind,
+    /// otherwise with the Title field's title, which then starts over for
+    /// the next recording. Announces "Saved Recording as <title>", or, after
+    /// a second still saving, that it is saving. A failure keeps the take,
+    /// for Save Again or Discard Recording.
+    private func save(_ take: RecordedTake, recoveredTitle: String? = nil) async {
         phase = .saving
         status = RecordingWording.saving
-        let bookTitle = TextImportPolicy.resolvedTitle(title.trimmingCharacters(in: .whitespacesAndNewlines))
+        takeBeingSaved = take.url
+        let bookTitle = recoveredTitle ?? TextImportPolicy.resolvedTitle(title.trimmingCharacters(in: .whitespacesAndNewlines))
         let policy = AudioOriginalPolicy.global(in: store)
         let slowNotice = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled, let self, self.isSaving else { return }
             self.announce(RecordingWording.saving)
         }
-        defer { slowNotice.cancel() }
+        defer {
+            slowNotice.cancel()
+            takeBeingSaved = nil
+        }
         do {
             let book = try await saver(take, bookTitle, folderPath, policy)
+            recoveredTitles[take.url] = nil
             phase = .saved(book)
             status = RecordingWording.saved(title: book.title)
             announce(RecordingWording.savedAnnouncement(title: book.title))
             service.reset()
             elapsed = 0
             levels = nil
-            title = RecordingWording.defaultTitle(at: now())
+            if recoveredTitle == nil {
+                title = RecordingWording.defaultTitle(at: now())
+            }
             folders = Self.folderChoices(folderPaths())
         } catch {
+            if let recoveredTitle {
+                recoveredTitles[take.url] = recoveredTitle
+            }
             phase = .saveFailed(take, error.localizedDescription)
             tell(RecordingWording.saveFailed(reason: error.localizedDescription))
             // The take is the window's now; the recorder can be ready again
             // once it is saved or discarded.
             service.reset()
         }
+    }
+
+    // MARK: Takes Left Behind
+
+    /// The take files this window holds: the recorder's, the one being
+    /// saved, and the one that could not be saved. Any other take in the
+    /// Recordings folder was left behind.
+    var ownedTakes: Set<URL> {
+        var owned = Set<URL>()
+        if let url = service.takeInUse {
+            owned.insert(url.standardizedFileURL)
+        }
+        if let takeBeingSaved {
+            owned.insert(takeBeingSaved.standardizedFileURL)
+        }
+        if case .saveFailed(let take, _) = phase {
+            owned.insert(take.url.standardizedFileURL)
+        }
+        return owned
+    }
+
+    /// Whether a take left behind can be saved or discarded now: nothing is
+    /// recording, starting, or being saved, and no take of the window's
+    /// waits to be saved again, as the window handles one take at a time.
+    var canHandleRecoveredTakes: Bool {
+        service.canStart && !isSaving && !hasUnsavedTake
+    }
+
+    /// Reads again, off the main thread, the takes recordings left in the
+    /// Recordings folder, and lists those no window holds: neither this one
+    /// (`ownedTakes`) nor any other recorder, as an audio editor recording a
+    /// punch-in (`RecordingService.takesInUse`). What they hold is asked
+    /// after the files are read, so a take that started or ended meanwhile
+    /// is never taken for one left behind; while this window's take is
+    /// starting, the list stays as it was. The first takes found are
+    /// announced, once.
+    func refreshRecoveredTakes() async {
+        let found = await RecordingTakeFiles.readLeftovers(in: service.takesFolder)
+        guard service.state != .starting else { return }
+        let owned = ownedTakes.union(RecordingService.takesInUse)
+        recoveredTakes = found.filter {
+            !owned.contains($0.url.standardizedFileURL) && FileManager.default.fileExists(atPath: $0.url.path)
+        }
+        if !recoveredTakes.isEmpty, !hasAnnouncedRecoveredTakes {
+            hasAnnouncedRecoveredTakes = true
+            tell(RecordingWording.recoveredAnnouncement(count: recoveredTakes.count))
+        }
+    }
+
+    /// Saves the take left behind, `recovered`, as an audiobook titled for
+    /// when it was recorded, "Recording 2026-10-04 06:30", in the folder
+    /// chosen: the save Stop makes. It leaves the list at once; one that
+    /// cannot be saved stays the window's, for Save Again or Discard
+    /// Recording. The Title field stays as it is, for the next recording.
+    func saveRecovered(_ recovered: RecoveredTake) async {
+        guard canHandleRecoveredTakes, recoveredTakes.contains(recovered), let take = recovered.take else { return }
+        recoveredTakes.removeAll { $0.id == recovered.id }
+        await save(take, recoveredTitle: RecordingWording.defaultTitle(at: take.startedAt))
+    }
+
+    /// Deletes the take left behind, `recovered`, with the encoding a save
+    /// cut off may have left beside it, and says so.
+    func discardRecovered(_ recovered: RecoveredTake) {
+        guard canHandleRecoveredTakes, recoveredTakes.contains(recovered) else { return }
+        RecordingTakeFiles.remove(recovered.url)
+        RecordingTakeFiles.remove(RecordingTakeFiles.encodingURL(for: recovered.url))
+        recoveredTakes.removeAll { $0.id == recovered.id }
+        tell(RecordingWording.recoveredDiscarded(
+            RecordingWording.recoveredTake(startedAt: recovered.startedAt, duration: recovered.duration)
+        ))
     }
 
     // MARK: Once a Second
@@ -480,7 +591,7 @@ final class RecordingWindowModel: ObservableObject {
     /// the book is in the library. A failure keeps the take.
     static func librarySaver(_ library: LibraryViewModel) -> Saver {
         { take, title, folderPath, policy in
-            let encoded = take.url.deletingPathExtension().appendingPathExtension("m4a")
+            let encoded = RecordingTakeFiles.encodingURL(for: take.url)
             defer { RecordingTakeFiles.remove(encoded) }
             try await RecordingEncoder.encode(take: take.url, to: encoded, title: title)
             let book = try await library.saveRecording(
