@@ -123,6 +123,10 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 showAddFeed()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .refreshAllFeeds)) { notification in
+                guard takesCommand(notification) else { return }
+                presenter.refreshAll(in: context)
+            }
             .sheet(item: $presenter.addFeed, onDismiss: {
                 presenter.addFeedDidClose(in: hostWindow, center: feedFolders.center)
             }, content: { model in
@@ -210,6 +214,9 @@ extension Notification.Name {
     /// button: the Library window that takes the command opens the Add Feed
     /// sheet (FR03).
     static let addFeed = Notification.Name("addFeed")
+    /// Posted by Library > Refresh All Feeds: the Library window that takes
+    /// the command refreshes every feed and says what came (FR03).
+    static let refreshAllFeeds = Notification.Name("refreshAllFeeds")
 }
 
 /// The feed reader's keyboard shortcuts (FR03).

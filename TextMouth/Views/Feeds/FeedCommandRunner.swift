@@ -15,6 +15,20 @@ struct FeedCommandContext {
     let window: NSWindow?
 }
 
+extension FeedCenter {
+    /// Refreshes every feed because the listener asked, from Library >
+    /// Refresh All Feeds or Preferences, saying through `announce` that it
+    /// started and, once done, what came (FR03).
+    /// - Returns: How the refresh ended.
+    @discardableResult
+    func refreshAllSaying(_ announce: @escaping @MainActor (String) -> Void) async -> FeedRefreshSummary {
+        announce(FeedSettingsWording.refreshing)
+        let summary = await refreshAll(origin: .listener)
+        announce(FeedWording.refreshedAll(summary, in: self))
+        return summary
+    }
+}
+
 /// A question asked before a command that can't be undone (FR03): Delete
 /// Episode or Delete Article, and Unsubscribe.
 struct FeedConfirmation: Identifiable, Equatable {
@@ -155,6 +169,20 @@ extension LibraryFeedsPresenter {
                 message: FeedWording.deleteItemMessage(isArticle: item.isArticle),
                 confirmTitle: FeedWording.deleteItemButton(isArticle: item.isArticle)
             )
+        }
+    }
+
+    // MARK: Every Feed
+
+    /// Refreshes every feed now, as Library > Refresh All Feeds asks, and
+    /// says what came, from the window it was chosen in.
+    /// - Returns: The refresh, which tests await.
+    @discardableResult
+    func refreshAll(in context: FeedCommandContext) -> Task<Void, Never> {
+        Task {
+            await context.center.refreshAllSaying { [weak self] message in
+                self?.announce(message, context.window)
+            }
         }
     }
 

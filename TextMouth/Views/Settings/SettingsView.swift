@@ -36,6 +36,12 @@ struct SettingsView: View {
                     Label("Stats", systemImage: "chart.bar")
                 }
 
+            // The podcast and article feeds' settings (FR03).
+            FeedSettingsView()
+                .tabItem {
+                    Label(FeedSettingsWording.tabTitle, systemImage: "dot.radiowaves.up.forward")
+                }
+
             StorageSettingsView()
                 .tabItem {
                     Label("Storage", systemImage: "folder.badge.gearshape")
@@ -46,7 +52,9 @@ struct SettingsView: View {
                     Label("Miscellaneous", systemImage: "gearshape.2")
                 }
         }
-        .frame(width: 600, height: 540)
+        // Wide enough for the nine tabs' toolbar to show every one, so none
+        // hides in the toolbar's overflow menu.
+        .frame(width: 700, height: 540)
     }
 }
 

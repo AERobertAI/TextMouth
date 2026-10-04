@@ -16,6 +16,8 @@ enum FeedWording {
     static let addFeedCommand = "Add Feed…"
     /// The Library window's toolbar button's title.
     static let addFeedToolbarTitle = "Add Feed"
+    /// The Library menu's command that refreshes every feed now.
+    static let refreshAllCommand = "Refresh All Feeds"
     /// The toolbar button's spoken label.
     static let addFeedButtonLabel = "Add a podcast or article feed"
     /// The toolbar button's spoken hint.

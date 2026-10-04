@@ -181,6 +181,11 @@ struct LibraryCommands: Commands {
             }
             .keyboardShortcut(FeedShortcuts.addFeed)
 
+            // Checks every feed now; the key Library window says what came.
+            Button(FeedWording.refreshAllCommand) {
+                NotificationCenter.default.post(name: .refreshAllFeeds, object: nil)
+            }
+
             Divider()
 
             Button("Edit Mode") {

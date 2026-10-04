@@ -1,0 +1,168 @@
+import SwiftUI
+
+// MARK: - Preferences, Feeds (FR03)
+
+/// The Feeds tab of Preferences (FR03): the seven feed settings the
+/// listener decided on October 4, each a labelled control, with the unit in
+/// the words of every number (`FeedSettings`, kept through
+/// `SettingsViewModel.feedSettings`, which config.json mirrors), and Refresh
+/// All Feeds Now.
+///
+/// The three numbers are drawn as the Repeated Symbols threshold is, each
+/// with its off value as a checkbox (`FeedThresholdControl`): refreshing
+/// only at launch and when asked, keeping every entry, and never deleting a
+/// played download.
+struct FeedSettingsView: View {
+    @EnvironmentObject var settingsViewModel: SettingsViewModel
+    /// The feed engine Refresh All Feeds Now refreshes: the app's, unless a
+    /// test shows its own.
+    var center: FeedCenter = .shared
+    /// Speaks what Refresh All Feeds Now found: through VoiceOver, unless a
+    /// test listens instead.
+    var announce: @MainActor (String) -> Void = { VoiceOverAnnouncer.announce($0) }
+
+    /// Whether Refresh All Feeds Now is refreshing.
+    @State private var isRefreshing = false
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle(FeedSettingsWording.refreshAtLaunch, isOn: binding(\.refreshAtLaunch))
+                    .accessibilityHint(FeedSettingsWording.refreshAtLaunchHint)
+                FeedThresholdControl(
+                    rule: SettingsPolicy.feedRefreshIntervalHours,
+                    wording: .refreshInterval,
+                    value: binding(\.refreshIntervalHours)
+                )
+                HStack(spacing: 8) {
+                    Button(FeedSettingsWording.refreshAllNow) {
+                        refreshAll()
+                    }
+                    .disabled(isRefreshing || center.feeds.isEmpty)
+                    .accessibilityHint(FeedSettingsWording.refreshAllNowHint)
+                    if isRefreshing {
+                        SheetWorkIndicator(label: FeedSettingsWording.refreshing)
+                    }
+                }
+            } header: {
+                Text(FeedSettingsWording.refreshingHeading)
+            }
+
+            Section {
+                FeedThresholdControl(
+                    rule: SettingsPolicy.feedKeepEntries,
+                    wording: .keepEntries,
+                    value: binding(\.keepEntries)
+                )
+                Toggle(FeedSettingsWording.autoDownload, isOn: binding(\.autoDownload))
+                    .accessibilityHint(FeedSettingsWording.autoDownloadHint)
+                FeedThresholdControl(
+                    rule: SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed,
+                    wording: .deleteDownloadsAfterPlaying,
+                    value: binding(\.deleteDownloadsDaysAfterPlayed)
+                )
+                Text(FeedSettingsWording.perFeedNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } header: {
+                Text(FeedSettingsWording.itemsHeading)
+            }
+
+            Section {
+                Toggle(FeedSettingsWording.refreshAlert, isOn: binding(\.refreshAlert))
+                    .accessibilityHint(FeedSettingsWording.refreshAlertHint)
+                Toggle(FeedSettingsWording.notifications, isOn: binding(\.notifications))
+                    .accessibilityHint(FeedSettingsWording.notificationsHint)
+            } header: {
+                Text(FeedSettingsWording.newItemsHeading)
+            }
+        }
+        .padding()
+    }
+
+    /// A binding to one feed setting, saved as it changes.
+    private func binding<Value>(_ keyPath: WritableKeyPath<FeedSettings, Value>) -> Binding<Value> {
+        Binding(
+            get: { settingsViewModel.feedSettings[keyPath: keyPath] },
+            set: { value in
+                var settings = settingsViewModel.feedSettings
+                settings[keyPath: keyPath] = value
+                settingsViewModel.feedSettings = settings
+            }
+        )
+    }
+
+    /// Refreshes every feed now, as the listener asked, and says what came.
+    private func refreshAll() {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        let center = center
+        let announce = announce
+        Task {
+            await center.refreshAllSaying(announce)
+            isRefreshing = false
+        }
+    }
+}
+
+// MARK: - Words
+
+/// The words of the Feeds tab of Preferences (FR03).
+enum FeedSettingsWording {
+    /// The tab's name.
+    static let tabTitle = "Feeds"
+    /// The first group's heading.
+    static let refreshingHeading = "Refreshing"
+    /// The second group's heading.
+    static let itemsHeading = "Episodes and Articles"
+    /// The third group's heading.
+    static let newItemsHeading = "When New Episodes Arrive"
+
+    /// Refreshing at launch.
+    static let refreshAtLaunch = "Refresh every feed when TextMouth opens"
+    /// Its hint.
+    static let refreshAtLaunchHint = "Checks every feed for new episodes and articles once the library has opened"
+    /// Refresh All Feeds Now.
+    static let refreshAllNow = "Refresh All Feeds Now"
+    /// Its hint.
+    static let refreshAllNowHint = "Checks every feed now and says what came"
+    /// What shows, and VoiceOver hears, while every feed is refreshed.
+    static let refreshing = "Refreshing all feeds…"
+    /// Downloading by themselves.
+    static let autoDownload = "Download new episodes and articles by themselves"
+    /// Its hint.
+    static let autoDownloadHint = "When off, an episode downloads when you open it or choose Download"
+    /// The note under the numbers.
+    static let perFeedNote = "A feed can keep its own number of entries and its own days before deleting played downloads, in its Feed Info."
+    /// The refresh alert.
+    static let refreshAlert = "Show an alert when a refresh brings new episodes"
+    /// Its hint.
+    static let refreshAlertHint = "After a refresh TextMouth makes by itself, at launch or on the interval, an alert names the feeds with new episodes and articles"
+    /// Notifications.
+    static let notifications = "Post a notification for each feed with new episodes"
+    /// Its hint.
+    static let notificationsHint = "After a refresh TextMouth makes by itself, a notification names each feed with new episodes and articles"
+}
+
+extension FeedWording {
+    /// What VoiceOver hears once every feed has been refreshed because the
+    /// listener asked: how many feeds, how many new items, and which feeds
+    /// could not be refreshed. `center` names the new items' kind.
+    @MainActor
+    static func refreshedAll(_ summary: FeedRefreshSummary, in center: FeedCenter) -> String {
+        guard !summary.reports.isEmpty else { return "There are no feeds to refresh." }
+        let newItems = summary.reports.flatMap { report in
+            report.newItemIDs.compactMap { center.store.record(of: report.feedID)?.item($0) }
+        }
+        let noun = ItemNoun.of(newItems)
+        let found = summary.newItemCount == 0
+            ? "nothing new."
+            : "\(summary.newItemCount) new \(summary.newItemCount == 1 ? noun.singular : noun.plural)."
+        var sentence = "Refreshed \(CountWording.phrase(summary.reports.count, singular: "feed", plural: "feeds")): \(found)"
+        if !summary.failedFeedTitles.isEmpty {
+            sentence += " Couldn't refresh \(LibraryCloudWording.list(summary.failedFeedTitles))."
+        }
+        return sentence
+    }
+}
