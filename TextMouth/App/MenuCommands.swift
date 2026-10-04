@@ -326,13 +326,15 @@ extension FocusedValues {
 /// the books selected in the Library window that is key, which each
 /// decides for itself through `WindowCommandRouting`. The reader's Book
 /// menu opens its book's text in the user's own editor, and transcribes an
-/// audiobook's audio or deletes its transcript; MenuVisibilityManager shows
-/// it only while a reader is in front. Edit Text is unavailable for an
-/// audiobook without a transcript, Transcribe Audio… for a text book, and
+/// audiobook's audio, cleans up its transcript, or deletes it;
+/// MenuVisibilityManager shows it only while a reader is in front. Edit
+/// Text is unavailable for an audiobook without a transcript, Transcribe
+/// Audio… for a text book, and Clean Up Transcript (Experimental)… and
 /// Delete Transcript… for a book without a transcript.
 struct BookCommands: Commands {
     @FocusedValue(\.canEditBookText) var canEditBookText
     @FocusedValue(\.canTranscribeBookAudio) var canTranscribeBookAudio
+    @FocusedValue(\.canCleanUpBookTranscript) var canCleanUpBookTranscript
     @FocusedValue(\.canDeleteBookTranscript) var canDeleteBookTranscript
 
     var body: some Commands {
@@ -361,6 +363,11 @@ struct BookCommands: Commands {
                 NotificationCenter.default.post(name: .transcribeBookAudio, object: nil)
             }
             .disabled(canTranscribeBookAudio != true)
+
+            Button(TranscriptCleanupWording.commandTitle) {
+                NotificationCenter.default.post(name: .cleanUpBookTranscript, object: nil)
+            }
+            .disabled(canCleanUpBookTranscript != true)
 
             Button(TranscriptionWording.deleteCommandTitle) {
                 NotificationCenter.default.post(name: .deleteBookTranscript, object: nil)
