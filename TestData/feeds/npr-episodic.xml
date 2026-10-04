@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/" xmlns:podcast="https://podcastindex.org/namespace/1.0" version="2.0">
+  <channel>
+    <title>Ledger Lines</title>
+    <link>https://radio.example/podcasts/ledger-lines</link>
+    <description><![CDATA[Every question about money hides a story about people. <em>Ledger Lines</em> follows the receipts.<br><br><em>Support the show at </em><a href="http://support.example/"target="_blank"   ><em>support.example</em></a><em>.</em>]]></description>
+    <copyright>Copyright 2015-2026 Example Public Radio</copyright>
+    <generator>Example Feed Publish Service v2.3.23</generator>
+    <language>en</language>
+    <itunes:author>Example Public Radio</itunes:author>
+    <itunes:block>no</itunes:block>
+    <itunes:owner>
+      <itunes:email>podcasts@radio.example</itunes:email>
+      <itunes:name>Example Public Radio</itunes:name>
+    </itunes:owner>
+    <itunes:category text="Business"/>
+    <itunes:category text="News"/>
+    <media:thumbnail url="https://images.example/ledger-lines-wide.jpg?s=5938&amp;c=66&amp;f=jpg" height="3340" width="5938"/>
+    <itunes:image href="https://images.example/ledger-lines-square.jpg?s=1400&amp;c=66&amp;f=jpg"/>
+    <itunes:type>episodic</itunes:type>
+    <image>
+      <url>https://images.example/ledger-lines-square.jpg?s=1400&amp;c=66&amp;f=jpg</url>
+      <title>Ledger Lines</title>
+      <link>https://radio.example/podcasts/ledger-lines</link>
+    </image>
+    <lastBuildDate>Sat, 03 Oct 2026 18:25:03 +0000</lastBuildDate>
+    <media:restriction type="country" relationship="allow">ad ar at au be bg bo br ca ch cl co cr cy cz de dk do ec ee es fi fr gb gr gt hn hu id ie il is it jp li lt lu lv mc mt mx my ni nl no nz pa pe pl pt py ro se sk sv th us uy za</media:restriction>
+    <podcast:funding url="https://support.example/?utm_source=podcast_rss_funding_tag">Support the show!</podcast:funding>
+    <item>
+      <title>Why the vending machine kept your dollar</title>
+      <description><![CDATA[A coin mechanism, a bill validator, and a warehouse of refunds nobody claims. We follow one crumpled dollar from the slot to the books of a snack company.<br/><br/><strong><em>Read:</em></strong><em> </em><br><em>- Our newsletter </em><a href="https://news.radio.example/ledger"target="_blank"   ><em>Ledger Notes</em></a><br/><br/><em>This episode was hosted by Margit Huhta and produced by Dev Raghunathan.</em>]]></description>
+      <pubDate>Fri, 02 Oct 2026 23:14:21 +0000</pubDate>
+      <guid isPermaLink="false">f35873ff-fecc-4857-bc2d-0f8a1a1202d5</guid>
+      <link>https://radio.example/2026/10/02/vending-machine-dollar</link>
+      <itunes:block>no</itunes:block>
+      <itunes:title>Why the vending machine kept your dollar</itunes:title>
+      <itunes:image href="https://images.example/vending-machine-dollar-square.jpg"/>
+      <media:thumbnail height="720" width="1280" url="https://images.example/vending-machine-dollar-wide.jpg"/>
+      <itunes:duration>1780</itunes:duration>
+      <itunes:explicit>no</itunes:explicit>
+      <itunes:episodeType>full</itunes:episodeType>
+      <content:encoded><![CDATA[A coin mechanism, a bill validator, and a warehouse of refunds nobody claims. We follow one crumpled dollar from the slot to the books of a snack company.<br/><br/><strong><em>Read:</em></strong><em> </em><br><em>- Our newsletter </em><a href="https://news.radio.example/ledger"target="_blank"   ><em>Ledger Notes</em></a><br/><br/><em>This episode was hosted by Margit Huhta and produced by Dev Raghunathan.</em>]]></content:encoded>
+      <enclosure length="28490275" type="audio/mpeg" url="https://tracking.example/track/4f2a/prefix.example/e/play.example/radio-510289/audio.example/43b5acee-463e-4612-95ad-d2596d9dd337/episodes/e2affd6c-dcac-45d1-b7c9-010b9f3cac4b/audio/128/default.mp3?awCollectionId=43b5acee-463e-4612-95ad-d2596d9dd337&amp;awEpisodeId=e2affd6c-dcac-45d1-b7c9-010b9f3cac4b&amp;feed=hvWWWzRv&amp;t=podcast&amp;e=nx-s1-5989651&amp;p=510289&amp;d=1780&amp;size=28490275"/>
+    </item>
+    <item>
+      <title>The price of a used piano</title>
+      <description><![CDATA[Upright pianos are being given away by the thousand. Movers, tuners, and a scrapyard explain what happens to an instrument nobody will pay for.]]></description>
+      <pubDate>Wed, 30 Sep 2026 14:55:43 +0000</pubDate>
+      <guid isPermaLink="false">84e80865-2556-470a-9f62-d1106c5aede6</guid>
+      <link>https://radio.example/2026/10/02/used-piano-price</link>
+      <itunes:block>no</itunes:block>
+      <itunes:title>The price of a used piano</itunes:title>
+      <itunes:image href="https://images.example/used-piano-price-square.jpg"/>
+      <media:thumbnail height="720" width="1280" url="https://images.example/used-piano-price-wide.jpg"/>
+      <itunes:duration>1753</itunes:duration>
+      <itunes:explicit>no</itunes:explicit>
+      <itunes:episodeType>full</itunes:episodeType>
+      <content:encoded><![CDATA[Upright pianos are being given away by the thousand. Movers, tuners, and a scrapyard explain what happens to an instrument nobody will pay for.<br/><br/><em>Correction: an earlier version of this episode misstated the weight of a grand piano.</em>]]></content:encoded>
+      <enclosure length="28062284" type="audio/mpeg" url="https://tracking.example/track/4f2a/prefix.example/e/play.example/radio-510289/audio.example/43b5acee-463e-4612-95ad-d2596d9dd337/episodes/47d744ef-f06a-4638-936e-6eea1d635b37/audio/128/default.mp3?awCollectionId=43b5acee-463e-4612-95ad-d2596d9dd337&amp;awEpisodeId=47d744ef-f06a-4638-936e-6eea1d635b37&amp;feed=hvWWWzRv&amp;t=podcast&amp;e=nx-s1-5985851&amp;p=510289&amp;d=1753&amp;size=28062284"/>
+    </item>
+    <item>
+      <title>Who owns the queue</title>
+      <description><![CDATA[Line-standing services, ticket bots, and the restaurant that sells its waiting list. A short history of selling time spent standing still.]]></description>
+      <pubDate>Fri, 25 Sep 2026 21:46:44 +0000</pubDate>
+      <guid isPermaLink="false">10652924-571e-4b6e-bd4f-11f819c1dc21</guid>
+      <link>https://radio.example/2026/10/02/who-owns-the-queue</link>
+      <itunes:block>no</itunes:block>
+      <itunes:title>Who owns the queue</itunes:title>
+      <itunes:image href="https://images.example/who-owns-the-queue-square.jpg"/>
+      <media:thumbnail height="720" width="1280" url="https://images.example/who-owns-the-queue-wide.jpg"/>
+      <itunes:duration>1843</itunes:duration>
+      <itunes:explicit>no</itunes:explicit>
+      <itunes:episodeType>full</itunes:episodeType>
+      <content:encoded><![CDATA[Line-standing services, ticket bots, and the restaurant that sells its waiting list. A short history of selling time spent standing still.]]></content:encoded>
+      <enclosure length="29504661" type="audio/mpeg" url="https://tracking.example/track/4f2a/prefix.example/e/play.example/radio-510289/audio.example/43b5acee-463e-4612-95ad-d2596d9dd337/episodes/f5cd8dff-e3d2-4fd9-9cce-baa9b3ba6fa6/audio/128/default.mp3?awCollectionId=43b5acee-463e-4612-95ad-d2596d9dd337&amp;awEpisodeId=f5cd8dff-e3d2-4fd9-9cce-baa9b3ba6fa6&amp;feed=hvWWWzRv&amp;t=podcast&amp;e=nx-s1-5981194&amp;p=510289&amp;d=1843&amp;size=29504661"/>
+    </item>
+  </channel>
+</rss>

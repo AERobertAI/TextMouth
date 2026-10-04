@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<channel><title>Moving Pictures, Heard</title><link>https://video.example/</link><description>A video podcast, played as sound.</description>
+<item><title>A workshop tour</title><enclosure url="http://video.example/tour.mp4" length="7340032" type="video/mp4"/>
+<guid isPermaLink="false">video-1</guid><pubDate>Mon, 28 Sep 2026 12:00:00 +0000</pubDate><itunes:duration>421</itunes:duration></item>
+<item><title>Notes only</title><link>https://video.example/notes</link><description>No file at all.</description>
+<guid isPermaLink="false">video-2</guid><pubDate>Sun, 27 Sep 2026 12:00:00 +0000</pubDate></item>
+<item><title>A booklet</title><enclosure url="https://video.example/booklet.pdf" length="1024" type="application/pdf"/>
+<guid isPermaLink="false">video-3</guid><pubDate>Sat, 26 Sep 2026 12:00:00 +0000</pubDate></item>
+</channel></rss>

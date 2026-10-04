@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel><title>Fault Lines</title><link>https://faults.example/</link><description>Feeds with one fault each.</description>
+<item><title>One&nbsp;two</title><description>Caf&eacute; recordings</description>
+<content:encoded><![CDATA[<p>Full <b>text</b> &nbsp; here.</p>]]></content:encoded>
+<enclosure url="https://cdn.example/1.mp3" length="1234" type="audio/mpeg"/>
+<guid isPermaLink="false">ep-1</guid><pubDate>Wed, 02 Oct 2002 13:00:00 GMT</pubDate>
+<itunes:duration>1:02:03</itunes:duration></item>
+<item><title>Second episode</title><enclosure url="https://cdn.example/2.mp3" length="99" type="audio/mpeg"/><guid>ep-2</guid><pubDate>Thu, 03 Oct 2002 13:00:00 GMT</pubDate></item>
+<item><title>Third episode</title><enclosure url="https://cdn.example/3.mp3" length="98" type="audio/mpeg"/><guid>ep-3</guid><pubDate>Fri, 04 Oct 2002 13:00:00 GMT</pubDate></item>
+</channel></rss>
