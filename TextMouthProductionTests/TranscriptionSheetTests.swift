@@ -19,7 +19,8 @@ final class TranscriptionSheetTests: XCTestCase {
 
     /// Transcribe Audio… is offered whenever an audiobook in a package of
     /// its own is among the books a row's commands act on, under the same
-    /// name in the menu and among VoiceOver's actions, and never for text
+    /// name in the menu and among VoiceOver's actions, after Edit Audio…
+    /// (FR04) when the row acts on that audiobook alone, and never for text
     /// books alone.
     func testTranscribeAudioIsOfferedWheneverAnAudiobookIsAmongTheBooks() {
         let audiobook = Self.audiobook("Harbour Bells")
@@ -27,13 +28,13 @@ final class TranscriptionSheetTests: XCTestCase {
                             tmbDirectoryName: "lock.tmb")
         let unpackaged = Book(title: "Loose Track", format: .audio, filePath: "/nonexistent/loose.mp3", md5Hash: "loose")
 
-        XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [audiobook]), [.transcribe([audiobook])])
+        XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [audiobook]), [.editAudio(audiobook), .transcribe([audiobook])])
         XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [textBook, audiobook]), [.transcribe([textBook, audiobook])])
         XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [textBook]), [])
         XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [unpackaged]), [])
         XCTAssertEqual(LibraryTranscriptionCommand.transcribe([audiobook]).title, "Transcribe Audio…")
         let row = BookRow(book: audiobook, transcriptionCommands: LibraryTranscriptionCommand.commands(for: [audiobook]))
-        XCTAssertEqual(row.accessibilityActionNames, ["Transcribe Audio…"])
+        XCTAssertEqual(row.accessibilityActionNames, ["Edit Audio…", "Transcribe Audio…"])
     }
 
     /// One audiobook opens its sheet; several books, or a book that is not

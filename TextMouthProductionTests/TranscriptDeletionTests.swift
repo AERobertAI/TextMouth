@@ -14,9 +14,10 @@ final class TranscriptDeletionTests: XCTestCase {
     // MARK: - The Command
 
     /// Delete Transcript… is offered for one transcribed audiobook alone,
-    /// after Transcribe Audio… and Clean Up Transcript (Experimental)…,
-    /// under the same name in the menu and among VoiceOver's actions; never
-    /// for several books, or a book without a transcript.
+    /// after Edit Audio… (FR04), Transcribe Audio…, and Clean Up Transcript
+    /// (Experimental)…, under the same name in the menu and among
+    /// VoiceOver's actions; never for several books, or a book without a
+    /// transcript.
     func testDeleteTranscriptIsOfferedForOneTranscribedAudiobook() {
         let book = TranscriptionSheetTests.audiobook("Harbour Bells")
         let other = TranscriptionSheetTests.audiobook("Tide Clock")
@@ -24,9 +25,12 @@ final class TranscriptDeletionTests: XCTestCase {
 
         XCTAssertEqual(
             LibraryTranscriptionCommand.commands(for: [book], isTranscribed: transcribed),
-            [.transcribe([book]), .cleanUpTranscript(book), .deleteTranscript(book)]
+            [.editAudio(book), .transcribe([book]), .cleanUpTranscript(book), .deleteTranscript(book)]
         )
-        XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [other], isTranscribed: transcribed), [.transcribe([other])])
+        XCTAssertEqual(
+            LibraryTranscriptionCommand.commands(for: [other], isTranscribed: transcribed),
+            [.editAudio(other), .transcribe([other])]
+        )
         XCTAssertEqual(
             LibraryTranscriptionCommand.commands(for: [book, other], isTranscribed: transcribed),
             [.transcribe([book, other])]
@@ -37,7 +41,10 @@ final class TranscriptDeletionTests: XCTestCase {
             transcriptionNote: .transcribed,
             transcriptionCommands: LibraryTranscriptionCommand.commands(for: [book], isTranscribed: transcribed)
         )
-        XCTAssertEqual(row.accessibilityActionNames, ["Transcribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"])
+        XCTAssertEqual(
+            row.accessibilityActionNames,
+            ["Edit Audio…", "Transcribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"]
+        )
     }
 
     // MARK: - Deleting
