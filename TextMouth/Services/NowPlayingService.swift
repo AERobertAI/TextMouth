@@ -568,18 +568,12 @@ final class NowPlayingService {
         // Play command: only resume, never toggle. Suppressed after device changes
         // to prevent macOS from auto-starting playback when Bluetooth disconnects.
         commandCenter.playCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.playCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.play))
-        }
+        registerRemoteCommand(commandCenter.playCommand, for: .play)
 
         // Pause command: only pause, never toggle. Always safe to forward —
         // even during the suppress window, pausing is the correct behaviour.
         commandCenter.pauseCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.pauseCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.pause))
-        }
+        registerRemoteCommand(commandCenter.pauseCommand, for: .pause)
 
         // Toggle command: in normal operation, reflects genuine user intent
         // (media keys, AirPods single-tap). During the suppress window, though,
@@ -587,37 +581,68 @@ final class NowPlayingService {
         // `rcd` forwards. We gate it so the bug cannot flip a paused book into
         // playback on the wrong output device.
         commandCenter.togglePlayPauseCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.togglePlayPauseCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.togglePlayPause))
-        }
+        registerRemoteCommand(commandCenter.togglePlayPauseCommand, for: .togglePlayPause)
 
         commandCenter.skipForwardCommand.isEnabled = true
         commandCenter.skipForwardCommand.preferredIntervals = [30]
-        registerRemoteCommand(commandCenter.skipForwardCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.skipForward))
-        }
+        registerRemoteCommand(commandCenter.skipForwardCommand, for: .skipForward)
 
         commandCenter.skipBackwardCommand.isEnabled = true
         commandCenter.skipBackwardCommand.preferredIntervals = [15]
-        registerRemoteCommand(commandCenter.skipBackwardCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.skipBackward))
-        }
+        registerRemoteCommand(commandCenter.skipBackwardCommand, for: .skipBackward)
 
         // Next/previous track (AirPods double-tap, etc.) maps to skip forward/backward
         // since that's the most common user expectation for a book reader
         commandCenter.nextTrackCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.nextTrackCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.nextTrack))
-        }
+        registerRemoteCommand(commandCenter.nextTrackCommand, for: .nextTrack)
 
         commandCenter.previousTrackCommand.isEnabled = true
-        registerRemoteCommand(commandCenter.previousTrackCommand) { [weak self] _ in
-            guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.previousTrack))
+        registerRemoteCommand(commandCenter.previousTrackCommand, for: .previousTrack)
+    }
+
+    /// The handler MediaPlayer calls when the system sends `request`'s
+    /// command, from the AirPods, the media keys, or Control Center.
+    ///
+    /// It is made here, outside the main actor, so that it is not isolated
+    /// to it. MediaPlayer does not say which thread it calls a handler on,
+    /// and in the Swift 6 language mode a handler made in main-actor code
+    /// checks, as it begins, that it runs on the main thread, stopping the
+    /// app anywhere else; the Swift 5 builds before a0bad26 checked nothing.
+    /// The command itself goes to `receiveRemoteCommand(_:by:)`. The service
+    /// is held weakly, as the registration outlives no one but the app.
+    nonisolated private static func remoteCommandHandler(
+        for request: RemoteMediaCommandRequest,
+        of service: NowPlayingService
+    ) -> (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
+        { [weak service] _ in
+            Self.receiveRemoteCommand(request, by: service)
+        }
+    }
+
+    /// Takes `request`, a command MediaPlayer delivered on whichever thread
+    /// it chose, into `service` without ever stopping the app.
+    ///
+    /// On the main thread, where MediaPlayer has delivered every command so
+    /// far, the command is accepted at once (`acceptRemoteCommand(_:)`), and
+    /// MediaPlayer hears whether a reader owns media controls. On any other
+    /// thread the command is accepted on the main queue, in the order it
+    /// arrived, and MediaPlayer hears success, since main-actor state cannot
+    /// be read there and waiting for the main thread could deadlock with it.
+    ///
+    /// - Returns: What MediaPlayer hears; failure when the service is gone.
+    nonisolated static func receiveRemoteCommand(
+        _ request: RemoteMediaCommandRequest,
+        by service: NowPlayingService?
+    ) -> MPRemoteCommandHandlerStatus {
+        guard let service else { return .commandFailed }
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async {
+                _ = service.acceptRemoteCommand(request)
+            }
+            return .success
+        }
+        return MainActor.assumeIsolated {
+            service.mediaPlayerStatus(for: service.acceptRemoteCommand(request))
         }
     }
 
@@ -1016,13 +1041,12 @@ final class NowPlayingService {
         ownerID.map(shortOwnerID) ?? "none"
     }
 
-    /// Retains the opaque token returned by MediaPlayer so removal can target
-    /// precisely the block TextMouth installed.
-    private func registerRemoteCommand(
-        _ command: MPRemoteCommand,
-        handler: @escaping (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
-    ) {
-        let target = command.addTarget(handler: handler)
+    /// Gives `command` the handler that delivers `request`
+    /// (`remoteCommandHandler(for:of:)`), and retains the opaque token
+    /// returned by MediaPlayer so removal can target precisely the block
+    /// TextMouth installed.
+    private func registerRemoteCommand(_ command: MPRemoteCommand, for request: RemoteMediaCommandRequest) {
+        let target = command.addTarget(handler: Self.remoteCommandHandler(for: request, of: self))
         remoteCommandRegistrations.append(
             RemoteCommandRegistration(command: command, target: target)
         )

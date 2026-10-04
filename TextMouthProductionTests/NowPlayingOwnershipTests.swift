@@ -1,3 +1,5 @@
+import MediaPlayer
+import os
 import XCTest
 @testable import TextMouth
 
@@ -660,6 +662,56 @@ final class NowPlayingOwnershipTests: XCTestCase {
         scheduledActions[1]()
         XCTAssertEqual(backwardSkips, 2)
         await fulfillment(of: [restartPosted], timeout: 0.1)
+    }
+
+    // MARK: - Commands Received on Any Thread
+
+    /// MediaPlayer does not say which thread it calls a command's handler
+    /// on, and in the Swift 6 language mode a handler isolated to the main
+    /// actor stops the app on any other. Received on the main thread, where
+    /// MediaPlayer has delivered every command so far, a command is accepted
+    /// at once and MediaPlayer hears whether a reader owns media controls.
+    /// Received on another thread, nothing stops: MediaPlayer hears success
+    /// at once, and the command is accepted on the main queue, reaching the
+    /// reader after the commands received before it.
+    func testCommandsAreReceivedOnWhicheverThreadMediaPlayerChooses() {
+        var scheduledActions: [@MainActor () -> Void] = []
+        var events: [String] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            scheduleRemoteCommandAction: { scheduledActions.append($0) }
+        )
+
+        // On the main thread, with no reader owning media controls, the
+        // command is refused at once; and with no service, always.
+        XCTAssertEqual(NowPlayingService.receiveRemoteCommand(.play, by: coordinator), .commandFailed)
+        XCTAssertEqual(NowPlayingService.receiveRemoteCommand(.play, by: nil), .commandFailed)
+        _ = makeSession(
+            coordinator: coordinator,
+            onPlay: { events.append("play") },
+            onPause: { events.append("pause") }
+        )
+        XCTAssertEqual(NowPlayingService.receiveRemoteCommand(.pause, by: coordinator), .success)
+        XCTAssertEqual(scheduledActions.count, 1, "The main thread's command was not accepted at once")
+
+        // On another thread. A semaphore, unlike an expectation, lets the
+        // main thread wait without running the main queue, so the command
+        // can only have been accepted after the handler returned.
+        let status = OSAllocatedUnfairLock<MPRemoteCommandHandlerStatus?>(initialState: nil)
+        let returned = DispatchSemaphore(value: 0)
+        DispatchQueue.global(qos: .userInitiated).async {
+            let heard = NowPlayingService.receiveRemoteCommand(.play, by: coordinator)
+            status.withLock { $0 = heard }
+            returned.signal()
+        }
+        XCTAssertEqual(returned.wait(timeout: .now() + 5), .success, "The handler never returned")
+        XCTAssertEqual(status.withLock { $0 }, .success)
+        XCTAssertEqual(scheduledActions.count, 1, "The command was accepted off the main thread")
+
+        XCTAssertTrue(waitUntil { scheduledActions.count == 2 }, "The command was never accepted on the main queue")
+        scheduledActions.forEach { $0() }
+        XCTAssertEqual(events, ["pause", "play"])
     }
 
     // MARK: - The Test Host Stays Out of the System's Media Session
