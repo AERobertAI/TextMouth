@@ -10,12 +10,13 @@ struct TranscriptDeletion: Sendable {
 }
 
 extension TranscriptStore {
-    /// Deletes `book`'s transcript (FR05): transcript.json, the content.md
-    /// written from it, the transcript's layer of the book's audio index,
-    /// saved through the book's record (which drops bookInfo.json's note of
-    /// it), and the reading text this Mac kept for the book. The audio, the
-    /// reading position, the bookmarks, and the book's settings stay as
-    /// they are: they count time, which a transcript does not change.
+    /// Deletes `book`'s transcript (FR05): transcript.json, the transcript
+    /// kept before its last cleanup, the content.md written from it, the
+    /// transcript's layer of the book's audio index, saved through the
+    /// book's record (which drops bookInfo.json's note of it), and the
+    /// reading text this Mac kept for the book. The audio, the reading
+    /// position, the bookmarks, and the book's settings stay as they are:
+    /// they count time, which a transcript does not change.
     ///
     /// transcript.json goes first, so a deletion cut short leaves no
     /// transcript for the next open to show: it then drops the rest itself.
@@ -34,6 +35,7 @@ extension TranscriptStore {
         return try boundary.perform(.textExtraction) { _ in
             let book = boundary.rebasedToCurrent(book)
             try removeIfPresent(TextMouthPaths.transcriptPath(in: book.tmbDirectory))
+            try removeIfPresent(TextMouthPaths.transcriptBeforeCleanupPath(in: book.tmbDirectory))
             try removeIfPresent(TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory))
             ReadingTextCache.shared.remove(bookID: book.id)
             var index = try BookContentAnalysisService.load(book: book).index

@@ -325,13 +325,23 @@ enum TextMouthPaths {
         tmbDir.appendingPathComponent(transcriptFileName)
     }
 
+    /// Name of the transcript a cleanup replaced, kept beside it so Undo
+    /// Cleanup can put it back (FR05, `TranscriptStore.cleanUp`).
+    static let transcriptBeforeCleanupFileName = transcriptFileName + ".before-cleanup"
+
+    /// Path to the transcript kept before a cleanup inside a .tmb package
+    static func transcriptBeforeCleanupPath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent(transcriptBeforeCleanupFileName)
+    }
+
     /// Whether `name`, an entry at the top of a package, is the audiobook's
-    /// transcript, or a copy kept beside it of one that could not be used
-    /// (`TranscriptStore`, as in "transcript.json.unreadable-20261004T101500Z"):
-    /// TextMouth's own files, never part of the book
-    /// (`FileImportService.isPackageContentName`).
+    /// transcript, the transcript kept before its cleanup, or a copy kept
+    /// beside it of one that could not be used (`TranscriptStore`, as in
+    /// "transcript.json.unreadable-20261004T101500Z"): TextMouth's own
+    /// files, never part of the book (`FileImportService.isPackageContentName`).
     static func isTranscriptFile(_ name: String) -> Bool {
-        name == transcriptFileName || name.hasPrefix(transcriptFileName + LibraryIndexQuarantine.nameMarker)
+        name == transcriptFileName || name == transcriptBeforeCleanupFileName
+            || name.hasPrefix(transcriptFileName + LibraryIndexQuarantine.nameMarker)
     }
 
     /// Path to the per-book cached audio directory inside a .tmb package
