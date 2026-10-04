@@ -119,6 +119,7 @@ extension XCTestCase {
         installer: (any TranscriptionModelInstalling)? = nil,
         transcript: TranscriptStore.Lookup = .missing,
         center: TranscriptionJobCenter? = nil,
+        transcribedBooks: TranscribedBooks = TranscribedBooks(),
         announcements: SheetAnnouncements = SheetAnnouncements()
     ) -> TranscriptionSheetServices {
         TranscriptionSheetServices(
@@ -128,6 +129,7 @@ extension XCTestCase {
             installer: installer ?? ScriptedModelInstaller(statuses: statuses),
             readTranscript: { _ in transcript },
             center: center ?? makeScriptedCenter(script: [:]),
+            transcribedBooks: transcribedBooks,
             announce: { message, window in announcements.record(message, window) }
         )
     }

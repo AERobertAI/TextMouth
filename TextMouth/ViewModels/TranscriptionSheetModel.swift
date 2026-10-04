@@ -50,6 +50,8 @@ struct TranscriptionSheetServices {
     var readTranscript: @Sendable (Book) async -> TranscriptStore.Lookup
     /// The transcriptions under way.
     var center: TranscriptionJobCenter
+    /// Which books the library rows call transcribed.
+    var transcribedBooks: TranscribedBooks
     /// Asks VoiceOver to speak a message from a window.
     var announce: @MainActor (String, NSWindow?) -> Void
 
@@ -66,6 +68,7 @@ struct TranscriptionSheetServices {
                 await OffMainWork.run { TranscriptStore.read(from: book.tmbDirectory) }
             },
             center: .shared,
+            transcribedBooks: .shared,
             announce: { message, window in VoiceOverAnnouncer.announce(message, from: window) }
         )
     }

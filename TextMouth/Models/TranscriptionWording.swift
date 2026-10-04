@@ -10,6 +10,9 @@ enum TranscriptionWording {
     /// in the library's context menu and VoiceOver actions and the reader's
     /// Book menu.
     static let transcribeCommandTitle = "Transcribe Audio…"
+    /// The command that deletes a transcribed audiobook's transcript, in the
+    /// same places, after a confirmation naming the book.
+    static let deleteCommandTitle = "Delete Transcript…"
 
     // MARK: Refusals
 
@@ -281,6 +284,42 @@ enum TranscriptionWording {
         + "language's speech model is on this Mac."
     static let offerNotNowTitle = "Not Now"
     static let offerNotNowHint = "Leaves the audiobook as it is. You can transcribe it later with Transcribe Audio."
+
+    // MARK: Delete Transcript
+
+    /// The confirmation's title: "Delete the Transcript of Moby-Dick?"
+    static func deleteConfirmationTitle(bookTitle: String) -> String {
+        "Delete the Transcript of \(bookTitle)?"
+    }
+
+    /// What the confirmation explains, saying when the user's own edits go
+    /// too.
+    static func deleteConfirmationMessage(isEdited: Bool) -> String {
+        let message = "The transcript and the text made from it are deleted. The audiobook's audio, your place, "
+            + "and your bookmarks stay as they are, and the book can be transcribed again."
+        return isEdited ? message + " Your edits to the transcript are deleted too." : message
+    }
+
+    /// The confirmation's deleting button.
+    static let deleteButtonTitle = "Delete Transcript"
+
+    /// The title of the alert saying why Delete Transcript did nothing.
+    static let deleteNoticeTitle = "Delete Transcript"
+
+    /// What VoiceOver hears once the transcript is deleted.
+    static func deleted(bookTitle: String) -> String {
+        "Deleted the transcript of \(bookTitle)."
+    }
+
+    /// Why the transcript could not be deleted.
+    static func deleteFailed(bookTitle: String, reason: String) -> String {
+        "Couldn't delete the transcript of \(bookTitle): \(reason)"
+    }
+
+    /// Why Delete Transcript waits while the same book is transcribed.
+    static func deleteWhileTranscribing(bookTitle: String) -> String {
+        "\(bookTitle) is being transcribed. Cancel the transcription first, or delete the transcript once it finishes."
+    }
 
     // MARK: The Library Row
 

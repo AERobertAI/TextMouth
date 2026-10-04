@@ -7,12 +7,15 @@ import SwiftUI
 /// The Book menu's Edit Text in Default Editor and Edit Text With… open the
 /// book's text in the user's own editor (`BookTextEditor`), and are
 /// available only while the reader's book has text to edit. Its Transcribe
-/// Audio… opens the Transcribe Audio sheet on the reader for an audiobook.
+/// Audio… opens the Transcribe Audio sheet on the reader for an audiobook,
+/// and Delete Transcript… asks to delete a transcribed audiobook's
+/// transcript.
 ///
 /// ReaderView attaches this in one line: its body sits at the type
 /// checker's limit (board #829), so everything here lives in views of its
 /// own. The reader itself is not observed, so a playing reader's frequent
-/// publishes never draw this again; only the settings it shows are.
+/// publishes never draw this again; only the settings it shows, and which
+/// books are transcribed, are.
 struct ReaderBookCommandsSupport: ViewModifier {
     /// The reader whose book the commands act on.
     let viewModel: ReaderViewModel
@@ -22,6 +25,9 @@ struct ReaderBookCommandsSupport: ViewModifier {
     @State private var exportModel: BookExportModel?
     /// The reader's transcription dialogs (FR05).
     @StateObject private var transcription = TranscriptionPresenter()
+    /// Which audiobooks are transcribed (FR05), observed so Delete
+    /// Transcript… follows the reader's book.
+    @ObservedObject private var transcribedBooks = TranscribedBooks.shared
 
     init(viewModel: ReaderViewModel) {
         self.viewModel = viewModel
@@ -53,12 +59,20 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 transcribe()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .deleteBookTranscript)) { notification in
+                guard takesCommand(notification) else { return }
+                deleteTranscript()
+            }
             // Scene values, published whenever this reader's window is key,
             // even while none of its views has keyboard focus, as when
             // VoiceOver reads its text: a focused value would leave the Book
             // menu's commands unavailable then.
             .focusedSceneValue(\.canEditBookText, BookTextEditor.canEditText(of: viewModel.book))
             .focusedSceneValue(\.canTranscribeBookAudio, LibraryTranscriptionCommand.isTranscribable(viewModel.book))
+            .focusedSceneValue(
+                \.canDeleteBookTranscript,
+                LibraryTranscriptionCommand.isTranscribable(viewModel.book) && transcribedBooks.contains(viewModel.book.id)
+            )
             .sheet(item: $exportModel) { model in
                 BookExportSheet(model: model, close: { exportModel = nil })
             }
@@ -71,6 +85,17 @@ struct ReaderBookCommandsSupport: ViewModifier {
         let library = viewModel.libraryViewModel
         let book = library.bookByID(viewModel.book.id) ?? viewModel.book
         transcription.transcribe([book], library: library, window: viewModel.hostWindow)
+    }
+
+    /// Asks to delete the transcript of the reader's audiobook, as the
+    /// library holds the book now (FR05).
+    private func deleteTranscript() {
+        let library = viewModel.libraryViewModel
+        let book = library.bookByID(viewModel.book.id) ?? viewModel.book
+        let window = viewModel.hostWindow
+        Task {
+            await transcription.confirmDeletion(of: book, library: library, window: window)
+        }
     }
 
     /// Opens the reader's book's text in the user's own editor, or in an

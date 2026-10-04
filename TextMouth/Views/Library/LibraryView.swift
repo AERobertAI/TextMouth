@@ -897,7 +897,7 @@ struct LibraryView: View {
             manualMoves: isSelectionRow ? nil : manualMoves[book.id],
             removalPreferences: removalPreferences,
             livePosition: libraryViewModel.livePositions.entry(for: book.id),
-            transcriptionCommands: LibraryTranscriptionCommand.commands(for: targets),
+            transcriptionCommands: LibraryTranscriptionCommand.commands(for: targets, isTranscribed: transcribedBooks.contains),
             transcriptionNote: transcribedBooks.note(for: book.id),
             actions: actions
         )

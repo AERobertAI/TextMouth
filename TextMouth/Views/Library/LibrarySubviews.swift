@@ -662,7 +662,8 @@ struct LibraryBookListRow: View, Equatable {
                 actions.editText(book, true)
             }
         }
-        // Transcribe Audio… for an audiobook (FR05), also a VoiceOver action.
+        // Transcribe Audio… for an audiobook, and Delete Transcript… for a transcribed
+        // one (FR05), also VoiceOver actions.
         ForEach(transcriptionCommands) { command in
             Button(command.title) {
                 actions.performTranscriptionCommand(command)
