@@ -72,8 +72,12 @@ final class AudioEditorModel: ObservableObject {
     /// marked In selects to the end of the audio.
     @Published var selectionEnd: TimeInterval?
     /// The markers dropped, in the order they were dropped; listed in time
-    /// order (`orderedMarkers`).
-    @Published var markers: [AudioEditorMarker] = []
+    /// order (`orderedMarkers`). They come back from the file's edit list
+    /// as the window opens, and every change to them is kept there again
+    /// (`AudioEditSession.keepMarkers`).
+    @Published var markers: [AudioEditMarker] = [] {
+        didSet { session.keepMarkers(markers) }
+    }
     /// Whether an edit, a save, or an export is under way: every other
     /// command that would change the audio waits for it, saying so.
     @Published var isWorking = false
@@ -207,6 +211,13 @@ final class AudioEditorModel: ObservableObject {
             self?.objectWillChange.send()
         }
         followRecorder()
+        // The markers the edit list kept, inside the audio. Set here, in
+        // the initializer, so they aren't written straight back.
+        markers = session.list.markers.map { marker in
+            var restored = marker
+            restored.time = clamped(marker.time)
+            return restored
+        }
     }
 
     // MARK: State

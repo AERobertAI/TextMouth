@@ -1,26 +1,13 @@
 import Foundation
 
-// MARK: - A Marker
-
-/// A marker dropped in the audio editor (FR04): a place to come back to,
-/// such as a sentence to redo, with a name when the user gives it one.
-/// Markers live as long as the window; they follow the sound through edits.
-struct AudioEditorMarker: Identifiable, Equatable, Sendable {
-    /// Tells markers apart.
-    let id: UUID
-    /// Where the marker is, in seconds on the edited audio.
-    var time: TimeInterval
-    /// Its name; empty for none.
-    var name: String
-}
-
 // MARK: - Selecting Without a Waveform (FR04)
 
 /// The selection and the markers: In and Out at the cursor, the stretch
 /// from the cursor to the next or previous pause, the chapter the cursor
-/// is in, everything, or nothing; and markers dropped at the cursor. Every
-/// change to the selection is announced briefly, by its length, and the
-/// whole of it is said on request.
+/// is in, everything, or nothing; and markers dropped at the cursor
+/// (`AudioEditMarker`), which the file's edit list keeps. Every change to
+/// the selection is announced briefly, by its length, and the whole of it
+/// is said on request.
 extension AudioEditorModel {
     // MARK: In and Out
 
@@ -126,19 +113,19 @@ extension AudioEditorModel {
     // MARK: Markers
 
     /// The markers in time order, as the list shows and numbers them.
-    var orderedMarkers: [AudioEditorMarker] {
+    var orderedMarkers: [AudioEditMarker] {
         markers.sorted { ($0.time, $0.id.uuidString) < ($1.time, $1.id.uuidString) }
     }
 
     /// The number the list gives `marker`, counting from 1 in time order.
-    func number(of marker: AudioEditorMarker) -> Int {
+    func number(of marker: AudioEditMarker) -> Int {
         (orderedMarkers.firstIndex { $0.id == marker.id } ?? 0) + 1
     }
 
     /// Drops a marker at the cursor, at once, so it can be dropped while
     /// listening; it can be named in the list.
     func addMarker() {
-        let marker = AudioEditorMarker(id: UUID(), time: cursor, name: "")
+        let marker = AudioEditMarker(id: UUID(), time: cursor, name: "")
         markers.append(marker)
         announce(AudioEditorWording.markerAdded(number(of: marker), at: marker.time))
     }

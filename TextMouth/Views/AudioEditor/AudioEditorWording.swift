@@ -711,17 +711,29 @@ enum AudioEditorWording {
     /// Revert's confirmation question.
     static let revertQuestion = "Revert to the original audio?"
 
-    /// What reverting does, with how many edits it undoes.
-    static func revertExplanation(_ count: Int) -> String {
-        "\(CountWording.phrase(count, singular: "edit is", plural: "edits are")) undone. Redo brings them back until you make another edit."
+    /// What reverting does, with how many edits it undoes and how many
+    /// markers it deletes.
+    static func revertExplanation(_ count: Int, markers: Int = 0) -> String {
+        let undone = "\(CountWording.phrase(count, singular: "edit is", plural: "edits are")) undone. Redo brings them back until you make another edit."
+        switch markers {
+        case 0: return undone
+        case 1: return undone + " The marker is deleted, and Redo doesn't bring it back."
+        default: return undone + " The \(markers) markers are deleted, and Redo doesn't bring them back."
+        }
     }
 
     /// The button that reverts.
     static let revertButton = "Revert"
 
-    /// Said as Revert to Original ends.
-    static func reverted(_ count: Int) -> String {
-        "Reverted to the original audio. Redo brings back the \(CountWording.phrase(count, singular: "edit", plural: "edits"))."
+    /// Said as Revert to Original ends, having undone `count` edits and
+    /// deleted `markers` markers.
+    static func reverted(_ count: Int, markers: Int = 0) -> String {
+        let reverted = "Reverted to the original audio. Redo brings back the \(CountWording.phrase(count, singular: "edit", plural: "edits"))."
+        switch markers {
+        case 0: return reverted
+        case 1: return reverted + " The marker is deleted."
+        default: return reverted + " The \(markers) markers are deleted."
+        }
     }
 
     /// Said by Revert to Original with nothing to undo.

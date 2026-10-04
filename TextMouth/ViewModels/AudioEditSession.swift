@@ -56,6 +56,14 @@ final class AudioEditSession: ObservableObject {
     /// longer has (`AudioEditList.renderedCursor`): a save then leaves the
     /// bookmarks and the position where they are.
     private(set) var savedFileRoute: AudioEditorTimeMap.Route?
+    /// The editor's markers as last asked to be kept, waiting to be
+    /// written; nil once every request is written or being written.
+    private var markersToKeep: [AudioEditMarker]?
+    /// The write of markers under way, if any.
+    private var markersWrite: Task<Void, Never>?
+    /// Whether a save is under way: markers asked to be kept meanwhile wait
+    /// for it, as it may rename the file their list is kept under.
+    private var isSaving = false
 
     private init(
         bookID: UUID,
@@ -307,6 +315,62 @@ final class AudioEditSession: ObservableObject {
         policyOverride = policy
     }
 
+    // MARK: Markers
+
+    /// Keeps `markers`, the editor's markers at their times on the edited
+    /// audio as it is now, in the file's edit list (`AudioEditList.markers`),
+    /// so a window opened later shows them again. They are written off the
+    /// main thread, one write at a time, in the order asked: a request made
+    /// while another is written waits, and a newer one takes its place, so
+    /// the last markers asked for are the ones kept. The list read when the
+    /// session opened (`list`) is not changed: the editor's own markers are
+    /// the ones that count while it is open.
+    func keepMarkers(_ markers: [AudioEditMarker]) {
+        markersToKeep = markers
+        writeMarkersIfIdle()
+    }
+
+    /// Waits until every marker asked to be kept so far is written, or has
+    /// failed to be, which the debug log records.
+    func markersKept() async {
+        while let write = markersWrite {
+            await write.value
+        }
+    }
+
+    /// Whether markers asked to be kept are still to be written.
+    var isKeepingMarkers: Bool {
+        markersWrite != nil || markersToKeep != nil
+    }
+
+    /// Starts writing the markers waiting, unless a write or a save is
+    /// under way, each of which starts the next write as it ends.
+    private func writeMarkersIfIdle() {
+        guard markersWrite == nil, !isSaving, let markers = markersToKeep else { return }
+        markersToKeep = nil
+        let place = place
+        let file = audioFile
+        markersWrite = Task {
+            do {
+                try await Self.changeHistory(place: place) { history in
+                    // A book removed meanwhile keeps nothing: its package
+                    // isn't made again only to hold markers.
+                    guard FileManager.default.fileExists(atPath: place.package.path) else { return }
+                    var list = history.listOrNew(for: file)
+                    list.setMarkers(markers)
+                    history.setList(list)
+                }
+            } catch {
+                // Described by kind, as the editor's other lines are, never
+                // by the markers' names.
+                let title = library?.bookByID(bookID)?.title ?? bookID.uuidString
+                DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(title): the markers couldn't be kept (\(AudioEditorLauncher.describe(error)))")
+            }
+            markersWrite = nil
+            writeMarkersIfIdle()
+        }
+    }
+
     // MARK: Previewing and Saving
 
     /// A composition of the edited audio, for an `AVPlayer` to play
@@ -359,6 +423,14 @@ final class AudioEditSession: ObservableObject {
     @discardableResult
     func save(progress: (@Sendable (Double) -> Void)? = nil) async throws -> AudioEditSaveOutcome {
         guard let library else { throw AudioEditError.bookNotInLibrary }
+        // Markers asked to be kept before the save are written under the
+        // file's name now; those asked for during it wait for its name after.
+        isSaving = true
+        defer {
+            isSaving = false
+            writeMarkersIfIdle()
+        }
+        await markersKept()
         let outcome = try await library.saveAudioEdits(ofBook: bookID, audioFile: audioFile, timeRoute: savedFileRoute, progress: progress)
         // The file holds the audio as edited now, so the route starts here,
         // whatever reading the history back does.

@@ -71,7 +71,7 @@ struct AudioEditorMarkersSheet: View {
     /// A marker's row: its name and place, then Go To, Rename, and Delete;
     /// while it is being renamed, the name field, Save Name, and Cancel.
     @ViewBuilder
-    private func markerRow(_ marker: AudioEditorMarker, number: Int) -> some View {
+    private func markerRow(_ marker: AudioEditMarker, number: Int) -> some View {
         let label = AudioEditorWording.marker(number, named: marker.name, at: marker.time)
         let subject = AudioEditorWording.markerName(number, named: "")
         if renaming == marker.id {
@@ -107,14 +107,14 @@ struct AudioEditorMarkersSheet: View {
     }
 
     /// Opens `marker`'s name field, holding its name.
-    private func startRenaming(_ marker: AudioEditorMarker) {
+    private func startRenaming(_ marker: AudioEditMarker) {
         renamingChapter = nil
         newName = marker.name
         renaming = marker.id
     }
 
     /// Keeps the name typed for `marker` and closes the field.
-    private func saveName(of marker: AudioEditorMarker) {
+    private func saveName(of marker: AudioEditMarker) {
         model.renameMarker(marker.id, to: newName)
         renaming = nil
     }

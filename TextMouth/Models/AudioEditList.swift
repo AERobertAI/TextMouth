@@ -32,6 +32,22 @@ struct AudioOriginal: Codable, Hashable, Sendable {
     var lastEditedAt: Date
 }
 
+// MARK: - A Marker
+
+/// A marker dropped in the audio editor (FR04): a place to come back to,
+/// such as a sentence to redo, with a name when the user gives it one. The
+/// edit list keeps the editor's markers, so they are there again when the
+/// window reopens; they follow the sound through edits, and Revert to
+/// Original deletes them.
+struct AudioEditMarker: Codable, Hashable, Sendable, Identifiable {
+    /// Tells markers apart.
+    let id: UUID
+    /// Where the marker is, in seconds on the edited audio.
+    var time: TimeInterval
+    /// Its name; empty for none.
+    var name: String
+}
+
 // MARK: - Why Undo Stops
 
 /// Why the list can undo no further, for the editor to say so.
@@ -88,6 +104,9 @@ struct AudioEditList: Hashable, Sendable {
     /// When the edits were last rendered into the book's audio file; nil
     /// before the first render.
     private(set) var lastRenderedAt: Date?
+    /// The editor's markers, at their times on the audio as the applied
+    /// edits leave it, in the order they were dropped.
+    private(set) var markers: [AudioEditMarker]
 
     /// A list for `audioFile` with no edits yet, whose original, when one is
     /// kept already (a recording's take), is `original`.
@@ -99,6 +118,7 @@ struct AudioEditList: Hashable, Sendable {
         cursor = 0
         renderedCursor = 0
         lastRenderedAt = nil
+        markers = []
     }
 
     // MARK: State
@@ -244,6 +264,12 @@ struct AudioEditList: Hashable, Sendable {
         audioFile = path
     }
 
+    /// Keeps `markers` as the editor's markers, at their times on the audio
+    /// as the applied edits leave it now.
+    mutating func setMarkers(_ markers: [AudioEditMarker]) {
+        self.markers = markers
+    }
+
     /// Keeps `original` as the audio the edits start from: a copy of the
     /// book's file taken just before the edits are first rendered into it.
     mutating func keepOriginal(_ original: AudioOriginal) {
@@ -272,13 +298,14 @@ struct AudioEditList: Hashable, Sendable {
 
 // MARK: - edits.json
 
-/// A list is written with its file, its original, its entries, and its
-/// cursors. Reading one checks that the cursors lie within the entries: a
-/// list that fails is damaged, never repaired, since a wrong cursor would
-/// apply edits the user undid.
+/// A list is written with its file, its original, its entries, its
+/// cursors, and its markers when it has any, so a list without markers is
+/// written exactly as before they were kept. Reading one checks that the
+/// cursors lie within the entries: a list that fails is damaged, never
+/// repaired, since a wrong cursor would apply edits the user undid.
 extension AudioEditList: Codable {
     private enum CodingKeys: String, CodingKey {
-        case audioFile, original, originalDeletedAt, entries, cursor, renderedCursor, lastRenderedAt
+        case audioFile, original, originalDeletedAt, entries, cursor, renderedCursor, lastRenderedAt, markers
     }
 
     init(from decoder: Decoder) throws {
@@ -290,6 +317,7 @@ extension AudioEditList: Codable {
         cursor = try container.decode(Int.self, forKey: .cursor)
         renderedCursor = try container.decodeIfPresent(Int.self, forKey: .renderedCursor)
         lastRenderedAt = try container.decodeIfPresent(Date.self, forKey: .lastRenderedAt)
+        markers = try container.decodeIfPresent([AudioEditMarker].self, forKey: .markers) ?? []
         guard (0...entries.count).contains(cursor) else {
             throw DecodingError.dataCorruptedError(
                 forKey: .cursor,
@@ -315,6 +343,9 @@ extension AudioEditList: Codable {
         try container.encode(cursor, forKey: .cursor)
         try container.encodeIfPresent(renderedCursor, forKey: .renderedCursor)
         try container.encodeIfPresent(lastRenderedAt, forKey: .lastRenderedAt)
+        if !markers.isEmpty {
+            try container.encode(markers, forKey: .markers)
+        }
     }
 }
 

@@ -132,10 +132,13 @@ extension AudioEditorModel {
     }
 
     /// Moves every marker by `map`, dropping none: two markers may come to
-    /// one place.
+    /// one place. They change in one step, so they are kept once.
     func followMarkers(_ map: (TimeInterval) -> TimeInterval) {
-        for index in markers.indices {
-            markers[index].time = clamped(map(markers[index].time))
+        guard !markers.isEmpty else { return }
+        markers = markers.map { marker in
+            var moved = marker
+            moved.time = clamped(map(marker.time))
+            return moved
         }
     }
 

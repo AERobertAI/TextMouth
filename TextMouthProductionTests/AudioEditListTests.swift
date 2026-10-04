@@ -290,6 +290,31 @@ final class AudioEditListTests: XCTestCase {
         XCTAssertTrue(text.contains(#""version" : 1"#), text)
     }
 
+    /// Markers are written with their list only when it has some, so a list
+    /// without them is written as it was before markers were kept, and a
+    /// list written then reads back with none.
+    func testMarkersAreWrittenWithTheirListOnlyWhenThereAreAny() throws {
+        let package = try makePackage()
+        var list = AudioEditList(audioFile: "Ferry.m4b")
+        list.record(.cut(AudioTimeRange(start: 1, end: 2)), at: moment(1))
+        try AudioEditHistoryStore.write(AudioEditHistory(files: [list]), source: .noRecord, toPackage: package, bookFile: "Ferry.m4b")
+        let without = try String(contentsOf: AudioEditPackage.historyURL(in: package), encoding: .utf8)
+        XCTAssertFalse(without.contains("markers"), without)
+
+        list.setMarkers([
+            AudioEditMarker(id: UUID(), time: 12.5, name: "Retake"),
+            AudioEditMarker(id: UUID(), time: 3, name: ""),
+        ])
+        let history = AudioEditHistory(files: [list])
+        try AudioEditHistoryStore.write(history, source: .editsFile, toPackage: package, bookFile: "Ferry.m4b")
+        XCTAssertEqual(AudioEditHistoryStore.read(fromPackage: package, bookFile: "Ferry.m4b"), .found(history, .editsFile))
+        let with = try String(contentsOf: AudioEditPackage.historyURL(in: package), encoding: .utf8)
+        XCTAssertTrue(with.contains(#""markers" : ["#), with)
+
+        let older = #"{"audioFile": "Ferry.m4b", "entries": [], "cursor": 0, "renderedCursor": 0}"#
+        XCTAssertEqual(try JSONDecoder().decode(AudioEditList.self, from: Data(older.utf8)).markers, [])
+    }
+
     /// A package never edited has an empty history, and no file is made for
     /// it by reading.
     func testAPackageWithoutAHistoryHasAnEmptyOne() throws {
@@ -427,6 +452,26 @@ final class AudioEditListTests: XCTestCase {
         XCTAssertEqual(history.policyOverride, .keep)
         XCTAssertEqual(history.list(for: "Ferry.m4a")?.original?.file, BookOrigin.originalTakeFileName)
         XCTAssertEqual(history.list(for: "Ferry.m4a")?.original?.lastEditedAt, moment(60))
+    }
+
+    /// A marker dropped on a recording never edited moves the take's record
+    /// into edits.json too, as its origin record has no place for markers.
+    func testAMarkerOnARecordingMovesTheTakesRecordIntoTheHistory() throws {
+        let package = try makePackage(recording: true, takePolicy: .keep)
+        let marker = AudioEditMarker(id: UUID(), time: 4, name: "Cough")
+
+        try AudioEditHistoryStore.update(package: package, bookFile: "Ferry.m4a") { history in
+            var list = history.listOrNew(for: "Ferry.m4a")
+            list.setMarkers([marker])
+            history.setList(list)
+        }
+
+        XCTAssertNil(try BookOrigin.load(fromPackage: package)?.originalTake)
+        guard case .found(let history, .editsFile) = AudioEditHistoryStore.read(fromPackage: package, bookFile: "Ferry.m4a") else {
+            return XCTFail("edits.json was not written")
+        }
+        XCTAssertEqual(history.list(for: "Ferry.m4a")?.markers, [marker])
+        XCTAssertEqual(history.list(for: "Ferry.m4a")?.original?.file, BookOrigin.originalTakeFileName)
     }
 
     // MARK: - Files in the Package
