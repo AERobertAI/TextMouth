@@ -9,6 +9,25 @@ BUILD_DIR = build
 APP_BUNDLE = $(BUILD_DIR)/$(APP_NAME).app
 INSTALL_DIR = /Applications
 
+# Launch Services' registration tool, which `make install` runs so that the
+# installed app appears in Open With menus. Named here so that the gate's
+# self-test can run `make install` against a stand-in.
+LSREGISTER = /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister
+
+# Where `make install` keeps the dSYM of each app it installs, as
+# TextMouth-<build number>-<UUID>.app.dSYM (Scripts/keep-installed-dsym.sh).
+# The Release app's symbols are stripped, so its crash reports can be read
+# only with its own build's dSYM, which the next build replaces in the build
+# products. Later builds never touch this folder, and `make uninstall` leaves
+# it; `make clean` removes it with the rest of build/. It keeps the dSYMs of
+# the last 5 installs: the installed build and the four before it, so a crash
+# report that arrives after a few more installs can still be read. Each dSYM
+# is about 58 MB, so five take about 290 MB of a disk that is nearly full,
+# and a report from a build older than that describes code that has usually
+# changed since.
+INSTALLED_DSYMS_DIR = $(BUILD_DIR)/installed-dSYMs
+INSTALLED_DSYMS_KEPT = 5
+
 # Where xcodebuild puts the built product
 DERIVED_BUILD_DIR = $(BUILD_DIR)/DerivedData
 BUILT_APP = $(DERIVED_BUILD_DIR)/Build/Products/$(CONFIG)/$(APP_NAME).app
@@ -66,11 +85,11 @@ help:
 	@echo "  make debug      - Build the app (Debug)"
 	@echo "  make run        - Build and run the app"
 	@echo "  make open       - Build, package, and open the .app"
-	@echo "  make install    - Copy the app to /Applications"
-	@echo "  make uninstall  - Remove from /Applications"
+	@echo "  make install    - Copy the app to /Applications, keeping its dSYM in build/installed-dSYMs"
+	@echo "  make uninstall  - Remove from /Applications, keeping the dSYMs"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
-	@echo "  make check-selftest - Test the gate and baseline-recording scripts in seconds, without building"
+	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, and the baseline-recording script in seconds, without building"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
 	@echo "  make resolve-packages - Resolve Swift packages exactly as Package.resolved pins them"
@@ -139,20 +158,24 @@ open: build
 	@echo "==> Opening $(APP_NAME).app..."
 	open "$(APP_BUNDLE)"
 
-## Install to /Applications
+## Install to /Applications, keeping the installed build's dSYM in
+## INSTALLED_DSYMS_DIR for reading its crash reports
 install: build
 	@echo "==> Installing to $(INSTALL_DIR)/$(APP_NAME).app..."
 	@rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"
 	cp -R "$(APP_BUNDLE)" "$(INSTALL_DIR)/$(APP_NAME).app"
 	@# Register the app with Launch Services so Open With menus update
-	/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f "$(INSTALL_DIR)/$(APP_NAME).app"
+	"$(LSREGISTER)" -f "$(INSTALL_DIR)/$(APP_NAME).app"
+	@Scripts/keep-installed-dsym.sh "$(INSTALL_DIR)/$(APP_NAME).app" "$(BUILT_APP).dSYM" \
+		"$(INSTALLED_DSYMS_DIR)" "$(INSTALLED_DSYMS_KEPT)"
 	@echo "==> Installed. TextMouth should now appear in Open With menus."
 
-## Remove from /Applications
+## Remove from /Applications, leaving the dSYMs make install kept, which can
+## still read crash reports from the app
 uninstall:
 	@echo "==> Removing $(INSTALL_DIR)/$(APP_NAME).app..."
 	rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"
-	@echo "==> Removed."
+	@echo "==> Removed. The dSYMs in $(INSTALLED_DSYMS_DIR) stay, for reading its crash reports."
 
 ## Run tests against the real application through the hosted test runner,
 ## building in TEST_DERIVED_DATA when it names a folder, with the performance
