@@ -173,6 +173,101 @@ final class BookExportServiceTests: XCTestCase {
         XCTAssertEqual(textOffer.item(.originalRecording)?.byteCount, Int64(Self.takeBytes.count))
     }
 
+    // MARK: - Originals an Edit Kept
+
+    /// An audiobook whose file the audio editor first edited offers its
+    /// original audio, kept by the engine's own call in the package's
+    /// originals folder, under its own extension; exporting copies that
+    /// original byte for byte, while Audio stays the book's file as edited.
+    func testAnEditedAudiobookOffersItsOriginalAudio() throws {
+        let world = try makeIntegrationWorld("Export Original Audio")
+        let (book, kept) = try makeEditedAudiobook(in: world)
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let destination = try makeSandboxDirectory("Export Original Audio Destination")
+
+        let offer = BookExportService.offer(for: book)
+        let outcome = BookExportService.export([offer], kinds: [.originalAudio], to: destination)
+
+        XCTAssertEqual(offer.items.map(\.kind), [.audio, .originalAudio])
+        let item = try XCTUnwrap(offer.item(.originalAudio))
+        XCTAssertNil(item.folderName)
+        XCTAssertEqual(item.suggestedName, "\(stem) - Original Audio.wav")
+        XCTAssertEqual(item.files.map(\.source.url.path), [kept.path])
+        XCTAssertEqual(item.byteCount, try byteCount(of: kept))
+        XCTAssertFalse(item.isInCloud)
+        XCTAssertEqual(outcome.failures, [])
+        XCTAssertEqual(outcome.exported.map(\.lastPathComponent), ["\(stem) - Original Audio.wav"])
+        let exported = try Data(contentsOf: destination.appendingPathComponent("\(stem) - Original Audio.wav"))
+        XCTAssertEqual(exported, try Data(contentsOf: kept))
+        XCTAssertNotEqual(exported, try Data(contentsOf: book.bookFileURL), "the edited audio was exported as the original")
+    }
+
+    /// A book of tracks offers the originals of the tracks it edited
+    /// together, in a folder named for its original audio, each under its
+    /// path in the book's audio folder, one edited track as much as two.
+    func testABookOfTracksOffersTheOriginalsOfItsEditedTracksInAFolder() throws {
+        let world = try makeIntegrationWorld("Export Track Originals")
+        let book = try world.makeSilentAudioBook(title: "Tide Clock Recordings", trackDurations: [1, 1, 1])
+        let tracks = try XCTUnwrap(AudioEditPackage.path(of: book.bookFileURL, in: book.tmbDirectory))
+        _ = try AudioEditPackage.keepOriginal(ofAudioFile: "\(tracks)/03.wav", inPackage: book.tmbDirectory, at: Date())
+
+        let one = try XCTUnwrap(BookExportService.offer(for: book).item(.originalAudio))
+        XCTAssertEqual(one.folderName, "Tide Clock Recordings - Original Audio")
+        XCTAssertEqual(one.files.map(\.path), ["03.wav"])
+
+        _ = try AudioEditPackage.keepOriginal(ofAudioFile: "\(tracks)/01.wav", inPackage: book.tmbDirectory, at: Date())
+        let offer = BookExportService.offer(for: book)
+        let destination = try makeSandboxDirectory("Export Track Originals Destination")
+        let outcome = BookExportService.export([offer], kinds: [.originalAudio], to: destination)
+
+        XCTAssertEqual(offer.items.map(\.kind), [.audio, .originalAudio])
+        XCTAssertEqual(offer.item(.originalAudio)?.files.map(\.path), ["01.wav", "03.wav"])
+        XCTAssertEqual(outcome.failures, [])
+        let folder = destination.appendingPathComponent("Tide Clock Recordings - Original Audio", isDirectory: true)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted(), ["01.wav", "03.wav"])
+    }
+
+    /// Only originals the engine kept are offered: a book never edited
+    /// offers none, nor does an originals folder holding only a hidden file,
+    /// and a recording's take stays its Original recording alone.
+    func testOnlyOriginalsTheEngineKeptAreOffered() throws {
+        let world = try makeIntegrationWorld("Export No Originals")
+        let book = try world.makeSilentAudioBook(title: "Night Shift Notes", trackDurations: [1])
+        try addExtraFiles(to: book, includingText: nil)
+        XCTAssertNil(BookExportService.offer(for: book).item(.originalAudio))
+
+        let originals = AudioEditPackage.folder(in: book.tmbDirectory)
+            .appendingPathComponent(AudioEditPackage.originalsFolderName, isDirectory: true)
+        try FileManager.default.createDirectory(at: originals, withIntermediateDirectories: true)
+        try Data("Finder".utf8).write(to: originals.appendingPathComponent(".DS_Store"))
+
+        let offer = BookExportService.offer(for: book)
+        XCTAssertNil(offer.item(.originalAudio))
+        XCTAssertEqual(offer.items.map(\.kind), [.audio, .originalRecording, .transcript])
+    }
+
+    /// Originals only in the cloud are offered as such and never exported,
+    /// the book named in the list's words: a folder that can't be listed
+    /// without downloading it, and a kept file that is dataless.
+    func testOriginalsInTheCloudAreRefused() throws {
+        let world = try makeIntegrationWorld("Export Cloud Originals")
+        let (book, kept) = try makeEditedAudiobook(in: world)
+        let folder = AudioEditPackage.folder(in: book.tmbDirectory)
+            .appendingPathComponent(AudioEditPackage.originalsFolderName, isDirectory: true)
+        let destination = try makeSandboxDirectory("Export Cloud Originals Destination")
+
+        for (dataless, inCloud) in [(folder, folder), (kept, kept)] {
+            let cloud = Self.cloud(dataless: [dataless])
+            let offer = BookExportService.offer(for: book, access: cloud)
+            let outcome = BookExportService.export([offer], kinds: [.originalAudio], to: destination, access: cloud)
+
+            XCTAssertEqual(offer.item(.originalAudio)?.fileInCloud, inCloud)
+            XCTAssertEqual(outcome.exported, [])
+            XCTAssertEqual(outcome.booksInCloud.map(\.title), [book.title])
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), [])
+    }
+
     // MARK: - Exporting
 
     /// Exporting a text book's three kinds copies its own file and its
@@ -538,6 +633,20 @@ final class BookExportServiceTests: XCTestCase {
         if let text {
             try Data(text.utf8).write(to: MarkdownCacheService.cacheURL(for: book))
         }
+    }
+
+    /// An audiobook of one WAVE file whose audio the editor has edited: its
+    /// original kept by the engine's own call (`AudioEditPackage.keepOriginal`),
+    /// then the book's file written again, longer, as a saved edit does.
+    /// Returns the book and its kept original.
+    private func makeEditedAudiobook(in world: IntegrationWorld) throws -> (book: Book, original: URL) {
+        let source = try makeSandboxDirectory("Export Edited Source").appendingPathComponent("Weir Survey.wav")
+        try AudioTestFixtures.writeSilence(to: source, duration: 1)
+        let book = try world.importBook(from: source)
+        let file = try XCTUnwrap(AudioEditPackage.path(of: book.bookFileURL, in: book.tmbDirectory))
+        let original = try AudioEditPackage.keepOriginal(ofAudioFile: file, inPackage: book.tmbDirectory, at: Date())
+        try AudioTestFixtures.writeSilence(to: book.bookFileURL, duration: 2)
+        return (book, book.tmbDirectory.appendingPathComponent(original.file))
     }
 
     /// The size of the file at `url`.

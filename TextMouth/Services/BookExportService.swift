@@ -31,6 +31,11 @@ enum BookExportKind: String, CaseIterable, Sendable {
     /// A recording's original take, kept beside the audio the book plays
     /// (`BookOrigin.originalTakeFileName`).
     case originalRecording
+    /// An audiobook's audio as it was before its first edit, which the
+    /// audio editor keeps in the package's originals folder while the
+    /// original policy keeps it (`AudioEditPackage.originalFile(forAudioFile:)`):
+    /// a book's file, or the files of the tracks edited in a book of several.
+    case originalAudio
     /// A transcription's transcript (`TextMouthPaths.transcriptFileName`)
     /// and, for an audiobook, the text written from it, its content.md.
     case transcript
@@ -181,8 +186,9 @@ final class BookExportCancellation: Sendable {
 // MARK: - Listing and Exporting
 
 /// Lists what a book can export and copies the chosen items to a folder
-/// (FR05): an audiobook's audio, a recording's original take, a transcript,
-/// and a text book's own file, its Markdown, and its reading text.
+/// (FR05): an audiobook's audio, a recording's original take, the original
+/// audio an edit kept, a transcript, and a text book's own file, its
+/// Markdown, and its reading text.
 ///
 /// Both run off the main actor, since they read and copy files that can
 /// wait on a drive or the network. Neither ever downloads a file that is
@@ -231,6 +237,9 @@ enum BookExportService {
         if access.presence(of: take) == .present {
             let name = "\(stem) - Original Recording.\(take.pathExtension)"
             items.append(standaloneItem(.originalRecording, files: [copy(take, as: name)], access: access))
+        }
+        if let originals = originalAudioItem(of: book, stem: stem, access: access) {
+            items.append(originals)
         }
         let markdown = MarkdownCacheService.cacheURL(for: book)
         let hasMarkdown = access.presence(of: markdown) == .present
@@ -359,13 +368,18 @@ enum BookExportService {
     /// caller runs it so (`MaintenanceFileAccess.read`): a listing that
     /// would download throws.
     private static func audioFiles(in folder: URL) throws -> [String] {
-        let contents = try FileManager.default.subpathsOfDirectory(atPath: folder.path)
-        return contents.filter { path in
-            let components = path.split(separator: "/")
-            guard !components.contains(where: { $0.hasPrefix(".") }) else { return false }
-            return audioExtensions.contains((path as NSString).pathExtension.lowercased())
-                && !isFolder(folder.appendingPathComponent(path))
-        }
+        try regularFiles(in: folder).filter { audioExtensions.contains(($0 as NSString).pathExtension.lowercased()) }
+    }
+
+    /// The files inside `folder`, at any depth, by their paths inside it, in
+    /// Finder's order: no folder, and nothing hidden or inside a hidden
+    /// folder. Lists as `audioFiles(in:)` does.
+    private static func regularFiles(in folder: URL) throws -> [String] {
+        try FileManager.default.subpathsOfDirectory(atPath: folder.path)
+            .filter { path in
+                !path.split(separator: "/").contains { $0.hasPrefix(".") } && !isFolder(folder.appendingPathComponent(path))
+            }
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
     /// `listed`, an audiobook folder's audio files by their paths inside
@@ -404,6 +418,64 @@ enum BookExportService {
     private static func savedContentIndex(of book: Book, access: MaintenanceFileAccess) -> BookContentIndex? {
         let package = book.tmbDirectory
         return (try? access.read(package) { try BookInfo.load(from: package) })?.contentIndex
+    }
+
+    // MARK: Originals an Edit Kept
+
+    /// The audio as it was before its first edit (FR04): every file in the
+    /// package's originals folder, where the audio editor keeps a book's
+    /// original while the original policy keeps it, named as the engine
+    /// names that folder (`AudioEditPackage`). The files are copied as they
+    /// are; Export never makes an original of its own from the book's audio,
+    /// and a recording's take, which stays at the package root, is its
+    /// Original recording. The original of a book of one file is exported as
+    /// "<title> - Original Audio" with its own extension; the originals of a
+    /// book of tracks, or of one file kept more than once, together in a
+    /// folder of that name, each under its path inside the book's audio
+    /// folder. Nil when no original is kept. A folder that can't be listed
+    /// without downloading it is offered as in the cloud, with nothing
+    /// listed.
+    private static func originalAudioItem(of book: Book, stem: String, access: MaintenanceFileAccess) -> BookExportItem? {
+        let package = book.tmbDirectory
+        let folder = AudioEditPackage.folder(in: package)
+            .appendingPathComponent(AudioEditPackage.originalsFolderName, isDirectory: true)
+        let name = "\(stem) - Original Audio"
+        let inCloud = BookExportItem(kind: .originalAudio, folderName: name, files: [], fileInCloud: folder)
+        switch access.presence(of: folder) {
+        case .absent:
+            return nil
+        case .inCloud:
+            return inCloud
+        case .present:
+            break
+        }
+        let listed: [String]
+        do {
+            listed = try access.read(folder) { try regularFiles(in: folder) }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            return inCloud
+        } catch {
+            return nil
+        }
+        guard !listed.isEmpty else { return nil }
+        if listed.count == 1, let only = listed.first, !isFolder(book.bookFileURL) {
+            let ext = (only as NSString).pathExtension
+            let file = copy(folder.appendingPathComponent(only), as: ext.isEmpty ? name : "\(name).\(ext)")
+            return standaloneItem(.originalAudio, files: [file], access: access)
+        }
+        // An original is kept at its file's path inside the package; in the
+        // exported folder it keeps its path inside the book's audio folder.
+        let audioFolder = AudioEditPackage.path(of: book.bookFileURL, in: package).map { $0 + "/" }
+        let files = listed.map { path -> BookExportFile in
+            let inside = audioFolder.flatMap { path.hasPrefix($0) ? String(path.dropFirst($0.count)) : nil }
+            return copy(folder.appendingPathComponent(path), as: inside ?? path)
+        }
+        return BookExportItem(
+            kind: .originalAudio,
+            folderName: name,
+            files: files,
+            fileInCloud: files.lazy.compactMap { access.itemInCloud($0.source.url) }.first
+        )
     }
 
     // MARK: DAISY Books Kept as Loose Files
