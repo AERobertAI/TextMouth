@@ -52,6 +52,44 @@ enum TranscriptionJobEnding: Equatable, Sendable {
     }
 }
 
+// MARK: - The Debug Log
+
+/// The debug log's lines about transcriptions (FR05, `DiagnosticLog`): one
+/// as a transcription starts, with the language it listens for, and one as
+/// it ends, finished with the words it found and how long it took,
+/// cancelled, or failed with why, in the words VoiceOver heard. Each names
+/// the book by its title and never quotes a word heard (TODO Q07).
+enum TranscriptionLog {
+    /// "TRANSCRIPTION_STARTED: Harbor Notes: en-US" for a transcription of
+    /// the book titled `bookTitle` in `language`, a locale identifier.
+    static func started(bookTitle: String, language: String) -> String {
+        "TRANSCRIPTION_STARTED: \(bookTitle): \(language)"
+    }
+
+    /// The line for a transcription of the book titled `bookTitle` that
+    /// ended as `ending` after running `elapsed` seconds: "TRANSCRIPTION_
+    /// FINISHED: Harbor Notes: 17 words in 2.4 seconds" (the seconds the
+    /// ending measured), "TRANSCRIPTION_CANCELLED: Harbor Notes: after 1.0
+    /// seconds", or "TRANSCRIPTION_FAILED: Harbor Notes: after 0.3 seconds:
+    /// Transcription stopped: the recognizer stopped."
+    static func ended(_ ending: TranscriptionJobEnding, bookTitle: String, elapsed: TimeInterval) -> String {
+        switch ending {
+        case .finished(let wordCount, let seconds):
+            let words = CountWording.phrase(wordCount, singular: "word", plural: "words")
+            return "TRANSCRIPTION_FINISHED: \(bookTitle): \(words) in \(formatted(seconds)) seconds"
+        case .cancelled:
+            return "TRANSCRIPTION_CANCELLED: \(bookTitle): after \(formatted(elapsed)) seconds"
+        case .failed(let reason):
+            return "TRANSCRIPTION_FAILED: \(bookTitle): after \(formatted(elapsed)) seconds: \(reason)"
+        }
+    }
+
+    /// `seconds` to a tenth of a second, as "2.4".
+    private static func formatted(_ seconds: TimeInterval) -> String {
+        String(format: "%.1f", seconds)
+    }
+}
+
 /// One transcription's end, as the center publishes it.
 struct TranscriptionJobEndingEvent: Equatable, Sendable {
     /// The transcription that ended.
@@ -74,7 +112,8 @@ struct TranscriptionJobEndingEvent: Equatable, Sendable {
 /// TextMouth cancels it, asking nothing.
 ///
 /// VoiceOver hears it start, pass each quarter, and end, from the window
-/// that started it. Its progress is shown at most four times a second, and
+/// that started it, and the debug log records its start and its end
+/// (`TranscriptionLog`). Its progress is shown at most four times a second, and
 /// whenever it moves to another file. Once its transcript is saved, the
 /// book's open readers show the text, and its library row says it is
 /// transcribed (`TranscribedBooks`).
@@ -145,6 +184,7 @@ final class TranscriptionJobCenter: ObservableObject {
         announcedMilestones = []
         progressShownAt = nil
         transcribedBooks.setTranscribing(book.id)
+        DiagnosticLog.event(.storage, TranscriptionLog.started(bookTitle: book.title, language: language))
         VoiceOverAnnouncer.announce(
             TranscriptionWording.started(bookTitle: book.title, audioSeconds: book.audioDuration),
             from: window
@@ -229,12 +269,17 @@ final class TranscriptionJobCenter: ObservableObject {
     }
 
     /// Ends `job` as `ending` says: no transcription is under way any more,
-    /// the end is announced, and published for the sheet showing it.
+    /// the end is logged and announced, and published for the sheet showing
+    /// it.
     private func finish(_ job: TranscriptionJob, _ ending: TranscriptionJobEnding) {
         guard current?.id == job.id else { return }
         current = nil
         task = nil
         transcribedBooks.setTranscribing(nil)
+        DiagnosticLog.event(
+            .storage,
+            TranscriptionLog.ended(ending, bookTitle: job.bookTitle, elapsed: Date().timeIntervalSince(job.startedAt))
+        )
         VoiceOverAnnouncer.announce(ending.announcement(bookTitle: job.bookTitle), from: announcingWindow)
         announcingWindow = nil
         lastEnding = TranscriptionJobEndingEvent(job: job, ending: ending)

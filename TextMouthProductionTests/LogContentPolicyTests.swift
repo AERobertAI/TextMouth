@@ -331,6 +331,9 @@ final class LogContentPolicyTests: XCTestCase {
         // The experimental transcript cleanup (FR05): the user's copy of its rules, unusable or only in the
         // cloud; a cleanup saved; and a cleanup undone.
         "TRANSCRIPT_CLEANUP_RULES", "TRANSCRIPT_CLEANED_UP", "TRANSCRIPT_CLEANUP_UNDONE",
+        // Transcriptions (FR05): one starting, and one finishing with its words and seconds, cancelled, or
+        // failed with why.
+        "TRANSCRIPTION_STARTED", "TRANSCRIPTION_FINISHED", "TRANSCRIPTION_CANCELLED", "TRANSCRIPTION_FAILED",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was
