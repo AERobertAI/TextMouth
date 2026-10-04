@@ -268,6 +268,14 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         defer { subscription.cancel() }
         await fulfillment(of: [loaded], timeout: 10)
         XCTAssertNil(reader.errorMessage, "the fixture did not load")
+        // The fixture's row keeps none of the EPUB's metadata, so the reader
+        // reads it from the file once the book shows (`showEPUBMetadata()`).
+        let metadataShown = expectation(description: "EPUB metadata shown")
+        let metadataSubscription = reader.$epubMetadata.compactMap { $0 }.prefix(1).sink { _ in
+            metadataShown.fulfill()
+        }
+        defer { metadataSubscription.cancel() }
+        await fulfillment(of: [metadataShown], timeout: 10)
         XCTAssertNotNil(reader.epubMetadata, "the fixture's metadata did not load")
         LibraryPersistenceService.flushPendingSave()
         return reader

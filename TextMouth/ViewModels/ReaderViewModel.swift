@@ -91,8 +91,17 @@ final class ReaderViewModel: ObservableObject {
     /// and the list that heading numbers count. Kept in step with `content`.
     @Published var headings: [Heading] = []
     @Published var bookmarks: [Bookmark] = []
+    /// An EPUB's package metadata with the book's own edits, which the
+    /// metadata editor starts from; nil until it is known, and for every
+    /// other format (`showEPUBMetadata()`).
     @Published var epubMetadata: EPUBMetadata?
     @Published var audioMetadata: AudioMetadata?
+    /// Reads an EPUB's package metadata from its file, off the main thread,
+    /// for a book whose row does not keep it (`showEPUBMetadata()`): the
+    /// read Book Info makes, which never downloads a file that is only in
+    /// the cloud (FR02). Tests replace it before the book loads, to count
+    /// the reads or to hold one back.
+    var readEPUBMetadata: @Sendable (URL) throws -> EPUBMetadata = LibraryBookInfoReader.system.readEPUBMetadata
 
     /// Republished from speechService so SwiftUI views update when playback state changes
     @Published var isCurrentlyPlaying = false
@@ -402,8 +411,12 @@ final class ReaderViewModel: ObservableObject {
     /// Forward speechService @Published state to our own @Published properties
     /// so SwiftUI views that observe this ViewModel get updated.
     private func forwardSpeechState() {
+        // A reader waiting for its chapter's speech shows Playing whatever
+        // the idle speech service says meanwhile, as when a move stops it
+        // (`isWaitingForChapterSpeech`).
         speechService.$isSpeaking
             .receive(on: DispatchQueue.main)
+            .map { [weak self] isSpeaking in isSpeaking || self?.isWaitingForChapterSpeech == true }
             .assign(to: &$isCurrentlyPlaying)
         speechService.$isPaused
             .receive(on: DispatchQueue.main)
@@ -841,8 +854,6 @@ final class ReaderViewModel: ObservableObject {
         let audioFiles: [String]?
         /// A segmented audiobook's clips, chapter by chapter.
         let audioSegments: [AudioSegment]?
-        /// An EPUB's own package metadata.
-        let fileMetadata: EPUBMetadata?
         /// An audiobook's tags.
         let audioTags: AudioMetadata?
         /// Whether the index, or the version of the cache it was measured
@@ -882,14 +893,16 @@ final class ReaderViewModel: ObservableObject {
         }
     }
 
-    /// Reads `book`'s content, with the metadata its files hold: an EPUB's
-    /// package metadata, or an audiobook's tags, from `tagsURL` when given
-    /// (the same file in the book's working copy) and otherwise from the
-    /// book's own file. Runs on a background queue.
+    /// Reads `book`'s content, with an audiobook's tags, from `tagsURL` when
+    /// given (the same file in the book's working copy) and otherwise from
+    /// the book's own file. Runs on a background queue.
     ///
-    /// The book's own edits are laid over the metadata back on the main
-    /// actor, from the reader's copy of the book as it is by then, so an
-    /// edit the library makes while the book loads is shown too (TODO P10).
+    /// The book's own edits are laid over the tags back on the main actor,
+    /// from the reader's copy of the book as it is by then, so an edit the
+    /// library makes while the book loads is shown too (TODO P10). An EPUB's
+    /// package metadata is not read here, so no open waits for it: the
+    /// reader takes it from the book's row, or reads it once the book shows
+    /// (`showEPUBMetadata()`).
     ///
     /// A text book's reading text goes through `readingTexts`, this Mac's
     /// cache of the reading text of the large books opened lately (PERF22,
@@ -910,10 +923,6 @@ final class ReaderViewModel: ObservableObject {
             readingTexts: readingTexts
         )
 
-        var fileMetadata: EPUBMetadata?
-        if format == .epub {
-            fileMetadata = try? EPUBParser.readMetadata(url: url)
-        }
         var audioTags: AudioMetadata?
         if format.isAudio {
             let tagged = tagsURL ?? url
@@ -925,7 +934,6 @@ final class ReaderViewModel: ObservableObject {
             index: analysis.index,
             audioFiles: analysis.audioFilePaths,
             audioSegments: analysis.audioSegments,
-            fileMetadata: fileMetadata,
             audioTags: audioTags,
             shouldPersistContentIndex: !analysis.usedPersistedIndex
                 || book.contentIndexVersion != BookContentIndex.currentVersion
@@ -948,8 +956,9 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Shows `loaded`, read from the book at `filePath`: its chapters, its
-    /// headings, its metadata, and its audio files, with the saved position
-    /// kept within the book. Saves a new index, and starts playing for a
+    /// headings, its metadata (an EPUB's from the book's row, or read once
+    /// the book shows), and its audio files, with the saved position kept
+    /// within the book. Saves a new index, and starts playing for a
     /// finished book that continued to this one while it loaded; a text
     /// book that does not start playing has the speech of the chapter it
     /// opened at prepared in the background (`prepareOpenedChapterSpeech()`).
@@ -967,7 +976,7 @@ final class ReaderViewModel: ObservableObject {
         }
         // Assigning content also publishes its headings.
         content = parsed
-        epubMetadata = loaded.fileMetadata.map { book.mergingEditableEPUBMetadata($0) }
+        showEPUBMetadata()
         audioMetadata = loaded.audioTags.map { book.mergingEditableAudioMetadata($0) }
 
         // Clamp saved reading position to valid range. The chapter
@@ -1029,6 +1038,44 @@ final class ReaderViewModel: ObservableObject {
         // A book that cannot load cannot play for a finished
         // book that continued to it; its error shows instead.
         discardAutoplayRequest()
+    }
+
+    // MARK: - EPUB Metadata
+
+    /// Shows an EPUB's package metadata, which the metadata editor starts
+    /// from, without making the open wait for it: from the book's row, with
+    /// the book, when the row keeps all of it (`Book.keptEPUBMetadata`), and
+    /// otherwise read from the EPUB off the main thread, arriving once the
+    /// book shows (`readEPUBMetadataInBackground()`). Shows nothing for any
+    /// other format, and reads nothing again once metadata shows.
+    func showEPUBMetadata() {
+        guard book.format == .epub else { return }
+        if let kept = book.keptEPUBMetadata {
+            epubMetadata = kept
+        } else if epubMetadata == nil {
+            readEPUBMetadataInBackground()
+        }
+    }
+
+    /// Reads the EPUB's package metadata from its file off the main thread
+    /// (`readEPUBMetadata`), at a priority below the work the listener waits
+    /// for, and shows it with the book's own edits laid over it, from the
+    /// reader's copy of the book as it is by then, so an edit the library
+    /// made meanwhile is shown too (TODO P10). Nothing is shown when the
+    /// reader has closed, when it shows metadata by then (its metadata
+    /// editor saved an edit), or when the file cannot be read: the metadata
+    /// editor then opens the library's Book Info, as for any book without
+    /// metadata of its own.
+    private func readEPUBMetadataInBackground() {
+        let file = book.bookFileURL
+        let read = readEPUBMetadata
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let metadata = try? read(file)
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let metadata, !self.hasClosed, self.epubMetadata == nil else { return }
+                self.epubMetadata = self.book.mergingEditableEPUBMetadata(metadata)
+            }
+        }
     }
 
     // MARK: - Text Display Window

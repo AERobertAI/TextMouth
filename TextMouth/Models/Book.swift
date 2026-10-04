@@ -522,6 +522,26 @@ struct Book: Identifiable, Codable, Hashable {
         return merged
     }
 
+    /// This EPUB's package metadata as the book's row keeps it, when the row
+    /// keeps every field of it, as it does for each book imported since rows
+    /// kept them: what the import read from the file, with the book's own
+    /// edits. That is exactly what reading the file and laying those edits
+    /// over it gives (`mergingEditableEPUBMetadata(_:)`), since the import
+    /// copies the file as it read it, and writing an edit into the file
+    /// (TODO A09) changes only the fields the row keeps the edit in.
+    ///
+    /// Nil for any other format, and for a row without one of the fields, as
+    /// a book imported before rows kept them has: an unedited publisher or
+    /// publication date, among others, is then known only to the file.
+    var keptEPUBMetadata: EPUBMetadata? {
+        guard format == .epub,
+              epubPublisher != nil, epubPublicationDate != nil, epubISBN != nil,
+              epubLanguage != nil, epubIdentifier != nil, epubVersion != nil else { return nil }
+        // Every field is there, so none of the defaults for a missing one,
+        // which Book Info shows for a book only in the cloud, applies.
+        return storedEPUBMetadata
+    }
+
     /// Overlay metadata kept by TextMouth onto values read from an audio
     /// file's tags: the title and author always, since they are the names
     /// the library gives the book, and the album, genre, and year once they

@@ -702,7 +702,6 @@ final class IntegrationSleepTimerTests: XCTestCase {
                     index: book.contentIndex,
                     audioFiles: nil,
                     audioSegments: nil,
-                    fileMetadata: nil,
                     audioTags: nil,
                     shouldPersistContentIndex: false,
                     cacheFormatVersion: nil

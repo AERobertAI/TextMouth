@@ -228,22 +228,50 @@ final class PerformanceBaselineTests: XCTestCase {
 
     // MARK: - Opening Books
 
-    /// Opening the 1 MB EPUB, imported as the developer imports a book, in
-    /// a reader with the developer's 16 substitution rules, until the
-    /// speech of the chapter it opens at is prepared, as Play needs it.
+    /// Opening the 1 MB EPUB for the first time, imported as the developer
+    /// imports a book, in a reader with the developer's 16 substitution
+    /// rules, until the speech of the chapter it opens at is prepared, as
+    /// Play needs it. Each run, the warm-up's too, starts with nothing of
+    /// the book kept on this Mac: the reading text the run before kept
+    /// (`ReadingTextCache`) is forgotten first, so every run parses the
+    /// book's content.md and keeps its reading text anew.
     func testOpeningTheEPUB() throws {
-        let world = try makeIntegrationWorld("Performance Open EPUB")
-        let book = try world.importBook(from: try PerformanceFixtures.oneMegabyteEPUB(for: self))
-        let substitutions = TextSubstitutionService(rules: try PerformanceFixtures.developerSubstitutionRules())
+        let epub = try importOneMegabyteEPUB("Performance Open EPUB")
 
         try baselines.check(.openTextBook) {
-            let start = ContinuousClock.now
-            let reader = try openReader(on: book, in: world, substitutions: substitutions)
-            defer { reader.close() }
-            guard let speech = reader.preparedSpeech(forChapterAt: reader.currentChapterIndex), !speech.text.isEmpty else {
-                throw PerformanceBaselineError.fixture("the EPUB's first chapter has no speech")
+            Self.forgetKeptReadingText(of: epub.book)
+            let milliseconds = try millisecondsToOpenedChapterSpeech(of: epub)
+            // Only an open that parsed content.md keeps its reading text.
+            guard Self.keptReadingTextFile(of: epub.book) != nil else {
+                throw PerformanceBaselineError.fixture(
+                    "the first open kept no reading text, so it may not have parsed content.md"
+                )
             }
-            return PerformanceClock.milliseconds(since: start)
+            return milliseconds
+        }
+    }
+
+    /// Opening the 1 MB EPUB again, as each later open of a book of a
+    /// megabyte or more opens it: from the reading text this Mac kept when
+    /// the book was first opened, which an untimed open keeps before the
+    /// runs. Each run checks that it read that reading text, rather than
+    /// parse content.md and keep its reading text anew, so the number can
+    /// never quietly measure a first open.
+    func testOpeningTheEPUBFromItsKeptReadingText() throws {
+        let epub = try importOneMegabyteEPUB("Performance Reopen EPUB")
+        _ = try millisecondsToOpenedChapterSpeech(of: epub)
+        guard let kept = Self.keptReadingTextFile(of: epub.book) else {
+            throw PerformanceBaselineError.fixture("the first open kept no reading text for the 1 MB EPUB")
+        }
+
+        try baselines.check(.openTextBookCached) {
+            let milliseconds = try millisecondsToOpenedChapterSpeech(of: epub)
+            guard Self.keptReadingTextFile(of: epub.book) == kept else {
+                throw PerformanceBaselineError.fixture(
+                    "the open parsed content.md again instead of reading the kept reading text"
+                )
+            }
+            return milliseconds
         }
     }
 
@@ -263,6 +291,58 @@ final class PerformanceBaselineTests: XCTestCase {
             }
             return PerformanceClock.milliseconds(since: start)
         }
+    }
+
+    /// The 1 MB EPUB imported into a world of a test's own, and the
+    /// developer's 16 substitution rules, which its readers apply.
+    private struct ImportedEPUB {
+        let world: IntegrationWorld
+        let book: Book
+        let rules: TextSubstitutionService
+    }
+
+    /// The 1 MB EPUB, imported as the developer imports a book into a world
+    /// of the test's own named after `label`.
+    private func importOneMegabyteEPUB(_ label: String) throws -> ImportedEPUB {
+        let world = try makeIntegrationWorld(label)
+        return ImportedEPUB(
+            world: world,
+            book: try world.importBook(from: try PerformanceFixtures.oneMegabyteEPUB(for: self)),
+            rules: TextSubstitutionService(rules: try PerformanceFixtures.developerSubstitutionRules())
+        )
+    }
+
+    /// Milliseconds from opening a reader on `epub` until the speech of the
+    /// chapter it opens at is prepared, as Play needs it. The reader is
+    /// closed afterwards.
+    private func millisecondsToOpenedChapterSpeech(of epub: ImportedEPUB) throws -> Double {
+        let start = ContinuousClock.now
+        let reader = try openReader(on: epub.book, in: epub.world, substitutions: epub.rules)
+        defer { reader.close() }
+        guard let speech = reader.preparedSpeech(forChapterAt: reader.currentChapterIndex), !speech.text.isEmpty else {
+            throw PerformanceBaselineError.fixture("the EPUB's first chapter has no speech")
+        }
+        return PerformanceClock.milliseconds(since: start)
+    }
+
+    /// Forgets the reading text this Mac kept for `book`, through the
+    /// cache's own API, once every store an earlier open queued has ended,
+    /// so the next open parses the book's content.md, as a first open does.
+    private static func forgetKeptReadingText(of book: Book) {
+        ReadingTextCache.waitForBackgroundWork()
+        ReadingTextCache.shared.remove(bookID: book.id)
+    }
+
+    /// The file number of the file in which this Mac keeps `book`'s reading
+    /// text, once every store queued has ended, or nil when none is kept.
+    /// An open that reads the kept text leaves that very file in place; an
+    /// open that parses content.md keeps the text anew, in another file
+    /// renamed into its place, which has another number.
+    private static func keptReadingTextFile(of book: Book) -> Int? {
+        ReadingTextCache.waitForBackgroundWork()
+        let kept = ReadingTextCache.shared.url(for: book.id)
+        let attributes = try? FileManager.default.attributesOfItem(atPath: kept.path)
+        return (attributes?[.systemFileNumber] as? NSNumber)?.intValue
     }
 
     /// A reader on `book` in `world`, opened as its window opens one, once

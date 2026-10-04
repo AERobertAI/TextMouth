@@ -16,6 +16,13 @@ extension ReaderViewModel {
     /// remains from the cursor, the book ends at once through its
     /// end-of-book behavior, without claiming media controls, making the
     /// play sound, or starting a Playing state or listening session.
+    ///
+    /// When the chapter speech starts in is long and its speech is being
+    /// prepared off the main thread from exactly the settings in force, as
+    /// the chapter a book opens at is (`prepareOpenedChapterSpeech()`), Play
+    /// waits for that speech instead of preparing the chapter again on the
+    /// main thread, showing Playing meanwhile (`waitForChapterSpeech(_:)`).
+    /// Play pressed while it waits changes nothing.
     func play() {
         // Loading or closed readers cannot own a playback/statistics session.
         guard !hasClosed, !isLoading, let content,
@@ -24,15 +31,22 @@ extension ReaderViewModel {
         if WhereAmIInterruptionPolicy.blocksBookPlayback(
             isAnnouncementSpeaking: isWhereAmISpeaking
         ) { return }
+        // A play waiting for its chapter's speech starts once it is ready.
+        guard !isWaitingForChapterSpeech else { return }
         // Find what a text book will say before claiming playback, so a book
         // with nothing left to say ends before any playback state is claimed.
         var speechStart: SpeechStart?
+        var awaitedSpeech: ChapterSpeechInputs?
         if !isAudioBook {
-            guard let start = speechStartFromCursor() else {
+            switch searchForSpeechStart(preparingLongChapters: .nowUnlessUnderWay) {
+            case .noneLeft:
                 endBookWithNothingLeftToSpeak()
                 return
+            case .found(let start):
+                speechStart = start
+            case .preparingInBackground(let inputs):
+                awaitedSpeech = inputs
             }
-            speechStart = start
         }
         restartPlaybackBackendOnNextResume = false
         mediaControlsReleased = false
@@ -47,11 +61,19 @@ extension ReaderViewModel {
         if isAudioBook {
             playAudioChapter()
         } else if let speechStart {
-            startSpeaking(speechStart)
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title, author: book.author, isPlaying: true
-            )
+            startSpeakingAsNowPlaying(speechStart)
+        } else if let awaitedSpeech {
+            waitForChapterSpeech(awaitedSpeech)
         }
+    }
+
+    /// Speak `start`'s chapter from its offset (`startSpeaking(_:playing:)`),
+    /// and tell Now Playing the book plays.
+    private func startSpeakingAsNowPlaying(_ start: SpeechStart) {
+        startSpeaking(start)
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: true
+        )
     }
 
     /// Resume playback if the book is already paused, otherwise fall
@@ -216,7 +238,9 @@ extension ReaderViewModel {
         DiagnosticLog.trace(.playback, "togglePlayPause called, isSpeaking=\(speechService.isSpeaking) isPaused=\(speechService.isPaused)")
         if speechService.isPaused {
             resumeSpeechPlayback()
-        } else if speechService.isSpeaking {
+        } else if speechService.isSpeaking || isWaitingForChapterSpeech {
+            // A reader waiting for its chapter's speech shows Playing, so
+            // Play/Pause pauses it too.
             pause()
         } else {
             play()
@@ -234,7 +258,9 @@ extension ReaderViewModel {
         if isAudioBook {
             wasActive = audioPlaybackService.isPlaying || audioPlaybackService.isPaused
         } else {
-            wasActive = speechService.isSpeaking || speechService.isPaused
+            // A play waiting for its chapter's speech counts, as it does
+            // for `pause()`.
+            wasActive = speechService.isSpeaking || speechService.isPaused || isWaitingForChapterSpeech
         }
 
         let wasSleepTimerFading = isOwnSleepTimerFading
@@ -244,6 +270,7 @@ extension ReaderViewModel {
         if isAudioBook {
             audioPlaybackService.stop()
         } else {
+            stopWaitingForChapterSpeech()
             speechService.stop()
             // Stopped speech looks ahead to nothing: the next Play chooses
             // the next chapter afresh. Abandoning the look-ahead now also
@@ -333,22 +360,56 @@ extension ReaderViewModel {
     /// chapter when anything speakable follows the cursor there, otherwise
     /// the start of the next speakable chapter. Nil when nothing speakable
     /// remains in the book, and when no content is loaded or the cursor is
-    /// outside it, which callers rule out first.
+    /// outside it, which callers rule out first. A chapter whose speech is
+    /// not kept yet is prepared at once, on the main actor.
     ///
     /// A chapter that is speakable as a whole can still have nothing left
     /// after the cursor, when the cursor sits in a skipped section at the
     /// end of the chapter or in its trailing blank lines.
     func speechStartFromCursor() -> SpeechStart? {
-        guard let current = preparedSpeech(forChapterAt: currentChapterIndex) else { return nil }
+        if case .found(let start) = searchForSpeechStart(preparingLongChapters: .now) {
+            return start
+        }
+        return nil
+    }
+
+    /// What a search for where speech begins from the cursor found.
+    enum SpeechStartSearch {
+        /// Where speech begins.
+        case found(SpeechStart)
+        /// Nothing speakable remains in the book.
+        case noneLeft
+        /// The chapter the search reached is long, and its speech is being
+        /// prepared in the background from exactly these inputs, the ones
+        /// in force, before the search can go on.
+        case preparingInBackground(ChapterSpeechInputs)
+    }
+
+    /// Search for where speech begins from the cursor, as
+    /// `speechStartFromCursor()` describes, preparing a long chapter whose
+    /// speech is not kept yet as `preparation` says: Play asks for
+    /// `.nowUnlessUnderWay`, and every other caller for `.now`.
+    private func searchForSpeechStart(preparingLongChapters preparation: LongChapterPreparation) -> SpeechStartSearch {
+        guard let inputs = speechInputs(forChapterAt: currentChapterIndex) else { return .noneLeft }
+        if preparation == .nowUnlessUnderWay, waitsForPreparation(of: inputs) {
+            return .preparingInBackground(inputs)
+        }
+        let current = preparedSpeech(for: inputs)
         // The cursor is an offset in the original text. Map it into the
         // spoken text; an offset inside a removed section can map past the
         // spoken text's end, so clamp it there.
         let offset = min(current.offsetMap.toModified(currentCharacterOffset), current.text.utf16Length)
         if Self.hasSpeakableText(in: current.text, fromSpokenOffset: offset) {
-            return SpeechStart(speech: current, offset: offset)
+            return .found(SpeechStart(speech: current, offset: offset))
         }
-        return nextSpeakableChapterSpeech(from: currentChapterIndex + 1)
-            .map { SpeechStart(speech: $0, offset: 0) }
+        switch searchForSpeakableChapter(from: currentChapterIndex + 1, preparingLongChapters: preparation) {
+        case .found(let speech):
+            return .found(SpeechStart(speech: speech, offset: 0))
+        case .noneLeft:
+            return .noneLeft
+        case .preparingInBackground(let awaited):
+            return .preparingInBackground(awaited)
+        }
     }
 
     /// Whether the speech loaded for the cursor's chapter has anything
@@ -595,14 +656,15 @@ extension ReaderViewModel {
     /// (finding #787). Nothing more plays: the cursor waits at
     /// `chapterIndex`, `characterOffset`, saved, so that Play starts there.
     ///
-    /// A text book stops its speech and lets go of the next chapter rendered
-    /// ahead, unplayed. An audiobook stops waiting for a chapter's files to
-    /// download, so that chapter does not start once they are here, and
-    /// lets go of its player, together with any next chapter's file it may
-    /// already have rolled on into, one named to follow before the timer was
-    /// set. Either way the reader shows playback stopped, ends its listening
-    /// session, and tells Now Playing, as a pause does. The caller tells the
-    /// listener why.
+    /// A text book stops waiting for its chapter's speech, so that chapter
+    /// does not start once the speech is ready, stops its speech, and lets
+    /// go of the next chapter rendered ahead, unplayed. An audiobook stops
+    /// waiting for a chapter's files to download, so that chapter does not
+    /// start once they are here, and lets go of its player, together with
+    /// any next chapter's file it may already have rolled on into, one named
+    /// to follow before the timer was set. Either way the reader shows
+    /// playback stopped, ends its listening session, and tells Now Playing,
+    /// as a pause does. The caller tells the listener why.
     private func stopPlaybackForSleepTimer(waitingAt chapterIndex: Int, characterOffset: Int) {
         if isAudioBook {
             stopWaitingForChapterDownload(because: "the sleep timer stopped playback")
@@ -610,6 +672,7 @@ extension ReaderViewModel {
             isCurrentlyPlaying = false
             isCurrentlyPaused = false
         } else {
+            stopWaitingForChapterSpeech()
             speechService.stop()
             discardLookAhead()
         }
@@ -1138,8 +1201,10 @@ extension ReaderViewModel {
     /// same inputs when it is ready (`finishPreparingInBackground(_:)`): a
     /// change to the substitution rules, the repeated-symbol setting, the
     /// pauses, or the skipped sections meanwhile leaves Play to prepare the
-    /// chapter from the settings in force, as it always did. So does Play
-    /// pressed before the preparation ends.
+    /// chapter from the settings in force, as it always did. Play pressed
+    /// before the preparation ends waits for it when the chapter is long,
+    /// showing Playing meanwhile (`play()`), and prepares a shorter chapter
+    /// at once, in a few milliseconds.
     func prepareOpenedChapterSpeech() {
         guard !hasClosed, !isAudioBook, let content else { return }
         let chapters = content.chapters
@@ -1175,14 +1240,20 @@ extension ReaderViewModel {
     }
 
     /// Keep speech prepared in the background while its chapter is still
-    /// prepared from the same inputs, and, when the look-ahead waited for it,
+    /// prepared from the same inputs; start the play that waited for it
+    /// (`continueWaitingPlay()`); and, when the look-ahead waited for it,
     /// choose the chapter to render ahead again, now without waiting. A
-    /// closed reader keeps nothing.
-    private func finishPreparingInBackground(_ speech: ChapterSpeech) {
+    /// closed reader keeps nothing. Tests hand it a preparation's result
+    /// themselves, so that no speech they start can start while the run
+    /// loop turns.
+    func finishPreparingInBackground(_ speech: ChapterSpeech) {
         chapterSpeechCache.endPreparingInBackground(speech.inputs)
         guard !hasClosed else { return }
         if speechInputs(forChapterAt: speech.chapterIndex) == speech.inputs {
             chapterSpeechCache.keep(speech)
+        }
+        if chapterSpeechCache.awaitedByPlay == speech.inputs {
+            continueWaitingPlay()
         }
         guard chapterSpeechCache.awaitedByLookAhead == speech.inputs else { return }
         chapterSpeechCache.awaitedByLookAhead = nil
@@ -1190,6 +1261,85 @@ extension ReaderViewModel {
         if isSpeechSessionActive {
             preRenderNextChapter()
         }
+    }
+
+    // MARK: - Play Waiting for Its Chapter's Speech
+
+    /// Whether the reader waits for the speech of the chapter Play starts
+    /// in, a long one being prepared off the main thread: it shows Playing,
+    /// as an audiobook waiting for its chapter's files to download does, but
+    /// says nothing until the speech is ready (`continueWaitingPlay()`).
+    var isWaitingForChapterSpeech: Bool {
+        chapterSpeechCache.awaitedByPlay != nil
+    }
+
+    /// Whether Play waits for the speech of `inputs` rather than prepare it
+    /// on the main thread: the chapter is long (`ChapterSpeechInputs.isLong`),
+    /// no speech is kept for exactly these inputs, and they are being
+    /// prepared in the background. A shorter chapter is prepared at once,
+    /// in a few milliseconds, as Play always prepared it.
+    private func waitsForPreparation(of inputs: ChapterSpeechInputs) -> Bool {
+        inputs.isLong && chapterSpeechCache.isOnlyBeingPreparedInBackground(inputs)
+    }
+
+    /// Wait for the speech of `inputs`, the long chapter Play starts in,
+    /// which is being prepared off the main thread, showing Playing
+    /// meanwhile, in the reader and in Now Playing.
+    private func waitForChapterSpeech(_ inputs: ChapterSpeechInputs) {
+        DiagnosticLog.trace(
+            .playback,
+            "play: waiting for chapter \(inputs.chapterIndex)'s speech "
+                + "(\(inputs.text.utf16Length) UTF-16 units), being prepared off the main thread"
+        )
+        chapterSpeechCache.awaitedByPlay = inputs
+        isCurrentlyPlaying = true
+        isCurrentlyPaused = false
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: true
+        )
+    }
+
+    /// Start the play that waited for its chapter's speech, now that the
+    /// preparation it waited for has ended: from the cursor as it is now,
+    /// so that a move made meanwhile is where speech begins. Speech prepared
+    /// from settings that changed meanwhile was not kept, so the chapter is
+    /// then prepared afresh from the settings in force, at once, unless a
+    /// preparation of exactly those is under way, which the play waits for
+    /// in turn. A book with nothing left to say ends. Nothing is said over a
+    /// Where Am I announcement: the play stops instead, as a pause stops
+    /// it, and Play starts it again.
+    private func continueWaitingPlay() {
+        guard !WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: isWhereAmISpeaking) else {
+            DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks; not starting it")
+            pause(playingPauseSound: false)
+            return
+        }
+        chapterSpeechCache.awaitedByPlay = nil
+        switch searchForSpeechStart(preparingLongChapters: .nowUnlessUnderWay) {
+        case .found(let start):
+            startSpeakingAsNowPlaying(start)
+        case .preparingInBackground(let inputs):
+            waitForChapterSpeech(inputs)
+        case .noneLeft:
+            endBookWithNothingLeftToSpeak()
+        }
+    }
+
+    /// Stops waiting for the speech of the chapter Play starts in, when the
+    /// reader waits for it, so that the chapter does not start once its
+    /// speech is ready: playback was paused or stopped. The preparation goes
+    /// on, and keeps the speech for the next Play. The reader shows that
+    /// nothing plays.
+    ///
+    /// - Returns: Whether the reader was waiting.
+    @discardableResult
+    private func stopWaitingForChapterSpeech() -> Bool {
+        guard isWaitingForChapterSpeech else { return false }
+        chapterSpeechCache.awaitedByPlay = nil
+        isCurrentlyPlaying = false
+        isCurrentlyPaused = false
+        DiagnosticLog.trace(.playback, "play: stopped waiting for the chapter's speech")
+        return true
     }
 
     // MARK: - Speakable Chapters
@@ -1243,8 +1393,14 @@ extension ReaderViewModel {
     /// whose speech is not kept yet.
     enum LongChapterPreparation {
         /// At once, on the main actor, for a caller that needs the answer
-        /// now: Play, a chapter's end, and the end of the book.
+        /// now: a chapter's end, the end of the book, and a restart of
+        /// speech.
         case now
+        /// At once, on the main actor, unless its speech is already being
+        /// prepared in the background from exactly the inputs in force:
+        /// then the search ends, to wait for that preparation. Play, which
+        /// shows Playing while it waits.
+        case nowUnlessUnderWay
         /// In the background, ending the search until it is ready: the
         /// look-ahead, which waits for it rather than hold the main thread.
         case inBackground
@@ -1256,9 +1412,9 @@ extension ReaderViewModel {
         case found(ChapterSpeech)
         /// No chapter from where the search began has anything to say.
         case noneLeft
-        /// A long chapter is being prepared in the background before the
-        /// search can go on.
-        case preparingInBackground
+        /// A long chapter is being prepared in the background, from these
+        /// inputs, before the search can go on.
+        case preparingInBackground(ChapterSpeechInputs)
     }
 
     /// Search for the first chapter at or after `start` with anything to
@@ -1271,16 +1427,22 @@ extension ReaderViewModel {
         guard let content else { return .noneLeft }
         var result = SpeakableChapterSearch.noneLeft
         // The search stops at the first chapter this accepts: the first with
-        // anything to say, or a long one left to be prepared in the
-        // background, and `result` says which.
+        // anything to say, or a long one being prepared in the background,
+        // and `result` says which.
         _ = Self.nextSpeakableChapterIndex(from: start, chapterCount: content.chapters.count) { chapterIndex in
             guard let inputs = speechInputs(forChapterAt: chapterIndex) else { return false }
+            // Play waits for a long chapter being prepared in the background
+            // rather than prepare it again on the main thread.
+            if preparingLongChapters == .nowUnlessUnderWay, waitsForPreparation(of: inputs) {
+                result = .preparingInBackground(inputs)
+                return true
+            }
             let speech: ChapterSpeech
             if let kept = chapterSpeechCache.speech(for: inputs) {
                 speech = kept
             } else if preparingLongChapters == .inBackground, inputs.isLong {
                 prepareInBackground(inputs)
-                result = .preparingInBackground
+                result = .preparingInBackground(inputs)
                 return true
             } else {
                 speech = prepareAndKeep(inputs)
@@ -2168,6 +2330,7 @@ extension ReaderViewModel {
         // checking after would always return "not playing" and the guard
         // would never apply. An audiobook waiting for its chapter's files to
         // download counts as playing: it is left paused at the chapter, below.
+        // So does a text book waiting for its chapter's speech, which stops.
         let wasPlaying = isPlaybackUnderWay
 
         if playingPauseSound {
@@ -2199,10 +2362,16 @@ extension ReaderViewModel {
                 isCurrentlyPlaying = true // still "playing" but paused
                 isCurrentlyPaused = true
             }
-        } else if completingSleepFade {
-            speechService.pauseForSleepTimerFadeCompletion()
         } else {
-            speechService.pause()
+            // A play still waiting for its chapter's speech has said nothing:
+            // it stops waiting and shows nothing playing, and the speech
+            // service below, with nothing to pause, does nothing.
+            stopWaitingForChapterSpeech()
+            if completingSleepFade {
+                speechService.pauseForSleepTimerFadeCompletion()
+            } else {
+                speechService.pause()
+            }
         }
         // Now safe to clean up fade state. Audio books still restore here;
         // TTS restores inside SpeechService after the engine has stopped.
@@ -2241,7 +2410,9 @@ extension ReaderViewModel {
     /// Whether playback is under way: speech or audio playing, not paused,
     /// or an audiobook waiting for its chapter's files to download (FR02),
     /// which shows Playing while nothing plays yet, and plays the chapter
-    /// once the files are here.
+    /// once the files are here; likewise a text book waiting for the speech
+    /// of its chapter, prepared off the main thread, which speaks once the
+    /// speech is ready.
     var isPlaybackUnderWay: Bool {
         if isAudioBook {
             return Self.wasActivelyPlaying(
@@ -2250,6 +2421,7 @@ extension ReaderViewModel {
             ) || isWaitingForChapterDownload
         }
         return Self.wasActivelyPlaying(isPlaying: speechService.isSpeaking, isPaused: speechService.isPaused)
+            || isWaitingForChapterSpeech
     }
 
     // MARK: - Rewind on Resume

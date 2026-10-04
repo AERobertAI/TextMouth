@@ -136,7 +136,7 @@ struct ChapterSpeechInputs: Equatable, Sendable {
 /// speech the look-ahead chose for the next chapter, carried to the moment
 /// that chapter begins however many other chapters are prepared meanwhile.
 /// It also remembers which long chapters are being prepared in the
-/// background, and which of them the look-ahead waits for.
+/// background, and which of them the look-ahead, or Play, waits for.
 ///
 /// A value stored in its reader and changed only on the main actor, where
 /// the reader lives.
@@ -159,6 +159,10 @@ struct ChapterSpeechCache {
     /// prepared in the background, or nil.
     var awaitedByLookAhead: ChapterSpeechInputs?
 
+    /// The inputs of the long chapter Play waits for while it is prepared in
+    /// the background, or nil (`ReaderViewModel.isWaitingForChapterSpeech`).
+    var awaitedByPlay: ChapterSpeechInputs?
+
     /// The inputs of the long chapters being prepared in the background.
     private var preparingInBackground: [ChapterSpeechInputs] = []
 
@@ -166,9 +170,11 @@ struct ChapterSpeechCache {
     /// inputs: each such request is prepared. Read by the tests.
     private(set) var misses = 0
 
-    /// Whether nothing is kept or being prepared, as after `removeAll()`.
+    /// Whether nothing is kept, being prepared, or waited for, as after
+    /// `removeAll()`.
     var isEmpty: Bool {
-        recent.isEmpty && lookAheadSpeech == nil && awaitedByLookAhead == nil && preparingInBackground.isEmpty
+        recent.isEmpty && lookAheadSpeech == nil && awaitedByLookAhead == nil && awaitedByPlay == nil
+            && preparingInBackground.isEmpty
     }
 
     /// The speech prepared from exactly `inputs`, when it is kept; a miss
@@ -223,9 +229,21 @@ struct ChapterSpeechCache {
     /// prepared in the background, asked without counting a miss or making
     /// any kept speech the most recent, as `speech(for:)` would.
     func isKeptOrPreparing(_ inputs: ChapterSpeechInputs) -> Bool {
-        lookAheadSpeech?.inputs == inputs
-            || recent.contains { $0.inputs == inputs }
-            || isPreparingInBackground(inputs)
+        isKept(inputs) || isPreparingInBackground(inputs)
+    }
+
+    /// Whether `inputs` are being prepared in the background while no
+    /// speech is kept for them yet, so that a caller can wait for that
+    /// preparation rather than prepare them again; asked without counting a
+    /// miss, as `isKeptOrPreparing(_:)` is.
+    func isOnlyBeingPreparedInBackground(_ inputs: ChapterSpeechInputs) -> Bool {
+        isPreparingInBackground(inputs) && !isKept(inputs)
+    }
+
+    /// Whether speech prepared from exactly `inputs` is kept, asked without
+    /// counting a miss or making any kept speech the most recent.
+    private func isKept(_ inputs: ChapterSpeechInputs) -> Bool {
+        lookAheadSpeech?.inputs == inputs || recent.contains { $0.inputs == inputs }
     }
 
     /// Forget the look-ahead's speech and the preparation it waits for, as
@@ -236,12 +254,14 @@ struct ChapterSpeechCache {
         awaitedByLookAhead = nil
     }
 
-    /// Forget all kept speech, as a closed reader does. Background
-    /// preparations still running end as usual, and keep nothing.
+    /// Forget all kept speech, and the preparations the look-ahead and Play
+    /// wait for, as a closed reader does. Background preparations still
+    /// running end as usual, and keep nothing.
     mutating func removeAll() {
         recent.removeAll()
         lookAheadSpeech = nil
         awaitedByLookAhead = nil
+        awaitedByPlay = nil
         preparingInBackground.removeAll()
     }
 }
