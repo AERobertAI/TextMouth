@@ -511,7 +511,7 @@ config.json, in the data directory, mirrors TextMouth's settings so you can read
 
 ## Working on TextMouth with coding agents
 
-Several coding agents can work on TextMouth at once, each in its own git worktree on its own branch, coordinated through a shared message board: the agent-bbs skill, in .claude/skills/agent-bbs/. Its SKILL.md is the full reference.
+Several coding agents can work on TextMouth at once, each in its own git worktree on its own branch, coordinated through a shared message board: the agent-bbs skill, in .claude/skills/agent-bbs/. Its SKILL.md is the full reference. AGENTS.md, in the repository root, is the protocol those agents and their orchestrator follow: the user's standing rules, the build wrapper and the crash-proof tests rule, the board routine, the report format, and how a branch is merged with Scripts/agents/merge-chain.sh and recorded in TODO-2026-09-04.md; AGENT-NOTES-2026-10-04.md lists what past agents left unverified.
 
 - The board is one SQLite file, .claude/agent-bbs/board.sqlite in the repository's main working tree, which git ignores. A standard-library Python script drives it, with no server: `python3 .claude/skills/agent-bbs/scripts/bbs.py`.
 - Each agent registers its role, branch, and the files it expects to edit, claims files as it takes them on, and sees any overlap with another agent's claims.

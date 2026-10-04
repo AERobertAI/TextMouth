@@ -20,7 +20,7 @@
 # Usage: [BBS_AGENT=<name>] build-slot-with-bbs.sh <command...>
 # BUILD_SLOT_ROOT overrides the slot directory. The default is the directory
 # build-slot.sh uses, so both wrappers share the same three slots.
-SLOT_ROOT=${BUILD_SLOT_ROOT:-/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/a8490c88-c8f5-4fef-9d39-eec95b7c0469/scratchpad/build-slots}
+SLOT_ROOT=${BUILD_SLOT_ROOT:-/tmp/textmouth-build-slots}
 SLOTS=3
 STALE_SECONDS=2400
 BBS_PY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bbs.py"
