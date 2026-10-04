@@ -692,6 +692,49 @@ final class NowPlayingOwnershipTests: XCTestCase {
         ])
     }
 
+    /// Only the reader whose item the system shows takes it down. A window
+    /// that never played, focused and then closed while another book waits
+    /// paused, clears nothing: the system goes on showing the paused book,
+    /// never told that TextMouth stopped, so macOS keeps sending the AirPods
+    /// to TextMouth, and the paused book's reader owns the commands again.
+    /// Stopping the shown reader and releasing its media controls then
+    /// clears the center once.
+    ///
+    /// Before the repair, closing the idle window told the system three
+    /// times that TextMouth stopped before showing the paused book again,
+    /// and Release Media Controls cleared the center twice.
+    func testOnlyTheReaderShownTakesDownTheSystemNowPlayingItem() {
+        var told: [NowPlayingItem?] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            systemNowPlaying: { told.append($0) }
+        )
+        let listened = makeSession(coordinator: coordinator)
+        let idle = makeSession(coordinator: coordinator)
+        let paused = NowPlayingItem(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        listened.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        listened.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+
+        // The idle window becomes key, then closes: its reader stops, which
+        // clears its Now Playing, twice as a reader's close does, and leaves.
+        idle.focus()
+        idle.clearNowPlaying()
+        idle.clearNowPlaying()
+        idle.close()
+
+        XCTAssertEqual(told.last, .some(paused))
+        XCTAssertFalse(told.contains(nil), "Closing a window that never played told the system TextMouth stopped")
+        XCTAssertEqual(coordinator.activeOwnerID, listened.ownerID)
+
+        // Release Media Controls stops the reader, which clears its Now
+        // Playing, then releases the controls.
+        listened.clearNowPlaying()
+        listened.releaseMediaControls()
+        XCTAssertEqual(told.last, .some(nil))
+        XCTAssertEqual(told.filter { $0 == nil }.count, 1, "The system was told more than once that TextMouth stopped")
+    }
+
     // MARK: - Commands Received on Any Thread
 
     /// MediaPlayer does not say which thread it calls a command's handler

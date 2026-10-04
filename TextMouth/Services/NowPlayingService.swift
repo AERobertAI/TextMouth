@@ -227,6 +227,12 @@ final class NowPlayingService {
     /// The item each reader last asked to show, kept for a reader that is
     /// not the active one until it becomes so (`publishCachedNowPlayingInfoForActiveOwner()`).
     private var nowPlayingInfoByOwner: [UUID: NowPlayingItem] = [:]
+    /// The reader whose item the system's Now Playing center shows, or nil
+    /// while it shows none of TextMouth's. Focus moves without changing
+    /// what is shown, so this can differ from the active reader; only this
+    /// reader takes the item down as it stops, releases media controls, or
+    /// closes (`clearNowPlaying(ownerID:)`, `unregister(ownerID:)`).
+    private var shownOwnerID: UUID?
     private(set) var focusedOwnerID: UUID?
     private(set) var playingOwnerID: UUID?
 
@@ -503,8 +509,14 @@ final class NowPlayingService {
                 + "fallback=\(shortOptionalOwnerID(activeOwnerID))"
         )
         if wasActive {
-            clearSystemNowPlaying()
-            publishCachedNowPlayingInfoForActiveOwner()
+            // As in `clearNowPlaying(ownerID:)`, only this reader's own item
+            // is taken down; the reader now active is shown unless it is.
+            if shownOwnerID == ownerID {
+                clearSystemNowPlaying()
+            }
+            if shownOwnerID != activeOwnerID {
+                publishCachedNowPlayingInfoForActiveOwner()
+            }
         }
     }
 
@@ -1016,6 +1028,13 @@ final class NowPlayingService {
         // An inactive reader can update its own paused state, but it must not
         // replace the visible Now Playing item or steal AirPods commands.
         guard activeOwnerID == ownerID else { return }
+        showSystemNowPlaying(item, of: ownerID)
+    }
+
+    /// Shows `item`, the reader `ownerID`'s, in the system's Now Playing
+    /// center, and remembers whose it is (`shownOwnerID`).
+    private func showSystemNowPlaying(_ item: NowPlayingItem, of ownerID: UUID) {
+        shownOwnerID = ownerID
         writeSystemNowPlaying(item)
     }
 
@@ -1049,6 +1068,12 @@ final class NowPlayingService {
             playingOwnerID = nil
         }
         nowPlayingInfoByOwner.removeValue(forKey: ownerID)
+        // Only the item this reader shows is taken down. A reader that shows
+        // none, such as a window that never played closing while another
+        // book waits paused, must not tell the system TextMouth stopped: the
+        // paused book stays shown, so macOS keeps sending the AirPods here.
+        // A reader that stops and then releases media controls clears once.
+        guard shownOwnerID == ownerID else { return }
         clearSystemNowPlaying()
         publishCachedNowPlayingInfoForActiveOwner()
     }
@@ -1058,7 +1083,7 @@ final class NowPlayingService {
     private func publishCachedNowPlayingInfoForActiveOwner() {
         guard let ownerID = activeOwnerID,
               let cached = nowPlayingInfoByOwner[ownerID] else { return }
-        writeSystemNowPlaying(cached)
+        showSystemNowPlaying(cached, of: ownerID)
     }
 
     private func mediaPlayerStatus(for result: RemoteCommandDispatchResult) -> MPRemoteCommandHandlerStatus {
@@ -1066,6 +1091,7 @@ final class NowPlayingService {
     }
 
     private func clearSystemNowPlaying() {
+        shownOwnerID = nil
         writeSystemNowPlaying(nil)
     }
 
