@@ -150,7 +150,7 @@ final class RecordingWindowTests: XCTestCase {
         let harness = try Harness(test: self, remembered: TestMicrophones.airPods.id)
         harness.model.title = "Kitchen Notes"
         harness.model.folderPath = "Fiction"
-        RecordingOriginalPolicy.saveGlobal(.keep, in: harness.store)
+        AudioOriginalPolicy.saveGlobal(.keep, in: harness.store)
 
         await harness.model.record()
         XCTAssertEqual(harness.model.service.state, .recording)
@@ -445,7 +445,7 @@ final class RecordingWindowTests: XCTestCase {
     /// shows only for a choice of days, with its own label.
     func testTheRecordingsGroupIsLabelledAndFollowsTheStore() throws {
         let store = makeSandboxedPreferences("recording-settings")
-        XCTAssertEqual(RecordingOriginalPolicy.Choice.allCases.map(RecordingSettingsWording.choiceTitle), [
+        XCTAssertEqual(AudioOriginalPolicy.Choice.allCases.map(RecordingSettingsWording.choiceTitle), [
             "Keep", "Don't keep", "Keep for a number of days",
         ])
         XCTAssertEqual(
@@ -456,11 +456,11 @@ final class RecordingWindowTests: XCTestCase {
         var changes = 0
         let subscription = model.objectWillChange.sink { changes += 1 }
         defer { subscription.cancel() }
-        RecordingOriginalPolicy.saveGlobal(.deleteAfter(days: 3), in: store)
+        AudioOriginalPolicy.saveGlobal(.deleteAfter(days: 3), in: store)
         XCTAssertGreaterThan(changes, 0, "a change made in the store was not shown")
         XCTAssertEqual(model.days, 3)
         model.choice = .keep
-        XCTAssertEqual(RecordingOriginalPolicy.global(in: store), .keep)
+        XCTAssertEqual(AudioOriginalPolicy.global(in: store), .keep)
 
         try skipUnlessHostedWindowsExposeAccessibility()
         model.choice = .deleteAfterDays
@@ -564,7 +564,7 @@ private final class FakeRecordingSaver {
         let take: RecordedTake
         let title: String
         let folderPath: String
-        let policy: RecordingOriginalPolicy
+        let policy: AudioOriginalPolicy
     }
 
     /// The saves asked, in order.

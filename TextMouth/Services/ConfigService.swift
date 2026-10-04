@@ -321,7 +321,7 @@ final class ConfigService: ObservableObject {
         /// empty, like any empty text here, keeps the current choice.
         var recordingInputDeviceID: String = ""
         /// What happens to a recording's original take once the recording
-        /// is saved as a book (`RecordingOriginalPolicy.Choice`): "keep",
+        /// is saved as a book (`AudioOriginalPolicy.Choice`): "keep",
         /// "delete", or "deleteAfterDays". Empty keeps the current choice.
         var recordingOriginalPolicy: String = ""
         /// How many days an original take is kept when the choice is

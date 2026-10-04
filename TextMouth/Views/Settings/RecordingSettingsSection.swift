@@ -17,7 +17,7 @@ enum RecordingSettingsWording {
     static let daysLabel = "Days to keep an original"
 
     /// How the picker names `choice`.
-    static func choiceTitle(_ choice: RecordingOriginalPolicy.Choice) -> String {
+    static func choiceTitle(_ choice: AudioOriginalPolicy.Choice) -> String {
         switch choice {
         case .keep: return "Keep"
         case .delete: return "Don't keep"
@@ -31,7 +31,7 @@ enum RecordingSettingsWording {
     }
 
     /// The line under the controls saying what the policy in force does.
-    static func explanation(_ policy: RecordingOriginalPolicy) -> String {
+    static func explanation(_ policy: AudioOriginalPolicy) -> String {
         switch policy {
         case .keep:
             return "Each recording keeps its original take until the book is removed."
@@ -46,7 +46,7 @@ enum RecordingSettingsWording {
 
 /// The global original-take policy as Storage settings shows and changes
 /// it: read from and written to the preferences store through the policy's
-/// own definitions (`RecordingOriginalPolicy`), where the settings model
+/// own definitions (`AudioOriginalPolicy`), where the settings model
 /// mirrors it in config.json, and redrawn whenever it changes there,
 /// wherever it was changed.
 @MainActor
@@ -59,35 +59,35 @@ final class RecordingSettingsModel: ObservableObject {
     /// A model of the policy in `store`.
     init(store: UserDefaults) {
         self.store = store
-        observer = PreferenceObserver(keys: RecordingOriginalPolicy.preferenceKeys, in: store) { [weak self] _ in
+        observer = PreferenceObserver(keys: AudioOriginalPolicy.preferenceKeys, in: store) { [weak self] _ in
             self?.objectWillChange.send()
         }
     }
 
     /// The choice in force.
-    var choice: RecordingOriginalPolicy.Choice {
-        get { RecordingOriginalPolicy.choicePreference.read(from: store) }
+    var choice: AudioOriginalPolicy.Choice {
+        get { AudioOriginalPolicy.choicePreference.read(from: store) }
         set {
             guard newValue != choice else { return }
             objectWillChange.send()
-            RecordingOriginalPolicy.choicePreference.write(newValue, to: store)
+            AudioOriginalPolicy.choicePreference.write(newValue, to: store)
         }
     }
 
     /// The number of days an original is kept under "keep for a number of
     /// days", in whole days.
     var days: Int {
-        get { Int(RecordingOriginalPolicy.daysPreference.read(from: store).rounded()) }
+        get { Int(AudioOriginalPolicy.daysPreference.read(from: store).rounded()) }
         set {
             guard newValue != days else { return }
             objectWillChange.send()
-            RecordingOriginalPolicy.daysPreference.write(Double(newValue), to: store)
+            AudioOriginalPolicy.daysPreference.write(Double(newValue), to: store)
         }
     }
 
     /// The policy in force.
-    var policy: RecordingOriginalPolicy {
-        RecordingOriginalPolicy.global(in: store)
+    var policy: AudioOriginalPolicy {
+        AudioOriginalPolicy.global(in: store)
     }
 }
 
@@ -113,7 +113,7 @@ struct RecordingSettingsSection: View {
                 get: { settings.choice },
                 set: { settings.choice = $0 }
             )) {
-                ForEach(RecordingOriginalPolicy.Choice.allCases, id: \.self) { choice in
+                ForEach(AudioOriginalPolicy.Choice.allCases, id: \.self) { choice in
                     Text(RecordingSettingsWording.choiceTitle(choice)).tag(choice)
                 }
             }

@@ -21,7 +21,7 @@ final class RecordingOriginalPolicyTests: XCTestCase {
     /// Until the user picks another, an original take is deleted one day
     /// after saving.
     func testTheStandardPolicyKeepsATakeForOneDay() {
-        XCTAssertEqual(RecordingOriginalPolicy.standard, .deleteAfter(days: 1))
+        XCTAssertEqual(AudioOriginalPolicy.standard, .deleteAfter(days: 1))
         XCTAssertEqual(SettingsPolicy.recordingOriginalPolicy.defaultValue, .deleteAfterDays)
         XCTAssertEqual(SettingsPolicy.recordingOriginalDays.defaultValue, 1)
         XCTAssertEqual(SettingsPolicy.recordingOriginalDays.range, 1...365)
@@ -31,10 +31,10 @@ final class RecordingOriginalPolicyTests: XCTestCase {
     /// at exactly that many days, not a moment before.
     func testEachPolicySaysWhenATakeIsDue() {
         let saved = Self.saved
-        XCTAssertNil(RecordingOriginalPolicy.keep.deletionDate(lastEdited: saved))
-        XCTAssertFalse(RecordingOriginalPolicy.keep.isDue(lastEdited: saved, now: saved.addingTimeInterval(1_000 * Self.day)))
-        XCTAssertTrue(RecordingOriginalPolicy.delete.isDue(lastEdited: saved, now: saved))
-        let threeDays = RecordingOriginalPolicy.deleteAfter(days: 3)
+        XCTAssertNil(AudioOriginalPolicy.keep.deletionDate(lastEdited: saved))
+        XCTAssertFalse(AudioOriginalPolicy.keep.isDue(lastEdited: saved, now: saved.addingTimeInterval(1_000 * Self.day)))
+        XCTAssertTrue(AudioOriginalPolicy.delete.isDue(lastEdited: saved, now: saved))
+        let threeDays = AudioOriginalPolicy.deleteAfter(days: 3)
         XCTAssertEqual(threeDays.deletionDate(lastEdited: saved), saved.addingTimeInterval(3 * Self.day))
         XCTAssertFalse(threeDays.isDue(lastEdited: saved, now: saved.addingTimeInterval(3 * Self.day - 1)))
         XCTAssertTrue(threeDays.isDue(lastEdited: saved, now: saved.addingTimeInterval(3 * Self.day)))
@@ -43,11 +43,11 @@ final class RecordingOriginalPolicyTests: XCTestCase {
     /// A choice and a number of days make the policy, and the policy gives
     /// them back.
     func testAChoiceAndDaysMakeThePolicy() {
-        XCTAssertEqual(RecordingOriginalPolicy(choice: .keep, days: 9), .keep)
-        XCTAssertEqual(RecordingOriginalPolicy(choice: .delete, days: 9), .delete)
-        XCTAssertEqual(RecordingOriginalPolicy(choice: .deleteAfterDays, days: 9), .deleteAfter(days: 9))
-        XCTAssertEqual(RecordingOriginalPolicy.deleteAfter(days: 9).choice, .deleteAfterDays)
-        XCTAssertEqual(RecordingOriginalPolicy.Choice.allCases.map(\.rawValue), ["keep", "delete", "deleteAfterDays"])
+        XCTAssertEqual(AudioOriginalPolicy(choice: .keep, days: 9), .keep)
+        XCTAssertEqual(AudioOriginalPolicy(choice: .delete, days: 9), .delete)
+        XCTAssertEqual(AudioOriginalPolicy(choice: .deleteAfterDays, days: 9), .deleteAfter(days: 9))
+        XCTAssertEqual(AudioOriginalPolicy.deleteAfter(days: 9).choice, .deleteAfterDays)
+        XCTAssertEqual(AudioOriginalPolicy.Choice.allCases.map(\.rawValue), ["keep", "delete", "deleteAfterDays"])
     }
 
     /// A book's record holds its own policy by choice and days, a number of
@@ -56,14 +56,14 @@ final class RecordingOriginalPolicyTests: XCTestCase {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         XCTAssertEqual(
-            String(decoding: try encoder.encode(RecordingOriginalPolicy.deleteAfter(days: 3)), as: UTF8.self),
+            String(decoding: try encoder.encode(AudioOriginalPolicy.deleteAfter(days: 3)), as: UTF8.self),
             #"{"choice":"deleteAfterDays","days":3}"#
         )
-        XCTAssertEqual(String(decoding: try encoder.encode(RecordingOriginalPolicy.keep), as: UTF8.self), #"{"choice":"keep"}"#)
+        XCTAssertEqual(String(decoding: try encoder.encode(AudioOriginalPolicy.keep), as: UTF8.self), #"{"choice":"keep"}"#)
 
         let decoder = JSONDecoder()
-        func decode(_ json: String) throws -> RecordingOriginalPolicy {
-            try decoder.decode(RecordingOriginalPolicy.self, from: Data(json.utf8))
+        func decode(_ json: String) throws -> AudioOriginalPolicy {
+            try decoder.decode(AudioOriginalPolicy.self, from: Data(json.utf8))
         }
         XCTAssertEqual(try decode(#"{"choice":"delete"}"#), .delete)
         XCTAssertEqual(try decode(#"{"choice":"deleteAfterDays","days":900}"#), .deleteAfter(days: 365))
@@ -76,19 +76,19 @@ final class RecordingOriginalPolicyTests: XCTestCase {
     /// choice of keep or delete leaves the days for later.
     func testTheGlobalPolicyIsKeptInTheStore() {
         let store = makeSandboxedPreferences("recording-policy")
-        XCTAssertEqual(RecordingOriginalPolicy.choicePreference.key, "recordingOriginalPolicy")
-        XCTAssertEqual(RecordingOriginalPolicy.daysPreference.key, "recordingOriginalDays")
-        XCTAssertEqual(RecordingOriginalPolicy.global(in: store), .standard)
+        XCTAssertEqual(AudioOriginalPolicy.choicePreference.key, "recordingOriginalPolicy")
+        XCTAssertEqual(AudioOriginalPolicy.daysPreference.key, "recordingOriginalDays")
+        XCTAssertEqual(AudioOriginalPolicy.global(in: store), .standard)
 
-        RecordingOriginalPolicy.saveGlobal(.deleteAfter(days: 7), in: store)
-        XCTAssertEqual(RecordingOriginalPolicy.global(in: store), .deleteAfter(days: 7))
-        RecordingOriginalPolicy.saveGlobal(.keep, in: store)
-        XCTAssertEqual(RecordingOriginalPolicy.global(in: store), .keep)
-        XCTAssertEqual(RecordingOriginalPolicy.daysPreference.read(from: store), 7, "keep forgot the days")
+        AudioOriginalPolicy.saveGlobal(.deleteAfter(days: 7), in: store)
+        XCTAssertEqual(AudioOriginalPolicy.global(in: store), .deleteAfter(days: 7))
+        AudioOriginalPolicy.saveGlobal(.keep, in: store)
+        XCTAssertEqual(AudioOriginalPolicy.global(in: store), .keep)
+        XCTAssertEqual(AudioOriginalPolicy.daysPreference.read(from: store), 7, "keep forgot the days")
 
         store.set("forever", forKey: "recordingOriginalPolicy")
         store.set(-4, forKey: "recordingOriginalDays")
-        XCTAssertEqual(RecordingOriginalPolicy.global(in: store), .deleteAfter(days: 1))
+        XCTAssertEqual(AudioOriginalPolicy.global(in: store), .deleteAfter(days: 1))
         XCTAssertTrue(RecordingPreferences.keys.contains("recordingOriginalPolicy"))
         XCTAssertTrue(RecordingPreferences.keys.contains("recordingOriginalDays"))
     }
@@ -262,18 +262,18 @@ final class RecordingOriginalPolicyTests: XCTestCase {
         XCTAssertEqual(written.recordingOriginalDays, 1)
 
         settings.applyConfigChanges(try config(#"{"recordingOriginalPolicy": "keep", "recordingOriginalDays": 30}"#))
-        XCTAssertEqual(RecordingOriginalPolicy.global(in: store), .keep)
-        XCTAssertEqual(RecordingOriginalPolicy.daysPreference.read(from: store), 30)
+        XCTAssertEqual(AudioOriginalPolicy.global(in: store), .keep)
+        XCTAssertEqual(AudioOriginalPolicy.daysPreference.read(from: store), 30)
 
         let unusable = try config(#"{"recordingOriginalPolicy": "forever", "recordingOriginalDays": 1000}"#)
         XCTAssertEqual(unusable.recordingOriginalPolicy, "")
         XCTAssertEqual(unusable.recordingOriginalDays, 365)
         settings.applyConfigChanges(unusable)
-        XCTAssertEqual(RecordingOriginalPolicy.choicePreference.read(from: store), .keep)
-        XCTAssertEqual(RecordingOriginalPolicy.daysPreference.read(from: store), 365)
+        XCTAssertEqual(AudioOriginalPolicy.choicePreference.read(from: store), .keep)
+        XCTAssertEqual(AudioOriginalPolicy.daysPreference.read(from: store), 365)
 
         settings.applyConfigChanges(try config("{}"))
-        XCTAssertEqual(RecordingOriginalPolicy.global(in: store), .keep, "a file without the fields changed the policy")
+        XCTAssertEqual(AudioOriginalPolicy.global(in: store), .keep, "a file without the fields changed the policy")
     }
 
     // MARK: - Helpers
@@ -283,7 +283,7 @@ final class RecordingOriginalPolicyTests: XCTestCase {
     /// record unless `writesRecord` is false, the take saved at `saved`
     /// under the book's own `policy`.
     private func makePackage(
-        policy: RecordingOriginalPolicy?,
+        policy: AudioOriginalPolicy?,
         keepsTake: Bool = true,
         writesRecord: Bool = true,
         in folder: URL? = nil

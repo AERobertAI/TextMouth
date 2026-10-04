@@ -904,8 +904,8 @@ final class SettingsViewModel: ObservableObject {
         config.repeatedSymbolThreshold = TextSubstitutionService.repeatedSymbolThresholdPreference.read(from: preferences)
         config.repeatedSymbolSet = TextSubstitutionService.repeatedSymbolSetPreference.read(from: preferences)
         config.recordingInputDeviceID = RecordingInputChoice.preference.read(from: preferences)
-        config.recordingOriginalPolicy = RecordingOriginalPolicy.choicePreference.read(from: preferences).rawValue
-        config.recordingOriginalDays = RecordingOriginalPolicy.daysPreference.read(from: preferences)
+        config.recordingOriginalPolicy = AudioOriginalPolicy.choicePreference.read(from: preferences).rawValue
+        config.recordingOriginalDays = AudioOriginalPolicy.daysPreference.read(from: preferences)
         config.showExportInReaderToolbar = BookExportPreferences.showInReaderToolbar.read(from: preferences)
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.bindingsPreference.read(from: preferences)
@@ -957,11 +957,11 @@ final class SettingsViewModel: ObservableObject {
         adopt(config.recordingInputDeviceID.nonEmpty, into: RecordingInputChoice.preference)
         adopt(
             SettingsPolicy.recordingOriginalPolicy.requestedValue(fromConfig: config.recordingOriginalPolicy),
-            into: RecordingOriginalPolicy.choicePreference
+            into: AudioOriginalPolicy.choicePreference
         )
         adopt(
             config.recordingOriginalDays.flatMap { SettingsPolicy.recordingOriginalDays.requestedValue(fromConfig: $0) },
-            into: RecordingOriginalPolicy.daysPreference
+            into: AudioOriginalPolicy.daysPreference
         )
         adopt(config.showExportInReaderToolbar, into: BookExportPreferences.showInReaderToolbar)
         adopt(

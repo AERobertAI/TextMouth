@@ -1,6 +1,6 @@
 import Foundation
 
-/// Applies the original-take policy (`RecordingOriginalPolicy`) to the
+/// Applies the original-take policy (`AudioOriginalPolicy`) to the
 /// recordings in the library: each original take whose time is up is
 /// deleted from its book's package, and the book's origin record says it is
 /// gone. The library runs it at launch and after each recording is saved,
@@ -28,7 +28,7 @@ enum RecordingTakeSweep {
 
     /// Whether the take `take` is due to be deleted at `now`, under its book's
     /// own policy or else `global`.
-    static func isDue(_ take: BookOrigin.OriginalTake, global: RecordingOriginalPolicy, now: Date) -> Bool {
+    static func isDue(_ take: BookOrigin.OriginalTake, global: AudioOriginalPolicy, now: Date) -> Bool {
         take.effectivePolicy(global: global).isDue(lastEdited: take.lastEditedAt, now: now)
     }
 
@@ -41,7 +41,7 @@ enum RecordingTakeSweep {
     /// since only a sync service makes files that are only in the cloud.
     static func sweep(
         packages: [URL],
-        global: RecordingOriginalPolicy,
+        global: AudioOriginalPolicy,
         now: Date,
         load: (URL) throws -> BookOrigin? = BookOrigin.load(fromPackage:)
     ) -> Result {

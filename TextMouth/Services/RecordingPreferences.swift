@@ -6,8 +6,8 @@ import Foundation
 enum RecordingPreferences {
     /// Their keys: the microphone the Record window remembers
     /// (`RecordingInputChoice`), and what happens to a recording's original
-    /// take (`RecordingOriginalPolicy`).
+    /// take (`AudioOriginalPolicy`).
     static var keys: [String] {
-        RecordingInputChoice.preferenceKeys + RecordingOriginalPolicy.preferenceKeys
+        RecordingInputChoice.preferenceKeys + AudioOriginalPolicy.preferenceKeys
     }
 }

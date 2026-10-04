@@ -59,7 +59,7 @@ extension ConfigService.AppConfig {
         config.repeatedSymbolThreshold = 7
         config.repeatedSymbolSet = "*=~"
         config.recordingInputDeviceID = "AppleUSBAudioEngine:Studio Microphone:4100000:1"
-        config.recordingOriginalPolicy = RecordingOriginalPolicy.Choice.keep.rawValue
+        config.recordingOriginalPolicy = AudioOriginalPolicy.Choice.keep.rawValue
         config.recordingOriginalDays = 14
         // Every action, as TextMouth writes them, three of them changed.
         var shortcuts = ShortcutAction.defaultBindings

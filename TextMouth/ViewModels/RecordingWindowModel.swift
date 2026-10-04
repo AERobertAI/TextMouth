@@ -36,7 +36,7 @@ final class RecordingWindowModel: ObservableObject {
         _ take: RecordedTake,
         _ title: String,
         _ folderPath: String,
-        _ policy: RecordingOriginalPolicy
+        _ policy: AudioOriginalPolicy
     ) async throws -> Book
 
     // MARK: Published State
@@ -356,7 +356,7 @@ final class RecordingWindowModel: ObservableObject {
         phase = .saving
         status = RecordingWording.saving
         let bookTitle = TextImportPolicy.resolvedTitle(title.trimmingCharacters(in: .whitespacesAndNewlines))
-        let policy = RecordingOriginalPolicy.global(in: store)
+        let policy = AudioOriginalPolicy.global(in: store)
         let slowNotice = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled, let self, self.isSaving else { return }

@@ -1128,7 +1128,7 @@ final class ConfigSyncTests: XCTestCase {
             "repeatedSymbolSet": "*=~",
             // Recording, kept by the Record window.
             "recordingInputDeviceID": "AppleUSBAudioEngine:Studio Microphone:4100000:1",
-            "recordingOriginalPolicy": RecordingOriginalPolicy.Choice.keep.rawValue,
+            "recordingOriginalPolicy": AudioOriginalPolicy.Choice.keep.rawValue,
             "recordingOriginalDays": 14.0,
             "soundEffectsEnabled": false,
             "soundEffectsVolume": Float(0.35),

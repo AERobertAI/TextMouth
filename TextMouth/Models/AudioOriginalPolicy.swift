@@ -12,7 +12,7 @@ import Foundation
 /// the book's audio was last made from it. A global setting holds the
 /// policy for every recording; a book's own origin record can hold one of
 /// its own, which wins (`BookOrigin.OriginalTake.policyOverride`).
-enum RecordingOriginalPolicy: Equatable, Sendable {
+enum AudioOriginalPolicy: Equatable, Sendable {
     /// Keep the original take for good.
     case keep
     /// Keep no original take: the book's audio is all there is.
@@ -31,7 +31,7 @@ enum RecordingOriginalPolicy: Equatable, Sendable {
 
     /// The global policy until the user picks another: keep the original
     /// for one day after saving.
-    static let standard = RecordingOriginalPolicy.deleteAfter(days: SettingsPolicy.recordingOriginalDays.defaultValue)
+    static let standard = AudioOriginalPolicy.deleteAfter(days: SettingsPolicy.recordingOriginalDays.defaultValue)
 
     /// The policy `choice` names, keeping the original `days` days when the
     /// choice is to delete it after some days.
@@ -82,7 +82,7 @@ extension SettingsPolicy {
     /// picks another choice.
     static let recordingOriginalPolicy = EnumSettingRule(
         key: "recordingOriginalPolicy",
-        defaultValue: RecordingOriginalPolicy.Choice.deleteAfterDays
+        defaultValue: AudioOriginalPolicy.Choice.deleteAfterDays
     )
     /// How many days an original take is kept when it is deleted after
     /// some days (Storage settings, Recordings stepper): 1 to 365, and 1
@@ -94,7 +94,7 @@ extension SettingsPolicy {
     )
 }
 
-extension RecordingOriginalPolicy {
+extension AudioOriginalPolicy {
     /// The global choice in the preferences store, saved as its raw value
     /// and read through `SettingsPolicy.recordingOriginalPolicy`, so a
     /// missing or unsupported value reads as the default.
@@ -119,14 +119,14 @@ extension RecordingOriginalPolicy {
     }
 
     /// The global policy `store` holds.
-    static func global(in store: UserDefaults) -> RecordingOriginalPolicy {
-        RecordingOriginalPolicy(choice: choicePreference.read(from: store), days: daysPreference.read(from: store))
+    static func global(in store: UserDefaults) -> AudioOriginalPolicy {
+        AudioOriginalPolicy(choice: choicePreference.read(from: store), days: daysPreference.read(from: store))
     }
 
     /// Saves `policy` as the global policy in `store`. Choosing keep or
     /// delete leaves the number of days as it was, for when the user
     /// chooses to delete after some days again.
-    static func saveGlobal(_ policy: RecordingOriginalPolicy, in store: UserDefaults) {
+    static func saveGlobal(_ policy: AudioOriginalPolicy, in store: UserDefaults) {
         choicePreference.write(policy.choice, to: store)
         if case .deleteAfter(let days) = policy {
             daysPreference.write(days, to: store)
@@ -140,7 +140,7 @@ extension RecordingOriginalPolicy {
 /// and, for a deletion after some days, the number of days:
 /// `{"choice": "deleteAfterDays", "days": 3}`. A number of days the global
 /// rule would not accept is brought within it as the record is read.
-extension RecordingOriginalPolicy: Codable {
+extension AudioOriginalPolicy: Codable {
     private enum CodingKeys: String, CodingKey {
         case choice
         case days
@@ -162,4 +162,4 @@ extension RecordingOriginalPolicy: Codable {
     }
 }
 
-extension RecordingOriginalPolicy.Choice: Codable {}
+extension AudioOriginalPolicy.Choice: Codable {}

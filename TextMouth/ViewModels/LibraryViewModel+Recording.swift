@@ -20,7 +20,7 @@ extension LibraryViewModel {
         encodedAudio: URL,
         title: String,
         toFolder folderPath: String,
-        policy: RecordingOriginalPolicy,
+        policy: AudioOriginalPolicy,
         savedAt: Date = Date()
     ) async throws -> Book {
         let keepsTake = policy != .delete
@@ -86,7 +86,7 @@ extension LibraryViewModel {
         let places = library.books
             .filter { $0.format.isAudio && !$0.tmbDirectoryName.isEmpty }
             .map { RecordingPackagePlace(folderPath: $0.folderPath, tmbDirectoryName: $0.tmbDirectoryName) }
-        let global = RecordingOriginalPolicy.global(in: TextMouthRuntime.current.preferences)
+        let global = AudioOriginalPolicy.global(in: TextMouthRuntime.current.preferences)
         DispatchQueue.global(qos: .utility).async {
             let result = StorageBoundary.shared.perform(.recordingTakes) { _ in
                 RecordingTakeSweep.sweep(
