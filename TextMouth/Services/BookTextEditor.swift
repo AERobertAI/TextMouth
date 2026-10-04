@@ -54,9 +54,12 @@ final class BookTextEditor {
     private weak var library: LibraryViewModel?
     /// The watcher of each edited book's content.md, by book ID.
     private var watchers: [UUID: ContentFileWatcher] = [:]
-    /// The digest of the content.md last refused for each book, so the same
-    /// refused bytes are announced once, however often they are checked.
-    private var refusedDigests: [UUID: String] = [:]
+    /// The edit last refused for each book, so the same refused bytes are
+    /// announced once, however often they are checked.
+    private var announcedRefusals: [UUID: BookTextEditSessions.RefusedEdit] = [:]
+    /// The copies of each book's edited text VoiceOver has been told of, so
+    /// a copy a rebuild kept is not announced again.
+    private var announcedCopies: [UUID: Set<URL>] = [:]
     /// What waits to be announced until TextMouth becomes active.
     private var pendingAnnouncements: [String] = []
     /// The observation of TextMouth becoming active, while any book is edited.
@@ -178,7 +181,8 @@ final class BookTextEditor {
     func end(_ bookID: UUID) {
         sessions.end(bookID)
         watchers.removeValue(forKey: bookID)?.cancel()
-        refusedDigests[bookID] = nil
+        announcedRefusals[bookID] = nil
+        announcedCopies[bookID] = nil
         if sessions.bookIDs.isEmpty, let observer = activationObserver {
             notificationCenter.removeObserver(observer)
             activationObserver = nil
@@ -218,10 +222,12 @@ final class BookTextEditor {
 
     // MARK: What a Check Found
 
-    /// Acts on what a check of the book `bookID` found: an edit taken is
-    /// given to the library, which refreshes the book's row and its open
-    /// readers, and announced; a refusal is announced once for the same
-    /// bytes; a book gone from the library ends its session.
+    /// Acts on what a check of the book `bookID` found, or what a rebuild of
+    /// its text did: an edit taken is given to the library, which refreshes
+    /// the book's row and its open readers, and announced; an edit not taken
+    /// is announced once for the same bytes and reason, with where it was
+    /// kept; text a rebuild replaced is announced once for each copy kept of
+    /// it; a book gone from the library ends its session.
     func handle(_ found: BookTextEditCheck, for bookID: UUID) {
         let title = library?.bookByID(bookID)?.title ?? ""
         switch found {
@@ -232,19 +238,21 @@ final class BookTextEditor {
                 end(bookID)
             }
         case .adopted(let edit):
-            refusedDigests[bookID] = nil
+            announcedRefusals[bookID] = nil
             library?.commitTextEdit(edit)
             announce(BookTextEditWording.updated)
-        case .refused(let refusal, let digest):
-            guard refusedDigests[bookID] != digest else { return }
-            refusedDigests[bookID] = digest
-            announce(BookTextEditWording.refused(refusal, bookTitle: title))
-        case .sourceChanged(let digest):
-            guard refusedDigests[bookID] != digest else { return }
-            refusedDigests[bookID] = digest
-            announce(BookTextEditWording.sourceChanged(bookTitle: title))
-        case .failed(let reason):
-            announce(BookTextEditWording.failed(reason: reason))
+        case .refused(let refusal, let digest, let keptCopy):
+            let refused = BookTextEditSessions.RefusedEdit(digest: digest, refusal: refusal)
+            guard announcedRefusals[bookID] != refused else { return }
+            announcedRefusals[bookID] = refused
+            if let keptCopy {
+                announcedCopies[bookID, default: []].insert(keptCopy)
+            }
+            announce(BookTextEditWording.notTaken(refusal, bookTitle: title, keptCopy: keptCopy))
+        case .replaced(let keptCopy):
+            guard announcedCopies[bookID, default: []].insert(keptCopy).inserted else { return }
+            announcedRefusals[bookID] = nil
+            announce(BookTextEditWording.replaced(bookTitle: title, keptCopy: keptCopy))
         }
     }
 

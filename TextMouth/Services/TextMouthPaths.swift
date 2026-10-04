@@ -307,6 +307,19 @@ enum TextMouthPaths {
     /// (FR05). See `Transcript` and `TranscriptStore`.
     static let transcriptFileName = "transcript.json"
 
+    /// The marker between content.md's name and the time in the name of a
+    /// copy Edit Text keeps of the user's edited text beside it (FR05), as
+    /// in "content.md.edited-20261004T123012Z" (`BookTextEditSessions`).
+    /// Such a copy is TextMouth's own file, never part of the book
+    /// (`FileImportService.isPackageContentName`).
+    static let keptTextCopyMarker = ".edited-"
+
+    /// Whether `name`, an entry at the top of a package, is a copy Edit Text
+    /// kept of the user's edited text (`keptTextCopyMarker`).
+    static func isKeptTextCopy(_ name: String) -> Bool {
+        name.hasPrefix("content.md" + keptTextCopyMarker)
+    }
+
     /// Path to the transcript inside a .tmb package
     static func transcriptPath(in tmbDir: URL) -> URL {
         tmbDir.appendingPathComponent(transcriptFileName)

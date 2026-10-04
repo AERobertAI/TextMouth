@@ -2,7 +2,10 @@ import Foundation
 
 /// Preserves a library index that TextMouth could not use, as a sibling file
 /// named like `library.json.unreadable-20260929T142233Z`, before anything else
-/// can touch it.
+/// can touch it. Other files are preserved the same way under a marker of
+/// their own: Edit Text keeps an edited content.md it cannot take, or one a
+/// rebuild is about to replace, as `content.md.edited-20261004T123012Z`
+/// (`BookTextEditSessions`, FR05).
 ///
 /// The original file is never modified, moved, or deleted here. The copy
 /// exists so the folders, order, sort settings, and per-book state that only
@@ -15,7 +18,8 @@ import Foundation
 /// contents alive when a rebuilt index later replaces `library.json` by an
 /// atomic rename.
 enum LibraryIndexQuarantine {
-    /// Separates the index's own name from the timestamp in a copy's name.
+    /// Separates the index's own name from the timestamp in a copy's name,
+    /// unless a caller passes a marker of its own.
     static let nameMarker = ".unreadable-"
 
     /// How many names to try for copies made within the same second.
@@ -27,19 +31,20 @@ enum LibraryIndexQuarantine {
     ///
     /// An earlier copy of the same contents is returned instead of making a
     /// new one, so relaunching or pressing Try Again against the same damaged
-    /// file does not pile up copies.
-    static func preserve(_ indexURL: URL, bytes: Data?, now: Date = Date()) -> URL? {
+    /// file does not pile up copies. `marker` separates the file's name from
+    /// the timestamp, `nameMarker` unless the caller keeps copies of its own.
+    static func preserve(_ indexURL: URL, bytes: Data?, marker: String = nameMarker, now: Date = Date()) -> URL? {
         if let bytes {
-            return preserveBytes(bytes, of: indexURL, now: now)
+            return preserveBytes(bytes, of: indexURL, marker: marker, now: now)
         }
-        return preserveByLinking(indexURL, now: now)
+        return preserveByLinking(indexURL, marker: marker, now: now)
     }
 
-    /// The copies already preserved next to `indexURL`, oldest first: their
-    /// timestamps sort chronologically.
-    static func existingCopies(of indexURL: URL) -> [URL] {
+    /// The copies already preserved next to `indexURL` under `marker`,
+    /// oldest first: their timestamps sort chronologically.
+    static func existingCopies(of indexURL: URL, marker: String = nameMarker) -> [URL] {
         let directory = indexURL.deletingLastPathComponent()
-        let prefix = indexURL.lastPathComponent + nameMarker
+        let prefix = indexURL.lastPathComponent + marker
         let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
         return names
             .filter { $0.hasPrefix(prefix) }
@@ -50,11 +55,12 @@ enum LibraryIndexQuarantine {
     /// The name for a copy made at `date`. The timestamp uses the ISO 8601
     /// basic format (`20260929T142233Z`), which sorts chronologically and has
     /// no colons, which Finder would show as slashes. Later attempts within
-    /// the same second add `-2`, `-3`, and so on.
-    static func copyURL(for indexURL: URL, at date: Date, attempt: Int = 1) -> URL {
+    /// the same second add `-2`, `-3`, and so on. `marker` separates the
+    /// file's name from the timestamp.
+    static func copyURL(for indexURL: URL, at date: Date, attempt: Int = 1, marker: String = nameMarker) -> URL {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withYear, .withMonth, .withDay, .withTime, .withTimeZone]
-        var name = indexURL.lastPathComponent + nameMarker + formatter.string(from: date)
+        var name = indexURL.lastPathComponent + marker + formatter.string(from: date)
         if attempt > 1 {
             name += "-\(attempt)"
         }
@@ -65,33 +71,33 @@ enum LibraryIndexQuarantine {
 
     /// Writes `bytes` to a new independent file, unless an earlier independent
     /// copy already holds exactly these bytes.
-    private static func preserveBytes(_ bytes: Data, of indexURL: URL, now: Date) -> URL? {
+    private static func preserveBytes(_ bytes: Data, of indexURL: URL, marker: String, now: Date) -> URL? {
         // A hard-linked copy shares the index's storage and changes with it
         // (for example, when the file is edited in place), so only a copy
         // stored separately counts as already preserving these bytes.
         let indexIdentity = fileIdentity(of: indexURL)
-        let earlierCopy = existingCopies(of: indexURL).first { copy in
+        let earlierCopy = existingCopies(of: indexURL, marker: marker).first { copy in
             fileIdentity(of: copy) != indexIdentity && contents(of: copy, match: bytes)
         }
         if let earlierCopy {
             return earlierCopy
         }
-        return createCopy(of: indexURL, now: now) { destination in
+        return createCopy(of: indexURL, marker: marker, now: now) { destination in
             try bytes.write(to: destination, options: .withoutOverwriting)
         }
     }
 
     /// Preserves a file whose bytes could not be read by hard-linking it,
     /// falling back to a file copy on volumes without hard links.
-    private static func preserveByLinking(_ indexURL: URL, now: Date) -> URL? {
+    private static func preserveByLinking(_ indexURL: URL, marker: String, now: Date) -> URL? {
         // Nothing is left to preserve when the file vanished meanwhile.
         guard let identity = fileIdentity(of: indexURL) else { return nil }
-        let earlierLink = existingCopies(of: indexURL).first { fileIdentity(of: $0) == identity }
+        let earlierLink = existingCopies(of: indexURL, marker: marker).first { fileIdentity(of: $0) == identity }
         if let earlierLink {
             return earlierLink
         }
         let fileManager = FileManager.default
-        let link = createCopy(of: indexURL, now: now) { destination in
+        let link = createCopy(of: indexURL, marker: marker, now: now) { destination in
             try fileManager.linkItem(at: indexURL, to: destination)
         }
         if let link {
@@ -99,7 +105,7 @@ enum LibraryIndexQuarantine {
         }
         // FAT volumes and many network shares have no hard links. A plain copy
         // still works whenever the read failed for a reason other than access.
-        return createCopy(of: indexURL, now: now) { destination in
+        return createCopy(of: indexURL, marker: marker, now: now) { destination in
             try fileManager.copyItem(at: indexURL, to: destination)
         }
     }
@@ -111,11 +117,12 @@ enum LibraryIndexQuarantine {
     /// gives up.
     private static func createCopy(
         of indexURL: URL,
+        marker: String,
         now: Date,
         using make: (URL) throws -> Void
     ) -> URL? {
         for attempt in 1...maxNameAttempts {
-            let destination = copyURL(for: indexURL, at: now, attempt: attempt)
+            let destination = copyURL(for: indexURL, at: now, attempt: attempt, marker: marker)
             guard !itemExists(at: destination) else { continue }
             do {
                 try make(destination)

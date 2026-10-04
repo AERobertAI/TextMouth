@@ -10,7 +10,9 @@ import XCTest
 /// and "Text updated" announced. An edit that leaves no chapter, one made
 /// while the book's own file changed too, and one of a text only in the
 /// cloud are left alone; one made during a hold on the storage work waits
-/// for the hold.
+/// for the hold. An edit that cannot be taken is kept beside content.md,
+/// and neither a reader nor any rebuild of the text replaces it; a rebuild
+/// that replaces text the user saved keeps it first.
 ///
 /// Every editor here is the test's own: it opens no app, shows no dialog,
 /// remembers its explanation in a sandboxed store, and takes TextMouth to
@@ -219,9 +221,11 @@ final class BookTextEditTests: XCTestCase {
     // MARK: - Edits Left Alone
 
     /// An edit leaving no chapter with anything in it, or bytes that are not
-    /// UTF-8, is refused, announced once however often it is checked; the
-    /// record, the row, and the reader keep the text they had.
-    func testARefusedEditKeepsTheEarlierText() async throws {
+    /// UTF-8, is refused and kept beside content.md exactly as saved, and
+    /// VoiceOver hears why and the copy's name once, however often it is
+    /// checked; content.md stays as the user saved it, and the record, the
+    /// row, and the reader keep the text they had.
+    func testARefusedEditIsKeptAndTheEarlierTextStays() async throws {
         let world = try makeIntegrationWorld("Edit Text Refused Edit")
         let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
         let reader = world.openReader(for: book)
@@ -235,35 +239,211 @@ final class BookTextEditTests: XCTestCase {
         await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
         let cache = MarkdownCacheService.cacheURL(for: book)
 
-        try "   \n\n\t\n".write(to: cache, atomically: true, encoding: .utf8)
-        try await check(book, with: editor, expecting: BookTextEditWording.refused(.noChapters, bookTitle: book.title), in: announcements)
-        try await check(book, with: editor, expecting: nil, in: announcements)
-        try Data([0x48, 0xFF, 0xFE, 0x69]).write(to: cache)
-        try await check(book, with: editor, expecting: BookTextEditWording.refused(.notText, bookTitle: book.title), in: announcements)
+        let blank = Data("   \n\n\t\n".utf8)
+        try blank.write(to: cache)
+        let blankHeard = await check(book, with: editor, in: announcements)
+        let blankCopy = try XCTUnwrap(keptCopies(of: book).last, "the refused edit was not kept")
+        XCTAssertEqual(try Data(contentsOf: blankCopy), blank)
+        XCTAssertEqual(blankHeard, [BookTextEditWording.notTaken(.noChapters, bookTitle: book.title, keptCopy: blankCopy)])
+        let blankAgain = await check(book, with: editor, in: announcements)
+        XCTAssertEqual(blankAgain, [], "the same refusal was announced again")
+        XCTAssertEqual(keptCopies(of: book), [blankCopy], "the same edit was kept twice")
 
+        let notText = Data([0x48, 0xFF, 0xFE, 0x69])
+        try notText.write(to: cache)
+        let notTextHeard = await check(book, with: editor, in: announcements)
+        let notTextCopy = try XCTUnwrap(keptCopies(of: book).first { (try? Data(contentsOf: $0)) == notText })
+        XCTAssertEqual(keptCopies(of: book).count, 2)
+        XCTAssertEqual(notTextHeard, [BookTextEditWording.notTaken(.notText, bookTitle: book.title, keptCopy: notTextCopy)])
+
+        XCTAssertEqual(try Data(contentsOf: cache), notText, "content.md is not as the user saved it")
         XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).contentIndex, indexBefore)
         XCTAssertEqual(world.library.bookByID(book.id)?.totalWordCount, indexBefore.totalWordCount)
         XCTAssertEqual(reader.content?.chapters.map(\.text), textBefore)
     }
 
-    /// content.md edited while the book's own file changed too is not
-    /// taken, and that is announced once.
-    func testAnEditBesideAChangedSourceIsNotTaken() async throws {
+    /// content.md edited while the book's own file changed too is not taken:
+    /// it is kept beside content.md, and VoiceOver hears so once, with the
+    /// copy's name. Reading the book then reads its text from the changed
+    /// file, as the announcement says, which says nothing more, and the
+    /// user's next save is checked against that text, so it is taken.
+    func testAnEditBesideAChangedSourceIsKeptThenTheChangedFileIsRead() async throws {
         let world = try makeIntegrationWorld("Edit Text Source Changed")
-        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let book = try world.importBook(from: writeSource(named: "Tide Tables.md", Self.twoChapters))
         let indexBefore = try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).contentIndex)
-        let editor = makeEditor()
+        let editor = makeEditor(sessions: .shared)
         defer { editor.endAll() }
         let announcements = AnnouncementCapture()
         defer { announcements.stop() }
         await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let cache = MarkdownCacheService.cacheURL(for: book)
 
         try (Self.twoChapters + "\n\nA new closing line.").write(to: book.bookFileURL, atomically: true, encoding: .utf8)
-        try Self.editedChapters.write(to: MarkdownCacheService.cacheURL(for: book), atomically: true, encoding: .utf8)
-        try await check(book, with: editor, expecting: BookTextEditWording.sourceChanged(bookTitle: book.title), in: announcements)
-        try await check(book, with: editor, expecting: nil, in: announcements)
-
+        try Self.editedChapters.write(to: cache, atomically: true, encoding: .utf8)
+        let heard = await check(book, with: editor, in: announcements)
+        let kept = try XCTUnwrap(keptCopies(of: book).first, "the edit was not kept")
+        XCTAssertEqual(try String(contentsOf: kept, encoding: .utf8), Self.editedChapters)
+        XCTAssertEqual(heard, [BookTextEditWording.notTaken(.sourceChanged, bookTitle: book.title, keptCopy: kept)])
+        let heardAgain = await check(book, with: editor, in: announcements)
+        XCTAssertEqual(heardAgain, [])
         XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).contentIndex, indexBefore)
+
+        let loaded = try ReaderViewModel.readContent(of: book, readingTexts: nil)
+        XCTAssertTrue(loaded.content.chapters.last?.text.contains("A new closing line.") == true, "the changed file was not read")
+        XCTAssertFalse(try String(contentsOf: cache, encoding: .utf8).contains("A pilot boat waits"))
+        XCTAssertEqual(keptCopies(of: book), [kept], "the edit was kept twice")
+        let afterRead = await eventually(timeout: 1) { announcements.messages.count > heard.count }
+        XCTAssertFalse(afterRead, "the copy already named was announced again: \(announcements.messages)")
+
+        try (Self.editedChapters + "\n\nA new closing line.").write(to: cache, atomically: true, encoding: .utf8)
+        let nextSave = await check(book, with: editor, in: announcements)
+        XCTAssertEqual(nextSave, [BookTextEditWording.updated], "the next save was not taken")
+    }
+
+    /// A reader opening a book whose saved edit cannot be taken reads
+    /// nothing, which would rebuild the text over the edit: it shows why,
+    /// naming the copy kept, and content.md stays as the user saved it. Once
+    /// the user saves text that can be taken, the reader opens the book with
+    /// it.
+    func testAReaderStopsOverAnEditNotTakenAndOpensOnceOneIsTaken() async throws {
+        let world = try makeIntegrationWorld("Edit Text Held Reader")
+        let book = try world.importBook(from: writeSource(named: "Ferry Timetable.md", Self.twoChapters))
+        let editor = makeEditor(sessions: .shared)
+        defer { editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let staleLines = debugLogLines(containing: "CACHE_STALE: \(book.title):").count
+        let notText = Data([0x48, 0xFF, 0xFE, 0x69])
+        try notText.write(to: cache)
+
+        XCTAssertThrowsError(try ReaderViewModel.readContent(of: book, readingTexts: nil)) { error in
+            guard let held = error as? BookTextEditPending else {
+                return XCTFail("the read was not held: \(error)")
+            }
+            XCTAssertEqual(held.refusal, .notText)
+            XCTAssertNotNil(held.keptCopy)
+        }
+        let reader = world.openReader(for: book)
+        await waitForReaderToLoadYielding(reader)
+        let kept = try XCTUnwrap(keptCopies(of: book).first, "the edit was not kept")
+        XCTAssertEqual(keptCopies(of: book), [kept], "the edit was kept twice")
+        XCTAssertEqual(reader.loadErrorMessage, BookTextEditWording.held(.notText, bookTitle: book.title, keptCopy: kept))
+        XCTAssertNil(reader.content)
+        XCTAssertEqual(try Data(contentsOf: cache), notText, "the text was rebuilt over the edit")
+        XCTAssertEqual(debugLogLines(containing: "CACHE_STALE: \(book.title):").count, staleLines)
+
+        try Self.editedChapters.write(to: cache, atomically: true, encoding: .utf8)
+        editor.editor.appBecameActive()
+        let opened = await eventually(timeout: 10) { reader.content?.chapters[1].text.contains("A pilot boat waits") == true }
+        XCTAssertTrue(opened, "the reader did not open the book once the edit was taken")
+        XCTAssertNil(reader.loadErrorMessage)
+        XCTAssertEqual(reader.headings.map(\.text), ["Harbour", "Channel", "Sandbanks"])
+    }
+
+    /// Redo Text Extraction reads each book's text from its own file again,
+    /// but never over an edit not taken, which it leaves as the user saved
+    /// it. Text the user saved and TextMouth took is kept beside content.md
+    /// before it is replaced, VoiceOver hears where, and the user's next
+    /// check is made against the text read again, so nothing is taken twice.
+    func testRedoTextExtractionKeepsWhatTheUserSaved() async throws {
+        let world = try makeIntegrationWorld("Edit Text Redo")
+        let taken = try world.importBook(from: writeSource(named: "Pier Lamps.md", Self.twoChapters))
+        // Text of its own: the library lists one book of each content.
+        let refused = try world.importBook(
+            from: writeSource(named: "Canal Locks.md", Self.twoChapters + "\n\nBarges wait at the lower gate.")
+        )
+        XCTAssertNotNil(world.library.bookByID(refused.id), "the second book was not listed")
+        let takenCache = MarkdownCacheService.cacheURL(for: taken)
+        let refusedCache = MarkdownCacheService.cacheURL(for: refused)
+        let extracted = try String(contentsOf: takenCache, encoding: .utf8)
+        let editor = makeEditor(sessions: .shared)
+        defer { editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(taken, choosingApp: false, in: world.library, from: nil)
+        await editor.editor.edit(refused, choosingApp: false, in: world.library, from: nil)
+        let heldLines = debugLogLines(containing: "TEXT_EDIT_HELD: \(refused.title):").count
+
+        try Self.editedChapters.write(to: takenCache, atomically: true, encoding: .utf8)
+        let blank = Data(" \n\t\n".utf8)
+        try blank.write(to: refusedCache)
+        editor.editor.appBecameActive()
+        let settled = await eventually(timeout: 10) {
+            announcements.messages.contains(BookTextEditWording.updated) && announcements.messages.count == 2
+        }
+        XCTAssertTrue(settled, "the edits were not checked: \(announcements.messages)")
+        let refusedCopies = keptCopies(of: refused)
+        XCTAssertEqual(refusedCopies.count, 1)
+
+        let outcome = await world.library.redoAllTextExtractionReturningOutcome()
+        XCTAssertNotNil(outcome, "Redo Text Extraction did not run")
+
+        XCTAssertEqual(try Data(contentsOf: refusedCache), blank, "the text was rebuilt over an edit not taken")
+        XCTAssertEqual(keptCopies(of: refused), refusedCopies)
+        XCTAssertEqual(debugLogLines(containing: "TEXT_EDIT_HELD: \(refused.title):").count, heldLines + 1)
+        XCTAssertEqual(try String(contentsOf: takenCache, encoding: .utf8), extracted, "the text was not read again")
+        let kept = try XCTUnwrap(keptCopies(of: taken).first, "the text taken was not kept")
+        XCTAssertEqual(try String(contentsOf: kept, encoding: .utf8), Self.editedChapters)
+        let replaced = BookTextEditWording.replaced(bookTitle: taken.title, keptCopy: kept)
+        let heard = await eventually(timeout: 5) { announcements.messages.contains(replaced) }
+        XCTAssertTrue(heard, "VoiceOver was not told where the text was kept: \(announcements.messages)")
+
+        let next = await check(taken, with: editor, in: announcements)
+        XCTAssertFalse(next.contains(BookTextEditWording.updated), "the text read again was taken as an edit")
+    }
+
+    /// A copy kept of the user's text is TextMouth's own file: a package
+    /// whose record is lost still recovers its one book file beside it, and
+    /// a loose DAISY book never counts it among its files.
+    func testAKeptCopyIsNeverTakenForPartOfTheBook() throws {
+        let package = try makeSandboxDirectory("Edit Text Kept Copy Package")
+        let bookFile = package.appendingPathComponent("Harbour Pilots.md")
+        try Data(Self.twoChapters.utf8).write(to: bookFile)
+        try Data(Self.twoChapters.utf8).write(to: package.appendingPathComponent("content.md"))
+        let kept = try XCTUnwrap(BookTextEditSessions.keepCopy(
+            of: package.appendingPathComponent("content.md"),
+            bytes: Data(Self.editedChapters.utf8)
+        ))
+
+        XCTAssertTrue(kept.lastPathComponent.hasPrefix("content.md.edited-"), kept.lastPathComponent)
+        XCTAssertTrue(TextMouthPaths.isKeptTextCopy(kept.lastPathComponent))
+        XCTAssertFalse(FileImportService.isPackageContentName(kept.lastPathComponent))
+        XCTAssertFalse(DAISYPackageInventory.isBookPath(kept.lastPathComponent))
+        XCTAssertEqual(
+            try FileImportService.retainedContentURL(in: package).standardizedFileURL,
+            bookFile.standardizedFileURL
+        )
+        XCTAssertTrue(FileImportService.isPackageContentName("content.md edited by hand.md"), "a book file of another name was refused")
+    }
+
+    /// The statistics pass leaves a book being edited to its session: it
+    /// reads nothing of it, so an edit not taken is neither rebuilt over nor
+    /// committed as the book's analysis.
+    func testTheStatisticsPassLeavesABookBeingEditedAlone() async throws {
+        let world = try makeIntegrationWorld("Edit Text Statistics")
+        let book = try world.importBook(from: writeSource(named: "Breakwater Survey.md", Self.twoChapters))
+        let indexBefore = try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).contentIndex)
+        let editor = makeEditor(sessions: .shared)
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let staleLines = debugLogLines(containing: "CACHE_STALE: \(book.title):").count
+        let blank = Data(" \n\t\n".utf8)
+        try blank.write(to: cache)
+        // The row lacks its counts, as a book the pass analyzes does.
+        let row = try XCTUnwrap(world.library.library.books.firstIndex { $0.id == book.id })
+        world.library.library.books[row].totalWordCount = nil
+        XCTAssertTrue(LibraryViewModel.needsContentAnalysis(world.library.library.books[row]))
+
+        let finished = expectation(description: "The statistics pass finished")
+        world.library.calculateMissingBookStats { finished.fulfill() }
+        await fulfillment(of: [finished], timeout: 10)
+
+        XCTAssertEqual(try Data(contentsOf: cache), blank, "the text was rebuilt over an edit not taken")
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).contentIndex, indexBefore)
+        XCTAssertEqual(debugLogLines(containing: "CACHE_STALE: \(book.title):").count, staleLines, "the pass read the book")
     }
 
     /// An edit of a content.md only in the cloud is left alone until the
@@ -489,16 +669,12 @@ final class BookTextEditTests: XCTestCase {
     }
 
     /// Checks `book` through `editor` as TextMouth becoming active does,
-    /// then asserts that exactly `expected` was announced since the last
-    /// check (nothing for nil).
+    /// and returns what VoiceOver heard since, waiting a moment for it.
     private func check(
         _ book: Book,
         with editor: TestEditor,
-        expecting expected: String?,
-        in announcements: AnnouncementCapture,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) async throws {
+        in announcements: AnnouncementCapture
+    ) async -> [String] {
         let before = announcements.messages.count
         editor.editor.appBecameActive()
         // The check runs on the sessions' queue; a check queued after it
@@ -507,7 +683,16 @@ final class BookTextEditTests: XCTestCase {
             editor.sessions.queue.async { continuation.resume() }
         }
         _ = await eventually(timeout: 2) { announcements.messages.count > before }
-        XCTAssertEqual(Array(announcements.messages.dropFirst(before)), expected.map { [$0] } ?? [], file: file, line: line)
+        return Array(announcements.messages.dropFirst(before))
+    }
+
+    /// The copies of the user's text kept beside `book`'s content.md, oldest
+    /// first.
+    private func keptCopies(of book: Book) -> [URL] {
+        LibraryIndexQuarantine.existingCopies(
+            of: MarkdownCacheService.cacheURL(for: book),
+            marker: TextMouthPaths.keptTextCopyMarker
+        )
     }
 }
 

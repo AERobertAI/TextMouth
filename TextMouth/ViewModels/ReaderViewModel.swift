@@ -229,6 +229,11 @@ final class ReaderViewModel: ObservableObject {
     /// reader was still loading the text it had (FR05): shown once loading
     /// ends (`showEditedTextWaitingForLoad()`); nil the rest of the time.
     var editedTextWaitingForLoad: DocumentContent?
+    /// Whether this reader's last load stopped because the book's content.md
+    /// held an edit TextMouth could not take (`BookTextEditPending`, FR05),
+    /// so the reader opens the book with the edit taken next
+    /// (`showEditedText(_:)`).
+    var loadHeldByTextEdit = false
     /// True after the user explicitly releases Now Playing / headphone media
     /// controls for this open reader. Starting playback in TextMouth clears it.
     @Published var mediaControlsReleased = false
@@ -931,13 +936,21 @@ final class ReaderViewModel: ObservableObject {
         var book = book
         let url = book.bookFileURL
         let format = book.format
-        // A text being edited in the user's editor has a saved edit taken
-        // first (FR05), so the read finds content.md and the record that
-        // describes it, never an edit that would look like a stale cache
-        // and be rebuilt from the source (TODO T07); the read then goes by
-        // the edit's analysis, its cache format current.
-        if !format.isAudio, let committed = BookTextEditSessions.shared.settlePendingEdit(of: book) {
-            book.contentAnalysisFields = committed.contentAnalysisFields
+        // A text being edited in the user's editor has a saved edit checked
+        // first (FR05), so the read never finds an edit that would look like
+        // a stale cache and be rebuilt from the source (TODO T07). An edit
+        // taken now is read by its analysis, its cache format current; an
+        // edit that cannot be taken stops the read, which says why and where
+        // the edit was kept, rather than rebuild the text over it.
+        if !format.isAudio {
+            switch BookTextEditSessions.shared.settlePendingEdit(of: book) {
+            case .readTaken(let committed):
+                book.contentAnalysisFields = committed.contentAnalysisFields
+            case .hold(let pending):
+                throw pending
+            case .readAsUsual:
+                break
+            }
         }
         let cacheOutdated = !format.isAudio
             && MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
@@ -1076,6 +1089,7 @@ final class ReaderViewModel: ObservableObject {
         }
         errorMessage = error.localizedDescription
         isLoading = false
+        loadHeldByTextEdit = error is BookTextEditPending
         // A book that cannot load cannot play for a finished
         // book that continued to it; its error shows instead.
         discardAutoplayRequest()

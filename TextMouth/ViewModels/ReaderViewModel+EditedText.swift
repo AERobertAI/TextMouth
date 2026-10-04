@@ -17,10 +17,30 @@ extension ReaderViewModel {
     /// the text this reader shows, unless it shows that very text already.
     ///
     /// A reader still loading keeps it until loading ends, since what it is
-    /// loading may be the text from before the edit. Bookmarks keep their
-    /// places in the chapters, which an edit may have moved.
+    /// loading may be the text from before the edit. A reader whose load
+    /// stopped over an edit that could not be taken opens the book with this
+    /// text, now that an edit is taken: the text the library committed,
+    /// parsed and indexed already, so nothing is read again. Bookmarks keep
+    /// their places in the chapters, which an edit may have moved.
     func showEditedText(_ edited: DocumentContent) {
         guard !hasClosed, !isAudioBook else { return }
+        if content == nil, !isLoading, loadHeldByTextEdit {
+            loadHeldByTextEdit = false
+            errorMessage = nil
+            showLoadedContent(
+                LoadedContent(
+                    content: edited,
+                    index: edited.contentIndex,
+                    audioFiles: nil,
+                    audioSegments: nil,
+                    audioTags: nil,
+                    shouldPersistContentIndex: false,
+                    cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+                ),
+                readFrom: book.filePath
+            )
+            return
+        }
         guard !isLoading, let current = content else {
             editedTextWaitingForLoad = edited
             return

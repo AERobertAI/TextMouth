@@ -22,6 +22,21 @@ enum BookTextEditRefusal: Equatable, Sendable {
     case notText
     /// It no longer holds a chapter with anything in it.
     case noChapters
+    /// The book's own file changed too since the edit began, so the book's
+    /// text is read from that file again, as any stale text cache is
+    /// rebuilt (TODO T07).
+    case sourceChanged
+    /// It could not be read, or the book's record could not take it, or a
+    /// rebuild found it before any check had, with why: a sentence.
+    case failed(String)
+
+    /// Whether the book keeps the text it had while this edit stands, and
+    /// nothing rebuilds its content.md over the edit (FR05): true but for a
+    /// changed source, which the book's text is read from again once the
+    /// edit is kept beside content.md.
+    var keepsEarlierText: Bool {
+        self != .sourceChanged
+    }
 }
 
 /// An edit taken as the book's text: committed to its record, with the
@@ -33,7 +48,8 @@ struct BookTextEdit: Sendable {
     let content: DocumentContent
 }
 
-/// What checking a book's content.md for an edit found.
+/// What checking a book's content.md for an edit found, or what a rebuild
+/// of its text did to the text the user saved there.
 enum BookTextEditCheck: Sendable {
     /// content.md holds what it held: nothing to do.
     case unchanged
@@ -43,18 +59,50 @@ enum BookTextEditCheck: Sendable {
     /// content.md is gone, or the book left the library: there is nothing
     /// to take.
     case missing
-    /// content.md changed, and so did the book's own file since the edit
-    /// began, so the edit is not taken: the next load rebuilds the text
-    /// from that file, as it rebuilds any stale text cache (TODO T07).
-    /// Carries the digest of the content.md found.
-    case sourceChanged(digest: String)
-    /// content.md changed but was refused, with why; the book keeps its
-    /// earlier text and index. Carries the digest of the content.md found.
-    case refused(BookTextEditRefusal, digest: String)
+    /// content.md changed but was not taken, with why, the digest of what
+    /// it held (nil when it could not be read), and the copy of it kept
+    /// beside it (`BookTextEditSessions.keepCopy(of:bytes:)`), nil when
+    /// none could be made. The book keeps its earlier text and index.
+    case refused(BookTextEditRefusal, digest: String?, keptCopy: URL?)
     /// The edit is the book's text now.
     case adopted(BookTextEdit)
-    /// The edit could not be committed to the book's record, with why.
-    case failed(String)
+    /// A rebuild read the book's text from its own file again, over text
+    /// the user had saved in content.md, which was kept first as this copy.
+    case replaced(keptCopy: URL)
+}
+
+/// What a read of a book's files does about its text being edited, once
+/// any edit saved has been checked (`BookTextEditSessions.settlePendingEdit`).
+enum BookTextEditSettlement: Sendable {
+    /// Read the book as usual: it is not being edited, nothing new was
+    /// saved, or its own file changed, which its text is read from again
+    /// once the edit is kept beside content.md.
+    case readAsUsual
+    /// Read the book as its record now records it, with the edit just
+    /// taken, whose analysis the read then goes by.
+    case readTaken(Book)
+    /// Read nothing: content.md holds an edit that cannot be taken, which a
+    /// read would rebuild over from the book's own file. The read stops
+    /// with this error, which says why and where the edit was kept.
+    case hold(BookTextEditPending)
+}
+
+/// Why the text of a book being edited is neither read nor rebuilt now:
+/// its content.md holds an edit TextMouth cannot take, which only the user
+/// can settle in their editor (FR05). A reader shows its description in
+/// place of the book; a rebuild that meets it leaves the book's text alone.
+struct BookTextEditPending: LocalizedError, Sendable {
+    /// The book's title.
+    let bookTitle: String
+    /// Why the edit cannot be taken.
+    let refusal: BookTextEditRefusal
+    /// The copy of the edited text kept beside content.md, or nil when none
+    /// could be made.
+    let keptCopy: URL?
+
+    var errorDescription: String? {
+        BookTextEditWording.held(refusal, bookTitle: bookTitle, keptCopy: keptCopy)
+    }
 }
 
 // MARK: - Sessions
@@ -68,16 +116,40 @@ enum BookTextEditCheck: Sendable {
 /// (`StorageBoundary.perform`), so two checks of a book never overlap, a
 /// check waits while a data-directory move or a folder edit holds the
 /// storage work, and each sees the baseline the one before it left.
+///
+/// Nothing the user saves in content.md is lost while the book is being
+/// edited. An edit a check cannot take is kept beside content.md first
+/// (`keepCopy(of:bytes:)`), and while it stands, beside an unchanged source,
+/// neither a reader (`settlePendingEdit(of:)`) nor any rebuild of the text
+/// (`permitTextRebuild(of:writing:)`) replaces it; a rebuild that does
+/// replace text the user saved, taken or not, keeps it the same way first.
 final class BookTextEditSessions: Sendable {
     /// The sessions of the app's Edit Text commands.
     static let shared = BookTextEditSessions()
 
     /// One book being edited.
     struct Session: Sendable {
-        /// What the book's files held when its text was last taken.
+        /// What the book's files held when its text was last taken, or last
+        /// rebuilt from the book's own file.
         var baseline: BookTextBaseline
-        /// Hears what each check found, on the checking queue.
+        /// Hears what each check found, on the checking queue, and what a
+        /// rebuild replaced, on the rebuild's thread.
         let report: @Sendable (UUID, BookTextEditCheck) -> Void
+        /// The edit the last check could not take; nil once an edit is
+        /// taken, content.md holds the text taken again, or the text is
+        /// rebuilt.
+        var refused: RefusedEdit? = nil
+        /// The copy kept of text the user saved, which the rebuild under way
+        /// is about to replace (`permitTextRebuild(of:writing:)`), reported
+        /// once the rebuild is written (`textRebuilt(_:writing:fingerprint:)`).
+        var replacedCopy: URL? = nil
+    }
+
+    /// An edit a check could not take: the digest of what content.md held,
+    /// nil when it could not be read, and why.
+    struct RefusedEdit: Equatable, Sendable {
+        let digest: String?
+        let refusal: BookTextEditRefusal
     }
 
     /// The sessions, by book ID, guarded by the lock itself.
@@ -144,22 +216,30 @@ final class BookTextEditSessions: Sendable {
         }
     }
 
-    /// Checks `book` for an edit now, waiting for the check, so that a
-    /// reader about to read the book's files reads the edit taken rather
-    /// than finding content.md changed under a record that does not
-    /// describe it, which would have it rebuilt from the source (TODO T07).
-    /// Does nothing for a book not being edited. A check never waits for
-    /// the main thread, so this may be called from it, as a test does.
-    /// - Returns: The book as its record records it once an edit was taken
-    ///   now, whose analysis the reader then reads by; nil otherwise.
+    /// Checks `book` for an edit now, waiting for the check, before a
+    /// reader reads the book's files, and says what the read does
+    /// (`BookTextEditSettlement`). It reads an edit just taken, rather than
+    /// finding content.md changed under a record that does not describe it,
+    /// which would have it rebuilt from the source (TODO T07). It stops
+    /// while content.md holds an edit that cannot be taken, which the check
+    /// kept beside content.md, rather than rebuild over it. Otherwise it
+    /// reads as usual, as it does at once for a book not being edited. A
+    /// check never waits for the main thread, so this may be called from
+    /// it, as a test does.
     @discardableResult
-    func settlePendingEdit(of book: Book) -> Book? {
-        guard isEditing(book.id) else { return nil }
+    func settlePendingEdit(of book: Book) -> BookTextEditSettlement {
+        guard isEditing(book.id) else { return .readAsUsual }
         let found = queue.sync {
             check(book)
         }
-        guard case .adopted(let edit) = found else { return nil }
-        return edit.committed
+        switch found {
+        case .adopted(let edit)?:
+            return .readTaken(edit.committed)
+        case .refused(let refusal, _, let keptCopy)? where refusal.keepsEarlierText:
+            return .hold(BookTextEditPending(bookTitle: book.title, refusal: refusal, keptCopy: keptCopy))
+        default:
+            return .readAsUsual
+        }
     }
 
     /// Checks `book` for an edit, as storage work, so it waits while a
@@ -168,8 +248,10 @@ final class BookTextEditSessions: Sendable {
     /// that moved the book meanwhile leaves its files elsewhere, which this
     /// check finds missing; the next one, with the book as the library
     /// holds it then, finds them. Reports what was found to the session,
-    /// and keeps a new baseline when an edit was taken or the files were
-    /// only rewritten. Runs on the queue.
+    /// keeps a new baseline when an edit was taken or the files were only
+    /// rewritten, and remembers an edit it could not take, for a rebuild
+    /// that meets it to say why (`permitTextRebuild(of:writing:)`). Runs on
+    /// the queue.
     /// - Returns: What was found; nil for a book not being edited.
     @discardableResult
     private func check(_ book: Book) -> BookTextEditCheck? {
@@ -185,13 +267,127 @@ final class BookTextEditSessions: Sendable {
                 access: access,
                 readingTexts: readingTexts
             )
-            if let baseline = checked.baseline {
-                sessions.withLock { $0[bookID]?.baseline = baseline }
+            sessions.withLock { all in
+                guard all[bookID] != nil else { return }
+                if let baseline = checked.baseline {
+                    all[bookID]?.baseline = baseline
+                }
+                switch checked.found {
+                case .refused(let refusal, let digest, _):
+                    all[bookID]?.refused = RefusedEdit(digest: digest, refusal: refusal)
+                case .adopted, .unchanged:
+                    all[bookID]?.refused = nil
+                case .inCloud, .missing, .replaced:
+                    break
+                }
             }
             return checked.found
         }
         session.report(bookID, found)
         return found
+    }
+
+    // MARK: Rebuilds
+
+    /// Lets a rebuild replace `book`'s content.md with `newBytes`, its text
+    /// read again from the book's own file (`MarkdownCacheService`), once
+    /// what the user saved there is safe.
+    ///
+    /// A book not being edited, or whose content.md is gone or holds those
+    /// very bytes, is rebuilt at once. Otherwise content.md holds text the
+    /// user saved, taken or not, which is kept beside it first
+    /// (`keepCopy(of:bytes:)`). The rebuild may then go on when that text was
+    /// taken, or when the book's own file changed since, which the book's
+    /// text is read from again; the session hears of the copy once the
+    /// rebuild is written (`textRebuilt(_:writing:fingerprint:)`). It is
+    /// refused while content.md holds an edit not taken beside an unchanged
+    /// source, which only the user can settle in their editor, while
+    /// content.md is only in the cloud, and when no copy could be kept.
+    ///
+    /// Runs on the rebuild's thread, inside its storage work, and never
+    /// waits for the checking queue, whose check may itself be waiting for
+    /// that storage work.
+    /// - Throws: `BookTextEditPending`, saying why and where the edited
+    ///   text was kept.
+    func permitTextRebuild(of book: Book, writing newBytes: Data) throws {
+        guard let session = sessions.withLock({ $0[book.id] }) else { return }
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+        guard FileStamp(of: cacheURL) != nil else { return }
+        guard !access.isInCloud(cacheURL) else {
+            throw holding(book, .failed(BookTextEditWording.onlyInCloud), keptCopy: nil)
+        }
+        let bytes = try? access.read(cacheURL) { try Data(contentsOf: cacheURL) }
+        guard bytes != newBytes else { return }
+
+        let kept = Self.keepCopy(of: cacheURL, bytes: bytes)
+        let digest = bytes.map { access.hasher.digestOfData($0) }
+        let wasTaken = digest != nil && digest == session.baseline.cache.digest
+        let mayReplace = wasTaken || Self.hasChanged(session.baseline.source, at: book.bookFileURL, access: access)
+        if let kept, mayReplace {
+            sessions.withLock { $0[book.id]?.replacedCopy = kept }
+            Self.logLine("TEXT_EDIT_KEPT", about: book, "content.md kept as \(kept.lastPathComponent) before its text was read again from the book's own file")
+            return
+        }
+        let refusal: BookTextEditRefusal
+        if kept == nil {
+            refusal = .failed(BookTextEditWording.noCopyKept)
+        } else if let earlier = session.refused, earlier.digest == digest {
+            refusal = earlier.refusal
+        } else {
+            refusal = .failed(BookTextEditWording.notReadYet)
+        }
+        throw holding(book, refusal, keptCopy: kept)
+    }
+
+    /// Takes the content.md a rebuild just wrote as `bytes`, read again from
+    /// `book`'s own file, as the text of the book's session from now on, so
+    /// the user's next save is checked against it and an edit refused before
+    /// is forgotten. A copy kept of text the user had saved there
+    /// (`permitTextRebuild(of:writing:)`) is reported, for VoiceOver to say
+    /// where it is. `fingerprint` is what the rebuild recorded, when it could.
+    func textRebuilt(_ book: Book, writing bytes: Data, fingerprint: TextCacheFingerprint?) {
+        guard isEditing(book.id) else { return }
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+        let hasher = access.hasher
+        guard let cache = fingerprint?.cache
+            ?? FileStamp(of: cacheURL).map({ FileFingerprint(stamp: $0, digest: hasher.digestOfData(bytes)) }) else { return }
+        let source = fingerprint?.source
+            ?? (access.isInCloud(book.bookFileURL) ? nil : FileFingerprint(of: book.bookFileURL, hasher: hasher))
+        // The session as it was, with the copy to report, once it is reset.
+        let before = sessions.withLock { all -> Session? in
+            guard let session = all[book.id] else { return nil }
+            all[book.id]?.baseline = BookTextBaseline(source: source, cache: cache)
+            all[book.id]?.refused = nil
+            all[book.id]?.replacedCopy = nil
+            return session
+        }
+        if let before, let kept = before.replacedCopy {
+            before.report(book.id, .replaced(keptCopy: kept))
+        }
+    }
+
+    /// The error that keeps `book`'s text from being rebuilt or read, for
+    /// `refusal`, with the copy kept of the edit, logged once as
+    /// `TEXT_EDIT_HELD`.
+    private func holding(_ book: Book, _ refusal: BookTextEditRefusal, keptCopy: URL?) -> BookTextEditPending {
+        Self.logLine("TEXT_EDIT_HELD", about: book, "its text was not read again from the book's own file over an edit not taken\(Self.keptNote(keptCopy))")
+        return BookTextEditPending(bookTitle: book.title, refusal: refusal, keptCopy: keptCopy)
+    }
+
+    /// Keeps a copy of the content.md at `url` beside it, holding `bytes`,
+    /// or linked to the file when they could not be read, named like
+    /// "content.md.edited-20261004T123012Z" (`TextMouthPaths.keptTextCopyMarker`).
+    /// A copy kept earlier of the same bytes is used again, and nothing is
+    /// downloaded (`SavedFile.preserveUnusable`).
+    /// - Returns: The copy, or nil when none could be made.
+    static func keepCopy(of url: URL, bytes: Data?) -> URL? {
+        SavedFile.preserveUnusable(url, bytes: bytes, marker: TextMouthPaths.keptTextCopyMarker)
+    }
+
+    /// The end of a log line saying where an edit was kept: "; kept as
+    /// content.md.edited-…", or that no copy could be made.
+    private static func keptNote(_ keptCopy: URL?) -> String {
+        keptCopy.map { "; kept as \($0.lastPathComponent)" } ?? "; no copy of it could be kept"
     }
 
     // MARK: The Check
@@ -224,9 +420,11 @@ final class BookTextEditSessions: Sendable {
     /// - content.md, or its package, only in the cloud is left alone, and so
     ///   is a content.md whose size and date are unchanged, or that was
     ///   rewritten with the same bytes (which gives a new baseline).
-    /// - A changed source refuses the edit (`sourceChanged`), as does a
-    ///   content.md that is not UTF-8 or no longer holds a chapter with
-    ///   anything in it (`refused`); the book keeps its earlier index.
+    /// - An edit is refused beside a changed source, when content.md is not
+    ///   UTF-8 or no longer holds a chapter with anything in it, and when it
+    ///   cannot be read or committed; the book keeps its earlier index. A
+    ///   refused edit is first kept beside content.md (`keepCopy(of:bytes:)`),
+    ///   so nothing the user saved is lost when the text is rebuilt.
     /// - Otherwise content.md is indexed afresh (headings, lengths, and
     ///   counts), its fingerprints become those of the edited bytes and
     ///   the source, so the text is not rebuilt from the source, and the
@@ -260,7 +458,10 @@ final class BookTextEditSessions: Sendable {
         } catch where DatalessFiles.isDownloadRefusal(error) {
             return (.inCloud, nil)
         } catch {
-            return (.failed(error.localizedDescription), nil)
+            // Bytes that cannot be read are kept by a link to the file.
+            let kept = keepCopy(of: cacheURL, bytes: nil)
+            logLine("TEXT_EDIT_FAILED", about: book, "content.md could not be read: \(error.localizedDescription)\(keptNote(kept))")
+            return (.refused(.failed(error.localizedDescription), digest: nil, keptCopy: kept), nil)
         }
         let digest = access.hasher.digestOfData(bytes)
         let cache = FileFingerprint(stamp: cacheStamp, digest: digest)
@@ -271,20 +472,27 @@ final class BookTextEditSessions: Sendable {
         let source: FileFingerprint?
         switch checkSource(baseline.source, at: sourceURL, access: access) {
         case .changed:
-            logLine("TEXT_EDIT_SOURCE_CHANGED", about: book, "the book's own file changed too; its text will be read from that file again")
-            return (.sourceChanged(digest: digest), nil)
+            let kept = keepCopy(of: cacheURL, bytes: bytes)
+            logLine(
+                "TEXT_EDIT_SOURCE_CHANGED",
+                about: book,
+                "the book's own file changed too; its text will be read from that file again\(keptNote(kept))"
+            )
+            return (.refused(.sourceChanged, digest: digest, keptCopy: kept), nil)
         case .unchanged(let fingerprint):
             source = fingerprint
         }
 
         guard let text = try? MarkdownCacheService.cacheText(from: bytes, at: cacheURL) else {
-            logLine("TEXT_EDIT_REFUSED", about: book, "content.md is not UTF-8 text")
-            return (.refused(.notText, digest: digest), nil)
+            let kept = keepCopy(of: cacheURL, bytes: bytes)
+            logLine("TEXT_EDIT_REFUSED", about: book, "content.md is not UTF-8 text\(keptNote(kept))")
+            return (.refused(.notText, digest: digest, keptCopy: kept), nil)
         }
         let parsed = MarkdownCacheService.parseMultiChapterMarkdown(text, bookTitle: book.title, bookAuthor: book.author)
         guard parsed.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) else {
-            logLine("TEXT_EDIT_REFUSED", about: book, "content.md holds no chapter with anything in it")
-            return (.refused(.noChapters, digest: digest), nil)
+            let kept = keepCopy(of: cacheURL, bytes: bytes)
+            logLine("TEXT_EDIT_REFUSED", about: book, "content.md holds no chapter with anything in it\(keptNote(kept))")
+            return (.refused(.noChapters, digest: digest, keptCopy: kept), nil)
         }
 
         var index = parsed.contentIndex.replacingFormat(book.format)
@@ -297,13 +505,16 @@ final class BookTextEditSessions: Sendable {
                 cacheFormatVersion: MarkdownCacheService.currentCacheVersion
             )
         } catch {
-            logLine("TEXT_EDIT_FAILED", about: book, error.localizedDescription)
-            return (.failed(error.localizedDescription), nil)
+            let kept = keepCopy(of: cacheURL, bytes: bytes)
+            logLine("TEXT_EDIT_FAILED", about: book, "\(error.localizedDescription)\(keptNote(kept))")
+            return (.refused(.failed(error.localizedDescription), digest: digest, keptCopy: kept), nil)
         }
         guard let committed else {
             // The record could not take it now (it is only in the cloud, or
             // the book moved meanwhile); the next check tries again.
-            return (.failed(BookTextEditWording.recordUnavailable), nil)
+            let kept = keepCopy(of: cacheURL, bytes: bytes)
+            logLine("TEXT_EDIT_FAILED", about: book, "the book's record could not take the edit now\(keptNote(kept))")
+            return (.refused(.failed(BookTextEditWording.recordUnavailable), digest: digest, keptCopy: kept), nil)
         }
         // The kept reading text was read from the content.md just replaced.
         readingTexts.remove(bookID: book.id)
@@ -344,6 +555,15 @@ final class BookTextEditSessions: Sendable {
             guard let digest = try? access.hasher.digestOfFile(url) else { return .unchanged(recorded) }
             return digest == recorded.digest ? .unchanged(FileFingerprint(stamp: stamp, digest: digest)) : .changed
         }
+    }
+
+    /// Whether the source at `url` holds other bytes than `recorded` says it
+    /// held (`checkSource(_:at:access:)`).
+    private static func hasChanged(_ recorded: FileFingerprint?, at url: URL, access: MaintenanceFileAccess) -> Bool {
+        if case .changed = checkSource(recorded, at: url, access: access) {
+            return true
+        }
+        return false
     }
 
     /// Records `<tag>: <title>: <detail>` in the debug log, as an event of
