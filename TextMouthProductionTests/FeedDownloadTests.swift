@@ -1,4 +1,5 @@
 import Combine
+import UniformTypeIdentifiers
 import XCTest
 @testable import TextMouth
 
@@ -54,9 +55,10 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: finished).count, finishedBefore + 1)
     }
 
-    /// A video episode downloads as an audiobook whose sound plays: only
-    /// feed downloads accept the video file, which Open Book still refuses.
-    func testAVideoEpisodeBecomesAnAudiobook() async throws {
+    /// A video episode downloads as an audiobook whose sound plays, and its
+    /// package imports again, as a library rebuilt or a package added does:
+    /// its video file is an audiobook's content, as Open Book reads it.
+    func testAVideoEpisodeBecomesAnAudiobookWhosePackageImportsAgain() async throws {
         let world = try FeedTestWorld(self, label: "FeedVideo")
         let video = try await FeedMediaFixtures.silentVideo()
         world.server.serve("/video/tour.mp4", FeedMediaFixtures.file(video, mimeType: "video/mp4"))
@@ -68,7 +70,49 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(book.format, .audio)
         XCTAssertEqual(book.bookFileURL.pathExtension, "mp4")
         XCTAssertGreaterThan(book.audioDuration ?? 0, 0)
-        XCTAssertNil(BookFormat.detect(from: book.bookFileURL), "Open Book would import a video file")
+        XCTAssertEqual(BookFormat.detect(from: book.bookFileURL), .audio)
+        let inspection = try FileImportService.inspectTMBPackage(at: book.tmbDirectory)
+        XCTAssertEqual(inspection.info.metadata.feedLink, FeedBookLink(feedID: feed.id, itemID: "guid:ep-1"))
+
+        // A copy of the package, taken elsewhere, imports as a book of its own.
+        let elsewhere = try makeSandboxDirectory("FeedVideoPackage").appendingPathComponent(book.tmbDirectoryName)
+        try FileManager.default.copyItem(at: book.tmbDirectory, to: elsewhere)
+        try FileManager.default.removeItem(at: book.tmbDirectory)
+        let imported = try FileImportService.importTMBPackageWithReport(from: elsewhere).book
+        addTeardownBlock { try? FileManager.default.removeItem(at: imported.tmbDirectory) }
+
+        XCTAssertEqual(imported.id, book.id)
+        XCTAssertEqual(imported.format, .audio)
+        XCTAssertEqual(imported.bookFileURL.pathExtension, "mp4")
+        XCTAssertEqual(try Data(contentsOf: imported.bookFileURL), video)
+    }
+
+    /// Open Book takes a video file, MPEG-4, M4V, or QuickTime, and imports
+    /// it as an audiobook whose sound plays; feeds still tell a video
+    /// enclosure from an audio one by its extension alone.
+    func testAVideoFileOpensAsAnAudiobook() async throws {
+        let world = try FeedTestWorld(self, label: "FeedVideoOpen")
+        let video = try await FeedMediaFixtures.silentVideo()
+        let source = try makeSandboxDirectory("FeedVideoSource").appendingPathComponent("Harbour Tour.mp4")
+        try video.write(to: source)
+
+        let book = try FileImportService.importFileWithReport(from: source, toFolder: world.folder.path).book
+
+        XCTAssertEqual(book.format, .audio)
+        XCTAssertEqual(book.bookFileURL.pathExtension, "mp4")
+        XCTAssertEqual(book.folderPath, world.folder.path)
+        XCTAssertGreaterThan(book.audioDuration ?? 0, 0)
+        for name in ["Tour.mp4", "Tour.M4V", "Tour.mov"] {
+            XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/Videos/\(name)")), .audio, name)
+        }
+        let types = FileImportService.supportedTypes
+        XCTAssertTrue(types.contains(.mpeg4Movie))
+        XCTAssertTrue(types.contains(.quickTimeMovie))
+        XCTAssertTrue(types.contains { $0.identifier == "com.apple.m4v-video" })
+        let address = try XCTUnwrap(URL(string: "https://atlas.example/video/tour.mp4"))
+        XCTAssertEqual(FeedMediaKind.of(mimeType: nil, url: address), .video)
+        XCTAssertEqual(FeedMediaKind.of(mimeType: "audio/mp4", url: address), .audio)
+        XCTAssertFalse(FeedMediaKind.audioExtensions.contains("mp4"))
     }
 
     /// Progress is published in the item's state as the bytes arrive, in

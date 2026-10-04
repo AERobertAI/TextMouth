@@ -1546,6 +1546,12 @@ enum FileImportService {
             UTType("org.xiph.flac"),             // flac
             UTType("public.aac-audio"),          // aac
         ].compactMap { $0 })
+        // Video, imported as an audiobook whose sound alone plays (FR03).
+        types.append(.mpeg4Movie)                // mp4
+        types.append(.quickTimeMovie)            // mov
+        if let m4v = UTType("com.apple.m4v-video") {
+            types.append(m4v)
+        }
         return types
     }
 
