@@ -32,6 +32,7 @@ struct AudioFilterProcessor: AudioEditProcessing {
             return AudioEditTimeline.Segment(source: .processed(name), sourceStart: 0, length: frames)
         }
 
+        try AudioEditScratch.make(sources.scratch)
         let input = sources.scratch.appendingPathComponent(".\(UUID().uuidString).input.caf")
         let partial = sources.scratch.appendingPathComponent(".\(UUID().uuidString).processed.caf")
         defer {

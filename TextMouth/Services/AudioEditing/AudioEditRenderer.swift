@@ -497,6 +497,7 @@ enum AudioEditRenderer {
     ) async throws -> Outcome {
         guard let ffmpeg else { throw AudioEditError.mp3NeedsFFmpeg }
         let settings = AudioRenderSettings.make(.mp3, for: sources.base)
+        try AudioEditScratch.make(sources.scratch)
         let intermediate = sources.scratch.appendingPathComponent(".\(UUID().uuidString).mp3-source.caf")
         defer { try? FileManager.default.removeItem(at: intermediate) }
         let rendered = try await render(
@@ -667,12 +668,20 @@ enum AudioEditRenderer {
                 chapterInput.markAsFinished()
             }
             let total = Double(made.frames) * settings.sampleRate / made.sampleRate
-            var written = 0.0
+            // Decoded audio is written up to the end of the edits and no
+            // further: a compressed take that ends them, as a punch-in at the
+            // very end leaves, is decoded to the end of its last packet,
+            // padding included. Samples copied as stored are whole packets,
+            // never cut, and hold no padding of that kind.
+            let limit = copyingSamples ? nil : Int(total.rounded())
+            var written = 0
             while let buffer = output.copyNextSampleBuffer() {
                 try Task.checkCancellation()
-                try await append(buffer, to: input, of: writer)
-                written += Double(CMSampleBufferGetNumSamples(buffer))
-                progress?(total > 0 ? min(1, written / total) : 1)
+                // The rest is still read, so the reader ends as completed.
+                guard let sample = try trimmed(buffer, toAtMost: limit.map { $0 - written }) else { continue }
+                try await append(sample, to: input, of: writer)
+                written += CMSampleBufferGetNumSamples(sample)
+                progress?(total > 0 ? min(1, Double(written) / total) : 1)
             }
             guard reader.status == .completed else { throw failure(reader.error) }
         } catch {
@@ -687,6 +696,28 @@ enum AudioEditRenderer {
             try? FileManager.default.removeItem(at: destination)
             throw failure(writer.error)
         }
+    }
+
+    /// `buffer`, decoded audio, cut to at most `frames` frames: all of it
+    /// when that many fit, or when `frames` is nil; nil when none may be
+    /// written. A cut buffer loses the trim its end had, which the cut has
+    /// made, so a writer that applies trims never cuts it again.
+    /// - Throws: `AudioEditError.renderFailed` when the frames can't be
+    ///   copied.
+    private static func trimmed(_ buffer: CMSampleBuffer, toAtMost frames: Int?) throws -> CMSampleBuffer? {
+        guard let frames else { return buffer }
+        guard frames > 0 else { return nil }
+        guard CMSampleBufferGetNumSamples(buffer) > frames else { return buffer }
+        var kept: CMSampleBuffer?
+        let status = CMSampleBufferCopySampleBufferForRange(
+            allocator: kCFAllocatorDefault,
+            sampleBuffer: buffer,
+            sampleRange: CFRange(location: 0, length: frames),
+            sampleBufferOut: &kept
+        )
+        guard status == noErr, let kept else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        CMRemoveAttachment(kept, key: kCMSampleBufferAttachmentKey_TrimDurationAtEnd)
+        return kept
     }
 
     /// Appends `sample` to `input` once it is ready for more.

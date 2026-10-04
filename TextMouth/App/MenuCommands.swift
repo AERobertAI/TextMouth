@@ -326,16 +326,18 @@ extension FocusedValues {
 /// the books selected in the Library window that is key, which each
 /// decides for itself through `WindowCommandRouting`. The reader's Book
 /// menu opens its book's text in the user's own editor, and transcribes an
-/// audiobook's audio, cleans up its transcript, or deletes it;
+/// audiobook's audio, cleans up its transcript, or deletes it, and Edit
+/// Audio… opens an audiobook in the audio editor (FR04);
 /// MenuVisibilityManager shows it only while a reader is in front. Edit
 /// Text is unavailable for an audiobook without a transcript, Transcribe
-/// Audio… for a text book, and Clean Up Transcript (Experimental)… and
-/// Delete Transcript… for a book without a transcript.
+/// Audio… and Edit Audio… for a text book, and Clean Up Transcript
+/// (Experimental)… and Delete Transcript… for a book without a transcript.
 struct BookCommands: Commands {
     @FocusedValue(\.canEditBookText) var canEditBookText
     @FocusedValue(\.canTranscribeBookAudio) var canTranscribeBookAudio
     @FocusedValue(\.canCleanUpBookTranscript) var canCleanUpBookTranscript
     @FocusedValue(\.canDeleteBookTranscript) var canDeleteBookTranscript
+    @FocusedValue(\.canEditBookAudio) var canEditBookAudio
 
     var body: some Commands {
         CommandGroup(after: .importExport) {
@@ -373,6 +375,14 @@ struct BookCommands: Commands {
                 NotificationCenter.default.post(name: .deleteBookTranscript, object: nil)
             }
             .disabled(canDeleteBookTranscript != true)
+
+            Divider()
+
+            // The audiobook's audio in the audio editor (FR04).
+            Button(AudioEditorWording.editAudioCommand) {
+                NotificationCenter.default.post(name: .editBookAudio, object: nil)
+            }
+            .disabled(canEditBookAudio != true)
         }
     }
 }

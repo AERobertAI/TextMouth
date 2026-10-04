@@ -331,6 +331,12 @@ final class ConfigService: ObservableObject {
         /// Whether an installed ffmpeg, when TextMouth finds one, runs the
         /// audio editor's filters and writes MP3 (`AudioFilterEngine`).
         var useInstalledFFmpeg: Bool?
+        /// Whether the audio editor's Apply Filter plays a preview before
+        /// applying a filter (`AudioEditorPreferences.previewFiltersFirst`).
+        var audioEditorPreviewsFilters: Bool?
+        /// Whether the audio editor plays half a second at the cursor after
+        /// each move (`AudioEditorPreferences.playAfterMoves`).
+        var audioEditorPlaysAfterMoves: Bool?
         /// The keyboard shortcuts of each action, keyed by the action's name
         /// as Settings shows it, each a list of shortcuts such as
         /// "option+shift+command+b" (`KeyBinding.configText`); an empty list
@@ -451,6 +457,8 @@ final class ConfigService: ObservableObject {
             recordingOriginalPolicy = fields.rawChoice(.recordingOriginalPolicy, rule: SettingsPolicy.recordingOriginalPolicy)
             recordingOriginalDays = fields.optionalNumber(.recordingOriginalDays, rule: SettingsPolicy.recordingOriginalDays)
             useInstalledFFmpeg = fields.optionalFlag(.useInstalledFFmpeg)
+            audioEditorPreviewsFilters = fields.optionalFlag(.audioEditorPreviewsFilters)
+            audioEditorPlaysAfterMoves = fields.optionalFlag(.audioEditorPlaysAfterMoves)
             keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
             feedRefreshAtLaunch = fields.optionalFlag(.feedRefreshAtLaunch)
             feedRefreshIntervalHours = fields.optionalThreshold(
@@ -527,8 +535,10 @@ final class ConfigService: ObservableObject {
                 // Recording: the microphone the Record window remembers.
                 mirrored += sameNames(RecordingPreferences.keys)
                 // Audio editing: how long the original audio of recordings and
-                // edited audiobooks is kept, and whether an installed ffmpeg
-                // runs filters and writes MP3.
+                // edited audiobooks is kept, whether an installed ffmpeg runs
+                // filters and writes MP3, and whether the editor previews a
+                // filter before applying it and plays half a second after
+                // each move.
                 mirrored += sameNames(AudioEditingPreferences.keys)
                 // Miscellaneous.
                 mirrored += sameNames([

@@ -20,8 +20,9 @@ final class TranscriptCleanupSheetTests: XCTestCase {
     // MARK: - The Command
 
     /// Clean Up Transcript (Experimental)… is offered for one transcribed
-    /// audiobook, between Transcribe Audio… and Delete Transcript…, under
-    /// the same name in the menu and among VoiceOver's actions.
+    /// audiobook, between Transcribe Audio… and Delete Transcript…, after
+    /// Edit Audio… (FR04), under the same name in the menu and among
+    /// VoiceOver's actions.
     func testCleanUpIsOfferedForOneTranscribedAudiobookBesideTranscribe() {
         let book = TranscriptionSheetTests.audiobook("Harbour Bells")
         let other = TranscriptionSheetTests.audiobook("Tide Clock")
@@ -29,9 +30,12 @@ final class TranscriptCleanupSheetTests: XCTestCase {
 
         XCTAssertEqual(
             LibraryTranscriptionCommand.commands(for: [book], isTranscribed: transcribed),
-            [.transcribe([book]), .cleanUpTranscript(book), .deleteTranscript(book)]
+            [.editAudio(book), .transcribe([book]), .cleanUpTranscript(book), .deleteTranscript(book)]
         )
-        XCTAssertEqual(LibraryTranscriptionCommand.commands(for: [other], isTranscribed: transcribed), [.transcribe([other])])
+        XCTAssertEqual(
+            LibraryTranscriptionCommand.commands(for: [other], isTranscribed: transcribed),
+            [.editAudio(other), .transcribe([other])]
+        )
         XCTAssertEqual(
             LibraryTranscriptionCommand.commands(for: [book, other], isTranscribed: transcribed),
             [.transcribe([book, other])]
@@ -42,7 +46,10 @@ final class TranscriptCleanupSheetTests: XCTestCase {
             transcriptionNote: .transcribed,
             transcriptionCommands: LibraryTranscriptionCommand.commands(for: [book], isTranscribed: transcribed)
         )
-        XCTAssertEqual(row.accessibilityActionNames, ["Transcribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"])
+        XCTAssertEqual(
+            row.accessibilityActionNames,
+            ["Edit Audio…", "Transcribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"]
+        )
     }
 
     /// The command opens the sheet for its book, once however often it is

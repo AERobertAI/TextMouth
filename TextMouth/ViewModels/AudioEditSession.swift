@@ -198,6 +198,28 @@ final class AudioEditSession: ObservableObject {
     /// - Throws: as `perform(_:)` does, or the take's own read error.
     @discardableResult
     func punchIn(replacing range: AudioTimeRange, withTakeAt url: URL, using takeRange: AudioTimeRange? = nil) async throws -> AudioEditEntry {
+        try await record(takeAt: url, using: takeRange) { .replace(range, with: $0) }
+    }
+
+    /// Inserts the audio file at `url`, of which `takeRange` is used, all of
+    /// it when nil, at `time` seconds, moving what follows on: the editor's
+    /// Paste of audio copied or cut, and a recording made where nothing is
+    /// selected. The file is kept in the book's package as a take, as a
+    /// punch-in's is.
+    /// - Throws: as `perform(_:)` does, or the file's own read error.
+    @discardableResult
+    func insert(takeAt url: URL, at time: TimeInterval, using takeRange: AudioTimeRange? = nil) async throws -> AudioEditEntry {
+        try await record(takeAt: url, using: takeRange) { .insert(at: time, with: $0) }
+    }
+
+    /// Records the edit `makeEdit` makes of the take at `url`, of which
+    /// `takeRange` is used, all of it when nil: the take is kept in the
+    /// book's package under the same lock that records the edit.
+    private func record(
+        takeAt url: URL,
+        using takeRange: AudioTimeRange?,
+        _ makeEdit: @escaping @Sendable (AudioEditTake) -> AudioEdit
+    ) async throws -> AudioEditEntry {
         let takeLength = try await Self.length(of: url)
         let used = takeRange ?? AudioTimeRange(start: 0, end: takeLength)
         guard used.isWellFormed, used.end <= takeLength + 0.001 else {
@@ -206,14 +228,14 @@ final class AudioEditSession: ObservableObject {
         // Checked with a stand-in for the take's place, which the history
         // gives it only as the edit is recorded.
         var check = timeline
-        try check.applyRearranging(.replace(range, with: AudioEditTake(file: "take", range: used)))
+        try check.applyRearranging(makeEdit(AudioEditTake(file: "take", range: used)))
         let file = audioFile
         let package = place.package
         let before = list
         let (list, entry) = try await Self.changeHistory(place: place) { history in
             let take = AudioEditTake(file: try AudioEditPackage.keepTake(from: url, inPackage: package), range: used)
             var list = history.listOrNew(for: file)
-            let entry = list.record(.replace(range, with: take), at: Date())
+            let entry = list.record(makeEdit(take), at: Date())
             history.setList(list)
             return (list, entry)
         }
@@ -268,10 +290,42 @@ final class AudioEditSession: ObservableObject {
     /// sample-exact: the window's preview. Each call makes a new one, which
     /// the caller owns and may hand to any actor.
     func makePreview() async throws -> sending AudioEditComposition {
-        try await AudioEditComposition.make(
-            timeline,
-            sources: AudioEditComposition.Sources(base: base, package: place.package, scratch: scratch)
+        try await AudioEditComposition.make(timeline, sources: sources)
+    }
+
+    /// A composition of the edited audio as it would be with `edit` made,
+    /// without making it: what the editor's Apply Filter plays for Preview.
+    /// A filter's processed stretch is kept in the scratch folder, so
+    /// applying the same edit afterwards reuses it.
+    /// - Throws: as `perform(_:)` does when the edit doesn't fit, or the
+    ///   composition's errors.
+    func makePreview(applying edit: AudioEdit) async throws -> sending AudioEditComposition {
+        var next = timeline
+        try await next.apply(edit, processor: processor)
+        return try await AudioEditComposition.make(next, sources: sources)
+    }
+
+    /// Renders `range` of the edited audio as it stands into a new file at
+    /// `url`: 32-bit float linear PCM in a CAF file at the audio's own rate
+    /// and channels, which loses nothing of it, as the editor keeps audio
+    /// copied or cut for a Paste (`insert(takeAt:at:using:)`).
+    /// - Throws: `AudioEditError.invalidEdit` for a range outside the audio,
+    ///   or the render's errors.
+    func renderStretch(_ range: AudioTimeRange, to url: URL) async throws {
+        let frames = try timeline.frameRange(range)
+        _ = try await AudioEditRenderer.render(
+            timeline.excerpt(frames),
+            sources: sources,
+            to: url,
+            format: .pcmCAF,
+            settings: AudioRenderSettings.floatCAF(for: base),
+            metadata: AudioRenderMetadata(title: "", author: nil)
         )
+    }
+
+    /// Where the stretches of the edited audio come from.
+    private var sources: AudioEditComposition.Sources {
+        AudioEditComposition.Sources(base: base, package: place.package, scratch: scratch)
     }
 
     /// Saves the edits into the book's file (`LibraryViewModel.saveAudioEdits`),
@@ -295,6 +349,18 @@ final class AudioEditSession: ObservableObject {
         return outcome
     }
 
+    /// The format a save writes the book's file in, by the rule a save
+    /// follows (`AudioRenderFormat.inPlace`): the file's own wherever
+    /// TextMouth can write it. Reads the file's stored format.
+    /// - Throws: `AudioEditError.bookNotInLibrary`, or the file's read
+    ///   errors (`AudioEditBase.load`).
+    func saveFormat() async throws -> AudioRenderFormat {
+        guard let library else { throw AudioEditError.bookNotInLibrary }
+        guard let url = AudioEditPackage.url(of: audioFile, in: place.package) else { throw AudioEditError.fileOutsidePackage }
+        let current = try await AudioEditBase.load(url, name: audioFile)
+        return AudioRenderFormat.inPlace(forFileNamed: url.lastPathComponent, stored: current.format, ffmpeg: library.audioFilterEngine().ffmpeg)
+    }
+
     /// The formats Export offers for the edited audio: MP3 only when an
     /// installed ffmpeg is found and the setting allows it.
     var exportFormats: [AudioExportFormat] {
@@ -314,7 +380,7 @@ final class AudioEditSession: ObservableObject {
         guard !format.needsFFmpeg || ffmpeg != nil else { throw AudioEditError.mp3NeedsFFmpeg }
         _ = try await AudioEditRenderer.render(
             timeline,
-            sources: AudioEditComposition.Sources(base: base, package: place.package, scratch: scratch),
+            sources: sources,
             to: url,
             format: format.renderFormat,
             metadata: AudioRenderMetadata(title: book.title, author: book.author),

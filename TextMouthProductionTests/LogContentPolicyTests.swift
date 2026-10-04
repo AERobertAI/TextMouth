@@ -280,9 +280,10 @@ final class LogContentPolicyTests: XCTestCase {
         "RECORDING_SAVED", "RECORDING_WINDOW_REFUSED",
         // Audio editing (FR04): an edit history that cannot be used, preserved beside itself; edits
         // saved into a book's audio; the originals of recordings and edited audiobooks the policy
-        // removed; and the filter presets' file, unusable or only in the cloud.
+        // removed; the filter presets' file, unusable or only in the cloud; and the audio editor
+        // window's failures to open, save, or record.
         "AUDIO_EDITS_FILE", "AUDIO_EDITS_SAVED", "AUDIO_ORIGINALS_SWEPT", "AUDIO_ORIGINAL_REMOVAL_FAILED",
-        "AUDIO_FILTERS_FILE",
+        "AUDIO_FILTERS_FILE", "AUDIO_EDITOR",
         // Cloud libraries (FR02): a book's download and the removal of its download, the library's
         // Download Now and Remove Download, Keep on This Mac and the downloads of kept books, the
         // reader's downloads and working copies, a maintenance pass leaving books in the cloud,

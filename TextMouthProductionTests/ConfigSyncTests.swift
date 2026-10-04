@@ -1130,8 +1130,12 @@ final class ConfigSyncTests: XCTestCase {
             "recordingInputDeviceID": "AppleUSBAudioEngine:Studio Microphone:4100000:1",
             "recordingOriginalPolicy": AudioOriginalPolicy.Choice.keep.rawValue,
             "recordingOriginalDays": 14.0,
-            // Audio editing: whether an installed ffmpeg is used (FR04).
+            // Audio editing: whether an installed ffmpeg is used, and the
+            // editor window's preview of a filter and half second after each
+            // move (FR04).
             "useInstalledFFmpeg": false,
+            "audioEditorPreviewsFilters": false,
+            "audioEditorPlaysAfterMoves": false,
             "soundEffectsEnabled": false,
             "soundEffectsVolume": Float(0.35),
             "soundEffectAssignments": try JSONEncoder().encode(sounds.keyedByRawValue),

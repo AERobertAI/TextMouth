@@ -10,7 +10,9 @@ import SwiftUI
 /// Audio… opens the Transcribe Audio sheet on the reader for an audiobook,
 /// Clean Up Transcript (Experimental)… opens the Clean Up sheet for a
 /// transcribed one, and Delete Transcript… asks to delete a transcribed
-/// audiobook's transcript.
+/// audiobook's transcript. Its Edit Audio… opens an audiobook in the audio
+/// editor (FR04), which first asks this reader to close, since editing
+/// changes the audio it plays.
 ///
 /// ReaderView attaches this in one line: its body sits at the type
 /// checker's limit (board #829), so everything here lives in views of its
@@ -68,6 +70,15 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 deleteTranscript()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .editBookAudio)) { notification in
+                guard takesCommand(notification) else { return }
+                editAudio()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .closeReaderForAudioEditing)) { notification in
+                // The audio editor is opening on this reader's book.
+                guard notification.object as? UUID == viewModel.book.id else { return }
+                viewModel.hostWindow?.performClose(nil)
+            }
             // Scene values, published whenever this reader's window is key,
             // even while none of its views has keyboard focus, as when
             // VoiceOver reads its text: a focused value would leave the Book
@@ -79,6 +90,7 @@ struct ReaderBookCommandsSupport: ViewModifier {
             .focusedSceneValue(\.canTranscribeBookAudio, LibraryTranscriptionCommand.isTranscribable(viewModel.book))
             .focusedSceneValue(\.canCleanUpBookTranscript, hasTranscript)
             .focusedSceneValue(\.canDeleteBookTranscript, hasTranscript)
+            .focusedSceneValue(\.canEditBookAudio, AudioEditorLauncher.canEdit(viewModel.book))
             .sheet(item: $exportModel) { model in
                 BookExportSheet(model: model, close: { exportModel = nil })
             }
@@ -106,6 +118,14 @@ struct ReaderBookCommandsSupport: ViewModifier {
         let library = viewModel.libraryViewModel
         let book = library.bookByID(viewModel.book.id) ?? viewModel.book
         transcription.cleanUp(book, library: library, window: viewModel.hostWindow)
+    }
+
+    /// Opens the reader's audiobook, as the library holds it now, in the
+    /// audio editor (FR04), which closes this reader first.
+    private func editAudio() {
+        let library = viewModel.libraryViewModel
+        let book = library.bookByID(viewModel.book.id) ?? viewModel.book
+        AudioEditorLauncher.edit(book, in: library, from: viewModel.hostWindow)
     }
 
     /// Asks to delete the transcript of the reader's audiobook, as the

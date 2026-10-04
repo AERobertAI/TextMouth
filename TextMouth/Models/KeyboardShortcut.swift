@@ -34,7 +34,72 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case moveBookUp = "Move Book Up"
     case moveBookDown = "Move Book Down"
 
+    // The audio editor's (FR04): a group of their own, matched only while an
+    // editor window is key (`ShortcutScope`), so they may share keys with
+    // the reader's. Each raw value begins with the group's name, so
+    // config.json tells them apart from the reader's actions of the same
+    // name; Settings lists them by `title`, under the group's heading.
+    case editorPlayPause = "Audio Editor: Play / Pause"
+    case editorStop = "Audio Editor: Stop"
+    case editorSkipBack = "Audio Editor: Back One Second"
+    case editorSkipForward = "Audio Editor: Forward One Second"
+    case editorSkipBackLong = "Audio Editor: Back 10 Seconds"
+    case editorSkipForwardLong = "Audio Editor: Forward 10 Seconds"
+    case editorSkipBackShort = "Audio Editor: Back a Tenth of a Second"
+    case editorSkipForwardShort = "Audio Editor: Forward a Tenth of a Second"
+    case editorGoToStart = "Audio Editor: Go to Start"
+    case editorGoToEnd = "Audio Editor: Go to End"
+    case editorGoToTime = "Audio Editor: Go to Time…"
+    case editorPreviousChapter = "Audio Editor: Previous Chapter Marker"
+    case editorNextChapter = "Audio Editor: Next Chapter Marker"
+    case editorPreviousPause = "Audio Editor: Previous Pause"
+    case editorNextPause = "Audio Editor: Next Pause"
+    case editorWhereAmI = "Audio Editor: Where Am I?"
+    case editorMarkIn = "Audio Editor: Mark In"
+    case editorMarkOut = "Audio Editor: Mark Out"
+    case editorSelectToPreviousPause = "Audio Editor: Select to Previous Pause"
+    case editorSelectToNextPause = "Audio Editor: Select to Next Pause"
+    case editorSelectChapter = "Audio Editor: Select Chapter"
+    case editorSelectAll = "Audio Editor: Select All"
+    case editorClearSelection = "Audio Editor: Clear Selection"
+    case editorSpeakSelection = "Audio Editor: Speak Selection"
+    case editorPlaySelection = "Audio Editor: Play Selection"
+    case editorAddMarker = "Audio Editor: Add Marker"
+    case editorShowMarkers = "Audio Editor: Markers and Pauses…"
+    case editorUndo = "Audio Editor: Undo"
+    case editorRedo = "Audio Editor: Redo"
+    case editorCut = "Audio Editor: Cut"
+    case editorCopy = "Audio Editor: Copy"
+    case editorPaste = "Audio Editor: Paste"
+    case editorTrimToSelection = "Audio Editor: Trim to Selection"
+    case editorInsertSilence = "Audio Editor: Insert Silence…"
+    case editorInsertChapter = "Audio Editor: Insert Chapter Marker…"
+    case editorApplyFilter = "Audio Editor: Apply Filter…"
+    case editorPunchIn = "Audio Editor: Punch In"
+    case editorSave = "Audio Editor: Save"
+    case editorExport = "Audio Editor: Export…"
+    case editorRevert = "Audio Editor: Revert to Original…"
+    case editorInfo = "Audio Editor: Audio Info…"
+
     var id: String { rawValue }
+
+    /// The heading of the audio editor's group in Settings, and the start
+    /// of each of its actions' raw values.
+    static let audioEditorCategory = "Audio Editor"
+
+    /// The action's name as Settings lists it under its group's heading:
+    /// its raw value, less the group's name that begins an audio editor
+    /// action's.
+    var title: String {
+        let prefix = Self.audioEditorCategory + ": "
+        return rawValue.hasPrefix(prefix) ? String(rawValue.dropFirst(prefix.count)) : rawValue
+    }
+
+    /// Where the action's shortcuts work: the audio editor's group in its
+    /// windows alone, every other action everywhere else.
+    var scope: ShortcutScope {
+        category == Self.audioEditorCategory ? .audioEditor : .app
+    }
 
     /// The notification to post when this action is triggered
     var notificationName: Notification.Name {
@@ -70,6 +135,19 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .toggleEditMode: return .toggleEditMode
         case .moveBookUp: return .moveBookUp
         case .moveBookDown: return .moveBookDown
+        // The audio editor's actions all post one name, carrying the action
+        // in their user info, and its window performs them.
+        case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
+             .editorSkipBackLong, .editorSkipForwardLong, .editorSkipBackShort, .editorSkipForwardShort,
+             .editorGoToStart, .editorGoToEnd, .editorGoToTime, .editorPreviousChapter, .editorNextChapter,
+             .editorPreviousPause, .editorNextPause, .editorWhereAmI,
+             .editorMarkIn, .editorMarkOut, .editorSelectToPreviousPause, .editorSelectToNextPause,
+             .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
+             .editorPlaySelection, .editorAddMarker, .editorShowMarkers,
+             .editorUndo, .editorRedo, .editorCut, .editorCopy, .editorPaste, .editorTrimToSelection,
+             .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn,
+             .editorSave, .editorExport, .editorRevert, .editorInfo:
+            return .audioEditorShortcut
         }
     }
 
@@ -90,8 +168,36 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown:
             return "Library"
+        case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
+             .editorSkipBackLong, .editorSkipForwardLong, .editorSkipBackShort, .editorSkipForwardShort,
+             .editorGoToStart, .editorGoToEnd, .editorGoToTime, .editorPreviousChapter, .editorNextChapter,
+             .editorPreviousPause, .editorNextPause, .editorWhereAmI,
+             .editorMarkIn, .editorMarkOut, .editorSelectToPreviousPause, .editorSelectToNextPause,
+             .editorSelectChapter, .editorSelectAll, .editorClearSelection, .editorSpeakSelection,
+             .editorPlaySelection, .editorAddMarker, .editorShowMarkers,
+             .editorUndo, .editorRedo, .editorCut, .editorCopy, .editorPaste, .editorTrimToSelection,
+             .editorInsertSilence, .editorInsertChapter, .editorApplyFilter, .editorPunchIn,
+             .editorSave, .editorExport, .editorRevert, .editorInfo:
+            return Self.audioEditorCategory
         }
     }
+}
+
+/// Where a shortcut works.
+enum ShortcutScope: Hashable, Sendable {
+    /// Every window but the audio editor's: the Library, the readers,
+    /// Settings, and the rest, as TextMouth's shortcuts always have.
+    case app
+    /// The audio editor's windows (FR04), and nowhere else: so the editor
+    /// can take Space, J, K, and L for itself.
+    case audioEditor
+}
+
+extension Notification.Name {
+    /// Posted for every audio editor shortcut (FR04), with the action's raw
+    /// value under "action" in its user info, and the window it was pressed
+    /// in under "sourceWindow": that window's editor performs it.
+    static let audioEditorShortcut = Notification.Name("audioEditorShortcut")
 }
 
 /// A keyboard binding: key + modifiers
@@ -333,7 +439,7 @@ private enum ConfigModifier: CaseIterable {
 extension ShortcutAction {
     /// Default bindings for each action (primary + optional secondary)
     static var defaultBindings: [ShortcutAction: [KeyBinding]] {
-        [
+        let everywhereElse: [ShortcutAction: [KeyBinding]] = [
             .togglePlayback: [
                 KeyBinding(key: "space"),
                 KeyBinding(key: "k")
@@ -435,6 +541,69 @@ extension ShortcutAction {
             .moveBookDown: [
                 KeyBinding(key: "downArrow", command: true, shift: true)
             ]
+        ]
+        return everywhereElse.merging(audioEditorDefaultBindings) { existing, _ in existing }
+    }
+
+    /// The audio editor's default bindings (FR04): single keys wherever one
+    /// fits, as the user chose on October 4, matched only in an editor
+    /// window (`ShortcutScope.audioEditor`), so Space, J, K, and L play and
+    /// move there as they do in a reader. None of them is any other editor
+    /// action's, and the Command ones are no menu command's but the Edit
+    /// menu's own Undo, Redo, Cut, Copy, Paste, and Select All, which the
+    /// editor answers itself (the shortcut tests check both).
+    static var audioEditorDefaultBindings: [ShortcutAction: [KeyBinding]] {
+        [
+            .editorPlayPause: [KeyBinding(key: "space"), KeyBinding(key: "k")],
+            .editorStop: [KeyBinding(key: "s")],
+            // J and Comma go back, L and Period forward: a second; Shift-J
+            // and Shift-L ten; with Option, a tenth.
+            .editorSkipBack: [KeyBinding(key: "j"), KeyBinding(key: ",")],
+            .editorSkipForward: [KeyBinding(key: "l"), KeyBinding(key: ".")],
+            .editorSkipBackLong: [KeyBinding(key: "j", shift: true)],
+            .editorSkipForwardLong: [KeyBinding(key: "l", shift: true)],
+            .editorSkipBackShort: [KeyBinding(key: "j", option: true), KeyBinding(key: ",", option: true)],
+            .editorSkipForwardShort: [KeyBinding(key: "l", option: true), KeyBinding(key: ".", option: true)],
+            // The start and the end of the audio, as of a document.
+            .editorGoToStart: [KeyBinding(key: "upArrow", command: true)],
+            .editorGoToEnd: [KeyBinding(key: "downArrow", command: true)],
+            .editorGoToTime: [KeyBinding(key: "g")],
+            // Chapter markers by the reader's keys for headings.
+            .editorPreviousChapter: [KeyBinding(key: "upArrow", command: true, option: true)],
+            .editorNextChapter: [KeyBinding(key: "downArrow", command: true, option: true)],
+            .editorPreviousPause: [KeyBinding(key: "n", shift: true)],
+            .editorNextPause: [KeyBinding(key: "n")],
+            .editorWhereAmI: [KeyBinding(key: "w")],
+            // In and Out, as in video editors; the selection said in full
+            // with Shift-W, beside Where Am I.
+            .editorMarkIn: [KeyBinding(key: "i")],
+            .editorMarkOut: [KeyBinding(key: "o")],
+            .editorSelectToPreviousPause: [KeyBinding(key: "n", option: true, shift: true)],
+            .editorSelectToNextPause: [KeyBinding(key: "n", option: true)],
+            .editorSelectChapter: [KeyBinding(key: "c")],
+            .editorSelectAll: [KeyBinding(key: "a", command: true)],
+            .editorClearSelection: [KeyBinding(key: "escape")],
+            .editorSpeakSelection: [KeyBinding(key: "w", shift: true)],
+            .editorPlaySelection: [KeyBinding(key: "p")],
+            .editorAddMarker: [KeyBinding(key: "m")],
+            .editorShowMarkers: [KeyBinding(key: "m", shift: true)],
+            // The Edit menu's keys, which the editor answers itself, and
+            // Delete for Cut, as the user asked.
+            .editorUndo: [KeyBinding(key: "z", command: true)],
+            .editorRedo: [KeyBinding(key: "z", command: true, shift: true)],
+            .editorCut: [KeyBinding(key: "delete"), KeyBinding(key: "x", command: true)],
+            .editorCopy: [KeyBinding(key: "c", command: true)],
+            .editorPaste: [KeyBinding(key: "v", command: true)],
+            .editorTrimToSelection: [KeyBinding(key: "t")],
+            .editorInsertSilence: [KeyBinding(key: "s", shift: true)],
+            .editorInsertChapter: [KeyBinding(key: "c", shift: true)],
+            .editorApplyFilter: [KeyBinding(key: "f")],
+            .editorPunchIn: [KeyBinding(key: "r")],
+            // Saving, as documents save; Revert beside Undo, asking first.
+            .editorSave: [KeyBinding(key: "s", command: true)],
+            .editorExport: [KeyBinding(key: "e", command: true, shift: true)],
+            .editorRevert: [KeyBinding(key: "z", command: true, option: true)],
+            .editorInfo: [KeyBinding(key: "i", command: true)],
         ]
     }
 }

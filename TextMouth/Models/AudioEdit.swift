@@ -71,6 +71,10 @@ enum AudioEdit: Hashable, Sendable {
     /// Replaces the range with a stretch of a take (punch-in). The take may
     /// be longer or shorter than the range it replaces.
     case replace(AudioTimeRange, with: AudioEditTake)
+    /// Inserts a stretch of a take at `at` seconds, moving what follows on:
+    /// a paste of audio copied or cut, or a recording inserted where nothing
+    /// is selected.
+    case insert(at: TimeInterval, with: AudioEditTake)
     /// Sets a chapter marker titled `title` at `at` seconds, or renames the
     /// marker already there.
     case setChapter(at: TimeInterval, title: String)
@@ -89,18 +93,21 @@ enum AudioEdit: Hashable, Sendable {
         switch self {
         case .setChapter, .removeChapter:
             return false
-        case .trimStart, .trimEnd, .cut, .move, .insertSilence, .replace, .filter, .gain:
+        case .trimStart, .trimEnd, .cut, .move, .insertSilence, .replace, .insert, .filter, .gain:
             return true
         }
     }
 
-    /// The take a punch-in uses, or nil for every other edit: what keeps a
-    /// take in the package (`AudioEditHistoryStore.removeUnusedTakes`).
+    /// The take a punch-in or an insertion uses, or nil for every other
+    /// edit: what keeps a take in the package
+    /// (`AudioEditHistoryStore.removeUnusedTakes`).
     var take: AudioEditTake? {
-        if case .replace(_, let take) = self {
+        switch self {
+        case .replace(_, let take), .insert(_, let take):
             return take
+        default:
+            return nil
         }
-        return nil
     }
 }
 
@@ -113,7 +120,7 @@ enum AudioEdit: Hashable, Sendable {
 extension AudioEdit: Codable {
     /// The kinds of edit, as edits.json names them.
     private enum Kind: String, Codable {
-        case trimStart, trimEnd, cut, move, insertSilence, replace, setChapter, removeChapter, filter, gain
+        case trimStart, trimEnd, cut, move, insertSilence, replace, insert, setChapter, removeChapter, filter, gain
     }
 
     /// The fields an edit can have.
@@ -150,6 +157,11 @@ extension AudioEdit: Codable {
             )
         case .replace:
             self = .replace(try range(), with: try container.decode(AudioEditTake.self, forKey: .take))
+        case .insert:
+            self = .insert(
+                at: try container.decode(Double.self, forKey: .at),
+                with: try container.decode(AudioEditTake.self, forKey: .take)
+            )
         case .setChapter:
             self = .setChapter(
                 at: try container.decode(Double.self, forKey: .at),
@@ -193,6 +205,10 @@ extension AudioEdit: Codable {
         case .replace(let range, let take):
             try container.encode(Kind.replace, forKey: .kind)
             try encode(range)
+            try container.encode(take, forKey: .take)
+        case .insert(let at, let take):
+            try container.encode(Kind.insert, forKey: .kind)
+            try container.encode(at, forKey: .at)
             try container.encode(take, forKey: .take)
         case .setChapter(let at, let title):
             try container.encode(Kind.setChapter, forKey: .kind)

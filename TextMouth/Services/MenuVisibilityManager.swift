@@ -36,6 +36,8 @@ import AppKit
 //      is the current tab name like "Shortcuts", not "Settings")
 //    - The Record window: identifier "new-recording", set by
 //      RecordingWindowController — no context menus, as Settings
+//    - Audio editor windows: identifier "audio-editor", set by
+//      AudioEditorWindowController — no context menus either
 //    - Library windows: the fallback — any titled, non-utility window that
 //      didn't match the above checks
 //    - No window (nil): all context menus hidden
@@ -242,6 +244,15 @@ final class MenuVisibilityManager {
         // a Library nor a reader window and has no menus of its own, so,
         // like Settings, it shows no context menu.
         if identifier == RecordingWindowController.windowIdentifier {
+            return nil
+        }
+
+        // --- The audio editor ---
+        // AppKit windows TextMouth makes itself, one for each book being
+        // edited, all named exactly (AudioEditorWindowController
+        // .windowIdentifier, FR04). Neither Library nor reader windows, and
+        // with no menus of their own, they show no context menu either.
+        if identifier == AudioEditorWindowController.windowIdentifier {
             return nil
         }
 

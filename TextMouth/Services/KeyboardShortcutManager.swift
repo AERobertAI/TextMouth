@@ -62,23 +62,28 @@ final class KeyboardShortcutManager: ObservableObject {
     )
 
     /// `saved` with each action it leaves out given its default bindings,
-    /// except any binding another action already uses.
+    /// except any binding another action of its scope already uses.
     nonisolated static func bindings(
         addingDefaultsTo saved: [ShortcutAction: [KeyBinding]]
     ) -> [ShortcutAction: [KeyBinding]] {
         var loaded = saved
         let defaults = ShortcutAction.defaultBindings
-        var claimedBindings = Set(loaded.values.flatMap { $0 })
+        // The bindings each scope's actions use: a key may mean one thing in
+        // a reader and another in the audio editor, never two in one place.
+        var claimedBindings: [ShortcutScope: Set<KeyBinding>] = [:]
+        for (action, bindings) in loaded {
+            claimedBindings[action.scope, default: []].formUnion(bindings)
+        }
         for action in ShortcutAction.allCases where loaded[action] == nil {
             // Preserve existing custom ownership during upgrades. A newly
             // introduced default must not duplicate an older user-assigned
             // binding because dictionary iteration would otherwise make the
             // action that fires nondeterministic.
             let availableDefaults = (defaults[action] ?? []).filter {
-                !claimedBindings.contains($0)
+                !claimedBindings[action.scope, default: []].contains($0)
             }
             loaded[action] = availableDefaults
-            claimedBindings.formUnion(availableDefaults)
+            claimedBindings[action.scope, default: []].formUnion(availableDefaults)
         }
         return loaded
     }
@@ -86,16 +91,22 @@ final class KeyboardShortcutManager: ObservableObject {
     /// The bindings once `requested`, from config.json, are in place: each
     /// action it names takes exactly the bindings it lists, and every other
     /// action keeps its own, except any binding the file gives a named
-    /// action, which moves there as a shortcut recorded in Settings moves
-    /// from the action that had it. A file that changes a few shortcuts thus
-    /// never leaves one key on two actions, which would make the action it
-    /// triggers a matter of chance.
+    /// action of its scope, which moves there as a shortcut recorded in
+    /// Settings moves from the action that had it. A file that changes a
+    /// few shortcuts thus never leaves one key on two actions of one scope,
+    /// which would make the action it triggers a matter of chance.
     nonisolated static func bindings(
         _ current: [ShortcutAction: [KeyBinding]],
         adopting requested: [ShortcutAction: [KeyBinding]]
     ) -> [ShortcutAction: [KeyBinding]] {
-        let claimed = Set(requested.values.joined())
-        var adopted = current.mapValues { bindings in bindings.filter { !claimed.contains($0) } }
+        var claimed: [ShortcutScope: Set<KeyBinding>] = [:]
+        for (action, bindings) in requested {
+            claimed[action.scope, default: []].formUnion(bindings)
+        }
+        var adopted: [ShortcutAction: [KeyBinding]] = [:]
+        for (action, bindings) in current {
+            adopted[action] = bindings.filter { !claimed[action.scope, default: []].contains($0) }
+        }
         for (action, bindings) in requested {
             adopted[action] = bindings
         }
@@ -124,8 +135,11 @@ final class KeyboardShortcutManager: ObservableObject {
     }
 
     func addBinding(_ binding: KeyBinding, to action: ShortcutAction) {
-        // Remove this binding from any other action first (no duplicates)
-        for otherAction in ShortcutAction.allCases where otherAction != action {
+        // Remove this binding from any other action of the same scope first
+        // (no duplicates where one key press could mean two things); an
+        // action of the other scope keeps it, as the editor's Space and the
+        // reader's do.
+        for otherAction in ShortcutAction.allCases where otherAction != action && otherAction.scope == action.scope {
             bindings[otherAction]?.removeAll { $0 == binding }
         }
         if bindings[action] == nil {
@@ -182,9 +196,12 @@ final class KeyboardShortcutManager: ObservableObject {
 
     private func handleKeyEvent(_ event: NSEvent) -> Bool {
         let textInputIsFocused = isTextInputFocused()
+        // Only the shortcuts of the key window's scope match; in a sheet over
+        // an audio editor none do, so its own controls take every key.
+        guard let scope = Self.scope(ofKeyWindow: NSApp.keyWindow) else { return false }
 
         // Check each action's bindings
-        for (action, actionBindings) in bindings {
+        for (action, actionBindings) in bindings where action.scope == scope {
             for binding in actionBindings {
                 if binding.matches(event) {
                     // Plain typing must continue to reach text fields. Command-
@@ -206,7 +223,7 @@ final class KeyboardShortcutManager: ObservableObject {
                         bindingRequiresShift: binding.shift
                     )
                     // Include the key window so only the focused book reader responds
-                    var userInfo: [String: Any] = [:]
+                    var userInfo: [String: Any] = ["action": action.rawValue]
                     if shiftHeld { userInfo["shiftHeld"] = true }
                     if let keyWindow = NSApp.keyWindow {
                         userInfo["sourceWindow"] = keyWindow
@@ -225,6 +242,27 @@ final class KeyboardShortcutManager: ObservableObject {
             }
         }
         return false
+    }
+
+    /// The scope whose shortcuts a key pressed in `keyWindow` matches: the
+    /// audio editor's in an editor window (FR04); none in a sheet over one,
+    /// whose fields and buttons take every key; the app's everywhere else,
+    /// as before the editor, with no key window included.
+    static func scope(ofKeyWindow keyWindow: NSWindow?) -> ShortcutScope? {
+        scope(
+            windowIdentifier: keyWindow?.identifier?.rawValue,
+            sheetParentIdentifier: keyWindow?.sheetParent?.identifier?.rawValue
+        )
+    }
+
+    /// The scope for a key window identified as `windowIdentifier`, a sheet
+    /// over a window identified as `sheetParentIdentifier` when it is one:
+    /// `scope(ofKeyWindow:)`'s rule, apart from AppKit.
+    nonisolated static func scope(windowIdentifier: String?, sheetParentIdentifier: String?) -> ShortcutScope? {
+        let editor = AudioEditorWindowController.windowIdentifier
+        if windowIdentifier == editor { return .audioEditor }
+        if sheetParentIdentifier == editor { return nil }
+        return .app
     }
 
     /// Preserve normal text entry unless the binding uses a conventional
