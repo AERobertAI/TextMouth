@@ -436,8 +436,9 @@ extension FileImportService {
     /// anything that is not hidden and is not one of the files TextMouth
     /// keeps beside the content (bookInfo.json and the content index beside
     /// it, the content.md text cache and the copies Edit Text keeps of it, a
-    /// recording's origin record and its original take (`BookOrigin`), an
-    /// audiobook's transcript and the copies kept of an unusable one
+    /// recording's origin record and its original take (`BookOrigin`), the
+    /// audio edit history's folder (`AudioEditPackage`), an audiobook's
+    /// transcript and the copies kept of an unusable one
     /// (`TextMouthPaths.isTranscriptFile`), the cachedAudio folder, and the
     /// removal marker).
     static func isPackageContentName(_ name: String) -> Bool {
@@ -447,6 +448,7 @@ extension FileImportService {
             && name != "content.md"
             && name != BookOrigin.fileName
             && name != BookOrigin.originalTakeFileName
+            && name != AudioEditPackage.folderName
             && name != "cachedAudio"
             && name != TextMouthPaths.removedFromLibraryMarkerName
             && !TextMouthPaths.isKeptTextCopy(name)
