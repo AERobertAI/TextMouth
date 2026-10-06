@@ -105,10 +105,11 @@ final class AudioEditorWindowTests: XCTestCase {
     // MARK: - Where VoiceOver Starts
 
     /// Each sheet starts VoiceOver on one control: a question's on its
-    /// field; Apply Filter's on the Filter pop-up; Export's on the Format
-    /// pop-up; Audio Info's on its policy pop-up; a save's on its progress
-    /// bar; and the list's on its first marker, or on Close while it lists
-    /// nothing at all.
+    /// field; Apply Filter's on the Filter pop-up, or on Cancel with every
+    /// preset deleted in Settings; Export's on the Format pop-up; Audio
+    /// Info's on its policy pop-up; a save's on its progress bar; and the
+    /// list's on its first marker, or on Close while it lists nothing at
+    /// all.
     func testEachSheetStartsVoiceOverOnOneControl() async throws {
         let model = try await openRamp(seconds: 4, loadsPreview: false).model
 
@@ -116,6 +117,9 @@ final class AudioEditorWindowTests: XCTestCase {
             checkVoiceOverStarts(on: prompt.fieldLabel, in: promptSheet(prompt, of: model))
         }
         checkVoiceOverStarts(on: AudioEditorWording.presetLabel, in: AudioEditorFilterSheet(model: model))
+        let noPresets = try emptyPresetLibrary()
+        XCTAssertTrue(noPresets.presets.isEmpty)
+        checkVoiceOverStarts(on: AudioEditorWording.cancelButton, in: AudioEditorFilterSheet(model: model, presets: noPresets))
         checkVoiceOverStarts(on: AudioEditorWording.formatLabel, in: AudioEditorExportSheet(model: model))
         checkVoiceOverStarts(on: AudioEditorWording.policyLabel, in: AudioEditorInfoSheet(model: model))
         model.progress = AudioEditorProgress(title: AudioEditorWording.savingTitle, detail: "", fraction: 0.5)
@@ -460,6 +464,18 @@ final class AudioEditorWindowTests: XCTestCase {
     /// An Edit menu item sending `action`.
     private func menuItem(_ action: Selector) -> NSMenuItem {
         NSMenuItem(title: "", action: action, keyEquivalent: "")
+    }
+
+    /// A preset library with every preset deleted, as Settings leaves it,
+    /// kept in a file of the test's own.
+    private func emptyPresetLibrary() throws -> AudioFilterPresetLibrary {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("audio-filters-\(UUID().uuidString).json")
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        let library = AudioFilterPresetLibrary(url: url, reader: SavedFile.readWithoutDownloading)
+        for preset in library.presets {
+            try library.remove(preset.id)
+        }
+        return library
     }
 
     /// `prompt`'s sheet for `model`, as the window builds it.
