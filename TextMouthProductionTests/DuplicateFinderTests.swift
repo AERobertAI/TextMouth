@@ -81,6 +81,23 @@ final class DuplicateFinderTests: XCTestCase {
         XCTAssertTrue(groups.isEmpty)
     }
 
+    /// A duplicate's row is spoken whole: its title, author, format, folder,
+    /// and the date it was added, which the row showed but, until October
+    /// 6, 2026, left unspoken, though it is what tells two copies apart.
+    func testARowIsSpokenWithTheDateItWasAdded() {
+        let added = Date(timeIntervalSince1970: 1_790_000_000)
+        let filed = Book(
+            title: "Atlas", author: "Dorothy Vance", format: .epub, filePath: "/tmp/a.epub", md5Hash: "a",
+            folderPath: "Travel", dateAdded: added
+        )
+        let atRoot = Book(title: "Atlas", author: "Dorothy Vance", format: .pdf, filePath: "/tmp/b.pdf", md5Hash: "b", dateAdded: added)
+        let date = added.formatted(date: .long, time: .omitted)
+
+        XCTAssertEqual(DuplicateFinderWording.bookLabel(filed), "Atlas, by Dorothy Vance, EPUB, in Travel, added \(date)")
+        XCTAssertEqual(DuplicateFinderWording.bookLabel(atRoot), "Atlas, by Dorothy Vance, PDF, in Library Root, added \(date)")
+        XCTAssertEqual(DuplicateFinderWording.libraryRoot, "Library Root")
+    }
+
     private func makeBook(
         title: String,
         author: String,

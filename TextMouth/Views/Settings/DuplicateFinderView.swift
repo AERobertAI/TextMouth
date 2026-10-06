@@ -188,6 +188,27 @@ struct DuplicateRemovalButton: View {
     }
 }
 
+/// The words of Find Duplicate Books that VoiceOver hears for what the
+/// sheet shows as one row or line.
+enum DuplicateFinderWording {
+    /// The folder named for a book at the library's top level.
+    static let libraryRoot = "Library Root"
+
+    /// A duplicate's row, everything it shows in one label: "Atlas, by
+    /// Dorothy Vance, EPUB, in Travel, added October 6, 2026". The date the
+    /// book was added tells two copies apart, so it is spoken, not only
+    /// shown.
+    static func bookLabel(_ book: Book) -> String {
+        [
+            book.title,
+            "by \(book.author)",
+            book.format.displayName,
+            "in \(book.folderPath.isEmpty ? libraryRoot : book.folderPath)",
+            "added \(book.dateAdded.formatted(date: .long, time: .omitted))",
+        ].joined(separator: ", ")
+    }
+}
+
 /// Sheet for finding and removing duplicate books across the library
 struct DuplicateFinderView: View {
     @ObservedObject var libraryViewModel: LibraryViewModel
@@ -328,7 +349,7 @@ struct DuplicateFinderView: View {
                                 .padding(.vertical, 6)
                                 .background(selectedForRemoval.contains(book.id)
                                     ? Color.red.opacity(0.08) : Color.clear)
-                                .accessibilityLabel(bookAccessibilityLabel(book))
+                                .accessibilityLabel(DuplicateFinderWording.bookLabel(book))
                                 Divider().padding(.leading)
                             }
                         }
@@ -464,16 +485,6 @@ struct DuplicateFinderView: View {
         )
     }
 
-    private func bookAccessibilityLabel(_ book: Book) -> String {
-        var parts = [book.title, "by \(book.author)", book.format.displayName]
-        if !book.folderPath.isEmpty {
-            parts.append("in \(book.folderPath)")
-        } else {
-            parts.append("in Library Root")
-        }
-        return parts.joined(separator: ", ")
-    }
-
     /// Load ISBN values from bookInfo.json for all EPUB books
     private func loadISBNs(from books: [Book]) async -> [UUID: String] {
         await withTaskGroup(of: (UUID, String)?.self) { group in
@@ -521,7 +532,7 @@ struct DuplicateBookLabel: View {
                         .background(Color.secondary.opacity(0.15))
                         .cornerRadius(3)
 
-                    Text(book.folderPath.isEmpty ? "Library Root" : book.folderPath)
+                    Text(book.folderPath.isEmpty ? DuplicateFinderWording.libraryRoot : book.folderPath)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
