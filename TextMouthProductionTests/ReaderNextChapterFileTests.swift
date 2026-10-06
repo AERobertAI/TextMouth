@@ -8,9 +8,10 @@ import XCTest
 /// chapter's file to its audio service, which queues it behind the one
 /// playing, so the player plays on into it with no quarter-second gap. The
 /// reader names none where playback may have to stop or wait at the
-/// chapter's end: at the last chapter, while this book's sleep timer is set
-/// for the end of the chapter, and before a file only in the cloud (see
-/// `ReaderCloudDownloadTests`). However a chapter ends, the reader moves on
+/// chapter's end: at the last chapter, while this reader's sleep timer is
+/// set for the end of the heading, which an audiobook's chapter ends, and
+/// before a file only in the cloud (see `ReaderCloudDownloadTests`).
+/// However a chapter ends, the reader moves on
 /// from it once, and its cursor never runs back within a chapter.
 ///
 /// Every reader here plays real, silent tracks through the real audio
@@ -89,14 +90,15 @@ final class ReaderNextChapterFileTests: XCTestCase {
         XCTAssertEqual(service.loadedURL.map { resolvedPath($0.path) }, files[1], "The player moved past the last file")
     }
 
-    /// While this book's sleep timer is set for the end of the chapter,
-    /// which expires as every audiobook chapter ends, no file is named to
-    /// follow the chapter playing, so playback stops at its end. Setting such
-    /// a timer while a chapter plays withdraws the file named; cancelling it,
-    /// or setting a timer that counts minutes instead, names it again, and so
-    /// does a timer set for the end of the book, which lets every chapter but
-    /// the last roll on into the next.
-    func testAnEndOfChapterSleepTimerNamesNoFileToFollow() throws {
+    /// While this reader's sleep timer is set for the end of the heading,
+    /// which ends where every audiobook chapter does, since each chapter
+    /// begins with its heading, no file is named to follow the chapter
+    /// playing, so playback stops at its end. Setting such a timer while a
+    /// chapter plays withdraws the file named; cancelling it, or setting a
+    /// timer that counts minutes instead, names it again, and so does a
+    /// timer set for the end of the book, which lets every chapter but the
+    /// last roll on into the next.
+    func testAnEndOfHeadingSleepTimerNamesNoFileToFollow() throws {
         preserveSharedSleepTimer()
         let world = try makeIntegrationWorld("Next Chapter File Timer")
         let book = try world.makeSilentAudioBook(title: "Harbour Soundings", trackDurations: [5, 5])
@@ -104,23 +106,24 @@ final class ReaderNextChapterFileTests: XCTestCase {
         waitForReaderToLoad(reader)
         let service = reader.audioPlaybackService
         let files = reader.audioChapterFiles.map(resolvedPath)
+        let firstFile = Array(files.prefix(1))
         defer { reader.stop() }
 
-        reader.startSleepTimer(duration: .endOfChapter)
+        reader.startSleepTimer(duration: .endOfHeading)
         reader.play()
         XCTAssertTrue(service.isPlaying, "The first chapter did not play")
-        XCTAssertEqual(service.queuedFilePaths, [files[0]], "A file was named to follow under an end-of-chapter timer")
+        XCTAssertEqual(service.queuedFilePaths, firstFile, "A file was named to follow under an end-of-heading timer")
 
         reader.cancelSleepTimer()
         XCTAssertEqual(service.queuedFilePaths, files, "Cancelling the timer did not name the next chapter's file")
 
-        reader.startSleepTimer(duration: .endOfChapter)
-        XCTAssertEqual(service.queuedFilePaths, [files[0]], "Setting the timer as the chapter played kept the file named")
+        reader.startSleepTimer(duration: .endOfHeading)
+        XCTAssertEqual(service.queuedFilePaths, firstFile, "Setting the timer as the chapter played kept the file named")
 
         reader.startSleepTimer(duration: .minutes(30))
         XCTAssertEqual(service.queuedFilePaths, files, "A timer counting minutes kept the next chapter's file from following")
 
-        reader.startSleepTimer(duration: .endOfChapter)
+        reader.startSleepTimer(duration: .endOfHeading)
         reader.startSleepTimer(duration: .endOfBook)
         XCTAssertEqual(
             service.queuedFilePaths,
