@@ -168,12 +168,15 @@ struct SleepTimerView: View {
 
     // MARK: - New Timer Section
 
-    /// Always visible. Lists preset durations + a custom-minutes field +
-    /// the heading-end option. Selecting any of these calls
+    /// Always visible. Lists preset durations and a custom-minutes field.
+    /// Selecting any of these calls
     /// `viewModel.startSleepTimer(duration:startPlaybackIfNeeded:)`
     /// which ALWAYS replaces any timer already running — the sheet's UI
     /// for "set a new timer" is the same whether or not one is currently
-    /// running.
+    /// running. The timers that stop at a place in the book are in the
+    /// Stop At section below. The End of current heading button that once
+    /// ended this section is gone: for most books it stopped where End of
+    /// chapter does, so VoiceOver met the same timer twice.
     private var newTimerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("New Timer")
@@ -232,11 +235,6 @@ struct SleepTimerView: View {
                 }
                 .accessibilityLabel("Set timer for \(customMinutes) minutes and start playing")
             }
-
-            Button("End of current heading") {
-                setNewTimer(.endOfHeading)
-            }
-            .accessibilityLabel("Stop at end of current heading and start playing")
         }
     }
 

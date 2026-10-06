@@ -1078,10 +1078,12 @@ final class SleepTimerSheetTests: XCTestCase {
 
     /// In the sheet, after the minute presets, End of chapter and End of
     /// book come with their labels and hints, the End of book hint for a
-    /// book that continues to the next. Pressing End of chapter through
-    /// accessibility sets that timer for this reader and announces it once;
-    /// the status line then reads where the timer stops; pressing End of
-    /// book replaces it.
+    /// book that continues to the next, and no control offers a heading
+    /// timer: the End of current heading button went on October 6, 2026,
+    /// since for most books it stopped where End of chapter does. Pressing
+    /// End of chapter through accessibility sets that timer for this reader
+    /// and announces it once; the status line then reads where the timer
+    /// stops; pressing End of book replaces it.
     func testStopAtButtonsAreLabelledAndSetTheirTimers() throws {
         let timer = SleepTimerService.shared
         preserveSharedSleepTimer()
@@ -1111,6 +1113,10 @@ final class SleepTimerSheetTests: XCTestCase {
             XCTAssertEqual(buttons.endOfChapter.hint, SleepTimerView.endOfChapterHint)
             XCTAssertEqual(buttons.endOfBook.hint, SleepTimerView.endOfBookHint(for: .continueNext))
             let labels = accessibleControls(in: hostingView).map(\.label)
+            XCTAssertFalse(
+                labels.contains { $0.localizedCaseInsensitiveContains("heading") },
+                "The sheet offers a heading timer again: \(labels)"
+            )
             let lastPreset = try XCTUnwrap(labels.lastIndex(of: "Set timer for 60 minutes and start playing"))
             let chapterIndex = try XCTUnwrap(labels.firstIndex(of: SleepTimerView.endOfChapterLabel))
             let bookIndex = try XCTUnwrap(labels.firstIndex(of: SleepTimerView.endOfBookLabel))
