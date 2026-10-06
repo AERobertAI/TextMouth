@@ -1064,7 +1064,7 @@ final class SleepTimerSheetTests: XCTestCase {
         XCTAssertEqual(SleepTimerView.announcement(forSetting: .endOfBook), "Sleep timer: stops at the end of the book.")
         XCTAssertEqual(
             SleepTimerView.announcement(forSetting: .endOfHeading),
-            "Sleep timer: set for the end of the heading."
+            "Sleep timer: stops at the end of this heading."
         )
         XCTAssertEqual(SleepTimerView.announcement(forSetting: .minutes(15)), "Timer set for 15 minutes.")
         XCTAssertEqual(SleepTimerView.resetAnnouncement(status: "15:00 remaining"), "Timer reset: 15:00 remaining.")
