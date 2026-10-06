@@ -306,23 +306,37 @@ struct HeadingSweep {
 }
 
 /// What a sleep timer waits for before it pauses playback: a number of
-/// minutes of listening, or a place the book reaches.
+/// minutes of listening, or a place the book reaches: the end of the
+/// heading playing, or the end of the book.
+///
+/// The places are one concept, headings, for every kind of document, as
+/// the user decided on October 6, 2026 ("I really want those two things to
+/// be under one concept called Headings to not just apply to normal books
+/// but to any document"). Every parser makes headings: an EPUB's h1 to h6
+/// and the labels its navigation document gives chapters without one, a
+/// Markdown or HTML file's headings, the headings a plain-text file's
+/// structure gives it, a DAISY book's NCC, and in an audiobook one heading
+/// at the start of each chapter, track, or marker segment
+/// (`AudioBookParser`). So "the end of the heading" is the same place in a
+/// novel, a Markdown file, and an audiobook: where the next heading of any
+/// level begins, as Next Heading finds it, or where the book ends.
 enum SleepTimerDuration: Hashable {
     case minutes(Int)
     /// The end of the heading current where the timer was set: where the
-    /// next heading begins, or the end of the book after the last heading
-    /// (finding #787). The reader that set it finds that place, and stops
-    /// playback when its cursor gets there. No control sets it since the
-    /// sheet's End of current heading button went (October 6, 2026): for
-    /// most books it stopped where End of chapter does, so VoiceOver met
-    /// the same timer twice; a saved preference naming it restores End of
-    /// chapter (`SleepTimerService`). The reader's heading-end machinery
-    /// stays for a timer set this way in code, and for its tests.
+    /// next heading begins, of any level, or the end of the book after the
+    /// last heading (finding #787). The reader that set it finds that place,
+    /// and stops playback when its cursor gets there: within a chapter,
+    /// where the next heading begins; at a chapter's end, when the next
+    /// chapter opens with the next heading, as every audiobook chapter does;
+    /// and at the book's end, which ends the last heading. It took the place
+    /// of End of chapter (October 6, 2026), which a saved preference may
+    /// still name (`SleepTimerService`). Where the two differed, the
+    /// heading's meaning holds: a chapter with more than one heading stops
+    /// at the next heading rather than at the chapter's end, and a next
+    /// chapter that has text before its first heading, or no heading at all,
+    /// goes on under the heading playing, so playback goes on into it
+    /// (`ReaderViewModel.chapterEnding(beforeChapter:)`).
     case endOfHeading
-    /// The end of the chapter playing, before the next chapter starts. It
-    /// took the place of the timer once called End of document, which a
-    /// saved preference may still name (`SleepTimerService`).
-    case endOfChapter
     /// The end of the book: the end of its last chapter, before the book
     /// starts again or the next book starts, whatever its end-of-book
     /// behavior.
@@ -332,31 +346,28 @@ enum SleepTimerDuration: Hashable {
         switch self {
         case .minutes(let m): return "\(m) minutes"
         case .endOfHeading: return "End of heading"
-        case .endOfChapter: return "End of chapter"
         case .endOfBook: return "End of book"
         }
     }
 
     /// What a timer set for a place in the book does, as VoiceOver reads it
-    /// after "Sleep timer:" ("stops at the end of this chapter"); nil for a
+    /// after "Sleep timer:" ("stops at the end of this heading"); nil for a
     /// timer counting minutes, which is read as the time it has left.
     var spokenStop: String? {
         switch self {
         case .minutes: return nil
-        case .endOfHeading: return "set for the end of the heading"
-        case .endOfChapter: return "stops at the end of this chapter"
+        case .endOfHeading: return "stops at the end of this heading"
         case .endOfBook: return "stops at the end of the book"
         }
     }
 
     /// Whether a timer set for this stops playback where a chapter ends,
-    /// before anything after that chapter plays (TODO P01). End of chapter
-    /// stops at the end of whichever chapter is playing, the book's last
-    /// included; End of heading where the heading it waits for ends there
-    /// too, as when the next chapter begins with the next heading, and where
-    /// the book ends, which ends every heading (finding #787); End of book
-    /// only at the end of the book's last chapter; a timer counting minutes
-    /// stops at no chapter's end.
+    /// before anything after that chapter plays (TODO P01). End of heading
+    /// stops there when the heading it waits for ends there too, as when the
+    /// next chapter begins with the next heading, which every audiobook
+    /// chapter does, and where the book ends, which ends the last heading
+    /// (finding #787); End of book only at the end of the book's last
+    /// chapter; a timer counting minutes stops at no chapter's end.
     ///
     /// - Parameters:
     ///   - endingTheHeading: Whether the heading an End of heading timer
@@ -365,8 +376,6 @@ enum SleepTimerDuration: Hashable {
     ///     nothing after it to play, so that its end is the book's.
     func stopsPlaybackAtChapterEnd(endingTheHeading: Bool, endingTheBook: Bool) -> Bool {
         switch self {
-        case .endOfChapter:
-            return true
         case .endOfHeading:
             return endingTheHeading || endingTheBook
         case .endOfBook:
@@ -377,11 +386,11 @@ enum SleepTimerDuration: Hashable {
     }
 
     /// What the sleep timer sheet offers: its minute presets, then the
-    /// timers of its Stop At section.
+    /// timers of its Stop At section, End of heading before End of book.
     static let presets: [SleepTimerDuration] = [
         .minutes(10), .minutes(15), .minutes(30),
         .minutes(45), .minutes(60),
-        .endOfChapter, .endOfBook
+        .endOfHeading, .endOfBook
     ]
 }
 

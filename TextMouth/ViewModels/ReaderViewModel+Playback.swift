@@ -548,9 +548,10 @@ extension ReaderViewModel {
 
     /// The speech of `play` finished. Save the position, and move on to the
     /// next chapter with anything to say, or end the book when none
-    /// remains; this reader's sleep timer set for the end of the chapter, or
-    /// of a heading that ends here (finding #787), stops playback here
-    /// instead (`stopForSleepTimerAtChapterEnd`).
+    /// remains; this reader's sleep timer set for the end of the heading
+    /// stops playback here instead when the heading ends here, where the
+    /// next chapter begins the next heading (finding #787,
+    /// `stopForSleepTimerAtChapterEnd`).
     ///
     /// Chapters that are empty, entirely inside skipped sections, or deleted
     /// by substitutions are passed over, exactly as starting playback passes
@@ -571,8 +572,8 @@ extension ReaderViewModel {
             handleEndOfBook()
             return
         }
-        if let timer = expireSleepTimerAtChapterEnd(beforeChapter: speech.chapterIndex) {
-            stopForSleepTimerAtChapterEnd(of: play, nextChapterIndex: speech.chapterIndex, endedTimer: timer)
+        if expireSleepTimerAtChapterEnd(beforeChapter: speech.chapterIndex) {
+            stopForSleepTimerAtChapterEnd(of: play, nextChapterIndex: speech.chapterIndex)
             return
         }
         DiagnosticLog.trace(.playback, "advancing to chapter \(speech.chapterIndex) (from \(play.chapterIndex))")
@@ -583,9 +584,9 @@ extension ReaderViewModel {
 
     /// The audio of `play` played to its end. Save the position, and play
     /// the next chapter, or end the book after the last; this reader's sleep
-    /// timer set for the end of the chapter, or of a heading that ends here
-    /// (finding #787), stops playback here instead
-    /// (`stopForSleepTimerAtChapterEnd`).
+    /// timer set for the end of the heading stops playback here instead,
+    /// since an audiobook's chapters are its headings (finding #787,
+    /// `stopForSleepTimerAtChapterEnd`).
     private func audioDidFinish(_ play: ChapterPlay) {
         guard endsPlayUnderWay(play, reportedBy: "audio") else { return }
         savePosition()
@@ -595,8 +596,8 @@ extension ReaderViewModel {
             handleEndOfBook()
             return
         }
-        if let timer = expireSleepTimerAtChapterEnd(beforeChapter: nextIndex) {
-            stopForSleepTimerAtChapterEnd(of: play, nextChapterIndex: nextIndex, endedTimer: timer)
+        if expireSleepTimerAtChapterEnd(beforeChapter: nextIndex) {
+            stopForSleepTimerAtChapterEnd(of: play, nextChapterIndex: nextIndex)
             return
         }
         currentChapterIndex = nextIndex
@@ -604,35 +605,30 @@ extension ReaderViewModel {
         playAudioChapter()
     }
 
-    /// What the listener hears when this reader's sleep timer runs out and
-    /// pauses playback: one counting minutes, or one set for a heading's end.
+    /// What the listener hears when this reader's sleep timer runs out on
+    /// its own clock and pauses playback: one counting minutes.
     nonisolated static let sleepTimerExpiredAnnouncement = "Sleep timer expired. Playback paused."
 
     /// What the listener hears when this reader's sleep timer stops playback
-    /// where a chapter ends, before the next chapter starts (TODO P01).
-    nonisolated static let sleepTimerStoppedAtChapterEndAnnouncement =
-        "Sleep timer expired at the end of the chapter. Playback paused."
-
-    /// What the listener hears when this reader's sleep timer stops playback
-    /// where the heading it was set in ends, before the next heading is heard
-    /// (TODO P01, finding #787).
+    /// where the heading it was set in ends, before the next heading is
+    /// heard, wherever that end comes: within a chapter, where the next
+    /// heading begins, or at a chapter's end that the next heading begins,
+    /// as an audiobook's chapters do (TODO P01, finding #787). One
+    /// announcement for one concept: the heading's end is the same place in
+    /// any document. At the book's end, which ends the last heading, the
+    /// listener hears instead that the book finished and why nothing follows
+    /// (`handleEndOfBook()`).
     nonisolated static let sleepTimerStoppedAtHeadingEndAnnouncement =
         "Sleep timer expired at the end of the heading. Playback paused."
 
-    /// What the listener hears when this reader's sleep timer, set for
-    /// `timer`, stops playback where a chapter ends: at the end of the
-    /// heading, for a timer waiting for one that ends there too (finding
-    /// #787), and otherwise at the end of the chapter.
-    nonisolated static func sleepTimerStopAnnouncement(atChapterEndFor timer: SleepTimerDuration) -> String {
-        timer == .endOfHeading ? sleepTimerStoppedAtHeadingEndAnnouncement : sleepTimerStoppedAtChapterEndAnnouncement
-    }
-
     /// Stop where the chapter just played ended, because this reader's sleep
-    /// timer, which has just ended, was set to stop playback there (TODO
-    /// P01): at the end of the chapter, or of a heading that ends there too
-    /// (finding #787). Nothing more plays: the cursor waits at the beginning
-    /// of the next chapter, saved, so that Play starts that chapter, and the
-    /// listener hears once that the timer stopped playback, and where.
+    /// timer, which has just ended, was set for the end of the heading, and
+    /// the heading ends there: the next chapter opens with the next heading,
+    /// as every audiobook chapter does (TODO P01, finding #787). Nothing
+    /// more plays: the cursor waits at the beginning of the next chapter,
+    /// saved, so that Play starts that chapter, and the listener hears once
+    /// that the timer stopped playback at the heading's end, in the words
+    /// heard for a heading's end within a chapter.
     ///
     /// The chapter has already played to its end, so there is nothing left
     /// to pause or fade (`stopPlaybackForSleepTimer(waitingAt:characterOffset:)`).
@@ -643,24 +639,20 @@ extension ReaderViewModel {
     ///   - play: The chapter play that ended.
     ///   - nextChapterIndex: The chapter Play will start: the next one with
     ///     anything to play.
-    ///   - endedTimer: What the timer that stopped playback was set for.
-    private func stopForSleepTimerAtChapterEnd(
-        of play: ChapterPlay,
-        nextChapterIndex: Int,
-        endedTimer: SleepTimerDuration
-    ) {
+    private func stopForSleepTimerAtChapterEnd(of play: ChapterPlay, nextChapterIndex: Int) {
         DiagnosticLog.trace(
             .playback,
-            "sleep timer: stopped at the end of chapter \(play.chapterIndex); chapter \(nextChapterIndex) waits"
+            "sleep timer: the heading ended with chapter \(play.chapterIndex); chapter \(nextChapterIndex) waits"
         )
         stopPlaybackForSleepTimer(waitingAt: nextChapterIndex, characterOffset: 0)
-        announceToVoiceOver(Self.sleepTimerStopAnnouncement(atChapterEndFor: endedTimer))
+        announceToVoiceOver(Self.sleepTimerStoppedAtHeadingEndAnnouncement)
     }
 
     /// Stops playback where this reader's sleep timer, which has just ended,
-    /// stops it (TODO P01): where a chapter ends, or where a heading does
-    /// (finding #787). Nothing more plays: the cursor waits at
-    /// `chapterIndex`, `characterOffset`, saved, so that Play starts there.
+    /// stops it (TODO P01): where the heading it waits for ends, within a
+    /// chapter or with one (finding #787). Nothing more plays: the cursor
+    /// waits at `chapterIndex`, `characterOffset`, saved, so that Play
+    /// starts there.
     ///
     /// A text book stops waiting for its chapter's speech, so that chapter
     /// does not start once the speech is ready, stops its speech, and lets
@@ -700,9 +692,9 @@ extension ReaderViewModel {
 
     /// Whether this reader's sleep timer stops playback where the cursor's
     /// chapter ends, before chapter `nextChapterIndex` starts (TODO P01): a
-    /// timer set for the end of the chapter, for the end of a heading that
-    /// ends there too (finding #787), or, where the book ends, for the end
-    /// of the book.
+    /// timer set for the end of the heading when the heading ends there too
+    /// (finding #787), or, where the book ends, which ends every heading,
+    /// one set for the end of the heading or of the book.
     ///
     /// - Parameter nextChapterIndex: The chapter that plays next; nil, or an
     ///   index past the last chapter, where the book ends.
@@ -722,17 +714,14 @@ extension ReaderViewModel {
     ///
     /// - Parameter nextChapterIndex: The chapter that would play next; nil,
     ///   or an index past the last chapter, where the book ends.
-    /// - Returns: What the timer that ended was set for; nil when no timer
-    ///   ended, so playback goes on.
-    private func expireSleepTimerAtChapterEnd(beforeChapter nextChapterIndex: Int?) -> SleepTimerDuration? {
+    /// - Returns: Whether the timer ended, so that playback stops here.
+    private func expireSleepTimerAtChapterEnd(beforeChapter nextChapterIndex: Int?) -> Bool {
         let ending = chapterEnding(beforeChapter: nextChapterIndex)
-        guard let timer = sleepTimerService.duration,
-              sleepTimerService.expireAtChapterEnd(
-                  endingTheHeading: ending.heading,
-                  endingTheBook: ending.book,
-                  by: readerID
-              ) else { return nil }
-        return timer
+        return sleepTimerService.expireAtChapterEnd(
+            endingTheHeading: ending.heading,
+            endingTheBook: ending.book,
+            by: readerID
+        )
     }
 
     /// What ends, for this reader's sleep timer, where the cursor's chapter
@@ -741,6 +730,15 @@ extension ReaderViewModel {
     /// the heading an End of heading timer waits for, when the next heading
     /// has begun by the time that chapter says anything
     /// (`headingHasBegun(_:atStartOfChapter:text:)`, finding #787).
+    ///
+    /// This is where End of chapter and End of heading differed, and where
+    /// the one timer (October 6, 2026) keeps the heading's meaning: a next
+    /// chapter that opens with its heading, as every audiobook chapter and
+    /// most EPUB chapters do, ends the heading with the chapter, so playback
+    /// stops here; a next chapter that has text before its first heading, or
+    /// no heading at all, goes on under the heading playing, so playback
+    /// goes on into it and stops where the next heading begins, or where
+    /// the book ends.
     private func chapterEnding(beforeChapter nextChapterIndex: Int?) -> (heading: Bool, book: Bool) {
         guard let content, let nextChapterIndex, content.chapters.indices.contains(nextChapterIndex) else {
             return (heading: true, book: true)
@@ -1825,11 +1823,11 @@ extension ReaderViewModel {
     /// playing, and the next chapter takes it over as it begins.
     ///
     /// Called as each chapter's audio starts, and as this reader's sleep timer
-    /// is set or cancelled, since a timer set for the end of the chapter, or
-    /// of a heading that ends with it, stops playback at the chapter's end.
-    /// Only audio playing or paused in the cursor's chapter's own file is
-    /// given a file to follow: audio that has stopped, or that still plays a
-    /// file the library has moved since, is given none.
+    /// is set or cancelled, since a timer set for the end of the heading,
+    /// which an audiobook's chapter ends, stops playback at the chapter's
+    /// end. Only audio playing or paused in the cursor's chapter's own file
+    /// is given a file to follow: audio that has stopped, or that still
+    /// plays a file the library has moved since, is given none.
     private func nameFileAfterCurrentChapter() {
         guard isAudioBook, audioPlaybackService.isPlaying,
               case .file(let chapterFile) = chapterAudioSource(forChapterAt: currentChapterIndex),
@@ -1845,8 +1843,8 @@ extension ReaderViewModel {
     /// - at the last chapter, where the book's end-of-book behavior decides
     ///   what comes next;
     /// - while this reader's sleep timer stops playback at the end of the
-    ///   chapter playing, as one set for the end of the chapter does, or for
-    ///   the end of a heading that ends there too
+    ///   chapter playing, as one set for the end of the heading does in an
+    ///   audiobook, whose every chapter begins with its heading
     ///   (`sleepTimerStopsPlaybackAtChapterEnd(beforeChapter:)`);
     /// - when the next chapter's file is only in the cloud, where the player
     ///   would wait on the network, so the chapter downloads first instead
@@ -1978,11 +1976,11 @@ extension ReaderViewModel {
     /// nothing left to say. Behavior depends on per-book override or global
     /// setting: stop, loop, or continue to next book.
     ///
-    /// This reader's sleep timer set for the end of the chapter, of a
-    /// heading, or of the book, stops playback here, where the book's last
-    /// chapter ends, which ends every heading too (TODO P01, finding #787):
-    /// the timer ends, and the book neither starts again nor continues to
-    /// the next book, whatever its end-of-book behavior.
+    /// This reader's sleep timer set for the end of the heading or of the
+    /// book stops playback here, where the book's last chapter ends, which
+    /// ends the last heading too (TODO P01, finding #787): the timer ends,
+    /// and the book neither starts again nor continues to the next book,
+    /// whatever its end-of-book behavior.
     /// The listener hears once that the book finished and why nothing
     /// follows.
     func handleEndOfBook() {
@@ -1997,7 +1995,7 @@ extension ReaderViewModel {
         // Whether this reader's sleep timer keeps the next book from starting,
         // decided before a timer that stops playback here ends just below.
         let sleepTimerEndsListening = sleepTimerEndsListeningHere
-        let sleepTimerStoppedHere = expireSleepTimerAtChapterEnd(beforeChapter: nil) != nil
+        let sleepTimerStoppedHere = expireSleepTimerAtChapterEnd(beforeChapter: nil)
         // Audio faded out toward this end, where the timer stopped it, plays
         // at full volume again next time.
         fadeOutBeforeSleepTimerStop()
@@ -2157,11 +2155,11 @@ extension ReaderViewModel {
     /// The timer pauses only the reader that set it, so it could never pause
     /// the next book, which would play on past it. Continuing is therefore
     /// ruled out while the timer is in effect: counting down, fading out,
-    /// or waiting for the end of a heading or of a chapter. A timer set for
-    /// the end of the chapter is still in effect as the book's last chapter
-    /// ends, since it ends there itself (`handleEndOfBook()` asks first). A
-    /// timer that has ended, at an earlier chapter's end or by running out,
-    /// rules nothing out.
+    /// or waiting for the end of a heading or of the book. A timer set for
+    /// either place is still in effect as the book's last chapter ends,
+    /// since it ends there itself (`handleEndOfBook()` asks first). A timer
+    /// that has ended, at an earlier heading's end or by running out, rules
+    /// nothing out.
     var sleepTimerEndsListeningHere: Bool {
         Self.sleepTimerEndsListening(
             timerBelongsToThisReader: sleepTimerService.ownerID == readerID,
@@ -2195,7 +2193,8 @@ extension ReaderViewModel {
     /// When `startPlaybackIfNeeded` is true, paused/stopped playback is
     /// resumed or started so the armed timer has audio to count against.
     /// A timer for the end of the heading waits for the heading the cursor
-    /// is in now to end, where the next heading begins (finding #787).
+    /// is in now to end, where the next heading begins, or the book ends
+    /// after the last heading, for which nothing is kept (finding #787).
     func startSleepTimer(duration: SleepTimerDuration, startPlaybackIfNeeded: Bool = false) {
         sleepTimerNextHeading = duration == .endOfHeading ? headingAfterCursor : nil
         // Capture one value for both timer scheduling and direct-speech fade
@@ -2262,11 +2261,12 @@ extension ReaderViewModel {
             },
             fadeOutDuration: fadeOutDuration
         )
-        // A timer for the end of the chapter, or of a heading that ends with
-        // it, stops playback at this chapter's end, where no file may follow
-        // on; any other timer lets the next chapter's file follow (TODO
-        // PERF09). Audio already near that end fades from now on, and a fade
-        // toward an end the new timer does not stop at is undone (TODO P01).
+        // A timer for the end of the heading stops playback at this chapter's
+        // end when the heading ends with it, as an audiobook's does, where no
+        // file may follow on; any other timer lets the next chapter's file
+        // follow (TODO PERF09). Audio already near that end fades from now
+        // on, and a fade toward an end the new timer does not stop at is
+        // undone (TODO P01).
         nameFileAfterCurrentChapter()
         fadeOutBeforeSleepTimerStop()
         if startPlaybackIfNeeded {
@@ -2403,8 +2403,9 @@ extension ReaderViewModel {
             // Halt any minutes-based countdown so it doesn't keep
             // ticking during the pause and expire while the user is
             // taking a break. Mid-fade pauses fall through the branch
-            // above and do not reach here. Heading/chapter-end modes
-            // are no-ops — the service guards on duration kind.
+            // above and do not reach here. A timer waiting for the end
+            // of the heading or of the book is left waiting: the service
+            // guards on the duration's kind.
             sleepTimerService.pauseCountdown(by: readerID)
         }
         readingStatsService.endSession(bookID: book.id)

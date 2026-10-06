@@ -7,10 +7,12 @@ import SwiftUI
 ///    underlying `SleepTimerService.start(...)` call replaces it — the
 ///    user's mental model is "set the timer to X minutes", not
 ///    "start a fresh timer if and only if none is running".
-/// 2. **Stop At** — always shown. End of chapter and End of book set a
+/// 2. **Stop At** — always shown. End of heading and End of book set a
 ///    timer that stops playback where the book reaches that place, for
 ///    text and audio alike, replacing any timer as a preset does (TODO
-///    P01).
+///    P01). The heading is one concept for any document (October 6,
+///    2026): where the next heading of any level begins, or the book
+///    ends; an audiobook's chapters are its headings.
 /// 3. **Current Timer** — visible only while a timer is running, above the
 ///    others. Shows the remaining time, or the place the timer stops at,
 ///    and exposes Reset (restart with the same duration) and Cancel
@@ -174,9 +176,7 @@ struct SleepTimerView: View {
     /// which ALWAYS replaces any timer already running — the sheet's UI
     /// for "set a new timer" is the same whether or not one is currently
     /// running. The timers that stop at a place in the book are in the
-    /// Stop At section below. The End of current heading button that once
-    /// ended this section is gone: for most books it stopped where End of
-    /// chapter does, so VoiceOver met the same timer twice.
+    /// Stop At section below.
     private var newTimerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("New Timer")
@@ -242,11 +242,14 @@ struct SleepTimerView: View {
 
     /// Always visible. Timers that stop playback where the book reaches a
     /// place rather than after some minutes, for text and audio alike (TODO
-    /// P01): the end of the chapter playing, or the end of the book, even
-    /// where Continue to Next Book would start the next book. Like a
-    /// preset, each replaces any timer running and starts playback. The End
-    /// of book hint says what the timer adds to what this book does at its
-    /// end on its own.
+    /// P01): the end of the heading playing, where the next heading begins
+    /// or the book ends, which is one concept for any document, a text
+    /// book's headings of any level and an audiobook's chapters alike
+    /// (October 6, 2026); or the end of the book, even where Continue to
+    /// Next Book would start the next book. Like a preset, each replaces any
+    /// timer running and starts playback. The End of heading hint says where
+    /// a heading ends; the End of book hint says what the timer adds to what
+    /// this book does at its end on its own.
     private var stopAtSection: some View {
         let endOfBookHint = Self.endOfBookHint(for: viewModel.effectiveEndOfBookBehavior)
         return VStack(alignment: .leading, spacing: 8) {
@@ -255,12 +258,12 @@ struct SleepTimerView: View {
                 .fontWeight(.semibold)
                 .accessibilityAddTraits(.isHeader)
 
-            Button(Self.endOfChapterTitle) {
-                setNewTimer(.endOfChapter)
+            Button(Self.endOfHeadingTitle) {
+                setNewTimer(.endOfHeading)
             }
-            .accessibilityLabel(Self.endOfChapterLabel)
-            .accessibilityHint(Self.endOfChapterHint)
-            .help(Self.endOfChapterHint)
+            .accessibilityLabel(Self.endOfHeadingLabel)
+            .accessibilityHint(Self.endOfHeadingHint)
+            .help(Self.endOfHeadingHint)
 
             Button(Self.endOfBookTitle) {
                 setNewTimer(.endOfBook)
@@ -292,13 +295,14 @@ struct SleepTimerView: View {
 
     /// The heading of the section of timers that stop at a place.
     nonisolated static let stopAtHeading = "Stop At"
-    /// The End of chapter button's title.
-    nonisolated static let endOfChapterTitle = "End of chapter"
-    /// What VoiceOver reads for the End of chapter button.
-    nonisolated static let endOfChapterLabel = "Stop at the end of this chapter and start playing"
-    /// What the End of chapter button does, for VoiceOver and as its help.
-    nonisolated static let endOfChapterHint =
-        "Pauses playback when the chapter playing now ends, before the next chapter starts."
+    /// The End of heading button's title.
+    nonisolated static let endOfHeadingTitle = "End of heading"
+    /// What VoiceOver reads for the End of heading button.
+    nonisolated static let endOfHeadingLabel = "Stop at the end of this heading and start playing"
+    /// What the End of heading button does, for VoiceOver and as its help:
+    /// where a heading ends, for any document.
+    nonisolated static let endOfHeadingHint =
+        "Pauses playback where the heading playing now ends: where the next heading begins, or the book ends."
     /// The End of book button's title.
     nonisolated static let endOfBookTitle = "End of book"
     /// What VoiceOver reads for the End of book button.
@@ -321,7 +325,7 @@ struct SleepTimerView: View {
 
     /// What VoiceOver announces as a timer is set for `duration`: where a
     /// timer for a place stops playback ("Sleep timer: stops at the end of
-    /// this chapter."), or the minutes a timer counts.
+    /// this heading."), or the minutes a timer counts.
     nonisolated static func announcement(forSetting duration: SleepTimerDuration) -> String {
         guard let stop = duration.spokenStop else { return "Timer set for \(duration.displayName)." }
         return "Sleep timer: \(stop)."

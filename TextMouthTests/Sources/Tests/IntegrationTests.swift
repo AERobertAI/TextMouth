@@ -832,9 +832,6 @@ test("Sleep timer: formatted output matches duration state") {
     timer.start(duration: .endOfHeading, onExpire: {})
     try assertEqual(timer.formattedRemaining, "End of heading")
 
-    timer.start(duration: .endOfChapter, onExpire: {})
-    try assertEqual(timer.formattedRemaining, "End of chapter")
-
     timer.start(duration: .endOfBook, onExpire: {})
     try assertEqual(timer.formattedRemaining, "End of book")
 
@@ -850,7 +847,6 @@ test("Sleep timer: formatted output matches duration state") {
         guard isActive else { return "" }
         if isFadingOut { return "Fading out" }
         if case .endOfHeading = duration { return "End of heading" }
-        if case .endOfChapter = duration { return "End of chapter" }
         if case .endOfBook = duration { return "End of book" }
         let minutes = remainingSeconds / 60
         let seconds = remainingSeconds % 60
@@ -860,7 +856,6 @@ test("Sleep timer: formatted output matches duration state") {
     try assertEqual(formattedRemaining(isActive: false, isFadingOut: false, duration: nil, remainingSeconds: 0), "")
     try assertEqual(formattedRemaining(isActive: true, isFadingOut: true, duration: .minutes(5), remainingSeconds: 0), "Fading out")
     try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .endOfHeading, remainingSeconds: 0), "End of heading")
-    try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .endOfChapter, remainingSeconds: 0), "End of chapter")
     try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .endOfBook, remainingSeconds: 0), "End of book")
     try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .minutes(15), remainingSeconds: 905), "15:05")
     try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .minutes(1), remainingSeconds: 59), "0:59")

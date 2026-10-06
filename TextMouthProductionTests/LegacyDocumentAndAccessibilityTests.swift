@@ -112,11 +112,11 @@ final class LegacyDocumentContentModelTests: XCTestCase {
     func testSleepTimerDurationNamesAndPresetsComeFromProductionModel() {
         XCTAssertEqual(SleepTimerDuration.minutes(10).displayName, "10 minutes")
         XCTAssertEqual(SleepTimerDuration.endOfHeading.displayName, "End of heading")
-        XCTAssertEqual(SleepTimerDuration.endOfChapter.displayName, "End of chapter")
         XCTAssertEqual(SleepTimerDuration.endOfBook.displayName, "End of book")
-        // The sheet offers no End of heading timer since October 6, 2026.
+        // The sheet's minute presets, then its Stop At timers: End of heading,
+        // the one place-based timer for any document, then End of book.
         XCTAssertEqual(SleepTimerDuration.presets.count, 7)
-        XCTAssertFalse(SleepTimerDuration.presets.contains(.endOfHeading))
+        XCTAssertEqual(Array(SleepTimerDuration.presets.suffix(2)), [.endOfHeading, .endOfBook])
     }
 
     func testGlobalLocationRoundTripsAcrossChapters() {

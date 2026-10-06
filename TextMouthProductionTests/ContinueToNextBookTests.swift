@@ -377,13 +377,14 @@ final class ContinueToNextBookTests: XCTestCase {
     // MARK: - Sleep timer
 
     /// The finished book's own sleep timer ends listening while it is in
-    /// effect, whatever it waits for: a timer set for the end of the chapter
-    /// is still in effect as the last chapter ends, since it ends there
-    /// itself. A timer that has ended, or another book's, does not.
+    /// effect, whatever it waits for: a timer set for the end of the heading
+    /// or of the book is still in effect as the last chapter ends, since it
+    /// ends there itself. A timer that has ended, or another book's, does
+    /// not.
     func testOnlyTheFinishedBooksEffectiveSleepTimerEndsListening() {
         let cases: [(name: String, owned: Bool, active: Bool, ends: Bool)] = [
-            ("counting down, or waiting for a heading's or a chapter's end", true, true, true),
-            ("ended: run out, stopped at an earlier chapter's end, or cancelled", true, false, false),
+            ("counting down, or waiting for a heading's or the book's end", true, true, true),
+            ("ended: run out, stopped at an earlier heading's end, or cancelled", true, false, false),
             ("another reader's, in effect", false, true, false),
             ("another reader's, ended", false, false, false),
         ]
@@ -408,12 +409,12 @@ final class ContinueToNextBookTests: XCTestCase {
         }
     }
 
-    /// A timer set for the end of the chapter stops playback where the
-    /// book's last chapter ends, so the next book is not started, and the
-    /// timer ends there.
-    func testEndOfChapterTimerAtTheBooksEndKeepsTheNextBookFromStarting() throws {
+    /// A timer set for the end of the heading stops playback where the
+    /// book's last chapter ends, which ends the last heading, so the next
+    /// book is not started, and the timer ends there.
+    func testEndOfHeadingTimerAtTheBooksEndKeepsTheNextBookFromStarting() throws {
         try assertSleepTimerKeepsTheNextBookFromStarting { finishedReaderID in
-            startSharedSleepTimer(.endOfChapter, ownedBy: finishedReaderID)
+            startSharedSleepTimer(.endOfHeading, ownedBy: finishedReaderID)
         }
         XCTAssertFalse(SleepTimerService.shared.isActive, "The timer did not end with the book")
     }
