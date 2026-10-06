@@ -646,7 +646,9 @@ final class SleepTimerServiceTests: XCTestCase {
     }
 
     func testLastUsedDurationPersistsAcrossServiceInstances() {
-        for duration: SleepTimerDuration in [.endOfChapter, .endOfBook, .endOfHeading, .minutes(25)] {
+        // End of heading is not among these: it restores as End of chapter
+        // (`testSavedEndOfDocumentAndEndOfHeadingRestoreEndOfChapter`).
+        for duration: SleepTimerDuration in [.endOfChapter, .endOfBook, .minutes(25)] {
             start(duration)
 
             let restored = SleepTimerService(userDefaults: testDefaults)
@@ -656,23 +658,39 @@ final class SleepTimerServiceTests: XCTestCase {
     }
 
     /// A duration saved as "endOfDocument", before End of chapter took the
-    /// place of End of document, restores End of chapter, so Restart Sleep
-    /// Timer still arms the timer the listener last chose. The new name is
-    /// what is saved from now on.
-    func testSavedEndOfDocumentRestoresEndOfChapter() throws {
+    /// place of End of document, or as "endOfHeading", before the sheet's
+    /// End of current heading button went (October 6, 2026), restores End
+    /// of chapter, so Restart Sleep Timer arms the timer the listener last
+    /// chose, and never one the sheet no longer offers. End of chapter's
+    /// own name is what is saved from then on.
+    func testSavedEndOfDocumentAndEndOfHeadingRestoreEndOfChapter() throws {
         let key = "sleepTimer.lastUsedDuration"
-        testDefaults.set(Data(#"{"kind":"endOfDocument"}"#.utf8), forKey: key)
+        for legacyKind in ["endOfDocument", "endOfHeading"] {
+            testDefaults.set(Data(#"{"kind":"\#(legacyKind)"}"#.utf8), forKey: key)
+
+            let restored = SleepTimerService(userDefaults: testDefaults)
+            defer { restored._resetForTesting() }
+
+            XCTAssertEqual(restored.lastUsedDuration, .endOfChapter, "A saved \(legacyKind) did not restore End of chapter")
+            restored.start(duration: try XCTUnwrap(restored.lastUsedDuration), onExpire: {})
+            let saved = try XCTUnwrap(testDefaults.data(forKey: key))
+            XCTAssertEqual(
+                try JSONSerialization.jsonObject(with: saved) as? [String: String],
+                ["kind": "endOfChapter"],
+                "Restarting a saved \(legacyKind) did not save End of chapter"
+            )
+        }
+    }
+
+    /// An End of heading timer started in code (no control sets one since
+    /// October 6, 2026) saves its own name, which restores End of chapter.
+    func testEndOfHeadingStartedInCodeRestoresEndOfChapter() {
+        start(.endOfHeading)
 
         let restored = SleepTimerService(userDefaults: testDefaults)
         defer { restored._resetForTesting() }
 
         XCTAssertEqual(restored.lastUsedDuration, .endOfChapter)
-        restored.start(duration: try XCTUnwrap(restored.lastUsedDuration), onExpire: {})
-        let saved = try XCTUnwrap(testDefaults.data(forKey: key))
-        XCTAssertEqual(
-            try JSONSerialization.jsonObject(with: saved) as? [String: String],
-            ["kind": "endOfChapter"]
-        )
     }
 
     /// The restored duration is editable with `defaults write`. Minutes above

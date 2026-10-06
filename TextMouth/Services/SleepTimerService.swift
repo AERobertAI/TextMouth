@@ -208,15 +208,18 @@ final class SleepTimerService: ObservableObject {
         /// "endOfDocument", saved before End of chapter took the place of
         /// End of document, restores End of chapter: that timer always
         /// stopped where a chapter ended, and Restart Sleep Timer should
-        /// arm the timer the listener last chose.
+        /// arm the timer the listener last chose. So does "endOfHeading",
+        /// saved before the sheet's End of current heading button went
+        /// (October 6, 2026): for most books that timer stopped where End
+        /// of chapter does, and Restart Sleep Timer should arm no timer the
+        /// sheet no longer offers.
         func toModel() -> SleepTimerDuration? {
             switch kind {
             case "minutes":
                 let supported = SettingsPolicy.sleepTimerMinutes
                 guard let minutes, minutes >= supported.lowerBound else { return nil }
                 return .minutes(min(minutes, supported.upperBound))
-            case "endOfHeading": return .endOfHeading
-            case "endOfChapter", "endOfDocument": return .endOfChapter
+            case "endOfChapter", "endOfDocument", "endOfHeading": return .endOfChapter
             case "endOfBook": return .endOfBook
             default: return nil
             }
