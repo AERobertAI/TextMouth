@@ -75,6 +75,49 @@ final class LibraryFolderPickerTests: XCTestCase {
         }
     }
 
+    // MARK: - Cancel New Folder
+
+    /// The button that closes the new folder's fields says which Cancel it
+    /// is, and its hint says the fields close and the folder chosen stays.
+    func testCancelNewFolderIsToldApartFromTheSheetsCancel() {
+        XCTAssertEqual(LibraryFolderPicker.cancelNewFolderTitle, "Cancel New Folder")
+        XCTAssertEqual(
+            LibraryFolderPicker.cancelNewFolderHint,
+            "Closes the new folder's fields and keeps the folder chosen."
+        )
+    }
+
+    /// In the Move sheet with the new folder's fields shown, VoiceOver
+    /// meets one Cancel, the sheet's, and one Cancel New Folder with its
+    /// hint, beside Create and Move.
+    func testTheFieldsCancelIsNamedApartFromTheSheetsCancel() throws {
+        let sheet = MoveFolderSheet(
+            books: [makeBook()],
+            library: makeLibrary(withFolders: ["Reports"]),
+            lastMovedFolderPath: "",
+            onMove: { _ in .success(nil) },
+            onCreateFolder: { _, _ in .success(nil) },
+            onCancel: {},
+            makingFolder: true
+        )
+
+        try skipUnlessHostedWindowsExposeAccessibility()
+        try withHostedView(sheet, until: { !self.nameFields(in: $0).isEmpty }) { hostingView in
+            let buttons = accessibleControls(in: hostingView).filter { $0.role == .button }
+            guard !buttons.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no buttons to accessibility in this run")
+            }
+            let labels = buttons.map(\.label)
+            XCTAssertEqual(labels.filter { $0 == "Cancel" }.count, 1, "Cancel is not the sheet's alone: \(labels)")
+            let fieldsCancel = try XCTUnwrap(
+                buttons.first { $0.label == LibraryFolderPicker.cancelNewFolderTitle },
+                "No Cancel New Folder: \(labels)"
+            )
+            XCTAssertEqual(fieldsCancel.hint, LibraryFolderPicker.cancelNewFolderHint)
+            XCTAssertTrue(labels.contains("Create") && labels.contains("Move"), "\(labels)")
+        }
+    }
+
     // MARK: - Keys and Fields
 
     /// Presses Return in `hostingView`'s window as the app receives a key:

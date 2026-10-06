@@ -304,6 +304,14 @@ struct LibraryFolderPicker: View {
     /// The parent chosen for the new folder.
     @State private var newFolderParent = ""
 
+    /// The title of the button that closes the new folder's fields: not
+    /// "Cancel", which the sheet's own button is, so VoiceOver tells the
+    /// two apart.
+    nonisolated static let cancelNewFolderTitle = "Cancel New Folder"
+    /// What that button does, for VoiceOver: the fields close, and the
+    /// folder chosen in the pop-up stays chosen.
+    nonisolated static let cancelNewFolderHint = "Closes the new folder's fields and keeps the folder chosen."
+
     /// The picker with its pop-up's `options`, the `newFolderParents` a new
     /// folder may go in, and the `selection` it keeps; `isDisabled` and
     /// `isMakingFolder` are for the owners that need them.
@@ -376,10 +384,14 @@ struct LibraryFolderPicker: View {
                 .accessibilityLabel("Parent folder for new folder")
 
                 HStack {
-                    Button("Cancel") {
+                    // Named apart from the sheet's own Cancel, which closes
+                    // the whole sheet, so VoiceOver never meets two Cancels
+                    // with different jobs.
+                    Button(Self.cancelNewFolderTitle) {
                         newFolderName = ""
                         showNewFolder = false
                     }
+                    .accessibilityHint(Self.cancelNewFolderHint)
                     Spacer()
                     // Return presses Create while the fields are shown; the
                     // owner's Return-key button stands down meanwhile
