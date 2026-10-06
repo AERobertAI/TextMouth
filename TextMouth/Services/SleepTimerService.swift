@@ -373,8 +373,8 @@ final class SleepTimerService: ObservableObject {
     /// Called from the playback layer when the user pauses, so the
     /// timer doesn't keep ticking in the background and expire while
     /// the user is away on a break.
-    /// - No-op for heading-end / chapter-end / book-end modes (no
-    ///   wall-clock).
+    /// - No-op for a timer waiting for the end of the heading or of the
+    ///   book, which counts no wall-clock time.
     /// - No-op when a fade is already in progress.
     /// - No-op when called by a non-owner — another reader pausing, even
     ///   one of the same book, must not affect this reader's timer.
@@ -466,8 +466,8 @@ final class SleepTimerService: ObservableObject {
 
     /// Whether the timer `callerID` owns is in effect and stops playback
     /// where the chapter playing now ends (TODO P01): a timer set for the end
-    /// of the chapter, at any chapter's end; for the end of a heading, where
-    /// that heading ends too, or the book does (finding #787); or for the end
+    /// of the heading, where that heading ends too, as an audiobook's does
+    /// with every chapter, or the book does (finding #787); or for the end
     /// of the book, at the end of its last chapter. Another owner's timer,
     /// one that has ended, and one counting minutes stop nothing there.
     ///
@@ -640,7 +640,7 @@ final class SleepTimerService: ObservableObject {
 
     /// The timer's state as the sheet and the reader show it: the time left
     /// as minutes and seconds, the place a timer waits for (End of heading,
-    /// End of chapter, End of book), or Fading out; empty with no timer.
+    /// End of book), or Fading out; empty with no timer.
     var formattedRemaining: String {
         guard isActive, let duration else { return "" }
         if isFadingOut { return "Fading out" }
@@ -653,7 +653,7 @@ final class SleepTimerService: ObservableObject {
 
     /// The timer's state as VoiceOver reads it after "Sleep timer:": the
     /// time left ("4:59 remaining"), where a timer set for a place in the
-    /// book stops playback ("stops at the end of this chapter"), or "fading
+    /// book stops playback ("stops at the end of this heading"), or "fading
     /// out"; empty with no timer.
     var spokenStatus: String {
         guard isActive, let duration else { return "" }

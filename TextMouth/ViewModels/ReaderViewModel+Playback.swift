@@ -649,9 +649,10 @@ extension ReaderViewModel {
     }
 
     /// Stops playback where this reader's sleep timer, which has just ended,
-    /// stops it (TODO P01): where a chapter ends, or where a heading does
-    /// (finding #787). Nothing more plays: the cursor waits at
-    /// `chapterIndex`, `characterOffset`, saved, so that Play starts there.
+    /// stops it (TODO P01): where the heading it waits for ends, within a
+    /// chapter or with one (finding #787). Nothing more plays: the cursor
+    /// waits at `chapterIndex`, `characterOffset`, saved, so that Play
+    /// starts there.
     ///
     /// A text book stops waiting for its chapter's speech, so that chapter
     /// does not start once the speech is ready, stops its speech, and lets
@@ -2402,8 +2403,9 @@ extension ReaderViewModel {
             // Halt any minutes-based countdown so it doesn't keep
             // ticking during the pause and expire while the user is
             // taking a break. Mid-fade pauses fall through the branch
-            // above and do not reach here. Heading/chapter-end modes
-            // are no-ops — the service guards on duration kind.
+            // above and do not reach here. A timer waiting for the end
+            // of the heading or of the book is left waiting: the service
+            // guards on the duration's kind.
             sleepTimerService.pauseCountdown(by: readerID)
         }
         readingStatsService.endSession(bookID: book.id)
