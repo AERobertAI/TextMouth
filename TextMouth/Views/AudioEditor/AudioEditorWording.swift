@@ -602,10 +602,11 @@ enum AudioEditorWording {
         "Previewing \(name) first. Choose Apply again to apply it."
     }
 
-    /// Apply's hint with the preview first.
+    /// Apply's hint while a press would preview first
+    /// (`AudioEditorModel.applyWouldPreview`).
     static let applyPreviewsFirstHint = "Plays the filtered audio first; choose Apply again to apply the filter."
 
-    /// Apply's hint without it.
+    /// Apply's hint while a press applies.
     static let applyHint = "Applies the filter."
 
     /// Said when there is nothing after the cursor to preview.

@@ -9,7 +9,10 @@ import SwiftUI
 /// pop-up, where VoiceOver starts; the chain, as text; and the Apply to
 /// radio buttons. Return applies; Escape closes, stopping a preview. The
 /// presets are read from audio-filters.json as the sheet opens, so those
-/// edited in Settings are the ones listed.
+/// edited in Settings are the ones listed. Apply's hint says what a press
+/// does now: with "Preview filters before applying" on, that it plays the
+/// filtered audio first, until that preset has been previewed on that
+/// target; after that, or with the setting off, that it applies.
 struct AudioEditorFilterSheet: View {
     /// The window's model.
     @ObservedObject var model: AudioEditorModel
@@ -84,7 +87,7 @@ struct AudioEditorFilterSheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(preset == nil || model.isWorking)
-                .accessibilityHint(model.previewsFiltersFirst ? AudioEditorWording.applyPreviewsFirstHint : AudioEditorWording.applyHint)
+                .accessibilityHint(model.applyHint(for: preset, on: target))
             }
         }
         .padding()

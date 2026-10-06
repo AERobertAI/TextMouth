@@ -49,12 +49,26 @@ extension AudioEditorModel {
         AudioEditorPreferences.previewFiltersFirst.read(from: store)
     }
 
+    /// Whether Apply would preview `preset` on `target` before applying
+    /// it: the setting is on, and that preset hasn't been previewed on that
+    /// target since Apply Filter opened, through Apply or through Preview.
+    func applyWouldPreview(_ preset: AudioFilterPreset, on target: AudioEditorFilterTarget) -> Bool {
+        previewsFiltersFirst && previewedFilter != AudioEditorFilterPreview(presetID: preset.id, target: target)
+    }
+
+    /// What Apply's hint says for `preset` on `target`: that a press plays
+    /// the filtered audio first, while it would, or that it applies the
+    /// filter; with no preset chosen, the latter.
+    func applyHint(for preset: AudioFilterPreset?, on target: AudioEditorFilterTarget) -> String {
+        guard let preset, applyWouldPreview(preset, on: target) else { return AudioEditorWording.applyHint }
+        return AudioEditorWording.applyPreviewsFirstHint
+    }
+
     /// Apply Filter's Apply: with the setting on, the first Apply of a
     /// preset on a target previews it, saying to choose Apply again; the
     /// next applies it. With the setting off, it applies at once.
     func chooseApply(_ preset: AudioFilterPreset, to target: AudioEditorFilterTarget) async {
-        let asked = AudioEditorFilterPreview(presetID: preset.id, target: target)
-        if previewsFiltersFirst, previewedFilter != asked {
+        if applyWouldPreview(preset, on: target) {
             await previewFilter(preset, on: target, saying: AudioEditorWording.previewingBeforeApplying(preset.name))
             return
         }
