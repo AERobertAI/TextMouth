@@ -1012,11 +1012,14 @@ final class IntegrationSleepTimerTests: XCTestCase {
 // MARK: - The Sleep Timer Sheet's Stop At Section
 
 /// The sleep timer sheet's Stop At section as VoiceOver meets it (TODO
-/// P01): an End of chapter and an End of book button, each labelled with
-/// what it does and given a hint, the End of book hint saying what the timer
-/// adds to what the book does at its end on its own; pressing one sets that
+/// P01): an End of heading and an End of book button, each labelled with
+/// what it does and given a hint, the End of heading hint saying where a
+/// heading ends in any document, the End of book hint what the timer adds
+/// to what the book does at its end on its own; pressing one sets that
 /// timer for the reader, starts playback, and announces where it stops; and
-/// the sheet's status line then reads where the timer stops playback.
+/// the sheet's status line then reads where the timer stops playback. End
+/// of heading is the one place-based timer besides End of book since
+/// October 6, 2026, when End of chapter folded into it.
 /// SwiftUI builds the accessibility elements of its buttons only for a
 /// connected assistive app, so the test that presses them skips, rather
 /// than fails, when it exposes none; the wording tests cover every label
@@ -1027,15 +1030,16 @@ final class SleepTimerSheetTests: XCTestCase {
     // MARK: - Wording
 
     /// Each Stop At button names what it does, and its hint says when it
-    /// pauses playback; the End of book hint follows the book's end-of-book
+    /// pauses playback: the End of heading hint where a heading ends, for
+    /// any document; the End of book hint follows the book's end-of-book
     /// behavior, and says so when the book stops at its end on its own.
     func testStopAtButtonsSayWhatTheyDo() {
         XCTAssertEqual(SleepTimerView.stopAtHeading, "Stop At")
-        XCTAssertEqual(SleepTimerView.endOfChapterTitle, "End of chapter")
-        XCTAssertEqual(SleepTimerView.endOfChapterLabel, "Stop at the end of this chapter and start playing")
+        XCTAssertEqual(SleepTimerView.endOfHeadingTitle, "End of heading")
+        XCTAssertEqual(SleepTimerView.endOfHeadingLabel, "Stop at the end of this heading and start playing")
         XCTAssertEqual(
-            SleepTimerView.endOfChapterHint,
-            "Pauses playback when the chapter playing now ends, before the next chapter starts."
+            SleepTimerView.endOfHeadingHint,
+            "Pauses playback where the heading playing now ends: where the next heading begins, or the book ends."
         )
         XCTAssertEqual(SleepTimerView.endOfBookTitle, "End of book")
         XCTAssertEqual(SleepTimerView.endOfBookLabel, "Stop at the end of the book and start playing")
@@ -1076,14 +1080,13 @@ final class SleepTimerSheetTests: XCTestCase {
 
     // MARK: - The Rendered Sheet
 
-    /// In the sheet, after the minute presets, End of chapter and End of
+    /// In the sheet, after the minute presets, End of heading and End of
     /// book come with their labels and hints, the End of book hint for a
-    /// book that continues to the next, and no control offers a heading
-    /// timer: the End of current heading button went on October 6, 2026,
-    /// since for most books it stopped where End of chapter does. Pressing
-    /// End of chapter through accessibility sets that timer for this reader
-    /// and announces it once; the status line then reads where the timer
-    /// stops; pressing End of book replaces it.
+    /// book that continues to the next, and no control offers a chapter
+    /// timer: End of chapter folded into End of heading on October 6, 2026.
+    /// Pressing End of heading through accessibility sets that timer for
+    /// this reader and announces it once; the status line then reads where
+    /// the timer stops; pressing End of book replaces it.
     func testStopAtButtonsAreLabelledAndSetTheirTimers() throws {
         let timer = SleepTimerService.shared
         preserveSharedSleepTimer()
@@ -1110,28 +1113,28 @@ final class SleepTimerSheetTests: XCTestCase {
             guard let buttons = stopAtButtons(in: hostingView) else {
                 throw XCTSkip("SwiftUI exposed no buttons to accessibility in this run")
             }
-            XCTAssertEqual(buttons.endOfChapter.hint, SleepTimerView.endOfChapterHint)
+            XCTAssertEqual(buttons.endOfHeading.hint, SleepTimerView.endOfHeadingHint)
             XCTAssertEqual(buttons.endOfBook.hint, SleepTimerView.endOfBookHint(for: .continueNext))
             let labels = accessibleControls(in: hostingView).map(\.label)
             XCTAssertFalse(
-                labels.contains { $0.localizedCaseInsensitiveContains("heading") },
-                "The sheet offers a heading timer again: \(labels)"
+                labels.contains { $0.localizedCaseInsensitiveContains("chapter") },
+                "The sheet offers a chapter timer again: \(labels)"
             )
             let lastPreset = try XCTUnwrap(labels.lastIndex(of: "Set timer for 60 minutes and start playing"))
-            let chapterIndex = try XCTUnwrap(labels.firstIndex(of: SleepTimerView.endOfChapterLabel))
+            let headingIndex = try XCTUnwrap(labels.firstIndex(of: SleepTimerView.endOfHeadingLabel))
             let bookIndex = try XCTUnwrap(labels.firstIndex(of: SleepTimerView.endOfBookLabel))
-            XCTAssertLessThan(lastPreset, chapterIndex, "Stop At does not follow the minute presets: \(labels)")
-            XCTAssertLessThan(chapterIndex, bookIndex, "End of book comes before End of chapter: \(labels)")
+            XCTAssertLessThan(lastPreset, headingIndex, "Stop At does not follow the minute presets: \(labels)")
+            XCTAssertLessThan(headingIndex, bookIndex, "End of book comes before End of heading: \(labels)")
 
-            let setChapter = recordingAnnouncements {
-                XCTAssertTrue(buttons.endOfChapter.element.accessibilityPerformPress())
-                XCTAssertTrue(waitUntil { timer.duration == .endOfChapter }, "Pressing End of chapter set no timer")
+            let setHeading = recordingAnnouncements {
+                XCTAssertTrue(buttons.endOfHeading.element.accessibilityPerformPress())
+                XCTAssertTrue(waitUntil { timer.duration == .endOfHeading }, "Pressing End of heading set no timer")
             }
-            XCTAssertEqual(setChapter.announcements.map(\.message), ["Sleep timer: stops at the end of this chapter."])
+            XCTAssertEqual(setHeading.announcements.map(\.message), ["Sleep timer: stops at the end of this heading."])
             XCTAssertEqual(timer.ownerID, reader.readerID, "The timer is not this reader's")
-            XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Pressing End of chapter did not start playback")
+            XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Pressing End of heading did not start playback")
 
-            let status = "Sleep timer: stops at the end of this chapter"
+            let status = "Sleep timer: stops at the end of this heading"
             XCTAssertTrue(
                 waitUntil { !self.accessibilityElements(labelled: status, in: hostingView).isEmpty },
                 "The status line does not say where the timer stops"
@@ -1153,12 +1156,12 @@ final class SleepTimerSheetTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// The End of chapter and End of book buttons among the controls
+    /// The End of heading and End of book buttons among the controls
     /// VoiceOver finds below `root`, or nil while either is missing.
-    private func stopAtButtons(in root: NSView) -> (endOfChapter: AccessibleControl, endOfBook: AccessibleControl)? {
+    private func stopAtButtons(in root: NSView) -> (endOfHeading: AccessibleControl, endOfBook: AccessibleControl)? {
         let buttons = accessibleControls(in: root).filter { $0.role == .button }
-        guard let endOfChapter = buttons.first(where: { $0.label == SleepTimerView.endOfChapterLabel }),
+        guard let endOfHeading = buttons.first(where: { $0.label == SleepTimerView.endOfHeadingLabel }),
               let endOfBook = buttons.first(where: { $0.label == SleepTimerView.endOfBookLabel }) else { return nil }
-        return (endOfChapter, endOfBook)
+        return (endOfHeading, endOfBook)
     }
 }
