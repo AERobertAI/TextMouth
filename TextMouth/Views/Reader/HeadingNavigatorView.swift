@@ -116,6 +116,15 @@ struct HeadingNavigatorView: View {
         Array(Set(headings.map(\.level))).sorted()
     }
 
+    /// The levels the filter offers a "H1–Hn" choice for, given the levels
+    /// present in the book, sorted: every one but the deepest. A choice of
+    /// the deepest level shows every heading, as the filter's "All" choice
+    /// does, so offering both put the same filter twice before VoiceOver
+    /// (and gave two choices one tag in a book with level-6 headings).
+    static func filterLevels(for levelsPresent: [Int]) -> [Int] {
+        Array(levelsPresent.dropLast())
+    }
+
     /// Return the end offset for every heading currently displayed in the
     /// navigator. A filtered-out heading must not terminate a visible row's
     /// duration: when the user selects H1 only, each H1 describes the whole
@@ -217,7 +226,7 @@ struct HeadingNavigatorView: View {
                         .foregroundColor(.secondary)
 
                     Picker("Max level", selection: $maxHeadingLevel) {
-                        ForEach(headingLevelsPresent, id: \.self) { level in
+                        ForEach(Self.filterLevels(for: headingLevelsPresent), id: \.self) { level in
                             Text("H1–H\(level)").tag(level)
                         }
                         Text("All").tag(Self.deepestFilterLevel)

@@ -126,6 +126,22 @@ final class FeatureModelProductionTests: XCTestCase {
         XCTAssertEqual(HeadingNavigatorView.levelsPresent(in: sameLevel).count, 1)
     }
 
+    /// The filter offers "H1–Hn" for every level present but the deepest,
+    /// whose choice would show every heading as "All" does: the same filter
+    /// twice before VoiceOver, and two choices with one tag for a book with
+    /// level-6 headings.
+    func testHeadingFilterOffersNoChoiceThatDuplicatesAll() {
+        XCTAssertEqual(HeadingNavigatorView.filterLevels(for: [1, 2, 3, 4]), [1, 2, 3])
+        XCTAssertEqual(HeadingNavigatorView.filterLevels(for: [1, 3]), [1])
+        XCTAssertEqual(HeadingNavigatorView.filterLevels(for: [1, 2, 6]), [1, 2])
+        XCTAssertEqual(HeadingNavigatorView.filterLevels(for: [2]), [])
+        XCTAssertEqual(HeadingNavigatorView.filterLevels(for: []), [])
+        XCTAssertEqual(
+            HeadingNavigatorView.filterLevels(for: HeadingNavigatorView.levelsPresent(in: headings)),
+            [1, 2, 3]
+        )
+    }
+
     func testCurrentHeadingDetectionCanUseFilteredHeadings() {
         let positioned = [
             Heading(level: 1, text: "Visible", chapterIndex: 0, characterOffset: 0),
