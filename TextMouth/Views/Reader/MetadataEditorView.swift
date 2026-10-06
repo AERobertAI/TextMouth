@@ -50,12 +50,14 @@ struct MetadataEditorView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // The heading alone: the Cancel button below, with Escape, is the
+            // one way to close without saving. A Close button here did the
+            // same, so VoiceOver met two controls for it.
             HStack {
                 Text("Book Information")
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
-                Button("Close") { dismiss() }
             }
             .padding()
 
