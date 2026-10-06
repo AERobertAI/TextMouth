@@ -207,6 +207,26 @@ enum DuplicateFinderWording {
             "added \(book.dateAdded.formatted(date: .long, time: .omitted))",
         ].joined(separator: ", ")
     }
+
+    /// What the sheet shows when a scan finds nothing.
+    static let noDuplicates = "No duplicates found."
+
+    /// What a scan found, read from its results and spoken when the scan
+    /// ends: "No duplicates found with the selected criteria", "1 duplicate
+    /// group found", "3 duplicate groups found".
+    static func scanResult(groupCount: Int) -> String {
+        groupCount == 0
+            ? "No duplicates found with the selected criteria"
+            : CountWording.phrase(groupCount, singular: "duplicate group found", plural: "duplicate groups found")
+    }
+
+    /// Says what a scan the user asked for found, as the removal's outcome
+    /// is said, since VoiceOver stays on the Scan button as the results
+    /// appear below it.
+    @MainActor
+    static func announceScanResult(groupCount: Int) {
+        VoiceOverAnnouncer.announce(scanResult(groupCount: groupCount))
+    }
 }
 
 /// Sheet for finding and removing duplicate books across the library
@@ -315,10 +335,10 @@ struct DuplicateFinderView: View {
                 Spacer()
             } else if scanResults.isEmpty {
                 Spacer()
-                Text("No duplicates found.")
+                Text(DuplicateFinderWording.noDuplicates)
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity)
-                    .accessibilityLabel("No duplicates found with the selected criteria")
+                    .accessibilityLabel(DuplicateFinderWording.scanResult(groupCount: 0))
                 Spacer()
             } else {
                 ScrollView {
@@ -355,7 +375,7 @@ struct DuplicateFinderView: View {
                         }
                     }
                 }
-                .accessibilityLabel("\(scanResults.count) duplicate groups found")
+                .accessibilityLabel(DuplicateFinderWording.scanResult(groupCount: scanResults.count))
             }
         }
         .frame(width: 600, height: 550)
@@ -379,7 +399,7 @@ struct DuplicateFinderView: View {
 
     // MARK: - Scan Logic
 
-    /// Start a scan, loading ISBNs first if needed
+    /// Start a scan, loading ISBNs first if needed, and say what it found
     private func performScan() {
         if activeFilters.contains(.isbn) && isbnCache.isEmpty {
             isLoadingISBNs = true
@@ -388,22 +408,27 @@ struct DuplicateFinderView: View {
                 await MainActor.run {
                     isbnCache = cache
                     isLoadingISBNs = false
-                    runScan()
+                    runScan(announcing: true)
                 }
             }
         } else {
-            runScan()
+            runScan(announcing: true)
         }
     }
 
-    /// Run the duplicate scan and cache results
-    private func runScan() {
+    /// Run the duplicate scan and cache results; `announcing`, say what it
+    /// found. The scan after a removal stays quiet: the removal's outcome
+    /// is announced instead.
+    private func runScan(announcing: Bool) {
         scanResults = DuplicateFinderEngine.findDuplicates(
             books: libraryViewModel.library.books,
             filters: activeFilters,
             isbnCache: isbnCache
         )
         hasScanned = true
+        if announcing {
+            DuplicateFinderWording.announceScanResult(groupCount: scanResults.count)
+        }
     }
 
     // MARK: - Removal
@@ -449,7 +474,7 @@ struct DuplicateFinderView: View {
         }
         let remaining = Set(libraryViewModel.library.books.map(\.id))
         selectedForRemoval.formIntersection(remaining)
-        runScan()
+        runScan(announcing: false)
     }
 
     // MARK: - Helpers

@@ -98,6 +98,26 @@ final class DuplicateFinderTests: XCTestCase {
         XCTAssertEqual(DuplicateFinderWording.libraryRoot, "Library Root")
     }
 
+    /// What a scan found is said in the right number, and spoken when the
+    /// scan ends, as the removal's outcome is; until October 6, 2026 one
+    /// group was "1 duplicate groups found" and a scan said nothing.
+    @MainActor
+    func testAScansResultIsCountedAndSpoken() {
+        XCTAssertEqual(DuplicateFinderWording.scanResult(groupCount: 0), "No duplicates found with the selected criteria")
+        XCTAssertEqual(DuplicateFinderWording.scanResult(groupCount: 1), "1 duplicate group found")
+        XCTAssertEqual(DuplicateFinderWording.scanResult(groupCount: 3), "3 duplicate groups found")
+        XCTAssertEqual(DuplicateFinderWording.noDuplicates, "No duplicates found.")
+
+        let heard = recordingAnnouncements {
+            DuplicateFinderWording.announceScanResult(groupCount: 0)
+            DuplicateFinderWording.announceScanResult(groupCount: 2)
+        }
+        XCTAssertEqual(
+            heard.announcements.map(\.message),
+            ["No duplicates found with the selected criteria", "2 duplicate groups found"]
+        )
+    }
+
     private func makeBook(
         title: String,
         author: String,
