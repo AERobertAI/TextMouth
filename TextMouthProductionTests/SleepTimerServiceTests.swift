@@ -646,9 +646,7 @@ final class SleepTimerServiceTests: XCTestCase {
     }
 
     func testLastUsedDurationPersistsAcrossServiceInstances() {
-        // End of heading is not among these: it restores as End of chapter
-        // (`testSavedEndOfDocumentAndEndOfHeadingRestoreEndOfChapter`).
-        for duration: SleepTimerDuration in [.endOfChapter, .endOfBook, .minutes(25)] {
+        for duration: SleepTimerDuration in [.endOfHeading, .endOfBook, .minutes(25)] {
             start(duration)
 
             let restored = SleepTimerService(userDefaults: testDefaults)
@@ -657,40 +655,30 @@ final class SleepTimerServiceTests: XCTestCase {
         }
     }
 
-    /// A duration saved as "endOfDocument", before End of chapter took the
-    /// place of End of document, or as "endOfHeading", before the sheet's
-    /// End of current heading button went (October 6, 2026), restores End
-    /// of chapter, so Restart Sleep Timer arms the timer the listener last
-    /// chose, and never one the sheet no longer offers. End of chapter's
-    /// own name is what is saved from then on.
-    func testSavedEndOfDocumentAndEndOfHeadingRestoreEndOfChapter() throws {
+    /// Every saved kind of place-based timer besides End of book restores
+    /// End of heading, the one such timer since October 6, 2026, so that
+    /// Restart Sleep Timer arms the timer the listener last chose: "endOfHeading",
+    /// its own name, which is what is saved from then on; "endOfChapter",
+    /// saved while the sheet offered End of chapter, which folded into End
+    /// of heading; and "endOfDocument", saved while it offered End of
+    /// document, which End of chapter had replaced.
+    func testEverySavedPlaceBasedKindRestoresEndOfHeading() throws {
         let key = "sleepTimer.lastUsedDuration"
-        for legacyKind in ["endOfDocument", "endOfHeading"] {
-            testDefaults.set(Data(#"{"kind":"\#(legacyKind)"}"#.utf8), forKey: key)
+        for savedKind in ["endOfHeading", "endOfChapter", "endOfDocument"] {
+            testDefaults.set(Data(#"{"kind":"\#(savedKind)"}"#.utf8), forKey: key)
 
             let restored = SleepTimerService(userDefaults: testDefaults)
             defer { restored._resetForTesting() }
 
-            XCTAssertEqual(restored.lastUsedDuration, .endOfChapter, "A saved \(legacyKind) did not restore End of chapter")
+            XCTAssertEqual(restored.lastUsedDuration, .endOfHeading, "A saved \(savedKind) did not restore End of heading")
             restored.start(duration: try XCTUnwrap(restored.lastUsedDuration), onExpire: {})
             let saved = try XCTUnwrap(testDefaults.data(forKey: key))
             XCTAssertEqual(
                 try JSONSerialization.jsonObject(with: saved) as? [String: String],
-                ["kind": "endOfChapter"],
-                "Restarting a saved \(legacyKind) did not save End of chapter"
+                ["kind": "endOfHeading"],
+                "Restarting a saved \(savedKind) did not save End of heading"
             )
         }
-    }
-
-    /// An End of heading timer started in code (no control sets one since
-    /// October 6, 2026) saves its own name, which restores End of chapter.
-    func testEndOfHeadingStartedInCodeRestoresEndOfChapter() {
-        start(.endOfHeading)
-
-        let restored = SleepTimerService(userDefaults: testDefaults)
-        defer { restored._resetForTesting() }
-
-        XCTAssertEqual(restored.lastUsedDuration, .endOfChapter)
     }
 
     /// The restored duration is editable with `defaults write`. Minutes above
@@ -799,6 +787,23 @@ final class SleepTimerServiceTests: XCTestCase {
             },
             "\(traced)"
         )
+    }
+
+    /// A timer set for a place in the book names that place in its START
+    /// event: end-of-heading for the one place-based timer any document
+    /// has, and end-of-book; no timer is logged as end-of-chapter.
+    func testTimerLogNamesThePlaceAPlaceBasedTimerWaitsFor() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+
+        let lines = logLines(in: .sleepTimer) {
+            start(.endOfHeading)
+            start(.endOfBook)
+            service.stop()
+        }
+
+        XCTAssertTrue(lines.contains { $0.contains(": START kind=end-of-heading ") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.contains(": START kind=end-of-book ") }, "\(lines)")
+        XCTAssertFalse(lines.contains { $0.contains("end-of-chapter") }, "\(lines)")
     }
 
     /// Start a five-minute timer, count down its first minute without

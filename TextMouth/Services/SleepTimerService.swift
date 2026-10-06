@@ -205,21 +205,20 @@ final class SleepTimerService: ObservableObject {
         /// range are rejected and minutes above it are clamped: arming a
         /// timer multiplies them by 60, which would overflow for Int.max.
         ///
-        /// "endOfDocument", saved before End of chapter took the place of
-        /// End of document, restores End of chapter: that timer always
-        /// stopped where a chapter ended, and Restart Sleep Timer should
-        /// arm the timer the listener last chose. So does "endOfHeading",
-        /// saved before the sheet's End of current heading button went
-        /// (October 6, 2026): for most books that timer stopped where End
-        /// of chapter does, and Restart Sleep Timer should arm no timer the
-        /// sheet no longer offers.
+        /// Every place-based timer the sheet ever offered besides End of book
+        /// restores End of heading, the one such timer since October 6,
+        /// 2026, so that Restart Sleep Timer arms the timer the listener last
+        /// chose: "endOfDocument" was saved while the sheet offered End of
+        /// document, "endOfChapter" while it offered End of chapter, which
+        /// folded into End of heading, and "endOfHeading" is what is saved
+        /// now and was saved by the End of current heading button before.
         func toModel() -> SleepTimerDuration? {
             switch kind {
             case "minutes":
                 let supported = SettingsPolicy.sleepTimerMinutes
                 guard let minutes, minutes >= supported.lowerBound else { return nil }
                 return .minutes(min(minutes, supported.upperBound))
-            case "endOfChapter", "endOfDocument", "endOfHeading": return .endOfChapter
+            case "endOfHeading", "endOfChapter", "endOfDocument": return .endOfHeading
             case "endOfBook": return .endOfBook
             default: return nil
             }
