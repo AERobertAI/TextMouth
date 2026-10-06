@@ -312,7 +312,12 @@ enum SleepTimerDuration: Hashable {
     /// The end of the heading current where the timer was set: where the
     /// next heading begins, or the end of the book after the last heading
     /// (finding #787). The reader that set it finds that place, and stops
-    /// playback when its cursor gets there.
+    /// playback when its cursor gets there. No control sets it since the
+    /// sheet's End of current heading button went (October 6, 2026): for
+    /// most books it stopped where End of chapter does, so VoiceOver met
+    /// the same timer twice; a saved preference naming it restores End of
+    /// chapter (`SleepTimerService`). The reader's heading-end machinery
+    /// stays for a timer set this way in code, and for its tests.
     case endOfHeading
     /// The end of the chapter playing, before the next chapter starts. It
     /// took the place of the timer once called End of document, which a
@@ -371,10 +376,12 @@ enum SleepTimerDuration: Hashable {
         }
     }
 
+    /// What the sleep timer sheet offers: its minute presets, then the
+    /// timers of its Stop At section.
     static let presets: [SleepTimerDuration] = [
         .minutes(10), .minutes(15), .minutes(30),
         .minutes(45), .minutes(60),
-        .endOfHeading, .endOfChapter, .endOfBook
+        .endOfChapter, .endOfBook
     ]
 }
 
