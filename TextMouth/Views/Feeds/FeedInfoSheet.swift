@@ -88,11 +88,12 @@ final class FeedInfoModel: ObservableObject, Identifiable {
 /// The Feed Info sheet (FR03): the feed's title as its heading; its
 /// address, web site, author, items, last check, and subscription date,
 /// each a labelled value VoiceOver reads as one; the folder its downloads
-/// go to, which can be changed; its description, read with VoiceOver's text
-/// navigation; the two settings the feed may keep for itself, each with
-/// "Use the global setting"; Unsubscribe…, which asks first and names the
-/// books left behind; and Done, which Escape presses. Every change applies
-/// as it is made.
+/// go to, which can be changed; its description, under a Description
+/// heading, in a text area labelled with the feed's title and read with
+/// VoiceOver's text navigation; the two settings the feed may keep for
+/// itself, each with "Use the global setting"; Unsubscribe…, which asks
+/// first and names the books left behind; and Done, which Escape presses.
+/// Every change applies as it is made.
 struct FeedInfoSheet: View {
     /// What the sheet shows and changes.
     @ObservedObject var model: FeedInfoModel
@@ -211,7 +212,10 @@ struct FeedInfoSheet: View {
             Text(FeedWording.descriptionLabel)
                 .font(.subheadline)
                 .accessibilityAddTraits(.isHeader)
-            FeedReadOnlyText(text: summary, label: FeedWording.descriptionLabel)
+            // Labelled with the feed's title, as Show Description labels its
+            // text area with the item's: labelled Description, VoiceOver
+            // would say the heading's word twice in a row.
+            FeedReadOnlyText(text: summary, label: FeedWording.descriptionTextLabel(title: feed.title))
                 .frame(height: 120)
         }
     }
@@ -438,7 +442,9 @@ extension FeedWording {
     static let folderInfoHelp = "Choosing another folder sends new downloads there; the books already downloaded stay where they are."
     /// The stand-in Feed Info's folder picker shows while the feed's folder is gone.
     static let chooseFolderOption = "Choose a folder"
-    /// The description's label and heading.
+    /// The Description heading in Feed Info; the text area under it is
+    /// labelled `descriptionTextLabel(title:)`, so VoiceOver does not say
+    /// Description twice.
     static let descriptionLabel = "Description"
     /// The heading of the feed's own settings.
     static let ownSettingsHeading = "This Feed's Settings"
@@ -451,7 +457,9 @@ extension FeedWording {
     static let useGlobalHint = "When checked, this feed follows the setting in Settings, Feeds; uncheck it to give the feed its own"
     /// The web page's label in Show Description.
     static let webPageLabel = "Web page"
-    /// The description text area's spoken label.
+    /// The spoken label of a description's text area, naming whose it is:
+    /// Feed Info's, with the feed's title, and Show Description's, with the
+    /// item's.
     static func descriptionTextLabel(title: String) -> String {
         "Description of \(title)"
     }

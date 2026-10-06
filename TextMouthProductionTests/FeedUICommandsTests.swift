@@ -361,6 +361,46 @@ final class FeedUICommandsTests: XCTestCase {
         )
     }
 
+    /// The words of a description: the heading Feed Info shows, and the
+    /// label of a text area, which names whose description it is.
+    func testTheDescriptionsWords() {
+        XCTAssertEqual(FeedWording.descriptionLabel, "Description")
+        XCTAssertEqual(FeedWording.descriptionTextLabel(title: "The Tactile Atlas"), "Description of The Tactile Atlas")
+        XCTAssertEqual(FeedWording.descriptionTextLabel(title: "Night trams"), "Description of Night trams")
+    }
+
+    /// Feed Info draws the feed's description, under its Description
+    /// heading, in a text area labelled with the feed's title, so VoiceOver
+    /// says the heading's word once and then whose description the text
+    /// is; until October 6, 2026 the text area was labelled Description
+    /// too, and VoiceOver said the word twice.
+    func testFeedInfosDescriptionIsLabelledWithTheFeedsTitle() async throws {
+        let harness = try await Harness(self, label: "FeedUICommandsInfoDescription")
+        let summary = try XCTUnwrap(harness.record?.feed.summary?.plainText, "the feed has no description to draw")
+        XCTAssertEqual(summary, "A show for tests.")
+        let model = FeedInfoModel(feedID: harness.feed.id, center: harness.world.center, library: harness.world.library)
+        let sheet = FeedInfoSheet(
+            model: model,
+            feedFolders: LibraryFeedFolders(center: harness.world.center),
+            unsubscribeConfirmation: { nil },
+            onUnsubscribe: {},
+            onDone: {}
+        )
+
+        withHostedView(sheet, size: NSSize(width: 560, height: 680), until: {
+            self.descendants(of: $0, as: NSTextView.self).contains { $0.string == summary }
+        }) { hosting in
+            let textViews = descendants(of: hosting, as: NSTextView.self)
+            let description = textViews.first { $0.string == summary }
+            XCTAssertNotNil(description, "the description was not drawn as a text area")
+            XCTAssertEqual(description?.accessibilityLabel(), "Description of The Tactile Atlas")
+            XCTAssertFalse(
+                textViews.contains { $0.accessibilityLabel() == FeedWording.descriptionLabel },
+                "a text area is labelled with the heading's word alone"
+            )
+        }
+    }
+
     /// Show Description… draws the text in a text area that can be read
     /// and selected but not typed in, labelled with the item's title.
     func testTheDescriptionIsATextAreaToRead() throws {
