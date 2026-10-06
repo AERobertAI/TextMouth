@@ -483,12 +483,18 @@ final class FeatureModelProductionTests: XCTestCase {
         XCTAssertTrue(duplicates([book("A", author: "Unknown"), book("B", author: "Unknown")], filter: .author).isEmpty)
     }
 
-    func testDuplicateTitleAndAuthorUsesCombinedKey() {
-        let groups = DuplicateFinderEngine.findDuplicates(
-            books: [book("Shared", author: "Same"), book("shared", author: "same")],
-            filters: [.titleAndAuthor], isbnCache: [:]
-        )
-        XCTAssertEqual(groups.count, 1)
+    /// Same Title checked with Same Author groups by both, leaving books
+    /// without an author, which Same Author leaves out, to Same Title alone.
+    func testDuplicateTitleWithAuthorGroupsByBothAndLeavesAuthorlessBooksToTitle() {
+        let named = [book("Shared", author: "Same"), book("shared", author: "same")]
+        let authorless = [book("Shared", author: ""), book("shared", author: "Unknown")]
+        func byBoth(_ books: [Book]) -> [DuplicateGroup] {
+            DuplicateFinderEngine.findDuplicates(books: books, filters: [.title, .author], isbnCache: [:])
+        }
+
+        XCTAssertEqual(byBoth(named).count, 1)
+        XCTAssertTrue(byBoth(authorless).isEmpty)
+        XCTAssertEqual(duplicates(authorless, filter: .title).count, 1)
     }
 
     func testDuplicateDetectionReturnsEmptyForUniqueBooks() {

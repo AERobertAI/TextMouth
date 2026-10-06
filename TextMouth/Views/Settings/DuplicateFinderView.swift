@@ -1,12 +1,15 @@
 import SwiftUI
 
-/// Criteria for matching duplicate books
+/// Criteria for matching duplicate books. Checked criteria combine, so none
+/// is offered that two others make together: Same Title checked with Same
+/// Author groups by both, as a "Same Title & Author" checkbox did until
+/// October 6, 2026. The one difference: books without an author, which Same
+/// Author leaves out, are grouped by Same Title alone.
 enum DuplicateFilter: String, CaseIterable, Identifiable {
     case md5Hash = "Identical File (MD5)"
     case isbn = "Same ISBN"
     case title = "Same Title"
     case author = "Same Author"
-    case titleAndAuthor = "Same Title & Author"
 
     var id: String { rawValue }
 
@@ -17,7 +20,6 @@ enum DuplicateFilter: String, CaseIterable, Identifiable {
         case .isbn: return "EPUB books with the same ISBN identifier"
         case .title: return "Books with the same title, regardless of author"
         case .author: return "All books by the same author"
-        case .titleAndAuthor: return "Books with both the same title and author"
         }
     }
 }
@@ -30,11 +32,10 @@ struct DuplicateGroup: Identifiable {
     let matchTypes: [DuplicateFilter]
     let books: [Book]
 
+    /// What matched, naming each criterion checked: "Same Title", or "Same
+    /// Title and Same Author" for criteria checked together.
     var matchDescription: String {
-        if matchTypes.count == 1 {
-            return matchTypes[0].rawValue
-        }
-        return "Combined: " + matchTypes.map(\.rawValue).joined(separator: ", ")
+        ListFormatter.localizedString(byJoining: matchTypes.map(\.rawValue))
     }
 
     init(matchKey: String, matchTypes: [DuplicateFilter], books: [Book]) {
@@ -105,11 +106,6 @@ enum DuplicateFinderEngine {
         case .author:
             let normalized = normalize(book.author)
             return normalized.isEmpty || normalized == "unknown" ? nil : normalized
-        case .titleAndAuthor:
-            let title = normalize(book.title)
-            let author = normalize(book.author)
-            guard !title.isEmpty else { return nil }
-            return "\(title)|\(author)"
         }
     }
 
@@ -117,22 +113,31 @@ enum DuplicateFinderEngine {
         value.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// The group's heading: what its books share, one value for each
+    /// criterion in the criteria's order, joined with semicolons; a title
+    /// and an author matched together read as one, "Shared by One Author".
     private static func displayKey(
         components: [String],
         filters: [DuplicateFilter],
         books: [Book]
     ) -> String {
-        let values = zip(filters, components).map { filter, component -> String in
+        var values: [String] = []
+        for (filter, component) in zip(filters, components) {
             switch filter {
             case .md5Hash:
-                return books.first?.title ?? component
+                values.append(books.first?.title ?? component)
             case .isbn:
-                return "ISBN: \(component.uppercased())"
-            case .titleAndAuthor:
-                let parts = component.split(separator: "|", maxSplits: 1)
-                return parts.count == 2 ? "\(parts[0]) by \(parts[1])" : component
-            default:
-                return component.capitalized
+                values.append("ISBN: \(component.uppercased())")
+            case .title:
+                values.append(component.capitalized)
+            case .author:
+                // The criteria keep their declared order, so a title, when
+                // checked, is the value appended just before the author.
+                if filters.contains(.title), let title = values.popLast() {
+                    values.append("\(title) by \(component.capitalized)")
+                } else {
+                    values.append(component.capitalized)
+                }
             }
         }
         return values.joined(separator: "; ")
