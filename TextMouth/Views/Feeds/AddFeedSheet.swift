@@ -203,7 +203,9 @@ final class AddFeedModel: ObservableObject, Identifiable {
 /// podcasts the directory finds, each with a Subscribe button of its own;
 /// the Move dialog's folder picker, choosing where the feed's own folder
 /// goes, with New Folder; and Subscribe, which Return presses, and Cancel,
-/// which Escape presses. In the Search field, Return presses Search instead.
+/// which Escape presses. In the Search field, Return presses Search instead,
+/// and while the picker's New Folder fields are shown it presses their
+/// Create, Subscribe standing down meanwhile, so one press does one thing.
 /// While the address is read the sheet says so; a web page naming several
 /// feeds turns the sheet to a radio group of them; a failure stays in the
 /// sheet, beside the address, and is announced.
@@ -230,6 +232,31 @@ struct AddFeedSheet: View {
     @FocusState private var searchFocused: Bool
     /// Why the last folder could not be made in the picker.
     @State private var folderFailure: String?
+    /// Whether the picker's new-folder fields are showing, while Return
+    /// presses their Create rather than Subscribe.
+    @State private var isMakingFolder: Bool
+
+    /// A sheet doing `model`'s work in `library`, whose folder picker keeps
+    /// off the folders `feedFolders` says hold feeds; `makingFolder` opens
+    /// it with the new folder's fields already shown, as the tests of the
+    /// Return key need.
+    init(
+        model: AddFeedModel,
+        library: Library,
+        feedFolders: LibraryFeedFolders,
+        onCreateFolder: @escaping (String, String) -> OperationOutcome,
+        onSubscribed: @escaping (Feed) -> Void,
+        onCancel: @escaping () -> Void,
+        makingFolder: Bool = false
+    ) {
+        _model = ObservedObject(wrappedValue: model)
+        self.library = library
+        self.feedFolders = feedFolders
+        self.onCreateFolder = onCreateFolder
+        self.onSubscribed = onSubscribed
+        self.onCancel = onCancel
+        _isMakingFolder = State(initialValue: makingFolder)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -301,8 +328,12 @@ struct AddFeedSheet: View {
                 accessibilityLabel: FeedWording.folderLabel,
                 onCreateFolder: onCreateFolder,
                 failureMessage: $folderFailure,
-                isDisabled: model.isWorking
+                isDisabled: model.isWorking,
+                isMakingFolder: $isMakingFolder
             )
+            // A page naming several feeds replaces this step, picker and
+            // all: its fields are gone, so Subscribe takes Return back.
+            .onDisappear { isMakingFolder = false }
             Text(FeedWording.folderHelp(parentPath: model.parentPath))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -408,7 +439,8 @@ struct AddFeedSheet: View {
     }
 
     /// Cancel, Back at the second step, and Subscribe, which Return presses
-    /// everywhere but in the Search field.
+    /// everywhere but in the Search field and while the new folder's fields
+    /// are shown.
     private var buttons: some View {
         HStack {
             Button("Cancel") {
@@ -426,7 +458,10 @@ struct AddFeedSheet: View {
             Button(FeedWording.subscribeTitle) {
                 model.subscribe()
             }
-            .keyboardShortcut(searchFocused ? nil : KeyboardShortcut.defaultAction)
+            // Return subscribes, except in the Search field, where it
+            // searches, and while the new folder's fields are shown, when
+            // it presses their Create.
+            .keyboardShortcut(searchFocused || isMakingFolder ? nil : KeyboardShortcut.defaultAction)
             .disabled(!model.canSubscribe)
         }
     }
