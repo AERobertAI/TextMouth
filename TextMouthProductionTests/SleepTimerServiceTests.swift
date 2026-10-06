@@ -172,11 +172,11 @@ final class SleepTimerServiceTests: XCTestCase {
     }
 
     /// Only a timer for the end of a heading ends where a heading does: one
-    /// counting minutes, or waiting for a chapter's or the book's end, goes
-    /// on, and nothing happens with no timer at all.
+    /// counting minutes, or waiting for the book's end, goes on, and nothing
+    /// happens with no timer at all.
     func testOnlyAHeadingTimerEndsWhereAHeadingEnds() {
         XCTAssertFalse(service.expireAtHeadingEnd(by: owner), "No timer ended")
-        for duration: SleepTimerDuration in [.minutes(10), .endOfChapter, .endOfBook] {
+        for duration: SleepTimerDuration in [.minutes(10), .endOfBook] {
             start(duration)
             XCTAssertFalse(service.waitsForHeadingEnd(ownedBy: owner), duration.displayName)
             XCTAssertFalse(service.expireAtHeadingEnd(by: owner), duration.displayName)
@@ -193,8 +193,6 @@ final class SleepTimerServiceTests: XCTestCase {
 
         start(.endOfHeading)
         XCTAssertEqual(service.formattedRemaining, "End of heading")
-        start(.endOfChapter)
-        XCTAssertEqual(service.formattedRemaining, "End of chapter")
         start(.endOfBook)
         XCTAssertEqual(service.formattedRemaining, "End of book")
         service.stop()
@@ -216,7 +214,6 @@ final class SleepTimerServiceTests: XCTestCase {
 
         let places: [(duration: SleepTimerDuration, status: String)] = [
             (.endOfHeading, "stops at the end of this heading"),
-            (.endOfChapter, "stops at the end of this chapter"),
             (.endOfBook, "stops at the end of the book"),
         ]
         for place in places {
@@ -346,13 +343,15 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertFalse(service.isActive)
     }
 
-    func testPauseDoesNotChangeChapterTimer() {
-        start(.endOfChapter)
+    /// Pausing playback leaves a timer waiting for the book's end waiting,
+    /// since it counts no time; the book's end then ends it.
+    func testPauseDoesNotChangeBookTimer() {
+        start(.endOfBook)
 
         service.pauseCountdown(by: owner)
         XCTAssertTrue(service.isActive)
-        XCTAssertTrue(service.stopsPlaybackAtChapterEnd(endingTheHeading: false, endingTheBook: false, ownedBy: owner))
-        service.expireAtChapterEnd(endingTheHeading: false, endingTheBook: false, by: owner)
+        XCTAssertTrue(service.stopsPlaybackAtChapterEnd(endingTheHeading: false, endingTheBook: true, ownedBy: owner))
+        service.expireAtChapterEnd(endingTheHeading: false, endingTheBook: true, by: owner)
 
         XCTAssertFalse(service.isActive)
     }
@@ -502,46 +501,43 @@ final class SleepTimerServiceTests: XCTestCase {
     }
 
     /// Only the owner's chapter end ends a timer set for the end of the
-    /// chapter. Ending it there calls no expiry callback, since the owner
-    /// has already stopped at the chapter's end and says so itself; the
-    /// timer ends as a stop ends it, keeping the duration for Restart Sleep
-    /// Timer.
-    func testOnlyOwnerExpiresChapterTimer() {
+    /// heading where the chapter ends the heading. Ending it there calls no
+    /// expiry callback, since the owner has already stopped at the chapter's
+    /// end and says so itself; the timer ends as a stop ends it, keeping the
+    /// duration for Restart Sleep Timer.
+    func testOnlyTheOwnersChapterEndEndsAHeadingTimerTheChapterEnds() {
         var expirations = 0
-        start(.endOfChapter, onExpire: { expirations += 1 })
+        start(.endOfHeading, onExpire: { expirations += 1 })
 
-        XCTAssertFalse(service.expireAtChapterEnd(endingTheHeading: false, endingTheBook: false, by: UUID()))
+        XCTAssertFalse(service.expireAtChapterEnd(endingTheHeading: true, endingTheBook: false, by: UUID()))
         XCTAssertTrue(service.isActive, "Another owner's chapter end ended the timer")
-        XCTAssertTrue(service.expireAtChapterEnd(endingTheHeading: false, endingTheBook: false, by: owner))
+        XCTAssertTrue(service.expireAtChapterEnd(endingTheHeading: true, endingTheBook: false, by: owner))
 
         XCTAssertFalse(service.isActive)
         XCTAssertNil(service.duration)
         XCTAssertNil(service.ownerID)
         XCTAssertEqual(expirations, 0, "The expiry callback was called at the chapter's end")
-        XCTAssertEqual(service.lastUsedDuration, .endOfChapter)
+        XCTAssertEqual(service.lastUsedDuration, .endOfHeading)
         XCTAssertEqual(service.lastOwnerID, owner)
         XCTAssertFalse(
-            service.expireAtChapterEnd(endingTheHeading: false, endingTheBook: false, by: owner),
+            service.expireAtChapterEnd(endingTheHeading: true, endingTheBook: false, by: owner),
             "An ended timer ended again"
         )
     }
 
     /// Which timers stop playback where a chapter ends: the owner's, while
-    /// in effect, when set for the end of the chapter, at every chapter's
-    /// end, the book's last included; when set for the end of a heading,
-    /// where that heading ends too and where the book ends (finding #787);
-    /// and when set for the end of the book, at the last chapter's end only.
-    /// A timer counting minutes stops at none, and neither does another
-    /// owner's or one that has ended.
-    func testOnlyTheOwnersEndOfChapterTimerStopsPlaybackAtAChaptersEnd() {
+    /// in effect, when set for the end of a heading, where that heading ends
+    /// too and where the book ends (finding #787); and when set for the end
+    /// of the book, at the last chapter's end only. A timer counting minutes
+    /// stops at none, and neither does another owner's or one that has
+    /// ended. No timer stops at every chapter's end: End of chapter folded
+    /// into End of heading (October 6, 2026).
+    func testOnlyTheOwnersTimerStopsPlaybackAtAChaptersEndWhereItEnds() {
         let otherOwner = UUID()
         let cases: [(
             name: String, duration: SleepTimerDuration?, asker: UUID,
             endingTheHeading: Bool, endingTheBook: Bool, stops: Bool
         )] = [
-            ("end of chapter, a chapter before the last", .endOfChapter, owner, false, false, true),
-            ("end of chapter, the book's last chapter", .endOfChapter, owner, false, true, true),
-            ("end of chapter, asked by another owner", .endOfChapter, otherOwner, false, false, false),
             ("end of book, a chapter before the last", .endOfBook, owner, false, false, false),
             ("end of book, a chapter ending a heading", .endOfBook, owner, true, false, false),
             ("end of book, the book's last chapter", .endOfBook, owner, false, true, true),
@@ -571,10 +567,10 @@ final class SleepTimerServiceTests: XCTestCase {
             )
         }
 
-        start(.endOfChapter)
+        start(.endOfHeading)
         service._expireForTesting()
         XCTAssertFalse(
-            service.stopsPlaybackAtChapterEnd(endingTheHeading: false, endingTheBook: false, ownedBy: owner),
+            service.stopsPlaybackAtChapterEnd(endingTheHeading: true, endingTheBook: false, ownedBy: owner),
             "A timer that has run out stops playback at a chapter's end"
         )
     }

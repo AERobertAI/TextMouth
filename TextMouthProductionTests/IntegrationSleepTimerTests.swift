@@ -1281,10 +1281,6 @@ final class SleepTimerSheetTests: XCTestCase {
     /// playback; a timer counting minutes announces its minutes, as before.
     /// Reset Timer announces the restarted timer's status.
     func testSettingATimerAnnouncesWhatWasSet() {
-        XCTAssertEqual(
-            SleepTimerView.announcement(forSetting: .endOfChapter),
-            "Sleep timer: stops at the end of this chapter."
-        )
         XCTAssertEqual(SleepTimerView.announcement(forSetting: .endOfBook), "Sleep timer: stops at the end of the book.")
         XCTAssertEqual(
             SleepTimerView.announcement(forSetting: .endOfHeading),

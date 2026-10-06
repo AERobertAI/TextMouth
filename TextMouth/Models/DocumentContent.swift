@@ -337,10 +337,6 @@ enum SleepTimerDuration: Hashable {
     /// goes on under the heading playing, so playback goes on into it
     /// (`ReaderViewModel.chapterEnding(beforeChapter:)`).
     case endOfHeading
-    /// The end of the chapter playing, before the next chapter starts. It
-    /// took the place of the timer once called End of document, which a
-    /// saved preference may still name (`SleepTimerService`).
-    case endOfChapter
     /// The end of the book: the end of its last chapter, before the book
     /// starts again or the next book starts, whatever its end-of-book
     /// behavior.
@@ -350,7 +346,6 @@ enum SleepTimerDuration: Hashable {
         switch self {
         case .minutes(let m): return "\(m) minutes"
         case .endOfHeading: return "End of heading"
-        case .endOfChapter: return "End of chapter"
         case .endOfBook: return "End of book"
         }
     }
@@ -362,19 +357,17 @@ enum SleepTimerDuration: Hashable {
         switch self {
         case .minutes: return nil
         case .endOfHeading: return "stops at the end of this heading"
-        case .endOfChapter: return "stops at the end of this chapter"
         case .endOfBook: return "stops at the end of the book"
         }
     }
 
     /// Whether a timer set for this stops playback where a chapter ends,
-    /// before anything after that chapter plays (TODO P01). End of chapter
-    /// stops at the end of whichever chapter is playing, the book's last
-    /// included; End of heading where the heading it waits for ends there
-    /// too, as when the next chapter begins with the next heading, and where
-    /// the book ends, which ends every heading (finding #787); End of book
-    /// only at the end of the book's last chapter; a timer counting minutes
-    /// stops at no chapter's end.
+    /// before anything after that chapter plays (TODO P01). End of heading
+    /// stops there when the heading it waits for ends there too, as when the
+    /// next chapter begins with the next heading, which every audiobook
+    /// chapter does, and where the book ends, which ends the last heading
+    /// (finding #787); End of book only at the end of the book's last
+    /// chapter; a timer counting minutes stops at no chapter's end.
     ///
     /// - Parameters:
     ///   - endingTheHeading: Whether the heading an End of heading timer
@@ -383,8 +376,6 @@ enum SleepTimerDuration: Hashable {
     ///     nothing after it to play, so that its end is the book's.
     func stopsPlaybackAtChapterEnd(endingTheHeading: Bool, endingTheBook: Bool) -> Bool {
         switch self {
-        case .endOfChapter:
-            return true
         case .endOfHeading:
             return endingTheHeading || endingTheBook
         case .endOfBook:

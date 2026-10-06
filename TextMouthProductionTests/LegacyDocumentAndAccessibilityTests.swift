@@ -112,7 +112,6 @@ final class LegacyDocumentContentModelTests: XCTestCase {
     func testSleepTimerDurationNamesAndPresetsComeFromProductionModel() {
         XCTAssertEqual(SleepTimerDuration.minutes(10).displayName, "10 minutes")
         XCTAssertEqual(SleepTimerDuration.endOfHeading.displayName, "End of heading")
-        XCTAssertEqual(SleepTimerDuration.endOfChapter.displayName, "End of chapter")
         XCTAssertEqual(SleepTimerDuration.endOfBook.displayName, "End of book")
         // The sheet's minute presets, then its Stop At timers: End of heading,
         // the one place-based timer for any document, then End of book.

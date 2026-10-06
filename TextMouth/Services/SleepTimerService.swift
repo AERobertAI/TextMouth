@@ -191,9 +191,6 @@ final class SleepTimerService: ObservableObject {
             case .endOfHeading:
                 kind = "endOfHeading"
                 minutes = nil
-            case .endOfChapter:
-                kind = "endOfChapter"
-                minutes = nil
             case .endOfBook:
                 kind = "endOfBook"
                 minutes = nil
@@ -232,7 +229,7 @@ final class SleepTimerService: ObservableObject {
     /// callbacks; the previous owner's callbacks are dropped.
     ///
     /// - Parameters:
-    ///   - duration: minutes, end-of-heading, end-of-chapter, or end-of-book
+    ///   - duration: minutes, end-of-heading, or end-of-book
     ///   - ownerID: UUID of the reader starting the timer (use its
     ///     `readerID`, never its book's ID, which a second window of the
     ///     same book shares). Optional only because some unit tests don't
@@ -282,9 +279,6 @@ final class SleepTimerService: ObservableObject {
         case .endOfHeading:
             remainingSeconds = 0
             timerLog(.event, "START kind=end-of-heading fadeSeconds=\(fadeOutDuration)")
-        case .endOfChapter:
-            remainingSeconds = 0
-            timerLog(.event, "START kind=end-of-chapter fadeSeconds=\(fadeOutDuration)")
         case .endOfBook:
             remainingSeconds = 0
             timerLog(.event, "START kind=end-of-book fadeSeconds=\(fadeOutDuration)")
