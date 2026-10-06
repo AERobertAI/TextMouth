@@ -88,11 +88,12 @@ final class FeedInfoModel: ObservableObject, Identifiable {
 /// The Feed Info sheet (FR03): the feed's title as its heading; its
 /// address, web site, author, items, last check, and subscription date,
 /// each a labelled value VoiceOver reads as one; the folder its downloads
-/// go to, which can be changed; its description, read with VoiceOver's text
-/// navigation; the two settings the feed may keep for itself, each with
-/// "Use the global setting"; Unsubscribe…, which asks first and names the
-/// books left behind; and Done, which Escape presses. Every change applies
-/// as it is made.
+/// go to, which can be changed; its description, under a Description
+/// heading, in a text area labelled with the feed's title and read with
+/// VoiceOver's text navigation; the two settings the feed may keep for
+/// itself, each with "Use the global setting"; Unsubscribe…, which asks
+/// first and names the books left behind; and Done, which Escape presses.
+/// Every change applies as it is made.
 struct FeedInfoSheet: View {
     /// What the sheet shows and changes.
     @ObservedObject var model: FeedInfoModel
@@ -211,7 +212,10 @@ struct FeedInfoSheet: View {
             Text(FeedWording.descriptionLabel)
                 .font(.subheadline)
                 .accessibilityAddTraits(.isHeader)
-            FeedReadOnlyText(text: summary, label: FeedWording.descriptionLabel)
+            // Labelled with the feed's title, as Show Description labels its
+            // text area with the item's: labelled Description, VoiceOver
+            // would say the heading's word twice in a row.
+            FeedReadOnlyText(text: summary, label: FeedWording.descriptionTextLabel(title: feed.title))
                 .frame(height: 120)
         }
     }
@@ -336,6 +340,59 @@ struct FeedReadOnlyText: NSViewRepresentable {
     }
 }
 
+// MARK: - A Key Equivalent Without a Button
+
+/// A key that does what a button's key equivalent does, with no second
+/// button (FR03): `key`, pressed with no modifier anywhere in the window,
+/// runs `action`. A SwiftUI button carries one shortcut, so Show
+/// Description's Close, whose shortcut is Return, answers Escape through
+/// this. The view takes no space, draws nothing, and is no element to
+/// VoiceOver.
+struct SilentKeyEquivalent: NSViewRepresentable {
+    /// The key.
+    let key: KeyEquivalent
+    /// What pressing it does.
+    let action: () -> Void
+
+    func makeNSView(context: Context) -> SilentKeyEquivalentView {
+        let view = SilentKeyEquivalentView(frame: .zero)
+        view.key = key
+        view.action = action
+        view.setAccessibilityElement(false)
+        return view
+    }
+
+    func updateNSView(_ view: SilentKeyEquivalentView, context: Context) {
+        view.key = key
+        view.action = action
+    }
+
+    /// No space at all, wherever the view is placed.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: SilentKeyEquivalentView, context: Context) -> CGSize? {
+        .zero
+    }
+}
+
+/// The view that takes the key. AppKit offers every key pressed in a window
+/// to each of the window's views as a key equivalent before the focused
+/// view sees it, so the key works wherever focus is, as a button's shortcut
+/// does, and before a focused text view can take it.
+final class SilentKeyEquivalentView: NSView {
+    /// The key, Escape until set.
+    var key: KeyEquivalent = .escape
+    /// What pressing it does; nothing until set.
+    var action: () -> Void = {}
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        guard modifiers.isEmpty, event.charactersIgnoringModifiers == String(key.character) else {
+            return super.performKeyEquivalent(with: event)
+        }
+        action()
+        return true
+    }
+}
+
 // MARK: - Show Description…
 
 /// What Show Description… shows of an item (FR03): its title, its feed and
@@ -397,13 +454,20 @@ struct FeedItemDescriptionSheet: View {
             }
             HStack {
                 Spacer()
+                // Return presses Close: nothing in the sheet takes typing.
+                // A button carries one shortcut, so Escape closes through
+                // the key equivalent below instead.
                 Button("Close", action: onClose)
-                    .keyboardShortcut(.cancelAction)
+                    .keyboardShortcut(.defaultAction)
             }
         }
         .padding()
         .frame(width: 520, height: 440)
         .navigationTitle(description.title)
+        // Escape closes the sheet too, wherever focus is, as Return does.
+        // Not the exit command: from the text area, an AppKit text view,
+        // that command never reaches SwiftUI.
+        .background(SilentKeyEquivalent(key: .escape, action: onClose))
     }
 }
 
@@ -438,7 +502,9 @@ extension FeedWording {
     static let folderInfoHelp = "Choosing another folder sends new downloads there; the books already downloaded stay where they are."
     /// The stand-in Feed Info's folder picker shows while the feed's folder is gone.
     static let chooseFolderOption = "Choose a folder"
-    /// The description's label and heading.
+    /// The Description heading in Feed Info; the text area under it is
+    /// labelled `descriptionTextLabel(title:)`, so VoiceOver does not say
+    /// Description twice.
     static let descriptionLabel = "Description"
     /// The heading of the feed's own settings.
     static let ownSettingsHeading = "This Feed's Settings"
@@ -451,7 +517,9 @@ extension FeedWording {
     static let useGlobalHint = "When checked, this feed follows the setting in Settings, Feeds; uncheck it to give the feed its own"
     /// The web page's label in Show Description.
     static let webPageLabel = "Web page"
-    /// The description text area's spoken label.
+    /// The spoken label of a description's text area, naming whose it is:
+    /// Feed Info's, with the feed's title, and Show Description's, with the
+    /// item's.
     static func descriptionTextLabel(title: String) -> String {
         "Description of \(title)"
     }
