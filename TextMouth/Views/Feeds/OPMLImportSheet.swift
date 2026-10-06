@@ -174,10 +174,13 @@ final class OPMLImportModel: ObservableObject, Identifiable {
 
 /// The Import OPML sheet (FR03): the file's name and how many feeds it
 /// lists; the Move dialog's folder picker, choosing where the feeds' own
-/// folders go; Import, which Return presses, and Cancel, which Escape
-/// presses and which stops an import under way. While it runs, the sheet
-/// says which feed it is subscribing to; once it ends, it says how it went,
-/// which VoiceOver also hears, and Done closes it.
+/// folders go, with New Folder; Import, which Return presses, except while
+/// the picker's New Folder fields are shown, when Return presses their
+/// Create and Import stands down, so one press does one thing; and Cancel,
+/// which Escape presses and which stops an import under way. While it
+/// runs, the sheet says which feed it is subscribing to; once it ends, it
+/// says how it went, which VoiceOver also hears, and Done, which Return
+/// presses, closes it.
 struct OPMLImportSheet: View {
     /// The sheet's work.
     @ObservedObject var model: OPMLImportModel
@@ -192,6 +195,29 @@ struct OPMLImportSheet: View {
 
     /// Why the last folder could not be made.
     @State private var folderFailure: String?
+    /// Whether the picker's new-folder fields are showing, while Return
+    /// presses their Create rather than Import.
+    @State private var isMakingFolder: Bool
+
+    /// A sheet doing `model`'s work in `library`, whose folder picker keeps
+    /// off the folders `feedFolders` says hold feeds; `makingFolder` opens
+    /// it with the new folder's fields already shown, as the tests of the
+    /// Return key need.
+    init(
+        model: OPMLImportModel,
+        library: Library,
+        feedFolders: LibraryFeedFolders,
+        onCreateFolder: @escaping (String, String) -> OperationOutcome,
+        onClose: @escaping () -> Void,
+        makingFolder: Bool = false
+    ) {
+        _model = ObservedObject(wrappedValue: model)
+        self.library = library
+        self.feedFolders = feedFolders
+        self.onCreateFolder = onCreateFolder
+        self.onClose = onClose
+        _isMakingFolder = State(initialValue: makingFolder)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -210,7 +236,8 @@ struct OPMLImportSheet: View {
                 accessibilityLabel: FeedWording.importFolderLabel,
                 onCreateFolder: onCreateFolder,
                 failureMessage: $folderFailure,
-                isDisabled: model.isRunning || model.summary != nil
+                isDisabled: model.isRunning || model.summary != nil,
+                isMakingFolder: $isMakingFolder
             )
 
             OperationFailureNotice(message: folderFailure)
@@ -234,7 +261,9 @@ struct OPMLImportSheet: View {
                     Button(FeedWording.importButton) {
                         model.start()
                     }
-                    .keyboardShortcut(.defaultAction)
+                    // Return imports, except while the new folder's fields
+                    // are shown, when it presses their Create.
+                    .keyboardShortcut(isMakingFolder ? nil : KeyboardShortcut.defaultAction)
                     .disabled(model.isRunning)
                 } else {
                     Spacer()
