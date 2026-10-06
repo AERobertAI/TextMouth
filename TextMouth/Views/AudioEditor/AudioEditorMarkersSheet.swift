@@ -10,7 +10,8 @@ import SwiftUI
 /// display shows which. The words drawn are hidden from VoiceOver, which
 /// has them in the row's label, so it reads them once, then the buttons.
 /// VoiceOver starts on the first row, or on Close when the list is empty.
-/// Escape closes the sheet.
+/// Escape presses a renaming's Cancel while a name is typed, as it cancels
+/// a renaming in the Finder, and Close otherwise.
 struct AudioEditorMarkersSheet: View {
     /// The window's model.
     @ObservedObject var model: AudioEditorModel
@@ -56,7 +57,7 @@ struct AudioEditorMarkersSheet: View {
             HStack {
                 Spacer()
                 Button(AudioEditorWording.closeButton) { model.sheet = nil }
-                    .keyboardShortcut(.cancelAction)
+                    .keyboardShortcut(Self.closeShortcut(whileRenaming: isRenaming))
                     .modifier(InitialVoiceOverFocusModifier(
                         isTarget: model.markers.isEmpty && model.chapters.isEmpty && model.pauses.isEmpty
                     ))
@@ -64,6 +65,18 @@ struct AudioEditorMarkersSheet: View {
         }
         .padding()
         .frame(minWidth: 560, minHeight: 440)
+    }
+
+    /// Whether a marker's or a chapter marker's name is being typed.
+    private var isRenaming: Bool {
+        renaming != nil || renamingChapter != nil
+    }
+
+    /// Close's keyboard shortcut: Escape, but for while a name is typed,
+    /// when Escape cancels the renaming instead (`AudioEditorRenameRow`),
+    /// the list staying open.
+    static func closeShortcut(whileRenaming: Bool) -> KeyboardShortcut? {
+        whileRenaming ? nil : .cancelAction
     }
 
     // MARK: - Markers
@@ -239,8 +252,10 @@ private struct RowCommand: Identifiable {
 /// A row of the list while its marker or chapter marker is renamed: the
 /// field, where the keyboard goes as the row opens, labelled for VoiceOver
 /// with the row's subject ("Name Marker 3"); Save Name, which Return
-/// presses too; and Cancel. The field's submit and Save Name run the one
-/// `save`, which one press of Return runs once.
+/// presses too; and Cancel, which Escape presses once the keyboard has
+/// left the field, which keeps Escape itself, the list staying open. The
+/// field's submit and Save Name run the one `save`, which one press of
+/// Return runs once.
 struct AudioEditorRenameRow: View {
     /// The field's label: Name for a marker, Title for a chapter marker.
     let label: String
@@ -265,6 +280,7 @@ struct AudioEditorRenameRow: View {
             Button(AudioEditorWording.saveNameButton, action: save)
                 .keyboardShortcut(.defaultAction)
             Button(AudioEditorWording.cancelButton, action: cancel)
+                .keyboardShortcut(.cancelAction)
         }
         .onAppear { fieldFocused = true }
     }

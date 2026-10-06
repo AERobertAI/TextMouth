@@ -314,6 +314,46 @@ final class AudioEditorWindowTests: XCTestCase {
         try checkReturnRunsOnce(in: row, counting: saves, "the rename row")
     }
 
+    /// Escape cancels a renaming under way, the list staying open, as it
+    /// cancels a renaming in the Finder: once the keyboard has left the
+    /// field, which keeps Escape itself, the rename row's Cancel takes the
+    /// key and saves nothing; Close takes it only while no name is typed,
+    /// closing the list.
+    func testEscapeCancelsARenamingBeforeClosingTheList() async throws {
+        XCTAssertNil(AudioEditorMarkersSheet.closeShortcut(whileRenaming: true))
+        XCTAssertEqual(AudioEditorMarkersSheet.closeShortcut(whileRenaming: false), .cancelAction)
+
+        let saves = Tally()
+        let cancels = Tally()
+        let row = AudioEditorRenameRow(
+            label: AudioEditorWording.nameFieldLabel,
+            subject: AudioEditorWording.markerSubject(1),
+            name: .constant("Intro"),
+            save: { saves.count += 1 },
+            cancel: { cancels.count += 1 }
+        )
+        try withHostedView(row, until: { !self.editableFields(in: $0).isEmpty }) { hosting in
+            let window = try XCTUnwrap(hosting.window, "the rename row has no window")
+            // The keyboard out of the field, as after a Tab to the buttons.
+            window.makeFirstResponder(nil)
+            try press(.escape, in: window)
+            guard ran(cancels) else {
+                throw XCTSkip("This macOS hands an offscreen window no key presses")
+            }
+            XCTAssertEqual(cancels.count, 1, "Escape cancelled the renaming \(cancels.count) times")
+            XCTAssertEqual(saves.count, 0, "Escape saved the name")
+        }
+
+        let model = try await openRamp(seconds: 4, loadsPreview: false).model
+        model.sheet = .markers
+        try withHostedView(AudioEditorMarkersSheet(model: model), until: { $0.fittingSize.height > 0 }) { hosting in
+            guard pressKeyEquivalent(.escape, in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertTrue(waitUntil { model.sheet == nil }, "Escape did not close the list")
+        }
+    }
+
     /// Hosts `view`, puts the keyboard in its field, as the view does as it
     /// opens, presses Return once, and checks that `runs` counted one run;
     /// then takes the keyboard out of the field and presses Return again,
