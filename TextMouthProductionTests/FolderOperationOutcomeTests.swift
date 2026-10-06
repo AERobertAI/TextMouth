@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -344,6 +345,35 @@ final class FolderOperationOutcomeTests: XCTestCase {
         XCTAssertTrue(recorder.announcements.isEmpty)
     }
 
+    // MARK: - Running a Sheet's Edit
+
+    /// `OperationFailureNotice.run` keeps a sheet's state through an edit
+    /// that takes a while (PERF14): the sheet works until the edit returns,
+    /// then shows the failure, announced once. A retry with the same input
+    /// shows no reason while it runs, since the one before was about the
+    /// attempt before, and after a second failure shows that failure's own
+    /// reason.
+    func testARetryShowsNoReasonUntilItsOwnFailure() {
+        let sheet = SheetStateProbe()
+
+        let recorder = recordingAnnouncements {
+            for attempt in 1...2 {
+                OperationFailureNotice.run(
+                    sheet.failingEdit,
+                    isWorking: sheet.isWorkingBinding,
+                    failureMessage: sheet.failureMessageBinding
+                )
+                XCTAssertTrue(sheet.isWorking, "attempt \(attempt) did not start")
+                XCTAssertNil(sheet.failureMessage, "attempt \(attempt) started with a reason showing")
+                XCTAssertTrue(waitUntil { !sheet.isWorking }, "attempt \(attempt) never ended")
+                XCTAssertEqual(sheet.failureMessage, "Attempt \(attempt) failed")
+            }
+        }
+
+        XCTAssertEqual(sheet.reasonsSeenWhileWorking, [nil, nil], "an attempt ran beside an earlier reason")
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Attempt 1 failed", "Attempt 2 failed"])
+    }
+
     // MARK: - Fixtures
 
     /// A top-level folder name unique to this test. Whatever ends up at that
@@ -396,5 +426,40 @@ final class FolderOperationOutcomeTests: XCTestCase {
         )
         try book.saveBookInfoThrowing()
         return book
+    }
+}
+
+// MARK: - Sheet State Probe
+
+/// The state a sheet hands `OperationFailureNotice.run`, its work flag and
+/// its failure message, held where a test can read it between the steps of
+/// an edit, with an edit that fails every time it runs.
+@MainActor
+private final class SheetStateProbe {
+    /// Whether the sheet is working, as the sheet's `isWorking` state.
+    var isWorking = false
+    /// The reason the sheet shows, as the sheet's `failureMessage` state.
+    var failureMessage: String?
+    /// How many times the edit has run.
+    private(set) var attempts = 0
+    /// What the sheet showed as each run of the edit started.
+    private(set) var reasonsSeenWhileWorking: [String?] = []
+
+    /// The binding a sheet's `@State private var isWorking` would give.
+    var isWorkingBinding: Binding<Bool> {
+        Binding(get: { self.isWorking }, set: { self.isWorking = $0 })
+    }
+
+    /// The binding a sheet's `@State private var failureMessage` would give.
+    var failureMessageBinding: Binding<String?> {
+        Binding(get: { self.failureMessage }, set: { self.failureMessage = $0 })
+    }
+
+    /// An edit that fails every time, naming its attempt, and records what
+    /// the sheet showed as it started.
+    func failingEdit() async -> OperationOutcome {
+        attempts += 1
+        reasonsSeenWhileWorking.append(failureMessage)
+        return .failure("Attempt \(attempts) failed")
     }
 }

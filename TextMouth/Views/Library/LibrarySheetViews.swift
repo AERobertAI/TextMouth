@@ -122,7 +122,9 @@ struct OperationFailureNotice: View {
 
     /// Starts `operation`, a sheet's edit that moves books and can take a
     /// while (PERF14), and keeps the sheet's state while it runs:
-    /// `isWorking` is true until it is done, which shows
+    /// `failureMessage` is cleared as it starts, so a retry of the same
+    /// input never shows the attempt before's reason beside the work
+    /// indicator; `isWorking` is true until it is done, which shows
     /// `SheetWorkIndicator` and keeps the sheet's buttons disabled, so the
     /// edit cannot start twice nor the sheet close halfway; then
     /// `failureMessage` holds what `message(after:)` gives. The owner closes
@@ -133,6 +135,9 @@ struct OperationFailureNotice: View {
         isWorking: Binding<Bool>,
         failureMessage: Binding<String?>
     ) {
+        // The last failure was about the attempt before; a reason that
+        // stayed would read as this attempt's until it ends.
+        failureMessage.wrappedValue = nil
         isWorking.wrappedValue = true
         Task { @MainActor in
             let outcome = await operation()
