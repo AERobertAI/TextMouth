@@ -255,6 +255,30 @@ final class AudioEditorWindowTests: XCTestCase {
         }
     }
 
+    /// While a marker or a chapter marker is renamed, its row holds the
+    /// field, labelled for VoiceOver with the row's subject, "Name Marker
+    /// 1" or "Title Chapter 2", holding the name as it stands, then Save
+    /// Name and Cancel; VoiceOver reads the field by that label, with the
+    /// name as its value.
+    func testARenameRowsFieldNamesItsRow() throws {
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.nameFieldLabel, AudioEditorWording.markerSubject(1)), "Name Marker 1")
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.titleFieldLabel, AudioEditorWording.chapterSubject(2)), "Title Chapter 2")
+        XCTAssertEqual(AudioEditorWording.saveNameButton, "Save Name")
+
+        let row = AudioEditorRenameRow(
+            label: AudioEditorWording.titleFieldLabel,
+            subject: AudioEditorWording.chapterSubject(2),
+            name: .constant("Locks"),
+            save: {},
+            cancel: {}
+        )
+        try withHostedControls(row) { controls in
+            let field = try control(labelled: "Title Chapter 2", in: controls)
+            XCTAssertEqual(field.role, .textField)
+            XCTAssertEqual(field.element.accessibilityValue() as? String, "Locks")
+        }
+    }
+
     // MARK: - The Main Edit Menu
 
     /// The main Edit menu sends the actions an editor window answers: Undo

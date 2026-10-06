@@ -21,8 +21,6 @@ struct AudioEditorMarkersSheet: View {
     @State private var renamingChapter: TimeInterval?
     /// The name or title typed.
     @State private var newName = ""
-    /// Puts the keyboard in the name field as it opens.
-    @FocusState private var nameFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -77,16 +75,13 @@ struct AudioEditorMarkersSheet: View {
         let label = AudioEditorWording.marker(number, named: marker.name, at: marker.time)
         let subject = AudioEditorWording.markerSubject(number)
         if renaming == marker.id {
-            HStack {
-                TextField(AudioEditorWording.nameFieldLabel, text: $newName)
-                    .focused($nameFocused)
-                    .onSubmit { saveName(of: marker) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.nameFieldLabel, subject))
-                Button(AudioEditorWording.saveNameButton) { saveName(of: marker) }
-                    .keyboardShortcut(.defaultAction)
-                Button(AudioEditorWording.cancelButton) { renaming = nil }
-            }
-            .onAppear { nameFocused = true }
+            AudioEditorRenameRow(
+                label: AudioEditorWording.nameFieldLabel,
+                subject: subject,
+                name: $newName,
+                save: { saveName(of: marker) },
+                cancel: { renaming = nil }
+            )
         } else {
             row(label, subject: subject, commands: [
                 RowCommand(AudioEditorWording.goToButton) { model.goToMarker(marker.id) },
@@ -119,16 +114,13 @@ struct AudioEditorMarkersSheet: View {
         let label = AudioEditorWording.chapterRow(index + 1, title: title, at: start)
         let subject = AudioEditorWording.chapterSubject(index + 1)
         if renamingChapter == start {
-            HStack {
-                TextField(AudioEditorWording.titleFieldLabel, text: $newName)
-                    .focused($nameFocused)
-                    .onSubmit { saveTitle(at: start) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.titleFieldLabel, subject))
-                Button(AudioEditorWording.saveNameButton) { saveTitle(at: start) }
-                    .keyboardShortcut(.defaultAction)
-                Button(AudioEditorWording.cancelButton) { renamingChapter = nil }
-            }
-            .onAppear { nameFocused = true }
+            AudioEditorRenameRow(
+                label: AudioEditorWording.titleFieldLabel,
+                subject: subject,
+                name: $newName,
+                save: { saveTitle(at: start) },
+                cancel: { renamingChapter = nil }
+            )
         } else {
             row(label, subject: subject, commands: [
                 RowCommand(AudioEditorWording.goToButton) { model.goToChapter(index) },
@@ -240,4 +232,40 @@ private struct RowCommand: Identifiable {
 
     /// A row's commands are told apart by their titles.
     var id: String { title }
+}
+
+// MARK: - Renaming
+
+/// A row of the list while its marker or chapter marker is renamed: the
+/// field, where the keyboard goes as the row opens, labelled for VoiceOver
+/// with the row's subject ("Name Marker 3"); Save Name, which Return
+/// presses too; and Cancel. The field's submit and Save Name run the one
+/// `save`, which one press of Return runs once.
+struct AudioEditorRenameRow: View {
+    /// The field's label: Name for a marker, Title for a chapter marker.
+    let label: String
+    /// The row's subject, which names the field: "Marker 3".
+    let subject: String
+    /// The name as typed.
+    @Binding var name: String
+    /// Keeps the name typed, and closes the row.
+    let save: () -> Void
+    /// Closes the row with the name as it was.
+    let cancel: () -> Void
+
+    /// Puts the keyboard in the field as the row opens.
+    @FocusState private var fieldFocused: Bool
+
+    var body: some View {
+        HStack {
+            TextField(label, text: $name)
+                .focused($fieldFocused)
+                .onSubmit(save)
+                .accessibilityLabel(AudioEditorWording.rowButton(label, subject))
+            Button(AudioEditorWording.saveNameButton, action: save)
+                .keyboardShortcut(.defaultAction)
+            Button(AudioEditorWording.cancelButton, action: cancel)
+        }
+        .onAppear { fieldFocused = true }
+    }
 }
