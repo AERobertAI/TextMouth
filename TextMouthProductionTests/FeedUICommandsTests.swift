@@ -401,6 +401,46 @@ final class FeedUICommandsTests: XCTestCase {
         }
     }
 
+    /// Feed Info has no Return-key button of its own: Escape presses Done,
+    /// and Return stays with the number fields, entering the number typed,
+    /// so while the folder picker's New Folder fields are shown their
+    /// Create is the one button Return presses, as in the Move sheet.
+    func testReturnStaysWithTheNumberFieldsAndEscapePressesDone() async throws {
+        let harness = try await Harness(self, label: "FeedUICommandsInfoReturn")
+        let model = FeedInfoModel(feedID: harness.feed.id, center: harness.world.center, library: harness.world.library)
+        // The feed keeps its own number of entries, so that field takes
+        // typing; the other still follows the global setting.
+        model.keepsGlobalEntries = false
+        var dones = 0
+        let sheet = FeedInfoSheet(
+            model: model,
+            feedFolders: LibraryFeedFolders(center: harness.world.center),
+            unsubscribeConfirmation: { nil },
+            onUnsubscribe: {},
+            onDone: { dones += 1 }
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 560, height: 680), until: {
+            self.feedEditableFields(in: $0).contains(where: \.isEnabled)
+        }) { hosting in
+            guard pressKeyEquivalent(.escape, in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertEqual(dones, 1, "Escape did not press Done")
+
+            let fields = feedEditableFields(in: hosting).filter(\.isEnabled)
+            XCTAssertEqual(fields.count, 1, "fields taking typing: \(fields.map { $0.accessibilityLabel() ?? "" })")
+            let field = try XCTUnwrap(fields.first)
+            try typeReplacingText("25", in: field, of: hosting)
+
+            XCTAssertFalse(pressReturnKey(in: hosting), "a button took Return from the number field")
+            settleHostedView(hosting)
+            XCTAssertEqual(model.keepEntries, 25, "Return did not enter the number typed")
+            XCTAssertEqual(harness.record?.feed.keepEntriesOverride, 25)
+            XCTAssertEqual(dones, 1, "Return pressed Done")
+        }
+    }
+
     /// Return presses Show Description's Close, as Escape does, from the
     /// text area the sheet starts in, each a key equivalent the window
     /// offers its views before the text area sees the key; until October 6,

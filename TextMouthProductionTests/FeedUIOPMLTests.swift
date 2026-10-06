@@ -7,8 +7,10 @@ import XCTest
 /// export, nested categories, letter case, duplicates, and damaged markup
 /// included, never loading an external entity; writing them, so a list
 /// TextMouth exports reads back the same; importing a list into a folder the
-/// listener picks, each feed into a folder of its own, saying how it went;
-/// and exporting to a file. Feeds are served by a stub server.
+/// listener picks, each feed into a folder of its own, saying how it went,
+/// the picker's Create taking the Return key from Import while its New
+/// Folder fields are shown; and exporting to a file. Feeds are served by a
+/// stub server.
 @MainActor
 final class FeedUIOPMLTests: XCTestCase {
 
@@ -273,6 +275,126 @@ final class FeedUIOPMLTests: XCTestCase {
             FeedWording.importLists(fileName: "subscriptions.opml", count: 1),
             "subscriptions.opml lists 1 feed. Each gets a folder of its own, named after it."
         )
+    }
+
+    // MARK: - The Return Key
+
+    /// With the new folder's fields shown and keyboard focus in the name
+    /// field, Return presses the picker's Create and never Import: a folder
+    /// that can't be made keeps the fields, and Return tries again; with no
+    /// name typed, Return imports nothing; once the folder is made and the
+    /// fields close, Return imports into it.
+    func testReturnCreatesTheNewFolderWhileItsFieldsAreShownAndImportsOtherwise() throws {
+        let world = try FeedTestWorld(self, label: "FeedUIOPMLReturn")
+        world.server.serve("/atlas.xml", .feed(FeedXML.rss(title: "The Tactile Atlas", items: [Self.item])))
+        guard startTurningTheRunLoop(world) else { return }
+        var heard: [String] = []
+        let model = OPMLImportModel(
+            fileName: "subscriptions.opml",
+            subscriptions: [OPMLSubscription(title: "The Tactile Atlas", feedURL: world.server.url("/atlas.xml"), siteURL: nil)],
+            center: world.center,
+            parentPath: "",
+            announce: { heard.append($0) }
+        )
+        let creates = CallLog<String>()
+        // The world's own folder stands for the folder made, as in the Add
+        // Feed test: in the pop-up from the start, so it can show as chosen
+        // once "made", and the feed's folder really goes inside it. The
+        // first try is refused, as a name in use is, and the second works.
+        let folderName = world.folder.path
+        let sheet = OPMLImportSheet(
+            model: model,
+            library: world.library.library,
+            feedFolders: LibraryFeedFolders(center: world.center),
+            onCreateFolder: { name, parent in
+                creates.record(parent.isEmpty ? name : "\(parent)/\(name)")
+                return creates.calls.count == 1
+                    ? .failure("Could not create folder: refused once for the test")
+                    : .success(nil)
+            },
+            onClose: {},
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 520, height: 480), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
+            try typeNewFolderName(folderName, in: hosting)
+            guard pressReturnKey(in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertEqual(creates.calls, [folderName], "Return did not press Create")
+            settleHostedView(hosting)
+            XCTAssertFalse(model.isRunning || model.summary != nil, "Return pressed Import as well")
+
+            // Refused, the fields stay with the name. With the name cleared,
+            // Create is unavailable, and Return imports nothing.
+            XCTAssertEqual(newFolderNameFields(in: hosting).count, 1, "the refused folder's fields closed")
+            try typeNewFolderName("", in: hosting)
+            XCTAssertFalse(pressReturnKey(in: hosting), "a button took Return with no name typed")
+            settleHostedView(hosting)
+            XCTAssertEqual(creates.calls.count, 1, "Return pressed Create with no name")
+            XCTAssertFalse(model.isRunning || model.summary != nil, "Return pressed Import with the fields shown")
+
+            // Typed again, the name makes the folder, which is the place
+            // chosen, and the fields are gone, so Return imports into it.
+            try typeNewFolderName(folderName, in: hosting)
+            XCTAssertTrue(pressReturnKey(in: hosting))
+            XCTAssertEqual(creates.calls, [folderName, folderName], "Return did not press Create again")
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                return self.newFolderNameFields(in: hosting).isEmpty
+            }, "the made folder's fields stayed open")
+            let popUp = descendants(of: hosting, as: NSPopUpButton.self).first
+            XCTAssertTrue(waitUntil { popUp?.titleOfSelectedItem == folderName }, "the place chosen is \(popUp?.titleOfSelectedItem ?? "none")")
+            settleHostedView(hosting)
+            XCTAssertTrue(pressReturnKey(in: hosting))
+            XCTAssertTrue(waitUntil(timeout: 10) { model.summary != nil }, "Return did not press Import once the fields closed")
+            XCTAssertEqual(creates.calls.count, 2, "Return pressed Create once the fields closed")
+        }
+        let summary = try XCTUnwrap(model.summary)
+        XCTAssertEqual(summary.subscribed, ["The Tactile Atlas"])
+        XCTAssertEqual(heard, [summary.sentence])
+        let feed = try XCTUnwrap(world.center.feeds.first { $0.title == "The Tactile Atlas" })
+        XCTAssertEqual(world.library.feedFolderPath(forFolderID: feed.folderID), "\(folderName)/The Tactile Atlas")
+    }
+
+    /// Once the import has ended, Return presses Done, with the new folder's
+    /// fields shown or not: they are unavailable then, with the picker.
+    func testReturnPressesDoneOnceTheImportHasEnded() throws {
+        let world = try FeedTestWorld(self, label: "FeedUIOPMLDone")
+        world.server.serve("/atlas.xml", .feed(FeedXML.rss(title: "The Tactile Atlas", items: [Self.item])))
+        guard startTurningTheRunLoop(world) else { return }
+        let model = OPMLImportModel(
+            fileName: "subscriptions.opml",
+            subscriptions: [OPMLSubscription(title: "The Tactile Atlas", feedURL: world.server.url("/atlas.xml"), siteURL: nil)],
+            center: world.center,
+            parentPath: world.folder.path,
+            announce: { _ in }
+        )
+        var closes = 0
+        let sheet = OPMLImportSheet(
+            model: model,
+            library: world.library.library,
+            feedFolders: LibraryFeedFolders(center: world.center),
+            onCreateFolder: { _, _ in .success(nil) },
+            onClose: { closes += 1 },
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 520, height: 480), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
+            // Escape presses Cancel before the import, which closes the sheet.
+            try typeNewFolderName("Shows", in: hosting)
+            guard pressKeyEquivalent(.escape, in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertEqual(closes, 1, "Escape did not press Cancel")
+
+            // Import pressed as a click presses it, with the fields shown.
+            model.start()
+            XCTAssertTrue(waitUntil(timeout: 10) { model.summary != nil }, "the import did not end")
+            settleHostedView(hosting)
+            XCTAssertTrue(pressReturnKey(in: hosting), "nothing took Return once the import ended")
+            XCTAssertEqual(closes, 2, "Return did not press Done")
+        }
     }
 
     // MARK: - Helpers

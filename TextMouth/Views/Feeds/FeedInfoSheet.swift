@@ -154,7 +154,8 @@ struct FeedInfoSheet: View {
                 .disabled(model.feed == nil)
                 Spacer()
                 // Escape presses Done: every change is kept as it is made,
-                // and Return stays with the number fields, which it enters.
+                // and Return stays with the number fields, which it enters,
+                // or with the picker's Create while its fields are shown.
                 Button("Done", action: onDone)
                     .keyboardShortcut(.cancelAction)
             }
@@ -190,6 +191,10 @@ struct FeedInfoSheet: View {
             FeedInfoValue(label: FeedWording.securityLabel, value: FeedWording.insecureNote)
         }
 
+        // The picker's Create takes Return while its New Folder fields are
+        // shown, from a number field too, whose number is entered as focus
+        // leaves it; no isMakingFolder binding, since the sheet has no
+        // Return-key button of its own to stand down meanwhile.
         LibraryFolderPicker(
             options: model.folderOptions(feedFolders: feedFolders),
             newFolderParents: LibraryFolderOption.options(in: model.library.library) { folder in

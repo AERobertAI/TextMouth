@@ -5,10 +5,12 @@ import XCTest
 
 /// Add Feed (FR03), as the listener meets it: a sheet with an address field,
 /// which VoiceOver's focus starts in, and the Move dialog's folder picker,
-/// choosing where the feed's own folder goes; subscribing makes a folder
-/// named after the feed there, only once the feed has been read; a page
-/// naming several feeds turns the sheet to a choice of them; a failure stays
-/// in the sheet in the engine's words; a plain-http feed is warned about
+/// choosing where the feed's own folder goes, whose Create takes the Return
+/// key from Subscribe while its New Folder fields are shown; subscribing
+/// makes a folder named after the feed there, only once the feed has been
+/// read; a page naming several feeds turns the sheet to a choice of them,
+/// Subscribe taking Return back; a failure stays in the sheet in the
+/// engine's words; a plain-http feed is warned about
 /// once, as the sheet closes. Every feed is served by a stub server, so no
 /// test reaches the network.
 @MainActor
@@ -427,6 +429,150 @@ final class FeedUIAddFeedTests: XCTestCase {
         XCTAssertEqual(FeedWording.subscribed(title: "Notes", itemCount: 3, noun: .article), "Subscribed to Notes: 3 articles.")
     }
 
+    // MARK: - The Return Key
+
+    /// With the new folder's fields shown and keyboard focus in the name
+    /// field, Return presses the picker's Create and never Subscribe: a
+    /// folder that can't be made keeps the fields, and Return tries again;
+    /// with no name typed, Return subscribes to nothing; once the folder is
+    /// made and the fields close, Return subscribes to the address, and the
+    /// feed's folder goes inside the folder made.
+    func testReturnCreatesTheNewFolderWhileItsFieldsAreShownAndSubscribesOtherwise() throws {
+        let world = try FeedTestWorld(self, label: "FeedUIReturn")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(title: "The Tactile Atlas", items: [Self.item])))
+        guard startTurningTheRunLoop(world) else { return }
+        var heard: [String] = []
+        let model = AddFeedModel(center: world.center, parentPath: "", announce: { heard.append($0) })
+        model.address = world.server.url("/feed.xml").absoluteString
+        let creates = CallLog<String>()
+        let subscribed = CallLog<String>()
+        // The world's own folder stands for the folder made: it is in the
+        // pop-up from the start, so the pop-up can show it chosen once
+        // "made", as it does in the app once the library publishes the new
+        // folder, and the feed's folder then really goes inside it. The
+        // first try is refused, as a name in use is, and the second works.
+        let folderName = world.folder.path
+        let sheet = AddFeedSheet(
+            model: model,
+            library: world.library.library,
+            feedFolders: LibraryFeedFolders(center: world.center),
+            onCreateFolder: { name, parent in
+                creates.record(parent.isEmpty ? name : "\(parent)/\(name)")
+                return creates.calls.count == 1
+                    ? .failure("Could not create folder: refused once for the test")
+                    : .success(nil)
+            },
+            onSubscribed: { subscribed.record($0.title) },
+            onCancel: {},
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 520, height: 720), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
+            try typeNewFolderName(folderName, in: hosting)
+            guard pressReturnKey(in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertEqual(creates.calls, [folderName], "Return did not press Create")
+            XCTAssertTrue(heard.isEmpty, "Return pressed Subscribe as well: \(heard)")
+
+            // Refused, the fields stay with the name. With the name cleared,
+            // Create is unavailable, and Return subscribes to nothing.
+            settleHostedView(hosting)
+            XCTAssertEqual(newFolderNameFields(in: hosting).count, 1, "the refused folder's fields closed")
+            try typeNewFolderName("", in: hosting)
+            XCTAssertFalse(pressReturnKey(in: hosting), "a button took Return with no name typed")
+            settleHostedView(hosting)
+            XCTAssertEqual(creates.calls.count, 1, "Return pressed Create with no name")
+            XCTAssertTrue(heard.isEmpty, "Return pressed Subscribe with the fields shown: \(heard)")
+            XCTAssertFalse(model.isWorking)
+
+            // Typed again, the name makes the folder, which is the place
+            // chosen, and the fields are gone, so Return subscribes into it.
+            try typeNewFolderName(folderName, in: hosting)
+            XCTAssertTrue(pressReturnKey(in: hosting))
+            XCTAssertEqual(creates.calls, [folderName, folderName], "Return did not press Create again")
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                return self.newFolderNameFields(in: hosting).isEmpty
+            }, "the made folder's fields stayed open")
+            let popUp = descendants(of: hosting, as: NSPopUpButton.self).first
+            XCTAssertTrue(waitUntil { popUp?.titleOfSelectedItem == folderName }, "the place chosen is \(popUp?.titleOfSelectedItem ?? "none")")
+            settleHostedView(hosting)
+            XCTAssertTrue(pressReturnKey(in: hosting))
+            XCTAssertEqual(heard, [FeedWording.checkingAddress], "Return did not press Subscribe once the fields closed")
+            XCTAssertEqual(creates.calls.count, 2, "Return pressed Create once the fields closed")
+            XCTAssertTrue(waitUntil(timeout: 10) { subscribed.calls == ["The Tactile Atlas"] }, "the feed was not subscribed to: \(subscribed.calls)")
+        }
+        let feed = try XCTUnwrap(model.subscribedFeed)
+        XCTAssertEqual(world.library.feedFolderPath(forFolderID: feed.folderID), "\(folderName)/The Tactile Atlas")
+    }
+
+    /// A page naming several feeds replaces the address step, folder picker
+    /// and all, so Subscribe takes Return back even when the new folder's
+    /// fields were shown as the page was read; Back brings the address step
+    /// back with the fields closed.
+    func testReturnSubscribesAtTheChoiceStepAfterTheFieldsWereShown() throws {
+        let world = try FeedTestWorld(self, label: "FeedUIReturnChoice")
+        let first = world.server.url("/posts.xml")
+        let second = world.server.url("/comments.xml")
+        world.server.serve("/page.html", StubResponse(
+            headers: ["Content-Type": "text/html; charset=utf-8"],
+            body: Data(FeedXML.page(naming: [first, second]).utf8)
+        ))
+        world.server.serve("/posts.xml", .feed(FeedXML.rss(title: "Posts", items: [Self.item])))
+        guard startTurningTheRunLoop(world) else { return }
+        var heard: [String] = []
+        let model = AddFeedModel(center: world.center, parentPath: world.folder.path, announce: { heard.append($0) })
+        model.address = world.server.url("/page.html").absoluteString
+        let subscribed = CallLog<String>()
+        let sheet = AddFeedSheet(
+            model: model,
+            library: world.library.library,
+            feedFolders: LibraryFeedFolders(center: world.center),
+            // Refused, so the fields stay shown, with their name, as the
+            // page is read.
+            onCreateFolder: { _, _ in .failure("Could not create folder: refused for the test") },
+            onSubscribed: { subscribed.record($0.title) },
+            onCancel: {},
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 520, height: 720), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
+            try typeNewFolderName("Shows", in: hosting)
+            guard pressReturnKey(in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertTrue(heard.isEmpty, "Return pressed Subscribe with the fields shown: \(heard)")
+            settleHostedView(hosting)
+            XCTAssertEqual(newFolderNameFields(in: hosting).count, 1, "the refused folder's fields closed")
+
+            // Subscribe pressed as a click presses it: the page names two
+            // feeds, and the choice of them replaces the fields.
+            model.subscribe()
+            XCTAssertTrue(waitUntil(timeout: 10) { model.isChoosing }, "the page's feeds were not offered")
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                return self.newFolderNameFields(in: hosting).isEmpty
+            }, "the fields stayed with the choice step")
+            settleHostedView(hosting)
+
+            // Return subscribes to the feed chosen.
+            XCTAssertTrue(pressReturnKey(in: hosting), "nothing took Return at the choice step")
+            XCTAssertEqual(heard.last, FeedWording.checkingAddress, "Return did not press Subscribe at the choice step")
+            XCTAssertTrue(waitUntil(timeout: 10) { subscribed.calls == ["Posts"] }, "the feed chosen was not subscribed to: \(subscribed.calls)")
+
+            // Back: the address step returns with the fields closed.
+            model.back()
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                return !self.descendants(of: hosting, as: NSPopUpButton.self).isEmpty
+            }, "the address step did not return")
+            settleHostedView(hosting)
+            XCTAssertTrue(newFolderNameFields(in: hosting).isEmpty, "the fields reopened after Back")
+        }
+        XCTAssertEqual(heard, [FeedWording.checkingAddress, FeedWording.choosePrompt(count: 2), FeedWording.checkingAddress])
+    }
+
     // MARK: - The Command
 
     /// Library > Add Feed… takes Shift-Command-F, which no default shortcut
@@ -493,4 +639,86 @@ final class FeedUIAddFeedTests: XCTestCase {
         return feed
     }
 
+}
+
+// MARK: - The Return Key and the New Folder's Fields
+
+// What the feed sheets' tests of the Return key share with each other; the
+// Move sheet's test (`LibraryFolderPickerTests`) keeps its own. These tests
+// are synchronous: they turn the run loop while a hosted view is alive, and
+// under an async test that turning cannot run the main actor's work, so a
+// button's Task would never finish.
+extension XCTestCase {
+    /// Starts `world`'s engine and turns the run loop until what it starts
+    /// has finished, as `world.start()` awaits it; fails the test, and
+    /// returns false, when that takes too long.
+    @MainActor
+    func startTurningTheRunLoop(_ world: FeedTestWorld, file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        let finished = CallLog<Bool>()
+        Task {
+            await world.start()
+            finished.record(true)
+        }
+        let started = waitUntil(timeout: 10) { !finished.calls.isEmpty }
+        XCTAssertTrue(started, "the engine's start did not finish", file: file, line: line)
+        return started
+    }
+
+    /// Presses Return in `hostingView`'s window as the app receives a key:
+    /// offered as a key equivalent first, which a button with that shortcut
+    /// takes, and otherwise sent on to the control with keyboard focus.
+    /// Returns whether a key equivalent took it; some macOS releases hand
+    /// an offscreen window none.
+    @MainActor
+    func pressReturnKey(in hostingView: NSView) -> Bool {
+        guard let window = hostingView.window, let event = keyDown(.return, in: window) else { return false }
+        if window.performKeyEquivalent(with: event) { return true }
+        window.sendEvent(event)
+        return false
+    }
+
+    /// Gives the new folder's name field keyboard focus and makes `name`
+    /// its text, through the window's field editor as the keyboard does,
+    /// so the picker's binding follows; an empty `name` clears the field.
+    /// Skips where an offscreen window gives the field no focus.
+    @MainActor
+    func typeNewFolderName(_ name: String, in hostingView: NSView) throws {
+        let field = try XCTUnwrap(newFolderNameFields(in: hostingView).first, "the name field was not drawn")
+        try typeReplacingText(name, in: field, of: hostingView)
+    }
+
+    /// Gives `field` keyboard focus and makes `text` its whole text,
+    /// through the window's field editor as the keyboard does, so the
+    /// field's binding follows; empty `text` clears the field. Skips where
+    /// an offscreen window gives the field no focus.
+    @MainActor
+    func typeReplacingText(_ text: String, in field: NSTextField, of hostingView: NSView) throws {
+        guard let window = hostingView.window, window.makeFirstResponder(field),
+              let editor = window.firstResponder as? NSTextView else {
+            throw XCTSkip("This macOS gives an offscreen window's field no keyboard focus")
+        }
+        editor.selectAll(nil)
+        if text.isEmpty {
+            editor.delete(nil)
+        } else {
+            editor.insertText(text, replacementRange: editor.selectedRange())
+        }
+        settleHostedView(hostingView)
+    }
+
+    /// Lets SwiftUI apply its pending updates, as after typing or a press.
+    @MainActor
+    func settleHostedView(_ hostingView: NSView) {
+        _ = waitUntil(timeout: 0.25) {
+            hostingView.layoutSubtreeIfNeeded()
+            return false
+        }
+    }
+
+    /// The new folder's name field, drawn while the picker's fields are
+    /// shown.
+    @MainActor
+    func newFolderNameFields(in root: NSView) -> [NSTextField] {
+        feedEditableFields(in: root).filter { $0.placeholderString == "Folder name" }
+    }
 }
