@@ -11,10 +11,11 @@ import XCTest
 /// each pop-up lists its choices by name; the window and each sheet start
 /// VoiceOver on one control; and, wherever this session exposes the AppKit
 /// controls SwiftUI draws, VoiceOver reads each by its label, hint, and
-/// value. SwiftUI builds its own buttons and text for VoiceOver only while
-/// an assistive app is connected, so their words are checked through the
-/// model functions that give them. No test shows a window, plays a sound,
-/// or records.
+/// value; and one press of Return runs a sheet's command once. SwiftUI
+/// builds its own buttons and text for VoiceOver only while an assistive
+/// app is connected, so their words are checked through the model
+/// functions that give them. No test shows a window, plays a sound, or
+/// records.
 @MainActor
 final class AudioEditorWindowTests: XCTestCase {
 
@@ -277,6 +278,89 @@ final class AudioEditorWindowTests: XCTestCase {
             XCTAssertEqual(field.role, .textField)
             XCTAssertEqual(field.element.accessibilityValue() as? String, "Locks")
         }
+    }
+
+    // MARK: - Return
+
+    /// One press of Return runs a sheet's command once, with the keyboard
+    /// in the field, as it is when the sheet opens, and out of it: Go to
+    /// Time, Insert Silence, and Insert Chapter Marker, whose field's
+    /// submit and default button take the same answer, and the list's
+    /// rename rows, whose field's submit and Save Name save the same name.
+    /// The key goes through the window as AppKit sends a key pressed in
+    /// it. Insert Silence begins its edit as soon as it is answered, so a
+    /// second run would insert the silence twice.
+    func testOneReturnRunsACommandOnce() throws {
+        for prompt in [AudioEditorPrompt.goToTime, .insertSilence, .insertChapter] {
+            let answers = Tally()
+            let sheet = AudioEditorPromptSheet(prompt: prompt, initialText: "1", submit: { _ in
+                answers.count += 1
+                return nil
+            }, cancel: {})
+            try checkReturnRunsOnce(in: sheet, counting: answers, prompt.title)
+        }
+        let saves = Tally()
+        let row = AudioEditorRenameRow(
+            label: AudioEditorWording.nameFieldLabel,
+            subject: AudioEditorWording.markerSubject(1),
+            name: .constant("Intro"),
+            save: { saves.count += 1 },
+            cancel: {}
+        )
+        try checkReturnRunsOnce(in: row, counting: saves, "the rename row")
+    }
+
+    /// Hosts `view`, puts the keyboard in its field, as the view does as it
+    /// opens, presses Return once, and checks that `runs` counted one run;
+    /// then takes the keyboard out of the field and presses Return again,
+    /// for one more. Skips where this macOS hands an offscreen window no
+    /// key at all.
+    private func checkReturnRunsOnce<Content: View>(in view: Content, counting runs: Tally, _ name: String) throws {
+        try withHostedView(view, until: { !self.editableFields(in: $0).isEmpty }) { hosting in
+            let window = try windowWithKeyboardInField(of: hosting, name)
+            try press(.return, in: window)
+            guard ran(runs) else {
+                throw XCTSkip("This macOS hands an offscreen window no key presses")
+            }
+            XCTAssertEqual(runs.count, 1, "one Return ran \(name)'s command \(runs.count) times with the keyboard in its field")
+
+            window.makeFirstResponder(nil)
+            runs.count = 0
+            try press(.return, in: window)
+            _ = ran(runs)
+            XCTAssertEqual(runs.count, 1, "one Return ran \(name)'s command \(runs.count) times with the keyboard out of its field")
+        }
+    }
+
+    /// The editable text fields AppKit drew for `hosting`'s view.
+    private func editableFields(in hosting: NSView) -> [NSTextField] {
+        descendants(of: hosting, as: NSTextField.self).filter(\.isEditable)
+    }
+
+    /// The window hosting `hosting`, with the keyboard put in the first
+    /// field drawn, as a sheet puts it as it opens; fails the test, naming
+    /// `name`, when there is no field or it took no keyboard focus.
+    private func windowWithKeyboardInField(of hosting: NSView, _ name: String) throws -> NSWindow {
+        let window = try XCTUnwrap(hosting.window, "\(name) has no window")
+        let field = try XCTUnwrap(editableFields(in: hosting).first, "\(name) drew no field")
+        XCTAssertTrue(window.makeFirstResponder(field), "\(name)'s field took no keyboard focus")
+        XCTAssertTrue(window.firstResponder is NSTextView, "\(name)'s field isn't being edited")
+        return window
+    }
+
+    /// Presses `key` in `window`, as AppKit sends a key pressed in it: to
+    /// the control with keyboard focus, or to the button with that shortcut.
+    private func press(_ key: KeyEquivalent, in window: NSWindow) throws {
+        window.sendEvent(try XCTUnwrap(keyDown(key, in: window), "no key-down event for \(key.character)"))
+    }
+
+    /// Whether `runs` counted a run within a second of a key press, waiting
+    /// a moment more for any second run, which would come at once or on
+    /// the next turn of the run loop.
+    private func ran(_ runs: Tally) -> Bool {
+        guard waitUntil(timeout: 1, { runs.count > 0 }) else { return false }
+        _ = waitUntil(timeout: 0.3) { runs.count > 1 }
+        return true
     }
 
     // MARK: - The Main Edit Menu
