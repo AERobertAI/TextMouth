@@ -268,7 +268,10 @@ struct LibraryFolderOption: Hashable {
 /// pop-up of the places offered, a New Folder... button, and, once that is
 /// pressed, the fields that make a new folder, which then becomes the place
 /// chosen. A folder that can't be made keeps the fields open with the name,
-/// and the owner's failure notice says why.
+/// and the owner's failure notice says why. While the fields are shown,
+/// Return presses their Create; an owner with a Return-key button of its
+/// own withdraws that shortcut meanwhile, following `isMakingFolder`, so
+/// one press does one thing.
 struct LibraryFolderPicker: View {
     /// The places the pop-up offers.
     let options: [LibraryFolderOption]
@@ -287,14 +290,45 @@ struct LibraryFolderPicker: View {
     /// name or parent clears it.
     @Binding var failureMessage: String?
     /// Whether the controls are unavailable, as while the owner works.
-    var isDisabled = false
+    let isDisabled: Bool
+    /// Where the owner follows whether the new-folder fields are showing,
+    /// kept current by the picker, so a Return-key button of the owner's
+    /// can stand down while they are; its first value says whether the
+    /// fields start shown. Nil for an owner with no such button.
+    let isMakingFolder: Binding<Bool>?
 
     /// Whether the new-folder fields are showing.
-    @State private var showNewFolder = false
+    @State private var showNewFolder: Bool
     /// The name typed for the new folder.
     @State private var newFolderName = ""
     /// The parent chosen for the new folder.
     @State private var newFolderParent = ""
+
+    /// The picker with its pop-up's `options`, the `newFolderParents` a new
+    /// folder may go in, and the `selection` it keeps; `isDisabled` and
+    /// `isMakingFolder` are for the owners that need them.
+    init(
+        options: [LibraryFolderOption],
+        newFolderParents: [LibraryFolderOption],
+        selection: Binding<String>,
+        caption: String,
+        accessibilityLabel: String,
+        onCreateFolder: @escaping (String, String) -> OperationOutcome,
+        failureMessage: Binding<String?>,
+        isDisabled: Bool = false,
+        isMakingFolder: Binding<Bool>? = nil
+    ) {
+        self.options = options
+        self.newFolderParents = newFolderParents
+        _selection = selection
+        self.caption = caption
+        self.accessibilityLabel = accessibilityLabel
+        self.onCreateFolder = onCreateFolder
+        _failureMessage = failureMessage
+        self.isDisabled = isDisabled
+        self.isMakingFolder = isMakingFolder
+        _showNewFolder = State(initialValue: isMakingFolder?.wrappedValue ?? false)
+    }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -320,9 +354,13 @@ struct LibraryFolderPicker: View {
         }
         .clearingFailure($failureMessage, whenChanged: newFolderName)
         .clearingFailure($failureMessage, whenChanged: newFolderParent)
+        .onChange(of: showNewFolder) { _, shown in
+            isMakingFolder?.wrappedValue = shown
+        }
     }
 
-    /// The new folder's name and parent, with Cancel and Create.
+    /// The new folder's name and parent, with Cancel and Create, which
+    /// Return presses.
     private var newFolderFields: some View {
         GroupBox("New Folder") {
             VStack(spacing: 8) {
@@ -343,7 +381,11 @@ struct LibraryFolderPicker: View {
                         showNewFolder = false
                     }
                     Spacer()
+                    // Return presses Create while the fields are shown; the
+                    // owner's Return-key button stands down meanwhile
+                    // (`isMakingFolder`), so one press does one thing.
                     Button("Create", action: createFolder)
+                        .keyboardShortcut(.defaultAction)
                         .disabled(BookFolder.normalizedName(newFolderName) == nil)
                 }
             }
@@ -389,6 +431,30 @@ struct MoveFolderSheet: View {
     @State private var failureMessage: String?
     /// Whether the books are moving now.
     @State private var isWorking = false
+    /// Whether the picker's new-folder fields are showing, while Return
+    /// presses their Create rather than Move.
+    @State private var isMakingFolder: Bool
+
+    /// The sheet that moves `books` within `library`, offering
+    /// `lastMovedFolderPath` first; `makingFolder` opens it with the new
+    /// folder's fields already shown, as the tests of the Return key need.
+    init(
+        books: [Book],
+        library: Library,
+        lastMovedFolderPath: String,
+        onMove: @escaping @MainActor (String) async -> OperationOutcome,
+        onCreateFolder: @escaping (String, String) -> OperationOutcome,
+        onCancel: @escaping () -> Void,
+        makingFolder: Bool = false
+    ) {
+        self.books = books
+        self.library = library
+        self.lastMovedFolderPath = lastMovedFolderPath
+        self.onMove = onMove
+        self.onCreateFolder = onCreateFolder
+        self.onCancel = onCancel
+        _isMakingFolder = State(initialValue: makingFolder)
+    }
 
     /// Title shown in the sheet header
     private var headerTitle: String {
@@ -418,7 +484,8 @@ struct MoveFolderSheet: View {
                 accessibilityLabel: "Destination folder",
                 onCreateFolder: onCreateFolder,
                 failureMessage: $failureMessage,
-                isDisabled: isWorking
+                isDisabled: isWorking,
+                isMakingFolder: $isMakingFolder
             )
 
             OperationFailureNotice(message: failureMessage)
@@ -440,7 +507,9 @@ struct MoveFolderSheet: View {
                         failureMessage: $failureMessage
                     )
                 }
-                .keyboardShortcut(.return, modifiers: [])
+                // Return moves, except while the new folder's fields are
+                // shown, when it presses their Create.
+                .keyboardShortcut(isMakingFolder ? nil : KeyboardShortcut.defaultAction)
             }
             .disabled(isWorking)
         }
