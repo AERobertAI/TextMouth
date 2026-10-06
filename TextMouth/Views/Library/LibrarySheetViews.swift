@@ -57,28 +57,36 @@ struct LibraryBookInfoSheet: View {
 
                 Button("Save") {
                     // Capture state before dismissing
-                    let savedTitle = title
-                    let savedAuthor = author
-                    let savedBook = book
+                    guard let updated = Self.edited(book, title: title, author: author) else { return }
                     let vm = libraryViewModel
 
                     // Dismiss first so shared state updates don't steal focus
                     dismiss()
 
                     DispatchQueue.main.async {
-                        var updated = savedBook
-                        updated.title = savedTitle
-                        updated.author = savedAuthor
                         vm.updateBookMetadata(updated)
                     }
                 }
                 .keyboardShortcut(.return, modifiers: [])
-                .disabled(title.isEmpty)
+                .disabled(Self.edited(book, title: title, author: author) == nil)
             }
         }
         .padding()
         .frame(width: 400, height: 350)
         .navigationTitle("Info: \(book.title)")
+    }
+
+    /// `book` with the `title` and `author` typed, less the spaces around
+    /// them, or nil when the title is blank: a book keeps a title, since the
+    /// library shows and sorts it by that, so Save is unavailable until one
+    /// is typed.
+    nonisolated static func edited(_ book: Book, title: String, author: String) -> Book? {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return nil }
+        var edited = book
+        edited.title = title
+        edited.author = author.trimmingCharacters(in: .whitespacesAndNewlines)
+        return edited
     }
 }
 
