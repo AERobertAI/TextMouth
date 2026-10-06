@@ -6,24 +6,31 @@ import SwiftUI
 /// applying anything; and Apply.
 ///
 /// Every control is a native one VoiceOver reads by its label: the Filter
-/// pop-up, where VoiceOver starts; the chain, as text; and the Apply to
-/// radio buttons. Return applies; Escape closes, stopping a preview. The
-/// presets are read from audio-filters.json as the sheet opens, so those
-/// edited in Settings are the ones listed.
+/// pop-up, where VoiceOver starts, or Cancel when there is no preset to
+/// list; the chain, as text; and the Apply to radio buttons. Return
+/// applies; Escape closes, stopping a preview. The presets are read from
+/// audio-filters.json as the sheet opens, so those edited in Settings are
+/// the ones listed. Apply's hint says what a press does now: with
+/// "Preview filters before applying" on, that it plays the filtered audio
+/// first, until that preset has been previewed on that target; after
+/// that, or with the setting off, that it applies.
 struct AudioEditorFilterSheet: View {
     /// The window's model.
     @ObservedObject var model: AudioEditorModel
 
     /// The presets.
-    @StateObject private var presets = AudioFilterPresetLibrary()
+    @StateObject private var presets: AudioFilterPresetLibrary
     /// The preset chosen.
     @State private var presetID: UUID?
     /// What the filter applies to.
     @State private var target: AudioEditorFilterTarget
 
-    /// The sheet for `model`, applying to the selection when there is one.
-    init(model: AudioEditorModel) {
+    /// The sheet for `model`, listing `presets`, those saved in Settings
+    /// unless a test gives others, and applying to the selection when there
+    /// is one.
+    init(model: AudioEditorModel, presets: AudioFilterPresetLibrary = AudioFilterPresetLibrary()) {
         self.model = model
+        _presets = StateObject(wrappedValue: presets)
         _target = State(initialValue: model.selection != nil ? .selection : .wholeFile)
     }
 
@@ -78,13 +85,15 @@ struct AudioEditorFilterSheet: View {
                     model.sheet = nil
                 }
                 .keyboardShortcut(.cancelAction)
+                // With no preset to list there is no pop-up to start on.
+                .modifier(InitialVoiceOverFocusModifier(isTarget: presets.presets.isEmpty))
                 Button(AudioEditorWording.applyButton) {
                     guard let preset else { return }
                     Task { await model.chooseApply(preset, to: target) }
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(preset == nil || model.isWorking)
-                .accessibilityHint(model.previewsFiltersFirst ? AudioEditorWording.applyPreviewsFirstHint : AudioEditorWording.applyHint)
+                .accessibilityHint(model.applyHint(for: preset, on: target))
             }
         }
         .padding()

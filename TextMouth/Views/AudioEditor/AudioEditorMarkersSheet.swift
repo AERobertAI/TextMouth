@@ -7,8 +7,11 @@ import SwiftUI
 /// Every row is one element VoiceOver reads whole, "Marker 3, Intro, at 1
 /// minute, 4 seconds", holding its buttons, which are also its VoiceOver
 /// actions; each button names its row ("Delete Marker 3"), so a braille
-/// display shows which. VoiceOver starts on the first row, or on Close
-/// when the list is empty. Escape closes the sheet.
+/// display shows which. The words drawn are hidden from VoiceOver, which
+/// has them in the row's label, so it reads them once, then the buttons.
+/// VoiceOver starts on the first row, or on Close when the list is empty.
+/// Escape presses a renaming's Cancel while a name is typed, as it cancels
+/// a renaming in the Finder, and Close otherwise.
 struct AudioEditorMarkersSheet: View {
     /// The window's model.
     @ObservedObject var model: AudioEditorModel
@@ -19,8 +22,6 @@ struct AudioEditorMarkersSheet: View {
     @State private var renamingChapter: TimeInterval?
     /// The name or title typed.
     @State private var newName = ""
-    /// Puts the keyboard in the name field as it opens.
-    @FocusState private var nameFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -56,7 +57,7 @@ struct AudioEditorMarkersSheet: View {
             HStack {
                 Spacer()
                 Button(AudioEditorWording.closeButton) { model.sheet = nil }
-                    .keyboardShortcut(.cancelAction)
+                    .keyboardShortcut(Self.closeShortcut(whileRenaming: isRenaming))
                     .modifier(InitialVoiceOverFocusModifier(
                         isTarget: model.markers.isEmpty && model.chapters.isEmpty && model.pauses.isEmpty
                     ))
@@ -66,6 +67,18 @@ struct AudioEditorMarkersSheet: View {
         .frame(minWidth: 560, minHeight: 440)
     }
 
+    /// Whether a marker's or a chapter marker's name is being typed.
+    private var isRenaming: Bool {
+        renaming != nil || renamingChapter != nil
+    }
+
+    /// Close's keyboard shortcut: Escape, but for while a name is typed,
+    /// when Escape cancels the renaming instead (`AudioEditorRenameRow`),
+    /// the list staying open.
+    static func closeShortcut(whileRenaming: Bool) -> KeyboardShortcut? {
+        whileRenaming ? nil : .cancelAction
+    }
+
     // MARK: - Markers
 
     /// A marker's row: its name and place, then Go To, Rename, and Delete;
@@ -73,36 +86,21 @@ struct AudioEditorMarkersSheet: View {
     @ViewBuilder
     private func markerRow(_ marker: AudioEditMarker, number: Int) -> some View {
         let label = AudioEditorWording.marker(number, named: marker.name, at: marker.time)
-        let subject = AudioEditorWording.markerName(number, named: "")
+        let subject = AudioEditorWording.markerSubject(number)
         if renaming == marker.id {
-            HStack {
-                TextField(AudioEditorWording.nameFieldLabel, text: $newName)
-                    .focused($nameFocused)
-                    .onSubmit { saveName(of: marker) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.nameFieldLabel, subject))
-                Button(AudioEditorWording.saveNameButton) { saveName(of: marker) }
-                    .keyboardShortcut(.defaultAction)
-                Button(AudioEditorWording.cancelButton) { renaming = nil }
-            }
-            .onAppear { nameFocused = true }
+            AudioEditorRenameRow(
+                label: AudioEditorWording.nameFieldLabel,
+                subject: subject,
+                name: $newName,
+                save: { saveName(of: marker) },
+                cancel: { renaming = nil }
+            )
         } else {
-            HStack {
-                Text(label)
-                Spacer()
-                Button(AudioEditorWording.goToButton) { model.goToMarker(marker.id) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.goToButton, subject))
-                Button(AudioEditorWording.renameButton) { startRenaming(marker) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.renameButton, subject))
-                Button(AudioEditorWording.deleteButton, role: .destructive) { model.deleteMarker(marker.id) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.deleteButton, subject))
-            }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(label)
-            .accessibilityActions {
-                Button(AudioEditorWording.goToButton) { model.goToMarker(marker.id) }
-                Button(AudioEditorWording.renameButton) { startRenaming(marker) }
-                Button(AudioEditorWording.deleteButton) { model.deleteMarker(marker.id) }
-            }
+            row(label, subject: subject, commands: [
+                RowCommand(AudioEditorWording.goToButton) { model.goToMarker(marker.id) },
+                RowCommand(AudioEditorWording.renameButton) { startRenaming(marker) },
+                RowCommand(AudioEditorWording.deleteButton, isDestructive: true) { model.deleteMarker(marker.id) },
+            ])
         }
     }
 
@@ -127,36 +125,21 @@ struct AudioEditorMarkersSheet: View {
     @ViewBuilder
     private func chapterRow(start: TimeInterval, title: String, index: Int) -> some View {
         let label = AudioEditorWording.chapterRow(index + 1, title: title, at: start)
-        let subject = "Chapter \(index + 1)"
+        let subject = AudioEditorWording.chapterSubject(index + 1)
         if renamingChapter == start {
-            HStack {
-                TextField(AudioEditorWording.titleFieldLabel, text: $newName)
-                    .focused($nameFocused)
-                    .onSubmit { saveTitle(at: start) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.titleFieldLabel, subject))
-                Button(AudioEditorWording.saveNameButton) { saveTitle(at: start) }
-                    .keyboardShortcut(.defaultAction)
-                Button(AudioEditorWording.cancelButton) { renamingChapter = nil }
-            }
-            .onAppear { nameFocused = true }
+            AudioEditorRenameRow(
+                label: AudioEditorWording.titleFieldLabel,
+                subject: subject,
+                name: $newName,
+                save: { saveTitle(at: start) },
+                cancel: { renamingChapter = nil }
+            )
         } else {
-            HStack {
-                Text(label)
-                Spacer()
-                Button(AudioEditorWording.goToButton) { model.goToChapter(index) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.goToButton, subject))
-                Button(AudioEditorWording.renameButton) { startRenamingChapter(at: start, title: title) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.renameButton, subject))
-                Button(AudioEditorWording.removeButton, role: .destructive) { removeChapter(at: start, title: title) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.removeButton, subject))
-            }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(label)
-            .accessibilityActions {
-                Button(AudioEditorWording.goToButton) { model.goToChapter(index) }
-                Button(AudioEditorWording.renameButton) { startRenamingChapter(at: start, title: title) }
-                Button(AudioEditorWording.removeButton) { removeChapter(at: start, title: title) }
-            }
+            row(label, subject: subject, commands: [
+                RowCommand(AudioEditorWording.goToButton) { model.goToChapter(index) },
+                RowCommand(AudioEditorWording.renameButton) { startRenamingChapter(at: start, title: title) },
+                RowCommand(AudioEditorWording.removeButton, isDestructive: true) { removeChapter(at: start, title: title) },
+            ])
         }
     }
 
@@ -209,21 +192,96 @@ struct AudioEditorMarkersSheet: View {
 
     /// A pause's row: its length and place, then Go To and Select.
     private func pauseRow(_ pause: AudioEditorPause, number: Int) -> some View {
-        let label = AudioEditorWording.pauseRow(number, pause)
-        let subject = "Pause \(number)"
-        return HStack {
+        row(AudioEditorWording.pauseRow(number, pause), subject: AudioEditorWording.pauseSubject(number), commands: [
+            RowCommand(AudioEditorWording.goToButton) { model.goToPause(pause) },
+            RowCommand(AudioEditorWording.selectButton) { model.selectPause(pause) },
+        ])
+    }
+
+    // MARK: - A Row
+
+    /// A row of the list, as VoiceOver reads it: one element labelled
+    /// `label`, holding a button for each of `commands`, named with the
+    /// row's `subject` ("Delete Marker 3") so a braille display tells one
+    /// row's from the next, and offering the commands as its actions, by
+    /// their titles. The words drawn are hidden from VoiceOver, which has
+    /// them in the label, so it reads a row's words once, then its buttons.
+    private func row(_ label: String, subject: String, commands: [RowCommand]) -> some View {
+        HStack {
             Text(label)
+                .accessibilityHidden(true)
             Spacer()
-            Button(AudioEditorWording.goToButton) { model.goToPause(pause) }
-                .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.goToButton, subject))
-            Button(AudioEditorWording.selectButton) { model.selectPause(pause) }
-                .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.selectButton, subject))
+            ForEach(commands) { command in
+                Button(command.title, role: command.isDestructive ? .destructive : nil, action: command.perform)
+                    .accessibilityLabel(AudioEditorWording.rowButton(command.title, subject))
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(label)
         .accessibilityActions {
-            Button(AudioEditorWording.goToButton) { model.goToPause(pause) }
-            Button(AudioEditorWording.selectButton) { model.selectPause(pause) }
+            ForEach(commands) { command in
+                Button(command.title, action: command.perform)
+            }
         }
+    }
+}
+
+/// One command of a row of the list: its button's title, which names the
+/// row's VoiceOver action too, and what it does.
+private struct RowCommand: Identifiable {
+    /// The button's title.
+    let title: String
+    /// Whether the command deletes something, as its button shows.
+    let isDestructive: Bool
+    /// Runs it.
+    let perform: () -> Void
+
+    /// The command titled `title`, destructive as `isDestructive` says.
+    init(_ title: String, isDestructive: Bool = false, perform: @escaping () -> Void) {
+        self.title = title
+        self.isDestructive = isDestructive
+        self.perform = perform
+    }
+
+    /// A row's commands are told apart by their titles.
+    var id: String { title }
+}
+
+// MARK: - Renaming
+
+/// A row of the list while its marker or chapter marker is renamed: the
+/// field, where the keyboard goes as the row opens, labelled for VoiceOver
+/// with the row's subject ("Name Marker 3"); Save Name, which Return
+/// presses too; and Cancel, which Escape presses once the keyboard has
+/// left the field, which keeps Escape itself, the list staying open. The
+/// field's submit and Save Name run the one `save`, which one press of
+/// Return runs once.
+struct AudioEditorRenameRow: View {
+    /// The field's label: Name for a marker, Title for a chapter marker.
+    let label: String
+    /// The row's subject, which names the field: "Marker 3".
+    let subject: String
+    /// The name as typed.
+    @Binding var name: String
+    /// Keeps the name typed, and closes the row.
+    let save: () -> Void
+    /// Closes the row with the name as it was.
+    let cancel: () -> Void
+
+    /// Puts the keyboard in the field as the row opens.
+    @FocusState private var fieldFocused: Bool
+
+    var body: some View {
+        HStack {
+            TextField(label, text: $name)
+                .focused($fieldFocused)
+                .onSubmit(save)
+                .accessibilityLabel(AudioEditorWording.rowButton(label, subject))
+            Button(AudioEditorWording.saveNameButton, action: save)
+                .keyboardShortcut(.defaultAction)
+            Button(AudioEditorWording.cancelButton, action: cancel)
+                .keyboardShortcut(.cancelAction)
+        }
+        .onAppear { fieldFocused = true }
     }
 }

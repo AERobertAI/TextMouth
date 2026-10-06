@@ -11,10 +11,11 @@ import XCTest
 /// each pop-up lists its choices by name; the window and each sheet start
 /// VoiceOver on one control; and, wherever this session exposes the AppKit
 /// controls SwiftUI draws, VoiceOver reads each by its label, hint, and
-/// value. SwiftUI builds its own buttons and text for VoiceOver only while
-/// an assistive app is connected, so their words are checked through the
-/// model functions that give them. No test shows a window, plays a sound,
-/// or records.
+/// value; and one press of Return runs a sheet's command once. SwiftUI
+/// builds its own buttons and text for VoiceOver only while an assistive
+/// app is connected, so their words are checked through the model
+/// functions that give them. No test shows a window, plays a sound, or
+/// records.
 @MainActor
 final class AudioEditorWindowTests: XCTestCase {
 
@@ -104,10 +105,11 @@ final class AudioEditorWindowTests: XCTestCase {
     // MARK: - Where VoiceOver Starts
 
     /// Each sheet starts VoiceOver on one control: a question's on its
-    /// field; Apply Filter's on the Filter pop-up; Export's on the Format
-    /// pop-up; Audio Info's on its policy pop-up; a save's on its progress
-    /// bar; and the list's on its first marker, or on Close while it lists
-    /// nothing at all.
+    /// field; Apply Filter's on the Filter pop-up, or on Cancel with every
+    /// preset deleted in Settings; Export's on the Format pop-up; Audio
+    /// Info's on its policy pop-up; a save's on its progress bar; and the
+    /// list's on its first marker, or on Close while it lists nothing at
+    /// all.
     func testEachSheetStartsVoiceOverOnOneControl() async throws {
         let model = try await openRamp(seconds: 4, loadsPreview: false).model
 
@@ -115,6 +117,9 @@ final class AudioEditorWindowTests: XCTestCase {
             checkVoiceOverStarts(on: prompt.fieldLabel, in: promptSheet(prompt, of: model))
         }
         checkVoiceOverStarts(on: AudioEditorWording.presetLabel, in: AudioEditorFilterSheet(model: model))
+        let noPresets = try emptyPresetLibrary()
+        XCTAssertTrue(noPresets.presets.isEmpty)
+        checkVoiceOverStarts(on: AudioEditorWording.cancelButton, in: AudioEditorFilterSheet(model: model, presets: noPresets))
         checkVoiceOverStarts(on: AudioEditorWording.formatLabel, in: AudioEditorExportSheet(model: model))
         checkVoiceOverStarts(on: AudioEditorWording.policyLabel, in: AudioEditorInfoSheet(model: model))
         model.progress = AudioEditorProgress(title: AudioEditorWording.savingTitle, detail: "", fraction: 0.5)
@@ -192,6 +197,214 @@ final class AudioEditorWindowTests: XCTestCase {
             XCTAssertEqual(bar.doubleValue / bar.maxValue, 0.5, accuracy: 0.000_1)
         }
         XCTAssertEqual(AudioEditorWording.progressLabel, "Progress")
+    }
+
+    // MARK: - The List's Rows
+
+    /// Each row of Markers and Pauses is one element labelled with its
+    /// words, "Marker 1, Intro, at 3 seconds.", which VoiceOver reads once:
+    /// the words drawn are hidden from it, and the row's buttons name the
+    /// row, "Delete Marker 1", so a braille display tells one row's from
+    /// the next. Wherever this session exposes SwiftUI's elements, a hosted
+    /// list holds no text repeating a row's words under the row, and the
+    /// row's buttons and actions are those.
+    func testARowsWordsAreReadOnce() async throws {
+        let pause = AudioEditorPause(start: 1, end: 1.8)
+        XCTAssertEqual(AudioEditorWording.marker(1, named: "Intro", at: 3), "Marker 1, Intro, at 3 seconds.")
+        XCTAssertEqual(AudioEditorWording.marker(2, named: "", at: 64), "Marker 2, at 1 minute, 4 seconds.")
+        XCTAssertEqual(AudioEditorWording.chapterRow(1, title: "Locks", at: 10), "Chapter 1: Locks, at 10 seconds")
+        XCTAssertEqual(AudioEditorWording.pauseRow(1, pause), "Pause 1, 0.8 seconds, at 1 second")
+        XCTAssertEqual(AudioEditorWording.markerSubject(1), "Marker 1")
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.deleteButton, AudioEditorWording.markerSubject(1)), "Delete Marker 1")
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.removeButton, AudioEditorWording.chapterSubject(1)), "Remove Chapter 1")
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.selectButton, AudioEditorWording.pauseSubject(1)), "Select Pause 1")
+
+        let model = try await openRamp(seconds: 12, loadsPreview: false).model
+        model.move(to: 3)
+        model.addMarker()
+        let marker = try XCTUnwrap(model.markers.first)
+        model.renameMarker(marker.id, to: "Intro")
+        try await model.session.perform(.setChapter(at: 10, title: "Locks"))
+        model.pauses = [pause]
+        model.pauseSearch = .found
+        // Each row's words, the subject its buttons name it with, and its
+        // commands, which name its actions.
+        let markerLabel = "Marker 1, Intro, at 3 seconds."
+        let rows: [(label: String, subject: String, commands: [String])] = [
+            (markerLabel, "Marker 1", [AudioEditorWording.goToButton, AudioEditorWording.renameButton, AudioEditorWording.deleteButton]),
+            ("Chapter 1: Locks, at 10 seconds", "Chapter 1", [AudioEditorWording.goToButton, AudioEditorWording.renameButton, AudioEditorWording.removeButton]),
+            ("Pause 1, 0.8 seconds, at 1 second", "Pause 1", [AudioEditorWording.goToButton, AudioEditorWording.selectButton]),
+        ]
+
+        try withHostedView(AudioEditorMarkersSheet(model: model), until: {
+            !self.accessibilityElements(labelled: markerLabel, in: $0).isEmpty
+        }) { hosting in
+            guard !accessibilityElements(labelled: markerLabel, in: hosting).isEmpty else {
+                throw XCTSkip("SwiftUI exposed no accessibility elements without an assistive app")
+            }
+            for row in rows {
+                let found = accessibilityElements(labelled: row.label, in: hosting)
+                XCTAssertEqual(found.count, 1, "\(row.label) is one element")
+                guard let element = found.first else { continue }
+                let repeated = (element.accessibilityChildren() ?? []).flatMap { elements(saying: row.label, under: $0) }
+                XCTAssertTrue(repeated.isEmpty, "\(row.label) is drawn again under its row for VoiceOver")
+                let buttons = accessibleControls(in: element).filter { $0.role == .button }.map(\.label)
+                if !buttons.isEmpty {
+                    XCTAssertEqual(buttons, row.commands.map { AudioEditorWording.rowButton($0, row.subject) })
+                }
+                let actions = (element.accessibilityCustomActions() ?? []).map(\.name)
+                if !actions.isEmpty {
+                    XCTAssertEqual(actions, row.commands)
+                }
+            }
+        }
+    }
+
+    /// While a marker or a chapter marker is renamed, its row holds the
+    /// field, labelled for VoiceOver with the row's subject, "Name Marker
+    /// 1" or "Title Chapter 2", holding the name as it stands, then Save
+    /// Name and Cancel; VoiceOver reads the field by that label, with the
+    /// name as its value.
+    func testARenameRowsFieldNamesItsRow() throws {
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.nameFieldLabel, AudioEditorWording.markerSubject(1)), "Name Marker 1")
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.titleFieldLabel, AudioEditorWording.chapterSubject(2)), "Title Chapter 2")
+        XCTAssertEqual(AudioEditorWording.saveNameButton, "Save Name")
+
+        let row = AudioEditorRenameRow(
+            label: AudioEditorWording.titleFieldLabel,
+            subject: AudioEditorWording.chapterSubject(2),
+            name: .constant("Locks"),
+            save: {},
+            cancel: {}
+        )
+        try withHostedControls(row) { controls in
+            let field = try control(labelled: "Title Chapter 2", in: controls)
+            XCTAssertEqual(field.role, .textField)
+            XCTAssertEqual(field.element.accessibilityValue() as? String, "Locks")
+        }
+    }
+
+    // MARK: - Return
+
+    /// One press of Return runs a sheet's command once, with the keyboard
+    /// in the field, as it is when the sheet opens, and out of it: Go to
+    /// Time, Insert Silence, and Insert Chapter Marker, whose field's
+    /// submit and default button take the same answer, and the list's
+    /// rename rows, whose field's submit and Save Name save the same name.
+    /// The key goes through the window as AppKit sends a key pressed in
+    /// it. Insert Silence begins its edit as soon as it is answered, so a
+    /// second run would insert the silence twice.
+    func testOneReturnRunsACommandOnce() throws {
+        for prompt in [AudioEditorPrompt.goToTime, .insertSilence, .insertChapter] {
+            let answers = Tally()
+            let sheet = AudioEditorPromptSheet(prompt: prompt, initialText: "1", submit: { _ in
+                answers.count += 1
+                return nil
+            }, cancel: {})
+            try checkReturnRunsOnce(in: sheet, counting: answers, prompt.title)
+        }
+        let saves = Tally()
+        let row = AudioEditorRenameRow(
+            label: AudioEditorWording.nameFieldLabel,
+            subject: AudioEditorWording.markerSubject(1),
+            name: .constant("Intro"),
+            save: { saves.count += 1 },
+            cancel: {}
+        )
+        try checkReturnRunsOnce(in: row, counting: saves, "the rename row")
+    }
+
+    /// Escape cancels a renaming under way, the list staying open, as it
+    /// cancels a renaming in the Finder: once the keyboard has left the
+    /// field, which keeps Escape itself, the rename row's Cancel takes the
+    /// key and saves nothing; Close takes it only while no name is typed,
+    /// closing the list.
+    func testEscapeCancelsARenamingBeforeClosingTheList() async throws {
+        XCTAssertNil(AudioEditorMarkersSheet.closeShortcut(whileRenaming: true))
+        XCTAssertEqual(AudioEditorMarkersSheet.closeShortcut(whileRenaming: false), .cancelAction)
+
+        let saves = Tally()
+        let cancels = Tally()
+        let row = AudioEditorRenameRow(
+            label: AudioEditorWording.nameFieldLabel,
+            subject: AudioEditorWording.markerSubject(1),
+            name: .constant("Intro"),
+            save: { saves.count += 1 },
+            cancel: { cancels.count += 1 }
+        )
+        try withHostedView(row, until: { !self.editableFields(in: $0).isEmpty }) { hosting in
+            let window = try XCTUnwrap(hosting.window, "the rename row has no window")
+            // The keyboard out of the field, as after a Tab to the buttons.
+            window.makeFirstResponder(nil)
+            try press(.escape, in: window)
+            guard ran(cancels) else {
+                throw XCTSkip("This macOS hands an offscreen window no key presses")
+            }
+            XCTAssertEqual(cancels.count, 1, "Escape cancelled the renaming \(cancels.count) times")
+            XCTAssertEqual(saves.count, 0, "Escape saved the name")
+        }
+
+        let model = try await openRamp(seconds: 4, loadsPreview: false).model
+        model.sheet = .markers
+        try withHostedView(AudioEditorMarkersSheet(model: model), until: { $0.fittingSize.height > 0 }) { hosting in
+            guard pressKeyEquivalent(.escape, in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertTrue(waitUntil { model.sheet == nil }, "Escape did not close the list")
+        }
+    }
+
+    /// Hosts `view`, puts the keyboard in its field, as the view does as it
+    /// opens, presses Return once, and checks that `runs` counted one run;
+    /// then takes the keyboard out of the field and presses Return again,
+    /// for one more. Skips where this macOS hands an offscreen window no
+    /// key at all.
+    private func checkReturnRunsOnce<Content: View>(in view: Content, counting runs: Tally, _ name: String) throws {
+        try withHostedView(view, until: { !self.editableFields(in: $0).isEmpty }) { hosting in
+            let window = try windowWithKeyboardInField(of: hosting, name)
+            try press(.return, in: window)
+            guard ran(runs) else {
+                throw XCTSkip("This macOS hands an offscreen window no key presses")
+            }
+            XCTAssertEqual(runs.count, 1, "one Return ran \(name)'s command \(runs.count) times with the keyboard in its field")
+
+            window.makeFirstResponder(nil)
+            runs.count = 0
+            try press(.return, in: window)
+            _ = ran(runs)
+            XCTAssertEqual(runs.count, 1, "one Return ran \(name)'s command \(runs.count) times with the keyboard out of its field")
+        }
+    }
+
+    /// The editable text fields AppKit drew for `hosting`'s view.
+    private func editableFields(in hosting: NSView) -> [NSTextField] {
+        descendants(of: hosting, as: NSTextField.self).filter(\.isEditable)
+    }
+
+    /// The window hosting `hosting`, with the keyboard put in the first
+    /// field drawn, as a sheet puts it as it opens; fails the test, naming
+    /// `name`, when there is no field or it took no keyboard focus.
+    private func windowWithKeyboardInField(of hosting: NSView, _ name: String) throws -> NSWindow {
+        let window = try XCTUnwrap(hosting.window, "\(name) has no window")
+        let field = try XCTUnwrap(editableFields(in: hosting).first, "\(name) drew no field")
+        XCTAssertTrue(window.makeFirstResponder(field), "\(name)'s field took no keyboard focus")
+        XCTAssertTrue(window.firstResponder is NSTextView, "\(name)'s field isn't being edited")
+        return window
+    }
+
+    /// Presses `key` in `window`, as AppKit sends a key pressed in it: to
+    /// the control with keyboard focus, or to the button with that shortcut.
+    private func press(_ key: KeyEquivalent, in window: NSWindow) throws {
+        window.sendEvent(try XCTUnwrap(keyDown(key, in: window), "no key-down event for \(key.character)"))
+    }
+
+    /// Whether `runs` counted a run within a second of a key press, waiting
+    /// a moment more for any second run, which would come at once or on
+    /// the next turn of the run loop.
+    private func ran(_ runs: Tally) -> Bool {
+        guard waitUntil(timeout: 1, { runs.count > 0 }) else { return false }
+        _ = waitUntil(timeout: 0.3) { runs.count > 1 }
+        return true
     }
 
     // MARK: - The Main Edit Menu
@@ -293,6 +506,18 @@ final class AudioEditorWindowTests: XCTestCase {
         NSMenuItem(title: "", action: action, keyEquivalent: "")
     }
 
+    /// A preset library with every preset deleted, as Settings leaves it,
+    /// kept in a file of the test's own.
+    private func emptyPresetLibrary() throws -> AudioFilterPresetLibrary {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("audio-filters-\(UUID().uuidString).json")
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        let library = AudioFilterPresetLibrary(url: url, reader: SavedFile.readWithoutDownloading)
+        for preset in library.presets {
+            try library.remove(preset.id)
+        }
+        return library
+    }
+
     /// `prompt`'s sheet for `model`, as the window builds it.
     private func promptSheet(_ prompt: AudioEditorPrompt, of model: AudioEditorModel) -> AudioEditorPromptSheet {
         AudioEditorPromptSheet(
@@ -337,6 +562,14 @@ final class AudioEditorWindowTests: XCTestCase {
         }) { hosting in
             try body(accessibleControls(in: hosting))
         }
+    }
+
+    /// Every accessibility element at or below `root` whose label or value
+    /// is `text`: where a row's words would be read again.
+    private func elements(saying text: String, under root: Any) -> [NSAccessibilityProtocol] {
+        guard let node = root as? NSAccessibilityProtocol else { return [] }
+        let says = node.accessibilityLabel() == text || node.accessibilityValue() as? String == text
+        return (says ? [node] : []) + (node.accessibilityChildren() ?? []).flatMap { elements(saying: text, under: $0) }
     }
 
     /// The control labelled `label` among `controls`; fails the test,

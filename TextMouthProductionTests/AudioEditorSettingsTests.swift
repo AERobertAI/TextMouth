@@ -6,8 +6,9 @@ import XCTest
 /// The audio editor's settings (FR04): Storage settings' Audio Editing
 /// group gains "Preview filters before applying" and "Play half a second
 /// after each move", both on until turned off, kept in the preferences
-/// store and mirrored in config.json, and followed by the editor at once;
-/// the filter presets are edited like the substitution rules, a premade
+/// store and mirrored in config.json, and followed by the editor at once,
+/// Apply's hint saying what a press does now; the filter presets are
+/// edited like the substitution rules, a premade
 /// one reset alone, a new chain checked as it is typed and refused when it
 /// isn't one; and the editor's keys are a group of the Shortcuts tab.
 @MainActor
@@ -85,6 +86,65 @@ final class AudioEditorSettingsTests: XCTestCase {
         model.perform(.editorApplyFilter)
         await model.chooseApply(louder, to: .wholeFile)
         XCTAssertEqual(harness.announcements.sentences.last, "Applied Louder to all of the audio. Now 6 seconds long.")
+    }
+
+    /// Apply's hint says what a press does: with the preview first, that it
+    /// plays the filtered audio first, until that preset has been previewed
+    /// on that target, through Apply or through Preview, a preview that has
+    /// ended counting; from then on, for another preset or target still,
+    /// that it applies the filter. Opening Apply Filter again starts over,
+    /// and with the setting off a press applies at once.
+    func testApplysHintSaysWhatAPressDoes() async throws {
+        let fixture = try AudioEditorTestBook.ramp(seconds: 6, for: self)
+        fixture.library.audioFilterEngine = { .builtIn }
+        let harness = try await EditorHarness.open(fixture, for: self)
+        let model = harness.model
+        addTeardownBlock { @MainActor in model.windowClosed() }
+        AudioEditorPreferences.playAfterMoves.write(false, to: harness.store)
+        await model.loadPreview()
+        let louder = AudioFilterPreset(id: UUID(), name: "Louder", chain: "volume=6dB")
+        let quieter = AudioFilterPreset(id: UUID(), name: "Quieter", chain: "volume=-6dB")
+        model.select(AudioTimeRange(start: 1, end: 2))
+        model.perform(.editorApplyFilter)
+
+        XCTAssertEqual(AudioEditorWording.applyPreviewsFirstHint, "Plays the filtered audio first; choose Apply again to apply the filter.")
+        XCTAssertEqual(AudioEditorWording.applyHint, "Applies the filter.")
+        XCTAssertTrue(model.applyWouldPreview(louder, on: .selection))
+        XCTAssertEqual(model.applyHint(for: louder, on: .selection), AudioEditorWording.applyPreviewsFirstHint)
+        XCTAssertEqual(model.applyHint(for: nil, on: .selection), AudioEditorWording.applyHint, "with no preset chosen, nothing previews")
+
+        // Apply previewed first: the next press of it applies, but only that
+        // preset on that target.
+        await model.chooseApply(louder, to: .selection)
+        XCTAssertEqual(model.filterPreview?.presetID, louder.id)
+        XCTAssertFalse(model.applyWouldPreview(louder, on: .selection))
+        XCTAssertEqual(model.applyHint(for: louder, on: .selection), AudioEditorWording.applyHint)
+        XCTAssertTrue(model.applyWouldPreview(louder, on: .wholeFile), "another target previews first")
+        XCTAssertTrue(model.applyWouldPreview(quieter, on: .selection), "another preset previews first")
+
+        // The preview ends; it still counts.
+        let loads = harness.player.loadedFrames.count
+        harness.player.finishPlaying(at: 2)
+        XCTAssertNil(model.filterPreview)
+        XCTAssertEqual(model.applyHint(for: louder, on: .selection), AudioEditorWording.applyHint)
+        let restored = await eventually { harness.player.loadedFrames.count > loads }
+        XCTAssertTrue(restored, "the edited audio never came back after the preview")
+
+        // The Preview button counts too.
+        await model.previewFilter(quieter, on: .selection)
+        XCTAssertEqual(model.applyHint(for: quieter, on: .selection), AudioEditorWording.applyHint)
+
+        // Opening Apply Filter again starts over.
+        model.sheet = nil
+        model.perform(.editorApplyFilter)
+        XCTAssertEqual(model.sheet, .filter)
+        XCTAssertEqual(model.applyHint(for: louder, on: .selection), AudioEditorWording.applyPreviewsFirstHint)
+        XCTAssertEqual(model.applyHint(for: quieter, on: .selection), AudioEditorWording.applyPreviewsFirstHint)
+
+        // With the setting off, a press applies at once.
+        AudioEditorPreferences.previewFiltersFirst.write(false, to: harness.store)
+        XCTAssertFalse(model.applyWouldPreview(louder, on: .selection))
+        XCTAssertEqual(model.applyHint(for: louder, on: .selection), AudioEditorWording.applyHint)
     }
 
     // MARK: - The Filter Presets
