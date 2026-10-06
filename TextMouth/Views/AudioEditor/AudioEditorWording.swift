@@ -330,10 +330,20 @@ enum AudioEditorWording {
         "\(markerName(number, named: name)) deleted."
     }
 
+    /// A marker as its row's buttons and name field name it: "Marker 3".
+    static func markerSubject(_ number: Int) -> String {
+        markerName(number, named: "")
+    }
+
     /// A pause's row in the list: "Pause 2, 1.3 seconds, at 1 minute, 4.2
     /// seconds".
     static func pauseRow(_ number: Int, _ pause: AudioEditorPause) -> String {
-        "Pause \(number), \(spoken(pause.duration)), at \(spoken(pause.start))"
+        "\(pauseSubject(number)), \(spoken(pause.duration)), at \(spoken(pause.start))"
+    }
+
+    /// A pause as its row's buttons name it: "Pause 2".
+    static func pauseSubject(_ number: Int) -> String {
+        "Pause \(number)"
     }
 
     /// The marker list's title.
@@ -513,7 +523,13 @@ enum AudioEditorWording {
     /// A chapter marker's row in the list: "Chapter 3: Tide Tables, at 12
     /// minutes, 4 seconds".
     static func chapterRow(_ number: Int, title: String, at time: TimeInterval) -> String {
-        "Chapter \(number): \(title), at \(spoken(time))"
+        "\(chapterSubject(number)): \(title), at \(spoken(time))"
+    }
+
+    /// A chapter marker as its row's buttons and title field name it:
+    /// "Chapter 3".
+    static func chapterSubject(_ number: Int) -> String {
+        "Chapter \(number)"
     }
 
     // MARK: - Punch In

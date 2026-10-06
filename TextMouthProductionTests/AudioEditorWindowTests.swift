@@ -194,6 +194,67 @@ final class AudioEditorWindowTests: XCTestCase {
         XCTAssertEqual(AudioEditorWording.progressLabel, "Progress")
     }
 
+    // MARK: - The List's Rows
+
+    /// Each row of Markers and Pauses is one element labelled with its
+    /// words, "Marker 1, Intro, at 3 seconds.", which VoiceOver reads once:
+    /// the words drawn are hidden from it, and the row's buttons name the
+    /// row, "Delete Marker 1", so a braille display tells one row's from
+    /// the next. Wherever this session exposes SwiftUI's elements, a hosted
+    /// list holds no text repeating a row's words under the row, and the
+    /// row's buttons and actions are those.
+    func testARowsWordsAreReadOnce() async throws {
+        let pause = AudioEditorPause(start: 1, end: 1.8)
+        XCTAssertEqual(AudioEditorWording.marker(1, named: "Intro", at: 3), "Marker 1, Intro, at 3 seconds.")
+        XCTAssertEqual(AudioEditorWording.marker(2, named: "", at: 64), "Marker 2, at 1 minute, 4 seconds.")
+        XCTAssertEqual(AudioEditorWording.chapterRow(1, title: "Locks", at: 10), "Chapter 1: Locks, at 10 seconds")
+        XCTAssertEqual(AudioEditorWording.pauseRow(1, pause), "Pause 1, 0.8 seconds, at 1 second")
+        XCTAssertEqual(AudioEditorWording.markerSubject(1), "Marker 1")
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.deleteButton, AudioEditorWording.markerSubject(1)), "Delete Marker 1")
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.removeButton, AudioEditorWording.chapterSubject(1)), "Remove Chapter 1")
+        XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.selectButton, AudioEditorWording.pauseSubject(1)), "Select Pause 1")
+
+        let model = try await openRamp(seconds: 12, loadsPreview: false).model
+        model.move(to: 3)
+        model.addMarker()
+        let marker = try XCTUnwrap(model.markers.first)
+        model.renameMarker(marker.id, to: "Intro")
+        try await model.session.perform(.setChapter(at: 10, title: "Locks"))
+        model.pauses = [pause]
+        model.pauseSearch = .found
+        // Each row's words, the subject its buttons name it with, and its
+        // commands, which name its actions.
+        let markerLabel = "Marker 1, Intro, at 3 seconds."
+        let rows: [(label: String, subject: String, commands: [String])] = [
+            (markerLabel, "Marker 1", [AudioEditorWording.goToButton, AudioEditorWording.renameButton, AudioEditorWording.deleteButton]),
+            ("Chapter 1: Locks, at 10 seconds", "Chapter 1", [AudioEditorWording.goToButton, AudioEditorWording.renameButton, AudioEditorWording.removeButton]),
+            ("Pause 1, 0.8 seconds, at 1 second", "Pause 1", [AudioEditorWording.goToButton, AudioEditorWording.selectButton]),
+        ]
+
+        try withHostedView(AudioEditorMarkersSheet(model: model), until: {
+            !self.accessibilityElements(labelled: markerLabel, in: $0).isEmpty
+        }) { hosting in
+            guard !accessibilityElements(labelled: markerLabel, in: hosting).isEmpty else {
+                throw XCTSkip("SwiftUI exposed no accessibility elements without an assistive app")
+            }
+            for row in rows {
+                let found = accessibilityElements(labelled: row.label, in: hosting)
+                XCTAssertEqual(found.count, 1, "\(row.label) is one element")
+                guard let element = found.first else { continue }
+                let repeated = (element.accessibilityChildren() ?? []).flatMap { elements(saying: row.label, under: $0) }
+                XCTAssertTrue(repeated.isEmpty, "\(row.label) is drawn again under its row for VoiceOver")
+                let buttons = accessibleControls(in: element).filter { $0.role == .button }.map(\.label)
+                if !buttons.isEmpty {
+                    XCTAssertEqual(buttons, row.commands.map { AudioEditorWording.rowButton($0, row.subject) })
+                }
+                let actions = (element.accessibilityCustomActions() ?? []).map(\.name)
+                if !actions.isEmpty {
+                    XCTAssertEqual(actions, row.commands)
+                }
+            }
+        }
+    }
+
     // MARK: - The Main Edit Menu
 
     /// The main Edit menu sends the actions an editor window answers: Undo
@@ -337,6 +398,14 @@ final class AudioEditorWindowTests: XCTestCase {
         }) { hosting in
             try body(accessibleControls(in: hosting))
         }
+    }
+
+    /// Every accessibility element at or below `root` whose label or value
+    /// is `text`: where a row's words would be read again.
+    private func elements(saying text: String, under root: Any) -> [NSAccessibilityProtocol] {
+        guard let node = root as? NSAccessibilityProtocol else { return [] }
+        let says = node.accessibilityLabel() == text || node.accessibilityValue() as? String == text
+        return (says ? [node] : []) + (node.accessibilityChildren() ?? []).flatMap { elements(saying: text, under: $0) }
     }
 
     /// The control labelled `label` among `controls`; fails the test,

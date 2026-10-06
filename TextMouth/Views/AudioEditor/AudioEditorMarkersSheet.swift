@@ -7,8 +7,10 @@ import SwiftUI
 /// Every row is one element VoiceOver reads whole, "Marker 3, Intro, at 1
 /// minute, 4 seconds", holding its buttons, which are also its VoiceOver
 /// actions; each button names its row ("Delete Marker 3"), so a braille
-/// display shows which. VoiceOver starts on the first row, or on Close
-/// when the list is empty. Escape closes the sheet.
+/// display shows which. The words drawn are hidden from VoiceOver, which
+/// has them in the row's label, so it reads them once, then the buttons.
+/// VoiceOver starts on the first row, or on Close when the list is empty.
+/// Escape closes the sheet.
 struct AudioEditorMarkersSheet: View {
     /// The window's model.
     @ObservedObject var model: AudioEditorModel
@@ -73,7 +75,7 @@ struct AudioEditorMarkersSheet: View {
     @ViewBuilder
     private func markerRow(_ marker: AudioEditMarker, number: Int) -> some View {
         let label = AudioEditorWording.marker(number, named: marker.name, at: marker.time)
-        let subject = AudioEditorWording.markerName(number, named: "")
+        let subject = AudioEditorWording.markerSubject(number)
         if renaming == marker.id {
             HStack {
                 TextField(AudioEditorWording.nameFieldLabel, text: $newName)
@@ -86,23 +88,11 @@ struct AudioEditorMarkersSheet: View {
             }
             .onAppear { nameFocused = true }
         } else {
-            HStack {
-                Text(label)
-                Spacer()
-                Button(AudioEditorWording.goToButton) { model.goToMarker(marker.id) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.goToButton, subject))
-                Button(AudioEditorWording.renameButton) { startRenaming(marker) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.renameButton, subject))
-                Button(AudioEditorWording.deleteButton, role: .destructive) { model.deleteMarker(marker.id) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.deleteButton, subject))
-            }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(label)
-            .accessibilityActions {
-                Button(AudioEditorWording.goToButton) { model.goToMarker(marker.id) }
-                Button(AudioEditorWording.renameButton) { startRenaming(marker) }
-                Button(AudioEditorWording.deleteButton) { model.deleteMarker(marker.id) }
-            }
+            row(label, subject: subject, commands: [
+                RowCommand(AudioEditorWording.goToButton) { model.goToMarker(marker.id) },
+                RowCommand(AudioEditorWording.renameButton) { startRenaming(marker) },
+                RowCommand(AudioEditorWording.deleteButton, isDestructive: true) { model.deleteMarker(marker.id) },
+            ])
         }
     }
 
@@ -127,7 +117,7 @@ struct AudioEditorMarkersSheet: View {
     @ViewBuilder
     private func chapterRow(start: TimeInterval, title: String, index: Int) -> some View {
         let label = AudioEditorWording.chapterRow(index + 1, title: title, at: start)
-        let subject = "Chapter \(index + 1)"
+        let subject = AudioEditorWording.chapterSubject(index + 1)
         if renamingChapter == start {
             HStack {
                 TextField(AudioEditorWording.titleFieldLabel, text: $newName)
@@ -140,23 +130,11 @@ struct AudioEditorMarkersSheet: View {
             }
             .onAppear { nameFocused = true }
         } else {
-            HStack {
-                Text(label)
-                Spacer()
-                Button(AudioEditorWording.goToButton) { model.goToChapter(index) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.goToButton, subject))
-                Button(AudioEditorWording.renameButton) { startRenamingChapter(at: start, title: title) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.renameButton, subject))
-                Button(AudioEditorWording.removeButton, role: .destructive) { removeChapter(at: start, title: title) }
-                    .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.removeButton, subject))
-            }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(label)
-            .accessibilityActions {
-                Button(AudioEditorWording.goToButton) { model.goToChapter(index) }
-                Button(AudioEditorWording.renameButton) { startRenamingChapter(at: start, title: title) }
-                Button(AudioEditorWording.removeButton) { removeChapter(at: start, title: title) }
-            }
+            row(label, subject: subject, commands: [
+                RowCommand(AudioEditorWording.goToButton) { model.goToChapter(index) },
+                RowCommand(AudioEditorWording.renameButton) { startRenamingChapter(at: start, title: title) },
+                RowCommand(AudioEditorWording.removeButton, isDestructive: true) { removeChapter(at: start, title: title) },
+            ])
         }
     }
 
@@ -209,21 +187,57 @@ struct AudioEditorMarkersSheet: View {
 
     /// A pause's row: its length and place, then Go To and Select.
     private func pauseRow(_ pause: AudioEditorPause, number: Int) -> some View {
-        let label = AudioEditorWording.pauseRow(number, pause)
-        let subject = "Pause \(number)"
-        return HStack {
+        row(AudioEditorWording.pauseRow(number, pause), subject: AudioEditorWording.pauseSubject(number), commands: [
+            RowCommand(AudioEditorWording.goToButton) { model.goToPause(pause) },
+            RowCommand(AudioEditorWording.selectButton) { model.selectPause(pause) },
+        ])
+    }
+
+    // MARK: - A Row
+
+    /// A row of the list, as VoiceOver reads it: one element labelled
+    /// `label`, holding a button for each of `commands`, named with the
+    /// row's `subject` ("Delete Marker 3") so a braille display tells one
+    /// row's from the next, and offering the commands as its actions, by
+    /// their titles. The words drawn are hidden from VoiceOver, which has
+    /// them in the label, so it reads a row's words once, then its buttons.
+    private func row(_ label: String, subject: String, commands: [RowCommand]) -> some View {
+        HStack {
             Text(label)
+                .accessibilityHidden(true)
             Spacer()
-            Button(AudioEditorWording.goToButton) { model.goToPause(pause) }
-                .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.goToButton, subject))
-            Button(AudioEditorWording.selectButton) { model.selectPause(pause) }
-                .accessibilityLabel(AudioEditorWording.rowButton(AudioEditorWording.selectButton, subject))
+            ForEach(commands) { command in
+                Button(command.title, role: command.isDestructive ? .destructive : nil, action: command.perform)
+                    .accessibilityLabel(AudioEditorWording.rowButton(command.title, subject))
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(label)
         .accessibilityActions {
-            Button(AudioEditorWording.goToButton) { model.goToPause(pause) }
-            Button(AudioEditorWording.selectButton) { model.selectPause(pause) }
+            ForEach(commands) { command in
+                Button(command.title, action: command.perform)
+            }
         }
     }
+}
+
+/// One command of a row of the list: its button's title, which names the
+/// row's VoiceOver action too, and what it does.
+private struct RowCommand: Identifiable {
+    /// The button's title.
+    let title: String
+    /// Whether the command deletes something, as its button shows.
+    let isDestructive: Bool
+    /// Runs it.
+    let perform: () -> Void
+
+    /// The command titled `title`, destructive as `isDestructive` says.
+    init(_ title: String, isDestructive: Bool = false, perform: @escaping () -> Void) {
+        self.title = title
+        self.isDestructive = isDestructive
+        self.perform = perform
+    }
+
+    /// A row's commands are told apart by their titles.
+    var id: String { title }
 }
