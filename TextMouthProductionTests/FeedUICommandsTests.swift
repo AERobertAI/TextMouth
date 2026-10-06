@@ -401,6 +401,51 @@ final class FeedUICommandsTests: XCTestCase {
         }
     }
 
+    /// Return presses Show Description's Close, as Escape does, from the
+    /// text area the sheet starts in, each a key equivalent the window
+    /// offers its views before the text area sees the key; until October 6,
+    /// 2026 only Escape closed it, though the sheet's description promised
+    /// both. The key Close's shortcut does not take is caught by a view
+    /// that takes no space and is no element to VoiceOver.
+    func testReturnAndEscapeCloseTheDescription() throws {
+        let item = FeedItem(
+            id: "guid:y",
+            title: "Harbour lights",
+            summary: FeedTextConverter.read(html: "<p>Which lamps are lit, and when.</p>"),
+            firstSeen: Date()
+        )
+        let feed = Feed(feedURL: URL(fileURLWithPath: "/"), folderID: UUID(), subscribedDate: Date())
+        let description = FeedItemDescription(item, of: feed)
+        var closes = 0
+        let sheet = FeedItemDescriptionSheet(description: description, onClose: { closes += 1 })
+
+        try withHostedView(sheet, size: NSSize(width: 560, height: 480), until: {
+            self.descendants(of: $0, as: NSTextView.self).contains { $0.string == description.text }
+        }) { hosting in
+            let window = try XCTUnwrap(hosting.window)
+            let textView = try XCTUnwrap(descendants(of: hosting, as: NSTextView.self).first { $0.string == description.text })
+            // The text area takes focus as the sheet appears; where the
+            // hosted window is slow to give it, the test gives it, since
+            // what is tested is the keys pressed from the text area.
+            if !waitUntil(timeout: 2, { window.firstResponder === textView }) {
+                window.makeFirstResponder(textView)
+            }
+            XCTAssertTrue(window.firstResponder === textView, "the text area has no focus")
+
+            guard pressKeyEquivalent(.return, in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertTrue(waitUntil { closes == 1 }, "Return did not press Close")
+
+            XCTAssertTrue(pressKeyEquivalent(.escape, in: hosting), "nothing took Escape")
+            XCTAssertTrue(waitUntil { closes == 2 }, "Escape did not close the sheet from the text area")
+
+            let catcher = try XCTUnwrap(descendants(of: hosting, as: SilentKeyEquivalentView.self).first)
+            XCTAssertEqual(catcher.frame.size, .zero, "the key's view takes space")
+            XCTAssertFalse(catcher.isAccessibilityElement(), "the key's view is an element to VoiceOver")
+        }
+    }
+
     /// Show Description… draws the text in a text area that can be read
     /// and selected but not typed in, labelled with the item's title.
     func testTheDescriptionIsATextAreaToRead() throws {
