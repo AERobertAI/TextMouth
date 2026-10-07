@@ -120,7 +120,8 @@ final class ZIPImportTests: XCTestCase {
     /// The loop names each book by its file as it begins, reading the file,
     /// passes on each step its importer begins on the book's package, and
     /// counts each book done once it is imported, skipped as a duplicate
-    /// without reaching the importer, or failed (FR10).
+    /// without reaching the importer, which it says so the estimate of the
+    /// time left leaves it out, or failed (FR10).
     func testSupportedFileLoopReportsEachBookItsStepsAndItsEnd() throws {
         let directory = try makeSandboxDirectory("zip-loop-progress")
         let imported = directory.appendingPathComponent("Rope Splicing.txt")
@@ -159,7 +160,7 @@ final class ZIPImportTests: XCTestCase {
             .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .readingText),
             .importing(done: 1, total: 3),
             .importingBook(number: 2, total: 3, book: "Knots.txt", step: .readingSource),
-            .importing(done: 2, total: 3),
+            .importing(done: 2, total: 3, skippedDuplicate: true),
             .importingBook(number: 3, total: 3, book: "Tides.txt", step: .readingSource),
             .importingBook(number: 3, total: 3, book: "Tides.txt", step: .copying),
             .importing(done: 3, total: 3)

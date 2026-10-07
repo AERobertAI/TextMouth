@@ -46,6 +46,51 @@ final class ImportProgressWordingTests: XCTestCase {
         )
     }
 
+    // MARK: - The Time Left
+
+    /// The time left is said in steps that suit its size, so an estimate
+    /// recomputed as each book finishes changes its words only when it moves
+    /// by a step that matters: less than a minute, then whole minutes under
+    /// 10, five minutes under an hour, and a quarter hour beyond.
+    func testTimeLeftIsRoundedToStepsThatSuitItsSize() {
+        let expected: [(TimeInterval, String)] = [
+            (0, "Less than a minute left"),
+            (59, "Less than a minute left"),
+            (60, "About 1 minute left"),
+            (89, "About 1 minute left"),
+            (90, "About 2 minutes left"),
+            (4 * 60 + 29, "About 4 minutes left"),
+            (9 * 60 + 40, "About 10 minutes left"),
+            (12 * 60 + 29, "About 10 minutes left"),
+            (12 * 60 + 30, "About 15 minutes left"),
+            (58 * 60, "About 1 hour left"),
+            (70 * 60, "About 1 hour, 15 minutes left"),
+            (2 * 3_600 + 31 * 60, "About 2 hours, 30 minutes left")
+        ]
+        for (seconds, words) in expected {
+            XCTAssertEqual(ImportProgressWording.timeLeft(seconds), words, "\(seconds) seconds")
+        }
+        XCTAssertEqual(ImportTimeEstimate.rounded(.infinity), 0)
+        XCTAssertEqual(ImportTimeEstimate.rounded(.nan), 0)
+    }
+
+    /// The estimate is the average time of the books timed so far times the
+    /// books left, and there is none before a book is timed or once no book
+    /// is left.
+    func testTheEstimateIsTheAverageOfTheBooksTimedTimesTheBooksLeft() {
+        XCTAssertEqual(ImportTimeEstimate.secondsLeft(timedSeconds: 90, timedBooks: 3, remaining: 7), 210)
+        XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: 0, timedBooks: 0, remaining: 7), "no book timed yet")
+        XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: 90, timedBooks: 3, remaining: 0), "no book left")
+        XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: .infinity, timedBooks: 3, remaining: 2))
+    }
+
+    /// Once Cancel is pressed the overlay says the import stops after the
+    /// book under way, or, before any book, only that it is cancelling.
+    func testCancellingIsSaidInPlaceOfTheTimeLeft() {
+        XCTAssertEqual(ImportProgressWording.cancelling(afterBook: true), "Cancelling after this book...")
+        XCTAssertEqual(ImportProgressWording.cancelling(afterBook: false), "Cancelling...")
+    }
+
     // MARK: - Counts and Extraction
 
     /// The count says the books done of the total, with the overlay's noun,

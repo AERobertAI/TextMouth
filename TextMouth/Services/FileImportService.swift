@@ -277,8 +277,10 @@ enum ZipImportProgress: Equatable, Sendable {
     /// step its import takes on its package.
     case importingBook(number: Int, total: Int, book: String, step: ImportStep)
     /// `done` of the `total` books found in the archive are imported,
-    /// failed, or skipped as duplicates.
-    case importing(done: Int, total: Int)
+    /// failed, or skipped as duplicates; `skippedDuplicate` when the book
+    /// just done was skipped as one, which takes next to no time, so the
+    /// estimate of the time left does not count it (FR10).
+    case importing(done: Int, total: Int, skippedDuplicate: Bool = false)
 }
 
 /// Where a ZIP batch the reader cancelled stopped (TODO I05).
@@ -1234,7 +1236,7 @@ enum FileImportService {
             // duplicate; a DAISY book in a folder has its package's.
             beganStep(.readingSource)
             if let hash = try? importHash(of: fileURL), seenHashes.contains(hash) {
-                progress?(.importing(done: number, total: total))
+                progress?(.importing(done: number, total: total, skippedDuplicate: true))
                 continue
             }
 

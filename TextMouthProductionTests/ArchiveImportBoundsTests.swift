@@ -369,14 +369,15 @@ final class ArchiveImportBoundsTests: XCTestCase {
     /// message names the book under way and its step (FR10).
     func testOverlayShowsExtractionThenBooks() {
         var state = ImportProgressState()
-        state.receive(.extracting(archive: "Library Export.zip", done: 37, total: 120))
+        let now = Date()
+        state.receive(.extracting(archive: "Library Export.zip", done: 37, total: 120), at: now)
 
         XCTAssertEqual(state.current, 0)
         XCTAssertEqual(state.total, 0)
         XCTAssertEqual(state.message, "Extracting “Library Export.zip”: 37 of 120 items...")
 
-        state.receive(.importing(done: 3, total: 10))
-        state.receive(.importingBook(number: 4, total: 10, book: "Rope Splicing.txt", step: .readingText))
+        state.receive(.importing(done: 3, total: 10), at: now)
+        state.receive(.importingBook(number: 4, total: 10, book: "Rope Splicing.txt", step: .readingText), at: now)
 
         XCTAssertEqual(state.current, 3)
         XCTAssertEqual(state.total, 10)

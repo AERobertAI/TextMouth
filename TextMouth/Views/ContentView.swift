@@ -368,6 +368,11 @@ struct ProgressOverlay: View {
     let message: String
     /// Noun for the items being processed (e.g. "books extracted", "books processed")
     let itemNoun: String
+    /// Lines shown under the message, each on its own: the import overlay's
+    /// time left, or that the imports are cancelling (FR10). A caller that
+    /// shows any words `spokenSummary` to read them too, as the import
+    /// overlay does. None by default.
+    var details: [String] = []
     /// What VoiceOver reads for the overlay, when the caller words it, as
     /// the import overlay does with every line it shows (FR10,
     /// `ImportProgressState.spokenStatus`); nil reads the title and the
@@ -406,6 +411,14 @@ struct ProgressOverlay: View {
 
             if !message.isEmpty {
                 Text(message)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            // By position: two details never repeat, but a line's words
+            // change as the import moves, and its place stays the same.
+            ForEach(Array(details.enumerated()), id: \.offset) { _, line in
+                Text(line)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -458,6 +471,7 @@ extension LibraryWindowView {
             total: state.total,
             message: state.message,
             itemNoun: ImportProgressWording.itemNoun,
+            details: state.details,
             spokenSummary: state.spokenStatus,
             onCancel: libraryViewModel.cancelImports
         )

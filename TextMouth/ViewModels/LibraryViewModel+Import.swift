@@ -352,13 +352,15 @@ extension LibraryViewModel {
     /// I05): a running batch stops before its next entry or book, keeps the
     /// books it already imported, and its summary says where it stopped; a
     /// waiting ZIP import never starts. The import overlay's Cancel button
-    /// calls this. Every question the stopped imports raised is withdrawn
-    /// with them, and one they raise later is never asked (TODO I01): a
-    /// duplicate's new copy is discarded, an original file is kept, and a
-    /// ZIP archive's books stay where they are. Imports started afterwards,
-    /// and their questions, are not affected.
+    /// calls this, and the overlay says the imports are cancelling in place
+    /// of the time left (FR10). Every question the stopped imports raised is
+    /// withdrawn with them, and one they raise later is never asked (TODO
+    /// I01): a duplicate's new copy is discarded, an original file is kept,
+    /// and a ZIP archive's books stay where they are. Imports started
+    /// afterwards, and their questions, are not affected.
     func cancelImports() {
         importOperationQueue.cancelEnqueued()
+        importProgress.cancel()
         withdrawCancelledImportDecisions()
     }
 
