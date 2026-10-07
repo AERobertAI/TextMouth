@@ -16,6 +16,9 @@ final class KeyboardShortcutManager: ObservableObject {
     private var eventMonitor: Any?
     /// The store holding the custom bindings.
     private let userDefaults: UserDefaults
+    /// Where the actions' notifications are posted: the app's own center,
+    /// which every window hears, unless a test passes one of its own.
+    private let notificationCenter: NotificationCenter
     /// Reports changes to the bindings in the store.
     private var storeObserver: PreferenceObserver?
 
@@ -25,8 +28,16 @@ final class KeyboardShortcutManager: ObservableObject {
     ///   - userDefaults: The store holding the custom bindings: this
     ///     process's preferences unless a test passes its own.
     ///   - installsEventMonitor: False leaves key presses alone, for tests.
-    init(userDefaults: UserDefaults = TextMouthRuntime.current.preferences, installsEventMonitor: Bool = true) {
+    ///   - notificationCenter: Where the actions' notifications go: the
+    ///     default center unless a test passes its own, so that a key it
+    ///     presses through the manager reaches no window of the app.
+    init(
+        userDefaults: UserDefaults = TextMouthRuntime.current.preferences,
+        installsEventMonitor: Bool = true,
+        notificationCenter: NotificationCenter = .default
+    ) {
         self.userDefaults = userDefaults
+        self.notificationCenter = notificationCenter
         bindings = Self.bindingsPreference.read(from: userDefaults)
         storeObserver = PreferenceObserver(keys: [Self.bindingsPreference.key], in: userDefaults) { [weak self] _ in
             self?.takeBindingsFromStore()
@@ -194,11 +205,29 @@ final class KeyboardShortcutManager: ObservableObject {
         }
     }
 
+    /// Acts on a key pressed anywhere in TextMouth, as the event monitor
+    /// hands it over: in the key window, whose first responder has the
+    /// keyboard. Returns whether the press was a shortcut and is consumed.
     private func handleKeyEvent(_ event: NSEvent) -> Bool {
-        let textInputIsFocused = isTextInputFocused()
+        let keyWindow = NSApp.keyWindow
+        return handleKeyEvent(event, keyWindow: keyWindow, firstResponder: keyWindow?.firstResponder)
+    }
+
+    /// Acts on the key press `event`, made in `keyWindow` while
+    /// `firstResponder` has the keyboard: posts the notification of the
+    /// action one of whose bindings it matches and returns true, so that
+    /// the press goes no further, or returns false and leaves the press to
+    /// the window, its menus, and its first responder.
+    ///
+    /// The event monitor passes the key window and its first responder.
+    /// Tests pass a key press made up for them, no window or one never
+    /// shown, and a stand-in for the first responder, such as the field
+    /// editor of a text field being edited: no key is really pressed.
+    func handleKeyEvent(_ event: NSEvent, keyWindow: NSWindow?, firstResponder: NSResponder?) -> Bool {
+        let textInputIsFocused = Self.isTextInput(firstResponder)
         // Only the shortcuts of the key window's scope match; in a sheet over
         // an audio editor none do, so its own controls take every key.
-        guard let scope = Self.scope(ofKeyWindow: NSApp.keyWindow) else { return false }
+        guard let scope = Self.scope(ofKeyWindow: keyWindow) else { return false }
 
         // Check each action's bindings
         for (action, actionBindings) in bindings where action.scope == scope {
@@ -225,18 +254,18 @@ final class KeyboardShortcutManager: ObservableObject {
                     // Include the key window so only the focused book reader responds
                     var userInfo: [String: Any] = ["action": action.rawValue]
                     if shiftHeld { userInfo["shiftHeld"] = true }
-                    if let keyWindow = NSApp.keyWindow {
+                    if let keyWindow {
                         userInfo["sourceWindow"] = keyWindow
                     }
                     if action == .restartSleepTimer {
-                        let windowNumber = NSApp.keyWindow.map { String($0.windowNumber) } ?? "none"
+                        let windowNumber = keyWindow.map { String($0.windowNumber) } ?? "none"
                         SleepTimerService.log(
                             .event,
                             "SHORTCUT_RECEIVED action=restart-sleep-timer binding=\(binding.displayString) "
                                 + "sourceWindow=\(windowNumber)"
                         )
                     }
-                    NotificationCenter.default.post(name: action.notificationName, object: nil, userInfo: userInfo)
+                    notificationCenter.post(name: action.notificationName, object: nil, userInfo: userInfo)
                     return true
                 }
             }
@@ -281,11 +310,14 @@ final class KeyboardShortcutManager: ObservableObject {
         eventHasShift && !bindingRequiresShift
     }
 
-    private func isTextInputFocused() -> Bool {
-        guard let window = NSApp.keyWindow,
-              let firstResponder = window.firstResponder else { return false }
-        // NSTextView is the field editor for NSTextField, NSSearchField, etc.
-        // Also check NSTextInputClient protocol adoption for custom text views.
-        return firstResponder is NSTextView || firstResponder is NSTextField
+    /// Whether `responder`, as the key window's first responder, takes
+    /// text from the keyboard: a text view, editable or only selectable
+    /// (a feed item's description is read and copied from one); the field
+    /// editor through which a text field or a search field is edited,
+    /// SwiftUI's included, which is itself a text view; or a text field in
+    /// the moment before its field editor takes over. The reader draws its
+    /// text in a view of its own, which is none of these.
+    static func isTextInput(_ responder: NSResponder?) -> Bool {
+        responder is NSTextView || responder is NSTextField
     }
 }
