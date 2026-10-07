@@ -2,6 +2,8 @@
 
 Slug `editbaselines`; branch `fix/hand-edit-baselines`. Read `common-evening.md` beside this file first. Launch after `fix/october-7-followups` has merged (it edits the reader's `bookInfoSheet` and the reader's view model).
 
+**Launched October 7 evening, after it merged (cb134bb1):** main is at 52ce9dd8 or later, 4857 tests, 54 skipped, 0 failures. The reader's Book Info is now its own view, `ReaderBookInfoSheet` in Views/Reader/ReaderView.swift, which passes its copy's record to both editors; the file import begins each new book's record as `.noneSinceImport` (only `importFileWithReport`). Item 3 of the first version of this brief was dropped: `Book.HandEdits` already keeps its fields in `MetadataField.allCases` order. Feed items will stop being editable under FR11 (a later branch); leave their editors alone here.
+
 ## Why
 FR06 (merge 065ec6a0) records which metadata fields the user edited by hand, so the launch metadata refresh never replaces them. A read-only review on October 7 evening (TODO-2026-09-04.md, entry REV07, library finding 3) found that an editor's save compares with the wrong baseline, and the orchestrator confirmed a second, older problem in the same path:
 - The simple Book Info sheet (Views/Library/LibrarySheetViews.swift about lines 60-75) calls `updateBookMetadata(updated)` with no `editedFrom:`, so `LibraryViewModel.updateBookMetadata(_:editedFrom:)` (LibraryViewModel+BookOperations.swift about lines 600-625) compares the save with the row **as it is now**. A field another window or the launch refresh changed while the sheet was open is marked "edited by hand", and a title whose only change was the sheet trimming spaces (a title taken from a file named "Notes .txt") is marked too.
