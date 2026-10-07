@@ -476,6 +476,33 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(again.speechString, retryChunk.words(of: text))
     }
 
+    /// A refusal in a chapter's last chunk is spoken again, strictly, to
+    /// the chapter's end, after which nothing is queued and the chapter
+    /// ends once, as it would have without the refusal.
+    func testARefusalInTheLastChunkStillEndsTheChapterOnce() throws {
+        let text = Self.bracketedText
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var finishes = 0
+        speech.onUtteranceFinished = { finishes += 1 }
+        let lastChunk = DirectSpeechChunk.starting(
+            at: text.utf16.count - 600, in: text, maximumLength: SpeechService.directModeFirstChunkSize
+        )
+        XCTAssertFalse(lastChunk.isPartial, "the chunk is not the chapter's last")
+        speech.speak(text, fromCharOffset: lastChunk.start)
+
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+
+        let retry = try handedOver(1, by: recorder)
+        XCTAssertEqual(retry.speechString, SpeechMarkupGuard.neutralizedStrictly(lastChunk.words(of: text)))
+        report(start: retry, to: speech)
+        XCTAssertEqual(recorder.utterances.count, 2, "something was queued after the chapter's last chunk")
+        XCTAssertEqual(finishes, 0)
+        report(finish: retry, to: speech)
+        XCTAssertEqual(finishes, 1)
+        XCTAssertFalse(speech.isSpeaking)
+    }
+
     /// A refusal heard while speech is paused, as when Pause is pressed
     /// just as the engine refuses a chunk, lets go of the refusing
     /// synthesizer at once and keeps the pause: nothing is heard until
