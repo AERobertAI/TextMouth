@@ -53,7 +53,7 @@ final class IntegrationImportTests: XCTestCase {
             message.hasPrefix("Could not import “\(epub.lastPathComponent)”. Reading its text failed: "),
             message
         )
-        XCTAssertEqual(model.importProgressMessage, "", "The import progress is still shown")
+        XCTAssertEqual(model.importProgress.state, ImportProgressState(), "The import progress is still shown")
         XCTAssertEqual(try Data(contentsOf: epub), originalBytes, "The original file changed")
         XCTAssertTrue(model.importDecisions.isEmpty, "Deleting the original was offered")
     }

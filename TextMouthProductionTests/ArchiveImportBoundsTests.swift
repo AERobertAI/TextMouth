@@ -357,8 +357,8 @@ final class ArchiveImportBoundsTests: XCTestCase {
     /// extracted it is left indeterminate and the message counts the items
     /// extracted; once books import, both count books, as before.
     func testOverlayShowsExtractionThenBooks() {
-        let extracting = LibraryViewModel.overlayProgress(for: .extracting(archive: "Library Export.zip", done: 37, total: 120))
-        let importing = LibraryViewModel.overlayProgress(for: .importing(done: 3, total: 10))
+        let extracting = ImportProgressState(.extracting(archive: "Library Export.zip", done: 37, total: 120))
+        let importing = ImportProgressState(.importing(done: 3, total: 10))
 
         XCTAssertEqual(extracting.current, 0)
         XCTAssertEqual(extracting.total, 0)

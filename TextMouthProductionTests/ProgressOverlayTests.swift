@@ -124,9 +124,7 @@ final class ProgressOverlayTests: XCTestCase {
     /// Cancel button.
     func testImportOverlayShowsTheLibrarysProgress() {
         let library = LibraryViewModel(initializeServices: false)
-        library.importProgressCurrent = 3
-        library.importProgressTotal = 10
-        library.importProgressMessage = "Importing book 3 of 10..."
+        library.importProgress.receive(.importing(done: 3, total: 10))
 
         let overlay = LibraryWindowView.importProgressOverlay(for: library)
 

@@ -168,11 +168,14 @@ final class LibraryViewModel: ObservableObject {
     @Published var showDeleteFolderDestinationSheet = false
     @Published var showDeleteEverythingConfirm = false
 
-    /// Import progress tracking
+    /// Whether any import is queued or running, which shows the import
+    /// overlay in every Library window.
     @Published var isImporting = false
-    @Published var importProgressCurrent = 0
-    @Published var importProgressTotal = 0
-    @Published var importProgressMessage = ""
+    /// What the import overlay shows: an object of its own, which only the
+    /// overlay observes, so the many reports of a ZIP batch never redraw
+    /// the Library windows' lists (FR10, as TODO PERF12 did for the text
+    /// extraction's progress).
+    let importProgress = ImportProgress()
     let importOperationQueue = SerialImportQueue()
     /// Opens a book's reader window, as an import that was asked to open its
     /// book does once the book is in the library. The app posts
@@ -312,9 +315,7 @@ final class LibraryViewModel: ObservableObject {
             guard let self else { return }
             self.isImporting = activeCount > 0
             if activeCount == 0 {
-                self.importProgressCurrent = 0
-                self.importProgressTotal = 0
-                self.importProgressMessage = ""
+                self.importProgress.clear()
             }
         }
         updateContentCachesAndStatistics()

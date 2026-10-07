@@ -51,9 +51,10 @@ struct LibraryWindowView: View {
                     }
                 )
 
-                // Import progress overlay, whose Cancel button stops ZIP imports
+                // Import progress overlay, whose Cancel button stops ZIP
+                // imports, redrawn alone as the imports report (FR10)
                 if libraryViewModel.isImporting {
-                    Self.importProgressOverlay(for: libraryViewModel)
+                    ImportProgressObserver(library: libraryViewModel, progress: libraryViewModel.importProgress)
                 }
 
                 // Text extraction progress overlay (shown on startup or
@@ -440,13 +441,31 @@ extension LibraryWindowView {
     /// TODO I05). The window's body shows exactly this overlay, made here so
     /// tests can press the very button the window shows.
     static func importProgressOverlay(for libraryViewModel: LibraryViewModel) -> ProgressOverlay {
-        ProgressOverlay(
+        let state = libraryViewModel.importProgress.state
+        return ProgressOverlay(
             title: "Importing Books",
-            current: libraryViewModel.importProgressCurrent,
-            total: libraryViewModel.importProgressTotal,
-            message: libraryViewModel.importProgressMessage,
+            current: state.current,
+            total: state.total,
+            message: state.message,
             itemNoun: "books processed",
             onCancel: libraryViewModel.cancelImports
         )
+    }
+}
+
+/// The import overlay of a Library window, redrawn alone as the imports
+/// report their progress (FR10): it observes the imports' progress, never
+/// the library model, so the many reports of a ZIP batch redraw no Library
+/// window's list, as `TextExtractionObserver` does for the text extraction
+/// (TODO PERF12).
+struct ImportProgressObserver: View {
+    /// The library whose imports the overlay shows and cancels; not
+    /// observed here.
+    let library: LibraryViewModel
+    /// The imports' progress, observed here alone: the library's own.
+    @ObservedObject var progress: ImportProgress
+
+    var body: some View {
+        LibraryWindowView.importProgressOverlay(for: library)
     }
 }

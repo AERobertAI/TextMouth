@@ -178,7 +178,7 @@ extension LibraryViewModel {
         importOperationQueue.enqueue(whileHeld: { [weak self] in
             guard let self else { return }
             DispatchQueue.main.async {
-                self.importProgressMessage = Self.importWaitingForMoveMessage
+                self.importProgress.show(Self.importWaitingForMoveMessage)
             }
         }, operation)
     }
@@ -305,7 +305,7 @@ extension LibraryViewModel {
     /// reader window does not take focus from the warning. The package the
     /// user chose is never deleted.
     func completePackageImport(_ imported: ImportedBook, openAfterImport: Bool) {
-        importProgressMessage = ""
+        importProgress.clear()
         library.addBook(imported.book)
         save()
         if let warning = imported.warning {
@@ -379,7 +379,7 @@ extension LibraryViewModel {
             }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            DispatchQueue.main.async { self.beginImportProgress("Extracting archive...") }
+            DispatchQueue.main.async { self.importProgress.show("Extracting archive...") }
             do {
                 if DAISYParser.isDAISYZip(url: url) {
                     let imported: ImportedBook
@@ -411,7 +411,7 @@ extension LibraryViewModel {
                     toFolder: folderPath,
                     existingHashes: existingHashes,
                     progress: { progress in
-                        DispatchQueue.main.async { self.showZipImportProgress(progress) }
+                        DispatchQueue.main.async { self.importProgress.receive(progress) }
                     },
                     isCancelled: cancellation.check
                 )
@@ -421,28 +421,6 @@ extension LibraryViewModel {
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
             }
-        }
-    }
-
-    /// Shows how far a ZIP batch has got in the import overlay (TODO I05).
-    private func showZipImportProgress(_ progress: ZipImportProgress) {
-        let shown = Self.overlayProgress(for: progress)
-        importProgressCurrent = shown.current
-        importProgressTotal = shown.total
-        importProgressMessage = shown.message
-    }
-
-    /// What the import overlay shows for a ZIP batch's progress. Its bar and
-    /// count speak of books, so while the archive is extracted the bar is
-    /// left indeterminate and the message counts the archive's items
-    /// extracted, so the overlay moves before the first book imports; once
-    /// books import, the bar and the message count them, as before.
-    nonisolated static func overlayProgress(for progress: ZipImportProgress) -> (current: Int, total: Int, message: String) {
-        switch progress {
-        case let .extracting(archive, done, total):
-            return (0, 0, "Extracting “\(archive)”: \(done) of \(total) items...")
-        case let .importing(done, total):
-            return (done, total, "Importing book \(done) of \(total)...")
         }
     }
 
@@ -462,7 +440,7 @@ extension LibraryViewModel {
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            DispatchQueue.main.async { self.beginImportProgress("Importing \(url.lastPathComponent)...") }
+            DispatchQueue.main.async { self.importProgress.show("Importing \(url.lastPathComponent)...") }
             do {
                 let imported = try FileImportService.importFileWithReport(
                     from: url,
@@ -476,12 +454,6 @@ extension LibraryViewModel {
                 DispatchQueue.main.async { self.presentImportError(error) }
             }
         }
-    }
-
-    private func beginImportProgress(_ message: String) {
-        importProgressCurrent = 0
-        importProgressTotal = 0
-        importProgressMessage = message
     }
 
     /// Publish one imported book, a document or a DAISY or audio ZIP, through
@@ -505,7 +477,7 @@ extension LibraryViewModel {
         originalURL: URL,
         request: ImportRequest = ImportRequest()
     ) {
-        importProgressMessage = ""
+        importProgress.clear()
         let book = imported.book
         // Without an original to offer, a later duplicate answer cannot
         // delete it either.
@@ -548,7 +520,7 @@ extension LibraryViewModel {
             !priorIDs.contains(book.id) && library.books.contains { $0.id == book.id }
         }
         save()
-        importProgressMessage = ""
+        importProgress.clear()
         if let failureSummary = result.failureSummary {
             presentImportMessage(failureSummary)
         }
@@ -574,7 +546,7 @@ extension LibraryViewModel {
     /// Tell the reader about an import through the library's alert: why it
     /// failed, or what a completed import is missing.
     private func presentImportMessage(_ message: String) {
-        importProgressMessage = ""
+        importProgress.clear()
         errorMessage = message
         showError = true
     }
