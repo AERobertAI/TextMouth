@@ -215,16 +215,17 @@ enum LibraryInfoWording {
     // MARK: A Feed
 
     /// A feed's brief summary, in parts: its title, "Feed", "Folder
-    /// missing" when its folder is gone, its items counted as its row
-    /// counts them with the unplayed ones after, and its last check.
-    /// Example: "Planet Money. Feed. 12 episodes, 3 downloaded, 2 new, 5
-    /// unplayed. Checked today at 3:05 PM."
+    /// missing" when its folder is gone, its items counted with its row's
+    /// own phrase (`FeedWording.countsPhrase`), its size first and its
+    /// unplayed items last, and its last check. Example: "Planet Money.
+    /// Feed. 10 of 381 episodes kept, 3 downloaded, 2 new, 5 unplayed.
+    /// Checked today at 3:05 PM."
     static func briefParts(of feed: FeedInfoFacts) -> [String] {
         var parts = [feed.title, FeedWording.feedNote]
         if feed.folderPath == nil {
             parts.append(FeedWording.folderMissingNote)
         }
-        parts.append(countsPhrase(feed.counts))
+        parts.append(FeedWording.countsPhrase(feed.counts))
         parts.append(feed.check)
         return parts
     }
@@ -241,15 +242,6 @@ enum LibraryInfoWording {
             parts.append("Address \(address)")
         }
         return parts
-    }
-
-    /// `counts` as the feed's row speaks them, then the unplayed items (of
-    /// articles: the unread ones) when there are any: "12 episodes, 3
-    /// downloaded, 2 new, 5 unplayed".
-    static func countsPhrase(_ counts: FeedItemCounts) -> String {
-        let phrase = FeedWording.countsPhrase(counts)
-        guard counts.unplayed > 0 else { return phrase }
-        return phrase + ", \(counts.unplayed) \(counts.noun == .article ? "unread" : "unplayed")"
     }
 
     // MARK: Sentences

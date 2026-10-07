@@ -50,6 +50,16 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
     /// Whether the feed is a serial show, listed oldest episode first
     /// (`itunes:type` serial), rather than an episodic one.
     var isSerial: Bool
+    /// How many entries the feed listed when it was last read: its size, of
+    /// which the record keeps the newest (`FeedReconciler`), as "10 of 381
+    /// episodes kept" says. Every merge of a body read records it; a check
+    /// that read nothing new (a 304, or the same bytes as last time) leaves
+    /// it as it was. Nil until a merge records it, as in a record written
+    /// before TextMouth recorded it, which still loads, since the decoder
+    /// reads an optional's key only when present (`decodeIfPresent`); the
+    /// next refresh of such a record reads its feed whole
+    /// (`FeedRefresher.fetchAndRead`), so the size is known from then on.
+    var entryTotal: FeedEntryTotal?
     /// How many entries this feed keeps, in place of the setting
     /// (`FeedSettings.keepEntries`); nil follows the setting.
     var keepEntriesOverride: Int?
@@ -74,8 +84,29 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
         newestItemDate = date
         usesInsecureTransport = FeedTransport.isInsecure(feedURL)
         isSerial = false
+        entryTotal = nil
         keepEntriesOverride = nil
         deleteDownloadsDaysAfterPlayedOverride = nil
+    }
+}
+
+// MARK: - A Feed's Size (October 7, 2026)
+
+/// How many entries a feed lists (FR03): its size, as the last read of it
+/// found, before the kept-entries rule chose the ones the record keeps.
+struct FeedEntryTotal: Codable, Equatable, Sendable {
+    /// How many entries TextMouth read of the feed, each counted once
+    /// however often the feed repeats it, with the ones the listener deleted
+    /// among them, since the feed still lists those.
+    var count: Int
+    /// Whether the feed lists more entries than TextMouth reads of one
+    /// (`FeedParser.maximumItems`): it then lists more than `count`.
+    var listsMore = false
+
+    /// Whether the feed lists more entries than the `kept` the library
+    /// keeps of it, so the number kept is not the feed's size.
+    func exceeds(_ kept: Int) -> Bool {
+        listsMore || count > kept
     }
 }
 

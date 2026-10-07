@@ -319,6 +319,114 @@ final class FeedRefresherTests: XCTestCase {
         XCTAssertEqual(serial.items.map(\.title), (47...58).reversed().map { "Letter \($0)" })
     }
 
+    // MARK: - The Feed's Size
+
+    /// A merge records the feed's size before the kept-entries rule: every
+    /// entry it lists, each once however often it repeats one, with the ones
+    /// the listener deleted, which it still lists; a later body records its
+    /// own size, even one below the number the record keeps; and a feed
+    /// longer than TextMouth reads says it lists more.
+    func testAMergeRecordsTheFeedsSizeBeforeTheKeptEntriesRule() throws {
+        let now = Date(timeIntervalSince1970: 1_791_000_000)
+        let address = try XCTUnwrap(URL(string: "https://show.example/feed.xml"))
+        /// The feed listing `items`, as TextMouth reads it, reading at most
+        /// `limit` of them.
+        func parsed(_ items: [FeedXML.Item], limit: Int = FeedParser.maximumItems) throws -> ParsedFeed {
+            try FeedParser.parse(Data(FeedXML.rss(items: items).utf8), baseURL: address, maximumItems: limit)
+        }
+        let items = (1...12).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: now.addingTimeInterval(-86_400 * Double(number)))
+        }
+        var record = FeedRecord(feed: Feed(feedURL: address, folderID: UUID(), subscribedDate: now))
+        var texts = FeedTextCache()
+
+        // Twelve entries, the newest listed twice, ten of them kept.
+        FeedReconciler.merge(try parsed(items + items.prefix(1)), into: &record, keepEntries: 10, now: now, texts: &texts)
+        XCTAssertEqual(record.listedItems.count, 10)
+        XCTAssertEqual(record.feed.entryTotal, FeedEntryTotal(count: 12, listsMore: false))
+
+        // An entry the listener deleted is still one the feed lists.
+        let newest = try XCTUnwrap(record.index(of: "guid:ep-1"))
+        record.items[newest].deletedDate = now
+        FeedReconciler.merge(try parsed(items), into: &record, keepEntries: 10, now: now.addingTimeInterval(60), texts: &texts)
+        XCTAssertEqual(record.listedItems.count, 10)
+        XCTAssertEqual(record.feed.entryTotal, FeedEntryTotal(count: 12))
+
+        // A feed that drops all but its newest three lists three, while the
+        // record keeps the entries before them.
+        FeedReconciler.merge(try parsed(Array(items.prefix(3))), into: &record, keepEntries: 10, now: now.addingTimeInterval(120), texts: &texts)
+        XCTAssertEqual(record.feed.entryTotal, FeedEntryTotal(count: 3))
+        XCTAssertEqual(record.listedItems.count, 10)
+
+        // A feed longer than TextMouth reads lists more than it read.
+        let long = try parsed(items, limit: 5)
+        XCTAssertTrue(long.reachedItemLimit)
+        FeedReconciler.merge(long, into: &record, keepEntries: 10, now: now.addingTimeInterval(180), texts: &texts)
+        XCTAssertEqual(record.feed.entryTotal, FeedEntryTotal(count: 5, listsMore: true))
+    }
+
+    /// Subscribing records the feed's size; a 304 and a body with the same
+    /// bytes as the last one keep it, and a changed body records its own.
+    func testAnUnchangedFeedKeepsItsSizeAndAChangedOneRecordsItsOwn() async throws {
+        let world = try FeedTestWorld(self, label: "FeedEntryTotal")
+        let items = (1...12).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)))
+        }
+        let first = StubResponse.feed(FeedXML.rss(items: items), headers: ["ETag": "\"v1\""])
+        let grown = [FeedXML.Item(guid: "ep-13", title: "Episode 13", published: world.day(0.5))] + items
+        world.server.serve("/feed.xml", first, StubResponse(status: 304), first, .feed(FeedXML.rss(items: grown)))
+        let feed = try await world.subscribe("/feed.xml")
+        /// The size the feed's record holds now.
+        func total() -> FeedEntryTotal? {
+            world.center.store.record(of: feed.id)?.feed.entryTotal
+        }
+        XCTAssertEqual(total(), FeedEntryTotal(count: 12))
+        XCTAssertEqual(world.center.listedItems(of: feed.id).count, 10)
+
+        let notModified = try await unwrap(world.center.refresh(feed.id))
+        XCTAssertEqual(notModified.outcome, .unchanged)
+        XCTAssertEqual(total(), FeedEntryTotal(count: 12))
+
+        let sameBytes = try await unwrap(world.center.refresh(feed.id))
+        XCTAssertEqual(sameBytes.outcome, .unchanged)
+        XCTAssertEqual(total(), FeedEntryTotal(count: 12))
+
+        world.advance(by: 86_400)
+        let changed = try await unwrap(world.center.refresh(feed.id))
+        XCTAssertEqual(changed.outcome, .updated(newItemIDs: ["guid:ep-13"]))
+        XCTAssertEqual(total(), FeedEntryTotal(count: 13))
+    }
+
+    /// A record written before TextMouth recorded its feed's size reads the
+    /// feed whole at its next refresh, sending no validators though nothing
+    /// changed, and records the size; the refreshes after it are
+    /// conditional again.
+    func testARecordWithoutItsFeedsSizeReadsTheFeedWholeOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedEntryTotalUnknown")
+        let body = StubResponse.feed(
+            FeedXML.rss(items: [FeedXML.Item(guid: "a", title: "A", published: world.day(-1))]),
+            headers: ["ETag": "\"v1\""]
+        )
+        world.server.serve("/feed.xml", body, body, StubResponse(status: 304))
+        let feed = try await world.subscribe("/feed.xml")
+        // The record as a TextMouth that recorded no size left it.
+        world.center.store.update(feed.id) { $0.feed.entryTotal = nil }
+
+        let whole = try await unwrap(world.center.refresh(feed.id))
+
+        XCTAssertEqual(whole.outcome, .updated(newItemIDs: []))
+        let unconditional = try XCTUnwrap(world.server.requests(to: "/feed.xml").last)
+        XCTAssertNil(unconditional.value(forHTTPHeaderField: "If-None-Match"))
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.feed.entryTotal, FeedEntryTotal(count: 1))
+
+        let next = try await unwrap(world.center.refresh(feed.id))
+
+        XCTAssertEqual(next.outcome, .unchanged)
+        let conditional = try XCTUnwrap(world.server.requests(to: "/feed.xml").last)
+        XCTAssertEqual(conditional.value(forHTTPHeaderField: "If-None-Match"), "\"v1\"")
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.feed.entryTotal, FeedEntryTotal(count: 1))
+    }
+
     /// Items of one date sort by the feed's order, an item the feed still
     /// lists ahead of one it dropped, then by episode number, then by
     /// identity: one consistent order, whatever order they come in.

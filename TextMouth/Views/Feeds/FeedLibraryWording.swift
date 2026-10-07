@@ -20,20 +20,37 @@ extension FeedWording {
 
     // MARK: Counts
 
-    /// A feed's items counted, as its row, its folder's summary bar, and
-    /// entering its folder say: "12 episodes, 3 downloaded, 1 downloading,
-    /// 2 new", leaving out the counts that are 0, but never the first.
+    /// A feed's items counted, as its row, its folder's summary bar, its
+    /// Feed Info, Speak Info, and entering its folder all say: its size
+    /// (`sizePhrase(_:)`), then the downloads, the new items, and the items
+    /// not yet played (of articles, not yet read), "10 of 381 episodes
+    /// kept, 3 downloaded, 1 downloading, 2 new, 5 unplayed", leaving out
+    /// the counts that are 0, but never the size.
     static func countsPhrase(_ counts: FeedItemCounts) -> String {
-        var parts = [count(counts.listed, counts.noun)]
+        var parts = [sizePhrase(counts)]
         if counts.downloaded > 0 { parts.append("\(counts.downloaded) downloaded") }
         if counts.downloading > 0 { parts.append("\(counts.downloading) downloading") }
         if counts.new > 0 { parts.append("\(counts.new) new") }
+        if counts.unplayed > 0 { parts.append("\(counts.unplayed) \(unplayedNote(counts.noun))") }
         return parts.joined(separator: ", ")
     }
 
-    /// A Feeds or feed-folder section's heading: "Episodes (12)".
-    static func sectionTitle(_ noun: ItemNoun, count: Int) -> String {
-        "\(noun.plural.capitalized) (\(count))"
+    /// What a feed's counts call the items not yet played: "unread" for
+    /// articles, "unplayed" for episodes and for a feed mixing the two.
+    static func unplayedNote(_ noun: ItemNoun) -> String {
+        noun == .article ? "unread" : "unplayed"
+    }
+
+    /// The heading of a feed's folder's items, which counts the rows under
+    /// it: "Episodes (12)". While those rows are every entry the library
+    /// keeps of a feed that lists more, it says the feed's size as the
+    /// feed's row does, "Episodes (10 of 381 kept)", "Articles (10 of more
+    /// than 2000 kept)"; while a search narrows them (`total` nil), the
+    /// rows alone. VoiceOver reads it in one stop, as it shows it.
+    static func sectionTitle(_ noun: ItemNoun, count: Int, total: FeedEntryTotal? = nil) -> String {
+        let name = noun.plural.capitalized
+        guard let total, total.exceeds(count) else { return "\(name) (\(count))" }
+        return "\(name) (\(count) of \(entriesPhrase(total, noun: nil)) \(keptNote))"
     }
 
     /// The heading of a feed's folder's books that came from no item of the
@@ -112,8 +129,9 @@ extension FeedWording {
     // MARK: Feed Rows
 
     /// A feed's row as VoiceOver speaks it, in one sentence: "Planet Money,
-    /// Feed, 12 episodes, 3 downloaded, 2 new, checked today at 3:05 PM",
-    /// with "Folder missing" after the note when its folder is gone.
+    /// Feed, 10 of 381 episodes kept, 3 downloaded, 2 new, checked today at
+    /// 3:05 PM", with "Folder missing" after the note when its folder is
+    /// gone.
     static func feedRowLabel(title: String, counts: FeedItemCounts, check: Check, folderMissing: Bool) -> String {
         var parts = [title, feedNote]
         if folderMissing { parts.append(folderMissingNote) }
@@ -137,8 +155,9 @@ extension FeedWording {
         "Downloading “\(title)”. It opens once it has downloaded."
     }
 
-    /// What entering a feed's folder says: "Planet Money, Feed, 12
-    /// episodes, 3 downloaded, 2 new".
+    /// What entering a feed's folder says, and its folder's row and Folders
+    /// rotor entry: "Planet Money, Feed, 10 of 381 episodes kept, 3
+    /// downloaded, 2 new".
     static func folderAnnouncement(name: String, counts: FeedItemCounts) -> String {
         "\(name), \(feedNote), \(countsPhrase(counts))"
     }
@@ -181,7 +200,8 @@ extension FeedWording {
     /// What a feed's folder's summary bar shows and says before the time
     /// left in its downloads: the feed's items counted, and its last check.
     struct FolderSummary: Equatable, Sendable {
-        /// The items counted: "12 episodes, 3 downloaded, 2 new".
+        /// The items counted: "10 of 381 episodes kept, 3 downloaded, 2
+        /// new".
         let counts: String
         /// The last check.
         let check: Check

@@ -4,8 +4,10 @@ import Foundation
 // MARK: - Which Folders Hold Feeds (FR03)
 
 /// Which library folders hold feeds (FR03), as a Library window needs to
-/// know them: a feed's folder carries the note "Feed" in the Folders list
-/// and the Folders rotor, opens on its feed's items, and is no place for
+/// know them: a feed's folder is left out of the Folders list where the
+/// Feeds section lists its feed (`folderRows(_:at:bookCount:)`), carries
+/// the note "Feed" and its feed's counts in the Folders list and the
+/// Folders rotor elsewhere, opens on its feed's items, and is no place for
 /// another feed's folder.
 ///
 /// It follows one feed engine and publishes only when a feed is subscribed,
@@ -67,5 +69,74 @@ final class LibraryFeedFolders: ObservableObject {
             map[feed.folderID] = feed.id
         }
         return map
+    }
+}
+
+// MARK: - The Folders Section and Its Rotor (October 7, 2026)
+
+/// One entry of a Library window's Folders rotor (FR03): what VoiceOver
+/// says for it, and the row it moves to.
+struct FolderRotorEntry: Equatable, Identifiable {
+    /// What the rotor says: a folder's row's label, "Fiction, 12 books", or,
+    /// for a feed's folder, the feed counted as its row counts it, "Planet
+    /// Money, Feed, 10 of 381 episodes kept".
+    let label: String
+    /// The ID of the row it moves to: the folder's own, or, for a feed's
+    /// folder the Feeds section's row stands for, the feed's, which is that
+    /// row's ID.
+    let id: UUID
+}
+
+/// The Folders section's rows and the Folders rotor's entries at one
+/// location of a Library window (FR03).
+struct LibraryFolderRows: Equatable {
+    /// The folders whose rows the Folders section shows, in order.
+    var shown: [BookFolder] = []
+    /// The Folders rotor's entries, one for each folder directly inside the
+    /// location, in the folders' order, each naming a row the list shows.
+    var rotorEntries: [FolderRotorEntry] = []
+}
+
+extension LibraryFeedFolders {
+    /// The Folders section's rows and the Folders rotor's entries at
+    /// `location`, of `subfolders`, the folders directly inside it, in
+    /// order; a plain folder's entry counts the books `bookCount` finds in
+    /// its tree.
+    ///
+    /// Only the Folders category shows folders: anywhere else there are
+    /// none, and so no rotor entries either, which would name rows the list
+    /// lacks. A feed's folder whose feed the Feeds section lists here is
+    /// left out, since the feed's row stands for it, opening the folder and
+    /// offering the feed's commands and the folder's, so the feed is listed
+    /// once, as the user asked on October 7: "the feeds should probably
+    /// just not have duplicate entries in the folders". Its rotor entry
+    /// stays, moved to the feed's row and naming the feed as that row does,
+    /// so the Folders rotor reaches every feed it reached before. A feed's
+    /// folder the Feeds section does not list keeps its row, which counts
+    /// the feed's items; a plain folder keeps its row whatever it holds, a
+    /// feed's folder deeper down included.
+    func folderRows(_ subfolders: [BookFolder], at location: LibraryLocation, bookCount: (BookFolder) -> Int) -> LibraryFolderRows {
+        guard location.category == .folders else { return LibraryFolderRows() }
+        let listedFeedIDs = Set(LibraryFeedsSectionRows.feeds(at: location, center: center).map(\.id))
+        var rows = LibraryFolderRows()
+        for folder in subfolders {
+            let heldFeedID = feedID(inFolder: folder.id)
+            let feedCounts = heldFeedID.map { center.counts(of: $0) }
+            if let heldFeedID, let feedCounts, listedFeedIDs.contains(heldFeedID),
+               let feed = center.store.record(of: heldFeedID)?.feed {
+                // The Feeds section's row stands for the folder.
+                rows.rotorEntries.append(FolderRotorEntry(
+                    label: FeedWording.folderAnnouncement(name: feed.title, counts: feedCounts),
+                    id: heldFeedID
+                ))
+                continue
+            }
+            rows.shown.append(folder)
+            rows.rotorEntries.append(FolderRotorEntry(
+                label: FolderRow.accessibilityLabel(name: folder.name, bookCount: bookCount(folder), feedCounts: feedCounts),
+                id: folder.id
+            ))
+        }
+        return rows
     }
 }

@@ -167,7 +167,30 @@ final class LibraryInfoWordingTests: XCTestCase {
                 + "In Podcasts/Planet Money. Address https://example.com/feed.xml."
         )
         // The row's own phrase, so the two never disagree.
-        XCTAssertEqual(LibraryInfoWording.countsPhrase(counts), FeedWording.countsPhrase(counts) + ", 5 unplayed")
+        XCTAssertEqual(FeedWording.countsPhrase(counts), "12 episodes, 3 downloaded, 2 new, 5 unplayed")
+        XCTAssertTrue(LibraryInfoWording.brief(.feed(feed)).contains(FeedWording.countsPhrase(counts)))
+    }
+
+    /// A feed that lists more entries than the library keeps says how many
+    /// of them are kept, as its row does; a feed longer than TextMouth
+    /// reads says it lists more.
+    func testAFeedsSummarySaysHowManyOfItsEntriesAreKept() {
+        var feed = FeedInfoFacts(
+            title: "Planet Money",
+            counts: FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), downloaded: 3, downloading: 0, new: 2, unplayed: 5, noun: .episode),
+            check: "Checked today at 3:05 PM",
+            folderPath: "Podcasts/Planet Money",
+            address: nil
+        )
+        XCTAssertEqual(
+            LibraryInfoWording.brief(.feed(feed)),
+            "Planet Money. Feed. 10 of 381 episodes kept, 3 downloaded, 2 new, 5 unplayed. Checked today at 3:05 PM."
+        )
+        feed.counts.total = FeedEntryTotal(count: 2_000, listsMore: true)
+        XCTAssertEqual(
+            LibraryInfoWording.brief(.feed(feed)),
+            "Planet Money. Feed. 10 of more than 2000 episodes kept, 3 downloaded, 2 new, 5 unplayed. Checked today at 3:05 PM."
+        )
     }
 
     /// Articles are unread rather than unplayed, nothing unplayed is left

@@ -255,9 +255,11 @@ struct BreadcrumbBar: View {
 struct FolderRow: View {
     let folder: BookFolder
     var bookCount: Int = 0
-    /// Whether the folder is a feed's (FR03): its row shows and says the
-    /// note "Feed" after its name.
-    var isFeed = false
+    /// The items of the feed whose folder this is, counted as the feed's
+    /// row in the Feeds section counts them (FR03): the row then says the
+    /// note "Feed" after the folder's name and counts the feed's items in
+    /// place of its books. Nil, the default, for any other folder.
+    var feedCounts: FeedItemCounts? = nil
 
     var body: some View {
         HStack {
@@ -266,26 +268,35 @@ struct FolderRow: View {
                 .accessibilityHidden(true)
             Text(folder.name)
                 .font(.headline)
-            if isFeed {
+            if feedCounts != nil {
                 FeedBadge(text: FeedWording.feedNote, color: .secondary)
             }
             Spacer()
-            Text(CountWording.books(bookCount))
+            Text(Self.countText(bookCount: bookCount, feedCounts: feedCounts))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Self.accessibilityLabel(name: folder.name, bookCount: bookCount, isFeed: isFeed))
+        .accessibilityLabel(Self.accessibilityLabel(name: folder.name, bookCount: bookCount, feedCounts: feedCounts))
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Double-tap to open folder")
     }
 
+    /// What the row shows after the folder's name: its books counted, "12
+    /// books", or, for a feed's folder, the feed's items as the feed's row
+    /// counts them, "10 of 381 episodes kept, 3 downloaded" (FR03).
+    static func countText(bookCount: Int, feedCounts: FeedItemCounts?) -> String {
+        feedCounts.map(FeedWording.countsPhrase) ?? CountWording.books(bookCount)
+    }
+
     /// What VoiceOver says for a folder's row and for its entry in the
     /// Folders rotor, which share it: "Fiction, 12 books", "Poems, 1 book",
-    /// and, for a feed's folder, "Planet Money, Feed, 3 books" (FR03).
-    static func accessibilityLabel(name: String, bookCount: Int, isFeed: Bool) -> String {
-        let note = isFeed ? ", \(FeedWording.feedNote)" : ""
-        return "\(name)\(note), \(CountWording.books(bookCount))"
+    /// and, for a feed's folder, its name, "Feed", and the feed's items as
+    /// the feed's row counts them, "Planet Money, Feed, 10 of 381 episodes
+    /// kept, 3 downloaded", never its downloads as books (FR03).
+    static func accessibilityLabel(name: String, bookCount: Int, feedCounts: FeedItemCounts?) -> String {
+        guard let feedCounts else { return "\(name), \(CountWording.books(bookCount))" }
+        return FeedWording.folderAnnouncement(name: name, counts: feedCounts)
     }
 }
 

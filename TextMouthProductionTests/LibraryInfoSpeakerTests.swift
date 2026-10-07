@@ -416,11 +416,12 @@ final class LibraryInfoSpeakerTests: XCTestCase {
     /// In a hosted Library window, the I key speaks that nothing is
     /// selected, then, once a row is selected (the List selects a folder's
     /// row by its ID as a book's), that row's information: a plain
-    /// folder's, a feed's folder's and a feed's row's as the feed, and a
-    /// book's; Command-I on the plain folder speaks it too, since a folder
-    /// has no sheet, and on the feed's row speaks nothing, opening Feed
-    /// Info instead. The window's speaker speaks through a recorder, so
-    /// nothing is heard.
+    /// folder's, a feed's row's as the feed, and a book's. The feed's
+    /// folder has no row of its own here, since the feed's row stands for
+    /// it, so the feed is heard once. Command-I on the plain folder speaks
+    /// it too, since a folder has no sheet, and on the feed's row speaks
+    /// nothing, opening Feed Info instead. The window's speaker speaks
+    /// through a recorder, so nothing is heard.
     func testThePlainIKeyInAHostedLibraryWindowSpeaksTheSelectedRow() async throws {
         let recorder = InfoSynthesizerRecorder()
         let previous = LibraryInfoSpeaker.makeSynthesizer
@@ -499,9 +500,9 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         let report = outcomes.joined(separator: " | ")
         let atlasPrefix = "The Tactile Atlas. Feed. 1 episode"
         XCTAssertEqual(texts.filter { $0.hasPrefix("Classics. Folder. 0 books.") }.count, 1, report)
-        XCTAssertEqual(texts.filter { $0.hasPrefix(atlasPrefix) }.count, 2, "the feed's folder and the feed's row: " + report)
+        XCTAssertEqual(texts.filter { $0.hasPrefix(atlasPrefix) }.count, 1, "the feed's row alone, its folder not listed twice: " + report)
         XCTAssertEqual(texts.filter { $0.hasPrefix("Middlemarch. By George Eliot. EPUB. In \(base). Unopened.") }.count, 1, report)
-        XCTAssertEqual(texts.count, 4, report)
+        XCTAssertEqual(texts.count, 3, report)
         XCTAssertNotNil(FeedInfoFacts.of(feedID: feed.id, center: world.center, now: Date()))
 
         // Command-I on the plain folder speaks it; on the feed's row it

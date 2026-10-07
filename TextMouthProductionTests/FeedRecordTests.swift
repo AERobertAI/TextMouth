@@ -130,6 +130,34 @@ final class FeedRecordTests: XCTestCase {
         XCTAssertEqual(record.durable.items[1], record.items[1])
     }
 
+    /// A record keeps its feed's size, with whether the feed lists more
+    /// entries than TextMouth reads; a record written before TextMouth
+    /// recorded the size loads without it, as a new subscription is before
+    /// its feed is read. The size exceeds a number kept only when the feed
+    /// lists more.
+    func testAFeedsSizeRoundTripsAndAnOlderRecordLoadsWithoutIt() throws {
+        var record = Self.record(itemCount: 2)
+        XCTAssertNil(record.feed.entryTotal, "a subscription knew its feed's size before reading it")
+        record.feed.entryTotal = FeedEntryTotal(count: 2_000, listsMore: true)
+        let data = try FeedRecordCoding.encoder().encode(record)
+        XCTAssertEqual(try FeedRecordCoding.decoder().decode(FeedRecord.self, from: data), record)
+
+        // The same file as a TextMouth that recorded no size wrote it.
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var feed = try XCTUnwrap(object["feed"] as? [String: Any])
+        XCTAssertNotNil(feed.removeValue(forKey: "entryTotal"), "the record wrote no size")
+        object["feed"] = feed
+        let older = try FeedRecordCoding.decoder().decode(FeedRecord.self, from: JSONSerialization.data(withJSONObject: object))
+        XCTAssertNil(older.feed.entryTotal)
+        record.feed.entryTotal = nil
+        XCTAssertEqual(older, record)
+
+        XCTAssertTrue(FeedEntryTotal(count: 381).exceeds(10))
+        XCTAssertFalse(FeedEntryTotal(count: 10).exceeds(10))
+        XCTAssertFalse(FeedEntryTotal(count: 5).exceeds(10), "a feed listing fewer entries than the record keeps")
+        XCTAssertTrue(FeedEntryTotal(count: 2_000, listsMore: true).exceeds(2_000))
+    }
+
     /// The items a library lists leave out the ones the listener deleted,
     /// which the record keeps so a refresh never brings them back.
     func testListedItemsLeaveOutDeletedOnes() {

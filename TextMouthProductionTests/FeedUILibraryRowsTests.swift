@@ -75,12 +75,15 @@ final class FeedUILibraryRowsTests: XCTestCase {
 
         let row = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).first)
 
-        XCTAssertEqual(row.counts, FeedItemCounts(listed: 3, downloaded: 1, downloading: 1, new: 2, unplayed: 3, noun: .episode))
-        XCTAssertEqual(row.countsText, "3 episodes, 1 downloaded, 1 downloading, 2 new")
+        XCTAssertEqual(
+            row.counts,
+            FeedItemCounts(listed: 3, total: FeedEntryTotal(count: 3), downloaded: 1, downloading: 1, new: 2, unplayed: 3, noun: .episode)
+        )
+        XCTAssertEqual(row.countsText, "3 episodes, 1 downloaded, 1 downloading, 2 new, 3 unplayed")
         let check = FeedWording.check(world.center.fetchState(of: feed.id), isRefreshing: false, now: Date())
         XCTAssertEqual(row.check, check)
         XCTAssertTrue(check.spoken.hasPrefix("checked "), check.spoken)
-        XCTAssertEqual(row.label, "The Tactile Atlas, Feed, 3 episodes, 1 downloaded, 1 downloading, 2 new, \(check.spoken)")
+        XCTAssertEqual(row.label, "The Tactile Atlas, Feed, 3 episodes, 1 downloaded, 1 downloading, 2 new, 3 unplayed, \(check.spoken)")
 
         // Opening the downloaded episode's book makes it no longer new. The
         // row is changed in place: the book has no package to save.
@@ -91,6 +94,108 @@ final class FeedUILibraryRowsTests: XCTestCase {
         world.center.markPlayed("guid:ep-3", of: feed.id)
         XCTAssertEqual(world.center.counts(of: feed.id).new, 0)
         XCTAssertEqual(world.center.counts(of: feed.id).unplayed, 2)
+    }
+
+    // MARK: - A Feed's Size
+
+    /// A feed's size reads as the number kept of the feed's entries when
+    /// the feed lists more than the library keeps, "10 of 381 episodes
+    /// kept", the noun agreeing with the number before it, and a feed
+    /// longer than TextMouth reads said to list more; otherwise, and while
+    /// the size is unknown, as the number kept alone, as it always read.
+    /// Every count of a feed starts with it.
+    func testAFeedsSizeSaysHowManyOfItsEntriesAreKept() {
+        /// The size `kept` of `total` reads as.
+        func size(_ kept: Int, _ total: FeedEntryTotal?, _ noun: FeedWording.ItemNoun = .episode) -> String {
+            FeedWording.sizePhrase(kept: kept, total: total, noun: noun)
+        }
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 381)), "10 of 381 episodes kept")
+        XCTAssertEqual(size(1, FeedEntryTotal(count: 381)), "1 of 381 episodes kept")
+        XCTAssertEqual(size(0, FeedEntryTotal(count: 1)), "0 of 1 episode kept")
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 381), .article), "10 of 381 articles kept")
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 381), .item), "10 of 381 items kept")
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 2_000, listsMore: true)), "10 of more than 2000 episodes kept")
+        XCTAssertEqual(size(2_000, FeedEntryTotal(count: 2_000, listsMore: true)), "2000 of more than 2000 episodes kept")
+        // Every entry kept, more kept than the feed lists now, or the size
+        // not known yet.
+        XCTAssertEqual(size(12, FeedEntryTotal(count: 12)), "12 episodes")
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 5)), "10 episodes")
+        XCTAssertEqual(size(1, FeedEntryTotal(count: 1)), "1 episode")
+        XCTAssertEqual(size(12, nil), "12 episodes")
+        XCTAssertEqual(size(1, nil, .article), "1 article")
+        XCTAssertEqual(size(0, nil), "0 episodes")
+        XCTAssertEqual(FeedWording.keptNote, "kept")
+        XCTAssertEqual(FeedWording.moreThanNote, "more than")
+
+        let counts = FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), downloaded: 3, downloading: 1, new: 2, noun: .episode)
+        XCTAssertEqual(FeedWording.sizePhrase(counts), "10 of 381 episodes kept")
+        XCTAssertEqual(FeedWording.countsPhrase(counts), "10 of 381 episodes kept, 3 downloaded, 1 downloading, 2 new")
+        XCTAssertEqual(
+            FeedWording.folderAnnouncement(name: "Planet Money", counts: counts),
+            "Planet Money, Feed, 10 of 381 episodes kept, 3 downloaded, 1 downloading, 2 new"
+        )
+        let check = FeedWording.Check(visible: "Checked today at 3:05 PM", spoken: "checked today at 3:05 PM", failed: false)
+        XCTAssertEqual(
+            FeedWording.feedRowLabel(title: "Planet Money", counts: counts, check: check, folderMissing: false),
+            "Planet Money, Feed, 10 of 381 episodes kept, 3 downloaded, 1 downloading, 2 new, checked today at 3:05 PM"
+        )
+        XCTAssertEqual(FeedWording.subscribed(title: "Planet Money", counts: counts), "Subscribed to Planet Money: 10 of 381 episodes kept.")
+    }
+
+    /// Every place that counts a feed says its size the same way: its row,
+    /// its folder's summary bar, entering its folder, Speak Info, and the
+    /// announcement after subscribing. A feed whose size is not known yet,
+    /// a feed keeping every entry, a feed listing fewer entries than the
+    /// library keeps, a feed of one entry, and a feed of articles each
+    /// count as they should.
+    func testEveryCountOfAFeedSaysItsSize() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUISize")
+        let episodes = (1...12).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)))
+        }
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: world.folder.path, items: episodes)
+        let counts = world.center.counts(of: feed.id)
+        XCTAssertEqual(counts.listed, 10)
+        XCTAssertEqual(counts.total, FeedEntryTotal(count: 12))
+        let size = "10 of 12 episodes kept"
+
+        let row = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).first)
+        XCTAssertTrue(row.countsText.hasPrefix(size), row.countsText)
+        XCTAssertTrue(row.label.hasPrefix("The Tactile Atlas, Feed, \(size)"), row.label)
+        let summary = world.center.folderSummary(of: feed.id, now: Date())
+        XCTAssertTrue(summary.counts.hasPrefix(size), summary.counts)
+        let path = try XCTUnwrap(world.library.feedFolderPath(forFolderID: feed.folderID))
+        let entering = FolderNavigationHistory.announcement(for: path, library: world.library.library, feedFolders: LibraryFeedFolders(center: world.center))
+        XCTAssertTrue(entering.hasPrefix("The Tactile Atlas, Feed, \(size)"), entering)
+        let facts = try XCTUnwrap(FeedInfoFacts.of(feedID: feed.id, center: world.center, now: Date()))
+        XCTAssertTrue(LibraryInfoWording.brief(.feed(facts)).hasPrefix("The Tactile Atlas. Feed. \(size)"), LibraryInfoWording.brief(.feed(facts)))
+        XCTAssertEqual(FeedWording.subscribed(title: feed.title, counts: counts), "Subscribed to The Tactile Atlas: \(size).")
+
+        // A record from before TextMouth recorded the size counts as it did.
+        world.center.store.update(feed.id) { $0.feed.entryTotal = nil }
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: feed.id)), "10 episodes")
+
+        // Keeping every entry: the next check reads the feed whole, and
+        // every entry is kept.
+        world.center.setKeepEntries(-1, of: feed.id)
+        _ = await world.center.refresh(feed.id)
+        XCTAssertEqual(world.center.counts(of: feed.id).total, FeedEntryTotal(count: 12))
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: feed.id)), "12 episodes")
+
+        // Fewer entries than the library keeps, and one entry.
+        let three = try await subscribe(world, title: "Three Rooms", path: "/three.xml", into: world.folder.path, items: Array(episodes.prefix(3)))
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: three.id)), "3 episodes")
+        let one = try await subscribe(world, title: "One Room", path: "/one.xml", into: world.folder.path)
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: one.id)), "1 episode")
+
+        // Articles: entries offering no audio or video.
+        let notes = (1...12).map { number in
+            FeedXML.Item(guid: "note-\(number)", title: "Note \(number)", published: world.day(-Double(number)), description: "<p>Words.</p>")
+        }
+        world.server.serve("/notes.xml", .feed(FeedXML.rss(title: "Harbour Notes", items: notes)))
+        let outcome = try await world.center.subscribe(to: world.server.url("/notes.xml").absoluteString, into: .newFolder(inParentPath: world.folder.path))
+        guard case .subscribed(let articles) = outcome else { return XCTFail("subscribing ended with \(outcome)") }
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: articles.id)), "10 of 12 articles kept")
     }
 
     /// The last check reads as being checked, never checked, failed with
@@ -190,13 +295,15 @@ final class FeedUILibraryRowsTests: XCTestCase {
         XCTAssertEqual(all.entries.map(\.id), ["item:guid:ep-3", "book:\(episode.id.uuidString)", "item:guid:ep-1"])
         XCTAssertEqual(all.otherBooks, [other])
         XCTAssertEqual(all.noun, .episode)
-        XCTAssertEqual(FeedWording.sectionTitle(all.noun, count: all.entries.count), "Episodes (3)")
+        XCTAssertEqual(all.total, FeedEntryTotal(count: 3))
+        XCTAssertEqual(FeedWording.sectionTitle(all.noun, count: all.entries.count, total: all.total), "Episodes (3)")
         XCTAssertEqual(FeedWording.otherBooksTitle(count: 1), "Books (1)")
 
         // The search narrows items and books alike.
         let searched = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [episode, other], search: "MAP")
         XCTAssertEqual(searched.entries.map(\.id), ["item:guid:ep-3"])
         XCTAssertEqual(searched.otherBooks, [])
+        XCTAssertNil(searched.total, "a search's rows are not the entries kept")
 
         // An episode whose book lives in another folder stays an item,
         // downloaded.
@@ -209,12 +316,134 @@ final class FeedUILibraryRowsTests: XCTestCase {
     // MARK: - Folders, the Rotor, the Bar, and Entering
 
     /// A feed's folder says "Feed" after its name, in its row and in the
-    /// Folders rotor, which share one label, and a folder of one book is
-    /// "1 book" in both.
-    func testAFeedsFolderSaysFeedAfterItsName() {
-        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Planet Money", bookCount: 3, isFeed: true), "Planet Money, Feed, 3 books")
-        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Poems", bookCount: 1, isFeed: false), "Poems, 1 book")
-        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Fiction", bookCount: 12, isFeed: false), "Fiction, 12 books")
+    /// Folders rotor, which share one label, and counts the feed's items as
+    /// the feed's row does, never its downloads as books; any other folder
+    /// counts its books, and a folder of one book is "1 book" in both.
+    func testAFeedsFolderSaysFeedAfterItsNameAndCountsItsItems() {
+        let counts = FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), downloaded: 3, noun: .episode)
+        XCTAssertEqual(
+            FolderRow.accessibilityLabel(name: "Planet Money", bookCount: 3, feedCounts: counts),
+            "Planet Money, Feed, 10 of 381 episodes kept, 3 downloaded"
+        )
+        XCTAssertEqual(FolderRow.countText(bookCount: 3, feedCounts: counts), "10 of 381 episodes kept, 3 downloaded")
+        XCTAssertEqual(
+            FolderRow.accessibilityLabel(name: "Harbour Notes", bookCount: 0, feedCounts: FeedItemCounts(listed: 1, unplayed: 1, noun: .article)),
+            "Harbour Notes, Feed, 1 article, 1 unread"
+        )
+        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Poems", bookCount: 1, feedCounts: nil), "Poems, 1 book")
+        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Fiction", bookCount: 12, feedCounts: nil), "Fiction, 12 books")
+        XCTAssertEqual(FolderRow.countText(bookCount: 12, feedCounts: nil), "12 books")
+    }
+
+    /// A real feed's folder, holding a downloaded episode's book, reads as
+    /// the feed's row counts it, where it read "1 book" before; the label
+    /// is the one entering the folder speaks.
+    func testAFeedsFolderRowCountsTheFeedsItemsNotItsBooks() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUIFolderRowCounts")
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: world.folder.path, items: [
+            FeedXML.Item(guid: "ep-2", title: "Second", published: world.day(0.5)),
+            FeedXML.Item(guid: "ep-1", title: "First", published: world.day(-3)),
+        ])
+        addBook(titled: "First", to: world, feed: feed, item: "guid:ep-1")
+        let folder = try XCTUnwrap(world.library.library.folders.first { $0.id == feed.folderID })
+        let label = FolderRow.accessibilityLabel(
+            name: folder.name,
+            bookCount: world.library.bookCount(inFolderTree: folder.fullPath),
+            feedCounts: world.center.counts(of: feed.id)
+        )
+
+        XCTAssertEqual(label, "The Tactile Atlas, Feed, 2 episodes, 1 downloaded, 1 new, 2 unplayed")
+        XCTAssertFalse(label.contains("book"), label)
+        XCTAssertEqual(
+            label,
+            FolderNavigationHistory.announcement(for: folder.fullPath, library: world.library.library, feedFolders: LibraryFeedFolders(center: world.center))
+        )
+    }
+
+    // MARK: - One Row for Each Feed
+
+    /// Where the Feeds section lists a feed, the Folders section leaves out
+    /// the feed's folder, and the Folders rotor's entry for it moves to the
+    /// feed's row, naming the feed as that row does: at the top of the
+    /// library, inside a folder, and inside a folder of a folder. A plain
+    /// folder holding a feed's folder deeper down keeps its row as it was;
+    /// a feed's folder the Feeds section does not list keeps its row,
+    /// counting the feed's items; and outside the Folders category there
+    /// are no folder rows, and so no rotor entries naming rows the list
+    /// lacks.
+    func testTheFoldersSectionLeavesOutTheFoldersOfTheFeedsItLists() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUIOneRow")
+        let base = world.folder.path
+        let shows = try world.library.createFolderReturningFolder(name: "Shows", parentPath: base)
+        let atlas = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: base)
+        let notes = try await subscribe(world, title: "Harbour Notes", path: "/notes.xml", into: shows.fullPath)
+        // A feed whose folder is at the top of the library, removed with
+        // its directory when the test ends.
+        let wire = try await subscribe(world, title: "Open Wire \(UUID().uuidString.prefix(8))", path: "/wire.xml", into: "")
+        let wireFolder = IntegrationLibraryFolder(path: try XCTUnwrap(world.library.feedFolderPath(forFolderID: wire.folderID)))
+        addTeardownBlock { wireFolder.remove() }
+        let feedFolders = LibraryFeedFolders(center: world.center)
+        /// The rows and rotor entries at `path` in `category`, of the
+        /// folders directly inside it unless `subfolders` are given.
+        func rows(_ path: String, _ category: LibraryCategory = .folders, subfolders: [BookFolder]? = nil) -> LibraryFolderRows {
+            feedFolders.folderRows(subfolders ?? world.library.subfoldersOf(path), at: LibraryLocation(category: category, folderPath: path)) {
+                world.library.bookCount(inFolderTree: $0.fullPath)
+            }
+        }
+        /// A plain folder's rotor entry, on its own row.
+        func folderEntry(_ folder: BookFolder) -> FolderRotorEntry {
+            FolderRotorEntry(
+                label: FolderRow.accessibilityLabel(name: folder.name, bookCount: world.library.bookCount(inFolderTree: folder.fullPath), feedCounts: nil),
+                id: folder.id
+            )
+        }
+        /// A feed's rotor entry, on the feed's row in the Feeds section.
+        func feedEntry(_ feed: Feed) -> FolderRotorEntry {
+            FolderRotorEntry(label: FeedWording.folderAnnouncement(name: feed.title, counts: world.center.counts(of: feed.id)), id: feed.id)
+        }
+
+        // The top: the world's folder keeps its row, though it holds two
+        // feeds' folders deeper down; Open Wire's folder is left out.
+        let top = rows("")
+        XCTAssertEqual(top.shown, [world.bookFolder])
+        XCTAssertEqual(top.rotorEntries, [folderEntry(world.bookFolder), feedEntry(wire)])
+        XCTAssertEqual(top.rotorEntries.last?.label, "\(wire.title), Feed, 1 episode, 1 unplayed")
+
+        // Inside the world's folder: Shows keeps its row; the Atlas's folder
+        // is left out, its entry on the Atlas's row.
+        let inside = rows(base)
+        XCTAssertEqual(inside.shown, [shows])
+        XCTAssertEqual(inside.rotorEntries, [folderEntry(shows), feedEntry(atlas)])
+
+        // Inside Shows: only the Notes' folder, left out.
+        let nested = rows(shows.fullPath)
+        XCTAssertEqual(nested.shown, [])
+        XCTAssertEqual(nested.rotorEntries, [feedEntry(notes)])
+
+        // Every rotor entry names a row the list shows: a folder's row, or
+        // a feed's row in the Feeds section.
+        for (path, listed) in [("", top), (base, inside), (shows.fullPath, nested)] {
+            let feedRowIDs = Set(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .folders, folderPath: path), center: world.center).map(\.id))
+            let rowIDs = Set(listed.shown.map(\.id)).union(feedRowIDs)
+            XCTAssertTrue(listed.rotorEntries.allSatisfy { rowIDs.contains($0.id) }, "a rotor entry at \"\(path)\" names a row the list lacks")
+        }
+
+        // Elsewhere no folders are shown, so the rotor offers none.
+        for category in [LibraryCategory.allItems, .unopened, .recent] {
+            XCTAssertEqual(rows(base, category), LibraryFolderRows(), "\(category)")
+        }
+
+        // A feed's folder the Feeds section does not list here keeps its
+        // row, counting the feed's items: the Atlas's folder, given as if
+        // it were inside Shows, where the section lists only the Notes.
+        let atlasFolder = try XCTUnwrap(world.library.library.folders.first { $0.id == atlas.folderID })
+        let unlisted = rows(shows.fullPath, subfolders: [atlasFolder])
+        XCTAssertEqual(unlisted.shown, [atlasFolder])
+        XCTAssertEqual(unlisted.rotorEntries, [FolderRotorEntry(
+            label: FolderRow.accessibilityLabel(name: atlasFolder.name, bookCount: 0, feedCounts: world.center.counts(of: atlas.id)),
+            id: atlasFolder.id
+        )])
+        XCTAssertEqual(unlisted.rotorEntries.first?.label, "The Tactile Atlas, Feed, 1 episode, 1 unplayed")
     }
 
     /// Which folders hold feeds follows the engine, and changes only when a
@@ -257,6 +486,54 @@ final class FeedUILibraryRowsTests: XCTestCase {
         XCTAssertEqual(plain.summaryAccessibilityLabel, "0 books")
     }
 
+    /// The open feed's summary bar and its items' heading say what the
+    /// feed's row says. The bar: how many entries are kept of the feed's
+    /// size, then the downloads, the new and the unplayed items, and the
+    /// last check, spoken in one sentence of the words it shows. The
+    /// heading: its rows counted with the feed's size while they are every
+    /// entry kept, and its rows alone while a search narrows them.
+    func testTheOpenFeedsSummaryAndHeadingSayWhatItsRowSays() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUIOpenFeed")
+        let episodes = (1...12).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)))
+        }
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: world.folder.path, items: episodes)
+        let book = addBook(titled: "Episode 2", to: world, feed: feed, item: "guid:ep-2")
+        world.center.markPlayed("guid:ep-3", of: feed.id)
+        let now = Date()
+        let row = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center, now: now).first)
+        XCTAssertEqual(row.countsText, "10 of 12 episodes kept, 1 downloaded, 9 unplayed")
+
+        // The summary bar.
+        let summary = world.center.folderSummary(of: feed.id, now: now)
+        XCTAssertEqual(summary.counts, row.countsText)
+        XCTAssertEqual(summary.check, row.check)
+        let bar = TimeRemainingBar(books: [], wpm: 200, feedSummary: summary)
+        XCTAssertEqual(bar.summaryAccessibilityLabel, "10 of 12 episodes kept, 1 downloaded, 9 unplayed. \(row.check.visible)")
+
+        // The heading, over every entry kept, and over a search's.
+        let listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [book], folderBooks: [book], search: "")
+        XCTAssertEqual(listing.entries.count, 10)
+        XCTAssertEqual(FeedWording.sectionTitle(listing.noun, count: listing.entries.count, total: listing.total), "Episodes (10 of 12 kept)")
+        let searched = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [book], search: "Episode 1")
+        XCTAssertEqual(searched.entries.map(\.id), ["item:guid:ep-1", "item:guid:ep-10"])
+        XCTAssertEqual(FeedWording.sectionTitle(searched.noun, count: searched.entries.count, total: searched.total), "Episodes (2)")
+
+        // Every form of the heading, and of the unplayed count.
+        XCTAssertEqual(FeedWording.sectionTitle(.episode, count: 12), "Episodes (12)")
+        XCTAssertEqual(FeedWording.sectionTitle(.episode, count: 1, total: FeedEntryTotal(count: 1)), "Episodes (1)")
+        XCTAssertEqual(FeedWording.sectionTitle(.episode, count: 10, total: FeedEntryTotal(count: 381)), "Episodes (10 of 381 kept)")
+        XCTAssertEqual(FeedWording.sectionTitle(.article, count: 10, total: FeedEntryTotal(count: 381)), "Articles (10 of 381 kept)")
+        XCTAssertEqual(FeedWording.sectionTitle(.item, count: 3, total: FeedEntryTotal(count: 2)), "Items (3)")
+        XCTAssertEqual(
+            FeedWording.sectionTitle(.episode, count: 10, total: FeedEntryTotal(count: 2_000, listsMore: true)),
+            "Episodes (10 of more than 2000 kept)"
+        )
+        XCTAssertEqual(FeedWording.countsPhrase(FeedItemCounts(listed: 2, unplayed: 1, noun: .article)), "2 articles, 1 unread")
+        XCTAssertEqual(FeedWording.countsPhrase(FeedItemCounts(listed: 3, unplayed: 3, noun: .item)), "3 items, 3 unplayed")
+        XCTAssertEqual(FeedWording.countsPhrase(FeedItemCounts(listed: 3, noun: .episode)), "3 episodes", "nothing unplayed is said")
+    }
+
     /// Entering a feed's folder says its name, "Feed", and the feed's items
     /// counted; any other folder is announced as before.
     func testEnteringAFeedsFolderSaysItsItems() async throws {
@@ -270,7 +547,7 @@ final class FeedUILibraryRowsTests: XCTestCase {
 
         XCTAssertEqual(
             FolderNavigationHistory.announcement(for: path, library: world.library.library, feedFolders: folders),
-            "The Tactile Atlas, Feed, 2 episodes, 1 new"
+            "The Tactile Atlas, Feed, 2 episodes, 1 new, 2 unplayed"
         )
         XCTAssertEqual(
             FolderNavigationHistory.announcement(for: world.folder.path, library: world.library.library, feedFolders: folders),
