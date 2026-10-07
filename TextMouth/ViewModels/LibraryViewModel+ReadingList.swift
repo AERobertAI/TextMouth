@@ -163,6 +163,43 @@ extension LibraryViewModel {
     }
 
     // MARK: - The Questions a Reader Asks
+    //
+    // FR09's second branch, the reader's part, builds on the two questions
+    // below; this branch leaves the reader alone. A reader opened from the
+    // Reading List is marked as reading from it, titles its window "Reading
+    // List: <title> by <author>", and continues down or up the list when its
+    // book ends. What it needs, as this branch leaves things:
+    //
+    // 1. A claim that the book was opened from the list:
+    //    `ReadingListOpenRequests`, a main-actor store shaped like
+    //    `ReaderAutoplayRequests` (Services/ReaderAutoplayRequests.swift).
+    //    A Library window showing the Reading List makes a request for a
+    //    book just before it opens it from the list: the row's default
+    //    action and its Open command (`LibraryBookRowActions.open`) and
+    //    Return on the selection (the `.openSelectedBook` handler), each
+    //    ahead of `onOpenBook`, while `category == .readingList`; Continue
+    //    Listening opens the last book, not the list's, and makes none. The
+    //    book's reader claims the request once, as it finishes loading, or
+    //    at once when its window was already open (`consume(for:)`); a
+    //    request older than its lifetime is thrown away, so the same book
+    //    opened later from elsewhere reads as before. A reader that
+    //    continues through the list makes a request for the next book too,
+    //    beside its autoplay request and before it posts
+    //    `.continueToNextBook`, so the next reader is marked as well.
+    // 2. At its book's end (`ReaderViewModel.handleEndOfBook`), a reader
+    //    marked as reading from the list counts the book finished, as it
+    //    does now, then asks `readingListContinuation(after:)` in place of
+    //    its own end-of-book behavior. A book continues there through
+    //    `continueToNextBook(_:)` and its autoplay request, which open or
+    //    bring forward the next book's window and play it; nil stops the
+    //    reader there and says why: Stop was chosen, the list ends, only
+    //    finished books lie beyond, or the book has left the list.
+    // 3. Next in Reading List and Previous in Reading List:
+    //    `readingListNeighbor(of:direction:skippingFinished:)`, down for
+    //    Next and up for Previous, with the list's `skipsFinished`.
+    //
+    // A book counts as finished by `finishedBookIDs`, what Books Finished
+    // records, and the book asking is never its own answer.
 
     /// The book beside `bookID` in the reading list: down, the nearest book
     /// below it; up, the nearest above it; passing over every finished book
