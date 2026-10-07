@@ -2,6 +2,8 @@
 
 Slug `readinglist`; branch `feature/reading-list`. The reader's part (opening from the list, the window title, continuing to the book below or above) is a second branch after this one merges; this branch provides the model and the questions the reader will ask.
 
+**Launched in the October 7 evening wave:** read `common-evening.md` beside this file instead of `common.md` (main is at fca0f91d or later, 4687 tests, 56 skipped, 0 failures; the Unopened, hand-edit, speech-guard, AirPods, and Speak Info branches are all merged, so the "if that branch is still in flight" notes below no longer apply). In LibraryView.swift and LibrarySubviews.swift, `feedfollowups` edits `foldersSection`, the `subfolders` it is given, the Folders rotor, and `FolderRow`; you edit the category's list, the options bar, and the book rows (`BookRow`, its context menu and VoiceOver actions). Post a `question` on the board before you touch the other's region.
+
 ## The user's words (October 7, 2026)
 "and then I want a reading list feature which I don't think exists yet as a fifth view which in most ways will act like a manually reorderable folder view but the books can come from anywhere, there should be a reading list options bar on that view like how to continue while in one of those books, continue to down book or above book maybe come up with better terms but next and previus might seemm ambiguous and option to skip finished books. When opening a book from the reading list the book view should be marked as using the reading list and the window title should be slightly different to indicate it in some way..."
 
