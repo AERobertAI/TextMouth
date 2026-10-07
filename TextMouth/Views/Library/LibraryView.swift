@@ -248,7 +248,12 @@ struct LibraryView: View {
         let allBooks = displayedBooks
         let books = filteredBooks
         let folders = libraryViewModel.subfoldersOf(currentFolderPath)
-        let subfolders = category == .folders ? folders : []
+        // The Folders section's rows and the Folders rotor's entries: none
+        // outside Folders, and no row for a feed's folder where the Feeds
+        // section lists its feed, whose row stands for it and takes its
+        // rotor entry (FR03).
+        let folderRows = shownFolderRows(of: folders)
+        let subfolders = folderRows.shown
         let lastBook = libraryViewModel.lastOpenedBook
         // The feed whose folder this is, if it is one (FR03): its items are
         // listed, and its summary bar counts them, even before any download.
@@ -353,8 +358,16 @@ struct LibraryView: View {
                     foldersSection(subfolders)
                 }
 
-                // Feeds section, only where there are feeds (FR03)
-                LibraryFeedsSection(center: feedFolders.center, location: location, open: openFeed, perform: performFeedAction)
+                // Feeds section, only where there are feeds (FR03); each
+                // row also offers its feed's folder's commands, as the
+                // folder's row, left out where the feed's row stands for
+                // it, did.
+                LibraryFeedsSection(center: feedFolders.center, location: location, open: openFeed, perform: performFeedAction) { row in
+                    if let folder = folder(ofFeedRow: row) {
+                        Divider()
+                        folderMenu(folder)
+                    }
+                }
 
                 // Books section; in a feed's folder, the feed's items with
                 // the downloaded ones as their books (FR03)
@@ -367,17 +380,11 @@ struct LibraryView: View {
                 }
             }
             .accessibilityRotor("Folders") {
-                ForEach(folders) { folder in
-                    // A feed's folder counts its feed's items, as its row
-                    // does (FR03).
-                    AccessibilityRotorEntry(
-                        FolderRow.accessibilityLabel(
-                            name: folder.name,
-                            bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath),
-                            feedCounts: feedFolders.feedID(inFolder: folder.id).map { feedFolders.center.counts(of: $0) }
-                        ),
-                        id: folder.id
-                    )
+                // Each folder here, as its row says it, or, for a feed's
+                // folder the Feeds section's row stands for, moving to that
+                // row (FR03).
+                ForEach(folderRows.rotorEntries) { entry in
+                    AccessibilityRotorEntry(entry.label, id: entry.id)
                 }
             }
             .onDeleteCommand {
@@ -959,9 +966,11 @@ struct LibraryView: View {
 
     /// The Folders section: a row for each of `subfolders`, which opens the
     /// folder, with the folder commands in its context menu. A feed's folder
-    /// says "Feed" after its name, counts its feed's items as the feed's
-    /// row does, and offers its feed's commands in its context menu and as
-    /// its VoiceOver actions (FR03).
+    /// has a row only where the Feeds section does not list its feed
+    /// (`LibraryFeedFolders.folderRows(_:at:bookCount:)`); there it says
+    /// "Feed" after its name, counts its feed's items as the feed's row
+    /// does, and offers its feed's commands in its context menu and as its
+    /// VoiceOver actions (FR03).
     private func foldersSection(_ subfolders: [BookFolder]) -> some View {
         Section {
             ForEach(subfolders) { folder in
@@ -1003,7 +1012,9 @@ struct LibraryView: View {
         }
     }
 
-    /// A folder row's context menu: Rename, Move, and Delete.
+    /// A folder's commands: Rename, Move, and Delete, in its row's context
+    /// menu, and, for a feed's folder, in its feed's row's, which stands for
+    /// the folder where the Feeds section lists the feed (FR03).
     @ViewBuilder
     private func folderMenu(_ folder: BookFolder) -> some View {
         Button("Rename Folder...") {
@@ -1053,6 +1064,20 @@ struct LibraryView: View {
                     .accessibilityAddTraits(.isHeader)
             }
         }
+    }
+
+    /// The Folders section's rows and the Folders rotor's entries here, of
+    /// `folders`, the folders directly inside this location
+    /// (`LibraryFeedFolders.folderRows(_:at:bookCount:)`, FR03).
+    private func shownFolderRows(of folders: [BookFolder]) -> LibraryFolderRows {
+        feedFolders.folderRows(folders, at: location) { libraryViewModel.bookCount(inFolderTree: $0.fullPath) }
+    }
+
+    /// The library folder of the feed a Feeds row shows, or nil when it is
+    /// gone (FR03).
+    private func folder(ofFeedRow row: FeedRowContent) -> BookFolder? {
+        guard let path = row.folderPath else { return nil }
+        return libraryViewModel.library.folders.first { $0.fullPath == path }
     }
 
     /// The feed whose folder the list shows, when it shows one (FR03).
@@ -1278,7 +1303,7 @@ struct LibraryView: View {
         LibraryInfoRow.selected(
             selectedBookIDs,
             editSelection: editSelection,
-            folders: category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : [],
+            folders: shownFolderRows(of: libraryViewModel.subfoldersOf(currentFolderPath)).shown,
             feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center),
             books: filteredBooks
         )

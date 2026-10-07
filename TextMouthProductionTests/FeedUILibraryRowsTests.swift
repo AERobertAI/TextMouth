@@ -360,6 +360,92 @@ final class FeedUILibraryRowsTests: XCTestCase {
         )
     }
 
+    // MARK: - One Row for Each Feed
+
+    /// Where the Feeds section lists a feed, the Folders section leaves out
+    /// the feed's folder, and the Folders rotor's entry for it moves to the
+    /// feed's row, naming the feed as that row does: at the top of the
+    /// library, inside a folder, and inside a folder of a folder. A plain
+    /// folder holding a feed's folder deeper down keeps its row as it was;
+    /// a feed's folder the Feeds section does not list keeps its row,
+    /// counting the feed's items; and outside the Folders category there
+    /// are no folder rows, and so no rotor entries naming rows the list
+    /// lacks.
+    func testTheFoldersSectionLeavesOutTheFoldersOfTheFeedsItLists() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUIOneRow")
+        let base = world.folder.path
+        let shows = try world.library.createFolderReturningFolder(name: "Shows", parentPath: base)
+        let atlas = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: base)
+        let notes = try await subscribe(world, title: "Harbour Notes", path: "/notes.xml", into: shows.fullPath)
+        // A feed whose folder is at the top of the library, removed with
+        // its directory when the test ends.
+        let wire = try await subscribe(world, title: "Open Wire \(UUID().uuidString.prefix(8))", path: "/wire.xml", into: "")
+        let wireFolder = IntegrationLibraryFolder(path: try XCTUnwrap(world.library.feedFolderPath(forFolderID: wire.folderID)))
+        addTeardownBlock { wireFolder.remove() }
+        let feedFolders = LibraryFeedFolders(center: world.center)
+        /// The rows and rotor entries at `path` in `category`, of the
+        /// folders directly inside it unless `subfolders` are given.
+        func rows(_ path: String, _ category: LibraryCategory = .folders, subfolders: [BookFolder]? = nil) -> LibraryFolderRows {
+            feedFolders.folderRows(subfolders ?? world.library.subfoldersOf(path), at: LibraryLocation(category: category, folderPath: path)) {
+                world.library.bookCount(inFolderTree: $0.fullPath)
+            }
+        }
+        /// A plain folder's rotor entry, on its own row.
+        func folderEntry(_ folder: BookFolder) -> FolderRotorEntry {
+            FolderRotorEntry(
+                label: FolderRow.accessibilityLabel(name: folder.name, bookCount: world.library.bookCount(inFolderTree: folder.fullPath), feedCounts: nil),
+                id: folder.id
+            )
+        }
+        /// A feed's rotor entry, on the feed's row in the Feeds section.
+        func feedEntry(_ feed: Feed) -> FolderRotorEntry {
+            FolderRotorEntry(label: FeedWording.folderAnnouncement(name: feed.title, counts: world.center.counts(of: feed.id)), id: feed.id)
+        }
+
+        // The top: the world's folder keeps its row, though it holds two
+        // feeds' folders deeper down; Open Wire's folder is left out.
+        let top = rows("")
+        XCTAssertEqual(top.shown, [world.bookFolder])
+        XCTAssertEqual(top.rotorEntries, [folderEntry(world.bookFolder), feedEntry(wire)])
+        XCTAssertEqual(top.rotorEntries.last?.label, "\(wire.title), Feed, 1 episode, 1 unplayed")
+
+        // Inside the world's folder: Shows keeps its row; the Atlas's folder
+        // is left out, its entry on the Atlas's row.
+        let inside = rows(base)
+        XCTAssertEqual(inside.shown, [shows])
+        XCTAssertEqual(inside.rotorEntries, [folderEntry(shows), feedEntry(atlas)])
+
+        // Inside Shows: only the Notes' folder, left out.
+        let nested = rows(shows.fullPath)
+        XCTAssertEqual(nested.shown, [])
+        XCTAssertEqual(nested.rotorEntries, [feedEntry(notes)])
+
+        // Every rotor entry names a row the list shows: a folder's row, or
+        // a feed's row in the Feeds section.
+        for (path, listed) in [("", top), (base, inside), (shows.fullPath, nested)] {
+            let feedRowIDs = Set(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .folders, folderPath: path), center: world.center).map(\.id))
+            let rowIDs = Set(listed.shown.map(\.id)).union(feedRowIDs)
+            XCTAssertTrue(listed.rotorEntries.allSatisfy { rowIDs.contains($0.id) }, "a rotor entry at \"\(path)\" names a row the list lacks")
+        }
+
+        // Elsewhere no folders are shown, so the rotor offers none.
+        for category in [LibraryCategory.allItems, .unopened, .recent] {
+            XCTAssertEqual(rows(base, category), LibraryFolderRows(), "\(category)")
+        }
+
+        // A feed's folder the Feeds section does not list here keeps its
+        // row, counting the feed's items: the Atlas's folder, given as if
+        // it were inside Shows, where the section lists only the Notes.
+        let atlasFolder = try XCTUnwrap(world.library.library.folders.first { $0.id == atlas.folderID })
+        let unlisted = rows(shows.fullPath, subfolders: [atlasFolder])
+        XCTAssertEqual(unlisted.shown, [atlasFolder])
+        XCTAssertEqual(unlisted.rotorEntries, [FolderRotorEntry(
+            label: FolderRow.accessibilityLabel(name: atlasFolder.name, bookCount: 0, feedCounts: world.center.counts(of: atlas.id)),
+            id: atlasFolder.id
+        )])
+        XCTAssertEqual(unlisted.rotorEntries.first?.label, "The Tactile Atlas, Feed, 1 episode, 1 unplayed")
+    }
+
     /// Which folders hold feeds follows the engine, and changes only when a
     /// feed is subscribed or unsubscribed, never with a download's progress.
     func testWhichFoldersHoldFeedsChangesOnlyWithTheFeeds() async throws {

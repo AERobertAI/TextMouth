@@ -6,11 +6,13 @@ import SwiftUI
 /// before Books, shown only where there are feeds: a heading VoiceOver's
 /// rotor finds, and a row for each feed that opens the feed's folder, as a
 /// folder's row does, with the feed's commands in its context menu and as
-/// its VoiceOver actions.
+/// its VoiceOver actions, and its folder's commands after them in the
+/// context menu. Where it lists a feed, the Folders section leaves out the
+/// feed's folder, which this row stands for (October 7).
 ///
 /// It observes the feed engine itself, so a download's progress or a
 /// refresh redraws this section and nothing else of the list.
-struct LibraryFeedsSection: View {
+struct LibraryFeedsSection<FolderMenu: View>: View {
     /// The feed engine.
     @ObservedObject var center: FeedCenter
     /// Where the list is.
@@ -19,6 +21,11 @@ struct LibraryFeedsSection: View {
     let open: (FeedRowContent) -> Void
     /// Runs a feed's command.
     let perform: (FeedAction) -> Void
+    /// The commands of a feed's folder (Rename, Move, and Delete Folder),
+    /// which its row's context menu offers after the feed's own, as the
+    /// folder's own row did before this row stood for it; nothing for a
+    /// feed whose folder is gone.
+    @ViewBuilder let folderMenu: (FeedRowContent) -> FolderMenu
 
     var body: some View {
         let _ = ViewBodyCounter.record("LibraryFeedsSection")
@@ -46,6 +53,7 @@ struct LibraryFeedsSection: View {
                         ForEach(actions) { action in
                             Button(action.title, role: action.role) { perform(action) }
                         }
+                        folderMenu(row)
                     }
                 }
             } header: {
