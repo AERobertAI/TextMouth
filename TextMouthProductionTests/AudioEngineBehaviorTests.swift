@@ -902,6 +902,53 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertFalse(engine.isRendering)
     }
 
+    /// A render the engine refuses, handed the raw chunk through the test
+    /// hook in place of the guard, is reported at once as failed and logged
+    /// `RENDER_REFUSED`, with nothing installed and the engine no longer
+    /// rendering, instead of holding the render queue for two minutes.
+    /// Rendered offline: nothing is heard. Skips when the voice is not
+    /// installed, or when the engine on this Mac does not refuse the chunk.
+    @MainActor
+    func testARefusedRenderIsReportedAtOnce() throws {
+        let voice = try SpeechMarkupGuardTests.probeVoice()
+        try TextMouthPaths.ensureDirectoryStructure()
+        let engine = AudioEngineService()
+        defer { engine.discardRenderedAudio() }
+        // The raw text, as the synthesizer saw it before the guard.
+        engine._spokenTextForTesting = { $0 }
+        let request = SpeechRenderRequest(text: SpeechMarkupGuardTests.chunkAfterOpeningTag, voice: voice)
+
+        let began = Date()
+        var installed: Bool?
+        let lines = logLines(in: .speechTransitions) {
+            installed = renderThroughTheQueue(request, into: engine, timeout: 20)
+        }
+        let seconds = Date().timeIntervalSince(began)
+
+        if installed == true {
+            throw XCTSkip("The engine on this Mac rendered the raw chunk; there is no refusal to report")
+        }
+        XCTAssertEqual(installed, false, "the refused render never reported")
+        XCTAssertLessThan(seconds, 15, "the refusal took \(seconds) s to report")
+        XCTAssertFalse(engine.hasRenderedAudio)
+        XCTAssertFalse(engine.isRendering)
+        XCTAssertTrue(lines.contains { $0.contains("RENDER_REFUSED:") && $0.contains("after 0 frames") }, "\(lines)")
+    }
+
+    /// A render cancelled by the engine wakes the render queue's wait
+    /// without a sound: the observer signals the semaphore it was given and
+    /// remembers the cancel.
+    func testTheCancellationObserverWakesTheWait() {
+        let semaphore = DispatchSemaphore(value: 0)
+        let observer = RenderCancellationObserver(waking: semaphore)
+        XCTAssertFalse(observer.wasCancelled)
+
+        observer.speechSynthesizer(AVSpeechSynthesizer(), didCancel: AVSpeechUtterance(string: "x"))
+
+        XCTAssertEqual(semaphore.wait(timeout: .now() + 1), .success)
+        XCTAssertTrue(observer.wasCancelled)
+    }
+
     /// Render `request` into `engine` in its turn on the app's render
     /// queue, as speech does, and return whether the render installed audio
     /// within `timeout` seconds, or nil when it did not report by then.

@@ -1,6 +1,7 @@
 import Accelerate
 import AVFoundation
 import Combine
+import os
 
 /// Identifies rendered speech audio by everything that went into it, so audio
 /// rendered ahead of time is only ever played for exactly the speech it was
@@ -86,6 +87,34 @@ struct SpeechRenderRequest: Sendable {
         self.text = text
         self.voice = voice
         signature = SpeechRenderSignature(text: text, voiceIdentifier: voice?.identifier)
+    }
+}
+
+/// Hears, on whatever thread the synthesizer calls it, that a render's
+/// synthesizer cancelled its utterance, and wakes the render queue, which
+/// waits for the utterance's last piece of audio. An utterance the engine
+/// refuses (see `SpeechMarkupGuard`) is cancelled before any piece, so
+/// nothing else would wake the queue until its two-minute limit: measured
+/// offline, a refused write made no buffer callback at all, and was
+/// cancelled within 0.03 s. `@unchecked Sendable`: its state is a flag
+/// under a lock and a semaphore.
+final class RenderCancellationObserver: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
+    /// The render queue's wait for the last piece.
+    private let finished: DispatchSemaphore
+    /// Whether the synthesizer cancelled the utterance.
+    private let cancelled = OSAllocatedUnfairLock(initialState: false)
+
+    /// An observer that signals `finished` once the synthesizer cancels.
+    init(waking finished: DispatchSemaphore) {
+        self.finished = finished
+    }
+
+    /// Whether the synthesizer cancelled the utterance.
+    var wasCancelled: Bool { cancelled.withLock { $0 } }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        cancelled.withLock { $0 = true }
+        finished.signal()
     }
 }
 
@@ -876,6 +905,10 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             // so no piece outlives the callback that delivers it.
             let builder = RenderedSpeechAudio.Builder()
             let semaphore = DispatchSemaphore(value: 0)
+            // A cancel wakes the wait too: the synthesizer's delegate is
+            // weak, so the observer is held here until the wait returns.
+            let cancellation = RenderCancellationObserver(waking: semaphore)
+            renderSynth.delegate = cancellation
 
             renderSynth.write(utterance) { buffer in
                 guard let pcm = buffer as? AVAudioPCMBuffer else { return }
@@ -887,11 +920,23 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             }
 
             let result = semaphore.wait(timeout: .now() + 120)
+            renderSynth.delegate = nil
 
             // Check if this render was cancelled while we were waiting
             self.renderLock.lock()
             let wasCancelled = self.currentRender?.ticket !== ticket
             self.renderLock.unlock()
+            // A cancel that was not this engine's own is the engine's
+            // refusal of the text: nothing is installed, and speech, which
+            // began directly, goes on directly, with the text guarded.
+            if cancellation.wasCancelled, !wasCancelled {
+                DiagnosticLog.event(
+                    .playback,
+                    "RENDER_REFUSED: the speech engine cancelled the render after \(builder.frameCount) frames "
+                        + "of \(text.utf16Length) UTF-16 units; nothing installed, direct speech goes on",
+                    in: .speechTransitions
+                )
+            }
 
             // Reports on the main queue that the render installed nothing.
             let reportFailure = {
@@ -903,8 +948,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                 }
             }
             // A render that timed out may still be writing pieces, so its
-            // builder is left alone.
-            guard result == .success, !wasCancelled else {
+            // builder is left alone; one the synthesizer cancelled holds at
+            // most part of the speech, which the frame map could not fit.
+            guard result == .success, !wasCancelled, !cancellation.wasCancelled else {
                 reportFailure()
                 return
             }
