@@ -24,20 +24,11 @@ enum MarkdownCacheService {
     /// 3.0.7: HTML text (HTML, EPUB, DAISY 2.02) is literal Markdown keeping block, row, and cell boundaries and code lines.
     static let currentCacheVersion: String = "3.0.7"
 
-    /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
-    /// Returns true if `stored` is older than `current`.
+    /// Whether a cache stamped `stored` is older than `current`
+    /// (`SemanticVersion.isOutdated(stored:current:)`), and so is extracted
+    /// again.
     static func isCacheOutdated(stored: String?, current: String = currentCacheVersion) -> Bool {
-        guard let stored = stored, !stored.isEmpty else { return true }
-        let storedParts = stored.split(separator: ".").compactMap { Int($0) }
-        let currentParts = current.split(separator: ".").compactMap { Int($0) }
-        // Pad to 3 components for consistent comparison
-        let s = storedParts + Array(repeating: 0, count: max(0, 3 - storedParts.count))
-        let c = currentParts + Array(repeating: 0, count: max(0, 3 - currentParts.count))
-        for i in 0..<3 {
-            if s[i] < c[i] { return true }
-            if s[i] > c[i] { return false }
-        }
-        return false // equal
+        SemanticVersion.isOutdated(stored: stored, current: current)
     }
 
     /// The comment prefix used to separate chapters in the cached Markdown file.

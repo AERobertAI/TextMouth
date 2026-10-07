@@ -97,8 +97,28 @@ struct ImportedBook {
 /// author, or whose metadata is damaged, is listed under its file name and
 /// an unknown author.
 struct ImportedFileMetadata {
+    /// The version of this reader, stamped on each row it reads for
+    /// (`Book.metadataReaderVersion`), so the first launch after a version
+    /// that reads a format's metadata better reads every older row's file
+    /// again (`LibraryViewModel.refreshOutdatedMetadata`). Semantic
+    /// versioning: major.minor.patch.
+    /// 1.0.0: an EPUB's author is read from the creator with the author
+    /// role, from a dcterms:creator meta element, or from a contributor
+    /// with the author role (`EPUBParser.authorName(in:)`); rows never
+    /// stamped were read by what came before.
+    static let readerVersion = "1.0.0"
+
+    /// Whether this reader opens a file of `format` at all: a plain text,
+    /// Markdown, or HTML file keeps no title or author it reads.
+    static func readsFile(of format: BookFormat) -> Bool {
+        switch format {
+        case .epub, .docx, .pdf, .daisy, .audio: return true
+        case .txt, .markdown, .html: return false
+        }
+    }
+
     var title: String
-    var author = "Unknown"
+    var author = Book.unknownAuthor
     /// Everything an EPUB's package document says about the book.
     var epub: EPUBMetadata?
     /// Audio tags, for an audio file.
@@ -701,7 +721,8 @@ enum FileImportService {
                 epubISBN: metadata.epub?.isbn,
                 epubLanguage: metadata.epub?.language,
                 epubIdentifier: metadata.epub?.identifier,
-                epubVersion: metadata.epub?.epubVersion
+                epubVersion: metadata.epub?.epubVersion,
+                metadataReaderVersion: ImportedFileMetadata.readerVersion
             )
             var imported = try publishReadableBook(staged, from: staging, run: &run)
             imported.isFromPackageFolder = package != nil
@@ -837,7 +858,7 @@ enum FileImportService {
             let staged = Book(
                 id: bookID,
                 title: title,
-                author: author.isEmpty ? "Unknown" : author,
+                author: Book.isUnknownAuthor(author) ? Book.unknownAuthor : author,
                 format: .txt,
                 filePath: file.path,
                 md5Hash: hash,
@@ -1433,7 +1454,7 @@ enum FileImportService {
             try run.begin(.preparingPackage)
             let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
                 title: zipName,
-                author: "Unknown",
+                author: Book.unknownAuthor,
                 dateAdded: dateAdded,
                 bookID: bookID,
                 folderPath: folderPath
@@ -1446,7 +1467,7 @@ enum FileImportService {
 
             // A manifest beside the audio can name the book and its author.
             var title = zipName
-            var author = "Unknown"
+            var author = Book.unknownAuthor
             let manifestURL = audioDirectory.appendingPathComponent("manifest.json")
             if let data = try? Data(contentsOf: manifestURL),
                let manifest = try? JSONDecoder().decode(AudioManifest.self, from: data) {

@@ -89,7 +89,7 @@ enum AudioBookParser {
         // Try to extract metadata
         let metadata = await AudioPlaybackService.extractMetadata(from: url)
         let title = metadata.title ?? url.deletingPathExtension().lastPathComponent
-        let author = metadata.artist ?? "Unknown"
+        let author = metadata.artist ?? Book.unknownAuthor
 
         // Try to extract chapter markers
         let chapters = await AudioPlaybackService.extractChapters(from: url)
@@ -171,7 +171,7 @@ enum AudioBookParser {
         }
 
         let overallTitle = manifest?.title ?? url.lastPathComponent
-        let overallAuthor = manifest?.author ?? "Unknown"
+        let overallAuthor = manifest?.author ?? Book.unknownAuthor
 
         // If manifest has segments (DAISY-style sub-file chapters), use those
         // instead of the one-file-per-chapter model

@@ -7,7 +7,7 @@ enum MarkdownDocParser {
         let chapter = try parseChapter(markdown: markdown, title: title)
         return DocumentContent(
             title: chapter.title,
-            author: "Unknown",
+            author: Book.unknownAuthor,
             chapters: [chapter]
         )
     }

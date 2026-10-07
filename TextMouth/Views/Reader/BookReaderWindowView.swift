@@ -68,7 +68,7 @@ struct BookReaderWindowView: View {
 
     private var windowTitle: String {
         let book = viewModel.book
-        if book.author.isEmpty || book.author == "Unknown" {
+        if Book.isUnknownAuthor(book.author) {
             return "Book: \(book.title)"
         }
         return "Book: \(book.title) by \(book.author)"

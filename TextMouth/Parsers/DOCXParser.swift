@@ -58,7 +58,7 @@ enum DOCXParser {
 
         // Parse the generated Markdown using the shared Markdown parser
         let docTitle = metadata?.title ?? title
-        let docAuthor = metadata?.author ?? "Unknown"
+        let docAuthor = metadata?.author ?? Book.unknownAuthor
 
         let content = try MarkdownDocParser.parse(markdown: markdown, title: docTitle)
         return DocumentContent(

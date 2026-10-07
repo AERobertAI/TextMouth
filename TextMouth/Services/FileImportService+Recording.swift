@@ -74,5 +74,5 @@ extension FileImportService {
 
     /// The author a recording is listed under: unknown, as for any book
     /// whose author no one entered, until the user edits it.
-    static let recordingAuthor = "Unknown"
+    static let recordingAuthor = Book.unknownAuthor
 }

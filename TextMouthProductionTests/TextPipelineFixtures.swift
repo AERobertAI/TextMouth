@@ -330,6 +330,34 @@ enum TextPipelineFixtures {
         ]
     }
 
+    /// A package document whose metadata element holds `metadata` beside
+    /// the identifier, naming one chapter, `chapter.xhtml`, in its reading
+    /// order, as `minimalEPUB(packageDocument:)` holds it. The `opf` prefix
+    /// is declared, for the role attributes of EPUB 2.
+    static func packageDocument(metadata: String) -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <package xmlns="http://www.idpf.org/2007/opf" xmlns:opf="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+        <dc:identifier id="uid">urn:uuid:5d1c0e7a-2b4f-4c8e-9a6d-3f2e1b0c9d8e</dc:identifier>
+        \(metadata)
+        </metadata>
+        <manifest><item id="c1" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest>
+        <spine><itemref idref="c1"/></spine>
+        </package>
+        """
+    }
+
+    /// The smallest EPUB: `opf` as its package document, at
+    /// OEBPS/package.opf, and one short chapter at OEBPS/chapter.xhtml,
+    /// which the package document is expected to name.
+    static func minimalEPUB(packageDocument opf: String) -> [TestZIPEntry] {
+        packageStart() + [
+            file("OEBPS/package.opf", opf),
+            file("OEBPS/chapter.xhtml", xhtml(title: "One", body: "<h1>One</h1><p>A page of words.</p>")),
+        ]
+    }
+
     /// An XHTML document titled `title` whose body is `body`.
     private static func xhtml(title: String, body: String) -> String {
         """

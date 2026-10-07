@@ -834,7 +834,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
             epubVersion: "version-\(seed)",
             cacheFormatVersion: "cache-\(seed)",
             contentIndexVersion: "index-\(seed)",
-            textCacheFingerprint: fingerprint(seed: seed)
+            textCacheFingerprint: fingerprint(seed: seed),
+            metadataReaderVersion: "reader-\(seed)"
         )
     }
 

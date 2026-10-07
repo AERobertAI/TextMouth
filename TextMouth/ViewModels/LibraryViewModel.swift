@@ -140,6 +140,10 @@ final class LibraryViewModel: ObservableObject {
     var isExtracting: Bool {
         textExtraction.isExtracting
     }
+    /// Whether the metadata refresh runs
+    /// (`refreshOutdatedMetadata(access:then:)`); a second is refused
+    /// meanwhile.
+    var isRefreshingMetadata = false
     /// Finished books' analysis summaries, on their way to `library`
     /// together: in one change and one save at most every half second, at
     /// the end of each pass, and at quit (TODO PERF12).

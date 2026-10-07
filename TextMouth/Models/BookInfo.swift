@@ -107,6 +107,11 @@ struct BookMetadata: Codable {
     var audioGenre: String?
     var audioYear: String?
 
+    /// The version of the metadata reader that last read the book's file
+    /// for its title and author (`Book.metadataReaderVersion`); nil in a
+    /// record written before readers were versioned.
+    var metadataReaderVersion: String?
+
     /// The feed item the book was downloaded from (FR03), for a podcast
     /// episode or an article; nil for every other book. Recorded here alone,
     /// never in library.json, and carried from record to record by each save
@@ -115,7 +120,7 @@ struct BookMetadata: Codable {
 
     init(
         title: String = "Untitled",
-        author: String = "Unknown",
+        author: String = Book.unknownAuthor,
         format: BookFormat = .txt,
         md5Hash: String = "",
         dateAdded: Date = Date(),
@@ -132,7 +137,8 @@ struct BookMetadata: Codable {
         epubVersion: String? = nil,
         audioAlbum: String? = nil,
         audioGenre: String? = nil,
-        audioYear: String? = nil
+        audioYear: String? = nil,
+        metadataReaderVersion: String? = nil
     ) {
         self.title = title
         self.author = author
@@ -153,6 +159,7 @@ struct BookMetadata: Codable {
         self.audioAlbum = audioAlbum
         self.audioGenre = audioGenre
         self.audioYear = audioYear
+        self.metadataReaderVersion = metadataReaderVersion
     }
 }
 

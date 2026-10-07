@@ -322,6 +322,9 @@ enum MaintenancePass: String, Sendable {
     case statistics = "statistics"
     /// The startup repair of the library and its packages.
     case startupRepair = "startup repair"
+    /// The launch pass that reads a book's file again for its author when
+    /// an older metadata reader read it.
+    case metadataRefresh = "metadata refresh"
 }
 
 /// The books a maintenance pass left as they are because their files are in

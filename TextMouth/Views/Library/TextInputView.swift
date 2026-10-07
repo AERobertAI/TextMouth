@@ -48,7 +48,7 @@ struct TextInputView: View {
     let onCancel: () -> Void
 
     @State private var title: String
-    @State private var author = "Unknown"
+    @State private var author = Book.unknownAuthor
     @State private var textContent = ""
     @State private var editorTempURL: URL?
     @State private var showReload = false

@@ -452,13 +452,31 @@ extension LibraryViewModel {
         }
     }
 
-    /// Bring every book's text cache and statistics up to date: caches first,
-    /// then statistics, which can use them. Both run on background queues.
-    /// - Parameter access: How both passes reach the books' files (FR02).
-    func updateContentCachesAndStatistics(access: MaintenanceFileAccess = .live) {
-        extractMissingContentCaches(access: access, then: { [weak self] in
-            self?.calculateMissingBookStats(access: access)
-        })
+    /// Bring every book's row and text up to date, each pass on a
+    /// background queue: the metadata refresh first, which reads a book's
+    /// file again when an older reader read it and takes seconds
+    /// (`refreshOutdatedMetadata(access:then:)`), then the text caches,
+    /// then the statistics, which can use them.
+    /// - Parameters:
+    ///   - access: How the passes reach the books' files (FR02).
+    ///   - completion: Called on the main actor once the last pass has ended.
+    func updateContentCachesAndStatistics(
+        access: MaintenanceFileAccess = .live,
+        then completion: (@MainActor @Sendable () -> Void)? = nil
+    ) {
+        refreshOutdatedMetadata(access: access) { [weak self] in
+            guard let self else {
+                completion?()
+                return
+            }
+            self.extractMissingContentCaches(access: access) { [weak self] in
+                guard let self else {
+                    completion?()
+                    return
+                }
+                self.calculateMissingBookStats(access: access, then: completion)
+            }
+        }
     }
 
     nonisolated static func needsContentAnalysis(_ book: Book) -> Bool {

@@ -155,11 +155,32 @@ struct Book: Identifiable, Codable, Hashable {
     /// that measured them; nil for audio and for a cache written before
     /// fingerprints. Startup maintenance compares them with the files.
     var textCacheFingerprint: TextCacheFingerprint?
+    /// The version of the metadata reader (`ImportedFileMetadata.readerVersion`)
+    /// that last read this book's file for its title and author: the
+    /// import's, or the launch refresh's. A row stamped by an older reader,
+    /// or by none, as every row was before readers were versioned, is read
+    /// again at launch (`LibraryViewModel.refreshOutdatedMetadata`). Kept
+    /// in the row and, from the book's next save on, in its record, so a
+    /// library rebuilt from its records reads again only the books whose
+    /// records were written before that.
+    var metadataReaderVersion: String?
+
+    /// The author a book is listed under when nothing names one: what every
+    /// import, parser, and recording writes for it, which a reader leaves
+    /// out of its window title and a metadata refresh may replace
+    /// (`isUnknownAuthor(_:)`).
+    static let unknownAuthor = "Unknown"
+
+    /// Whether `author` is the placeholder for an author nothing named:
+    /// empty, or `unknownAuthor`.
+    static func isUnknownAuthor(_ author: String) -> Bool {
+        author.isEmpty || author == unknownAuthor
+    }
 
     init(
         id: UUID = UUID(),
         title: String,
-        author: String = "Unknown",
+        author: String = Book.unknownAuthor,
         format: BookFormat,
         filePath: String,
         md5Hash: String,
@@ -194,7 +215,8 @@ struct Book: Identifiable, Codable, Hashable {
         epubVersion: String? = nil,
         cacheFormatVersion: String? = nil,
         contentIndexVersion: String? = nil,
-        textCacheFingerprint: TextCacheFingerprint? = nil
+        textCacheFingerprint: TextCacheFingerprint? = nil,
+        metadataReaderVersion: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -234,6 +256,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.cacheFormatVersion = cacheFormatVersion
         self.contentIndexVersion = contentIndexVersion
         self.textCacheFingerprint = textCacheFingerprint
+        self.metadataReaderVersion = metadataReaderVersion
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -293,6 +316,7 @@ struct Book: Identifiable, Codable, Hashable {
         // checked as one written before fingerprints, instead of the whole
         // library failing over one damaged field.
         textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
+        metadataReaderVersion = try container.decodeIfPresent(String.self, forKey: .metadataReaderVersion)
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -718,7 +742,8 @@ struct Book: Identifiable, Codable, Hashable {
                 epubVersion: epubVersion,
                 audioAlbum: audioAlbum,
                 audioGenre: audioGenre,
-                audioYear: audioYear
+                audioYear: audioYear,
+                metadataReaderVersion: metadataReaderVersion
             ),
             state: BookState(
                 readingPosition: readingPosition,
@@ -790,7 +815,8 @@ struct Book: Identifiable, Codable, Hashable {
             epubVersion: metadata.epubVersion,
             cacheFormatVersion: state.cacheFormatVersion,
             contentIndexVersion: state.contentIndexVersion,
-            textCacheFingerprint: state.textCacheFingerprint
+            textCacheFingerprint: state.textCacheFingerprint,
+            metadataReaderVersion: metadata.metadataReaderVersion
         )
     }
 }

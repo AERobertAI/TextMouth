@@ -280,7 +280,7 @@ enum DAISYParser {
         let markdown = try extractMarkdown(from: url)
         let metadata = try? readMetadata(from: url)
         let title = metadata?.title ?? url.deletingPathExtension().lastPathComponent
-        let author = metadata?.author ?? "Unknown"
+        let author = metadata?.author ?? Book.unknownAuthor
 
         let content = try MarkdownDocParser.parse(markdown: markdown, title: title)
         return DocumentContent(title: title, author: author, chapters: content.chapters)
