@@ -1,6 +1,6 @@
 # TextMouth architecture
 
-This document explains how TextMouth is put together and, above all, which part of the app owns each kind of state: who keeps it, who may change it, and how everything else finds out about a change. It describes main as of October 6, 2026. When a change moves the ownership of some state, update its entry here in the same branch.
+This document explains how TextMouth is put together and, above all, which part of the app owns each kind of state: who keeps it, who may change it, and how everything else finds out about a change. It describes main as of October 7, 2026. When a change moves the ownership of some state, update its entry here in the same branch.
 
 README.md covers building, testing, the files in the data directory, and keeping the library in the cloud. Paths below are relative to the TextMouth source folder unless they start with the name of another top-level folder, and names in the text are the names of Swift types, functions, and properties.
 
