@@ -22,9 +22,9 @@ extension AVSpeechSynthesizer: LibraryInfoSynthesizing {}
 /// does, and otherwise on the next main-queue turn. Ending at once lets a
 /// hosted test, which runs as a main-queue job and so cannot drain other
 /// main-queue blocks from a run loop it spins, end an announcement itself.
-///
-/// `@unchecked Sendable`: its one property is a constant Sendable closure.
-final class LibraryInfoSpeechDelegate: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
+/// It needs no Sendable conformance: its one property is a Sendable
+/// closure, which alone is captured for the main queue.
+final class LibraryInfoSpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
     /// What to do when the utterance ends.
     private let onFinished: @MainActor @Sendable () -> Void
 
