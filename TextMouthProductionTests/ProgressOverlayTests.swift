@@ -17,18 +17,36 @@ final class ProgressOverlayTests: XCTestCase {
     // MARK: - Wording
 
     /// While the bar has a total, VoiceOver reads the title and the items
-    /// done of the total, as before; the message, which repeats the count
-    /// while books import, is left out.
+    /// done of the total, as before; the text cache's message, which only
+    /// repeats the count, is left out.
     func testStatusCountsItemsWhileTheBarHasATotal() {
+        let overlay = ProgressOverlay(
+            title: "Extracting Text",
+            current: 3,
+            total: 60,
+            message: "Updating text cache: 3 of 60...",
+            itemNoun: "books extracted"
+        )
+
+        XCTAssertEqual(overlay.spokenStatus, "Extracting Text: 3 of 60 books extracted")
+    }
+
+    /// An overlay whose caller words what VoiceOver reads, as the import
+    /// overlay does with every line it shows (FR10), reads exactly that.
+    func testACallersSummaryIsReadInsteadOfTheCount() {
         let overlay = ProgressOverlay(
             title: "Importing Books",
             current: 3,
             total: 10,
-            message: "Importing book 3 of 10...",
-            itemNoun: "books processed"
+            message: "Book 4 of 10: “Rope Splicing.txt”, reading its text",
+            itemNoun: "books processed",
+            spokenSummary: "Importing Books: 3 of 10 books processed. Book 4 of 10: “Rope Splicing.txt”, reading its text."
         )
 
-        XCTAssertEqual(overlay.spokenStatus, "Importing Books: 3 of 10 books processed")
+        XCTAssertEqual(
+            overlay.spokenStatus,
+            "Importing Books: 3 of 10 books processed. Book 4 of 10: “Rope Splicing.txt”, reading its text."
+        )
     }
 
     /// While the bar is indeterminate, the message carries the progress, so
@@ -124,14 +142,19 @@ final class ProgressOverlayTests: XCTestCase {
     /// Cancel button.
     func testImportOverlayShowsTheLibrarysProgress() {
         let library = LibraryViewModel(initializeServices: false)
-        library.importProgressCurrent = 3
-        library.importProgressTotal = 10
-        library.importProgressMessage = "Importing book 3 of 10..."
+        library.importProgress.receive(.importingBook(number: 4, total: 10, book: "Rope Splicing.txt", step: .readingText))
 
         let overlay = LibraryWindowView.importProgressOverlay(for: library)
 
-        XCTAssertEqual(overlay.spokenStatus, "Importing Books: 3 of 10 books processed")
-        XCTAssertEqual(overlay.message, "Importing book 3 of 10...")
+        XCTAssertEqual(overlay.title, "Importing Books")
+        XCTAssertEqual(overlay.current, 3)
+        XCTAssertEqual(overlay.total, 10)
+        XCTAssertEqual(overlay.itemNoun, "books processed")
+        XCTAssertEqual(
+            overlay.spokenStatus,
+            "Importing Books: 3 of 10 books processed. Book 4 of 10: “Rope Splicing.txt”, reading its text."
+        )
+        XCTAssertEqual(overlay.message, "Book 4 of 10: “Rope Splicing.txt”, reading its text")
         XCTAssertNotNil(overlay.onCancel)
     }
 

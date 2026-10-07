@@ -49,11 +49,12 @@ final class SerialImportQueue: @unchecked Sendable {
         self.boundary = boundary
     }
 
-    /// Told as each step of a queued single-file or text import begins on
-    /// its staged package (see `ImportStepObserver`), on the import queue;
-    /// nil in the app. Tests set it before enqueueing to hold an import at
-    /// a step of their choosing. ZIP, audio ZIP, DAISY ZIP, and package
-    /// imports do not report their steps.
+    /// Told as each step of a queued single-file or text import, or of an
+    /// audio or DAISY ZIP, each one book, begins on its staged package (see
+    /// `ImportStepObserver`), on the import queue, after the import overlay
+    /// is told (FR10); nil in the app. Tests set it before enqueueing to
+    /// hold an import at a step of their choosing. A ZIP batch of books and
+    /// package imports do not report their steps here.
     var stepObserver: (@Sendable (ImportStep, URL) throws -> Void)? {
         get {
             stateLock.lock()
@@ -178,7 +179,7 @@ extension LibraryViewModel {
         importOperationQueue.enqueue(whileHeld: { [weak self] in
             guard let self else { return }
             DispatchQueue.main.async {
-                self.importProgressMessage = Self.importWaitingForMoveMessage
+                self.importProgress.show(Self.importWaitingForMoveMessage)
             }
         }, operation)
     }
@@ -305,7 +306,7 @@ extension LibraryViewModel {
     /// reader window does not take focus from the warning. The package the
     /// user chose is never deleted.
     func completePackageImport(_ imported: ImportedBook, openAfterImport: Bool) {
-        importProgressMessage = ""
+        importProgress.clear()
         library.addBook(imported.book)
         save()
         if let warning = imported.warning {
@@ -352,14 +353,35 @@ extension LibraryViewModel {
     /// I05): a running batch stops before its next entry or book, keeps the
     /// books it already imported, and its summary says where it stopped; a
     /// waiting ZIP import never starts. The import overlay's Cancel button
-    /// calls this. Every question the stopped imports raised is withdrawn
-    /// with them, and one they raise later is never asked (TODO I01): a
-    /// duplicate's new copy is discarded, an original file is kept, and a
-    /// ZIP archive's books stay where they are. Imports started afterwards,
-    /// and their questions, are not affected.
+    /// calls this, and the overlay says the imports are cancelling in place
+    /// of the time left (FR10). Every question the stopped imports raised is
+    /// withdrawn with them, and one they raise later is never asked (TODO
+    /// I01): a duplicate's new copy is discarded, an original file is kept,
+    /// and a ZIP archive's books stay where they are. Imports started
+    /// afterwards, and their questions, are not affected.
     func cancelImports() {
         importOperationQueue.cancelEnqueued()
+        importProgress.cancel()
         withdrawCancelledImportDecisions()
+    }
+
+    // MARK: - Speak Import Progress (FR10)
+
+    /// Starts answering Speak Import Progress, from the Library menu or the
+    /// key the user gave it, from any window. The library starts it once,
+    /// with its other observers.
+    func observeImportProgressRequests() {
+        NotificationCenter.default.publisher(for: .speakImportProgress)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.speakImportProgress() }
+            .store(in: &cancellables)
+    }
+
+    /// Has VoiceOver speak how the imports under way have got, every line
+    /// the import overlay shows, or that none is under way, wherever the
+    /// user is, without finding the overlay (FR10).
+    func speakImportProgress() {
+        VoiceOverAnnouncer.announce(importProgress.spokenStatus(whileImporting: isImporting))
     }
 
     /// Import a zip file asynchronously with progress tracking. The import
@@ -369,6 +391,8 @@ extension LibraryViewModel {
     func importZipAsync(from url: URL, toFolder folderPath: String, origin: ImportOrigin? = nil) {
         let request = importRequest(from: origin)
         let cancellation = request.batch
+        let progress = importProgress
+        let queue = importOperationQueue
         enqueueImport { [weak self] in
             guard let self = self else { return }
             // A ZIP import cancelled while it waited never starts, and says
@@ -379,15 +403,23 @@ extension LibraryViewModel {
             }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            DispatchQueue.main.async { self.beginImportProgress("Extracting archive...") }
+            DispatchQueue.main.async { progress.showArchive(url.lastPathComponent) }
             do {
+                // An archive holding one book, a DAISY book or an audiobook's
+                // tracks, is named in the overlay with each step it begins,
+                // as a single file is (FR10).
                 if DAISYParser.isDAISYZip(url: url) {
+                    let observer = progress.observeBook(url.lastPathComponent, then: queue.stepObserver)
                     let imported: ImportedBook
                     if let archive = Archive.openedForReading(at: url),
                        DAISYAudioConverter.hasAudio(in: ArchiveFileProvider(archive: archive)) {
-                        imported = try FileImportService.importDAISYAudioZipWithReport(from: url, toFolder: folderPath)
+                        imported = try FileImportService.importDAISYAudioZipWithReport(
+                            from: url,
+                            toFolder: folderPath,
+                            observer: observer
+                        )
                     } else {
-                        imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
+                        imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath, observer: observer)
                     }
                     DispatchQueue.main.sync {
                         self.completeSingleImportedBook(imported, originalURL: url, request: request)
@@ -395,7 +427,11 @@ extension LibraryViewModel {
                     return
                 }
                 if Self.isAudioZip(url: url) {
-                    let imported = try FileImportService.importAudioZipWithReport(from: url, toFolder: folderPath)
+                    let imported = try FileImportService.importAudioZipWithReport(
+                        from: url,
+                        toFolder: folderPath,
+                        observer: progress.observeBook(url.lastPathComponent, then: queue.stepObserver)
+                    )
                     DispatchQueue.main.sync {
                         self.completeSingleImportedBook(imported, originalURL: url, request: request)
                     }
@@ -410,8 +446,8 @@ extension LibraryViewModel {
                     from: url,
                     toFolder: folderPath,
                     existingHashes: existingHashes,
-                    progress: { progress in
-                        DispatchQueue.main.async { self.showZipImportProgress(progress) }
+                    progress: { report in
+                        DispatchQueue.main.async { progress.receive(report) }
                     },
                     isCancelled: cancellation.check
                 )
@@ -421,28 +457,6 @@ extension LibraryViewModel {
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
             }
-        }
-    }
-
-    /// Shows how far a ZIP batch has got in the import overlay (TODO I05).
-    private func showZipImportProgress(_ progress: ZipImportProgress) {
-        let shown = Self.overlayProgress(for: progress)
-        importProgressCurrent = shown.current
-        importProgressTotal = shown.total
-        importProgressMessage = shown.message
-    }
-
-    /// What the import overlay shows for a ZIP batch's progress. Its bar and
-    /// count speak of books, so while the archive is extracted the bar is
-    /// left indeterminate and the message counts the archive's items
-    /// extracted, so the overlay moves before the first book imports; once
-    /// books import, the bar and the message count them, as before.
-    nonisolated static func overlayProgress(for progress: ZipImportProgress) -> (current: Int, total: Int, message: String) {
-        switch progress {
-        case let .extracting(archive, done, total):
-            return (0, 0, "Extracting “\(archive)”: \(done) of \(total) items...")
-        case let .importing(done, total):
-            return (done, total, "Importing book \(done) of \(total)...")
         }
     }
 
@@ -458,16 +472,17 @@ extension LibraryViewModel {
     ) {
         let request = importRequest(from: origin, opensAfterImport: openAfterImport)
         let queue = importOperationQueue
+        let progress = importProgress
         enqueueImport { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            DispatchQueue.main.async { self.beginImportProgress("Importing \(url.lastPathComponent)...") }
             do {
+                // The overlay names the file and each step it begins (FR10).
                 let imported = try FileImportService.importFileWithReport(
                     from: url,
                     toFolder: folderPath,
-                    observer: queue.stepObserver
+                    observer: progress.observeBook(url.lastPathComponent, then: queue.stepObserver)
                 )
                 DispatchQueue.main.sync {
                     self.completeSingleImportedBook(imported, originalURL: url, request: request)
@@ -476,12 +491,6 @@ extension LibraryViewModel {
                 DispatchQueue.main.async { self.presentImportError(error) }
             }
         }
-    }
-
-    private func beginImportProgress(_ message: String) {
-        importProgressCurrent = 0
-        importProgressTotal = 0
-        importProgressMessage = message
     }
 
     /// Publish one imported book, a document or a DAISY or audio ZIP, through
@@ -505,7 +514,8 @@ extension LibraryViewModel {
         originalURL: URL,
         request: ImportRequest = ImportRequest()
     ) {
-        importProgressMessage = ""
+        // VoiceOver hears the end of an import that ran long (FR10).
+        importProgress.end(.book)
         let book = imported.book
         // Without an original to offer, a later duplicate answer cannot
         // delete it either.
@@ -548,7 +558,9 @@ extension LibraryViewModel {
             !priorIDs.contains(book.id) && library.books.contains { $0.id == book.id }
         }
         save()
-        importProgressMessage = ""
+        // VoiceOver hears the end of a batch that ran long, before its
+        // alert and its questions (FR10).
+        importProgress.end(.batch(result))
         if let failureSummary = result.failureSummary {
             presentImportMessage(failureSummary)
         }
@@ -567,14 +579,17 @@ extension LibraryViewModel {
         }
     }
 
+    /// Tells the reader why an import failed: VoiceOver hears that it
+    /// failed when it ran long (FR10), and the library's alert says why.
     private func presentImportError(_ error: Error) {
+        importProgress.end(.failure)
         presentImportMessage(error.localizedDescription)
     }
 
     /// Tell the reader about an import through the library's alert: why it
     /// failed, or what a completed import is missing.
     private func presentImportMessage(_ message: String) {
-        importProgressMessage = ""
+        importProgress.clear()
         errorMessage = message
         showError = true
     }

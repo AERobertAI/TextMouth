@@ -98,7 +98,7 @@ final class ZIPImportTests: XCTestCase {
         let result = FileImportService.importSupportedFiles(
             [good, bad],
             toFolder: "",
-            importer: { url, _ in
+            importer: { url, _, _ in
                 if url.lastPathComponent == "bad.txt" {
                     throw FileImportError.importFailed("simulated parse failure")
                 }
@@ -115,6 +115,56 @@ final class ZIPImportTests: XCTestCase {
         XCTAssertEqual(result.failures.count, 1)
         XCTAssertEqual(result.failures[0].fileName, "bad.txt")
         XCTAssertTrue(result.failures[0].message.contains("simulated parse failure"))
+    }
+
+    /// The loop names each book by its file as it begins, reading the file,
+    /// passes on each step its importer begins on the book's package, and
+    /// counts each book done once it is imported, skipped as a duplicate
+    /// without reaching the importer, which it says so the estimate of the
+    /// time left leaves it out, or failed (FR10).
+    func testSupportedFileLoopReportsEachBookItsStepsAndItsEnd() throws {
+        let directory = try makeSandboxDirectory("zip-loop-progress")
+        let imported = directory.appendingPathComponent("Rope Splicing.txt")
+        let duplicate = directory.appendingPathComponent("Knots.txt")
+        let failing = directory.appendingPathComponent("Tides.txt")
+        try Data("rope".utf8).write(to: imported)
+        try Data("knots".utf8).write(to: duplicate)
+        try Data("tides".utf8).write(to: failing)
+        var reports: [ZipImportProgress] = []
+
+        let result = FileImportService.importSupportedFiles(
+            [imported, duplicate, failing],
+            toFolder: "",
+            existingHashes: [try FileImportService.md5Hash(of: duplicate)],
+            progress: { reports.append($0) },
+            importer: { url, _, observer in
+                try observer?(.copying, url)
+                if url == failing {
+                    throw FileImportError.importFailed("simulated parse failure")
+                }
+                try observer?(.readingText, url)
+                return ImportedBook(book: Book(
+                    title: "Rope Splicing",
+                    format: .txt,
+                    filePath: url.path,
+                    md5Hash: try FileImportService.md5Hash(of: url)
+                ))
+            }
+        )
+
+        XCTAssertEqual(result.books.map(\.title), ["Rope Splicing"])
+        XCTAssertEqual(result.failures.map(\.fileName), ["Tides.txt"])
+        XCTAssertEqual(reports, [
+            .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .readingSource),
+            .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .copying),
+            .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .readingText),
+            .importing(done: 1, total: 3),
+            .importingBook(number: 2, total: 3, book: "Knots.txt", step: .readingSource),
+            .importing(done: 2, total: 3, skippedDuplicate: true),
+            .importingBook(number: 3, total: 3, book: "Tides.txt", step: .readingSource),
+            .importingBook(number: 3, total: 3, book: "Tides.txt", step: .copying),
+            .importing(done: 3, total: 3)
+        ])
     }
 
     func testFailureSummaryNamesEveryFailedFile() throws {
@@ -182,7 +232,7 @@ final class ZIPImportTests: XCTestCase {
             [file],
             toFolder: "",
             existingHashes: [hash],
-            importer: { _, _ in
+            importer: { _, _, _ in
                 XCTFail("Duplicate should not reach importer")
                 throw FileImportError.importFailed("unexpected")
             }

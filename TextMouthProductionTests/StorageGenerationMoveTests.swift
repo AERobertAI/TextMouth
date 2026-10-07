@@ -156,8 +156,8 @@ final class StorageGenerationMoveTests: XCTestCase {
         let destination = try makeDataDirectoryMoveDestination("HeldImportDuringMove")
         let oldFolder = Self.folder(world.folder.path, under: TextMouthPaths.root)
         let toldItWaits = expectation(description: "the overlay said the import waits for the move")
-        let messages = model.$importProgressMessage
-            .filter { $0 == LibraryViewModel.importWaitingForMoveMessage }
+        let messages = model.importProgress.$state
+            .filter { $0.message == LibraryViewModel.importWaitingForMoveMessage }
             .first()
             .sink { _ in toldItWaits.fulfill() }
         defer { messages.cancel() }

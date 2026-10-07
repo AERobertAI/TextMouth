@@ -51,9 +51,10 @@ struct LibraryWindowView: View {
                     }
                 )
 
-                // Import progress overlay, whose Cancel button stops ZIP imports
+                // Import progress overlay, whose Cancel button stops ZIP
+                // imports, redrawn alone as the imports report (FR10)
                 if libraryViewModel.isImporting {
-                    Self.importProgressOverlay(for: libraryViewModel)
+                    ImportProgressObserver(library: libraryViewModel, progress: libraryViewModel.importProgress)
                 }
 
                 // Text extraction progress overlay (shown on startup or
@@ -367,6 +368,16 @@ struct ProgressOverlay: View {
     let message: String
     /// Noun for the items being processed (e.g. "books extracted", "books processed")
     let itemNoun: String
+    /// Lines shown under the message, each on its own: the import overlay's
+    /// time on the book under way and its time left, or that the imports
+    /// are cancelling (FR10). A caller that shows any words `spokenSummary`
+    /// to read them too, as the import overlay does. None by default.
+    var details: [String] = []
+    /// What VoiceOver reads for the overlay, when the caller words it, as
+    /// the import overlay does with every line it shows (FR10,
+    /// `ImportProgressState.spokenStatus`); nil reads the title and the
+    /// count, or the message while the bar only spins.
+    var spokenSummary: String? = nil
     /// Cancels the operation the overlay shows, from its Cancel button or
     /// the Escape key; nil, the default, shows no Cancel button.
     var onCancel: (@MainActor () -> Void)? = nil
@@ -391,7 +402,7 @@ struct ProgressOverlay: View {
                     .progressViewStyle(.linear)
                     .frame(width: 300)
 
-                Text("\(current) of \(total) \(itemNoun)")
+                Text(CountWording.progress(current, of: total, itemNoun))
                     .font(.body)
             } else {
                 ProgressView()
@@ -400,6 +411,14 @@ struct ProgressOverlay: View {
 
             if !message.isEmpty {
                 Text(message)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            // By position: two details never repeat, but a line's words
+            // change as the import moves, and its place stays the same.
+            ForEach(Array(details.enumerated()), id: \.offset) { _, line in
+                Text(line)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -420,33 +439,65 @@ struct ProgressOverlay: View {
         .accessibilityLabel(spokenStatus)
     }
 
-    /// What VoiceOver reads for the overlay: its title, then the items done
-    /// of the total while the bar has one. While the bar is indeterminate,
-    /// the message carries the progress instead (a ZIP archive's items
-    /// extracted, say), so it follows the title; with no message, the title
-    /// is read alone.
+    /// What VoiceOver reads for the overlay: the caller's own summary when
+    /// it gives one (`spokenSummary`); otherwise its title, then the items
+    /// done of the total while the bar has one, whose message, such as the
+    /// text cache's "Updating text cache: 3 of 60...", only repeats the
+    /// count. While the bar is indeterminate, the message carries the
+    /// progress instead, so it follows the title; with no message, the
+    /// title is read alone.
     var spokenStatus: String {
+        if let spokenSummary {
+            return spokenSummary
+        }
         if total > 0 {
-            return "\(title): \(current) of \(total) \(itemNoun)"
+            return "\(title): \(CountWording.progress(current, of: total, itemNoun))"
         }
         return message.isEmpty ? title : "\(title): \(message)"
     }
 }
 
 extension LibraryWindowView {
-    /// The overlay a Library window shows while imports run: their progress,
-    /// and a Cancel button, which Escape presses too, that stops the ZIP
-    /// imports under way and queued (`LibraryViewModel.cancelImports()`,
-    /// TODO I05). The window's body shows exactly this overlay, made here so
-    /// tests can press the very button the window shows.
-    static func importProgressOverlay(for libraryViewModel: LibraryViewModel) -> ProgressOverlay {
-        ProgressOverlay(
-            title: "Importing Books",
-            current: libraryViewModel.importProgressCurrent,
-            total: libraryViewModel.importProgressTotal,
-            message: libraryViewModel.importProgressMessage,
-            itemNoun: "books processed",
+    /// The overlay a Library window shows while imports run, as it is at
+    /// `now`: their progress, the time on the book under way and the time
+    /// left (FR10), and a Cancel button, which Escape presses too, that
+    /// stops the ZIP imports under way and queued
+    /// (`LibraryViewModel.cancelImports()`, TODO I05). The window's body
+    /// shows exactly this overlay, made here so tests can press the very
+    /// button the window shows.
+    static func importProgressOverlay(for libraryViewModel: LibraryViewModel, at now: Date = Date()) -> ProgressOverlay {
+        let state = libraryViewModel.importProgress.state
+        return ProgressOverlay(
+            title: ImportProgressWording.title,
+            current: state.current,
+            total: state.total,
+            message: state.message,
+            itemNoun: ImportProgressWording.itemNoun,
+            details: state.details(at: now),
+            spokenSummary: state.spokenStatus(at: now),
             onCancel: libraryViewModel.cancelImports
         )
+    }
+}
+
+/// The import overlay of a Library window, redrawn alone as the imports
+/// report their progress (FR10): it observes the imports' progress, never
+/// the library model, so the many reports of a ZIP batch redraw no Library
+/// window's list, as `TextExtractionObserver` does for the text extraction
+/// (TODO PERF12).
+struct ImportProgressObserver: View {
+    /// The library whose imports the overlay shows and cancels; not
+    /// observed here.
+    let library: LibraryViewModel
+    /// The imports' progress, observed here alone: the library's own.
+    @ObservedObject var progress: ImportProgress
+
+    var body: some View {
+        // Ticks in the steps the time on a book moves in, counted from when
+        // the book under way began, so that time keeps up between the
+        // import's reports (FR10).
+        TimelineView(.periodic(from: progress.state.book?.startedAt ?? Date(), by: ImportProgressWording.timeOnBookStep)) { context in
+            LibraryWindowView.importProgressOverlay(for: library, at: context.date)
+        }
     }
 }
