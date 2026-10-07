@@ -264,11 +264,18 @@ struct ZipImportResult {
 }
 
 /// How far a ZIP batch has got, told to the library's import overlay
-/// (TODO I05), so it moves before the first book imports.
+/// (TODO I05), so it moves before the first book imports, and names each
+/// book as it imports and the step it is at (FR10).
 enum ZipImportProgress: Equatable, Sendable {
     /// `done` of the `total` entries of the archive named `archive` (the
     /// archive imported, or one found inside it) are extracted.
     case extracting(archive: String, done: Int, total: Int)
+    /// The book numbered `number` of the `total` found in the archive, the
+    /// item named `book` there (its file, or a DAISY book's folder), began
+    /// `step`, one of the steps a failure names (FR10). Each book begins by
+    /// reading its file, whose checksum tells a duplicate, and then each
+    /// step its import takes on its package.
+    case importingBook(number: Int, total: Int, book: String, step: ImportStep)
     /// `done` of the `total` books found in the archive are imported,
     /// failed, or skipped as duplicates.
     case importing(done: Int, total: Int)
@@ -1019,8 +1026,9 @@ enum FileImportService {
     /// on every exit.
     /// - Parameters:
     ///   - progress: told the entries extracted of each archive's total, then
-    ///     the books imported of the total found, so the overlay moves before
-    ///     the first book imports.
+    ///     each book as it begins and as it begins each step, and the books
+    ///     done of the total found, so the overlay moves before the first
+    ///     book imports and while each one does (FR10).
     ///   - isCancelled: asked between entries (and the chunks of a large
     ///     one) while extracting and between books while importing. Once it
     ///     says to stop, the batch stops, keeps the books already imported,
@@ -1087,7 +1095,7 @@ enum FileImportService {
                 candidates.books,
                 toFolder: folderPath,
                 existingHashes: existingHashes,
-                progress: { done, total in progress?(.importing(done: done, total: total)) },
+                progress: progress,
                 isCancelled: isCancelled
             )
             // An archive inside that could not be searched is a failure too,
@@ -1173,18 +1181,25 @@ enum FileImportService {
     /// and the books imported without some of their chapters.
     /// This is separate from archive discovery so partial-import behavior is
     /// deterministic and independently testable.
-    /// - Parameter isCancelled: asked before each file. Once it says to stop,
-    ///   the files not yet imported are left alone, the books already
-    ///   imported are kept, and the result says after how many of how many
-    ///   files the batch stopped (TODO I05).
+    /// - Parameters:
+    ///   - progress: told, for each file, that it begins by reading the file
+    ///     (`ZipImportProgress.importingBook`), each step its import then
+    ///     begins on its package, and the files done of the total once it is
+    ///     imported, fails, or is skipped as a duplicate (FR10).
+    ///   - isCancelled: asked before each file. Once it says to stop, the
+    ///     files not yet imported are left alone, the books already imported
+    ///     are kept, and the result says after how many of how many files
+    ///     the batch stopped (TODO I05).
+    ///   - importer: imports one file into a library folder, telling the
+    ///     observer it is given as each step on the book's package begins.
     static func importSupportedFiles(
         _ supportedFiles: [URL],
         toFolder folderPath: String,
         existingHashes: Set<String> = [],
-        progress: ((Int, Int) -> Void)? = nil,
+        progress: ((ZipImportProgress) -> Void)? = nil,
         isCancelled: ImportCancellationCheck = { false },
-        importer: (URL, String) throws -> ImportedBook = { url, folder in
-            try importFileWithReport(from: url, toFolder: folder)
+        importer: (URL, String, ImportStepObserver?) throws -> ImportedBook = { url, folder, observer in
+            try importFileWithReport(from: url, toFolder: folder, observer: observer)
         }
     ) -> ZipImportResult {
         let total = supportedFiles.count
@@ -1208,15 +1223,25 @@ enum FileImportService {
                 )
             }
 
+            // Tells the overlay that this book, numbered from 1, began
+            // `step` (FR10).
+            let number = index + 1
+            let beganStep = { (step: ImportStep) in
+                progress?(.importingBook(number: number, total: total, book: fileURL.lastPathComponent, step: step))
+            }
+
             // Compute hash before creating .tmb to avoid orphaning on
             // duplicate; a DAISY book in a folder has its package's.
+            beganStep(.readingSource)
             if let hash = try? importHash(of: fileURL), seenHashes.contains(hash) {
-                progress?(index + 1, total)
+                progress?(.importing(done: number, total: total))
                 continue
             }
 
             do {
-                let imported = try importer(fileURL, folderPath)
+                // Each step the import begins on the book's package is told
+                // as it begins.
+                let imported = try importer(fileURL, folderPath) { step, _ in beganStep(step) }
                 seenHashes.insert(imported.book.md5Hash)
                 books.append(imported.book)
                 if !imported.report.isComplete {
@@ -1240,7 +1265,7 @@ enum FileImportService {
                     )
                 )
             }
-            progress?(index + 1, total)
+            progress?(.importing(done: number, total: total))
         }
 
         return ZipImportResult(books: books, failures: failures, incompleteBooks: incompleteBooks)

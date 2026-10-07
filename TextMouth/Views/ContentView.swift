@@ -368,6 +368,11 @@ struct ProgressOverlay: View {
     let message: String
     /// Noun for the items being processed (e.g. "books extracted", "books processed")
     let itemNoun: String
+    /// What VoiceOver reads for the overlay, when the caller words it, as
+    /// the import overlay does with every line it shows (FR10,
+    /// `ImportProgressState.spokenStatus`); nil reads the title and the
+    /// count, or the message while the bar only spins.
+    var spokenSummary: String? = nil
     /// Cancels the operation the overlay shows, from its Cancel button or
     /// the Escape key; nil, the default, shows no Cancel button.
     var onCancel: (@MainActor () -> Void)? = nil
@@ -392,7 +397,7 @@ struct ProgressOverlay: View {
                     .progressViewStyle(.linear)
                     .frame(width: 300)
 
-                Text("\(current) of \(total) \(itemNoun)")
+                Text(CountWording.progress(current, of: total, itemNoun))
                     .font(.body)
             } else {
                 ProgressView()
@@ -421,14 +426,19 @@ struct ProgressOverlay: View {
         .accessibilityLabel(spokenStatus)
     }
 
-    /// What VoiceOver reads for the overlay: its title, then the items done
-    /// of the total while the bar has one. While the bar is indeterminate,
-    /// the message carries the progress instead (a ZIP archive's items
-    /// extracted, say), so it follows the title; with no message, the title
-    /// is read alone.
+    /// What VoiceOver reads for the overlay: the caller's own summary when
+    /// it gives one (`spokenSummary`); otherwise its title, then the items
+    /// done of the total while the bar has one, whose message, such as the
+    /// text cache's "Updating text cache: 3 of 60...", only repeats the
+    /// count. While the bar is indeterminate, the message carries the
+    /// progress instead, so it follows the title; with no message, the
+    /// title is read alone.
     var spokenStatus: String {
+        if let spokenSummary {
+            return spokenSummary
+        }
         if total > 0 {
-            return "\(title): \(current) of \(total) \(itemNoun)"
+            return "\(title): \(CountWording.progress(current, of: total, itemNoun))"
         }
         return message.isEmpty ? title : "\(title): \(message)"
     }
@@ -443,11 +453,12 @@ extension LibraryWindowView {
     static func importProgressOverlay(for libraryViewModel: LibraryViewModel) -> ProgressOverlay {
         let state = libraryViewModel.importProgress.state
         return ProgressOverlay(
-            title: "Importing Books",
+            title: ImportProgressWording.title,
             current: state.current,
             total: state.total,
             message: state.message,
-            itemNoun: "books processed",
+            itemNoun: ImportProgressWording.itemNoun,
+            spokenSummary: state.spokenStatus,
             onCancel: libraryViewModel.cancelImports
         )
     }

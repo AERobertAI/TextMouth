@@ -379,7 +379,7 @@ extension LibraryViewModel {
             }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            DispatchQueue.main.async { self.importProgress.show("Extracting archive...") }
+            DispatchQueue.main.async { self.importProgress.show(ImportProgressWording.startingArchive) }
             do {
                 if DAISYParser.isDAISYZip(url: url) {
                     let imported: ImportedBook

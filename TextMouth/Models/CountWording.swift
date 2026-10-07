@@ -20,4 +20,12 @@ enum CountWording {
     static func books(_ count: Int) -> String {
         phrase(count, singular: "book", plural: "books")
     }
+
+    /// How far a batch has got: `done` of `total`, then `noun`, as in "3 of
+    /// 10 books processed". The noun counts the total, so it is the plural
+    /// whatever `done` is. A progress overlay's count says it, and VoiceOver
+    /// reads it the same way (FR10).
+    static func progress(_ done: Int, of total: Int, _ noun: String) -> String {
+        "\(done) of \(total) \(noun)"
+    }
 }

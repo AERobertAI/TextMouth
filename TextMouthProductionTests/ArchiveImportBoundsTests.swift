@@ -231,8 +231,10 @@ final class ArchiveImportBoundsTests: XCTestCase {
     // MARK: - Progress and Cancellation
 
     /// The batch tells its extraction, the entries done of the total, before
-    /// its first book, an archive inside under that archive's own name, and
-    /// then each book imported of the total found.
+    /// its first book, an archive inside under that archive's own name; then
+    /// each book by its name as it begins by reading its file, each step its
+    /// import takes on its package, and the books done of the total found
+    /// as each finishes (FR10).
     func testExtractionProgressComesBeforeTheFirstBook() throws {
         let inner = try makeArchive("Inner", [TestZIPEntry("Tides.txt", Self.notes("tides"))])
         let archive = try makeArchive("Library Export", [
@@ -244,15 +246,23 @@ final class ArchiveImportBoundsTests: XCTestCase {
         _ = try FileImportService.importZip(from: archive, toFolder: folderPath, progress: { reports.append($0) })
 
         let name = archive.lastPathComponent
-        XCTAssertEqual(reports, [
+        // A plain-text book's steps: its checksum, then its package's.
+        let steps: [ImportStep] = [.readingSource, .copying, .readingText, .savingRecord, .publishing]
+        // The archive's own book comes first: its folder sorts before the
+        // folder the archives inside it are extracted into.
+        let extraction: [ZipImportProgress] = [
             .extracting(archive: name, done: 0, total: 2),
             .extracting(archive: name, done: 1, total: 2),
             .extracting(archive: name, done: 2, total: 2),
             .extracting(archive: "Collection.zip", done: 0, total: 1),
-            .extracting(archive: "Collection.zip", done: 1, total: 1),
-            .importing(done: 1, total: 2),
-            .importing(done: 2, total: 2)
-        ])
+            .extracting(archive: "Collection.zip", done: 1, total: 1)
+        ]
+        let firstBook = steps.map { ZipImportProgress.importingBook(number: 1, total: 2, book: "Rope Splicing.txt", step: $0) }
+        let secondBook = steps.map { ZipImportProgress.importingBook(number: 2, total: 2, book: "Tides.txt", step: $0) }
+        XCTAssertEqual(
+            reports,
+            extraction + firstBook + [.importing(done: 1, total: 2)] + secondBook + [.importing(done: 2, total: 2)]
+        )
     }
 
     /// Cancelling while the archive is extracted stops before any book:
@@ -355,17 +365,22 @@ final class ArchiveImportBoundsTests: XCTestCase {
 
     /// The import overlay's bar counts books, so while an archive is
     /// extracted it is left indeterminate and the message counts the items
-    /// extracted; once books import, both count books, as before.
+    /// extracted; once books import, the bar counts the books done and the
+    /// message names the book under way and its step (FR10).
     func testOverlayShowsExtractionThenBooks() {
-        let extracting = ImportProgressState(.extracting(archive: "Library Export.zip", done: 37, total: 120))
-        let importing = ImportProgressState(.importing(done: 3, total: 10))
+        var state = ImportProgressState()
+        state.receive(.extracting(archive: "Library Export.zip", done: 37, total: 120))
 
-        XCTAssertEqual(extracting.current, 0)
-        XCTAssertEqual(extracting.total, 0)
-        XCTAssertEqual(extracting.message, "Extracting “Library Export.zip”: 37 of 120 items...")
-        XCTAssertEqual(importing.current, 3)
-        XCTAssertEqual(importing.total, 10)
-        XCTAssertEqual(importing.message, "Importing book 3 of 10...")
+        XCTAssertEqual(state.current, 0)
+        XCTAssertEqual(state.total, 0)
+        XCTAssertEqual(state.message, "Extracting “Library Export.zip”: 37 of 120 items...")
+
+        state.receive(.importing(done: 3, total: 10))
+        state.receive(.importingBook(number: 4, total: 10, book: "Rope Splicing.txt", step: .readingText))
+
+        XCTAssertEqual(state.current, 3)
+        XCTAssertEqual(state.total, 10)
+        XCTAssertEqual(state.message, "Book 4 of 10: “Rope Splicing.txt”, reading its text")
     }
 
     // MARK: - Cancelling in the Library
