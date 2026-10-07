@@ -5,7 +5,9 @@ import XCTest
 /// A book read from the reading list (FR09, the reader's part): the request
 /// a Library window leaves as it opens a book from the Reading List, and the
 /// book's reader claiming it, once, as the open makes the reader or brings
-/// its window forward.
+/// its window forward; and the mark that says so: the window's title, the
+/// header's line, and the full Where Am I?, which follow the list as it
+/// changes and end when the book leaves it.
 ///
 /// Every book is a package of silent audio tracks, or a text book that no
 /// test plays, so nothing is heard. Each test's readers share a private
@@ -279,7 +281,165 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertNil(ReadingListPlace(of: UUID(), in: library))
     }
 
+    // MARK: - The Mark
+
+    /// A reader window is titled "Book: <title> by <author>", or "Book:
+    /// <title>" when no author is known; a book read from the reading list
+    /// says "Reading List" in place of "Book", which VoiceOver speaks as the
+    /// window's title.
+    func testTheWindowTitleSaysTheBookIsReadFromTheReadingList() {
+        let known = Book(title: "The Salt Road", author: "Wanjiru Abernethy", format: .txt, filePath: "", md5Hash: "")
+        let unknown = Book(title: "The Salt Road", format: .txt, filePath: "", md5Hash: "")
+
+        XCTAssertEqual(BookReaderWindowView.windowTitlePrefix, "Book")
+        XCTAssertEqual(ReadingListReaderWording.windowTitlePrefix, "Reading List")
+        XCTAssertEqual(
+            BookReaderWindowView.windowTitle(for: known, readFromReadingList: true),
+            "Reading List: The Salt Road by Wanjiru Abernethy"
+        )
+        XCTAssertEqual(BookReaderWindowView.windowTitle(for: unknown, readFromReadingList: true), "Reading List: The Salt Road")
+        XCTAssertEqual(
+            BookReaderWindowView.windowTitle(for: known, readFromReadingList: false),
+            "Book: The Salt Road by Wanjiru Abernethy"
+        )
+        XCTAssertEqual(BookReaderWindowView.windowTitle(for: unknown, readFromReadingList: false), "Book: The Salt Road")
+    }
+
+    /// The full Where Am I? says where a book read from the list stands in
+    /// it, after the times and before a transcript's quoted sentence; for
+    /// any other book it is as it was. The header line says the same words.
+    func testTheFullWhereAmISaysWhereTheBookStandsInTheList() {
+        let headings = (0..<20).map { Heading(level: 2, text: "Part \($0 + 1)", characterOffset: $0 * 100) }
+        let position = HeadingPosition(in: headings, chapterIndex: 0, characterOffset: 450)
+        func full(place: ReadingListPlace?, heard: String? = nil) -> String {
+            ReaderViewModel.fullWhereAmISummary(
+                bookTitle: "My Book",
+                locationTitle: "The Battle",
+                headingPosition: position,
+                percentComplete: 25,
+                timeRemaining: 10_800,
+                timeRemainingInHeading: 900,
+                totalTime: 14_400,
+                readingListPlace: place,
+                heardSentence: heard
+            )
+        }
+        let times = "My Book. The Battle. Heading 5 of 20. 25 percent through the book. "
+            + "3 hours remaining. 15 minutes remaining in this heading. Total book time: 4 hours."
+        let third = ReadingListPlace(position: 3, count: 12)
+
+        XCTAssertEqual(ReadingListReaderWording.place(third), "Reading list, book 3 of 12")
+        XCTAssertEqual(full(place: third), times + " Reading list, book 3 of 12.")
+        XCTAssertEqual(
+            full(place: third, heard: "The salt road bends east."),
+            times + " Reading list, book 3 of 12. The salt road bends east."
+        )
+        XCTAssertEqual(full(place: nil), times)
+    }
+
+    /// A reader reading its book from the list says the book's place in the
+    /// full Where Am I? alone: the brief one, pressed often while listening,
+    /// is as it was. A reader of the same book opened another way says
+    /// nothing of the list.
+    func testAReaderReadFromTheListSaysItsPlaceInTheFullWhereAmIAlone() throws {
+        let world = try makeIntegrationWorld("ReadingListWhereAmI")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let third = try makeAudioBook("Third Crossing", in: world)
+        list([first, second, third], in: world)
+        requests.request(for: second.id)
+        let fromList = makeReader(for: second, in: world, requests: requests)
+        let fromFolder = makeReader(for: third, in: world, requests: requests)
+        waitForReaderToLoad(fromList)
+        waitForReaderToLoad(fromFolder)
+
+        let full = fromList.buildFullWhereAmI(content: try XCTUnwrap(fromList.content))
+        let totalTime = TimeFormatting.spoken(fromList.totalEstimatedTime)
+        XCTAssertTrue(full.hasSuffix("Total book time: \(totalTime). Reading list, book 2 of 3."), full)
+        XCTAssertFalse(fromList.buildBriefWhereAmI().contains("Reading list"), fromList.buildBriefWhereAmI())
+        let other = fromFolder.buildFullWhereAmI(content: try XCTUnwrap(fromFolder.content))
+        XCTAssertFalse(other.contains("Reading list"), other)
+    }
+
+    /// The place follows the list as the Library window changes it: a move,
+    /// an addition, and another book's removal each move it, while a change
+    /// of the list's options leaves it.
+    func testThePlaceFollowsTheListAsItChanges() throws {
+        let world = try makeIntegrationWorld("ReadingListPlaceFollows")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let third = try makeAudioBook("Third Crossing", in: world)
+        let fourth = try makeAudioBook("Fourth Crossing", in: world)
+        list([first, second, third], in: world)
+        requests.request(for: second.id)
+        let reader = makeReader(for: second, in: world, requests: requests)
+        XCTAssertEqual(reader.readingListPlace, ReadingListPlace(position: 2, count: 3))
+
+        world.library.moveInReadingList(bookID: second.id, direction: .up)
+        XCTAssertEqual(reader.readingListPlace, ReadingListPlace(position: 1, count: 3), "a move")
+        world.library.addToReadingList([fourth.id])
+        XCTAssertEqual(reader.readingListPlace, ReadingListPlace(position: 1, count: 4), "an addition")
+        world.library.moveInReadingList(bookID: third.id, direction: .up)
+        world.library.moveInReadingList(bookID: third.id, direction: .up)
+        XCTAssertEqual(reader.readingListPlace, ReadingListPlace(position: 2, count: 4), "a book moved above it")
+        world.library.removeFromReadingList([first.id])
+        XCTAssertEqual(reader.readingListPlace, ReadingListPlace(position: 2, count: 3), "another book's removal")
+        world.library.setReadingListContinuation(.stop)
+        world.library.setReadingListSkipsFinished(false)
+        XCTAssertEqual(reader.readingListPlace, ReadingListPlace(position: 2, count: 3), "an option")
+    }
+
+    /// A book taken off the list while its reader is open is no longer read
+    /// from it: its title says "Book" again. Put back on the list, it stays
+    /// as any book until it is opened from the list again.
+    func testABookTakenOffTheListWhileOpenIsNoLongerReadFromIt() throws {
+        let world = try makeIntegrationWorld("ReadingListLeaves")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        list([first, second], in: world)
+        requests.request(for: second.id)
+        let reader = makeReader(for: second, in: world, requests: requests)
+        waitForReaderToLoad(reader)
+        XCTAssertEqual(title(of: reader), "Reading List: Second Crossing")
+
+        world.library.removeFromReadingList([second.id])
+
+        XCTAssertFalse(reader.isOpenedFromReadingList)
+        XCTAssertNil(reader.readingListPlace)
+        XCTAssertEqual(title(of: reader), "Book: Second Crossing")
+        world.library.addToReadingList([second.id])
+        XCTAssertFalse(reader.isOpenedFromReadingList, "put back on the list, it was read from it again unasked")
+        requests.request(for: second.id)
+        XCTAssertEqual(reader.readingListPlace, ReadingListPlace(position: 2, count: 2), "opened from the list again")
+    }
+
+    /// A book removed from the library while its reader is open leaves the
+    /// list with it, so it is no longer read from the list either.
+    func testABookRemovedFromTheLibraryWhileOpenIsNoLongerReadFromTheList() throws {
+        let world = try makeIntegrationWorld("ReadingListRemoved")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        list([first, second], in: world)
+        requests.request(for: second.id)
+        let reader = makeReader(for: second, in: world, requests: requests)
+        XCTAssertTrue(reader.isOpenedFromReadingList)
+
+        world.library.library.removeBook(id: second.id)
+
+        XCTAssertFalse(reader.isOpenedFromReadingList)
+        XCTAssertEqual(title(of: reader), "Book: Second Crossing")
+    }
+
     // MARK: - Fixtures
+
+    /// The title `reader`'s window shows now.
+    private func title(of reader: ReaderViewModel) -> String {
+        BookReaderWindowView.windowTitle(for: reader.book, readFromReadingList: reader.isOpenedFromReadingList)
+    }
 
     /// The tracks of every fixture audiobook, in seconds: longer than any
     /// test runs, so no chapter ends by itself.

@@ -38,4 +38,23 @@ extension ReaderViewModel {
                 : "reading list: reading this book from the list"
         )
     }
+
+    /// Keeps the book's place current as the library changes to `library`,
+    /// while the book is read from the reading list: a book moved, added,
+    /// or taken off the list moves the place, and the book reads as any
+    /// book once it leaves the list, by its own removal there or its removal
+    /// from the library, so its window title says "Book" again and its end
+    /// follows its own end-of-book behavior, since the list has nothing to
+    /// say of it (`LibraryViewModel.readingListContinuation(after:)`). A
+    /// book put back on the list is not read from it again until it is
+    /// opened from it again. A closed reader keeps nothing current.
+    func followReadingList(in library: Library) {
+        guard !hasClosed, let current = readingListPlace else { return }
+        let place = ReadingListPlace(of: book.id, in: library)
+        guard place != current else { return }
+        readingListPlace = place
+        if place == nil {
+            DiagnosticLog.trace(.playback, "reading list: this book left the list; read as any book from now on")
+        }
+    }
 }

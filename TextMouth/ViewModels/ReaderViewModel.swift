@@ -485,12 +485,19 @@ final class ReaderViewModel: ObservableObject {
     /// claimed now, as the open made this reader; one made while the reader
     /// is open, as such an open brings its window forward, is claimed as it
     /// is made (`ReadingListOpenRequests.requestsMade`). Requests for other
-    /// books are left for their own readers.
+    /// books are left for their own readers. While the book is read from the
+    /// list, its place follows every change the library makes to the list,
+    /// and the book is no longer read from it once it leaves the list
+    /// (`followReadingList(in:)`).
     private func observeReadingList() {
         let bookID = book.id
         readingListRequests.requestsMade
             .filter { $0 == bookID }
             .sink { [weak self] _ in self?.claimReadingListRequest() }
+            .store(in: &cancellables)
+        // Published as each change is made, with the library as it will be.
+        libraryViewModel.$library
+            .sink { [weak self] library in self?.followReadingList(in: library) }
             .store(in: &cancellables)
         claimReadingListRequest()
     }
