@@ -476,6 +476,49 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(again.speechString, retryChunk.words(of: text))
     }
 
+    /// A refusal heard while speech is paused, as when Pause is pressed
+    /// just as the engine refuses a chunk, lets go of the refusing
+    /// synthesizer at once and keeps the pause: nothing is heard until
+    /// Play, which speaks the chunk again from its start on a fresh
+    /// synthesizer, strictly guarded. That was the place's one retry:
+    /// refused there again, speech ends with the announcement.
+    func testARefusalWhilePausedIsSpokenAgainAtPlay() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let text = Self.bracketedText
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(text)
+        let refused = try handedOver(0, by: recorder)
+        let refusing = try synthesizer(0, by: recorder)
+        speech.pause()
+        XCTAssertTrue(speech.isPaused)
+
+        let lines = logLines(in: .speechTransitions) {
+            report(cancel: refused, to: speech)
+        }
+
+        XCTAssertTrue(speech.isPaused, "the pause did not stand")
+        XCTAssertTrue(speech.isActive)
+        XCTAssertEqual(recorder.utterances.count, 1, "something was handed over while paused")
+        XCTAssertFalse(speech._directSynthesizerForTesting === refusing, "the synthesizer that refused is kept")
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app was paused") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY_AT_RESUME offset=0 ") }, "\(lines)")
+
+        XCTAssertTrue(speech.resume())
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertTrue(speech.isSpeaking)
+        let retry = try handedOver(1, by: recorder)
+        let chunk = DirectSpeechChunk.starting(at: 0, in: text, maximumLength: SpeechService.directModeFirstChunkSize)
+        XCTAssertEqual(retry.speechString, SpeechMarkupGuard.neutralizedStrictly(chunk.words(of: text)))
+        XCTAssertFalse(try synthesizer(1, by: recorder) === refusing, "Play went to the synthesizer that refused")
+
+        let announced = recordingAnnouncements {
+            report(cancel: retry, to: speech)
+        }
+        XCTAssertFalse(speech.isActive, "a second refusal at the same place did not end speech")
+        XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
+    }
+
     /// Speech that stopped after a refusal speaks again when asked, and
     /// not on the synthesizer that refused the retry, which would never
     /// speak again (October 7): Play goes to a fresh synthesizer, which
