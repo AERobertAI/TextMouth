@@ -37,6 +37,10 @@ import Foundation
 /// ahead of the items kept before it; any other is new once the record has
 /// been refreshed before.
 ///
+/// Every merge also records the feed's size (`Feed.entryTotal`): how many
+/// entries it lists, each once, before the kept-entries rule, which the
+/// library says beside the number kept ("10 of 381 episodes kept").
+///
 /// Reading an item's texts (`FeedTextConverter`) is the costly part, so it
 /// happens only for the items kept whose text is new or changed, and the
 /// texts read are kept by their HTML in a `FeedTextCache`: a refresh merges
@@ -155,6 +159,10 @@ enum FeedReconciler {
         record.feed.summary = texts.read(feed.summary, keeping: record.feed.summary)
         record.feed.author = feed.author ?? record.feed.author
         record.feed.isSerial = feed.isSerial
+        // The feed's size: every entry it lists, each once, the ones the
+        // listener deleted among them, and whether it lists more than
+        // TextMouth reads of a feed.
+        record.feed.entryTotal = FeedEntryTotal(count: listedIDs.count, listsMore: feed.reachedItemLimit)
         record.feed.usesInsecureTransport = FeedTransport.isInsecure(record.feed.feedURL)
             || feed.items.contains { $0.enclosure.map { FeedTransport.isInsecure($0.url) } ?? false }
 

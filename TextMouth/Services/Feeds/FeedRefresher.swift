@@ -122,9 +122,12 @@ struct FeedRefreshSummary: Equatable, Sendable {
 /// the last one is neither read again nor saved either. Both hold only
 /// while the feed keeps as many entries as when its last body was read: a
 /// changed kept-entries setting reads the feed whole again, so it applies
-/// at once. A feed that moved for good, by a permanent redirect or its own
-/// `itunes:new-feed-url`, is fetched from its new address from then on.
-/// A refresh that ends after its feed was unsubscribed changes nothing.
+/// at once. A record that does not know its feed's size (`Feed.entryTotal`),
+/// written before TextMouth recorded it, reads its feed whole once too, so
+/// the size is known from that check on. A feed that moved for good, by a
+/// permanent redirect or its own `itunes:new-feed-url`, is fetched from its
+/// new address from then on. A refresh that ends after its feed was
+/// unsubscribed changes nothing.
 ///
 /// Everything slow happens off the main actor: the fetch, and the parse and
 /// first merge, which read the items' texts. The main actor then merges the
@@ -370,10 +373,10 @@ final class FeedRefresher {
     }
 
     /// Fetches `record`'s feed through `network` with the validators of
-    /// `fetchState`, and, when it changed or `keepEntries` differs from the
-    /// number its last body was merged with, reads it and merges it into a
-    /// copy of `record`, off the main actor, keeping the texts that merge
-    /// read.
+    /// `fetchState`, and, when it changed, `keepEntries` differs from the
+    /// number its last body was merged with, or the record does not know the
+    /// feed's size, reads it and merges it into a copy of `record`, off the
+    /// main actor, keeping the texts that merge read.
     nonisolated static func fetchAndRead(
         _ record: FeedRecord,
         fetchState: FeedFetchState,
@@ -383,10 +386,12 @@ final class FeedRefresher {
         now: Date
     ) async -> Work {
         // The last body counts only when it was merged keeping as many
-        // entries as the record keeps now. Validators mean something only
-        // beside the digest of the body they came with, which is what
-        // decides that nothing changed.
-        let lastDigest = fetchState.keptEntriesOfLastBody == keepEntries ? fetchState.bodyDigest : nil
+        // entries as the record keeps now, and the record knows the feed's
+        // size, which a record written before TextMouth recorded it does
+        // not. Validators mean something only beside the digest of the body
+        // they came with, which is what decides that nothing changed.
+        let lastBodyCounts = fetchState.keptEntriesOfLastBody == keepEntries && record.feed.entryTotal != nil
+        let lastDigest = lastBodyCounts ? fetchState.bodyDigest : nil
         let fetched: FeedFetchResult
         do {
             fetched = try await network.fetch(
