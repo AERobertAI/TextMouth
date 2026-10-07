@@ -165,6 +165,13 @@ struct LibraryCommands: Commands {
             }
             .keyboardShortcut("o", modifiers: [.command, .shift])
 
+            // VoiceOver speaks how the imports under way have got (FR10).
+            // It has no key until the user gives it one in Settings, which
+            // KeyboardShortcutManager then handles from any window.
+            Button(ShortcutAction.speakImportProgress.title) {
+                NotificationCenter.default.post(name: .speakImportProgress, object: nil)
+            }
+
             // Records from a microphone into a new audiobook (FR04); File >
             // New Recording… carries the shortcut.
             Button(RecordingWording.menuTitle) {
@@ -444,6 +451,10 @@ extension Notification.Name {
     /// that takes the command speaks its selected row's information with
     /// the app's own voice (`LibraryInfoSpeaker`).
     static let speakInfo = Notification.Name("speakInfo")
+    /// Posted by Library > Speak Import Progress and its key, when the user
+    /// gave it one: the library model has VoiceOver speak how the imports
+    /// under way have got (FR10).
+    static let speakImportProgress = Notification.Name("speakImportProgress")
     static let openSelectedBook = Notification.Name("openSelectedBook")
     static let copyReadingPosition = Notification.Name("copyReadingPosition")
     static let searchInBook = Notification.Name("searchInBook")

@@ -365,6 +365,25 @@ extension LibraryViewModel {
         withdrawCancelledImportDecisions()
     }
 
+    // MARK: - Speak Import Progress (FR10)
+
+    /// Starts answering Speak Import Progress, from the Library menu or the
+    /// key the user gave it, from any window. The library starts it once,
+    /// with its other observers.
+    func observeImportProgressRequests() {
+        NotificationCenter.default.publisher(for: .speakImportProgress)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.speakImportProgress() }
+            .store(in: &cancellables)
+    }
+
+    /// Has VoiceOver speak how the imports under way have got, every line
+    /// the import overlay shows, or that none is under way, wherever the
+    /// user is, without finding the overlay (FR10).
+    func speakImportProgress() {
+        VoiceOverAnnouncer.announce(importProgress.spokenStatus(whileImporting: isImporting))
+    }
+
     /// Import a zip file asynchronously with progress tracking. The import
     /// takes the queue's cancellation as it is enqueued, so `cancelImports()`
     /// stops it while it waits as well as while it runs (TODO I05). The

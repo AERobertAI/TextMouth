@@ -27,6 +27,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// the Library window with the app's own voice, as Where Am I? speaks
     /// a position in a reader (`LibraryInfoSpeaker`).
     case speakInfo = "Speak Info"
+    /// Has VoiceOver speak how the imports under way have got, as the
+    /// import overlay says it, from any window (FR10). It has no key until
+    /// the user gives it one in Settings.
+    case speakImportProgress = "Speak Import Progress"
     case navigateUpLevel = "Up One Level"
     case openSelectedBook = "Open Selected Book"
     case showBookInfo = "Book Info"
@@ -137,6 +141,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .restartSleepTimer: return .restartSleepTimer
         case .whereAmI: return .whereAmI
         case .speakInfo: return .speakInfo
+        case .speakImportProgress: return .speakImportProgress
         case .openSelectedBook: return .openSelectedBook
         case .showBookInfo: return .showBookInfo
         case .removeFromLibrary: return .removeFromLibrary
@@ -177,7 +182,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Bookmarks"
         case .showHeadingList, .showSleepTimer, .restartSleepTimer:
             return "Panels"
-        case .whereAmI, .speakInfo:
+        case .whereAmI, .speakInfo, .speakImportProgress:
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown,
              .addToReadingList, .removeFromReadingList:
@@ -535,6 +540,9 @@ extension ShortcutAction {
                 // The audio editor's Mark In has I in its own scope.
                 KeyBinding(key: "i")
             ],
+            // No key by default (FR10): the user gives it a key of their
+            // choosing in Settings, as Release Media Controls.
+            .speakImportProgress: [],
             .openSelectedBook: [
                 KeyBinding(key: "return")
             ],

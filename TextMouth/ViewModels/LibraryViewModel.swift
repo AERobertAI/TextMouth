@@ -318,6 +318,8 @@ final class LibraryViewModel: ObservableObject {
                 self.importProgress.clear()
             }
         }
+        // Speak Import Progress, from any window (FR10).
+        observeImportProgressRequests()
         updateContentCachesAndStatistics()
         // The podcast and article feeds start in the background (FR03).
         startFeeds()

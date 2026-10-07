@@ -319,6 +319,16 @@ final class ImportProgress: ObservableObject {
         }
     }
 
+    /// What Speak Import Progress says now: what VoiceOver reads for the
+    /// overlay, its every line, while an import shows or `isImporting`
+    /// says one is queued or running; otherwise that none is under way.
+    func spokenStatus(whileImporting isImporting: Bool) -> String {
+        guard isImporting || state != ImportProgressState() else {
+            return ImportProgressWording.noImportUnderWay
+        }
+        return state.spokenStatus(at: now())
+    }
+
     /// Whether the import shown has run for `announcedAfter` by `date`.
     private func hasRunLong(at date: Date) -> Bool {
         guard let startedAt else { return false }

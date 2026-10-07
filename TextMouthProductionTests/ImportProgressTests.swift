@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import XCTest
 @testable import TextMouth
@@ -473,6 +474,73 @@ final class ImportProgressTests: XCTestCase {
         }
     }
 
+    // MARK: - Speak Import Progress
+
+    /// The action is "Speak Import Progress" (config.json's key for it), in
+    /// the app's scope, so the key the user gives it works from any window
+    /// but the audio editor's, listed in Settings under Information beside
+    /// Speak Info, with no key until the user gives it one, and it posts its
+    /// own notification.
+    func testSpeakImportProgressIsAnActionWithNoKeyBesideSpeakInfo() {
+        XCTAssertEqual(ShortcutAction.speakImportProgress.rawValue, "Speak Import Progress")
+        XCTAssertEqual(ShortcutAction.speakImportProgress.title, "Speak Import Progress")
+        XCTAssertEqual(ShortcutAction(rawValue: "Speak Import Progress"), .speakImportProgress)
+        XCTAssertEqual(ShortcutAction.defaultBindings[.speakImportProgress], [])
+        XCTAssertEqual(ShortcutAction.speakImportProgress.scope, .app)
+        XCTAssertEqual(ShortcutAction.speakImportProgress.category, "Information")
+        XCTAssertEqual(ShortcutAction.speakImportProgress.category, ShortcutAction.speakInfo.category)
+        XCTAssertEqual(ShortcutAction.speakImportProgress.notificationName, .speakImportProgress)
+        XCTAssertEqual(Notification.Name.speakImportProgress.rawValue, "speakImportProgress")
+    }
+
+    /// The Library menu, the one shown while a Library window is key,
+    /// offers Speak Import Progress, named as the action is.
+    func testTheLibraryMenuOffersSpeakImportProgress() throws {
+        let mainMenu = try XCTUnwrap(NSApp.mainMenu)
+        let library = try XCTUnwrap(mainMenu.items.first { $0.title == "Library" }?.submenu, "no Library menu")
+        let titles = library.items.map(\.title)
+        XCTAssertTrue(titles.contains(ShortcutAction.speakImportProgress.title), titles.joined(separator: ", "))
+    }
+
+    /// Speak Import Progress has VoiceOver speak every line the overlay
+    /// shows, at once, wherever the user is; with no import under way, it
+    /// says so.
+    func testSpeakImportProgressSpeaksTheOverlaysLines() {
+        let library = LibraryViewModel(initializeServices: false)
+
+        let recorder = recordingAnnouncements {
+            library.speakImportProgress()
+            library.importProgress.showArchive("Library Export.zip")
+            library.importProgress.receive(.importingBook(number: 4, total: 10, book: "Rope Splicing.txt", step: .copying))
+            library.speakImportProgress()
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "No import is under way.",
+            "Importing Books: 3 of 10 books processed. Book 4 of 10: “Rope Splicing.txt”, copying it into the library."
+        ])
+        XCTAssertEqual(recorder.announcements.map(\.priority), [.high, .high])
+    }
+
+    /// The menu item and the key reach Speak Import Progress through its
+    /// notification, which the library answers once it observes it.
+    func testTheCommandsNotificationReachesTheLibrary() {
+        let library = LibraryViewModel(initializeServices: false)
+        library.observeImportProgressRequests()
+        library.importProgress.showArchive("Heard on Request.zip")
+        let heard = HeardMessages()
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in heard.messages.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+
+        NotificationCenter.default.post(name: .speakImportProgress, object: nil)
+
+        XCTAssertTrue(
+            waitUntil { heard.messages.contains("Importing Books: Extracting archive...") },
+            heard.messages.joined(separator: " | ")
+        )
+    }
+
     // MARK: - Fixtures
 
     /// Holds the import `model`'s queue runs when it begins `step`, until the
@@ -490,4 +558,12 @@ final class ImportProgressTests: XCTestCase {
         }
         return gate
     }
+}
+
+
+/// The messages VoiceOver was asked to speak while a test listened.
+@MainActor
+private final class HeardMessages {
+    /// Every message, oldest first.
+    var messages: [String] = []
 }

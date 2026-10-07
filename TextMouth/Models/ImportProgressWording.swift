@@ -150,6 +150,12 @@ enum ImportProgressWording {
     static func failed(_ subject: String) -> String {
         "Could not import “\(subject)”."
     }
+
+    // MARK: - What VoiceOver Hears on Request
+
+    /// What Speak Import Progress says with no import under way; with one,
+    /// it says what VoiceOver reads for the overlay.
+    static let noImportUnderWay = "No import is under way."
 }
 
 // MARK: - The Time Left
