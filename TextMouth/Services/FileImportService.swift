@@ -722,7 +722,17 @@ enum FileImportService {
                 epubLanguage: metadata.epub?.language,
                 epubIdentifier: metadata.epub?.identifier,
                 epubVersion: metadata.epub?.epubVersion,
-                metadataReaderVersion: ImportedFileMetadata.readerVersion
+                metadataReaderVersion: ImportedFileMetadata.readerVersion,
+                // The book's record of hand edits begins here, empty (#1291):
+                // its title and author are what the metadata reader stamped
+                // above read in this very file, so a launch refresh by a
+                // later reader may bring every field the file names up to
+                // date (`LibraryViewModel.refreshedValues(of:from:)`). No
+                // other import begins one: a feed's download, a recording,
+                // New from Text, and an audio or DAISY archive take their
+                // names from elsewhere than the file the refresh reads, and
+                // a package keeps the record it carries.
+                handEdits: .noneSinceImport
             )
             var imported = try publishReadableBook(staged, from: staging, run: &run)
             imported.isFromPackageFolder = package != nil
