@@ -1,4 +1,5 @@
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// Which name a package document gives a book's author
@@ -96,7 +97,62 @@ final class EPUBAuthorNameTests: XCTestCase {
         XCTAssertEqual(imported.author, Book.unknownAuthor)
     }
 
+    // MARK: - Writing an Edited Author
+
+    /// An author saved into a package with no `dc:creator` gets one, which
+    /// names the author from then on, for the reader as for Book Info.
+    func testSavingAnAuthorIntoAPackageWithoutACreatorAddsOne() throws {
+        let metadata = "<dc:title>Century Rain</dc:title><meta property=\"dcterms:creator\">Alastair Reynolds</meta>"
+        let file = try writtenEPUB(opf: package(metadata: metadata))
+        var edited = try EPUBParser.readMetadata(url: file)
+        edited.author = "A. Reynolds"
+
+        _ = try EPUBParser.writeMetadata(edited, to: file)
+
+        XCTAssertEqual(try EPUBParser.readMetadata(url: file).author, "A. Reynolds")
+        XCTAssertEqual(try EPUBParser.parseOPF(try packageDocument(of: file)).author, "A. Reynolds")
+    }
+
+    /// An author saved into a package listing its illustrator first goes
+    /// into the creator with the author role; the illustrator keeps its name.
+    func testSavingAnAuthorWritesIntoTheCreatorWithTheAuthorRole() throws {
+        let metadata = """
+        <dc:creator opf:role="ill">Pieter Vandenbroucke</dc:creator>
+        <dc:creator opf:role="aut">Wilhelmina Achterberg</dc:creator>
+        """
+        let file = try writtenEPUB(opf: package(metadata: metadata))
+        var edited = try EPUBParser.readMetadata(url: file)
+        edited.author = "W. Achterberg"
+
+        _ = try EPUBParser.writeMetadata(edited, to: file)
+
+        let document = try packageDocument(of: file)
+        XCTAssertTrue(document.contains(">Pieter Vandenbroucke<"), "the illustrator was renamed")
+        XCTAssertTrue(document.contains(">W. Achterberg<"))
+        XCTAssertFalse(document.contains(">Wilhelmina Achterberg<"))
+        XCTAssertEqual(try EPUBParser.readMetadata(url: file).author, "W. Achterberg")
+    }
+
+    /// Saving the placeholder into a package without a creator adds no
+    /// element: the package still names no one.
+    func testSavingThePlaceholderIntoAPackageWithoutACreatorAddsNone() throws {
+        let file = try writtenEPUB(opf: package(metadata: "<dc:title>Quick Start</dc:title>"))
+        var edited = try EPUBParser.readMetadata(url: file)
+        edited.author = Book.unknownAuthor
+
+        _ = try EPUBParser.writeMetadata(edited, to: file)
+
+        XCTAssertFalse(try packageDocument(of: file).contains("creator"))
+        XCTAssertEqual(try EPUBParser.readMetadata(url: file).author, "")
+    }
+
     // MARK: - Fixtures
+
+    /// The package document of the EPUB at `file`, as written there.
+    private func packageDocument(of file: URL) throws -> String {
+        let archive = try Archive(url: file, accessMode: .read)
+        return try EPUBParser.extractString(archive: archive, path: "OEBPS/package.opf")
+    }
 
     /// The author both `parseOPF` and `readMetadata` read from a package
     /// whose metadata element holds `metadata`, or nil when it names no

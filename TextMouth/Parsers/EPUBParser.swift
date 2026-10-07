@@ -265,32 +265,35 @@ enum EPUBParser {
             titleNode.stringValue = metadata.title
         }
 
-        // Update author/creator
-        if let creatorNode = (try? doc.nodes(forXPath: "//*[local-name()='creator']"))?.first {
-            creatorNode.stringValue = metadata.author
+        // The author goes into the creator that names the author, or else
+        // into the first creator, which named no one. A package without any
+        // creator gets one, unless the author is the placeholder, which
+        // names no one and is not worth an element.
+        if let creator = creatorElement(in: doc) ?? elements(in: doc, matching: creatorPath).first {
+            creator.stringValue = metadata.author
+        } else if !Book.isUnknownAuthor(metadata.author), let metadataNode = metadataElement(in: doc) {
+            let creator = XMLElement(name: "dc:creator")
+            creator.stringValue = metadata.author
+            metadataNode.addChild(creator)
         }
 
         // Update publisher
         if let pubNode = (try? doc.nodes(forXPath: "//*[local-name()='publisher']"))?.first {
             pubNode.stringValue = metadata.publisher
-        } else if !metadata.publisher.isEmpty {
+        } else if !metadata.publisher.isEmpty, let metadataNode = metadataElement(in: doc) {
             // Add publisher if it doesn't exist
-            if let metadataNode = (try? doc.nodes(forXPath: "//*[local-name()='metadata']"))?.first as? XMLElement {
-                let pubElem = XMLElement(name: "dc:publisher")
-                pubElem.stringValue = metadata.publisher
-                metadataNode.addChild(pubElem)
-            }
+            let pubElem = XMLElement(name: "dc:publisher")
+            pubElem.stringValue = metadata.publisher
+            metadataNode.addChild(pubElem)
         }
 
         // Update date
         if let dateNode = (try? doc.nodes(forXPath: "//*[local-name()='date']"))?.first {
             dateNode.stringValue = metadata.publicationDate
-        } else if !metadata.publicationDate.isEmpty {
-            if let metadataNode = (try? doc.nodes(forXPath: "//*[local-name()='metadata']"))?.first as? XMLElement {
-                let dateElem = XMLElement(name: "dc:date")
-                dateElem.stringValue = metadata.publicationDate
-                metadataNode.addChild(dateElem)
-            }
+        } else if !metadata.publicationDate.isEmpty, let metadataNode = metadataElement(in: doc) {
+            let dateElem = XMLElement(name: "dc:date")
+            dateElem.stringValue = metadata.publicationDate
+            metadataNode.addChild(dateElem)
         }
 
         return doc.xmlString(options: [.nodePrettyPrint])
@@ -377,6 +380,12 @@ enum EPUBParser {
             }
         }
         return roles
+    }
+
+    /// The package's metadata element, which holds every Dublin Core
+    /// element, or nil in a package document without one.
+    private static func metadataElement(in doc: XMLDocument) -> XMLElement? {
+        elements(in: doc, matching: "//*[local-name()='metadata']").first
     }
 
     /// The elements `path` names in `doc`, in document order; none when the
