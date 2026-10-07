@@ -63,6 +63,42 @@ final class SpeechMarkupGuardTests: XCTestCase {
         ("<?xml version=\"1.0\"?> then", "\(open)?xml version=\"1.0\"?\(close) then"),
         ("x<y>z", "x\(open)y\(close)z"),
         ("Caf\u{00E9} <été> fin", "Caf\u{00E9} \(open)été\(close) fin"),
+        // Measured on October 7 (Scripts/agents/probes/speech-markup-probe-shapes.swift):
+        // each of these swallowed the rest of its sentence, in Samantha and
+        // in Alex, so a name may be any run of characters other than
+        // brackets, spaces, and slashes, or nothing at all.
+        ("the omitted <...> passage", "the omitted \(open)...\(close) passage"),
+        ("a <=> b", "a \(open)=\(close) b"),
+        ("x <-> y", "x \(open)-\(close) y"),
+        ("<$fh>", "\(open)$fh\(close)"),
+        ("<*>", "\(open)*\(close)"),
+        ("<#>", "\(open)#\(close)"),
+        ("<@reader>", "\(open)@reader\(close)"),
+        ("<.x>", "\(open).x\(close)"),
+        ("<-x>", "\(open)-x\(close)"),
+        ("<=x>", "\(open)=x\(close)"),
+        ("<a=b>", "\(open)a=b\(close)"),
+        ("< = >", "\(open) = \(close)"),
+        ("<\"x\">", "\(open)\"x\"\(close)"),
+        ("<'x'>", "\(open)'x'\(close)"),
+        ("<\\>", "\(open)\\\(close)"),
+        ("<>", "\(open)\(close)"),
+        ("< >", "\(open) \(close)"),
+        ("a <> b", "a \(open)\(close) b"),
+        ("<3-4>", "\(open)3-4\(close)"),
+        ("Array<Int>", "Array\(open)Int\(close)"),
+        ("<reader@example.com>", "\(open)reader@example.com\(close)"),
+        ("<!>", "\(open)!\(close)"),
+        ("<?>", "\(open)?\(close)"),
+        // Refused, as every closing tag without an opening one was.
+        ("</>", "\(open)/\(close)"),
+        // Spoken by the engine, brackets and all, or silent and harmless
+        // (`<a/>` closes itself): the guard silences their brackets anyway,
+        // which costs a "less than" at most.
+        ("<!-- comment -->", "\(open)!-- comment --\(close)"),
+        ("<!DOCTYPE html>", "\(open)!DOCTYPE html\(close)"),
+        ("<a/>", "\(open)a/\(close)"),
+        ("<\u{1F642}>", "\(open)\u{1F642}\(close)"),
     ]
 
     /// Texts the guard leaves exactly as they are: brackets the engine
@@ -89,6 +125,24 @@ final class SpeechMarkupGuardTests: XCTestCase {
         "",
         "Lamps came on along the pier.",
         "the quote \u{2039}sm\u{203A} is already harmless",
+        // Measured on October 7 (Scripts/agents/probes/speech-markup-probe-shapes.swift):
+        // spoken in full, so left alone. Bare words after the name, or a
+        // slash inside it, make no tag.
+        "<-- aside -->",
+        "<x y=1 z>",
+        "Map<String, Int>",
+        "<a/b>",
+        "<https://example.com/page>",
+        // The ampersand, bare or in an entity, never stopped or swallowed
+        // anything.
+        "fish & chips",
+        "&amp;",
+        "&#60;",
+        "AT&T",
+        "R&D",
+        "&nbsp;",
+        "&lt;sm&gt;",
+        "fish & chips \u{2039}p\u{203A}here\u{2039}/p\u{203A}",
     ]
 
     // MARK: - What changes
@@ -280,6 +334,23 @@ final class SpeechMarkupGuardTests: XCTestCase {
         XCTAssertLessThan(elapsed, .seconds(1), "guarding 100,000 units took \(elapsed)")
     }
 
+    /// A bracket followed by a long run of spaces and no closing bracket is
+    /// given up quickly: no two runs of spaces in the pattern can trade
+    /// spaces, so the time grows with the run, not with its square.
+    func testALongRunOfSpacesAfterABracketIsGivenUpQuickly() {
+        let spaces = String(repeating: " ", count: 20_000)
+        let texts = ["<" + spaces + "x", "<a" + spaces + "x", "<a b=c" + spaces + "x", "< /" + spaces + "x"]
+        let began = ContinuousClock.now
+        for text in texts {
+            let guarded = SpeechMarkupGuard.neutralized(text)
+            XCTAssertEqual(guarded.utf16.count, text.utf16.count)
+        }
+        XCTAssertEqual(SpeechMarkupGuard.neutralized("<" + spaces + "x"), "<" + spaces + "x", "no closing bracket, no run")
+        XCTAssertEqual(SpeechMarkupGuard.neutralized("<a" + spaces + ">"), "\(Self.open)a" + spaces + Self.close)
+        let elapsed = began.duration(to: .now)
+        XCTAssertLessThan(elapsed, .seconds(1), "four 20,000-space runs took \(elapsed)")
+    }
+
     // MARK: - The engine itself, offline
 
     /// The voice the engine's behaviour was measured in.
@@ -302,6 +373,34 @@ final class SpeechMarkupGuardTests: XCTestCase {
         XCTAssertEqual(guardedEnd, .finished, "the guarded chunk did not render")
         XCTAssertGreaterThan(guarded.frames, 0)
         XCTAssertGreaterThanOrEqual(guarded.frames, raw.frames, "the guard lost audio")
+    }
+
+    /// Shapes that swallowed the rest of their sentence on October 7, which
+    /// the first guard left alone, render it in full once guarded: at least
+    /// nine tenths of the frames the sentence renders without the shape.
+    /// What the engine on this Mac does with each raw shape is printed for
+    /// the record, not asserted, since the guard must hold whatever it does.
+    /// Rendered offline: nothing is heard.
+    func testShapesThatSwallowedTheirSentenceRenderInFullOnceGuarded() throws {
+        let voice = try Self.probeVoice()
+        let lead = "The reader went on with the story"
+        let tail = "and every word after it should still be heard, all the way to the very end of this rather long sentence."
+        let plain = OfflineRenderProbe("\(lead) \(tail)", voice: voice)
+        XCTAssertEqual(render(plain), .finished, "the sentence alone did not render")
+
+        for shape in ["the omitted <...> passage", "<>", "a <=> b", "<a=b>"] {
+            let sentence = "\(lead) \(shape) \(tail)"
+            let raw = OfflineRenderProbe(sentence, voice: voice)
+            let rawEnd = render(raw)
+            let guarded = OfflineRenderProbe(SpeechMarkupGuard.neutralized(sentence), voice: voice)
+            let guardedEnd = render(guarded)
+
+            print("SpeechMarkupGuard: \(shape.debugDescription) raw \(rawEnd.map { "\($0)" } ?? "timed out") with "
+                + "\(raw.frames) frames, guarded \(guardedEnd.map { "\($0)" } ?? "timed out") with \(guarded.frames), "
+                + "the sentence alone \(plain.frames)")
+            XCTAssertEqual(guardedEnd, .finished, shape)
+            XCTAssertGreaterThanOrEqual(guarded.frames * 10, plain.frames * 9, "the guarded \(shape.debugDescription) lost words")
+        }
     }
 
     /// After the engine refuses an utterance, a fresh synthesizer speaks at
