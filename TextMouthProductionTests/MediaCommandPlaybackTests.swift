@@ -424,6 +424,93 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertEqual(recorder.announcements, [], "Skip Backward after the end announced something")
     }
 
+    /// After an audiobook has finished, Next Track at the end stays at the
+    /// end, plays nothing, and announces nothing more, and Pause changes
+    /// nothing either; the keyboard's Skip Backward then moves the cursor
+    /// back by the skip unit from the end and plays, as the AirPods' rewind
+    /// does. The keyboard's shortcut, the playback bar's button, and the
+    /// AirPods all reach `skipBackward()`.
+    func testNextTrackAndPauseAtTheEndChangeNothingAndTheKeyboardsSkipBackwardPlays() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Keyboard Audio")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let reader = ferry.reader
+        let audio = reader.audioPlaybackService
+        let chapterEnd = try XCTUnwrap(reader.content?.chapters.last?.text.utf16Length)
+
+        let recorder = recordingAnnouncements {
+            XCTAssertEqual(system.press(.nextTrack), .success)
+            XCTAssertFalse(audio.isPlaying, "Next Track at the end played")
+            XCTAssertEqual(reader.currentChapterIndex, 1, "Next Track at the end left the last chapter")
+            XCTAssertEqual(reader.currentCharacterOffset, chapterEnd - 1, "Next Track at the end did not stay at the end")
+            assertToldSystem(system, that: reader, plays: false, "Next Track at the end")
+
+            XCTAssertEqual(system.press(.pause), .success)
+            XCTAssertFalse(audio.isPlaying, "Pause at the end played")
+            assertToldSystem(system, that: reader, plays: false, "Pause at the end")
+
+            reader.lastSkipTime = .distantPast
+            reader.skipBackward()
+        }
+        assertPlaysAudio(reader, from: chapterEnd - 1 - Self.fifteenSecondsOfAudio, "Skip Backward after the end")
+        assertToldSystem(system, that: reader, plays: true, "Skip Backward after the end")
+        XCTAssertEqual(recorder.announcements, [], "A skip or Pause at the end announced something")
+    }
+
+    /// The same for a text book: the keyboard's Skip Forward at the end
+    /// stays at the end and speaks nothing, as a stopped reader's skip
+    /// never speaks on its own, and Skip Backward then speaks from the skip
+    /// unit before the end at full volume, the system told the book plays.
+    func testTheKeyboardsSkipForwardAtTheEndStaysSilentAndSkipBackwardThenSpeaks() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Keyboard Text")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let reader = quay.reader
+        let end = finishSpeech(of: quay, in: system)
+        let handedOverBefore = quay.handedOver.utterances.count
+
+        let recorder = recordingAnnouncements {
+            reader.skipForward()
+            XCTAssertFalse(reader.speechService.isSpeaking, "Skip Forward at the end spoke")
+            XCTAssertEqual(quay.handedOver.utterances.count, handedOverBefore, "Skip Forward at the end handed speech over")
+            XCTAssertGreaterThanOrEqual(reader.currentCharacterOffset, end, "Skip Forward at the end moved back")
+            assertToldSystem(system, that: reader, plays: false, "Skip Forward at the end")
+
+            reader.lastSkipTime = .distantPast
+            reader.skipBackward()
+        }
+        let movedTo = reader.currentCharacterOffset
+        XCTAssertLessThan(movedTo, end, "Skip Backward did not move back")
+        XCTAssertGreaterThan(movedTo, end - 2_000, "Skip Backward moved too far")
+        assertSpeaks(quay, from: movedTo, "Skip Backward after the end")
+        assertToldSystem(system, that: reader, plays: true, "Skip Backward after the end")
+        XCTAssertEqual(recorder.announcements, [], "A skip at the end announced something")
+    }
+
+    /// A jump away from the end, here to the first chapter, leaves the
+    /// finished book a stopped reader like any other: a Skip Backward then
+    /// moves the cursor without playing, the system still shows the book
+    /// paused, and Play starts it from there.
+    func testAJumpAwayFromTheEndLeavesASkipMovingTheCursorOnly() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Jump")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let reader = ferry.reader
+
+        reader.navigateTo(chapterIndex: 0, characterOffset: 5)
+        XCTAssertFalse(reader.hasFinishedBook, "The book is still finished after the jump")
+        reader.lastSkipTime = .distantPast
+        reader.skipBackward()
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying, "A skip after the jump played")
+        XCTAssertEqual(reader.currentChapterIndex, 0, "The skip left the first chapter")
+        XCTAssertEqual(reader.currentCharacterOffset, 0, "The skip did not move to the start")
+        assertToldSystem(system, that: reader, plays: false, "The skip after the jump")
+
+        XCTAssertEqual(system.press(.play), .success)
+        assertPlaysAudio(reader, inChapter: 0, from: 0, "Play after the jump")
+        assertToldSystem(system, that: reader, plays: true, "Play after the jump")
+    }
+
     // MARK: - The System's Side
 
     /// The system's side of the media session as a test plays it: the
@@ -806,11 +893,13 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertEqual(spoken?.volume, 1, "\(context): speech is not at full volume", file: file, line: line)
     }
 
-    /// Check that `reader`'s audio plays from `offset` of its last chapter:
-    /// the player playing, not paused, the reader showing Playing, and the
-    /// cursor and the player within a second of the place.
+    /// Check that `reader`'s audio plays from `offset` of chapter
+    /// `chapterIndex`, the last by default: the player playing, not paused,
+    /// the reader showing Playing, and the cursor and the player within a
+    /// second of the place.
     private func assertPlaysAudio(
         _ reader: ReaderViewModel,
+        inChapter chapterIndex: Int = 1,
         from offset: Int,
         _ context: String,
         file: StaticString = #filePath,
@@ -824,7 +913,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             file: file,
             line: line
         )
-        XCTAssertEqual(reader.currentChapterIndex, 1, "\(context): the cursor left the last chapter", file: file, line: line)
+        XCTAssertEqual(reader.currentChapterIndex, chapterIndex, "\(context): the cursor is in another chapter", file: file, line: line)
         XCTAssertLessThanOrEqual(
             abs(reader.currentCharacterOffset - offset),
             Int(ReaderViewModel.audioCharsPerSecond),

@@ -374,6 +374,83 @@ final class ContinueToNextBookTests: XCTestCase {
         XCTAssertTrue(asked().isEmpty)
     }
 
+    // MARK: - Resting at the end
+
+    /// Where a finished book rests follows its end-of-book behavior, and
+    /// decides what a backward skip then does. A book that stops at its
+    /// end, that continues when no book follows, that continues to the next
+    /// book, or whose own sleep timer keeps the next book from starting
+    /// rests finished at its end: it keeps its media session, and Skip
+    /// Backward, from the keyboard or as the AirPods' rewind, plays it again
+    /// from where the skip lands. A book that loops starts again, and one
+    /// whose timer keeps it from restarting waits at its beginning, so
+    /// neither is finished: a skip there starts nothing. The skip announces
+    /// nothing in any case, and leaves no book finished.
+    func testWhereAFinishedBookRestsFollowsItsEndOfBookBehavior() throws {
+        let cases: [(
+            name: String, behavior: EndOfBookBehavior, hasNext: Bool, timer: Bool,
+            announcement: String, finished: Bool, chapter: Int, playsAfterSkipBackward: Bool
+        )] = [
+            ("stop", .stop, false, false, "Finished: First Volume", true, 1, true),
+            ("stop with the timer", .stop, false, true, "Finished: First Volume. Sleep timer expired.", true, 1, true),
+            (
+                "continue with no next book", .continueNext, false, false,
+                "Finished: First Volume. No more books in folder.", true, 1, true
+            ),
+            (
+                "continue with the timer", .continueNext, true, true,
+                "Finished: First Volume. Next book not started because of the sleep timer.", true, 1, true
+            ),
+            ("continue to the next book", .continueNext, true, false, "Starting: Second Volume", true, 1, true),
+            ("loop", .loop, false, false, "Restarting: First Volume", false, 0, true),
+            (
+                "loop with the timer", .loop, false, true,
+                "Finished: First Volume. Not restarted because of the sleep timer.", false, 0, false
+            ),
+        ]
+        for testCase in cases {
+            let finished = try makeAudioBook(title: "First Volume", endOfBook: testCase.behavior)
+            var books = [finished]
+            if testCase.hasNext {
+                books.append(try makeAudioBook(title: "Second Volume"))
+            }
+            let world = try makeWorld(books: books)
+            // Fifteen seconds back from the saved position, half a second
+            // into the second track, lands at the start of the first.
+            world.settings.skipBackwardUnit = .seconds15
+            let reader = makeReader(for: finished, in: world)
+            waitUntilLoaded(reader)
+            if testCase.timer {
+                startSharedSleepTimer(.endOfBook, ownedBy: reader.readerID)
+            }
+
+            let ending = recordingAnnouncements {
+                reader.handleEndOfBook()
+                spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+            }
+            XCTAssertEqual(ending.announcements.map(\.message), [testCase.announcement], testCase.name)
+            XCTAssertEqual(reader.hasFinishedBook, testCase.finished, "\(testCase.name): finished")
+            XCTAssertEqual(reader.currentChapterIndex, testCase.chapter, "\(testCase.name): chapter")
+            // Only a loop that restarts plays after the end.
+            XCTAssertEqual(
+                reader.audioPlaybackService.isPlaying,
+                testCase.behavior == .loop && !testCase.timer,
+                "\(testCase.name): playing after the end"
+            )
+
+            let skipping = recordingAnnouncements {
+                reader.skipBackward()
+            }
+            XCTAssertEqual(skipping.announcements, [], "\(testCase.name): the skip announced something")
+            XCTAssertEqual(
+                reader.audioPlaybackService.isPlaying,
+                testCase.playsAfterSkipBackward,
+                "\(testCase.name): playing after Skip Backward"
+            )
+            XCTAssertFalse(reader.hasFinishedBook, "\(testCase.name): still finished after Skip Backward")
+        }
+    }
+
     // MARK: - Sleep timer
 
     /// The finished book's own sleep timer ends listening while it is in

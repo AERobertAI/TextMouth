@@ -796,6 +796,12 @@ extension ReaderViewModel {
     func navigateTo(chapterIndex: Int, characterOffset: Int) {
         guard let content = content, !content.chapters.isEmpty else { return }
         defer { endSleepTimerIfMoveReachedHeadingEnd() }
+        // A jump leaves a finished book's end behind: the reader then rests
+        // where the jump lands, as any stopped reader does, and its skips
+        // move the cursor without playing until Play (`hasFinishedBook`). A
+        // backward skip that jumps plays all the same, having asked first
+        // (`performSkip(unit:forward:)`).
+        hasFinishedBook = false
 
         let clampedPosition = Self.clampedNavigationPosition(
             in: content,
