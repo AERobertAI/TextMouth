@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 
 // MARK: - A Pause
 
@@ -27,9 +28,9 @@ struct AudioEditorPause: Equatable, Hashable, Sendable, Identifiable {
 /// waveform draws for sighted helpers.
 ///
 /// The levels are measured from the edited audio itself, the same
-/// composition the preview plays, read once off the main thread after each
-/// edit, mixed to one channel; a pass streams the audio a buffer at a time,
-/// so memory stays small whatever the audio's length.
+/// composition the preview plays, read once after each edit on a thread of
+/// its own, mixed to one channel; a pass streams the audio a buffer at a
+/// time, so memory stays small whatever the audio's length.
 struct AudioEditorLevels: Equatable, Sendable {
     /// The seconds each level stands for.
     static let window: TimeInterval = 0.01
@@ -128,8 +129,24 @@ struct AudioEditorLevels: Equatable, Sendable {
 
     // MARK: Measuring
 
-    /// The levels of `preview`, the edited audio's composition, read off the
-    /// main thread.
+    /// Told, on the reading thread, how many frames a measurement is about
+    /// to read, just before its reader starts; nil in the app. Tests set it
+    /// to see a measurement start, or to hold one there.
+    static var readingObserver: (@Sendable (Int64) -> Void)? {
+        get { readingObserverStore.withLock { $0 } }
+        set { readingObserverStore.withLock { $0 = newValue } }
+    }
+
+    /// Backs `readingObserver`, which any thread may read or set.
+    private static let readingObserverStore = OSAllocatedUnfairLock<(@Sendable (Int64) -> Void)?>(initialState: nil)
+
+    /// The levels of `preview`, the edited audio's composition, read on a
+    /// thread of its own: never on one of Swift's cooperative pool, which
+    /// has as few threads as the Mac has cores and lends them only to work
+    /// that keeps moving. A reader's `copyNextSampleBuffer` waits as long
+    /// as it likes; a cancelled measurement that waited there could not see
+    /// its cancellation, and a few of them at once left the pool with no
+    /// thread for anything else (October 6, 2026).
     /// - Throws: `AudioEditError.renderFailed` when AVFoundation can't read
     ///   it, or `CancellationError` when the task is cancelled, as a newer
     ///   edit cancels the measurement of an older one.
@@ -141,7 +158,7 @@ struct AudioEditorLevels: Equatable, Sendable {
         do {
             reader = try AVAssetReader(asset: preview.composition)
         } catch {
-            throw AudioEditError.renderFailed("\((error as NSError).domain) \((error as NSError).code)")
+            throw AudioEditError.renderFailed(name(error))
         }
         // One channel of 32-bit floats at the audio's own rate: the mix
         // output sums the channels, which is what a level needs.
@@ -157,29 +174,127 @@ struct AudioEditorLevels: Equatable, Sendable {
         output.alwaysCopiesSampleData = false
         guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
         reader.add(output)
-        guard reader.startReading() else {
-            throw AudioEditError.renderFailed(reader.error.map { "\(($0 as NSError).domain) \(($0 as NSError).code)" } ?? "no error was given")
+
+        // The reading thread hands back the levels, or the error, once; a
+        // cancellation only asks it to stop, since Apple's contract forbids
+        // cancelling a reader while it is being read.
+        let reading = Reading(preview, reader: reader, output: output)
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                reading.start { continuation.resume(with: $0) }
+            }
+        } onCancel: {
+            reading.cancel()
+        }
+    }
+
+    /// `error` as its domain and code, as the editor names AVFoundation's
+    /// refusals.
+    private static func name(_ error: any Error) -> String {
+        "\((error as NSError).domain) \((error as NSError).code)"
+    }
+
+    /// One measurement's reading of its composition, on a thread of its
+    /// own, to the end or until cancelled. A thread of its own rather than
+    /// a dispatch queue (`OffMainWork`): a read may block for as long as
+    /// CoreMedia takes, and a thread that does costs nothing else, where a
+    /// worker of a queue that does is one fewer for every other queue.
+    ///
+    /// `@unchecked Sendable`: the composition, the reader, and its output
+    /// belong to the reading thread alone once `start` has made it, and
+    /// `cancelled` is read and changed only under its lock. The cancelling
+    /// thread changes nothing else: `cancelReading` must not run while
+    /// `copyNextSampleBuffer` does, so the reading thread cancels the
+    /// reader itself, between buffers, once it sees the flag.
+    private final class Reading: @unchecked Sendable {
+        /// The composition read, kept so its sources live as long as the
+        /// reader needs them.
+        private let preview: AudioEditComposition
+        private let reader: AVAssetReader
+        private let output: AVAssetReaderAudioMixOutput
+        /// Whether the measurement is to stop at its next buffer.
+        private let cancelled = OSAllocatedUnfairLock(initialState: false)
+
+        init(_ preview: AudioEditComposition, reader: AVAssetReader, output: AVAssetReaderAudioMixOutput) {
+            self.preview = preview
+            self.reader = reader
+            self.output = output
         }
 
-        var meter = WindowMeter(framesPerWindow: max(1, Int((rate * window).rounded())))
-        // Each buffer's samples are copied out, since a block buffer need
-        // not hold them in one piece; the copy is reused buffer to buffer.
-        var samples: [Float] = []
-        // The frames still to measure: a compressed take that ends the
-        // audio decodes past its end, to the end of its last packet, and
-        // those frames are none of the audio's (`AudioEditRenderer`).
-        var remaining = Int(preview.frames)
-        while let buffer = output.copyNextSampleBuffer() {
-            do {
-                try Task.checkCancellation()
-            } catch {
-                reader.cancelReading()
-                throw error
+        /// Asks the reading thread to stop, which it does before its reader
+        /// starts, or at the next buffer it gets.
+        func cancel() {
+            cancelled.withLock { $0 = true }
+        }
+
+        /// Whether the measurement was asked to stop.
+        private var isCancelled: Bool {
+            cancelled.withLock { $0 }
+        }
+
+        /// Starts the reading thread, which hands `finish` the levels or the
+        /// error, exactly once, when it is done.
+        func start(_ finish: @escaping @Sendable (Result<AudioEditorLevels, any Error>) -> Void) {
+            let thread = Thread { [self] in finish(read()) }
+            thread.name = "com.textmouth.audio-editor-levels"
+            thread.qualityOfService = .userInitiated
+            thread.start()
+        }
+
+        /// Reads the composition a buffer at a time, on the reading thread,
+        /// and turns it into levels.
+        private func read() -> Result<AudioEditorLevels, any Error> {
+            AudioEditorLevels.readingObserver?(preview.frames)
+            // A measurement cancelled before its reader starts never reads.
+            guard !isCancelled else { return .failure(CancellationError()) }
+            guard reader.startReading() else {
+                return .failure(AudioEditorLevels.failure(of: reader, otherwise: "no error was given"))
             }
-            guard let block = CMSampleBufferGetDataBuffer(buffer) else { continue }
+
+            let rate = preview.sampleRate
+            var meter = WindowMeter(framesPerWindow: max(1, Int((rate * window).rounded())))
+            // Each buffer's samples are copied out, since a block buffer need
+            // not hold them in one piece; the copy is reused buffer to buffer.
+            var samples: [Float] = []
+            // The frames still to measure: a compressed take that ends the
+            // audio decodes past its end, to the end of its last packet, and
+            // those frames are none of the audio's (`AudioEditRenderer`).
+            var remaining = Int(preview.frames)
+            var ended = false
+            while !ended {
+                // Each buffer is read and measured in an autorelease pool of
+                // its own: a thread of its own has none, and whatever
+                // AVFoundation autoreleases for a buffer would otherwise
+                // wait for the thread's end, hours of audio later.
+                autoreleasepool {
+                    guard let buffer = output.copyNextSampleBuffer() else {
+                        ended = true
+                        return
+                    }
+                    // A cancellation is seen here, between buffers: the only
+                    // place the reader may be cancelled from.
+                    guard !isCancelled else {
+                        reader.cancelReading()
+                        ended = true
+                        return
+                    }
+                    Self.measure(buffer, into: &meter, samples: &samples, remaining: &remaining)
+                }
+            }
+            guard !isCancelled else { return .failure(CancellationError()) }
+            guard reader.status == .completed else {
+                return .failure(AudioEditorLevels.failure(of: reader, otherwise: "the reader stopped"))
+            }
+            return .success(AudioEditorLevels(decibels: meter.finish(), duration: Double(preview.frames) / rate))
+        }
+
+        /// Adds `buffer`'s samples to `meter`, as many as `remaining` allows,
+        /// through `samples`, the copy reused buffer to buffer.
+        private static func measure(_ buffer: CMSampleBuffer, into meter: inout WindowMeter, samples: inout [Float], remaining: inout Int) {
+            guard let block = CMSampleBufferGetDataBuffer(buffer) else { return }
             let count = min(CMBlockBufferGetDataLength(block) / MemoryLayout<Float>.size, remaining)
             remaining -= count
-            guard count > 0 else { continue }
+            guard count > 0 else { return }
             if samples.count < count {
                 samples = [Float](repeating: 0, count: count)
             }
@@ -187,15 +302,16 @@ struct AudioEditorLevels: Equatable, Sendable {
                 guard let base = bytes.baseAddress else { return kCMBlockBufferBadPointerParameterErr }
                 return CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: count * MemoryLayout<Float>.size, destination: base)
             }
-            guard copied == noErr else { continue }
+            guard copied == noErr else { return }
             samples.withUnsafeBufferPointer { all in
                 meter.add(UnsafeBufferPointer(rebasing: all[0..<count]))
             }
         }
-        guard reader.status == .completed else {
-            throw AudioEditError.renderFailed(reader.error.map { "\(($0 as NSError).domain) \(($0 as NSError).code)" } ?? "the reader stopped")
-        }
-        return AudioEditorLevels(decibels: meter.finish(), duration: Double(preview.frames) / rate)
+    }
+
+    /// The error `reader` stopped with, or `otherwise` when it gives none.
+    private static func failure(of reader: AVAssetReader, otherwise: String) -> AudioEditError {
+        .renderFailed(reader.error.map(name) ?? otherwise)
     }
 
     /// Sums the squares of samples a window at a time and turns each
