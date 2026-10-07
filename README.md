@@ -537,6 +537,8 @@ TextMouth itself is under the MIT License, in LICENSE beside this file. It build
 
 ## Working on TextMouth with coding agents
 
+Task agents run on Claude Opus, launched with an explicit `model: "opus"`, in git worktrees of their own; the orchestrating session, which may run on a larger model, writes their briefs, reviews their reports and diffs, merges after a green suite, and records the merge. An agent launched without a model override inherits the orchestrator's model, which spent a weekly usage window on October 6 and 7, 2026; AGENTS.md carries the rule. The briefs of each day's wave are kept under `Scripts/agents/briefs/`, and `Scripts/agents/probes/` holds the offline speech-engine probes behind the October 7 speech guard.
+
 Several coding agents can work on TextMouth at once, each in its own git worktree on its own branch, coordinated through a shared message board: the agent-bbs skill, in .claude/skills/agent-bbs/. Its SKILL.md is the full reference. AGENTS.md, in the repository root, is the protocol those agents and their orchestrator follow: the user's standing rules, the build wrapper and the crash-proof tests rule, the board routine, the report format, and how a branch is merged with Scripts/agents/merge-chain.sh and recorded in TODO-2026-09-04.md; AGENT-NOTES-2026-10-04.md lists what past agents left unverified.
 
 - The board is one SQLite file, .claude/agent-bbs/board.sqlite in the repository's main working tree, which git ignores. A standard-library Python script drives it, with no server: `python3 .claude/skills/agent-bbs/scripts/bbs.py`.
