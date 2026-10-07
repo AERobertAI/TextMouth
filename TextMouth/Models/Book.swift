@@ -164,6 +164,17 @@ struct Book: Identifiable, Codable, Hashable {
     /// library rebuilt from its records reads again only the books whose
     /// records were written before that.
     var metadataReaderVersion: String?
+    /// Which of this book's metadata fields the user edited by hand, and
+    /// since when (`HandEdits`); nil for a book nothing has recorded for:
+    /// every row saved before October 7, 2026, and every book made since,
+    /// until an editor's save begins its record. Every editor's save
+    /// records the fields it changed (`LibraryViewModel.updateBookMetadata`),
+    /// Book Info says which values are the user's own, and the launch
+    /// metadata refresh never replaces a recorded field
+    /// (`LibraryViewModel.refreshedValues(of:from:)`). Kept in the row and
+    /// in the book's record; a reader's copy takes the row's
+    /// (`EditableMetadata`).
+    var handEdits: HandEdits?
 
     /// The author a book is listed under when nothing names one: what every
     /// import, parser, and recording writes for it, which a reader leaves
@@ -216,7 +227,8 @@ struct Book: Identifiable, Codable, Hashable {
         cacheFormatVersion: String? = nil,
         contentIndexVersion: String? = nil,
         textCacheFingerprint: TextCacheFingerprint? = nil,
-        metadataReaderVersion: String? = nil
+        metadataReaderVersion: String? = nil,
+        handEdits: HandEdits? = nil
     ) {
         self.id = id
         self.title = title
@@ -257,6 +269,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.contentIndexVersion = contentIndexVersion
         self.textCacheFingerprint = textCacheFingerprint
         self.metadataReaderVersion = metadataReaderVersion
+        self.handEdits = handEdits
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -317,6 +330,10 @@ struct Book: Identifiable, Codable, Hashable {
         // library failing over one damaged field.
         textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
         metadataReaderVersion = try container.decodeIfPresent(String.self, forKey: .metadataReaderVersion)
+        // A record of hand edits that cannot be read counts as none, as a
+        // fingerprint does: the row is then one nothing was recorded for,
+        // which the metadata refresh treats with the most care.
+        handEdits = fields.optionalValue(.handEdits) { $0 }
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -438,7 +455,9 @@ struct Book: Identifiable, Codable, Hashable {
     /// The metadata the library's and the reader's metadata editors change:
     /// the title and author, an audiobook's album, genre, and year, and an
     /// EPUB's publisher and publication date, together with the content
-    /// hash, which changes when an edit is written into the book's EPUB file.
+    /// hash, which changes when an edit is written into the book's EPUB
+    /// file, and the record of which of them the user edited by hand
+    /// (`handEdits`), which every save of them keeps.
     struct EditableMetadata: Equatable, Sendable {
         var title: String
         var author: String
@@ -448,6 +467,7 @@ struct Book: Identifiable, Codable, Hashable {
         var audioYear: String?
         var epubPublisher: String?
         var epubPublicationDate: String?
+        var handEdits: HandEdits?
     }
 
     /// This book's editable metadata. Setting it changes exactly those
@@ -463,7 +483,8 @@ struct Book: Identifiable, Codable, Hashable {
                 audioGenre: audioGenre,
                 audioYear: audioYear,
                 epubPublisher: epubPublisher,
-                epubPublicationDate: epubPublicationDate
+                epubPublicationDate: epubPublicationDate,
+                handEdits: handEdits
             )
         }
         set {
@@ -475,6 +496,7 @@ struct Book: Identifiable, Codable, Hashable {
             audioYear = newValue.audioYear
             epubPublisher = newValue.epubPublisher
             epubPublicationDate = newValue.epubPublicationDate
+            handEdits = newValue.handEdits
         }
     }
 
@@ -743,7 +765,8 @@ struct Book: Identifiable, Codable, Hashable {
                 audioAlbum: audioAlbum,
                 audioGenre: audioGenre,
                 audioYear: audioYear,
-                metadataReaderVersion: metadataReaderVersion
+                metadataReaderVersion: metadataReaderVersion,
+                handEdits: handEdits
             ),
             state: BookState(
                 readingPosition: readingPosition,
@@ -816,8 +839,179 @@ struct Book: Identifiable, Codable, Hashable {
             cacheFormatVersion: state.cacheFormatVersion,
             contentIndexVersion: state.contentIndexVersion,
             textCacheFingerprint: state.textCacheFingerprint,
-            metadataReaderVersion: metadata.metadataReaderVersion
+            metadataReaderVersion: metadata.metadataReaderVersion,
+            handEdits: metadata.handEdits
         )
+    }
+}
+
+// MARK: - Hand Edits
+
+extension Book {
+    /// A field of a book's metadata the user can edit by hand: in the
+    /// library's Book Info sheet (the title and author), the EPUB metadata
+    /// editor (the title, author, publisher, and publication date), or the
+    /// audio metadata editor (the title, the author as the artist, and the
+    /// album, genre, and year). Named by its raw value in a row's and a
+    /// record's `HandEdits`.
+    enum MetadataField: String, Codable, CaseIterable, Sendable {
+        case title
+        case author
+        case publisher
+        case publicationDate
+        case audioAlbum
+        case audioGenre
+        case audioYear
+
+        /// The fields the launch metadata refresh may replace with what a
+        /// book's file names (`LibraryViewModel.refreshedValues(of:from:)`):
+        /// the ones every import reads. An audiobook's album, genre, and
+        /// year are read once, at its import.
+        static let refreshable: [MetadataField] = [.title, .author, .publisher, .publicationDate]
+
+        /// `fields` in the order of `allCases`, the order the editors show
+        /// them in, each once: the one list a set of fields is written as.
+        static func ordered(_ fields: Set<MetadataField>) -> [MetadataField] {
+            allCases.filter(fields.contains)
+        }
+
+        /// This field's value in `metadata`, or nil where the book keeps
+        /// none: an EPUB keeps no album, and a row imported before rows
+        /// kept an EPUB's publisher and publication date has neither until
+        /// an editor saves them.
+        func value(in metadata: EditableMetadata) -> String? {
+            switch self {
+            case .title: return metadata.title
+            case .author: return metadata.author
+            case .publisher: return metadata.epubPublisher
+            case .publicationDate: return metadata.epubPublicationDate
+            case .audioAlbum: return metadata.audioAlbum
+            case .audioGenre: return metadata.audioGenre
+            case .audioYear: return metadata.audioYear
+            }
+        }
+
+        /// Sets this field of `book` to `value`.
+        func set(_ value: String, in book: inout Book) {
+            switch self {
+            case .title: book.title = value
+            case .author: book.author = value
+            case .publisher: book.epubPublisher = value
+            case .publicationDate: book.epubPublicationDate = value
+            case .audioAlbum: book.audioAlbum = value
+            case .audioGenre: book.audioGenre = value
+            case .audioYear: book.audioYear = value
+            }
+        }
+
+        /// The values of the fields `metadata` keeps, by field; a field it
+        /// keeps none of is absent.
+        static func values(in metadata: EditableMetadata) -> MetadataValues {
+            var values: MetadataValues = [:]
+            for field in allCases {
+                values[field] = field.value(in: metadata)
+            }
+            return values
+        }
+
+        /// The values of the fields the EPUB editor changes, as `metadata`
+        /// has them: what the editor opened with, or what it saved.
+        static func values(in metadata: EPUBMetadata) -> MetadataValues {
+            [
+                .title: metadata.title,
+                .author: metadata.author,
+                .publisher: metadata.publisher,
+                .publicationDate: metadata.publicationDate
+            ]
+        }
+
+        /// The values of the fields the audio editor changes, as `metadata`
+        /// has them, its artist as the author: what the editor opened with,
+        /// or what it saved.
+        static func values(in metadata: AudioMetadata) -> MetadataValues {
+            [
+                .title: metadata.title,
+                .author: metadata.artist,
+                .audioAlbum: metadata.album,
+                .audioGenre: metadata.genre,
+                .audioYear: metadata.year
+            ]
+        }
+
+        /// The fields whose values differ between `before` and `after`, a
+        /// field only one of them has included: what a save changed by
+        /// hand, when `before` is what the editor opened with and `after`
+        /// what it saved. An editor shows the file's value for a field the
+        /// row keeps none of, so comparing with the row instead would count
+        /// that value as typed.
+        static func fieldsThatDiffer(between before: MetadataValues, and after: MetadataValues) -> Set<MetadataField> {
+            Set(allCases.filter { before[$0] != after[$0] })
+        }
+    }
+
+    /// The values of some metadata fields, by field: what an editor opened
+    /// with or saved, or what a book's file names. A field without a value
+    /// is absent.
+    typealias MetadataValues = [MetadataField: String]
+
+    /// Which of a book's metadata fields the user edited by hand, and since
+    /// when the record has been kept. Every editor's save adds the fields
+    /// it changed (`Book.markEditedByHand(_:)`); nothing ever removes one,
+    /// so a field edited back to an earlier value stays the user's own.
+    struct HandEdits: Codable, Hashable, Sendable {
+        /// The fields edited by hand, in `MetadataField.allCases` order and
+        /// each once (`MetadataField.ordered(_:)`), so one record is always
+        /// written as the same bytes.
+        private(set) var fields: [MetadataField]
+        /// Whether the record has been kept since the book was imported, so
+        /// that every hand edit of the book is in `fields`. False for a
+        /// book imported before edits were recorded (October 7, 2026),
+        /// whose record began with its first edit since: its other fields
+        /// may hold older edits nothing recorded, so the launch metadata
+        /// refresh treats them as it treats a row without a record.
+        var sinceImport: Bool
+
+        /// The record of `fields`, kept since the import when `sinceImport`.
+        init(fields: Set<MetadataField> = [], sinceImport: Bool) {
+            self.fields = MetadataField.ordered(fields)
+            self.sinceImport = sinceImport
+        }
+
+        /// The record of a book nothing has edited by hand since it was
+        /// imported: what an import gives a new book.
+        static let noneSinceImport = HandEdits(sinceImport: true)
+
+        /// Decodes a record, keeping the fields this version knows: a name
+        /// a newer version of TextMouth wrote for a field this one cannot
+        /// edit is left out rather than failing the row, and a record
+        /// without `sinceImport` counts as begun by an edit.
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let names = try container.decodeIfPresent([String].self, forKey: .fields) ?? []
+            fields = MetadataField.ordered(Set(names.compactMap(MetadataField.init(rawValue:))))
+            sinceImport = try container.decodeIfPresent(Bool.self, forKey: .sinceImport) ?? false
+        }
+
+        /// Whether `field` was edited by hand.
+        func contains(_ field: MetadataField) -> Bool {
+            fields.contains(field)
+        }
+
+        /// Adds `edited` to the fields edited by hand.
+        mutating func mark(_ edited: Set<MetadataField>) {
+            fields = MetadataField.ordered(Set(fields).union(edited))
+        }
+    }
+
+    /// Records `fields` as edited by hand: added to this book's record, or,
+    /// for a book without one, begun as a record kept from this edit on
+    /// (`HandEdits.sinceImport` false). Marking no field changes nothing,
+    /// so a save that changes nothing leaves a row as it was.
+    mutating func markEditedByHand(_ fields: Set<MetadataField>) {
+        guard !fields.isEmpty else { return }
+        var record = handEdits ?? HandEdits(sinceImport: false)
+        record.mark(fields)
+        handEdits = record
     }
 }
 
