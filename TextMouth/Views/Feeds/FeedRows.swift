@@ -118,6 +118,26 @@ struct FeedBadge: View {
     }
 }
 
+// MARK: - A Feed's Folder's Row
+
+/// A feed's folder's row in the Folders list (FR03, October 7): the
+/// folder's own row, counting the feed's items as the feed's row in the
+/// Feeds section counts them, never its downloads as books. It observes
+/// the feed engine, so its counts follow each download and refresh while
+/// the list around it stays as it was.
+struct FeedFolderRow: View {
+    /// The feed engine.
+    @ObservedObject var center: FeedCenter
+    /// The feed's folder.
+    let folder: BookFolder
+    /// The feed whose folder it is.
+    let feedID: UUID
+
+    var body: some View {
+        FolderRow(folder: folder, feedCounts: center.counts(of: feedID))
+    }
+}
+
 // MARK: - A Feed's Folder
 
 /// What a feed's folder lists instead of its Books section (FR03): the

@@ -368,11 +368,13 @@ struct LibraryView: View {
             }
             .accessibilityRotor("Folders") {
                 ForEach(folders) { folder in
+                    // A feed's folder counts its feed's items, as its row
+                    // does (FR03).
                     AccessibilityRotorEntry(
                         FolderRow.accessibilityLabel(
                             name: folder.name,
                             bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath),
-                            isFeed: feedFolders.holdsFeed(folder)
+                            feedCounts: feedFolders.feedID(inFolder: folder.id).map { feedFolders.center.counts(of: $0) }
                         ),
                         id: folder.id
                     )
@@ -957,20 +959,24 @@ struct LibraryView: View {
 
     /// The Folders section: a row for each of `subfolders`, which opens the
     /// folder, with the folder commands in its context menu. A feed's folder
-    /// says "Feed" after its name, and offers its feed's commands in its
-    /// context menu and as its VoiceOver actions (FR03).
+    /// says "Feed" after its name, counts its feed's items as the feed's
+    /// row does, and offers its feed's commands in its context menu and as
+    /// its VoiceOver actions (FR03).
     private func foldersSection(_ subfolders: [BookFolder]) -> some View {
         Section {
             ForEach(subfolders) { folder in
+                let feedID = feedFolders.feedID(inFolder: folder.id)
                 let feedActions = feedActions(forFolder: folder)
                 Button {
                     currentFolderPath = folder.fullPath
                 } label: {
-                    FolderRow(
-                        folder: folder,
-                        bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath),
-                        isFeed: !feedActions.isEmpty
-                    )
+                    if let feedID {
+                        // Its counts follow the feed engine, which the list
+                        // itself does not observe.
+                        FeedFolderRow(center: feedFolders.center, folder: folder, feedID: feedID)
+                    } else {
+                        FolderRow(folder: folder, bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath))
+                    }
                 }
                 .buttonStyle(.plain)
                 .accessibilityAction(.default) {

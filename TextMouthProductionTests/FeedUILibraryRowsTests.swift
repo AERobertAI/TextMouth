@@ -316,12 +316,48 @@ final class FeedUILibraryRowsTests: XCTestCase {
     // MARK: - Folders, the Rotor, the Bar, and Entering
 
     /// A feed's folder says "Feed" after its name, in its row and in the
-    /// Folders rotor, which share one label, and a folder of one book is
-    /// "1 book" in both.
-    func testAFeedsFolderSaysFeedAfterItsName() {
-        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Planet Money", bookCount: 3, isFeed: true), "Planet Money, Feed, 3 books")
-        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Poems", bookCount: 1, isFeed: false), "Poems, 1 book")
-        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Fiction", bookCount: 12, isFeed: false), "Fiction, 12 books")
+    /// Folders rotor, which share one label, and counts the feed's items as
+    /// the feed's row does, never its downloads as books; any other folder
+    /// counts its books, and a folder of one book is "1 book" in both.
+    func testAFeedsFolderSaysFeedAfterItsNameAndCountsItsItems() {
+        let counts = FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), downloaded: 3, noun: .episode)
+        XCTAssertEqual(
+            FolderRow.accessibilityLabel(name: "Planet Money", bookCount: 3, feedCounts: counts),
+            "Planet Money, Feed, 10 of 381 episodes kept, 3 downloaded"
+        )
+        XCTAssertEqual(FolderRow.countText(bookCount: 3, feedCounts: counts), "10 of 381 episodes kept, 3 downloaded")
+        XCTAssertEqual(
+            FolderRow.accessibilityLabel(name: "Harbour Notes", bookCount: 0, feedCounts: FeedItemCounts(listed: 1, unplayed: 1, noun: .article)),
+            "Harbour Notes, Feed, 1 article, 1 unread"
+        )
+        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Poems", bookCount: 1, feedCounts: nil), "Poems, 1 book")
+        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Fiction", bookCount: 12, feedCounts: nil), "Fiction, 12 books")
+        XCTAssertEqual(FolderRow.countText(bookCount: 12, feedCounts: nil), "12 books")
+    }
+
+    /// A real feed's folder, holding a downloaded episode's book, reads as
+    /// the feed's row counts it, where it read "1 book" before; the label
+    /// is the one entering the folder speaks.
+    func testAFeedsFolderRowCountsTheFeedsItemsNotItsBooks() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUIFolderRowCounts")
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: world.folder.path, items: [
+            FeedXML.Item(guid: "ep-2", title: "Second", published: world.day(0.5)),
+            FeedXML.Item(guid: "ep-1", title: "First", published: world.day(-3)),
+        ])
+        addBook(titled: "First", to: world, feed: feed, item: "guid:ep-1")
+        let folder = try XCTUnwrap(world.library.library.folders.first { $0.id == feed.folderID })
+        let label = FolderRow.accessibilityLabel(
+            name: folder.name,
+            bookCount: world.library.bookCount(inFolderTree: folder.fullPath),
+            feedCounts: world.center.counts(of: feed.id)
+        )
+
+        XCTAssertEqual(label, "The Tactile Atlas, Feed, 2 episodes, 1 downloaded, 1 new, 2 unplayed")
+        XCTAssertFalse(label.contains("book"), label)
+        XCTAssertEqual(
+            label,
+            FolderNavigationHistory.announcement(for: folder.fullPath, library: world.library.library, feedFolders: LibraryFeedFolders(center: world.center))
+        )
     }
 
     /// Which folders hold feeds follows the engine, and changes only when a

@@ -155,8 +155,9 @@ extension FeedWording {
         "Downloading “\(title)”. It opens once it has downloaded."
     }
 
-    /// What entering a feed's folder says: "Planet Money, Feed, 10 of 381
-    /// episodes kept, 3 downloaded, 2 new".
+    /// What entering a feed's folder says, and its folder's row and Folders
+    /// rotor entry: "Planet Money, Feed, 10 of 381 episodes kept, 3
+    /// downloaded, 2 new".
     static func folderAnnouncement(name: String, counts: FeedItemCounts) -> String {
         "\(name), \(feedNote), \(countsPhrase(counts))"
     }
