@@ -1428,7 +1428,9 @@ struct LibraryView: View {
                         // asked, and nothing changes if that fails: the editor
                         // then stays open and shows why (TODO A09). VoiceOver
                         // hears the outcome from the editor, which has focus.
-                        let save = libraryViewModel.saveEPUBMetadata(updated, for: book, writingToFile: writeToFile)
+                        let save = libraryViewModel.saveEPUBMetadata(
+                            updated, openedAs: metadata, for: book, writingToFile: writeToFile
+                        )
                         VoiceOverAnnouncer.announce(save.message)
                         return save.outcome
                     }
@@ -1449,7 +1451,11 @@ struct LibraryView: View {
                         updatedBook.audioAlbum = updated.album
                         updatedBook.audioGenre = updated.genre
                         updatedBook.audioYear = updated.year
-                        libraryViewModel.updateBookMetadata(updatedBook)
+                        // Compared with what the editor opened with, which
+                        // shows the file's tags where the row keeps none,
+                        // so only what the user changed is recorded as
+                        // edited by hand.
+                        libraryViewModel.updateBookMetadata(updatedBook, editedFrom: Book.MetadataField.values(in: metadata))
                     }
                 )
             }

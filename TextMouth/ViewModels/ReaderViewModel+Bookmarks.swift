@@ -282,6 +282,9 @@ extension ReaderViewModel {
     ) -> OperationOutcome {
         let save = libraryViewModel.saveEPUBMetadata(
             metadata,
+            // What the editor opened with, so the save records the fields
+            // it changed as edited by hand.
+            openedAs: epubMetadata,
             for: book,
             writingToFile: writeToFile,
             writer: writer
@@ -300,8 +303,12 @@ extension ReaderViewModel {
     }
 
     /// Save edited audio metadata. Updates the book's title/author and persists
-    /// the album, genre, and year fields to bookInfo.json inside the .tmb package.
+    /// the album, genre, and year fields to bookInfo.json inside the .tmb package,
+    /// recording the fields the edit changed as edited by hand.
     func saveAudioMetadata(_ metadata: AudioMetadata) {
+        // What the editor opened with, which shows the file's tags where
+        // the row keeps none, so only what the user changed is recorded.
+        let opened = audioMetadata.map { Book.MetadataField.values(in: $0) }
         audioMetadata = metadata
 
         book.title = metadata.title
@@ -310,7 +317,10 @@ extension ReaderViewModel {
         book.audioGenre = metadata.genre
         book.audioYear = metadata.year
 
-        libraryViewModel.updateBookMetadata(book)
+        // The row as saved carries the record of hand edits.
+        if let saved = libraryViewModel.updateBookMetadata(book, editedFrom: opened) {
+            book.applyEditableMetadata(from: saved)
+        }
         announceToVoiceOver("Metadata updated")
 
         // Update NowPlaying with the new metadata

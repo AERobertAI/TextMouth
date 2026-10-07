@@ -205,18 +205,142 @@ final class HandEditedMetadataTests: XCTestCase {
         XCTAssertNil(try Self.decode(BookMetadata.self, from: older).handEdits)
     }
 
+    // MARK: - The Saves
+
+    /// A save through the library records the fields it changed, on the
+    /// row, which it returns; a later save adds the fields it changes; a
+    /// save that changes nothing, or that puts an earlier value back,
+    /// leaves the record as it is; and a book that has left the library is
+    /// not saved.
+    @MainActor
+    func testASaveRecordsTheFieldsItChangedOnTheRow() throws {
+        let (model, book) = try makeLibrary()
+
+        var retitled = book
+        retitled.title = "Tide Tables, Second Edition"
+        let saved = model.updateBookMetadata(retitled)
+        XCTAssertEqual(saved?.handEdits, Book.HandEdits(fields: [.title], sinceImport: false))
+        XCTAssertEqual(saved, model.bookByID(book.id), "the row as saved is returned")
+
+        var attributed = try XCTUnwrap(saved)
+        attributed.author = "Harbour Survey"
+        XCTAssertEqual(model.updateBookMetadata(attributed)?.handEdits?.fields, [.title, .author])
+
+        let unchanged = try XCTUnwrap(model.bookByID(book.id))
+        XCTAssertEqual(model.updateBookMetadata(unchanged), unchanged, "a save that changes nothing changes nothing")
+
+        var putBack = unchanged
+        putBack.title = book.title
+        XCTAssertEqual(
+            model.updateBookMetadata(putBack)?.handEdits?.fields, [.title, .author],
+            "a field put back to an earlier value by a later save stays the user's own"
+        )
+
+        var gone = unchanged
+        gone.title = "Nowhere"
+        model.library = Library(books: [])
+        XCTAssertNil(model.updateBookMetadata(gone))
+    }
+
+    /// An editor's save is compared with what the editor opened with, not
+    /// with the row: an editor shows the file's publisher and date for a
+    /// row that keeps none, so saving them unchanged records nothing,
+    /// while the row then keeps them, as it did before edits were recorded.
+    /// Compared with the row instead, the same save would count them as
+    /// typed.
+    @MainActor
+    func testAnEditorsSaveIsComparedWithWhatItOpenedWith() throws {
+        let (model, book) = try makeLibrary()
+        XCTAssertNil(book.epubPublisher)
+        let opened = EPUBMetadata(
+            title: book.title, author: book.author, publisher: "Tollgate Press", publicationDate: "2024",
+            isbn: "", language: "", identifier: "", epubVersion: "3.0"
+        )
+        var edited = book
+        edited.title = "Tide Tables, Second Edition"
+        edited.epubPublisher = opened.publisher
+        edited.epubPublicationDate = opened.publicationDate
+
+        let saved = model.updateBookMetadata(edited, editedFrom: Book.MetadataField.values(in: opened))
+
+        XCTAssertEqual(saved?.handEdits, Book.HandEdits(fields: [.title], sinceImport: false))
+        XCTAssertEqual(saved?.epubPublisher, "Tollgate Press")
+        XCTAssertEqual(saved?.epubPublicationDate, "2024")
+
+        let (other, same) = try makeLibrary()
+        var editedAgainstTheRow = same
+        editedAgainstTheRow.title = edited.title
+        editedAgainstTheRow.epubPublisher = opened.publisher
+        editedAgainstTheRow.epubPublicationDate = opened.publicationDate
+        XCTAssertEqual(
+            other.updateBookMetadata(editedAgainstTheRow)?.handEdits?.fields, [.title, .publisher, .publicationDate],
+            "compared with the row, the file's values would count as typed"
+        )
+    }
+
+    /// The record of hand edits is the row's: a save from an editor's copy
+    /// taken before the row's record grew keeps what the row recorded
+    /// since, and adds what the save changed.
+    @MainActor
+    func testTheRowsRecordOutlivesAnEditorsOlderCopy() throws {
+        let (model, book) = try makeLibrary()
+        let olderCopy = book
+        model.updateBook(id: book.id) { $0.markEditedByHand([.author]) }
+
+        var retitled = olderCopy
+        retitled.title = "Tide Tables, Second Edition"
+        let saved = model.updateBookMetadata(retitled)
+
+        XCTAssertEqual(saved?.handEdits?.fields, [.title, .author])
+    }
+
+    /// The reader's audio metadata save records the fields it changed,
+    /// compared with the tags the editor opened with, on the row and on
+    /// the reader's own copy of the book.
+    @MainActor
+    func testTheReadersAudioSaveRecordsWhatItChanged() throws {
+        let world = try makeIntegrationWorld("Hand Edited Audio Metadata")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [1])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        var metadata = try XCTUnwrap(reader.audioMetadata, "The reader read no audio metadata")
+
+        metadata.genre = "Field Recording"
+        reader.saveAudioMetadata(metadata)
+
+        let expected = Book.HandEdits(fields: [.audioGenre], sinceImport: false)
+        XCTAssertEqual(reader.book.handEdits, expected)
+        XCTAssertEqual(world.library.bookByID(book.id)?.handEdits, expected)
+        XCTAssertEqual(world.library.bookByID(book.id)?.audioGenre, "Field Recording")
+    }
+
     // MARK: - Fixtures
 
     /// An EPUB row as an import lists one: named, with nothing else kept.
-    static func makeBook() -> Book {
+    /// `inPackage` false lists it without a package, so a save of it writes
+    /// no record anywhere.
+    static func makeBook(inPackage: Bool = true) -> Book {
         Book(
             title: "Tide Tables",
             author: "Port Authority",
             format: .epub,
             filePath: "/nowhere/Tide Tables.tmb/tide.epub",
             md5Hash: "hash",
-            tmbDirectoryName: "Tide Tables.tmb"
+            tmbDirectoryName: inPackage ? "Tide Tables.tmb" : ""
         )
+    }
+
+    /// A library model listing one book without a package, without the
+    /// app's services, whose index is put back when the test ends.
+    @MainActor
+    private func makeLibrary() throws -> (LibraryViewModel, Book) {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let book = Self.makeBook(inPackage: false)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+        return (model, book)
     }
 
     /// `value` as JSON, as an object.

@@ -80,8 +80,9 @@ final class ReaderEPUBMetadataTests: XCTestCase {
         reader.readEPUBMetadata = held.read
         waitForReaderToLoad(reader)
 
-        let edited = Self.edit(of: try Self.metadataAsEveryOpenReadIt(for: book))
-        let save = world.library.saveEPUBMetadata(edited, for: book, writingToFile: false)
+        let opened = try Self.metadataAsEveryOpenReadIt(for: book)
+        let edited = Self.edit(of: opened)
+        let save = world.library.saveEPUBMetadata(edited, openedAs: opened, for: book, writingToFile: false)
         XCTAssertNotNil(save.savedBook, save.message)
         held.release()
 

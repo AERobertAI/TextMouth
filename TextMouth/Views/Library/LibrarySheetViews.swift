@@ -64,6 +64,9 @@ struct LibraryBookInfoSheet: View {
                     dismiss()
 
                     DispatchQueue.main.async {
+                        // Compared with the row, which always keeps the
+                        // title and author this sheet edits, so the fields
+                        // changed are recorded as edited by hand.
                         vm.updateBookMetadata(updated)
                     }
                 }
