@@ -15,6 +15,9 @@
 #   MERGE_DERIVED_DATA  the build folder for main's suite (default build/DerivedData-main);
 #                       delete it between merges when the disk is tight, and
 #                       unregister its app first (see AGENTS.md)
+#   MERGE_CO_AUTHOR     the Co-Authored-By trailer of a commit the chain makes
+#                       itself (a regenerated project), naming the model the
+#                       orchestrator runs on (default Claude Opus 5.5)
 #
 # A conflict in TextMouth.xcodeproj/project.pbxproj alone is resolved by
 # regenerating the project with xcodegen; any other conflict aborts the merge
@@ -24,6 +27,7 @@ set -u
 cd "$(git rev-parse --show-toplevel)" || exit 1
 LOG_DIR=${MERGE_LOG_DIR:-build/merge-logs}
 DERIVED=${MERGE_DERIVED_DATA:-build/DerivedData-main}
+CO_AUTHOR=${MERGE_CO_AUTHOR:-"Claude Opus 5.5 <noreply@anthropic.com>"}
 WRAPPER=.claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh
 mkdir -p "$LOG_DIR"
 
@@ -57,7 +61,7 @@ merge_and_test() {
     git add TextMouth.xcodeproj/project.pbxproj \
       && git commit -q -m "Regenerate the Xcode project after the $slug merge
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" >> "$log" 2>&1 \
+Co-Authored-By: $CO_AUTHOR" >> "$log" 2>&1 \
       && echo PBXPROJ_REGENERATED_AND_COMMITTED >> "$log"
   fi
   git log --oneline -1 >> "$log"
