@@ -510,6 +510,55 @@ final class SpeechDirectChunkingTests: XCTestCase {
     }
 
 
+    // MARK: - Switching to rendered audio
+
+    // The engine plays silence installed as audio rendered from the text,
+    // at volume 0, so nothing is heard.
+
+    /// The watchdog, finding the synthesizer idle while speech should be
+    /// heard, switches to audio rendered from this speech at the last word
+    /// reported, and the engine plays. The recorder's synthesizer never had
+    /// the utterance, so it is idle from the start.
+    func testTheWatchdogSwitchesAnIdleSynthesizerToRenderedAudio() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        report(word: NSRange(location: 300, length: 5), of: first, to: speech)
+
+        let lines = logLines(in: .speechTransitions) {
+            XCTAssertTrue(waitUntil(timeout: 5) { !speech.usingDirectMode }, "the watchdog never switched")
+        }
+
+        XCTAssertTrue(speech.audioEngine.isPlaying, "the rendered audio did not start")
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertEqual(recorder.utterances.count, 2, "direct speech went on")
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=300 ") }, "\(lines)")
+    }
+
+    /// A sleep fade that begins during direct speech switches to audio
+    /// rendered from it at the last word reported, whose volume the engine
+    /// fades, instead of queuing quieter utterances.
+    func testASleepFadeSwitchesDirectSpeechToRenderedAudio() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        report(word: NSRange(location: 300, length: 5), of: first, to: speech)
+
+        speech.setSleepTimerFadeVolume(0.5, duration: 10)
+
+        XCTAssertFalse(speech.usingDirectMode)
+        XCTAssertTrue(speech.audioEngine.isPlaying, "the rendered audio did not start")
+        XCTAssertEqual(speech.audioEngine.outputVolume, 0.5)
+        XCTAssertEqual(recorder.utterances.count, 2, "fade segments were queued")
+    }
+
     /// What the synthesizer itself does with the two changes, muted: the
     /// first word of a 1,000-unit utterance against a 5,000-unit one (the
     /// review measured 66 and 111 ms), and the silence between two
@@ -643,6 +692,21 @@ final class SpeechDirectChunkingTests: XCTestCase {
             file: file,
             line: line
         )
+    }
+
+    /// Install in `speech`'s engine five seconds of silence as audio
+    /// rendered from `text` in `speech`'s current voice, its frames spread
+    /// evenly over the whole text, so that speech may switch to it. The
+    /// engine plays at volume 0, and silence besides. Call it after
+    /// `speak(_:)`, which lets go of earlier rendered audio.
+    private func installSilentRenderedAudio(of text: String, in speech: SpeechService) {
+        let engine = speech.audioEngine
+        engine.setVolume(0)
+        engine._installRenderedAudioForTesting(
+            signature: SpeechRenderRequest(text: text, voice: speech.currentVoice).signature,
+            lasting: 5
+        )
+        engine._configureFrameMapForTesting([(0, 0), (text.utf16.count, 110_250)], totalFrames: 110_250)
     }
 
     /// Tell `speech`, as the synthesizer would, that `utterance` started, and

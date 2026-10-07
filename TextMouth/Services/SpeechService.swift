@@ -989,14 +989,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         let safeOffset = max(0, min(reportedOffset, currentText.utf16Length))
         if renderedAudioMatchesSpeech {
             transitionLog(.event, "DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
-            stopDirectSynthesizer()
-            usingDirectMode = false
-            audioEngine.setSpeed(wpm: wordsPerMinute)
-            audioEngine.setPitch(multiplier: pitchMultiplier)
-            audioEngine.play(fromCharOffset: safeOffset)
-            if audioEngine.isPlaying {
-                startPositionTracking()
-            } else {
+            if !switchToRenderedAudio(at: safeOffset) {
                 // A rendered buffer can survive an engine-start failure. Fall
                 // back to direct speech rather than leaving the logical state
                 // active with a second silent backend.
@@ -1160,6 +1153,34 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         directFadeTerminalVolume = 0
     }
 
+    /// Switch from direct speech to the engine's rendered audio of this
+    /// speech, playing it from `offset` at the listener's speed and pitch,
+    /// and follow its position once it plays. Returns whether the engine
+    /// is playing; when it is not, as a rendered buffer that survived an
+    /// engine-start failure can leave it, speech is in neither backend, and
+    /// the caller decides how to go on.
+    ///
+    /// The synthesizer is stopped first and its utterance let go
+    /// (`stopDirectSynthesizer()`). `willSpeakRangeOfSpeechString` runs
+    /// ahead of the audio by a few words, so a switch while an utterance is
+    /// heard can repeat or cut words: a seek, a resume, and the watchdog's
+    /// recovery from an idle synthesizer switch where nothing is heard; the
+    /// start of a sleep fade switches while speech is heard, since only
+    /// rendered audio follows the fade's volume. Every caller has checked
+    /// that the audio is of this speech in the current voice
+    /// (`renderedAudioMatchesSpeech`).
+    @discardableResult
+    private func switchToRenderedAudio(at offset: Int) -> Bool {
+        stopDirectSynthesizer()
+        usingDirectMode = false
+        audioEngine.setSpeed(wpm: wordsPerMinute)
+        audioEngine.setPitch(multiplier: pitchMultiplier)
+        audioEngine.play(fromCharOffset: offset)
+        guard audioEngine.isPlaying else { return false }
+        startPositionTracking()
+        return true
+    }
+
     /// Apply a sleep timer volume update to whichever speech backend is
     /// actually audible. Rendered playback supports mixer updates directly.
     /// Direct synthesis is switched to rendered audio of this speech when
@@ -1176,14 +1197,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
             if renderedAudioMatchesSpeech {
                 transitionLog(.trace, "SLEEP_FADE_SWITCH: direct→engine at offset=\(offset)")
-                stopDirectSynthesizer()
-                usingDirectMode = false
-                audioEngine.setSpeed(wpm: wordsPerMinute)
-                audioEngine.setPitch(multiplier: pitchMultiplier)
-                audioEngine.play(fromCharOffset: offset)
-                if audioEngine.isPlaying {
-                    startPositionTracking()
-                } else {
+                if !switchToRenderedAudio(at: offset) {
                     // Preserve an audible fade when a retained render cannot
                     // restart, for example after a device-route transition.
                     transitionLog(.event, "SLEEP_FADE_ENGINE_FAILED: using direct utterance fade at offset=\(offset)")
@@ -1360,15 +1374,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         switch action {
         case .switchToEngine(let resumeOffset), .startRenderedEngine(let resumeOffset):
             transitionLog(.trace, "RESUME_SWITCH: starting rendered engine at offset=\(resumeOffset)")
-            stopDirectSynthesizer()
-            usingDirectMode = false
-            audioEngine.setSpeed(wpm: wordsPerMinute)
-            audioEngine.setPitch(multiplier: pitchMultiplier)
-            audioEngine.play(fromCharOffset: resumeOffset)
-            resumed = audioEngine.isPlaying
-            if resumed {
-                startPositionTracking()
-            }
+            resumed = switchToRenderedAudio(at: resumeOffset)
 
         case .resumeEngine(let resumeOffset):
             // The Mac may have stopped AVAudioEngine while sleeping. The
@@ -1535,11 +1541,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 pendingDirectSeekOffset = offset
             } else if renderedAudioMatchesSpeech {
                 transitionLog(.trace, "SEEK_SWITCH: direct→engine at offset=\(offset)")
-                usingDirectMode = false
-                audioEngine.setSpeed(wpm: wordsPerMinute)
-                audioEngine.setPitch(multiplier: pitchMultiplier)
-                audioEngine.play(fromCharOffset: offset)
-                startPositionTracking()
+                // The switch stops the synthesizer again, which, stopped
+                // above, changes nothing.
+                switchToRenderedAudio(at: offset)
             } else {
                 // No rendered audio of this speech yet, or only audio from
                 // before the voice changed: restart direct speech here.
