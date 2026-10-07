@@ -5,7 +5,9 @@
    "**Open follow-ups noted by the September 28 agents**".
 2. A sentence with the suite's exact counts ("After the X merge: **N tests,
    S skipped, 0 failures**.") goes after the last such sentence of the long
-   verification paragraph.
+   verification paragraph; a merge that ran no suite (a Markdown-only
+   documentation pass) gives a plain sentence with --note instead, which
+   goes in the same place.
 3. Optional: open items found by the branch are appended to the paragraph
    that begins "**Open follow-ups noted on October 3 afternoon and evening**".
 4. Optional: a feature request or bug entry (FR09, B01, ...) is ticked and
@@ -17,6 +19,7 @@ Usage:
   record-merge.py --entry ENTRY.md --counts "After the reading-list merge: **4700 tests, 56 skipped, 0 failures**."
                   [--followups FOLLOWUPS.txt] [--tick FR09 --hash 1a2b3c4d --date "October 7"]
                   [--todo PATH]
+  record-merge.py --entry ENTRY.md --note "The October 7 documentation pass changed only README.md and ARCHITECTURE.md."
 """
 import argparse
 import re
@@ -103,14 +106,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--todo", default=str(Path(__file__).resolve().parents[2] / "TODO-2026-09-04.md"))
     parser.add_argument("--entry", required=True, help="file holding the merge's '- [x]' entry")
-    parser.add_argument("--counts", required=True, help="the counts sentence")
+    sentence = parser.add_mutually_exclusive_group(required=True)
+    sentence.add_argument("--counts", help="the counts sentence")
+    sentence.add_argument("--note", help="a plain sentence, for a merge that ran no suite")
     parser.add_argument("--followups", help="file holding sentences for the open follow-ups paragraph")
     parser.add_argument("--tick", help="a feature or bug entry to tick, such as FR09")
     parser.add_argument("--hash", help="the merge commit, with --tick")
     parser.add_argument("--date", default="October 7", help="the merge's date, with --tick")
     args = parser.parse_args()
 
-    if not COUNTS_PATTERN.search(args.counts):
+    if args.counts is not None and not COUNTS_PATTERN.search(args.counts):
         fail("the counts sentence must read 'After the ... merge: **N tests, S skipped, F failures**'")
     if args.tick and not args.hash:
         fail("--tick needs --hash")
@@ -118,7 +123,7 @@ def main():
     path = Path(args.todo)
     text = path.read_text(encoding="utf-8")
     text = insert_entry(text, Path(args.entry).read_text(encoding="utf-8"))
-    text = insert_counts(text, args.counts)
+    text = insert_counts(text, args.counts if args.counts is not None else args.note)
     if args.followups:
         text = append_followups(text, Path(args.followups).read_text(encoding="utf-8"))
     if args.tick:
