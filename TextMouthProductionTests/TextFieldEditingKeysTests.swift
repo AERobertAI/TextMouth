@@ -7,12 +7,13 @@ import XCTest
 /// B03 (October 7, 2026): what the shortcut manager does with a key pressed
 /// while a text field or text view has the keyboard.
 ///
-/// Every key here goes through the manager's own decision,
-/// `KeyboardShortcutManager.handleKeyEvent(_:keyWindow:firstResponder:)`,
-/// as a key press made up for the test, with a stand-in for the first
-/// responder, on a manager of the test's own whose notifications go to a
-/// center of the test's own: no key is really pressed, and no window of the
-/// app hears an action.
+/// The rule is checked through `KeyboardShortcutManager.shouldHandle` and
+/// `TextEditingKeys`, and key presses go through the manager's own
+/// decision, `handleKeyEvent(_:keyWindow:firstResponder:)`: each a key
+/// press made up for the test, with a stand-in for the first responder, on
+/// a manager of the test's own whose notifications go to a center of the
+/// test's own, so no key is really pressed and no window of the app hears
+/// an action.
 @MainActor
 final class TextFieldEditingKeysTests: XCTestCase {
     /// The center the test's manager posts its actions on, heard by no
@@ -258,6 +259,52 @@ final class TextFieldEditingKeysTests: XCTestCase {
         }
     }
 
+    // MARK: - Nothing Acts for a Key a Field Takes
+
+    /// No default key a field being edited takes posts any action, so no
+    /// window acts on it and TextMouth says nothing: what is heard is
+    /// VoiceOver reading the field's own edit, as in any app. Every other
+    /// default key posts its own action from a field, and every default key
+    /// posts its own action from a view that takes no text, each pressed in
+    /// a window of its own scope, the app's or an audio editor's. Restart
+    /// Sleep Timer's key, which is no field's, is left out: its press
+    /// writes the sleep timer's diagnostic log.
+    func testNoActionFiresForAKeyAFieldTakes() throws {
+        let manager = makeManager()
+        try withEditorWindow { editorWindow in
+            for (action, bindings) in ShortcutAction.defaultBindings where action != .restartSleepTimer {
+                let keyWindow = action.scope == .audioEditor ? editorWindow : nil
+                for binding in bindings {
+                    let label = "\(action.rawValue): \(binding.configText)"
+                    let fieldTakesIt = !KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true)
+                    let inField = try press(binding, on: manager, firstResponder: fieldEditor(), keyWindow: keyWindow)
+                    XCTAssertEqual(inField.consumed, !fieldTakesIt, label)
+                    XCTAssertEqual(inField.posted, fieldTakesIt ? [] : [action.rawValue], label)
+                    let elsewhere = try press(binding, on: manager, firstResponder: NSTableView(), keyWindow: keyWindow)
+                    XCTAssertTrue(elsewhere.consumed, label)
+                    XCTAssertEqual(elsewhere.posted, [action.rawValue], label)
+                }
+            }
+        }
+    }
+
+    /// A key of the user's own on a key a field edits with, Control-K for
+    /// Where Am I? say, is the field's too: in a field it posts nothing and
+    /// goes on to the field, which deletes to the end of the paragraph;
+    /// away from text it acts.
+    func testAUsersOwnKeyOnAFieldsKeyIsTheFieldsToo() throws {
+        let manager = makeManager()
+        let controlK = KeyBinding(key: "k", control: true)
+        manager.addBinding(controlK, to: .whereAmI)
+
+        let inField = try press(controlK, on: manager, firstResponder: fieldEditor())
+        XCTAssertFalse(inField.consumed, "Control-K was kept from the field")
+        XCTAssertEqual(inField.posted, [])
+        let elsewhere = try press(controlK, on: manager, firstResponder: NSTableView())
+        XCTAssertTrue(elsewhere.consumed, "Control-K did not reach Where Am I?")
+        XCTAssertEqual(elsewhere.posted, [ShortcutAction.whereAmI.rawValue])
+    }
+
     // MARK: - Helpers
 
     /// A shortcut manager with the default keys, from a preferences store
@@ -277,6 +324,26 @@ final class TextFieldEditingKeysTests: XCTestCase {
         let editor = NSTextView()
         editor.isFieldEditor = true
         return editor
+    }
+
+    /// Runs `body` with a window identified as an audio editor's, never
+    /// shown and holding no editor, so that a key pressed in it matches the
+    /// editor's shortcuts.
+    private func withEditorWindow(_ body: (NSWindow) throws -> Void) rethrows {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: 120),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: true
+        )
+        // The test owns the window; AppKit must not release it again on close.
+        window.isReleasedWhenClosed = false
+        // A titled window that is not key stays off screen, as a hosted
+        // test view's does (`withHostedView`).
+        window.title = "Hosted test view"
+        window.identifier = NSUserInterfaceItemIdentifier(AudioEditorWindowController.windowIdentifier)
+        defer { window.close() }
+        try body(window)
     }
 
     /// Presses `binding` once through `manager`, in `keyWindow` while
