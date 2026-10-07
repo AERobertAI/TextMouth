@@ -1,6 +1,7 @@
 import Accelerate
 import AVFoundation
 import Combine
+import os
 
 /// Identifies rendered speech audio by everything that went into it, so audio
 /// rendered ahead of time is only ever played for exactly the speech it was
@@ -71,7 +72,9 @@ extension SpeechRenderSignature: CustomStringConvertible {
 /// the rendered audio exactly. A new input to rendering belongs here, and in
 /// the signature.
 struct SpeechRenderRequest: Sendable {
-    /// The exact text handed to the synthesizer.
+    /// The text to render. The engine hands the synthesizer its guarded
+    /// form (`SpeechMarkupGuard`), of exactly this length, so the audio's
+    /// offsets are this text's.
     let text: String
     /// The voice to render with; nil renders with the system's default voice.
     let voice: AVSpeechSynthesisVoice?
@@ -84,6 +87,34 @@ struct SpeechRenderRequest: Sendable {
         self.text = text
         self.voice = voice
         signature = SpeechRenderSignature(text: text, voiceIdentifier: voice?.identifier)
+    }
+}
+
+/// Hears, on whatever thread the synthesizer calls it, that a render's
+/// synthesizer cancelled its utterance, and wakes the render queue, which
+/// waits for the utterance's last piece of audio. An utterance the engine
+/// refuses (see `SpeechMarkupGuard`) is cancelled before any piece, so
+/// nothing else would wake the queue until its two-minute limit: measured
+/// offline, a refused write made no buffer callback at all, and was
+/// cancelled within 0.03 s. `@unchecked Sendable`: its state is a flag
+/// under a lock and a semaphore.
+final class RenderCancellationObserver: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
+    /// The render queue's wait for the last piece.
+    private let finished: DispatchSemaphore
+    /// Whether the synthesizer cancelled the utterance.
+    private let cancelled = OSAllocatedUnfairLock(initialState: false)
+
+    /// An observer that signals `finished` once the synthesizer cancels.
+    init(waking finished: DispatchSemaphore) {
+        self.finished = finished
+    }
+
+    /// Whether the synthesizer cancelled the utterance.
+    var wasCancelled: Bool { cancelled.withLock { $0 } }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        cancelled.withLock { $0 = true }
+        finished.signal()
     }
 }
 
@@ -837,6 +868,11 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         cancelRender()
 
         let text = request.text
+        // What the synthesizer is handed for the text: its tag-shaped runs
+        // made harmless (`SpeechMarkupGuard`), unless a test hands it
+        // something else. Chosen here, on the main thread, where the hook is
+        // set; applied on the render queue, off the main thread.
+        let spokenText = _spokenTextForTesting ?? SpeechMarkupGuard.neutralized
         isRendering = true
         wordFrameMap = []
         renderedAudio = nil
@@ -858,7 +894,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             self.currentRender = (renderSynth, ticket)
             self.renderLock.unlock()
 
-            let utterance = AVSpeechUtterance(string: text)
+            // The guarded text has exactly the length of `text`, so the
+            // frame map below, which counts the request's offsets, fits it.
+            let utterance = AVSpeechUtterance(string: spokenText(text))
             utterance.voice = request.voice
             utterance.rate = 0.7
             utterance.prefersAssistiveTechnologySettings = false
@@ -867,6 +905,10 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             // so no piece outlives the callback that delivers it.
             let builder = RenderedSpeechAudio.Builder()
             let semaphore = DispatchSemaphore(value: 0)
+            // A cancel wakes the wait too: the synthesizer's delegate is
+            // weak, so the observer is held here until the wait returns.
+            let cancellation = RenderCancellationObserver(waking: semaphore)
+            renderSynth.delegate = cancellation
 
             renderSynth.write(utterance) { buffer in
                 guard let pcm = buffer as? AVAudioPCMBuffer else { return }
@@ -878,11 +920,23 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             }
 
             let result = semaphore.wait(timeout: .now() + 120)
+            renderSynth.delegate = nil
 
             // Check if this render was cancelled while we were waiting
             self.renderLock.lock()
             let wasCancelled = self.currentRender?.ticket !== ticket
             self.renderLock.unlock()
+            // A cancel that was not this engine's own is the engine's
+            // refusal of the text: nothing is installed, and speech, which
+            // began directly, goes on directly, with the text guarded.
+            if cancellation.wasCancelled, !wasCancelled {
+                DiagnosticLog.event(
+                    .playback,
+                    "RENDER_REFUSED: the speech engine cancelled the render after \(builder.frameCount) frames "
+                        + "of \(text.utf16Length) UTF-16 units; nothing installed, direct speech goes on",
+                    in: .speechTransitions
+                )
+            }
 
             // Reports on the main queue that the render installed nothing.
             let reportFailure = {
@@ -894,8 +948,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                 }
             }
             // A render that timed out may still be writing pieces, so its
-            // builder is left alone.
-            guard result == .success, !wasCancelled else {
+            // builder is left alone; one the synthesizer cancelled holds at
+            // most part of the speech, which the frame map could not fit.
+            guard result == .success, !wasCancelled, !cancellation.wasCancelled else {
                 reportFailure()
                 return
             }
@@ -1468,6 +1523,12 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     func _charOffsetForFrameForTesting(_ frame: AVAudioFramePosition) -> Int {
         charOffsetForFrame(frame)
     }
+
+    /// What the synthesizer is handed for a render's text, in place of the
+    /// markup guard (`SpeechMarkupGuard.neutralized`), so a test can hand it
+    /// a text the engine refuses and see what the render does; nil, as in
+    /// the app, guards the text.
+    var _spokenTextForTesting: (@Sendable (String) -> String)?
 
     /// Called with this engine, on the player node's own thread, each time
     /// the node reports a scheduled segment played back, just before the
