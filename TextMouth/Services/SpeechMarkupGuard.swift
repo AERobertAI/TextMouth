@@ -29,13 +29,16 @@ import Foundation
 ///   between spaced brackets counts as a tag too: "x < y > z …" rendered
 ///   9,659 frames against 110,774 without the brackets, and so did
 ///   "x < 5 > y …", `see < a href="x" > here …`, and "x << 2 >> 1 …".
-///   So does any name at all, empty or not, of characters other than
-///   brackets, spaces, and slashes (measured on October 7 in a sentence of
-///   145,418 frames, which each of these cut to 46,602 or fewer, in the
-///   legacy Alex voice too): `<...>`, `<=>`, `<->`, `<$fh>`, `<*>`, `<#>`,
+///   So did every other name of characters other than brackets, spaces,
+///   and slashes measured on October 7, and no name at all, in a sentence
+///   of 145,418 frames, which each of these cut to 46,602 or fewer, in the
+///   legacy Alex voice too: `<...>`, `<=>`, `<->`, `<$fh>`, `<*>`, `<#>`,
 ///   `<@reader>`, `<=x>`, `<a=b>`, `<"x">`, `<\>`, `<!>`, `<?>`, `<>`,
-///   `< >`, and "a <> b" (`Scripts/agents/probes/speech-markup-probe-shapes.swift`
-///   holds every result).
+///   `< >`, and "a <> b". The one exception was an emoji alone, `<🙂>`,
+///   spoken in full, brackets and all, as if the engine read the emoji's
+///   name, words with spaces, in its place
+///   (`Scripts/agents/probes/speech-markup-probe-shapes.swift` holds every
+///   result).
 /// - Balanced tags are read as markup: the words between them are spoken
 ///   and the tags are silent.
 /// - Brackets that are not tag-shaped are spoken, as "less than" and
@@ -93,7 +96,9 @@ enum SpeechMarkupGuard {
     ///   `<br />`). Bare words after the name make no tag, as they make none
     ///   for the engine, so "x < y and y > z", "a<b and c>d", `<a b c>`, and
     ///   `<-- aside -->` are left alone and spoken, and neither does a slash
-    ///   inside the name (`<a/b>`, `<https://example.com/page>`);
+    ///   inside the name (`<a/b>`, `<https://example.com/page>`). An emoji
+    ///   alone between brackets, which the engine spoke, is taken for a tag
+    ///   too: guarding it only silences its brackets;
     /// - an empty tag: only spaces between the brackets (`<>`, `< >`).
     ///
     /// The empty tag is its own alternative, and the self-closing slash
