@@ -235,6 +235,26 @@ final class SpeechMarkupGuardTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(guarded.frames, raw.frames, "the guard lost audio")
     }
 
+    /// After the engine refuses an utterance, a fresh synthesizer speaks at
+    /// once, which is why `SpeechService` replaces its synthesizer after an
+    /// unexpected cancel instead of speaking again on the one that refused
+    /// (which waited 10 s for nothing in the October 7 probe). Rendered
+    /// offline: nothing is heard. Skips when the engine on this Mac does
+    /// not refuse the chunk, since there is then no refusal to recover from.
+    func testAFreshSynthesizerSpeaksAfterARefusal() throws {
+        let voice = try Self.probeVoice()
+        let refused = OfflineRenderProbe(Self.chunkAfterOpeningTag, voice: voice)
+        guard render(refused) == .cancelled, refused.frames == 0 else {
+            throw XCTSkip("The engine on this Mac did not refuse the chunk; there is no refusal to recover from")
+        }
+
+        let fresh = OfflineRenderProbe("could recruit, Alfred? Alfred didn't reply directly.", voice: voice)
+        let end = render(fresh)
+
+        XCTAssertEqual(end, .finished, "the fresh synthesizer did not speak")
+        XCTAssertGreaterThan(fresh.frames, 0)
+    }
+
     /// The compact Samantha voice, or a skip when it is not installed.
     static func probeVoice() throws -> AVSpeechSynthesisVoice {
         guard let voice = AVSpeechSynthesisVoice(identifier: Self.probeVoiceIdentifier) else {

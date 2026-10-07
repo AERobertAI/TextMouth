@@ -280,7 +280,134 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(words, ["Braun", "recruit", "reply"])
     }
 
-    // MARK: - Benchmark
+    // MARK: - Recovery after the system cancels the live utterance
+
+    /// When the system cancels the live utterance on its own, as the speech
+    /// engine does with a text it refuses, speech replaces its synthesizer
+    /// with a fresh one, its delegate attached, and speaks the cancelled
+    /// chunk again from the chunk's start; the chapter does not end.
+    func testACancelledLiveUtteranceIsSpokenAgainOnAFreshSynthesizer() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var finishes = 0
+        speech.onUtteranceFinished = { finishes += 1 }
+        speech.speak(Self.longText)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        let second = try handedOver(1, by: recorder)
+        let secondChunk = chunk(at: chunk(at: 0, size: SpeechService.directModeFirstChunkSize).end, size: SpeechService.directModeChunkSize)
+        // The first chunk ends: the queued second is live, and never starts.
+        report(finish: first, to: speech)
+        let before = speech._directSynthesizerForTesting
+
+        let lines = logLines(in: .speechTransitions) {
+            report(cancel: second, to: speech)
+        }
+
+        let after = speech._directSynthesizerForTesting
+        XCTAssertFalse(before === after, "the synthesizer was not replaced")
+        XCTAssertTrue(after.delegate === speech, "the fresh synthesizer reports to speech")
+        XCTAssertEqual(recorder.utterances.count, 3, "the chunk is handed over again")
+        XCTAssertEqual(
+            try handedOver(2, by: recorder).speechString,
+            chunk(at: secondChunk.start, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText)
+        )
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertEqual(finishes, 0)
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_CANCEL_UNEXPECTED:") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_SYNTH_REPLACED:") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY offset=\(secondChunk.start) ") }, "\(lines)")
+    }
+
+    /// A chunk cancelled after some of its words were heard is spoken again
+    /// from its last reported word, so nothing heard is heard twice.
+    func testAChunkCancelledMidWayIsSpokenAgainFromItsLastWord() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        report(word: NSRange(location: 300, length: 5), of: first, to: speech)
+        XCTAssertEqual(recorder.utterances.count, 2, "the next chunk was queued at the start")
+
+        let lines = logLines(in: .speechTransitions) {
+            report(cancel: first, to: speech)
+        }
+
+        XCTAssertEqual(recorder.utterances.count, 3)
+        XCTAssertEqual(
+            try handedOver(2, by: recorder).speechString,
+            chunk(at: 300, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText)
+        )
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY offset=300 ") }, "\(lines)")
+        XCTAssertTrue(speech.isSpeaking)
+    }
+
+    /// Cancelled again at the same place, on the fresh synthesizer, speech
+    /// ends there: it shows itself stopped at the cursor, not paused, keeps
+    /// its text for Play, the chapter neither ends nor moves on, the reader
+    /// is told, and the listener hears why, in the pinned words.
+    func testACancelOfTheRetryEndsSpeechWithTheAnnouncement() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var finishes = 0
+        var refusals = 0
+        var cursor: [NSRange] = []
+        speech.onUtteranceFinished = { finishes += 1 }
+        speech.onSpeechRefused = { refusals += 1 }
+        speech.onWordSpoken = { range, _ in cursor.append(range) }
+        // The refused chunk never starts, so nothing is queued after it.
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+        let retry = try handedOver(1, by: recorder)
+        XCTAssertTrue(speech.isSpeaking, "the first cancel is retried")
+
+        var lines: [String] = []
+        let announced = recordingAnnouncements {
+            lines = logLines(in: .speechTransitions) {
+                report(cancel: retry, to: speech)
+            }
+        }
+
+        XCTAssertFalse(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertFalse(speech.isActive)
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: start, length: 0))
+        XCTAssertEqual(cursor.last, NSRange(location: start, length: 0))
+        XCTAssertEqual(speech.currentText, Self.longText, "the text is kept for Play")
+        XCTAssertEqual(finishes, 0, "the chapter did not end")
+        XCTAssertEqual(refusals, 1)
+        XCTAssertEqual(recorder.utterances.count, 2, "nothing more is handed over")
+        XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
+        XCTAssertEqual(SpeechService.engineRefusedAnnouncement, "Speech stopped: the Mac's speech engine refused this text.")
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY_FAILED: offset=\(start) ") }, "\(lines)")
+    }
+
+    /// Speech that stopped after a refusal speaks again when asked, on the
+    /// fresh synthesizer, and may be cancelled and retried once more there.
+    func testSpeechSpeaksAgainAfterARefusalEndedIt() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText, fromCharOffset: 20_000)
+        try recordingAnnouncements {
+            report(cancel: try handedOver(0, by: recorder), to: speech)
+            report(cancel: try handedOver(1, by: recorder), to: speech)
+        }
+        XCTAssertFalse(speech.isActive)
+
+        speech.speak(Self.longText, fromCharOffset: 20_000)
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertEqual(recorder.utterances.count, 3)
+        report(cancel: try handedOver(2, by: recorder), to: speech)
+        XCTAssertEqual(recorder.utterances.count, 4, "a new speech may be retried once again")
+        XCTAssertTrue(speech.isSpeaking)
+    }
+
 
     /// What the synthesizer itself does with the two changes, muted: the
     /// first word of a 1,000-unit utterance against a 5,000-unit one (the
@@ -395,6 +522,13 @@ final class SpeechDirectChunkingTests: XCTestCase {
     /// Tell `speech`, as the synthesizer would, that `utterance` finished.
     private func report(finish utterance: AVSpeechUtterance, to speech: SpeechService) {
         speech.speechSynthesizer(AVSpeechSynthesizer(), didFinish: utterance)
+        handleQueuedCallbacks()
+    }
+
+    /// Tell `speech`, as the synthesizer would, that `utterance` was
+    /// cancelled.
+    private func report(cancel utterance: AVSpeechUtterance, to speech: SpeechService) {
+        speech.speechSynthesizer(AVSpeechSynthesizer(), didCancel: utterance)
         handleQueuedCallbacks()
     }
 

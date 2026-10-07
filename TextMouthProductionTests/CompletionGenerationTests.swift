@@ -816,9 +816,11 @@ final class CompletionGenerationTests: XCTestCase {
     }
 
     /// The utterance speaking, cancelled while speech should be playing, is
-    /// logged as an unexpected cancel, which the direct-speech watchdog looks
-    /// into; another utterance's cancel, such as one a seek stopped, is
-    /// expected. Neither ends the chapter or changes whether speech plays.
+    /// logged as an unexpected cancel, after which speech speaks again on a
+    /// fresh synthesizer (`SpeechDirectChunkingTests`), or, with no text to
+    /// speak again as here, ends where it was without ending the chapter;
+    /// another utterance's cancel, such as one a seek stopped, is expected
+    /// and changes nothing.
     func testACancelIsUnexpectedOnlyForTheUtteranceSpeaking() throws {
         try TextMouthPaths.ensureDirectoryStructure()
         // The expected cancel is a trace line.
@@ -846,8 +848,9 @@ final class CompletionGenerationTests: XCTestCase {
         )
         XCTAssertFalse(staleLines.contains { $0.contains("DIRECT_CANCEL_UNEXPECTED") }, "\(staleLines)")
         XCTAssertTrue(liveLines.contains { $0.contains("DIRECT_CANCEL_UNEXPECTED:") }, "\(liveLines)")
+        XCTAssertTrue(liveLines.contains { $0.contains("DIRECT_RETRY_FAILED:") }, "\(liveLines)")
         XCTAssertEqual(finishedCount, 0)
-        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isSpeaking, "with no text to speak again, speech ends")
         XCTAssertFalse(speech.isPaused)
     }
 
