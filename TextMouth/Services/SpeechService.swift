@@ -1110,6 +1110,41 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         transitionLog(.event, "DIRECT_RETRY_AT_RESUME offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(refusedChunkEnd); speech stays paused")
     }
 
+    /// A segment of a direct sleep fade, `segment`, which begins at
+    /// `segmentStart` in the text, was cancelled while the fade still held
+    /// it. The app never does that: each of its stops lets go of the fade's
+    /// segments before it stops the synthesizer (`stopDirectSynthesizer()`).
+    /// So the engine refused the segment's text, and the synthesizer that
+    /// held it, with the quieter segments queued after it, never speaks
+    /// again: the fade would fall silent early, and Play after the timer's
+    /// pause would restart speech on it, into silence.
+    ///
+    /// A fresh synthesizer takes its place (`DIRECT_SYNTH_REPLACED`), and
+    /// the fade goes on from where the segment was cancelled, planned anew
+    /// as a fade's continuation is, starting no louder than the segment
+    /// was, with the rest of the segment strictly guarded
+    /// (`SLEEP_FADE_DIRECT_SEGMENT_REFUSED`). Once per place, as for any
+    /// refusal: refused there again, speech ends with the announcement
+    /// (`endDirectSpeechRefused(at:)`).
+    private func recoverFromRefusedFadeSegment(_ segment: AVSpeechUtterance, at segmentStart: Int) {
+        let segmentEnd = segmentStart + (directFadeLengths[ObjectIdentifier(segment)] ?? 0)
+        let offset = retryOffset(from: segmentStart, to: segmentEnd)
+        // Read before the synthesizer is replaced, which ends the fade's
+        // bookkeeping.
+        let continuationDuration = directFadeContinuationDuration
+        replaceDirectSynthesizer()
+        guard takeRetry(from: offset, to: segmentEnd) else {
+            endDirectSpeechRefused(at: offset)
+            return
+        }
+        transitionLog(.event, "SLEEP_FADE_DIRECT_SEGMENT_REFUSED: offset=\(offset) segmentEnd=\(segmentEnd); the fade goes on strictly guarded")
+        prepareDirectSleepFade(
+            fromUTF16Offset: offset,
+            duration: continuationDuration,
+            startingVolume: segment.volume
+        )
+    }
+
     /// Where to speak again after the system cancelled an utterance that
     /// spoke `start..<end` of the text: its last reported word, when one was
     /// reported within it, so that nothing heard is heard twice; else its
@@ -2027,9 +2062,13 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         let cancelled = ReportedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            // Every stop of the app's lets go of the fade's segments before
+            // it stops the synthesizer, so a segment the fade still holds
+            // was cancelled by the system: refused.
             if self.isDirectSleepFadeActive,
-               self.directFadeOffsets[cancelled.id] != nil {
-                self.transitionLog(.trace, "SLEEP_FADE_DIRECT_SEGMENT_CANCELLED: expected timer cleanup")
+               let segmentStart = self.directFadeOffsets[cancelled.id] {
+                self.transitionLog(.event, "DIRECT_CANCEL_UNEXPECTED: sleep fade segment cancelled while the fade still held it, at offset=\(segmentStart)")
+                self.recoverFromRefusedFadeSegment(cancelled.utterance, at: segmentStart)
                 return
             }
             let isCurrent = Self.isLiveDirectUtterance(cancelled.utterance, liveUtterance: self.liveDirectUtterance)

@@ -519,6 +519,90 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
     }
 
+    /// A sleep-fade segment the engine refuses lets go of the refusing
+    /// synthesizer, which would leave the rest of the fade silent and the
+    /// next Play too, and the fade goes on from the same place on a fresh
+    /// one, no louder, the refused segment strictly guarded; refused there
+    /// again, speech ends with the announcement.
+    func testARefusedFadeSegmentGoesOnStrictlyOnAFreshSynthesizer() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let text = Self.bracketedText
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(text)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        // The cursor on the "3" of "3 < 4", so the fade's first segment
+        // holds a lone bracket.
+        let three = (text as NSString).range(of: "3 < 4").location
+        report(word: NSRange(location: three, length: 1), of: first, to: speech)
+        let handedBeforeTheFade = recorder.utterances.count
+        // No rendered audio: the fade queues quieter utterances, planned as
+        // the service plans them, over the fade's duration times its volume.
+        let fadeDuration = 10 * Double(Float(0.8))
+        speech.setSleepTimerFadeVolume(0.8, duration: 10)
+        let planned = DirectSpeechFadePlanner.segments(
+            in: text, fromUTF16Offset: three, duration: fadeDuration, wordsPerMinute: speech.wordsPerMinute, startingVolume: 0.8
+        )
+        let firstPlanned = try XCTUnwrap(planned.first)
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheFade + planned.count)
+        let refused = try handedOver(handedBeforeTheFade, by: recorder)
+        XCTAssertEqual(refused.speechString, firstPlanned.text, "the default guard leaves lone brackets")
+        XCTAssertTrue(firstPlanned.text.contains("<"))
+        let refusing = try synthesizer(handedBeforeTheFade, by: recorder)
+
+        let lines = logLines(in: .speechTransitions) {
+            report(cancel: refused, to: speech)
+        }
+
+        XCTAssertFalse(speech._directSynthesizerForTesting === refusing, "the synthesizer that refused is kept")
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertTrue(lines.contains { $0.contains("SLEEP_FADE_DIRECT_SEGMENT_REFUSED: offset=\(three) ") }, "\(lines)")
+        // The fade planned anew from the same place, no louder.
+        let replanned = DirectSpeechFadePlanner.segments(
+            in: text, fromUTF16Offset: three, duration: fadeDuration, wordsPerMinute: speech.wordsPerMinute, startingVolume: refused.volume
+        )
+        let firstReplanned = try XCTUnwrap(replanned.first)
+        let goesOnIndex = handedBeforeTheFade + planned.count
+        XCTAssertEqual(recorder.utterances.count, goesOnIndex + replanned.count, "the fade did not go on")
+        let goesOn = try handedOver(goesOnIndex, by: recorder)
+        XCTAssertEqual(
+            goesOn.speechString,
+            SpeechMarkupGuard.neutralized(firstReplanned.text, strictlyWithin: 0..<(firstPlanned.endUTF16Offset - three))
+        )
+        XCTAssertFalse(goesOn.speechString.contains("<"), "the refused segment kept a bracket")
+        XCTAssertLessThanOrEqual(goesOn.volume, refused.volume, "the fade grew louder")
+        XCTAssertFalse(try synthesizer(goesOnIndex, by: recorder) === refusing)
+
+        let announced = recordingAnnouncements {
+            report(cancel: goesOn, to: speech)
+        }
+        XCTAssertFalse(speech.isActive, "a second refusal at the same place did not end speech")
+        XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
+    }
+
+    /// A sleep-fade segment cancelled by the app's own stop, as a pause
+    /// during the fade makes, is no refusal: the synthesizer stays, and
+    /// nothing more is handed over.
+    func testAFadeSegmentTheAppStoppedIsNoRefusal() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        report(start: try handedOver(0, by: recorder), to: speech)
+        let handedBeforeTheFade = recorder.utterances.count
+        speech.setSleepTimerFadeVolume(0.8, duration: 10)
+        let segment = try handedOver(handedBeforeTheFade, by: recorder)
+        let before = speech._directSynthesizerForTesting
+        speech.pause()
+        let handed = recorder.utterances.count
+
+        report(cancel: segment, to: speech)
+
+        XCTAssertTrue(speech._directSynthesizerForTesting === before, "a stop of the app's replaced the synthesizer")
+        XCTAssertEqual(recorder.utterances.count, handed)
+        XCTAssertTrue(speech.isPaused)
+    }
+
     /// Speech that stopped after a refusal speaks again when asked, and
     /// not on the synthesizer that refused the retry, which would never
     /// speak again (October 7): Play goes to a fresh synthesizer, which
