@@ -217,8 +217,8 @@ final class UnopenedCategoryTests: XCTestCase {
         let atlasRow = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: unopened, center: world.center, now: now).first)
         XCTAssertEqual(atlasRow, try XCTUnwrap(everywhere.first { $0.id == atlas.id }))
         XCTAssertEqual(atlasRow.counts.unplayed, 2)
-        XCTAssertEqual(atlasRow.countsText, "2 episodes, 2 new")
-        XCTAssertTrue(atlasRow.label.hasPrefix("The Tactile Atlas, Feed, 2 episodes, 2 new, "), atlasRow.label)
+        XCTAssertEqual(atlasRow.countsText, "2 episodes, 2 new, 2 unplayed")
+        XCTAssertTrue(atlasRow.label.hasPrefix("The Tactile Atlas, Feed, 2 episodes, 2 new, 2 unplayed, "), atlasRow.label)
 
         // Playing one of the two episodes keeps the feed listed; playing the
         // other takes it off, and marking an item unplayed brings its feed back.

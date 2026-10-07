@@ -56,7 +56,7 @@ final class FeedUIEndToEndTests: XCTestCase {
         // episodes.
         let rows = LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .folders, folderPath: world.folder.path), center: world.center)
         XCTAssertEqual(rows.map(\.title), ["The Tactile Atlas"])
-        XCTAssertEqual(rows.first?.countsText, "2 episodes, 1 new")
+        XCTAssertEqual(rows.first?.countsText, "2 episodes, 1 new, 2 unplayed")
         var listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [], search: "")
         XCTAssertEqual(listing.entries.map(\.id), ["item:guid:ep-1", "item:guid:ep-2"])
 

@@ -167,7 +167,8 @@ final class LibraryInfoWordingTests: XCTestCase {
                 + "In Podcasts/Planet Money. Address https://example.com/feed.xml."
         )
         // The row's own phrase, so the two never disagree.
-        XCTAssertEqual(LibraryInfoWording.countsPhrase(counts), FeedWording.countsPhrase(counts) + ", 5 unplayed")
+        XCTAssertEqual(FeedWording.countsPhrase(counts), "12 episodes, 3 downloaded, 2 new, 5 unplayed")
+        XCTAssertTrue(LibraryInfoWording.brief(.feed(feed)).contains(FeedWording.countsPhrase(counts)))
     }
 
     /// A feed that lists more entries than the library keeps says how many

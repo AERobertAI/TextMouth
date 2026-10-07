@@ -193,14 +193,22 @@ enum FeedWording {
     /// feed, and the noun agrees with the number before it.
     static func sizePhrase(kept: Int, total: FeedEntryTotal?, noun: ItemNoun) -> String {
         guard let total, total.exceeds(kept) else { return count(kept, noun) }
-        let size = count(total.count, noun)
-        return "\(kept) of \(total.listsMore ? "\(moreThanNote) \(size)" : size) \(keptNote)"
+        return "\(kept) of \(entriesPhrase(total, noun: noun)) \(keptNote)"
     }
 
     /// The size of the feed `counts` counts: its items listed of the
     /// entries it lists (`sizePhrase(kept:total:noun:)`).
     static func sizePhrase(_ counts: FeedItemCounts) -> String {
         sizePhrase(kept: counts.listed, total: counts.total, noun: counts.noun)
+    }
+
+    /// A feed's size as the words after "of" say it: its entries counted
+    /// with `noun`, "381 episodes", "1 episode", or, without a noun, as a
+    /// heading counts its rows, "381"; "more than" comes first for a feed
+    /// longer than TextMouth reads.
+    static func entriesPhrase(_ total: FeedEntryTotal, noun: ItemNoun?) -> String {
+        let number = noun.map { count(total.count, $0) } ?? "\(total.count)"
+        return total.listsMore ? "\(moreThanNote) \(number)" : number
     }
 
     // MARK: After Subscribing

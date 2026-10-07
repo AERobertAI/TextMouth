@@ -122,10 +122,12 @@ struct FeedBadge: View {
 
 /// What a feed's folder lists instead of its Books section (FR03): the
 /// feed's items, newest first, under a heading counting them ("Episodes
-/// (12)"), each downloaded one as its book's own row, unchanged but for the
-/// item's commands beside the book's, and each other one as an item row
-/// with its commands in its context menu and as its VoiceOver actions; then,
-/// under "Books", the folder's books that came from no item of the feed.
+/// (12)", or, of a feed that lists more entries than are kept, "Episodes
+/// (10 of 381 kept)"), each downloaded one as its book's own row,
+/// unchanged but for the item's commands beside the book's, and each other
+/// one as an item row with its commands in its context menu and as its
+/// VoiceOver actions; then, under "Books", the folder's books that came
+/// from no item of the feed.
 ///
 /// It observes the feed engine itself, so a download's progress redraws
 /// these rows and nothing else of the list.
@@ -165,7 +167,7 @@ struct FeedFolderSections<BookRowView: View>: View {
                 }
             }
         } header: {
-            Text(FeedWording.sectionTitle(listing.noun, count: listing.entries.count))
+            Text(FeedWording.sectionTitle(listing.noun, count: listing.entries.count, total: listing.total))
                 .accessibilityAddTraits(.isHeader)
         }
         if !listing.otherBooks.isEmpty {
@@ -263,12 +265,14 @@ struct FeedItemRow: View, Equatable {
 
 // MARK: - A Feed's Folder's Summary Bar
 
-/// The library's summary bar, which in a feed's folder (FR03) counts the
-/// feed's items and downloads and says its last check, beside the time
-/// left in its downloads. It observes the feed engine, so the counts follow
-/// each download while the list around it stays as it was. It holds the bar
-/// in every folder, feed's or not, so moving between folders never makes
-/// the bar anew, and never repeats the bar's VoiceOver focus request.
+/// The library's summary bar, which in a feed's folder (FR03) says what the
+/// feed's row in the Feeds section says, its items counted as the row
+/// counts them and its last check, beside the time left in its downloads:
+/// "10 of 381 episodes kept, 3 downloaded, 5 unplayed. Checked today at
+/// 3:05 PM". It observes the feed engine, so the counts follow each
+/// download while the list around it stays as it was. It holds the bar in
+/// every folder, feed's or not, so moving between folders never makes the
+/// bar anew, and never repeats the bar's VoiceOver focus request.
 struct FeedFolderSummaryBar<Bar: View>: View {
     /// The feed engine.
     @ObservedObject var center: FeedCenter

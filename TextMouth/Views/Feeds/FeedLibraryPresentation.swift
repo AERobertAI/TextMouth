@@ -241,6 +241,11 @@ struct FeedFolderListing: Equatable {
     var otherBooks: [Book] = []
     /// What the feed's items are called.
     var noun: FeedWording.ItemNoun = .episode
+    /// The feed's size, which the items' heading says beside their count
+    /// while the entries are every item the library lists
+    /// (`FeedWording.sectionTitle(_:count:total:)`); nil while a search
+    /// narrows them, and while the size is not known.
+    var total: FeedEntryTotal?
 
     /// The listing of the feed `feedID`'s folder in `center`, given the
     /// folder's books as the list shows them, narrowed by `search`
@@ -260,7 +265,9 @@ struct FeedFolderListing: Equatable {
             return FeedFolderListing(otherBooks: shownBooks)
         }
         let items = record.listedItems
-        var listing = FeedFolderListing(noun: .of(items))
+        // With no search, every item listed has its row, as its book's or
+        // its own, so the rows are the entries kept, of the feed's size.
+        var listing = FeedFolderListing(noun: .of(items), total: search.isEmpty ? record.feed.entryTotal : nil)
         let shownByID = Dictionary(shownBooks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let folderBookIDs = Set(folderBooks.map(\.id))
         let query = search.lowercased()

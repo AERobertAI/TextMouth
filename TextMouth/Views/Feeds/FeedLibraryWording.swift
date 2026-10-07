@@ -21,21 +21,36 @@ extension FeedWording {
     // MARK: Counts
 
     /// A feed's items counted, as its row, its folder's summary bar, its
-    /// Feed Info, Speak Info, and entering its folder say: its size
-    /// (`sizePhrase(_:)`), then the downloads and the new items, "10 of 381
-    /// episodes kept, 3 downloaded, 1 downloading, 2 new", leaving out the
-    /// counts that are 0, but never the size.
+    /// Feed Info, Speak Info, and entering its folder all say: its size
+    /// (`sizePhrase(_:)`), then the downloads, the new items, and the items
+    /// not yet played (of articles, not yet read), "10 of 381 episodes
+    /// kept, 3 downloaded, 1 downloading, 2 new, 5 unplayed", leaving out
+    /// the counts that are 0, but never the size.
     static func countsPhrase(_ counts: FeedItemCounts) -> String {
         var parts = [sizePhrase(counts)]
         if counts.downloaded > 0 { parts.append("\(counts.downloaded) downloaded") }
         if counts.downloading > 0 { parts.append("\(counts.downloading) downloading") }
         if counts.new > 0 { parts.append("\(counts.new) new") }
+        if counts.unplayed > 0 { parts.append("\(counts.unplayed) \(unplayedNote(counts.noun))") }
         return parts.joined(separator: ", ")
     }
 
-    /// A Feeds or feed-folder section's heading: "Episodes (12)".
-    static func sectionTitle(_ noun: ItemNoun, count: Int) -> String {
-        "\(noun.plural.capitalized) (\(count))"
+    /// What a feed's counts call the items not yet played: "unread" for
+    /// articles, "unplayed" for episodes and for a feed mixing the two.
+    static func unplayedNote(_ noun: ItemNoun) -> String {
+        noun == .article ? "unread" : "unplayed"
+    }
+
+    /// The heading of a feed's folder's items, which counts the rows under
+    /// it: "Episodes (12)". While those rows are every entry the library
+    /// keeps of a feed that lists more, it says the feed's size as the
+    /// feed's row does, "Episodes (10 of 381 kept)", "Articles (10 of more
+    /// than 2000 kept)"; while a search narrows them (`total` nil), the
+    /// rows alone. VoiceOver reads it in one stop, as it shows it.
+    static func sectionTitle(_ noun: ItemNoun, count: Int, total: FeedEntryTotal? = nil) -> String {
+        let name = noun.plural.capitalized
+        guard let total, total.exceeds(count) else { return "\(name) (\(count))" }
+        return "\(name) (\(count) of \(entriesPhrase(total, noun: nil)) \(keptNote))"
     }
 
     /// The heading of a feed's folder's books that came from no item of the
