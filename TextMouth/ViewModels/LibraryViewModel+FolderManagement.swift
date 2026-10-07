@@ -362,7 +362,11 @@ extension LibraryViewModel {
         return sort.sorted(books, fileSizes: sizes)
     }
 
-    /// Return books matching the given library category within a folder path
+    /// The books the category `category` lists, before sorting: the books
+    /// of the folder at `folderPath` in Folders, every book in All Items,
+    /// every book never opened, from every folder, in Unopened
+    /// (`Library.unopenedBooks()`), and the books opened lately in Recent.
+    /// All Items, Unopened, and Recent ignore `folderPath`.
     func booksForCategory(_ category: LibraryCategory, folderPath: String) -> [Book] {
         switch category {
         case .folders:
@@ -370,7 +374,7 @@ extension LibraryViewModel {
         case .allItems:
             return library.books
         case .unopened:
-            return library.booksWithNoFolder()
+            return library.unopenedBooks()
         case .recent:
             return LibraryBookSorter.recent(library.books)
         }

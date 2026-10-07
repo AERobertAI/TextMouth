@@ -4,7 +4,8 @@ import XCTest
 /// The Unopened category of the Library window, which replaced No Folder:
 /// every book never opened, from every folder, and the feeds with items not
 /// yet played. These tests pin its name, its sort key and the sort carried
-/// over from No Folder, and its default sort.
+/// over from No Folder, its default sort, and what it lists: the books,
+/// which leave it when opened, and the feeds, which leave it when played.
 @MainActor
 final class UnopenedCategoryTests: XCTestCase {
     /// The isolated data root's index, put back after a test that saves.
@@ -128,5 +129,145 @@ final class UnopenedCategoryTests: XCTestCase {
         XCTAssertEqual(model.library.folderSortSettings["__noFolder__"], authorDescending)
         XCTAssertEqual(model.library.folderSortSettings["__unopened__"], shown.setting)
         XCTAssertEqual(model.sortState(at: unopened), shown)
+    }
+
+    // MARK: - What It Lists
+
+    /// Unopened lists every book never opened, from the root and every
+    /// folder at any depth, newest added first, and no book opened, whatever
+    /// folder Folders showed last; a search narrows it as it does any list.
+    /// The root's books, which No Folder listed, are still exactly what
+    /// Folders lists at the root, so nothing is lost by the change.
+    func testUnopenedListsTheBooksNeverOpenedFromEveryFolder() {
+        let model = LibraryViewModel(initializeServices: false)
+        let start = Date(timeIntervalSince1970: 1_791_000_000)
+        let loose = Self.book("Loose Pages", in: "", added: start, opened: nil)
+        let filed = Self.book("Filed Pages", in: "Essays", added: start.addingTimeInterval(60), opened: nil)
+        let deep = Self.book("Travel Notes", in: "Essays/Travel", added: start.addingTimeInterval(120), opened: nil)
+        let read = Self.book("Read Pages", in: "", added: start.addingTimeInterval(180), opened: start.addingTimeInterval(200))
+        let readFiled = Self.book("Read Essay", in: "Essays", added: start.addingTimeInterval(240), opened: start.addingTimeInterval(300))
+        model.library = Library(
+            books: [read, loose, readFiled, filed, deep],
+            folders: [BookFolder(name: "Essays"), BookFolder(name: "Travel", parentPath: "Essays")]
+        )
+        let unopened = LibraryLocation(category: .unopened, folderPath: "Essays")
+
+        XCTAssertEqual(model.library.unopenedBooks().map(\.title), ["Loose Pages", "Filed Pages", "Travel Notes"])
+        XCTAssertEqual(model.displayedBooks(at: unopened).map(\.title), ["Travel Notes", "Filed Pages", "Loose Pages"])
+        XCTAssertEqual(model.displayedBooks(at: unopened, matching: "pages").map(\.title), ["Filed Pages", "Loose Pages"])
+        // The root's books are what Folders lists at the root.
+        let root = LibraryLocation(category: .folders, folderPath: "")
+        XCTAssertEqual(Set(model.displayedBooks(at: root).map(\.title)), ["Loose Pages", "Read Pages"])
+        XCTAssertEqual(model.library.booksWithNoFolder().map(\.id), model.library.booksInFolder("").map(\.id))
+    }
+
+    /// Opening a book takes it off the Unopened list the next time the list
+    /// is read, and off no other list: a book's last-opened date is a field
+    /// every kept list depends on, so the list is derived again, while
+    /// reading it again unchanged derives nothing.
+    func testOpeningABookTakesItOffTheListAtTheNextRead() throws {
+        let model = LibraryViewModel(initializeServices: false)
+        let start = Date(timeIntervalSince1970: 1_791_000_000)
+        let first = Self.book("First", in: "Essays", added: start, opened: nil)
+        let second = Self.book("Second", in: "", added: start.addingTimeInterval(60), opened: nil)
+        model.library = Library(books: [first, second], folders: [BookFolder(name: "Essays")])
+        let unopened = LibraryLocation(category: .unopened, folderPath: "")
+        let allItems = LibraryLocation(category: .allItems, folderPath: "")
+        XCTAssertEqual(model.displayedBooks(at: unopened).map(\.title), ["Second", "First"])
+        let derivations = model.listCache.derivationCount
+
+        XCTAssertEqual(model.displayedBooks(at: unopened).map(\.title), ["Second", "First"])
+        XCTAssertEqual(model.listCache.derivationCount, derivations, "reading the list again derived it again")
+        let index = try XCTUnwrap(model.library.books.firstIndex { $0.id == second.id })
+        model.library.books[index].lastOpened = start.addingTimeInterval(120)
+
+        XCTAssertEqual(model.displayedBooks(at: unopened).map(\.title), ["First"])
+        XCTAssertEqual(model.listCache.derivationCount, derivations + 1)
+        XCTAssertEqual(Set(model.displayedBooks(at: allItems).map(\.title)), ["First", "Second"])
+    }
+
+    /// The Feeds section at Unopened lists every feed with an item not yet
+    /// played, each row as it reads in All Items, and no feed whose items
+    /// are all played or that has none; a feed leaves the section when its
+    /// last unplayed item is played, and returns when one is unplayed again.
+    func testTheFeedsSectionAtUnopenedListsTheFeedsWithUnplayedItems() async throws {
+        let world = try FeedTestWorld(self, label: "UnopenedFeeds")
+        let atlas = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", items: [
+            FeedXML.Item(guid: "ep-2", title: "Second", published: world.day(1)),
+            FeedXML.Item(guid: "ep-1", title: "First", published: world.day(0.5)),
+        ])
+        let notes = try await subscribe(world, title: "Harbour Notes", path: "/notes.xml", items: [
+            FeedXML.Item(guid: "note-1", title: "Tides", published: world.day(0.5)),
+        ])
+        let silent = try await subscribe(world, title: "Silent Signal", path: "/silent.xml", items: [])
+        world.center.markPlayed("guid:note-1", of: notes.id)
+        let now = Date()
+        let unopened = LibraryLocation(category: .unopened, folderPath: "")
+        let allItems = LibraryLocation(category: .allItems, folderPath: "")
+        func titlesAtUnopened() -> [String] {
+            LibraryFeedsSectionRows.rows(at: unopened, center: world.center, now: now).map(\.title)
+        }
+
+        XCTAssertEqual(titlesAtUnopened(), ["The Tactile Atlas"])
+        let everywhere = LibraryFeedsSectionRows.rows(at: allItems, center: world.center, now: now)
+        XCTAssertEqual(everywhere.map(\.title), ["Harbour Notes", "Silent Signal", "The Tactile Atlas"])
+        XCTAssertEqual(world.center.counts(of: silent.id).unplayed, 0)
+        XCTAssertEqual(world.center.counts(of: notes.id).unplayed, 0)
+        // The feed's row reads exactly as it does in All Items.
+        let atlasRow = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: unopened, center: world.center, now: now).first)
+        XCTAssertEqual(atlasRow, try XCTUnwrap(everywhere.first { $0.id == atlas.id }))
+        XCTAssertEqual(atlasRow.counts.unplayed, 2)
+        XCTAssertEqual(atlasRow.countsText, "2 episodes, 2 new")
+        XCTAssertTrue(atlasRow.label.hasPrefix("The Tactile Atlas, Feed, 2 episodes, 2 new, "), atlasRow.label)
+
+        // Playing one of the two episodes keeps the feed listed; playing the
+        // other takes it off, and marking an item unplayed brings its feed back.
+        world.center.markPlayed("guid:ep-2", of: atlas.id)
+        XCTAssertEqual(titlesAtUnopened(), ["The Tactile Atlas"])
+        world.center.markPlayed("guid:ep-1", of: atlas.id)
+        XCTAssertEqual(titlesAtUnopened(), [])
+        world.center.markUnplayed("guid:note-1", of: notes.id)
+        XCTAssertEqual(titlesAtUnopened(), ["Harbour Notes"])
+    }
+
+    // MARK: - Fixtures
+
+    /// A book titled `title` in the folder `folder`, added at `added` and
+    /// last opened at `opened`, or never when nil.
+    private static func book(_ title: String, in folder: String, added: Date, opened: Date?) -> Book {
+        let id = UUID()
+        return Book(
+            id: id,
+            title: title,
+            format: .txt,
+            filePath: "/nonexistent/unopened/\(id.uuidString).txt",
+            md5Hash: "unopened-\(id.uuidString)",
+            folderPath: folder,
+            dateAdded: added,
+            lastOpened: opened
+        )
+    }
+
+    /// Subscribes `world` to a feed titled `title` served at `path`, listing
+    /// `items`, each given audio so it is an episode, into a new folder
+    /// inside the world's folder.
+    private func subscribe(_ world: FeedTestWorld, title: String, path: String, items: [FeedXML.Item]) async throws -> Feed {
+        let episodes = items.map { item -> FeedXML.Item in
+            var episode = item
+            episode.enclosure = "https://atlas.example/audio/\(item.guid ?? UUID().uuidString).mp3"
+            return episode
+        }
+        world.server.serve(path, .feed(FeedXML.rss(title: title, items: episodes)))
+        if !world.center.hasStarted {
+            await world.start()
+        }
+        let outcome = try await world.center.subscribe(
+            to: world.server.url(path).absoluteString,
+            into: .newFolder(inParentPath: world.folder.path)
+        )
+        guard case .subscribed(let feed) = outcome else {
+            throw NSError(domain: "UnopenedCategoryTests", code: 1, userInfo: [NSLocalizedDescriptionKey: "\(outcome)"])
+        }
+        return feed
     }
 }

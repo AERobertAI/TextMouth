@@ -667,6 +667,13 @@ struct Library: Codable {
         books.filter { $0.folderPath.isEmpty }
     }
 
+    /// All books never opened, from the root and every folder: what the
+    /// Unopened category lists. A book is unopened while it has no
+    /// `lastOpened`, which is what `BookState.isNew` reads too.
+    func unopenedBooks() -> [Book] {
+        books.filter { $0.lastOpened == nil }
+    }
+
     func subfolders(of parentPath: String) -> [BookFolder] {
         folders.filter { $0.parentPath == parentPath }.sorted { $0.name < $1.name }
     }
