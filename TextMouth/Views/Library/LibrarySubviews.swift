@@ -445,7 +445,10 @@ struct BookRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(rowAccessibilityLabel)
         // "In reading list" after the label, only for a book in it (FR09).
-        .modifier(SpokenValue(rowAccessibilityValue))
+        // Always set, empty otherwise, which VoiceOver does not speak, so
+        // the row keeps its identity, and VoiceOver its place on the row,
+        // when its own command adds the book or takes it off.
+        .accessibilityValue(rowAccessibilityValue ?? "")
         .accessibilityHint(isEditMode
             ? "Double-tap to \(isEditSelected ? "deselect" : "select")"
             : "Press Enter to open, Command I for info")
@@ -529,27 +532,6 @@ struct BookRow: View {
     static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
         guard let progress = progressText(for: book) else { return nil }
         return besideDownloadPercentage ? "\(progress.spoken) read" : progress.spoken
-    }
-}
-
-/// Gives a view the accessibility value `value` when there is one, and
-/// leaves it without one otherwise, so a row with nothing to add never
-/// carries an empty value.
-private struct SpokenValue: ViewModifier {
-    /// The value VoiceOver speaks after the label, or nil for none.
-    let value: String?
-
-    /// A modifier speaking `value`, or nothing for nil.
-    init(_ value: String?) {
-        self.value = value
-    }
-
-    func body(content: Content) -> some View {
-        if let value {
-            content.accessibilityValue(value)
-        } else {
-            content
-        }
     }
 }
 
