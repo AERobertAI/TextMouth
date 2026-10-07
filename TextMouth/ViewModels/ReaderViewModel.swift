@@ -601,6 +601,13 @@ final class ReaderViewModel: ObservableObject {
         // belongs to the cursor's chapter.
         listenForSpeechEnd(of: cursorChapterPlay)
 
+        // Speech the Mac's speech engine refused, on a fresh synthesizer
+        // too, has stopped at the cursor; the reader makes that stop its
+        // own, as a pause would be (#1308).
+        speechService.onSpeechRefused = { [weak self] in
+            self?.showPlaybackStoppedAfterRefusal()
+        }
+
         // Sleep timer callbacks are no longer set here — they're passed
         // when this VM starts a timer (see startSleepTimer below). This
         // ensures the active callbacks always belong to whichever book

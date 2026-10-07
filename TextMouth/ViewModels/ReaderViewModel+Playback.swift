@@ -695,6 +695,41 @@ extension ReaderViewModel {
         savePosition()
     }
 
+    /// Makes the reader's own the stop the speech service made when the
+    /// Mac's speech engine refused a text on a fresh synthesizer too
+    /// (`SpeechService.onSpeechRefused`, #1308): speech has stopped where it
+    /// was, the cursor is there, and the listener has heard why
+    /// (`SpeechService.engineRefusedAnnouncement`).
+    ///
+    /// The reader treats it as a pause, as `stopPlaybackForSleepTimer`
+    /// treats the timer's stop: it shows nothing playing; ends this book's
+    /// listening session, so that time away is not credited as listening;
+    /// tells Now Playing the book is paused, not stopped, so that the next
+    /// press of the AirPods or a media key is Play and reaches this reader;
+    /// halts its sleep timer's countdown, which Play resumes; and records
+    /// the stop and saves the position. It neither stops speech again nor
+    /// moves the chapter: Play speaks on from the cursor, a new play of the
+    /// chapter. A refusal comes only while speech speaks, which a play still
+    /// waiting for its chapter's speech never does
+    /// (`isWaitingForChapterSpeech`), and a book that has finished speaks
+    /// nothing (`hasFinishedBook`). A closed reader shows nothing.
+    func showPlaybackStoppedAfterRefusal() {
+        guard !hasClosed else { return }
+        DiagnosticLog.event(
+            .playback,
+            "PLAYBACK_STOPPED_AFTER_REFUSAL: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset)"
+        )
+        isCurrentlyPlaying = false
+        isCurrentlyPaused = false
+        sleepTimerService.pauseCountdown(by: readerID)
+        readingStatsService.endSession(bookID: book.id)
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: false
+        )
+        recordPlaybackStopped()
+        savePosition()
+    }
+
     // MARK: - Where a Chapter's End Stops the Timer
 
     /// Whether this reader's sleep timer stops playback where the cursor's
