@@ -31,6 +31,25 @@ enum ReadingListWording {
     /// The hint of the Reading List's one sort item: how its order changes.
     static let orderHint = "The reading list keeps the order you arrange with Move Book Up, Move Book Down, or dragging"
 
+    // MARK: - The Options Bar
+
+    /// The label of the options bar's picker of what a book opened from the
+    /// reading list does when it ends, whose options are
+    /// `ReadingList.Continuation.title`.
+    static let continuationLabel = "When a book ends"
+
+    /// The picker's hint: which books it applies to, and what each option
+    /// does.
+    static let continuationHint = "For a book opened from the reading list: "
+        + "play the book below it or the book above it when it ends, or stop"
+
+    /// The label of the options bar's checkbox for passing over finished
+    /// books.
+    static let skipFinishedLabel = "Skip finished books"
+
+    /// The checkbox's hint: when it applies, and what it does.
+    static let skipFinishedHint = "When a book opened from the reading list ends, pass over the books already finished"
+
     // MARK: - The Empty List
 
     /// What the Reading List shows, as a row VoiceOver reads, while the

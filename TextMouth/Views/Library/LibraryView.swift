@@ -288,6 +288,9 @@ struct LibraryView: View {
             .padding(.top, 8)
             .accessibilityLabel(Self.categoryPickerLabel)
 
+            // The Reading List's options, there alone (FR09).
+            readingListOptions
+
             // Breadcrumb navigation (only in folders mode)
             if category == .folders && !currentFolderPath.isEmpty {
                 BreadcrumbBar(
@@ -830,6 +833,22 @@ struct LibraryView: View {
     }
 
     // MARK: - Extracted Subviews
+
+    /// The options bar at the top of the Reading List (FR09), showing the
+    /// list's own options and saving each choice at once; nothing in any
+    /// other category.
+    @ViewBuilder
+    private var readingListOptions: some View {
+        if category == .readingList {
+            let list = libraryViewModel.readingList
+            ReadingListOptionsBar(
+                continuation: list.continuation,
+                skipsFinished: list.skipsFinished,
+                chooseContinuation: { libraryViewModel.setReadingListContinuation($0) },
+                chooseSkipsFinished: { libraryViewModel.setReadingListSkipsFinished($0) }
+            )
+        }
+    }
 
     /// Continue Listening button for `lastBook`, the book last opened, when
     /// there is one — extracted to reduce body complexity for the type checker

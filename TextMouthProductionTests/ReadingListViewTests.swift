@@ -337,6 +337,86 @@ final class ReadingListViewTests: XCTestCase {
         )
     }
 
+    // MARK: - The Options Bar
+
+    /// The options bar's words: the picker's label and hint, and the
+    /// checkbox's label and hint, which each control speaks for itself.
+    func testTheOptionsBarsWordsArePinned() {
+        XCTAssertEqual(ReadingListWording.continuationLabel, "When a book ends")
+        XCTAssertEqual(
+            ReadingListWording.continuationHint,
+            "For a book opened from the reading list: play the book below it or the book above it when it ends, or stop"
+        )
+        XCTAssertEqual(ReadingListWording.skipFinishedLabel, "Skip finished books")
+        XCTAssertEqual(
+            ReadingListWording.skipFinishedHint,
+            "When a book opened from the reading list ends, pass over the books already finished"
+        )
+    }
+
+    /// Hosted, the picker is a pop-up button VoiceOver reads by its label,
+    /// "When a book ends", with the option chosen as its value and its
+    /// hint, for each option; and the checkbox is checked while finished
+    /// books are skipped. SwiftUI exposes the pop-up button to
+    /// accessibility in a hosted window, but not the checkbox, whose state
+    /// is read here from the AppKit button behind it; its label and hint
+    /// are pinned by `testTheOptionsBarsWordsArePinned`.
+    @MainActor
+    func testTheOptionsBarsControlsSpeakTheirLabelsValuesAndHints() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let choices: [(ReadingList.Continuation, Bool)] = [(.playBookBelow, true), (.playBookAbove, false), (.stop, true)]
+        for (continuation, skipsFinished) in choices {
+            let bar = ReadingListOptionsBar(
+                continuation: continuation,
+                skipsFinished: skipsFinished,
+                chooseContinuation: { _ in },
+                chooseSkipsFinished: { _ in }
+            )
+            try withHostedView(bar, until: { Self.picker(in: self.accessibleControls(in: $0)) != nil }) { hostingView in
+                let picker = try XCTUnwrap(Self.picker(in: accessibleControls(in: hostingView)), "\(continuation)")
+                XCTAssertEqual(picker.label, "When a book ends")
+                XCTAssertEqual(picker.element.accessibilityValue() as? String, continuation.title)
+                XCTAssertEqual(picker.hint, ReadingListWording.continuationHint)
+
+                let checkbox = try XCTUnwrap(Self.checkbox(in: hostingView, test: self), "\(continuation)")
+                XCTAssertEqual(checkbox.state, skipsFinished ? .on : .off, "\(continuation)")
+            }
+        }
+    }
+
+    /// Hosted, a Library window shows the options bar at the Reading List,
+    /// with the list's own options, and nowhere else.
+    @MainActor
+    func testTheWindowShowsTheOptionsBarAtTheReadingListAlone() {
+        let shelf = Self.shelf()
+        shelf.model.setReadingListContinuation(.playBookAbove)
+
+        for category in [LibraryCategory.readingList, .folders] {
+            let hosted = Self.hostLibraryWindow(showing: category, of: shelf.model, in: self)
+            defer { takeDown(hosted.window) }
+            let shown = waitUntil(timeout: 2) {
+                hosted.hostingView.layoutSubtreeIfNeeded()
+                return self.descendants(of: hosted.hostingView, as: NSPopUpButton.self)
+                    .contains { $0.titleOfSelectedItem == "Play the book above" }
+            }
+            XCTAssertEqual(shown, category == .readingList, "\(category)")
+        }
+    }
+
+    /// The pop-up button VoiceOver reads as "When a book ends" among
+    /// `controls`, if any.
+    private static func picker(in controls: [AccessibleControl]) -> AccessibleControl? {
+        controls.first { $0.role == .popUpButton && $0.label == ReadingListWording.continuationLabel }
+    }
+
+    /// The AppKit button behind the options bar's checkbox in `view`, whose
+    /// state is the checkbox's: the bar's one button that is not the pop-up
+    /// button.
+    @MainActor
+    private static func checkbox(in view: NSView, test: XCTestCase) -> NSButton? {
+        test.descendants(of: view, as: NSButton.self).first { !($0 is NSPopUpButton) }
+    }
+
     // MARK: - Fixtures
 
     /// A library model of four books: "Loose Pages" at the root, "Field
