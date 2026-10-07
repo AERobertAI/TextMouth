@@ -36,6 +36,31 @@ enum ImportProgressWording {
         "Book \(number) of \(total): “\(name)”, \(self.step(step))"
     }
 
+    /// The one book an import is bringing in, a file or an archive holding
+    /// one book, and the step it is at: "“Moby Dick.epub”, reading its text".
+    static func book(_ name: String, step: ImportStep) -> String {
+        "“\(name)”, \(self.step(step))"
+    }
+
+    /// How long a book must have been under way before the overlay says how
+    /// long: most books take a second or two, and the time on them would
+    /// only flash by (FR10).
+    static let timeOnBookShownAfter: TimeInterval = 10
+    /// The step the time on a book moves in, so what VoiceOver reads and a
+    /// braille display shows changes every few seconds rather than every
+    /// second, as the reader's cloud download counts its wait.
+    static let timeOnBookStep: TimeInterval = 5
+
+    /// How long the book under way has taken, once that is long enough to
+    /// say: "1 minute, 5 seconds on this book", counted down to whole
+    /// `timeOnBookStep`s; nil before `timeOnBookShownAfter`. A book that
+    /// never leaves its step shows here as a time that keeps growing.
+    static func timeOnBook(_ seconds: TimeInterval) -> String? {
+        guard seconds.isFinite, seconds >= timeOnBookShownAfter else { return nil }
+        let stepped = (seconds / timeOnBookStep).rounded(.down) * timeOnBookStep
+        return "\(TimeFormatting.spoken(stepped)) on this book"
+    }
+
     /// `step` as the phrase that follows a book's name: the words a failure
     /// names the step by (`ImportStep.activity`), begun in lowercase, as in
     /// "reading its text" or "copying it into the library".
@@ -64,8 +89,9 @@ enum ImportProgressWording {
 
     /// What VoiceOver reads for the overlay: the title, then each line it
     /// shows, as sentences: "Importing Books: 2 of 100 books processed. Book
-    /// 3 of 100: “Moby Dick.epub”, reading its text." Empty lines are left
-    /// out, and with none the title is read alone.
+    /// 3 of 100: “Moby Dick.epub”, reading its text. 15 seconds on this
+    /// book. About 4 minutes left." Empty lines are left out, and with none
+    /// the title is read alone.
     static func spokenStatus(_ lines: [String]) -> String {
         let shown = lines.filter { !$0.isEmpty }
         guard !shown.isEmpty else { return title }

@@ -49,11 +49,12 @@ final class SerialImportQueue: @unchecked Sendable {
         self.boundary = boundary
     }
 
-    /// Told as each step of a queued single-file or text import begins on
-    /// its staged package (see `ImportStepObserver`), on the import queue;
-    /// nil in the app. Tests set it before enqueueing to hold an import at
-    /// a step of their choosing. ZIP, audio ZIP, DAISY ZIP, and package
-    /// imports do not report their steps.
+    /// Told as each step of a queued single-file or text import, or of an
+    /// audio or DAISY ZIP, each one book, begins on its staged package (see
+    /// `ImportStepObserver`), on the import queue, after the import overlay
+    /// is told (FR10); nil in the app. Tests set it before enqueueing to
+    /// hold an import at a step of their choosing. A ZIP batch of books and
+    /// package imports do not report their steps here.
     var stepObserver: (@Sendable (ImportStep, URL) throws -> Void)? {
         get {
             stateLock.lock()
@@ -371,6 +372,8 @@ extension LibraryViewModel {
     func importZipAsync(from url: URL, toFolder folderPath: String, origin: ImportOrigin? = nil) {
         let request = importRequest(from: origin)
         let cancellation = request.batch
+        let progress = importProgress
+        let queue = importOperationQueue
         enqueueImport { [weak self] in
             guard let self = self else { return }
             // A ZIP import cancelled while it waited never starts, and says
@@ -381,15 +384,23 @@ extension LibraryViewModel {
             }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            DispatchQueue.main.async { self.importProgress.show(ImportProgressWording.startingArchive) }
+            DispatchQueue.main.async { progress.show(ImportProgressWording.startingArchive) }
             do {
+                // An archive holding one book, a DAISY book or an audiobook's
+                // tracks, is named in the overlay with each step it begins,
+                // as a single file is (FR10).
                 if DAISYParser.isDAISYZip(url: url) {
+                    let observer = progress.observeBook(url.lastPathComponent, then: queue.stepObserver)
                     let imported: ImportedBook
                     if let archive = Archive.openedForReading(at: url),
                        DAISYAudioConverter.hasAudio(in: ArchiveFileProvider(archive: archive)) {
-                        imported = try FileImportService.importDAISYAudioZipWithReport(from: url, toFolder: folderPath)
+                        imported = try FileImportService.importDAISYAudioZipWithReport(
+                            from: url,
+                            toFolder: folderPath,
+                            observer: observer
+                        )
                     } else {
-                        imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
+                        imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath, observer: observer)
                     }
                     DispatchQueue.main.sync {
                         self.completeSingleImportedBook(imported, originalURL: url, request: request)
@@ -397,7 +408,11 @@ extension LibraryViewModel {
                     return
                 }
                 if Self.isAudioZip(url: url) {
-                    let imported = try FileImportService.importAudioZipWithReport(from: url, toFolder: folderPath)
+                    let imported = try FileImportService.importAudioZipWithReport(
+                        from: url,
+                        toFolder: folderPath,
+                        observer: progress.observeBook(url.lastPathComponent, then: queue.stepObserver)
+                    )
                     DispatchQueue.main.sync {
                         self.completeSingleImportedBook(imported, originalURL: url, request: request)
                     }
@@ -412,8 +427,8 @@ extension LibraryViewModel {
                     from: url,
                     toFolder: folderPath,
                     existingHashes: existingHashes,
-                    progress: { progress in
-                        DispatchQueue.main.async { self.importProgress.receive(progress) }
+                    progress: { report in
+                        DispatchQueue.main.async { progress.receive(report) }
                     },
                     isCancelled: cancellation.check
                 )
@@ -438,16 +453,17 @@ extension LibraryViewModel {
     ) {
         let request = importRequest(from: origin, opensAfterImport: openAfterImport)
         let queue = importOperationQueue
+        let progress = importProgress
         enqueueImport { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            DispatchQueue.main.async { self.importProgress.show("Importing \(url.lastPathComponent)...") }
             do {
+                // The overlay names the file and each step it begins (FR10).
                 let imported = try FileImportService.importFileWithReport(
                     from: url,
                     toFolder: folderPath,
-                    observer: queue.stepObserver
+                    observer: progress.observeBook(url.lastPathComponent, then: queue.stepObserver)
                 )
                 DispatchQueue.main.sync {
                     self.completeSingleImportedBook(imported, originalURL: url, request: request)

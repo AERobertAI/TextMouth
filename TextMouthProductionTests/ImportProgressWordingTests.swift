@@ -46,6 +46,36 @@ final class ImportProgressWordingTests: XCTestCase {
         )
     }
 
+    /// The one book an import brings in, a file or an archive holding one
+    /// book, is named with the step it is at.
+    func testTheOneBookLineNamesTheBookAndItsStep() {
+        XCTAssertEqual(ImportProgressWording.book("Moby Dick.epub", step: .readingText), "“Moby Dick.epub”, reading its text")
+        XCTAssertEqual(
+            ImportProgressWording.book("Harbor Talks.zip", step: .extractingArchive),
+            "“Harbor Talks.zip”, extracting the archive"
+        )
+    }
+
+    // MARK: - It Is Moving
+
+    /// The time on a book is said once it has taken 10 seconds, counted in
+    /// steps of 5 seconds, so a book that never leaves its step shows as a
+    /// time that keeps growing, while what VoiceOver reads changes only
+    /// every few seconds.
+    func testTheTimeOnABookIsSaidOnceItIsLongInStepsOfFiveSeconds() {
+        XCTAssertEqual(ImportProgressWording.timeOnBookShownAfter, 10)
+        XCTAssertEqual(ImportProgressWording.timeOnBookStep, 5)
+        XCTAssertNil(ImportProgressWording.timeOnBook(0))
+        XCTAssertNil(ImportProgressWording.timeOnBook(9.9))
+        XCTAssertEqual(ImportProgressWording.timeOnBook(10), "10 seconds on this book")
+        XCTAssertEqual(ImportProgressWording.timeOnBook(14.9), "10 seconds on this book")
+        XCTAssertEqual(ImportProgressWording.timeOnBook(15), "15 seconds on this book")
+        XCTAssertEqual(ImportProgressWording.timeOnBook(60), "1 minute on this book")
+        XCTAssertEqual(ImportProgressWording.timeOnBook(69.9), "1 minute, 5 seconds on this book")
+        XCTAssertEqual(ImportProgressWording.timeOnBook(3_725), "1 hour, 2 minutes, 5 seconds on this book")
+        XCTAssertNil(ImportProgressWording.timeOnBook(.nan))
+    }
+
     // MARK: - The Time Left
 
     /// The time left is said in steps that suit its size, so an estimate

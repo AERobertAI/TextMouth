@@ -369,9 +369,9 @@ struct ProgressOverlay: View {
     /// Noun for the items being processed (e.g. "books extracted", "books processed")
     let itemNoun: String
     /// Lines shown under the message, each on its own: the import overlay's
-    /// time left, or that the imports are cancelling (FR10). A caller that
-    /// shows any words `spokenSummary` to read them too, as the import
-    /// overlay does. None by default.
+    /// time on the book under way and its time left, or that the imports
+    /// are cancelling (FR10). A caller that shows any words `spokenSummary`
+    /// to read them too, as the import overlay does. None by default.
     var details: [String] = []
     /// What VoiceOver reads for the overlay, when the caller words it, as
     /// the import overlay does with every line it shows (FR10,
@@ -458,12 +458,14 @@ struct ProgressOverlay: View {
 }
 
 extension LibraryWindowView {
-    /// The overlay a Library window shows while imports run: their progress,
-    /// and a Cancel button, which Escape presses too, that stops the ZIP
-    /// imports under way and queued (`LibraryViewModel.cancelImports()`,
-    /// TODO I05). The window's body shows exactly this overlay, made here so
-    /// tests can press the very button the window shows.
-    static func importProgressOverlay(for libraryViewModel: LibraryViewModel) -> ProgressOverlay {
+    /// The overlay a Library window shows while imports run, as it is at
+    /// `now`: their progress, the time on the book under way and the time
+    /// left (FR10), and a Cancel button, which Escape presses too, that
+    /// stops the ZIP imports under way and queued
+    /// (`LibraryViewModel.cancelImports()`, TODO I05). The window's body
+    /// shows exactly this overlay, made here so tests can press the very
+    /// button the window shows.
+    static func importProgressOverlay(for libraryViewModel: LibraryViewModel, at now: Date = Date()) -> ProgressOverlay {
         let state = libraryViewModel.importProgress.state
         return ProgressOverlay(
             title: ImportProgressWording.title,
@@ -471,8 +473,8 @@ extension LibraryWindowView {
             total: state.total,
             message: state.message,
             itemNoun: ImportProgressWording.itemNoun,
-            details: state.details,
-            spokenSummary: state.spokenStatus,
+            details: state.details(at: now),
+            spokenSummary: state.spokenStatus(at: now),
             onCancel: libraryViewModel.cancelImports
         )
     }
@@ -491,6 +493,11 @@ struct ImportProgressObserver: View {
     @ObservedObject var progress: ImportProgress
 
     var body: some View {
-        LibraryWindowView.importProgressOverlay(for: library)
+        // Ticks in the steps the time on a book moves in, counted from when
+        // the book under way began, so that time keeps up between the
+        // import's reports (FR10).
+        TimelineView(.periodic(from: progress.state.book?.startedAt ?? Date(), by: ImportProgressWording.timeOnBookStep)) { context in
+            LibraryWindowView.importProgressOverlay(for: library, at: context.date)
+        }
     }
 }
