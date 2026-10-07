@@ -138,4 +138,83 @@ extension ReaderViewModel {
         let anyBook = libraryViewModel.readingListNeighbor(of: book.id, direction: direction, skippingFinished: false)
         return anyBook == nil ? .noBookBeyond : .onlyFinishedBooksBeyond
     }
+
+    // MARK: - Next and Previous in Reading List
+
+    /// Next in Reading List (going down) and Previous in Reading List
+    /// (going up), FR09: opens the book below or above this one in the
+    /// reading list, passing over finished books while the list says so,
+    /// to be read from the list, and plays it when this book was playing.
+    ///
+    /// A playing book pauses where it is, without the pause sound, since
+    /// the book that starts makes its own; a Where Am I announcement
+    /// speaking ends without resuming its book, and counts as playing when
+    /// it paused a playing one. The book that follows is announced, then
+    /// asked for after the moment Continue to Next Book gives VoiceOver to
+    /// begin: "Starting: <title>" for one that plays, which continues as a
+    /// finished book continues through the list
+    /// (`continueThroughReadingList(to:)`); "Opening: <title>" for one that
+    /// does not (`openFromReadingList(_:)`). This reader's sleep timer in
+    /// effect keeps the book from starting, since it could never pause it,
+    /// and the announcement says so.
+    ///
+    /// With no book that way it says so, and why when only finished books
+    /// lie there. A reader not reading its book from the list says that
+    /// instead: the Navigate menu offers neither command then, but a key
+    /// the user gave them still reaches any reader.
+    func goThroughReadingList(_ direction: ReadingList.Direction) {
+        guard isOpenedFromReadingList else {
+            announceToVoiceOver(ReadingListReaderWording.notReadFromReadingList)
+            return
+        }
+        let skippingFinished = libraryViewModel.readingList.skipsFinished
+        guard let neighbor = libraryViewModel.readingListNeighbor(
+            of: book.id,
+            direction: direction,
+            skippingFinished: skippingFinished
+        ) else {
+            announceToVoiceOver(ReadingListReaderWording.noNeighbor(readingListEnd(going: direction), going: direction))
+            return
+        }
+        // Playing: speech or audio under way, or paused only while a Where
+        // Am I announcement speaks.
+        let wasPlaying = isPlaybackUnderWay || (isWhereAmISpeaking && wasPlayingBeforeWhereAmI)
+        let sleepTimerKeepsItFromStarting = wasPlaying && sleepTimerEndsListeningHere
+        if isWhereAmISpeaking {
+            stopWhereAmISynthesizer()
+            endWhereAmIWithoutResuming()
+        }
+        if wasPlaying {
+            pause(playingPauseSound: false)
+        }
+        let plays = wasPlaying && !sleepTimerKeepsItFromStarting
+        announceToVoiceOver(
+            plays
+                ? EndOfBookWording.starting(neighbor.title)
+                : ReadingListReaderWording.opening(neighbor.title, sleepTimerKeptItFromStarting: sleepTimerKeepsItFromStarting)
+        )
+        DiagnosticLog.trace(
+            .playback,
+            "reading list: opening the book \(ReadingListReaderWording.side(direction)) this one; plays: \(plays)"
+        )
+        // Asked for once VoiceOver has begun the announcement, as Continue
+        // to Next Book asks for its book.
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+            if plays {
+                self.continueThroughReadingList(to: neighbor.id)
+            } else {
+                self.openFromReadingList(neighbor.id)
+            }
+        }
+    }
+
+    /// Opens the book `bookID` to be read from the reading list, without
+    /// starting it: the request to read it from the list first, so a reader
+    /// already open for it claims it at once, then `.openBookWindow`, which
+    /// opens its window or brings it forward, as a book an import opens is
+    /// opened (`LibraryWindowRouter`).
+    func openFromReadingList(_ bookID: UUID) {
+        readingListRequests.request(for: bookID)
+        notificationCenter.post(name: .openBookWindow, object: bookID)
+    }
 }

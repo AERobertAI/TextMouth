@@ -31,6 +31,22 @@ extension FocusedValues {
     }
 }
 
+/// Whether the reader whose window is key reads its book from the reading
+/// list (FR09), which Navigate > Next in Reading List and Previous in
+/// Reading List need. The reader's window publishes it as a scene value
+/// (`BookReaderWindowView`), so the commands stay available while
+/// VoiceOver reads the window's text, which holds no keyboard focus.
+struct ReadsFromReadingListKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var readsFromReadingList: Bool? {
+        get { self[ReadsFromReadingListKey.self] }
+        set { self[ReadsFromReadingListKey.self] = newValue }
+    }
+}
+
 // MARK: - Menu Commands
 
 struct PlaybackCommands: Commands {
@@ -103,6 +119,9 @@ struct PlaybackCommands: Commands {
 }
 
 struct NavigationCommands: Commands {
+    /// Whether the key reader reads its book from the reading list (FR09).
+    @FocusedValue(\.readsFromReadingList) var readsFromReadingList
+
     var body: some Commands {
         CommandMenu("Navigate") {
             Button("Go to Library") {
@@ -126,6 +145,22 @@ struct NavigationCommands: Commands {
             Button("Previous Heading") {
                 NotificationCenter.default.post(name: .previousHeading, object: nil)
             }
+
+            Divider()
+
+            // The book below or above this one in the reading list (FR09),
+            // available while the key reader reads its book from the list.
+            // They have no keys until the user gives them some, which
+            // KeyboardShortcutManager handles for window targeting.
+            Button(ShortcutAction.nextInReadingList.title) {
+                NotificationCenter.default.post(name: .nextInReadingList, object: nil)
+            }
+            .disabled(readsFromReadingList != true)
+
+            Button(ShortcutAction.previousInReadingList.title) {
+                NotificationCenter.default.post(name: .previousInReadingList, object: nil)
+            }
+            .disabled(readsFromReadingList != true)
 
             Divider()
 
@@ -434,6 +469,14 @@ extension Notification.Name {
     static let decreaseSpeed = Notification.Name("decreaseSpeed")
     static let nextHeading = Notification.Name("nextHeading")
     static let previousHeading = Notification.Name("previousHeading")
+    /// Posted by Navigate > Next in Reading List, and by its key when the
+    /// user gave it one (FR09): the key reader, reading its book from the
+    /// reading list, opens the book below it there.
+    static let nextInReadingList = Notification.Name("nextInReadingList")
+    /// Posted by Navigate > Previous in Reading List, and by its key when
+    /// the user gave it one (FR09): the key reader, reading its book from
+    /// the reading list, opens the book above it there.
+    static let previousInReadingList = Notification.Name("previousInReadingList")
     static let addBookmark = Notification.Name("addBookmark")
     static let nextBookmark = Notification.Name("nextBookmark")
     static let previousBookmark = Notification.Name("previousBookmark")

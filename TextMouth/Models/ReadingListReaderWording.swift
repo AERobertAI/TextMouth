@@ -43,6 +43,40 @@ enum ReadingListReaderWording {
         }
     }
 
+    // MARK: - Next and Previous in Reading List
+
+    /// What Next in Reading List and Previous in Reading List say from a
+    /// reader not reading its book from the list: the Navigate menu offers
+    /// them only for one that is, but a key the user gave them still
+    /// reaches any reader.
+    static let notReadFromReadingList = "This book was not opened from the reading list."
+
+    /// What VoiceOver hears as Next in Reading List or Previous in Reading
+    /// List opens `title` without starting it, as when this book was not
+    /// playing: "Opening: <title>"; and, when this reader's sleep timer kept
+    /// it from starting, why: "Opening: <title>. Not started because of the
+    /// sleep timer." A book that starts is announced as a book that
+    /// continues is (`EndOfBookWording.starting(_:)`).
+    static func opening(_ title: String, sleepTimerKeptItFromStarting: Bool) -> String {
+        let opening = "Opening: \(title)"
+        return sleepTimerKeptItFromStarting ? opening + ". Not started because of the sleep timer." : opening
+    }
+
+    /// What Next in Reading List (going down) or Previous in Reading List
+    /// (going up) says with no book that way: "No next book in the reading
+    /// list.", or, past only finished books while the list passes over
+    /// them, why: "No next book in the reading list: every book below this
+    /// one is finished."
+    static func noNeighbor(_ end: ReadingListEnd, going direction: ReadingList.Direction) -> String {
+        let noBook = "No \(direction == .down ? "next" : "previous") book in the reading list"
+        switch end {
+        case .noBookBeyond:
+            return noBook + "."
+        case .onlyFinishedBooksBeyond:
+            return noBook + ": every book \(side(direction)) this one is finished."
+        }
+    }
+
     // MARK: - Ways Through the List
 
     /// Where `direction` leads in the list as it is shown and spoken, as the

@@ -792,6 +792,21 @@ final class ReaderViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Next in Reading List and Previous in Reading List (FR09).
+        nc.publisher(for: .nextInReadingList)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goThroughReadingList(.down)
+            }
+            .store(in: &cancellables)
+
+        nc.publisher(for: .previousInReadingList)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goThroughReadingList(.up)
+            }
+            .store(in: &cancellables)
+
         nc.publisher(for: .addBookmark)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }

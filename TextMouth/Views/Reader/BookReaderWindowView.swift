@@ -52,6 +52,10 @@ struct BookReaderWindowView: View {
             ))
             .focusedValue(\.activeWindowType, .reader)
             .focusedValue(\.canReleaseMediaControls, viewModel.canReleaseMediaControls)
+            // Next in Reading List and Previous in Reading List are
+            // available while this reader reads its book from the list
+            // (FR09), whether or not a view of it holds keyboard focus.
+            .focusedSceneValue(\.readsFromReadingList, viewModel.isOpenedFromReadingList)
             .navigationTitle(windowTitle)
             .onAppear {
                 libraryViewModel.markBookOpened(bookID)

@@ -2438,7 +2438,11 @@ extension ReaderViewModel {
         togglePlayPause()
     }
 
-    private func pause(playingPauseSound: Bool) {
+    /// Pause playback as `pause()` does, making the pause sound only when
+    /// `playingPauseSound`: not as a sleep timer's fade ends, nor as Next
+    /// in Reading List and Previous in Reading List leave this book for
+    /// another, whose start makes its own sound (FR09).
+    func pause(playingPauseSound: Bool) {
         // Capture pre-pause playing state BEFORE we issue any pause calls.
         // The audio / speech services flip their flags synchronously, so
         // checking after would always return "not playing" and the guard
