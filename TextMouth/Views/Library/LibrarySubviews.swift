@@ -344,6 +344,12 @@ struct BookRow: View {
     var feedActions: [FeedItemAction] = []
     /// Runs one of `feedActions`.
     var performFeedAction: (FeedItemAction) -> Void = { _ in }
+    /// Add to Reading List or Remove from Reading List, by membership, or
+    /// both for a selection holding books of each kind (FR09): the row's
+    /// last VoiceOver actions, under the names its context menu gives them.
+    var readingListCommands: [ReadingListCommand] = []
+    /// Runs one of `readingListCommands`.
+    var performReadingListCommand: (ReadingListCommand) -> Void = { _ in }
     /// The book's live position while a reader plays it (TODO PERF11). The
     /// row observes this one entry, so it redraws when its own book's
     /// reader moves and no other row does. The inert entry, the default,
@@ -454,6 +460,9 @@ struct BookRow: View {
             ForEach(feedActions) { action in
                 Button(action.title) { performFeedAction(action) }
             }
+            ForEach(readingListCommands) { command in
+                Button(command.title) { performReadingListCommand(command) }
+            }
         }
     }
 
@@ -461,6 +470,7 @@ struct BookRow: View {
     /// lists them.
     var accessibilityActionNames: [String] {
         cloudCommands.map(\.title) + audioCommands.map(\.title) + feedActions.map(\.title)
+            + readingListCommands.map(\.title)
     }
 
     /// Spoken label for the whole row, replacing its combined children.
@@ -611,6 +621,9 @@ struct LibraryBookRowActions {
     /// Runs a command of the feed item a book was downloaded from (FR03).
     /// Doing nothing unless the list supplies it.
     var performFeedAction: (FeedItemAction) -> Void = { _ in }
+    /// Runs Add to Reading List or Remove from Reading List (FR09). Doing
+    /// nothing unless the list supplies it.
+    var performReadingListCommand: (ReadingListCommand) -> Void = { _ in }
 }
 
 /// One book's row in the library list: the row, its context menu, its
@@ -670,6 +683,9 @@ struct LibraryBookListRow: View, Equatable {
     /// Whether the row says its book is in the reading list (FR09); true
     /// only outside the Reading List.
     var isInReadingList: Bool = false
+    /// Add to Reading List and Remove from Reading List for `targets`
+    /// (FR09): context menu items and VoiceOver actions alike.
+    var readingListCommands: [ReadingListCommand] = []
     /// What the commands do. Never compared.
     let actions: LibraryBookRowActions
 
@@ -691,6 +707,7 @@ struct LibraryBookListRow: View, Equatable {
             && lhs.transcriptionNote == rhs.transcriptionNote
             && lhs.feedActions == rhs.feedActions
             && lhs.isInReadingList == rhs.isInReadingList
+            && lhs.readingListCommands == rhs.readingListCommands
     }
 
     var body: some View {
@@ -711,6 +728,8 @@ struct LibraryBookListRow: View, Equatable {
             performAudioCommand: actions.performAudioCommand,
             feedActions: feedActions,
             performFeedAction: actions.performFeedAction,
+            readingListCommands: readingListCommands,
+            performReadingListCommand: actions.performReadingListCommand,
             livePosition: livePosition
         )
         .accessibilityAction(.default) {
@@ -748,6 +767,13 @@ struct LibraryBookListRow: View, Equatable {
         }
         Button(isMulti ? "Move \(targets.count) Books to Folder..." : "Move to Folder...") {
             actions.moveToFolder(targets)
+        }
+        // Add to Reading List or Remove from Reading List, by membership,
+        // also VoiceOver actions (FR09).
+        ForEach(readingListCommands) { command in
+            Button(command.title) {
+                actions.performReadingListCommand(command)
+            }
         }
         // The Export dialog for the row's book or the selection (FR05).
         Button(BookExportWording.commandTitle(count: targets.count)) {

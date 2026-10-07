@@ -259,7 +259,9 @@ test("All actions have default binding entries") {
     for action in ShortcutAction.allCases {
         let bindings = defaults[action]
         try assertTrue(bindings != nil, "\(action.rawValue) should have a default binding entry")
-        if action != .releaseMediaControls {
+        // Release Media Controls and the reading list's two commands (FR09)
+        // have no keys until the user gives them some.
+        if ![.releaseMediaControls, .addToReadingList, .removeFromReadingList].contains(action) {
             try assertGreater(bindings!.count, 0, "\(action.rawValue) should have at least one binding")
         }
     }
@@ -451,7 +453,7 @@ test("Select All has Cmd+A binding") {
 
 test("Library category includes all library actions") {
     let libraryActions = ShortcutAction.allCases.filter { $0.category == "Library" }
-    try assertEqual(libraryActions.count, 9, "Should have 9 library actions")
+    try assertEqual(libraryActions.count, 11, "Should have 11 library actions")
     let names = libraryActions.map { $0.rawValue }
     try assertTrue(names.contains("Remove from Library"))
     try assertTrue(names.contains("New Folder"))
@@ -462,6 +464,8 @@ test("Library category includes all library actions") {
     try assertTrue(names.contains("Edit Mode"))
     try assertTrue(names.contains("Move Book Up"))
     try assertTrue(names.contains("Move Book Down"))
+    try assertTrue(names.contains("Add to Reading List"))
+    try assertTrue(names.contains("Remove from Reading List"))
     print("    Library category has \(libraryActions.count) actions")
 }
 

@@ -213,6 +213,130 @@ final class ReadingListViewTests: XCTestCase {
         }
     }
 
+    // MARK: - The Commands
+
+    /// A row's own book is offered exactly one command, by membership,
+    /// under the name the Library menu gives it; a selection is offered one
+    /// for its books outside the list and one for those in it, each acting
+    /// on its own books and counting them in its title.
+    @MainActor
+    func testTheCommandsAreOfferedByMembership() {
+        let shelf = Self.shelf()
+        let inList = Set(shelf.ids("Field Notes"))
+        func titles(_ books: [Book], selection: Bool, in list: Set<UUID>) -> [String] {
+            ReadingListCommand.commands(for: books, isSelection: selection, inList: list).map(\.title)
+        }
+
+        XCTAssertEqual(titles(shelf.books(titled: "Loose Pages"), selection: false, in: inList), ["Add to Reading List"])
+        XCTAssertEqual(titles(shelf.books(titled: "Field Notes"), selection: false, in: inList), ["Remove from Reading List"])
+
+        let selection = shelf.books(titled: "Loose Pages", "Field Notes", "Travel Notes")
+        let commands = ReadingListCommand.commands(for: selection, isSelection: true, inList: inList)
+        XCTAssertEqual(commands.map(\.title), ["Add 2 Books to Reading List", "Remove 1 Book from Reading List"])
+        XCTAssertEqual(commands.map(\.kind), [.add, .remove])
+        XCTAssertEqual(commands.first?.books.map(\.title), ["Loose Pages", "Travel Notes"])
+        XCTAssertEqual(commands.last?.books.map(\.title), ["Field Notes"])
+
+        let everyBook = Set(shelf.ids("Loose Pages", "Field Notes", "Travel Notes"))
+        XCTAssertEqual(titles(selection, selection: true, in: everyBook), ["Remove 3 Books from Reading List"])
+        XCTAssertEqual(titles(selection, selection: true, in: []), ["Add 3 Books to Reading List"])
+        XCTAssertEqual(titles([], selection: false, in: inList), [])
+    }
+
+    /// The Library menu's commands are named as a row names them for one
+    /// book, and listed in Settings under Library, with no keys until the
+    /// user gives them some.
+    @MainActor
+    func testTheLibraryMenusCommandsHaveNoKeysUntilGivenSome() {
+        XCTAssertEqual(ShortcutAction.addToReadingList.title, "Add to Reading List")
+        XCTAssertEqual(ShortcutAction.removeFromReadingList.title, "Remove from Reading List")
+        for action in [ShortcutAction.addToReadingList, .removeFromReadingList] {
+            XCTAssertEqual(action.category, "Library", action.rawValue)
+            XCTAssertEqual(action.scope, .app, action.rawValue)
+            XCTAssertEqual(ShortcutAction.defaultBindings[action], [], action.rawValue)
+        }
+        XCTAssertEqual(ShortcutAction.addToReadingList.notificationName, .addToReadingList)
+        XCTAssertEqual(ShortcutAction.removeFromReadingList.notificationName, .removeFromReadingList)
+        XCTAssertEqual(Notification.Name.addToReadingList.rawValue, "addToReadingList")
+        XCTAssertEqual(Notification.Name.removeFromReadingList.rawValue, "removeFromReadingList")
+    }
+
+    /// Add to Reading List says what it did: the book added, or how many,
+    /// and how many were in the list already; or why it added none: every
+    /// book chosen is in the list already, or none is chosen.
+    @MainActor
+    func testAddingSaysWhatItDid() {
+        let shelf = Self.shelf()
+        let recorder = recordingAnnouncements {
+            shelf.model.addToReadingList(shelf.books(titled: "Loose Pages"), announcingFrom: nil)
+            shelf.model.addToReadingList(shelf.books(titled: "Field Notes", "Travel Notes"), announcingFrom: nil)
+            shelf.model.addToReadingList(shelf.books(titled: "Loose Pages", "Unlisted Essay", "Field Notes"), announcingFrom: nil)
+            shelf.model.addToReadingList(shelf.books(titled: "Loose Pages"), announcingFrom: nil)
+            shelf.model.addToReadingList(shelf.books(titled: "Loose Pages", "Field Notes"), announcingFrom: nil)
+            shelf.model.addToReadingList([], announcingFrom: nil)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Added to reading list: Loose Pages",
+            "Added 2 books to the reading list.",
+            "Added to reading list: Unlisted Essay. 2 books were already in it.",
+            "Loose Pages is already in the reading list.",
+            "The 2 selected books are already in the reading list.",
+            "No books are selected.",
+        ])
+        XCTAssertEqual(shelf.model.readingListBooks.map(\.title), ["Loose Pages", "Field Notes", "Travel Notes", "Unlisted Essay"])
+    }
+
+    /// Remove from Reading List says what it did: the book taken off, or
+    /// how many, and how many were not in the list; or why it took none
+    /// off. The books stay in the library.
+    @MainActor
+    func testRemovingSaysWhatItDid() {
+        let shelf = Self.shelf()
+        shelf.model.addToReadingList(shelf.ids("Loose Pages", "Field Notes", "Travel Notes", "Unlisted Essay"))
+        let recorder = recordingAnnouncements {
+            shelf.model.removeFromReadingList(shelf.books(titled: "Field Notes"), announcingFrom: nil)
+            shelf.model.removeFromReadingList(shelf.books(titled: "Travel Notes", "Unlisted Essay"), announcingFrom: nil)
+            shelf.model.removeFromReadingList(shelf.books(titled: "Loose Pages", "Field Notes", "Travel Notes"), announcingFrom: nil)
+            shelf.model.removeFromReadingList(shelf.books(titled: "Loose Pages"), announcingFrom: nil)
+            shelf.model.removeFromReadingList(shelf.books(titled: "Loose Pages", "Field Notes"), announcingFrom: nil)
+            shelf.model.removeFromReadingList([], announcingFrom: nil)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Removed from reading list: Field Notes",
+            "Removed 2 books from the reading list.",
+            "Removed from reading list: Loose Pages. 2 books were not in it.",
+            "Loose Pages isn't in the reading list.",
+            "None of the 2 selected books is in the reading list.",
+            "No books are selected.",
+        ])
+        XCTAssertEqual(shelf.model.readingListBooks, [])
+        XCTAssertEqual(shelf.model.library.books.count, 4)
+    }
+
+    /// A row offers its reading list command as a VoiceOver action, after
+    /// its other actions, under the name its context menu gives it.
+    @MainActor
+    func testARowOffersItsCommandAsAVoiceOverAction() {
+        let book = Self.book("Loose Pages", in: "")
+        let adding = BookRow(book: book, readingListCommands: ReadingListCommand.commands(for: [book], isSelection: false, inList: []))
+        let removing = BookRow(book: book, readingListCommands: ReadingListCommand.commands(for: [book], isSelection: false, inList: [book.id]))
+
+        XCTAssertEqual(adding.accessibilityActionNames, ["Add to Reading List"])
+        XCTAssertEqual(removing.accessibilityActionNames, ["Remove from Reading List"])
+    }
+
+    /// An empty Reading List says so, and how a book joins it, naming the
+    /// command as the menus do.
+    func testAnEmptyReadingListSaysHowABookJoinsIt() {
+        XCTAssertEqual(
+            ReadingListWording.emptyList,
+            "The reading list is empty. To add a book, choose Add to Reading List from its context menu, "
+                + "its VoiceOver actions, or the Library menu."
+        )
+    }
+
     // MARK: - Fixtures
 
     /// A library model of four books: "Loose Pages" at the root, "Field

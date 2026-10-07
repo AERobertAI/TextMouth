@@ -82,6 +82,11 @@ final class ViewsAndWindowsLibraryListTests: XCTestCase {
             ("removal", Self.row(book, removal: RemovalPreferences(confirmsFirst: false, movesToTrash: false), livePosition: live)),
             ("live position", Self.row(book, livePosition: LiveReadingPosition())),
             ("in reading list", Self.row(book, livePosition: live, isInReadingList: true)),
+            ("reading list commands", Self.row(
+                book,
+                livePosition: live,
+                readingListCommands: ReadingListCommand.commands(for: [book], isSelection: false, inList: [])
+            )),
         ]
         for (difference, changed) in differing {
             XCTAssertNotEqual(row, changed, difference)
@@ -162,6 +167,7 @@ final class ViewsAndWindowsLibraryListTests: XCTestCase {
         removal: RemovalPreferences = RemovalPreferences(confirmsFirst: true, movesToTrash: true),
         livePosition: LiveReadingPosition,
         isInReadingList: Bool = false,
+        readingListCommands: [ReadingListCommand] = [],
         actions: LibraryBookRowActions = noActions
     ) -> LibraryBookListRow {
         LibraryBookListRow(
@@ -178,6 +184,7 @@ final class ViewsAndWindowsLibraryListTests: XCTestCase {
             removalPreferences: removal,
             livePosition: livePosition,
             isInReadingList: isInReadingList,
+            readingListCommands: readingListCommands,
             actions: actions
         )
     }

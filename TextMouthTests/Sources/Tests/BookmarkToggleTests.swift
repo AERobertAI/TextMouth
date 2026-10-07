@@ -525,7 +525,9 @@ test("Every ShortcutAction has a default binding entry") {
     for action in ShortcutAction.allCases {
         let bindings = defaults[action]
         try assertTrue(bindings != nil, "\(action.rawValue) should have a default binding entry")
-        if action != .releaseMediaControls {
+        // Release Media Controls and the reading list's two commands (FR09)
+        // have no keys until the user gives them some.
+        if ![.releaseMediaControls, .addToReadingList, .removeFromReadingList].contains(action) {
             try assertTrue(!bindings!.isEmpty, "\(action.rawValue) should have at least one default binding")
         }
     }

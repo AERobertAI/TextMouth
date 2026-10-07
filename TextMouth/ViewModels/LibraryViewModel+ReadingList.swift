@@ -54,6 +54,60 @@ extension LibraryViewModel {
         }
     }
 
+    // MARK: - The Commands
+
+    /// Add to Reading List, from a row, a selection, or the Library menu:
+    /// adds `books`, the books the command chose, to the end of the list in
+    /// their order, and tells VoiceOver, from `window`, what it did: the
+    /// books added and how many were in the list already
+    /// (`ReadingListWording.addedAnnouncement`), or, when it added none,
+    /// why (`ReadingListWording.addRefusal`). A book chosen twice counts
+    /// once, and one no longer in the library not at all. Returns what it
+    /// said.
+    @discardableResult
+    func addToReadingList(_ books: [Book], announcingFrom window: NSWindow?) -> String {
+        let listedBefore = Set(readingList.bookIDs)
+        let chosen = booksStillInLibrary(books)
+        let added = addToReadingList(chosen.map(\.id))
+        let message = added.isEmpty
+            ? ReadingListWording.addRefusal(selected: chosen.map(\.title))
+            : ReadingListWording.addedAnnouncement(
+                added: added.map(\.title),
+                alreadyIn: chosen.filter { listedBefore.contains($0.id) }.count
+            )
+        VoiceOverAnnouncer.announce(message, from: window)
+        return message
+    }
+
+    /// Remove from Reading List, from a row, a selection, or the Library
+    /// menu: takes `books` off the list, and tells VoiceOver, from `window`,
+    /// what it did: the books taken off and how many were not in the list
+    /// (`ReadingListWording.removedAnnouncement`), or, when it took none
+    /// off, why (`ReadingListWording.removeRefusal`). The books stay in the
+    /// library. Returns what it said.
+    @discardableResult
+    func removeFromReadingList(_ books: [Book], announcingFrom window: NSWindow?) -> String {
+        let chosen = booksStillInLibrary(books)
+        let removed = removeFromReadingList(chosen.map(\.id))
+        let message = removed.isEmpty
+            ? ReadingListWording.removeRefusal(selected: chosen.map(\.title))
+            : ReadingListWording.removedAnnouncement(removed: removed.map(\.title), notIn: chosen.count - removed.count)
+        VoiceOverAnnouncer.announce(message, from: window)
+        return message
+    }
+
+    /// `books` as the library holds them now, in their order and each once,
+    /// leaving out any no longer in it: what a command acts on, whatever
+    /// the list showed when it was chosen.
+    private func booksStillInLibrary(_ books: [Book]) -> [Book] {
+        let current = booksByID
+        var seen = Set<UUID>()
+        return books.compactMap { book in
+            guard seen.insert(book.id).inserted else { return nil }
+            return current[book.id]
+        }
+    }
+
     // MARK: - Order
 
     /// Moves the book `bookID` one place up or down the reading list, past

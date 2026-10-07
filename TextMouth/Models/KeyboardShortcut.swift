@@ -37,6 +37,12 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case toggleEditMode = "Edit Mode"
     case moveBookUp = "Move Book Up"
     case moveBookDown = "Move Book Down"
+    /// Adds the selected books to the end of the reading list (FR09). It
+    /// has no key until the user gives it one in Settings.
+    case addToReadingList = "Add to Reading List"
+    /// Takes the selected books off the reading list (FR09). It has no key
+    /// until the user gives it one in Settings.
+    case removeFromReadingList = "Remove from Reading List"
 
     // The audio editor's (FR04): a group of their own, matched only while an
     // editor window is key (`ShortcutScope`), so they may share keys with
@@ -140,6 +146,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .toggleEditMode: return .toggleEditMode
         case .moveBookUp: return .moveBookUp
         case .moveBookDown: return .moveBookDown
+        case .addToReadingList: return .addToReadingList
+        case .removeFromReadingList: return .removeFromReadingList
         // The audio editor's actions all post one name, carrying the action
         // in their user info, and its window performs them.
         case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
@@ -171,7 +179,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Panels"
         case .whereAmI, .speakInfo:
             return "Information"
-        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown:
+        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown,
+             .addToReadingList, .removeFromReadingList:
             return "Library"
         case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
              .editorSkipBackLong, .editorSkipForwardLong, .editorSkipBackShort, .editorSkipForwardShort,
@@ -552,7 +561,11 @@ extension ShortcutAction {
             ],
             .moveBookDown: [
                 KeyBinding(key: "downArrow", command: true, shift: true)
-            ]
+            ],
+            // No keys by default (FR09): the user gives them keys of their
+            // choosing in Settings, as Release Media Controls.
+            .addToReadingList: [],
+            .removeFromReadingList: []
         ]
         return everywhereElse.merging(audioEditorDefaultBindings) { existing, _ in existing }
     }

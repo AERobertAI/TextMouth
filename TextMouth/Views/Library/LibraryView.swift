@@ -642,14 +642,13 @@ struct LibraryView: View {
                 isEditMode = true
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .moveBookUp)) { notification in
-            guard takesCommand(notification) else { return }
-            moveSelectedBookInManualOrder(direction: -1)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .moveBookDown)) { notification in
-            guard takesCommand(notification) else { return }
-            moveSelectedBookInManualOrder(direction: 1)
-        }
+        // Move Book Up and Move Book Down, and Add to Reading List and
+        // Remove from Reading List (FR09), for the selection.
+        .modifier(LibraryOrderCommandsSupport(
+            takesCommand: takesCommand,
+            moveSelectedBook: { moveSelectedBookInManualOrder(direction: $0) },
+            changeReadingList: { changeReadingList($0, with: selectedBooks) }
+        ))
         .sheet(isPresented: $showTextInput) {
             TextInputView(
                 onAdd: { title, author, text in
@@ -925,6 +924,8 @@ struct LibraryView: View {
         let manualMoves: [UUID: LibraryManualMoves]
         /// The books in the reading list (FR09), by ID.
         let readingListIDs: Set<UUID>
+        /// The reading list commands of `selection` (FR09).
+        let selectionReadingListCommands: [ReadingListCommand]
         /// What the rows' commands do.
         let actions: LibraryBookRowActions
     }
@@ -948,12 +949,18 @@ struct LibraryView: View {
         // Every book's moves in the order the list shows, read from that
         // order rather than by sorting the folder again for each row.
         let manualMoves = reorderTarget == nil || !offersManualMoves ? [:] : LibraryManualMoves.moves(in: allBooks)
+        let readingListIDs = Set(libraryViewModel.readingList.bookIDs)
         return BookRowContext(
             selectedIDs: selectedIDs,
             selection: selection,
             selectionCloudCommands: selectionCloudCommands,
             manualMoves: manualMoves,
-            readingListIDs: Set(libraryViewModel.readingList.bookIDs),
+            readingListIDs: readingListIDs,
+            selectionReadingListCommands: ReadingListCommand.commands(
+                for: selection,
+                isSelection: selection.count > 1,
+                inList: readingListIDs
+            ),
             actions: rowActions
         )
     }
@@ -995,6 +1002,10 @@ struct LibraryView: View {
             feedActions: isSelectionRow ? [] : feedActions,
             // Said in every view but the Reading List, where every book is in it.
             isInReadingList: category != .readingList && context.readingListIDs.contains(book.id),
+            // Add to or Remove from Reading List, by membership (FR09).
+            readingListCommands: isSelectionRow
+                ? context.selectionReadingListCommands
+                : ReadingListCommand.commands(for: targets, isSelection: false, inList: context.readingListIDs),
             actions: context.actions
         )
         .equatable()
@@ -1097,6 +1108,13 @@ struct LibraryView: View {
             )
         } else {
             Section {
+                // An empty reading list says so, and how a book joins it
+                // (FR09); a search that matches nothing leaves the list as
+                // it is.
+                if category == .readingList && allBooks.isEmpty {
+                    Text(ReadingListWording.emptyList)
+                        .foregroundColor(.secondary)
+                }
                 bookRows(books, orderedBy: allBooks)
             } header: {
                 Text("Books (\(books.count))")
@@ -1226,8 +1244,27 @@ struct LibraryView: View {
             performAudioCommand: { command in
                 transcription.perform(command, library: libraryViewModel, window: hostWindow)
             },
-            performFeedAction: performFeedItemAction
+            performFeedAction: performFeedItemAction,
+            performReadingListCommand: performReadingListCommand
         )
+    }
+
+    /// Runs a row's reading list command (FR09), from its context menu or
+    /// its VoiceOver actions, announcing from this window what it did.
+    private func performReadingListCommand(_ command: ReadingListCommand) {
+        changeReadingList(command.kind, with: command.books)
+    }
+
+    /// Adds `books` to the reading list or takes them off it (FR09), as a
+    /// row's command or the Library menu asks, and says what it did, or why
+    /// nothing changed, from this window.
+    private func changeReadingList(_ kind: ReadingListCommand.Kind, with books: [Book]) {
+        switch kind {
+        case .add:
+            libraryViewModel.addToReadingList(books, announcingFrom: hostWindow)
+        case .remove:
+            libraryViewModel.removeFromReadingList(books, announcingFrom: hostWindow)
+        }
     }
 
     /// Runs a row's cloud command, from its context menu or its VoiceOver
@@ -1632,6 +1669,44 @@ private struct ClosedLibraryWindowPlaceholder: View {
             .font(.title2)
             .foregroundColor(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Arranging Commands (TODO A06, FR09)
+
+/// A Library window's part in the Library menu's commands that arrange its
+/// selected books, and in their keys: Move Book Up and Move Book Down, which
+/// move the one selected book in the order the list shows, and Add to
+/// Reading List and Remove from Reading List (FR09), which act on the whole
+/// selection. Only the window that takes a command acts on it.
+private struct LibraryOrderCommandsSupport: ViewModifier {
+    /// Whether this window takes the command a notification carries.
+    let takesCommand: (Notification) -> Bool
+    /// Moves the selected book one place: -1 up, +1 down.
+    let moveSelectedBook: (Int) -> Void
+    /// Adds the selected books to the reading list, or takes them off it.
+    let changeReadingList: (ReadingListCommand.Kind) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .moveBookUp)) { notification in
+                guard takesCommand(notification) else { return }
+                moveSelectedBook(-1)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .moveBookDown)) { notification in
+                guard takesCommand(notification) else { return }
+                moveSelectedBook(1)
+            }
+            // Library > Add to Reading List and Remove from Reading List,
+            // and their keys once the user gives them some.
+            .onReceive(NotificationCenter.default.publisher(for: .addToReadingList)) { notification in
+                guard takesCommand(notification) else { return }
+                changeReadingList(.add)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .removeFromReadingList)) { notification in
+                guard takesCommand(notification) else { return }
+                changeReadingList(.remove)
+            }
     }
 }
 
