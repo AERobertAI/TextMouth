@@ -194,6 +194,75 @@ final class SpeechMarkupGuardTests: XCTestCase {
         }
     }
 
+    // MARK: - The strict guard
+
+    /// The strict guard, for the rest of a chunk the engine refused, makes
+    /// every bracket silent, tag-shaped or not, unit for unit, and keeps
+    /// every length; every other unit, the ampersand included, stays.
+    func testTheStrictGuardSilencesEveryBracketAndKeepsEveryLength() {
+        let inputs = Self.changedTexts.map(\.input) + Self.untouchedTexts + ["fish & chips, &amp; and AT&T"]
+        for input in inputs {
+            let strict = SpeechMarkupGuard.neutralizedStrictly(input)
+            XCTAssertEqual(strict.utf16.count, input.utf16.count, input.debugDescription)
+            XCTAssertFalse(strict.contains("<"), input.debugDescription)
+            XCTAssertFalse(strict.contains(">"), input.debugDescription)
+            for (before, after) in zip(input.utf16, strict.utf16) {
+                switch before {
+                case 0x3C: XCTAssertEqual(after, 0x2039, input.debugDescription)
+                case 0x3E: XCTAssertEqual(after, 0x203A, input.debugDescription)
+                default: XCTAssertEqual(after, before, input.debugDescription)
+                }
+            }
+        }
+        XCTAssertEqual(
+            SpeechMarkupGuard.neutralizedStrictly("x < y and y > z, so 3 < 4."),
+            "x \(Self.open) y and y \(Self.close) z, so 3 \(Self.open) 4."
+        )
+        XCTAssertEqual(SpeechMarkupGuard.neutralizedStrictly("fish & chips"), "fish & chips")
+        XCTAssertEqual(SpeechMarkupGuard.neutralizedStrictly(""), "")
+    }
+
+    /// Strict within a part of a text, and guarded as usual outside it: a
+    /// lone bracket in the part falls silent, one outside it is still
+    /// spoken, and a tag-shaped run is neutralized wherever it is, even
+    /// when the part begins or ends inside it.
+    func testOnlyTheStrictPartLosesItsLoneBrackets() {
+        let text = "a < b, then <sm>quiet</sm>, then c > d."
+        let expectedWhole = "a < b, then \(Self.open)sm\(Self.close)quiet\(Self.open)/sm\(Self.close), then c > d."
+        XCTAssertEqual(SpeechMarkupGuard.neutralized(text), expectedWhole)
+
+        // Strict over "a < b": its lone bracket falls silent, and the one
+        // in "c > d" is still spoken.
+        XCTAssertEqual(
+            SpeechMarkupGuard.neutralized(text, strictlyWithin: 0..<5),
+            "a \(Self.open) b, then \(Self.open)sm\(Self.close)quiet\(Self.open)/sm\(Self.close), then c > d."
+        )
+        // Strict from inside the tag "<sm>" to the end: the tag is guarded
+        // as before, and "c > d" falls silent too.
+        let insideTheTag = (text as NSString).range(of: "sm>").location
+        XCTAssertEqual(
+            SpeechMarkupGuard.neutralized(text, strictlyWithin: insideTheTag..<text.utf16.count),
+            "a < b, then \(Self.open)sm\(Self.close)quiet\(Self.open)/sm\(Self.close), then c \(Self.close) d."
+        )
+    }
+
+    /// A strict part given partly or wholly outside the text counts only
+    /// where it overlaps the text, so a caller may give it in the offsets of
+    /// a longer text; one that misses the text, or is empty, changes
+    /// nothing beyond the default guard.
+    func testAStrictPartOutsideTheTextIsIgnored() {
+        let text = "x < y and y > z"
+        let strict = "x \(Self.open) y and y \(Self.close) z"
+
+        XCTAssertEqual(SpeechMarkupGuard.neutralized(text, strictlyWithin: -40..<400), strict)
+        XCTAssertEqual(SpeechMarkupGuard.neutralized(text, strictlyWithin: -40..<3), "x \(Self.open) y and y > z")
+        XCTAssertEqual(SpeechMarkupGuard.neutralized(text, strictlyWithin: 10..<400), "x < y and y \(Self.close) z")
+        for missing in [-40..<0, -40..<(-10), 15..<400, 200..<400, 6..<6] {
+            XCTAssertEqual(SpeechMarkupGuard.neutralized(text, strictlyWithin: missing), text, "\(missing)")
+        }
+        XCTAssertEqual(SpeechMarkupGuard.neutralized("", strictlyWithin: 0..<10), "")
+    }
+
     /// A chapter's worth of prose with a few tags is guarded quickly enough
     /// to run on every utterance, and the tags are found wherever they are.
     func testALongTextIsGuardedQuicklyAndCompletely() {

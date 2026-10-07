@@ -388,6 +388,94 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY_FAILED: offset=\(start) ") }, "\(lines)")
     }
 
+    /// The retry speaks the refused chunk strictly guarded, every bracket
+    /// silent, so that a shape the default guard misses is not refused
+    /// twice; the chunk after it goes back to the default guard, which
+    /// leaves a lone "less than" to be spoken. Every length, and so every
+    /// word's place, stays.
+    func testTheRetrySpeaksTheRefusedChunkStrictlyAndOnlyThatChunk() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let text = Self.bracketedText
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(text)
+        let refusedChunk = DirectSpeechChunk.starting(at: 0, in: text, maximumLength: SpeechService.directModeFirstChunkSize)
+        let refused = try handedOver(0, by: recorder)
+        XCTAssertEqual(refused.speechString, refusedChunk.words(of: text), "the default guard leaves lone brackets")
+        XCTAssertTrue(refused.speechString.contains("<"))
+
+        let lines = logLines(in: .speechTransitions) {
+            report(cancel: refused, to: speech)
+        }
+
+        let retry = try handedOver(1, by: recorder)
+        XCTAssertEqual(retry.speechString, SpeechMarkupGuard.neutralizedStrictly(refusedChunk.words(of: text)))
+        XCTAssertFalse(retry.speechString.contains("<"))
+        XCTAssertFalse(retry.speechString.contains(">"))
+        XCTAssertEqual(retry.speechString.utf16.count, refusedChunk.end - refusedChunk.start)
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY offset=0 ") }, "\(lines)")
+
+        // The retry starts, which queues the chunk after it: that chunk is
+        // guarded as usual, its lone brackets kept.
+        report(start: retry, to: speech)
+        let next = try handedOver(2, by: recorder)
+        let nextChunk = DirectSpeechChunk.starting(at: refusedChunk.end, in: text, maximumLength: SpeechService.directModeChunkSize)
+        XCTAssertEqual(next.speechString, nextChunk.words(of: text))
+        XCTAssertTrue(next.speechString.contains("<"), "a later chunk lost its lone brackets")
+
+        // A word of the retry lands at its own place in the text.
+        let tide = (retry.speechString as NSString).range(of: "tide")
+        report(word: tide, of: retry, to: speech)
+        XCTAssertEqual(speech.currentWordRange, tide)
+        XCTAssertEqual((text as NSString).substring(with: tide), "tide")
+    }
+
+    /// When a long chunk is refused, the whole rest of it is strictly
+    /// guarded, though the retry speaks it in a short chunk and the one
+    /// queued after it: that one is strict up to the refused chunk's end
+    /// and guarded as usual after it. A new speech guards as usual again.
+    func testTheRestOfALongRefusedChunkIsStrictAcrossTheRetrysChunks() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let text = Self.bracketedText
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(text)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        let second = try handedOver(1, by: recorder)
+        let firstChunk = DirectSpeechChunk.starting(at: 0, in: text, maximumLength: SpeechService.directModeFirstChunkSize)
+        let secondChunk = DirectSpeechChunk.starting(at: firstChunk.end, in: text, maximumLength: SpeechService.directModeChunkSize)
+        // The first chunk ends: the queued second is live, and never starts.
+        report(finish: first, to: speech)
+        report(cancel: second, to: speech)
+
+        // The retry, a short chunk from where the refused one began: strict.
+        let retry = try handedOver(2, by: recorder)
+        let retryChunk = DirectSpeechChunk.starting(at: secondChunk.start, in: text, maximumLength: SpeechService.directModeFirstChunkSize)
+        XCTAssertEqual(retry.speechString, SpeechMarkupGuard.neutralizedStrictly(retryChunk.words(of: text)))
+
+        // The chunk queued at its start: strict to the refused chunk's end.
+        report(start: retry, to: speech)
+        let next = try handedOver(3, by: recorder)
+        let nextChunk = DirectSpeechChunk.starting(at: retryChunk.end, in: text, maximumLength: SpeechService.directModeChunkSize)
+        let strictLength = secondChunk.end - nextChunk.start
+        XCTAssertEqual(
+            next.speechString,
+            SpeechMarkupGuard.neutralized(nextChunk.words(of: text), strictlyWithin: 0..<strictLength)
+        )
+        let units = Array(next.speechString.utf16)
+        guard strictLength > 0, strictLength < units.count else {
+            return XCTFail("the refused chunk should end inside the chunk after the retry, at \(strictLength) of \(units.count)")
+        }
+        XCTAssertFalse(units[..<strictLength].contains(0x3C), "the rest of the refused chunk kept a bracket")
+        XCTAssertTrue(units[strictLength...].contains(0x3C), "the text after the refused chunk lost its lone brackets")
+
+        // A new speech guards as usual from its first chunk.
+        speech.speak(text, fromCharOffset: secondChunk.start)
+        let again = try handedOver(4, by: recorder)
+        XCTAssertEqual(again.speechString, retryChunk.words(of: text))
+    }
+
     /// Speech that stopped after a refusal speaks again when asked, and
     /// not on the synthesizer that refused the retry, which would never
     /// speak again (October 7): Play goes to a fresh synthesizer, which
@@ -489,6 +577,15 @@ final class SpeechDirectChunkingTests: XCTestCase {
     private static let longText: String = {
         var prose = BenchmarkProse(seed: 71)
         return prose.text(utf16Length: SpeechRenderCoordinator.maximumTextLength + 20_000)
+    }()
+
+    /// A text longer than the render limit with lone brackets all through
+    /// it, which the default guard leaves to be spoken as "less than" and
+    /// "greater than", and the strict guard makes silent.
+    private static let bracketedText: String = {
+        let sentence = "Count on it: 3 < 4 and 5 > 2 here, as the tide turns. "
+        let repeats = SpeechRenderCoordinator.maximumTextLength / sentence.utf16.count + 400
+        return String(repeating: sentence, count: repeats)
     }()
 
     /// The pieces random chunking texts are made of: words, spaces, line

@@ -89,6 +89,14 @@ enum SpeechMarkupGuard {
     /// The UTF-16 unit of `<`, which every tag-shaped run begins with.
     private static let lessThan: UInt16 = 0x3C
 
+    /// The UTF-16 unit of `>`, which every tag-shaped run ends with.
+    private static let greaterThan: UInt16 = 0x3E
+
+    /// `openingBracketReplacement` and `closingBracketReplacement` as the
+    /// single UTF-16 units they are.
+    private static let openingReplacementUnit: UInt16 = 0x2039
+    private static let closingReplacementUnit: UInt16 = 0x203A
+
     /// The ranges of the tag-shaped runs in `text`, in UTF-16 units as
     /// `NSRange` counts them, in text order; each begins with the run's `<`
     /// and ends with its `>`.
@@ -121,5 +129,64 @@ enum SpeechMarkupGuard {
             )
         }
         return guarded as String
+    }
+
+    // MARK: - The strict guard
+
+    /// `text` with every `<` and `>` replaced by the angle quotation marks,
+    /// tag-shaped or not, one UTF-16 unit for one, and nothing else changed,
+    /// so it has exactly the length of `text`.
+    ///
+    /// For text the engine refused although `neutralized(_:)` had guarded
+    /// it, which only a shape this guard does not know could make it do:
+    /// with no bracket left, the engine finds no markup to parse at all.
+    /// The price is that a lone "less than" or "greater than", which the
+    /// engine would speak, is silent in that text; `SpeechService` pays it
+    /// only for the rest of a chunk the engine refused, and speaks every
+    /// other chunk through `neutralized(_:)`.
+    ///
+    /// The ampersand stays. The engine reads character entities (`&amp;`
+    /// was spoken as "and"), but no text with an ampersand, bare or in an
+    /// entity, with or without tags beside it, was refused or lost a word in
+    /// the October 7 probes (`Scripts/agents/probes/speech-markup-probe-shapes.swift`),
+    /// while a bare `&`, spoken as "and", fell silent as U+FF06 or U+FE60.
+    static func neutralizedStrictly(_ text: String) -> String {
+        neutralized(text, strictlyWithin: 0..<text.utf16.count)
+    }
+
+    /// `text` guarded by `neutralized(_:)`, and within `strictRange`, in
+    /// UTF-16 offsets into `text`, by `neutralizedStrictly(_:)` as well:
+    /// every bracket there replaced, every other unit left as it is. The
+    /// part of `strictRange` outside `text` is ignored, so a caller may give
+    /// a range that begins before `text` or ends after it. The result has
+    /// exactly the length of `text`.
+    ///
+    /// The strict part may begin or end anywhere, even inside a tag-shaped
+    /// run: both guards put the same mark in place of a bracket, so where
+    /// both touch one they agree.
+    static func neutralized(_ text: String, strictlyWithin strictRange: Range<Int>) -> String {
+        let guarded = neutralized(text)
+        // The strict part that lies in `text`; none when the range misses
+        // it, as it does for every chunk after a refused one.
+        let lower = max(0, strictRange.lowerBound)
+        let upper = min(guarded.utf16.count, strictRange.upperBound)
+        guard lower < upper else { return guarded }
+        var units = Array(guarded.utf16)
+        var changed = false
+        for index in lower..<upper {
+            switch units[index] {
+            case lessThan:
+                units[index] = openingReplacementUnit
+                changed = true
+            case greaterThan:
+                units[index] = closingReplacementUnit
+                changed = true
+            default:
+                break
+            }
+        }
+        // Brackets and their marks are single units outside the surrogate
+        // range, so replacing them never splits a character.
+        return changed ? String(decoding: units, as: UTF16.self) : guarded
     }
 }

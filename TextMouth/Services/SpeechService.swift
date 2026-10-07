@@ -622,6 +622,15 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// speech then ends (`endDirectSpeechRefused(at:)`) instead of trying
     /// forever.
     private var lastDirectRetryOffset: Int?
+    /// The part of the text being spoken, in its UTF-16 offsets, that direct
+    /// speech hands the synthesizer strictly guarded, every bracket silent
+    /// (`SpeechMarkupGuard.neutralizedStrictly(_:)`): the rest of the last
+    /// chunk the engine refused, from where it is spoken again to the
+    /// chunk's end. Nil when nothing was refused since speech last stopped.
+    /// Every other part goes through the default guard, which leaves a lone
+    /// "less than" to be spoken. Kept until speech stops, so that the same
+    /// passage spoken again, after a seek back, is not refused again.
+    private var strictlyGuardedRange: Range<Int>?
     /// The chunk handed to the synthesizer to follow the one speaking, so
     /// it goes straight on; nil when none is queued. It becomes the one
     /// speaking when the one before it ends, or when it starts, whichever
@@ -824,7 +833,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             transitionLog(.trace, "CHUNK_START: offset=\(chunk.start) len=\(chunk.end - chunk.start) end=\(chunk.end) totalText=\(text.utf16Length)")
         }
 
-        let utterance = makeDirectUtterance(speaking: chunk.words(of: text))
+        let utterance = makeDirectUtterance(speaking: chunk.words(of: text), at: chunk.start)
         // Mark this utterance as live BEFORE handing it to the synth.
         // The didFinish delegate compares against `liveDirectUtterance`
         // to filter callbacks for previously-stopped utterances.
@@ -848,7 +857,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             in: currentText,
             maximumLength: Self.directModeChunkSize
         )
-        let utterance = makeDirectUtterance(speaking: chunk.words(of: currentText))
+        let utterance = makeDirectUtterance(speaking: chunk.words(of: currentText), at: chunk.start)
         queuedDirectChunk = QueuedDirectChunk(utterance: utterance, chunk: chunk)
         transitionLog(.trace, "CHUNK_QUEUED: offset=\(chunk.start) len=\(chunk.end - chunk.start) end=\(chunk.end)")
         handToSynthesizer(utterance)
@@ -873,13 +882,20 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         let chunk: DirectSpeechChunk
     }
 
-    /// An utterance of `text` in the voice, speed, and pitch chosen now.
-    /// The synthesizer is handed `text` with its tag-shaped runs made
-    /// harmless (`SpeechMarkupGuard`), at exactly the text's length, so a
-    /// range it reports for the utterance is a range of `text`, and the
-    /// chunk's place in the whole text counts as before.
-    private func makeDirectUtterance(speaking text: String) -> AVSpeechUtterance {
-        let utterance = AVSpeechUtterance(string: SpeechMarkupGuard.neutralized(text))
+    /// An utterance of `text`, the part of the text being spoken that
+    /// begins at UTF-16 offset `offset`, in the voice, speed, and pitch
+    /// chosen now. The synthesizer is handed `text` with its tag-shaped runs
+    /// made harmless (`SpeechMarkupGuard`), and every bracket of its part in
+    /// `strictlyGuardedRange` too, at exactly the text's length, so a range
+    /// it reports for the utterance is a range of `text`, and the chunk's
+    /// place in the whole text counts as before.
+    private func makeDirectUtterance(speaking text: String, at offset: Int) -> AVSpeechUtterance {
+        let guarded = strictlyGuardedRange.map { strict in
+            // The strict part in the utterance's own offsets; the guard
+            // ignores whatever of it lies outside the utterance.
+            SpeechMarkupGuard.neutralized(text, strictlyWithin: (strict.lowerBound - offset)..<(strict.upperBound - offset))
+        } ?? SpeechMarkupGuard.neutralized(text)
+        let utterance = AVSpeechUtterance(string: guarded)
         utterance.voice = currentVoice
         utterance.rate = Self.rateForWPM(wordsPerMinute)
         utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
@@ -1031,20 +1047,27 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// next Play too, and speak it into silence while speech showed itself
     /// speaking, which is how the reading stopped and could not restart on
     /// October 7. The fresh one speaks the cancelled chunk again from where
-    /// it was cancelled (`DIRECT_RETRY`). Once per place: a cancel that
+    /// it was cancelled (`DIRECT_RETRY`), and strictly guarded to the
+    /// chunk's end (`strictlyGuardedRange`): the default guard had already
+    /// passed this text, so only every bracket made silent keeps a shape it
+    /// misses from being refused twice. A lone "less than" there is then
+    /// not spoken, which is the price of hearing the rest; the chunks after
+    /// it go back to the default guard. Once per place: a cancel that
     /// comes back to the same offset means the engine refuses this text on
-    /// any synthesizer, and speech ends there instead
-    /// (`endDirectSpeechRefused(at:)`), as it does when there is no text to
-    /// speak again.
+    /// any synthesizer, even with no bracket in it, and speech ends there
+    /// instead (`endDirectSpeechRefused(at:)`), as it does when there is no
+    /// text to speak again.
     private func recoverFromCancelledDirectUtterance() {
         let offset = directRetryOffset()
+        let refusedChunkEnd = directModeChunkEnd
         replaceDirectSynthesizer()
         guard !currentText.isEmpty, lastDirectRetryOffset != offset else {
             endDirectSpeechRefused(at: offset)
             return
         }
         lastDirectRetryOffset = offset
-        transitionLog(.event, "DIRECT_RETRY offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(directModeChunkEnd)")
+        strictlyGuardedRange = offset..<max(offset, refusedChunkEnd)
+        transitionLog(.event, "DIRECT_RETRY offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(refusedChunkEnd); strictly guarded to the chunk's end")
         speakDirect(currentText, fromCharOffset: offset)
     }
 
@@ -1214,7 +1237,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         isDirectSleepFadeActive = true
 
         let utterances = segments.map { segment -> AVSpeechUtterance in
-            let utterance = makeDirectUtterance(speaking: segment.text)
+            let utterance = makeDirectUtterance(speaking: segment.text, at: segment.baseUTF16Offset)
             utterance.volume = segment.volume
             let identifier = ObjectIdentifier(utterance)
             directFadeOffsets[identifier] = segment.baseUTF16Offset
@@ -1432,6 +1455,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         directModeChunkEnd = 0
         pendingDirectSeekOffset = nil
         lastDirectRetryOffset = nil
+        strictlyGuardedRange = nil
         stopPositionTracking()
     }
 
