@@ -150,6 +150,10 @@ struct LibraryView: View {
     /// notices after its commands (FR03). Kept, not observed: its sheets'
     /// host observes it, so a sheet opening never redraws the list.
     @State private var feedPresenter = LibraryFeedsPresenter()
+    /// What speaks the selected row's information for Speak Info, the I
+    /// key, and for Book Info on a folder, which has no sheet (October 7,
+    /// 2026). Kept, not observed: it draws nothing.
+    @State private var infoSpeaker = LibraryInfoSpeaker()
     @State private var showNewFolderSheet = false
     @State private var newFolderName = ""
     @State private var newFolderParentPath = ""
@@ -588,11 +592,29 @@ struct LibraryView: View {
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
             // Only open in the focused library window
             guard takesCommand(notification) else { return }
-            // Cmd+I: show info for the first selected book
-            if let id = selectedBookIDs.first,
-               let book = filteredBooks.first(where: { $0.id == id }) {
+            // Cmd+I: Book Info for the first selected book; Feed Info for a
+            // feed's row, or a feed's folder's; a folder has no sheet, so
+            // its row speaks its information instead (Speak Info).
+            switch selectedInfoRow {
+            case .book(let book):
                 showBookInfo(for: book)
+            case .feed(let row):
+                showFeedInfo(row.id)
+            case .folder(let folder):
+                if let feedID = feedFolders.feedID(inFolder: folder.id) {
+                    showFeedInfo(feedID)
+                } else {
+                    speakSelectedInfo()
+                }
+            case nil:
+                break
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .speakInfo)) { notification in
+            // The I key, and Library > Speak Info: the selected row's
+            // information, spoken with the app's own voice.
+            guard takesCommand(notification) else { return }
+            speakSelectedInfo()
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSelectedBook)) { notification in
             // Only respond in the focused library window
@@ -1238,6 +1260,51 @@ struct LibraryView: View {
             hasHostWindow: hostWindow != nil,
             hostWindowIsKey: hostWindow?.isKeyWindow ?? false
         )
+    }
+
+    // MARK: - Speak Info and Book Info for the Selected Row
+
+    /// The row Speak Info (the I key) and Book Info (Cmd+I) act on: the
+    /// first selected row in the list's order, which the List selects by
+    /// ID for a folder's and a feed's row as for a book's, or the edit
+    /// selection's first book (`LibraryInfoRow.selected`).
+    private var selectedInfoRow: LibraryInfoRow? {
+        LibraryInfoRow.selected(
+            selectedBookIDs,
+            editSelection: editSelection,
+            folders: category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : [],
+            feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center),
+            books: filteredBooks
+        )
+    }
+
+    /// Speaks the selected row's information with the app's own voice, as
+    /// Where Am I speaks a position in a reader (`LibraryInfoSpeaker`): the
+    /// brief summary, or the full one on a quick second press, in the
+    /// chosen voice at the chosen speed; with nothing selected, that
+    /// nothing is. The row's facts are gathered at the press, as the list
+    /// shows them then.
+    private func speakSelectedInfo() {
+        let row = selectedInfoRow
+        infoSpeaker.press(voice: settingsViewModel.selectedVoice, wordsPerMinute: settingsViewModel.wordsPerMinute) { full in
+            row.map { row in
+                LibraryInfoSubject(
+                    row,
+                    library: libraryViewModel,
+                    feedFolders: feedFolders,
+                    wordsPerMinute: settingsViewModel.wordsPerMinute,
+                    cloudStates: cloudStates,
+                    keptBooks: keptBooks,
+                    measuresFileSize: full
+                )
+            }
+        }
+    }
+
+    /// Opens Feed Info for the feed `feedID`, as its row's command does
+    /// (FR03).
+    private func showFeedInfo(_ feedID: UUID) {
+        performFeedAction(FeedAction(command: .feedInfo, feedID: feedID, title: FeedWording.feedInfoTitle))
     }
 
     /// Where this list is: its category and, in Folders, its folder.
