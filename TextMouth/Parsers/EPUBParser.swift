@@ -131,7 +131,7 @@ enum EPUBParser {
         let doc = try XMLDocument(xmlString: xml)
 
         let title = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first?.stringValue ?? ""
-        let author = (try? doc.nodes(forXPath: "//*[local-name()='creator']"))?.first?.stringValue ?? ""
+        let author = authorName(in: doc) ?? ""
         let publisher = (try? doc.nodes(forXPath: "//*[local-name()='publisher']"))?.first?.stringValue ?? ""
         let date = (try? doc.nodes(forXPath: "//*[local-name()='date']"))?.first?.stringValue ?? ""
         let language = (try? doc.nodes(forXPath: "//*[local-name()='language']"))?.first?.stringValue ?? ""
@@ -296,6 +296,95 @@ enum EPUBParser {
         return doc.xmlString(options: [.nodePrettyPrint])
     }
 
+    // MARK: - The Author a Package Names
+
+    /// The XPath naming every `dc:creator` element of a package document.
+    private static let creatorPath = "//*[local-name()='creator']"
+
+    /// The author the package document `doc` names, or nil when it names
+    /// no one.
+    ///
+    /// Most packages name the author in a `dc:creator` element, read first
+    /// (`creatorElement(in:refinedRoles:)`). Packages written by some EPUB
+    /// 3 converters name the author only in a
+    /// `<meta property="dcterms:creator">` element, the generic form EPUB
+    /// 3.0 allowed for every Dublin Core term, read next: on October 7,
+    /// 2026, 150 of the 729 EPUBs in the user's library named their author
+    /// that way alone, and every one was listed under an unknown author. A
+    /// `dc:contributor` with the author role is read last. Every name is
+    /// read by `name(of:)`, so an element holding only the placeholder
+    /// "Unknown", which calibre writes for a book with no author, names no
+    /// one, and the next place is read.
+    static func authorName(in doc: XMLDocument) -> String? {
+        let roles = refinedRoles(in: doc)
+        if let creator = creatorElement(in: doc, refinedRoles: roles) {
+            return name(of: creator)
+        }
+        let termMetas = elements(in: doc, matching: "//*[local-name()='meta'][@property='dcterms:creator']")
+        if let named = termMetas.lazy.compactMap(name(of:)).first {
+            return named
+        }
+        let contributors = elements(in: doc, matching: "//*[local-name()='contributor']")
+        return contributors.first { hasAuthorRole($0, refinedRoles: roles) }.flatMap(name(of:))
+    }
+
+    /// The `dc:creator` element of `doc` that names the author, when one
+    /// names anyone: the first with the author role, or else the first
+    /// naming anyone, so a package listing its illustrator before its author
+    /// names the author. An edit of the author is written into this element
+    /// (`updateOPFMetadata`). `refinedRoles` are the roles `doc`'s meta
+    /// elements give (`refinedRoles(in:)`), read here when not given.
+    static func creatorElement(in doc: XMLDocument, refinedRoles: [String: String]? = nil) -> XMLElement? {
+        let roles = refinedRoles ?? self.refinedRoles(in: doc)
+        let named = elements(in: doc, matching: creatorPath).filter { name(of: $0) != nil }
+        return named.first { hasAuthorRole($0, refinedRoles: roles) } ?? named.first
+    }
+
+    /// The name `element` holds: its text without the spaces and line
+    /// breaks around it, or nil when it holds none, or only the placeholder
+    /// `Book.unknownAuthor`.
+    private static func name(of element: XMLElement) -> String? {
+        let text = (element.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return Book.isUnknownAuthor(text) ? nil : text
+    }
+
+    /// Whether `element` has the author role: `aut`, the MARC relator for
+    /// an author, in its `opf:role` attribute (EPUB 2) or in the meta
+    /// element refining it (EPUB 3, `refinedRoles`).
+    private static func hasAuthorRole(_ element: XMLElement, refinedRoles: [String: String]) -> Bool {
+        var role = element.attribute(forName: "opf:role")?.stringValue
+            ?? element.attribute(forName: "role")?.stringValue
+        if role == nil, let id = element.attribute(forName: "id")?.stringValue {
+            role = refinedRoles[id]
+        }
+        return role?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "aut"
+    }
+
+    /// The roles the EPUB 3 meta elements of `doc` give the elements they
+    /// refine, by the refined element's ID: `<meta refines="#aut"
+    /// property="role" scheme="marc:relators">aut</meta>` gives the element
+    /// with the ID `aut` the role `aut`. The first role given to an element
+    /// counts.
+    private static func refinedRoles(in doc: XMLDocument) -> [String: String] {
+        var roles: [String: String] = [:]
+        for meta in elements(in: doc, matching: "//*[local-name()='meta'][@refines][@property='role']") {
+            guard let refines = meta.attribute(forName: "refines")?.stringValue, let role = meta.stringValue else {
+                continue
+            }
+            let id = refines.hasPrefix("#") ? String(refines.dropFirst()) : refines
+            if roles[id] == nil {
+                roles[id] = role
+            }
+        }
+        return roles
+    }
+
+    /// The elements `path` names in `doc`, in document order; none when the
+    /// path cannot be evaluated.
+    private static func elements(in doc: XMLDocument, matching path: String) -> [XMLElement] {
+        ((try? doc.nodes(forXPath: path)) ?? []).compactMap { $0 as? XMLElement }
+    }
+
     // MARK: - Container Parsing (shared with MarkdownCacheService)
 
     static func parseContainerForOPFPath(_ xml: String) throws -> String {
@@ -333,8 +422,7 @@ enum EPUBParser {
         let titles = try doc.nodes(forXPath: "//*[local-name()='title']")
         let title = titles.first?.stringValue ?? "Untitled"
 
-        let creators = try doc.nodes(forXPath: "//*[local-name()='creator']")
-        let author = creators.first?.stringValue ?? Book.unknownAuthor
+        let author = authorName(in: doc) ?? Book.unknownAuthor
 
         // Manifest
         let manifestNodes = try doc.nodes(forXPath: "//*[local-name()='item']")
