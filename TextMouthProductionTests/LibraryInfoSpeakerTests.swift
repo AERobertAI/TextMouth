@@ -184,6 +184,24 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         XCTAssertEqual(LibraryInfoSpeaker.text(for: classics, full: true, now: start), LibraryInfoWording.full(classics, now: start))
     }
 
+    /// A title holding a tag-shaped run the synthesizer would take as
+    /// markup is handed over neutralized, as every book text is, and the
+    /// text the press reports stays the wording's.
+    func testTitlesWithSynthesizerMarkupAreNeutralized() throws {
+        let (speaker, recorder) = makeSpeaker()
+        let marked = LibraryInfoSubject.folder(
+            FolderInfoFacts(name: "<sm>Classics</sm>", bookCount: 1, unopenedCount: 0, feedCount: 0, subfolderCount: 0, timeRemaining: nil)
+        )
+
+        let text = try XCTUnwrap(speaker.press(voice: nil, wordsPerMinute: 200, now: start) { _ in marked })
+
+        XCTAssertEqual(text, "<sm>Classics</sm>. Folder. 1 book.")
+        XCTAssertEqual(recorder.spoken, [SpeechMarkupGuard.neutralized(text)])
+        XCTAssertEqual(recorder.spoken, ["\u{2039}sm\u{203A}Classics\u{2039}/sm\u{203A}. Folder. 1 book."])
+        XCTAssertNotEqual(recorder.spoken.first, text)
+        XCTAssertEqual(recorder.spoken.first?.utf16.count, text.utf16.count)
+    }
+
     /// The app's own synthesizer is what a speaker made without one speaks
     /// through; made here, it speaks nothing.
     func testTheAppsSynthesizerIsTheDefault() {

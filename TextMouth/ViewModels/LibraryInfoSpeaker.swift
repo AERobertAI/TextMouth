@@ -147,7 +147,9 @@ final class LibraryInfoSpeaker {
         }
         self.delegate = delegate
         synthesizer.delegate = delegate
-        let utterance = AVSpeechUtterance(string: text)
+        // A title can hold a tag-shaped run the synthesizer would take as
+        // markup ("<sm>"): neutralized, as every book text is.
+        let utterance = AVSpeechUtterance(string: SpeechMarkupGuard.neutralized(text))
         utterance.voice = voice
         utterance.rate = SpeechService.rateForWPM(wordsPerMinute)
         utterance.prefersAssistiveTechnologySettings = false
