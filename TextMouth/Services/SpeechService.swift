@@ -622,6 +622,15 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// speech then ends (`endDirectSpeechRefused(at:)`) instead of trying
     /// forever.
     private var lastDirectRetryOffset: Int?
+    /// The part of the text being spoken, in its UTF-16 offsets, that direct
+    /// speech hands the synthesizer strictly guarded, every bracket silent
+    /// (`SpeechMarkupGuard.neutralizedStrictly(_:)`): the rest of the last
+    /// chunk the engine refused, from where it is spoken again to the
+    /// chunk's end. Nil when nothing was refused since speech last stopped.
+    /// Every other part goes through the default guard, which leaves a lone
+    /// "less than" to be spoken. Kept until speech stops, so that the same
+    /// passage spoken again, after a seek back, is not refused again.
+    private var strictlyGuardedRange: Range<Int>?
     /// The chunk handed to the synthesizer to follow the one speaking, so
     /// it goes straight on; nil when none is queued. It becomes the one
     /// speaking when the one before it ends, or when it starts, whichever
@@ -824,7 +833,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             transitionLog(.trace, "CHUNK_START: offset=\(chunk.start) len=\(chunk.end - chunk.start) end=\(chunk.end) totalText=\(text.utf16Length)")
         }
 
-        let utterance = makeDirectUtterance(speaking: chunk.words(of: text))
+        let utterance = makeDirectUtterance(speaking: chunk.words(of: text), at: chunk.start)
         // Mark this utterance as live BEFORE handing it to the synth.
         // The didFinish delegate compares against `liveDirectUtterance`
         // to filter callbacks for previously-stopped utterances.
@@ -848,7 +857,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             in: currentText,
             maximumLength: Self.directModeChunkSize
         )
-        let utterance = makeDirectUtterance(speaking: chunk.words(of: currentText))
+        let utterance = makeDirectUtterance(speaking: chunk.words(of: currentText), at: chunk.start)
         queuedDirectChunk = QueuedDirectChunk(utterance: utterance, chunk: chunk)
         transitionLog(.trace, "CHUNK_QUEUED: offset=\(chunk.start) len=\(chunk.end - chunk.start) end=\(chunk.end)")
         handToSynthesizer(utterance)
@@ -873,13 +882,20 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         let chunk: DirectSpeechChunk
     }
 
-    /// An utterance of `text` in the voice, speed, and pitch chosen now.
-    /// The synthesizer is handed `text` with its tag-shaped runs made
-    /// harmless (`SpeechMarkupGuard`), at exactly the text's length, so a
-    /// range it reports for the utterance is a range of `text`, and the
-    /// chunk's place in the whole text counts as before.
-    private func makeDirectUtterance(speaking text: String) -> AVSpeechUtterance {
-        let utterance = AVSpeechUtterance(string: SpeechMarkupGuard.neutralized(text))
+    /// An utterance of `text`, the part of the text being spoken that
+    /// begins at UTF-16 offset `offset`, in the voice, speed, and pitch
+    /// chosen now. The synthesizer is handed `text` with its tag-shaped runs
+    /// made harmless (`SpeechMarkupGuard`), and every bracket of its part in
+    /// `strictlyGuardedRange` too, at exactly the text's length, so a range
+    /// it reports for the utterance is a range of `text`, and the chunk's
+    /// place in the whole text counts as before.
+    private func makeDirectUtterance(speaking text: String, at offset: Int) -> AVSpeechUtterance {
+        let guarded = strictlyGuardedRange.map { strict in
+            // The strict part in the utterance's own offsets; the guard
+            // ignores whatever of it lies outside the utterance.
+            SpeechMarkupGuard.neutralized(text, strictlyWithin: (strict.lowerBound - offset)..<(strict.upperBound - offset))
+        } ?? SpeechMarkupGuard.neutralized(text)
+        let utterance = AVSpeechUtterance(string: guarded)
         utterance.voice = currentVoice
         utterance.rate = Self.rateForWPM(wordsPerMinute)
         utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
@@ -973,14 +989,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         let safeOffset = max(0, min(reportedOffset, currentText.utf16Length))
         if renderedAudioMatchesSpeech {
             transitionLog(.event, "DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
-            stopDirectSynthesizer()
-            usingDirectMode = false
-            audioEngine.setSpeed(wpm: wordsPerMinute)
-            audioEngine.setPitch(multiplier: pitchMultiplier)
-            audioEngine.play(fromCharOffset: safeOffset)
-            if audioEngine.isPlaying {
-                startPositionTracking()
-            } else {
+            if !switchToRenderedAudio(at: safeOffset) {
                 // A rendered buffer can survive an engine-start failure. Fall
                 // back to direct speech rather than leaving the logical state
                 // active with a second silent backend.
@@ -1024,37 +1033,142 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// refuses a text it reads as broken markup (`SpeechMarkupGuard`): the
     /// refused utterance never starts, so the watchdog, which its start
     /// would arm, never looks, and the synthesizer that refused it never
-    /// speaks again, so speaking again on it would be silent too. A fresh
-    /// synthesizer takes its place (`DIRECT_SYNTH_REPLACED`) and speaks the
-    /// cancelled chunk again from where it was cancelled (`DIRECT_RETRY`).
-    /// Once per place: a cancel that comes back to the same offset means
-    /// the engine refuses this text on any synthesizer, and speech ends
-    /// there instead (`endDirectSpeechRefused(at:)`), as it does when there
-    /// is no text to speak again.
+    /// speaks again, so speaking again on it would be silent too.
+    ///
+    /// A fresh synthesizer takes its place first, whatever follows
+    /// (`DIRECT_SYNTH_REPLACED`): kept, the one that refused would take the
+    /// next Play too, and speak it into silence while speech showed itself
+    /// speaking, which is how the reading stopped and could not restart on
+    /// October 7.
+    ///
+    /// When the engine holds audio rendered from this speech in the
+    /// current voice (`renderedAudioMatchesSpeech`), that audio plays on
+    /// from where the cancelled chunk would have gone on
+    /// (`DIRECT_RETRY_ENGINE`). Nothing is heard at this moment, so the
+    /// switch neither repeats nor cuts a word, and the render, made from the
+    /// whole chapter, can hold what the engine refused in a chunk alone: on
+    /// October 7 a chunk holding only a closing tag was refused, while the
+    /// chapter, its tags balanced, had rendered.
+    ///
+    /// Otherwise, or when the engine does not start, the fresh synthesizer
+    /// speaks the cancelled chunk again from where it was cancelled
+    /// (`DIRECT_RETRY`), and strictly guarded to the chunk's end
+    /// (`strictlyGuardedRange`): the default guard had already passed this
+    /// text, so only every bracket made silent keeps a shape it misses from
+    /// being refused twice. A lone "less than" there is then not spoken,
+    /// which is the price of hearing the rest; the chunks after it go back
+    /// to the default guard. Once per place: a cancel that comes back to
+    /// the same offset means the engine refuses this text on any
+    /// synthesizer, even with no bracket in it, and speech ends there
+    /// instead (`endDirectSpeechRefused(at:)`), as it does when there is no
+    /// text to speak again.
     private func recoverFromCancelledDirectUtterance() {
-        let offset = directRetryOffset()
-        guard !currentText.isEmpty, lastDirectRetryOffset != offset else {
+        let offset = retryOffset(from: directModeBaseOffset, to: directModeChunkEnd)
+        let refusedChunkEnd = directModeChunkEnd
+        replaceDirectSynthesizer()
+        if renderedAudioMatchesSpeech {
+            transitionLog(.event, "DIRECT_RETRY_ENGINE: rendered audio of this speech plays on at offset=\(offset) chunkEnd=\(refusedChunkEnd)")
+            if switchToRenderedAudio(at: offset) { return }
+            // A rendered buffer can survive an engine-start failure: speak
+            // directly again instead, as if there were no rendered audio.
+            transitionLog(.event, "DIRECT_RETRY_ENGINE_FAILED: rendered audio did not start at offset=\(offset); speaking it again directly")
+            audioEngine.stop()
+        }
+        guard takeRetry(from: offset, to: refusedChunkEnd) else {
             endDirectSpeechRefused(at: offset)
             return
         }
-        lastDirectRetryOffset = offset
-        replaceDirectSynthesizer()
-        transitionLog(.event, "DIRECT_RETRY offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(directModeChunkEnd)")
+        transitionLog(.event, "DIRECT_RETRY offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(refusedChunkEnd); strictly guarded to the chunk's end")
         speakDirect(currentText, fromCharOffset: offset)
     }
 
-    /// Where to speak again after the live chunk was cancelled: its last
-    /// reported word, when one was reported within the chunk, so that
-    /// nothing heard is heard twice; else the chunk's start, since a chunk
-    /// the engine refused never said a word, and a word reported before it
-    /// belongs to the chunk before it.
-    private func directRetryOffset() -> Int {
-        let chunkStart = directModeBaseOffset
-        guard let reported = currentWordRange?.location,
-              reported >= chunkStart, reported < directModeChunkEnd else {
-            return chunkStart
+    /// The live utterance was cancelled while speech was paused, which the
+    /// app itself never does: a pause pauses the synthesizer, and every
+    /// stop of the app's lets go of the live utterance before it stops the
+    /// synthesizer (`stopDirectSynthesizer()`). The engine refused it, or
+    /// the system dropped it, and the synthesizer that held it may never
+    /// speak again, so resuming would continue nothing on it, or speak again
+    /// on it into silence while speech showed itself playing.
+    ///
+    /// A fresh synthesizer takes its place now (`DIRECT_SYNTH_REPLACED`),
+    /// and the pause stands: nothing is heard until Play. Play then goes on
+    /// from where the utterance was cancelled (`pendingDirectSeekOffset`),
+    /// as after a seek made while paused: from audio rendered from this
+    /// speech when the engine holds some, and otherwise directly, the rest
+    /// of the cancelled chunk strictly guarded, as the retry would speak it
+    /// (`DIRECT_RETRY_AT_RESUME`). That counts as this place's one retry:
+    /// refused there again after Play, speech ends with the announcement.
+    private func retryCancelledDirectUtteranceAtResume() {
+        let offset = retryOffset(from: directModeBaseOffset, to: directModeChunkEnd)
+        let refusedChunkEnd = directModeChunkEnd
+        replaceDirectSynthesizer()
+        guard takeRetry(from: offset, to: refusedChunkEnd) else {
+            endDirectSpeechRefused(at: offset)
+            return
+        }
+        pendingDirectSeekOffset = offset
+        transitionLog(.event, "DIRECT_RETRY_AT_RESUME offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(refusedChunkEnd); speech stays paused")
+    }
+
+    /// A segment of a direct sleep fade, `segment`, which begins at
+    /// `segmentStart` in the text, was cancelled while the fade still held
+    /// it. The app never does that: each of its stops lets go of the fade's
+    /// segments before it stops the synthesizer (`stopDirectSynthesizer()`).
+    /// So the engine refused the segment's text, and the synthesizer that
+    /// held it, with the quieter segments queued after it, never speaks
+    /// again: the fade would fall silent early, and Play after the timer's
+    /// pause would restart speech on it, into silence.
+    ///
+    /// A fresh synthesizer takes its place (`DIRECT_SYNTH_REPLACED`), and
+    /// the fade goes on from where the segment was cancelled, planned anew
+    /// as a fade's continuation is, starting no louder than the segment
+    /// was, with the rest of the segment strictly guarded
+    /// (`SLEEP_FADE_DIRECT_SEGMENT_REFUSED`). Once per place, as for any
+    /// refusal: refused there again, speech ends with the announcement
+    /// (`endDirectSpeechRefused(at:)`).
+    private func recoverFromRefusedFadeSegment(_ segment: AVSpeechUtterance, at segmentStart: Int) {
+        let segmentEnd = segmentStart + (directFadeLengths[ObjectIdentifier(segment)] ?? 0)
+        let offset = retryOffset(from: segmentStart, to: segmentEnd)
+        // Read before the synthesizer is replaced, which ends the fade's
+        // bookkeeping.
+        let continuationDuration = directFadeContinuationDuration
+        replaceDirectSynthesizer()
+        guard takeRetry(from: offset, to: segmentEnd) else {
+            endDirectSpeechRefused(at: offset)
+            return
+        }
+        transitionLog(.event, "SLEEP_FADE_DIRECT_SEGMENT_REFUSED: offset=\(offset) segmentEnd=\(segmentEnd); the fade goes on strictly guarded")
+        prepareDirectSleepFade(
+            fromUTF16Offset: offset,
+            duration: continuationDuration,
+            startingVolume: segment.volume
+        )
+    }
+
+    /// Where to speak again after the system cancelled an utterance that
+    /// spoke `start..<end` of the text: its last reported word, when one was
+    /// reported within it, so that nothing heard is heard twice; else its
+    /// start, since an utterance the engine refused never said a word, and
+    /// a word reported before it belongs to the utterance before it.
+    private func retryOffset(from start: Int, to end: Int) -> Int {
+        guard let reported = currentWordRange?.location, reported >= start, reported < end else {
+            return start
         }
         return reported
+    }
+
+    /// Take the one retry of the place at `offset`, the start of what is
+    /// left of a refused utterance that ran to `end`: that rest is spoken
+    /// strictly guarded (`strictlyGuardedRange`). False, taking nothing,
+    /// when speech was refused at `offset` before, so that the engine
+    /// refuses this text on any synthesizer, even with no bracket in it, or
+    /// when there is no text to speak again; speech should then end there
+    /// (`endDirectSpeechRefused(at:)`).
+    private func takeRetry(from offset: Int, to end: Int) -> Bool {
+        guard !currentText.isEmpty, lastDirectRetryOffset != offset else { return false }
+        lastDirectRetryOffset = offset
+        strictlyGuardedRange = offset..<max(offset, end)
+        return true
     }
 
     /// Replace the direct synthesizer with a fresh one, the old one stopped
@@ -1077,9 +1191,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// speech from its cursor, and the chapter neither ends nor moves on.
     /// The listener hears `engineRefusedAnnouncement`, and the reader is
     /// told (`onSpeechRefused`).
+    ///
+    /// The caller has already let go of the synthesizer that refused, and
+    /// of what it held (`replaceDirectSynthesizer()`), so that Play speaks
+    /// on a synthesizer that can still speak.
     private func endDirectSpeechRefused(at offset: Int) {
         transitionLog(.event, "DIRECT_RETRY_FAILED: offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(directModeChunkEnd); speech stopped, the listener told")
-        stopDirectSynthesizer()
         stopPositionTracking()
         isSpeaking = false
         isPaused = false
@@ -1129,6 +1246,35 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         directFadeTerminalVolume = 0
     }
 
+    /// Switch from direct speech to the engine's rendered audio of this
+    /// speech, playing it from `offset` at the listener's speed and pitch,
+    /// and follow its position once it plays. Returns whether the engine
+    /// is playing; when it is not, as a rendered buffer that survived an
+    /// engine-start failure can leave it, speech is in neither backend, and
+    /// the caller decides how to go on.
+    ///
+    /// The synthesizer is stopped first and its utterance let go
+    /// (`stopDirectSynthesizer()`). `willSpeakRangeOfSpeechString` runs
+    /// ahead of the audio by a few words, so a switch while an utterance is
+    /// heard can repeat or cut words: a seek, a resume, the watchdog's
+    /// recovery from an idle synthesizer, and the recovery from an utterance
+    /// the engine refused switch where nothing is heard; the start of a
+    /// sleep fade switches while speech is heard, since only rendered audio
+    /// follows the fade's volume. Every caller has checked
+    /// that the audio is of this speech in the current voice
+    /// (`renderedAudioMatchesSpeech`).
+    @discardableResult
+    private func switchToRenderedAudio(at offset: Int) -> Bool {
+        stopDirectSynthesizer()
+        usingDirectMode = false
+        audioEngine.setSpeed(wpm: wordsPerMinute)
+        audioEngine.setPitch(multiplier: pitchMultiplier)
+        audioEngine.play(fromCharOffset: offset)
+        guard audioEngine.isPlaying else { return false }
+        startPositionTracking()
+        return true
+    }
+
     /// Apply a sleep timer volume update to whichever speech backend is
     /// actually audible. Rendered playback supports mixer updates directly.
     /// Direct synthesis is switched to rendered audio of this speech when
@@ -1145,14 +1291,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
             if renderedAudioMatchesSpeech {
                 transitionLog(.trace, "SLEEP_FADE_SWITCH: direct→engine at offset=\(offset)")
-                stopDirectSynthesizer()
-                usingDirectMode = false
-                audioEngine.setSpeed(wpm: wordsPerMinute)
-                audioEngine.setPitch(multiplier: pitchMultiplier)
-                audioEngine.play(fromCharOffset: offset)
-                if audioEngine.isPlaying {
-                    startPositionTracking()
-                } else {
+                if !switchToRenderedAudio(at: offset) {
                     // Preserve an audible fade when a retained render cannot
                     // restart, for example after a device-route transition.
                     transitionLog(.event, "SLEEP_FADE_ENGINE_FAILED: using direct utterance fade at offset=\(offset)")
@@ -1206,7 +1345,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         isDirectSleepFadeActive = true
 
         let utterances = segments.map { segment -> AVSpeechUtterance in
-            let utterance = makeDirectUtterance(speaking: segment.text)
+            let utterance = makeDirectUtterance(speaking: segment.text, at: segment.baseUTF16Offset)
             utterance.volume = segment.volume
             let identifier = ObjectIdentifier(utterance)
             directFadeOffsets[identifier] = segment.baseUTF16Offset
@@ -1329,15 +1468,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         switch action {
         case .switchToEngine(let resumeOffset), .startRenderedEngine(let resumeOffset):
             transitionLog(.trace, "RESUME_SWITCH: starting rendered engine at offset=\(resumeOffset)")
-            stopDirectSynthesizer()
-            usingDirectMode = false
-            audioEngine.setSpeed(wpm: wordsPerMinute)
-            audioEngine.setPitch(multiplier: pitchMultiplier)
-            audioEngine.play(fromCharOffset: resumeOffset)
-            resumed = audioEngine.isPlaying
-            if resumed {
-                startPositionTracking()
-            }
+            resumed = switchToRenderedAudio(at: resumeOffset)
 
         case .resumeEngine(let resumeOffset):
             // The Mac may have stopped AVAudioEngine while sleeping. The
@@ -1424,6 +1555,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         directModeChunkEnd = 0
         pendingDirectSeekOffset = nil
         lastDirectRetryOffset = nil
+        strictlyGuardedRange = nil
         stopPositionTracking()
     }
 
@@ -1503,11 +1635,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 pendingDirectSeekOffset = offset
             } else if renderedAudioMatchesSpeech {
                 transitionLog(.trace, "SEEK_SWITCH: direct→engine at offset=\(offset)")
-                usingDirectMode = false
-                audioEngine.setSpeed(wpm: wordsPerMinute)
-                audioEngine.setPitch(multiplier: pitchMultiplier)
-                audioEngine.play(fromCharOffset: offset)
-                startPositionTracking()
+                // The switch stops the synthesizer again, which, stopped
+                // above, changes nothing.
+                switchToRenderedAudio(at: offset)
             } else {
                 // No rendered audio of this speech yet, or only audio from
                 // before the voice changed: restart direct speech here.
@@ -1932,21 +2062,32 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         let cancelled = ReportedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            // Every stop of the app's lets go of the fade's segments before
+            // it stops the synthesizer, so a segment the fade still holds
+            // was cancelled by the system: refused.
             if self.isDirectSleepFadeActive,
-               self.directFadeOffsets[cancelled.id] != nil {
-                self.transitionLog(.trace, "SLEEP_FADE_DIRECT_SEGMENT_CANCELLED: expected timer cleanup")
+               let segmentStart = self.directFadeOffsets[cancelled.id] {
+                self.transitionLog(.event, "DIRECT_CANCEL_UNEXPECTED: sleep fade segment cancelled while the fade still held it, at offset=\(segmentStart)")
+                self.recoverFromRefusedFadeSegment(cancelled.utterance, at: segmentStart)
                 return
             }
             let isCurrent = Self.isLiveDirectUtterance(cancelled.utterance, liveUtterance: self.liveDirectUtterance)
-            if isCurrent, self.usingDirectMode, self.isSpeaking, !self.isPaused {
-                // The watchdog cannot look into this: its start arms it,
-                // and an utterance the engine refuses never starts. Speech
-                // goes on from a fresh synthesizer instead.
+            if isCurrent, self.usingDirectMode, self.isSpeaking {
+                // The app never cancels the live utterance itself: every
+                // stop lets go of it first. The watchdog cannot look into
+                // this: its start arms it, and an utterance the engine
+                // refuses never starts. Speech goes on from a fresh
+                // synthesizer instead, now, or at Play when paused.
                 // Read before logging: the message is built lazily.
                 let synthesizerIsSpeaking = self.directSynth.isSpeaking
                 let synthesizerIsPaused = self.directSynth.isPaused
-                self.transitionLog(.event, "DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app expected playback; watchdog armed=\(self.directPlaybackWatchdogTimer != nil) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
-                self.recoverFromCancelledDirectUtterance()
+                let appState = self.isPaused ? "was paused" : "expected playback"
+                self.transitionLog(.event, "DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app \(appState); watchdog armed=\(self.directPlaybackWatchdogTimer != nil) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
+                if self.isPaused {
+                    self.retryCancelledDirectUtteranceAtResume()
+                } else {
+                    self.recoverFromCancelledDirectUtterance()
+                }
             } else {
                 self.transitionLog(.trace, "DIRECT_CANCEL_EXPECTED: stale or deliberately stopped utterance cancelled current=\(isCurrent) directMode=\(self.usingDirectMode) appSpeaking=\(self.isSpeaking) appPaused=\(self.isPaused)")
             }
