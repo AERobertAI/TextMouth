@@ -2079,9 +2079,7 @@ extension ReaderViewModel {
         case .stop:
             readingStatsService.markBookFinished(bookID: book.id, title: book.title)
             finishListening(
-                announcing: sleepTimerStoppedHere
-                    ? "Finished: \(book.title). Sleep timer expired."
-                    : "Finished: \(book.title)"
+                announcing: EndOfBookWording.finished(book.title, sleepTimerExpired: sleepTimerStoppedHere)
             )
 
         case .loop:
@@ -2095,9 +2093,11 @@ extension ReaderViewModel {
             if sleepTimerStoppedHere {
                 // The book waits at its beginning, where Play starts it again.
                 DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer stopped playback here; not starting it again")
-                finishListening(announcing: "Finished: \(book.title). Not restarted because of the sleep timer.")
+                finishListening(
+                    announcing: EndOfBookWording.finished(book.title, notes: [EndOfBookWording.notRestartedNote])
+                )
             } else {
-                announceToVoiceOver("Restarting: \(book.title)")
+                announceToVoiceOver(EndOfBookWording.restarting(book.title))
                 // Route through the correct backend and start the next
                 // listening session. Audiobook placeholder text cannot be
                 // looped via TTS.
@@ -2114,10 +2114,10 @@ extension ReaderViewModel {
                     // timer, which can pause only the reader that set it.
                     DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book")
                     finishListening(
-                        announcing: "Finished: \(book.title). Next book not started because of the sleep timer."
+                        announcing: EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote])
                     )
                 } else {
-                    announceToVoiceOver("Starting: \(nextBook.title)")
+                    announceToVoiceOver(EndOfBookWording.starting(nextBook.title))
                     // Ask for the next book once VoiceOver has begun the
                     // announcement. This reader is kept until then, so
                     // closing its window meanwhile still continues, as
@@ -2128,9 +2128,11 @@ extension ReaderViewModel {
                 }
             } else {
                 finishListening(
-                    announcing: sleepTimerStoppedHere
-                        ? "Finished: \(book.title). No more books in folder. Sleep timer expired."
-                        : "Finished: \(book.title). No more books in folder."
+                    announcing: EndOfBookWording.finished(
+                        book.title,
+                        notes: [EndOfBookWording.noMoreBooksInFolderNote],
+                        sleepTimerExpired: sleepTimerStoppedHere
+                    )
                 )
             }
         }

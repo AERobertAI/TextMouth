@@ -434,6 +434,38 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertEqual(title(of: reader), "Book: Second Crossing")
     }
 
+    // MARK: - The End of a Book
+
+    /// Every way a book ends words what the ways share alike: "Finished:
+    /// <title>" alone, with no full stop, or followed by each reason as a
+    /// sentence of its own, the sleep timer's last; "Starting: <title>" for
+    /// the book that follows; "Restarting: <title>" for a book that loops.
+    /// These are the words a book's own end-of-book behavior has always
+    /// said.
+    func testEveryEndOfABookIsWordedInOnePlace() {
+        let title = "The Salt Road"
+        XCTAssertEqual(EndOfBookWording.finished(title), "Finished: The Salt Road")
+        XCTAssertEqual(EndOfBookWording.finished(title, sleepTimerExpired: true), "Finished: The Salt Road. Sleep timer expired.")
+        XCTAssertEqual(
+            EndOfBookWording.finished(title, notes: [EndOfBookWording.noMoreBooksInFolderNote]),
+            "Finished: The Salt Road. No more books in folder."
+        )
+        XCTAssertEqual(
+            EndOfBookWording.finished(title, notes: [EndOfBookWording.noMoreBooksInFolderNote], sleepTimerExpired: true),
+            "Finished: The Salt Road. No more books in folder. Sleep timer expired."
+        )
+        XCTAssertEqual(
+            EndOfBookWording.finished(title, notes: [EndOfBookWording.nextBookNotStartedNote]),
+            "Finished: The Salt Road. Next book not started because of the sleep timer."
+        )
+        XCTAssertEqual(
+            EndOfBookWording.finished(title, notes: [EndOfBookWording.notRestartedNote]),
+            "Finished: The Salt Road. Not restarted because of the sleep timer."
+        )
+        XCTAssertEqual(EndOfBookWording.starting(title), "Starting: The Salt Road")
+        XCTAssertEqual(EndOfBookWording.restarting(title), "Restarting: The Salt Road")
+    }
+
     // MARK: - Fixtures
 
     /// The title `reader`'s window shows now.
