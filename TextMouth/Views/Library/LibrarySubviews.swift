@@ -321,6 +321,11 @@ struct BookRow: View {
     /// The book's transcription note (FR05): "Transcribed" or
     /// "Transcribing", shown and spoken after the cloud notes; nil for none.
     var transcriptionNote: TranscriptionRowNote? = nil
+    /// Whether the row says its book is in the reading list (FR09): "In
+    /// reading list", spoken as the row's value after its label, which
+    /// stays as it was. The list passes true only outside the Reading List,
+    /// where every row's book is in the list.
+    var isInReadingList: Bool = false
     /// The cloud commands of the row's context menu, which are also the
     /// row's VoiceOver actions (VO-Command-Space), under the same names
     /// (FR02).
@@ -433,6 +438,8 @@ struct BookRow: View {
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(rowAccessibilityLabel)
+        // "In reading list" after the label, only for a book in it (FR09).
+        .modifier(SpokenValue(rowAccessibilityValue))
         .accessibilityHint(isEditMode
             ? "Double-tap to \(isEditSelected ? "deselect" : "select")"
             : "Press Enter to open, Command I for info")
@@ -489,6 +496,13 @@ struct BookRow: View {
         return parts.joined(separator: ", ")
     }
 
+    /// What VoiceOver says for the row after its label: "In reading list"
+    /// for a book the row says is in the reading list (FR09), and nothing
+    /// otherwise.
+    var rowAccessibilityValue: String? {
+        isInReadingList ? ReadingListWording.inReadingListValue : nil
+    }
+
     /// Progress shown in a library row — visible "42%", spoken "42 percent" —
     /// or nil to hide it when it cannot be known without parsing the book.
     /// Whole percents are rounded the same way Where Am I speaks them.
@@ -505,6 +519,27 @@ struct BookRow: View {
     static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
         guard let progress = progressText(for: book) else { return nil }
         return besideDownloadPercentage ? "\(progress.spoken) read" : progress.spoken
+    }
+}
+
+/// Gives a view the accessibility value `value` when there is one, and
+/// leaves it without one otherwise, so a row with nothing to add never
+/// carries an empty value.
+private struct SpokenValue: ViewModifier {
+    /// The value VoiceOver speaks after the label, or nil for none.
+    let value: String?
+
+    /// A modifier speaking `value`, or nothing for nil.
+    init(_ value: String?) {
+        self.value = value
+    }
+
+    func body(content: Content) -> some View {
+        if let value {
+            content.accessibilityValue(value)
+        } else {
+            content
+        }
     }
 }
 
@@ -632,6 +667,9 @@ struct LibraryBookListRow: View, Equatable {
     /// The commands of the feed item the book was downloaded from, in its
     /// feed's folder (FR03); none for any other book.
     var feedActions: [FeedItemAction] = []
+    /// Whether the row says its book is in the reading list (FR09); true
+    /// only outside the Reading List.
+    var isInReadingList: Bool = false
     /// What the commands do. Never compared.
     let actions: LibraryBookRowActions
 
@@ -652,6 +690,7 @@ struct LibraryBookListRow: View, Equatable {
             && lhs.audioCommands == rhs.audioCommands
             && lhs.transcriptionNote == rhs.transcriptionNote
             && lhs.feedActions == rhs.feedActions
+            && lhs.isInReadingList == rhs.isInReadingList
     }
 
     var body: some View {
@@ -665,6 +704,7 @@ struct LibraryBookListRow: View, Equatable {
             cloudState: cloudState,
             isKeptOnThisMac: isKeptOnThisMac,
             transcriptionNote: transcriptionNote,
+            isInReadingList: isInReadingList,
             cloudCommands: cloudCommands,
             performCloudCommand: actions.performCloudCommand,
             audioCommands: audioCommands,

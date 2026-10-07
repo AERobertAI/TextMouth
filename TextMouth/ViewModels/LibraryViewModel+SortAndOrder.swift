@@ -1,11 +1,24 @@
 import SwiftUI
 
 enum ManualBookOrder {
+    /// One book moved one place up or down an order the user arranges: a
+    /// folder's manual order, or the reading list (FR09).
     struct MoveResult {
+        /// The title of the book moved.
         let movedTitle: String
+        /// The title of the book it moved past.
         let adjacentTitle: String
+        /// -1 for up, +1 for down.
         let direction: Int
+        /// Where the moved book is now in the order.
         let newIndex: Int
+
+        /// What VoiceOver says of the move, the same in a folder and in
+        /// the reading list: "Moved Bestiary above Almanac", or "Moved
+        /// Almanac below Bestiary".
+        var announcement: String {
+            "Moved \(movedTitle) \(direction < 0 ? "above" : "below") \(adjacentTitle)"
+        }
     }
 
     /// The books in `folderPath`, in the folder's manual order exactly as
@@ -118,11 +131,13 @@ extension LibraryViewModel {
     /// a sort (TODO A06). The key is the one the change was made in, so no
     /// change can land on a folder or category shown before it, however
     /// fast the window moved on. A change that leaves the sort as it was,
-    /// such as reversing manual order, saves nothing. Returns the sort now
-    /// shown.
+    /// such as reversing manual order, saves nothing, and neither does any
+    /// change at the Reading List, which keeps its own order (FR09).
+    /// Returns the sort now shown.
     @discardableResult
     func userChangedSort(_ change: LibrarySortChange, at location: LibraryLocation) -> LibrarySortState {
         let shown = sortState(at: location)
+        guard !location.keepsItsOwnOrder else { return shown }
         let changed = shown.applying(change)
         if changed != shown {
             setFolderSortSetting(changed.setting, for: location.sortSettingsKey)
@@ -181,6 +196,38 @@ extension LibraryViewModel {
             direction: direction,
             folderPath: folderPath
         )
+    }
+
+    // MARK: - Rearranging Where the List Shows an Arranged Order
+
+    /// Moves a book one place up (-1) or down (+1) in `target`: a folder's
+    /// manual order, or the reading list (FR09). Move Up and Move Down in a
+    /// row's context menu, and Move Book Up and Move Book Down from the
+    /// Library menu and the keyboard, all move this way wherever the list
+    /// shows an order the user arranges, and announce the result alike
+    /// (`MoveResult.announcement`). Returns nil, changing nothing, when the
+    /// book cannot move that way.
+    @discardableResult
+    func moveBook(_ bookID: UUID, direction: Int, in target: LibraryReorderTarget) -> MoveResult? {
+        switch target {
+        case .folder(let folderPath):
+            return moveBookInManualOrder(bookID: bookID, direction: direction, folderPath: folderPath)
+        case .readingList:
+            guard let way = ReadingList.Direction(step: direction) else { return nil }
+            return moveInReadingList(bookID: bookID, direction: way)
+        }
+    }
+
+    /// Moves the books at `source` to `destination` in `target`, as a drag
+    /// in the list does: the offsets are positions in that whole order as
+    /// the list shows it, with no search narrowing it.
+    func reorderBooks(in target: LibraryReorderTarget, from source: IndexSet, to destination: Int) {
+        switch target {
+        case .folder(let folderPath):
+            reorderBooksInFolder(folderPath: folderPath, from: source, to: destination)
+        case .readingList:
+            reorderReadingList(from: source, to: destination)
+        }
     }
 
     // MARK: - Saving Manual Order

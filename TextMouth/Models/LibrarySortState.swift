@@ -37,20 +37,29 @@ struct LibraryLocation: Equatable {
             return folderPath.isEmpty
                 ? "All Folders"
                 : folderPath.components(separatedBy: "/").last ?? "All Folders"
-        case .allItems, .unopened, .recent:
+        case .allItems, .unopened, .recent, .readingList:
             // The same words the category picker shows.
             return category.rawValue
         }
     }
 
+    /// Whether the location shows its books in an order of its own, which
+    /// no sort changes: the Reading List, in the order the user arranges
+    /// (FR09). Its Sort menu names that order and offers no other, and no
+    /// sort is ever saved for it.
+    var keepsItsOwnOrder: Bool {
+        category == .readingList
+    }
+
     /// The folder whose manual order the location shows: the folder shown in
     /// Folders, the root included. All Items, Unopened, and Recent mix books
-    /// from many folders, which share no one order, so they have none.
+    /// from many folders, which share no one order, so they have none; the
+    /// Reading List has an order of its own, which is no folder's.
     var manualOrderFolder: String? {
         switch category {
         case .folders:
             return folderPath
-        case .allItems, .unopened, .recent:
+        case .allItems, .unopened, .recent, .readingList:
             return nil
         }
     }
@@ -64,12 +73,36 @@ struct LibraryLocation: Equatable {
         sort.field == .manual ? manualOrderFolder : nil
     }
 
+    /// What the user can rearrange here while `sort` is shown, by dragging
+    /// or with Move Book Up and Move Book Down: a folder's manual order
+    /// while the list shows it (`reorderableFolder(sortedBy:)`), the reading
+    /// list's order at the Reading List, which always shows it (FR09), and
+    /// nothing anywhere else.
+    func reorderTarget(sortedBy sort: LibrarySortState) -> LibraryReorderTarget? {
+        if keepsItsOwnOrder {
+            return .readingList
+        }
+        return reorderableFolder(sortedBy: sort).map(LibraryReorderTarget.folder)
+    }
+
     /// The library window's title, naming the location and its sort:
     /// "Library: Fiction (Author Descending)", or "Library: Recent (Manual
-    /// Order)" for manual order, which has no direction.
+    /// Order)" for manual order, which has no direction. The Reading List,
+    /// whose one order is its own, is named alone: "Library: Reading List".
     func windowTitle(sortedBy sort: LibrarySortState) -> String {
-        "Library: \(name) (\(sort.titleFragment))"
+        keepsItsOwnOrder ? "Library: \(name)" : "Library: \(name) (\(sort.titleFragment))"
     }
+}
+
+// MARK: - What Can Be Rearranged
+
+/// An order the user arranges, by dragging or with Move Book Up and Move
+/// Book Down, which a Library window rearranges where it shows it.
+enum LibraryReorderTarget: Equatable {
+    /// The manual order of the books in the folder at this path (TODO A06).
+    case folder(String)
+    /// The reading list's own order (FR09).
+    case readingList
 }
 
 // MARK: - A Change the User Makes
@@ -117,8 +150,9 @@ extension LibrarySortField {
 ///   location has not shown it, so leaving manual order restores the chosen
 ///   field's last direction.
 /// - Books can be rearranged only where the list shows one folder's manual
-///   order (see `LibraryLocation.reorderableFolder(sortedBy:)`); doing so
-///   saves the order at once and leaves the field on manual order.
+///   order, or at the Reading List, which always shows its own (see
+///   `LibraryLocation.reorderTarget(sortedBy:)`); doing so saves the order
+///   at once and leaves the field on manual order.
 struct LibrarySortState: Equatable {
     /// The field the books are sorted by.
     let field: LibrarySortField
@@ -270,7 +304,12 @@ extension Library {
     /// under the old key. A No Folder sort of manual order is not carried
     /// over: it was the arrangement of the root's books, which books from
     /// many folders do not share, so Unopened shows its default instead.
+    /// The Reading List always shows its own order (FR09), whatever is
+    /// saved under its key.
     func sortSetting(at location: LibraryLocation) -> FolderSortSetting {
+        if location.keepsItsOwnOrder {
+            return location.defaultSortSetting
+        }
         if let saved = folderSortSettings[location.sortSettingsKey] {
             return saved
         }

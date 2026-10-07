@@ -331,11 +331,15 @@ extension LibraryViewModel {
     /// PERF10, `LibraryListCache`); any other change, such as a reading
     /// position, reaches the books it returns without sorting them again.
     /// So a window may read it as often as it draws.
+    ///
+    /// The Reading List is never sorted: it shows its books in the order
+    /// the user arranged (FR09), and a search narrows that order.
     func displayedBooks(at location: LibraryLocation, matching search: String = "") -> [Book] {
         let sort = sortState(at: location)
         let unsearched = LibraryListCache.Key(location: location, sort: sort, search: "")
         let books = listCache.books(for: unsearched, in: library) {
-            sortedBooks(booksForCategory(location.category, folderPath: location.folderPath), by: sort)
+            let listed = booksForCategory(location.category, folderPath: location.folderPath)
+            return location.keepsItsOwnOrder ? listed : sortedBooks(listed, by: sort)
         }
         guard !search.isEmpty else { return books }
         let query = search.lowercased()
@@ -365,8 +369,10 @@ extension LibraryViewModel {
     /// The books the category `category` lists, before sorting: the books
     /// of the folder at `folderPath` in Folders, every book in All Items,
     /// every book never opened, from every folder, in Unopened
-    /// (`Library.unopenedBooks()`), and the books opened lately in Recent.
-    /// All Items, Unopened, and Recent ignore `folderPath`.
+    /// (`Library.unopenedBooks()`), the books opened lately in Recent, and
+    /// the reading list's books in the Reading List, in the list's order,
+    /// which is never sorted (FR09). All Items, Unopened, Recent, and the
+    /// Reading List ignore `folderPath`.
     func booksForCategory(_ category: LibraryCategory, folderPath: String) -> [Book] {
         switch category {
         case .folders:
@@ -377,6 +383,8 @@ extension LibraryViewModel {
             return library.unopenedBooks()
         case .recent:
             return LibraryBookSorter.recent(library.books)
+        case .readingList:
+            return readingListBooks
         }
     }
 }

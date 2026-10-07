@@ -37,6 +37,11 @@ struct FolderSortSetting: Codable, Equatable {
     /// first), since no unopened book has a last-opened date to sort by.
     static let unopenedDefault = FolderSortSetting(sortField: .dateAdded, sortAscending: false)
 
+    /// The one order of the Reading List (FR09): the list's own, which the
+    /// user arranges, shown as manual order, which has no direction. The
+    /// list never sorts by it; it shows its books as the list holds them.
+    static let readingListOrder = FolderSortSetting(sortField: .manual, sortAscending: true)
+
     /// The setting in the one form a location shows it: manual order is
     /// ascending, because it has no direction, and no direction is
     /// remembered for the field shown or for manual order.

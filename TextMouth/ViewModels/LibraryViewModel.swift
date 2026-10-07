@@ -16,8 +16,9 @@ enum LibrarySortField: String, CaseIterable, Codable {
 /// The views of the library a Library window shows, as its View picker
 /// names them, in the picker's order. Folders shows one folder at a time;
 /// the others list books from every folder: all of them, those never
-/// opened, and those opened lately. Unopened replaced No Folder, which
-/// listed the root's books; Folders still lists those at the root.
+/// opened, those opened lately, and those in the reading list. Unopened
+/// replaced No Folder, which listed the root's books; Folders still lists
+/// those at the root.
 enum LibraryCategory: String, CaseIterable, Codable {
     case folders = "Folders"
     case allItems = "All Items"
@@ -25,6 +26,9 @@ enum LibraryCategory: String, CaseIterable, Codable {
     /// not yet played.
     case unopened = "Unopened"
     case recent = "Recent"
+    /// The reading list (FR09): books from any folder, in the order the
+    /// user arranges, which no sort changes.
+    case readingList = "Reading List"
 
     /// What the category Unopened replaced was called. A category saved
     /// under that name reads as Unopened.
@@ -36,25 +40,30 @@ enum LibraryCategory: String, CaseIterable, Codable {
 
     /// Key used to store per-category sort settings in folderSortSettings.
     /// Folder category uses the actual folder path; other categories use
-    /// a reserved key that cannot collide with real folder paths.
+    /// a reserved key that cannot collide with real folder paths. The
+    /// Reading List's is reserved too, though no sort is ever saved under
+    /// it: the list keeps its own order (`LibraryLocation.keepsItsOwnOrder`).
     var sortSettingsKey: String? {
         switch self {
-        case .folders:  return nil  // uses folder path instead
-        case .allItems: return "__allItems__"
-        case .unopened: return "__unopened__"
-        case .recent:   return "__recent__"
+        case .folders:     return nil  // uses folder path instead
+        case .allItems:    return "__allItems__"
+        case .unopened:    return "__unopened__"
+        case .recent:      return "__recent__"
+        case .readingList: return "__readingList__"
         }
     }
 
     /// The default sort setting for this category when no user preference
     /// exists: newest first for Recent (by last opened) and for Unopened (by
-    /// date added, since no unopened book has been opened), title ascending
-    /// elsewhere.
+    /// date added, since no unopened book has been opened), the list's own
+    /// order for the Reading List, which is its only one, and title
+    /// ascending elsewhere.
     var defaultSortSetting: FolderSortSetting {
         switch self {
-        case .recent:   return .recentDefault
-        case .unopened: return .unopenedDefault
-        default:        return .defaultSort
+        case .recent:      return .recentDefault
+        case .unopened:    return .unopenedDefault
+        case .readingList: return .readingListOrder
+        default:           return .defaultSort
         }
     }
 
