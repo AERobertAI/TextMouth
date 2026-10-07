@@ -334,7 +334,7 @@ enum EPUBParser {
         let title = titles.first?.stringValue ?? "Untitled"
 
         let creators = try doc.nodes(forXPath: "//*[local-name()='creator']")
-        let author = creators.first?.stringValue ?? "Unknown"
+        let author = creators.first?.stringValue ?? Book.unknownAuthor
 
         // Manifest
         let manifestNodes = try doc.nodes(forXPath: "//*[local-name()='item']")

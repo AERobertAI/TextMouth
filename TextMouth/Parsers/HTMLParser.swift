@@ -22,7 +22,7 @@ enum HTMLParser {
 
         return DocumentContent(
             title: docTitle,
-            author: extractMetaAuthor(doc) ?? "Unknown",
+            author: extractMetaAuthor(doc) ?? Book.unknownAuthor,
             chapters: [chapter]
         )
     }

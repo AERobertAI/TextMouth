@@ -398,7 +398,7 @@ extension ReaderViewModel {
     /// Joins copied-position fields with " | ", dropping empty fields and the
     /// placeholder "Unknown" author.
     nonisolated static func readingPositionSummary(parts: [String]) -> String {
-        parts.filter { !$0.isEmpty && $0 != "by Unknown" }.joined(separator: " | ")
+        parts.filter { !$0.isEmpty && $0 != "by \(Book.unknownAuthor)" }.joined(separator: " | ")
     }
 
     // MARK: - VoiceOver Announcement

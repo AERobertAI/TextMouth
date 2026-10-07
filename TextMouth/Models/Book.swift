@@ -156,10 +156,22 @@ struct Book: Identifiable, Codable, Hashable {
     /// fingerprints. Startup maintenance compares them with the files.
     var textCacheFingerprint: TextCacheFingerprint?
 
+    /// The author a book is listed under when nothing names one: what every
+    /// import, parser, and recording writes for it, which a reader leaves
+    /// out of its window title and a metadata refresh may replace
+    /// (`isUnknownAuthor(_:)`).
+    static let unknownAuthor = "Unknown"
+
+    /// Whether `author` is the placeholder for an author nothing named:
+    /// empty, or `unknownAuthor`.
+    static func isUnknownAuthor(_ author: String) -> Bool {
+        author.isEmpty || author == unknownAuthor
+    }
+
     init(
         id: UUID = UUID(),
         title: String,
-        author: String = "Unknown",
+        author: String = Book.unknownAuthor,
         format: BookFormat,
         filePath: String,
         md5Hash: String,

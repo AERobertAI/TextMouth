@@ -55,7 +55,7 @@ enum PlainTextParser {
 
         return DocumentContent(
             title: title,
-            author: "Unknown",
+            author: Book.unknownAuthor,
             chapters: [chapter]
         )
     }

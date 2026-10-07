@@ -98,7 +98,7 @@ struct ImportedBook {
 /// an unknown author.
 struct ImportedFileMetadata {
     var title: String
-    var author = "Unknown"
+    var author = Book.unknownAuthor
     /// Everything an EPUB's package document says about the book.
     var epub: EPUBMetadata?
     /// Audio tags, for an audio file.
@@ -837,7 +837,7 @@ enum FileImportService {
             let staged = Book(
                 id: bookID,
                 title: title,
-                author: author.isEmpty ? "Unknown" : author,
+                author: Book.isUnknownAuthor(author) ? Book.unknownAuthor : author,
                 format: .txt,
                 filePath: file.path,
                 md5Hash: hash,
@@ -1433,7 +1433,7 @@ enum FileImportService {
             try run.begin(.preparingPackage)
             let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
                 title: zipName,
-                author: "Unknown",
+                author: Book.unknownAuthor,
                 dateAdded: dateAdded,
                 bookID: bookID,
                 folderPath: folderPath
@@ -1446,7 +1446,7 @@ enum FileImportService {
 
             // A manifest beside the audio can name the book and its author.
             var title = zipName
-            var author = "Unknown"
+            var author = Book.unknownAuthor
             let manifestURL = audioDirectory.appendingPathComponent("manifest.json")
             if let data = try? Data(contentsOf: manifestURL),
                let manifest = try? JSONDecoder().decode(AudioManifest.self, from: data) {

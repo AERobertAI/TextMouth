@@ -115,7 +115,7 @@ struct BookMetadata: Codable {
 
     init(
         title: String = "Untitled",
-        author: String = "Unknown",
+        author: String = Book.unknownAuthor,
         format: BookFormat = .txt,
         md5Hash: String = "",
         dateAdded: Date = Date(),
