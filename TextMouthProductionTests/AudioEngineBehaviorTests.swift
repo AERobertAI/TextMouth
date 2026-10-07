@@ -885,15 +885,35 @@ final class AudioEngineBehaviorTests: XCTestCase {
     /// frames (see `SpeechMarkupGuard`), renders through the engine's render
     /// path, which hands the synthesizer the text guarded, and the audio
     /// carries the request's own signature. Rendered offline, in its turn
-    /// on the app's render queue: nothing is heard. Skips when the voice the
-    /// refusal was measured in is not installed.
+    /// on the app's render queue: nothing is heard.
+    ///
+    /// The same engine first renders the raw chunk, handed to the
+    /// synthesizer unguarded through the test hook, and the test skips
+    /// unless the engine refuses it: where the engine accepts the raw chunk,
+    /// a render through the guard could not be told from one without it,
+    /// and the test would pin nothing. Skips too when the voice the refusal
+    /// was measured in is not installed.
     @MainActor
     func testARenderHandsTheSynthesizerTheTextGuarded() throws {
         let voice = try SpeechMarkupGuardTests.probeVoice()
+        try TextMouthPaths.ensureDirectoryStructure()
         let engine = AudioEngineService()
         defer { engine.discardRenderedAudio() }
         let request = SpeechRenderRequest(text: SpeechMarkupGuardTests.chunkAfterOpeningTag, voice: voice)
 
+        engine._spokenTextForTesting = { $0 }
+        switch renderThroughTheQueue(request, into: engine, timeout: 20) {
+        case .some(true):
+            throw XCTSkip("The engine on this Mac rendered the raw chunk; a guarded render could not be told from an unguarded one")
+        case .none:
+            // A render still waiting would hold the queue the next one needs.
+            return XCTFail("the raw render never reported")
+        case .some(false):
+            XCTAssertFalse(engine.hasRenderedAudio)
+        }
+
+        // The same request through the guard, as the app renders it.
+        engine._spokenTextForTesting = nil
         let installed = renderThroughTheQueue(request, into: engine)
 
         XCTAssertEqual(installed, true, "the guarded render did not install audio")
