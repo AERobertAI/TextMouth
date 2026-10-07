@@ -1024,21 +1024,26 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// refuses a text it reads as broken markup (`SpeechMarkupGuard`): the
     /// refused utterance never starts, so the watchdog, which its start
     /// would arm, never looks, and the synthesizer that refused it never
-    /// speaks again, so speaking again on it would be silent too. A fresh
-    /// synthesizer takes its place (`DIRECT_SYNTH_REPLACED`) and speaks the
-    /// cancelled chunk again from where it was cancelled (`DIRECT_RETRY`).
-    /// Once per place: a cancel that comes back to the same offset means
-    /// the engine refuses this text on any synthesizer, and speech ends
-    /// there instead (`endDirectSpeechRefused(at:)`), as it does when there
-    /// is no text to speak again.
+    /// speaks again, so speaking again on it would be silent too.
+    ///
+    /// A fresh synthesizer takes its place first, whatever follows
+    /// (`DIRECT_SYNTH_REPLACED`): kept, the one that refused would take the
+    /// next Play too, and speak it into silence while speech showed itself
+    /// speaking, which is how the reading stopped and could not restart on
+    /// October 7. The fresh one speaks the cancelled chunk again from where
+    /// it was cancelled (`DIRECT_RETRY`). Once per place: a cancel that
+    /// comes back to the same offset means the engine refuses this text on
+    /// any synthesizer, and speech ends there instead
+    /// (`endDirectSpeechRefused(at:)`), as it does when there is no text to
+    /// speak again.
     private func recoverFromCancelledDirectUtterance() {
         let offset = directRetryOffset()
+        replaceDirectSynthesizer()
         guard !currentText.isEmpty, lastDirectRetryOffset != offset else {
             endDirectSpeechRefused(at: offset)
             return
         }
         lastDirectRetryOffset = offset
-        replaceDirectSynthesizer()
         transitionLog(.event, "DIRECT_RETRY offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(directModeChunkEnd)")
         speakDirect(currentText, fromCharOffset: offset)
     }
@@ -1077,9 +1082,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// speech from its cursor, and the chapter neither ends nor moves on.
     /// The listener hears `engineRefusedAnnouncement`, and the reader is
     /// told (`onSpeechRefused`).
+    ///
+    /// The caller has already let go of the synthesizer that refused, and
+    /// of what it held (`replaceDirectSynthesizer()`), so that Play speaks
+    /// on a synthesizer that can still speak.
     private func endDirectSpeechRefused(at offset: Int) {
         transitionLog(.event, "DIRECT_RETRY_FAILED: offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(directModeChunkEnd); speech stopped, the listener told")
-        stopDirectSynthesizer()
         stopPositionTracking()
         isSpeaking = false
         isPaused = false

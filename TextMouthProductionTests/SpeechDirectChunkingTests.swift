@@ -388,21 +388,34 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY_FAILED: offset=\(start) ") }, "\(lines)")
     }
 
-    /// Speech that stopped after a refusal speaks again when asked, on the
-    /// fresh synthesizer, and may be cancelled and retried once more there.
+    /// Speech that stopped after a refusal speaks again when asked, and
+    /// not on the synthesizer that refused the retry, which would never
+    /// speak again (October 7): Play goes to a fresh synthesizer, which
+    /// reports to speech, and may be cancelled and retried once more there.
+    /// The recorder notes the synthesizer each utterance would have reached.
     func testSpeechSpeaksAgainAfterARefusalEndedIt() throws {
         let (speech, recorder) = makeDirectSpeech()
         defer { speech.stop() }
         speech.speak(Self.longText, fromCharOffset: 20_000)
+        let first = try synthesizer(0, by: recorder)
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+        // The retry went to a fresh synthesizer, which refuses it too.
+        let refusing = try synthesizer(1, by: recorder)
+        XCTAssertFalse(refusing === first, "the retry went to the synthesizer that refused the chunk")
         try recordingAnnouncements {
-            report(cancel: try handedOver(0, by: recorder), to: speech)
             report(cancel: try handedOver(1, by: recorder), to: speech)
         }
         XCTAssertFalse(speech.isActive)
+        XCTAssertFalse(speech._directSynthesizerForTesting === refusing, "the synthesizer that refused the retry is kept")
+        XCTAssertTrue(speech._directSynthesizerForTesting.delegate === speech)
 
         speech.speak(Self.longText, fromCharOffset: 20_000)
         XCTAssertTrue(speech.isSpeaking)
         XCTAssertEqual(recorder.utterances.count, 3)
+        let afterTheEnd = try synthesizer(2, by: recorder)
+        XCTAssertFalse(afterTheEnd === refusing, "Play went to the synthesizer that refused, which never speaks again")
+        XCTAssertFalse(afterTheEnd === first)
+        XCTAssertTrue(afterTheEnd.delegate === speech, "the synthesizer Play went to reports to speech")
         report(cancel: try handedOver(2, by: recorder), to: speech)
         XCTAssertEqual(recorder.utterances.count, 4, "a new speech may be retried once again")
         XCTAssertTrue(speech.isSpeaking)
@@ -488,11 +501,17 @@ final class SpeechDirectChunkingTests: XCTestCase {
     }
 
     /// A speech service with preferences of its own whose direct utterances
-    /// go to the returned recorder instead of the synthesizer.
+    /// go to the returned recorder instead of the synthesizer. The recorder
+    /// notes, beside each utterance, the synthesizer speech would have
+    /// handed it to, read through a seam no production code uses.
     private func makeDirectSpeech() -> (SpeechService, UtteranceRecorder) {
         let speech = SpeechService(userDefaults: makeSandboxedPreferences("direct-chunking"))
         let recorder = UtteranceRecorder()
-        speech._directUtteranceRecorderForTesting = { recorder.utterances.append($0) }
+        // Weak: speech holds this closure.
+        speech._directUtteranceRecorderForTesting = { [weak speech] utterance in
+            recorder.utterances.append(utterance)
+            recorder.synthesizers.append(speech?._directSynthesizerForTesting)
+        }
         return (speech, recorder)
     }
 
@@ -506,6 +525,23 @@ final class SpeechDirectChunkingTests: XCTestCase {
     ) throws -> AVSpeechUtterance {
         try XCTUnwrap(
             recorder.utterances.indices.contains(index) ? recorder.utterances[index] : nil,
+            "no utterance \(index) was handed over",
+            file: file,
+            line: line
+        )
+    }
+
+    /// The synthesizer the utterance in position `index` of `recorder`
+    /// would have been handed to, failing the test without stopping it when
+    /// there is none.
+    private func synthesizer(
+        _ index: Int,
+        by recorder: UtteranceRecorder,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> AVSpeechSynthesizer {
+        try XCTUnwrap(
+            recorder.synthesizers.indices.contains(index) ? recorder.synthesizers[index] : nil,
             "no utterance \(index) was handed over",
             file: file,
             line: line
@@ -607,9 +643,13 @@ final class SpeechDirectChunkingTests: XCTestCase {
 // MARK: - Test doubles
 
 /// Keeps every utterance direct speech hands over, in place of the
-/// synthesizer, in order. Used only on the main thread.
+/// synthesizer, in order, and beside each the synthesizer it would have
+/// reached. Used only on the main thread.
 private final class UtteranceRecorder {
     var utterances: [AVSpeechUtterance] = []
+    /// The synthesizer each utterance would have been handed to, by
+    /// position; nil when speech was gone, which no test lets happen.
+    var synthesizers: [AVSpeechSynthesizer?] = []
 }
 
 /// A synthesizer and the utterance the benchmark hands it on the main
