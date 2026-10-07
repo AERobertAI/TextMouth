@@ -2024,7 +2024,10 @@ extension ReaderViewModel {
 
     /// Called when the last chapter finishes playing, and when Play finds
     /// nothing left to say. Behavior depends on per-book override or global
-    /// setting: stop, loop, or continue to next book.
+    /// setting: stop, loop, or continue to next book. A book read from the
+    /// reading list follows the list's "When a book ends" instead
+    /// (`finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:)`,
+    /// FR09), as the user decided on October 7, 2026.
     ///
     /// This reader's sleep timer set for the end of the heading or of the
     /// book stops playback here, where the book's last chapter ends, which
@@ -2064,6 +2067,15 @@ extension ReaderViewModel {
         // Audio faded out toward this end, where the timer stopped it, plays
         // at full volume again next time.
         fadeOutBeforeSleepTimerStop()
+        // A book read from the reading list goes where the list's "When a
+        // book ends" says, in place of its own end-of-book behavior (FR09).
+        if isOpenedFromReadingList {
+            finishBookReadFromReadingList(
+                sleepTimerEndsListening: sleepTimerEndsListening,
+                sleepTimerStoppedHere: sleepTimerStoppedHere
+            )
+            return
+        }
         // Determine behavior: per-book override or global setting
         var behavior = effectiveEndOfBookBehavior
         // Looping restarts speech at the first chapter with anything to say.
@@ -2149,8 +2161,9 @@ extension ReaderViewModel {
     /// book again from where it lands (`performSkip(unit:forward:)`), as
     /// the listener who rewinds a finished book means to hear its end
     /// again. Only Release Media Controls or closing the window gives the
-    /// controls up.
-    private func finishListening(announcing announcement: String) {
+    /// controls up. A book read from the reading list ends listening here
+    /// too (ReaderViewModel+ReadingList).
+    func finishListening(announcing announcement: String) {
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
         )

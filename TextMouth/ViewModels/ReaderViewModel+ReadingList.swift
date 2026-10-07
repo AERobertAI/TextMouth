@@ -57,4 +57,85 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "reading list: this book left the list; read as any book from now on")
         }
     }
+
+    // MARK: - The End of a Book Read from the List
+
+    /// Ends this book, read from the reading list, as the list's "When a
+    /// book ends" says, in place of the book's own end-of-book behavior:
+    /// the user decided on October 7, 2026 that "the reading list open mode
+    /// should override it". `handleEndOfBook()` calls it once the book's
+    /// listening session has closed and the book rests finished at its end.
+    ///
+    /// The book is counted finished, as a book that stops or continues is,
+    /// before the list is asked what follows, so it is never its own answer.
+    /// The book below or above it, passing over finished books while the
+    /// list says so, then opens to be read from the list and plays, as
+    /// Continue to Next Book starts the next book in a folder: "Starting:
+    /// <title>", a moment for VoiceOver to begin saying it, then the
+    /// requests and the window (`continueThroughReadingList(to:)`). Nothing
+    /// follows for Stop, at that end of the list, or past only finished
+    /// books, and the book says which. The sleep timer keeps its rules: this
+    /// reader's timer in effect starts nothing, since it could never pause
+    /// the next book, and a timer that stopped playback here says so last.
+    ///
+    /// - Parameters:
+    ///   - sleepTimerEndsListening: Whether this reader's sleep timer was in
+    ///     effect as the book ended (`sleepTimerEndsListeningHere`).
+    ///   - sleepTimerStoppedHere: Whether that timer stopped playback here,
+    ///     at the end of the heading or of the book.
+    func finishBookReadFromReadingList(sleepTimerEndsListening: Bool, sleepTimerStoppedHere: Bool) {
+        readingStatsService.markBookFinished(bookID: book.id, title: book.title)
+        savePosition()
+        guard let next = libraryViewModel.readingListContinuation(after: book.id) else {
+            let note = readingListEndNote()
+            DiagnosticLog.trace(.playback, "end of book: nothing follows in the reading list (\(note))")
+            finishListening(
+                announcing: EndOfBookWording.finished(book.title, notes: [note], sleepTimerExpired: sleepTimerStoppedHere)
+            )
+            return
+        }
+        guard !sleepTimerEndsListening else {
+            DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book in the reading list")
+            finishListening(
+                announcing: EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote])
+            )
+            return
+        }
+        announceToVoiceOver(EndOfBookWording.starting(next.title))
+        // Asked for once VoiceOver has begun the announcement. This reader
+        // is kept until then, so closing its window meanwhile still
+        // continues, as announced.
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+            self.continueThroughReadingList(to: next.id)
+        }
+    }
+
+    /// Opens the book `nextBookID` to be read from the reading list, and
+    /// starts it: the request to read it from the list comes first, so a
+    /// reader already open for it claims that one at once, and then the
+    /// book continues as Continue to Next Book continues to the next book in
+    /// a folder (`continueToNextBook(_:)`): a request to start playing, and
+    /// the notification that opens its window or brings it forward.
+    func continueThroughReadingList(to nextBookID: UUID) {
+        readingListRequests.request(for: nextBookID)
+        continueToNextBook(nextBookID)
+    }
+
+    /// Why nothing follows this book at its end in the reading list, as the
+    /// sentence after "Finished: <title>." says it: Stop is chosen, or no
+    /// book, or only finished books, lie the way the list continues.
+    private func readingListEndNote() -> String {
+        guard let direction = libraryViewModel.readingList.continuation.direction else {
+            return ReadingListReaderWording.stopNote
+        }
+        return ReadingListReaderWording.endNote(readingListEnd(going: direction), going: direction)
+    }
+
+    /// What lies beyond this book going `direction` through the reading
+    /// list, when the list offers no book that way: no book at all, or only
+    /// books already finished, which the list passed over.
+    func readingListEnd(going direction: ReadingList.Direction) -> ReadingListEnd {
+        let anyBook = libraryViewModel.readingListNeighbor(of: book.id, direction: direction, skippingFinished: false)
+        return anyBook == nil ? .noBookBeyond : .onlyFinishedBooksBeyond
+    }
 }

@@ -5,9 +5,11 @@ import XCTest
 /// A book read from the reading list (FR09, the reader's part): the request
 /// a Library window leaves as it opens a book from the Reading List, and the
 /// book's reader claiming it, once, as the open makes the reader or brings
-/// its window forward; and the mark that says so: the window's title, the
+/// its window forward; the mark that says so: the window's title, the
 /// header's line, and the full Where Am I?, which follow the list as it
-/// changes and end when the book leaves it.
+/// changes and end when the book leaves it; and the end of a book read from
+/// the list, which goes where the list's options say, in place of the
+/// book's own end-of-book behavior, under the sleep timer's rules.
 ///
 /// Every book is a package of silent audio tracks, or a text book that no
 /// test plays, so nothing is heard. Each test's readers share a private
@@ -16,6 +18,8 @@ import XCTest
 /// requests, and announcements are recorded instead of spoken.
 @MainActor
 final class ReadingListReaderTests: XCTestCase {
+    /// Subscriptions a test keeps until it ends.
+    private var subscriptions = Set<AnyCancellable>()
 
     // MARK: - The Request Store
 
@@ -466,6 +470,338 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertEqual(EndOfBookWording.restarting(title), "Restarting: The Salt Road")
     }
 
+    // MARK: - The End of a Book Read from the List
+
+    /// A book read from the list that ends goes on to the book below it, as
+    /// the list's default says: it says "Starting: <title>" once, counts the
+    /// book finished, and after a moment leaves the next book a request to
+    /// be read from the list and one to start playing, then asks for its
+    /// window, naming both books. The reader the window makes reads the
+    /// next book from the list and plays it.
+    func testABookReadFromTheListContinuesToTheBookBelow() throws {
+        let world = try makeIntegrationWorld("ReadingListContinuesDown")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let third = try makeAudioBook("Third Crossing", in: world)
+        list([first, second, third], in: world)
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        let asked = record(.continueToNextBook, in: world)
+
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(asked().isEmpty, "Asked before the announcement had a moment")
+            XCTAssertFalse(requests.hasRequest(for: second.id), "Requested before the announcement had a moment")
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
+            // Long enough for any second request to arrive.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [second.id])
+        XCTAssertEqual(asked().first?.userInfo?[Notification.ContinueToNextBookKey.previousBookID] as? UUID, first.id)
+        XCTAssertTrue(requests.hasRequest(for: second.id), "No request to read the next book from the list")
+        XCTAssertTrue(world.autoplayRequests.hasRequest(for: second.id), "No request to start the next book")
+        XCTAssertEqual(ReadingStatsService.shared.stats.finishedBooks.map(\.bookID), [first.id.uuidString])
+        XCTAssertTrue(reader.hasFinishedBook)
+        XCTAssertFalse(reader.isCurrentlyPlaying)
+
+        // The window opened for the requests makes the next book's reader.
+        let next = makeReader(for: second, in: world, requests: requests)
+        XCTAssertEqual(next.readingListPlace, ReadingListPlace(position: 2, count: 3))
+        XCTAssertTrue(eventually { next.isCurrentlyPlaying }, "The next book never started")
+        XCTAssertTrue(next.audioPlaybackService.isPlaying)
+        XCTAssertFalse(world.autoplayRequests.hasRequest(for: second.id))
+    }
+
+    /// With "Play the book above" chosen, a book read from the list goes on
+    /// to the book above it.
+    func testABookReadFromTheListContinuesToTheBookAboveWhenTheListSaysSo() throws {
+        let world = try makeIntegrationWorld("ReadingListContinuesUp")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let third = try makeAudioBook("Third Crossing", in: world)
+        list([first, second, third], in: world, continuation: .playBookAbove)
+        let reader = makeReaderFromList(for: third, in: world, requests: requests)
+        let asked = record(.continueToNextBook, in: world)
+
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the book above")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [second.id])
+        XCTAssertTrue(requests.hasRequest(for: second.id))
+    }
+
+    /// The list's choice overrides the book's own end-of-book behavior, as
+    /// the user decided on October 7: a book set to loop stops when the
+    /// list says Stop, and a book set to continue in its folder goes on to
+    /// the list's next book, not its folder's.
+    func testTheListsChoiceOverridesTheBooksOwnEndOfBookBehavior() throws {
+        let world = try makeIntegrationWorld("ReadingListOverrides")
+        let requests = ReadingListOpenRequests()
+        // In the folder, by title: Alpha, Beta, Delta, Gamma.
+        let alpha = try makeAudioBook("Alpha Crossing", in: world, endOfBook: .loop)
+        let beta = try makeAudioBook("Beta Crossing", in: world, endOfBook: .continueNext)
+        _ = try makeAudioBook("Delta Crossing", in: world)
+        let gamma = try makeAudioBook("Gamma Crossing", in: world)
+        let asked = record(.continueToNextBook, in: world)
+
+        list([alpha, gamma], in: world, continuation: .stop)
+        let looping = makeReaderFromList(for: alpha, in: world, requests: requests)
+        let stopping = recordingAnnouncements {
+            looping.handleEndOfBook()
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(
+            stopping.announcements.map(\.message),
+            ["Finished: Alpha Crossing. The reading list is set to stop when a book ends."]
+        )
+        XCTAssertTrue(looping.hasFinishedBook, "the book looped back to its beginning")
+        XCTAssertFalse(looping.audioPlaybackService.isPlaying, "the book started again")
+        XCTAssertTrue(asked().isEmpty)
+
+        list([beta, gamma], in: world)
+        let continuing = makeReaderFromList(for: beta, in: world, requests: requests)
+        XCTAssertEqual(world.library.nextBookInFolder(after: beta)?.title, "Delta Crossing")
+        let starting = recordingAnnouncements {
+            continuing.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the list's next book")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(starting.announcements.map(\.message), ["Starting: Gamma Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [gamma.id])
+        XCTAssertTrue(requests.hasRequest(for: gamma.id))
+    }
+
+    /// Finished books, as Books Finished records them, are passed over while
+    /// the list says so: the book goes on past every finished book to the
+    /// nearest one not finished; with Skip Finished Books off, to the
+    /// finished book beside it.
+    func testFinishedBooksArePassedOverWhileTheListSaysSo() throws {
+        let world = try makeIntegrationWorld("ReadingListSkipsFinished")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let third = try makeAudioBook("Third Crossing", in: world)
+        list([first, second, third], in: world)
+        ReadingStatsService.shared.markBookFinished(bookID: second.id, title: second.title)
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        let asked = record(.continueToNextBook, in: world)
+
+        let skipping = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(eventually { asked().count == 1 }, "Never asked for the next book")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(skipping.announcements.map(\.message), ["Starting: Third Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [third.id])
+
+        world.library.setReadingListSkipsFinished(false)
+        let notSkipping = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(eventually { asked().count == 2 }, "Never asked for the finished book")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(notSkipping.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [third.id, second.id])
+    }
+
+    /// A book with nothing after it in the list stops there and says why:
+    /// Stop chosen, the end of the list going down, its start going up, or
+    /// only finished books beyond, either way. It asks for nothing, rests
+    /// finished, and is counted in Books Finished.
+    func testABookWithNothingAfterItInTheListStopsAndSaysWhy() throws {
+        let world = try makeIntegrationWorld("ReadingListStops")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let third = try makeAudioBook("Third Crossing", in: world)
+        let asked = record(.continueToNextBook, in: world)
+        let cases: [(continuation: ReadingList.Continuation, reading: Book, finished: [Book], announcement: String)] = [
+            (.stop, second, [], "Finished: Second Crossing. The reading list is set to stop when a book ends."),
+            (.playBookBelow, third, [], "Finished: Third Crossing. End of the reading list."),
+            (.playBookAbove, first, [], "Finished: First Crossing. Start of the reading list."),
+            (.playBookBelow, first, [second, third], "Finished: First Crossing. Every book below it in the reading list is finished."),
+            (.playBookAbove, third, [first, second], "Finished: Third Crossing. Every book above it in the reading list is finished."),
+        ]
+        for testCase in cases {
+            list([first, second, third], in: world, continuation: testCase.continuation)
+            let finished = Set(testCase.finished.map(\.id))
+            world.library.finishedBookIDs = { finished }
+            let reader = makeReaderFromList(for: testCase.reading, in: world, requests: requests)
+
+            let recorder = recordingAnnouncements {
+                reader.handleEndOfBook()
+                spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+            }
+
+            XCTAssertEqual(recorder.announcements.map(\.message), [testCase.announcement], testCase.announcement)
+            XCTAssertTrue(asked().isEmpty, testCase.announcement)
+            for book in [first, second, third] {
+                XCTAssertFalse(requests.hasRequest(for: book.id), "\(testCase.announcement): requested \(book.title)")
+                XCTAssertFalse(world.autoplayRequests.hasRequest(for: book.id), "\(testCase.announcement): started \(book.title)")
+            }
+            XCTAssertTrue(reader.hasFinishedBook, testCase.announcement)
+            XCTAssertEqual(
+                ReadingStatsService.shared.stats.finishedBooks.last?.bookID,
+                testCase.reading.id.uuidString,
+                testCase.announcement
+            )
+            // Its window closes, so the next case opens its book afresh.
+            reader.close()
+        }
+    }
+
+    /// The sleep timer keeps its rules for a book read from the list: a
+    /// timer of this reader's that is in effect starts nothing in the list,
+    /// and says so; a timer that stopped playback at the book's end is said
+    /// after why nothing follows. Another reader's timer does not stop the
+    /// list.
+    func testTheSleepTimerKeepsItsRulesForABookReadFromTheList() throws {
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("ReadingListSleepTimer")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let asked = record(.continueToNextBook, in: world)
+        let timer = SleepTimerService.shared
+        // Each case ends a book, which counts it finished; no book counts
+        // as finished here, so the list always offers the book beside.
+        world.library.finishedBookIDs = { [] }
+        let cases: [(duration: SleepTimerDuration, continuation: ReadingList.Continuation, reading: Book, announcement: String)] = [
+            (.minutes(30), .playBookBelow, first, "Finished: First Crossing. Next book not started because of the sleep timer."),
+            (.endOfBook, .playBookBelow, first, "Finished: First Crossing. Next book not started because of the sleep timer."),
+            (
+                .endOfBook, .stop, first,
+                "Finished: First Crossing. The reading list is set to stop when a book ends. Sleep timer expired."
+            ),
+            (.endOfHeading, .playBookBelow, second, "Finished: Second Crossing. End of the reading list. Sleep timer expired."),
+        ]
+        for testCase in cases {
+            list([first, second], in: world, continuation: testCase.continuation)
+            let reader = makeReaderFromList(for: testCase.reading, in: world, requests: requests)
+            timer.start(duration: testCase.duration, ownerID: reader.readerID, onExpire: {})
+
+            let recorder = recordingAnnouncements {
+                reader.handleEndOfBook()
+                spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+            }
+            timer.stop(reason: "the case ended")
+
+            XCTAssertEqual(recorder.announcements.map(\.message), [testCase.announcement], testCase.announcement)
+            XCTAssertTrue(asked().isEmpty, "\(testCase.announcement): asked for a book")
+            XCTAssertFalse(requests.hasRequest(for: second.id), "\(testCase.announcement): requested the next book")
+            XCTAssertFalse(world.autoplayRequests.hasRequest(for: second.id), "\(testCase.announcement): started the next book")
+            // Its window closes, so the next case opens its book afresh.
+            reader.close()
+        }
+
+        // Another reader's timer pauses only that reader: the list goes on.
+        list([first, second], in: world)
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        timer.start(duration: .minutes(30), ownerID: UUID(), onExpire: {})
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Another reader's timer kept the next book from starting")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        timer.stop(reason: "the test ended")
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+    }
+
+    /// A book taken off the list while it is read ends as its own
+    /// end-of-book behavior says, since the list has nothing to say of it:
+    /// Stop says "Finished: <title>", and Continue to Next Book goes on to
+    /// the next book in its folder, which is not read from the list.
+    func testABookTakenOffTheListMidReadEndsAsItsOwnBehaviorSays() throws {
+        let world = try makeIntegrationWorld("ReadingListLeftMidRead")
+        let requests = ReadingListOpenRequests()
+        // In the folder, by title: Alpha, Beta, Gamma.
+        let alpha = try makeAudioBook("Alpha Crossing", in: world)
+        let beta = try makeAudioBook("Beta Crossing", in: world, endOfBook: .continueNext)
+        let gamma = try makeAudioBook("Gamma Crossing", in: world)
+        list([alpha, beta, gamma], in: world)
+        let asked = record(.continueToNextBook, in: world)
+
+        let stopping = makeReaderFromList(for: alpha, in: world, requests: requests)
+        world.library.removeFromReadingList([alpha.id])
+        let stopped = recordingAnnouncements {
+            stopping.handleEndOfBook()
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(stopped.announcements.map(\.message), ["Finished: Alpha Crossing"])
+        XCTAssertTrue(asked().isEmpty)
+
+        let continuing = makeReaderFromList(for: beta, in: world, requests: requests)
+        world.library.removeFromReadingList([beta.id])
+        let continued = recordingAnnouncements {
+            continuing.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never continued in the folder")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(continued.announcements.map(\.message), ["Starting: Gamma Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [gamma.id])
+        XCTAssertTrue(world.autoplayRequests.hasRequest(for: gamma.id))
+        XCTAssertFalse(requests.hasRequest(for: gamma.id), "the folder's next book was asked to be read from the list")
+    }
+
+    /// A text book read from the list continues through it as an audiobook
+    /// does. (It is never played: its end is reached directly.)
+    func testATextBookReadFromTheListContinuesThroughIt() throws {
+        let world = try makeIntegrationWorld("ReadingListTextBook")
+        let requests = ReadingListOpenRequests()
+        let text = try makeTextBook("Tide Tables", in: world)
+        let audio = try makeAudioBook("Second Crossing", in: world)
+        list([text, audio], in: world)
+        let reader = makeReaderFromList(for: text, in: world, requests: requests)
+        XCTAssertFalse(reader.isAudioBook)
+        let asked = record(.continueToNextBook, in: world)
+
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [audio.id])
+        XCTAssertTrue(requests.hasRequest(for: audio.id))
+        XCTAssertFalse(reader.speechService.isSpeaking)
+    }
+
+    /// The next book's window already open from a folder is brought
+    /// forward, and its reader reads it from the list from then on and
+    /// plays it, once.
+    func testTheNextBookAlreadyOpenIsReadFromTheListAndPlays() throws {
+        let world = try makeIntegrationWorld("ReadingListNextOpen")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        list([first, second], in: world)
+        let next = makeReader(for: second, in: world, requests: requests)
+        waitForReaderToLoad(next)
+        XCTAssertFalse(next.isOpenedFromReadingList)
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(eventually { next.isCurrentlyPlaying }, "The next book never started")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertEqual(next.readingListPlace, ReadingListPlace(position: 2, count: 2))
+        XCTAssertTrue(next.audioPlaybackService.isPlaying)
+        XCTAssertFalse(requests.hasRequest(for: second.id))
+        XCTAssertFalse(world.autoplayRequests.hasRequest(for: second.id))
+        XCTAssertNil(next.lastAnnouncement)
+    }
+
     // MARK: - Fixtures
 
     /// The title `reader`'s window shows now.
@@ -532,5 +868,36 @@ final class ReadingListReaderTests: XCTestCase {
         )
         addTeardownBlock { reader.close() }
         return reader
+    }
+
+    /// A reader for `book` opened from the Reading List of `world`, as the
+    /// row's Open item opens it there, once it has loaded. In the app a
+    /// book has one window, which an open brings forward, so a test closes
+    /// a reader of the book before opening it from the list again: an open
+    /// reader of the book claims the request at once.
+    private func makeReaderFromList(
+        for book: Book,
+        in world: IntegrationWorld,
+        requests: ReadingListOpenRequests,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> ReaderViewModel {
+        requests.request(for: book.id)
+        let reader = makeReader(for: book, in: world, requests: requests)
+        waitForReaderToLoad(reader, file: file, line: line)
+        XCTAssertTrue(reader.isOpenedFromReadingList, "\(book.title) is not read from the list", file: file, line: line)
+        return reader
+    }
+
+    /// Records every notification named `name` posted on `world`'s
+    /// notification center from now on.
+    ///
+    /// - Returns: A function reading the notifications posted so far.
+    private func record(_ name: Notification.Name, in world: IntegrationWorld) -> () -> [Notification] {
+        var posted: [Notification] = []
+        world.notifications.publisher(for: name)
+            .sink { posted.append($0) }
+            .store(in: &subscriptions)
+        return { posted }
     }
 }

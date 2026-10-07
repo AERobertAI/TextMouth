@@ -35,3 +35,18 @@ extension ReadingListPlace {
         self.init(position: index + 1, count: shown.count)
     }
 }
+
+// MARK: - What Lies Beyond a Book in the List
+
+/// What lies beyond a book in the reading list, one way through it, when
+/// the list offers no book that way (FR09): no book at all, as below the
+/// last book or above the first, or only books already finished, which the
+/// list passes over while Skip Finished Books is on. A book read from the
+/// list says which as it ends, and Next in Reading List and Previous in
+/// Reading List say which when they have nowhere to go.
+enum ReadingListEnd: Equatable, Sendable {
+    /// No book lies that way.
+    case noBookBeyond
+    /// Only finished books lie that way, and the list passes over them.
+    case onlyFinishedBooksBeyond
+}
