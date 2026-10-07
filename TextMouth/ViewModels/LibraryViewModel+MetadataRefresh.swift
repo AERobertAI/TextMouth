@@ -135,9 +135,12 @@ extension LibraryViewModel {
     /// (`refreshedAuthor(current:read:)`), asked again here because an
     /// author typed while the pass ran stays; and the reader's version on
     /// every row read. A row whose author changed has its record written
-    /// too, as any edit of it would; a row only stamped has not, since the
-    /// stamp lives in the index alone. One `METADATA_REFRESH` line in the
-    /// debug log counts both. A book no longer in the library is skipped.
+    /// too, as any edit of it would; a row only stamped has not, so a
+    /// library of hundreds of books writes nothing for them: the stamp
+    /// reaches each record with the book's next save, and a library rebuilt
+    /// from its records before then reads those books again once. One
+    /// `METADATA_REFRESH` line in the debug log counts both. A book no
+    /// longer in the library is skipped.
     private func applyMetadataReadings(_ readings: [MetadataReading]) {
         guard !readings.isEmpty else { return }
         let latest = Dictionary(readings.map { ($0.bookID, $0) }, uniquingKeysWith: { _, later in later })

@@ -160,8 +160,9 @@ struct Book: Identifiable, Codable, Hashable {
     /// import's, or the launch refresh's. A row stamped by an older reader,
     /// or by none, as every row was before readers were versioned, is read
     /// again at launch (`LibraryViewModel.refreshOutdatedMetadata`). Kept
-    /// in library.json alone: a row rebuilt from its package record is read
-    /// again once.
+    /// in the row and, from the book's next save on, in its record, so a
+    /// library rebuilt from its records reads again only the books whose
+    /// records were written before that.
     var metadataReaderVersion: String?
 
     /// The author a book is listed under when nothing names one: what every
@@ -741,7 +742,8 @@ struct Book: Identifiable, Codable, Hashable {
                 epubVersion: epubVersion,
                 audioAlbum: audioAlbum,
                 audioGenre: audioGenre,
-                audioYear: audioYear
+                audioYear: audioYear,
+                metadataReaderVersion: metadataReaderVersion
             ),
             state: BookState(
                 readingPosition: readingPosition,
@@ -813,7 +815,8 @@ struct Book: Identifiable, Codable, Hashable {
             epubVersion: metadata.epubVersion,
             cacheFormatVersion: state.cacheFormatVersion,
             contentIndexVersion: state.contentIndexVersion,
-            textCacheFingerprint: state.textCacheFingerprint
+            textCacheFingerprint: state.textCacheFingerprint,
+            metadataReaderVersion: metadata.metadataReaderVersion
         )
     }
 }
