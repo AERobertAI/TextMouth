@@ -118,6 +118,45 @@ final class AudioEditorLevelsTests: XCTestCase {
 
     // MARK: - One Measurement at a Time
 
+    /// A newer measurement waits for the older one, which it cancelled, to
+    /// stop before it reads: while the older is held at its reader, the
+    /// newer has not started; released, the older ends without reading, and
+    /// only then does the newer read, and complete.
+    func testANewMeasurementWaitsForTheOldOneToStop() throws {
+        let harness = try openRampForSpinning(seconds: 6)
+        let model = harness.model
+        let holds = DispatchSemaphore(value: 0)
+        let started = OSAllocatedUnfairLock(initialState: 0)
+        observeReading(of: 48_000) {
+            started.withLock { $0 += 1 }
+            _ = holds.wait(timeout: .now() + Self.longestHold)
+        }
+        addTeardownBlock { holds.signal(); holds.signal() }
+
+        model.measureLevels()
+        let older = try XCTUnwrap(model.measuring)
+        let olderHeld = spinUntil(timeout: 10) { started.withLock { $0 } == 1 }
+        XCTAssertTrue(olderHeld, "the first measurement never reached its reader")
+
+        model.measureLevels()
+        let newer = try XCTUnwrap(model.measuring)
+        XCTAssertNotEqual(older, newer)
+        XCTAssertTrue(older.isCancelled)
+        XCTAssertEqual(model.pauseSearch, .finding)
+        spin(for: 0.3)
+        XCTAssertEqual(started.withLock { $0 }, 1, "the newer measurement started reading before the older one stopped")
+
+        holds.signal()
+        XCTAssertTrue(endsInTime(older, within: 5), "the older measurement never ended once released")
+        let newerReads = spinUntil(timeout: 10) { started.withLock { $0 } == 2 }
+        XCTAssertTrue(newerReads, "the newer measurement never read once the older had stopped")
+        holds.signal()
+        let found = spinUntil(timeout: 10) { model.pauseSearch == .found }
+        XCTAssertTrue(found, "the pauses were never found: \(model.pauseSearch)")
+        XCTAssertEqual(model.levels?.decibels.count, 600)
+        XCTAssertEqual(model.measuring, newer)
+    }
+
     /// Of several measurements started at once, each cancelled by the next,
     /// every one ends and the last completes, with the levels of the audio.
     func testMeasurementsStartedAtOnceAllEndAndTheLastCompletes() throws {

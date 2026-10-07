@@ -241,15 +241,24 @@ extension AudioEditorModel {
         return nil
     }
 
-    /// Measures the edited audio's levels again, off the main thread, and
-    /// finds its pauses; a measurement under way, of audio since changed,
-    /// is cancelled.
+    /// Measures the edited audio's levels again, on a thread of their own,
+    /// and finds its pauses; a measurement under way, of audio since
+    /// changed, is cancelled, and the new one begins once it has stopped.
     func measureLevels() {
-        measuring?.cancel()
+        // One measurement at a time. The older one, cancelled, stops only
+        // at its next buffer, so the newer waits for it to end before it
+        // builds its composition and reads: two readers decoding the
+        // edited audio at once would double the decoding and the memory of
+        // a long book for nothing, and a burst of edits would pile readers
+        // up as fast as the keys are pressed. Waiting keeps a burst to one
+        // reader, and the editor's pauses to the order of its edits.
+        let older = measuring
+        older?.cancel()
         pauseSearch = .finding
         pauses = []
         measuring = Task { [weak self] in
-            guard let self else { return }
+            await older?.value
+            guard let self, !Task.isCancelled else { return }
             do {
                 let preview = try await self.session.makePreview()
                 let measured = try await AudioEditorLevels.measure(preview)
