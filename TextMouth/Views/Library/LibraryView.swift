@@ -597,7 +597,7 @@ struct LibraryView: View {
             guard takesCommand(notification) else { return }
             if let id = selectedBookIDs.first,
                let book = filteredBooks.first(where: { $0.id == id }) {
-                onOpenBook(book)
+                openBook(book)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .removeFromLibrary)) { notification in
@@ -1218,13 +1218,27 @@ struct LibraryView: View {
         return ids.count > 1 ? selection : [book]
     }
 
+    /// Opens `book` from this window's list: by its row's default action,
+    /// its Open item, or Return on the selection. At the Reading List the
+    /// book's reader is asked first to read it from the list (FR09), so its
+    /// window is marked and the book continues through the list; Continue
+    /// Listening, which opens the last book read, opens as it always has.
+    private func openBook(_ book: Book) {
+        ReadingListOpenRequests.shared.open(
+            book,
+            shownIn: category,
+            libraryIsMoving: libraryViewModel.dataDirectoryMove != nil,
+            with: onOpenBook
+        )
+    }
+
     /// What the rows' commands do, on this list's state as it is when they
     /// run: open, Book Info, Select, Move to Folder, Move Up and Move Down,
     /// the cloud commands, removal, Export, Edit Text, and the transcription
     /// commands (FR05).
     private var rowActions: LibraryBookRowActions {
         LibraryBookRowActions(
-            open: onOpenBook,
+            open: openBook,
             showInfo: { book in
                 showBookInfo(for: book)
             },
