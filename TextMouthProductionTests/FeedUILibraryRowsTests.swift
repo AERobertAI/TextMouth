@@ -75,7 +75,10 @@ final class FeedUILibraryRowsTests: XCTestCase {
 
         let row = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).first)
 
-        XCTAssertEqual(row.counts, FeedItemCounts(listed: 3, downloaded: 1, downloading: 1, new: 2, unplayed: 3, noun: .episode))
+        XCTAssertEqual(
+            row.counts,
+            FeedItemCounts(listed: 3, total: FeedEntryTotal(count: 3), downloaded: 1, downloading: 1, new: 2, unplayed: 3, noun: .episode)
+        )
         XCTAssertEqual(row.countsText, "3 episodes, 1 downloaded, 1 downloading, 2 new")
         let check = FeedWording.check(world.center.fetchState(of: feed.id), isRefreshing: false, now: Date())
         XCTAssertEqual(row.check, check)
@@ -91,6 +94,108 @@ final class FeedUILibraryRowsTests: XCTestCase {
         world.center.markPlayed("guid:ep-3", of: feed.id)
         XCTAssertEqual(world.center.counts(of: feed.id).new, 0)
         XCTAssertEqual(world.center.counts(of: feed.id).unplayed, 2)
+    }
+
+    // MARK: - A Feed's Size
+
+    /// A feed's size reads as the number kept of the feed's entries when
+    /// the feed lists more than the library keeps, "10 of 381 episodes
+    /// kept", the noun agreeing with the number before it, and a feed
+    /// longer than TextMouth reads said to list more; otherwise, and while
+    /// the size is unknown, as the number kept alone, as it always read.
+    /// Every count of a feed starts with it.
+    func testAFeedsSizeSaysHowManyOfItsEntriesAreKept() {
+        /// The size `kept` of `total` reads as.
+        func size(_ kept: Int, _ total: FeedEntryTotal?, _ noun: FeedWording.ItemNoun = .episode) -> String {
+            FeedWording.sizePhrase(kept: kept, total: total, noun: noun)
+        }
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 381)), "10 of 381 episodes kept")
+        XCTAssertEqual(size(1, FeedEntryTotal(count: 381)), "1 of 381 episodes kept")
+        XCTAssertEqual(size(0, FeedEntryTotal(count: 1)), "0 of 1 episode kept")
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 381), .article), "10 of 381 articles kept")
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 381), .item), "10 of 381 items kept")
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 2_000, listsMore: true)), "10 of more than 2000 episodes kept")
+        XCTAssertEqual(size(2_000, FeedEntryTotal(count: 2_000, listsMore: true)), "2000 of more than 2000 episodes kept")
+        // Every entry kept, more kept than the feed lists now, or the size
+        // not known yet.
+        XCTAssertEqual(size(12, FeedEntryTotal(count: 12)), "12 episodes")
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 5)), "10 episodes")
+        XCTAssertEqual(size(1, FeedEntryTotal(count: 1)), "1 episode")
+        XCTAssertEqual(size(12, nil), "12 episodes")
+        XCTAssertEqual(size(1, nil, .article), "1 article")
+        XCTAssertEqual(size(0, nil), "0 episodes")
+        XCTAssertEqual(FeedWording.keptNote, "kept")
+        XCTAssertEqual(FeedWording.moreThanNote, "more than")
+
+        let counts = FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), downloaded: 3, downloading: 1, new: 2, noun: .episode)
+        XCTAssertEqual(FeedWording.sizePhrase(counts), "10 of 381 episodes kept")
+        XCTAssertEqual(FeedWording.countsPhrase(counts), "10 of 381 episodes kept, 3 downloaded, 1 downloading, 2 new")
+        XCTAssertEqual(
+            FeedWording.folderAnnouncement(name: "Planet Money", counts: counts),
+            "Planet Money, Feed, 10 of 381 episodes kept, 3 downloaded, 1 downloading, 2 new"
+        )
+        let check = FeedWording.Check(visible: "Checked today at 3:05 PM", spoken: "checked today at 3:05 PM", failed: false)
+        XCTAssertEqual(
+            FeedWording.feedRowLabel(title: "Planet Money", counts: counts, check: check, folderMissing: false),
+            "Planet Money, Feed, 10 of 381 episodes kept, 3 downloaded, 1 downloading, 2 new, checked today at 3:05 PM"
+        )
+        XCTAssertEqual(FeedWording.subscribed(title: "Planet Money", counts: counts), "Subscribed to Planet Money: 10 of 381 episodes kept.")
+    }
+
+    /// Every place that counts a feed says its size the same way: its row,
+    /// its folder's summary bar, entering its folder, Speak Info, and the
+    /// announcement after subscribing. A feed whose size is not known yet,
+    /// a feed keeping every entry, a feed listing fewer entries than the
+    /// library keeps, a feed of one entry, and a feed of articles each
+    /// count as they should.
+    func testEveryCountOfAFeedSaysItsSize() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUISize")
+        let episodes = (1...12).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)))
+        }
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: world.folder.path, items: episodes)
+        let counts = world.center.counts(of: feed.id)
+        XCTAssertEqual(counts.listed, 10)
+        XCTAssertEqual(counts.total, FeedEntryTotal(count: 12))
+        let size = "10 of 12 episodes kept"
+
+        let row = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).first)
+        XCTAssertTrue(row.countsText.hasPrefix(size), row.countsText)
+        XCTAssertTrue(row.label.hasPrefix("The Tactile Atlas, Feed, \(size)"), row.label)
+        let summary = world.center.folderSummary(of: feed.id, now: Date())
+        XCTAssertTrue(summary.counts.hasPrefix(size), summary.counts)
+        let path = try XCTUnwrap(world.library.feedFolderPath(forFolderID: feed.folderID))
+        let entering = FolderNavigationHistory.announcement(for: path, library: world.library.library, feedFolders: LibraryFeedFolders(center: world.center))
+        XCTAssertTrue(entering.hasPrefix("The Tactile Atlas, Feed, \(size)"), entering)
+        let facts = try XCTUnwrap(FeedInfoFacts.of(feedID: feed.id, center: world.center, now: Date()))
+        XCTAssertTrue(LibraryInfoWording.brief(.feed(facts)).hasPrefix("The Tactile Atlas. Feed. \(size)"), LibraryInfoWording.brief(.feed(facts)))
+        XCTAssertEqual(FeedWording.subscribed(title: feed.title, counts: counts), "Subscribed to The Tactile Atlas: \(size).")
+
+        // A record from before TextMouth recorded the size counts as it did.
+        world.center.store.update(feed.id) { $0.feed.entryTotal = nil }
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: feed.id)), "10 episodes")
+
+        // Keeping every entry: the next check reads the feed whole, and
+        // every entry is kept.
+        world.center.setKeepEntries(-1, of: feed.id)
+        _ = await world.center.refresh(feed.id)
+        XCTAssertEqual(world.center.counts(of: feed.id).total, FeedEntryTotal(count: 12))
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: feed.id)), "12 episodes")
+
+        // Fewer entries than the library keeps, and one entry.
+        let three = try await subscribe(world, title: "Three Rooms", path: "/three.xml", into: world.folder.path, items: Array(episodes.prefix(3)))
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: three.id)), "3 episodes")
+        let one = try await subscribe(world, title: "One Room", path: "/one.xml", into: world.folder.path)
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: one.id)), "1 episode")
+
+        // Articles: entries offering no audio or video.
+        let notes = (1...12).map { number in
+            FeedXML.Item(guid: "note-\(number)", title: "Note \(number)", published: world.day(-Double(number)), description: "<p>Words.</p>")
+        }
+        world.server.serve("/notes.xml", .feed(FeedXML.rss(title: "Harbour Notes", items: notes)))
+        let outcome = try await world.center.subscribe(to: world.server.url("/notes.xml").absoluteString, into: .newFolder(inParentPath: world.folder.path))
+        guard case .subscribed(let articles) = outcome else { return XCTFail("subscribing ended with \(outcome)") }
+        XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: articles.id)), "10 of 12 articles kept")
     }
 
     /// The last check reads as being checked, never checked, failed with

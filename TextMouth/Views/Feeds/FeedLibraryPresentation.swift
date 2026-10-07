@@ -6,6 +6,10 @@ import Foundation
 struct FeedItemCounts: Equatable, Sendable {
     /// The items the library lists: every one not deleted.
     var listed = 0
+    /// How many entries the feed itself lists (`Feed.entryTotal`), of
+    /// which the library lists `listed`; nil until a check has read the
+    /// feed since TextMouth began recording its size.
+    var total: FeedEntryTotal?
     /// Those downloaded, whose books the library lists.
     var downloaded = 0
     /// Those waiting to download or downloading.
@@ -31,12 +35,12 @@ extension FeedCenter {
         return true
     }
 
-    /// The items of the feed `feedID` counted as the library shows them;
-    /// none for a feed no longer subscribed.
+    /// The items of the feed `feedID` counted as the library shows them,
+    /// with the feed's size; none for a feed no longer subscribed.
     func counts(of feedID: UUID) -> FeedItemCounts {
         guard let record = store.record(of: feedID) else { return FeedItemCounts() }
         let items = record.listedItems
-        var counts = FeedItemCounts(listed: items.count, noun: .of(items))
+        var counts = FeedItemCounts(listed: items.count, total: record.feed.entryTotal, noun: .of(items))
         for item in items {
             switch state(of: item) {
             case .downloaded:
@@ -79,7 +83,7 @@ extension FolderNavigationHistory {
     /// What VoiceOver hears on entering the folder at `path`: its name and
     /// its books counted ("Fiction, 12 books"), or, for a feed's folder, its
     /// name, the note "Feed", and the feed's items counted ("Planet Money,
-    /// Feed, 12 episodes, 3 downloaded, 2 new") (FR03).
+    /// Feed, 10 of 381 episodes kept, 3 downloaded, 2 new") (FR03).
     @MainActor
     static func announcement(for path: String, library: Library, feedFolders: LibraryFeedFolders) -> String {
         if !path.isEmpty,

@@ -216,9 +216,9 @@ enum LibraryInfoWording {
 
     /// A feed's brief summary, in parts: its title, "Feed", "Folder
     /// missing" when its folder is gone, its items counted as its row
-    /// counts them with the unplayed ones after, and its last check.
-    /// Example: "Planet Money. Feed. 12 episodes, 3 downloaded, 2 new, 5
-    /// unplayed. Checked today at 3:05 PM."
+    /// counts them, its size first, with the unplayed ones after, and its
+    /// last check. Example: "Planet Money. Feed. 10 of 381 episodes kept, 3
+    /// downloaded, 2 new, 5 unplayed. Checked today at 3:05 PM."
     static func briefParts(of feed: FeedInfoFacts) -> [String] {
         var parts = [feed.title, FeedWording.feedNote]
         if feed.folderPath == nil {

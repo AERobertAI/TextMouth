@@ -170,6 +170,28 @@ final class LibraryInfoWordingTests: XCTestCase {
         XCTAssertEqual(LibraryInfoWording.countsPhrase(counts), FeedWording.countsPhrase(counts) + ", 5 unplayed")
     }
 
+    /// A feed that lists more entries than the library keeps says how many
+    /// of them are kept, as its row does; a feed longer than TextMouth
+    /// reads says it lists more.
+    func testAFeedsSummarySaysHowManyOfItsEntriesAreKept() {
+        var feed = FeedInfoFacts(
+            title: "Planet Money",
+            counts: FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), downloaded: 3, downloading: 0, new: 2, unplayed: 5, noun: .episode),
+            check: "Checked today at 3:05 PM",
+            folderPath: "Podcasts/Planet Money",
+            address: nil
+        )
+        XCTAssertEqual(
+            LibraryInfoWording.brief(.feed(feed)),
+            "Planet Money. Feed. 10 of 381 episodes kept, 3 downloaded, 2 new, 5 unplayed. Checked today at 3:05 PM."
+        )
+        feed.counts.total = FeedEntryTotal(count: 2_000, listsMore: true)
+        XCTAssertEqual(
+            LibraryInfoWording.brief(.feed(feed)),
+            "Planet Money. Feed. 10 of more than 2000 episodes kept, 3 downloaded, 2 new, 5 unplayed. Checked today at 3:05 PM."
+        )
+    }
+
     /// Articles are unread rather than unplayed, nothing unplayed is left
     /// out, a feed whose folder is gone says so and names no folder, and a
     /// feed no longer subscribed has no address to say. A failed check's

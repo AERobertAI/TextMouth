@@ -425,8 +425,15 @@ final class FeedUIAddFeedTests: XCTestCase {
             FeedWording.folderHelp(parentPath: ""),
             "TextMouth makes a folder named after the feed in Library Root, and its episodes and articles download into it."
         )
-        XCTAssertEqual(FeedWording.subscribed(title: "Atlas", itemCount: 1, noun: .episode), "Subscribed to Atlas: 1 episode.")
-        XCTAssertEqual(FeedWording.subscribed(title: "Notes", itemCount: 3, noun: .article), "Subscribed to Notes: 3 articles.")
+        XCTAssertEqual(FeedWording.subscribed(title: "Atlas", counts: FeedItemCounts(listed: 1, noun: .episode)), "Subscribed to Atlas: 1 episode.")
+        XCTAssertEqual(
+            FeedWording.subscribed(title: "Notes", counts: FeedItemCounts(listed: 3, total: FeedEntryTotal(count: 3), noun: .article)),
+            "Subscribed to Notes: 3 articles."
+        )
+        XCTAssertEqual(
+            FeedWording.subscribed(title: "Planet Money", counts: FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), noun: .episode)),
+            "Subscribed to Planet Money: 10 of 381 episodes kept."
+        )
     }
 
     // MARK: - The Return Key

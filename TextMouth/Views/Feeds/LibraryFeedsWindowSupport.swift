@@ -90,8 +90,7 @@ final class LibraryFeedsPresenter: ObservableObject {
             notice = FeedNotice(title: FeedWording.insecureTitle, message: FeedWording.insecureMessage(title: current.title))
             return
         }
-        let items = center.listedItems(of: feed.id)
-        let message = FeedWording.subscribed(title: current.title, itemCount: items.count, noun: .of(items))
+        let message = FeedWording.subscribed(title: current.title, counts: center.counts(of: feed.id))
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             VoiceOverAnnouncer.announce(message, from: window)
         }
