@@ -241,11 +241,52 @@ final class UnopenedCategoryTests: XCTestCase {
         XCTAssertEqual(LibraryLocation(category: .unopened, folderPath: "Essays").name, "Unopened")
     }
 
+    // MARK: - No Manual Order
+
+    /// Unopened offers no manual order, as All Items offers none: books
+    /// from many folders share no one order, so dragging and Move Book Up
+    /// and Move Book Down rearrange nothing there, whatever sort is saved,
+    /// while the same books can be rearranged in their own folder. A manual
+    /// sort saved for Unopened still lists every unopened book, in the
+    /// books' positions in their folders' orders and then by title, as All
+    /// Items shows that sort.
+    func testUnopenedOffersNoManualOrderAsAllItemsOffersNone() {
+        let manual = FolderSortSetting(sortField: .manual, sortAscending: true)
+        let manualSort = LibrarySortState(restoring: manual)
+        let unopened = LibraryLocation(category: .unopened, folderPath: "Essays")
+        let allItems = LibraryLocation(category: .allItems, folderPath: "Essays")
+        XCTAssertNil(unopened.manualOrderFolder)
+        XCTAssertNil(allItems.manualOrderFolder)
+        XCTAssertEqual(LibraryLocation(category: .folders, folderPath: "Essays").reorderableFolder(sortedBy: manualSort), "Essays")
+        for field in LibrarySortField.allCases {
+            let sort = LibrarySortState(restoring: FolderSortSetting(sortField: field, sortAscending: true))
+            XCTAssertNil(unopened.reorderableFolder(sortedBy: sort), field.rawValue)
+        }
+
+        let model = LibraryViewModel(initializeServices: false)
+        let start = Date(timeIntervalSince1970: 1_791_000_000)
+        model.library = Library(
+            books: [
+                Self.book("Second in Essays", in: "Essays", added: start, opened: nil, manualOrder: 1),
+                Self.book("First at the root", in: "", added: start, opened: nil, manualOrder: 0),
+                Self.book("Read first in Essays", in: "Essays", added: start, opened: start, manualOrder: 0),
+                Self.book("Unplaced", in: "", added: start, opened: nil, manualOrder: nil)
+            ],
+            folders: [BookFolder(name: "Essays")],
+            folderSortSettings: ["__unopened__": manual, "__allItems__": manual]
+        )
+
+        XCTAssertEqual(model.sortState(at: unopened), manualSort)
+        XCTAssertEqual(model.displayedBooks(at: unopened).map(\.title), ["First at the root", "Second in Essays", "Unplaced"])
+        XCTAssertEqual(model.displayedBooks(at: allItems).map(\.title), ["First at the root", "Read first in Essays", "Second in Essays", "Unplaced"])
+    }
+
     // MARK: - Fixtures
 
-    /// A book titled `title` in the folder `folder`, added at `added` and
-    /// last opened at `opened`, or never when nil.
-    private static func book(_ title: String, in folder: String, added: Date, opened: Date?) -> Book {
+    /// A book titled `title` in the folder `folder`, added at `added`, last
+    /// opened at `opened`, or never when nil, at `manualOrder` in its
+    /// folder's manual order, or unplaced when nil.
+    private static func book(_ title: String, in folder: String, added: Date, opened: Date?, manualOrder: Int? = nil) -> Book {
         let id = UUID()
         return Book(
             id: id,
@@ -255,7 +296,8 @@ final class UnopenedCategoryTests: XCTestCase {
             md5Hash: "unopened-\(id.uuidString)",
             folderPath: folder,
             dateAdded: added,
-            lastOpened: opened
+            lastOpened: opened,
+            manualSortOrder: manualOrder
         )
     }
 

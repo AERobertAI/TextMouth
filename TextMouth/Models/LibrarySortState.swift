@@ -44,16 +44,13 @@ struct LibraryLocation: Equatable {
     }
 
     /// The folder whose manual order the location shows: the folder shown in
-    /// Folders, and the root in No Folder, whose books are exactly the
-    /// root's. All Items and Recent mix books from many folders, which share
-    /// no one order, so they have none.
+    /// Folders, the root included. All Items, Unopened, and Recent mix books
+    /// from many folders, which share no one order, so they have none.
     var manualOrderFolder: String? {
         switch category {
         case .folders:
             return folderPath
-        case .unopened:
-            return ""
-        case .allItems, .recent:
+        case .allItems, .unopened, .recent:
             return nil
         }
     }
