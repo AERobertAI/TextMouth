@@ -222,7 +222,8 @@ final class ReaderViewModel: ObservableObject {
     /// or paused (`handleEndOfBook()`). A finished book keeps its media
     /// session, shown paused at its end, so that the AirPods and the media
     /// keys still reach this reader, and its next backward skip plays the
-    /// book again from where the skip lands (`performSkip(unit:forward:)`).
+    /// book again from where the skip lands (`performSkip(unit:forward:)`);
+    /// Release Media Controls is offered meanwhile (`canReleaseMediaControls`).
     /// Cleared when playback starts (`play()`), when a jump moves the cursor
     /// away from the end (`navigateTo(chapterIndex:characterOffset:)`), and
     /// when playback is stopped (`stop()`). A book that loops back to its
@@ -1441,6 +1442,10 @@ final class ReaderViewModel: ObservableObject {
 
     var canReleaseMediaControls: Bool {
         guard !mediaControlsReleased else { return false }
+        // A finished book still owns the media controls, shown paused at its
+        // end, though nothing plays or is paused (`hasFinishedBook`), so
+        // they can be handed back without closing the window.
+        if hasFinishedBook { return true }
         if isAudioBook {
             return audioPlaybackService.isPlaying
                 || audioPlaybackService.isPaused

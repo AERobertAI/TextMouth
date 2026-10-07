@@ -511,6 +511,33 @@ final class MediaCommandPlaybackTests: XCTestCase {
         assertToldSystem(system, that: reader, plays: true, "Play after the jump")
     }
 
+    /// A finished book still owns the media controls, so Release Media
+    /// Controls is offered, and hands them back: the system is told
+    /// playback stopped, and the book is finished no longer, so a Skip
+    /// Backward then moves the cursor without playing or reclaiming the
+    /// controls, as a stopped reader's does.
+    func testReleasingMediaControlsAfterTheBookFinishesHandsThemBack() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Release")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let reader = ferry.reader
+        XCTAssertTrue(reader.canReleaseMediaControls, "Release Media Controls is not offered after the end")
+
+        let recorder = recordingAnnouncements {
+            reader.releaseMediaControls()
+        }
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Media controls released"])
+        XCTAssertEqual(system.told.last, .some(nil), "Releasing media controls did not clear Now Playing")
+        XCTAssertFalse(reader.hasFinishedBook, "The released book is still finished")
+        XCTAssertFalse(reader.canReleaseMediaControls, "Release Media Controls is offered again")
+
+        reader.lastSkipTime = .distantPast
+        reader.skipBackward()
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying, "A skip after releasing played")
+        XCTAssertLessThan(reader.currentCharacterOffset, ferry.endOffset, "The skip did not move the cursor")
+        XCTAssertEqual(system.told.last, .some(nil), "The skip reclaimed Now Playing")
+    }
+
     // MARK: - The System's Side
 
     /// The system's side of the media session as a test plays it: the
