@@ -23,6 +23,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case showSleepTimer = "Show Sleep Timer"
     case restartSleepTimer = "Restart Sleep Timer"
     case whereAmI = "Where Am I?"
+    /// Speaks the selected book's, folder's, or feed's information in
+    /// the Library window with the app's own voice, as Where Am I? speaks
+    /// a position in a reader (`LibraryInfoSpeaker`).
+    case speakInfo = "Speak Info"
     case navigateUpLevel = "Up One Level"
     case openSelectedBook = "Open Selected Book"
     case showBookInfo = "Book Info"
@@ -126,6 +130,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .showSleepTimer: return .showSleepTimer
         case .restartSleepTimer: return .restartSleepTimer
         case .whereAmI: return .whereAmI
+        case .speakInfo: return .speakInfo
         case .openSelectedBook: return .openSelectedBook
         case .showBookInfo: return .showBookInfo
         case .removeFromLibrary: return .removeFromLibrary
@@ -164,7 +169,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Bookmarks"
         case .showHeadingList, .showSleepTimer, .restartSleepTimer:
             return "Panels"
-        case .whereAmI:
+        case .whereAmI, .speakInfo:
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown:
             return "Library"
@@ -513,6 +518,13 @@ extension ShortcutAction {
             ],
             .whereAmI: [
                 KeyBinding(key: "w")
+            ],
+            .speakInfo: [
+                // A plain key beside Where Am I's W, as the user asked on
+                // October 7: it never reaches a text field (plain keys
+                // are left to typing), and Book Info keeps Command-I.
+                // The audio editor's Mark In has I in its own scope.
+                KeyBinding(key: "i")
             ],
             .openSelectedBook: [
                 KeyBinding(key: "return")

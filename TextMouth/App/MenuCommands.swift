@@ -200,6 +200,17 @@ struct LibraryCommands: Commands {
 
             Divider()
 
+            // Speaks the selected book's, folder's, or feed's information
+            // with the app's own voice, as Where Am I? speaks a position
+            // in a reader. Its key, I, is handled by KeyboardShortcutManager
+            // for window targeting; Book Info (Command-I) is the Navigate
+            // menu's, and from a feed's row it opens Feed Info.
+            Button(ShortcutAction.speakInfo.title) {
+                NotificationCenter.default.post(name: .speakInfo, object: nil)
+            }
+
+            Divider()
+
             Button("Edit Mode") {
                 NotificationCenter.default.post(name: .toggleEditMode, object: nil)
             }
@@ -414,6 +425,10 @@ extension Notification.Name {
     /// presents the folder-only panel and imports the folders chosen.
     static let importDAISYFolder = Notification.Name("importDAISYFolder")
     static let showBookInfo = Notification.Name("showBookInfo")
+    /// Posted by Library > Speak Info and the I key: the Library window
+    /// that takes the command speaks its selected row's information with
+    /// the app's own voice (`LibraryInfoSpeaker`).
+    static let speakInfo = Notification.Name("speakInfo")
     static let openSelectedBook = Notification.Name("openSelectedBook")
     static let copyReadingPosition = Notification.Name("copyReadingPosition")
     static let searchInBook = Notification.Name("searchInBook")
