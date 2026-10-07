@@ -155,6 +155,14 @@ struct Book: Identifiable, Codable, Hashable {
     /// that measured them; nil for audio and for a cache written before
     /// fingerprints. Startup maintenance compares them with the files.
     var textCacheFingerprint: TextCacheFingerprint?
+    /// The version of the metadata reader (`ImportedFileMetadata.readerVersion`)
+    /// that last read this book's file for its title and author: the
+    /// import's, or the launch refresh's. A row stamped by an older reader,
+    /// or by none, as every row was before readers were versioned, is read
+    /// again at launch (`LibraryViewModel.refreshOutdatedMetadata`). Kept
+    /// in library.json alone: a row rebuilt from its package record is read
+    /// again once.
+    var metadataReaderVersion: String?
 
     /// The author a book is listed under when nothing names one: what every
     /// import, parser, and recording writes for it, which a reader leaves
@@ -206,7 +214,8 @@ struct Book: Identifiable, Codable, Hashable {
         epubVersion: String? = nil,
         cacheFormatVersion: String? = nil,
         contentIndexVersion: String? = nil,
-        textCacheFingerprint: TextCacheFingerprint? = nil
+        textCacheFingerprint: TextCacheFingerprint? = nil,
+        metadataReaderVersion: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -246,6 +255,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.cacheFormatVersion = cacheFormatVersion
         self.contentIndexVersion = contentIndexVersion
         self.textCacheFingerprint = textCacheFingerprint
+        self.metadataReaderVersion = metadataReaderVersion
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -305,6 +315,7 @@ struct Book: Identifiable, Codable, Hashable {
         // checked as one written before fingerprints, instead of the whole
         // library failing over one damaged field.
         textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
+        metadataReaderVersion = try container.decodeIfPresent(String.self, forKey: .metadataReaderVersion)
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
