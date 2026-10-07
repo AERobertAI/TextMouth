@@ -18,7 +18,8 @@ final class FeedUILibraryRowsTests: XCTestCase {
 
     /// The section lists the feeds whose folders are inside the location,
     /// at any depth, by title: every feed at the top of the library and in
-    /// All Items, none in a feed's own folder, No Folder, or Recent.
+    /// All Items, and in Unopened while it has an episode not yet played,
+    /// none in a feed's own folder or in Recent.
     func testTheFeedsSectionListsTheFeedsInsideTheLocation() async throws {
         let world = try FeedTestWorld(self, label: "FeedUISection")
         let base = world.folder.path
@@ -35,7 +36,7 @@ final class FeedUILibraryRowsTests: XCTestCase {
         XCTAssertEqual(titles(.folders, "\(base)/Shows"), ["Harbour Notes"])
         XCTAssertEqual(titles(.folders, atlasFolder), [], "a feed's own folder listed itself")
         XCTAssertEqual(titles(.allItems), ["Harbour Notes", "The Tactile Atlas"])
-        XCTAssertEqual(titles(.noFolder), [])
+        XCTAssertEqual(titles(.unopened), ["Harbour Notes", "The Tactile Atlas"], "each feed has an episode not yet played")
         XCTAssertEqual(titles(.recent), [])
         XCTAssertNotEqual(notes.id, atlas.id)
     }

@@ -304,7 +304,7 @@ final class LegacyFolderSortSettingScenarioTests: XCTestCase {
         runFolderSortSettingTests()
         XCTAssertEqual(
             LegacyScenarioRecorder.shared.count - initialCount,
-            28,
+            29,
             "Every folder-sort scenario should use the production Library model"
         )
     }

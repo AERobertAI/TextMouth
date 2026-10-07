@@ -174,7 +174,7 @@ final class LibraryListCacheTests: XCTestCase {
         model.library = try LibraryBenchmarkFixture.library(bookCount: 160)
         let locations = [
             LibraryLocation(category: .allItems, folderPath: ""),
-            LibraryLocation(category: .noFolder, folderPath: "Essays"),
+            LibraryLocation(category: .unopened, folderPath: "Essays"),
             LibraryLocation(category: .recent, folderPath: ""),
             LibraryLocation(category: .folders, folderPath: "")
         ] + LibraryBenchmarkFixture.folderPaths.map { LibraryLocation(category: .folders, folderPath: $0) }

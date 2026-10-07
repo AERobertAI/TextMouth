@@ -15,8 +15,8 @@ final class ViewsAndWindowsLibraryListTests: XCTestCase {
 
     /// Move Up and Move Down, read from the list's own manual order, are
     /// offered exactly where moving the book is possible, in random folders
-    /// with positions that repeat, are missing, or tie on the title, and in
-    /// No Folder, whose manual order is the root's.
+    /// with positions that repeat, are missing, or tie on the title, and at
+    /// the root of Folders, whose manual order is the root's.
     func testMovesFollowTheManualOrderTheListShows() {
         var generator = SeededGenerator(state: 0x5EED_2028)
         for round in 0..<40 {
@@ -24,7 +24,7 @@ final class ViewsAndWindowsLibraryListTests: XCTestCase {
             model.library = Self.randomLibrary(using: &generator)
             for location in [
                 LibraryLocation(category: .folders, folderPath: "Shelf"),
-                LibraryLocation(category: .noFolder, folderPath: ""),
+                LibraryLocation(category: .folders, folderPath: ""),
             ] {
                 model.library.folderSortSettings[location.sortSettingsKey] = FolderSortSetting(sortField: .manual, sortAscending: true)
                 let shown = model.displayedBooks(at: location)

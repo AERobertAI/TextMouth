@@ -122,10 +122,12 @@ struct FeedRowContent: Equatable, Identifiable {
 ///
 /// The section shows where feeds are: at a folder holding feeds' folders,
 /// at any depth, which makes the top of the library list every feed, and
-/// in All Items, which lists every feed. A feed's own folder lists its
-/// items rather than itself, and No Folder and Recent list no feeds. A feed
-/// whose folder is gone shows at the top of the library and in All Items,
-/// where it can still be found.
+/// in All Items, which lists every feed. Unopened lists the feeds with an
+/// item not yet played (an article: not read), each row counting its items
+/// as it does everywhere. A feed's own folder lists its items rather than
+/// itself, and Recent lists no feeds. A feed whose folder is gone shows at
+/// the top of the library, in All Items, and, with an item unplayed, in
+/// Unopened, where it can still be found.
 enum LibraryFeedsSectionRows {
     /// The feeds the Feeds section lists at `location`, by title.
     @MainActor
@@ -139,7 +141,10 @@ enum LibraryFeedsSectionRows {
                 guard let path = center.folderPath(of: feed) else { return base.isEmpty }
                 return base.isEmpty || path.hasPrefix(base + "/")
             }
-        case .noFolder, .recent:
+        case .unopened:
+            // Every feed with an item not yet played, whatever its folder.
+            return center.feeds.filter { center.counts(of: $0.id).unplayed > 0 }
+        case .recent:
             return []
         }
     }

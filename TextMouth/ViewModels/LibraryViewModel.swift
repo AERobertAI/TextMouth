@@ -13,11 +13,26 @@ enum LibrarySortField: String, CaseIterable, Codable {
     var accessibilityLabel: String { rawValue }
 }
 
+/// The views of the library a Library window shows, as its View picker
+/// names them, in the picker's order. Folders shows one folder at a time;
+/// the others list books from every folder: all of them, those never
+/// opened, and those opened lately. Unopened replaced No Folder, which
+/// listed the root's books; Folders still lists those at the root.
 enum LibraryCategory: String, CaseIterable, Codable {
     case folders = "Folders"
     case allItems = "All Items"
-    case noFolder = "No Folder"
+    /// Every book never opened, from every folder, and the feeds with items
+    /// not yet played.
+    case unopened = "Unopened"
     case recent = "Recent"
+
+    /// What the category Unopened replaced was called. A category saved
+    /// under that name reads as Unopened.
+    static let formerNoFolderName = "No Folder"
+    /// The key that category's sort was saved under. It is read as the
+    /// Unopened sort until one is chosen at Unopened (`Library.sortSetting(at:)`)
+    /// and never written, and no folder can take it as a name.
+    static let formerNoFolderSortSettingsKey = "__noFolder__"
 
     /// Key used to store per-category sort settings in folderSortSettings.
     /// Folder category uses the actual folder path; other categories use
@@ -26,16 +41,37 @@ enum LibraryCategory: String, CaseIterable, Codable {
         switch self {
         case .folders:  return nil  // uses folder path instead
         case .allItems: return "__allItems__"
-        case .noFolder: return "__noFolder__"
+        case .unopened: return "__unopened__"
         case .recent:   return "__recent__"
         }
     }
 
-    /// The default sort setting for this category when no user preference exists.
+    /// The default sort setting for this category when no user preference
+    /// exists: newest first for Recent (by last opened) and for Unopened (by
+    /// date added, since no unopened book has been opened), title ascending
+    /// elsewhere.
     var defaultSortSetting: FolderSortSetting {
         switch self {
-        case .recent: return .recentDefault
-        default:      return .defaultSort
+        case .recent:   return .recentDefault
+        case .unopened: return .unopenedDefault
+        default:        return .defaultSort
+        }
+    }
+
+    /// Reads a saved category by its name, taking the former name "No
+    /// Folder" for Unopened, which replaced it, so nothing saved under the
+    /// old name fails to load. Saving still writes the name itself.
+    init(from decoder: Decoder) throws {
+        let name = try decoder.singleValueContainer().decode(String.self)
+        if let category = LibraryCategory(rawValue: name) {
+            self = category
+        } else if name == Self.formerNoFolderName {
+            self = .unopened
+        } else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "No library category is named \(name)."
+            ))
         }
     }
 }

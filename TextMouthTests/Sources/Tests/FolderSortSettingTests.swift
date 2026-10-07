@@ -234,6 +234,13 @@ func runFolderSortSettingTests() {
         try assertTrue(!setting.sortAscending, "Recent default should be descending (newest first)")
     }
 
+    test("Unopened category default sort is dateAdded descending") {
+        let setting = FolderSortSetting.unopenedDefault
+        try assertEqual(setting.sortField, .dateAdded)
+        try assertTrue(!setting.sortAscending, "Unopened default should be descending (newest first)")
+        try assertEqual(LibraryCategory.unopened.defaultSortSetting, setting)
+    }
+
     test("Recent category sort key is __recent__") {
         try assertEqual(LibraryCategory.recent.sortSettingsKey, "__recent__")
     }
@@ -244,7 +251,7 @@ func runFolderSortSettingTests() {
 
     test("All categories except folders have reserved sort keys") {
         try assertEqual(LibraryCategory.allItems.sortSettingsKey, "__allItems__")
-        try assertEqual(LibraryCategory.noFolder.sortSettingsKey, "__noFolder__")
+        try assertEqual(LibraryCategory.unopened.sortSettingsKey, "__unopened__")
         try assertEqual(LibraryCategory.recent.sortSettingsKey, "__recent__")
     }
 
@@ -325,7 +332,7 @@ func runFolderSortSettingTests() {
         try assertEqual(LibraryCategory.recent.defaultSortSetting, .recentDefault)
         try assertEqual(LibraryCategory.folders.defaultSortSetting, .defaultSort)
         try assertEqual(LibraryCategory.allItems.defaultSortSetting, .defaultSort)
-        try assertEqual(LibraryCategory.noFolder.defaultSortSetting, .defaultSort)
+        try assertEqual(LibraryCategory.unopened.defaultSortSetting, .unopenedDefault)
     }
 
     // MARK: - Category switch round-trip (each location keeps its own key)

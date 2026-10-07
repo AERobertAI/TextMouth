@@ -33,6 +33,10 @@ struct FolderSortSetting: Codable, Equatable {
     /// Default sort for the Recent category: last opened descending (newest first)
     static let recentDefault = FolderSortSetting(sortField: .lastOpened, sortAscending: false)
 
+    /// Default sort for the Unopened category: date added descending (newest
+    /// first), since no unopened book has a last-opened date to sort by.
+    static let unopenedDefault = FolderSortSetting(sortField: .dateAdded, sortAscending: false)
+
     /// The setting in the one form a location shows it: manual order is
     /// ascending, because it has no direction, and no direction is
     /// remembered for the field shown or for manual order.
@@ -661,6 +665,13 @@ struct Library: Codable {
     /// All books with no folder assignment
     func booksWithNoFolder() -> [Book] {
         books.filter { $0.folderPath.isEmpty }
+    }
+
+    /// All books never opened, from the root and every folder: what the
+    /// Unopened category lists. A book is unopened while it has no
+    /// `lastOpened`, which is what `BookState.isNew` reads too.
+    func unopenedBooks() -> [Book] {
+        books.filter { $0.lastOpened == nil }
     }
 
     func subfolders(of parentPath: String) -> [BookFolder] {
