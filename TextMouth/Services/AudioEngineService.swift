@@ -71,7 +71,9 @@ extension SpeechRenderSignature: CustomStringConvertible {
 /// the rendered audio exactly. A new input to rendering belongs here, and in
 /// the signature.
 struct SpeechRenderRequest: Sendable {
-    /// The exact text handed to the synthesizer.
+    /// The text to render. The engine hands the synthesizer its guarded
+    /// form (`SpeechMarkupGuard`), of exactly this length, so the audio's
+    /// offsets are this text's.
     let text: String
     /// The voice to render with; nil renders with the system's default voice.
     let voice: AVSpeechSynthesisVoice?
@@ -837,6 +839,11 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         cancelRender()
 
         let text = request.text
+        // What the synthesizer is handed for the text: its tag-shaped runs
+        // made harmless (`SpeechMarkupGuard`), unless a test hands it
+        // something else. Chosen here, on the main thread, where the hook is
+        // set; applied on the render queue, off the main thread.
+        let spokenText = _spokenTextForTesting ?? SpeechMarkupGuard.neutralized
         isRendering = true
         wordFrameMap = []
         renderedAudio = nil
@@ -858,7 +865,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             self.currentRender = (renderSynth, ticket)
             self.renderLock.unlock()
 
-            let utterance = AVSpeechUtterance(string: text)
+            // The guarded text has exactly the length of `text`, so the
+            // frame map below, which counts the request's offsets, fits it.
+            let utterance = AVSpeechUtterance(string: spokenText(text))
             utterance.voice = request.voice
             utterance.rate = 0.7
             utterance.prefersAssistiveTechnologySettings = false
@@ -1468,6 +1477,12 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     func _charOffsetForFrameForTesting(_ frame: AVAudioFramePosition) -> Int {
         charOffsetForFrame(frame)
     }
+
+    /// What the synthesizer is handed for a render's text, in place of the
+    /// markup guard (`SpeechMarkupGuard.neutralized`), so a test can hand it
+    /// a text the engine refuses and see what the render does; nil, as in
+    /// the app, guards the text.
+    var _spokenTextForTesting: (@Sendable (String) -> String)?
 
     /// Called with this engine, on the player node's own thread, each time
     /// the node reports a scheduled segment played back, just before the

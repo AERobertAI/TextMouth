@@ -879,6 +879,49 @@ final class AudioEngineBehaviorTests: XCTestCase {
         return Array(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
     }
 
+    // MARK: - Markup
+
+    /// The chunk of *Rainbows End* the engine refused raw, cancelled with 0
+    /// frames (see `SpeechMarkupGuard`), renders through the engine's render
+    /// path, which hands the synthesizer the text guarded, and the audio
+    /// carries the request's own signature. Rendered offline, in its turn
+    /// on the app's render queue: nothing is heard. Skips when the voice the
+    /// refusal was measured in is not installed.
+    @MainActor
+    func testARenderHandsTheSynthesizerTheTextGuarded() throws {
+        let voice = try SpeechMarkupGuardTests.probeVoice()
+        let engine = AudioEngineService()
+        defer { engine.discardRenderedAudio() }
+        let request = SpeechRenderRequest(text: SpeechMarkupGuardTests.chunkAfterOpeningTag, voice: voice)
+
+        let installed = renderThroughTheQueue(request, into: engine)
+
+        XCTAssertEqual(installed, true, "the guarded render did not install audio")
+        XCTAssertTrue(engine.hasRenderedAudio)
+        XCTAssertEqual(engine.renderedSignature, request.signature)
+        XCTAssertFalse(engine.isRendering)
+    }
+
+    /// Render `request` into `engine` in its turn on the app's render
+    /// queue, as speech does, and return whether the render installed audio
+    /// within `timeout` seconds, or nil when it did not report by then.
+    @MainActor
+    private func renderThroughTheQueue(
+        _ request: SpeechRenderRequest,
+        into engine: AudioEngineService,
+        timeout: TimeInterval = 15
+    ) -> Bool? {
+        let outcome = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+        SpeechRenderCoordinator.shared.render(
+            request,
+            engine: engine,
+            shouldStart: { true },
+            completion: { success in outcome.withLock { $0 = success } }
+        )
+        _ = eventually(within: timeout) { outcome.withLock { $0 } != nil }
+        return outcome.withLock { $0 }
+    }
+
     // MARK: - Memory Benchmark
 
     /// The environment variable that asks for the rendered speech benchmark.

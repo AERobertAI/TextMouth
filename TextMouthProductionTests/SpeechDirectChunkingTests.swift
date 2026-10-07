@@ -214,6 +214,72 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(speech.currentWordRange, NSRange(location: 50_000, length: 0))
     }
 
+    // MARK: - Markup
+
+    /// A text with tag-shaped markup, which the Mac's speech engine reads
+    /// as markup, is handed over guarded (`SpeechMarkupGuard`): each chunk
+    /// at exactly the chunk's length, its brackets angle quotation marks
+    /// and every other unit the text's own. The words the synthesizer
+    /// reports for a guarded chunk land where they land in the same text
+    /// with the markup blanked out, so the guard moves no offset.
+    func testMarkupIsHandedOverGuardedWithoutMovingAnyWord() throws {
+        var prose = BenchmarkProse(seed: 0x5A_FE)
+        let lead = prose.text(utf16Length: 1_200)
+        let sentence = SpeechMarkupGuardTests.rainbowsEndSentence
+        // The same text with the markup's brackets as spaces: the same
+        // length, no markup.
+        let blanked = sentence.replacingOccurrences(of: "<", with: " ").replacingOccurrences(of: ">", with: " ")
+        let marked = lead + " " + sentence + " " + Self.longText
+        let plain = lead + " " + blanked + " " + Self.longText
+        XCTAssertEqual(marked.utf16.count, plain.utf16.count)
+        let firstChunk = DirectSpeechChunk.starting(at: 0, in: marked, maximumLength: SpeechService.directModeFirstChunkSize)
+        let secondChunk = DirectSpeechChunk.starting(at: firstChunk.end, in: marked, maximumLength: SpeechService.directModeChunkSize)
+        XCTAssertLessThan(firstChunk.end, lead.utf16.count, "the sentence lies in the second chunk")
+
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        let (twin, twinRecorder) = makeDirectSpeech()
+        defer { twin.stop() }
+        var words: [String] = []
+        speech.onWordSpoken = { _, word in words.append(word) }
+        speech.speak(marked)
+        twin.speak(plain)
+        let first = try handedOver(0, by: recorder)
+        let twinFirst = try handedOver(0, by: twinRecorder)
+        report(start: first, to: speech)
+        report(start: twinFirst, to: twin)
+
+        // The first chunk, without markup, is handed over as it is; the
+        // second, with the sentence, guarded and at its own length.
+        XCTAssertEqual(first.speechString, firstChunk.words(of: marked))
+        let second = try handedOver(1, by: recorder)
+        let secondWords = secondChunk.words(of: marked)
+        XCTAssertEqual(second.speechString, SpeechMarkupGuard.neutralized(secondWords))
+        XCTAssertNotEqual(second.speechString, secondWords, "the chunk held markup")
+        XCTAssertFalse(second.speechString.contains("<"))
+        XCTAssertEqual(second.speechString.utf16.count, secondChunk.end - secondChunk.start)
+        let twinSecond = try handedOver(1, by: twinRecorder)
+        XCTAssertEqual(twinSecond.speechString, secondChunk.words(of: plain))
+        XCTAssertEqual(twinSecond.speechString.utf16.count, second.speechString.utf16.count)
+
+        // Once the first chunk ends, the second is the one speaking, and a
+        // word before the markup, one between the tags, and one after the
+        // closing tag land at the same place for both texts.
+        report(finish: first, to: speech)
+        report(finish: twinFirst, to: twin)
+        for word in ["Braun", "recruit", "reply"] {
+            let local = (secondWords as NSString).range(of: word)
+            XCTAssertNotEqual(local.location, NSNotFound, word)
+            report(word: local, of: second, to: speech)
+            report(word: local, of: twinSecond, to: twin)
+            let expected = NSRange(location: secondChunk.start + local.location, length: local.length)
+            XCTAssertEqual(speech.currentWordRange, expected, word)
+            XCTAssertEqual(twin.currentWordRange, expected, word)
+            XCTAssertEqual((marked as NSString).substring(with: expected), word)
+        }
+        XCTAssertEqual(words, ["Braun", "recruit", "reply"])
+    }
+
     // MARK: - Benchmark
 
     /// What the synthesizer itself does with the two changes, muted: the

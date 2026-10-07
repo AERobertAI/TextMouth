@@ -262,7 +262,9 @@ extension ReaderViewModel {
         self.whereAmIDelegate = delegate
         whereAmISynth.delegate = delegate
 
-        let utterance = AVSpeechUtterance(string: text)
+        // Guarded like the book's own speech: the announcement quotes the
+        // book, and the engine reads tag-shaped text as markup.
+        let utterance = AVSpeechUtterance(string: SpeechMarkupGuard.neutralized(text))
         utterance.voice = speechService.currentVoice
         utterance.rate = SpeechService.rateForWPM(speechService.wordsPerMinute)
         utterance.prefersAssistiveTechnologySettings = false

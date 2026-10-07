@@ -857,8 +857,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     /// An utterance of `text` in the voice, speed, and pitch chosen now.
+    /// The synthesizer is handed `text` with its tag-shaped runs made
+    /// harmless (`SpeechMarkupGuard`), at exactly the text's length, so a
+    /// range it reports for the utterance is a range of `text`, and the
+    /// chunk's place in the whole text counts as before.
     private func makeDirectUtterance(speaking text: String) -> AVSpeechUtterance {
-        let utterance = AVSpeechUtterance(string: text)
+        let utterance = AVSpeechUtterance(string: SpeechMarkupGuard.neutralized(text))
         utterance.voice = currentVoice
         utterance.rate = Self.rateForWPM(wordsPerMinute)
         utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
