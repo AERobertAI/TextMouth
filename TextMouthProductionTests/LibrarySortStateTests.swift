@@ -30,13 +30,13 @@ final class LibrarySortStateTests: XCTestCase {
     func testEveryCategoryAndFolderRestoresItsOwnSavedSort() {
         let library = Library(folderSortSettings: [
             "__allItems__": FolderSortSetting(sortField: .dateAdded, sortAscending: false),
-            "__noFolder__": FolderSortSetting(sortField: .fileSize, sortAscending: true),
+            "__unopened__": FolderSortSetting(sortField: .fileSize, sortAscending: true),
             "__recent__": FolderSortSetting(sortField: .title, sortAscending: true),
             "Essays/Travel": FolderSortSetting(sortField: .author, sortAscending: false)
         ])
         let expectedTitles: [(LibraryLocation, String)] = [
             (LibraryLocation(category: .allItems, folderPath: "Essays/Travel"), "Library: All Items (Date Added Descending)"),
-            (LibraryLocation(category: .noFolder, folderPath: "Essays/Travel"), "Library: No Folder (File Size Ascending)"),
+            (LibraryLocation(category: .unopened, folderPath: "Essays/Travel"), "Library: Unopened (File Size Ascending)"),
             (LibraryLocation(category: .recent, folderPath: "Essays/Travel"), "Library: Recent (Title Ascending)"),
             (LibraryLocation(category: .folders, folderPath: "Essays/Travel"), "Library: Travel (Author Descending)")
         ]
@@ -47,13 +47,15 @@ final class LibrarySortStateTests: XCTestCase {
     }
 
     /// A location with no saved sort shows its category's default: Last
-    /// Opened Descending (newest first) for Recent, Title Ascending elsewhere.
+    /// Opened Descending (newest first) for Recent, Date Added Descending
+    /// (newest first) for Unopened, Title Ascending elsewhere.
     func testALocationWithoutASavedSortShowsItsCategoryDefault() {
         let library = Library()
+        let newestFirst: [LibraryCategory: String] = [.recent: "Last Opened Descending", .unopened: "Date Added Descending"]
 
         for category in LibraryCategory.allCases {
             let location = LibraryLocation(category: category, folderPath: "Unsorted Shelf")
-            let expected = category == .recent ? "Last Opened Descending" : "Title Ascending"
+            let expected = newestFirst[category] ?? "Title Ascending"
             XCTAssertEqual(library.sortState(at: location).titleFragment, expected, "\(category)")
         }
     }
@@ -64,7 +66,7 @@ final class LibrarySortStateTests: XCTestCase {
         XCTAssertEqual(LibraryLocation(category: .folders, folderPath: "").sortSettingsKey, "")
         XCTAssertEqual(LibraryLocation(category: .folders, folderPath: "Essays/Travel").sortSettingsKey, "Essays/Travel")
         XCTAssertEqual(LibraryLocation(category: .allItems, folderPath: "Essays").sortSettingsKey, "__allItems__")
-        XCTAssertEqual(LibraryLocation(category: .noFolder, folderPath: "Essays").sortSettingsKey, "__noFolder__")
+        XCTAssertEqual(LibraryLocation(category: .unopened, folderPath: "Essays").sortSettingsKey, "__unopened__")
         XCTAssertEqual(LibraryLocation(category: .recent, folderPath: "Essays").sortSettingsKey, "__recent__")
     }
 
@@ -282,7 +284,7 @@ final class LibrarySortStateTests: XCTestCase {
         let expected: [(LibraryLocation, String?)] = [
             (LibraryLocation(category: .folders, folderPath: "Essays/Travel"), "Essays/Travel"),
             (LibraryLocation(category: .folders, folderPath: ""), ""),
-            (LibraryLocation(category: .noFolder, folderPath: "Essays/Travel"), ""),
+            (LibraryLocation(category: .unopened, folderPath: "Essays/Travel"), ""),
             (LibraryLocation(category: .allItems, folderPath: "Essays/Travel"), nil),
             (LibraryLocation(category: .recent, folderPath: "Essays/Travel"), nil)
         ]

@@ -37,7 +37,7 @@ struct LibraryLocation: Equatable {
             return folderPath.isEmpty
                 ? "All Folders"
                 : folderPath.components(separatedBy: "/").last ?? "All Folders"
-        case .allItems, .noFolder, .recent:
+        case .allItems, .unopened, .recent:
             // The same words the category picker shows.
             return category.rawValue
         }
@@ -51,7 +51,7 @@ struct LibraryLocation: Equatable {
         switch category {
         case .folders:
             return folderPath
-        case .noFolder:
+        case .unopened:
             return ""
         case .allItems, .recent:
             return nil
@@ -262,8 +262,26 @@ extension Library {
     /// from its category's default when none is saved (TODO A06). This is
     /// the one function every window, menu, and list uses to load a sort.
     func sortState(at location: LibraryLocation) -> LibrarySortState {
-        LibrarySortState(
-            restoring: sortSetting(for: location.sortSettingsKey, default: location.defaultSortSetting)
-        )
+        LibrarySortState(restoring: sortSetting(at: location))
+    }
+
+    /// The setting saved for `location`, or its category's default. At
+    /// Unopened, a sort saved while the category was named No Folder (under
+    /// `LibraryCategory.formerNoFolderSortSettingsKey`) is carried over by
+    /// being read here, until a sort is chosen at Unopened, which is saved
+    /// under Unopened's own key and shadows it; nothing is ever written
+    /// under the old key. A No Folder sort of manual order is not carried
+    /// over: it was the arrangement of the root's books, which books from
+    /// many folders do not share, so Unopened shows its default instead.
+    func sortSetting(at location: LibraryLocation) -> FolderSortSetting {
+        if let saved = folderSortSettings[location.sortSettingsKey] {
+            return saved
+        }
+        if location.category == .unopened,
+           let former = folderSortSettings[LibraryCategory.formerNoFolderSortSettingsKey],
+           former.sortField.hasDirection {
+            return former
+        }
+        return location.defaultSortSetting
     }
 }

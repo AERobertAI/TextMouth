@@ -24,7 +24,7 @@ final class ViewsAndWindowsLibraryListTests: XCTestCase {
             model.library = Self.randomLibrary(using: &generator)
             for location in [
                 LibraryLocation(category: .folders, folderPath: "Shelf"),
-                LibraryLocation(category: .noFolder, folderPath: ""),
+                LibraryLocation(category: .unopened, folderPath: ""),
             ] {
                 model.library.folderSortSettings[location.sortSettingsKey] = FolderSortSetting(sortField: .manual, sortAscending: true)
                 let shown = model.displayedBooks(at: location)

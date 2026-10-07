@@ -369,7 +369,7 @@ extension LibraryViewModel {
             return library.booksInFolder(folderPath)
         case .allItems:
             return library.books
-        case .noFolder:
+        case .unopened:
             return library.booksWithNoFolder()
         case .recent:
             return LibraryBookSorter.recent(library.books)

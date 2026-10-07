@@ -27,6 +27,12 @@ struct BookFolder: Identifiable, Codable, Hashable {
 
     static let maxDepth = 4
 
+    /// The names no folder may have: the keys the categories' sort settings
+    /// are saved under (`LibraryCategory.sortSettingsKey`), and the former No
+    /// Folder category's key, which Unopened still reads.
+    static let reservedNames: Set<String> = Set(LibraryCategory.allCases.compactMap(\.sortSettingsKey))
+        .union([LibraryCategory.formerNoFolderSortSettingsKey])
+
     /// Normalize user-entered names without allowing filesystem navigation or
     /// names reserved for packages and the library's category sort settings.
     /// Names are stored in Unicode NFC, so a composed é (U+00E9) and a
@@ -39,7 +45,7 @@ struct BookFolder: Identifiable, Codable, Hashable {
               normalized != ".", normalized != "..",
               !normalized.contains("\0"),
               !normalized.lowercased().hasSuffix(".tmb"),
-              !["__allItems__", "__noFolder__", "__recent__"].contains(normalized) else {
+              !Self.reservedNames.contains(normalized) else {
             return nil
         }
         return normalized

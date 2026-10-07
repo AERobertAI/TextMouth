@@ -139,7 +139,7 @@ enum LibraryFeedsSectionRows {
                 guard let path = center.folderPath(of: feed) else { return base.isEmpty }
                 return base.isEmpty || path.hasPrefix(base + "/")
             }
-        case .noFolder, .recent:
+        case .unopened, .recent:
             return []
         }
     }

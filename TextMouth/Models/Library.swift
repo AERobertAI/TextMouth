@@ -33,6 +33,10 @@ struct FolderSortSetting: Codable, Equatable {
     /// Default sort for the Recent category: last opened descending (newest first)
     static let recentDefault = FolderSortSetting(sortField: .lastOpened, sortAscending: false)
 
+    /// Default sort for the Unopened category: date added descending (newest
+    /// first), since no unopened book has a last-opened date to sort by.
+    static let unopenedDefault = FolderSortSetting(sortField: .dateAdded, sortAscending: false)
+
     /// The setting in the one form a location shows it: manual order is
     /// ascending, because it has no direction, and no direction is
     /// remembered for the field shown or for manual order.

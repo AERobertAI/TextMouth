@@ -35,7 +35,7 @@ final class FeedUILibraryRowsTests: XCTestCase {
         XCTAssertEqual(titles(.folders, "\(base)/Shows"), ["Harbour Notes"])
         XCTAssertEqual(titles(.folders, atlasFolder), [], "a feed's own folder listed itself")
         XCTAssertEqual(titles(.allItems), ["Harbour Notes", "The Tactile Atlas"])
-        XCTAssertEqual(titles(.noFolder), [])
+        XCTAssertEqual(titles(.unopened), [])
         XCTAssertEqual(titles(.recent), [])
         XCTAssertNotEqual(notes.id, atlas.id)
     }
