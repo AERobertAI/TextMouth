@@ -208,7 +208,7 @@ struct ReaderPanels {
     var bookmarks = false
     /// The sleep timer (`SleepTimerView`).
     var sleepTimer = false
-    /// The book's info (`MetadataEditorView`, or `LibraryBookInfoSheet`).
+    /// The book's info (`ReaderBookInfoSheet`).
     var bookInfo = false
     /// The book's voice and speed, or an audiobook's speed
     /// (`BookVoicePickerView`).
@@ -389,7 +389,7 @@ struct ReaderPanelSheets: ViewModifier {
                 sleepTimerSheet
             }
             .sheet(isPresented: $panels.bookInfo) {
-                bookInfoSheet
+                ReaderBookInfoSheet(viewModel: viewModel)
             }
             .sheet(isPresented: $panels.voice) {
                 BookVoicePickerView(viewModel: viewModel)
@@ -418,35 +418,6 @@ struct ReaderPanelSheets: ViewModifier {
         )
     }
 
-    /// The book's info: an EPUB's metadata or an audiobook's, in the
-    /// metadata editor, or for any other book (plain text, Markdown, HTML)
-    /// the simple info editor the library uses.
-    @ViewBuilder
-    private var bookInfoSheet: some View {
-        if let metadata = viewModel.epubMetadata {
-            MetadataEditorView(
-                metadata: metadata,
-                isEPUB: viewModel.book.format == .epub,
-                onSave: { updated, writeToFile in
-                    viewModel.saveEPUBMetadata(updated, writeToFile: writeToFile)
-                }
-            )
-        } else if let audioMeta = viewModel.audioMetadata {
-            MetadataEditorView(
-                audioMetadata: audioMeta,
-                onSave: { updated in
-                    viewModel.saveAudioMetadata(updated)
-                }
-            )
-        } else {
-            // Plain text, markdown, HTML — use the simple info editor
-            LibraryBookInfoSheet(
-                book: viewModel.book,
-                libraryViewModel: viewModel.libraryViewModel
-            )
-        }
-    }
-
     /// Search in the loaded book. Choosing a result moves the reader there
     /// and closes the sheet.
     @ViewBuilder
@@ -465,6 +436,46 @@ struct ReaderPanelSheets: ViewModifier {
                     viewModel.navigateToSearchResult(chapterIndex: chapterIndex, characterOffset: charOffset)
                     panels.search = false
                 }
+            )
+        }
+    }
+}
+
+/// The reader's Book Info sheet: an EPUB's metadata or an audiobook's, in
+/// the metadata editor, or for any other book (plain text, Markdown, HTML)
+/// the simple info editor the library uses. Each says after a field's label
+/// that the user edited it by hand, from the book's record (`Book.handEdits`),
+/// as the Library window's Book Info does. The reader's copy of the book
+/// takes the record from every save of its row, the reader's own saves
+/// included, and the reader is observed, so the sheet, opened again, says
+/// "edited by hand" for a field just saved.
+struct ReaderBookInfoSheet: View {
+    @ObservedObject var viewModel: ReaderViewModel
+
+    var body: some View {
+        if let metadata = viewModel.epubMetadata {
+            MetadataEditorView(
+                metadata: metadata,
+                isEPUB: viewModel.book.format == .epub,
+                handEdits: viewModel.book.handEdits,
+                onSave: { updated, writeToFile in
+                    viewModel.saveEPUBMetadata(updated, writeToFile: writeToFile)
+                }
+            )
+        } else if let audioMeta = viewModel.audioMetadata {
+            MetadataEditorView(
+                audioMetadata: audioMeta,
+                handEdits: viewModel.book.handEdits,
+                onSave: { updated in
+                    viewModel.saveAudioMetadata(updated)
+                }
+            )
+        } else {
+            // Plain text, Markdown, HTML: the simple info editor, which
+            // reads the book's record of hand edits itself.
+            LibraryBookInfoSheet(
+                book: viewModel.book,
+                libraryViewModel: viewModel.libraryViewModel
             )
         }
     }
