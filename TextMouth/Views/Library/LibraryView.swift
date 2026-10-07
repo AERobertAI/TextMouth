@@ -136,6 +136,10 @@ struct LibraryView: View {
     /// whichever window is key (TODO A05).
     @Binding var showTextInput: Bool
     let onOpenBook: (Book) -> Void
+    /// What VoiceOver calls the category picker, whose segments read the
+    /// categories' names (`LibraryCategory.rawValue`): Folders, All Items,
+    /// Unopened, Recent.
+    static let categoryPickerLabel = "Library category"
     /// Which library folders hold feeds, and the feed engine they follow
     /// (FR03): the app's, unless a test shows its own. Observed, as it
     /// publishes only when a feed's folder changes; the views showing a
@@ -263,7 +267,8 @@ struct LibraryView: View {
             // they succeed or are dismissed (TODO S09).
             PersistenceFailureBanner(center: libraryViewModel.failureCenter)
 
-            // Category picker
+            // The category picker: a segment per category, each reading its
+            // name, under the label VoiceOver says for the picker itself.
             Picker("View", selection: $category) {
                 ForEach(LibraryCategory.allCases, id: \.self) { cat in
                     Text(cat.rawValue).tag(cat)
@@ -272,7 +277,7 @@ struct LibraryView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal)
             .padding(.top, 8)
-            .accessibilityLabel("Library category")
+            .accessibilityLabel(Self.categoryPickerLabel)
 
             // Breadcrumb navigation (only in folders mode)
             if category == .folders && !currentFolderPath.isEmpty {
