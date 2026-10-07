@@ -239,6 +239,15 @@ final class NowPlayingService {
     /// The active owner is the playing reader when one exists, otherwise the
     /// most recently focused reader. Kept as a compatibility view for callers
     /// and tests that only need the current command target.
+    ///
+    /// A reader whose book has finished is still the focused owner, so it
+    /// is the active one while nothing plays: it keeps its media session
+    /// and shows its book paused at the end, never stopped
+    /// (`ReaderViewModel.finishListening`), so that macOS goes on sending
+    /// the AirPods and the media keys here, and the skip and track commands
+    /// sent after the end reach it and play the book again from where the
+    /// skip lands. A reader gives the controls up only by releasing them
+    /// (`clearNowPlaying(ownerID:)`) or closing (`unregister(ownerID:)`).
     var activeOwnerID: UUID? {
         playingOwnerID ?? focusedOwnerID
     }
@@ -829,7 +838,10 @@ final class NowPlayingService {
     }
 
     /// Resolves navigation ownership at execution so an earlier Play or Toggle
-    /// in the same FIFO batch can transfer playback before the Skip runs.
+    /// in the same FIFO batch can transfer playback before the Skip runs. A
+    /// finished book's reader is still the active owner (`activeOwnerID`),
+    /// so the AirPods' Previous Track after the end reaches it, where the
+    /// reader's own skip plays the book again (`ReaderViewModel.performSkip`).
     private func dispatchSkipCommandToActiveOwner(
         gesture: MediaGestureDetector.EventType,
         direction: SkipDirection,

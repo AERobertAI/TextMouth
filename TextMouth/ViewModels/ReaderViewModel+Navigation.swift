@@ -93,14 +93,23 @@ extension ReaderViewModel {
     }
 
     /// Whether a move to `offset` in chapter `chapterIndex` can seek the
-    /// speech already loaded instead of restarting it. The move must stay in
-    /// the cursor's chapter, and while speech plays it must land where
-    /// something speakable follows: seeking onto silent text, such as a
-    /// skipped section that closes the chapter, would restart speech with
-    /// nothing to say. Restarting from the cursor instead passes over that
-    /// text, or ends the book when nothing speakable remains.
+    /// speech already loaded instead of restarting it.
+    ///
+    /// Speech must be loaded, playing or paused. Speech that has finished,
+    /// or never started, holds nothing to seek, and seeking it would start
+    /// a direct utterance from the new offset on its own, outside Play, as
+    /// a skip after a finished book once did: the move restarts from the
+    /// cursor instead, which leaves a stopped reader silent until Play, or
+    /// until a backward skip plays a finished book again (`performSkip`).
+    /// The move must stay in the cursor's chapter, and while speech plays it
+    /// must land where something speakable follows: seeking onto silent
+    /// text, such as a skipped section that closes the chapter, would
+    /// restart speech with nothing to say. Restarting from the cursor
+    /// instead passes over that text, or ends the book when nothing
+    /// speakable remains.
     private func canSeekLoadedSpeech(toChapter chapterIndex: Int, offset: Int, whilePlaying isPlaying: Bool) -> Bool {
-        chapterIndex == currentChapterIndex
+        guard speechService.isSpeaking || speechService.isPaused else { return false }
+        return chapterIndex == currentChapterIndex
             && (!isPlaying || loadedSpeechHasSpeakableText(afterOriginalOffset: offset))
     }
 
@@ -176,8 +185,24 @@ extension ReaderViewModel {
 
     /// Dispatch a skip action based on the skip unit type.
     /// Time-based units convert to word or character deltas; structural units delegate to heading/bookmark nav.
+    ///
+    /// A finished book rests at its end with nothing playing, and keeps its
+    /// media session so that the AirPods still reach it (`hasFinishedBook`).
+    /// A backward skip from there, by whatever unit, plays the book again
+    /// from where it lands, exactly as a skip during playback plays on: the
+    /// listener who rewinds a finished book means to hear its end again.
+    /// Play claims the media controls and a listening session as every
+    /// start does, with its own sound after the skip's, and the book rests
+    /// finished again when it ends again. A backward skip that could not
+    /// move, such as a heading skip with no heading before, leaves the book
+    /// finished and silent, as does a forward skip at the end, which stays
+    /// there.
     func performSkip(unit: SkipUnit, forward: Bool) {
         DiagnosticLog.trace(.playback, "performSkip unit=\(unit.rawValue) forward=\(forward) wpm=\(speechService.wordsPerMinute)")
+        // Taken before the skip: a structural skip jumps (`navigateTo`),
+        // which itself leaves the finished state behind.
+        let wasFinished = hasFinishedBook
+        let before = (chapter: currentChapterIndex, offset: currentCharacterOffset)
         switch unit {
         case .sentence:
             if forward { nextSentence() } else { previousSentence() }
@@ -203,6 +228,11 @@ extension ReaderViewModel {
                 skipByTime(seconds: forward ? Double(seconds) : -Double(seconds))
             }
         }
+        // The finished book plays again from where a backward skip landed.
+        guard wasFinished, !forward,
+              before != (chapter: currentChapterIndex, offset: currentCharacterOffset) else { return }
+        DiagnosticLog.trace(.playback, "performSkip: the finished book plays again from where the skip landed")
+        play()
     }
 
     /// Jump to the next subheading (level >= 2) after the current position
@@ -766,6 +796,12 @@ extension ReaderViewModel {
     func navigateTo(chapterIndex: Int, characterOffset: Int) {
         guard let content = content, !content.chapters.isEmpty else { return }
         defer { endSleepTimerIfMoveReachedHeadingEnd() }
+        // A jump leaves a finished book's end behind: the reader then rests
+        // where the jump lands, as any stopped reader does, and its skips
+        // move the cursor without playing until Play (`hasFinishedBook`). A
+        // backward skip that jumps plays all the same, having asked first
+        // (`performSkip(unit:forward:)`).
+        hasFinishedBook = false
 
         let clampedPosition = Self.clampedNavigationPosition(
             in: content,
