@@ -49,6 +49,9 @@ enum StorageWork: Sendable, CaseIterable {
     /// Analyzing a book for its statistics and index, in the background
     /// pass that follows the text caches.
     case contentAnalysis
+    /// Reading a book's file again for its metadata, in the launch pass
+    /// before the text caches (`LibraryViewModel.refreshOutdatedMetadata`).
+    case metadataRefresh
     /// Writing or removing a feed's record in the data directory's Feeds
     /// folder (FR03).
     case savingFeeds
@@ -65,6 +68,8 @@ enum StorageWork: Sendable, CaseIterable {
             return "Waiting for text extraction to finish..."
         case .contentAnalysis:
             return "Waiting for book analysis to finish..."
+        case .metadataRefresh:
+            return "Waiting for book metadata to be read..."
         case .savingFeeds:
             return "Waiting for feed records to be saved..."
         }

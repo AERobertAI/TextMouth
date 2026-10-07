@@ -169,39 +169,12 @@ final class EPUBAuthorNameTests: XCTestCase {
     /// A package document whose metadata element holds `metadata` beside
     /// the identifier, with one chapter in its reading order.
     private func package(metadata: String) -> String {
-        """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <package xmlns="http://www.idpf.org/2007/opf" xmlns:opf="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
-        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-        <dc:identifier id="uid">urn:uuid:5d1c0e7a-2b4f-4c8e-9a6d-3f2e1b0c9d8e</dc:identifier>
-        \(metadata)
-        </metadata>
-        <manifest><item id="c1" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest>
-        <spine><itemref idref="c1"/></spine>
-        </package>
-        """
+        TextPipelineFixtures.packageDocument(metadata: metadata)
     }
 
     /// An EPUB file holding `opf` as its package document and one short
     /// chapter, in a folder removed when the test ends.
     private func writtenEPUB(opf: String) throws -> URL {
-        let container = """
-        <?xml version="1.0"?>
-        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-        <rootfiles><rootfile full-path="OEBPS/package.opf" media-type="application/oebps-package+xml"/></rootfiles>
-        </container>
-        """
-        let chapter = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <html xmlns="http://www.w3.org/1999/xhtml"><head><title>One</title></head>
-        <body><h1>One</h1><p>A page of words.</p></body></html>
-        """
-        let entries = [
-            TestZIPEntry("mimetype", Data("application/epub+zip".utf8)),
-            TestZIPEntry("META-INF/container.xml", Data(container.utf8)),
-            TestZIPEntry("OEBPS/package.opf", Data(opf.utf8)),
-            TestZIPEntry("OEBPS/chapter.xhtml", Data(chapter.utf8)),
-        ]
-        return try TextPipelineFixtures.writeEPUB(entries, named: "author.epub", for: self)
+        try TextPipelineFixtures.writeEPUB(TextPipelineFixtures.minimalEPUB(packageDocument: opf), named: "author.epub", for: self)
     }
 }
