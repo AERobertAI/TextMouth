@@ -511,7 +511,7 @@ final class ReadingListReaderTests: XCTestCase {
         // The window opened for the requests makes the next book's reader.
         let next = makeReader(for: second, in: world, requests: requests)
         XCTAssertEqual(next.readingListPlace, ReadingListPlace(position: 2, count: 3))
-        XCTAssertTrue(eventually { next.isCurrentlyPlaying }, "The next book never started")
+        XCTAssertTrue(eventually(within: Self.playbackStartTimeout) { next.isCurrentlyPlaying }, "The next book never started")
         XCTAssertTrue(next.audioPlaybackService.isPlaying)
         XCTAssertFalse(world.autoplayRequests.hasRequest(for: second.id))
     }
@@ -792,7 +792,7 @@ final class ReadingListReaderTests: XCTestCase {
 
         let recorder = recordingAnnouncements {
             reader.handleEndOfBook()
-            XCTAssertTrue(eventually { next.isCurrentlyPlaying }, "The next book never started")
+            XCTAssertTrue(eventually(within: Self.playbackStartTimeout) { next.isCurrentlyPlaying }, "The next book never started")
             spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
         }
 
@@ -802,6 +802,43 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertFalse(requests.hasRequest(for: second.id))
         XCTAssertFalse(world.autoplayRequests.hasRequest(for: second.id))
         XCTAssertNil(next.lastAnnouncement)
+    }
+
+    /// The list as it is when the book ends decides what follows, whatever
+    /// it was when the book started: a book playing while the list is
+    /// rearranged and its option changed goes on to the book now beside it
+    /// that way, and its place follows the changes as it plays.
+    func testTheListAsChangedWhileABookPlaysDecidesWhatFollows() throws {
+        let world = try makeIntegrationWorld("ReadingListChangedWhilePlaying")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let third = try makeAudioBook("Third Crossing", in: world)
+        list([first, second, third], in: world)
+        let reader = makeReaderFromList(for: second, in: world, requests: requests)
+        reader.play()
+        XCTAssertTrue(eventually(within: Self.playbackStartTimeout) { reader.audioPlaybackService.isPlaying }, "The book did not play")
+        let asked = record(.continueToNextBook, in: world)
+
+        // While it plays: Third moves to the top, and the list now plays
+        // the book above.
+        world.library.moveInReadingList(bookID: third.id, direction: .up)
+        world.library.moveInReadingList(bookID: third.id, direction: .up)
+        world.library.setReadingListContinuation(.playBookAbove)
+        XCTAssertEqual(reader.readingListPlace, ReadingListPlace(position: 3, count: 3))
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "a change to the list stopped the book")
+
+        // The book's audio reaches its end, which then ends the book.
+        reader.audioPlaybackService.stop()
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the book above")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: First Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [first.id])
+        XCTAssertTrue(requests.hasRequest(for: first.id))
     }
 
     // MARK: - Next and Previous in Reading List
@@ -852,7 +889,7 @@ final class ReadingListReaderTests: XCTestCase {
         list([first, second, third], in: world)
         let reader = makeReaderFromList(for: first, in: world, requests: requests)
         reader.play()
-        XCTAssertTrue(eventually { reader.audioPlaybackService.isPlaying }, "The book did not play")
+        XCTAssertTrue(eventually(within: Self.playbackStartTimeout) { reader.audioPlaybackService.isPlaying }, "The book did not play")
         let asked = record(.continueToNextBook, in: world)
         let opened = record(.openBookWindow, in: world)
 
@@ -874,7 +911,7 @@ final class ReadingListReaderTests: XCTestCase {
 
         let next = makeReader(for: second, in: world, requests: requests)
         XCTAssertEqual(next.readingListPlace, ReadingListPlace(position: 2, count: 3))
-        XCTAssertTrue(eventually { next.isCurrentlyPlaying }, "The next book never started")
+        XCTAssertTrue(eventually(within: Self.playbackStartTimeout) { next.isCurrentlyPlaying }, "The next book never started")
         XCTAssertTrue(next.audioPlaybackService.isPlaying)
     }
 
@@ -1027,7 +1064,7 @@ final class ReadingListReaderTests: XCTestCase {
         list([first, second], in: world)
         let reader = makeReaderFromList(for: first, in: world, requests: requests)
         reader.play()
-        XCTAssertTrue(eventually { reader.audioPlaybackService.isPlaying }, "The book did not play")
+        XCTAssertTrue(eventually(within: Self.playbackStartTimeout) { reader.audioPlaybackService.isPlaying }, "The book did not play")
         let timer = SleepTimerService.shared
         timer.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
         let asked = record(.continueToNextBook, in: world)
@@ -1065,7 +1102,7 @@ final class ReadingListReaderTests: XCTestCase {
         // so nothing is heard.
         reader._whereAmIUtteranceRecorderForTesting = { _ in }
         reader.play()
-        XCTAssertTrue(eventually { reader.audioPlaybackService.isPlaying }, "The book did not play")
+        XCTAssertTrue(eventually(within: Self.playbackStartTimeout) { reader.audioPlaybackService.isPlaying }, "The book did not play")
         reader.whereAmI()
         XCTAssertTrue(reader.isWhereAmISpeaking)
         XCTAssertTrue(reader.audioPlaybackService.isPaused, "Where Am I did not pause the book")
@@ -1095,6 +1132,11 @@ final class ReadingListReaderTests: XCTestCase {
     /// The tracks of every fixture audiobook, in seconds: longer than any
     /// test runs, so no chapter ends by itself.
     private static let trackDurations: [TimeInterval] = [5, 5]
+
+    /// How long a test waits for a book to start playing: a fresh test
+    /// host's first audio takes about five seconds to start, as long as
+    /// `eventually`'s own limit, and a busy Mac takes longer still.
+    private static let playbackStartTimeout: TimeInterval = 15
 
     /// A silent audiobook titled `title` in `world`, listed in its library,
     /// ending as `endOfBook` says when read from anywhere but the list.
