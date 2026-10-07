@@ -365,6 +365,65 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertNil(system.coordinator.playingOwnerID)
     }
 
+    // MARK: - After the Book Has Finished
+
+    /// Report of 2026-10-07: "after a book 'finished' trying to use the
+    /// rewind track on my AirPods didn't seem to work to hear the last
+    /// little bit." An audiobook plays its last half second and finishes
+    /// with the Stop behavior. Nothing is lost on the way to the reader: it
+    /// keeps its media session, shown paused at the end rather than
+    /// stopped, so macOS goes on sending the AirPods here; it is still the
+    /// owner, and Previous Track is accepted and not dropped. The skip
+    /// itself was what was lost: it moved the cursor back and left the
+    /// stopped player silent, since a skip only played on when something
+    /// was playing. Now Previous Track moves the cursor back by the skip
+    /// unit from the end and plays from there, as a skip during playback
+    /// plays on, and the system is told the book plays; the listener heard
+    /// once that the book finished.
+    func testPreviousTrackAfterAnAudiobookFinishesMovesBackFromTheEndAndPlays() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Audio")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let reader = ferry.reader
+        assertToldSystem(system, that: reader, plays: false, "The book's end")
+
+        let recorder = recordingAnnouncements {
+            XCTAssertEqual(system.press(.previousTrack), .success)
+        }
+        assertPlaysAudio(reader, from: ferry.endOffset - Self.fifteenSecondsOfAudio, "Previous Track after the end")
+        assertToldSystem(system, that: reader, plays: true, "Previous Track after the end")
+        XCTAssertEqual(recorder.announcements, [], "Previous Track after the end announced something")
+    }
+
+    /// The same for a text book, through the Skip Backward command, which
+    /// the media keys send and an AirPods gesture can be set to: the book's
+    /// last words are spoken and speech finishes with the Stop behavior,
+    /// and the reader keeps its media session, shown paused at the end.
+    /// Skip Backward then moves the cursor back by the skip unit and
+    /// speaks from there at full volume, as it does while playing, and the
+    /// system is told the book plays. Before the repair the skip seeked the
+    /// finished speech, which started direct speech again on its own,
+    /// outside Play: the system went on showing the book paused, nothing
+    /// counted the listening, and the reader showed Playing by accident.
+    func testSkipBackwardAfterATextBookFinishesMovesBackFromTheEndAndSpeaks() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Text")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let end = finishSpeech(of: quay, in: system)
+
+        let recorder = recordingAnnouncements {
+            XCTAssertEqual(system.press(.skipBackward), .success)
+        }
+        let movedTo = quay.reader.currentCharacterOffset
+        XCTAssertLessThan(movedTo, end, "Skip Backward did not move back")
+        XCTAssertGreaterThan(movedTo, end - 2_000, "Skip Backward moved too far")
+        assertSpeaks(quay, from: movedTo, "Skip Backward after the end")
+        handleQueuedCallbacks()
+        XCTAssertTrue(quay.reader.isCurrentlyPlaying, "The reader does not show Playing")
+        assertToldSystem(system, that: quay.reader, plays: true, "Skip Backward after the end")
+        XCTAssertEqual(recorder.announcements, [], "Skip Backward after the end announced something")
+    }
+
     // MARK: - The System's Side
 
     /// The system's side of the media session as a test plays it: the
@@ -609,6 +668,113 @@ final class MediaCommandPlaybackTests: XCTestCase {
         assertToldSystem(system, that: reader, plays: true, "Previous Track", file: file, line: line)
     }
 
+    // MARK: - A Book That Has Finished
+
+    /// Seconds of silence in the last track of every finished audiobook:
+    /// long enough for a skip of either unit to land inside it.
+    private static let lastTrackSeconds: TimeInterval = 30
+
+    /// How far the 15-second skip moves an audiobook's cursor: ten
+    /// characters stand for one second of audio.
+    private static let fifteenSecondsOfAudio = Int(15 * ReaderViewModel.audioCharsPerSecond)
+
+    /// An audiobook's reader, joined to a test's media system, whose book
+    /// has just finished.
+    private struct FinishedAudioBook {
+        let reader: ReaderViewModel
+        /// Where the cursor rests at the end: the last position the player
+        /// reported, within the last second of the last track.
+        let endOffset: Int
+    }
+
+    /// Opens a reader of a silent audiobook titled `title` in `world`,
+    /// joined to `system`, half a second before the end of its last track,
+    /// and plays it to its end, where it finishes with the Stop behavior:
+    /// the listener hears once that the book finished, the reader shows
+    /// nothing playing, and the system is told the book is paused, not
+    /// stopped. The skip units are set to 15 seconds back and 30 forward,
+    /// as the app's defaults are, so that a skip's landing is known.
+    private func finishSilentAudioBook(
+        titled title: String,
+        in world: IntegrationWorld,
+        joining system: MediaSystem,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> FinishedAudioBook {
+        world.settings.skipBackwardUnit = .seconds15
+        world.settings.skipForwardUnit = .seconds30
+        let lastHalfSecond = Int((Self.lastTrackSeconds - 0.5) * ReaderViewModel.audioCharsPerSecond)
+        let book = try world.makeSilentAudioBook(
+            title: title,
+            trackDurations: [1, Self.lastTrackSeconds],
+            savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: lastHalfSecond),
+            endOfBook: .stop
+        )
+        let reader = world.openReader(for: book, nowPlaying: system.coordinator)
+        waitForReaderToLoad(reader, file: file, line: line)
+        let audio = reader.audioPlaybackService
+        let recorder = recordingAnnouncements {
+            reader.play()
+            XCTAssertTrue(audio.isPlaying, "\(title) did not play", file: file, line: line)
+            XCTAssertTrue(
+                eventually(within: 10) { !reader.isCurrentlyPlaying && !audio.isPlaying },
+                "\(title) never finished",
+                file: file,
+                line: line
+            )
+        }
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Finished: \(title)"], file: file, line: line)
+        XCTAssertEqual(reader.currentChapterIndex, 1, "The cursor left the last chapter", file: file, line: line)
+        XCTAssertGreaterThanOrEqual(
+            reader.currentCharacterOffset, lastHalfSecond, "The cursor is not at the end", file: file, line: line
+        )
+        return FinishedAudioBook(reader: reader, endOffset: reader.currentCharacterOffset)
+    }
+
+    /// Where the text book's last words begin: inside the last chunk direct
+    /// speech speaks, which ends where the chapter does.
+    private static let lastWordsOffset = ledgerText.utf16Length - 400
+
+    /// Speaks `book`'s last words and finishes its speech, as the
+    /// synthesizer reports the end of the utterance handed over, so that
+    /// the book finishes with the Stop behavior: the listener hears once
+    /// that it finished, the reader shows nothing playing, and the system
+    /// is told the book is paused, not stopped.
+    ///
+    /// - Returns: Where the cursor rests at the end: the last word speech
+    ///   reported.
+    private func finishSpeech(
+        of book: TextBookReader,
+        in system: MediaSystem,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Int {
+        let reader = book.reader
+        reader.navigateTo(chapterIndex: 0, characterOffset: Self.lastWordsOffset)
+        let recorder = recordingAnnouncements {
+            reader.play()
+            reportWordSpoken(by: book, file: file, line: line)
+            guard let spoken = book.handedOver.utterances.last else {
+                XCTFail("Nothing was handed to the synthesizer", file: file, line: line)
+                return
+            }
+            reader.speechService.speechSynthesizer(AVSpeechSynthesizer(), didFinish: spoken)
+            handleQueuedCallbacks(file: file, line: line)
+        }
+        XCTAssertEqual(
+            recorder.announcements.map(\.message), ["Finished: \(reader.book.title)"], file: file, line: line
+        )
+        XCTAssertFalse(reader.speechService.isSpeaking, "Speech did not finish", file: file, line: line)
+        XCTAssertTrue(
+            waitUntil(timeout: 2) { !reader.isCurrentlyPlaying },
+            "The reader still shows Playing",
+            file: file,
+            line: line
+        )
+        assertToldSystem(system, that: reader, plays: false, "The book's end", file: file, line: line)
+        return reader.currentCharacterOffset
+    }
+
     // MARK: - Checks
 
     /// Check that `book`'s speech plays from `offset` of its chapter at full
@@ -638,6 +804,41 @@ final class MediaCommandPlaybackTests: XCTestCase {
             line: line
         )
         XCTAssertEqual(spoken?.volume, 1, "\(context): speech is not at full volume", file: file, line: line)
+    }
+
+    /// Check that `reader`'s audio plays from `offset` of its last chapter:
+    /// the player playing, not paused, the reader showing Playing, and the
+    /// cursor and the player within a second of the place.
+    private func assertPlaysAudio(
+        _ reader: ReaderViewModel,
+        from offset: Int,
+        _ context: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let audio = reader.audioPlaybackService
+        XCTAssertTrue(audio.isPlaying && !audio.isPaused, "\(context): the audio is not playing", file: file, line: line)
+        XCTAssertTrue(
+            reader.isCurrentlyPlaying && !reader.isCurrentlyPaused,
+            "\(context): the reader does not show Playing",
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(reader.currentChapterIndex, 1, "\(context): the cursor left the last chapter", file: file, line: line)
+        XCTAssertLessThanOrEqual(
+            abs(reader.currentCharacterOffset - offset),
+            Int(ReaderViewModel.audioCharsPerSecond),
+            "\(context): the cursor is not at the place",
+            file: file,
+            line: line
+        )
+        let seconds = Double(offset) / ReaderViewModel.audioCharsPerSecond
+        XCTAssertTrue(
+            eventually(within: 2) { abs(audio.currentTime - seconds) <= 1.5 },
+            "\(context): the audio does not play from the place",
+            file: file,
+            line: line
+        )
     }
 
     /// Check what the system was last told: `reader`'s book, playing or

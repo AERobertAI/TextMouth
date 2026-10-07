@@ -216,6 +216,19 @@ final class ReaderViewModel: ObservableObject {
     /// resuming plays them from where they are then instead of from a player
     /// still holding the old place (TODO P10).
     var restartPlaybackBackendOnNextResume = false
+    /// Whether the book has finished and rests at its end: its last chapter
+    /// played or was spoken to its end, or nothing speakable was left, and
+    /// its end-of-book behavior ended listening there, with nothing playing
+    /// or paused (`handleEndOfBook()`). A finished book keeps its media
+    /// session, shown paused at its end, so that the AirPods and the media
+    /// keys still reach this reader, and its next backward skip plays the
+    /// book again from where the skip lands (`performSkip(unit:forward:)`).
+    /// Cleared when playback starts (`play()`), when a jump moves the cursor
+    /// away from the end (`navigateTo(chapterIndex:characterOffset:)`), and
+    /// when playback is stopped (`stop()`). A book that loops back to its
+    /// beginning is not finished: it plays again, or waits at its start.
+    /// Accessed from the Playback and Navigation extensions.
+    var hasFinishedBook = false
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is
     /// not newer is ignored. Written only by `applyLibraryUpdate(_:)` and

@@ -48,6 +48,9 @@ extension ReaderViewModel {
                 awaitedSpeech = inputs
             }
         }
+        // The book plays again, so it no longer rests finished at its end; a
+        // book with nothing left to say ended again above instead.
+        hasFinishedBook = false
         restartPlaybackBackendOnNextResume = false
         mediaControlsReleased = false
         nowPlayingService.activateRemoteCommandsIfNeeded()
@@ -323,6 +326,10 @@ extension ReaderViewModel {
             sleepTimerService.stop()
         }
         readingStatsService.endSession(bookID: book.id)
+        // A stopped reader rests wherever it is with no media session, so
+        // its skips move the cursor only: a finished book that is stopped,
+        // by Release Media Controls or by closing, is finished no longer.
+        hasFinishedBook = false
         nowPlayingService.clearNowPlaying()
         if wasActive {
             recordPlaybackStopped()
@@ -1983,6 +1990,16 @@ extension ReaderViewModel {
     /// whatever its end-of-book behavior.
     /// The listener hears once that the book finished and why nothing
     /// follows.
+    ///
+    /// A book that ends listening here rests finished at its end
+    /// (`hasFinishedBook`), and keeps what it owns: its media session, shown
+    /// paused at the end rather than stopped (`finishListening`), so that
+    /// macOS goes on sending the AirPods and the media keys to this reader.
+    /// A Previous Track or Skip Backward after the end therefore reaches it
+    /// and plays the book again from where the skip lands
+    /// (`performSkip(unit:forward:)`), as the listener who rewinds a
+    /// finished book means to hear its end again. A book that loops is not
+    /// finished: it plays again, or waits at its beginning.
     func handleEndOfBook() {
         // Time after the end of the book is not listening time, so close this
         // book's session here, once, for every way a book can end. Another
@@ -1992,6 +2009,11 @@ extension ReaderViewModel {
         // Clear its mirrored UI state before applying stop/loop/continue.
         isCurrentlyPlaying = false
         isCurrentlyPaused = false
+        // The book rests at its end from here on, keeping its media session
+        // so the AirPods still reach it; its next backward skip plays it
+        // again from where the skip lands. A loop that moves the cursor back
+        // to the start takes this back below.
+        hasFinishedBook = true
         // Whether this reader's sleep timer keeps the next book from starting,
         // decided before a timer that stops playback here ends just below.
         let sleepTimerEndsListening = sleepTimerEndsListeningHere
@@ -2022,6 +2044,9 @@ extension ReaderViewModel {
         case .loop:
             currentChapterIndex = 0
             currentCharacterOffset = 0
+            // The book waits at its beginning, not its end: a backward skip
+            // from here has nowhere to go back to, and starts nothing.
+            hasFinishedBook = false
             chapterPlaybackGeneration += 1
             savePosition()
             if sleepTimerStoppedHere {
@@ -2068,8 +2093,18 @@ extension ReaderViewModel {
         }
     }
 
-    /// End listening with this finished book: Now Playing shows it
-    /// stopped, and the listener hears `announcement`.
+    /// End listening with this finished book, and say `announcement`.
+    ///
+    /// The book's media session is kept: Now Playing shows the book paused
+    /// at its end rather than stopped, and the reader stays the focused
+    /// owner (`NowPlayingService.activeOwnerID`), so macOS goes on sending
+    /// the AirPods and the media keys to this reader, where a stopped item
+    /// would hand them to another app. A Previous Track or Skip Backward
+    /// after the end therefore reaches `skipBackward()`, which plays the
+    /// book again from where it lands (`performSkip(unit:forward:)`), as
+    /// the listener who rewinds a finished book means to hear its end
+    /// again. Only Release Media Controls or closing the window gives the
+    /// controls up.
     private func finishListening(announcing announcement: String) {
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
