@@ -86,5 +86,8 @@ TestData/are-you-ready-d3-audio.zip
 # Feature experiments / research (not part of the app)
 featureExp/
 
+# Questions for the user and their answers, kept on this Mac only (AGENTS.md)
+/humanQuestions/
+
 # Local app icon source archives
 /text_mouth_icon_v*.zip
