@@ -57,4 +57,19 @@ final class LibraryBookInfoSheetTests: XCTestCase {
         model.updateBookMetadata(attributed)
         XCTAssertEqual(model.bookByID(book.id)?.handEdits, Book.HandEdits(fields: [.title, .author], sinceImport: false))
     }
+
+    /// The sheet's title field is labeled "Book title, edited by hand" for
+    /// a book whose title the user typed, and its author field "Book
+    /// author" alone, as VoiceOver reads them from the hosted sheet.
+    func testTheFieldsSayWhichValuesWereEditedByHand() throws {
+        var book = Book(title: "Harbour Soundings", format: .txt, filePath: "/nowhere/Harbour Soundings.txt", md5Hash: "info-fixture")
+        book.markEditedByHand([.title])
+        let sheet = LibraryBookInfoSheet(book: book, libraryViewModel: LibraryViewModel(initializeServices: false))
+
+        try withHostedControls(sheet) { controls in
+            let labels = controls.filter { $0.role == .textField }.map(\.label)
+            XCTAssertTrue(labels.contains("Book title, edited by hand"), "\(labels)")
+            XCTAssertTrue(labels.contains("Book author"), "\(labels)")
+        }
+    }
 }

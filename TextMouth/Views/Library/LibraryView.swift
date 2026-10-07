@@ -1413,6 +1413,7 @@ struct LibraryView: View {
                 MetadataEditorView(
                     metadata: metadata,
                     isEPUB: true,
+                    handEdits: book.handEdits,
                     onSave: { updated, writeToFile in
                         // Writing an EPUB only in the cloud would download it
                         // first while the interface waited, so the editor
@@ -1444,6 +1445,7 @@ struct LibraryView: View {
                 // Audio books get the rich metadata editor with album, genre, etc.
                 MetadataEditorView(
                     audioMetadata: metadata,
+                    handEdits: book.handEdits,
                     onSave: { updated in
                         var updatedBook = book
                         updatedBook.title = updated.title

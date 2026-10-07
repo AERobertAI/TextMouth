@@ -315,6 +315,21 @@ final class HandEditedMetadataTests: XCTestCase {
         XCTAssertEqual(world.library.bookByID(book.id)?.audioGenre, "Field Recording")
     }
 
+    // MARK: - What Book Info Says
+
+    /// A field the user edited by hand is labeled so, "Book title, edited
+    /// by hand", in the EPUB and audio editors and the simple sheet alike;
+    /// any other field keeps its label alone, as does every field of a
+    /// book without a record.
+    func testAFieldEditedByHandSaysSoInItsLabel() {
+        XCTAssertEqual(MetadataEditorWording.editedByHand, "edited by hand")
+        let record = Book.HandEdits(fields: [.title, .audioGenre], sinceImport: false)
+        XCTAssertEqual(MetadataEditorWording.fieldLabel("Book title", for: .title, in: record), "Book title, edited by hand")
+        XCTAssertEqual(MetadataEditorWording.fieldLabel("Genre", for: .audioGenre, in: record), "Genre, edited by hand")
+        XCTAssertEqual(MetadataEditorWording.fieldLabel("Author", for: .author, in: record), "Author")
+        XCTAssertEqual(MetadataEditorWording.fieldLabel("Book title", for: .title, in: nil), "Book title")
+    }
+
     // MARK: - Fixtures
 
     /// An EPUB row as an import lists one: named, with nothing else kept.

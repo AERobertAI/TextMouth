@@ -17,6 +17,10 @@ struct MetadataEditorView: View {
 
     let isEPUB: Bool
     let isAudio: Bool
+    /// Which of the book's fields the user edited by hand, said after the
+    /// label of each such field (`MetadataEditorWording.fieldLabel`); nil
+    /// for a book with no record.
+    let handEdits: Book.HandEdits?
     /// Saves EPUB metadata, writing the library's copy of the EPUB file too
     /// when the Bool is true, and returns what happened, which the caller has
     /// announced. The editor closes after a success; after a failure it stays
@@ -25,18 +29,26 @@ struct MetadataEditorView: View {
     /// Called when saving audio metadata.
     let onSaveAudio: ((AudioMetadata) -> Void)?
 
-    /// Initialize for an EPUB book
-    init(metadata: EPUBMetadata, isEPUB: Bool, onSave: @escaping (EPUBMetadata, Bool) -> OperationOutcome) {
+    /// Initialize for an EPUB book. `handEdits` is the book's record of
+    /// hand edits (`Book.handEdits`), which the labels say.
+    init(
+        metadata: EPUBMetadata,
+        isEPUB: Bool,
+        handEdits: Book.HandEdits? = nil,
+        onSave: @escaping (EPUBMetadata, Bool) -> OperationOutcome
+    ) {
         self._editedEPUBMetadata = State(initialValue: metadata)
         self._editedAudioMetadata = State(initialValue: AudioMetadata())
         self.isEPUB = isEPUB
         self.isAudio = false
+        self.handEdits = handEdits
         self.onSaveEPUB = onSave
         self.onSaveAudio = nil
     }
 
-    /// Initialize for an audio book
-    init(audioMetadata: AudioMetadata, onSave: @escaping (AudioMetadata) -> Void) {
+    /// Initialize for an audio book. `handEdits` is the book's record of
+    /// hand edits (`Book.handEdits`), which the labels say.
+    init(audioMetadata: AudioMetadata, handEdits: Book.HandEdits? = nil, onSave: @escaping (AudioMetadata) -> Void) {
         self._editedEPUBMetadata = State(initialValue: EPUBMetadata(
             title: "", author: "", publisher: "", publicationDate: "",
             isbn: "", language: "", identifier: "", epubVersion: ""
@@ -44,8 +56,15 @@ struct MetadataEditorView: View {
         self._editedAudioMetadata = State(initialValue: audioMetadata)
         self.isEPUB = false
         self.isAudio = true
+        self.handEdits = handEdits
         self.onSaveEPUB = nil
         self.onSaveAudio = onSave
+    }
+
+    /// The accessibility label of the field `field`, `label` with "edited
+    /// by hand" after it when the book's record says so.
+    private func fieldLabel(_ label: String, for field: Book.MetadataField) -> String {
+        MetadataEditorWording.fieldLabel(label, for: field, in: handEdits)
     }
 
     var body: some View {
@@ -163,23 +182,24 @@ struct MetadataEditorView: View {
 
     // MARK: - Audio Sections
 
-    /// Editable fields for audio books: title, artist, album, genre, year
+    /// Editable fields for audio books: title, artist, album, genre, year,
+    /// each labeled "edited by hand" when the user typed it.
     private var audioEditableSection: some View {
         Section {
             TextField("Title", text: $editedAudioMetadata.title)
-                .accessibilityLabel("Book title")
+                .accessibilityLabel(fieldLabel("Book title", for: .title))
 
             TextField("Artist", text: $editedAudioMetadata.artist)
-                .accessibilityLabel("Artist or narrator")
+                .accessibilityLabel(fieldLabel("Artist or narrator", for: .author))
 
             TextField("Album", text: $editedAudioMetadata.album)
-                .accessibilityLabel("Album name")
+                .accessibilityLabel(fieldLabel("Album name", for: .audioAlbum))
 
             TextField("Genre", text: $editedAudioMetadata.genre)
-                .accessibilityLabel("Genre")
+                .accessibilityLabel(fieldLabel("Genre", for: .audioGenre))
 
             TextField("Year", text: $editedAudioMetadata.year)
-                .accessibilityLabel("Year")
+                .accessibilityLabel(fieldLabel("Year", for: .audioYear))
         } header: {
             Text("Editable")
                 .accessibilityAddTraits(.isHeader)
@@ -210,20 +230,21 @@ struct MetadataEditorView: View {
 
     // MARK: - EPUB Sections
 
-    /// Editable fields for EPUBs: title, author, publisher, publication date
+    /// Editable fields for EPUBs: title, author, publisher, publication
+    /// date, each labeled "edited by hand" when the user typed it.
     private var epubEditableSection: some View {
         Section {
             TextField("Title", text: $editedEPUBMetadata.title)
-                .accessibilityLabel("Book title")
+                .accessibilityLabel(fieldLabel("Book title", for: .title))
 
             TextField("Author", text: $editedEPUBMetadata.author)
-                .accessibilityLabel("Author")
+                .accessibilityLabel(fieldLabel("Author", for: .author))
 
             TextField("Publisher", text: $editedEPUBMetadata.publisher)
-                .accessibilityLabel("Publisher")
+                .accessibilityLabel(fieldLabel("Publisher", for: .publisher))
 
             TextField("Publication Date", text: $editedEPUBMetadata.publicationDate)
-                .accessibilityLabel("Publication date")
+                .accessibilityLabel(fieldLabel("Publication date", for: .publicationDate))
         } header: {
             Text("Editable")
                 .accessibilityAddTraits(.isHeader)
@@ -287,5 +308,22 @@ struct MetadataEditorView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Wording
+
+/// The words the metadata editors and the library's Book Info sheet share.
+enum MetadataEditorWording {
+    /// What VoiceOver reads after the label of a field the user edited by
+    /// hand (`Book.handEdits`), so the user knows which values are their
+    /// own: "Book title, edited by hand".
+    static let editedByHand = "edited by hand"
+
+    /// The accessibility label of the control for `field`: `label`, with
+    /// `editedByHand` after it when `handEdits` records the field.
+    static func fieldLabel(_ label: String, for field: Book.MetadataField, in handEdits: Book.HandEdits?) -> String {
+        guard handEdits?.contains(field) == true else { return label }
+        return "\(label), \(editedByHand)"
     }
 }
