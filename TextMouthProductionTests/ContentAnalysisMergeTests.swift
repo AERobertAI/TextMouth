@@ -835,7 +835,11 @@ final class ContentAnalysisMergeTests: XCTestCase {
             cacheFormatVersion: "cache-\(seed)",
             contentIndexVersion: "index-\(seed)",
             textCacheFingerprint: fingerprint(seed: seed),
-            metadataReaderVersion: "reader-\(seed)"
+            metadataReaderVersion: "reader-\(seed)",
+            handEdits: Book.HandEdits(
+                fields: [Book.MetadataField.allCases[seed % Book.MetadataField.allCases.count]],
+                sinceImport: seed.isMultiple(of: 2)
+            )
         )
     }
 

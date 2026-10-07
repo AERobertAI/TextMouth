@@ -24,10 +24,12 @@ struct LibraryBookInfoSheet: View {
                 .accessibilityAddTraits(.isHeader)
 
             Form {
+                // Each label says "edited by hand" when the user typed the
+                // value (`Book.handEdits`).
                 TextField("Title", text: $title)
-                    .accessibilityLabel("Book title")
+                    .accessibilityLabel(MetadataEditorWording.fieldLabel("Book title", for: .title, in: book.handEdits))
                 TextField("Author", text: $author)
-                    .accessibilityLabel("Book author")
+                    .accessibilityLabel(MetadataEditorWording.fieldLabel("Book author", for: .author, in: book.handEdits))
 
                 LabeledContent("Format") {
                     Text(book.format.displayName)
@@ -64,6 +66,9 @@ struct LibraryBookInfoSheet: View {
                     dismiss()
 
                     DispatchQueue.main.async {
+                        // Compared with the row, which always keeps the
+                        // title and author this sheet edits, so the fields
+                        // changed are recorded as edited by hand.
                         vm.updateBookMetadata(updated)
                     }
                 }

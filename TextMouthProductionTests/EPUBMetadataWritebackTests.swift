@@ -29,6 +29,7 @@ final class EPUBMetadataWritebackTests: XCTestCase {
 
         let save = library.saveEPUBMetadata(
             try editedMetadata(of: book),
+            openedAs: try openedMetadata(of: book),
             for: book,
             writingToFile: true,
             writer: .refusingReplacement
@@ -53,7 +54,7 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         staleCopy.filePath = "/Volumes/Unmounted/\(UUID().uuidString).epub"
         let edited = try editedMetadata(of: book)
 
-        let save = library.saveEPUBMetadata(edited, for: staleCopy, writingToFile: true)
+        let save = library.saveEPUBMetadata(edited, openedAs: try openedMetadata(of: book), for: staleCopy, writingToFile: true)
 
         XCTAssertEqual(save.outcome, .success("Metadata saved to the library's copy of “alice.epub”."))
         let newHash = try FileImportService.md5Hash(of: book.bookFileURL)
@@ -71,7 +72,9 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         library.library = Library(books: [])
         let fileBefore = try Data(contentsOf: book.bookFileURL)
 
-        let save = library.saveEPUBMetadata(try editedMetadata(of: book), for: book, writingToFile: true)
+        let save = library.saveEPUBMetadata(
+            try editedMetadata(of: book), openedAs: try openedMetadata(of: book), for: book, writingToFile: true
+        )
 
         XCTAssertEqual(
             save.outcome,
@@ -79,6 +82,32 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         )
         XCTAssertEqual(try Data(contentsOf: book.bookFileURL), fileBefore)
         XCTAssertEqual(SavedMetadata(try BookInfo.load(from: book.tmbDirectory)), SavedMetadata(book))
+    }
+
+    /// A save records the fields it changed as edited by hand, on the row
+    /// and in the record alike: the first save of a book imported before
+    /// edits were recorded begins its record, a later save adds the fields
+    /// it changes, and a save that changes nothing adds none.
+    func testASaveRecordsTheFieldsItChangedAndALaterSaveAddsToThem() throws {
+        let book = try makePackagedEPUB()
+        let library = makeLibrary(with: book)
+        XCTAssertNil(book.handEdits, "nothing has recorded the fixture's edits")
+
+        var retitled = try openedMetadata(of: book)
+        retitled.title = "Alice Underground"
+        let first = library.saveEPUBMetadata(retitled, openedAs: try openedMetadata(of: book), for: book, writingToFile: false)
+        XCTAssertTrue(first.outcome.succeeded)
+        XCTAssertEqual(try agreedMetadata(of: book, in: library).handEdits, Book.HandEdits(fields: [.title], sinceImport: false))
+
+        let row = try XCTUnwrap(library.bookByID(book.id))
+        let second = library.saveEPUBMetadata(try editedMetadata(of: row), openedAs: try openedMetadata(of: row), for: row, writingToFile: false)
+        XCTAssertTrue(second.outcome.succeeded)
+        XCTAssertEqual(try agreedMetadata(of: book, in: library), .edited(hash: book.md5Hash))
+
+        let unchanged = try openedMetadata(of: try XCTUnwrap(library.bookByID(book.id)))
+        let third = library.saveEPUBMetadata(unchanged, openedAs: unchanged, for: row, writingToFile: false)
+        XCTAssertTrue(third.outcome.succeeded)
+        XCTAssertEqual(try agreedMetadata(of: book, in: library), .edited(hash: book.md5Hash))
     }
 
     // MARK: - The Reader's Save
@@ -285,10 +314,16 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         return reader
     }
 
+    /// The metadata an editor opens with for `book`: the file's, with the
+    /// book's own edits laid over it, as Book Info reads it.
+    private func openedMetadata(of book: Book) throws -> EPUBMetadata {
+        book.mergingEditableEPUBMetadata(try EPUBParser.readMetadata(url: book.bookFileURL))
+    }
+
     /// The metadata an editor opens with for `book`, edited as
     /// `SavedMetadata.edited(hash:)` describes.
     private func editedMetadata(of book: Book) throws -> EPUBMetadata {
-        var metadata = book.mergingEditableEPUBMetadata(try EPUBParser.readMetadata(url: book.bookFileURL))
+        var metadata = try openedMetadata(of: book)
         let edit = SavedMetadata.edited(hash: "")
         metadata.title = edit.title
         metadata.author = edit.author
@@ -334,13 +369,15 @@ final class EPUBMetadataWritebackTests: XCTestCase {
 
 // MARK: - Test Support
 
-/// The metadata an EPUB save changes, as a book or its record holds it.
+/// The metadata an EPUB save changes, as a book or its record holds it,
+/// with the record of which fields were edited by hand.
 private struct SavedMetadata: Equatable {
     var title: String
     var author: String
     var publisher: String?
     var publicationDate: String?
     var md5Hash: String
+    var handEdits: Book.HandEdits?
 }
 
 private extension SavedMetadata {
@@ -351,7 +388,8 @@ private extension SavedMetadata {
             author: book.author,
             publisher: book.epubPublisher,
             publicationDate: book.epubPublicationDate,
-            md5Hash: book.md5Hash
+            md5Hash: book.md5Hash,
+            handEdits: book.handEdits
         )
     }
 
@@ -362,18 +400,22 @@ private extension SavedMetadata {
             author: record.metadata.author,
             publisher: record.metadata.publisher,
             publicationDate: record.metadata.publicationDate,
-            md5Hash: record.metadata.md5Hash
+            md5Hash: record.metadata.md5Hash,
+            handEdits: record.metadata.handEdits
         )
     }
 
-    /// The edit every test makes, saved with the content hash `hash`.
+    /// The edit every test makes, saved with the content hash `hash`: every
+    /// editable field changed, so every one is recorded as edited by hand,
+    /// in a record begun by that edit.
     static func edited(hash: String) -> SavedMetadata {
         SavedMetadata(
             title: "The Annotated Rabbit Hole",
             author: "Ottoline Brabazon",
             publisher: "Tollgate Press",
             publicationDate: "2026-10-02",
-            md5Hash: hash
+            md5Hash: hash,
+            handEdits: Book.HandEdits(fields: [.title, .author, .publisher, .publicationDate], sinceImport: false)
         )
     }
 }

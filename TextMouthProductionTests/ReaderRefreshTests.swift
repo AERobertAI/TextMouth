@@ -38,10 +38,11 @@ final class ReaderRefreshTests: XCTestCase {
 
         // The Library window's metadata editor renames the book and credits
         // another author, saving to the library only.
-        var edited = try XCTUnwrap(reader.epubMetadata, "The reader read no EPUB metadata")
+        let opened = try XCTUnwrap(reader.epubMetadata, "The reader read no EPUB metadata")
+        var edited = opened
         edited.title = Self.revisedTitle
         edited.author = Self.revisedAuthor
-        let save = world.library.saveEPUBMetadata(edited, for: book, writingToFile: false)
+        let save = world.library.saveEPUBMetadata(edited, openedAs: opened, for: book, writingToFile: false)
         XCTAssertNotNil(save.savedBook, save.message)
         stale += staleFields(of: reader, in: world.library, after: "the metadata edit")
 

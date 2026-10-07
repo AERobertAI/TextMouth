@@ -112,6 +112,11 @@ struct BookMetadata: Codable {
     /// record written before readers were versioned.
     var metadataReaderVersion: String?
 
+    /// Which of the book's metadata fields the user edited by hand, and
+    /// since when (`Book.handEdits`); nil in a record written before edits
+    /// were recorded, and for a book with no edit recorded yet.
+    var handEdits: Book.HandEdits?
+
     /// The feed item the book was downloaded from (FR03), for a podcast
     /// episode or an article; nil for every other book. Recorded here alone,
     /// never in library.json, and carried from record to record by each save
@@ -138,7 +143,8 @@ struct BookMetadata: Codable {
         audioAlbum: String? = nil,
         audioGenre: String? = nil,
         audioYear: String? = nil,
-        metadataReaderVersion: String? = nil
+        metadataReaderVersion: String? = nil,
+        handEdits: Book.HandEdits? = nil
     ) {
         self.title = title
         self.author = author
@@ -160,6 +166,7 @@ struct BookMetadata: Codable {
         self.audioGenre = audioGenre
         self.audioYear = audioYear
         self.metadataReaderVersion = metadataReaderVersion
+        self.handEdits = handEdits
     }
 }
 

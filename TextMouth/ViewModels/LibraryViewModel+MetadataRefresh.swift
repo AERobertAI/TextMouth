@@ -2,16 +2,48 @@ import Foundation
 
 // MARK: - The Metadata Refresh
 
-/// What the metadata refresh read of one book: the author its file names
-/// now, on its way to the book's row.
+/// What the metadata refresh read of one book: the values its file names
+/// now for the fields the refresh may replace
+/// (`Book.MetadataField.refreshable`), on their way to the book's row. A
+/// field the file names no value for, or that its format keeps none of, is
+/// absent; the author is there only when the file names someone, never as
+/// the placeholder.
 struct MetadataReading: Sendable {
     let bookID: UUID
-    /// The author the file names, or the placeholder when it names no one,
-    /// or was not opened because its format keeps no metadata in the file.
-    let author: String
+    let named: Book.MetadataValues
+
+    /// The reading of `bookID`'s file, which names `named`, or nothing.
+    init(bookID: UUID, named: Book.MetadataValues = [:]) {
+        self.bookID = bookID
+        self.named = named
+    }
+
+    /// What `metadata`, read from `bookID`'s file with an empty fallback
+    /// title (`ImportedFileMetadata.read(from:format:fallbackTitle:)`),
+    /// names: a title the file names, an author other than the
+    /// placeholder, and an EPUB's publisher and publication date where
+    /// they are not empty.
+    init(bookID: UUID, read metadata: ImportedFileMetadata) {
+        var named: Book.MetadataValues = [:]
+        if !metadata.title.isEmpty {
+            named[.title] = metadata.title
+        }
+        if !Book.isUnknownAuthor(metadata.author) {
+            named[.author] = metadata.author
+        }
+        if let epub = metadata.epub {
+            if !epub.publisher.isEmpty {
+                named[.publisher] = epub.publisher
+            }
+            if !epub.publicationDate.isEmpty {
+                named[.publicationDate] = epub.publicationDate
+            }
+        }
+        self.init(bookID: bookID, named: named)
+    }
 }
 
-/// The launch pass that reads a book's file again for its author when an
+/// The launch pass that reads a book's file again for its metadata when an
 /// older metadata reader read it (`Book.metadataReaderVersion`).
 extension LibraryViewModel {
 
@@ -22,24 +54,41 @@ extension LibraryViewModel {
         SemanticVersion.isOutdated(stored: book.metadataReaderVersion, current: ImportedFileMetadata.readerVersion)
     }
 
-    /// The author the refresh gives a row whose author is `current` when its
-    /// file names `read`, or nil to keep `current`. Only the placeholder is
-    /// replaced, and only by a name: an author typed by hand is never the
-    /// placeholder, so the refresh never replaces one, and a file that still
-    /// names no one changes nothing.
-    nonisolated static func refreshedAuthor(current: String, read: String) -> String? {
-        guard Book.isUnknownAuthor(current), !Book.isUnknownAuthor(read) else { return nil }
-        return read
+    /// The fields of `book` the refresh replaces with what its file names
+    /// (`reading`), each with its new value.
+    ///
+    /// A field the user edited by hand (`Book.handEdits`) is never
+    /// replaced. For a row whose record of hand edits has been kept since
+    /// its import (`Book.HandEdits.sinceImport`), every other refreshable
+    /// field the file names a value for is replaced, so a better reading
+    /// reaches every value the import read. For any other row, whose
+    /// unrecorded fields may hold edits nothing recorded (every row from
+    /// before October 7, 2026, with or without a record begun by an edit
+    /// since), only an author at the placeholder is replaced, and only by
+    /// a name: a title or an author typed by hand before then stays. A
+    /// value the row already holds is not counted.
+    nonisolated static func refreshedValues(of book: Book, from reading: MetadataReading) -> Book.MetadataValues {
+        let record = book.handEdits
+        let keptSinceImport = record?.sinceImport ?? false
+        var values: Book.MetadataValues = [:]
+        for field in Book.MetadataField.refreshable {
+            guard let read = reading.named[field], record?.contains(field) != true else { continue }
+            let current = field.value(in: book.editableMetadata)
+            let replaceable = keptSinceImport || (field == .author && Book.isUnknownAuthor(current ?? ""))
+            guard replaceable, read != current else { continue }
+            values[field] = read
+        }
+        return values
     }
 
     /// Reads again, off the main thread, the file of every book an older
     /// reader read (`needsMetadataRefresh(_:)`), with the reader imports use
     /// (`ImportedFileMetadata.read`), and then gives the rows what was read
     /// in one change of the library and one save
-    /// (`applyMetadataReadings(_:)`): the author, where a row lists the
-    /// placeholder and its file now names one, and the reader's version on
-    /// every row read. Runs at launch before the text cache batch, and takes
-    /// a few seconds for several hundred books.
+    /// (`applyMetadataReadings(_:)`): the fields the file names that the
+    /// row may take (`refreshedValues(of:from:)`), and the reader's version
+    /// on every row read. Runs at launch before the text cache batch, and
+    /// takes a few seconds for several hundred books.
     ///
     /// Each read is storage work (TODO S04): a data-directory move waits
     /// for the one under way and holds the rest until it has published, and
@@ -90,37 +139,41 @@ extension LibraryViewModel {
         }
     }
 
-    /// The author `book`'s file names now, read on the pass's thread with
-    /// the reader imports use, or nil when the book is left as it is: its
-    /// file is missing, for a launch that finds it; or its files are in the
+    /// What `book`'s file names now, read on the pass's thread with the
+    /// reader imports use, or nil when the book is left as it is: its file
+    /// is missing, for a launch that finds it; or its files are in the
     /// cloud, counted in `skips`, or went there while it was read, so
     /// nothing read in part is kept (FR02). A book whose format keeps no
-    /// metadata in its file is not looked at and is read as naming no one,
-    /// as is a book whose content is a folder of tracks, which has no tags
-    /// of its own.
+    /// metadata in its file is not looked at and is read as naming
+    /// nothing, as is a book whose content is a folder of tracks, which
+    /// has no tags of its own.
     nonisolated private static func readMetadataAgain(
         of book: Book,
         access: MaintenanceFileAccess,
         skips: CloudSkips
     ) -> MetadataReading? {
         guard ImportedFileMetadata.readsFile(of: book.format) else {
-            return MetadataReading(bookID: book.id, author: Book.unknownAuthor)
+            return MetadataReading(bookID: book.id)
         }
         let file = book.bookFileURL
         do {
             try access.requireOnThisMac(book, reading: .content)
             guard access.presence(of: file) == .present else { return nil }
-            let author = try access.read(file) {
+            let reading = try access.read(file) {
                 var isFolder: ObjCBool = false
                 guard FileManager.default.fileExists(atPath: file.path, isDirectory: &isFolder), !isFolder.boolValue else {
-                    return Book.unknownAuthor
+                    return MetadataReading(bookID: book.id)
                 }
-                return ImportedFileMetadata.read(from: file, format: book.format).author
+                // With an empty fallback title, a file that names no title
+                // reads as naming none, where an import would list the
+                // book under its file's name.
+                let read = ImportedFileMetadata.read(from: file, format: book.format, fallbackTitle: "")
+                return MetadataReading(bookID: book.id, read: read)
             }
             // A file that went to the cloud while it was read may have been
             // read in part, so nothing read from it is kept.
             try access.requireOnThisMac(book, reading: .content)
-            return MetadataReading(bookID: book.id, author: author)
+            return reading
         } catch {
             // Only a refusal is thrown here: reading metadata never throws.
             if DatalessFiles.isDownloadRefusal(error) {
@@ -131,37 +184,48 @@ extension LibraryViewModel {
     }
 
     /// Gives the rows what the pass read, in one change of the library and
-    /// one save: the author read, where the row still lists the placeholder
-    /// (`refreshedAuthor(current:read:)`), asked again here because an
-    /// author typed while the pass ran stays; and the reader's version on
-    /// every row read. A row whose author changed has its record written
-    /// too, as any edit of it would; a row only stamped has not, so a
-    /// library of hundreds of books writes nothing for them: the stamp
-    /// reaches each record with the book's next save, and a library rebuilt
-    /// from its records before then reads those books again once. One
-    /// `METADATA_REFRESH` line in the debug log counts both. A book no
+    /// one save: the fields each row may take from what its file names
+    /// (`refreshedValues(of:from:)`), asked here, of the rows as they are
+    /// now, because a field edited by hand while the pass ran is recorded
+    /// on its row by then and stays; and the reader's version on every row
+    /// read. The refresh records no edit of its own: a row without a
+    /// record of hand edits keeps none. A row with a field replaced has its
+    /// record written too, as any edit of it would; a row only stamped has
+    /// not, so a library of hundreds of books writes nothing for them: the
+    /// stamp reaches each record with the book's next save, and a library
+    /// rebuilt from its records before then reads those books again once.
+    /// One `METADATA_REFRESH` line in the debug log counts the books read,
+    /// the fields replaced, and the rows they were replaced on. A book no
     /// longer in the library is skipped.
     private func applyMetadataReadings(_ readings: [MetadataReading]) {
         guard !readings.isEmpty else { return }
         let latest = Dictionary(readings.map { ($0.bookID, $0) }, uniquingKeysWith: { _, later in later })
         var books = library.books
         var changed: [Book] = []
+        var replaced = 0
         for index in books.indices {
             guard let reading = latest[books[index].id] else { continue }
             books[index].metadataReaderVersion = ImportedFileMetadata.readerVersion
-            if let author = Self.refreshedAuthor(current: books[index].author, read: reading.author) {
-                books[index].author = author
-                changed.append(books[index])
+            let values = Self.refreshedValues(of: books[index], from: reading)
+            guard !values.isEmpty else { continue }
+            for (field, value) in values {
+                field.set(value, in: &books[index])
             }
+            changed.append(books[index])
+            replaced += values.count
         }
         library.books = books
         save()
         for row in changed {
             LibraryPersistenceService.saveBookInfo(for: row)
         }
-        DiagnosticLog.event(
-            .storage,
-            "METADATA_REFRESH: read \(readings.count) books again; found the author of \(changed.count)"
-        )
+        DiagnosticLog.event(.storage, Self.metadataRefreshLogLine(read: readings.count, replaced: replaced, rows: changed.count))
+    }
+
+    /// The `METADATA_REFRESH` line: how many books were read again, and how
+    /// many fields were replaced on how many of them.
+    nonisolated static func metadataRefreshLogLine(read: Int, replaced: Int, rows: Int) -> String {
+        "METADATA_REFRESH: read \(CountWording.books(read)) again; "
+            + "replaced \(CountWording.phrase(replaced, singular: "field", plural: "fields")) of \(rows)"
     }
 }
