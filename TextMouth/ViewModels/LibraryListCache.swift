@@ -12,7 +12,8 @@ import Foundation
 /// change it depends on:
 ///
 /// - **Membership**: which books there are and where, that is their IDs,
-///   their order in the library, and their folders.
+///   their order in the library, and their folders; and which books the
+///   reading list holds, in its order (FR09).
 /// - **Sort keys**: a field a sort, the Recent category, or a search reads:
 ///   the title, the author, the dates added and last opened, the manual
 ///   order, and the book's file (its path and content hash, which the size a
@@ -115,7 +116,9 @@ final class LibraryListCache {
     /// the new library through the cache.
     func libraryDidChange(from old: Library, to new: Library) {
         contentRevision &+= 1
-        guard Self.listsMayDiffer(old.books, new.books) else { return }
+        guard Self.listsMayDiffer(old.books, new.books) || Self.readingListMayDiffer(old.readingList, new.readingList) else {
+            return
+        }
         listRevision &+= 1
         entries.removeAll(keepingCapacity: true)
         indexByID = nil
@@ -133,6 +136,13 @@ final class LibraryListCache {
             return true
         }
         return false
+    }
+
+    /// Whether going from `old` to `new` can change the Reading List's
+    /// list (FR09): a book added to or taken off the reading list, or moved
+    /// in it. Its options change no list.
+    nonisolated static func readingListMayDiffer(_ old: ReadingList, _ new: ReadingList) -> Bool {
+        old.bookIDs != new.bookIDs
     }
 
     // MARK: - Reading Lists

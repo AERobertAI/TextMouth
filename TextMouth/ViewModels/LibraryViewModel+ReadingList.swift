@@ -1,0 +1,190 @@
+import SwiftUI
+
+/// The reading list's part of the library model (FR09): which books the list
+/// holds and in what order, the changes the Library window makes to it, its
+/// options, and the questions a reader opened from it asks when its book
+/// ends.
+///
+/// Every change is made to the list as the window shows it, which leaves out
+/// any ID that names no book in the library (`editReadingList(_:)`), so
+/// positions and neighbors count only books the list shows; a change that
+/// changes anything is one change of `library` and one save of the index,
+/// and a request that changes nothing saves nothing. The list's order is
+/// its own: moving or dragging a book here never touches a folder's manual
+/// order (`Book.manualSortOrder`).
+extension LibraryViewModel {
+
+    // MARK: - Reading the List
+
+    /// The books of the reading list, in reading order. An ID that names no
+    /// book is passed over: only a removal that went around
+    /// `Library.removeBook(id:)` can leave one, and the next change to the
+    /// list drops it.
+    var readingListBooks: [Book] {
+        let books = booksByID
+        return readingList.bookIDs.compactMap { books[$0] }
+    }
+
+    /// Whether the book `bookID` is in the reading list.
+    func isInReadingList(_ bookID: UUID) -> Bool {
+        readingList.contains(bookID)
+    }
+
+    // MARK: - Membership
+
+    /// Adds the books `ids` names to the end of the reading list, in the
+    /// order given, which is the order the list showing them shows them,
+    /// leaving out every book already there, any named twice after the
+    /// first, and any not in the library. Returns the books added, in that
+    /// order; none when nothing changed, and then nothing is saved.
+    @discardableResult
+    func addToReadingList(_ ids: [UUID]) -> [Book] {
+        editReadingList { list, books in
+            list.append(ids.filter { books[$0] != nil }).compactMap { books[$0] }
+        }
+    }
+
+    /// Takes the books `ids` names off the reading list, keeping the others
+    /// in their order. Returns the books taken off, in the list's order;
+    /// none when none was in it, and then nothing is saved.
+    @discardableResult
+    func removeFromReadingList(_ ids: [UUID]) -> [Book] {
+        editReadingList { list, books in
+            list.remove(Set(ids)).compactMap { books[$0] }
+        }
+    }
+
+    // MARK: - Order
+
+    /// Moves the book `bookID` one place up or down the reading list, past
+    /// the book beside it, as Move Book Up and Move Book Down do there, and
+    /// saves the new order at once. Returns what VoiceOver says of the move
+    /// (the moved book, the book it passed, and where it went), or nil,
+    /// changing nothing, when the book is not in the list or is already at
+    /// that end of it.
+    @discardableResult
+    func moveInReadingList(bookID: UUID, direction: ReadingList.Direction) -> MoveResult? {
+        editReadingList { list, books in
+            guard let moved = books[bookID], let newIndex = list.move(bookID, direction) else { return nil }
+            // The two books changed places: the one passed is now where
+            // the moved one was.
+            let passedIndex = newIndex - direction.step
+            let passed = list.bookIDs.indices.contains(passedIndex) ? books[list.bookIDs[passedIndex]] : nil
+            return MoveResult(
+                movedTitle: moved.title,
+                adjacentTitle: passed?.title ?? "",
+                direction: direction.step,
+                newIndex: newIndex
+            )
+        }
+    }
+
+    /// Moves the books at `source` to `destination` in the reading list, as
+    /// a drag in the list does: the offsets are positions in the list as it
+    /// shows it (`readingListBooks`), with no search narrowing it. Saves
+    /// the new order at once; offsets outside the list change nothing.
+    func reorderReadingList(from source: IndexSet, to destination: Int) {
+        editReadingList { list, _ in
+            list.move(fromOffsets: source, toOffset: destination)
+        }
+    }
+
+    // MARK: - Options
+
+    /// Makes `continuation` what a book opened from the reading list does
+    /// when it ends, and saves it; choosing the option already chosen
+    /// saves nothing.
+    func setReadingListContinuation(_ continuation: ReadingList.Continuation) {
+        editReadingList { list, _ in
+            list.continuation = continuation
+        }
+    }
+
+    /// Makes continuing through the reading list pass over finished books,
+    /// or not, and saves the choice; the choice already made saves nothing.
+    func setReadingListSkipsFinished(_ skipsFinished: Bool) {
+        editReadingList { list, _ in
+            list.skipsFinished = skipsFinished
+        }
+    }
+
+    // MARK: - The Questions a Reader Asks
+
+    /// The book beside `bookID` in the reading list: down, the nearest book
+    /// below it; up, the nearest above it; passing over every finished book
+    /// (`finishedBookIDs`) when `skippingFinished`. Nil when `bookID` is not
+    /// in the list, or nothing is left that way: at the end of the list
+    /// going down, at its start going up, or past only finished books. A
+    /// book whose file is only in the cloud is a neighbor like any other:
+    /// opening it downloads it, as opening any such book does.
+    ///
+    /// A reader opened from the reading list asks this for Next in Reading
+    /// List and Previous in Reading List, and, through
+    /// `readingListContinuation(after:)`, when its book ends.
+    func readingListNeighbor(
+        of bookID: UUID,
+        direction: ReadingList.Direction,
+        skippingFinished: Bool
+    ) -> Book? {
+        let books = booksByID
+        // A book no longer in the library is not in the list as shown.
+        guard books[bookID] != nil else { return nil }
+        let finished = skippingFinished ? finishedBookIDs() : []
+        let neighbor = readingList.neighbor(of: bookID, direction) { id in
+            books[id] != nil && !finished.contains(id)
+        }
+        return neighbor.flatMap { books[$0] }
+    }
+
+    /// The book to play once `bookID`, opened from the reading list, ends,
+    /// as the list's options say: the book below it or the one above it,
+    /// passing over finished books when Skip Finished Books is on, or none
+    /// for Stop (`ReadingList.continuation`, `ReadingList.skipsFinished`).
+    /// Nil too when `bookID` has left the list, or no book is left that
+    /// way, which is where the reader stops. Asked as the book ends, after
+    /// the reader has counted it finished, so the book itself is never the
+    /// answer.
+    func readingListContinuation(after bookID: UUID) -> Book? {
+        let list = readingList
+        guard let direction = list.continuation.direction else { return nil }
+        return readingListNeighbor(of: bookID, direction: direction, skippingFinished: list.skipsFinished)
+    }
+
+    // MARK: - Changing the List
+
+    /// Every book in the library, by ID; the first wins should an ID appear
+    /// twice.
+    private var booksByID: [UUID: Book] {
+        Dictionary(library.books.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// Applies `edit` to the reading list as the window shows it, leaving
+    /// out any ID that names no book, and, when that changed it, makes the
+    /// result the reading list, in one change of `library`, and saves the
+    /// index once. Returns what `edit` returned. `edit` is given the
+    /// library's books by ID.
+    @discardableResult
+    private func editReadingList<Result>(_ edit: (inout ReadingList, _ books: [UUID: Book]) -> Result) -> Result {
+        let books = booksByID
+        var shown = library.readingList
+        shown.keepOnly(Set(books.keys))
+        var edited = shown
+        let result = edit(&edited, books)
+        if edited != shown {
+            library.readingList = edited
+            save()
+        }
+        return result
+    }
+}
+
+// MARK: - Finished Books
+
+extension ReadingStats {
+    /// The books Books Finished counts, by ID, which the reading list's Skip
+    /// Finished Books passes over (FR09); an entry whose ID cannot be read
+    /// is left out.
+    var finishedBookIDs: Set<UUID> {
+        Set(finishedBooks.compactMap { UUID(uuidString: $0.bookID) })
+    }
+}

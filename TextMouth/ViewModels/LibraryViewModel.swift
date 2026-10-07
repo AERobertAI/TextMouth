@@ -96,6 +96,20 @@ final class LibraryViewModel: ObservableObject {
     let listCache = LibraryListCache()
     /// Tells open readers when the library changes or moves their book.
     let bookUpdates = LibraryBookUpdates()
+    /// The reading list (FR09), as the library holds it: its books in
+    /// reading order and its options. Changed only through the functions in
+    /// LibraryViewModel+ReadingList, each of which saves the index.
+    var readingList: ReadingList {
+        library.readingList
+    }
+    /// The books the reading list's Skip Finished Books passes over (FR09):
+    /// those Books Finished counts (`ReadingStats.finishedBookIDs`), which a
+    /// book joins when it is played or read to its end and stops there or
+    /// continues to the next book (`ReadingStatsService.markBookFinished`).
+    /// That is a deliberate record, unlike a position near the end, which
+    /// may be saved short of it (P07); a book counted once stays counted,
+    /// even when read again. Tests give their own.
+    var finishedBookIDs: @MainActor () -> Set<UUID> = { ReadingStatsService.shared.stats.finishedBookIDs }
     /// Where readers are between checkpoints (TODO PERF11), which the rows
     /// and the summary bar show: `updateLiveReadingPosition` reports there
     /// instead of changing the library, so a playing reader no longer

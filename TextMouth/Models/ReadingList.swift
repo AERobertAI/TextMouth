@@ -99,7 +99,22 @@ struct ReadingList: Codable, Equatable, Sendable {
         self.skipsFinished = skipsFinished
     }
 
-    // MARK: Taking Books Off
+    // MARK: Membership
+
+    /// Whether the list holds the book `id`.
+    func contains(_ id: UUID) -> Bool {
+        bookIDs.contains(id)
+    }
+
+    /// Appends each of `ids` the list does not hold yet to its end, in the
+    /// order given and each once. Returns the IDs appended.
+    @discardableResult
+    mutating func append(_ ids: [UUID]) -> [UUID] {
+        var held = Set(bookIDs)
+        let appended = ids.filter { held.insert($0).inserted }
+        bookIDs += appended
+        return appended
+    }
 
     /// Takes the books `ids` names off the list, keeping the others in
     /// their order. Returns the IDs taken off, in the list's order.
@@ -109,6 +124,65 @@ struct ReadingList: Codable, Equatable, Sendable {
         guard !removed.isEmpty else { return [] }
         bookIDs.removeAll { ids.contains($0) }
         return removed
+    }
+
+    /// Keeps only the books `existing` holds, in their order, as the list
+    /// is shown: an ID naming no book in the library is left out. Returns
+    /// whether any was.
+    @discardableResult
+    mutating func keepOnly(_ existing: Set<UUID>) -> Bool {
+        let count = bookIDs.count
+        bookIDs.removeAll { !existing.contains($0) }
+        return bookIDs.count != count
+    }
+
+    // MARK: Order
+
+    /// Moves the book `id` one place in `direction`, changing places with
+    /// the book beside it, as Move Book Up and Move Book Down do. Returns
+    /// its new position, or nil, changing nothing, when the list does not
+    /// hold it or it is already first (up) or last (down).
+    @discardableResult
+    mutating func move(_ id: UUID, _ direction: Direction) -> Int? {
+        guard let position = bookIDs.firstIndex(of: id) else { return nil }
+        let destination = position + direction.step
+        guard bookIDs.indices.contains(destination) else { return nil }
+        bookIDs.swapAt(position, destination)
+        return destination
+    }
+
+    /// Moves the books at the positions `source` so that they come, in
+    /// their order, before the book that was at `destination` before the
+    /// move, or at the end when `destination` is the count: what a drag in
+    /// the list does, as SwiftUI's `move(fromOffsets:toOffset:)` moves a
+    /// list's rows. Returns false, changing nothing, when `source` is empty
+    /// or a position is outside the list.
+    @discardableResult
+    mutating func move(fromOffsets source: IndexSet, toOffset destination: Int) -> Bool {
+        guard !source.isEmpty,
+              source.allSatisfy({ bookIDs.indices.contains($0) }),
+              (0...bookIDs.count).contains(destination) else { return false }
+        let moving = source.map { bookIDs[$0] }
+        var staying = bookIDs.enumerated().filter { !source.contains($0.offset) }.map(\.element)
+        // The books taken out ahead of the destination no longer count
+        // toward its position, which therefore lies within what stays.
+        let insertion = destination - source.count(in: 0..<destination)
+        staying.insert(contentsOf: moving, at: min(max(insertion, 0), staying.count))
+        bookIDs = staying
+        return true
+    }
+
+    // MARK: Neighbors
+
+    /// The nearest book after `id` (down) or before it (up) that
+    /// `isEligible` accepts; nil when the list does not hold `id`, or holds
+    /// no such book that way.
+    func neighbor(of id: UUID, _ direction: Direction, where isEligible: (UUID) -> Bool) -> UUID? {
+        guard let position = bookIDs.firstIndex(of: id) else { return nil }
+        let beyond: [UUID] = direction == .down
+            ? Array(bookIDs[(position + 1)...])
+            : bookIDs[..<position].reversed()
+        return beyond.first(where: isEligible)
     }
 
     // MARK: Coding
