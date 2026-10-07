@@ -1039,21 +1039,41 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// (`DIRECT_SYNTH_REPLACED`): kept, the one that refused would take the
     /// next Play too, and speak it into silence while speech showed itself
     /// speaking, which is how the reading stopped and could not restart on
-    /// October 7. The fresh one speaks the cancelled chunk again from where
-    /// it was cancelled (`DIRECT_RETRY`), and strictly guarded to the
-    /// chunk's end (`strictlyGuardedRange`): the default guard had already
-    /// passed this text, so only every bracket made silent keeps a shape it
-    /// misses from being refused twice. A lone "less than" there is then
-    /// not spoken, which is the price of hearing the rest; the chunks after
-    /// it go back to the default guard. Once per place: a cancel that
-    /// comes back to the same offset means the engine refuses this text on
-    /// any synthesizer, even with no bracket in it, and speech ends there
+    /// October 7.
+    ///
+    /// When the engine holds audio rendered from this speech in the
+    /// current voice (`renderedAudioMatchesSpeech`), that audio plays on
+    /// from where the cancelled chunk would have gone on
+    /// (`DIRECT_RETRY_ENGINE`). Nothing is heard at this moment, so the
+    /// switch neither repeats nor cuts a word, and the render, made from the
+    /// whole chapter, can hold what the engine refused in a chunk alone: on
+    /// October 7 a chunk holding only a closing tag was refused, while the
+    /// chapter, its tags balanced, had rendered.
+    ///
+    /// Otherwise, or when the engine does not start, the fresh synthesizer
+    /// speaks the cancelled chunk again from where it was cancelled
+    /// (`DIRECT_RETRY`), and strictly guarded to the chunk's end
+    /// (`strictlyGuardedRange`): the default guard had already passed this
+    /// text, so only every bracket made silent keeps a shape it misses from
+    /// being refused twice. A lone "less than" there is then not spoken,
+    /// which is the price of hearing the rest; the chunks after it go back
+    /// to the default guard. Once per place: a cancel that comes back to
+    /// the same offset means the engine refuses this text on any
+    /// synthesizer, even with no bracket in it, and speech ends there
     /// instead (`endDirectSpeechRefused(at:)`), as it does when there is no
     /// text to speak again.
     private func recoverFromCancelledDirectUtterance() {
         let offset = directRetryOffset()
         let refusedChunkEnd = directModeChunkEnd
         replaceDirectSynthesizer()
+        if renderedAudioMatchesSpeech {
+            transitionLog(.event, "DIRECT_RETRY_ENGINE: rendered audio of this speech plays on at offset=\(offset) chunkEnd=\(refusedChunkEnd)")
+            if switchToRenderedAudio(at: offset) { return }
+            // A rendered buffer can survive an engine-start failure: speak
+            // directly again instead, as if there were no rendered audio.
+            transitionLog(.event, "DIRECT_RETRY_ENGINE_FAILED: rendered audio did not start at offset=\(offset); speaking it again directly")
+            audioEngine.stop()
+        }
         guard !currentText.isEmpty, lastDirectRetryOffset != offset else {
             endDirectSpeechRefused(at: offset)
             return
@@ -1163,10 +1183,11 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// The synthesizer is stopped first and its utterance let go
     /// (`stopDirectSynthesizer()`). `willSpeakRangeOfSpeechString` runs
     /// ahead of the audio by a few words, so a switch while an utterance is
-    /// heard can repeat or cut words: a seek, a resume, and the watchdog's
-    /// recovery from an idle synthesizer switch where nothing is heard; the
-    /// start of a sleep fade switches while speech is heard, since only
-    /// rendered audio follows the fade's volume. Every caller has checked
+    /// heard can repeat or cut words: a seek, a resume, the watchdog's
+    /// recovery from an idle synthesizer, and the recovery from an utterance
+    /// the engine refused switch where nothing is heard; the start of a
+    /// sleep fade switches while speech is heard, since only rendered audio
+    /// follows the fade's volume. Every caller has checked
     /// that the audio is of this speech in the current voice
     /// (`renderedAudioMatchesSpeech`).
     @discardableResult

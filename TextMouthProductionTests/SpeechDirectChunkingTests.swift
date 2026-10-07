@@ -559,6 +559,94 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(recorder.utterances.count, 2, "fade segments were queued")
     }
 
+    /// When the engine holds audio rendered from this speech in the current
+    /// voice, a refused chunk is not spoken again directly: speech switches
+    /// to that audio where the chunk began, where nothing is heard, as on
+    /// October 7, when a chunk holding only a closing tag was refused while
+    /// the whole chapter had rendered. The synthesizer that refused is let
+    /// go, and the chapter goes on.
+    func testARefusalSwitchesToRenderedAudioOfThisSpeech() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var finishes = 0
+        speech.onUtteranceFinished = { finishes += 1 }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        let second = try handedOver(1, by: recorder)
+        let secondStart = chunk(at: 0, size: SpeechService.directModeFirstChunkSize).end
+        // The first chunk ends: the queued second is live, and never starts.
+        report(finish: first, to: speech)
+        let refusing = try synthesizer(1, by: recorder)
+
+        let lines = logLines(in: .speechTransitions) {
+            report(cancel: second, to: speech)
+        }
+
+        XCTAssertFalse(speech.usingDirectMode, "the refused chunk was spoken again directly")
+        XCTAssertTrue(speech.audioEngine.isPlaying, "the rendered audio did not start")
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertEqual(finishes, 0)
+        XCTAssertEqual(recorder.utterances.count, 2, "an utterance was handed to a synthesizer again")
+        XCTAssertFalse(speech._directSynthesizerForTesting === refusing, "the synthesizer that refused is kept")
+        XCTAssertTrue(
+            lines.contains { $0.contains("DIRECT_RETRY_ENGINE: rendered audio of this speech plays on at offset=\(secondStart) ") },
+            "\(lines)"
+        )
+        XCTAssertFalse(lines.contains { $0.contains("DIRECT_RETRY offset=") }, "\(lines)")
+    }
+
+    /// Audio rendered from another text is never switched to: the refused
+    /// chunk is spoken again directly, strictly guarded, as without audio.
+    func testARefusalNeverSwitchesToAnotherTextsAudio() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: "Lamps came on along the pier.", in: speech)
+
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+
+        XCTAssertTrue(speech.usingDirectMode)
+        XCTAssertFalse(speech.audioEngine.isPlaying)
+        XCTAssertEqual(recorder.utterances.count, 2, "the refused chunk was not spoken again")
+        XCTAssertTrue(speech.isSpeaking)
+    }
+
+    /// A strict retry refused too ends speech only when there is nothing
+    /// else to play: audio rendered from this speech since the first
+    /// refusal is switched to instead, at the same place, with no
+    /// announcement.
+    func testARefusedRetrySwitchesToAudioRenderedSince() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var refusals = 0
+        speech.onSpeechRefused = { refusals += 1 }
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+        let retry = try handedOver(1, by: recorder)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+
+        var lines: [String] = []
+        let announced = recordingAnnouncements {
+            lines = logLines(in: .speechTransitions) {
+                report(cancel: retry, to: speech)
+            }
+        }
+
+        XCTAssertFalse(speech.usingDirectMode)
+        XCTAssertTrue(speech.audioEngine.isPlaying, "the rendered audio did not start")
+        XCTAssertTrue(speech.isSpeaking, "speech ended though rendered audio could go on")
+        XCTAssertEqual(refusals, 0)
+        XCTAssertEqual(announced.announcements.count, 0)
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY_ENGINE: rendered audio of this speech plays on at offset=\(start) ") }, "\(lines)")
+        XCTAssertFalse(lines.contains { $0.contains("DIRECT_RETRY_FAILED:") }, "\(lines)")
+    }
+
     /// What the synthesizer itself does with the two changes, muted: the
     /// first word of a 1,000-unit utterance against a 5,000-unit one (the
     /// review measured 66 and 111 ms), and the silence between two
