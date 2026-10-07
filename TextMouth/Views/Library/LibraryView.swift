@@ -288,6 +288,9 @@ struct LibraryView: View {
             .padding(.top, 8)
             .accessibilityLabel(Self.categoryPickerLabel)
 
+            // The Reading List's options, there alone (FR09).
+            readingListOptions
+
             // Breadcrumb navigation (only in folders mode)
             if category == .folders && !currentFolderPath.isEmpty {
                 BreadcrumbBar(
@@ -466,45 +469,9 @@ struct LibraryView: View {
                     .accessibilityLabel("Create new folder")
                 }
 
-                // Sort controls. Every item reads the one sort the location
-                // shows and changes it only through userChangedSort, so the
-                // menu, the window title, and the order agree (TODO A06).
-                Menu {
-                    // A checkmark marks the field shown, for VoiceOver as
-                    // well as on screen; choosing that field again reverses
-                    // its direction, as the menu always has.
-                    ForEach(LibrarySortField.allCases, id: \.self) { field in
-                        Toggle(field.rawValue, isOn: Binding(
-                            get: { sort.isChecked(field) },
-                            set: { _ in userChangedSort(.choose(field)) }
-                        ))
-                    }
-                    Divider()
-                    // Disabled in manual order, which has no direction; the
-                    // hint says why, to VoiceOver and as a tooltip.
-                    Button(sort.directionCommandTitle) {
-                        userChangedSort(.reverseDirection)
-                    }
-                    .disabled(!sort.isDirectionCommandEnabled)
-                    .help(sort.directionCommandHint)
-                    .accessibilityHint(sort.directionCommandHint)
-                    // Only show "Apply to Subfolders" when in folders mode and subfolders exist
-                    if category == .folders {
-                        let hasSubfolders = !folders.isEmpty
-                        if hasSubfolders {
-                            Divider()
-                            Button {
-                                libraryViewModel.applySortToSubfolders(sort.setting, from: currentFolderPath)
-                                announceToVoiceOver(sort.subfolderAnnouncement)
-                            } label: {
-                                Text("Apply Sort to All Subfolders")
-                            }
-                        }
-                    }
-                } label: {
-                    Label("Sort", systemImage: "arrow.up.arrow.down")
-                }
-                .accessibilityLabel(sort.menuAccessibilityLabel)
+                // Sort controls (TODO A06), or the Reading List's one order
+                // (FR09).
+                sortMenu(hasSubfolders: !folders.isEmpty)
             }
         }
         // Each sheet below closes only after its operation succeeds. After a
@@ -678,14 +645,13 @@ struct LibraryView: View {
                 isEditMode = true
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .moveBookUp)) { notification in
-            guard takesCommand(notification) else { return }
-            moveSelectedBookInManualOrder(direction: -1)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .moveBookDown)) { notification in
-            guard takesCommand(notification) else { return }
-            moveSelectedBookInManualOrder(direction: 1)
-        }
+        // Move Book Up and Move Book Down, and Add to Reading List and
+        // Remove from Reading List (FR09), for the selection.
+        .modifier(LibraryOrderCommandsSupport(
+            takesCommand: takesCommand,
+            moveSelectedBook: { moveSelectedBookInManualOrder(direction: $0) },
+            changeReadingList: { changeReadingList($0, with: selectedBooks) }
+        ))
         .sheet(isPresented: $showTextInput) {
             TextInputView(
                 onAdd: { title, author, text in
@@ -797,7 +763,92 @@ struct LibraryView: View {
         }
     }
 
+    // MARK: - The Sort Menu
+
+    /// The Sort menu. Every item reads the one sort the location shows and
+    /// changes it only through userChangedSort, so the menu, the window
+    /// title, and the order agree (TODO A06). At the Reading List, which
+    /// shows its own order (FR09), the menu names that order, checked, and
+    /// offers no other.
+    /// - Parameter hasSubfolders: Whether the folder shown has subfolders,
+    ///   for Apply Sort to All Subfolders.
+    private func sortMenu(hasSubfolders: Bool) -> some View {
+        Menu {
+            if location.keepsItsOwnOrder {
+                readingListSortItem
+            } else {
+                sortItems(hasSubfolders: hasSubfolders)
+            }
+        } label: {
+            Label("Sort", systemImage: "arrow.up.arrow.down")
+        }
+        .accessibilityLabel(location.keepsItsOwnOrder ? ReadingListWording.sortMenuLabel : sort.menuAccessibilityLabel)
+    }
+
+    /// The Sort menu's items where the user sorts the books: a field each,
+    /// the direction command, and, in a folder with subfolders, Apply Sort
+    /// to All Subfolders.
+    @ViewBuilder
+    private func sortItems(hasSubfolders: Bool) -> some View {
+        // A checkmark marks the field shown, for VoiceOver as well as on
+        // screen; choosing that field again reverses its direction, as the
+        // menu always has.
+        ForEach(LibrarySortField.allCases, id: \.self) { field in
+            Toggle(field.rawValue, isOn: Binding(
+                get: { sort.isChecked(field) },
+                set: { _ in userChangedSort(.choose(field)) }
+            ))
+        }
+        Divider()
+        // Disabled in manual order, which has no direction; the hint says
+        // why, to VoiceOver and as a tooltip.
+        Button(sort.directionCommandTitle) {
+            userChangedSort(.reverseDirection)
+        }
+        .disabled(!sort.isDirectionCommandEnabled)
+        .help(sort.directionCommandHint)
+        .accessibilityHint(sort.directionCommandHint)
+        // Only show "Apply to Subfolders" when in folders mode and subfolders exist
+        if category == .folders && hasSubfolders {
+            Divider()
+            Button {
+                libraryViewModel.applySortToSubfolders(sort.setting, from: currentFolderPath)
+                announceToVoiceOver(sort.subfolderAnnouncement)
+            } label: {
+                Text("Apply Sort to All Subfolders")
+            }
+        }
+    }
+
+    /// The Sort menu's one item at the Reading List (FR09): its order,
+    /// checked, whose hint says how it changes; choosing it says the order,
+    /// as choosing a sort elsewhere says the sort now shown.
+    private var readingListSortItem: some View {
+        Toggle(ReadingListWording.orderName, isOn: Binding(
+            get: { true },
+            set: { _ in announceToVoiceOver(ReadingListWording.orderAnnouncement) }
+        ))
+        .help(ReadingListWording.orderHint)
+        .accessibilityHint(ReadingListWording.orderHint)
+    }
+
     // MARK: - Extracted Subviews
+
+    /// The options bar at the top of the Reading List (FR09), showing the
+    /// list's own options and saving each choice at once; nothing in any
+    /// other category.
+    @ViewBuilder
+    private var readingListOptions: some View {
+        if category == .readingList {
+            let list = libraryViewModel.readingList
+            ReadingListOptionsBar(
+                continuation: list.continuation,
+                skipsFinished: list.skipsFinished,
+                chooseContinuation: { libraryViewModel.setReadingListContinuation($0) },
+                chooseSkipsFinished: { libraryViewModel.setReadingListSkipsFinished($0) }
+            )
+        }
+    }
 
     /// Continue Listening button for `lastBook`, the book last opened, when
     /// there is one — extracted to reduce body complexity for the type checker
@@ -890,6 +941,10 @@ struct LibraryView: View {
         /// Each book's moves in the manual order the list shows, by ID;
         /// empty when it shows none.
         let manualMoves: [UUID: LibraryManualMoves]
+        /// The books in the reading list (FR09), by ID.
+        let readingListIDs: Set<UUID>
+        /// The reading list commands of `selection` (FR09).
+        let selectionReadingListCommands: [ReadingListCommand]
         /// What the rows' commands do.
         let actions: LibraryBookRowActions
     }
@@ -897,7 +952,8 @@ struct LibraryView: View {
     /// The context the rows of `books` share, for a list whose location
     /// shows `allBooks`: Move Up and Move Down follow that whole order only
     /// where `offersManualMoves`, as nowhere a feed's items are listed by
-    /// date (FR03).
+    /// date (FR03), and only where the list shows an order the user
+    /// arranges: a folder's manual order, or the reading list (FR09).
     private func bookRowContext(_ books: [Book], orderedBy allBooks: [Book], offersManualMoves: Bool = true) -> BookRowContext {
         // The selection in list order, and its cloud commands, made once
         // for all the rows that belong to it.
@@ -909,14 +965,21 @@ struct LibraryView: View {
             states: cloudStates,
             kept: keptBooks.bookIDs
         )
-        // Every book's moves in the folder's manual order, read from the
-        // order shown rather than by sorting the folder again for each row.
-        let manualMoves = reorderableFolder == nil || !offersManualMoves ? [:] : LibraryManualMoves.moves(in: allBooks)
+        // Every book's moves in the order the list shows, read from that
+        // order rather than by sorting the folder again for each row.
+        let manualMoves = reorderTarget == nil || !offersManualMoves ? [:] : LibraryManualMoves.moves(in: allBooks)
+        let readingListIDs = Set(libraryViewModel.readingList.bookIDs)
         return BookRowContext(
             selectedIDs: selectedIDs,
             selection: selection,
             selectionCloudCommands: selectionCloudCommands,
             manualMoves: manualMoves,
+            readingListIDs: readingListIDs,
+            selectionReadingListCommands: ReadingListCommand.commands(
+                for: selection,
+                isSelection: selection.count > 1,
+                inList: readingListIDs
+            ),
             actions: rowActions
         )
     }
@@ -956,6 +1019,12 @@ struct LibraryView: View {
             transcriptionNote: transcribedBooks.note(for: book.id),
             // The item's commands act on the row's own book alone.
             feedActions: isSelectionRow ? [] : feedActions,
+            // Said in every view but the Reading List, where every book is in it.
+            isInReadingList: category != .readingList && context.readingListIDs.contains(book.id),
+            // Add to or Remove from Reading List, by membership (FR09).
+            readingListCommands: isSelectionRow
+                ? context.selectionReadingListCommands
+                : ReadingListCommand.commands(for: targets, isSelection: false, inList: context.readingListIDs),
             actions: context.actions
         )
         .equatable()
@@ -1058,6 +1127,13 @@ struct LibraryView: View {
             )
         } else {
             Section {
+                // An empty reading list says so, and how a book joins it
+                // (FR09); a search that matches nothing leaves the list as
+                // it is.
+                if category == .readingList && allBooks.isEmpty {
+                    Text(ReadingListWording.emptyList)
+                        .foregroundColor(.secondary)
+                }
                 bookRows(books, orderedBy: allBooks)
             } header: {
                 Text("Books (\(books.count))")
@@ -1164,8 +1240,8 @@ struct LibraryView: View {
                 showMoveSheet = true
             },
             moveInManualOrder: { book, direction in
-                if let folder = reorderableFolder {
-                    moveBook(book.id, direction: direction, inManualOrderOf: folder)
+                if let target = reorderTarget {
+                    moveBook(book.id, direction: direction, in: target)
                 }
             },
             performCloudCommand: performCloudCommand,
@@ -1187,8 +1263,27 @@ struct LibraryView: View {
             performAudioCommand: { command in
                 transcription.perform(command, library: libraryViewModel, window: hostWindow)
             },
-            performFeedAction: performFeedItemAction
+            performFeedAction: performFeedItemAction,
+            performReadingListCommand: performReadingListCommand
         )
+    }
+
+    /// Runs a row's reading list command (FR09), from its context menu or
+    /// its VoiceOver actions, announcing from this window what it did.
+    private func performReadingListCommand(_ command: ReadingListCommand) {
+        changeReadingList(command.kind, with: command.books)
+    }
+
+    /// Adds `books` to the reading list or takes them off it (FR09), as a
+    /// row's command or the Library menu asks, and says what it did, or why
+    /// nothing changed, from this window.
+    private func changeReadingList(_ kind: ReadingListCommand.Kind, with books: [Book]) {
+        switch kind {
+        case .add:
+            libraryViewModel.addToReadingList(books, announcingFrom: hostWindow)
+        case .remove:
+            libraryViewModel.removeFromReadingList(books, announcingFrom: hostWindow)
+        }
     }
 
     /// Runs a row's cloud command, from its context menu or its VoiceOver
@@ -1352,21 +1447,23 @@ struct LibraryView: View {
         libraryViewModel.sortState(at: location)
     }
 
-    /// The folder whose books can be rearranged here now, or nil: only while
-    /// the list shows one folder's manual order (see
-    /// `LibraryLocation.reorderableFolder(sortedBy:)`).
-    private var reorderableFolder: String? {
-        location.reorderableFolder(sortedBy: sort)
+    /// What can be rearranged here now, or nil: one folder's manual order,
+    /// while the list shows it, or the reading list at the Reading List,
+    /// which always shows its own order (see
+    /// `LibraryLocation.reorderTarget(sortedBy:)`, FR09).
+    private var reorderTarget: LibraryReorderTarget? {
+        location.reorderTarget(sortedBy: sort)
     }
 
-    /// What dragging a row does: rearranges the folder's manual order while
-    /// the rows are that whole order, with no search narrowing them, and
-    /// nothing anywhere else, where a row's position in the list is not its
-    /// position in one folder's order (TODO A06). Nil turns dragging off.
+    /// What dragging a row does: rearranges the order the list shows, a
+    /// folder's manual order or the reading list, while the rows are that
+    /// whole order, with no search narrowing them, and nothing anywhere
+    /// else, where a row's position in the list is not its position in an
+    /// order the user arranges (TODO A06, FR09). Nil turns dragging off.
     private var dragReorderAction: ((IndexSet, Int) -> Void)? {
-        guard let folder = reorderableFolder, searchText.isEmpty else { return nil }
+        guard let target = reorderTarget, searchText.isEmpty else { return nil }
         return { source, destination in
-            libraryViewModel.reorderBooksInFolder(folderPath: folder, from: source, to: destination)
+            libraryViewModel.reorderBooks(in: target, from: source, to: destination)
         }
     }
 
@@ -1428,25 +1525,24 @@ struct LibraryView: View {
         }
     }
 
-    /// Move the currently selected book up or down in manual sort order.
-    /// Only works when a single book is selected and the list shows one
-    /// folder's manual order (TODO A06). Announces the result to VoiceOver.
+    /// Move the currently selected book up or down in the order the list
+    /// shows. Only works when a single book is selected and the list shows
+    /// an order the user arranges: one folder's manual order (TODO A06), or
+    /// the reading list (FR09). Announces the result to VoiceOver.
     private func moveSelectedBookInManualOrder(direction: Int) {
-        guard let folder = reorderableFolder else { return }
+        guard let target = reorderTarget else { return }
         let ids = effectiveSelection
         guard ids.count == 1, let bookID = ids.first else { return }
-        moveBook(bookID, direction: direction, inManualOrderOf: folder)
+        moveBook(bookID, direction: direction, in: target)
     }
 
-    /// Moves a book one place up (-1) or down (+1) in `folder`'s manual
-    /// order, which saves at once, and tells VoiceOver where it went. Move
-    /// Up and Move Down in the context menu and on the keyboard share it.
-    private func moveBook(_ bookID: UUID, direction: Int, inManualOrderOf folder: String) {
-        if let result = libraryViewModel.moveBookInManualOrder(
-            bookID: bookID, direction: direction, folderPath: folder
-        ) {
-            let position = result.direction < 0 ? "above" : "below"
-            announceToVoiceOver("Moved \(result.movedTitle) \(position) \(result.adjacentTitle)")
+    /// Moves a book one place up (-1) or down (+1) in `target`, which saves
+    /// at once, and tells VoiceOver where it went, the same way in a folder
+    /// and in the reading list. Move Up and Move Down in the context menu
+    /// and on the keyboard share it.
+    private func moveBook(_ bookID: UUID, direction: Int, in target: LibraryReorderTarget) {
+        if let result = libraryViewModel.moveBook(bookID, direction: direction, in: target) {
+            announceToVoiceOver(result.announcement)
         }
     }
 
@@ -1592,6 +1688,44 @@ private struct ClosedLibraryWindowPlaceholder: View {
             .font(.title2)
             .foregroundColor(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Arranging Commands (TODO A06, FR09)
+
+/// A Library window's part in the Library menu's commands that arrange its
+/// selected books, and in their keys: Move Book Up and Move Book Down, which
+/// move the one selected book in the order the list shows, and Add to
+/// Reading List and Remove from Reading List (FR09), which act on the whole
+/// selection. Only the window that takes a command acts on it.
+private struct LibraryOrderCommandsSupport: ViewModifier {
+    /// Whether this window takes the command a notification carries.
+    let takesCommand: (Notification) -> Bool
+    /// Moves the selected book one place: -1 up, +1 down.
+    let moveSelectedBook: (Int) -> Void
+    /// Adds the selected books to the reading list, or takes them off it.
+    let changeReadingList: (ReadingListCommand.Kind) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .moveBookUp)) { notification in
+                guard takesCommand(notification) else { return }
+                moveSelectedBook(-1)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .moveBookDown)) { notification in
+                guard takesCommand(notification) else { return }
+                moveSelectedBook(1)
+            }
+            // Library > Add to Reading List and Remove from Reading List,
+            // and their keys once the user gives them some.
+            .onReceive(NotificationCenter.default.publisher(for: .addToReadingList)) { notification in
+                guard takesCommand(notification) else { return }
+                changeReadingList(.add)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .removeFromReadingList)) { notification in
+                guard takesCommand(notification) else { return }
+                changeReadingList(.remove)
+            }
     }
 }
 

@@ -1,0 +1,56 @@
+import SwiftUI
+
+/// The options bar at the top of the Reading List (FR09): what a book
+/// opened from the reading list does when it ends, and whether continuing
+/// passes over finished books.
+///
+/// Both are AppKit controls the keyboard and VoiceOver reach as they reach
+/// any other, side by side with no group around them, so VoiceOver moves to
+/// each directly: a pop-up button, which speaks its label, the option
+/// chosen, and its hint, and a checkbox, which speaks its label, whether it
+/// is checked, and its hint. Each choice is saved with the list at once, by
+/// the closures the window gives.
+struct ReadingListOptionsBar: View {
+    /// What a book opened from the list does when it ends.
+    let continuation: ReadingList.Continuation
+    /// Whether continuing passes over finished books.
+    let skipsFinished: Bool
+    /// Saves a new choice of what a book does when it ends.
+    let chooseContinuation: (ReadingList.Continuation) -> Void
+    /// Saves skipping finished books on or off.
+    let chooseSkipsFinished: (Bool) -> Void
+
+    var body: some View {
+        HStack(spacing: 16) {
+            // The label is spoken from the control itself, as in Settings:
+            // a pop-up button takes no label from the picker's title.
+            Picker(ReadingListWording.continuationLabel, selection: Binding(
+                get: { continuation },
+                set: { chooseContinuation($0) }
+            )) {
+                ForEach(ReadingList.Continuation.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+            .pickerStyle(.menu)
+            .fixedSize()
+            .help(ReadingListWording.continuationHint)
+            .accessibilityLabel(ReadingListWording.continuationLabel)
+            .accessibilityHint(ReadingListWording.continuationHint)
+
+            Toggle(ReadingListWording.skipFinishedLabel, isOn: Binding(
+                get: { skipsFinished },
+                set: { chooseSkipsFinished($0) }
+            ))
+            .toggleStyle(.checkbox)
+            .help(ReadingListWording.skipFinishedHint)
+            .accessibilityLabel(ReadingListWording.skipFinishedLabel)
+            .accessibilityHint(ReadingListWording.skipFinishedHint)
+
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 6)
+        .background(Color.secondary.opacity(0.08))
+    }
+}

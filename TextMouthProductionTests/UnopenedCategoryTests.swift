@@ -23,9 +23,10 @@ final class UnopenedCategoryTests: XCTestCase {
     // MARK: - The Category
 
     /// The View picker's segments, in order, with Unopened where No Folder
-    /// was; nothing is called No Folder any more.
+    /// was and the Reading List (FR09) last; nothing is called No Folder
+    /// any more.
     func testTheCategoriesAreNamedInOrder() {
-        XCTAssertEqual(LibraryCategory.allCases.map(\.rawValue), ["Folders", "All Items", "Unopened", "Recent"])
+        XCTAssertEqual(LibraryCategory.allCases.map(\.rawValue), ["Folders", "All Items", "Unopened", "Recent", "Reading List"])
         XCTAssertEqual(LibraryCategory.unopened.rawValue, "Unopened")
         XCTAssertEqual(LibraryCategory.formerNoFolderName, "No Folder")
         XCTAssertNil(LibraryCategory(rawValue: "No Folder"))
@@ -57,7 +58,7 @@ final class UnopenedCategoryTests: XCTestCase {
         XCTAssertEqual(LibraryCategory.unopened.sortSettingsKey, "__unopened__")
         XCTAssertEqual(LibraryLocation(category: .unopened, folderPath: "Essays").sortSettingsKey, "__unopened__")
         XCTAssertEqual(LibraryCategory.formerNoFolderSortSettingsKey, "__noFolder__")
-        XCTAssertEqual(BookFolder.reservedNames, ["__allItems__", "__unopened__", "__recent__", "__noFolder__"])
+        XCTAssertEqual(BookFolder.reservedNames, ["__allItems__", "__unopened__", "__recent__", "__readingList__", "__noFolder__"])
         for reserved in BookFolder.reservedNames {
             XCTAssertNil(BookFolder.normalizedName(reserved), reserved)
             XCTAssertFalse(BookFolder.isValidLibraryPath(reserved), reserved)
@@ -209,6 +210,9 @@ final class UnopenedCategoryTests: XCTestCase {
         }
 
         XCTAssertEqual(titlesAtUnopened(), ["The Tactile Atlas"])
+        // The Reading List (FR09) holds books only, and lists no feed.
+        let readingList = LibraryLocation(category: .readingList, folderPath: "")
+        XCTAssertEqual(LibraryFeedsSectionRows.rows(at: readingList, center: world.center, now: now), [])
         let everywhere = LibraryFeedsSectionRows.rows(at: allItems, center: world.center, now: now)
         XCTAssertEqual(everywhere.map(\.title), ["Harbour Notes", "Silent Signal", "The Tactile Atlas"])
         XCTAssertEqual(world.center.counts(of: silent.id).unplayed, 0)

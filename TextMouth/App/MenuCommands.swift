@@ -242,6 +242,21 @@ struct LibraryCommands: Commands {
 
             Divider()
 
+            // Adds the selected books to the end of the reading list, or
+            // takes them off it (FR09): the key Library window acts on its
+            // selection and says what it did, or why nothing changed. They
+            // have no keys until the user gives them some in Settings,
+            // which KeyboardShortcutManager handles for window targeting.
+            Button(ShortcutAction.addToReadingList.title) {
+                NotificationCenter.default.post(name: .addToReadingList, object: nil)
+            }
+
+            Button(ShortcutAction.removeFromReadingList.title) {
+                NotificationCenter.default.post(name: .removeFromReadingList, object: nil)
+            }
+
+            Divider()
+
             // Keeps the selected books downloaded on this Mac, or stops, in
             // a library in the cloud (Keep on This Mac). The key Library
             // window acts on its selection, and says why when nothing changes.
@@ -447,6 +462,14 @@ extension Notification.Name {
     static let toggleEditMode = Notification.Name("toggleEditMode")
     static let moveBookUp = Notification.Name("moveBookUp")
     static let moveBookDown = Notification.Name("moveBookDown")
+    /// Posted by Library > Add to Reading List, and by its key when the
+    /// user gave it one (FR09): the Library window that takes it adds its
+    /// selected books to the reading list.
+    static let addToReadingList = Notification.Name("addToReadingList")
+    /// Posted by Library > Remove from Reading List, and by its key when
+    /// the user gave it one (FR09): the Library window that takes it takes
+    /// its selected books off the reading list.
+    static let removeFromReadingList = Notification.Name("removeFromReadingList")
     /// Posted by Library > Keep on This Mac: the key Library window keeps
     /// its selected books downloaded on this Mac.
     static let keepOnThisMac = Notification.Name("keepOnThisMac")

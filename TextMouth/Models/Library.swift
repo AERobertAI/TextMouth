@@ -37,6 +37,11 @@ struct FolderSortSetting: Codable, Equatable {
     /// first), since no unopened book has a last-opened date to sort by.
     static let unopenedDefault = FolderSortSetting(sortField: .dateAdded, sortAscending: false)
 
+    /// The one order of the Reading List (FR09): the list's own, which the
+    /// user arranges, shown as manual order, which has no direction. The
+    /// list never sorts by it; it shows its books as the list holds them.
+    static let readingListOrder = FolderSortSetting(sortField: .manual, sortAscending: true)
+
     /// The setting in the one form a location shows it: manual order is
     /// ascending, because it has no direction, and no direction is
     /// remembered for the field shown or for manual order.
@@ -110,19 +115,33 @@ struct Library: Codable {
     /// Per-folder sort settings keyed by folder path (empty string = root).
     /// Folders not in this dictionary use FolderSortSetting.defaultSort.
     var folderSortSettings: [String: FolderSortSetting]
+    /// The reading list (FR09): books from anywhere in the library in the
+    /// order the user arranged, with its options. Saved with the index.
+    var readingList: ReadingList
 
-    init(books: [Book] = [], folders: [BookFolder] = [], folderSortSettings: [String: FolderSortSetting] = [:]) {
+    init(
+        books: [Book] = [],
+        folders: [BookFolder] = [],
+        folderSortSettings: [String: FolderSortSetting] = [:],
+        readingList: ReadingList = ReadingList()
+    ) {
         self.books = books
         self.folders = folders
         self.folderSortSettings = folderSortSettings
+        self.readingList = readingList
     }
 
-    /// Backward-compatible decoding: folderSortSettings may be absent in older library.json files
+    /// Backward-compatible decoding: folderSortSettings may be absent in
+    /// older library.json files, and the reading list in any written before
+    /// it existed (FR09). A reading list that cannot be read at all is left
+    /// empty rather than making the whole index unreadable; its own reading
+    /// already skips an entry it cannot read and keeps the rest.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         books = try container.decode([Book].self, forKey: .books)
         folders = try container.decode([BookFolder].self, forKey: .folders)
         folderSortSettings = try container.decodeIfPresent([String: FolderSortSetting].self, forKey: .folderSortSettings) ?? [:]
+        readingList = (try? container.decodeIfPresent(ReadingList.self, forKey: .readingList)) ?? ReadingList()
     }
 
     // MARK: - Sort Settings
@@ -166,8 +185,12 @@ struct Library: Codable {
         books.append(book)
     }
 
+    /// Takes the book `id` out of the library, and off the reading list
+    /// (FR09): every removal of a book from the library, whether its package
+    /// is deleted or kept, ends here or in `removeFolderAndContents(id:)`.
     mutating func removeBook(id: UUID) {
         books.removeAll { $0.id == id }
+        readingList.remove([id])
     }
 
     mutating func moveBook(id: UUID, toFolder folderPath: String) {
@@ -307,10 +330,11 @@ struct Library: Codable {
             $0.folderPath == folderPath || $0.folderPath.hasPrefix(folderPath + "/")
         }
 
-        // Remove those books
+        // Remove those books, from the library and from the reading list (FR09)
         books.removeAll {
             $0.folderPath == folderPath || $0.folderPath.hasPrefix(folderPath + "/")
         }
+        readingList.remove(Set(removedBooks.map(\.id)))
 
         // Remove the folder and all subfolders
         folders.removeAll {

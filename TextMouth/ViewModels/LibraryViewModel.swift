@@ -16,8 +16,9 @@ enum LibrarySortField: String, CaseIterable, Codable {
 /// The views of the library a Library window shows, as its View picker
 /// names them, in the picker's order. Folders shows one folder at a time;
 /// the others list books from every folder: all of them, those never
-/// opened, and those opened lately. Unopened replaced No Folder, which
-/// listed the root's books; Folders still lists those at the root.
+/// opened, those opened lately, and those in the reading list. Unopened
+/// replaced No Folder, which listed the root's books; Folders still lists
+/// those at the root.
 enum LibraryCategory: String, CaseIterable, Codable {
     case folders = "Folders"
     case allItems = "All Items"
@@ -25,6 +26,9 @@ enum LibraryCategory: String, CaseIterable, Codable {
     /// not yet played.
     case unopened = "Unopened"
     case recent = "Recent"
+    /// The reading list (FR09): books from any folder, in the order the
+    /// user arranges, which no sort changes.
+    case readingList = "Reading List"
 
     /// What the category Unopened replaced was called. A category saved
     /// under that name reads as Unopened.
@@ -36,25 +40,30 @@ enum LibraryCategory: String, CaseIterable, Codable {
 
     /// Key used to store per-category sort settings in folderSortSettings.
     /// Folder category uses the actual folder path; other categories use
-    /// a reserved key that cannot collide with real folder paths.
+    /// a reserved key that cannot collide with real folder paths. The
+    /// Reading List's is reserved too, though no sort is ever saved under
+    /// it: the list keeps its own order (`LibraryLocation.keepsItsOwnOrder`).
     var sortSettingsKey: String? {
         switch self {
-        case .folders:  return nil  // uses folder path instead
-        case .allItems: return "__allItems__"
-        case .unopened: return "__unopened__"
-        case .recent:   return "__recent__"
+        case .folders:     return nil  // uses folder path instead
+        case .allItems:    return "__allItems__"
+        case .unopened:    return "__unopened__"
+        case .recent:      return "__recent__"
+        case .readingList: return "__readingList__"
         }
     }
 
     /// The default sort setting for this category when no user preference
     /// exists: newest first for Recent (by last opened) and for Unopened (by
-    /// date added, since no unopened book has been opened), title ascending
-    /// elsewhere.
+    /// date added, since no unopened book has been opened), the list's own
+    /// order for the Reading List, which is its only one, and title
+    /// ascending elsewhere.
     var defaultSortSetting: FolderSortSetting {
         switch self {
-        case .recent:   return .recentDefault
-        case .unopened: return .unopenedDefault
-        default:        return .defaultSort
+        case .recent:      return .recentDefault
+        case .unopened:    return .unopenedDefault
+        case .readingList: return .readingListOrder
+        default:           return .defaultSort
         }
     }
 
@@ -96,6 +105,20 @@ final class LibraryViewModel: ObservableObject {
     let listCache = LibraryListCache()
     /// Tells open readers when the library changes or moves their book.
     let bookUpdates = LibraryBookUpdates()
+    /// The reading list (FR09), as the library holds it: its books in
+    /// reading order and its options. Changed only through the functions in
+    /// LibraryViewModel+ReadingList, each of which saves the index.
+    var readingList: ReadingList {
+        library.readingList
+    }
+    /// The books the reading list's Skip Finished Books passes over (FR09):
+    /// those Books Finished counts (`ReadingStats.finishedBookIDs`), which a
+    /// book joins when it is played or read to its end and stops there or
+    /// continues to the next book (`ReadingStatsService.markBookFinished`).
+    /// That is a deliberate record, unlike a position near the end, which
+    /// may be saved short of it (P07); a book counted once stays counted,
+    /// even when read again. Tests give their own.
+    var finishedBookIDs: @MainActor () -> Set<UUID> = { ReadingStatsService.shared.stats.finishedBookIDs }
     /// Where readers are between checkpoints (TODO PERF11), which the rows
     /// and the summary bar show: `updateLiveReadingPosition` reports there
     /// instead of changing the library, so a playing reader no longer

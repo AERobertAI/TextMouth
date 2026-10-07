@@ -48,14 +48,19 @@ final class LibrarySortStateTests: XCTestCase {
 
     /// A location with no saved sort shows its category's default: Last
     /// Opened Descending (newest first) for Recent, Date Added Descending
-    /// (newest first) for Unopened, Title Ascending elsewhere.
+    /// (newest first) for Unopened, the Reading List's own order, as manual
+    /// order (FR09), and Title Ascending elsewhere.
     func testALocationWithoutASavedSortShowsItsCategoryDefault() {
         let library = Library()
-        let newestFirst: [LibraryCategory: String] = [.recent: "Last Opened Descending", .unopened: "Date Added Descending"]
+        let defaults: [LibraryCategory: String] = [
+            .recent: "Last Opened Descending",
+            .unopened: "Date Added Descending",
+            .readingList: "Manual Order",
+        ]
 
         for category in LibraryCategory.allCases {
             let location = LibraryLocation(category: category, folderPath: "Unsorted Shelf")
-            let expected = newestFirst[category] ?? "Title Ascending"
+            let expected = defaults[category] ?? "Title Ascending"
             XCTAssertEqual(library.sortState(at: location).titleFragment, expected, "\(category)")
         }
     }
@@ -68,6 +73,7 @@ final class LibrarySortStateTests: XCTestCase {
         XCTAssertEqual(LibraryLocation(category: .allItems, folderPath: "Essays").sortSettingsKey, "__allItems__")
         XCTAssertEqual(LibraryLocation(category: .unopened, folderPath: "Essays").sortSettingsKey, "__unopened__")
         XCTAssertEqual(LibraryLocation(category: .recent, folderPath: "Essays").sortSettingsKey, "__recent__")
+        XCTAssertEqual(LibraryLocation(category: .readingList, folderPath: "Essays").sortSettingsKey, "__readingList__")
     }
 
     // MARK: - Manual Order
@@ -275,10 +281,11 @@ final class LibrarySortStateTests: XCTestCase {
 
     // MARK: - Where Books Can Be Rearranged
 
-    /// Books can be rearranged only where the list shows one folder's
-    /// manual order: a folder in Folders, the root included. All Items,
-    /// Unopened, and Recent mix folders, and other sorts have no manual
-    /// order to change.
+    /// A folder's books can be rearranged only where the list shows one
+    /// folder's manual order: a folder in Folders, the root included. All
+    /// Items, Unopened, and Recent mix folders, and other sorts have no
+    /// manual order to change; the Reading List rearranges its own order,
+    /// never a folder's (FR09, `ReadingListViewTests`).
     func testRearrangingIsOfferedOnlyWhereOneFoldersManualOrderIsShown() {
         let manual = LibrarySortState(restoring: FolderSortSetting(sortField: .manual, sortAscending: true))
         let expected: [(LibraryLocation, String?)] = [
@@ -286,7 +293,8 @@ final class LibrarySortStateTests: XCTestCase {
             (LibraryLocation(category: .folders, folderPath: ""), ""),
             (LibraryLocation(category: .allItems, folderPath: "Essays/Travel"), nil),
             (LibraryLocation(category: .unopened, folderPath: "Essays/Travel"), nil),
-            (LibraryLocation(category: .recent, folderPath: "Essays/Travel"), nil)
+            (LibraryLocation(category: .recent, folderPath: "Essays/Travel"), nil),
+            (LibraryLocation(category: .readingList, folderPath: "Essays/Travel"), nil)
         ]
 
         for (location, folder) in expected {
