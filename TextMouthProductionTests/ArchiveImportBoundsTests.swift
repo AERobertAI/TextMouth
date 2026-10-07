@@ -246,23 +246,47 @@ final class ArchiveImportBoundsTests: XCTestCase {
         _ = try FileImportService.importZip(from: archive, toFolder: folderPath, progress: { reports.append($0) })
 
         let name = archive.lastPathComponent
-        // A plain-text book's steps: its checksum, then its package's.
-        let steps: [ImportStep] = [.readingSource, .copying, .readingText, .savingRecord, .publishing]
-        // The archive's own book comes first: its folder sorts before the
+        // Each archive's extraction runs from nothing to all its entries
+        // and all the bytes they declare, the archive inside after the one
+        // imported, before the first book (FR10).
+        let outerBytes = Int64(Self.notes("rope").count + (try Data(contentsOf: inner)).count)
+        let innerBytes = Int64(Self.notes("tides").count)
+        let extractions = reports.prefix { if case .extracting = $0 { return true } else { return false } }
+        let byArchive = Dictionary(grouping: extractions) { report -> String in
+            guard case let .extracting(archive, _) = report else { return "" }
+            return archive
+        }
+        XCTAssertEqual(extractions.compactMap(Self.archiveName).reduce(into: [String]()) { names, archive in
+            if names.last != archive { names.append(archive) }
+        }, [name, "Collection.zip"])
+        XCTAssertEqual(Self.extraction(byArchive[name]?.first), ArchiveExtractionProgress(entriesDone: 0, entries: 2, bytesDone: 0, bytes: outerBytes))
+        XCTAssertEqual(Self.extraction(byArchive[name]?.last), ArchiveExtractionProgress(entriesDone: 2, entries: 2, bytesDone: outerBytes, bytes: outerBytes))
+        XCTAssertEqual(Self.extraction(byArchive["Collection.zip"]?.first), ArchiveExtractionProgress(entriesDone: 0, entries: 1, bytesDone: 0, bytes: innerBytes))
+        XCTAssertEqual(Self.extraction(byArchive["Collection.zip"]?.last), ArchiveExtractionProgress(entriesDone: 1, entries: 1, bytesDone: innerBytes, bytes: innerBytes))
+
+        // A plain-text book's steps: its checksum, then its package's. The
+        // archive's own book comes first: its folder sorts before the
         // folder the archives inside it are extracted into.
-        let extraction: [ZipImportProgress] = [
-            .extracting(archive: name, done: 0, total: 2),
-            .extracting(archive: name, done: 1, total: 2),
-            .extracting(archive: name, done: 2, total: 2),
-            .extracting(archive: "Collection.zip", done: 0, total: 1),
-            .extracting(archive: "Collection.zip", done: 1, total: 1)
-        ]
+        let steps: [ImportStep] = [.readingSource, .copying, .readingText, .savingRecord, .publishing]
         let firstBook = steps.map { ZipImportProgress.importingBook(number: 1, total: 2, book: "Rope Splicing.txt", step: $0) }
         let secondBook = steps.map { ZipImportProgress.importingBook(number: 2, total: 2, book: "Tides.txt", step: $0) }
         XCTAssertEqual(
-            reports,
-            extraction + firstBook + [.importing(done: 1, total: 2)] + secondBook + [.importing(done: 2, total: 2)]
+            Array(reports.dropFirst(extractions.count)),
+            firstBook + [.importing(done: 1, total: 2)] + secondBook + [.importing(done: 2, total: 2)]
         )
+    }
+
+    /// The archive `report` tells the extraction of; nil for any other report.
+    private static func archiveName(_ report: ZipImportProgress) -> String? {
+        guard case let .extracting(archive, _) = report else { return nil }
+        return archive
+    }
+
+    /// How far the extraction `report` tells has got; nil for none or any
+    /// other report.
+    private static func extraction(_ report: ZipImportProgress?) -> ArchiveExtractionProgress? {
+        guard case let .extracting(_, progress)? = report else { return nil }
+        return progress
     }
 
     /// Cancelling while the archive is extracted stops before any book:
@@ -277,7 +301,7 @@ final class ArchiveImportBoundsTests: XCTestCase {
             from: archive,
             toFolder: folderPath,
             progress: { progress in
-                if case .extracting(archive: _, done: 2, total: _) = progress { cancellation.cancel() }
+                if case let .extracting(_, extraction) = progress, extraction.entriesDone == 2 { cancellation.cancel() }
             },
             isCancelled: cancellation.check
         )
@@ -309,7 +333,9 @@ final class ArchiveImportBoundsTests: XCTestCase {
             from: archive,
             toFolder: folderPath,
             progress: { progress in
-                if case .extracting(archive: "Collection.zip", done: 1, total: _) = progress { cancellation.cancel() }
+                if case .extracting(archive: "Collection.zip", progress: let extraction) = progress, extraction.entriesDone == 1 {
+                    cancellation.cancel()
+                }
             },
             isCancelled: cancellation.check
         )
@@ -365,16 +391,18 @@ final class ArchiveImportBoundsTests: XCTestCase {
 
     /// The import overlay's bar counts books, so while an archive is
     /// extracted it is left indeterminate and the message counts the items
-    /// extracted; once books import, the bar counts the books done and the
-    /// message names the book under way and its step (FR10).
+    /// extracted and the bytes written; once books import, the bar counts
+    /// the books done and the message names the book under way and its
+    /// step (FR10).
     func testOverlayShowsExtractionThenBooks() {
         var state = ImportProgressState()
         let now = Date()
-        state.receive(.extracting(archive: "Library Export.zip", done: 37, total: 120), at: now)
+        let extraction = ArchiveExtractionProgress(entriesDone: 37, entries: 120, bytesDone: 1_200_000_000, bytes: 3_400_000_000)
+        state.receive(.extracting(archive: "Library Export.zip", progress: extraction), at: now)
 
         XCTAssertEqual(state.current, 0)
         XCTAssertEqual(state.total, 0)
-        XCTAssertEqual(state.message, "Extracting “Library Export.zip”: 37 of 120 items...")
+        XCTAssertEqual(state.message, "Extracting “Library Export.zip”: 37 of 120 items, 1.2 GB of 3.4 GB...")
 
         state.receive(.importing(done: 3, total: 10), at: now)
         state.receive(.importingBook(number: 4, total: 10, book: "Rope Splicing.txt", step: .readingText), at: now)

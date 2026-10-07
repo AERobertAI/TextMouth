@@ -124,19 +124,44 @@ final class ImportProgressWordingTests: XCTestCase {
     // MARK: - Counts and Extraction
 
     /// The count says the books done of the total, with the overlay's noun,
-    /// as the overlay's count line shows it; the extraction line counts the
-    /// archive's items.
-    func testTheCountAndTheExtractionLine() {
+    /// as the overlay's count line shows it, under the overlay's title; a
+    /// ZIP import starts by saying it extracts the archive.
+    func testTheCountTheTitleAndTheStart() {
         XCTAssertEqual(ImportProgressWording.count(done: 2, of: 100), "2 of 100 books processed")
         XCTAssertEqual(ImportProgressWording.count(done: 1, of: 1), "1 of 1 books processed")
         XCTAssertEqual(CountWording.progress(3, of: 60, "books extracted"), "3 of 60 books extracted")
-        XCTAssertEqual(
-            ImportProgressWording.extracting(archive: "Library Export.zip", done: 37, total: 120),
-            "Extracting “Library Export.zip”: 37 of 120 items..."
-        )
         XCTAssertEqual(ImportProgressWording.startingArchive, "Extracting archive...")
         XCTAssertEqual(ImportProgressWording.title, "Importing Books")
         XCTAssertEqual(ImportProgressWording.itemNoun, "books processed")
+    }
+
+    /// The extraction line counts the archive's items and the bytes they
+    /// declare, written as Finder writes sizes, from "0 bytes" up; an
+    /// archive declaring no bytes is counted by its items alone (FR10).
+    func testTheExtractionLineCountsItemsAndBytes() {
+        XCTAssertEqual(
+            ImportProgressWording.extracting(
+                archive: "Library Export.zip",
+                progress: ArchiveExtractionProgress(entriesDone: 120, entries: 300, bytesDone: 1_200_000_000, bytes: 3_400_000_000)
+            ),
+            "Extracting “Library Export.zip”: 120 of 300 items, 1.2 GB of 3.4 GB..."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.extracting(
+                archive: "Library Export.zip",
+                progress: ArchiveExtractionProgress(entriesDone: 0, entries: 300, bytesDone: 0, bytes: 45_000_000)
+            ),
+            "Extracting “Library Export.zip”: 0 of 300 items, 0 bytes of 45 MB..."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.extracting(
+                archive: "Folders.zip",
+                progress: ArchiveExtractionProgress(entriesDone: 2, entries: 3, bytesDone: 0, bytes: 0)
+            ),
+            "Extracting “Folders.zip”: 2 of 3 items..."
+        )
+        XCTAssertEqual(ImportProgressWording.size(999), ArchiveFigures.size(999), "sizes read as the archive messages write them")
+        XCTAssertEqual(ImportProgressWording.size(1_200_000_000), ArchiveFigures.size(1_200_000_000))
     }
 
     // MARK: - What VoiceOver Reads

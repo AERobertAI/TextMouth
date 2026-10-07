@@ -40,31 +40,51 @@ final class ArchiveExtractionTests: XCTestCase {
         XCTAssertEqual(budget.admittedArchives, 1)
     }
 
-    /// Progress is told the entries done of the total, from none to all.
-    func testProgressIsToldEntriesDoneOfTheTotal() throws {
+    /// Progress is told the entries done and the bytes written of their
+    /// totals, from none to all: every entry's count in turn, and the bytes
+    /// as they are written, never going back (FR10).
+    func testProgressIsToldEntriesAndBytesDoneOfTheirTotals() throws {
         let archive = try makeArchive((1...4).map { TestZIPEntry("page\($0).txt", Data("Page \($0)".utf8)) })
-        var reports: [[Int]] = []
+        var reports: [ArchiveExtractionProgress] = []
 
-        try ArchiveExtractor.extract(archiveAt: archive, into: destination, budget: Self.budget(), progress: { done, total in
-            reports.append([done, total])
-        })
+        try ArchiveExtractor.extract(archiveAt: archive, into: destination, budget: Self.budget(), progress: { reports.append($0) })
 
-        XCTAssertEqual(reports, [[0, 4], [1, 4], [2, 4], [3, 4], [4, 4]])
+        // Each page is "Page N", 6 bytes.
+        XCTAssertEqual(reports.first, ArchiveExtractionProgress(entriesDone: 0, entries: 4, bytesDone: 0, bytes: 24))
+        XCTAssertEqual(reports.last, ArchiveExtractionProgress(entriesDone: 4, entries: 4, bytesDone: 24, bytes: 24))
+        XCTAssertEqual(Self.distinct(reports.map(\.entriesDone)), [0, 1, 2, 3, 4])
+        XCTAssertEqual(reports.map(\.bytesDone), reports.map(\.bytesDone).sorted(), "the bytes went back")
+        XCTAssertEqual(Set(reports.map(\.bytesDone)), [0, 6, 12, 18, 24])
     }
 
-    /// A large archive tells its progress at most once per percent, from
-    /// none to all, so the main thread is not flooded.
+    /// A file of many chunks is told as it is written, so a large file is
+    /// seen to move before its entry is done.
+    func testALargeFilesBytesAreToldAsItIsWritten() throws {
+        let size = 400_000
+        let archive = try makeArchive([TestZIPEntry("lecture.wav", Data(repeating: 0x61, count: size))])
+        var reports: [ArchiveExtractionProgress] = []
+
+        try ArchiveExtractor.extract(archiveAt: archive, into: destination, budget: Self.budget(), progress: { reports.append($0) })
+
+        let duringTheFile = reports.filter { $0.entriesDone == 0 && $0.bytesDone > 0 }
+        XCTAssertGreaterThan(duringTheFile.count, 1, "the file was not seen to move: \(reports.map(\.bytesDone))")
+        XCTAssertTrue(duringTheFile.allSatisfy { $0.bytesDone <= Int64(size) && $0.bytes == Int64(size) })
+        XCTAssertEqual(reports.last, ArchiveExtractionProgress(entriesDone: 1, entries: 1, bytesDone: Int64(size), bytes: Int64(size)))
+        XCTAssertLessThanOrEqual(reports.count, 102, "a report for each whole percent, at most")
+    }
+
+    /// A large archive tells its progress at most once per percent of its
+    /// entries and once per percent of its bytes, from none to all, so the
+    /// main thread is not flooded.
     func testProgressOfALargeArchiveIsToldAtMostOncePerPercent() throws {
         let archive = try makeArchive((1...500).map { TestZIPEntry("slip\($0).txt", Data("x".utf8)) })
-        var reports: [[Int]] = []
+        var reports: [ArchiveExtractionProgress] = []
 
-        try ArchiveExtractor.extract(archiveAt: archive, into: destination, budget: Self.budget(), progress: { done, total in
-            reports.append([done, total])
-        })
+        try ArchiveExtractor.extract(archiveAt: archive, into: destination, budget: Self.budget(), progress: { reports.append($0) })
 
-        XCTAssertEqual(reports.first, [0, 500])
-        XCTAssertEqual(reports.last, [500, 500])
-        XCTAssertLessThanOrEqual(reports.count, 101)
+        XCTAssertEqual(reports.first, ArchiveExtractionProgress(entriesDone: 0, entries: 500, bytesDone: 0, bytes: 500))
+        XCTAssertEqual(reports.last, ArchiveExtractionProgress(entriesDone: 500, entries: 500, bytesDone: 500, bytes: 500))
+        XCTAssertLessThanOrEqual(reports.count, 201)
     }
 
     /// An archive is admitted to its budget before anything is written: one
@@ -256,8 +276,8 @@ final class ArchiveExtractionTests: XCTestCase {
                 into: destination,
                 budget: Self.budget(),
                 isCancelled: cancellation.check,
-                progress: { done, _ in
-                    if done == 2 { cancellation.cancel() }
+                progress: { progress in
+                    if progress.entriesDone == 2 { cancellation.cancel() }
                 }
             )
         ) { error in
@@ -521,5 +541,14 @@ private final class CheckCounter: @unchecked Sendable {
         defer { lock.unlock() }
         count += 1
         return count
+    }
+}
+
+extension ArchiveExtractionTests {
+    /// `values` with each run of equal values told once, in order.
+    static func distinct(_ values: [Int]) -> [Int] {
+        values.reduce(into: []) { kept, value in
+            if kept.last != value { kept.append(value) }
+        }
     }
 }

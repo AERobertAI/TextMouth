@@ -50,6 +50,22 @@ final class ImportCancellation: @unchecked Sendable {
 
 // MARK: - Extraction
 
+/// How far the extraction of one archive has got (TODO I05, FR10): its
+/// entries extracted of the total, and the bytes written of the total its
+/// entries declare once extracted. Both totals come from the archive's
+/// central directory, which the extraction reads anyway to admit the archive
+/// to its budget, so telling the bytes costs no second pass.
+struct ArchiveExtractionProgress: Equatable, Sendable {
+    /// The entries extracted so far.
+    var entriesDone: Int
+    /// The archive's entries: its files, folders, and links.
+    var entries: Int
+    /// The bytes written so far, never more than `bytes`.
+    var bytesDone: Int64
+    /// The bytes the archive's entries declare once extracted.
+    var bytes: Int64
+}
+
 /// Extracts ZIP archives for imports, entry by entry, within a budget
 /// (TODO I05). It takes the place of ZIPFoundation's `unzipItem`, which
 /// extracts a whole archive at once, with no bound on what it writes and no
@@ -75,8 +91,10 @@ enum ArchiveExtractor {
     /// if needed. The archive is inspected and admitted to `budget` before
     /// anything is written; then each entry is extracted in turn, the
     /// cancellation check asked before each one and between the chunks of a
-    /// large one, and `progress` told the entries done of the total, at the
-    /// start and then at most once per percent.
+    /// large one, and `progress` told the entries done and the bytes written
+    /// of their totals: at the start, and then whenever the whole percentage
+    /// of either changes, between chunks as well as between entries, so a
+    /// large file is seen to move as it is written (FR10).
     ///
     /// Each file is held to the size the archive records for it and charged
     /// to `budget` as it is written, so an archive whose sizes lie stops at
@@ -99,20 +117,19 @@ enum ArchiveExtractor {
         budget: ArchiveBudget,
         nestedArchive: String? = nil,
         isCancelled: ImportCancellationCheck = { false },
-        progress: ((_ done: Int, _ total: Int) -> Void)? = nil
+        progress: ((ArchiveExtractionProgress) -> Void)? = nil
     ) throws {
         let archive = try open(url)
         let inspection = ArchiveInspection(of: archive)
         try budget.admit(inspection, extractingInto: directory, nestedArchive: nestedArchive)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
-        var report = ProgressReporter(total: inspection.entryCount, progress: progress)
-        report(0)
-        var done = 0
+        let report = ProgressReporter(entries: inspection.entryCount, bytes: inspection.declaredSize, progress: progress)
+        report.start()
         for entry in archive {
             if isCancelled() { throw ImportCancelled() }
             do {
-                try extract(entry, of: archive, into: directory, budget: budget, isCancelled: isCancelled)
+                try extract(entry, of: archive, into: directory, budget: budget, isCancelled: isCancelled, wrote: report.wrote)
             } catch Archive.ArchiveError.uncontainedSymlink {
                 throw FileImportError.archiveLinksOutside
             } catch is Archive.ArchiveError {
@@ -120,8 +137,7 @@ enum ArchiveExtractor {
                 // listener could use.
                 throw FileImportError.unreadableArchive
             }
-            done += 1
-            report(done)
+            report.entryDone()
         }
     }
 
@@ -150,12 +166,14 @@ enum ArchiveExtractor {
 
     /// Extracts `entry` of `archive` into `directory`: a folder is created, a
     /// link is made as ZIPFoundation makes it, and a file is written.
+    /// `wrote` is told the bytes of each chunk, or of a link, once written.
     private static func extract(
         _ entry: Entry,
         of archive: Archive,
         into directory: URL,
         budget: ArchiveBudget,
-        isCancelled: ImportCancellationCheck
+        isCancelled: ImportCancellationCheck,
+        wrote: (Int64) -> Void
     ) throws {
         guard let destination = containedDestination(of: entry.path, in: directory) else {
             throw FileImportError.archivePathOutside
@@ -167,8 +185,9 @@ enum ArchiveExtractor {
             try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
         case .symlink:
             try extractLink(entry, of: archive, to: destination, budget: budget)
+            wrote(Int64(clamping: entry.uncompressedSize))
         case .file:
-            try extractFile(entry, of: archive, to: destination, budget: budget, isCancelled: isCancelled)
+            try extractFile(entry, of: archive, to: destination, budget: budget, isCancelled: isCancelled, wrote: wrote)
         }
     }
 
@@ -190,12 +209,14 @@ enum ArchiveExtractor {
     /// Writes the file `entry` describes to `destination`, chunk by chunk:
     /// held to its recorded size, charged to `budget`, stopped between chunks
     /// when the cancellation check says so, and compared with its checksum.
+    /// `wrote` is told the bytes of each chunk once it is written.
     private static func extractFile(
         _ entry: Entry,
         of archive: Archive,
         to destination: URL,
         budget: ArchiveBudget,
-        isCancelled: ImportCancellationCheck
+        isCancelled: ImportCancellationCheck,
+        wrote: (Int64) -> Void
     ) throws {
         try FileManager.default.createDirectory(
             at: destination.deletingLastPathComponent(),
@@ -211,6 +232,7 @@ enum ArchiveExtractor {
                     if isCancelled() { throw ImportCancelled() }
                     try budget.charge(Int64(chunk.count))
                     try handle.write(contentsOf: chunk)
+                    wrote(Int64(chunk.count))
                 } catch {
                     throw StoppedWriting(reason: error)
                 }
@@ -258,30 +280,73 @@ enum ArchiveExtractor {
     }
 }
 
-/// Tells an extraction's progress callback the entries done of the total:
-/// at the start, then whenever the whole percentage done changes, so a large
-/// archive sends at most about a hundred updates to the main thread.
-private struct ProgressReporter {
-    /// The archive's entries.
-    let total: Int
-    /// Told the entries done of the total.
-    let progress: ((Int, Int) -> Void)?
-    /// The percentage done last told; none at first.
-    private var lastPercent = -1
+/// Tells an extraction's progress callback the entries done and the bytes
+/// written of their totals: at the start, then whenever the whole
+/// percentage done of either changes, so a large archive, or one large
+/// file, sends at most about two hundred updates to the main thread, and a
+/// file of gigabytes is seen to move while it is written (FR10).
+///
+/// A class, since the extraction of each file tells it each chunk written
+/// through a closure.
+private final class ProgressReporter {
+    /// Told how far the extraction has got.
+    private let progress: ((ArchiveExtractionProgress) -> Void)?
+    /// How far the extraction has got, the bytes written uncapped.
+    private var current: ArchiveExtractionProgress
+    /// The whole percentages of the entries and of the bytes last told;
+    /// none at first.
+    private var lastEntryPercent = -1
+    private var lastBytePercent = -1
 
-    init(total: Int, progress: ((Int, Int) -> Void)?) {
-        self.total = total
+    /// A reporter for an archive of `entries` entries declaring `bytes`
+    /// bytes in all, telling `progress`.
+    init(entries: Int, bytes: Int64, progress: ((ArchiveExtractionProgress) -> Void)?) {
         self.progress = progress
+        current = ArchiveExtractionProgress(entriesDone: 0, entries: entries, bytesDone: 0, bytes: bytes)
     }
 
-    /// Tells `progress` that `done` entries are out, unless the whole
-    /// percentage done is the one last told.
-    mutating func callAsFunction(_ done: Int) {
+    /// Tells the start: nothing extracted yet.
+    func start() {
+        tellIfMoved()
+    }
+
+    /// Counts `count` more bytes written.
+    func wrote(_ count: Int64) {
+        current.bytesDone = ArchiveInspection.saturatingSum(current.bytesDone, count)
+        tellIfMoved()
+    }
+
+    /// Counts one more entry extracted.
+    func entryDone() {
+        current.entriesDone += 1
+        tellIfMoved()
+    }
+
+    /// Tells `progress` how far the extraction has got, unless the whole
+    /// percentages of both the entries and the bytes are the ones last
+    /// told. The bytes told never pass the total, though an archive whose
+    /// sizes lie writes more until its budget stops it.
+    private func tellIfMoved() {
         guard let progress else { return }
-        let percent = total == 0 ? 100 : done * 100 / total
-        guard percent != lastPercent else { return }
-        lastPercent = percent
-        progress(done, total)
+        let entryPercent = Self.percent(Int64(current.entriesDone), of: Int64(current.entries))
+        let bytePercent = Self.percent(current.bytesDone, of: current.bytes)
+        guard entryPercent != lastEntryPercent || bytePercent != lastBytePercent else { return }
+        lastEntryPercent = entryPercent
+        lastBytePercent = bytePercent
+        var told = current
+        told.bytesDone = min(current.bytesDone, current.bytes)
+        progress(told)
+    }
+
+    /// `done` of `total` as a whole percentage, at most 100, and 100 of a
+    /// total of nothing: exact for any real size, and worked in floating
+    /// point only for a size too large to multiply by 100, which no budget
+    /// admits.
+    private static func percent(_ done: Int64, of total: Int64) -> Int {
+        guard total > 0 else { return 100 }
+        let capped = min(max(done, 0), total)
+        let (scaled, overflowed) = capped.multipliedReportingOverflow(by: 100)
+        return overflowed ? Int(Double(capped) / Double(total) * 100) : Int(scaled / total)
     }
 }
 

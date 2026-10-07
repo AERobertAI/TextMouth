@@ -267,9 +267,10 @@ struct ZipImportResult {
 /// (TODO I05), so it moves before the first book imports, and names each
 /// book as it imports and the step it is at (FR10).
 enum ZipImportProgress: Equatable, Sendable {
-    /// `done` of the `total` entries of the archive named `archive` (the
-    /// archive imported, or one found inside it) are extracted.
-    case extracting(archive: String, done: Int, total: Int)
+    /// The archive named `archive` (the archive imported, or one found
+    /// inside it) has extracted as much as `progress` says: its entries,
+    /// and the bytes they declare (FR10).
+    case extracting(archive: String, progress: ArchiveExtractionProgress)
     /// The book numbered `number` of the `total` found in the archive, the
     /// item named `book` there (its file, or a DAISY book's folder), began
     /// `step`, one of the steps a failure names (FR10). Each book begins by
@@ -398,9 +399,9 @@ struct NestedArchiveUnpacking {
     static func extractionProgress(
         of archive: String,
         to progress: ((ZipImportProgress) -> Void)?
-    ) -> ((Int, Int) -> Void)? {
+    ) -> ((ArchiveExtractionProgress) -> Void)? {
         guard let progress else { return nil }
-        return { done, total in progress(.extracting(archive: archive, done: done, total: total)) }
+        return { extraction in progress(.extracting(archive: archive, progress: extraction)) }
     }
 
     /// Why an archive lying deeper than `maximumDepth` levels is not searched.
@@ -1027,10 +1028,11 @@ enum FileImportService {
     /// shares its volume and in the data directory otherwise (FR02), removed
     /// on every exit.
     /// - Parameters:
-    ///   - progress: told the entries extracted of each archive's total, then
-    ///     each book as it begins and as it begins each step, and the books
-    ///     done of the total found, so the overlay moves before the first
-    ///     book imports and while each one does (FR10).
+    ///   - progress: told the entries extracted and the bytes written of each
+    ///     archive's totals, then each book as it begins and as it begins
+    ///     each step, and the books done of the total found, so the overlay
+    ///     moves before the first book imports and while each one does
+    ///     (FR10).
     ///   - isCancelled: asked between entries (and the chunks of a large
     ///     one) while extracting and between books while importing. Once it
     ///     says to stop, the batch stops, keeps the books already imported,

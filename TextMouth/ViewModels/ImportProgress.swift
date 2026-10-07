@@ -68,7 +68,8 @@ struct ImportProgressState: Equatable {
 
     /// Takes a ZIP batch's `progress`, reported at `date` (TODO I05, FR10).
     /// While the archive is extracted the bar only spins and the line counts
-    /// the archive's items, so the overlay moves before the first book; once
+    /// the archive's items and bytes, so the overlay moves before the first
+    /// book; once
     /// books import, the bar counts the books done, and the line names the
     /// book under way and the step it is at, which it keeps until the next
     /// book begins. Each book is timed from its first report to its last,
@@ -76,11 +77,11 @@ struct ImportProgressState: Equatable {
     /// extraction is never timed.
     mutating func receive(_ progress: ZipImportProgress, at date: Date) {
         switch progress {
-        case let .extracting(archive, done, total):
+        case let .extracting(archive, extraction):
             current = 0
-            self.total = 0
+            total = 0
             book = nil
-            notice = ImportProgressWording.extracting(archive: archive, done: done, total: total)
+            notice = ImportProgressWording.extracting(archive: archive, progress: extraction)
         case let .importingBook(number, total, name, step):
             // A book's first report begins it; the later ones move its step.
             if book?.number == number {

@@ -567,3 +567,11 @@ private final class HeardMessages {
     /// Every message, oldest first.
     var messages: [String] = []
 }
+
+extension ZipImportProgress {
+    /// The extraction of `archive` at `done` of its `total` items, declaring
+    /// no bytes, for the tests that count items alone.
+    fileprivate static func extracting(archive: String, done: Int, total: Int) -> ZipImportProgress {
+        .extracting(archive: archive, progress: ArchiveExtractionProgress(entriesDone: done, entries: total, bytesDone: 0, bytes: 0))
+    }
+}

@@ -23,10 +23,27 @@ enum ImportProgressWording {
     }
 
     /// How far the extraction of the archive named `archive`, the archive
-    /// imported or one found inside it, has got: "Extracting “Library
-    /// Export.zip”: 37 of 120 items...".
-    static func extracting(archive: String, done: Int, total: Int) -> String {
-        "Extracting “\(archive)”: \(done) of \(total) items..."
+    /// imported or one found inside it, has got, by its items and by the
+    /// bytes they declare: "Extracting “Library Export.zip”: 120 of 300
+    /// items, 1.2 GB of 3.4 GB...". An archive declaring no bytes, folders
+    /// and empty files alone, is counted by its items alone.
+    static func extracting(archive: String, progress: ArchiveExtractionProgress) -> String {
+        let items = "\(progress.entriesDone) of \(progress.entries) items"
+        guard progress.bytes > 0 else { return "Extracting “\(archive)”: \(items)..." }
+        return "Extracting “\(archive)”: \(items), \(size(progress.bytesDone)) of \(size(progress.bytes))..."
+    }
+
+    /// `bytes` as a size, as the archive messages write sizes, in decimal
+    /// units as Finder does (`ArchiveFigures.size`), but in figures from the
+    /// start: "0 bytes" rather than "Zero KB", since the size counts up
+    /// from nothing. VoiceOver reads "1.2 GB" as gigabytes.
+    static func size(_ bytes: Int64) -> String {
+        // A formatter of its own each time: formatting is rare enough, at
+        // most a few hundred times an archive, and nothing is shared.
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        formatter.allowsNonnumericFormatting = false
+        return formatter.string(fromByteCount: bytes)
     }
 
     /// The book a ZIP batch is importing and the step it is at: "Book 3 of
