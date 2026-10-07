@@ -13,6 +13,7 @@
 		00EB50ACC407D38CEBBC5497 /* LibraryAudioCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C233BE1857D209B61C4600 /* LibraryAudioCommand.swift */; };
 		00F4F01109C3FB44306154B0 /* FeedParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95269E48DB70E816CE8E8B85 /* FeedParser.swift */; };
 		0232E88FBA0ED4BC20BEF313 /* TextExtractionProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4614F4E0D73497717F0B94F6 /* TextExtractionProgress.swift */; };
+		028C013665E15A78972E1AE7 /* TextEditingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925BCC37E18EBC6C6B91EDF8 /* TextEditingKeys.swift */; };
 		0355DE87EA2109B77345A006 /* ReaderViewModel+LibraryUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9366E47AB00CC4D0B40B73D2 /* ReaderViewModel+LibraryUpdates.swift */; };
 		04FA7EC719C3C7139B990740 /* ImportDecisionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F55E4147A16F76D554D605C /* ImportDecisionSheet.swift */; };
 		051C599F9147EB957F1A38FE /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D811A8124A1918F17347B0C /* SettingsViewModel.swift */; };
@@ -1236,6 +1237,7 @@
 		917CE421208BB6ED1AF64A9C /* AudioEditRenderer+MP3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioEditRenderer+MP3.swift"; sourceTree = "<group>"; };
 		91BAE0509271637A7A0334D2 /* AudioEditorEditingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorEditingTests.swift; sourceTree = "<group>"; };
 		91CC9BD320117CED94A8D70B /* TextCacheVerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextCacheVerificationTests.swift; sourceTree = "<group>"; };
+		925BCC37E18EBC6C6B91EDF8 /* TextEditingKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEditingKeys.swift; sourceTree = "<group>"; };
 		929CA99B0F2D2205B65D8F8B /* KeyboardShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutTests.swift; sourceTree = "<group>"; };
 		92BDB2E2EF1B369DA910AB56 /* BookReaderWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookReaderWindowView.swift; sourceTree = "<group>"; };
 		92D133F0245F04B20A9009CD /* encoder.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = encoder.c; sourceTree = "<group>"; };
@@ -1913,6 +1915,7 @@
 				A368C525EC2FEA30DBA3329E /* SettingsPolicy.swift */,
 				E89FA55F8A2F4C2EE648AB49 /* StoredPreference.swift */,
 				9998D0949EC2FB8D5A1216C4 /* TextCacheFingerprint.swift */,
+				925BCC37E18EBC6C6B91EDF8 /* TextEditingKeys.swift */,
 				4FA86068E04276BA1A18BAE3 /* Transcript.swift */,
 				F22A2D8D42A5F6AC10001ACD /* TranscriptCleanupRules.swift */,
 				3AA76F941DB6005B2ACE9A7B /* TranscriptCleanupWording.swift */,
@@ -3418,6 +3421,7 @@
 				92635958E372EBA5EECB682C /* SubstitutionsSettingsView.swift in Sources */,
 				230C0DED4B5B6FDE756214AE /* TextCacheFingerprint.swift in Sources */,
 				9F7AE9C0CFA9F1C54CE8FB52 /* TextCacheUpdateQueue.swift in Sources */,
+				028C013665E15A78972E1AE7 /* TextEditingKeys.swift in Sources */,
 				0232E88FBA0ED4BC20BEF313 /* TextExtractionProgress.swift in Sources */,
 				D6C521E9D46072D084D92BAA /* TextFileDecoder.swift in Sources */,
 				B2D31A9256B8344308F95785 /* TextInputView.swift in Sources */,

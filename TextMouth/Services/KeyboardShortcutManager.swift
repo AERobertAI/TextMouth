@@ -233,11 +233,12 @@ final class KeyboardShortcutManager: ObservableObject {
         for (action, actionBindings) in bindings where action.scope == scope {
             for binding in actionBindings {
                 if binding.matches(event) {
-                    // Plain typing must continue to reach text fields. Command-
-                    // and Control-based bindings represent explicit shortcuts,
-                    // however, and need to keep working from fields such as the
-                    // sleep timer's custom-minutes input so they can close the
-                    // panel they opened.
+                    // A field being edited keeps its typing and the keys it
+                    // edits with, which go on to it untouched. Other Command-
+                    // and Control-based bindings are explicit shortcuts and
+                    // keep working from fields such as the sleep timer's
+                    // custom-minutes input, so they can close the panel they
+                    // opened.
                     guard Self.shouldHandle(
                         binding: binding,
                         whenTextInputIsFocused: textInputIsFocused
@@ -294,13 +295,23 @@ final class KeyboardShortcutManager: ObservableObject {
         return .app
     }
 
-    /// Preserve normal text entry unless the binding uses a conventional
-    /// command modifier that clearly identifies it as an app shortcut.
+    /// Whether the manager acts on a key press matching `binding`, given
+    /// whether a text field or text view has the keyboard (`isTextInput`).
+    ///
+    /// Away from text every binding acts. A field being edited keeps what
+    /// it types and edits with (B03): a key with neither Command nor
+    /// Control types, Shift and Option alone included, and the keys
+    /// `TextEditingKeys` lists delete, move, and select in its text,
+    /// Command-Delete, Command-A, and the Command arrows among them. Every
+    /// other key with Command or Control is an app shortcut and acts from a
+    /// field too, as Command-I's Book Info does, and Shift-Command-T, which
+    /// closes the sleep timer's panel from its own minutes field.
     nonisolated static func shouldHandle(
         binding: KeyBinding,
         whenTextInputIsFocused: Bool
     ) -> Bool {
-        !whenTextInputIsFocused || binding.command || binding.control
+        guard whenTextInputIsFocused else { return true }
+        return (binding.command || binding.control) && !TextEditingKeys.contains(binding)
     }
 
     nonisolated static func hasExtraShift(

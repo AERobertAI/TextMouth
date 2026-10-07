@@ -58,27 +58,95 @@ final class TextFieldEditingKeysTests: XCTestCase {
         XCTAssertFalse(KeyboardShortcutManager.isTextInput(nil), "no first responder")
     }
 
-    // MARK: - Measured Before B03's Rule
+    // MARK: - The Rule
 
-    /// Before B03, Command-Delete and Command-A act while a text field is
-    /// edited: the manager posts Remove from Library and Select All and
-    /// keeps the press from the field, so the field never deletes to the
-    /// start of its line or selects its text. Command-Left Arrow, Skip
-    /// Backward's key, likewise never moves the field's insertion point to
-    /// the start of the line.
-    func testCommandDeleteAndCommandAActWhileAFieldIsEdited() throws {
-        let manager = makeManager()
-        let pressed: [(binding: KeyBinding, action: ShortcutAction)] = [
-            (KeyBinding(key: "delete", command: true), .removeFromLibrary),
-            (KeyBinding(key: "a", command: true), .selectAll),
-            (KeyBinding(key: "leftArrow", command: true), .skipBackward),
+    /// Delete, Forward Delete, the four arrows, Home, End, Page Up, and
+    /// Page Down are a field's with each of the sixteen sets of modifiers:
+    /// the manager leaves them to a field being edited and acts on them
+    /// anywhere else.
+    func testDeletingAndMovingKeysAreAFieldsWithAnyModifiers() {
+        let keys = [
+            "delete", TextEditingKeys.forwardDelete,
+            "leftArrow", "rightArrow", "upArrow", "downArrow",
+            TextEditingKeys.home, TextEditingKeys.end, TextEditingKeys.pageUp, TextEditingKeys.pageDown,
         ]
-        for (binding, action) in pressed {
-            let result = try press(binding, on: manager, firstResponder: fieldEditor())
-            XCTAssertTrue(result.consumed, "\(binding.configText) reached the field")
-            XCTAssertEqual(result.posted, [action.rawValue], binding.configText)
+        for key in keys {
+            for binding in withEveryModifierSet(key) {
+                XCTAssertTrue(TextEditingKeys.contains(binding), binding.configText)
+                XCTAssertFalse(KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true), binding.configText)
+                XCTAssertTrue(KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: false), binding.configText)
+            }
         }
     }
+
+    /// The Edit menu's Select All, Copy, Paste, Cut, Undo, and Redo keys
+    /// are a field's. Every other key with Command, those letters with
+    /// other modifiers included, is an app shortcut and acts from a field:
+    /// Book Info, Show Sleep Timer, and the rest. So are Control or Command
+    /// with Return or Tab, which end editing or move the keyboard rather
+    /// than edit.
+    func testTheEditMenusCommandKeysAreAFieldsAndNoOtherCommandKey() throws {
+        let editMenus = ["command+a", "command+c", "command+v", "command+x", "command+z", "shift+command+z"]
+        let appShortcuts = [
+            "command+i", "command+b", "command+e", "command+l", "command+s", "command+f", "command+n",
+            "command+[", "command++", "shift+command+t", "shift+command+r", "shift+command+b",
+            "option+command+z", "shift+command+a", "option+command+a", "shift+command+c",
+            "option+shift+command+v", "control+command+a", "command+return", "control+return", "control+tab",
+        ]
+        for text in editMenus + appShortcuts {
+            let binding = try XCTUnwrap(KeyBinding(configText: text), text)
+            let isAFields = editMenus.contains(text)
+            XCTAssertEqual(TextEditingKeys.contains(binding), isAFields, text)
+            XCTAssertEqual(KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true), !isAFields, text)
+            XCTAssertTrue(KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: false), text)
+        }
+    }
+
+    /// Control with each letter AppKit binds with Control is a field's,
+    /// alone or with Shift or Option or both; Control with any other
+    /// letter, and Control-Command with any letter, are not.
+    func testTheControlLettersAppKitBindsAreAFields() {
+        let bound = Set("abdefhklnoptvy".map(String.init))
+        for letter in "abcdefghijklmnopqrstuvwxyz".map(String.init) {
+            for (shift, option) in [(false, false), (true, false), (false, true), (true, true)] {
+                let binding = KeyBinding(key: letter, option: option, shift: shift, control: true)
+                XCTAssertEqual(TextEditingKeys.contains(binding), bound.contains(letter), binding.configText)
+                XCTAssertEqual(
+                    KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true),
+                    !bound.contains(letter),
+                    binding.configText
+                )
+            }
+            let withCommand = KeyBinding(key: letter, command: true, control: true)
+            XCTAssertFalse(TextEditingKeys.contains(withCommand), withCommand.configText)
+        }
+    }
+
+    /// Forward Delete, Home, End, Page Up, and Page Down have no names of
+    /// their own: the Shortcuts tab records each as the character AppKit
+    /// gives the key, which is the one the rule holds, so a binding
+    /// recorded on any of them is left to a field.
+    func testTheUnnamedKeysAreHeldAsTheShortcutsTabRecordsThem() throws {
+        let keys: [(name: String, keyCode: UInt16, appKit: Int, held: String)] = [
+            ("Forward Delete", 117, NSDeleteFunctionKey, TextEditingKeys.forwardDelete),
+            ("Home", 115, NSHomeFunctionKey, TextEditingKeys.home),
+            ("End", 119, NSEndFunctionKey, TextEditingKeys.end),
+            ("Page Up", 116, NSPageUpFunctionKey, TextEditingKeys.pageUp),
+            ("Page Down", 121, NSPageDownFunctionKey, TextEditingKeys.pageDown),
+        ]
+        for key in keys {
+            let scalar = try XCTUnwrap(Unicode.Scalar(key.appKit), key.name)
+            let characters = String(Character(scalar))
+            XCTAssertEqual(key.held, characters, "\(key.name) is not held as AppKit's character")
+            let event = try keyDown(keyCode: key.keyCode, characters: characters, modifiers: [.function, .command])
+            let recorded = try XCTUnwrap(KeyBinding.from(event: event), key.name)
+            XCTAssertEqual(recorded, KeyBinding(key: key.held, command: true), key.name)
+            XCTAssertTrue(recorded.matches(event), key.name)
+            XCTAssertTrue(TextEditingKeys.contains(recorded), key.name)
+        }
+    }
+
+    // MARK: - The Default Keys
 
     /// The default keys a text field edits with itself, by action. AppKit's
     /// standard key bindings give Command with each arrow, Shift-Command
@@ -106,35 +174,87 @@ final class TextFieldEditingKeysTests: XCTestCase {
         .editorPaste: ["command+v"],
     ]
 
-    /// Before B03, every default key with Command or Control acts even
-    /// from a field being edited, the keys the field edits with among them;
-    /// a key with neither, Shift and Option alone included, is left to the
-    /// field's typing.
-    func testEveryDefaultCommandOrControlKeyActsFromAField() {
+    /// The default keys with Command or Control a field being edited keeps,
+    /// by action: the ones it edits with, and the Option-Command arrows of
+    /// Next and Previous Heading and of the editor's chapter markers, which
+    /// move nothing in a field but are arrows. Every other default key with
+    /// Command or Control still acts from a field, and a key with neither,
+    /// Shift and Option alone included, is the field's typing, as before.
+    func testTheDefaultKeysAFieldKeeps() {
+        var kept: [ShortcutAction: [String]] = [:]
         for (action, bindings) in ShortcutAction.defaultBindings {
-            for binding in bindings {
-                XCTAssertEqual(
+            for binding in bindings where !KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true) {
+                if binding.command || binding.control {
+                    kept[action, default: []].append(binding.configText)
+                }
+            }
+            for binding in bindings where !binding.command && !binding.control {
+                XCTAssertFalse(
                     KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true),
-                    binding.command || binding.control,
-                    "\(action.rawValue): \(binding.configText)"
+                    "\(action.rawValue): \(binding.configText) is taken from typing"
                 )
             }
         }
-        for (action, texts) in Self.defaultsAFieldEditsWith {
-            for text in texts {
-                guard let binding = KeyBinding(configText: text) else {
-                    XCTFail("\(text) is no shortcut")
-                    continue
-                }
-                XCTAssertTrue(
-                    ShortcutAction.defaultBindings[action]?.contains(binding) == true,
-                    "\(action.rawValue) has no default \(text)"
-                )
-                XCTAssertTrue(
-                    KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true),
-                    "\(action.rawValue): \(text) is left to the field"
-                )
-            }
+        var expected = Self.defaultsAFieldEditsWith
+        expected[.nextHeading] = ["option+command+downArrow"]
+        expected[.previousHeading] = ["option+command+upArrow"]
+        expected[.editorNextChapter] = ["option+command+downArrow"]
+        expected[.editorPreviousChapter] = ["option+command+upArrow"]
+        XCTAssertEqual(kept, expected)
+    }
+
+    // MARK: - What the Field Gets
+
+    /// Command-Delete and Command-A go to a text field being edited: the
+    /// manager posts nothing and leaves the press to the field, which
+    /// deletes to the start of its line or selects its text, as Command-Left
+    /// Arrow moves its insertion point to the start of the line. With the
+    /// keyboard in the Library's list, a view that takes no text, the same
+    /// keys act as before.
+    func testCommandDeleteAndCommandAReachAFieldBeingEdited() throws {
+        let manager = makeManager()
+        let pressed: [(binding: KeyBinding, action: ShortcutAction)] = [
+            (KeyBinding(key: "delete", command: true), .removeFromLibrary),
+            (KeyBinding(key: "a", command: true), .selectAll),
+            (KeyBinding(key: "leftArrow", command: true), .skipBackward),
+        ]
+        for (binding, action) in pressed {
+            let inField = try press(binding, on: manager, firstResponder: fieldEditor())
+            XCTAssertFalse(inField.consumed, "\(binding.configText) was kept from the field")
+            XCTAssertEqual(inField.posted, [], binding.configText)
+            let inList = try press(binding, on: manager, firstResponder: NSTableView())
+            XCTAssertTrue(inList.consumed, "\(binding.configText) reached the list")
+            XCTAssertEqual(inList.posted, [action.rawValue], binding.configText)
+        }
+    }
+
+    /// A key the manager leaves to a field meets the menus before the
+    /// field does. The Edit menu's Select All, Copy, Paste, Cut, Undo, and
+    /// Redo take Command with A, C, V, X, Z, and Shift-Z and send their
+    /// commands along the responder chain, which starts at the field. No
+    /// other menu item takes a key a field keeps, so Command-Delete and the
+    /// arrows reach the field itself.
+    func testOnlyTheEditMenuTakesAFieldsKeyOnItsWay() throws {
+        let mainMenu = try XCTUnwrap(NSApp.mainMenu)
+        let items = Self.allItems(of: mainMenu)
+        let editMenu: [KeyBinding: Selector] = [
+            KeyBinding(key: "a", command: true): #selector(NSText.selectAll(_:)),
+            KeyBinding(key: "c", command: true): #selector(NSText.copy(_:)),
+            KeyBinding(key: "v", command: true): #selector(NSText.paste(_:)),
+            KeyBinding(key: "x", command: true): #selector(NSText.cut(_:)),
+            KeyBinding(key: "z", command: true): Selector(("undo:")),
+            KeyBinding(key: "z", command: true, shift: true): Selector(("redo:")),
+        ]
+        for item in items {
+            guard let binding = Self.binding(answeredBy: item), TextEditingKeys.contains(binding) else { continue }
+            XCTAssertEqual(item.action, editMenu[binding], "\(item.title) takes \(binding.configText) before the field")
+            XCTAssertNil(item.target, "\(item.title) sends \(binding.configText) past the field")
+        }
+        for (binding, action) in editMenu {
+            XCTAssertTrue(
+                items.contains { $0.action == action && Self.binding(answeredBy: $0) == binding },
+                "no menu item sends \(action) for \(binding.configText)"
+            )
         }
     }
 
@@ -209,18 +329,69 @@ final class TextFieldEditingKeysTests: XCTestCase {
         // A key a binding spells is matched by its character, which Shift
         // capitalizes as the keyboard does; its code goes unread.
         let characters = named?.characters ?? (binding.shift ? binding.key.uppercased() : binding.key)
+        return try keyDown(keyCode: named?.keyCode ?? 0, characters: characters, modifiers: flags)
+    }
+
+    /// A key-down event giving `characters` for the key with code
+    /// `keyCode`, `modifiers` held, made up for the test and never sent to
+    /// any window.
+    private func keyDown(keyCode: UInt16, characters: String, modifiers: NSEvent.ModifierFlags) throws -> NSEvent {
         let event = NSEvent.keyEvent(
             with: .keyDown,
             location: .zero,
-            modifierFlags: flags,
+            modifierFlags: modifiers,
             timestamp: ProcessInfo.processInfo.systemUptime,
             windowNumber: 0,
             context: nil,
             characters: characters,
             charactersIgnoringModifiers: characters,
             isARepeat: false,
-            keyCode: named?.keyCode ?? 0
+            keyCode: keyCode
         )
-        return try XCTUnwrap(event, "no key press for \(binding.configText)")
+        return try XCTUnwrap(event, "no key press for the key with code \(keyCode)")
+    }
+
+    /// `key` with each of the sixteen sets of Command, Option, Shift, and
+    /// Control, none held included.
+    private func withEveryModifierSet(_ key: String) -> [KeyBinding] {
+        (0..<16).map { bits in
+            KeyBinding(
+                key: key,
+                command: bits & 1 != 0,
+                option: bits & 2 != 0,
+                shift: bits & 4 != 0,
+                control: bits & 8 != 0
+            )
+        }
+    }
+
+    /// Every item of `menu` and of its submenus, depth first.
+    private static func allItems(of menu: NSMenu) -> [NSMenuItem] {
+        menu.items.flatMap { item in [item] + (item.submenu.map(allItems(of:)) ?? []) }
+    }
+
+    /// The characters menus give the keys a binding names.
+    private static let menuKeyNames: [String: String] = [
+        "\u{F700}": "upArrow", "\u{F701}": "downArrow", "\u{F702}": "leftArrow", "\u{F703}": "rightArrow",
+        "\u{8}": "delete", "\u{7F}": "delete", " ": "space", "\r": "return", "\t": "tab", "\u{1B}": "escape",
+    ]
+
+    /// The binding a menu item's key equivalent stands for, its key spelled
+    /// as a binding spells it; nil for an item with no key equivalent, or
+    /// with the Globe key held, which no binding holds (the Window menu's
+    /// Move & Resize items).
+    private static func binding(answeredBy item: NSMenuItem) -> KeyBinding? {
+        let equivalent = item.keyEquivalent
+        let modifiers = item.keyEquivalentModifierMask
+        guard !equivalent.isEmpty, !modifiers.contains(.function) else { return nil }
+        return KeyBinding(
+            key: menuKeyNames[equivalent] ?? equivalent.lowercased(),
+            command: modifiers.contains(.command),
+            option: modifiers.contains(.option),
+            // A capital letter is a key equivalent with Shift held, as
+            // AppKit reads it.
+            shift: modifiers.contains(.shift) || equivalent != equivalent.lowercased(),
+            control: modifiers.contains(.control)
+        )
     }
 }
