@@ -96,9 +96,14 @@ struct SpeechRenderRequest: Sendable {
 /// refuses (see `SpeechMarkupGuard`) is cancelled before any piece, so
 /// nothing else would wake the queue until its two-minute limit: measured
 /// offline, a refused write made no buffer callback at all, and was
-/// cancelled within 0.03 s. `@unchecked Sendable`: its state is a flag
-/// under a lock and a semaphore.
-final class RenderCancellationObserver: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
+/// cancelled within 0.03 s.
+///
+/// It is Sendable, as every delegate of a synthesizer is (the SDK marks
+/// `AVSpeechSynthesizerDelegate` `NS_SWIFT_SENDABLE`), and the compiler
+/// checks that it is: a final class whose only state is a semaphore and a
+/// flag kept in an `OSAllocatedUnfairLock`, both Sendable and never
+/// replaced.
+final class RenderCancellationObserver: NSObject, AVSpeechSynthesizerDelegate {
     /// The render queue's wait for the last piece.
     private let finished: DispatchSemaphore
     /// Whether the synthesizer cancelled the utterance.
