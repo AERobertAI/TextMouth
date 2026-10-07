@@ -75,10 +75,11 @@ final class EPUBAuthorNameTests: XCTestCase {
 
     /// A contributor with the author role names the author when nothing
     /// else does; one with another role, such as calibre's book producer,
-    /// never does.
+    /// never does, and one with the author role but no name is passed over.
     func testAContributorWithTheAuthorRoleNamesTheAuthorLast() throws {
         let metadata = """
         <dc:contributor opf:role="bkp">calibre (5.36.0) [http://calibre-ebook.com]</dc:contributor>
+        <dc:contributor opf:role="aut"> </dc:contributor>
         <dc:contributor opf:role="aut">Russell Hoban</dc:contributor>
         """
         XCTAssertEqual(try author(metadata: metadata), "Russell Hoban")

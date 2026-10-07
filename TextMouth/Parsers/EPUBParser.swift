@@ -328,7 +328,7 @@ enum EPUBParser {
             return named
         }
         let contributors = elements(in: doc, matching: "//*[local-name()='contributor']")
-        return contributors.first { hasAuthorRole($0, refinedRoles: roles) }.flatMap(name(of:))
+        return contributors.first { name(of: $0) != nil && hasAuthorRole($0, refinedRoles: roles) }.flatMap(name(of:))
     }
 
     /// The `dc:creator` element of `doc` that names the author, when one
