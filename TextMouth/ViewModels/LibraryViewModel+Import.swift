@@ -384,7 +384,7 @@ extension LibraryViewModel {
             }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            DispatchQueue.main.async { progress.show(ImportProgressWording.startingArchive) }
+            DispatchQueue.main.async { progress.showArchive(url.lastPathComponent) }
             do {
                 // An archive holding one book, a DAISY book or an audiobook's
                 // tracks, is named in the overlay with each step it begins,
@@ -495,7 +495,8 @@ extension LibraryViewModel {
         originalURL: URL,
         request: ImportRequest = ImportRequest()
     ) {
-        importProgress.clear()
+        // VoiceOver hears the end of an import that ran long (FR10).
+        importProgress.end(.book)
         let book = imported.book
         // Without an original to offer, a later duplicate answer cannot
         // delete it either.
@@ -538,7 +539,9 @@ extension LibraryViewModel {
             !priorIDs.contains(book.id) && library.books.contains { $0.id == book.id }
         }
         save()
-        importProgress.clear()
+        // VoiceOver hears the end of a batch that ran long, before its
+        // alert and its questions (FR10).
+        importProgress.end(.batch(result))
         if let failureSummary = result.failureSummary {
             presentImportMessage(failureSummary)
         }
@@ -557,7 +560,10 @@ extension LibraryViewModel {
         }
     }
 
+    /// Tells the reader why an import failed: VoiceOver hears that it
+    /// failed when it ran long (FR10), and the library's alert says why.
     private func presentImportError(_ error: Error) {
+        importProgress.end(.failure)
         presentImportMessage(error.localizedDescription)
     }
 

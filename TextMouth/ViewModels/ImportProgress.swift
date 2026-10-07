@@ -36,6 +36,8 @@ struct ImportProgressState: Equatable {
     /// seconds they took in all, which the time left is estimated from.
     private(set) var timedBooks = 0
     private(set) var timedSeconds: TimeInterval = 0
+    /// The batch's books skipped as duplicates, which its end says.
+    private(set) var skippedDuplicates = 0
     /// The seconds the batch has left, estimated as its last book finished;
     /// nil while no estimate applies (`ImportTimeEstimate`).
     private(set) var secondsLeft: TimeInterval?
@@ -95,7 +97,9 @@ struct ImportProgressState: Equatable {
             // The book done is the one under way, timed from its start.
             if let finished = book, finished.number == done, !finished.isDone {
                 book?.isDone = true
-                if !skippedDuplicate {
+                if skippedDuplicate {
+                    skippedDuplicates += 1
+                } else {
                     timedBooks += 1
                     timedSeconds += max(0, date.timeIntervalSince(finished.startedAt))
                 }
@@ -167,13 +171,43 @@ struct ImportProgressState: Equatable {
 /// library model itself would redraw every Library window's list. The
 /// library model owns one and changes it on the main thread; whether the
 /// overlay shows at all is still the model's `isImporting`.
+///
+/// VoiceOver hears an import that runs long without having to find the
+/// overlay (FR10): each quarter of a ZIP batch's books, once, and how the
+/// import ended; and, at once, that Cancel was pressed. An import that ends
+/// within `announcedAfter` stays quiet, as before: its questions and alerts
+/// speak for it.
 @MainActor
 final class ImportProgress: ObservableObject {
+    /// How an import shown in the overlay ended, which its announcement says.
+    enum Ending {
+        /// A ZIP batch of books returned `result`.
+        case batch(ZipImportResult)
+        /// One book was imported: a file, or an archive holding one book.
+        case book
+        /// The import failed, and the library's alert says why.
+        case failure
+    }
+
+    /// How long an import must have run before VoiceOver hears its quarters
+    /// and its end unasked: one that ends sooner ends before the user could
+    /// wonder whether it is stuck.
+    static let announcedAfter: TimeInterval = 10
+
     /// What the overlay shows now.
     @Published private(set) var state = ImportProgressState()
     /// Tells the time each report arrives, which times the books: the
     /// system's clock in the app, a test's own clock in a test.
     private let now: @MainActor () -> Date
+    /// What the import shown is called in announcements: its archive's name,
+    /// or its one book's; nil for an import that names neither.
+    private var subject: String?
+    /// When the import shown began running; nil while none is shown.
+    private var startedAt: Date?
+    /// The highest quarter of the batch's books reached so far, 1 for the
+    /// first: each is announced once, or passes silently while the import
+    /// is still short.
+    private var quarterReached = 0
 
     /// Progress timed by `now`: the system's clock unless a test passes its
     /// own.
@@ -184,13 +218,29 @@ final class ImportProgress: ObservableObject {
     /// Shows `message` alone, under a bar that only spins: an import
     /// starting, or waiting for a data-directory move (TODO S04).
     func show(_ message: String) {
-        state = ImportProgressState(message: message)
+        begin(ImportProgressState(message: message), subject: nil, at: now())
+    }
+
+    /// Shows the ZIP archive named `name` beginning to import, before it is
+    /// known to hold one book or a batch of them (FR10).
+    func showArchive(_ name: String) {
+        begin(ImportProgressState(message: ImportProgressWording.startingArchive), subject: name, at: now())
     }
 
     /// Shows the import of one book, named `name`, beginning now: a file,
     /// or an archive holding one book (FR10).
     func showBook(_ name: String) {
-        state = ImportProgressState(book: name, at: now())
+        let date = now()
+        begin(ImportProgressState(book: name, at: date), subject: name, at: date)
+    }
+
+    /// Shows `newState`, the start of an import known as `subject`, begun
+    /// at `date`, with none of its quarters reached.
+    private func begin(_ newState: ImportProgressState, subject: String?, at date: Date) {
+        state = newState
+        self.subject = subject
+        startedAt = date
+        quarterReached = 0
     }
 
     /// Shows that the import of one book began `step`.
@@ -200,20 +250,87 @@ final class ImportProgress: ObservableObject {
 
     /// Takes a ZIP batch's `progress`, timed as it arrives: how far its
     /// extraction has got, the book under way and its step, and the books
-    /// done, with the time left (TODO I05, FR10).
+    /// done, with the time left (TODO I05, FR10). A book done that takes
+    /// the batch past a quarter of its books is announced.
     func receive(_ progress: ZipImportProgress) {
-        state.receive(progress, at: now())
+        let date = now()
+        state.receive(progress, at: date)
+        if case let .importing(done, total, _) = progress {
+            announceQuarter(reachedBy: done, of: total, at: date)
+        }
+    }
+
+    /// Announces the quarter of its `total` books a batch reached as its
+    /// `done`th book finished, when it reached a new one: the highest, once,
+    /// with the books processed and the time left. A quarter reached before
+    /// the import has run long passes silently, as do those after Cancel;
+    /// the last quarter is the batch's end, announced on its own.
+    private func announceQuarter(reachedBy done: Int, of total: Int, at date: Date) {
+        guard total > 0 else { return }
+        let quarter = done * 4 / total
+        guard quarter > quarterReached else { return }
+        quarterReached = quarter
+        guard quarter < 4, !state.isCancelling, hasRunLong(at: date), let subject else { return }
+        VoiceOverAnnouncer.announce(
+            ImportProgressWording.quarter(of: subject, done: done, total: total, secondsLeft: state.secondsLeft),
+            priority: .medium
+        )
     }
 
     /// Notes that Cancel was pressed while this import runs, which the
-    /// overlay then says in place of the time left (TODO I05, FR10).
+    /// overlay then says in place of the time left, and VoiceOver hears at
+    /// once, in the overlay's own words, so the press is heard to count
+    /// (TODO I05, FR10). A second press says nothing more.
     func cancel() {
+        guard !state.isCancelling else { return }
         state.cancel()
+        VoiceOverAnnouncer.announce(ImportProgressWording.cancelling(afterBook: state.book != nil))
+    }
+
+    /// Ends the import shown, which ended as `ending`: VoiceOver hears how,
+    /// when the import ran long and Cancel was not pressed (a cancelled
+    /// batch's alert says where it stopped), and the overlay shows nothing
+    /// more.
+    func end(_ ending: Ending) {
+        if let words = endAnnouncement(for: ending) {
+            VoiceOverAnnouncer.announce(words)
+        }
+        clear()
+    }
+
+    /// What VoiceOver hears as the import shown ends as `ending`, or nil
+    /// when it hears nothing: the import was short, cancelled, or named
+    /// neither an archive nor a book.
+    private func endAnnouncement(for ending: Ending) -> String? {
+        guard let subject, !state.isCancelling, hasRunLong(at: now()) else { return nil }
+        switch ending {
+        case .batch(let result):
+            guard result.cancellation == nil else { return nil }
+            return ImportProgressWording.finished(
+                batch: subject,
+                imported: result.books.count,
+                skippedDuplicates: state.skippedDuplicates,
+                failed: result.failures.count
+            )
+        case .book:
+            return ImportProgressWording.finished(book: subject)
+        case .failure:
+            return ImportProgressWording.failed(subject)
+        }
+    }
+
+    /// Whether the import shown has run for `announcedAfter` by `date`.
+    private func hasRunLong(at date: Date) -> Bool {
+        guard let startedAt else { return false }
+        return date.timeIntervalSince(startedAt) >= Self.announcedAfter
     }
 
     /// Shows nothing more: an import ended, or none is under way.
     func clear() {
         state = ImportProgressState()
+        subject = nil
+        startedAt = nil
+        quarterReached = 0
     }
 
     /// For an import of one book that runs on the import queue: shows, on

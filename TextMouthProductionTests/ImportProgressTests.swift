@@ -341,6 +341,138 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
     }
 
+    // MARK: - What VoiceOver Hears Unasked
+
+    /// A batch that runs long is announced at each quarter of its books it
+    /// reaches, once, with the books processed and the time left, at medium
+    /// priority so it waits for VoiceOver's current speech; a quarter
+    /// reached in its first 10 seconds passes silently, and its end is
+    /// announced on its own.
+    func testABatchThatRunsLongIsAnnouncedAtEachQuarterAndAtItsEnd() {
+        let clock = CommandClock()
+        let progress = ImportProgress(now: { clock.now })
+
+        let recorder = recordingAnnouncements {
+            progress.showArchive("Library Export.zip")
+            for number in 1...8 {
+                progress.receive(.importingBook(number: number, total: 8, book: "Book \(number).epub", step: .readingSource))
+                clock.advance(by: 4)
+                progress.receive(.importing(done: number, total: 8))
+            }
+            progress.end(.batch(ZipImportResult(books: Self.books(8), failures: [])))
+        }
+
+        // The first quarter came 8 seconds in, too soon to be said.
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Importing “Library Export.zip”: 4 of 8 books processed, less than a minute left.",
+            "Importing “Library Export.zip”: 6 of 8 books processed, less than a minute left.",
+            "Finished importing “Library Export.zip”: 8 books imported."
+        ])
+        XCTAssertEqual(recorder.announcements.map(\.priority), [.medium, .medium, .high])
+        XCTAssertEqual(progress.state, ImportProgressState(), "the end clears the overlay")
+    }
+
+    /// An import that ends within 10 seconds is never announced, neither its
+    /// quarters nor its end: its questions and alerts speak for it.
+    func testAShortImportStaysQuiet() {
+        let clock = CommandClock()
+        let progress = ImportProgress(now: { clock.now })
+
+        let recorder = recordingAnnouncements {
+            progress.showArchive("Shelf.zip")
+            for number in 1...4 {
+                progress.receive(.importingBook(number: number, total: 4, book: "Book \(number).epub", step: .readingSource))
+                clock.advance(by: 2)
+                progress.receive(.importing(done: number, total: 4))
+            }
+            progress.end(.batch(ZipImportResult(books: Self.books(4), failures: [])))
+            progress.showBook("Moby Dick.epub")
+            clock.advance(by: 9)
+            progress.end(.book)
+        }
+
+        XCTAssertEqual(recorder.announcements, [])
+    }
+
+    /// The end of an import that ran long says what came of it: a batch's
+    /// books imported, skipped as duplicates, and failed, or that none was
+    /// found; one book's name; a failure; and nothing for a batch the user
+    /// cancelled, whose alert says where it stopped.
+    func testTheEndOfALongImportSaysWhatCameOfIt() {
+        let clock = CommandClock()
+        let progress = ImportProgress(now: { clock.now })
+        let failure = ZipImportFailure(fileName: "Knots.docx", message: "Reading its text failed: unreadable")
+
+        let recorder = recordingAnnouncements {
+            progress.showArchive("Library Export.zip")
+            progress.receive(.importingBook(number: 1, total: 3, book: "Copy.epub", step: .readingSource))
+            progress.receive(.importing(done: 1, total: 3, skippedDuplicate: true))
+            progress.receive(.importingBook(number: 2, total: 3, book: "Knots.docx", step: .readingSource))
+            progress.receive(.importing(done: 2, total: 3))
+            progress.receive(.importingBook(number: 3, total: 3, book: "Atlas.pdf", step: .readingSource))
+            clock.advance(by: 30)
+            progress.receive(.importing(done: 3, total: 3))
+            progress.end(.batch(ZipImportResult(books: Self.books(1), failures: [failure])))
+
+            progress.showBook("Moby Dick.epub")
+            clock.advance(by: 12)
+            progress.end(.book)
+
+            progress.showArchive("Too Big.zip")
+            clock.advance(by: 15)
+            progress.end(.failure)
+
+            progress.showArchive("Cancelled.zip")
+            progress.receive(.importingBook(number: 1, total: 2, book: "One.epub", step: .readingSource))
+            clock.advance(by: 20)
+            progress.cancel()
+            progress.receive(.importing(done: 1, total: 2))
+            progress.end(.batch(ZipImportResult(
+                books: Self.books(1),
+                failures: [],
+                cancellation: .afterBooks(completed: 1, total: 2)
+            )))
+
+            progress.showArchive("Empty.zip")
+            clock.advance(by: 10)
+            progress.end(.batch(ZipImportResult(books: [], failures: [])))
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Finished importing “Library Export.zip”: 1 book imported, 1 skipped as a duplicate, 1 failed.",
+            "Finished importing “Moby Dick.epub”.",
+            "Could not import “Too Big.zip”.",
+            "Cancelling after this book...",
+            "Finished importing “Empty.zip”: no books were found in it."
+        ])
+    }
+
+    /// Cancel is announced at once, in the overlay's own words, and once
+    /// however often it is pressed; before any book, it says only that the
+    /// import is cancelling. The library's Cancel reaches it.
+    func testCancelIsAnnouncedOnceInTheOverlaysWords() {
+        let library = LibraryViewModel(initializeServices: false)
+
+        let recorder = recordingAnnouncements {
+            library.importProgress.showArchive("Library Export.zip")
+            library.importProgress.receive(.extracting(archive: "Library Export.zip", done: 1, total: 3))
+            library.cancelImports()
+            library.cancelImports()
+            library.importProgress.showBook("Moby Dick.epub")
+            library.cancelImports()
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Cancelling...", "Cancelling after this book..."])
+        XCTAssertEqual(recorder.announcements.map(\.priority), [.high, .high])
+    }
+
+    /// `count` books, as a batch's result lists the books it imported.
+    private static func books(_ count: Int) -> [Book] {
+        (0..<count).map { index in
+            Book(title: "Book \(index + 1)", format: .epub, filePath: "/tmp/Book \(index + 1).epub", md5Hash: "\(index + 1)")
+        }
+    }
+
     // MARK: - Fixtures
 
     /// Holds the import `model`'s queue runs when it begins `step`, until the

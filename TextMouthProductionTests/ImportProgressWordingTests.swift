@@ -159,4 +159,43 @@ final class ImportProgressWordingTests: XCTestCase {
         XCTAssertEqual(ImportProgressWording.spokenStatus(["", ""]), "Importing Books")
         XCTAssertEqual(ImportProgressWording.spokenStatus([]), "Importing Books")
     }
+
+    // MARK: - What VoiceOver Hears Unasked
+
+    /// A quarter is announced with the archive's name, the books processed,
+    /// and the time left when there is an estimate. A batch's end says what
+    /// came of it, with only the counts that are not 0, or that no book was
+    /// found; one book's end, and a failure, name it.
+    func testAnnouncementsSayWhatCameOfTheImport() {
+        XCTAssertEqual(
+            ImportProgressWording.quarter(of: "Library Export.zip", done: 25, total: 100, secondsLeft: 250),
+            "Importing “Library Export.zip”: 25 of 100 books processed, about 4 minutes left."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.quarter(of: "Library Export.zip", done: 50, total: 100, secondsLeft: 30),
+            "Importing “Library Export.zip”: 50 of 100 books processed, less than a minute left."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.quarter(of: "Library Export.zip", done: 1, total: 3, secondsLeft: nil),
+            "Importing “Library Export.zip”: 1 of 3 books processed."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.finished(batch: "Library Export.zip", imported: 97, skippedDuplicates: 2, failed: 1),
+            "Finished importing “Library Export.zip”: 97 books imported, 2 skipped as duplicates, 1 failed."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.finished(batch: "Shelf.zip", imported: 1, skippedDuplicates: 1, failed: 0),
+            "Finished importing “Shelf.zip”: 1 book imported, 1 skipped as a duplicate."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.finished(batch: "Shelf.zip", imported: 0, skippedDuplicates: 3, failed: 0),
+            "Finished importing “Shelf.zip”: 0 books imported, 3 skipped as duplicates."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.finished(batch: "Empty.zip", imported: 0, skippedDuplicates: 0, failed: 0),
+            "Finished importing “Empty.zip”: no books were found in it."
+        )
+        XCTAssertEqual(ImportProgressWording.finished(book: "Moby Dick.epub"), "Finished importing “Moby Dick.epub”.")
+        XCTAssertEqual(ImportProgressWording.failed("Moby Dick.epub"), "Could not import “Moby Dick.epub”.")
+    }
 }

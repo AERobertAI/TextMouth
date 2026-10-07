@@ -65,8 +65,13 @@ enum ImportProgressWording {
     /// names the step by (`ImportStep.activity`), begun in lowercase, as in
     /// "reading its text" or "copying it into the library".
     static func step(_ step: ImportStep) -> String {
-        let activity = step.activity
-        return activity.prefix(1).lowercased() + activity.dropFirst()
+        lowercasedFirst(step.activity)
+    }
+
+    /// `words` with their first letter in lowercase, to follow other words
+    /// in a sentence.
+    private static func lowercasedFirst(_ words: String) -> String {
+        words.prefix(1).lowercased() + words.dropFirst()
     }
 
     /// The time a batch has left, as the overlay says it once a book is
@@ -102,6 +107,48 @@ enum ImportProgressWording {
     /// in one, or in the ellipsis of a line still under way.
     private static func sentence(_ line: String) -> String {
         line.hasSuffix(".") ? line : line + "."
+    }
+
+    // MARK: - What VoiceOver Hears Unasked
+
+    /// Announced as a ZIP batch that has run long passes a quarter of its
+    /// books: "Importing “Library Export.zip”: 25 of 100 books processed,
+    /// about 4 minutes left." `subject` is the archive's name; the time
+    /// left is said when there is an estimate.
+    static func quarter(of subject: String, done: Int, total: Int, secondsLeft: TimeInterval?) -> String {
+        let timeLeft = secondsLeft.map { ", " + lowercasedFirst(self.timeLeft($0)) } ?? ""
+        return "Importing “\(subject)”: \(count(done: done, of: total))\(timeLeft)."
+    }
+
+    /// Announced as a ZIP batch that ran long ends: "Finished importing
+    /// “Library Export.zip”: 97 books imported, 2 skipped as duplicates,
+    /// 1 failed." Only the counts that are not 0 follow the books imported,
+    /// and an archive with no book in it says so. The library's alert names
+    /// each file that failed.
+    static func finished(batch subject: String, imported: Int, skippedDuplicates: Int, failed: Int) -> String {
+        guard imported + skippedDuplicates + failed > 0 else {
+            return "Finished importing “\(subject)”: no books were found in it."
+        }
+        var counts = ["\(CountWording.books(imported)) imported"]
+        if skippedDuplicates > 0 {
+            counts.append(CountWording.phrase(skippedDuplicates, singular: "skipped as a duplicate", plural: "skipped as duplicates"))
+        }
+        if failed > 0 {
+            counts.append("\(failed) failed")
+        }
+        return "Finished importing “\(subject)”: \(counts.joined(separator: ", "))."
+    }
+
+    /// Announced as the import of one book that ran long ends: "Finished
+    /// importing “Moby Dick.epub”."
+    static func finished(book subject: String) -> String {
+        "Finished importing “\(subject)”."
+    }
+
+    /// Announced as an import that ran long fails; the library's alert says
+    /// why, in the same opening words (`ImportFailure.errorDescription`).
+    static func failed(_ subject: String) -> String {
+        "Could not import “\(subject)”."
     }
 }
 
