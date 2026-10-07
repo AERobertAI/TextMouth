@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import XCTest
 @testable import TextMouth
@@ -657,6 +658,44 @@ final class SpeechPreparationCacheTests: XCTestCase {
                 reader.togglePlayPause()
 
                 XCTAssertFalse(reader.isWhereAmISpeaking, label)
+                XCTAssertFalse(reader.isWaitingForChapterSpeech, "\(label): the play still waits")
+                XCTAssertFalse(reader.isCurrentlyPlaying, "\(label): Playing shows")
+                if !speechIsReady {
+                    reader.finishPreparingInBackground(inputs.prepare())
+                }
+                XCTAssertFalse(reader.speechService.isSpeaking, "\(label): the speech started")
+
+                reader.play()
+
+                XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "\(label): the next Play prepared the chapter on the main thread")
+                assertSpeaks(reader, try legacyPreparedSpeech(reader, chapterIndex: 1), label)
+                silence(reader)
+            }
+        }
+    }
+
+    /// An announcement the system cancels on its own, as the speech engine
+    /// does with a text it refuses, leaves a waiting play paused, as
+    /// Play/Pause during the announcement does (#1296): the play stops
+    /// waiting, whether the speech is ready or still being prepared, and
+    /// nothing is spoken. The next Play speaks the speech kept for it.
+    func testAnAnnouncementTheSystemCancelsPausesAWaitingPlay() throws {
+        for speechIsReady in [true, false] {
+            let label = speechIsReady ? "speech ready" : "speech still being prepared"
+            try withReader(chapters: Self.chaptersEndingInALongOne(seed: speechIsReady ? 107 : 109)) { reader, _ in
+                var announcements: [AVSpeechUtterance] = []
+                reader._whereAmIUtteranceRecorderForTesting = { announcements.append($0) }
+                let inputs = try waitingPlay(of: reader, whileWhereAmISpeaks: false)
+                reader.speakWhereAmI("Tide Tables.")
+                if speechIsReady {
+                    reader.finishPreparingInBackground(inputs.prepare())
+                }
+                let announcement = try XCTUnwrap(announcements.last, "\(label): no announcement was handed over")
+                let delegate = try XCTUnwrap(reader.whereAmIDelegate, "\(label): nothing hears the synthesizer")
+
+                delegate.speechSynthesizer(AVSpeechSynthesizer(), didCancel: announcement)
+
+                XCTAssertTrue(waitUntil(timeout: 5) { !reader.isWhereAmISpeaking }, "\(label): the cancel was not heard")
                 XCTAssertFalse(reader.isWaitingForChapterSpeech, "\(label): the play still waits")
                 XCTAssertFalse(reader.isCurrentlyPlaying, "\(label): Playing shows")
                 if !speechIsReady {

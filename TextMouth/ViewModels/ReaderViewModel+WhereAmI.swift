@@ -28,7 +28,7 @@ extension ReaderViewModel {
     func whereAmI() {
         // If already speaking a Where Am I announcement, stop it
         if isWhereAmISpeaking {
-            whereAmISynth.stopSpeaking(at: .immediate)
+            stopWhereAmISynthesizer()
             isWhereAmISpeaking = false
             if wasPlayingBeforeWhereAmI {
                 wasPlayingBeforeWhereAmI = false
@@ -232,7 +232,7 @@ extension ReaderViewModel {
     /// Used by skip/play/pause to cleanly interrupt an announcement.
     func cancelWhereAmIIfActive() {
         guard isWhereAmISpeaking else { return }
-        whereAmISynth.stopSpeaking(at: .immediate)
+        stopWhereAmISynthesizer()
         isWhereAmISpeaking = false
         // Resume book if it was playing before Where Am I interrupted it
         if WhereAmIInterruptionPolicy.shouldResume(
@@ -251,14 +251,17 @@ extension ReaderViewModel {
     nonisolated static let whereAmIEndSoundDelay: TimeInterval = 0.3
 
     /// Speak a Where Am I announcement using the dedicated synthesizer (not the book reader).
-    /// Sets up a delegate to resume book playback when the announcement finishes.
+    /// Sets up a delegate that hears how the announcement ends: a finish
+    /// resumes book playback, and a cancel the reader did not ask for ends
+    /// the announcement without it (`whereAmISynthesizerCancelled(_:)`).
     func speakWhereAmI(_ text: String) {
-        whereAmISynth.stopSpeaking(at: .immediate)
+        stopWhereAmISynthesizer()
 
         // Set self as delegate via the WhereAmIDelegateHelper
-        let delegate = WhereAmIDelegateHelper { [weak self] in
-            self?.whereAmIAnnouncementFinished()
-        }
+        let delegate = WhereAmIDelegateHelper(
+            onFinished: { [weak self] finished in self?.whereAmISynthesizerFinished(finished) },
+            onCancelled: { [weak self] cancelled in self?.whereAmISynthesizerCancelled(cancelled) }
+        )
         self.whereAmIDelegate = delegate
         whereAmISynth.delegate = delegate
 
@@ -270,14 +273,90 @@ extension ReaderViewModel {
         utterance.prefersAssistiveTechnologySettings = false
 
         isWhereAmISpeaking = true
-        whereAmISynth.speak(utterance)
+        liveWhereAmIUtterance = utterance
+        handWhereAmIToSynthesizer(utterance)
+    }
+
+    /// Hands `utterance` to the Where Am I synthesizer, or to the test's
+    /// recorder in its place (`_whereAmIUtteranceRecorderForTesting`).
+    private func handWhereAmIToSynthesizer(_ utterance: AVSpeechUtterance) {
+        if let record = _whereAmIUtteranceRecorderForTesting {
+            record(utterance)
+        } else {
+            whereAmISynth.speak(utterance)
+        }
+    }
+
+    /// Silences the Where Am I synthesizer because the reader asked: a
+    /// press while an announcement speaks, a command that interrupts it, a
+    /// new announcement, or the reader closing. The announcement speaking is
+    /// forgotten first, so that the cancel the synthesizer then reports for
+    /// it is known for one the reader asked for, handled where it was asked,
+    /// once (`whereAmISynthesizerCancelled(_:)`).
+    func stopWhereAmISynthesizer() {
+        liveWhereAmIUtterance = nil
+        whereAmISynth.stopSpeaking(at: .immediate)
+    }
+
+    /// The synthesizer says `finished` ended by itself, on the main queue.
+    /// When it is the announcement speaking, the announcement ends as one
+    /// that finished does (`whereAmIAnnouncementFinished()`); the end of
+    /// one the reader stopped or replaced since is ignored, so it can
+    /// neither play the end sound again nor end a newer announcement.
+    func whereAmISynthesizerFinished(_ finished: ReportedUtterance) {
+        guard isLiveWhereAmIUtterance(finished) else { return }
+        liveWhereAmIUtterance = nil
+        whereAmIAnnouncementFinished()
+    }
+
+    /// The synthesizer says `cancelled` was cancelled, on the main queue
+    /// (#1296). A cancel the reader asked for, of an utterance it forgot as
+    /// it stopped it (`stopWhereAmISynthesizer()`), was handled where it
+    /// was asked and changes nothing here.
+    ///
+    /// A cancel of the announcement speaking, which the reader did not ask
+    /// for, as when the speech engine refuses its text, ends it without the
+    /// end sound or the resume a finished announcement makes: the book it
+    /// paused stays paused, and a play it held pauses, as when Play/Pause
+    /// ends an announcement (`endWhereAmIWithoutResuming()`), so Play/Pause
+    /// works at once instead of only ending an announcement nobody hears.
+    /// Its synthesizer is replaced, since one the engine refused never
+    /// speaks again, as the speech service replaces its own.
+    func whereAmISynthesizerCancelled(_ cancelled: ReportedUtterance) {
+        guard isLiveWhereAmIUtterance(cancelled) else { return }
+        DiagnosticLog.event(
+            .playback,
+            "WHERE_AM_I_CANCEL_UNEXPECTED: the announcement was cancelled before it ended; "
+                + "synthesizer replaced, book left paused"
+        )
+        liveWhereAmIUtterance = nil
+        replaceWhereAmISynthesizer()
+        endWhereAmIWithoutResuming()
+    }
+
+    /// Whether `reported` is the announcement speaking now
+    /// (`liveWhereAmIUtterance`).
+    private func isLiveWhereAmIUtterance(_ reported: ReportedUtterance) -> Bool {
+        liveWhereAmIUtterance.map(ObjectIdentifier.init) == reported.id
+    }
+
+    /// Replaces the Where Am I synthesizer with a fresh one, the old one
+    /// stopped and its delegate let go, so that nothing it still reports
+    /// reaches the reader. The next announcement gives the fresh one its
+    /// delegate (`speakWhereAmI(_:)`).
+    private func replaceWhereAmISynthesizer() {
+        whereAmISynth.delegate = nil
+        whereAmISynth.stopSpeaking(at: .immediate)
+        whereAmISynth = AVSpeechSynthesizer()
     }
 
     /// End a Where Am I announcement that finished by itself: play the end
     /// sound, then, once it has played (`whereAmIEndSoundDelay`), resume
     /// the book the announcement paused, or start the play it held
     /// (`startPlayHeldByWhereAmI()`). The synthesizer's delegate calls it
-    /// on the main queue; tests call it in the announcement's place.
+    /// on the main queue, for the announcement speaking
+    /// (`whereAmISynthesizerFinished(_:)`); tests call it in the
+    /// announcement's place.
     func whereAmIAnnouncementFinished() {
         isWhereAmISpeaking = false
         soundEffectService?.play(for: .whereAmIEnd)

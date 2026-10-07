@@ -212,22 +212,15 @@ extension ReaderViewModel {
     /// Toggle between play and pause states. Handles Where Am I interruption,
     /// audio book resume, TTS resume with rewind-on-resume, and cold start.
     func togglePlayPause() {
-        // If Where Am I is speaking, stop the announcement and resume/don't resume book.
-        // Don't allow toggling playback while Where Am I is active — it would cause
-        // both the book and the announcement to play simultaneously.
+        // If Where Am I is speaking, stop the announcement and don't resume
+        // the book: the user pressed Play/Pause, not "dismiss Where Am I".
+        // Toggling playback while Where Am I is active would have the book
+        // and the announcement speak at once.
         if WhereAmIInterruptionPolicy.blocksBookPlayback(
             isAnnouncementSpeaking: isWhereAmISpeaking
         ) {
-            whereAmISynth.stopSpeaking(at: .immediate)
-            isWhereAmISpeaking = false
-            // Don't resume book — user explicitly pressed play/pause, not "dismiss Where Am I"
-            wasPlayingBeforeWhereAmI = false
-            // Nor start a play waiting for its chapter's speech, which shows
-            // Playing: it pauses, as a book the announcement paused stays
-            // paused, whether its speech is ready or still being prepared.
-            if isWaitingForChapterSpeech {
-                pause(playingPauseSound: false)
-            }
+            stopWhereAmISynthesizer()
+            endWhereAmIWithoutResuming()
             return
         }
 
@@ -253,6 +246,21 @@ extension ReaderViewModel {
             pause()
         } else {
             play()
+        }
+    }
+
+    /// Ends the Where Am I announcement, whose synthesizer is silent now,
+    /// without resuming the book it paused, which stays paused; a play it
+    /// held, waiting for its chapter's speech and showing Playing, pauses
+    /// too, whether its speech is ready or still being prepared. Play/Pause
+    /// pressed during an announcement ends it so, and so does a cancel of
+    /// the announcement the reader did not ask for
+    /// (`whereAmISynthesizerCancelled(_:)`).
+    func endWhereAmIWithoutResuming() {
+        isWhereAmISpeaking = false
+        wasPlayingBeforeWhereAmI = false
+        if isWaitingForChapterSpeech {
+            pause(playingPauseSound: false)
         }
     }
 
