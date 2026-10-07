@@ -149,6 +149,17 @@ final class ReaderViewModel: ObservableObject {
     /// Where Continue to Next Book leaves its requests to start playing:
     /// the shared store, unless the reader was created with its own.
     let autoplayRequests: ReaderAutoplayRequests
+    /// Where a Library window opening this book from the Reading List, or a
+    /// book continuing to it through the reading list, asks this reader to
+    /// read it from the list (FR09): the shared store, unless the reader
+    /// was created with its own.
+    let readingListRequests: ReadingListOpenRequests
+    /// Where this reader's book stands in the reading list while the reader
+    /// reads it from the list (FR09): opened from the Reading List, or
+    /// reached through the list by a book that continued to it. Nil while it
+    /// does not, as for a book opened any other way, even one in the list.
+    /// Set only by ReaderViewModel+ReadingList.
+    @Published var readingListPlace: ReadingListPlace?
     /// The center this reader listens on for commands and for Continue to
     /// Next Book, and posts its own Continue to Next Book to: the default
     /// center, unless the reader was created with its own, as tests do to
@@ -357,6 +368,9 @@ final class ReaderViewModel: ObservableObject {
     ///     pass their own so the user's rules cannot change what is spoken.
     ///   - autoplayRequests: Where finished books ask this one to start
     ///     playing. Nil uses the shared store; tests pass their own.
+    ///   - readingListRequests: Where this book is asked to be read from
+    ///     the reading list (FR09). Nil uses the shared store; tests pass
+    ///     their own.
     ///   - notificationCenter: Where the reader listens for commands and for
     ///     Continue to Next Book, and posts its own Continue to Next Book.
     ///     Tests pass their own, so their notifications never reach the
@@ -375,6 +389,7 @@ final class ReaderViewModel: ObservableObject {
         settingsViewModel: SettingsViewModel,
         substitutionService: TextSubstitutionService? = nil,
         autoplayRequests: ReaderAutoplayRequests? = nil,
+        readingListRequests: ReadingListOpenRequests? = nil,
         notificationCenter: NotificationCenter = .default,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         cloud: ReaderCloudServices? = nil,
@@ -387,6 +402,7 @@ final class ReaderViewModel: ObservableObject {
         // main-actor services are read inside this main-actor initializer.
         self.substitutionService = substitutionService ?? .shared
         self.autoplayRequests = autoplayRequests ?? .shared
+        self.readingListRequests = readingListRequests ?? .shared
         self.notificationCenter = notificationCenter
         self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
         self.cloudServices = cloud ?? .app
@@ -408,6 +424,7 @@ final class ReaderViewModel: ObservableObject {
         setupNotifications()
         observeSpokenAudioSettings()
         observeLibraryUpdates()
+        observeReadingList()
         forwardSpeechState()
 
         if isAudioBook {
@@ -460,6 +477,29 @@ final class ReaderViewModel: ObservableObject {
         updates.events(for: book.id)
             .sink { [weak self] event in self?.handleLibraryEvent(event) }
             .store(in: &cancellables)
+    }
+
+    /// Read this book from the reading list when asked to (FR09). A request
+    /// made before this reader existed, as a Library window opened the book
+    /// from the Reading List or a book continued to it through the list, is
+    /// claimed now, as the open made this reader; one made while the reader
+    /// is open, as such an open brings its window forward, is claimed as it
+    /// is made (`ReadingListOpenRequests.requestsMade`). Requests for other
+    /// books are left for their own readers. While the book is read from the
+    /// list, its place follows every change the library makes to the list,
+    /// and the book is no longer read from it once it leaves the list
+    /// (`followReadingList(in:)`).
+    private func observeReadingList() {
+        let bookID = book.id
+        readingListRequests.requestsMade
+            .filter { $0 == bookID }
+            .sink { [weak self] _ in self?.claimReadingListRequest() }
+            .store(in: &cancellables)
+        // Published as each change is made, with the library as it will be.
+        libraryViewModel.$library
+            .sink { [weak self] library in self?.followReadingList(in: library) }
+            .store(in: &cancellables)
+        claimReadingListRequest()
     }
 
     /// Forward speechService @Published state to our own @Published properties
@@ -749,6 +789,21 @@ final class ReaderViewModel: ObservableObject {
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
                 self.previousHeading()
+            }
+            .store(in: &cancellables)
+
+        // Next in Reading List and Previous in Reading List (FR09).
+        nc.publisher(for: .nextInReadingList)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goThroughReadingList(.down)
+            }
+            .store(in: &cancellables)
+
+        nc.publisher(for: .previousInReadingList)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goThroughReadingList(.up)
             }
             .store(in: &cancellables)
 

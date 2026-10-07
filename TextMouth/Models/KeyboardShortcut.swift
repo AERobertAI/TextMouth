@@ -15,6 +15,14 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case goForward = "Go Forward"
     case nextHeading = "Next Heading"
     case previousHeading = "Previous Heading"
+    /// Opens the book below this one in the reading list, for a book read
+    /// from the list (FR09). It has no key until the user gives it one in
+    /// Settings.
+    case nextInReadingList = "Next in Reading List"
+    /// Opens the book above this one in the reading list, for a book read
+    /// from the list (FR09). It has no key until the user gives it one in
+    /// Settings.
+    case previousInReadingList = "Previous in Reading List"
     case addBookmark = "Add Bookmark"
     case nextBookmark = "Next Bookmark"
     case previousBookmark = "Previous Bookmark"
@@ -132,6 +140,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .navigateUpLevel: return .navigateUpLevel
         case .nextHeading: return .nextHeading
         case .previousHeading: return .previousHeading
+        case .nextInReadingList: return .nextInReadingList
+        case .previousInReadingList: return .previousInReadingList
         case .addBookmark: return .addBookmark
         case .nextBookmark: return .nextBookmark
         case .previousBookmark: return .previousBookmark
@@ -176,7 +186,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
              .cycleForwardNavigationUnit, .cycleBackwardNavigationUnit,
              .increaseSpeed, .decreaseSpeed:
             return "Playback"
-        case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading:
+        case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading,
+             .nextInReadingList, .previousInReadingList:
             return "Navigation"
         case .addBookmark, .nextBookmark, .previousBookmark, .showBookmarkList:
             return "Bookmarks"
@@ -505,6 +516,10 @@ extension ShortcutAction {
             .previousHeading: [
                 KeyBinding(key: "upArrow", command: true, option: true)
             ],
+            // No keys by default (FR09): the user gives them keys of their
+            // choosing in Settings, as the reading list's Library commands.
+            .nextInReadingList: [],
+            .previousInReadingList: [],
             .addBookmark: [
                 KeyBinding(key: "b", command: true)
             ],

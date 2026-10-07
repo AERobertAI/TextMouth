@@ -117,7 +117,8 @@ extension ReaderViewModel {
 
     /// Full summary: the brief summary's location, then time remaining in the
     /// book and in the current heading, and the total book time, then, for a
-    /// transcribed audiobook, the sentence being heard.
+    /// book read from the reading list, where it stands in the list (FR09),
+    /// and, for a transcribed audiobook, the sentence being heard.
     func buildFullWhereAmI(content: DocumentContent) -> String {
         let position = currentHeadingPosition
         return Self.fullWhereAmISummary(
@@ -128,14 +129,20 @@ extension ReaderViewModel {
             timeRemaining: timeRemaining,
             timeRemainingInHeading: position.heading.flatMap { remainingTime(inHeading: $0, content: content) },
             totalTime: totalEstimatedTime,
+            readingListPlace: readingListPlace,
             heardSentence: heardTranscriptSentence
         )
     }
 
     /// Pure formatter for the full announcement, shared with regression tests.
     /// The heading is named exactly once, followed by its number, so the
-    /// listener never hears two different names for the same place. A
-    /// transcribed audiobook's `heardSentence` follows the times.
+    /// listener never hears two different names for the same place. A book
+    /// read from the reading list says its place there after the times
+    /// ("Reading list, book 3 of 12", FR09), the broader setting, which only
+    /// this second announcement gives: the brief one is the quick check of
+    /// a place in the book, pressed often while listening, and the window's
+    /// title and header say the book is read from the list. A transcribed
+    /// audiobook's `heardSentence` follows last.
     nonisolated static func fullWhereAmISummary(
         bookTitle: String,
         locationTitle: String?,
@@ -144,6 +151,7 @@ extension ReaderViewModel {
         timeRemaining: TimeInterval,
         timeRemainingInHeading: TimeInterval?,
         totalTime: TimeInterval,
+        readingListPlace: ReadingListPlace? = nil,
         heardSentence: String? = nil
     ) -> String {
         var parts = whereAmILocationParts(
@@ -157,6 +165,9 @@ extension ReaderViewModel {
             parts.append("\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading")
         }
         parts.append("Total book time: \(TimeFormatting.spoken(totalTime))")
+        if let readingListPlace {
+            parts.append(ReadingListReaderWording.place(readingListPlace))
+        }
         return whereAmISummary(parts: parts, quoting: heardSentence)
     }
 

@@ -256,6 +256,15 @@ struct ReaderLocationHeader: View {
                     .fontWeight(.bold)
                     .accessibilityAddTraits(.isHeader)
 
+                // A book read from the reading list says where it stands in
+                // the list, as plain text VoiceOver reads after the title
+                // (FR09); the window's title says "Reading List" too.
+                if let place = viewModel.readingListPlace {
+                    Text(ReadingListReaderWording.place(place))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
                 let position = viewModel.displayHeadingPosition
                 if let title = viewModel.locationTitle(
                     for: position,

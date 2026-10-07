@@ -52,6 +52,10 @@ struct BookReaderWindowView: View {
             ))
             .focusedValue(\.activeWindowType, .reader)
             .focusedValue(\.canReleaseMediaControls, viewModel.canReleaseMediaControls)
+            // Next in Reading List and Previous in Reading List are
+            // available while this reader reads its book from the list
+            // (FR09), whether or not a view of it holds keyboard focus.
+            .focusedSceneValue(\.readsFromReadingList, viewModel.isOpenedFromReadingList)
             .navigationTitle(windowTitle)
             .onAppear {
                 libraryViewModel.markBookOpened(bookID)
@@ -66,12 +70,29 @@ struct BookReaderWindowView: View {
             .frame(minWidth: 600, minHeight: 400)
     }
 
+    /// The window's title, which follows the reader: it changes as the book
+    /// is renamed, and as it starts or stops being read from the reading
+    /// list (FR09).
     private var windowTitle: String {
-        let book = viewModel.book
+        Self.windowTitle(for: viewModel.book, readFromReadingList: viewModel.isOpenedFromReadingList)
+    }
+
+    /// What a reader window's title begins with for a book read from
+    /// anywhere but the reading list.
+    nonisolated static let windowTitlePrefix = "Book"
+
+    /// The title of the reader window of `book`: "Book: <title> by
+    /// <author>", or "Book: <title>" when the author is unknown. A book read
+    /// from the reading list (FR09) begins "Reading List" in place of
+    /// "Book", so the window says it wherever VoiceOver or an eye meets it,
+    /// as the user asked on October 7, 2026: "the window title should be
+    /// slightly different to indicate it in some way".
+    nonisolated static func windowTitle(for book: Book, readFromReadingList: Bool) -> String {
+        let prefix = readFromReadingList ? ReadingListReaderWording.windowTitlePrefix : windowTitlePrefix
         if Book.isUnknownAuthor(book.author) {
-            return "Book: \(book.title)"
+            return "\(prefix): \(book.title)"
         }
-        return "Book: \(book.title) by \(book.author)"
+        return "\(prefix): \(book.title) by \(book.author)"
     }
 }
 

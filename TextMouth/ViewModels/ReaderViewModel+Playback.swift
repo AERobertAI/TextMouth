@@ -2024,7 +2024,10 @@ extension ReaderViewModel {
 
     /// Called when the last chapter finishes playing, and when Play finds
     /// nothing left to say. Behavior depends on per-book override or global
-    /// setting: stop, loop, or continue to next book.
+    /// setting: stop, loop, or continue to next book. A book read from the
+    /// reading list follows the list's "When a book ends" instead
+    /// (`finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:)`,
+    /// FR09), as the user decided on October 7, 2026.
     ///
     /// This reader's sleep timer set for the end of the heading or of the
     /// book stops playback here, where the book's last chapter ends, which
@@ -2064,6 +2067,15 @@ extension ReaderViewModel {
         // Audio faded out toward this end, where the timer stopped it, plays
         // at full volume again next time.
         fadeOutBeforeSleepTimerStop()
+        // A book read from the reading list goes where the list's "When a
+        // book ends" says, in place of its own end-of-book behavior (FR09).
+        if isOpenedFromReadingList {
+            finishBookReadFromReadingList(
+                sleepTimerEndsListening: sleepTimerEndsListening,
+                sleepTimerStoppedHere: sleepTimerStoppedHere
+            )
+            return
+        }
         // Determine behavior: per-book override or global setting
         var behavior = effectiveEndOfBookBehavior
         // Looping restarts speech at the first chapter with anything to say.
@@ -2079,9 +2091,7 @@ extension ReaderViewModel {
         case .stop:
             readingStatsService.markBookFinished(bookID: book.id, title: book.title)
             finishListening(
-                announcing: sleepTimerStoppedHere
-                    ? "Finished: \(book.title). Sleep timer expired."
-                    : "Finished: \(book.title)"
+                announcing: EndOfBookWording.finished(book.title, sleepTimerExpired: sleepTimerStoppedHere)
             )
 
         case .loop:
@@ -2095,9 +2105,11 @@ extension ReaderViewModel {
             if sleepTimerStoppedHere {
                 // The book waits at its beginning, where Play starts it again.
                 DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer stopped playback here; not starting it again")
-                finishListening(announcing: "Finished: \(book.title). Not restarted because of the sleep timer.")
+                finishListening(
+                    announcing: EndOfBookWording.finished(book.title, notes: [EndOfBookWording.notRestartedNote])
+                )
             } else {
-                announceToVoiceOver("Restarting: \(book.title)")
+                announceToVoiceOver(EndOfBookWording.restarting(book.title))
                 // Route through the correct backend and start the next
                 // listening session. Audiobook placeholder text cannot be
                 // looped via TTS.
@@ -2114,10 +2126,10 @@ extension ReaderViewModel {
                     // timer, which can pause only the reader that set it.
                     DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book")
                     finishListening(
-                        announcing: "Finished: \(book.title). Next book not started because of the sleep timer."
+                        announcing: EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote])
                     )
                 } else {
-                    announceToVoiceOver("Starting: \(nextBook.title)")
+                    announceToVoiceOver(EndOfBookWording.starting(nextBook.title))
                     // Ask for the next book once VoiceOver has begun the
                     // announcement. This reader is kept until then, so
                     // closing its window meanwhile still continues, as
@@ -2128,9 +2140,11 @@ extension ReaderViewModel {
                 }
             } else {
                 finishListening(
-                    announcing: sleepTimerStoppedHere
-                        ? "Finished: \(book.title). No more books in folder. Sleep timer expired."
-                        : "Finished: \(book.title). No more books in folder."
+                    announcing: EndOfBookWording.finished(
+                        book.title,
+                        notes: [EndOfBookWording.noMoreBooksInFolderNote],
+                        sleepTimerExpired: sleepTimerStoppedHere
+                    )
                 )
             }
         }
@@ -2147,8 +2161,9 @@ extension ReaderViewModel {
     /// book again from where it lands (`performSkip(unit:forward:)`), as
     /// the listener who rewinds a finished book means to hear its end
     /// again. Only Release Media Controls or closing the window gives the
-    /// controls up.
-    private func finishListening(announcing announcement: String) {
+    /// controls up. A book read from the reading list ends listening here
+    /// too (ReaderViewModel+ReadingList).
+    func finishListening(announcing announcement: String) {
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
         )
@@ -2423,7 +2438,11 @@ extension ReaderViewModel {
         togglePlayPause()
     }
 
-    private func pause(playingPauseSound: Bool) {
+    /// Pause playback as `pause()` does, making the pause sound only when
+    /// `playingPauseSound`: not as a sleep timer's fade ends, nor as Next
+    /// in Reading List and Previous in Reading List leave this book for
+    /// another, whose start makes its own sound (FR09).
+    func pause(playingPauseSound: Bool) {
         // Capture pre-pause playing state BEFORE we issue any pause calls.
         // The audio / speech services flip their flags synchronously, so
         // checking after would always return "not playing" and the guard

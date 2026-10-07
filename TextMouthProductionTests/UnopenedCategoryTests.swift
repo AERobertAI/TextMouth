@@ -6,7 +6,11 @@ import XCTest
 /// yet played. These tests pin its name, its sort key and the sort carried
 /// over from No Folder, its default sort, and what it lists: the books,
 /// which leave it when opened, and the feeds, which leave it when played.
-@MainActor
+///
+/// Each test runs on the main actor, not the class as a whole: the set-up
+/// and tear-down overrides are nonisolated, and on a main-actor class their
+/// use of `sandbox` warned in every test build, which `make check` refuses
+/// (board #1391), as `ManualOrderRearrangingTests` avoids the same way.
 final class UnopenedCategoryTests: XCTestCase {
     /// The isolated data root's index, put back after a test that saves.
     private var sandbox: LibraryIndexSandbox!
@@ -25,6 +29,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// The View picker's segments, in order, with Unopened where No Folder
     /// was and the Reading List (FR09) last; nothing is called No Folder
     /// any more.
+    @MainActor
     func testTheCategoriesAreNamedInOrder() {
         XCTAssertEqual(LibraryCategory.allCases.map(\.rawValue), ["Folders", "All Items", "Unopened", "Recent", "Reading List"])
         XCTAssertEqual(LibraryCategory.unopened.rawValue, "Unopened")
@@ -35,6 +40,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// A category is saved by its name and read back by it; a category
     /// saved as "No Folder" reads as Unopened; a name no category has fails
     /// to read rather than becoming one.
+    @MainActor
     func testACategorySavedAsNoFolderReadsAsUnopened() throws {
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
@@ -54,6 +60,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// Unopened saves its sort under its own reserved key, which no folder
     /// path can match, as No Folder did under its key; neither can be a
     /// folder's name, since the old key is still read.
+    @MainActor
     func testTheSortKeyIsReservedAlongWithNoFoldersKey() {
         XCTAssertEqual(LibraryCategory.unopened.sortSettingsKey, "__unopened__")
         XCTAssertEqual(LibraryLocation(category: .unopened, folderPath: "Essays").sortSettingsKey, "__unopened__")
@@ -69,6 +76,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// Without a saved sort, Unopened shows its books newest first by the
     /// date they were added: no unopened book has a last-opened date to
     /// sort by, so Recent's default would leave them in title order.
+    @MainActor
     func testWithoutASavedSortUnopenedShowsNewestAddedFirst() {
         let unopened = LibraryLocation(category: .unopened, folderPath: "Essays")
         let sort = Library().sortState(at: unopened)
@@ -85,6 +93,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// there: the old key is read, never written, and a sort chosen at
     /// Unopened shadows it. Manual order is not carried over, since it was
     /// the root's arrangement, which books from many folders do not share.
+    @MainActor
     func testASortSavedForNoFolderIsCarriedOverUntilOneIsChosenAtUnopened() {
         let unopened = LibraryLocation(category: .unopened, folderPath: "")
         let authorDescending = FolderSortSetting(sortField: .author, sortAscending: false)
@@ -113,6 +122,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// Showing the carried-over sort saves nothing; choosing a sort at
     /// Unopened saves it under Unopened's key and leaves the old key as it
     /// was, and from then on the old key is not read.
+    @MainActor
     func testChoosingASortAtUnopenedSavesUnderItsOwnKey() {
         let model = LibraryViewModel(initializeServices: false)
         let authorDescending = FolderSortSetting(sortField: .author, sortAscending: false)
@@ -139,6 +149,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// folder Folders showed last; a search narrows it as it does any list.
     /// The root's books, which No Folder listed, are still exactly what
     /// Folders lists at the root, so nothing is lost by the change.
+    @MainActor
     func testUnopenedListsTheBooksNeverOpenedFromEveryFolder() {
         let model = LibraryViewModel(initializeServices: false)
         let start = Date(timeIntervalSince1970: 1_791_000_000)
@@ -166,6 +177,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// is read, and off no other list: a book's last-opened date is a field
     /// every kept list depends on, so the list is derived again, while
     /// reading it again unchanged derives nothing.
+    @MainActor
     func testOpeningABookTakesItOffTheListAtTheNextRead() throws {
         let model = LibraryViewModel(initializeServices: false)
         let start = Date(timeIntervalSince1970: 1_791_000_000)
@@ -191,6 +203,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// played, each row as it reads in All Items, and no feed whose items
     /// are all played or that has none; a feed leaves the section when its
     /// last unplayed item is played, and returns when one is unplayed again.
+    @MainActor
     func testTheFeedsSectionAtUnopenedListsTheFeedsWithUnplayedItems() async throws {
         let world = try FeedTestWorld(self, label: "UnopenedFeeds")
         let atlas = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", items: [
@@ -238,6 +251,7 @@ final class UnopenedCategoryTests: XCTestCase {
 
     /// The View picker's third segment reads "Unopened", under the picker's
     /// own label, and the window title names the category the same way.
+    @MainActor
     func testThePickerSegmentReadsUnopened() {
         XCTAssertEqual(LibraryView.categoryPickerLabel, "Library category")
         XCTAssertEqual(LibraryCategory.allCases.firstIndex(of: .unopened), 2)
@@ -254,6 +268,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// sort saved for Unopened still lists every unopened book, in the
     /// books' positions in their folders' orders and then by title, as All
     /// Items shows that sort.
+    @MainActor
     func testUnopenedOffersNoManualOrderAsAllItemsOffersNone() {
         let manual = FolderSortSetting(sortField: .manual, sortAscending: true)
         let manualSort = LibrarySortState(restoring: manual)
@@ -308,6 +323,7 @@ final class UnopenedCategoryTests: XCTestCase {
     /// Subscribes `world` to a feed titled `title` served at `path`, listing
     /// `items`, each given audio so it is an episode, into a new folder
     /// inside the world's folder.
+    @MainActor
     private func subscribe(_ world: FeedTestWorld, title: String, path: String, items: [FeedXML.Item]) async throws -> Feed {
         let episodes = items.map { item -> FeedXML.Item in
             var episode = item
