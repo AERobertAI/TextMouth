@@ -365,6 +365,73 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertNil(system.coordinator.playingOwnerID)
     }
 
+    // MARK: - After the Speech Engine Refuses the Text
+
+    /// The Mac's speech engine refuses the text where speech goes on, on
+    /// the fresh synthesizer too, and speech stops there (#1308). The reader
+    /// makes the stop its own, as a pause: the book's listening session
+    /// ends, so no time away is credited as listening; the system is told
+    /// the book is paused, never stopped, so the AirPods stay with TextMouth
+    /// and their next press is Play; and the place where speech stopped and
+    /// the stop itself are saved. Play then speaks on from that place.
+    func testARefusedTextStopsAsAPauseAndPlaySpeaksOnFromThere() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Refusal")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let reader = quay.reader
+        let statistics = ReadingStatsService.shared
+
+        reader.play()
+        XCTAssertTrue(statistics.hasActiveSession, "Play opened no listening session")
+        assertToldSystem(system, that: reader, plays: true, "Play")
+        var refusedAt = 0
+        let recorder = recordingAnnouncements {
+            refusedAt = refuseTheChunkAfterTheFirst(of: quay)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
+        XCTAssertFalse(reader.speechService.isSpeaking, "Speech did not stop")
+        XCTAssertEqual(reader.currentCharacterOffset, refusedAt, "The cursor is not where speech stopped")
+        XCTAssertFalse(statistics.hasActiveSession, "The listening session stayed open")
+        assertToldSystem(system, that: reader, plays: false, "The refusal")
+        let row = try XCTUnwrap(world.library.bookByID(reader.book.id))
+        XCTAssertEqual(row.readingPosition?.characterOffset, refusedAt, "The place where speech stopped was not saved")
+        XCTAssertNotNil(row.lastPlaybackStopped, "The stop was not recorded")
+
+        XCTAssertEqual(system.press(.play), .success)
+        handleQueuedCallbacks()
+        assertSpeaks(quay, from: refusedAt, "Play after the refusal")
+        assertToldSystem(system, that: reader, plays: true, "Play after the refusal")
+        XCTAssertTrue(statistics.hasActiveSession, "Play after the refusal opened no listening session")
+    }
+
+    /// A 15-minute sleep timer's countdown halts where the speech engine's
+    /// refusal stopped speech, as it halts at a pause, so it cannot run out
+    /// while nothing plays; Play resumes it.
+    func testARefusedTextHaltsTheSleepTimersCountdownUntilPlay() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Refusal Timer")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+
+        quay.reader.play()
+        quay.reader.startSleepTimer(duration: .minutes(15))
+        let atTheRefusal = logLines(in: .sleepTimer) {
+            _ = recordingAnnouncements {
+                _ = refuseTheChunkAfterTheFirst(of: quay)
+            }
+        }
+
+        XCTAssertTrue(timer.isActive, "The refusal ended the timer")
+        XCTAssertTrue(atTheRefusal.contains { $0.contains("COUNTDOWN_PAUSED") }, "\(atTheRefusal)")
+        let atPlay = logLines(in: .sleepTimer) {
+            XCTAssertEqual(system.press(.play), .success)
+        }
+        XCTAssertTrue(atPlay.contains { $0.contains("COUNTDOWN_RESUMED") }, "\(atPlay)")
+        XCTAssertTrue(quay.reader.speechService.isSpeaking, "Play did not speak")
+    }
+
     // MARK: - After the Book Has Finished
 
     /// Report of 2026-10-07: "after a book 'finished' trying to use the
@@ -726,6 +793,51 @@ final class MediaCommandPlaybackTests: XCTestCase {
             utterance: spoken
         )
         handleQueuedCallbacks(file: file, line: line)
+    }
+
+    /// Has the Mac's speech engine refuse the text where `book`'s speech
+    /// goes on after its first chunk, as the synthesizer reports it: the
+    /// first chunk starts, which queues the next, and finishes, which makes
+    /// the next the one speaking; the engine cancels that one before it
+    /// says a word, and then the fresh synthesizer's retry of it, and the
+    /// main queue handles each report. Speech then stops where the second
+    /// chunk begins, a place nothing saved before the refusal.
+    ///
+    /// - Returns: Where speech stopped: the second chunk's start.
+    @discardableResult
+    private func refuseTheChunkAfterTheFirst(
+        of book: TextBookReader,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Int {
+        let speech = book.reader.speechService
+        let synthesizer = AVSpeechSynthesizer()
+        guard let first = book.handedOver.utterances.last else {
+            XCTFail("Nothing was handed to the synthesizer", file: file, line: line)
+            return 0
+        }
+        speech.speechSynthesizer(synthesizer, didStart: first)
+        handleQueuedCallbacks(file: file, line: line)
+        guard let second = book.handedOver.utterances.last, second !== first else {
+            XCTFail("The second chunk was not queued", file: file, line: line)
+            return 0
+        }
+        speech.speechSynthesizer(synthesizer, didFinish: first)
+        handleQueuedCallbacks(file: file, line: line)
+        speech.speechSynthesizer(synthesizer, didCancel: second)
+        handleQueuedCallbacks(file: file, line: line)
+        guard let retry = book.handedOver.utterances.last, retry !== second else {
+            XCTFail("The refused chunk was not spoken again", file: file, line: line)
+            return 0
+        }
+        speech.speechSynthesizer(synthesizer, didCancel: retry)
+        handleQueuedCallbacks(file: file, line: line)
+        let firstChunk = DirectSpeechChunk.starting(
+            at: Self.openingOffset,
+            in: book.text,
+            maximumLength: SpeechService.directModeFirstChunkSize
+        )
+        return DirectSpeechChunk.starting(at: firstChunk.end, in: book.text, maximumLength: SpeechService.directModeChunkSize).start
     }
 
     /// Set a 15-minute sleep timer in `book`'s reader and run it out on its

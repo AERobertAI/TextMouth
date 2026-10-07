@@ -330,6 +330,64 @@ final class HandEditedMetadataTests: XCTestCase {
         XCTAssertEqual(MetadataEditorWording.fieldLabel("Book title", for: .title, in: nil), "Book title")
     }
 
+    /// The reader's Book Info for an audiobook, opened again after its
+    /// audio editor saved a new title, labels the title field "Book title,
+    /// edited by hand" and the artist field "Artist or narrator" alone, as
+    /// the Library window's Book Info would: the reader's copy of the book
+    /// holds the record its save made.
+    @MainActor
+    func testTheReadersAudioEditorOpenedAgainSaysWhatItsSaveEditedByHand() throws {
+        let world = try makeIntegrationWorld("Reader Audio Editor Labels")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [1])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        var metadata = try XCTUnwrap(reader.audioMetadata, "The reader read no audio metadata")
+
+        metadata.title = "Breakwater Soundings, Revised"
+        reader.saveAudioMetadata(metadata)
+
+        XCTAssertEqual(reader.book.handEdits?.fields, [.title])
+        let labels = try textFieldLabels(ofBookInfoOver: reader)
+        XCTAssertTrue(labels.contains("Book title, edited by hand"), "\(labels)")
+        XCTAssertTrue(labels.contains("Artist or narrator"), "\(labels)")
+    }
+
+    /// The reader's Book Info for an EPUB, opened again after its metadata
+    /// editor saved a new author to the library, labels the author field
+    /// "Author, edited by hand" and the title field "Book title" alone.
+    @MainActor
+    func testTheReadersEPUBEditorOpenedAgainSaysWhatItsSaveEditedByHand() throws {
+        let world = try makeIntegrationWorld("Reader EPUB Editor Labels")
+        let book = try world.importBook(from: requireFile("alice.epub"))
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        XCTAssertTrue(waitUntil(timeout: 10) { reader.epubMetadata != nil }, "The reader showed no EPUB metadata")
+        var metadata = try XCTUnwrap(reader.epubMetadata)
+
+        metadata.author = "The Hatter"
+        let outcome = reader.saveEPUBMetadata(metadata, writeToFile: false)
+
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        XCTAssertEqual(reader.book.handEdits?.fields, [.author])
+        let labels = try textFieldLabels(ofBookInfoOver: reader)
+        XCTAssertTrue(labels.contains("Author, edited by hand"), "\(labels)")
+        XCTAssertTrue(labels.contains("Book title"), "\(labels)")
+    }
+
+    /// The labels VoiceOver reads for the text fields of the reader's Book
+    /// Info sheet (`ReaderBookInfoSheet`) over `reader`, hosted offscreen.
+    /// The test is skipped where hosted windows expose no controls.
+    @MainActor
+    private func textFieldLabels(ofBookInfoOver reader: ReaderViewModel) throws -> [String] {
+        var labels: [String] = []
+        try withHostedControls(ReaderBookInfoSheet(viewModel: reader)) { controls in
+            labels = controls.filter { $0.role == .textField }.map(\.label)
+        }
+        return labels
+    }
+
     // MARK: - Fixtures
 
     /// An EPUB row as an import lists one: named, with nothing else kept.

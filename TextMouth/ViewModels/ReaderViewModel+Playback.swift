@@ -212,22 +212,15 @@ extension ReaderViewModel {
     /// Toggle between play and pause states. Handles Where Am I interruption,
     /// audio book resume, TTS resume with rewind-on-resume, and cold start.
     func togglePlayPause() {
-        // If Where Am I is speaking, stop the announcement and resume/don't resume book.
-        // Don't allow toggling playback while Where Am I is active — it would cause
-        // both the book and the announcement to play simultaneously.
+        // If Where Am I is speaking, stop the announcement and don't resume
+        // the book: the user pressed Play/Pause, not "dismiss Where Am I".
+        // Toggling playback while Where Am I is active would have the book
+        // and the announcement speak at once.
         if WhereAmIInterruptionPolicy.blocksBookPlayback(
             isAnnouncementSpeaking: isWhereAmISpeaking
         ) {
-            whereAmISynth.stopSpeaking(at: .immediate)
-            isWhereAmISpeaking = false
-            // Don't resume book — user explicitly pressed play/pause, not "dismiss Where Am I"
-            wasPlayingBeforeWhereAmI = false
-            // Nor start a play waiting for its chapter's speech, which shows
-            // Playing: it pauses, as a book the announcement paused stays
-            // paused, whether its speech is ready or still being prepared.
-            if isWaitingForChapterSpeech {
-                pause(playingPauseSound: false)
-            }
+            stopWhereAmISynthesizer()
+            endWhereAmIWithoutResuming()
             return
         }
 
@@ -253,6 +246,21 @@ extension ReaderViewModel {
             pause()
         } else {
             play()
+        }
+    }
+
+    /// Ends the Where Am I announcement, whose synthesizer is silent now,
+    /// without resuming the book it paused, which stays paused; a play it
+    /// held, waiting for its chapter's speech and showing Playing, pauses
+    /// too, whether its speech is ready or still being prepared. Play/Pause
+    /// pressed during an announcement ends it so, and so does a cancel of
+    /// the announcement the reader did not ask for
+    /// (`whereAmISynthesizerCancelled(_:)`).
+    func endWhereAmIWithoutResuming() {
+        isWhereAmISpeaking = false
+        wasPlayingBeforeWhereAmI = false
+        if isWaitingForChapterSpeech {
+            pause(playingPauseSound: false)
         }
     }
 
@@ -687,6 +695,41 @@ extension ReaderViewModel {
         chapterPlaybackGeneration += 1
         currentChapterIndex = chapterIndex
         currentCharacterOffset = characterOffset
+        readingStatsService.endSession(bookID: book.id)
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: false
+        )
+        recordPlaybackStopped()
+        savePosition()
+    }
+
+    /// Makes the reader's own the stop the speech service made when the
+    /// Mac's speech engine refused a text on a fresh synthesizer too
+    /// (`SpeechService.onSpeechRefused`, #1308): speech has stopped where it
+    /// was, the cursor is there, and the listener has heard why
+    /// (`SpeechService.engineRefusedAnnouncement`).
+    ///
+    /// The reader treats it as a pause, as `stopPlaybackForSleepTimer`
+    /// treats the timer's stop: it shows nothing playing; ends this book's
+    /// listening session, so that time away is not credited as listening;
+    /// tells Now Playing the book is paused, not stopped, so that the next
+    /// press of the AirPods or a media key is Play and reaches this reader;
+    /// halts its sleep timer's countdown, which Play resumes; and records
+    /// the stop and saves the position. It neither stops speech again nor
+    /// moves the chapter: Play speaks on from the cursor, a new play of the
+    /// chapter. A refusal comes only while speech speaks, which a play still
+    /// waiting for its chapter's speech never does
+    /// (`isWaitingForChapterSpeech`), and a book that has finished speaks
+    /// nothing (`hasFinishedBook`). A closed reader shows nothing.
+    func showPlaybackStoppedAfterRefusal() {
+        guard !hasClosed else { return }
+        DiagnosticLog.event(
+            .playback,
+            "PLAYBACK_STOPPED_AFTER_REFUSAL: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset)"
+        )
+        isCurrentlyPlaying = false
+        isCurrentlyPaused = false
+        sleepTimerService.pauseCountdown(by: readerID)
         readingStatsService.endSession(bookID: book.id)
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false

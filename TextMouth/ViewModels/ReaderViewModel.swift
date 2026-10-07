@@ -203,8 +203,24 @@ final class ReaderViewModel: ObservableObject {
     weak var hostWindow: NSWindow?
 
     /// Separate synthesizer for "Where Am I?" announcements (not the book reader).
+    /// Replaced with a fresh one when the system cancels an announcement on
+    /// its own (`replaceWhereAmISynthesizer()`): after the speech engine
+    /// refuses an utterance, the synthesizer that held it never speaks again.
     /// Accessed from WhereAmI and Playback extensions.
-    let whereAmISynth = AVSpeechSynthesizer()
+    var whereAmISynth = AVSpeechSynthesizer()
+    /// The announcement the Where Am I synthesizer speaks now, so that its
+    /// end and its cancel are told apart from those of one the reader
+    /// stopped or replaced (`stopWhereAmISynthesizer()`); nil while none
+    /// speaks. Held strongly, as the speech service holds its live
+    /// utterance, so that its identity stays its own until the synthesizer's
+    /// callbacks are compared on the main queue. Accessed from the WhereAmI
+    /// extension.
+    var liveWhereAmIUtterance: AVSpeechUtterance?
+    /// Takes the utterance a Where Am I announcement would hand its
+    /// synthesizer, in its place, so hosted tests can deliver the
+    /// synthesizer's callbacks for it without a sound. Nil, as in the app,
+    /// hands it to the synthesizer.
+    var _whereAmIUtteranceRecorderForTesting: ((AVSpeechUtterance) -> Void)?
     /// Whether playback was active before "Where Am I?" interrupted it.
     /// Accessed from WhereAmI and Playback extensions.
     var wasPlayingBeforeWhereAmI = false
@@ -600,6 +616,13 @@ final class ReaderViewModel: ObservableObject {
         // play (see `startSpeaking(_:playing:)`); until one starts, the end
         // belongs to the cursor's chapter.
         listenForSpeechEnd(of: cursorChapterPlay)
+
+        // Speech the Mac's speech engine refused, on a fresh synthesizer
+        // too, has stopped at the cursor; the reader makes that stop its
+        // own, as a pause would be (#1308).
+        speechService.onSpeechRefused = { [weak self] in
+            self?.showPlaybackStoppedAfterRefusal()
+        }
 
         // Sleep timer callbacks are no longer set here — they're passed
         // when this VM starts a timer (see startSleepTimer below). This
@@ -1560,7 +1583,7 @@ final class ReaderViewModel: ObservableObject {
         // while stopped, and is a no-op until content has loaded.
         stop()
         savePosition()
-        whereAmISynth.stopSpeaking(at: .immediate)
+        stopWhereAmISynthesizer()
         nowPlayingService.clearNowPlaying()
         nowPlayingService.close()
         // Stop the shared sleep timer iff this reader owned it. With the
@@ -1618,20 +1641,41 @@ final class ReaderViewModel: ObservableObject {
 
 // MARK: - Helpers
 
-/// Helper delegate for the Where Am I synthesizer (separate from the book speech service)
+/// Helper delegate for the Where Am I synthesizer (separate from the book
+/// speech service). It hands each end of an announcement, finished or
+/// cancelled, to the main queue with the utterance that ended, held as a
+/// `ReportedUtterance`, for the reader to compare with the announcement
+/// speaking (`ReaderViewModel.whereAmISynthesizerFinished(_:)` and
+/// `whereAmISynthesizerCancelled(_:)`).
 ///
-/// `@unchecked Sendable`: its one property is a constant, and `onFinished`
-/// runs only on the main queue, where the synthesizer's callback sends it.
+/// `@unchecked Sendable`: its two properties are constants, and each runs
+/// only on the main queue, where the synthesizer's callbacks send them.
 final class WhereAmIDelegateHelper: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
-    let onFinished: () -> Void
+    /// Told of an utterance that finished by itself.
+    let onFinished: (ReportedUtterance) -> Void
+    /// Told of an utterance that was cancelled: by the reader's own stop,
+    /// or by the system, as when the speech engine refuses its text.
+    let onCancelled: (ReportedUtterance) -> Void
 
-    init(onFinished: @escaping () -> Void) {
+    init(
+        onFinished: @escaping (ReportedUtterance) -> Void,
+        onCancelled: @escaping (ReportedUtterance) -> Void
+    ) {
         self.onFinished = onFinished
+        self.onCancelled = onCancelled
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        let finished = ReportedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
-            self?.onFinished()
+            self?.onFinished(finished)
+        }
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        let cancelled = ReportedUtterance(utterance: utterance)
+        DispatchQueue.main.async { [weak self] in
+            self?.onCancelled(cancelled)
         }
     }
 }
