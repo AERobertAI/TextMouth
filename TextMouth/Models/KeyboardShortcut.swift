@@ -593,6 +593,23 @@ extension ShortcutAction {
         return everywhereElse.merging(audioEditorDefaultBindings) { existing, _ in existing }
     }
 
+    /// The defaults actions had before today's, for the move to the record
+    /// of the user's edits alone (FR12, `ShortcutEdits.migrating`): a saved
+    /// key equal to one of them is a default the whole-map save froze, not
+    /// the user's choice, so the action follows today's default from then
+    /// on. Only three defaults ever changed: Move Book Up and Move Book Down
+    /// left Control-Option-Up and Control-Option-Down for Shift-Command-Up
+    /// and Shift-Command-Down on March 22, 2026 (1ec35f02), and Next
+    /// Bookmark left Shift-Command-B for Option-Shift-Command-B on March 24
+    /// (ffb538b1), when Show Bookmarks took Shift-Command-B. The move runs
+    /// once; a default changed after it reaches every unedited action
+    /// through the record, and needs no entry here.
+    static let formerDefaultBindings: [ShortcutAction: [[KeyBinding]]] = [
+        .moveBookUp: [[KeyBinding(key: "upArrow", option: true, control: true)]],
+        .moveBookDown: [[KeyBinding(key: "downArrow", option: true, control: true)]],
+        .nextBookmark: [[KeyBinding(key: "b", command: true, shift: true)]],
+    ]
+
     /// The audio editor's default bindings (FR04): single keys wherever one
     /// fits, as the user chose on October 4, matched only in an editor
     /// window (`ShortcutScope.audioEditor`), so Space, J, K, and L play and

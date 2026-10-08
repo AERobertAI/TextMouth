@@ -175,6 +175,79 @@ private struct ScopedKey: Hashable {
     let key: KeyBinding
 }
 
+// MARK: - The Move From the Whole Saved Map
+
+extension ShortcutEdits {
+    /// The record made, once, from the shortcuts saved before it existed
+    /// (FR12, section 4.2 of the design), and every key it found on two
+    /// edited actions, left to one of them.
+    ///
+    /// Each action is decided in the order Settings lists them:
+    /// 1. Its keys are config.json's when they differ from the saved map's:
+    ///    the old releases wrote the two together, so a difference is an
+    ///    edit made in the file while TextMouth was closed. Otherwise they
+    ///    are the saved map's, and without a saved map the file's, which the
+    ///    old release wrote from its defaults. An action neither lists, such
+    ///    as one added since, is unedited.
+    /// 2. It is unedited when those keys are its default, today's or one it
+    ///    had before, whole or less the keys other actions of its scope hold
+    ///    among the keys of step 1: a key the user gave another action leaves
+    ///    this one without it, and does not make it the user's. From then on
+    ///    it follows the defaults, where counting it edited would freeze an
+    ///    old default, as the whole-map save did.
+    /// 3. Otherwise it is edited, with those keys.
+    /// 4. A key two edited actions then hold goes to the one whose keys came
+    ///    from an edit of the file, else to the one Settings lists first
+    ///    (`resolvingSharedKeys(favoring:)`).
+    ///
+    /// The order of an action's keys is no edit: keys are compared as sets.
+    ///
+    /// - Parameters:
+    ///   - savedMap: Every action's keys as the store's whole map held them
+    ///     (`customKeyboardBindings`), or nil for a user who never changed a
+    ///     shortcut, whose store holds none.
+    ///   - fileLists: Every action's keys as config.json listed them in its
+    ///     old form, or nil without a file to read.
+    ///   - defaults: Today's defaults.
+    ///   - formerDefaults: The defaults actions had before today's.
+    static func migrating(
+        savedMap: [ShortcutAction: [KeyBinding]]?,
+        fileLists: [ShortcutAction: [KeyBinding]]?,
+        defaults: [ShortcutAction: [KeyBinding]] = ShortcutAction.defaultBindings,
+        formerDefaults: [ShortcutAction: [[KeyBinding]]] = ShortcutAction.formerDefaultBindings
+    ) -> Settlement {
+        // Step 1: each action's keys, and the actions an edit of the file
+        // made while TextMouth was closed.
+        var keys = savedMap ?? [:]
+        var editedInFile: Set<ShortcutAction> = []
+        for (action, listed) in fileLists ?? [:] {
+            guard let saved = savedMap?[action] else {
+                keys[action] = listed
+                continue
+            }
+            if saved != listed {
+                keys[action] = listed
+                editedInFile.insert(action)
+            }
+        }
+        // Steps 2 and 3: the actions whose keys are no default of theirs.
+        var edited: [ShortcutAction: [KeyBinding]] = [:]
+        for action in ShortcutAction.allCases {
+            guard let actionKeys = keys[action] else { continue }
+            let heldElsewhere = Set(keys.lazy.filter { $0.key != action && $0.key.scope == action.scope }.flatMap(\.value))
+            let given = Set(actionKeys)
+            let isADefault = ([defaults[action] ?? []] + (formerDefaults[action] ?? [])).contains { aDefault in
+                given == Set(aDefault) || given == Set(aDefault.filter { !heldElsewhere.contains($0) })
+            }
+            if !isADefault {
+                edited[action] = actionKeys.withoutRepeats
+            }
+        }
+        // Step 4.
+        return ShortcutEdits(edited).resolvingSharedKeys(favoring: editedInFile)
+    }
+}
+
 // MARK: - In the Preferences Store
 
 extension ShortcutEdits {
