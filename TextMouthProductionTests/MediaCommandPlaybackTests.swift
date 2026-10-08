@@ -852,6 +852,88 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertTrue(otherAudio.isPaused, "The paused book did not stay paused")
     }
 
+    /// The user's decision of October 7 evening, pinned (REV07, speech
+    /// finding 4): "the timer should finish the book / stop it, then if the
+    /// user hits rewind it should go 15 seconds or whatevr rewind does back
+    /// and play from them then when it reaches the end of a book again it
+    /// wwould continue to the next because there would be no timer". With an
+    /// End of book sleep timer and Continue to Next Book, the timer stops
+    /// the book at its end, keeps the next book from starting, and is spent;
+    /// the AirPods' rewind then plays the end again from the skip back, at
+    /// full volume; and at the end, with no timer left, Continue to Next
+    /// Book starts the next book.
+    func testAfterAnEndOfBookTimerStopsTheBookARewindReplaysItsEndThenItContinues() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Timer Continue")
+        world.settings.skipBackwardUnit = .seconds15
+        world.settings.skipForwardUnit = .seconds30
+        // The audio fades out toward the timer's stop, as a listener's can.
+        world.settings.sleepFadeOutDuration = 2
+        let lastHalfSecond = Int((Self.lastTrackSeconds - 0.5) * ReaderViewModel.audioCharsPerSecond)
+        let firstBook = try world.makeSilentAudioBook(
+            title: "First Crossing",
+            trackDurations: [1, Self.lastTrackSeconds],
+            savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: lastHalfSecond),
+            endOfBook: .continueNext
+        )
+        let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
+        let reader = world.openReader(for: firstBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(reader)
+        let audio = reader.audioPlaybackService
+
+        // The book plays its last half second under an End of book timer,
+        // which stops it at its end and keeps the next book from starting.
+        reader.startSleepTimer(duration: .endOfBook)
+        let stopping = recordingAnnouncements {
+            reader.play()
+            XCTAssertTrue(audio.isPlaying, "The book did not play")
+            XCTAssertTrue(
+                eventually(within: 10) { !reader.isCurrentlyPlaying && !audio.isPlaying },
+                "The book never finished"
+            )
+            // Long enough for a next book to have been asked for.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(
+            stopping.announcements.map(\.message),
+            ["Finished: First Crossing. Next book not started because of the sleep timer."]
+        )
+        XCTAssertFalse(timer.isActive, "The timer was not spent at the book's end")
+        XCTAssertFalse(world.autoplayRequests.hasRequest(for: nextBook.id), "The next book was asked for past the timer")
+        XCTAssertTrue(reader.hasFinishedBook, "The book the timer stopped does not rest finished at its end")
+        assertToldSystem(system, that: reader, plays: false, "The timer's stop at the end")
+        let endOffset = reader.currentCharacterOffset
+
+        // The AirPods' rewind plays the end again from the skip back.
+        let rewinding = recordingAnnouncements {
+            XCTAssertEqual(system.press(.previousTrack), .success)
+        }
+        assertPlaysAudio(reader, from: endOffset - Self.fifteenSecondsOfAudio, "The rewind after the timer's stop")
+        XCTAssertEqual(audio.intendedVolume, 1, "The end plays again faded, as if the timer were still set")
+        assertToldSystem(system, that: reader, plays: true, "The rewind after the timer's stop")
+        XCTAssertEqual(rewinding.announcements, [], "The rewind announced something")
+
+        // The book plays on to its end, which Next Track brings near, where,
+        // with no timer left, Continue to Next Book starts the next book.
+        let continuing = recordingAnnouncements {
+            reader.lastSkipTime = .distantPast
+            XCTAssertEqual(system.press(.nextTrack), .success)
+            XCTAssertTrue(
+                eventually(within: 10) { world.autoplayRequests.hasRequest(for: nextBook.id) },
+                "The next book was never asked for at the end"
+            )
+        }
+        XCTAssertEqual(continuing.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertFalse(reader.hasFinishedBook, "The book that continued still rests finished at its end")
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(next)
+        let nextAudio = next.audioPlaybackService
+        XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "Continue to Next Book did not start the next book")
+        assertToldSystem(system, that: next, plays: true, "The next book's start")
+    }
+
     // MARK: - The System's Side
 
     /// The system's side of the media session as a test plays it: the
