@@ -333,6 +333,7 @@
 		6E83EC8B8E18CE91A0B392A0 /* SpeechDirectChunkingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BBEFC172AD282562E5CE1BA /* SpeechDirectChunkingTests.swift */; };
 		6EA83E53AABC72024983B138 /* LegacyAudioMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CDB66EE9D2786D224F3D58 /* LegacyAudioMetadataTests.swift */; };
 		6ECA12C6E8E3B575ADABF4B0 /* TranscriptionOfferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA88030FEED38F4C9C46E629 /* TranscriptionOfferTests.swift */; };
+		702E7B5445A5AB715F936097 /* ShortcutListingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF1D4BC7CDEB7AD41945257 /* ShortcutListingTests.swift */; };
 		70377DC0525462D59DBB931E /* TranscriptTextLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF91BB2739F53E049CBD9BD /* TranscriptTextLoader.swift */; };
 		70443F45DFE00D2779810B2E /* AsyncBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9038CE24226E677C56AB39 /* AsyncBridge.swift */; };
 		704F87EA03C091FCA322C945 /* DOCXParser+SAXParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1BC24CFB8D5D6AB68DF3C1A /* DOCXParser+SAXParser.swift */; };
@@ -1157,6 +1158,7 @@
 		6CBAF87A1E9FB623267BB355 /* TextMouthPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextMouthPaths.swift; sourceTree = "<group>"; };
 		6CBE6B993487DC0C8E2BF968 /* libLAME.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLAME.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		6CE6875FDA951EACD96EA647 /* FeedJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedJSON.swift; sourceTree = "<group>"; };
+		6CF1D4BC7CDEB7AD41945257 /* ShortcutListingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutListingTests.swift; sourceTree = "<group>"; };
 		6D5A8A2FE26E3B335C7C8898 /* FeedUILibraryRowsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedUILibraryRowsTests.swift; sourceTree = "<group>"; };
 		6D7A5DE7FC5F64F5027079C2 /* ImportDecisionFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportDecisionFlowTests.swift; sourceTree = "<group>"; };
 		6D997C20EEE20A86719BAFC9 /* LibraryIndexFailureReportingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryIndexFailureReportingTests.swift; sourceTree = "<group>"; };
@@ -2394,6 +2396,7 @@
 				C6FA3B998AF8CD5F49B11F5F /* SettingsPolicyTests.swift */,
 				EA8B2A35F817C3A526671647 /* SharedPackageMigrationTests.swift */,
 				40E43FCA19D0139719FA2EE5 /* ShortcutEditsTests.swift */,
+				6CF1D4BC7CDEB7AD41945257 /* ShortcutListingTests.swift */,
 				59FF708095E0BC233169C4D6 /* ShortcutMigrationTests.swift */,
 				B5C8DBFF02248C668CCEE864 /* SleepTimerServiceTests.swift */,
 				E5899A498521BA0A311E7758 /* SourceScanTestSupport.swift */,
@@ -3057,6 +3060,7 @@
 				FD48A10395F0AD42587AF86C /* SettingsPolicyTests.swift in Sources */,
 				E29FE4702BCCA8BF09C90A35 /* SharedPackageMigrationTests.swift in Sources */,
 				31D18E986548B1053366D613 /* ShortcutEditsTests.swift in Sources */,
+				702E7B5445A5AB715F936097 /* ShortcutListingTests.swift in Sources */,
 				39BE0255DBADFE7E33549D7F /* ShortcutMigrationTests.swift in Sources */,
 				D8F3E731356EE743DB4469C4 /* SleepTimerServiceTests.swift in Sources */,
 				DDCA01075DB335BF911AD722 /* SourceScanTestSupport.swift in Sources */,

@@ -248,6 +248,54 @@ extension ShortcutEdits {
     }
 }
 
+// MARK: - In config.json
+
+extension ShortcutEdits {
+    /// Every action's entry as config.json lists it (FR12, section 5.1 of
+    /// the design), given a build's `defaults`: an edited action's keys in
+    /// force as a list, and every other action "default: " and its keys in
+    /// force (`ShortcutListing`). An edited action set back to its default
+    /// keys is still a list: it stays the user's.
+    func listings(defaults: [ShortcutAction: [KeyBinding]]) -> [ShortcutAction: ShortcutListing] {
+        let inForce = effectiveBindings(defaults: defaults)
+        var listings: [ShortcutAction: ShortcutListing] = [:]
+        for action in ShortcutAction.allCases {
+            let keys = inForce[action] ?? []
+            listings[action] = isEdited(action) ? .edited(keys) : .followingDefaults(keys)
+        }
+        return listings
+    }
+
+    /// The record once config.json's `listings` are in place (FR12, sections
+    /// 5.1 and 5.2 of the design), and every key two edited actions then
+    /// held, left to one of them.
+    ///
+    /// A list makes its action the user's with those keys, even keys equal
+    /// to its default; text beginning with "default" gives it back to the
+    /// defaults, as Reset to Default does; an action the listings leave out,
+    /// or whose entry cannot be read, keeps what it has. A key two edited
+    /// actions then hold goes to the one whose entry changed the record, as
+    /// recording a key in Settings takes it for the action recorded, and
+    /// when both or neither did, to the one Settings lists first
+    /// (`resolvingSharedKeys(favoring:)`).
+    func adopting(_ listings: [ShortcutAction: ShortcutListing]) -> Settlement {
+        var adopted = self
+        var changed: Set<ShortcutAction> = []
+        for action in ShortcutAction.allCases {
+            guard let listing = listings[action] else { continue }
+            if listing.followsDefaults {
+                if adopted.keysByEditedAction.removeValue(forKey: action) != nil {
+                    changed.insert(action)
+                }
+            } else if let keys = listing.bindings?.withoutRepeats, adopted.keysByEditedAction[action] != keys {
+                adopted.keysByEditedAction[action] = keys
+                changed.insert(action)
+            }
+        }
+        return adopted.resolvingSharedKeys(favoring: changed)
+    }
+}
+
 // MARK: - In the Preferences Store
 
 extension ShortcutEdits {

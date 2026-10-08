@@ -465,6 +465,123 @@ private enum ConfigModifier: CaseIterable {
     }
 }
 
+// MARK: - An Action's Entry in config.json
+
+/// One action's entry in config.json's `keyboardShortcuts`, in either of the
+/// file's two forms (FR12, as the user chose on October 7, 2026):
+/// - a list of shortcuts, written as `KeyBinding.configText` writes them,
+///   makes the action the user's, with those keys or, for an empty list,
+///   none: `"Release Media Controls": ["shift+r"]`;
+/// - text beginning with "default", in any letter case, gives the action
+///   TextMouth's defaults and, as TextMouth writes it, says what they are:
+///   `"Where Am I?": "default: w"`.
+///
+/// Any other text is one shortcut, read as a list of one. The words after
+/// "default" are never read back, so changing them changes nothing: that is
+/// what lets a later release's defaults reach every action written so,
+/// however old the file, without TextMouth ever having to tell an older
+/// release's defaults from the user's edits.
+///
+/// Shortcuts scoped to a kind of window (FR12's branch E) would add a third
+/// form, an object holding a list and a scope, for an action whose scope the
+/// user changed; a list would keep the action's default scope, and the text
+/// following the defaults could name the scope in its words.
+enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, ExpressibleByStringLiteral {
+    /// A list of shortcuts: the user's keys for the action.
+    case list([String])
+    /// Text: "default" and what the defaults are, or one shortcut.
+    case text(String)
+
+    /// The word that begins an entry following the defaults.
+    static let defaultWord = "default"
+
+    /// The entry TextMouth writes for an action the user edited: its keys,
+    /// as a list.
+    static func edited(_ keys: [KeyBinding]) -> ShortcutListing {
+        .list(keys.map(\.configText))
+    }
+
+    /// The entry TextMouth writes for an action following the defaults:
+    /// "default: " and its keys in force, such as "default: space, k", or
+    /// "default: none" for an action that has none.
+    static func followingDefaults(_ keysInForce: [KeyBinding]) -> ShortcutListing {
+        let keys = keysInForce.isEmpty ? "none" : keysInForce.map(\.configText).joined(separator: ", ")
+        return .text("\(defaultWord): \(keys)")
+    }
+
+    /// Whether the entry gives the action TextMouth's defaults: text that
+    /// begins with "default", in any letter case, after any spaces.
+    var followsDefaults: Bool {
+        guard case .text(let words) = self else { return false }
+        return words.drop(while: \.isWhitespace).lowercased().hasPrefix(Self.defaultWord)
+    }
+
+    /// The keys the entry makes the user's: a list's, each read as
+    /// `KeyBinding(configText:)` reads it and kept once, or the one shortcut
+    /// other text names. Nil for an entry following the defaults, and for
+    /// one holding a shortcut that cannot be read, which leaves the action
+    /// as it is rather than dropping that shortcut and keeping the rest.
+    var bindings: [KeyBinding]? {
+        switch self {
+        case .list(let shortcuts):
+            return KeyBinding.bindings(fromConfigTexts: shortcuts)
+        case .text(let shortcut):
+            guard !followsDefaults else { return nil }
+            return KeyBinding(configText: shortcut).map { [$0] }
+        }
+    }
+
+    /// The entry as TextMouth writes it, or nil when it cannot be used: a
+    /// list, or one shortcut written as text, becomes a list of shortcuts
+    /// written as TextMouth writes them; text following the defaults is
+    /// kept as written, since TextMouth never reads its words.
+    var validated: ShortcutListing? {
+        followsDefaults ? self : bindings.map(Self.edited)
+    }
+
+    /// A list of shortcuts, written as an array literal.
+    init(arrayLiteral shortcuts: String...) {
+        self = .list(shortcuts)
+    }
+
+    /// Text, written as a string literal.
+    init(stringLiteral words: String) {
+        self = .text(words)
+    }
+
+    /// Reads a list of text or text; anything else cannot be read.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let shortcuts = try? container.decode([String].self) {
+            self = .list(shortcuts)
+        } else {
+            self = .text(try container.decode(String.self))
+        }
+    }
+
+    /// Writes a list as a list, and text as text.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .list(let shortcuts):
+            try container.encode(shortcuts)
+        case .text(let words):
+            try container.encode(words)
+        }
+    }
+}
+
+extension ShortcutAction {
+    /// The action config.json's `name` names: its name as Settings shows it,
+    /// in any letter case, the exact name tried first, so "where am i?" is
+    /// Where Am I?. Nil for a name that names none. A renamed action would
+    /// keep its former name readable here.
+    static func named(_ name: String) -> ShortcutAction? {
+        ShortcutAction(rawValue: name)
+            ?? allCases.first { $0.rawValue.caseInsensitiveCompare(name) == .orderedSame }
+    }
+}
+
 /// All default keyboard shortcut bindings
 extension ShortcutAction {
     /// Default bindings for each action (primary + optional secondary)
