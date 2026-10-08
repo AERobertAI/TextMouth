@@ -55,6 +55,7 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "NSQuitAlwaysKeepsWindows",
         "sleepTimer.lastUsedDuration",
         "customKeyboardBindings",
+        "keyboardShortcutEdits",
         "logLocation",
         "transcriptionLocale",
         "offerTranscriptionAfterImport"

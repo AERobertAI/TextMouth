@@ -333,37 +333,41 @@ final class PreferenceStoreTests: XCTestCase {
 
     // MARK: - Keyboard Shortcuts
 
-    /// Bindings written to the store by someone else take effect in the
-    /// manager at once, published once, so key presses match them.
+    /// A record of the user's edits written to the store by someone else
+    /// takes effect in the manager at once, published once, so key presses
+    /// match its keys.
     func testShortcutsFollowChangesMadeInTheirStore() {
         let store = makeSandboxedPreferences("shortcuts-follow")
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
         var publications = 0
         let subscription = manager.objectWillChange.sink { publications += 1 }
-        var changed = ShortcutAction.defaultBindings
-        changed[.whereAmI] = [KeyBinding(key: "w", option: true)]
+        let changed = ShortcutEdits([.whereAmI: [KeyBinding(key: "w", option: true)]])
 
-        KeyboardShortcutManager.bindingsPreference.write(changed, to: store)
+        KeyboardShortcutManager.editsPreference.write(changed, to: store)
 
-        XCTAssertEqual(manager.bindings, changed)
+        var expected = ShortcutAction.defaultBindings
+        expected[.whereAmI] = [KeyBinding(key: "w", option: true)]
+        XCTAssertEqual(manager.edits, changed)
+        XCTAssertEqual(manager.bindings, expected)
         XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "w", option: true)])
+        XCTAssertEqual(KeyboardShortcutManager.bindingsPreference.read(from: store), expected)
         XCTAssertEqual(publications, 1)
         subscription.cancel()
     }
 
-    /// The bindings are saved where and as every release saved them: JSON
-    /// under customKeyboardBindings, keyed by each action's name, every
-    /// action included, so saved shortcuts keep loading.
+    /// The shortcuts are saved as the record of the actions the user
+    /// edited (FR12): JSON under keyboardShortcutEdits in the form the whole
+    /// map was saved in, keyed by each edited action's name and holding only
+    /// those; the whole map's key, customKeyboardBindings, is never written.
     func testShortcutsKeepTheirSavedKeyAndForm() throws {
         let store = makeSandboxedPreferences("shortcuts-form")
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
 
         manager.updateBindings(for: .whereAmI, to: [KeyBinding(key: "w", option: true)])
 
-        let data = try XCTUnwrap(store.data(forKey: "customKeyboardBindings"))
+        let data = try XCTUnwrap(store.data(forKey: "keyboardShortcutEdits"))
         let saved = try JSONDecoder().decode([String: [KeyBinding]].self, from: data)
-        XCTAssertEqual(saved["Where Am I?"], [KeyBinding(key: "w", option: true)])
-        XCTAssertEqual(saved["Play / Pause"], [KeyBinding(key: "space"), KeyBinding(key: "k")])
-        XCTAssertEqual(Set(saved.keys), Set(ShortcutAction.allCases.map(\.rawValue)))
+        XCTAssertEqual(saved, ["Where Am I?": [KeyBinding(key: "w", option: true)]])
+        XCTAssertNil(store.object(forKey: "customKeyboardBindings"))
     }
 }

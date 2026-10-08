@@ -239,28 +239,34 @@ where Case: RawRepresentable & Hashable & Sendable, Case.RawValue == String,
     let key: String
     /// What the entries may hold, for log lines.
     let supportedDescription: String
+    /// The case an entry's name names, or nil when it names none.
+    private let caseNamed: @Sendable (String) -> Case?
     /// Reads one entry's value, or returns nil when it is unsupported.
     private let parse: @Sendable (FileValue) -> Value?
     /// Writes one value the way TextMouth saves it.
     private let format: @Sendable (Value) -> FileValue
 
     /// A rule for the field `key`, reading each entry's value with `parse`
-    /// and writing it with `format`.
+    /// and writing it with `format`. An entry names its case by the case's
+    /// raw value exactly, unless `caseNamed` reads names otherwise, as the
+    /// shortcuts' rule reads them in any letter case.
     init(
         key: String,
         supportedDescription: String,
+        caseNamed: @escaping @Sendable (String) -> Case? = { Case(rawValue: $0) },
         parse: @escaping @Sendable (FileValue) -> Value?,
         format: @escaping @Sendable (Value) -> FileValue
     ) {
         self.key = key
         self.supportedDescription = supportedDescription
+        self.caseNamed = caseNamed
         self.parse = parse
         self.format = format
     }
 
     /// Whether `name` names a case, and so can key an entry.
     func names(_ name: String) -> Bool {
-        Case(rawValue: name) != nil
+        caseNamed(name) != nil
     }
 
     /// Validates one entry's value from `config.json`: the value as
@@ -270,9 +276,19 @@ where Case: RawRepresentable & Hashable & Sendable, Case.RawValue == String,
     }
 
     /// The values `config.json`'s entries ask the app to adopt: those of the
-    /// entries that name a case and hold a value the rule can read.
+    /// entries that name a case and hold a value the rule can read. Should
+    /// two entries name one case, as names read in any letter case can, the
+    /// one spelled as the case's raw value wins, else the first in sorted
+    /// order, so one file always asks for the same values.
     func requestedValues(fromConfig entries: [String: FileValue]) -> [Case: Value] {
-        [Case: FileValue](keyedByRawValue: entries).compactMapValues(parse)
+        var requested: [Case: Value] = [:]
+        for (name, fileValue) in entries.sorted(by: { $0.key < $1.key }) {
+            guard let named = caseNamed(name), let value = parse(fileValue) else { continue }
+            if requested[named] == nil || name == named.rawValue {
+                requested[named] = value
+            }
+        }
+        return requested
     }
 
     /// `values` as `config.json` holds them.
@@ -428,14 +444,21 @@ enum SettingsPolicy {
         format: { $0 }
     )
 
-    /// The shortcuts of each action (Shortcuts settings): a list of
-    /// shortcuts written as `KeyBinding.configText` writes them, such as
-    /// "option+shift+command+b", read whole or not at all.
-    static let keyboardShortcuts = KeyedSettingRule<ShortcutAction, [String], [KeyBinding]>(
+    /// The shortcuts of each action (Shortcuts settings, FR12), named as
+    /// Settings names the action, in any letter case: a list of shortcuts
+    /// written as `KeyBinding.configText` writes them, such as
+    /// ["option+shift+command+b"], read whole or not at all, makes the
+    /// action the user's; text beginning with "default" gives it TextMouth's
+    /// defaults (`ShortcutListing`). A usable entry is kept as TextMouth
+    /// writes it; the record of the user's edits takes it in
+    /// (`ShortcutEdits.adopting(_:)`).
+    static let keyboardShortcuts = KeyedSettingRule<ShortcutAction, ShortcutListing, ShortcutListing>(
         key: "keyboardShortcuts",
-        supportedDescription: "actions as Settings names them, each with a list of shortcuts such as \"shift+command+b\"",
-        parse: { KeyBinding.bindings(fromConfigTexts: $0) },
-        format: { $0.map(\.configText) }
+        supportedDescription: "actions as Settings names them, in any letter case, each with a list of shortcuts "
+            + "such as [\"shift+command+b\"], or text beginning with \"default\"",
+        caseNamed: { ShortcutAction.named($0) },
+        parse: { $0.validated },
+        format: { $0 }
     )
 
     // MARK: Integer

@@ -183,25 +183,46 @@ final class SettingsPolicyTests: XCTestCase {
         )
     }
 
-    /// Shortcuts keep only the actions TextMouth knows, each with a list
-    /// whose every shortcut can be read, written the way TextMouth writes
-    /// them; an empty list is a choice, an action with no shortcut.
-    func testShortcutRuleKeepsKnownActionsWithReadableLists() {
+    /// Shortcuts keep only the actions TextMouth knows, named in any letter
+    /// case (FR12), each with a list whose every shortcut can be read,
+    /// written the way TextMouth writes them, an empty list being a choice,
+    /// an action with no shortcut; with text beginning with "default", kept
+    /// as written; or with other text, one shortcut, written as a list.
+    func testShortcutRuleKeepsKnownActionsWithReadableEntries() {
         let rule = SettingsPolicy.keyboardShortcuts
 
         XCTAssertEqual(
             rule.requestedValues(fromConfig: [
                 "Where Am I?": ["Option+W"], "Go to Library": [], "Teleport": ["t"], "Play / Pause": ["space", "kk"],
+                "go back": "Default: whatever", "Go Forward": "Cmd+]",
             ]),
-            [.whereAmI: [KeyBinding(key: "w", option: true)], .goToLibrary: []]
+            [.whereAmI: ["option+w"], .goToLibrary: [], .goBack: "Default: whatever", .goForward: ["command+]"]]
         )
         XCTAssertEqual(rule.validatedConfigValue(["cmd + shift + B", "space"]), ["shift+command+b", "space"])
+        XCTAssertEqual(rule.validatedConfigValue("default: w"), "default: w")
         XCTAssertNil(rule.validatedConfigValue(["space", "comand+k"]))
-        XCTAssertFalse(rule.names("where am i?"), "action names are case-sensitive")
+        XCTAssertNil(rule.validatedConfigValue("none"))
+        XCTAssertTrue(rule.names("where am i?"), "action names are read in any letter case")
+        XCTAssertFalse(rule.names("Teleport"))
         XCTAssertEqual(
-            rule.fileEntries([.togglePlayback: [KeyBinding(key: "space"), KeyBinding(key: "k")]]),
-            ["Play / Pause": ["space", "k"]]
+            rule.fileEntries([.togglePlayback: "default: space, k", .releaseMediaControls: ["shift+r"]]),
+            ["Play / Pause": "default: space, k", "Release Media Controls": ["shift+r"]]
         )
+    }
+
+    /// Two entries naming one action, as names read in any letter case can:
+    /// the one spelled as Settings names it wins, else the first in sorted
+    /// order, whatever order the file holds them in.
+    func testShortcutRulePicksOneOfTwoEntriesNamingOneAction() {
+        let rule = SettingsPolicy.keyboardShortcuts
+
+        XCTAssertEqual(
+            rule.requestedValues(fromConfig: ["where am i?": ["k"], "Where Am I?": ["w"], "WHERE AM I?": ["j"]]),
+            [.whereAmI: ["w"]]
+        )
+        XCTAssertEqual(rule.requestedValues(fromConfig: ["where am i?": ["k"], "WHERE AM I?": ["j"]]), [.whereAmI: ["j"]])
+        // The sounds' events are still named exactly.
+        XCTAssertFalse(SettingsPolicy.soundEffectAssignments.names("play"))
     }
 
     // MARK: - Repeated symbols

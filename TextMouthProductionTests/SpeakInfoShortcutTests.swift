@@ -64,15 +64,17 @@ final class SpeakInfoShortcutTests: XCTestCase {
     }
 
     /// A user who put the plain I on another action before this release
-    /// keeps it there: the new default is left out rather than put on two
-    /// actions, as every new default is.
+    /// keeps it there: the whole map saved then moves to a record with that
+    /// action edited (FR12), and the new default is left out rather than put
+    /// on two actions, as every new default is.
     func testAnOlderCustomIKeepsItsActionAndLeavesSpeakInfoUnbound() {
         let plainI = KeyBinding(key: "i")
-        let loaded = KeyboardShortcutManager.bindings(addingDefaultsTo: [.whereAmI: [plainI]])
+        let moved = ShortcutEdits.migrating(savedMap: [.whereAmI: [plainI]], fileLists: nil)
+        let loaded = moved.edits.effectiveBindings(defaults: ShortcutAction.defaultBindings)
         XCTAssertEqual(loaded[.whereAmI], [plainI])
         XCTAssertEqual(loaded[.speakInfo], [])
         // With no such binding, the default is adopted.
-        XCTAssertEqual(KeyboardShortcutManager.bindings(addingDefaultsTo: [:])[.speakInfo], [plainI])
+        XCTAssertEqual(ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings)[.speakInfo], [plainI])
     }
 
     // MARK: - The Menu

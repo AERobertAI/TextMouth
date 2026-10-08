@@ -690,9 +690,10 @@ final class ConfigSyncTests: XCTestCase {
     // MARK: - Keyboard shortcuts
 
     /// Shortcuts applied from config.json reach the shortcut manager at
-    /// once, through the store it follows: an action the file names takes
-    /// exactly its shortcuts, and the others keep theirs. They are saved
-    /// back with every action named, in readable text.
+    /// once, through the record it follows: an action the file lists takes
+    /// exactly its shortcuts, as the user's, and the others keep theirs.
+    /// They are saved back with every action named, in readable text: an
+    /// edited action as a list, every other as "default: " and its keys.
     func testShortcutsReachTheShortcutManagerAndAreSaved() throws {
         let store = try isolatedDefaults()
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
@@ -705,11 +706,12 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "w", option: true)])
         XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [KeyBinding(key: "r", control: true)])
         XCTAssertEqual(manager.bindingsFor(.togglePlayback), ShortcutAction.defaultBindings[.togglePlayback])
+        XCTAssertEqual(manager.edits.editedActions, [.releaseMediaControls, .whereAmI])
 
         var saved = ConfigService.AppConfig()
         viewModel.writePreferences(into: &saved)
         XCTAssertEqual(saved.keyboardShortcuts["Where Am I?"], ["option+w"])
-        XCTAssertEqual(saved.keyboardShortcuts["Play / Pause"], ["space", "k"])
+        XCTAssertEqual(saved.keyboardShortcuts["Play / Pause"], "default: space, k")
         XCTAssertEqual(Set(saved.keyboardShortcuts.keys), Set(ShortcutAction.allCases.map(\.rawValue)))
     }
 
@@ -747,7 +749,7 @@ final class ConfigSyncTests: XCTestCase {
             "Play / Pause": ["space", "\(mistyped)"],
             "Where Am I?": ["Option + W"],
             "\(unknownAction)": ["t"],
-            "Go Back": "command+["
+            "Go Back": 7
           }
         }
         """)
@@ -757,6 +759,7 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "w", option: true)])
         XCTAssertEqual(manager.bindingsFor(.togglePlayback), ShortcutAction.defaultBindings[.togglePlayback])
         XCTAssertEqual(manager.bindingsFor(.goBack), ShortcutAction.defaultBindings[.goBack])
+        XCTAssertEqual(manager.edits.editedActions, [.whereAmI])
         XCTAssertEqual(debugLogLines(containing: mistyped).count, 1)
         XCTAssertEqual(debugLogLines(containing: unknownAction).count, 1)
         XCTAssertFalse(debugLogLines(containing: "config.json keyboardShortcuts.Go Back: could not be read").isEmpty)
@@ -1090,9 +1093,11 @@ final class ConfigSyncTests: XCTestCase {
     /// A value unlike its default for every portable preference, by store
     /// key, in the form its owner keeps it in the preferences store.
     private static func portablePreferenceSamples() throws -> [String: Any] {
-        var shortcuts = ShortcutAction.defaultBindings
-        shortcuts[.togglePlayback] = [KeyBinding(key: "p", control: true)]
-        shortcuts[.whereAmI] = [KeyBinding(key: "w", option: true), KeyBinding(key: "w", control: true)]
+        // The record of the shortcuts the user edited (FR12): two actions.
+        let shortcuts = ShortcutEdits([
+            .togglePlayback: [KeyBinding(key: "p", control: true)],
+            .whereAmI: [KeyBinding(key: "w", option: true), KeyBinding(key: "w", control: true)],
+        ])
         let sounds: [SoundEvent: String] = [
             .play: "Glass", .pause: "None", .skipForward: "Funk",
             .skipBackward: "Bottle", .whereAmIStart: "Hero", .whereAmIEnd: "Purr",
@@ -1121,7 +1126,7 @@ final class ConfigSyncTests: XCTestCase {
             "showSpeedInPlaybackControls": false,
             "showExportInReaderToolbar": true,
             // Shortcuts, text, and sounds, kept by their services.
-            "customKeyboardBindings": try JSONEncoder().encode(shortcuts.keyedByRawValue),
+            "keyboardShortcutEdits": try XCTUnwrap(shortcuts.storedData),
             "substitutionsEnabled": false,
             "repeatedSymbolStyle": RepeatedSymbolStyle.leaveOut.rawValue,
             "repeatedSymbolThreshold": 7,

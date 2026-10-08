@@ -344,11 +344,17 @@ final class ConfigService: ObservableObject {
         /// each move (`AudioEditorPreferences.playAfterMoves`).
         var audioEditorPlaysAfterMoves: Bool?
         /// The keyboard shortcuts of each action, keyed by the action's name
-        /// as Settings shows it, each a list of shortcuts such as
-        /// "option+shift+command+b" (`KeyBinding.configText`); an empty list
-        /// leaves the action without one. TextMouth writes every action; an
-        /// action the file leaves out keeps its shortcuts.
-        var keyboardShortcuts: [String: [String]] = [:]
+        /// as Settings shows it, in any letter case, in either of two forms
+        /// (FR12, `ShortcutListing`): an action the user edited is a list of
+        /// shortcuts such as ["option+shift+command+b"]
+        /// (`KeyBinding.configText`), an empty list leaving it without one,
+        /// and every other action is text beginning with "default", such as
+        /// "default: w". Writing a list makes an action the user's, and
+        /// writing "default" gives it back to TextMouth's defaults.
+        /// TextMouth writes every action from the record of the user's edits
+        /// (`ShortcutEdits`); an action the file leaves out keeps its
+        /// shortcuts.
+        var keyboardShortcuts: [String: ShortcutListing] = [:]
         /// Whether every feed is refreshed when TextMouth opens (FR03,
         /// `FeedSettings`).
         var feedRefreshAtLaunch: Bool?
@@ -534,8 +540,9 @@ final class ConfigService: ObservableObject {
                     "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls",
                     "showSpeedInPlaybackControls", "showExportInReaderToolbar",
                 ])
-                // Shortcuts: the store's key is older than the file's field.
-                mirrored.append((storeKey: "customKeyboardBindings", field: "keyboardShortcuts"))
+                // Shortcuts: the record of the ones the user edited (FR12),
+                // which the file lists with every other action's defaults.
+                mirrored.append((storeKey: KeyboardShortcutManager.editsPreference.key, field: "keyboardShortcuts"))
                 // Text: the switch and the repeated-symbol settings. The rules
                 // are kept in substitutions.json.
                 mirrored += sameNames([
@@ -575,6 +582,16 @@ final class ConfigService: ObservableObject {
             /// Portable preferences config.json alone holds: the Storage
             /// settings' import and removal choices.
             static let fileOnly = ["importDeleteBehavior", "confirmBeforeDelete", "moveToTrashInsteadOfDeleting"]
+
+            /// Preferences-store keys an earlier release wrote, read once to
+            /// move what they held and never written again, so each stays
+            /// as a copy to go back to; neither mirrored nor written to
+            /// config.json.
+            /// - `customKeyboardBindings`: every action's keys, as saved
+            ///   before the record of the user's edits (FR12). The move to
+            ///   the record reads it at the first launch without one
+            ///   (`KeyboardShortcutManager.moveSavedShortcutsIfNeeded`).
+            static let retiredStoreKeys = [KeyboardShortcutManager.savedMapKey]
 
             /// Machine-local values config.json holds without mirroring them.
             /// - `dataDirectoryPath`: where this Mac keeps its library. The

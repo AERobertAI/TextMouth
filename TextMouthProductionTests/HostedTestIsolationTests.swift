@@ -419,7 +419,7 @@ final class HostedTestIsolationTests: XCTestCase {
     /// process's preferences and never to the user's.
     func testSettingsShortcutsAndSleepTimerDefaultToThisProcessPreferences() {
         let preferences = TextMouthRuntime.current.preferences
-        let keys = ["autoPlayOnNavigate", "customKeyboardBindings", "sleepTimer.lastUsedDuration"]
+        let keys = ["autoPlayOnNavigate", "keyboardShortcutEdits", "sleepTimer.lastUsedDuration"]
         preservePreferences(keys)
         let usersPreferences = UserPreferenceFingerprint(UserPreferenceFingerprint.textMouthKeys + keys)
         for key in keys {
@@ -431,7 +431,7 @@ final class HostedTestIsolationTests: XCTestCase {
         XCTAssertEqual(preferences.object(forKey: "autoPlayOnNavigate") as? Bool, settings.autoPlayOnNavigate)
 
         KeyboardShortcutManager(installsEventMonitor: false).resetToDefaults()
-        XCTAssertNotNil(preferences.data(forKey: "customKeyboardBindings"))
+        XCTAssertNotNil(preferences.data(forKey: "keyboardShortcutEdits"))
 
         let timer = SleepTimerService()
         defer { timer._resetForTesting() }

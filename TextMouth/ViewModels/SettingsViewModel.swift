@@ -516,9 +516,7 @@ final class SettingsViewModel: ObservableObject {
         // file since it was loaded, and publishes it for this model to apply.
         observeExternalEdits()
         withoutSyncingToConfig {
-            if configService.hasExistingConfig {
-                applyConfigChanges(configService.config)
-            }
+            applyFileAtLaunch()
             if selectedVoiceID.isEmpty {
                 voiceCatalog.listNow()
             }
@@ -532,6 +530,25 @@ final class SettingsViewModel: ObservableObject {
             configService.saveToDisk()
         }
         configService.startWatching()
+    }
+
+    /// Applies config.json as launch found it, when it could be read. First,
+    /// at the first launch that finds no record of the shortcuts the user
+    /// edited, the shortcuts saved before the record are moved into it
+    /// (FR12): that move reads the file's shortcuts itself, so they are left
+    /// out of what is applied then, since the old form's lists would make
+    /// every action the user's. The launch's save then writes the new form.
+    private func applyFileAtLaunch() {
+        var fileConfig = configService.hasExistingConfig ? configService.config : nil
+        let fileListings = fileConfig.map {
+            SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: $0.keyboardShortcuts)
+        }
+        if KeyboardShortcutManager.moveSavedShortcutsIfNeeded(in: preferences, fileListings: fileListings) {
+            fileConfig?.keyboardShortcuts = [:]
+        }
+        if let fileConfig {
+            applyConfigChanges(fileConfig)
+        }
     }
 
     /// Offers the catalog's voices for the language chosen (every voice when
@@ -642,7 +659,13 @@ final class SettingsViewModel: ObservableObject {
     /// are clamped before assignment, and an empty or unsupported choice, an
     /// unset speed or pitch, empty text, or a newer field the file leaves out
     /// (nil) leaves the current preference alone.
+    ///
+    /// When the snapshot's shortcuts gave one key to two edited actions,
+    /// left to one of them now (FR12), config.json is saved again once this
+    /// is applied, as after a repaired value, so the file shows the keys in
+    /// force; at launch, the launch's own save does it.
     func applyConfigChanges(_ config: ConfigService.AppConfig) {
+        var shortcutsWereRepaired = false
         withoutSyncingToConfig {
             adopt(config.selectedVoiceID.nonEmpty, into: \.selectedVoiceID)
             adopt(config.wordsPerMinute, rule: SettingsPolicy.wordsPerMinute, into: \.wordsPerMinute)
@@ -700,8 +723,11 @@ final class SettingsViewModel: ObservableObject {
             )
             adopt(config.showBookmarkInPlaybackControls, into: \.showBookmarkInPlaybackControls)
             adopt(config.showSpeedInPlaybackControls, into: \.showSpeedInPlaybackControls)
-            adoptServicePreferences(from: config)
+            shortcutsWereRepaired = adoptServicePreferences(from: config)
             requestDataDirectoryMove(to: config.dataDirectoryPath)
+        }
+        if shortcutsWereRepaired {
+            syncToConfig()
         }
     }
 
@@ -781,7 +807,7 @@ final class SettingsViewModel: ObservableObject {
             + TextSubstitutionService.preferenceKeys
             + RecordingPreferences.keys
             + AudioEditingPreferences.keys
-            + [KeyboardShortcutManager.bindingsPreference.key, LogLocation.preference.key]
+            + [KeyboardShortcutManager.editsPreference.key, LogLocation.preference.key]
             + [TranscriptionLanguage.preference.key, TranscriptionPreferences.offerAfterImport.key]
             + [BookExportPreferences.showInReaderToolbar.key]
     }
@@ -913,8 +939,10 @@ final class SettingsViewModel: ObservableObject {
         config.audioEditorPreviewsFilters = AudioEditorPreferences.previewFiltersFirst.read(from: preferences)
         config.audioEditorPlaysAfterMoves = AudioEditorPreferences.playAfterMoves.read(from: preferences)
         config.showExportInReaderToolbar = BookExportPreferences.showInReaderToolbar.read(from: preferences)
+        // Every action: an edited one as the list of its keys, every other
+        // as "default: " and its keys in force (FR12).
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
-            KeyboardShortcutManager.bindingsPreference.read(from: preferences)
+            KeyboardShortcutManager.editsPreference.read(from: preferences).listings(defaults: ShortcutAction.defaultBindings)
         )
         config.logLocation = LogLocation.preference.read(from: preferences).rawValue
         config.transcriptionLocale = TranscriptionLanguage.preference.read(from: preferences)
@@ -923,7 +951,9 @@ final class SettingsViewModel: ObservableObject {
 
     /// Writes the values config.json asks for into the store, where their
     /// services take them up, through the same rules the decoder applies.
-    private func adoptServicePreferences(from config: ConfigService.AppConfig) {
+    /// Returns whether the shortcuts gave one key to two edited actions,
+    /// settled now (FR12), so the file is to be saved again.
+    private func adoptServicePreferences(from config: ConfigService.AppConfig) -> Bool {
         adopt(config.soundEffectsEnabled, into: SoundEffectService.enabledPreference)
         let volume = config.soundEffectsVolume.flatMap { SettingsPolicy.soundEffectsVolume.requestedValue(fromConfig: $0) }
         adopt(volume.map { Float($0) }, into: SoundEffectService.volumePreference)
@@ -980,16 +1010,18 @@ final class SettingsViewModel: ObservableObject {
         adopt(config.audioEditorPreviewsFilters, into: AudioEditorPreferences.previewFiltersFirst)
         adopt(config.audioEditorPlaysAfterMoves, into: AudioEditorPreferences.playAfterMoves)
         adopt(config.showExportInReaderToolbar, into: BookExportPreferences.showInReaderToolbar)
-        adopt(
-            entries: SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),
-            into: KeyboardShortcutManager.bindingsPreference,
-            combining: KeyboardShortcutManager.bindings(_:adopting:)
+        // A list makes its action the user's, "default" gives it back, and
+        // a key two edited actions then hold goes to one (FR12).
+        let shortcutsWereRepaired = KeyboardShortcutManager.adopt(
+            SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),
+            in: preferences
         )
         // An empty or unsupported choice leaves the current one alone.
         adopt(SettingsPolicy.logLocation.requestedValue(fromConfig: config.logLocation), into: LogLocation.preference)
         // So does an empty language, or one that cannot be an identifier.
         adopt(TranscriptionLanguage.validated(config.transcriptionLocale), into: TranscriptionLanguage.preference)
         adopt(config.offerTranscriptionAfterImport, into: TranscriptionPreferences.offerAfterImport)
+        return shortcutsWereRepaired
     }
 
     /// Writes a value config.json asks for into the store when it differs
@@ -1000,18 +1032,14 @@ final class SettingsViewModel: ObservableObject {
     }
 
     /// Writes the entries config.json sets for a preference keyed by enum
-    /// cases: `combine` puts them in place of the current values, by default
-    /// replacing each case they name, so every case they leave out keeps its
-    /// value. No entries leave the preference alone.
+    /// cases, each replacing its case's value, so every case they leave out
+    /// keeps its value. No entries leave the preference alone.
     private func adopt<Case: Hashable & Sendable, Value: Equatable & Sendable>(
         entries requested: [Case: Value],
-        into preference: StoredPreference<[Case: Value]>,
-        combining combine: (_ current: [Case: Value], _ requested: [Case: Value]) -> [Case: Value] = {
-            $0.merging($1) { _, requested in requested }
-        }
+        into preference: StoredPreference<[Case: Value]>
     ) {
         guard !requested.isEmpty else { return }
-        adopt(combine(preference.read(from: preferences), requested), into: preference)
+        adopt(preference.read(from: preferences).merging(requested) { _, requested in requested }, into: preference)
     }
 
     /// The sound effects volume as config.json holds it: to the hundredth,
