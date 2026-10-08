@@ -547,3 +547,19 @@ Each has a recommended answer.
 - **Which command deleted the October 7 download.**
 - **The true size of "The Digital Antiquarian":** its record keeps 10 entries, and its size is recorded at its next check.
 - **Precise timings:** every timing was taken under load (load average 10 to 13), so the figures are upper bounds.
+
+## Addendum, October 7 evening: the user's answers
+
+The user answered the ten questions on the evening of October 7 (`humanQuestions/2026-10-07-evening.md`, quoted in FR11 in TODO-2026-09-04.md): yes to 2, 3, 4, 7, 8, and 10, and changes to 1, 5, 6, and 9. `FEED-ITEMS-ADDENDUM-2026-10-07.md` measures the user's layout for question 1 (a package for each item, each feed's own index of its packages, and no feed item in library.json) and recommends it in place of option (c).
+
+- **Replaced by the addendum:**
+  - section 2's recommendation;
+  - section 3, where the records show;
+  - section 5, since a removed download's state stays in its package, not in `FeedItem.savedBook`;
+  - the moving of the downloaded article in section 6;
+  - section 9's build plan, now five branches.
+- **Still standing:**
+  - section 4's three choices and their number, except the rule's protections, which answer 5 changes: a download started and not finished may be removed, and a transcribed one needs no protection;
+  - section 7's wording, with the addendum's new counts;
+  - the follow-ups.
+- **What comes next:** six new questions end the addendum.
