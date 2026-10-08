@@ -134,6 +134,14 @@ final class NowPlayingSession {
         coordinator.clearNowPlaying(ownerID: ownerID)
     }
 
+    /// Whether this reader is the active owner: the playing reader, or,
+    /// while none plays, the most recently focused one
+    /// (`NowPlayingService.activeOwnerID`), which the system's skip, track,
+    /// and Pause commands reach.
+    var isActiveOwner: Bool {
+        coordinator.activeOwnerID == ownerID
+    }
+
     /// Whether this reader holds TextMouth's media controls, which Release
     /// Media Controls hands back to other apps: it is the active owner and
     /// the system shows its book (`NowPlayingService.holdsMediaControls(ownerID:)`).
@@ -253,8 +261,11 @@ final class NowPlayingService {
     /// (`ReaderViewModel.finishListening`), so that macOS goes on sending
     /// the AirPods and the media keys here, and the skip and track commands
     /// sent after the end reach it and play the book again from where the
-    /// skip lands. A reader gives the controls up only by releasing them
-    /// (`clearNowPlaying(ownerID:)`) or closing (`unregister(ownerID:)`).
+    /// skip lands. A reader gives the controls up by releasing them
+    /// (`clearNowPlaying(ownerID:)`) or closing (`unregister(ownerID:)`),
+    /// and another reader that plays becomes the active one: a backward
+    /// skip in the finished book's window then moves its cursor only
+    /// (`ReaderViewModel.performSkip`).
     var activeOwnerID: UUID? {
         playingOwnerID ?? focusedOwnerID
     }

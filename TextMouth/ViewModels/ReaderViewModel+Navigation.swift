@@ -197,6 +197,17 @@ extension ReaderViewModel {
     /// move, such as a heading skip with no heading before, leaves the book
     /// finished and silent, as does a forward skip at the end, which stays
     /// there.
+    ///
+    /// The book plays again only while its reader is still the active
+    /// owner (`NowPlayingSession.isActiveOwner`), as it is unless another
+    /// book plays, since the rewind exists to hear the end again while
+    /// nothing else plays. While another book plays, a backward skip in the
+    /// finished book's window moves its cursor only, as any stopped
+    /// reader's skip does, rather than play the finished book and pause the
+    /// one being listened to by accident; the book then rests at its end no
+    /// longer (REV07, speech finding 5, as the orchestrator recommended on
+    /// October 7). The AirPods reach only the active owner, so their rewind
+    /// plays any finished book it reaches.
     func performSkip(unit: SkipUnit, forward: Bool) {
         DiagnosticLog.trace(.playback, "performSkip unit=\(unit.rawValue) forward=\(forward) wpm=\(speechService.wordsPerMinute)")
         // Taken before the skip: a structural skip jumps (`navigateTo`),
@@ -228,9 +239,18 @@ extension ReaderViewModel {
                 skipByTime(seconds: forward ? Double(seconds) : -Double(seconds))
             }
         }
-        // The finished book plays again from where a backward skip landed.
+        // The finished book plays again from where a backward skip landed,
+        // while nothing else plays.
         guard wasFinished, !forward,
               before != (chapter: currentChapterIndex, offset: currentCharacterOffset) else { return }
+        guard nowPlayingService.isActiveOwner else {
+            // Another reader is the active owner, as the one playing is:
+            // this book's cursor has moved, as any stopped reader's does,
+            // and it rests at its end no longer.
+            DiagnosticLog.trace(.playback, "performSkip: another reader is the active owner; the finished book's cursor moved only")
+            hasFinishedBook = false
+            return
+        }
         DiagnosticLog.trace(.playback, "performSkip: the finished book plays again from where the skip landed")
         play()
     }

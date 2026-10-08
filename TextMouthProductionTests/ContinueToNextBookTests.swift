@@ -425,7 +425,16 @@ final class ContinueToNextBookTests: XCTestCase {
             // Fifteen seconds back from the saved position, half a second
             // into the second track, lands at the start of the first.
             world.settings.skipBackwardUnit = .seconds15
-            let reader = makeReader(for: finished, in: world)
+            // The reader joins a media session of its own, as its only
+            // reader, so it is the active owner, as a finished book's reader
+            // is while no other book plays: a finished book plays again on a
+            // backward skip only then. Readers of other tests may still be
+            // registered in the app's shared session.
+            let reader = makeReader(
+                for: finished,
+                in: world,
+                nowPlaying: NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+            )
             waitUntilLoaded(reader)
             if testCase.timer {
                 startSharedSleepTimer(.endOfBook, ownedBy: reader.readerID)
@@ -660,18 +669,23 @@ final class ContinueToNextBookTests: XCTestCase {
     /// A reader for `book` in `world`, which starts loading at once and is
     /// closed when the test ends.
     ///
-    /// - Parameter requests: The request store, when not the world's own.
+    /// - Parameters:
+    ///   - requests: The request store, when not the world's own.
+    ///   - nowPlaying: The Now Playing coordinator the reader joins, when
+    ///     not the app's shared one.
     private func makeReader(
         for book: Book,
         in world: World,
-        requests: ReaderAutoplayRequests? = nil
+        requests: ReaderAutoplayRequests? = nil,
+        nowPlaying: NowPlayingService? = nil
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: world.library,
             settingsViewModel: world.settings,
             autoplayRequests: requests ?? world.requests,
-            notificationCenter: world.notifications
+            notificationCenter: world.notifications,
+            nowPlaying: nowPlaying
         )
         addTeardownBlock { reader.close() }
         return reader

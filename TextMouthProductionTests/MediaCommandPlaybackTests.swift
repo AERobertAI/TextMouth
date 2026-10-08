@@ -782,6 +782,76 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertEqual(system.told.filter { $0 == nil }.count, 1, "Now Playing was cleared more than once")
     }
 
+    /// While another book plays, the keyboard's Skip Backward in a finished
+    /// book's window moves its cursor back by the skip unit and plays
+    /// nothing (REV07, speech finding 5): the book being listened to plays
+    /// on and keeps the controls, and the finished book rests at its end no
+    /// longer. Before, the skip played the finished book again and paused
+    /// the other.
+    func testAFinishedBooksSkipBackwardWhileAnotherBookPlaysMovesItsCursorOnly() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Skip Owner")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let finished = ferry.reader
+
+        // Another book's window opens, becomes key, and plays its book.
+        let otherBook = try world.makeSilentAudioBook(title: "Harbour Timetable", trackDurations: [30])
+        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(other)
+        other.windowBecameKey()
+        other.play()
+        let otherAudio = other.audioPlaybackService
+        XCTAssertTrue(otherAudio.isPlaying && !otherAudio.isPaused, "The other book did not play")
+
+        // Back in the finished book's window, Skip Backward.
+        finished.windowBecameKey()
+        finished.lastSkipTime = .distantPast
+        let skipping = recordingAnnouncements {
+            finished.skipBackward()
+        }
+        XCTAssertFalse(finished.audioPlaybackService.isPlaying, "Skip Backward played the finished book while another played")
+        XCTAssertEqual(
+            finished.currentCharacterOffset,
+            ferry.endOffset - Self.fifteenSecondsOfAudio,
+            "Skip Backward did not move the cursor back by the skip unit"
+        )
+        XCTAssertFalse(finished.hasFinishedBook, "The finished book still rests at its end after its cursor moved")
+        XCTAssertTrue(otherAudio.isPlaying && !otherAudio.isPaused, "Skip Backward in the finished book's window paused the book playing")
+        assertToldSystem(system, that: other, plays: true, "Skip Backward in the finished book's window")
+        XCTAssertEqual(skipping.announcements, [], "Skip Backward announced something")
+    }
+
+    /// While nothing plays, a finished book's Skip Backward plays it again,
+    /// though another book was played since and is shown paused: the
+    /// finished book's reader, its window key, is the active owner, and the
+    /// rewind exists to hear the end again while nothing else plays. The
+    /// paused book stays paused.
+    func testAFinishedBooksSkipBackwardWhileNothingPlaysPlaysItAgain() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Skip Paused Other")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let finished = ferry.reader
+
+        // Another book's window opens, becomes key, and plays its book, then
+        // pauses it.
+        let otherBook = try world.makeSilentAudioBook(title: "Harbour Timetable", trackDurations: [30])
+        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(other)
+        other.windowBecameKey()
+        other.play()
+        other.pause()
+        let otherAudio = other.audioPlaybackService
+        XCTAssertTrue(otherAudio.isPaused, "The other book did not pause")
+
+        // Back in the finished book's window, Skip Backward.
+        finished.windowBecameKey()
+        finished.lastSkipTime = .distantPast
+        finished.skipBackward()
+        assertPlaysAudio(finished, from: ferry.endOffset - Self.fifteenSecondsOfAudio, "Skip Backward while nothing plays")
+        assertToldSystem(system, that: finished, plays: true, "Skip Backward while nothing plays")
+        XCTAssertTrue(otherAudio.isPaused, "The paused book did not stay paused")
+    }
+
     // MARK: - The System's Side
 
     /// The system's side of the media session as a test plays it: the

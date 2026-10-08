@@ -254,9 +254,11 @@ final class ReaderViewModel: ObservableObject {
     /// the controls (`canReleaseMediaControls`).
     /// Cleared when playback starts (`play()`), when a jump moves the cursor
     /// away from the end (`navigateTo(chapterIndex:characterOffset:)`), when
-    /// playback is stopped (`stop()`), and when the book hands listening
-    /// over to the next book, in its folder or in the reading list, which
-    /// takes the media controls (`handOverToNextBook(titled:askingWith:)`).
+    /// a backward skip moves it while another book plays
+    /// (`performSkip(unit:forward:)`), when playback is stopped (`stop()`),
+    /// and when the book hands listening over to the next book, in its
+    /// folder or in the reading list, which takes the media controls
+    /// (`handOverToNextBook(titled:askingWith:)`).
     /// A book that loops back to its beginning is not finished: it plays
     /// again, or waits at its start. Accessed from the Playback and
     /// Navigation extensions.
