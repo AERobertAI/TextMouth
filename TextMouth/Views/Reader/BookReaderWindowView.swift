@@ -47,7 +47,9 @@ struct BookReaderWindowView: View {
                     NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
                 },
                 onWindowBecameKey: {
-                    viewModel.nowPlayingService.focus()
+                    // Focuses the reader's media session, and has the menus
+                    // ask afresh whether it can release the media controls.
+                    viewModel.windowBecameKey()
                 }
             ))
             .focusedValue(\.activeWindowType, .reader)

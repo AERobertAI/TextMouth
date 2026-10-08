@@ -735,6 +735,45 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertEqual(told.filter { $0 == nil }.count, 1, "The system was told more than once that TextMouth stopped")
     }
 
+    /// A reader holds TextMouth's media controls, the ones Release Media
+    /// Controls hands back, while it is the active reader and the system
+    /// shows its item: not before it shows one; not once another reader's
+    /// window is focused, though the system still shows its paused book;
+    /// not once another reader's playing book replaces its own, whichever
+    /// window is focused; and not once it has released them. A finished
+    /// book whose controls the next book took holds nothing for the same
+    /// reason (REV07, speech finding 5).
+    func testOnlyTheActiveReaderWhoseItemIsShownHoldsTheMediaControls() {
+        let coordinator = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let first = makeSession(coordinator: coordinator)
+        let second = makeSession(coordinator: coordinator)
+        XCTAssertFalse(first.holdsMediaControls, "A reader that showed nothing holds the controls")
+
+        first.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        XCTAssertTrue(first.holdsMediaControls, "The playing reader does not hold the controls")
+        first.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        XCTAssertTrue(first.holdsMediaControls, "The paused reader the system shows does not hold the controls")
+
+        // Another reader's window becomes key: the system still shows the
+        // first reader's book, but the first is no longer the active one.
+        second.focus()
+        XCTAssertFalse(first.holdsMediaControls, "A reader no longer active holds the controls")
+        XCTAssertFalse(second.holdsMediaControls, "A focused reader whose book is not shown holds the controls")
+
+        // The second reader plays: its book replaces the first's.
+        second.updateNowPlayingInfo(title: "Ferry Log", author: "Purser", isPlaying: true)
+        XCTAssertTrue(second.holdsMediaControls, "The playing reader does not hold the controls")
+        first.focus()
+        XCTAssertFalse(first.holdsMediaControls, "A reader whose book another replaced holds the controls")
+        XCTAssertTrue(second.holdsMediaControls, "Focusing another window took the controls from the playing reader")
+
+        // The second reader's window becomes key, and releases them.
+        second.focus()
+        second.releaseMediaControls()
+        XCTAssertFalse(second.holdsMediaControls, "A reader holds the controls it released")
+        XCTAssertFalse(first.holdsMediaControls, "Releasing the controls handed them to another reader")
+    }
+
     // MARK: - Commands Received on Any Thread
 
     /// MediaPlayer does not say which thread it calls a command's handler

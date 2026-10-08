@@ -201,6 +201,12 @@ extension ReaderViewModel {
     /// Stop TextMouth's current media session and release Now Playing /
     /// headphone media controls while keeping the reader window open.
     /// Starting playback from TextMouth again reclaims the controls.
+    ///
+    /// Only a reader that holds the controls releases them, and only then
+    /// does VoiceOver hear "Media controls released"
+    /// (`canReleaseMediaControls`). A finished book whose controls the next
+    /// book has taken once stopped and said so while it released nothing,
+    /// the playing book keeping them (REV07, speech finding 5).
     func releaseMediaControls() {
         guard canReleaseMediaControls else { return }
         stop()
@@ -2162,9 +2168,10 @@ extension ReaderViewModel {
     /// after the end therefore reaches `skipBackward()`, which plays the
     /// book again from where it lands (`performSkip(unit:forward:)`), as
     /// the listener who rewinds a finished book means to hear its end
-    /// again. Only Release Media Controls or closing the window gives the
-    /// controls up. A book read from the reading list ends listening here
-    /// too (ReaderViewModel+ReadingList).
+    /// again. Release Media Controls or closing the window gives the
+    /// controls up, and another book that plays takes them. A book read
+    /// from the reading list ends listening here too
+    /// (ReaderViewModel+ReadingList).
     func finishListening(announcing announcement: String) {
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
@@ -2206,8 +2213,9 @@ extension ReaderViewModel {
     /// window, from the keyboard or as an AirPods rewind that arrives before
     /// the next book starts, then moves this book's cursor only, as any
     /// stopped reader's skip does: it never plays this book's end over the
-    /// book just announced, nor pauses that book once it plays. Release
-    /// Media Controls is not offered on this book's account either. The
+    /// book just announced, nor pauses that book once it plays. Once that
+    /// book plays it holds the media controls, and this book's window
+    /// offers to release them no more (`canReleaseMediaControls`). The
     /// October 7 review found all three while the finished state outlived
     /// the hand-over (REV07, speech finding 5).
     ///

@@ -1,4 +1,5 @@
 import AVFoundation
+import Combine
 import CoreAudio
 import XCTest
 @testable import TextMouth
@@ -295,7 +296,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
         assertToldSystem(system, that: next, plays: true, "The next book's start")
 
         // Back in the finished book's window, which becomes key.
-        finished.nowPlayingService.focus()
+        finished.windowBecameKey()
         XCTAssertFalse(finished.canReleaseMediaControls, "Release Media Controls is offered for the book that continued")
         let atTheKeyboardSkip = finished.currentCharacterOffset
         finished.lastSkipTime = .distantPast
@@ -515,6 +516,35 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertTrue(quay.reader.speechService.isSpeaking, "Play did not speak")
     }
 
+    /// Where the speech engine's refusal stopped speech, the book is shown
+    /// paused and holds the media controls, so Release Media Controls is
+    /// offered, as it is for a paused book, and hands them back: the system
+    /// is told once that playback stopped, and VoiceOver hears so. Before,
+    /// it was not offered until Play, though the book held the controls.
+    func testReleaseMediaControlsIsOfferedWhereARefusalStoppedSpeech() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Refusal Release")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let reader = quay.reader
+
+        reader.play()
+        recordingAnnouncements {
+            refuseTheChunkAfterTheFirst(of: quay)
+        }
+        XCTAssertFalse(reader.speechService.isSpeaking, "Speech did not stop")
+        assertToldSystem(system, that: reader, plays: false, "The refusal")
+        XCTAssertTrue(reader.canReleaseMediaControls, "Release Media Controls is not offered where the refusal stopped speech")
+
+        let releasing = recordingAnnouncements {
+            reader.releaseMediaControls()
+        }
+        XCTAssertEqual(releasing.announcements.map(\.message), ["Media controls released"])
+        XCTAssertEqual(system.told.last, .some(nil), "Releasing media controls did not clear Now Playing")
+        XCTAssertEqual(system.told.filter { $0 == nil }.count, 1, "Now Playing was cleared more than once")
+        XCTAssertNil(system.coordinator.playingOwnerID)
+        XCTAssertFalse(reader.canReleaseMediaControls, "Release Media Controls is offered again")
+    }
+
     // MARK: - After the Book Has Finished
 
     /// Report of 2026-10-07: "after a book 'finished' trying to use the
@@ -686,6 +716,70 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertFalse(reader.audioPlaybackService.isPlaying, "A skip after releasing played")
         XCTAssertLessThan(reader.currentCharacterOffset, ferry.endOffset, "The skip did not move the cursor")
         XCTAssertEqual(system.told.last, .some(nil), "The skip reclaimed Now Playing")
+    }
+
+    /// A finished book offers Release Media Controls only while it holds
+    /// them, its book the one the system shows (REV07, speech finding 5).
+    /// Once another book plays, the finished book's window, which asks
+    /// again as it becomes key, offers nothing, and Release Media Controls
+    /// chosen anyway, as a key can choose it, releases nothing and says
+    /// nothing: the playing book plays on with the controls, and the system
+    /// is never told that TextMouth stopped. Before, the finished book
+    /// stopped and said "Media controls released" while the other book kept
+    /// them. Nor is it offered while the system shows that book paused;
+    /// that book's own window releases them.
+    func testAFinishedBookOffersReleaseMediaControlsOnlyWhileItHoldsThem() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Release Owner")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let finished = ferry.reader
+        XCTAssertTrue(finished.canReleaseMediaControls, "Release Media Controls is not offered while the finished book holds the controls")
+
+        // Another book's window opens, becomes key, and plays its book.
+        let otherBook = try world.makeSilentAudioBook(title: "Harbour Timetable", trackDurations: [30])
+        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(other)
+        other.windowBecameKey()
+        other.play()
+        let otherAudio = other.audioPlaybackService
+        XCTAssertTrue(otherAudio.isPlaying && !otherAudio.isPaused, "The other book did not play")
+        assertToldSystem(system, that: other, plays: true, "The other book's start")
+
+        // The finished book's window becomes key again and asks afresh.
+        var republished = 0
+        let watching = finished.objectWillChange.sink { _ in republished += 1 }
+        finished.windowBecameKey()
+        watching.cancel()
+        XCTAssertGreaterThan(republished, 0, "The finished book's window did not ask afresh as it became key")
+        XCTAssertEqual(system.coordinator.focusedOwnerID, finished.nowPlayingService.ownerID, "The finished book's reader is not focused")
+        XCTAssertFalse(finished.canReleaseMediaControls, "Release Media Controls is offered while another book plays")
+        let refused = recordingAnnouncements {
+            finished.releaseMediaControls()
+        }
+        XCTAssertEqual(refused.announcements, [], "Release Media Controls announced releasing what another book holds")
+        XCTAssertTrue(otherAudio.isPlaying && !otherAudio.isPaused, "Release Media Controls paused the book playing")
+        assertToldSystem(system, that: other, plays: true, "Release Media Controls in the finished book's window")
+
+        // The other book pauses, and the system shows it paused.
+        other.windowBecameKey()
+        other.pause()
+        finished.windowBecameKey()
+        XCTAssertEqual(
+            system.told.last,
+            .some(NowPlayingItem(title: other.book.title, author: other.book.author, isPlaying: false)),
+            "The system does not show the other book paused"
+        )
+        XCTAssertFalse(finished.canReleaseMediaControls, "Release Media Controls is offered while the system shows another book")
+
+        // That book's own window releases them.
+        other.windowBecameKey()
+        XCTAssertTrue(other.canReleaseMediaControls, "The paused book's window does not offer Release Media Controls")
+        let released = recordingAnnouncements {
+            other.releaseMediaControls()
+        }
+        XCTAssertEqual(released.announcements.map(\.message), ["Media controls released"])
+        XCTAssertEqual(system.told.last, .some(nil), "Releasing media controls did not clear Now Playing")
+        XCTAssertEqual(system.told.filter { $0 == nil }.count, 1, "Now Playing was cleared more than once")
     }
 
     // MARK: - The System's Side

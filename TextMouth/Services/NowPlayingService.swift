@@ -134,6 +134,13 @@ final class NowPlayingSession {
         coordinator.clearNowPlaying(ownerID: ownerID)
     }
 
+    /// Whether this reader holds TextMouth's media controls, which Release
+    /// Media Controls hands back to other apps: it is the active owner and
+    /// the system shows its book (`NowPlayingService.holdsMediaControls(ownerID:)`).
+    var holdsMediaControls: Bool {
+        coordinator.holdsMediaControls(ownerID: ownerID)
+    }
+
     func updateNowPlayingInfo(title: String, author: String, isPlaying: Bool) {
         coordinator.updateNowPlayingInfo(
             ownerID: ownerID,
@@ -250,6 +257,20 @@ final class NowPlayingService {
     /// (`clearNowPlaying(ownerID:)`) or closing (`unregister(ownerID:)`).
     var activeOwnerID: UUID? {
         playingOwnerID ?? focusedOwnerID
+    }
+
+    /// Whether the reader `ownerID` holds TextMouth's media controls: it is
+    /// the active owner, and the system's Now Playing center shows its
+    /// item, playing or paused, so that macOS sends the AirPods and the
+    /// media keys to TextMouth for its book. Only such a reader has the
+    /// controls to hand back to other apps, since releasing them takes its
+    /// item down (`clearNowPlaying(ownerID:)`). A reader whose item another
+    /// reader's has replaced holds nothing, as a finished book holds nothing
+    /// once another book plays; nor does a reader whose window is focused
+    /// while the system shows another reader's paused book, nor one that
+    /// never played, stopped, or released them.
+    func holdsMediaControls(ownerID: UUID) -> Bool {
+        activeOwnerID == ownerID && shownOwnerID == ownerID
     }
 
     private var activeHandlers: Handlers? {
