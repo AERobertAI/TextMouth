@@ -252,10 +252,13 @@ final class ReaderViewModel: ObservableObject {
     /// book again from where the skip lands (`performSkip(unit:forward:)`);
     /// Release Media Controls is offered meanwhile (`canReleaseMediaControls`).
     /// Cleared when playback starts (`play()`), when a jump moves the cursor
-    /// away from the end (`navigateTo(chapterIndex:characterOffset:)`), and
-    /// when playback is stopped (`stop()`). A book that loops back to its
-    /// beginning is not finished: it plays again, or waits at its start.
-    /// Accessed from the Playback and Navigation extensions.
+    /// away from the end (`navigateTo(chapterIndex:characterOffset:)`), when
+    /// playback is stopped (`stop()`), and when the book hands listening
+    /// over to the next book, in its folder or in the reading list, which
+    /// takes the media controls (`handOverToNextBook(titled:askingWith:)`).
+    /// A book that loops back to its beginning is not finished: it plays
+    /// again, or waits at its start. Accessed from the Playback and
+    /// Navigation extensions.
     var hasFinishedBook = false
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is

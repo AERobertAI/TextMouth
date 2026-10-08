@@ -257,7 +257,8 @@ final class ContinueToNextBookTests: XCTestCase {
     /// A book that finishes with Continue to Next Book says "Starting" once,
     /// then, after a moment, leaves the next book a request and asks for its
     /// window exactly once, naming both books. The finished reader itself
-    /// stays finished.
+    /// stays silent, counted finished, and rests at its end no longer: the
+    /// next book takes the media controls.
     func testFinishedBookAnnouncesTheNextOnceThenAsksForIt() throws {
         let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
         let next = try makeAudioBook(title: "Second Volume")
@@ -271,6 +272,9 @@ final class ContinueToNextBookTests: XCTestCase {
 
             XCTAssertTrue(asked().isEmpty, "Asked before the announcement had a moment")
             XCTAssertFalse(world.requests.hasRequest(for: next.id), "Requested before asking")
+            // The hand-over begins with the announcement, before the next
+            // book is asked for.
+            XCTAssertFalse(finishedReader.hasFinishedBook, "The book still rests finished as it says Starting")
             XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
             // Long enough for any second request to arrive.
             spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
@@ -288,6 +292,7 @@ final class ContinueToNextBookTests: XCTestCase {
         XCTAssertFalse(world.requests.hasRequest(for: finished.id))
         XCTAssertFalse(finishedReader.isCurrentlyPlaying)
         XCTAssertFalse(finishedReader.audioPlaybackService.isPlaying)
+        XCTAssertFalse(finishedReader.hasFinishedBook, "The book that continued still rests finished at its end")
         XCTAssertEqual(
             ReadingStatsService.shared.stats.finishedBooks.map(\.bookID),
             [finished.id.uuidString]
@@ -378,14 +383,16 @@ final class ContinueToNextBookTests: XCTestCase {
 
     /// Where a finished book rests follows its end-of-book behavior, and
     /// decides what a backward skip then does. A book that stops at its
-    /// end, that continues when no book follows, that continues to the next
-    /// book, or whose own sleep timer keeps the next book from starting
-    /// rests finished at its end: it keeps its media session, and Skip
-    /// Backward, from the keyboard or as the AirPods' rewind, plays it again
-    /// from where the skip lands. A book that loops starts again, and one
-    /// whose timer keeps it from restarting waits at its beginning, so
-    /// neither is finished: a skip there starts nothing. The skip announces
-    /// nothing in any case, and leaves no book finished.
+    /// end, that continues when no book follows, or whose own sleep timer
+    /// keeps the next book from starting rests finished at its end: it
+    /// keeps its media session, and Skip Backward, from the keyboard or as
+    /// the AirPods' rewind, plays it again from where the skip lands. A book
+    /// that continues to the next book hands the media controls over to it
+    /// as it says "Starting", so it is not finished: a skip moves its cursor
+    /// and plays nothing (REV07, speech finding 5). A book that loops starts
+    /// again, and one whose timer keeps it from restarting waits at its
+    /// beginning, so neither is finished: a skip there starts nothing. The
+    /// skip announces nothing in any case, and leaves no book finished.
     func testWhereAFinishedBookRestsFollowsItsEndOfBookBehavior() throws {
         let cases: [(
             name: String, behavior: EndOfBookBehavior, hasNext: Bool, timer: Bool,
@@ -401,7 +408,7 @@ final class ContinueToNextBookTests: XCTestCase {
                 "continue with the timer", .continueNext, true, true,
                 "Finished: First Volume. Next book not started because of the sleep timer.", true, 1, true
             ),
-            ("continue to the next book", .continueNext, true, false, "Starting: Second Volume", true, 1, true),
+            ("continue to the next book", .continueNext, true, false, "Starting: Second Volume", false, 1, false),
             ("loop", .loop, false, false, "Restarting: First Volume", false, 0, true),
             (
                 "loop with the timer", .loop, false, true,

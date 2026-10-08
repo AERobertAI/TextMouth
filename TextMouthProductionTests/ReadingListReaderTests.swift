@@ -479,7 +479,9 @@ final class ReadingListReaderTests: XCTestCase {
     /// book finished, and after a moment leaves the next book a request to
     /// be read from the list and one to start playing, then asks for its
     /// window, naming both books. The reader the window makes reads the
-    /// next book from the list and plays it.
+    /// next book from the list and plays it. The book that continued rests
+    /// at its end no longer, as one that continues in its folder does: the
+    /// next book takes the media controls (REV07, speech finding 5).
     func testABookReadFromTheListContinuesToTheBookBelow() throws {
         let world = try makeIntegrationWorld("ReadingListContinuesDown")
         let requests = ReadingListOpenRequests()
@@ -505,7 +507,7 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertTrue(requests.hasRequest(for: second.id), "No request to read the next book from the list")
         XCTAssertTrue(world.autoplayRequests.hasRequest(for: second.id), "No request to start the next book")
         XCTAssertEqual(ReadingStatsService.shared.stats.finishedBooks.map(\.bookID), [first.id.uuidString])
-        XCTAssertTrue(reader.hasFinishedBook)
+        XCTAssertFalse(reader.hasFinishedBook, "The book that continued through the list still rests finished at its end")
         XCTAssertFalse(reader.isCurrentlyPlaying)
 
         // The window opened for the requests makes the next book's reader.
