@@ -314,6 +314,46 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertEqual(skipping.announcements, [], "The keyboard's Skip Backward announced something")
     }
 
+    /// A book that hands over to the next one tells the system, as it says
+    /// "Starting: <title>", that it no longer plays: the system shows it
+    /// paused until the next book plays, and the next book's start finds no
+    /// book playing to pause. Before, the system went on showing it playing,
+    /// and the next book's start paused it as a book still playing, which in
+    /// the app made the pause sound with the next book's play sound.
+    func testABookThatHandsOverIsShownPausedAndTheNextBooksStartPausesNothing() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Hand-over Paused")
+        let finishedBook = try world.makeSilentAudioBook(
+            title: "First Crossing", trackDurations: [30], endOfBook: .continueNext
+        )
+        let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(finished)
+
+        // The first book plays, and ends with the hand-over.
+        finished.play()
+        XCTAssertTrue(finished.audioPlaybackService.isPlaying, "The first book did not play")
+        assertToldSystem(system, that: finished, plays: true, "The first book's play")
+        finished.audioPlaybackService.stop()
+        let ending = recordingAnnouncements {
+            finished.handleEndOfBook()
+        }
+        XCTAssertEqual(ending.announcements.map(\.message), ["Starting: Second Crossing"])
+        assertToldSystem(system, that: finished, plays: false, "The hand-over")
+
+        // The next book's window opens for the request and starts it.
+        XCTAssertTrue(
+            eventually { world.autoplayRequests.hasRequest(for: nextBook.id) },
+            "The next book was never asked for"
+        )
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(next)
+        let nextAudio = next.audioPlaybackService
+        XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "Continue to Next Book did not start the next book")
+        assertToldSystem(system, that: next, plays: true, "The next book's start")
+        XCTAssertEqual(system.exclusivePauses, [], "The next book's start paused the book that handed over")
+    }
+
     // MARK: - Two Windows, One Closed
 
     /// The listener opens another book's window and closes it again, while
@@ -986,6 +1026,13 @@ final class MediaCommandPlaybackTests: XCTestCase {
         /// The routing diagnostics of commands accepted but then dropped.
         var droppedCommands: [String] {
             state.routeLog.filter { $0.contains("result=commandFailed") }
+        }
+
+        /// The routing diagnostics of readers paused because another reader
+        /// started (`NowPlayingService.prepareForPlayback(ownerID:)`): in the
+        /// app, each such pause makes the pause sound.
+        var exclusivePauses: [String] {
+            state.routeLog.filter { $0.contains("exclusive pause") }
         }
 
         /// Deliver `request` as MediaPlayer does when the AirPods are

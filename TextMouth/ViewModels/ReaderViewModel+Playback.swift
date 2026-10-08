@@ -2219,6 +2219,14 @@ extension ReaderViewModel {
     /// October 7 review found all three while the finished state outlived
     /// the hand-over (REV07, speech finding 5).
     ///
+    /// Nothing plays from here on, so Now Playing shows the book paused at
+    /// its end until the next book plays, as a finished book is shown
+    /// (`finishListening(announcing:)`). It once went on showing the book
+    /// playing, its reader still the playing owner, so the next book's
+    /// start, which pauses the book that plays
+    /// (`NowPlayingService.prepareForPlayback(ownerID:)`), paused this one
+    /// again, and its pause sound was heard with the next book's play sound.
+    ///
     /// The next book is asked for once VoiceOver has begun the
     /// announcement. This reader is kept until then, so closing its window
     /// meanwhile still continues, as announced.
@@ -2228,6 +2236,9 @@ extension ReaderViewModel {
     ///   - askForNextBook: Asks for the next book, after the announcement.
     func handOverToNextBook(titled title: String, askingWith askForNextBook: @escaping () -> Void) {
         hasFinishedBook = false
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: false
+        )
         announceToVoiceOver(EndOfBookWording.starting(title))
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
             askForNextBook()
