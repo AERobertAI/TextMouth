@@ -1627,7 +1627,7 @@ struct LibraryView: View {
                     metadata: metadata,
                     isEPUB: true,
                     handEdits: book.handEdits,
-                    onSave: { updated, writeToFile in
+                    onSave: { edited, opened, writeToFile in
                         // Writing an EPUB only in the cloud would download it
                         // first while the interface waited, so the editor
                         // stays open and says why instead.
@@ -1642,8 +1642,10 @@ struct LibraryView: View {
                         // asked, and nothing changes if that fails: the editor
                         // then stays open and shows why (TODO A09). VoiceOver
                         // hears the outcome from the editor, which has focus.
+                        // Only what the user changed since the editor opened
+                        // is saved.
                         let save = libraryViewModel.saveEPUBMetadata(
-                            updated, openedAs: metadata, for: book, writingToFile: writeToFile
+                            edited, openedAs: opened, for: book, writingToFile: writeToFile
                         )
                         VoiceOverAnnouncer.announce(save.message)
                         return save.outcome
@@ -1659,18 +1661,12 @@ struct LibraryView: View {
                 MetadataEditorView(
                     audioMetadata: metadata,
                     handEdits: book.handEdits,
-                    onSave: { updated in
-                        var updatedBook = book
-                        updatedBook.title = updated.title
-                        updatedBook.author = updated.artist
-                        updatedBook.audioAlbum = updated.album
-                        updatedBook.audioGenre = updated.genre
-                        updatedBook.audioYear = updated.year
+                    onSave: { edited, opened in
                         // Compared with what the editor opened with, which
                         // shows the file's tags where the row keeps none,
-                        // so only what the user changed is recorded as
-                        // edited by hand.
-                        libraryViewModel.updateBookMetadata(updatedBook, editedFrom: Book.MetadataField.values(in: metadata))
+                        // so only what the user changed is saved and
+                        // recorded as edited by hand.
+                        libraryViewModel.updateBookMetadata(Book.MetadataEdit(opened: opened, saved: edited), of: book.id)
                     }
                 )
             }

@@ -722,9 +722,10 @@ final class ContentAnalysisMergeTests: XCTestCase {
     private func makeNewerWrites(to book: Book, through model: LibraryViewModel) {
         model.addBookmark(bookID: book.id, chapterIndex: 0, characterOffset: 9, label: "Added Meanwhile")
         model.persistReadingPosition(bookID: book.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 9))
-        var retitled = book
-        retitled.title = "Retitled Meanwhile"
-        model.updateBookMetadata(retitled)
+        model.updateBookMetadata(
+            Book.MetadataEdit(opened: [.title: book.title], saved: [.title: "Retitled Meanwhile"]),
+            of: book.id
+        )
         model.markBookOpened(book.id)
         model.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: "voice.meanwhile", wpm: 240, pitch: 1.2)
         model.updateSkippedHeadings(bookID: book.id, skippedIDs: ["heading-meanwhile"])

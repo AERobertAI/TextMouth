@@ -138,7 +138,10 @@ struct LibraryBookInfoReader: Sendable {
 
 extension Book {
     /// The EPUB metadata the library keeps for this book, which Book Info
-    /// shows while the file is only in the cloud.
+    /// shows while the file is only in the cloud. A field the library keeps
+    /// none of shows empty; a save that leaves it empty leaves it unknown
+    /// (`Book.MetadataEdit`), so the file's value shows once the book is
+    /// downloaded.
     var storedEPUBMetadata: EPUBMetadata {
         EPUBMetadata(
             title: title,
@@ -154,7 +157,10 @@ extension Book {
 
     /// The audio metadata the library keeps for this book, which Book Info
     /// shows while the file is only in the cloud: its names, its measured
-    /// length, and its file's type.
+    /// length, and its file's type. An album, genre, or year the library
+    /// keeps none of shows empty; a save that leaves it empty leaves it
+    /// unknown (`Book.MetadataEdit`), so the file's tags show once the book
+    /// is downloaded.
     var storedAudioMetadata: AudioMetadata {
         mergingEditableAudioMetadata(AudioMetadata(
             duration: audioDuration.map(TimeFormatting.format) ?? "",

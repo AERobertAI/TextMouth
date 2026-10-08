@@ -123,11 +123,12 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         let metadataBefore = editableFields(of: reader.epubMetadata)
         let savedBefore = try agreedMetadata(of: reader)
         let fileBefore = try Data(contentsOf: book.bookFileURL)
+        let opened = try XCTUnwrap(reader.epubMetadata, "the reader shows no metadata to edit")
         let edited = try editedMetadata(of: book)
 
         var outcome: OperationOutcome?
         let recorder = recordingAnnouncements {
-            outcome = reader.saveEPUBMetadata(edited, writeToFile: true, writer: .refusingReplacement)
+            outcome = reader.saveEPUBMetadata(edited, openedAs: opened, writeToFile: true, writer: .refusingReplacement)
         }
 
         XCTAssertEqual(outcome, .failure(Self.refusedWriteMessage))
@@ -145,11 +146,12 @@ final class EPUBMetadataWritebackTests: XCTestCase {
     func testASuccessfulWriteUpdatesTheReaderTheLibraryTheRecordAndTheHash() async throws {
         let book = try makePackagedEPUB()
         let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
+        let opened = try XCTUnwrap(reader.epubMetadata, "the reader shows no metadata to edit")
         let edited = try editedMetadata(of: book)
 
         var outcome: OperationOutcome?
         let recorder = recordingAnnouncements {
-            outcome = reader.saveEPUBMetadata(edited, writeToFile: true)
+            outcome = reader.saveEPUBMetadata(edited, openedAs: opened, writeToFile: true)
         }
 
         let saved = "Metadata saved to the library's copy of “alice.epub”."
@@ -168,12 +170,13 @@ final class EPUBMetadataWritebackTests: XCTestCase {
     func testALibraryOnlySaveLeavesTheFileAndItsHashUnchanged() async throws {
         let book = try makePackagedEPUB()
         let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
+        let opened = try XCTUnwrap(reader.epubMetadata, "the reader shows no metadata to edit")
         let edited = try editedMetadata(of: book)
         let fileBefore = try Data(contentsOf: book.bookFileURL)
 
         var outcome: OperationOutcome?
         let recorder = recordingAnnouncements {
-            outcome = reader.saveEPUBMetadata(edited, writeToFile: false)
+            outcome = reader.saveEPUBMetadata(edited, openedAs: opened, writeToFile: false)
         }
 
         let libraryOnly = "Metadata saved to the library only; the EPUB file is unchanged."
@@ -192,12 +195,13 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         let center = cleanSharedFailureCenter()
         let book = try makePackagedEPUB()
         let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
+        let opened = try XCTUnwrap(reader.epubMetadata, "the reader shows no metadata to edit")
         let edited = try editedMetadata(of: book)
         let savedBefore = try agreedMetadata(of: reader)
         let fileBefore = try Data(contentsOf: book.bookFileURL)
         makeReadOnly(book.tmbDirectory)
 
-        let outcome = reader.saveEPUBMetadata(edited, writeToFile: true)
+        let outcome = reader.saveEPUBMetadata(edited, openedAs: opened, writeToFile: true)
 
         let failure = try XCTUnwrap(outcome.failureMessage)
         XCTAssertTrue(failure.hasPrefix("Could not save metadata to the library's copy of “alice.epub”: "), failure)

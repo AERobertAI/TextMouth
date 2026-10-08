@@ -2,12 +2,21 @@ import SwiftUI
 
 // MARK: - Book Info Sheet
 
-/// Book info editor accessible from the library context menu
+/// Book info editor accessible from the library context menu, and the
+/// reader's Book Info for a book without the metadata editor.
 struct LibraryBookInfoSheet: View {
     let book: Book
     let libraryViewModel: LibraryViewModel
     @State private var title: String
     @State private var author: String
+    /// The title and author the sheet opened with, as Save stores them
+    /// (`values(title:author:)`), kept for as long as it is open: Save
+    /// compares what is typed with them (`Book.MetadataEdit`), so only what
+    /// the user changed here is saved and recorded as edited by hand. The
+    /// book shown may change meanwhile, since a reader's sheet shows the
+    /// reader's copy, which takes every change the library makes; this does
+    /// not.
+    @State private var opened: Book.MetadataValues
     @Environment(\.dismiss) private var dismiss
 
     init(book: Book, libraryViewModel: LibraryViewModel) {
@@ -15,6 +24,7 @@ struct LibraryBookInfoSheet: View {
         self.libraryViewModel = libraryViewModel
         self._title = State(initialValue: book.title)
         self._author = State(initialValue: book.author)
+        self._opened = State(initialValue: Self.values(title: book.title, author: book.author))
     }
 
     var body: some View {
@@ -59,21 +69,21 @@ struct LibraryBookInfoSheet: View {
 
                 Button("Save") {
                     // Capture state before dismissing
-                    guard let updated = Self.edited(book, title: title, author: author) else { return }
+                    guard let edit = Self.edit(from: opened, title: title, author: author) else { return }
                     let vm = libraryViewModel
+                    let bookID = book.id
 
                     // Dismiss first so shared state updates don't steal focus
                     dismiss()
 
                     DispatchQueue.main.async {
-                        // Compared with the row, which always keeps the
-                        // title and author this sheet edits, so the fields
-                        // changed are recorded as edited by hand.
-                        vm.updateBookMetadata(updated)
+                        // Saves what the user changed here, and only that,
+                        // to the row as it is by then.
+                        vm.updateBookMetadata(edit, of: bookID)
                     }
                 }
                 .keyboardShortcut(.return, modifiers: [])
-                .disabled(Self.edited(book, title: title, author: author) == nil)
+                .disabled(Self.edit(from: opened, title: title, author: author) == nil)
             }
         }
         .padding()
@@ -81,17 +91,27 @@ struct LibraryBookInfoSheet: View {
         .navigationTitle("Info: \(book.title)")
     }
 
-    /// `book` with the `title` and `author` typed, less the spaces around
-    /// them, or nil when the title is blank: a book keeps a title, since the
+    /// `title` and `author` as Save stores them: each less the spaces
+    /// around it.
+    nonisolated static func values(title: String, author: String) -> Book.MetadataValues {
+        [
+            .title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+            .author: author.trimmingCharacters(in: .whitespacesAndNewlines)
+        ]
+    }
+
+    /// What Save gives the library for the `title` and `author` typed in a
+    /// sheet that opened with `opened` (`values(title:author:)`): what was
+    /// typed, less the spaces around it, beside what the sheet opened with;
+    /// or nil when the title is blank: a book keeps a title, since the
     /// library shows and sorts it by that, so Save is unavailable until one
-    /// is typed.
-    nonisolated static func edited(_ book: Book, title: String, author: String) -> Book? {
-        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return nil }
-        var edited = book
-        edited.title = title
-        edited.author = author.trimmingCharacters(in: .whitespacesAndNewlines)
-        return edited
+    /// is typed. A title whose only change is the spaces Save trims, as one
+    /// taken from a file named "Notes .txt" has, is no change, since what
+    /// the sheet opened with is trimmed the same way.
+    nonisolated static func edit(from opened: Book.MetadataValues, title: String, author: String) -> Book.MetadataEdit? {
+        let saved = values(title: title, author: author)
+        guard let savedTitle = saved[.title], !savedTitle.isEmpty else { return nil }
+        return Book.MetadataEdit(opened: opened, saved: saved)
     }
 }
 

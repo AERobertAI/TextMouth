@@ -6,9 +6,20 @@ import SwiftUI
 /// library's copy of the EPUB file, never to the file it was imported from;
 /// a save that fails keeps the editor open with the edits and shows why
 /// (TODO A09).
+///
+/// The editor keeps the metadata it opened with for as long as it is open
+/// and hands it to its save beside the edits, so the save changes, and
+/// records as edited by hand, only what the user changed here
+/// (`Book.MetadataEdit`). Whoever shows the editor may make it again with
+/// newer metadata while it is open, as the reader's Book Info does when the
+/// library changes the book; the edits and what it opened with stay.
 struct MetadataEditorView: View {
     @State private var editedEPUBMetadata: EPUBMetadata
     @State private var editedAudioMetadata: AudioMetadata
+    /// The EPUB metadata the editor opened with, handed to `onSaveEPUB`.
+    @State private var openedEPUBMetadata: EPUBMetadata
+    /// The audio metadata the editor opened with, handed to `onSaveAudio`.
+    @State private var openedAudioMetadata: AudioMetadata
     @State private var writeToFile = false
     /// Why the last EPUB save failed, shown above the buttons until the user
     /// changes an edit or the choice to write the file.
@@ -21,13 +32,15 @@ struct MetadataEditorView: View {
     /// label of each such field (`MetadataEditorWording.fieldLabel`); nil
     /// for a book with no record.
     let handEdits: Book.HandEdits?
-    /// Saves EPUB metadata, writing the library's copy of the EPUB file too
-    /// when the Bool is true, and returns what happened, which the caller has
-    /// announced. The editor closes after a success; after a failure it stays
-    /// open with the edits and shows why.
-    let onSaveEPUB: ((EPUBMetadata, Bool) -> OperationOutcome)?
-    /// Called when saving audio metadata.
-    let onSaveAudio: ((AudioMetadata) -> Void)?
+    /// Saves EPUB metadata: the edits, and the metadata the editor opened
+    /// with, writing the library's copy of the EPUB file too when the Bool
+    /// is true; returns what happened, which the caller has announced. The
+    /// editor closes after a success; after a failure it stays open with the
+    /// edits and shows why.
+    let onSaveEPUB: ((_ edited: EPUBMetadata, _ opened: EPUBMetadata, _ writeToFile: Bool) -> OperationOutcome)?
+    /// Saves audio metadata: the edits, and the metadata the editor opened
+    /// with.
+    let onSaveAudio: ((_ edited: AudioMetadata, _ opened: AudioMetadata) -> Void)?
 
     /// Initialize for an EPUB book. `handEdits` is the book's record of
     /// hand edits (`Book.handEdits`), which the labels say.
@@ -35,10 +48,12 @@ struct MetadataEditorView: View {
         metadata: EPUBMetadata,
         isEPUB: Bool,
         handEdits: Book.HandEdits? = nil,
-        onSave: @escaping (EPUBMetadata, Bool) -> OperationOutcome
+        onSave: @escaping (_ edited: EPUBMetadata, _ opened: EPUBMetadata, _ writeToFile: Bool) -> OperationOutcome
     ) {
         self._editedEPUBMetadata = State(initialValue: metadata)
+        self._openedEPUBMetadata = State(initialValue: metadata)
         self._editedAudioMetadata = State(initialValue: AudioMetadata())
+        self._openedAudioMetadata = State(initialValue: AudioMetadata())
         self.isEPUB = isEPUB
         self.isAudio = false
         self.handEdits = handEdits
@@ -48,18 +63,28 @@ struct MetadataEditorView: View {
 
     /// Initialize for an audio book. `handEdits` is the book's record of
     /// hand edits (`Book.handEdits`), which the labels say.
-    init(audioMetadata: AudioMetadata, handEdits: Book.HandEdits? = nil, onSave: @escaping (AudioMetadata) -> Void) {
-        self._editedEPUBMetadata = State(initialValue: EPUBMetadata(
-            title: "", author: "", publisher: "", publicationDate: "",
-            isbn: "", language: "", identifier: "", epubVersion: ""
-        ))
+    init(
+        audioMetadata: AudioMetadata,
+        handEdits: Book.HandEdits? = nil,
+        onSave: @escaping (_ edited: AudioMetadata, _ opened: AudioMetadata) -> Void
+    ) {
+        self._editedEPUBMetadata = State(initialValue: Self.noEPUBMetadata)
+        self._openedEPUBMetadata = State(initialValue: Self.noEPUBMetadata)
         self._editedAudioMetadata = State(initialValue: audioMetadata)
+        self._openedAudioMetadata = State(initialValue: audioMetadata)
         self.isEPUB = false
         self.isAudio = true
         self.handEdits = handEdits
         self.onSaveEPUB = nil
         self.onSaveAudio = onSave
     }
+
+    /// The EPUB metadata an audio book's editor holds, which it never
+    /// shows or saves.
+    private static let noEPUBMetadata = EPUBMetadata(
+        title: "", author: "", publisher: "", publicationDate: "",
+        isbn: "", language: "", identifier: "", epubVersion: ""
+    )
 
     /// The accessibility label of the field `field`, `label` with "edited
     /// by hand" after it when the book's record says so.
@@ -136,7 +161,7 @@ struct MetadataEditorView: View {
     /// again; the caller has already announced the failure.
     private func saveEPUB() {
         guard let onSaveEPUB else { return }
-        let outcome = onSaveEPUB(editedEPUBMetadata, writesToFile)
+        let outcome = onSaveEPUB(editedEPUBMetadata, openedEPUBMetadata, writesToFile)
         if outcome.succeeded {
             dismiss()
         } else {
@@ -147,12 +172,14 @@ struct MetadataEditorView: View {
     /// Saves audio edits, which write no file, after closing the editor, so
     /// the sheet closes before the shared update can move window focus.
     private func saveAudioAfterClosing() {
-        // Capture the edits before dismissing.
+        // Capture the edits, and what the editor opened with, before
+        // dismissing.
         let audioMeta = editedAudioMetadata
+        let opened = openedAudioMetadata
         let saveAudio = onSaveAudio
         dismiss()
         DispatchQueue.main.async {
-            saveAudio?(audioMeta)
+            saveAudio?(audioMeta, opened)
         }
     }
 

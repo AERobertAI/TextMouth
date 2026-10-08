@@ -937,22 +937,64 @@ extension Book {
                 .audioYear: metadata.year
             ]
         }
-
-        /// The fields whose values differ between `before` and `after`, a
-        /// field only one of them has included: what a save changed by
-        /// hand, when `before` is what the editor opened with and `after`
-        /// what it saved. An editor shows the file's value for a field the
-        /// row keeps none of, so comparing with the row instead would count
-        /// that value as typed.
-        static func fieldsThatDiffer(between before: MetadataValues, and after: MetadataValues) -> Set<MetadataField> {
-            Set(allCases.filter { before[$0] != after[$0] })
-        }
     }
 
     /// The values of some metadata fields, by field: what an editor opened
     /// with or saved, or what a book's file names. A field without a value
     /// is absent.
     typealias MetadataValues = [MetadataField: String]
+
+    /// One save of a metadata editor (the Book Info sheet, or the EPUB or
+    /// the audio editor): the values of the fields the editor shows, as it
+    /// opened with them and as the user saved them.
+    ///
+    /// The fields the user changed are told from what the editor opened
+    /// with, never from the book's row: the row may have changed while the
+    /// editor was open (another window's save, the launch metadata
+    /// refresh), and an editor shows the file's value for a field the row
+    /// keeps none of. A save applies the changes alone to the row as it is
+    /// by then (`Book.applyMetadataEdit(_:)`), so every other field keeps
+    /// whatever value the row has.
+    struct MetadataEdit: Equatable, Sendable {
+        /// The values the editor opened with.
+        var opened: MetadataValues
+        /// The values the user saved.
+        var saved: MetadataValues
+
+        /// The edit of an editor that opened with `opened` and saved
+        /// `saved`.
+        init(opened: MetadataValues, saved: MetadataValues) {
+            self.opened = opened
+            self.saved = saved
+        }
+
+        /// The EPUB editor's edit: its title, author, publisher, and
+        /// publication date, as it opened with them and as they were saved.
+        init(opened: EPUBMetadata, saved: EPUBMetadata) {
+            self.init(opened: MetadataField.values(in: opened), saved: MetadataField.values(in: saved))
+        }
+
+        /// The audio editor's edit: its title, artist as the author, album,
+        /// genre, and year, as it opened with them and as they were saved.
+        init(opened: AudioMetadata, saved: AudioMetadata) {
+            self.init(opened: MetadataField.values(in: opened), saved: MetadataField.values(in: saved))
+        }
+
+        /// The fields the user changed, each with the value saved: every
+        /// field saved with a value other than the one the editor opened
+        /// with. A field saved as it opened is no change, nor is a field
+        /// the save has no value for.
+        ///
+        /// An editor shows a field it has no value for, one nothing knew,
+        /// as empty, so a field it opened without counts as opened empty:
+        /// saved empty, it is no change and stays unknown (nil) on the row,
+        /// so the book's file still gives its value later, as it does for
+        /// a cloud-only book's EPUB publisher and date or an audiobook's
+        /// album, genre, and year. Only a value typed into it is saved.
+        var changes: MetadataValues {
+            saved.filter { field, value in (opened[field] ?? "") != value }
+        }
+    }
 
     /// Which of a book's metadata fields the user edited by hand, and since
     /// when the record has been kept. Every editor's save adds the fields
@@ -1012,6 +1054,19 @@ extension Book {
         var record = handEdits ?? HandEdits(sinceImport: false)
         record.mark(fields)
         handEdits = record
+    }
+
+    /// Applies `edit`, one save of a metadata editor, to this book: each
+    /// field the user changed (`MetadataEdit.changes`) takes the value
+    /// saved and is recorded as edited by hand; every other field keeps the
+    /// value this book has, which may be newer than the one the editor
+    /// opened with. An edit that changed nothing leaves the book as it was.
+    mutating func applyMetadataEdit(_ edit: MetadataEdit) {
+        let changes = edit.changes
+        for (field, value) in changes {
+            field.set(value, in: &self)
+        }
+        markEditedByHand(Set(changes.keys))
     }
 }
 
