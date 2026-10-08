@@ -66,12 +66,16 @@ extension ConfigService.AppConfig {
         config.useInstalledFFmpeg = false
         config.audioEditorPreviewsFilters = false
         config.audioEditorPlaysAfterMoves = false
-        // Every action, as TextMouth writes them, three of them changed.
-        var shortcuts = ShortcutAction.defaultBindings
-        shortcuts[.togglePlayback] = [KeyBinding(key: "space"), KeyBinding(key: "p", control: true)]
-        shortcuts[.whereAmI] = [KeyBinding(key: "w", option: true)]
-        shortcuts[.releaseMediaControls] = [KeyBinding(key: "escape", shift: true)]
-        config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(shortcuts)
+        // Every action, as TextMouth writes them (FR12): three edited, each
+        // a list of its keys, and every other "default: " and its keys.
+        let shortcuts = ShortcutEdits([
+            .togglePlayback: [KeyBinding(key: "space"), KeyBinding(key: "p", control: true)],
+            .whereAmI: [KeyBinding(key: "w", option: true)],
+            .releaseMediaControls: [KeyBinding(key: "escape", shift: true)],
+        ])
+        config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
+            shortcuts.listings(defaults: ShortcutAction.defaultBindings)
+        )
         config.logLocation = LogLocation.machine.rawValue
         config.transcriptionLocale = TranscriptFixtures.languageOtherThanTheDefault
         config.offerTranscriptionAfterImport = true

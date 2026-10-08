@@ -252,17 +252,45 @@ struct KeyBinding: Codable, Equatable, Hashable {
         return parts.joined()
     }
 
-    /// Accessible display string using words
+    /// The binding in words, as VoiceOver speaks it and a braille display
+    /// shows it: its modifiers, then its key, joined by " + ", such as
+    /// "Shift + Command + B" or "Command + Right Arrow". No part is a
+    /// symbol, which a braille display shows as a sign (FR12).
     var accessibleDisplayString: String {
         var parts: [String] = []
         if control { parts.append("Control") }
         if option { parts.append("Option") }
         if shift { parts.append("Shift") }
         if command { parts.append("Command") }
-        parts.append(keyDisplayName)
+        parts.append(keyNameInWords)
         return parts.joined(separator: " + ")
     }
 
+    /// The keys of one action in words, as the Shortcuts tab says them:
+    /// "Space or K", or "No shortcut" for none.
+    static func accessibleDisplayString(for keys: [KeyBinding]) -> String {
+        keys.isEmpty ? "No shortcut" : keys.map(\.accessibleDisplayString).joined(separator: " or ")
+    }
+
+    /// The key in words: a special key's name, such as "Right Arrow" or
+    /// "Delete", or the character in capitals.
+    private var keyNameInWords: String {
+        switch key {
+        case "space": return "Space"
+        case "rightArrow": return "Right Arrow"
+        case "leftArrow": return "Left Arrow"
+        case "upArrow": return "Up Arrow"
+        case "downArrow": return "Down Arrow"
+        case "tab": return "Tab"
+        case "return": return "Return"
+        case "delete": return "Delete"
+        case "escape": return "Escape"
+        default: return key.uppercased()
+        }
+    }
+
+    /// The key as the screen shows it: a special key's symbol, such as "→"
+    /// or "⌫", "Space", or the character in capitals.
     private var keyDisplayName: String {
         switch key {
         case "space": return "Space"
@@ -465,6 +493,123 @@ private enum ConfigModifier: CaseIterable {
     }
 }
 
+// MARK: - An Action's Entry in config.json
+
+/// One action's entry in config.json's `keyboardShortcuts`, in either of the
+/// file's two forms (FR12, as the user chose on October 7, 2026):
+/// - a list of shortcuts, written as `KeyBinding.configText` writes them,
+///   makes the action the user's, with those keys or, for an empty list,
+///   none: `"Release Media Controls": ["shift+r"]`;
+/// - text beginning with "default", in any letter case, gives the action
+///   TextMouth's defaults and, as TextMouth writes it, says what they are:
+///   `"Where Am I?": "default: w"`.
+///
+/// Any other text is one shortcut, read as a list of one. The words after
+/// "default" are never read back, so changing them changes nothing: that is
+/// what lets a later release's defaults reach every action written so,
+/// however old the file, without TextMouth ever having to tell an older
+/// release's defaults from the user's edits.
+///
+/// Shortcuts scoped to a kind of window (FR12's branch E) would add a third
+/// form, an object holding a list and a scope, for an action whose scope the
+/// user changed; a list would keep the action's default scope, and the text
+/// following the defaults could name the scope in its words.
+enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, ExpressibleByStringLiteral {
+    /// A list of shortcuts: the user's keys for the action.
+    case list([String])
+    /// Text: "default" and what the defaults are, or one shortcut.
+    case text(String)
+
+    /// The word that begins an entry following the defaults.
+    static let defaultWord = "default"
+
+    /// The entry TextMouth writes for an action the user edited: its keys,
+    /// as a list.
+    static func edited(_ keys: [KeyBinding]) -> ShortcutListing {
+        .list(keys.map(\.configText))
+    }
+
+    /// The entry TextMouth writes for an action following the defaults:
+    /// "default: " and its keys in force, such as "default: space, k", or
+    /// "default: none" for an action that has none.
+    static func followingDefaults(_ keysInForce: [KeyBinding]) -> ShortcutListing {
+        let keys = keysInForce.isEmpty ? "none" : keysInForce.map(\.configText).joined(separator: ", ")
+        return .text("\(defaultWord): \(keys)")
+    }
+
+    /// Whether the entry gives the action TextMouth's defaults: text that
+    /// begins with "default", in any letter case, after any spaces.
+    var followsDefaults: Bool {
+        guard case .text(let words) = self else { return false }
+        return words.drop(while: \.isWhitespace).lowercased().hasPrefix(Self.defaultWord)
+    }
+
+    /// The keys the entry makes the user's: a list's, each read as
+    /// `KeyBinding(configText:)` reads it and kept once, or the one shortcut
+    /// other text names. Nil for an entry following the defaults, and for
+    /// one holding a shortcut that cannot be read, which leaves the action
+    /// as it is rather than dropping that shortcut and keeping the rest.
+    var bindings: [KeyBinding]? {
+        switch self {
+        case .list(let shortcuts):
+            return KeyBinding.bindings(fromConfigTexts: shortcuts)
+        case .text(let shortcut):
+            guard !followsDefaults else { return nil }
+            return KeyBinding(configText: shortcut).map { [$0] }
+        }
+    }
+
+    /// The entry as TextMouth writes it, or nil when it cannot be used: a
+    /// list, or one shortcut written as text, becomes a list of shortcuts
+    /// written as TextMouth writes them; text following the defaults is
+    /// kept as written, since TextMouth never reads its words.
+    var validated: ShortcutListing? {
+        followsDefaults ? self : bindings.map(Self.edited)
+    }
+
+    /// A list of shortcuts, written as an array literal.
+    init(arrayLiteral shortcuts: String...) {
+        self = .list(shortcuts)
+    }
+
+    /// Text, written as a string literal.
+    init(stringLiteral words: String) {
+        self = .text(words)
+    }
+
+    /// Reads a list of text or text; anything else cannot be read.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let shortcuts = try? container.decode([String].self) {
+            self = .list(shortcuts)
+        } else {
+            self = .text(try container.decode(String.self))
+        }
+    }
+
+    /// Writes a list as a list, and text as text.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .list(let shortcuts):
+            try container.encode(shortcuts)
+        case .text(let words):
+            try container.encode(words)
+        }
+    }
+}
+
+extension ShortcutAction {
+    /// The action config.json's `name` names: its name as Settings shows it,
+    /// in any letter case, the exact name tried first, so "where am i?" is
+    /// Where Am I?. Nil for a name that names none. A renamed action would
+    /// keep its former name readable here.
+    static func named(_ name: String) -> ShortcutAction? {
+        ShortcutAction(rawValue: name)
+            ?? allCases.first { $0.rawValue.caseInsensitiveCompare(name) == .orderedSame }
+    }
+}
+
 /// All default keyboard shortcut bindings
 extension ShortcutAction {
     /// Default bindings for each action (primary + optional secondary)
@@ -592,6 +737,23 @@ extension ShortcutAction {
         ]
         return everywhereElse.merging(audioEditorDefaultBindings) { existing, _ in existing }
     }
+
+    /// The defaults actions had before today's, for the move to the record
+    /// of the user's edits alone (FR12, `ShortcutEdits.migrating`): a saved
+    /// key equal to one of them is a default the whole-map save froze, not
+    /// the user's choice, so the action follows today's default from then
+    /// on. Only three defaults ever changed: Move Book Up and Move Book Down
+    /// left Control-Option-Up and Control-Option-Down for Shift-Command-Up
+    /// and Shift-Command-Down on March 22, 2026 (1ec35f02), and Next
+    /// Bookmark left Shift-Command-B for Option-Shift-Command-B on March 24
+    /// (ffb538b1), when Show Bookmarks took Shift-Command-B. The move runs
+    /// once; a default changed after it reaches every unedited action
+    /// through the record, and needs no entry here.
+    static let formerDefaultBindings: [ShortcutAction: [[KeyBinding]]] = [
+        .moveBookUp: [[KeyBinding(key: "upArrow", option: true, control: true)]],
+        .moveBookDown: [[KeyBinding(key: "downArrow", option: true, control: true)]],
+        .nextBookmark: [[KeyBinding(key: "b", command: true, shift: true)]],
+    ]
 
     /// The audio editor's default bindings (FR04): single keys wherever one
     /// fits, as the user chose on October 4, matched only in an editor

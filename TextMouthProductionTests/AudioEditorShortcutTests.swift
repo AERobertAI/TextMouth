@@ -100,14 +100,17 @@ final class AudioEditorShortcutTests: XCTestCase {
         XCTAssertEqual(manager.bindingsFor(.editorStop), [KeyBinding(key: "s"), KeyBinding(key: "space")], "a reader key took an editor key")
     }
 
-    /// The defaults added to bindings saved before the editor existed skip
-    /// only the keys the editor's own group already uses.
+    /// The editor's defaults reach shortcuts saved before the editor
+    /// existed, moved to the record of the user's edits (FR12), skipping
+    /// only the keys the editor's own group holds.
     func testDefaultsAddedLaterSkipOnlyTheirOwnGroupsKeys() {
         var saved = ShortcutAction.defaultBindings.filter { $0.key.scope == .app }
         saved[.whereAmI] = [KeyBinding(key: "w"), KeyBinding(key: "j", command: true)]
 
-        let loaded = KeyboardShortcutManager.bindings(addingDefaultsTo: saved)
+        let moved = ShortcutEdits.migrating(savedMap: saved, fileLists: nil)
+        let loaded = moved.edits.effectiveBindings(defaults: ShortcutAction.defaultBindings)
 
+        XCTAssertEqual(moved.edits.editedActions, [.whereAmI])
         XCTAssertEqual(loaded[.editorPlayPause], [KeyBinding(key: "space"), KeyBinding(key: "k")])
         XCTAssertEqual(loaded[.editorWhereAmI], [KeyBinding(key: "w")])
         XCTAssertEqual(loaded[.togglePlayback], [KeyBinding(key: "space"), KeyBinding(key: "k")])
@@ -116,10 +119,8 @@ final class AudioEditorShortcutTests: XCTestCase {
     /// A shortcut config.json gives an editor action moves from the other
     /// editor actions only.
     func testConfigMovesAKeyOnlyWithinItsGroup() {
-        let adopted = KeyboardShortcutManager.bindings(
-            ShortcutAction.defaultBindings,
-            adopting: [.editorStop: [KeyBinding(key: "space")]]
-        )
+        let adopted = ShortcutEdits().adopting([.editorStop: ["space"]]).edits
+            .effectiveBindings(defaults: ShortcutAction.defaultBindings)
 
         XCTAssertEqual(adopted[.editorStop], [KeyBinding(key: "space")])
         XCTAssertEqual(adopted[.editorPlayPause], [KeyBinding(key: "k")])

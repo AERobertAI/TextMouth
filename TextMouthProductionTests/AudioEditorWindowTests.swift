@@ -62,9 +62,9 @@ final class AudioEditorWindowTests: XCTestCase {
         let watching = model.objectWillChange.sink { _ in changes.count += 1 }
         defer { watching.cancel() }
 
-        var bindings = KeyboardShortcutManager.bindingsPreference.read(from: harness.store)
-        bindings[.editorSkipBack] = [KeyBinding(key: "h", shift: true)]
-        KeyboardShortcutManager.bindingsPreference.write(bindings, to: harness.store)
+        var edits = KeyboardShortcutManager.editsPreference.read(from: harness.store)
+        edits.setKeys([KeyBinding(key: "h", shift: true)], for: .editorSkipBack)
+        KeyboardShortcutManager.editsPreference.write(edits, to: harness.store)
 
         XCTAssertEqual(model.hint(for: .editorSkipBack), "Moves the cursor back one second. Shortcut: Shift-H.")
         let heard = await eventually { changes.count > 0 }

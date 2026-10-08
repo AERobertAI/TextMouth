@@ -3,6 +3,8 @@ import SwiftUI
 /// The Shortcuts settings tab: every action's shortcuts, by group, each
 /// changeable; the audio editor's actions are a group of their own, matched
 /// only in its windows (`ShortcutScope`), so their keys may be the reader's.
+/// An action the user edited says so, and can be given back to its defaults
+/// on its own (FR12).
 struct KeyboardShortcutsSettingsView: View {
     @EnvironmentObject var shortcutManager: KeyboardShortcutManager
     @State private var showResetConfirmation = false
@@ -52,6 +54,12 @@ struct KeyboardShortcutsSettingsView: View {
     }
 }
 
+/// One action's row: its name; a button for each of its keys, which records
+/// a key in that one's place, and one removing it; a button adding a key;
+/// and, for an action the user edited, "Edited" and Reset to Default.
+/// VoiceOver reads the row as one label in words
+/// (`ShortcutsSettingsWording.rowLabel`) and offers Reset to Default as an
+/// action of the row as well, and every key recorded is announced.
 struct ShortcutBindingRow: View {
     let action: ShortcutAction
     @EnvironmentObject var shortcutManager: KeyboardShortcutManager
@@ -123,33 +131,135 @@ struct ShortcutBindingRow: View {
                     )
                 }
             }
+
+            // An action the user edited says so, after its keys, and can go
+            // back to its defaults on its own.
+            if isEdited {
+                HStack(spacing: 8) {
+                    Spacer()
+                    Text(ShortcutsSettingsWording.edited)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Button(ShortcutsSettingsWording.resetToDefaultTitle, action: resetToDefault)
+                        .accessibilityLabel(ShortcutsSettingsWording.resetToDefaultLabel(for: action))
+                        .accessibilityHint(ShortcutsSettingsWording.resetToDefaultHint)
+                }
+            }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(action.rawValue): \(shortcutManager.allDisplayStrings(for: action))")
+        .accessibilityLabel(ShortcutsSettingsWording.rowLabel(for: action, keys: currentBindings, isEdited: isEdited))
+        .accessibilityActions {
+            if isEdited {
+                Button(ShortcutsSettingsWording.resetToDefaultTitle, action: resetToDefault)
+            }
+        }
     }
 
+    /// The action's keys in force.
     private var currentBindings: [KeyBinding] {
         shortcutManager.bindingsFor(action)
     }
 
+    /// Whether the user edited the action's keys, which then stay theirs
+    /// until Reset to Default.
+    private var isEdited: Bool {
+        shortcutManager.isEdited(action)
+    }
+
+    /// Puts `newBinding` in place of the key at `index`, as the user's,
+    /// taking it from any other action of the scope that had it, and
+    /// announces it.
     private func replaceBinding(at index: Int, with newBinding: KeyBinding) {
         var bindings = currentBindings
-        if index < bindings.count {
-            bindings[index] = newBinding
-        }
+        guard bindings.indices.contains(index) else { return }
+        let previousOwner = shortcutManager.action(holding: newBinding, in: action.scope)
+        bindings[index] = newBinding
         shortcutManager.updateBindings(for: action, to: bindings)
+        announceRecorded(newBinding, takenFrom: previousOwner)
     }
 
+    /// Removes the key at `index`, which makes the keys left the user's.
     private func removeBinding(at index: Int) {
         var bindings = currentBindings
-        if index < bindings.count {
-            bindings.remove(at: index)
-        }
+        guard bindings.indices.contains(index) else { return }
+        bindings.remove(at: index)
         shortcutManager.updateBindings(for: action, to: bindings)
     }
 
+    /// Adds `binding` to the action's keys, as the user's, taking it from
+    /// any other action of the scope that had it, and announces it.
     private func addBinding(_ binding: KeyBinding) {
+        let previousOwner = shortcutManager.action(holding: binding, in: action.scope)
         shortcutManager.addBinding(binding, to: action)
+        announceRecorded(binding, takenFrom: previousOwner)
+    }
+
+    /// Tells VoiceOver, wherever its cursor is, the key recorded for the
+    /// action and, when another action had it, which one it was taken from:
+    /// a key once moved silently.
+    private func announceRecorded(_ binding: KeyBinding, takenFrom previousOwner: ShortcutAction?) {
+        let other = previousOwner == action ? nil : previousOwner
+        VoiceOverAnnouncer.announce(ShortcutsSettingsWording.recorded(binding, for: action, takenFrom: other))
+    }
+
+    /// Gives the action back to its defaults and says what they are, since
+    /// the button that did it goes away with the row's edit.
+    private func resetToDefault() {
+        shortcutManager.resetToDefault(action)
+        VoiceOverAnnouncer.announce(ShortcutsSettingsWording.resetAnnouncement(for: action, keys: currentBindings))
+    }
+}
+
+// MARK: - Wording
+
+/// What the Shortcuts tab says (FR12): every key in words, never in symbols,
+/// which a braille display shows as signs. Tests pin each wording.
+enum ShortcutsSettingsWording {
+    /// What an edited row says after its keys, on screen and to VoiceOver.
+    static let edited = "Edited"
+    /// The title of the button, and of the row's VoiceOver action, that
+    /// gives one action back to its defaults.
+    static let resetToDefaultTitle = "Reset to Default"
+    /// That button's hint.
+    static let resetToDefaultHint =
+        "Gives this action TextMouth's default shortcuts again, which follow later releases' changes"
+
+    /// A row's VoiceOver label: the action's name as config.json names it,
+    /// an audio editor action's with its group's, then its keys in words,
+    /// and, for an action the user edited, "Edited.": "Release Media
+    /// Controls: Shift + R. Edited.", "Where Am I?: W".
+    static func rowLabel(for action: ShortcutAction, keys: [KeyBinding], isEdited: Bool) -> String {
+        let label = "\(action.rawValue): \(KeyBinding.accessibleDisplayString(for: keys))"
+        return isEdited ? "\(sentence(label)) \(edited)." : label
+    }
+
+    /// The reset button's VoiceOver label: "Reset Release Media Controls to
+    /// Default".
+    static func resetToDefaultLabel(for action: ShortcutAction) -> String {
+        "Reset \(action.rawValue) to Default"
+    }
+
+    /// What VoiceOver says once a key is recorded: "Shift + R, recorded for
+    /// Release Media Controls.", followed, for a key another action of the
+    /// scope had, by "Taken from Play / Pause."
+    static func recorded(_ key: KeyBinding, for action: ShortcutAction, takenFrom previousOwner: ShortcutAction?) -> String {
+        let recorded = sentence("\(key.accessibleDisplayString), recorded for \(action.rawValue)")
+        guard let previousOwner else { return recorded }
+        return "\(recorded) \(sentence("Taken from \(previousOwner.rawValue)"))"
+    }
+
+    /// What VoiceOver says once an action is reset to its default: "Next
+    /// Bookmark reset to default: Option + Shift + Command + B."
+    static func resetAnnouncement(for action: ShortcutAction, keys: [KeyBinding]) -> String {
+        sentence("\(action.rawValue) reset to default: \(KeyBinding.accessibleDisplayString(for: keys))")
+    }
+
+    /// `text` ended as a sentence: with a period, unless it ends in a
+    /// question mark, a period, or an ellipsis already, as "Where Am I?"
+    /// does.
+    static func sentence(_ text: String) -> String {
+        guard let last = text.last, !"?.…".contains(last) else { return text }
+        return text + "."
     }
 }
 

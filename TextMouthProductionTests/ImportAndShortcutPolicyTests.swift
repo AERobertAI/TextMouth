@@ -99,14 +99,15 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
     }
 
     /// Adding F/B defaults in an upgrade must never steal a binding that the
-    /// user already assigned to an older action.
+    /// user already assigned to an older action: the record of the user's
+    /// edits (FR12) keeps F on Where Am I?, and a whole map saved before the
+    /// cycling actions existed moves to such a record.
     func testNewShortcutDefaultsDoNotDuplicateLegacyCustomBindings() throws {
         let defaults = makeSandboxedPreferences("shortcuts")
         let existingForwardBinding = KeyBinding(key: "f")
-        let saved = [
-            ShortcutAction.whereAmI.rawValue: [existingForwardBinding],
-        ]
-        defaults.set(try JSONEncoder().encode(saved), forKey: "customKeyboardBindings")
+        let moved = ShortcutEdits.migrating(savedMap: [.whereAmI: [existingForwardBinding]], fileLists: nil)
+        XCTAssertEqual(moved.edits, ShortcutEdits([.whereAmI: [existingForwardBinding]]))
+        KeyboardShortcutManager.editsPreference.write(moved.edits, to: defaults)
 
         let manager = KeyboardShortcutManager(
             userDefaults: defaults,

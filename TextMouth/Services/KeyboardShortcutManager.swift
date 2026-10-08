@@ -5,28 +5,37 @@ import Combine
 /// Posts notifications when shortcuts are triggered, so the rest of the app
 /// can respond via the same NotificationCenter pattern already in use.
 ///
-/// The bindings live in the preferences store. The manager saves each change
-/// made through it there, and takes up every change made there by anyone
-/// else, such as the settings model applying an edit of config.json, which
-/// mirrors the shortcuts; key presses match the new bindings at once.
+/// The shortcuts live in the preferences store as the record of the ones the
+/// user edited (FR12, `ShortcutEdits`); every other action follows this
+/// build's defaults. Every change made through the manager goes through the
+/// record and is saved there, and the manager takes up every change made
+/// there by anyone else, such as the settings model applying an edit of
+/// config.json, which mirrors the shortcuts; key presses match the keys in
+/// force at once.
 @MainActor
 final class KeyboardShortcutManager: ObservableObject {
-    @Published var bindings: [ShortcutAction: [KeyBinding]] = [:]
+    /// The record of the shortcuts the user edited, as the store holds it.
+    private(set) var edits: ShortcutEdits
+    /// Every action's keys in force: the record's, with this build's
+    /// defaults (`ShortcutEdits.effectiveBindings(defaults:)`), so no key
+    /// belongs to two actions of one scope. Key presses match these. A
+    /// change of the record and these is published once (`take(_:)`).
+    private(set) var bindings: [ShortcutAction: [KeyBinding]]
 
     private var eventMonitor: Any?
-    /// The store holding the custom bindings.
+    /// The store holding the record.
     private let userDefaults: UserDefaults
     /// Where the actions' notifications are posted: the app's own center,
     /// which every window hears, unless a test passes one of its own.
     private let notificationCenter: NotificationCenter
-    /// Reports changes to the bindings in the store.
+    /// Reports changes to the record in the store.
     private var storeObserver: PreferenceObserver?
 
-    /// Loads the bindings, follows their changes in the store from then on,
+    /// Loads the record, follows its changes in the store from then on,
     /// and, unless told not to, starts watching key presses.
     /// - Parameters:
-    ///   - userDefaults: The store holding the custom bindings: this
-    ///     process's preferences unless a test passes its own.
+    ///   - userDefaults: The store holding the record: this process's
+    ///     preferences unless a test passes its own.
     ///   - installsEventMonitor: False leaves key presses alone, for tests.
     ///   - notificationCenter: Where the actions' notifications go: the
     ///     default center unless a test passes its own, so that a key it
@@ -38,9 +47,11 @@ final class KeyboardShortcutManager: ObservableObject {
     ) {
         self.userDefaults = userDefaults
         self.notificationCenter = notificationCenter
-        bindings = Self.bindingsPreference.read(from: userDefaults)
-        storeObserver = PreferenceObserver(keys: [Self.bindingsPreference.key], in: userDefaults) { [weak self] _ in
-            self?.takeBindingsFromStore()
+        let stored = Self.storedEdits(in: userDefaults)
+        edits = stored
+        bindings = stored.effectiveBindings(defaults: ShortcutAction.defaultBindings)
+        storeObserver = PreferenceObserver(keys: [Self.editsPreference.key], in: userDefaults) { [weak self] _ in
+            self?.takeEditsFromStore()
         }
         if installsEventMonitor {
             startMonitoring()
@@ -49,128 +60,195 @@ final class KeyboardShortcutManager: ObservableObject {
 
     // MARK: - Persistence
 
-    /// The bindings of every action in the preferences store, saved as JSON
-    /// keyed by the actions' names under the key every release has used, so
-    /// saved shortcuts keep loading. An action the saved bindings leave out,
-    /// such as one added since they were saved, gets its defaults. The
-    /// settings model mirrors the bindings in config.json through this same
-    /// definition.
-    nonisolated static let bindingsPreference = StoredPreference<[ShortcutAction: [KeyBinding]]>(
-        key: "customKeyboardBindings",
+    /// The record of the shortcuts the user edited (FR12) in the
+    /// preferences store, under a key of its own, as
+    /// `ShortcutEdits.storedData` writes it: an empty record while the store
+    /// holds none. The settings model mirrors it in config.json through this
+    /// same definition.
+    nonisolated static let editsPreference = StoredPreference<ShortcutEdits>(
+        key: "keyboardShortcutEdits",
         read: { store, key in
-            guard let data = store.data(forKey: key),
-                  let saved = try? JSONDecoder().decode([String: [KeyBinding]].self, from: data) else {
-                return ShortcutAction.defaultBindings
-            }
-            return KeyboardShortcutManager.bindings(
-                addingDefaultsTo: [ShortcutAction: [KeyBinding]](keyedByRawValue: saved)
-            )
+            store.data(forKey: key).map { ShortcutEdits.reading($0).edits } ?? ShortcutEdits()
         },
-        write: { bindings, store, key in
-            guard let data = try? JSONEncoder().encode(bindings.keyedByRawValue) else { return }
+        write: { edits, store, key in
+            guard let data = edits.storedData else { return }
             store.set(data, forKey: key)
         }
     )
 
-    /// `saved` with each action it leaves out given its default bindings,
-    /// except any binding another action of its scope already uses.
-    nonisolated static func bindings(
-        addingDefaultsTo saved: [ShortcutAction: [KeyBinding]]
-    ) -> [ShortcutAction: [KeyBinding]] {
-        var loaded = saved
-        let defaults = ShortcutAction.defaultBindings
-        // The bindings each scope's actions use: a key may mean one thing in
-        // a reader and another in the audio editor, never two in one place.
-        var claimedBindings: [ShortcutScope: Set<KeyBinding>] = [:]
-        for (action, bindings) in loaded {
-            claimedBindings[action.scope, default: []].formUnion(bindings)
-        }
-        for action in ShortcutAction.allCases where loaded[action] == nil {
-            // Preserve existing custom ownership during upgrades. A newly
-            // introduced default must not duplicate an older user-assigned
-            // binding because dictionary iteration would otherwise make the
-            // action that fires nondeterministic.
-            let availableDefaults = (defaults[action] ?? []).filter {
-                !claimedBindings[action.scope, default: []].contains($0)
-            }
-            loaded[action] = availableDefaults
-            claimedBindings[action.scope, default: []].formUnion(availableDefaults)
-        }
-        return loaded
+    /// The key under which every release before the record saved the whole
+    /// map of every action's keys. The move to the record reads it once, at
+    /// the first launch that finds no record (`moveSavedShortcutsIfNeeded`),
+    /// and nothing writes it again, so it stays as a copy to go back to.
+    nonisolated static let savedMapKey = "customKeyboardBindings"
+
+    /// The keys in force as a store's record gives them, read only, for
+    /// whoever follows the shortcuts without a manager of its own: an audio
+    /// editor window says its buttons' keys in their hints. Its key is the
+    /// record's, so a change of the record is a change of these.
+    nonisolated static let bindingsPreference = StoredShortcutBindings(key: editsPreference.key)
+
+    /// Names the preferences store in the repair lines of the debug log.
+    nonisolated static let storeLogSource = "preferences"
+
+    /// The record `store` holds, each entry left out of it logged as a
+    /// repair; an empty record while there is none.
+    private static func storedEdits(in store: UserDefaults) -> ShortcutEdits {
+        guard let data = store.data(forKey: editsPreference.key) else { return ShortcutEdits() }
+        let reading = ShortcutEdits.reading(data)
+        ShortcutEdits.log(reading.skipped, source: storeLogSource, field: editsPreference.key)
+        return reading.edits
     }
 
-    /// The bindings once `requested`, from config.json, are in place: each
-    /// action it names takes exactly the bindings it lists, and every other
-    /// action keeps its own, except any binding the file gives a named
-    /// action of its scope, which moves there as a shortcut recorded in
-    /// Settings moves from the action that had it. A file that changes a
-    /// few shortcuts thus never leaves one key on two actions of one scope,
-    /// which would make the action it triggers a matter of chance.
-    nonisolated static func bindings(
-        _ current: [ShortcutAction: [KeyBinding]],
-        adopting requested: [ShortcutAction: [KeyBinding]]
-    ) -> [ShortcutAction: [KeyBinding]] {
-        var claimed: [ShortcutScope: Set<KeyBinding>] = [:]
-        for (action, bindings) in requested {
-            claimed[action.scope, default: []].formUnion(bindings)
-        }
-        var adopted: [ShortcutAction: [KeyBinding]] = [:]
-        for (action, bindings) in current {
-            adopted[action] = bindings.filter { !claimed[action.scope, default: []].contains($0) }
-        }
-        for (action, bindings) in requested {
-            adopted[action] = bindings
-        }
-        return adopted
+    /// Takes the record from the store when someone else changed it there.
+    /// Nothing is written back: the record is saved only by the methods
+    /// that change it.
+    private func takeEditsFromStore() {
+        take(Self.storedEdits(in: userDefaults))
     }
 
-    private func saveBindings() {
-        Self.bindingsPreference.write(bindings, to: userDefaults)
+    /// Makes `newEdits` the record in force, with its keys, publishing once
+    /// when it differs from the one in force.
+    private func take(_ newEdits: ShortcutEdits) {
+        guard newEdits != edits else { return }
+        objectWillChange.send()
+        edits = newEdits
+        bindings = newEdits.effectiveBindings(defaults: ShortcutAction.defaultBindings)
     }
 
-    /// Takes the bindings from the store when someone else changed them
-    /// there. Nothing is written back: `bindings` saves only through the
-    /// methods that change it.
-    private func takeBindingsFromStore() {
-        let stored = Self.bindingsPreference.read(from: userDefaults)
-        if stored != bindings {
-            bindings = stored
-        }
+    /// Puts `changed` in force, then saves it. In force first: the store
+    /// reports the save at once, within the write, and the record it then
+    /// reads is the one already in force, so the change is published once.
+    private func save(_ changed: ShortcutEdits) {
+        take(changed)
+        Self.editsPreference.write(changed, to: userDefaults)
     }
 
-    // MARK: - Binding Management
+    // MARK: - Changing the Shortcuts
 
+    /// Gives `action` exactly `newBindings`, as the user's, each taken from
+    /// every other action of its scope (`ShortcutEdits.setKeys(_:for:)`,
+    /// the one rule a key's owner follows). Replacing a key in Settings comes
+    /// through here, so it can no longer leave one key on two actions.
     func updateBindings(for action: ShortcutAction, to newBindings: [KeyBinding]) {
-        bindings[action] = newBindings
-        saveBindings()
+        change(action, to: newBindings)
     }
 
+    /// Adds `binding` to `action`'s keys, which makes them the user's, and
+    /// takes it from any other action of the same scope; an action of the
+    /// other scope keeps it, as the editor's Space and the reader's do.
     func addBinding(_ binding: KeyBinding, to action: ShortcutAction) {
-        // Remove this binding from any other action of the same scope first
-        // (no duplicates where one key press could mean two things); an
-        // action of the other scope keeps it, as the editor's Space and the
-        // reader's do.
-        for otherAction in ShortcutAction.allCases where otherAction != action && otherAction.scope == action.scope {
-            bindings[otherAction]?.removeAll { $0 == binding }
-        }
-        if bindings[action] == nil {
-            bindings[action] = []
-        }
-        if !(bindings[action]?.contains(binding) ?? false) {
-            bindings[action]?.append(binding)
-        }
-        saveBindings()
+        let keys = bindingsFor(action)
+        change(action, to: keys.contains(binding) ? keys : keys + [binding])
     }
 
+    /// Removes `binding` from `action`'s keys, which makes them the user's.
     func removeBinding(_ binding: KeyBinding, from action: ShortcutAction) {
-        bindings[action]?.removeAll { $0 == binding }
-        saveBindings()
+        change(action, to: bindingsFor(action).filter { $0 != binding })
     }
 
-    func resetToDefaults() {
-        bindings = ShortcutAction.defaultBindings
-        saveBindings()
+    /// Gives `action` back to this build's defaults (Reset to Default),
+    /// less any key an edited action of its scope holds; every key it held
+    /// goes back to the unedited action whose default it is.
+    func resetToDefault(_ action: ShortcutAction) {
+        var changed = edits
+        changed.reset(action)
+        save(changed)
     }
+
+    /// Gives every action back to this build's defaults (Reset to Defaults).
+    func resetToDefaults() {
+        save(ShortcutEdits())
+    }
+
+    /// Whether the user edited `action`'s keys, which then stay theirs until
+    /// Reset to Default, even when they are its default keys.
+    func isEdited(_ action: ShortcutAction) -> Bool {
+        edits.isEdited(action)
+    }
+
+    /// Makes `keys` `action`'s, as the user's. Keys that leave an unedited
+    /// action as it is change nothing: it stays TextMouth's.
+    private func change(_ action: ShortcutAction, to keys: [KeyBinding]) {
+        guard edits.isEdited(action) || keys != bindingsFor(action) else { return }
+        var changed = edits
+        changed.setKeys(keys, for: action)
+        save(changed)
+    }
+
+    // MARK: - The Move to the Record (FR12)
+
+    /// Moves the shortcuts saved before the record existed into it, at the
+    /// first launch that finds no record in `store` (FR12, section 4.2 of
+    /// the design), and returns whether it did.
+    ///
+    /// The settings model calls this at launch, before it applies
+    /// config.json, with the file's entries (`fileListings`, nil when there
+    /// was no file it could read), and leaves the file's shortcuts out of
+    /// what it applies when this returns true: the move reads them itself,
+    /// and applying the old form's lists afterwards would make every action
+    /// the user's. That launch's own save then writes config.json in the new
+    /// form.
+    ///
+    /// Nothing is moved when the store holds a record already, nor when
+    /// config.json is in the new form already (an entry written "default"),
+    /// which is then read as any edit is: over an empty record, written now,
+    /// so that the move never runs again. The whole map (`savedMapKey`) is
+    /// read and left as it is; nothing writes it again.
+    @discardableResult
+    static func moveSavedShortcutsIfNeeded(in store: UserDefaults, fileListings: [ShortcutAction: ShortcutListing]?) -> Bool {
+        guard store.data(forKey: editsPreference.key) == nil else { return false }
+        if let fileListings, fileListings.values.contains(where: \.followsDefaults) {
+            DiagnosticLog.event(
+                .storage,
+                "SHORTCUT_EDITS_MOVED: config.json is in the new form already; reading it over an empty record"
+            )
+            editsPreference.write(ShortcutEdits(), to: store)
+            return false
+        }
+        let savedMap = store.data(forKey: savedMapKey).map(ShortcutEdits.reading)
+        if let savedMap {
+            ShortcutEdits.log(savedMap.skipped, source: storeLogSource, field: savedMapKey)
+        }
+        let fileLists = fileListings?.compactMapValues(\.bindings)
+        let moved = ShortcutEdits.migrating(savedMap: savedMap?.edits.keysByEditedAction, fileLists: fileLists)
+        ShortcutEdits.log(moved.sharedKeys, source: storeLogSource, field: editsPreference.key)
+        let sources = [
+            savedMap.map { "\(savedMapKey) (\($0.edits.keysByEditedAction.count) actions)" },
+            fileLists.map { "config.json (\($0.count) actions)" },
+        ].compactMap { $0 }
+        let edited = moved.edits.editedActions.map(\.rawValue)
+        DiagnosticLog.event(
+            .storage,
+            "SHORTCUT_EDITS_MOVED: made the record of edited shortcuts from "
+                + (sources.isEmpty ? "nothing saved" : sources.joined(separator: " and "))
+                + "; edited: " + (edited.isEmpty ? "none" : edited.joined(separator: ", "))
+        )
+        editsPreference.write(moved.edits, to: store)
+        return true
+    }
+
+    // MARK: - config.json's Entries (FR12)
+
+    /// Puts config.json's entries in place in `store`'s record (FR12,
+    /// sections 5.1 and 5.2 of the design, `ShortcutEdits.adopting(_:)`):
+    /// a list makes its action the user's, "default" gives it back, and a key
+    /// two edited actions then hold is left to one of them and logged, naming
+    /// the key and both actions. No entries change nothing.
+    ///
+    /// - Returns: Whether such a key was settled, so the settings model
+    ///   saves config.json again at once and the file shows the keys in
+    ///   force, as it is saved after a repaired value.
+    @discardableResult
+    static func adopt(_ listings: [ShortcutAction: ShortcutListing], in store: UserDefaults) -> Bool {
+        guard !listings.isEmpty else { return false }
+        let adopted = editsPreference.read(from: store).adopting(listings)
+        ShortcutEdits.log(adopted.sharedKeys, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
+        editsPreference.write(adopted.edits, to: store)
+        return !adopted.sharedKeys.isEmpty
+    }
+
+    // MARK: - Reading the Shortcuts
 
     /// Get all bindings for an action
     func bindingsFor(_ action: ShortcutAction) -> [KeyBinding] {
@@ -182,11 +260,16 @@ final class KeyboardShortcutManager: ObservableObject {
         bindings[action]?.first?.displayString ?? "None"
     }
 
-    /// All display strings for an action (for accessibility)
+    /// An action's keys in force in words, as VoiceOver and a braille
+    /// display take them: "Space or K", or "No shortcut".
     func allDisplayStrings(for action: ShortcutAction) -> String {
-        let keys = bindings[action] ?? []
-        if keys.isEmpty { return "No shortcut" }
-        return keys.map { $0.displayString }.joined(separator: " or ")
+        KeyBinding.accessibleDisplayString(for: bindingsFor(action))
+    }
+
+    /// The action of `scope` whose keys in force hold `binding`, if any: the
+    /// one a key recorded in Settings is taken from.
+    func action(holding binding: KeyBinding, in scope: ShortcutScope) -> ShortcutAction? {
+        ShortcutAction.allCases.first { $0.scope == scope && bindingsFor($0).contains(binding) }
     }
 
     // MARK: - Event Monitoring
@@ -330,5 +413,21 @@ final class KeyboardShortcutManager: ObservableObject {
     /// text in a view of its own, which is none of these.
     static func isTextInput(_ responder: NSResponder?) -> Bool {
         responder is NSTextView || responder is NSTextField
+    }
+}
+
+/// Every action's keys in force as a preferences store's record of the
+/// user's edits gives them (`KeyboardShortcutManager.bindingsPreference`),
+/// read only: every change goes through the record
+/// (`KeyboardShortcutManager.editsPreference`).
+struct StoredShortcutBindings: Sendable {
+    /// The store key whose changes change the keys in force: the record's.
+    let key: String
+
+    /// Every action's keys in force, as `store`'s record gives them with
+    /// this build's defaults.
+    func read(from store: UserDefaults) -> [ShortcutAction: [KeyBinding]] {
+        KeyboardShortcutManager.editsPreference.read(from: store)
+            .effectiveBindings(defaults: ShortcutAction.defaultBindings)
     }
 }

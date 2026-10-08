@@ -702,8 +702,8 @@ final class ConfigWatcherTests: XCTestCase {
 
     /// An edit of the shortcuts, noticed through the watcher's handler, is
     /// applied once and reaches the shortcut manager at once, published
-    /// once; the store keeps them where and as every release saved them,
-    /// and nothing is written back.
+    /// once; the store keeps the record of the user's edits (FR12) in the
+    /// form the whole map had, and nothing is written back.
     func testExternalEditOfTheShortcutsReachesTheManagerOnce() throws {
         let url = try makeConfigFileURL()
         var edit = launchConsistentConfig()
@@ -726,9 +726,10 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "w", control: true)])
         XCTAssertEqual(publications, 1)
         XCTAssertEqual(counter.writes, 0)
-        let stored = try XCTUnwrap(defaults.data(forKey: "customKeyboardBindings"))
+        let stored = try XCTUnwrap(defaults.data(forKey: "keyboardShortcutEdits"))
         let saved = try JSONDecoder().decode([String: [KeyBinding]].self, from: stored)
         XCTAssertEqual(saved["Where Am I?"], [KeyBinding(key: "w", control: true)])
+        XCTAssertNil(defaults.object(forKey: "customKeyboardBindings"), "the whole map's key is never written")
         withExtendedLifetime(settings) {}
     }
 
