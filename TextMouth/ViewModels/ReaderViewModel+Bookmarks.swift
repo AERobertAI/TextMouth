@@ -272,26 +272,31 @@ extension ReaderViewModel {
     ///
     /// - Parameters:
     ///   - metadata: The edited metadata.
+    ///   - opened: The metadata the editor opened with, which it kept while
+    ///     this reader's own metadata took any change the library made
+    ///     meanwhile, so the save changes only what the user changed.
     ///   - writeToFile: Whether to write the library's copy of the EPUB file.
     ///   - writer: Writes the file; tests pass one that fails.
     @discardableResult
     func saveEPUBMetadata(
         _ metadata: EPUBMetadata,
+        openedAs opened: EPUBMetadata,
         writeToFile: Bool,
         writer: EPUBMetadataWriter = .system
     ) -> OperationOutcome {
         let save = libraryViewModel.saveEPUBMetadata(
             metadata,
-            // What the editor opened with, so the save records the fields
-            // it changed as edited by hand.
-            openedAs: epubMetadata,
+            openedAs: opened,
             for: book,
             writingToFile: writeToFile,
             writer: writer
         )
         if let saved = save.savedBook {
-            epubMetadata = metadata
             book.applyEditableMetadata(from: saved)
+            // The row's fields, over the edit for the rest: a field the
+            // library changed while the editor was open shows as the row
+            // has it, not as the editor opened with it.
+            epubMetadata = saved.mergingEditableEPUBMetadata(metadata)
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title,
                 author: book.author,
@@ -302,25 +307,26 @@ extension ReaderViewModel {
         return save.outcome
     }
 
-    /// Save edited audio metadata. Updates the book's title/author and persists
-    /// the album, genre, and year fields to bookInfo.json inside the .tmb package,
-    /// recording the fields the edit changed as edited by hand.
-    func saveAudioMetadata(_ metadata: AudioMetadata) {
-        // What the editor opened with, which shows the file's tags where
-        // the row keeps none, so only what the user changed is recorded.
-        let opened = audioMetadata.map { Book.MetadataField.values(in: $0) }
-        audioMetadata = metadata
-
-        book.title = metadata.title
-        book.author = metadata.artist
-        book.audioAlbum = metadata.album
-        book.audioGenre = metadata.genre
-        book.audioYear = metadata.year
-
+    /// Saves edited audio metadata through the library: the title, the
+    /// artist as the author, and the album, genre, and year, each only if
+    /// the user changed it since the editor opened with `opened`, which is
+    /// recorded as edited by hand on the row and in bookInfo.json inside the
+    /// .tmb package. The reader's book, its metadata, and Now Playing then
+    /// show the row as saved. A book that has left the library is not saved,
+    /// and the reader stays as it was and says so.
+    func saveAudioMetadata(_ metadata: AudioMetadata, openedAs opened: AudioMetadata) {
         // The row as saved carries the record of hand edits.
-        if let saved = libraryViewModel.updateBookMetadata(book, editedFrom: opened) {
-            book.applyEditableMetadata(from: saved)
+        guard let saved = libraryViewModel.updateBookMetadata(
+            Book.MetadataEdit(opened: opened, saved: metadata),
+            of: book.id
+        ) else {
+            // The words the EPUB editor's save uses for such a book.
+            announceToVoiceOver(EPUBMetadataSaveWording.notInLibrary(title: book.title))
+            return
         }
+        book.applyEditableMetadata(from: saved)
+        // The row's fields, over the edit for the rest, as for an EPUB.
+        audioMetadata = saved.mergingEditableAudioMetadata(metadata)
         announceToVoiceOver("Metadata updated")
 
         // Update NowPlaying with the new metadata

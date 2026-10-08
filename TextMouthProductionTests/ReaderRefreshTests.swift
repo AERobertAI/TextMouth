@@ -136,14 +136,17 @@ final class ReaderRefreshTests: XCTestCase {
         waitForReaderToLoad(reader)
         XCTAssertNil(reader.errorMessage, "The book did not open")
 
-        var renamed = try row(of: book, in: world.library)
-        renamed.title = "Breakwater Soundings, Second Survey"
-        world.library.updateBookMetadata(renamed)
+        let original = try row(of: book, in: world.library)
+        world.library.updateBookMetadata(
+            Book.MetadataEdit(opened: [.title: original.title], saved: [.title: "Breakwater Soundings, Second Survey"]),
+            of: book.id
+        )
         var stale = staleFields(of: reader, in: world.library, after: "the library's edit")
 
-        var metadata = try XCTUnwrap(reader.audioMetadata, "The reader read no audio metadata")
+        let opened = try XCTUnwrap(reader.audioMetadata, "The reader read no audio metadata")
+        var metadata = opened
         metadata.genre = "Field Recording"
-        reader.saveAudioMetadata(metadata)
+        reader.saveAudioMetadata(metadata, openedAs: opened)
 
         let saved = try row(of: book, in: world.library)
         if saved.title != "Breakwater Soundings, Second Survey" {
@@ -469,9 +472,10 @@ final class ReaderRefreshTests: XCTestCase {
         let otherRevisionBefore = otherReader.appliedLibraryRevision
         let original = try row(of: book, in: world.library)
 
-        var renamed = original
-        renamed.title = Self.revisedTitle
-        world.library.updateBookMetadata(renamed)
+        world.library.updateBookMetadata(
+            Book.MetadataEdit(opened: [.title: original.title], saved: [.title: Self.revisedTitle]),
+            of: book.id
+        )
 
         XCTAssertEqual(world.library.bookUpdates.revision(of: book.id), revisionBefore + 1)
         for reader in readers {
@@ -511,9 +515,11 @@ final class ReaderRefreshTests: XCTestCase {
         let generation = reader.chapterPlaybackGeneration
         reader.speechService.isSpeaking = true
 
-        var renamed = try row(of: book, in: world.library)
-        renamed.title = Self.revisedTitle
-        world.library.updateBookMetadata(renamed)
+        let original = try row(of: book, in: world.library)
+        world.library.updateBookMetadata(
+            Book.MetadataEdit(opened: [.title: original.title], saved: [.title: Self.revisedTitle]),
+            of: book.id
+        )
         let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf") }
         XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
 
@@ -539,10 +545,13 @@ final class ReaderRefreshTests: XCTestCase {
         // The load finishes on the main queue, which runs only once this
         // test waits for it, so the edit always lands while it is under way.
         XCTAssertTrue(reader.isLoading)
-        var edited = book
-        edited.title = Self.revisedTitle
-        edited.author = Self.revisedAuthor
-        world.library.updateBookMetadata(edited)
+        world.library.updateBookMetadata(
+            Book.MetadataEdit(
+                opened: [.title: book.title, .author: book.author],
+                saved: [.title: Self.revisedTitle, .author: Self.revisedAuthor]
+            ),
+            of: book.id
+        )
         waitForReaderToLoad(reader)
 
         XCTAssertNil(reader.errorMessage, "The book did not open")

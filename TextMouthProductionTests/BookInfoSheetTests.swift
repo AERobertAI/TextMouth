@@ -22,7 +22,7 @@ final class BookInfoSheetTests: XCTestCase {
             title: "Ferry Timetable", author: "Harbour Board", publisher: "", publicationDate: "",
             isbn: "", language: "en", identifier: "", epubVersion: "3.0"
         )
-        let sheet = MetadataEditorView(metadata: metadata, isEPUB: true) { _, _ in .success(nil) }
+        let sheet = MetadataEditorView(metadata: metadata, isEPUB: true) { _, _, _ in .success(nil) }
 
         try withHostedControls(sheet) { controls in
             let buttons = controls.filter { $0.role == .button }.map(\.label)

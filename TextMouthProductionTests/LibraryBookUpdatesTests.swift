@@ -66,10 +66,13 @@ final class LibraryBookUpdatesTests: XCTestCase {
         let recorder = record(book, in: model)
         model.bookUpdates.watch(book)
 
-        var edited = book
-        edited.title = "Neap Tides"
-        edited.author = "Harbour Survey Office"
-        model.updateBookMetadata(edited)
+        model.updateBookMetadata(
+            Book.MetadataEdit(
+                opened: [.title: book.title, .author: book.author],
+                saved: [.title: "Neap Tides", .author: "Harbour Survey Office"]
+            ),
+            of: book.id
+        )
 
         XCTAssertEqual(recorder.updates.count, 1)
         XCTAssertEqual(recorder.updates.first?.revision, 1)

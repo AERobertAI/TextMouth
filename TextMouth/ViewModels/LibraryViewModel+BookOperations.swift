@@ -594,32 +594,41 @@ extension LibraryViewModel {
         persistReadingPosition(bookID: bookID, position: position)
     }
 
-    /// Saves the editable metadata of `updatedBook` (`Book.EditableMetadata`)
-    /// to its row, as every editor's save does, and returns the row as
-    /// saved, or nil when the book has left the library.
+    /// Saves `edit`, one save of a metadata editor, to the row of the book
+    /// `bookID`, as every editor's save does, and returns the row as saved,
+    /// or nil when the book has left the library.
     ///
-    /// Each field whose value the save changed is recorded as edited by
-    /// hand (`Book.markEditedByHand(_:)`): the fields of `updatedBook` that
-    /// differ from `opened`, what the editor opened with
-    /// (`Book.MetadataField.values(in:)`), or, when that is nil, from the
-    /// row. An editor shows the file's value for a field the row keeps
-    /// none of, so a save from the EPUB or the audio editor passes what it
-    /// opened with; the Book Info sheet, whose title and author the row
-    /// always keeps, compares with the row. The record of hand edits is
-    /// the row's own: a copy an editor took when it opened cannot know the
-    /// edits recorded since, so the row's record is kept and this save's
-    /// edits are added to it.
+    /// The edit applies to the row as it is now, never as the editor
+    /// opened with it (`Book.applyMetadataEdit(_:)`): each field the user
+    /// changed, saved with a value other than the one the editor opened
+    /// with, takes the value saved and is recorded as edited by hand, and
+    /// every other field keeps the row's value. So a field another window
+    /// or the launch metadata refresh changed while the editor was open
+    /// keeps that change and is not marked; a field the editor showed from
+    /// the book's file, where the row keeps none, is not kept in the row
+    /// when saved unchanged; and the row's record of hand edits, which may
+    /// have grown since the editor opened, keeps every field it names. A
+    /// save that changes nothing writes nothing, so the row, its record,
+    /// and the library index stay as they are.
+    ///
+    /// - Parameters:
+    ///   - edit: What the editor opened with and what the user saved.
+    ///   - bookID: The book edited.
+    ///   - contentHash: The new content hash of the book's file, when the
+    ///     save wrote the edit into the file (an EPUB's, TODO A09); nil
+    ///     keeps the row's.
     @discardableResult
-    func updateBookMetadata(_ updatedBook: Book, editedFrom opened: Book.MetadataValues? = nil) -> Book? {
+    func updateBookMetadata(_ edit: Book.MetadataEdit, of bookID: UUID, contentHash: String? = nil) -> Book? {
+        guard let row = bookByID(bookID) else { return nil }
+        // Nothing to change: a write would only rewrite the book's record
+        // and the index, and redraw every Library window, for nothing.
+        guard !edit.changes.isEmpty || contentHash != nil else { return row }
         var saved: Book?
-        updateBook(id: updatedBook.id) { book in
-            let before = book
-            book.applyEditableMetadata(from: updatedBook)
-            book.handEdits = before.handEdits
-            book.markEditedByHand(Book.MetadataField.fieldsThatDiffer(
-                between: opened ?? Book.MetadataField.values(in: before.editableMetadata),
-                and: Book.MetadataField.values(in: updatedBook.editableMetadata)
-            ))
+        updateBook(id: bookID) { book in
+            book.applyMetadataEdit(edit)
+            if let contentHash {
+                book.md5Hash = contentHash
+            }
             saved = book
         }
         return saved
@@ -640,42 +649,51 @@ extension LibraryViewModel {
     /// The edit applies to the book as the library holds it now, found by
     /// its ID, so an editor opened before the book moved writes the file
     /// where it is now, and a book that has left the library is not saved at
-    /// all. Nothing is presented or announced here: the caller reports the
-    /// result where the user is working.
+    /// all. Only the fields the user changed are saved and recorded as
+    /// edited by hand (`updateBookMetadata(_:of:contentHash:)`), and the
+    /// file is given the row as the save leaves it, so a field another
+    /// window changed while the editor was open goes into the file as the
+    /// row has it now. Nothing is presented or announced here: the caller
+    /// reports the result where the user is working.
     ///
     /// - Parameters:
     ///   - metadata: The edited metadata. Its title, author, publisher, and
     ///     publication date are saved; its other fields are read-only.
-    ///   - opened: The metadata the editor opened with, so that the fields
-    ///     the edit changed are recorded as edited by hand
-    ///     (`updateBookMetadata(_:editedFrom:)`); nil, for a save made
-    ///     without an editor, compares with the row.
+    ///   - opened: The metadata the editor opened with, which tells the
+    ///     fields the user changed from the rest.
     ///   - book: The book being edited, as the editor knows it.
     ///   - writingToFile: Whether to write the library's copy of the EPUB
     ///     file too.
     ///   - writer: Writes the file; tests pass one that fails.
     func saveEPUBMetadata(
         _ metadata: EPUBMetadata,
-        openedAs opened: EPUBMetadata?,
+        openedAs opened: EPUBMetadata,
         for book: Book,
         writingToFile: Bool,
         writer: EPUBMetadataWriter = .system
     ) -> EPUBMetadataSave {
-        guard var updated = bookByID(book.id) else {
-            return .failed(message: EPUBMetadataSaveWording.notInLibrary(title: book.title))
+        let notInLibrary = EPUBMetadataSaveWording.notInLibrary(title: book.title)
+        guard let row = bookByID(book.id) else {
+            return .failed(message: notInLibrary)
         }
-        updated.title = metadata.title
-        updated.author = metadata.author
-        updated.epubPublisher = metadata.publisher
-        updated.epubPublicationDate = metadata.publicationDate
+        let edit = Book.MetadataEdit(opened: opened, saved: metadata)
 
         let message: String
-        if writingToFile && updated.format == .epub {
-            let wording = EPUBMetadataSaveWording(filePath: updated.filePath)
+        var contentHash: String?
+        if writingToFile && row.format == .epub {
+            let wording = EPUBMetadataSaveWording(filePath: row.filePath)
+            // The file takes the row as the edit leaves it, with the
+            // editor's metadata under it for the fields the row keeps none
+            // of, so the file and the row agree once the save is done.
+            var edited = row
+            edited.applyMetadataEdit(edit)
             do {
                 // The new hash describes the written file, so it is recorded
                 // only once the write has succeeded.
-                updated.md5Hash = try writer.write(metadata, URL(fileURLWithPath: updated.filePath))
+                contentHash = try writer.write(
+                    edited.mergingEditableEPUBMetadata(metadata),
+                    URL(fileURLWithPath: row.filePath)
+                )
             } catch {
                 // The error's domain, code, and description, which names files
                 // by name; its full description would repeat absolute paths.
@@ -683,7 +701,7 @@ extension LibraryViewModel {
                 DiagnosticLog.event(
                     .storage,
                     "EPUB_METADATA_WRITE_FAILED: book=\(book.id.uuidString.prefix(8)) "
-                        + "file=\(DiagnosticLog.loggablePath(updated.filePath)): "
+                        + "file=\(DiagnosticLog.loggablePath(row.filePath)): "
                         + "\(failure.domain) \(failure.code): \(failure.localizedDescription)"
                 )
                 return .failed(message: wording.writeFailed(reason: error.localizedDescription))
@@ -694,7 +712,9 @@ extension LibraryViewModel {
         }
         // The row as saved carries the record of hand edits, which the
         // reader's copy takes from it.
-        let saved = updateBookMetadata(updated, editedFrom: opened.map { Book.MetadataField.values(in: $0) }) ?? updated
+        guard let saved = updateBookMetadata(edit, of: book.id, contentHash: contentHash) else {
+            return .failed(message: notInLibrary)
+        }
         return .saved(saved, message: message)
     }
 

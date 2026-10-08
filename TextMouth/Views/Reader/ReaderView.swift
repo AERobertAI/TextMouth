@@ -458,6 +458,13 @@ struct ReaderPanelSheets: ViewModifier {
 /// takes the record from every save of its row, the reader's own saves
 /// included, and the reader is observed, so the sheet, opened again, says
 /// "edited by hand" for a field just saved.
+///
+/// While the sheet is open the reader takes every change the library makes
+/// to the book (another window's save, the launch metadata refresh), and
+/// the sheet is made again with it. Each editor keeps what it opened with
+/// and its save hands that on, so the save changes, and marks, only what
+/// the user changed in it (`Book.MetadataEdit`): the library's change is
+/// neither put back nor counted as the user's.
 struct ReaderBookInfoSheet: View {
     @ObservedObject var viewModel: ReaderViewModel
 
@@ -467,16 +474,16 @@ struct ReaderBookInfoSheet: View {
                 metadata: metadata,
                 isEPUB: viewModel.book.format == .epub,
                 handEdits: viewModel.book.handEdits,
-                onSave: { updated, writeToFile in
-                    viewModel.saveEPUBMetadata(updated, writeToFile: writeToFile)
+                onSave: { edited, opened, writeToFile in
+                    viewModel.saveEPUBMetadata(edited, openedAs: opened, writeToFile: writeToFile)
                 }
             )
         } else if let audioMeta = viewModel.audioMetadata {
             MetadataEditorView(
                 audioMetadata: audioMeta,
                 handEdits: viewModel.book.handEdits,
-                onSave: { updated in
-                    viewModel.saveAudioMetadata(updated)
+                onSave: { edited, opened in
+                    viewModel.saveAudioMetadata(edited, openedAs: opened)
                 }
             )
         } else {

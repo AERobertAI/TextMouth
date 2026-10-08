@@ -101,10 +101,11 @@ final class ReaderEPUBMetadataTests: XCTestCase {
         reader.readEPUBMetadata = held.read
         waitForReaderToLoad(reader)
 
-        let edited = Self.edit(of: try Self.metadataAsEveryOpenReadIt(for: book))
+        let opened = try Self.metadataAsEveryOpenReadIt(for: book)
+        let edited = Self.edit(of: opened)
         // The save's announcement is recorded rather than spoken.
         var outcome: OperationOutcome?
-        _ = recordingAnnouncements { outcome = reader.saveEPUBMetadata(edited, writeToFile: false) }
+        _ = recordingAnnouncements { outcome = reader.saveEPUBMetadata(edited, openedAs: opened, writeToFile: false) }
         XCTAssertEqual(outcome, .success("Metadata saved to the library only; the EPUB file is unchanged."))
         held.release()
 

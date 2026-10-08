@@ -67,16 +67,71 @@ final class HandEditedMetadataTests: XCTestCase {
         )
     }
 
-    /// The fields that differ between what an editor opened with and what
-    /// it saved: a changed value, and a value only one side has; not a
-    /// value both sides share, nor a field neither has.
-    func testTheFieldsThatDifferAreTheOnesASaveChanged() {
+    /// The changes of an editor's save are the fields saved with a value
+    /// other than the one the editor opened with, each with the value
+    /// saved: a changed value, and a value saved for a field the editor
+    /// opened without; not a value saved as it opened, nor a field the save
+    /// has no value for.
+    func testAnEditsChangesAreTheFieldsSavedWithAnotherValue() {
         let opened: Book.MetadataValues = [.title: "Tide Tables", .author: "Port Authority", .publisher: "Tollgate Press"]
         let saved: Book.MetadataValues = [.title: "Tide Tables", .author: "Harbour Survey", .publicationDate: "2026"]
 
-        XCTAssertEqual(Book.MetadataField.fieldsThatDiffer(between: opened, and: saved), [.author, .publisher, .publicationDate])
-        XCTAssertEqual(Book.MetadataField.fieldsThatDiffer(between: opened, and: opened), [])
-        XCTAssertEqual(Book.MetadataField.fieldsThatDiffer(between: [:], and: [:]), [])
+        XCTAssertEqual(
+            Book.MetadataEdit(opened: opened, saved: saved).changes,
+            [.author: "Harbour Survey", .publicationDate: "2026"]
+        )
+        XCTAssertEqual(Book.MetadataEdit(opened: opened, saved: opened).changes, [:])
+        XCTAssertEqual(Book.MetadataEdit(opened: [:], saved: [:]).changes, [:])
+    }
+
+    /// The EPUB and the audio editors' edits are made of the values each
+    /// shows (`Book.MetadataField.values(in:)`), as it opened with them and
+    /// as they were saved.
+    func testTheEditorsEditsAreMadeOfTheValuesEachShows() {
+        let epub = EPUBMetadata(
+            title: "Tide Tables", author: "Port Authority", publisher: "Tollgate Press", publicationDate: "2026",
+            isbn: "isbn", language: "en", identifier: "id", epubVersion: "3.0"
+        )
+        var retitled = epub
+        retitled.title = "Tide Tables, Revised"
+        XCTAssertEqual(
+            Book.MetadataEdit(opened: epub, saved: retitled),
+            Book.MetadataEdit(opened: Book.MetadataField.values(in: epub), saved: Book.MetadataField.values(in: retitled))
+        )
+
+        let audio = AudioMetadata(title: "Soundings", artist: "Harbour Survey", album: "Coastal Series")
+        var regenred = audio
+        regenred.genre = "Field Recording"
+        XCTAssertEqual(
+            Book.MetadataEdit(opened: audio, saved: regenred),
+            Book.MetadataEdit(opened: Book.MetadataField.values(in: audio), saved: Book.MetadataField.values(in: regenred))
+        )
+        XCTAssertEqual(Book.MetadataEdit(opened: audio, saved: regenred).changes, [.audioGenre: "Field Recording"])
+    }
+
+    /// Applying an edit sets each field the user changed and records it as
+    /// edited by hand; every other field keeps the book's value, even one
+    /// the editor opened with an older value of, and the content hash is
+    /// left alone. An edit that changed nothing changes nothing.
+    func testApplyingAnEditChangesAndMarksOnlyWhatTheUserChanged() {
+        var book = Self.makeBook()
+        book.author = "Harbour Survey"
+        let edit = Book.MetadataEdit(
+            opened: [.title: "Tide Tables", .author: "Port Authority", .publisher: ""],
+            saved: [.title: "Neap Tides", .author: "Port Authority", .publisher: ""]
+        )
+
+        book.applyMetadataEdit(edit)
+
+        XCTAssertEqual(book.title, "Neap Tides")
+        XCTAssertEqual(book.author, "Harbour Survey", "a field the user left alone keeps the book's newer value")
+        XCTAssertNil(book.epubPublisher, "a field saved as the editor showed it is not kept")
+        XCTAssertEqual(book.md5Hash, "hash")
+        XCTAssertEqual(book.handEdits, Book.HandEdits(fields: [.title], sinceImport: false))
+
+        let before = book
+        book.applyMetadataEdit(Book.MetadataEdit(opened: edit.saved, saved: edit.saved))
+        XCTAssertEqual(book, before, "an edit that changed nothing changed something")
     }
 
     // MARK: - The Record
@@ -215,39 +270,40 @@ final class HandEditedMetadataTests: XCTestCase {
     @MainActor
     func testASaveRecordsTheFieldsItChangedOnTheRow() throws {
         let (model, book) = try makeLibrary()
+        let names: Book.MetadataValues = [.title: book.title, .author: book.author]
 
-        var retitled = book
-        retitled.title = "Tide Tables, Second Edition"
-        let saved = model.updateBookMetadata(retitled)
+        let retitled = Book.MetadataEdit(opened: names, saved: [.title: "Tide Tables, Second Edition", .author: book.author])
+        let saved = model.updateBookMetadata(retitled, of: book.id)
         XCTAssertEqual(saved?.handEdits, Book.HandEdits(fields: [.title], sinceImport: false))
+        XCTAssertEqual(saved?.title, "Tide Tables, Second Edition")
         XCTAssertEqual(saved, model.bookByID(book.id), "the row as saved is returned")
 
-        var attributed = try XCTUnwrap(saved)
-        attributed.author = "Harbour Survey"
-        XCTAssertEqual(model.updateBookMetadata(attributed)?.handEdits?.fields, [.title, .author])
+        let attributed = Book.MetadataEdit(opened: retitled.saved, saved: [.title: "Tide Tables, Second Edition", .author: "Harbour Survey"])
+        XCTAssertEqual(model.updateBookMetadata(attributed, of: book.id)?.handEdits?.fields, [.title, .author])
 
         let unchanged = try XCTUnwrap(model.bookByID(book.id))
-        XCTAssertEqual(model.updateBookMetadata(unchanged), unchanged, "a save that changes nothing changes nothing")
-
-        var putBack = unchanged
-        putBack.title = book.title
         XCTAssertEqual(
-            model.updateBookMetadata(putBack)?.handEdits?.fields, [.title, .author],
+            model.updateBookMetadata(Book.MetadataEdit(opened: attributed.saved, saved: attributed.saved), of: book.id),
+            unchanged,
+            "a save that changes nothing changes nothing"
+        )
+
+        let putBack = Book.MetadataEdit(opened: attributed.saved, saved: [.title: book.title, .author: "Harbour Survey"])
+        XCTAssertEqual(
+            model.updateBookMetadata(putBack, of: book.id)?.handEdits?.fields, [.title, .author],
             "a field put back to an earlier value by a later save stays the user's own"
         )
 
-        var gone = unchanged
-        gone.title = "Nowhere"
         model.library = Library(books: [])
-        XCTAssertNil(model.updateBookMetadata(gone))
+        XCTAssertNil(model.updateBookMetadata(Book.MetadataEdit(opened: names, saved: [.title: "Nowhere"]), of: book.id))
     }
 
     /// An editor's save is compared with what the editor opened with, not
     /// with the row: an editor shows the file's publisher and date for a
-    /// row that keeps none, so saving them unchanged records nothing,
-    /// while the row then keeps them, as it did before edits were recorded.
-    /// Compared with the row instead, the same save would count them as
-    /// typed.
+    /// row that keeps none, so saving them unchanged records nothing and
+    /// leaves the row keeping none, while the title the user changed is
+    /// saved and recorded. Compared with the row instead, the same save
+    /// would count the file's values as typed.
     @MainActor
     func testAnEditorsSaveIsComparedWithWhatItOpenedWith() throws {
         let (model, book) = try makeLibrary()
@@ -256,40 +312,28 @@ final class HandEditedMetadataTests: XCTestCase {
             title: book.title, author: book.author, publisher: "Tollgate Press", publicationDate: "2024",
             isbn: "", language: "", identifier: "", epubVersion: "3.0"
         )
-        var edited = book
+        var edited = opened
         edited.title = "Tide Tables, Second Edition"
-        edited.epubPublisher = opened.publisher
-        edited.epubPublicationDate = opened.publicationDate
 
-        let saved = model.updateBookMetadata(edited, editedFrom: Book.MetadataField.values(in: opened))
+        let saved = model.updateBookMetadata(Book.MetadataEdit(opened: opened, saved: edited), of: book.id)
 
+        XCTAssertEqual(saved?.title, "Tide Tables, Second Edition")
         XCTAssertEqual(saved?.handEdits, Book.HandEdits(fields: [.title], sinceImport: false))
-        XCTAssertEqual(saved?.epubPublisher, "Tollgate Press")
-        XCTAssertEqual(saved?.epubPublicationDate, "2024")
-
-        let (other, same) = try makeLibrary()
-        var editedAgainstTheRow = same
-        editedAgainstTheRow.title = edited.title
-        editedAgainstTheRow.epubPublisher = opened.publisher
-        editedAgainstTheRow.epubPublicationDate = opened.publicationDate
-        XCTAssertEqual(
-            other.updateBookMetadata(editedAgainstTheRow)?.handEdits?.fields, [.title, .publisher, .publicationDate],
-            "compared with the row, the file's values would count as typed"
-        )
+        XCTAssertNil(saved?.epubPublisher, "the file's publisher, saved unchanged, is still the file's alone")
+        XCTAssertNil(saved?.epubPublicationDate, "the file's date, saved unchanged, is still the file's alone")
     }
 
-    /// The record of hand edits is the row's: a save from an editor's copy
-    /// taken before the row's record grew keeps what the row recorded
+    /// The record of hand edits is the row's: a save from an editor that
+    /// opened before the row's record grew keeps what the row recorded
     /// since, and adds what the save changed.
     @MainActor
     func testTheRowsRecordOutlivesAnEditorsOlderCopy() throws {
         let (model, book) = try makeLibrary()
-        let olderCopy = book
+        let opened: Book.MetadataValues = [.title: book.title, .author: book.author]
         model.updateBook(id: book.id) { $0.markEditedByHand([.author]) }
 
-        var retitled = olderCopy
-        retitled.title = "Tide Tables, Second Edition"
-        let saved = model.updateBookMetadata(retitled)
+        let retitled = Book.MetadataEdit(opened: opened, saved: [.title: "Tide Tables, Second Edition", .author: book.author])
+        let saved = model.updateBookMetadata(retitled, of: book.id)
 
         XCTAssertEqual(saved?.handEdits?.fields, [.title, .author])
     }
@@ -304,10 +348,11 @@ final class HandEditedMetadataTests: XCTestCase {
         let reader = world.openReader(for: book)
         waitForReaderToLoad(reader)
         XCTAssertNil(reader.errorMessage, "The book did not open")
-        var metadata = try XCTUnwrap(reader.audioMetadata, "The reader read no audio metadata")
+        let opened = try XCTUnwrap(reader.audioMetadata, "The reader read no audio metadata")
+        var metadata = opened
 
         metadata.genre = "Field Recording"
-        reader.saveAudioMetadata(metadata)
+        reader.saveAudioMetadata(metadata, openedAs: opened)
 
         let expected = Book.HandEdits(fields: [.audioGenre], sinceImport: false)
         XCTAssertEqual(reader.book.handEdits, expected)
@@ -342,10 +387,11 @@ final class HandEditedMetadataTests: XCTestCase {
         let reader = world.openReader(for: book)
         waitForReaderToLoad(reader)
         XCTAssertNil(reader.errorMessage, "The book did not open")
-        var metadata = try XCTUnwrap(reader.audioMetadata, "The reader read no audio metadata")
+        let opened = try XCTUnwrap(reader.audioMetadata, "The reader read no audio metadata")
+        var metadata = opened
 
         metadata.title = "Breakwater Soundings, Revised"
-        reader.saveAudioMetadata(metadata)
+        reader.saveAudioMetadata(metadata, openedAs: opened)
 
         XCTAssertEqual(reader.book.handEdits?.fields, [.title])
         let labels = try textFieldLabels(ofBookInfoOver: reader)
@@ -364,10 +410,11 @@ final class HandEditedMetadataTests: XCTestCase {
         waitForReaderToLoad(reader)
         XCTAssertNil(reader.errorMessage, "The book did not open")
         XCTAssertTrue(waitUntil(timeout: 10) { reader.epubMetadata != nil }, "The reader showed no EPUB metadata")
-        var metadata = try XCTUnwrap(reader.epubMetadata)
+        let opened = try XCTUnwrap(reader.epubMetadata)
+        var metadata = opened
 
         metadata.author = "The Hatter"
-        let outcome = reader.saveEPUBMetadata(metadata, writeToFile: false)
+        let outcome = reader.saveEPUBMetadata(metadata, openedAs: opened, writeToFile: false)
 
         XCTAssertTrue(outcome.succeeded, "\(outcome)")
         XCTAssertEqual(reader.book.handEdits?.fields, [.author])
