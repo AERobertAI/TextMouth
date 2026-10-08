@@ -250,12 +250,18 @@ final class ReaderViewModel: ObservableObject {
     /// session, shown paused at its end, so that the AirPods and the media
     /// keys still reach this reader, and its next backward skip plays the
     /// book again from where the skip lands (`performSkip(unit:forward:)`);
-    /// Release Media Controls is offered meanwhile (`canReleaseMediaControls`).
+    /// Release Media Controls is offered meanwhile, while the book holds
+    /// the controls (`canReleaseMediaControls`).
     /// Cleared when playback starts (`play()`), when a jump moves the cursor
-    /// away from the end (`navigateTo(chapterIndex:characterOffset:)`), and
-    /// when playback is stopped (`stop()`). A book that loops back to its
-    /// beginning is not finished: it plays again, or waits at its start.
-    /// Accessed from the Playback and Navigation extensions.
+    /// away from the end (`navigateTo(chapterIndex:characterOffset:)`), when
+    /// a backward skip moves it while another book plays
+    /// (`performSkip(unit:forward:)`), when playback is stopped (`stop()`),
+    /// and when the book hands listening over to the next book, in its
+    /// folder or in the reading list, which takes the media controls
+    /// (`handOverToNextBook(titled:askingWith:)`).
+    /// A book that loops back to its beginning is not finished: it plays
+    /// again, or waits at its start. Accessed from the Playback and
+    /// Navigation extensions.
     var hasFinishedBook = false
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is
@@ -1518,22 +1524,36 @@ final class ReaderViewModel: ObservableObject {
         cloudSession.chapterFailure = nil
     }
 
+    /// Whether Release Media Controls is offered: while this reader holds
+    /// TextMouth's media controls, its book shown in the system's Now
+    /// Playing, playing or paused, so that macOS sends the AirPods and the
+    /// media keys here (`NowPlayingSession.holdsMediaControls`), and only
+    /// then, since only then is there anything to release. That covers a
+    /// book that plays or is paused; a finished book resting at its end
+    /// (`hasFinishedBook`); and a book shown paused where its speech stopped
+    /// on a refusal (`showPlaybackStoppedAfterRefusal()`) or where its sleep
+    /// timer stopped it, neither of which was offered it before. A book
+    /// whose controls another book has taken, by playing, has nothing to
+    /// release, and is not offered it (REV07, speech finding 5); nor is a
+    /// book that released them, until it plays again.
+    ///
+    /// Nothing this reader publishes follows another reader's taking the
+    /// controls, so its window asks again as it becomes key
+    /// (`windowBecameKey()`).
     var canReleaseMediaControls: Bool {
-        guard !mediaControlsReleased else { return false }
-        // A finished book still owns the media controls, shown paused at its
-        // end, though nothing plays or is paused (`hasFinishedBook`), so
-        // they can be handed back without closing the window.
-        if hasFinishedBook { return true }
-        if isAudioBook {
-            return audioPlaybackService.isPlaying
-                || audioPlaybackService.isPaused
-                || isCurrentlyPlaying
-                || isCurrentlyPaused
-        }
-        return speechService.isSpeaking
-            || speechService.isPaused
-            || isCurrentlyPlaying
-            || isCurrentlyPaused
+        !mediaControlsReleased && nowPlayingService.holdsMediaControls
+    }
+
+    /// This reader's window became key. The reader becomes the focused
+    /// owner of TextMouth's media session, which a Play from the AirPods
+    /// starts while no book plays (`NowPlayingSession.focus()`), and its
+    /// window publishes afresh what the menus read of it: whether the
+    /// reader holds the media controls (`canReleaseMediaControls`) changes
+    /// as another book takes them while this window is in the background,
+    /// and nothing the window observes follows that.
+    func windowBecameKey() {
+        nowPlayingService.focus()
+        objectWillChange.send()
     }
 
     /// UI-facing global offset, derived from the throttled display cursor.

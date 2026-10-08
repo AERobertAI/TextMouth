@@ -1,4 +1,5 @@
 import AVFoundation
+import Combine
 import CoreAudio
 import XCTest
 @testable import TextMouth
@@ -230,6 +231,129 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertFalse(finished.audioPlaybackService.isPlaying, "The finished book played again")
     }
 
+    /// A book that finishes with Continue to Next Book hands the AirPods
+    /// over to the next book as it says "Starting: <title>" (REV07, speech
+    /// finding 5): it rests finished no longer. The AirPods' rewind in the
+    /// moment before the next book is asked for moves its cursor back and
+    /// plays nothing; once the next book plays, the finished book's window
+    /// offers no Release Media Controls, and its keyboard Skip Backward
+    /// moves its cursor only, leaving the next book playing and holding the
+    /// controls. Before the repair the rewind played the finished book's
+    /// end until the next book's start paused it, and the keyboard's skip
+    /// played the finished book again and paused the next.
+    func testABookThatContinuedToTheNextLeavesTheAirPodsToIt() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Continue Hand-over")
+        world.settings.skipBackwardUnit = .seconds15
+        // Forty seconds into a minute: each 15-second skip back lands
+        // exactly, well inside the track.
+        let finishedBook = try world.makeSilentAudioBook(
+            title: "First Crossing",
+            trackDurations: [60],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 400),
+            endOfBook: .continueNext
+        )
+        let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(finished)
+        let audio = finished.audioPlaybackService
+
+        // The first book plays, and ends with the hand-over. The main run
+        // loop has not turned since, so the next book is not asked for yet.
+        finished.play()
+        XCTAssertTrue(audio.isPlaying, "The first book did not play")
+        audio.stop()
+        let ending = recordingAnnouncements {
+            finished.handleEndOfBook()
+        }
+        XCTAssertEqual(ending.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertFalse(finished.hasFinishedBook, "The book that continued still rests finished at its end")
+        XCTAssertFalse(world.autoplayRequests.hasRequest(for: nextBook.id), "The next book was asked for at once")
+
+        // The AirPods' rewind in that moment only moves the cursor back.
+        let atTheRewind = finished.currentCharacterOffset
+        let rewinding = recordingAnnouncements {
+            XCTAssertEqual(system.press(.previousTrack), .success)
+        }
+        XCTAssertFalse(audio.isPlaying, "The rewind played the book that continued")
+        XCTAssertFalse(finished.isCurrentlyPlaying, "The book that continued shows Playing after the rewind")
+        XCTAssertEqual(
+            finished.currentCharacterOffset,
+            atTheRewind - Self.fifteenSecondsOfAudio,
+            "The rewind did not move the cursor back by the skip unit"
+        )
+        XCTAssertEqual(rewinding.announcements, [], "The rewind announced something")
+
+        // The next book's window opens for the request and starts it.
+        XCTAssertTrue(
+            eventually { world.autoplayRequests.hasRequest(for: nextBook.id) },
+            "The next book was never asked for"
+        )
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(next)
+        let nextAudio = next.audioPlaybackService
+        XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "Continue to Next Book did not start the next book")
+        assertToldSystem(system, that: next, plays: true, "The next book's start")
+
+        // Back in the finished book's window, which becomes key.
+        finished.windowBecameKey()
+        XCTAssertFalse(finished.canReleaseMediaControls, "Release Media Controls is offered for the book that continued")
+        let atTheKeyboardSkip = finished.currentCharacterOffset
+        finished.lastSkipTime = .distantPast
+        let skipping = recordingAnnouncements {
+            finished.skipBackward()
+        }
+        XCTAssertFalse(audio.isPlaying, "The keyboard's Skip Backward played the book that continued")
+        XCTAssertEqual(
+            finished.currentCharacterOffset,
+            atTheKeyboardSkip - Self.fifteenSecondsOfAudio,
+            "The keyboard's Skip Backward did not move the cursor back by the skip unit"
+        )
+        XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "The keyboard's Skip Backward paused the next book")
+        assertToldSystem(system, that: next, plays: true, "The keyboard's Skip Backward in the finished book's window")
+        XCTAssertEqual(skipping.announcements, [], "The keyboard's Skip Backward announced something")
+    }
+
+    /// A book that hands over to the next one tells the system, as it says
+    /// "Starting: <title>", that it no longer plays: the system shows it
+    /// paused until the next book plays, and the next book's start finds no
+    /// book playing to pause. Before, the system went on showing it playing,
+    /// and the next book's start paused it as a book still playing, which in
+    /// the app made the pause sound with the next book's play sound.
+    func testABookThatHandsOverIsShownPausedAndTheNextBooksStartPausesNothing() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Hand-over Paused")
+        let finishedBook = try world.makeSilentAudioBook(
+            title: "First Crossing", trackDurations: [30], endOfBook: .continueNext
+        )
+        let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(finished)
+
+        // The first book plays, and ends with the hand-over.
+        finished.play()
+        XCTAssertTrue(finished.audioPlaybackService.isPlaying, "The first book did not play")
+        assertToldSystem(system, that: finished, plays: true, "The first book's play")
+        finished.audioPlaybackService.stop()
+        let ending = recordingAnnouncements {
+            finished.handleEndOfBook()
+        }
+        XCTAssertEqual(ending.announcements.map(\.message), ["Starting: Second Crossing"])
+        assertToldSystem(system, that: finished, plays: false, "The hand-over")
+
+        // The next book's window opens for the request and starts it.
+        XCTAssertTrue(
+            eventually { world.autoplayRequests.hasRequest(for: nextBook.id) },
+            "The next book was never asked for"
+        )
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(next)
+        let nextAudio = next.audioPlaybackService
+        XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "Continue to Next Book did not start the next book")
+        assertToldSystem(system, that: next, plays: true, "The next book's start")
+        XCTAssertEqual(system.exclusivePauses, [], "The next book's start paused the book that handed over")
+    }
+
     // MARK: - Two Windows, One Closed
 
     /// The listener opens another book's window and closes it again, while
@@ -432,6 +556,35 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertTrue(quay.reader.speechService.isSpeaking, "Play did not speak")
     }
 
+    /// Where the speech engine's refusal stopped speech, the book is shown
+    /// paused and holds the media controls, so Release Media Controls is
+    /// offered, as it is for a paused book, and hands them back: the system
+    /// is told once that playback stopped, and VoiceOver hears so. Before,
+    /// it was not offered until Play, though the book held the controls.
+    func testReleaseMediaControlsIsOfferedWhereARefusalStoppedSpeech() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Refusal Release")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let reader = quay.reader
+
+        reader.play()
+        recordingAnnouncements {
+            refuseTheChunkAfterTheFirst(of: quay)
+        }
+        XCTAssertFalse(reader.speechService.isSpeaking, "Speech did not stop")
+        assertToldSystem(system, that: reader, plays: false, "The refusal")
+        XCTAssertTrue(reader.canReleaseMediaControls, "Release Media Controls is not offered where the refusal stopped speech")
+
+        let releasing = recordingAnnouncements {
+            reader.releaseMediaControls()
+        }
+        XCTAssertEqual(releasing.announcements.map(\.message), ["Media controls released"])
+        XCTAssertEqual(system.told.last, .some(nil), "Releasing media controls did not clear Now Playing")
+        XCTAssertEqual(system.told.filter { $0 == nil }.count, 1, "Now Playing was cleared more than once")
+        XCTAssertNil(system.coordinator.playingOwnerID)
+        XCTAssertFalse(reader.canReleaseMediaControls, "Release Media Controls is offered again")
+    }
+
     // MARK: - After the Book Has Finished
 
     /// Report of 2026-10-07: "after a book 'finished' trying to use the
@@ -605,6 +758,222 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertEqual(system.told.last, .some(nil), "The skip reclaimed Now Playing")
     }
 
+    /// A finished book offers Release Media Controls only while it holds
+    /// them, its book the one the system shows (REV07, speech finding 5).
+    /// Once another book plays, the finished book's window, which asks
+    /// again as it becomes key, offers nothing, and Release Media Controls
+    /// chosen anyway, as a key can choose it, releases nothing and says
+    /// nothing: the playing book plays on with the controls, and the system
+    /// is never told that TextMouth stopped. Before, the finished book
+    /// stopped and said "Media controls released" while the other book kept
+    /// them. Nor is it offered while the system shows that book paused;
+    /// that book's own window releases them.
+    func testAFinishedBookOffersReleaseMediaControlsOnlyWhileItHoldsThem() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Release Owner")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let finished = ferry.reader
+        XCTAssertTrue(finished.canReleaseMediaControls, "Release Media Controls is not offered while the finished book holds the controls")
+
+        // Another book's window opens, becomes key, and plays its book.
+        let otherBook = try world.makeSilentAudioBook(title: "Harbour Timetable", trackDurations: [30])
+        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(other)
+        other.windowBecameKey()
+        other.play()
+        let otherAudio = other.audioPlaybackService
+        XCTAssertTrue(otherAudio.isPlaying && !otherAudio.isPaused, "The other book did not play")
+        assertToldSystem(system, that: other, plays: true, "The other book's start")
+
+        // The finished book's window becomes key again and asks afresh.
+        var republished = 0
+        let watching = finished.objectWillChange.sink { _ in republished += 1 }
+        finished.windowBecameKey()
+        watching.cancel()
+        XCTAssertGreaterThan(republished, 0, "The finished book's window did not ask afresh as it became key")
+        XCTAssertEqual(system.coordinator.focusedOwnerID, finished.nowPlayingService.ownerID, "The finished book's reader is not focused")
+        XCTAssertFalse(finished.canReleaseMediaControls, "Release Media Controls is offered while another book plays")
+        let refused = recordingAnnouncements {
+            finished.releaseMediaControls()
+        }
+        XCTAssertEqual(refused.announcements, [], "Release Media Controls announced releasing what another book holds")
+        XCTAssertTrue(otherAudio.isPlaying && !otherAudio.isPaused, "Release Media Controls paused the book playing")
+        assertToldSystem(system, that: other, plays: true, "Release Media Controls in the finished book's window")
+
+        // The other book pauses, and the system shows it paused.
+        other.windowBecameKey()
+        other.pause()
+        finished.windowBecameKey()
+        XCTAssertEqual(
+            system.told.last,
+            .some(NowPlayingItem(title: other.book.title, author: other.book.author, isPlaying: false)),
+            "The system does not show the other book paused"
+        )
+        XCTAssertFalse(finished.canReleaseMediaControls, "Release Media Controls is offered while the system shows another book")
+
+        // That book's own window releases them.
+        other.windowBecameKey()
+        XCTAssertTrue(other.canReleaseMediaControls, "The paused book's window does not offer Release Media Controls")
+        let released = recordingAnnouncements {
+            other.releaseMediaControls()
+        }
+        XCTAssertEqual(released.announcements.map(\.message), ["Media controls released"])
+        XCTAssertEqual(system.told.last, .some(nil), "Releasing media controls did not clear Now Playing")
+        XCTAssertEqual(system.told.filter { $0 == nil }.count, 1, "Now Playing was cleared more than once")
+    }
+
+    /// While another book plays, the keyboard's Skip Backward in a finished
+    /// book's window moves its cursor back by the skip unit and plays
+    /// nothing (REV07, speech finding 5): the book being listened to plays
+    /// on and keeps the controls, and the finished book rests at its end no
+    /// longer. Before, the skip played the finished book again and paused
+    /// the other.
+    func testAFinishedBooksSkipBackwardWhileAnotherBookPlaysMovesItsCursorOnly() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Skip Owner")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let finished = ferry.reader
+
+        // Another book's window opens, becomes key, and plays its book.
+        let otherBook = try world.makeSilentAudioBook(title: "Harbour Timetable", trackDurations: [30])
+        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(other)
+        other.windowBecameKey()
+        other.play()
+        let otherAudio = other.audioPlaybackService
+        XCTAssertTrue(otherAudio.isPlaying && !otherAudio.isPaused, "The other book did not play")
+
+        // Back in the finished book's window, Skip Backward.
+        finished.windowBecameKey()
+        finished.lastSkipTime = .distantPast
+        let skipping = recordingAnnouncements {
+            finished.skipBackward()
+        }
+        XCTAssertFalse(finished.audioPlaybackService.isPlaying, "Skip Backward played the finished book while another played")
+        XCTAssertEqual(
+            finished.currentCharacterOffset,
+            ferry.endOffset - Self.fifteenSecondsOfAudio,
+            "Skip Backward did not move the cursor back by the skip unit"
+        )
+        XCTAssertFalse(finished.hasFinishedBook, "The finished book still rests at its end after its cursor moved")
+        XCTAssertTrue(otherAudio.isPlaying && !otherAudio.isPaused, "Skip Backward in the finished book's window paused the book playing")
+        assertToldSystem(system, that: other, plays: true, "Skip Backward in the finished book's window")
+        XCTAssertEqual(skipping.announcements, [], "Skip Backward announced something")
+    }
+
+    /// While nothing plays, a finished book's Skip Backward plays it again,
+    /// though another book was played since and is shown paused: the
+    /// finished book's reader, its window key, is the active owner, and the
+    /// rewind exists to hear the end again while nothing else plays. The
+    /// paused book stays paused.
+    func testAFinishedBooksSkipBackwardWhileNothingPlaysPlaysItAgain() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Skip Paused Other")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let finished = ferry.reader
+
+        // Another book's window opens, becomes key, and plays its book, then
+        // pauses it.
+        let otherBook = try world.makeSilentAudioBook(title: "Harbour Timetable", trackDurations: [30])
+        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(other)
+        other.windowBecameKey()
+        other.play()
+        other.pause()
+        let otherAudio = other.audioPlaybackService
+        XCTAssertTrue(otherAudio.isPaused, "The other book did not pause")
+
+        // Back in the finished book's window, Skip Backward.
+        finished.windowBecameKey()
+        finished.lastSkipTime = .distantPast
+        finished.skipBackward()
+        assertPlaysAudio(finished, from: ferry.endOffset - Self.fifteenSecondsOfAudio, "Skip Backward while nothing plays")
+        assertToldSystem(system, that: finished, plays: true, "Skip Backward while nothing plays")
+        XCTAssertTrue(otherAudio.isPaused, "The paused book did not stay paused")
+    }
+
+    /// The user's decision of October 7 evening, pinned (REV07, speech
+    /// finding 4): "the timer should finish the book / stop it, then if the
+    /// user hits rewind it should go 15 seconds or whatevr rewind does back
+    /// and play from them then when it reaches the end of a book again it
+    /// wwould continue to the next because there would be no timer". With an
+    /// End of book sleep timer and Continue to Next Book, the timer stops
+    /// the book at its end, keeps the next book from starting, and is spent;
+    /// the AirPods' rewind then plays the end again from the skip back, at
+    /// full volume; and at the end, with no timer left, Continue to Next
+    /// Book starts the next book.
+    func testAfterAnEndOfBookTimerStopsTheBookARewindReplaysItsEndThenItContinues() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Timer Continue")
+        world.settings.skipBackwardUnit = .seconds15
+        world.settings.skipForwardUnit = .seconds30
+        // The audio fades out toward the timer's stop, as a listener's can.
+        world.settings.sleepFadeOutDuration = 2
+        let lastHalfSecond = Int((Self.lastTrackSeconds - 0.5) * ReaderViewModel.audioCharsPerSecond)
+        let firstBook = try world.makeSilentAudioBook(
+            title: "First Crossing",
+            trackDurations: [1, Self.lastTrackSeconds],
+            savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: lastHalfSecond),
+            endOfBook: .continueNext
+        )
+        let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
+        let reader = world.openReader(for: firstBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(reader)
+        let audio = reader.audioPlaybackService
+
+        // The book plays its last half second under an End of book timer,
+        // which stops it at its end and keeps the next book from starting.
+        reader.startSleepTimer(duration: .endOfBook)
+        let stopping = recordingAnnouncements {
+            reader.play()
+            XCTAssertTrue(audio.isPlaying, "The book did not play")
+            XCTAssertTrue(
+                eventually(within: 10) { !reader.isCurrentlyPlaying && !audio.isPlaying },
+                "The book never finished"
+            )
+            // Long enough for a next book to have been asked for.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(
+            stopping.announcements.map(\.message),
+            ["Finished: First Crossing. Next book not started because of the sleep timer."]
+        )
+        XCTAssertFalse(timer.isActive, "The timer was not spent at the book's end")
+        XCTAssertFalse(world.autoplayRequests.hasRequest(for: nextBook.id), "The next book was asked for past the timer")
+        XCTAssertTrue(reader.hasFinishedBook, "The book the timer stopped does not rest finished at its end")
+        assertToldSystem(system, that: reader, plays: false, "The timer's stop at the end")
+        let endOffset = reader.currentCharacterOffset
+
+        // The AirPods' rewind plays the end again from the skip back.
+        let rewinding = recordingAnnouncements {
+            XCTAssertEqual(system.press(.previousTrack), .success)
+        }
+        assertPlaysAudio(reader, from: endOffset - Self.fifteenSecondsOfAudio, "The rewind after the timer's stop")
+        XCTAssertEqual(audio.intendedVolume, 1, "The end plays again faded, as if the timer were still set")
+        assertToldSystem(system, that: reader, plays: true, "The rewind after the timer's stop")
+        XCTAssertEqual(rewinding.announcements, [], "The rewind announced something")
+
+        // The book plays on to its end, which Next Track brings near, where,
+        // with no timer left, Continue to Next Book starts the next book.
+        let continuing = recordingAnnouncements {
+            reader.lastSkipTime = .distantPast
+            XCTAssertEqual(system.press(.nextTrack), .success)
+            XCTAssertTrue(
+                eventually(within: 10) { world.autoplayRequests.hasRequest(for: nextBook.id) },
+                "The next book was never asked for at the end"
+            )
+        }
+        XCTAssertEqual(continuing.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertFalse(reader.hasFinishedBook, "The book that continued still rests finished at its end")
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(next)
+        let nextAudio = next.audioPlaybackService
+        XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "Continue to Next Book did not start the next book")
+        assertToldSystem(system, that: next, plays: true, "The next book's start")
+    }
+
     // MARK: - The System's Side
 
     /// The system's side of the media session as a test plays it: the
@@ -657,6 +1026,13 @@ final class MediaCommandPlaybackTests: XCTestCase {
         /// The routing diagnostics of commands accepted but then dropped.
         var droppedCommands: [String] {
             state.routeLog.filter { $0.contains("result=commandFailed") }
+        }
+
+        /// The routing diagnostics of readers paused because another reader
+        /// started (`NowPlayingService.prepareForPlayback(ownerID:)`): in the
+        /// app, each such pause makes the pause sound.
+        var exclusivePauses: [String] {
+            state.routeLog.filter { $0.contains("exclusive pause") }
         }
 
         /// Deliver `request` as MediaPlayer does when the AirPods are

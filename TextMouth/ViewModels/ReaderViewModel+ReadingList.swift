@@ -72,9 +72,11 @@ extension ReaderViewModel {
     /// list says so, then opens to be read from the list and plays, as
     /// Continue to Next Book starts the next book in a folder: "Starting:
     /// <title>", a moment for VoiceOver to begin saying it, then the
-    /// requests and the window (`continueThroughReadingList(to:)`). Nothing
-    /// follows for Stop, at that end of the list, or past only finished
-    /// books, and the book says which. The sleep timer keeps its rules: this
+    /// requests and the window (`continueThroughReadingList(to:)`); this
+    /// book stops resting finished as it says so
+    /// (`handOverToNextBook(titled:askingWith:)`). Nothing follows for Stop,
+    /// at that end of the list, or past only finished books, and the book
+    /// says which, and rests finished. The sleep timer keeps its rules: this
     /// reader's timer in effect starts nothing, since it could never pause
     /// the next book, and a timer that stopped playback here says so last.
     ///
@@ -101,11 +103,9 @@ extension ReaderViewModel {
             )
             return
         }
-        announceToVoiceOver(EndOfBookWording.starting(next.title))
-        // Asked for once VoiceOver has begun the announcement. This reader
-        // is kept until then, so closing its window meanwhile still
-        // continues, as announced.
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+        // The next book takes over, as Continue to Next Book's does, so
+        // this one no longer rests finished at its end.
+        handOverToNextBook(titled: next.title) {
             self.continueThroughReadingList(to: next.id)
         }
     }

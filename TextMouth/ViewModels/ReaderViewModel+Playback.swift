@@ -201,6 +201,12 @@ extension ReaderViewModel {
     /// Stop TextMouth's current media session and release Now Playing /
     /// headphone media controls while keeping the reader window open.
     /// Starting playback from TextMouth again reclaims the controls.
+    ///
+    /// Only a reader that holds the controls releases them, and only then
+    /// does VoiceOver hear "Media controls released"
+    /// (`canReleaseMediaControls`). A finished book whose controls the next
+    /// book has taken once stopped and said so while it released nothing,
+    /// the playing book keeping them (REV07, speech finding 5).
     func releaseMediaControls() {
         guard canReleaseMediaControls else { return }
         stop()
@@ -2045,7 +2051,11 @@ extension ReaderViewModel {
     /// and plays the book again from where the skip lands
     /// (`performSkip(unit:forward:)`), as the listener who rewinds a
     /// finished book means to hear its end again. A book that loops is not
-    /// finished: it plays again, or waits at its beginning.
+    /// finished: it plays again, or waits at its beginning. Nor is a book
+    /// that hands over to the next one, in its folder or in the reading
+    /// list (`handOverToNextBook(titled:askingWith:)`): the next book takes
+    /// the media controls. A book whose sleep timer keeps the next one from
+    /// starting, or with no next book, rests finished.
     func handleEndOfBook() {
         // Time after the end of the book is not listening time, so close this
         // book's session here, once, for every way a book can end. Another
@@ -2058,7 +2068,8 @@ extension ReaderViewModel {
         // The book rests at its end from here on, keeping its media session
         // so the AirPods still reach it; its next backward skip plays it
         // again from where the skip lands. A loop that moves the cursor back
-        // to the start takes this back below.
+        // to the start takes this back below, and so does a hand-over to the
+        // next book.
         hasFinishedBook = true
         // Whether this reader's sleep timer keeps the next book from starting,
         // decided before a timer that stops playback here ends just below.
@@ -2129,12 +2140,9 @@ extension ReaderViewModel {
                         announcing: EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote])
                     )
                 } else {
-                    announceToVoiceOver(EndOfBookWording.starting(nextBook.title))
-                    // Ask for the next book once VoiceOver has begun the
-                    // announcement. This reader is kept until then, so
-                    // closing its window meanwhile still continues, as
-                    // announced.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+                    // The next book takes over, so this one no longer rests
+                    // finished at its end.
+                    handOverToNextBook(titled: nextBook.title) {
                         self.continueToNextBook(nextBook.id)
                     }
                 }
@@ -2160,9 +2168,10 @@ extension ReaderViewModel {
     /// after the end therefore reaches `skipBackward()`, which plays the
     /// book again from where it lands (`performSkip(unit:forward:)`), as
     /// the listener who rewinds a finished book means to hear its end
-    /// again. Only Release Media Controls or closing the window gives the
-    /// controls up. A book read from the reading list ends listening here
-    /// too (ReaderViewModel+ReadingList).
+    /// again. Release Media Controls or closing the window gives the
+    /// controls up, and another book that plays takes them. A book read
+    /// from the reading list ends listening here too
+    /// (ReaderViewModel+ReadingList).
     func finishListening(announcing announcement: String) {
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
@@ -2191,6 +2200,50 @@ extension ReaderViewModel {
     /// asking for it, so VoiceOver can begin "Starting: <title>" before the
     /// next book's window takes focus.
     static let continueToNextBookDelay: TimeInterval = 0.5
+
+    /// Hand listening over from this finished book to the book titled
+    /// `title`, which `askForNextBook` then asks for: the next book in the
+    /// folder, for Continue to Next Book (`continueToNextBook(_:)`), or the
+    /// next book in the reading list (`continueThroughReadingList(to:)`,
+    /// FR09).
+    ///
+    /// The book stops resting finished at its end (`hasFinishedBook`) as it
+    /// says "Starting: <title>", since the book it hands over to takes the
+    /// media controls, the AirPods with them. A backward skip in this
+    /// window, from the keyboard or as an AirPods rewind that arrives before
+    /// the next book starts, then moves this book's cursor only, as any
+    /// stopped reader's skip does: it never plays this book's end over the
+    /// book just announced, nor pauses that book once it plays. Once that
+    /// book plays it holds the media controls, and this book's window
+    /// offers to release them no more (`canReleaseMediaControls`). The
+    /// October 7 review found all three while the finished state outlived
+    /// the hand-over (REV07, speech finding 5).
+    ///
+    /// Nothing plays from here on, so Now Playing shows the book paused at
+    /// its end until the next book plays, as a finished book is shown
+    /// (`finishListening(announcing:)`). It once went on showing the book
+    /// playing, its reader still the playing owner, so the next book's
+    /// start, which pauses the book that plays
+    /// (`NowPlayingService.prepareForPlayback(ownerID:)`), paused this one
+    /// again, and its pause sound was heard with the next book's play sound.
+    ///
+    /// The next book is asked for once VoiceOver has begun the
+    /// announcement. This reader is kept until then, so closing its window
+    /// meanwhile still continues, as announced.
+    ///
+    /// - Parameters:
+    ///   - title: The next book's title, as the announcement says it.
+    ///   - askForNextBook: Asks for the next book, after the announcement.
+    func handOverToNextBook(titled title: String, askingWith askForNextBook: @escaping () -> Void) {
+        hasFinishedBook = false
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: false
+        )
+        announceToVoiceOver(EndOfBookWording.starting(title))
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+            askForNextBook()
+        }
+    }
 
     /// Ask the next book to start playing, then ask for its reader window.
     ///
