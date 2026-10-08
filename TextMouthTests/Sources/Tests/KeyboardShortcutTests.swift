@@ -536,8 +536,10 @@ test("Panel actions have correct categories") {
 }
 
 test("New library shortcuts display correctly for accessibility") {
+    // Special keys are named in words, not symbols, which a braille display
+    // shows as signs (FR12).
     let remove = KeyBinding(key: "delete", command: true)
-    try assertEqual(remove.accessibleDisplayString, "Command + \u{232B}")
+    try assertEqual(remove.accessibleDisplayString, "Command + Delete")
 
     let newFolder = KeyBinding(key: "n", command: true, shift: true)
     try assertEqual(newFolder.accessibleDisplayString, "Shift + Command + N")

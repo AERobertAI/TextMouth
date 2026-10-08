@@ -252,17 +252,45 @@ struct KeyBinding: Codable, Equatable, Hashable {
         return parts.joined()
     }
 
-    /// Accessible display string using words
+    /// The binding in words, as VoiceOver speaks it and a braille display
+    /// shows it: its modifiers, then its key, joined by " + ", such as
+    /// "Shift + Command + B" or "Command + Right Arrow". No part is a
+    /// symbol, which a braille display shows as a sign (FR12).
     var accessibleDisplayString: String {
         var parts: [String] = []
         if control { parts.append("Control") }
         if option { parts.append("Option") }
         if shift { parts.append("Shift") }
         if command { parts.append("Command") }
-        parts.append(keyDisplayName)
+        parts.append(keyNameInWords)
         return parts.joined(separator: " + ")
     }
 
+    /// The keys of one action in words, as the Shortcuts tab says them:
+    /// "Space or K", or "No shortcut" for none.
+    static func accessibleDisplayString(for keys: [KeyBinding]) -> String {
+        keys.isEmpty ? "No shortcut" : keys.map(\.accessibleDisplayString).joined(separator: " or ")
+    }
+
+    /// The key in words: a special key's name, such as "Right Arrow" or
+    /// "Delete", or the character in capitals.
+    private var keyNameInWords: String {
+        switch key {
+        case "space": return "Space"
+        case "rightArrow": return "Right Arrow"
+        case "leftArrow": return "Left Arrow"
+        case "upArrow": return "Up Arrow"
+        case "downArrow": return "Down Arrow"
+        case "tab": return "Tab"
+        case "return": return "Return"
+        case "delete": return "Delete"
+        case "escape": return "Escape"
+        default: return key.uppercased()
+        }
+    }
+
+    /// The key as the screen shows it: a special key's symbol, such as "→"
+    /// or "⌫", "Space", or the character in capitals.
     private var keyDisplayName: String {
         switch key {
         case "space": return "Space"

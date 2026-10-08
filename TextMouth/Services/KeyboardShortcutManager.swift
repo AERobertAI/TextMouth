@@ -260,11 +260,16 @@ final class KeyboardShortcutManager: ObservableObject {
         bindings[action]?.first?.displayString ?? "None"
     }
 
-    /// All display strings for an action (for accessibility)
+    /// An action's keys in force in words, as VoiceOver and a braille
+    /// display take them: "Space or K", or "No shortcut".
     func allDisplayStrings(for action: ShortcutAction) -> String {
-        let keys = bindings[action] ?? []
-        if keys.isEmpty { return "No shortcut" }
-        return keys.map { $0.displayString }.joined(separator: " or ")
+        KeyBinding.accessibleDisplayString(for: bindingsFor(action))
+    }
+
+    /// The action of `scope` whose keys in force hold `binding`, if any: the
+    /// one a key recorded in Settings is taken from.
+    func action(holding binding: KeyBinding, in scope: ShortcutScope) -> ShortcutAction? {
+        ShortcutAction.allCases.first { $0.scope == scope && bindingsFor($0).contains(binding) }
     }
 
     // MARK: - Event Monitoring
