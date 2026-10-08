@@ -9,7 +9,8 @@ import XCTest
 /// the fields saved with another value (`Book.MetadataEdit`): a field another
 /// window or the launch metadata refresh changed while the editor was open is
 /// neither put back nor marked, and the spaces the Book Info sheet trims are
-/// no change.
+/// no change. A value nothing knew, which an editor shows empty, stays
+/// unknown when saved empty, so the book's file still gives it later.
 ///
 /// Until October 7, 2026, the Book Info sheet compared its save with the row
 /// as it was at the save, a reader's editors with the reader's metadata as it
@@ -214,6 +215,82 @@ final class MetadataEditorBaselineTests: XCTestCase {
         XCTAssertEqual(reader.lastAnnouncement, EPUBMetadataSaveWording.notInLibrary(title: "Breakwater Soundings"))
     }
 
+    // MARK: - Unknown Values
+
+    /// A field an editor opened without a value for, a value nothing knew,
+    /// showed empty: saved empty, it is no change and stays unknown, as is
+    /// a field it opened empty and saved so. A value typed into it is a
+    /// change, and so is a known value the user cleared, which is saved
+    /// empty.
+    func testAFieldShownEmptyForWantOfAValueAndSavedEmptyIsNoChange() {
+        let titled: Book.MetadataValues = [.title: "Tide Tables"]
+        XCTAssertEqual(Book.MetadataEdit(opened: titled, saved: [.title: "Tide Tables", .publisher: ""]).changes, [:])
+        XCTAssertEqual(Book.MetadataEdit(opened: [.publisher: ""], saved: [.publisher: ""]).changes, [:])
+        XCTAssertEqual(
+            Book.MetadataEdit(opened: titled, saved: [.title: "Tide Tables", .publisher: "Tollgate Press"]).changes,
+            [.publisher: "Tollgate Press"]
+        )
+        XCTAssertEqual(
+            Book.MetadataEdit(opened: [.publisher: "Tollgate Press"], saved: [.publisher: ""]).changes,
+            [.publisher: ""],
+            "a publisher the user cleared was not cleared"
+        )
+
+        var book = Book(title: "Tide Tables", format: .epub, filePath: "/nowhere/tide.epub", md5Hash: "hash")
+        book.applyMetadataEdit(Book.MetadataEdit(opened: titled, saved: [.title: "Tide Tables", .publisher: ""]))
+        XCTAssertNil(book.epubPublisher, "a publisher left empty was saved empty")
+        XCTAssertNil(book.handEdits)
+    }
+
+    /// Book Info for an EPUB only in the cloud shows the metadata the
+    /// library keeps (`LibraryBookInfoReader.info(for:)`), with an empty
+    /// publisher and publication date where it keeps none. Saved with a new
+    /// title, both stay unknown on the row, not empty, so the file's values
+    /// show once the book is downloaded.
+    func testACloudOnlyEPUBsUnknownPublisherAndDateStayUnknown() throws {
+        let (model, book) = try makeLibrary()
+        let opened = book.storedEPUBMetadata
+        XCTAssertEqual([opened.publisher, opened.publicationDate], ["", ""])
+        var edited = opened
+        edited.title = "Tide Tables, Second Edition"
+
+        let save = model.saveEPUBMetadata(edited, openedAs: opened, for: book, writingToFile: false)
+
+        let row = try XCTUnwrap(save.savedBook, save.message)
+        XCTAssertEqual(row.title, "Tide Tables, Second Edition")
+        XCTAssertNil(row.epubPublisher, "an unknown publisher was saved empty")
+        XCTAssertNil(row.epubPublicationDate, "an unknown publication date was saved empty")
+        XCTAssertEqual(row.handEdits, Book.HandEdits(fields: [.title], sinceImport: false))
+        let downloaded = row.mergingEditableEPUBMetadata(Self.epubFileMetadata)
+        XCTAssertEqual(downloaded.publisher, "Tollgate Press", "the file's publisher is hidden")
+        XCTAssertEqual(downloaded.publicationDate, "2024", "the file's publication date is hidden")
+    }
+
+    /// Book Info for an audiobook only in the cloud shows the library's
+    /// names, length, and file type, with an empty album, genre, and year
+    /// where it keeps none. Saved with a new title, all three stay unknown
+    /// on the row, not empty, so the file's tags show once the book is
+    /// downloaded.
+    func testACloudOnlyAudiobooksUnknownAlbumGenreAndYearStayUnknown() throws {
+        let (model, book) = try makeLibrary(format: .audio)
+        let opened = book.storedAudioMetadata
+        XCTAssertEqual([opened.album, opened.genre, opened.year], ["", "", ""])
+        var edited = opened
+        edited.title = "Tide Tables, Second Edition"
+
+        let saved = try XCTUnwrap(model.updateBookMetadata(Book.MetadataEdit(opened: opened, saved: edited), of: book.id))
+
+        XCTAssertEqual(saved.title, "Tide Tables, Second Edition")
+        XCTAssertNil(saved.audioAlbum, "an unknown album was saved empty")
+        XCTAssertNil(saved.audioGenre, "an unknown genre was saved empty")
+        XCTAssertNil(saved.audioYear, "an unknown year was saved empty")
+        XCTAssertEqual(saved.handEdits, Book.HandEdits(fields: [.title], sinceImport: false))
+        let downloaded = saved.mergingEditableAudioMetadata(AudioMetadata(
+            title: "Tide Tables", artist: "Port Authority", album: "Coastal Series", genre: "Field Recording", year: "2024"
+        ))
+        XCTAssertEqual([downloaded.album, downloaded.genre, downloaded.year], ["Coastal Series", "Field Recording", "2024"])
+    }
+
     // MARK: - The Editors Keep What They Opened With
 
     /// The reader's Book Info for an EPUB, open while the refresh finds the
@@ -386,26 +463,35 @@ final class MetadataEditorBaselineTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    /// A library model listing one EPUB without a package, titled `title`
-    /// and credited to `author`, with nothing else kept and no record of
-    /// hand edits, without the app's services; its index is put back when
-    /// the test ends.
-    private func makeLibrary(title: String = "Tide Tables", author: String = "Port Authority") throws -> (LibraryViewModel, Book) {
+    /// A library model listing one book without a package, an EPUB unless
+    /// `format` says otherwise, titled `title` and credited to `author`,
+    /// with nothing else kept and no record of hand edits, without the
+    /// app's services; its index is put back when the test ends.
+    private func makeLibrary(
+        title: String = "Tide Tables",
+        author: String = "Port Authority",
+        format: BookFormat = .epub
+    ) throws -> (LibraryViewModel, Book) {
         let sandbox = try LibraryIndexSandbox.capture()
         addTeardownBlock { sandbox.restore() }
-        let book = Book(title: title, author: author, format: .epub, filePath: "/nowhere/tide.epub", md5Hash: "hash")
+        let file = format == .audio ? "/nowhere/tide.m4b" : "/nowhere/tide.epub"
+        let book = Book(title: title, author: author, format: format, filePath: file, md5Hash: "hash")
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: [book])
         return (model, book)
     }
 
-    /// The metadata an EPUB editor opens with for `book`, whose file names
-    /// a publisher and a date the row keeps none of.
+    /// What the tests' EPUB file names: a publisher and a publication date
+    /// besides its title and author.
+    private static let epubFileMetadata = EPUBMetadata(
+        title: "Tide Tables", author: "Port Authority", publisher: "Tollgate Press", publicationDate: "2024",
+        isbn: "", language: "en", identifier: "", epubVersion: "3.0"
+    )
+
+    /// The metadata an EPUB editor opens with for `book` on this Mac: the
+    /// file's, with the book's own laid over it, as Book Info reads it.
     private static func epubMetadata(of book: Book) -> EPUBMetadata {
-        book.mergingEditableEPUBMetadata(EPUBMetadata(
-            title: "Tide Tables", author: "Port Authority", publisher: "Tollgate Press", publicationDate: "2024",
-            isbn: "", language: "en", identifier: "", epubVersion: "3.0"
-        ))
+        book.mergingEditableEPUBMetadata(epubFileMetadata)
     }
 
     /// Runs the launch metadata refresh of `library` to its end, reading the

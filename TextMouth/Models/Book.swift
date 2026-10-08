@@ -984,8 +984,15 @@ extension Book {
         /// field saved with a value other than the one the editor opened
         /// with. A field saved as it opened is no change, nor is a field
         /// the save has no value for.
+        ///
+        /// An editor shows a field it has no value for, one nothing knew,
+        /// as empty, so a field it opened without counts as opened empty:
+        /// saved empty, it is no change and stays unknown (nil) on the row,
+        /// so the book's file still gives its value later, as it does for
+        /// a cloud-only book's EPUB publisher and date or an audiobook's
+        /// album, genre, and year. Only a value typed into it is saved.
         var changes: MetadataValues {
-            saved.filter { field, value in opened[field] != value }
+            saved.filter { field, value in (opened[field] ?? "") != value }
         }
     }
 
