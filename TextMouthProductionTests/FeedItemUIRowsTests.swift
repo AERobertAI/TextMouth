@@ -109,6 +109,34 @@ final class FeedItemUIRowsTests: XCTestCase {
         )
     }
 
+    /// A kept place at the end of an episode not marked played says
+    /// "Finished", as its book's row said it, with no "0:00 left" beside it
+    /// (TODO P07, board #1956).
+    func testAKeptPlaceAtTheEndSaysFinishedWithNoTimeLeft() async throws {
+        let world = try FeedTestWorld(self, label: "FeedItemUIKeptAtEnd")
+        let feed = try await subscribe(world, items: [
+            FeedXML.Item(guid: "ep-368", title: "Ep. 368", published: world.day(-2), enclosure: "https://atlas.example/368.mp3"),
+        ])
+        let itemID = "guid:ep-368"
+        world.center.store.updateItem(itemID, of: feed.id) { $0.duration = 1_920 }
+        var kept = Self.keptRow(of: feed.id, item: itemID)
+        kept.audioDuration = 1_920
+        kept.totalCharacterCount = 1_000
+        kept.readingPosition = ReadingPosition(characterOffset: 1_000, globalCharacterOffset: 1_000)
+        kept.lastOpened = world.clock.value
+        world.library.library.feedShelf.put(kept)
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item(itemID))
+
+        let row = FeedItemRowContent(item, of: feed, in: world.center, wordsPerMinute: 200)
+
+        XCTAssertNil(row.kept?.remaining)
+        XCTAssertEqual(row.kept?.shownParts, [EndOfBookWording.finishedProgress])
+        XCTAssertEqual(
+            row.label,
+            "Ep. 368, Not Downloaded, \(EndOfBookWording.finishedProgress), \(FeedWording.itemDate(world.day(-2))), 32 minutes"
+        )
+    }
+
     /// The time left reads as a book row reads it, on screen and aloud, so
     /// an episode says the same before and after its file goes.
     func testTheTimeLeftIsTheBookRowsOwnWords() {

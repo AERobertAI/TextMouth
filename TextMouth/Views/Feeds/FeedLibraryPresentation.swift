@@ -280,8 +280,10 @@ struct FeedKeptProgress: Equatable, Sendable {
     /// the download has got, as a book row says it beside a cloud
     /// download's percentage.
     let spokenProgress: String?
-    /// The time left after the place; nil with no progress to say, since
-    /// the row's own duration then says how long the item is.
+    /// The time left after the place, as a book's row gives it
+    /// (`BookRow.timeRemaining(for:wpm:)`); nil with no progress to say,
+    /// since the row's own duration then says how long the item is, and at
+    /// the end, where "Finished" says it all (TODO P07).
     let remaining: TimeInterval?
     /// How many bookmarks the package kept.
     let bookmarkCount: Int
@@ -295,7 +297,7 @@ struct FeedKeptProgress: Equatable, Sendable {
         let shown = isPlayed ? nil : BookRow.progressText(for: row)?.visible
         shownProgress = shown
         spokenProgress = shown == nil ? nil : BookRow.spokenProgress(for: row, besideDownloadPercentage: besideDownloadPercentage)
-        remaining = shown == nil ? nil : row.estimatedTimeRemaining(wpm: wordsPerMinute)
+        remaining = shown == nil ? nil : BookRow.timeRemaining(for: row, wpm: wordsPerMinute)
         bookmarkCount = row.bookmarks.count
     }
 
