@@ -142,26 +142,6 @@ final class WhereAmIPolicyTests: XCTestCase {
         XCTAssertEqual(summary, "My Book. 50 percent. 2 minutes remaining.")
     }
 
-    func testRepeatWithinThreeSecondsUsesFullDetail() {
-        let last = Date(timeIntervalSince1970: 1_000)
-
-        XCTAssertTrue(ReaderViewModel.shouldUseFullWhereAmI(
-            last: last, now: last.addingTimeInterval(2)
-        ))
-    }
-
-    func testFirstPressAfterLongGapUsesBriefDetail() {
-        XCTAssertFalse(ReaderViewModel.shouldUseFullWhereAmI(last: .distantPast, now: Date()))
-    }
-
-    func testPressAtExactlyThreeSecondsUsesBriefDetail() {
-        let last = Date(timeIntervalSince1970: 1_000)
-
-        XCTAssertFalse(ReaderViewModel.shouldUseFullWhereAmI(
-            last: last, now: last.addingTimeInterval(3)
-        ))
-    }
-
     func testBriefSummaryIncludesPercentageButNotHeadingTimeDetail() {
         let summary = briefSummary()
 

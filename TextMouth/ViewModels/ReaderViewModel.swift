@@ -301,9 +301,10 @@ final class ReaderViewModel: ObservableObject {
     /// True after the user explicitly releases Now Playing / headphone media
     /// controls for this open reader. Starting playback in TextMouth clears it.
     @Published var mediaControlsReleased = false
-    /// Track when "Where Am I?" was last triggered for brief->full escalation.
-    /// Accessed from WhereAmI extension.
-    var lastWhereAmITime: Date = .distantPast
+    /// The summary the Where Am I announcement speaking says, brief or full
+    /// (FR12): set as each announcement starts, and read only while one
+    /// speaks (`isWhereAmISpeaking`). Accessed from the WhereAmI extension.
+    var whereAmIDetail: SummaryDetail = .brief
     /// Text of the most recent VoiceOver announcement, recorded even when no
     /// window can post it, so regression tests can verify spoken wording.
     /// Written only by `announceToVoiceOver(_:)`.
@@ -848,10 +849,13 @@ final class ReaderViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // W, and Playback > Where Am I?, speak the brief summary; W twice,
+        // and Playback > Where Am I? Full Summary, the full one (FR12).
         nc.publisher(for: .whereAmI)
+            .merge(with: nc.publisher(for: .whereAmIFull))
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
-                self.whereAmI()
+                self.whereAmI(notification.name == .whereAmIFull ? .full : .brief)
             }
             .store(in: &cancellables)
 

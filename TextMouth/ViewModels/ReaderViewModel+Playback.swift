@@ -271,7 +271,8 @@ extension ReaderViewModel {
     }
 
     /// Ends the Where Am I announcement, whose synthesizer is silent now,
-    /// without resuming the book it paused, which stays paused; a play it
+    /// without resuming the book it paused, which stays paused, its pause
+    /// settled as a pause is (`settlePauseLeftByWhereAmI()`); a play it
     /// held, waiting for its chapter's speech and showing Playing, pauses
     /// too, whether its speech is ready or still being prepared. Play/Pause
     /// pressed during an announcement ends it so, and so does a cancel of
@@ -279,7 +280,10 @@ extension ReaderViewModel {
     /// (`whereAmISynthesizerCancelled(_:)`).
     func endWhereAmIWithoutResuming() {
         isWhereAmISpeaking = false
-        wasPlayingBeforeWhereAmI = false
+        if wasPlayingBeforeWhereAmI {
+            wasPlayingBeforeWhereAmI = false
+            settlePauseLeftByWhereAmI()
+        }
         if isWaitingForChapterSpeech {
             pause(playingPauseSound: false)
         }
