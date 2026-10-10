@@ -390,6 +390,42 @@ enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
         self == .library ? title : title.prefix(1).lowercased() + title.dropFirst()
     }
 
+    /// Whether the scope is said where it is an action's default, in the
+    /// Shortcuts tab's rows and in config.json's "default" text: Library and
+    /// reader windows are, since a key may mean one thing in each; every
+    /// window, most actions' default, goes unsaid, and so do the audio
+    /// editor and the Record window, which their actions' names and groups
+    /// say already.
+    var isSaidAsADefault: Bool {
+        self == .library || self == .reader
+    }
+
+    /// The scope config.json's `name` names (FR12's branch E): the Works in
+    /// pop-up's words, as "Library windows", or the scope's short name, as
+    /// "library", in any letter case, with spaces or without, and with or
+    /// without "the" before it and "window" or "windows" after it. So "every
+    /// window", "Every", and "app" all name every window, and "the audio
+    /// editor" and "audioEditor" the audio editor. Nil for a name that names
+    /// none.
+    static func named(_ name: String) -> ShortcutScope? {
+        let wanted = comparableName(name)
+        return allCases.first { comparableName($0.title) == wanted || comparableName($0.rawValue) == wanted }
+    }
+
+    /// `name` as `named(_:)` compares names: in lower case, without spaces,
+    /// and without "the" before it or "window" or "windows" after it. No two
+    /// scopes' names compare alike (a test checks).
+    private static func comparableName(_ name: String) -> String {
+        var compared = name.lowercased().filter { !$0.isWhitespace }
+        if compared.hasPrefix("the") {
+            compared.removeFirst("the".count)
+        }
+        if let ending = ["windows", "window"].first(where: { compared.hasSuffix($0) }) {
+            compared.removeLast(ending.count)
+        }
+        return compared
+    }
+
     /// Whether a menu command working here acts while a window of `kind` is
     /// in front, nil meaning no window at all (FR12's branch E): one working
     /// in every window acts in any, an audio editor's included, as menus

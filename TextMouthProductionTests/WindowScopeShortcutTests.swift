@@ -39,6 +39,34 @@ final class WindowScopeShortcutTests: XCTestCase {
         }
     }
 
+    // MARK: - Naming a Scope
+
+    /// config.json may name a scope by the Works in pop-up's words or by its
+    /// short name, in any letter case, with or without spaces, "the", and
+    /// "window" or "windows"; each scope's own names name it alone, and a
+    /// name naming none is nil. Library and reader windows are said even as
+    /// an action's default.
+    func testAScopeIsNamedByItsWordsOrItsShortName() {
+        let named: [String: ShortcutScope] = [
+            "Every window": .app, "every window": .app, "EVERY": .app, "app": .app,
+            "Library windows": .library, "library": .library, "LIBRARY WINDOW": .library, "the library": .library,
+            "Reader windows": .reader, "reader": .reader, " reader  windows ": .reader,
+            "The audio editor": .audioEditor, "audio editor": .audioEditor, "audioEditor": .audioEditor,
+            "The recording window": .recording, "recording": .recording, "Recording Window": .recording,
+        ]
+        for (name, scope) in named {
+            XCTAssertEqual(ShortcutScope.named(name), scope, name)
+        }
+        for scope in ShortcutScope.allCases {
+            XCTAssertEqual(ShortcutScope.named(scope.title), scope, scope.title)
+            XCTAssertEqual(ShortcutScope.named(scope.rawValue), scope, scope.rawValue)
+        }
+        for nothing in ["", "the", "windows", "kitchen", "everywhere", "libraries", "editor window"] {
+            XCTAssertNil(ShortcutScope.named(nothing), nothing)
+        }
+        XCTAssertEqual(ShortcutScope.allCases.filter(\.isSaidAsADefault), [.library, .reader])
+    }
+
     // MARK: - The Record
 
     /// The record keeps a scope only for an action it holds, only one the

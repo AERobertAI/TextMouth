@@ -549,12 +549,11 @@ enum ShortcutsSettingsWording {
         return more.isEmpty ? label : ([sentence(label)] + more).joined(separator: " ")
     }
 
-    /// Whether a row says where `action` works, in `scope`: always for
-    /// Library or reader windows, and otherwise only when the user chose it.
-    /// Every window, an action's default, goes unsaid, and so do the audio
-    /// editor and the Record window, which their groups' headings name.
+    /// Whether a row says where `action` works, in `scope`: when the user
+    /// chose it, and otherwise when it is a default said
+    /// (`ShortcutScope.isSaidAsADefault`), Library or reader windows.
     private static func saysScope(_ scope: ShortcutScope, of action: ShortcutAction) -> Bool {
-        scope != action.defaultScope || scope == .library || scope == .reader
+        scope != action.defaultScope || scope.isSaidAsADefault
     }
 
     /// The Works in pop-up's label (FR12's branch E).
