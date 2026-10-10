@@ -418,6 +418,45 @@ final class SaveAsDefaultsWordingTests: XCTestCase {
     }
 }
 
+// MARK: - Lists That Keep Their Rows
+
+/// Search in Book keeps every result row alive while its sheet is open, as
+/// the headings and bookmarks panels do: a lazy stack recycled rows out of
+/// view, which can invalidate VoiceOver's current element and send its
+/// cursor back toward the top of a long list. The search's result limit,
+/// lowered to 500 for it, bounds what the rows cost.
+@MainActor
+final class SearchResultRowsTests: XCTestCase {
+    /// A search with many more results than fit in the sheet draws every
+    /// row, where a lazy list drew those in view alone.
+    func testEverySearchResultRowIsDrawnNotOnlyThoseInView() throws {
+        let matches = 80
+        let sheet = BookSearchView(
+            chapterTexts: [String(repeating: "ferry boat ", count: matches)],
+            chapterTitles: ["Crossings"],
+            headings: [],
+            bookTitle: "Ferry Timetables",
+            totalCharacterCount: 11 * matches,
+            totalWordCount: 2 * matches,
+            currentWPM: 200,
+            announce: { _ in },
+            onNavigate: { _, _ in }
+        )
+        let hosted = hostOffscreen(sheet, size: NSSize(width: 500, height: 450))
+        defer { takeDown(hosted.window) }
+        let field = try XCTUnwrap(descendants(of: hosted.hostingView, as: NSTextField.self).first { $0.isEditable })
+        let before = ViewBodyCounter.count(of: "SearchResultRow")
+
+        try typeReplacingText("boat", in: field, of: hosted.hostingView)
+
+        let drewEveryRow = waitUntil(timeout: 5) {
+            hosted.hostingView.layoutSubtreeIfNeeded()
+            return ViewBodyCounter.count(of: "SearchResultRow") - before >= matches
+        }
+        XCTAssertTrue(drewEveryRow, "drew \(ViewBodyCounter.count(of: "SearchResultRow") - before) of \(matches) rows")
+    }
+}
+
 // MARK: - Shared Fixtures
 
 extension XCTestCase {

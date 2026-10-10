@@ -379,12 +379,14 @@ final class BookSearchEngineTests: XCTestCase {
         XCTAssertGreaterThan(comparedResults, 500)
     }
 
-    /// The documented limit, which the status line reports when reached.
-    func testResultLimitIsTwoThousand() {
-        XCTAssertEqual(BookSearchEngine.resultLimit, 2_000)
+    /// The documented limit, which the status line reports when reached:
+    /// 500 since TODO A10, when the sheet began keeping every row it lists
+    /// alive for VoiceOver.
+    func testResultLimitIsFiveHundred() {
+        XCTAssertEqual(BookSearchEngine.resultLimit, 500)
     }
 
-    /// A query with more matches than the limit lists the first 2,000, the
+    /// A query with more matches than the limit lists the first 500, the
     /// same ones the old search listed first, and says more exist.
     func testSearchStopsAtTheResultLimit() throws {
         let corpus = repeatedCorpus(chapters: 3, matchesPerChapter: 1_000)
@@ -401,7 +403,7 @@ final class BookSearchEngineTests: XCTestCase {
     /// Exactly as many matches as the limit is a complete list, not a
     /// truncated one, for literal text and regular expressions alike.
     func testExactlyTheLimitIsACompleteList() throws {
-        let corpus = repeatedCorpus(chapters: 2, matchesPerChapter: 1_000)
+        let corpus = repeatedCorpus(chapters: 2, matchesPerChapter: BookSearchEngine.resultLimit / 2)
         for useRegex in [false, true] {
             let outcome = try BookSearchEngine.search(query: "tock", useRegex: useRegex, in: corpus)
             let found = try XCTUnwrap(matchedTexts(outcome))
@@ -736,7 +738,7 @@ final class BookSearchModelTests: XCTestCase {
         XCTAssertNil(model.searchTask)
     }
 
-    /// With more matches than the limit, the first 2,000 are listed and the
+    /// With more matches than the limit, the first 500 are listed and the
     /// status line and announcement ask for a narrower search.
     func testResultLimitIsReportedInStatusAndAnnouncement() async {
         let (model, announcements) = makeModel(searching: repeatedCorpus(chapters: 3, matchesPerChapter: 1_000))
@@ -746,7 +748,7 @@ final class BookSearchModelTests: XCTestCase {
 
         XCTAssertEqual(model.results.count, BookSearchEngine.resultLimit)
         XCTAssertEqual(model.status, .truncated(shown: BookSearchEngine.resultLimit))
-        XCTAssertEqual(model.status.text, "Showing the first \(2_000.formatted()) matches; refine your search")
+        XCTAssertEqual(model.status.text, "Showing the first 500 matches; refine your search")
         XCTAssertEqual(announcements.messages, [model.status.text])
     }
 

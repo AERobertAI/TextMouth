@@ -148,7 +148,11 @@ enum BookSearchEngine {
     /// The most matches one search lists. A broader query yields more rows
     /// than anyone would review one at a time; stopping here also bounds the
     /// work, memory, and rows that a query such as "e" would otherwise cost.
-    static let resultLimit = 2_000
+    /// The sheet keeps every row it lists alive for VoiceOver (TODO A10),
+    /// which costs about half a millisecond and a tenth of a megabyte a row
+    /// to draw, so 500 rows draw in about a quarter of a second; 2,000, the
+    /// limit until then, took over a second and some 200 megabytes.
+    static let resultLimit = 500
 
     /// Search every chapter of `corpus` for `query`, in reading order.
     /// - Throws: `CancellationError` once `isCancelled` returns true. A
@@ -403,7 +407,13 @@ struct BookSearchView: View {
                 Spacer()
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
+                    // Keep every result row alive while the sheet is open,
+                    // as the headings and bookmarks panels do: LazyVStack
+                    // recycles rows out of view, which can invalidate
+                    // VoiceOver's current element and send its cursor back
+                    // toward the top of a long list (TODO A10). The result
+                    // limit bounds what the rows cost.
+                    VStack(alignment: .leading, spacing: 0) {
                         ForEach(model.results) { result in
                             // A native button exposes the same activation to
                             // keyboard, VoiceOver, braille, and pointer users.
@@ -460,6 +470,9 @@ private struct SearchResultRow: View {
     let currentWPM: Double
 
     var body: some View {
+        // Counted, so a test can tell that the list draws every row, not
+        // only those in view (TODO A10).
+        let _ = ViewBodyCounter.record("SearchResultRow")
         VStack(alignment: .leading, spacing: 4) {
             Text(result.contextSnippet)
                 .font(.body)
