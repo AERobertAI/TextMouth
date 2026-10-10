@@ -4,8 +4,23 @@ import SwiftUI
 /// removing, and querying bookmarks for a specific book.
 extension LibraryViewModel {
 
-    func addBookmark(bookID: UUID, chapterIndex: Int, characterOffset: Int, label: String = "") {
-        library.addBookmark(bookID: bookID, chapterIndex: chapterIndex, characterOffset: characterOffset, label: label)
+    /// Adds a bookmark to the book `bookID` with `label` and `anchor`, the
+    /// words around its place (T06), and saves it in the book's row and its
+    /// record (`Library.addBookmark`).
+    func addBookmark(
+        bookID: UUID,
+        chapterIndex: Int,
+        characterOffset: Int,
+        label: String = "",
+        anchor: TextAnchor? = nil
+    ) {
+        library.addBookmark(
+            bookID: bookID,
+            chapterIndex: chapterIndex,
+            characterOffset: characterOffset,
+            label: label,
+            anchor: anchor
+        )
         save()
         if let book = library.books.first(where: { $0.id == bookID }) {
             LibraryPersistenceService.saveBookInfo(for: book)

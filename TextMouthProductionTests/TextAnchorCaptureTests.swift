@@ -121,9 +121,9 @@ final class TextAnchorCaptureTests: XCTestCase {
         )
     }
 
-    /// An audiobook's places count time in its recording (P08), so its
-    /// position keeps no words.
-    func testAnAudiobooksPositionKeepsNoWords() throws {
+    /// An audiobook's places count time in its recording (P08), so neither
+    /// its position nor a bookmark keeps words.
+    func testAnAudiobooksPlacesKeepNoWords() throws {
         let world = try makeIntegrationWorld("Anchor Capture Audiobook")
         let book = try world.makeSilentAudioBook(title: "Tide Clock Recordings", trackDurations: [1, 1])
         let reader = world.openReader(for: book)
@@ -131,10 +131,71 @@ final class TextAnchorCaptureTests: XCTestCase {
 
         reader.currentCharacterOffset = 5
         reader.savePosition()
+        let bookmark = try XCTUnwrap(reader.addBookmarkAtCurrentPosition(label: "Second bell"))
 
         let saved = try XCTUnwrap(world.library.bookByID(book.id)?.readingPosition)
         XCTAssertEqual(saved.characterOffset, 5)
         XCTAssertNil(saved.anchor)
+        XCTAssertNil(bookmark.anchor)
+        XCTAssertNil(world.library.bookmarksForBook(book.id).first?.anchor)
+    }
+
+    // MARK: - Bookmarks
+
+    /// Both ways of adding a bookmark keep the words around the offset each
+    /// saves: Add Bookmark at the cursor, and the bookmark toggle at the
+    /// offset it saves, which at a chapter's very end is its last character.
+    /// Each is in the book's row and its record.
+    func testBothBookmarkAddsKeepTheWordsWhereTheySave() throws {
+        let world = try makeIntegrationWorld("Anchor Capture Bookmarks")
+        let book = try world.importBook(from: writeOrchardEPUB())
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let content = try XCTUnwrap(reader.content)
+
+        reader.currentChapterIndex = 2
+        reader.currentCharacterOffset = 25
+        let added = try XCTUnwrap(reader.addBookmarkAtCurrentPosition(label: "The oak screw"))
+        XCTAssertEqual(added.anchor, content.anchor(at: TextPlace(chapter: 2, offset: 25), measuredIn: TextAnchor.currentMeasure))
+
+        let end = content.chapters[0].text.utf16Length
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = end
+        reader.toggleBookmarkAtCurrentPosition()
+        let toggled = try XCTUnwrap(world.library.bookmarksForBook(book.id).first { $0.chapterIndex == 0 })
+        XCTAssertEqual(toggled.characterOffset, end - 1, "the toggle saved another offset")
+        XCTAssertEqual(toggled.anchor, content.anchor(at: TextPlace(chapter: 0, offset: end - 1), measuredIn: TextAnchor.currentMeasure))
+
+        let row = world.library.bookmarksForBook(book.id)
+        XCTAssertEqual(row.count, 2)
+        XCTAssertTrue(row.allSatisfy { $0.anchor != nil }, "a bookmark lacks its words")
+        XCTAssertEqual(reader.bookmarks, row, "the reader's bookmarks differ from the row's")
+        LibraryPersistenceService.flushPendingSave()
+        // The record keeps dates to the second, so the bookmarks are
+        // compared by what identifies them and their words.
+        let recorded = try BookInfo.load(from: book.tmbDirectory).bookmarks
+        XCTAssertEqual(recorded.map(\.id), row.map(\.id))
+        XCTAssertEqual(recorded.map(\.anchor), row.map(\.anchor), "the record's bookmarks lack their words")
+    }
+
+    /// A bookmark added where the book opened, before the cursor moves,
+    /// keeps the words that place was saved with, as the position does, so
+    /// both stay together however the text changed under them.
+    func testABookmarkAddedWhereTheBookOpenedKeepsThatPlacesWords() throws {
+        let world = try makeIntegrationWorld("Anchor Capture Bookmark Opened")
+        let book = try world.importBook(from: writeOrchardEPUB())
+        let earlier = TextAnchor(before: "an older reading's ", after: "words at this place", fraction: 0.5, measuredIn: "3.0.4/1.0.0")
+        world.library.persistReadingPosition(
+            bookID: book.id,
+            position: ReadingPosition(chapterIndex: 2, characterOffset: 30, anchor: earlier)
+        )
+        let reader = world.openReader(for: try XCTUnwrap(world.library.bookByID(book.id)))
+        waitForReaderToLoad(reader)
+
+        let bookmark = try XCTUnwrap(reader.addBookmarkAtCurrentPosition())
+
+        XCTAssertEqual(bookmark.anchor, earlier)
+        XCTAssertEqual(world.library.bookByID(book.id)?.readingPosition?.anchor, earlier)
     }
 
     /// A reader's live position reaches the library's rows only when its
