@@ -916,15 +916,17 @@ struct LibraryView: View {
     }
 
     /// The words for Delete Everything on the folder awaiting confirmation,
-    /// in the mode the Trash preference chooses. With no folder pending, no
-    /// dialog shows, and only the mode-dependent button title matters.
+    /// in the mode the Trash preference chooses, naming the feeds whose
+    /// folders are inside it and what happens to each (FR14). With no folder
+    /// pending, no dialog shows, and only the mode-dependent button title
+    /// matters.
     private var deleteEverythingWording: FolderRemovalWording {
         let folder = libraryViewModel.pendingDeleteFolder
         return FolderRemovalWording(
             mode: removalPreferences.deletionMode,
             folderName: folder?.name ?? "",
             bookCount: folder.map { libraryViewModel.bookCount(inFolderTree: $0.fullPath) } ?? 0,
-            feedTitle: folder.flatMap { libraryViewModel.feedTitle(ofFolder: $0) }
+            feedTitles: folder.map { libraryViewModel.feedTitles(inside: $0) } ?? []
         )
     }
 
@@ -1113,7 +1115,9 @@ struct LibraryView: View {
 
     /// A folder's commands: Rename, Move, and Delete, in its row's context
     /// menu, and, for a feed's folder, in its feed's row's, which stands for
-    /// the folder where the Feeds section lists the feed (FR03).
+    /// the folder where the Feeds section lists the feed (FR03). A feed's
+    /// own folder offers no Delete Folder…: its feed's commands beside these
+    /// offer Delete Feed… there, so a feed has one delete (FR14).
     @ViewBuilder
     private func folderMenu(_ folder: BookFolder) -> some View {
         Button("Rename Folder...") {
@@ -1125,14 +1129,16 @@ struct LibraryView: View {
             folderToMove = folder
             showMoveFolderSheet = true
         }
-        Divider()
-        Button("Delete Folder...", role: .destructive) {
-            if libraryViewModel.folderHasContents(folder) {
-                libraryViewModel.pendingDeleteFolder = folder
-                libraryViewModel.showDeleteFolderDialog = true
-            } else {
-                // Empty folder — just delete it
-                libraryViewModel.removeFolder(folder)
+        if libraryViewModel.offersDeleteFolder(folder) {
+            Divider()
+            Button("Delete Folder...", role: .destructive) {
+                if libraryViewModel.folderHasContents(folder) {
+                    libraryViewModel.pendingDeleteFolder = folder
+                    libraryViewModel.showDeleteFolderDialog = true
+                } else {
+                    // Empty folder — just delete it
+                    libraryViewModel.removeFolder(folder)
+                }
             }
         }
     }
