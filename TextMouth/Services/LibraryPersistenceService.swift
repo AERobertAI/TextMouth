@@ -498,7 +498,7 @@ enum LibraryPersistenceService {
                     folderPath: analyzed.folderPath,
                     tmbDirectoryName: analyzed.tmbDirectoryName
                 )
-                book.feedLink = analyzed.feedLink
+                book.fileLocation = analyzed.fileLocation
                 return book
             } ?? analyzed
             if let change = contentChange(from: analyzed, to: latest) {

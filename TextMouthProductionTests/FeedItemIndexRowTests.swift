@@ -129,6 +129,79 @@ final class FeedItemIndexRowTests: CloudMaintenanceTestCase {
         XCTAssertEqual(placed.id, book.id)
     }
 
+    // MARK: - Where the Package Is
+
+    /// A feed item's package is in its feed's own folder, beside the feed's
+    /// record and outside the Library folder, whatever folder its row names.
+    func testAFeedItemsPackageIsInItsFeedsFolder() {
+        let feedID = UUID()
+        let root = TextMouthPaths.root
+        let book = Book(
+            title: "Episode", format: .audio, filePath: "/episode.mp3", md5Hash: "e",
+            folderPath: "Podcasts", tmbDirectoryName: "Episode-1.tmb",
+            feedLink: FeedBookLink(feedID: feedID, itemID: "1")
+        )
+
+        let expected = root.appendingPathComponent("Feeds/\(feedID.uuidString)/Episode-1.tmb", isDirectory: true)
+        XCTAssertEqual(book.tmbDirectory.standardizedFileURL.path, expected.standardizedFileURL.path)
+        XCTAssertEqual(book.tmbDirectory, FeedPaths.packageDirectory(named: "Episode-1.tmb", of: feedID, in: root))
+        XCTAssertFalse(book.tmbDirectory.path.hasPrefix(TextMouthPaths.libraryDir.path + "/"))
+    }
+
+    /// Every other book's package is in its library folder, exactly where
+    /// it always was, in the data directory in use and in any other.
+    func testABooksPackageIsInItsLibraryFolder() {
+        let other = URL(fileURLWithPath: "/Volumes/Elsewhere/.TextMouth", isDirectory: true)
+        for folder in ["", "Fiction/Sci-Fi"] {
+            let book = Book(
+                title: "Book", format: .txt, filePath: "/book.txt", md5Hash: "b",
+                folderPath: folder, tmbDirectoryName: "Book-1.tmb"
+            )
+
+            XCTAssertEqual(book.tmbDirectory, TextMouthPaths.tmbPath(folderPath: folder, tmbName: "Book-1.tmb"), folder)
+            let inFolder = folder.isEmpty ? "" : folder + "/"
+            XCTAssertEqual(
+                book.packageDirectory(inDataDirectory: other).path,
+                "/Volumes/Elsewhere/.TextMouth/Library/\(inFolder)Book-1.tmb",
+                folder
+            )
+        }
+    }
+
+    /// A row's location carries its feed link, so a reader that takes a
+    /// moved row's library fields finds the package in its feed's folder.
+    func testTheLocationCarriesTheFeedLink() {
+        let link = FeedBookLink(feedID: UUID(), itemID: "moved")
+        var reader = Book(
+            title: "Moved Article", format: .html, filePath: "/old/article.html", md5Hash: "m",
+            folderPath: "The Digital Antiquarian", tmbDirectoryName: "Moved-1.tmb"
+        )
+        var row = reader
+        row.fileLocation = Book.FileLocation(
+            folderPath: "", filePath: "/new/article.html", tmbDirectoryName: "Moved-1.tmb", feedLink: link
+        )
+
+        reader.libraryFields = row.libraryFields
+
+        XCTAssertEqual(reader.feedLink, link)
+        XCTAssertEqual(reader.folderPath, "")
+        XCTAssertEqual(reader.tmbDirectory, row.tmbDirectory)
+    }
+
+    /// A feed's folder is named by its ID alone, so it is never taken for a
+    /// record, and a record's name or a conflict copy's never for a folder.
+    func testAFeedsFolderIsNamedByItsIDAlone() {
+        let id = UUID()
+        let root = URL(fileURLWithPath: "/data", isDirectory: true)
+
+        XCTAssertEqual(FeedPaths.feedID(ofItemsFolderNamed: id.uuidString), id)
+        for name in [id.uuidString + ".json", id.uuidString.lowercased(), id.uuidString + " 2", "Feeds"] {
+            XCTAssertNil(FeedPaths.feedID(ofItemsFolderNamed: name), name)
+        }
+        XCTAssertNil(FeedPaths.feedID(ofRecordNamed: id.uuidString), "the record reader reads only <ID>.json")
+        XCTAssertEqual(FeedPaths.indexFile(of: id, in: root).path, "/data/Feeds/\(id.uuidString)/library.json")
+    }
+
     // MARK: - Helpers
 
     /// Writes rows as library.json does.

@@ -362,9 +362,32 @@ struct Book: Identifiable, Codable, Hashable {
     /// The .tmb package directory URL: in the library, or, while an import
     /// is staging this book's package, wherever the import builds it, which
     /// can be this Mac's Import Staging folder (`ImportStaging`, FR02).
+    ///
+    /// A feed item's package is in its feed's own folder, `Feeds/<feed
+    /// ID>/`, outside the Library folder (FR11); every other book's is in its
+    /// library folder. Every use of an existing package follows this one
+    /// rule: record saves, package deletion, cloud state, transcripts, the
+    /// reader's working copy, and Show in Finder.
     var tmbDirectory: URL {
-        ImportStaging.directory(ofStagedPackage: tmbDirectoryName)
-            ?? TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbDirectoryName)
+        if let staged = ImportStaging.directory(ofStagedPackage: tmbDirectoryName) {
+            return staged
+        }
+        return packageDirectory(inDataDirectory: TextMouthPaths.root)
+    }
+
+    /// Where this book's package is in the data directory at `root`, as
+    /// `tmbDirectory` places it there: in its feed's folder for a feed item
+    /// (FR11), and otherwise in its library folder, exactly where
+    /// `TextMouthPaths.tmbPath(folderPath:tmbName:)` names it for the data
+    /// directory in use. A data-directory move places each package of the
+    /// copy it stages this way (`DataDirectoryMigrator`).
+    func packageDirectory(inDataDirectory root: URL) -> URL {
+        if let feedLink {
+            return FeedPaths.packageDirectory(named: tmbDirectoryName, of: feedLink.feedID, in: root)
+        }
+        let library = root.appendingPathComponent(TextMouthPaths.libraryFolderName, isDirectory: true)
+        let folder = folderPath.isEmpty ? library : library.appendingPathComponent(folderPath, isDirectory: true)
+        return folder.appendingPathComponent(tmbDirectoryName, isDirectory: true)
     }
 
     /// The actual book file URL inside the .tmb package
@@ -533,23 +556,32 @@ struct Book: Identifiable, Codable, Hashable {
 
     /// Where a book's files are: the library folder holding its package, the
     /// package's name, and the path the book reads from inside it (its file,
-    /// or its folder of audio tracks). Moving the book, renaming or moving a
-    /// folder above it, and moving the data directory change it.
+    /// or its folder of audio tracks), and, for a feed item, the feed whose
+    /// folder holds the package instead (FR11). Moving the book, renaming or
+    /// moving a folder above it, moving it into its feed's folder, and moving
+    /// the data directory change it.
     struct FileLocation: Equatable, Sendable {
         var folderPath: String
         var filePath: String
         var tmbDirectoryName: String
+        /// The feed item a feed item's package belongs to, which puts the
+        /// package in its feed's folder (`Book.tmbDirectory`); nil for every
+        /// other book.
+        var feedLink: FeedBookLink? = nil
     }
 
-    /// This book's file location. Setting it changes exactly those fields.
+    /// This book's file location. Setting it changes exactly those fields,
+    /// so a reader taking a moved row's location (`libraryFields`) finds the
+    /// package wherever the library now places it, a feed's folder included.
     var fileLocation: FileLocation {
         get {
-            FileLocation(folderPath: folderPath, filePath: filePath, tmbDirectoryName: tmbDirectoryName)
+            FileLocation(folderPath: folderPath, filePath: filePath, tmbDirectoryName: tmbDirectoryName, feedLink: feedLink)
         }
         set {
             folderPath = newValue.folderPath
             filePath = newValue.filePath
             tmbDirectoryName = newValue.tmbDirectoryName
+            feedLink = newValue.feedLink
         }
     }
 
