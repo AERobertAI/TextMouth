@@ -38,7 +38,7 @@ extension LibraryViewModel {
     /// books are downloads. Until then each download shows where it always
     /// did. Then returns to the library the downloads of every feed whose
     /// folder is here while its record is gone
-    /// (`returnDownloadsOfFeedsWithoutRecords(subscribed:removingWith:)`),
+    /// (`returnDownloadsOfFeedsWithoutRecords(subscribed:absence:removingWith:)`),
     /// and marks downloaded again the items an older TextMouth marked
     /// otherwise (`markFeedItemsDownloadedAgain()`). Called once, as the
     /// feeds start.

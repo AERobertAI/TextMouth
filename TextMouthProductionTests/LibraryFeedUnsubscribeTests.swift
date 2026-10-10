@@ -104,6 +104,116 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         XCTAssertEqual(model.feedsWithoutRecords(subscribed: others), [])
     }
 
+    // MARK: - At Launch, in a Cloud Library
+
+    /// Unsubscribe on another Mac moves the feed's downloads itself, and the
+    /// record's removal can reach this Mac before those moves: in a cloud
+    /// library the first launch that finds the record gone returns nothing
+    /// and notes it, asking twice at that launch counts once, and a later
+    /// launch that finds it still gone returns the download as the library's
+    /// own, the note going with the feed's folder.
+    @MainActor
+    func testInACloudLibraryARecordGoneAtTwoLaunchesReturnsTheDownloads() async throws {
+        let fixture = try makeUnsubscribedFeed()
+        removeAtTheEnd(topLevelPackageNamed: fixture.download.tmbDirectoryName)
+        let model = launchedModel()
+        let others = model.library.feedShelf.indexedFeedIDs.subtracting([feedID])
+        let first = Self.thisMac(at: UUID())
+
+        let atFirst = await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, absence: first, removingWith: Self.deleteForGood)
+        let again = await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, absence: first, removingWith: Self.deleteForGood)
+
+        XCTAssertEqual(atFirst, 0, "a record gone at one launch returned the downloads")
+        XCTAssertEqual(again, 0, "one launch counted as two")
+        try assertStaysInItsFeed(fixture.download, in: model)
+        XCTAssertEqual(try absenceNotes(), [Self.noteName(at: first)])
+
+        let atSecond = await model.returnDownloadsOfFeedsWithoutRecords(
+            subscribed: others,
+            absence: Self.thisMac(at: UUID()),
+            removingWith: Self.deleteForGood
+        )
+
+        XCTAssertEqual(atSecond, 1)
+        try assertReturned(fixture, toFolder: "", in: model)
+    }
+
+    /// A feed subscribed on another Mac can reach this one as its folder
+    /// before its record: the first launch returns nothing and notes the
+    /// absence, and once the record is here the next launch returns nothing
+    /// and takes the note away, so a later absence begins again: a launch
+    /// after that, the record gone, only notes it.
+    @MainActor
+    func testInACloudLibraryAFolderThatArrivesBeforeItsRecordStaysInItsFeed() async throws {
+        let fixture = try makeUnsubscribedFeed()
+        let model = launchedModel()
+        let others = model.library.feedShelf.indexedFeedIDs.subtracting([feedID])
+        let third = Self.thisMac(at: UUID())
+
+        let beforeTheRecord = await model.returnDownloadsOfFeedsWithoutRecords(
+            subscribed: others,
+            absence: Self.thisMac(at: UUID()),
+            removingWith: Self.deleteForGood
+        )
+        XCTAssertEqual(try absenceNotes().count, 1)
+        let withTheRecord = await model.returnDownloadsOfFeedsWithoutRecords(
+            subscribed: others.union([feedID]),
+            absence: Self.thisMac(at: UUID()),
+            removingWith: Self.deleteForGood
+        )
+        XCTAssertEqual(try absenceNotes(), [], "the note outlived the record's arrival")
+        let goneAgain = await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, absence: third, removingWith: Self.deleteForGood)
+
+        XCTAssertEqual([beforeTheRecord, withTheRecord, goneAgain], [0, 0, 0])
+        try assertStaysInItsFeed(fixture.download, in: model)
+        XCTAssertEqual(try absenceNotes(), [Self.noteName(at: third)])
+    }
+
+    /// Another Mac's note of the absence counts for nothing on this Mac, and
+    /// stays; a record the records' folder shows only as an older iCloud
+    /// Drive's placeholder is a record here, so nothing is returned and this
+    /// Mac's note goes; and in a library not in the cloud, the first launch
+    /// returns the download, as it always did.
+    @MainActor
+    func testOnlyThisMacsEarlierLaunchCountsAndAPlaceholderIsARecord() async throws {
+        let fixture = try makeUnsubscribedFeed()
+        removeAtTheEnd(topLevelPackageNamed: fixture.download.tmbDirectoryName)
+        let model = launchedModel()
+        let others = model.library.feedShelf.indexedFeedIDs.subtracting([feedID])
+        let otherMac = FeedRecordAbsence(isCloud: true, macID: UUID().uuidString, launchID: UUID())
+        XCTAssertFalse(otherMac.wasGoneAtAnEarlierLaunch(feed: feedID, folder: feedFolderURL))
+
+        let afterTheOtherMac = await model.returnDownloadsOfFeedsWithoutRecords(
+            subscribed: others,
+            absence: Self.thisMac(at: UUID()),
+            removingWith: Self.deleteForGood
+        )
+        XCTAssertEqual(afterTheOtherMac, 0, "another Mac's note counted on this one")
+        XCTAssertEqual(try absenceNotes().count, 2)
+
+        let records = FeedPaths.recordsFolder(in: TextMouthPaths.root)
+        let placeholder = records.appendingPathComponent(FeedRecordAbsence.placeholderName(of: "\(feedID.uuidString).json"))
+        XCTAssertEqual(placeholder.lastPathComponent, ".\(feedID.uuidString).json.icloud")
+        try Data().write(to: placeholder)
+        addTeardownBlock { try? FileManager.default.removeItem(at: placeholder) }
+        XCTAssertEqual(model.feedsWithoutRecords(subscribed: others), [], "a placeholder of the record was taken for none")
+        let withAPlaceholder = await model.returnDownloadsOfFeedsWithoutRecords(
+            subscribed: others,
+            absence: Self.thisMac(at: UUID()),
+            removingWith: Self.deleteForGood
+        )
+        XCTAssertEqual(withAPlaceholder, 0)
+        XCTAssertEqual(try absenceNotes().map { $0.hasPrefix(FeedRecordAbsence.notePrefix + otherMac.macID) }, [true])
+        try assertStaysInItsFeed(fixture.download, in: model)
+
+        try FileManager.default.removeItem(at: placeholder)
+        let local = FeedRecordAbsence(isCloud: false, macID: Self.thisMacID, launchID: UUID())
+        let returned = await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, absence: local, removingWith: Self.deleteForGood)
+
+        XCTAssertEqual(returned, 1)
+        try assertReturned(fixture, toFolder: "", in: model)
+    }
+
     // MARK: - A Crash Between Two Steps
 
     /// A crash once the download's package moved into the library folder,
@@ -264,6 +374,39 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         XCTAssertEqual(next.bookByID(download.id)?.folderPath, folder, file: file, line: line)
         XCTAssertNil(next.bookByID(download.id)?.feedLink, file: file, line: line)
         XCTAssertEqual(next.bookByID(download.id)?.readingPosition, download.readingPosition, file: file, line: line)
+    }
+
+    /// The ID of the Mac these tests run as, as a note of a record's absence
+    /// names it.
+    private static let thisMacID = UUID().uuidString
+
+    /// How this Mac judges a record gone in a cloud library at the launch
+    /// `launch`.
+    private static func thisMac(at launch: UUID) -> FeedRecordAbsence {
+        FeedRecordAbsence(isCloud: true, macID: thisMacID, launchID: launch)
+    }
+
+    /// The name of the note `absence` leaves at its launch.
+    private static func noteName(at absence: FeedRecordAbsence) -> String {
+        "\(FeedRecordAbsence.notePrefix)\(absence.macID)-\(absence.launchID.uuidString)"
+    }
+
+    /// The notes of a record's absence in this test's feed's folder, by
+    /// name, in order.
+    private func absenceNotes() throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: feedFolderURL.path)
+            .filter { $0.hasPrefix(FeedRecordAbsence.notePrefix) }
+            .sorted()
+    }
+
+    /// Asserts that `download` is still its feed's item among `model`'s
+    /// books, its package in its feed's folder, as no return touched it.
+    @MainActor
+    private func assertStaysInItsFeed(_ download: Book, in model: LibraryViewModel, file: StaticString = #filePath, line: UInt = #line) throws {
+        let row = try XCTUnwrap(model.bookByID(download.id), "the download left the library", file: file, line: line)
+        XCTAssertEqual(row.feedLink, download.feedLink, "the download left its feed", file: file, line: line)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: download.filePath), "the download's file moved", file: file, line: line)
+        XCTAssertEqual(model.library.feedShelf.rows.filter { $0.feedLink?.feedID == feedID }.count, 1, "the kept row left", file: file, line: line)
     }
 
     /// Removes, when the test ends, the package named `name` that a return
