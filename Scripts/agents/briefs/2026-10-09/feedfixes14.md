@@ -1,0 +1,30 @@
+# Task brief: feedfixes14 — REV14's feed findings: what Unsubscribe, Delete Feed…, and the launch's sweep delete
+
+Slug `feedfixes14`; branch `fix/rev14-feed-findings`, from main. Read `common.md` beside this file first; the normal usage rule applies: read only "5-hour session" and "Weekly (all models)", ignore "Weekly (Fable)", and stop with a report below 10% left. Use main's latest suite count as your baseline. **Items 1 to 3 can delete what the user meant to keep; do them first.**
+
+## Where these come from
+REV14's `reviewlibrary` reviewer (read-only) read FR14 (428f4532), the REV13 feed follow-ups (2304010c), and the app cleanups (adf3d24a); line numbers are main's at 743a34ff. Read the feeddelete and feedfollowups2 agents' notes in `AGENT-NOTES-2026-10-04.md` first. Removal Behavior (Trash or delete permanently) is the user's promise: nothing the app deletes on the user's behalf may skip the Trash while it says Trash.
+
+## Items, one commit each, each with its test
+1. **Unsubscribe can delete a kept place, bookmarks, and transcript without asking** (bug, confirmed by tracing; reopens REV13 feeds 12).
+   - The case: an episode the rule removed with its package kept is later queued by the rule to download again, and has not started.
+   - The question and the menu title use `keptRowsUnsubscribeDeletes` (`FeedCommandRunner.swift` about 124, 140, 173), which leaves out items in the download queue. With no other kept rows the command is "Unsubscribe" and acts at once.
+   - `unsubscribe(_:)` then withdraws the rule's queued downloads (`FeedCenter.swift` about 752), and `deleteKeptPackages` (about 758) recomputes the set, now with that package, and deletes it. The listener hears afterwards: "What was kept for 1 removed download was deleted."
+   - Take the list once, before the withdrawal, and delete exactly that list (or count queued rule re-downloads in the question; say which and why). Test the queued-but-not-started case; `LibraryFeedUnsubscribeTests.swift` about 551 covers only a download already under way.
+2. **Delete Feed… during a kept package's restore deletes it for good, whatever Removal Behavior says** (risk, confirmed).
+   - The case: a kept episode downloading again has reached "adding it to the library", and `restoreBook` (`FeedEpisodeImporter.swift` about 293) has moved the kept place, bookmarks, and transcript into the new package.
+   - `closeFeed` then makes `commit` (`FeedDownloadManager.swift` about 781) discard that package with `FileManager.removeItem` (about 799-802), and Delete Feed counts it deleted though its question said "they go to the Trash". Delete Episode has had the same path since REV10.
+   - Discard through `environment.removeItem` (Removal Behavior) when the import restored a kept package, or when the feed is closed; test both paths.
+3. **The launch's sweep puts a held-aside article in the Trash under a hidden name** (risk, confirmed by reading). `FeedCenter.swift` about 490 trashes the holder itself, named `.removing-<UUID>` (`FeedItemPackage.swift` about 174; pinned by `FeedLifecycleTests.swift` about 418), so Finder hides it and Put Back is out of reach. Trash each entry inside the holder, then remove the empty holder, as `removeFileAndText` does. Also: when a Delete Download is refused and the files cannot go back (FEED_DOWNLOAD_HELD_ASIDE), the row stays "Downloaded" and the next launch sweeps its file away, even with Trash on. Make that case keep the file or put it back, and say which.
+4. **When Delete Feed… stops short after closing the feed, episodes stay "Downloading" or "Waiting to Download"** (bug, low). `closeFeed` (`FeedDownloadManager.swift` about 437-453) drops queued and put-off requests without resetting their items, and `reopenFeed` resets nothing. Set `.notDownloaded` for the items `closeFeed` dropped, as `cancelEveryDownload` does; test a stopped-short Delete Feed with queued downloads (refusals at `FeedCenter+DeleteFeed.swift` about 110-136).
+5. **Cancel promises re-downloads that may never come** (wording). `FeedDownloadProgressWording.swift` about 208 (`retryAfterCancel`, appended at about 184) and the button hint at about 221 say "TextMouth downloads each feed's newest again at its next check…" even when every stopped download was the listener's own pick, or the feed downloads nothing by itself. Say it only when a rule download stopped; otherwise say that Download gets them back.
+6. **A refusal shown in an alert is also announced** (accessibility, plausible). `FeedCommandRunner.swift` about 414. Delete Feed's refusal and the in-use refusals set the alert and announce the same text, which VoiceOver may read twice. Follow the app's own pattern for alerts elsewhere (say which you found), and pin it.
+7. **A folder holding a feed's downloads and other books loses Delete Folder… entirely** (design risk). `LibraryViewModel+FolderManagement.swift` about 288; Feed Info can point a feed at any folder that isn't another feed's (`FeedInfoSheet.swift` about 93). Offer Delete Folder… when the folder holds more than the feed's items; its question already names the feed.
+8. **Two package-removal closures treat a missing package differently** (DRY). `FeedCenter+DeleteFeed.swift` about 122-129 counts it deleted; `FeedLifecycle.swift` about 311-313 fails and leaves the row. Use one shared helper with one rule.
+9. **Delete Feed's announcement doesn't name what the kept packages held**, though its question does (`FeedCommands.swift` about 690): pass the kept parts and use `keptPhrase(count:parts:)`, as Unsubscribe's announcement does.
+
+## Files you own
+The feed engine and views, `FeedEpisodeImporter`, `LibraryViewModel+FolderManagement.swift`'s feed-folder check, and their tests. `endfixes`, `anchorcapture`, and `placediff` work on the reader and the places; none should need your files.
+
+## Verify or report as unverified
+Say what Unsubscribe, Delete Feed…, Cancel, and the launch's sweep now do to the user's two feeds (counts only from `~/.TextMouth`, never content). Real networks, the real Trash, and live VoiceOver are unverified. Report the README and ARCHITECTURE wording and the TODO sentence.
