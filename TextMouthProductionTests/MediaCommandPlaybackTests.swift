@@ -975,6 +975,49 @@ final class MediaCommandPlaybackTests: XCTestCase {
         assertToldSystem(system, that: quay.reader, plays: true, "Play once the speech was ready")
     }
 
+    /// A play waiting for its chapter's speech counts as playing for the
+    /// system's media commands, as it shows Playing: a recording starting
+    /// pauses it, as it pauses every book playing, and so do the AirPods
+    /// leaving, so it stops waiting and says nothing once its speech is
+    /// ready, and the system is told it paused. Before, it counted as not
+    /// playing, nothing paused it, and it began to speak once its speech was
+    /// ready, under the recording or through the Mac's speakers (REV12's
+    /// leftovers).
+    func testAPlayWaitingForItsChaptersSpeechIsPausedAsAPlayingBookIs() throws {
+        let pauses: [(name: String, pause: (MediaSystem) -> Void)] = [
+            ("a recording starting", { system in
+                XCTAssertEqual(system.coordinator.pauseEveryPlayingReader(), 1, "the waiting play was not paused")
+            }),
+            ("the AirPods leaving", { system in
+                system.takeAirPodsOut()
+            }),
+        ]
+        for (name, pause) in pauses {
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Waiting Play Paused \(name)")
+            world.settings.bluetoothMonitoringEnabled = true
+            world.settings.bluetoothDisconnectDelay = 2
+            let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+            let inputs = try XCTUnwrap(quay.reader.speechInputs(forChapterAt: 0), name)
+            // The chapter's speech is "prepared off the main thread" by the
+            // test, which hands it over when it chooses, so nothing can
+            // start while the run loop turns.
+            XCTAssertTrue(quay.reader.chapterSpeechCache.beginPreparingInBackground(inputs), name)
+            quay.reader.play()
+            XCTAssertTrue(quay.reader.isWaitingForChapterSpeech, "\(name): Play did not wait for the chapter's speech")
+            system.coordinator.refreshPreviousDeviceInfo()
+            XCTAssertTrue(system.coordinator.previousDeviceWasBluetooth, "\(name): the AirPods are not the output")
+
+            pause(system)
+
+            XCTAssertFalse(quay.reader.isWaitingForChapterSpeech, "\(name): the play still waits")
+            quay.reader.finishPreparingInBackground(inputs.prepare())
+            XCTAssertTrue(quay.handedOver.utterances.isEmpty, "\(name): the paused play spoke once its speech was ready")
+            XCTAssertFalse(quay.reader.speechService.isSpeaking, "\(name): the paused play started once its speech was ready")
+            assertToldSystem(system, that: quay.reader, plays: false, name)
+        }
+    }
+
     // MARK: - Continue to Next Book
 
     /// The book Continue to Next Book started takes the AirPods: Pause

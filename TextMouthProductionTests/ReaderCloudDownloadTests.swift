@@ -816,6 +816,26 @@ final class ReaderCloudDownloadTests: XCTestCase {
         assertNothingPlaysOnceTheDownloadEnds(for: book, in: cloud, reader: reader)
     }
 
+    /// A reader waiting for its chapter's files counts as playing for the
+    /// system's media commands, as it shows Playing: a recording starting
+    /// pauses it, as it pauses every book playing, so it stops waiting and
+    /// plays nothing once the download ends. Before, it counted as not
+    /// playing, nothing paused it, and the chapter played under the
+    /// recording (REV12's leftovers).
+    func testARecordingStartingWhileAChapterDownloadsPausesTheReader() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Recording", clone: Self.failingClone)
+        let coordinator = NowPlayingService(installsSystemIntegrations: false)
+        cloud.nowPlaying = coordinator
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+
+        XCTAssertEqual(coordinator.pauseEveryPlayingReader(), 1, "The reader waiting for its chapter was not paused")
+
+        XCTAssertEqual(cloud.storage.downloadsCancelled, [book.id])
+        XCTAssertNil(reader.cloudPhase)
+        XCTAssertTrue(reader.isCurrentlyPaused)
+        assertNothingPlaysOnceTheDownloadEnds(for: book, in: cloud, reader: reader)
+    }
+
     /// With Auto-play on navigate, a bookmark picked while a chapter's files
     /// download moves the reader to the bookmark and leaves it waiting: the
     /// download goes on, and the chapter plays once its files are here.
@@ -1432,6 +1452,10 @@ private final class CloudReaders {
     let cloudOnly = CloudOnlyFiles()
     /// How often the readers announce a download without a percentage.
     var quietAnnouncementInterval: TimeInterval = 30
+    /// The Now Playing coordinator the readers opened from now on join: the
+    /// app's shared one unless a test gives its own, to send the readers
+    /// the system's commands as MediaPlayer does.
+    var nowPlaying: NowPlayingService?
     /// Every reader opened, closed when the test ends.
     private(set) var readers: [ReaderViewModel] = []
 
@@ -1465,7 +1489,8 @@ private final class CloudReaders {
                 isDataless: cloudOnly.check,
                 workingCopies: copies,
                 quietAnnouncementInterval: quietAnnouncementInterval
-            )
+            ),
+            nowPlaying: nowPlaying
         )
         readers.append(reader)
         return reader

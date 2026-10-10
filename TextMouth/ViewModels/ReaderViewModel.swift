@@ -754,15 +754,19 @@ final class ReaderViewModel: ObservableObject {
             // the book counted as paused, nothing was paused, and the book
             // played on through the Mac's speakers once the announcement
             // ended.
+            //
+            // So does a play under way that has not begun to sound
+            // (`isPlaybackUnderWay`): one waiting for its chapter's speech,
+            // prepared off the main thread, or an audiobook's waiting for its
+            // chapter's files to download, which shows Playing. Counted as
+            // not playing, it was not paused by the AirPods leaving or a
+            // recording starting, nor by another book starting unless it was
+            // the book last playing, and it began to speak or play once
+            // ready, through the Mac's speakers or under the recording
+            // (REV12's leftovers).
             isCurrentlyPlaying: { [weak self] in
-                guard let self = self else { return false }
-                if self.whereAmIWillPlayBook {
-                    return true
-                }
-                if self.isAudioBook {
-                    return self.audioPlaybackService.isPlaying && !self.audioPlaybackService.isPaused
-                }
-                return self.speechService.isSpeaking && !self.speechService.isPaused
+                guard let self else { return false }
+                return self.whereAmIWillPlayBook || self.isPlaybackUnderWay
             },
             bluetoothMonitoring: settingsViewModel.bluetoothMonitoringEnabled,
             bluetoothDelay: settingsViewModel.bluetoothDisconnectDelay
