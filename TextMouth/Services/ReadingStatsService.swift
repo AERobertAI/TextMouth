@@ -391,7 +391,9 @@ final class ReadingStatsService: ObservableObject {
     ///
     /// Either way the end is told (`.bookDidFinish`), as the feed engine marks
     /// a downloaded episode or article played then (FR03): an item marked
-    /// unplayed and heard to its end again is played again.
+    /// unplayed and heard to its end again is played again. A reader whose
+    /// rewind after the end replays a finished book's end does not call
+    /// this at all (`ReaderViewModel.finishAtTheEnd(replayingAFinishedEnd:)`).
     ///
     /// - Returns: Whether Books Finished counted the book now, for the first
     ///   time.
@@ -822,6 +824,7 @@ extension Notification.Name {
     /// statistics service told of it, naming the book under
     /// `ReadingStatsService.finishedBookIDKey`, at each such end, whether
     /// Books Finished counted the book then or had counted it already, since
-    /// it counts each book once (TODO P07).
+    /// it counts each book once (TODO P07). A rewind's replay of a finished
+    /// book's end posts nothing: the book had ended already.
     static let bookDidFinish = Notification.Name("bookDidFinish")
 }

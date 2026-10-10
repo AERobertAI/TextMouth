@@ -397,6 +397,15 @@ final class ReaderViewModel: ObservableObject {
     /// again, or waits at its start. Accessed from the Playback and
     /// Navigation extensions.
     var hasFinishedBook = false
+    /// Whether the play under way replays a finished book's end, as a
+    /// backward skip after the end starts it (`performSkip(unit:forward:)`):
+    /// the end it plays on to is no new finish (TODO P07; the user,
+    /// October 10, 2026, question 14: yes), so `handleEndOfBook()` neither
+    /// counts it nor tells it (`.bookDidFinish`), and does all else the end
+    /// does. Set by that skip; cleared by the end it reaches, by a jump
+    /// (`navigateTo(chapterIndex:characterOffset:)`), and by a stop.
+    /// Accessed from the Playback and Navigation extensions.
+    var replaysFinishedEnd = false
     /// The latest hand-over of listening from this finished book to the
     /// next one, in its folder or in the reading list
     /// (`handOverToNextBook(to:titled:askingWith:)`). While it is under way,

@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -114,6 +115,52 @@ final class FinishedBookReaderTests: XCTestCase {
         XCTAssertLessThan(other.currentCharacterOffset, Self.lastHalfSecond, "Skip Backward did not move the cursor")
     }
 
+    // MARK: - Counting
+
+    /// A rewind after a book's end replays the end, which is no new finish
+    /// (TODO P07; the user, October 10, 2026, question 14: yes): played on
+    /// to the end again, the book is neither counted again in Books
+    /// Finished nor told as finished (`.bookDidFinish`), which would mark a
+    /// feed item played anew and restart its delete-after-played clock; it
+    /// rests at its end, finished, as the first end left it. A jump, then a
+    /// play to the end, is a new end: it is told, while Books Finished,
+    /// which counts each book once, still counts the book once.
+    func testARewindsReplayOfTheEndIsNoNewFinish() throws {
+        let world = try makeIntegrationWorld("Finished Replay")
+        world.settings.skipBackwardUnit = .seconds15
+        world.settings.skipForwardUnit = .seconds30
+        let book = try makeAudioBook(.filePerChapter, titled: "Harbour Soundings", in: world)
+        let reader = world.openReader(for: book, nowPlaying: privateMediaSession())
+        waitForReaderToLoad(reader)
+        let told = recordFinishesTold()
+        let statistics = ReadingStatsService.shared
+
+        reader.play()
+        waitForTheEnd(of: reader, "The first end")
+        XCTAssertEqual(told(), [book.id], "The first end was not told")
+        XCTAssertEqual(statistics.stats.finishedBooks.map(\.bookID), [book.id.uuidString])
+
+        // The rewind replays the end, which Next Track brings near.
+        reader.skipBackward()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "The rewind did not play the end again")
+        XCTAssertTrue(reader.replaysFinishedEnd, "The rewind's play is not a replay")
+        reader.lastSkipTime = .distantPast
+        reader.skipForward()
+        XCTAssertTrue(reader.replaysFinishedEnd, "A skip during the replay ended it")
+        waitForTheEnd(of: reader, "The replay's end")
+        XCTAssertEqual(told(), [book.id], "The replay's end was told as a finish")
+        XCTAssertEqual(statistics.stats.finishedBooks.map(\.bookID), [book.id.uuidString], "The replay was counted")
+        XCTAssertFalse(reader.replaysFinishedEnd, "The replay outlived its end")
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The replay's end did not rest at the end")
+
+        // A jump, then a play to the end, is a new end.
+        reader.navigateTo(chapterIndex: 1, characterOffset: Self.lastHalfSecond)
+        reader.play()
+        waitForTheEnd(of: reader, "The end after a jump")
+        XCTAssertEqual(told(), [book.id, book.id], "The end after a jump was not told")
+        XCTAssertEqual(statistics.stats.finishedBooks.map(\.bookID), [book.id.uuidString], "The book was counted twice")
+    }
+
     // MARK: - Fixtures
 
     /// How many seconds of silence the last chapter of every audiobook
@@ -190,6 +237,44 @@ final class FinishedBookReaderTests: XCTestCase {
     /// the app's shared session.
     private func privateMediaSession() -> NowPlayingService {
         NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+    }
+
+    /// Subscriptions a test keeps until it ends.
+    private var subscriptions: [AnyCancellable] = []
+
+    /// Records the books the shared statistics service tells as finished
+    /// from now on (`.bookDidFinish`), as the feed engine hears them.
+    ///
+    /// - Returns: The books told, oldest first.
+    private func recordFinishesTold() -> () -> [UUID] {
+        final class Told {
+            var books: [UUID] = []
+        }
+        let told = Told()
+        NotificationCenter.default.publisher(for: .bookDidFinish, object: ReadingStatsService.shared)
+            .sink { notification in
+                if let bookID = notification.userInfo?[ReadingStatsService.finishedBookIDKey] as? UUID {
+                    told.books.append(bookID)
+                }
+            }
+            .store(in: &subscriptions)
+        return { told.books }
+    }
+
+    /// Waits until `reader`'s book has played to its end and rests
+    /// finished, nothing playing.
+    private func waitForTheEnd(
+        of reader: ReaderViewModel,
+        _ context: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertTrue(
+            eventually(within: 10) { reader.hasFinishedBook && !reader.audioPlaybackService.isPlaying },
+            "\(context): the book never reached its end",
+            file: file,
+            line: line
+        )
     }
 
     // MARK: - Checks

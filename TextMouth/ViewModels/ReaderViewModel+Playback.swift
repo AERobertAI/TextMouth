@@ -421,8 +421,10 @@ extension ReaderViewModel {
         readingStatsService.endSession(bookID: book.id)
         // A stopped reader rests wherever it is with no media session, so
         // its skips move the cursor only: a finished book that is stopped,
-        // by Release Media Controls or by closing, is finished no longer.
+        // by Release Media Controls or by closing, is finished no longer,
+        // and a replay of its end is over (TODO P07).
         hasFinishedBook = false
+        replaysFinishedEnd = false
         nowPlayingService.clearNowPlaying()
         if wasActive {
             recordPlaybackStopped()
@@ -2171,7 +2173,7 @@ extension ReaderViewModel {
     /// nothing left to say. Behavior depends on per-book override or global
     /// setting: stop, loop, or continue to next book. A book read from the
     /// reading list follows the list's "When a book ends" instead
-    /// (`finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:)`,
+    /// (`finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:replayingAFinishedEnd:)`,
     /// FR09), as the user decided on October 7, 2026.
     ///
     /// This reader's sleep timer set for the end of the heading or of the
@@ -2197,7 +2199,7 @@ extension ReaderViewModel {
     /// starting, or with no next book, rests finished.
     ///
     /// Every end but a loop's saves the book exactly at its end, its last
-    /// chapter at its full length (`finishAtTheEnd()`, TODO P07), which the
+    /// chapter at its full length (`finishAtTheEnd(replayingAFinishedEnd:)`, TODO P07), which the
     /// library row then reads as finished (`Book.restsAtEnd`): the place a
     /// book ended at was once the last word speech reported, or the last
     /// quarter second the player reported, a few characters short of the
@@ -2219,6 +2221,10 @@ extension ReaderViewModel {
         // to the start takes this back below, and so does a hand-over to the
         // next book.
         hasFinishedBook = true
+        // An end a rewind's replay reached is no new finish (TODO P07): it
+        // is neither counted nor told, and does all else an end does.
+        let replayedFinishedEnd = replaysFinishedEnd
+        replaysFinishedEnd = false
         // Whether this reader's sleep timer keeps the next book from starting,
         // decided before a timer that stops playback here ends just below.
         let sleepTimerEndsListening = sleepTimerEndsListeningHere
@@ -2231,7 +2237,8 @@ extension ReaderViewModel {
         if isOpenedFromReadingList {
             finishBookReadFromReadingList(
                 sleepTimerEndsListening: sleepTimerEndsListening,
-                sleepTimerStoppedHere: sleepTimerStoppedHere
+                sleepTimerStoppedHere: sleepTimerStoppedHere,
+                replayingAFinishedEnd: replayedFinishedEnd
             )
             return
         }
@@ -2248,7 +2255,7 @@ extension ReaderViewModel {
 
         switch behavior {
         case .stop:
-            finishAtTheEnd()
+            finishAtTheEnd(replayingAFinishedEnd: replayedFinishedEnd)
             finishListening(
                 announcing: EndOfBookWording.finished(book.title, sleepTimerExpired: sleepTimerStoppedHere)
             )
@@ -2276,7 +2283,7 @@ extension ReaderViewModel {
             }
 
         case .continueNext:
-            finishAtTheEnd()
+            finishAtTheEnd(replayingAFinishedEnd: replayedFinishedEnd)
             // Find the next book in the same folder by manual sort order
             if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
                 if sleepTimerEndsListening {
@@ -2329,11 +2336,34 @@ extension ReaderViewModel {
     // MARK: - Resting at the End (TODO P07)
 
     /// The book has played or been read to its end, and stops there or
-    /// continues to the next book: Books Finished counts it, and it rests
-    /// exactly at its end, saved (`restAtEnd()`). Called by every end that
-    /// does not loop, in its folder and in the reading list.
-    func finishAtTheEnd() {
-        readingStatsService.markBookFinished(bookID: book.id, title: book.title)
+    /// continues to the next book: it rests exactly at its end, saved
+    /// (`restAtEnd()`), and the statistics are told it finished
+    /// (`ReadingStatsService.markBookFinished`), which counts each book
+    /// once. Called by every end that does not loop, in its folder and in
+    /// the reading list.
+    ///
+    /// An end that replayed the book's end, finished already, as a rewind
+    /// after the end does, is no new finish (TODO P07; the user, October
+    /// 10, 2026, question 14: yes): nothing is told, so nothing is counted
+    /// and no feed item is marked played anew, which would restart its
+    /// delete-after-played clock.
+    ///
+    /// One `BOOK_FINISHED` line in the debug log says which it was, so that
+    /// a diagnosis can tell a finish from a replay; it names the book by
+    /// the start of its ID.
+    ///
+    /// - Parameter replayingAFinishedEnd: Whether this end replayed the
+    ///   book's end (`replaysFinishedEnd`).
+    func finishAtTheEnd(replayingAFinishedEnd: Bool) {
+        let outcome: String
+        if replayingAFinishedEnd {
+            outcome = "a rewind replayed its end; not counted again"
+        } else if readingStatsService.markBookFinished(bookID: book.id, title: book.title) {
+            outcome = "counted in Books Finished"
+        } else {
+            outcome = "counted in Books Finished already"
+        }
+        DiagnosticLog.event(.playback, "BOOK_FINISHED: book \(book.id.uuidString.prefix(8)) rests at its end; \(outcome)")
         restAtEnd()
     }
 

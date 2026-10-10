@@ -214,6 +214,13 @@ extension ReaderViewModel {
     /// stays there, finished. Every skip by time or by words stops one unit,
     /// or one word, inside the last chapter, so it would otherwise move the
     /// cursor back off the end, and the book would read as finished no more.
+    ///
+    /// The play a backward skip starts from the end replays the finished
+    /// book's end (`replaysFinishedEnd`, TODO P07): the end it plays on to
+    /// is no new finish, counted or told, as the user decided on October 10,
+    /// 2026 (question 14). A skip made while that replay plays is part of it,
+    /// a structural one too, though it jumps (`navigateTo`), which ends a
+    /// replay.
     func performSkip(unit: SkipUnit, forward: Bool) {
         DiagnosticLog.trace(.playback, "performSkip unit=\(unit.rawValue) forward=\(forward) wpm=\(speechService.wordsPerMinute)")
         guard !(forward && cursorRestsAtEnd) else {
@@ -221,8 +228,9 @@ extension ReaderViewModel {
             return
         }
         // Taken before the skip: a structural skip jumps (`navigateTo`),
-        // which itself leaves the finished state behind.
+        // which itself leaves the finished state, and a replay, behind.
         let wasFinished = hasFinishedBook
+        let wasReplayingFinishedEnd = replaysFinishedEnd
         let before = (chapter: currentChapterIndex, offset: currentCharacterOffset)
         switch unit {
         case .sentence:
@@ -249,6 +257,13 @@ extension ReaderViewModel {
                 skipByTime(seconds: forward ? Double(seconds) : -Double(seconds))
             }
         }
+        // A replay of the finished end that goes on after the skip, playing
+        // or paused, is still that replay. One the skip brought to the end,
+        // which rests finished again and took the mark, or stopped, is over.
+        let isPaused = isAudioBook ? audioPlaybackService.isPaused : speechService.isPaused
+        if wasReplayingFinishedEnd, !hasFinishedBook, isPlaybackUnderWay || isPaused {
+            replaysFinishedEnd = true
+        }
         // The finished book plays again from where a backward skip landed,
         // while nothing else plays.
         guard wasFinished, !forward,
@@ -262,6 +277,8 @@ extension ReaderViewModel {
             return
         }
         DiagnosticLog.trace(.playback, "performSkip: the finished book plays again from where the skip landed")
+        // The end this play reaches replays the finished end (TODO P07).
+        replaysFinishedEnd = true
         play()
     }
 
@@ -840,8 +857,11 @@ extension ReaderViewModel {
         // where the jump lands, as any stopped reader does, and its skips
         // move the cursor without playing until Play (`hasFinishedBook`). A
         // backward skip that jumps plays all the same, having asked first
-        // (`performSkip(unit:forward:)`).
+        // (`performSkip(unit:forward:)`). A replay of the finished end ends
+        // too: the end reached after a jump is a new one (TODO P07), as a
+        // listener who jumps to the end asked to hear it.
         hasFinishedBook = false
+        replaysFinishedEnd = false
 
         let clampedPosition = Self.clampedNavigationPosition(
             in: content,

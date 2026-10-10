@@ -67,7 +67,7 @@ extension ReaderViewModel {
     /// listening session has closed and the book rests finished at its end.
     ///
     /// The book is counted finished, and rests exactly at its end, saved
-    /// (`finishAtTheEnd()`, TODO P07), as a book that stops or continues
+    /// (`finishAtTheEnd(replayingAFinishedEnd:)`, TODO P07), as a book that stops or continues
     /// does, before the list is asked what follows, so it is never its own
     /// answer.
     /// The book below or above it, passing over finished books while the
@@ -87,8 +87,15 @@ extension ReaderViewModel {
     ///     effect as the book ended (`sleepTimerEndsListeningHere`).
     ///   - sleepTimerStoppedHere: Whether that timer stopped playback here,
     ///     at the end of the heading or of the book.
-    func finishBookReadFromReadingList(sleepTimerEndsListening: Bool, sleepTimerStoppedHere: Bool) {
-        finishAtTheEnd()
+    ///   - replayingAFinishedEnd: Whether this end replayed the book's end,
+    ///     finished already, as a rewind after the end does, which counts
+    ///     nothing anew (`replaysFinishedEnd`, TODO P07).
+    func finishBookReadFromReadingList(
+        sleepTimerEndsListening: Bool,
+        sleepTimerStoppedHere: Bool,
+        replayingAFinishedEnd: Bool
+    ) {
+        finishAtTheEnd(replayingAFinishedEnd: replayingAFinishedEnd)
         guard let next = libraryViewModel.readingListContinuation(after: book.id) else {
             let note = readingListEndNote()
             DiagnosticLog.trace(.playback, "end of book: nothing follows in the reading list (\(note))")
