@@ -167,13 +167,14 @@ final class IntegrationWorld {
     /// of its own in the world's folder, with a manifest whose `sections`
     /// are the book's headings, each playing one or more clips of those
     /// files. It is indexed as an import indexes it and listed in the
-    /// library, and its end-of-book behavior is Stop. A reader playing it
-    /// is never heard.
+    /// library, and its end-of-book behavior is `endOfBook`, Stop unless
+    /// given. A reader playing it is never heard.
     func makeSegmentedAudioBook(
         title: String,
         files: [String: TimeInterval],
         sections: [AudioSegment],
-        savedPosition: ReadingPosition? = nil
+        savedPosition: ReadingPosition? = nil,
+        endOfBook: EndOfBookBehavior = .stop
     ) throws -> Book {
         let packageName = "\(UUID().uuidString).tmb"
         let audio = TextMouthPaths.tmbPath(folderPath: folder.path, tmbName: packageName)
@@ -191,7 +192,66 @@ final class IntegrationWorld {
             folderPath: folder.path,
             readingPosition: savedPosition,
             tmbDirectoryName: packageName,
-            localEndOfBookBehavior: EndOfBookBehavior.stop.rawValue
+            localEndOfBookBehavior: endOfBook.rawValue
+        )
+        return try indexAndList(book)
+    }
+
+    /// An audiobook of one silent WAV file lasting `duration` seconds, in a
+    /// package of its own in the world's folder, indexed and listed: one
+    /// chapter, which plays the file whole (`AudioLayout.singleFile`). A
+    /// reader playing it is never heard.
+    ///
+    /// - Parameters:
+    ///   - title: The book's title, which also orders it in its folder.
+    ///   - savedPosition: Where the book was last read, if anywhere.
+    ///   - endOfBook: The book's own end-of-book behavior.
+    func makeSilentAudioFileBook(
+        title: String,
+        duration: TimeInterval,
+        savedPosition: ReadingPosition? = nil,
+        endOfBook: EndOfBookBehavior = .stop
+    ) throws -> Book {
+        try makeOneFileAudioBook(
+            title: title,
+            fileName: "\(title).wav",
+            savedPosition: savedPosition,
+            endOfBook: endOfBook
+        ) { file in
+            try AudioTestFixtures.writeSilence(to: file, duration: duration)
+        }
+    }
+
+    /// An audiobook of one file, named `fileName`, which `write` writes
+    /// where it is given, in a package of its own in the world's folder,
+    /// indexed and listed as `makeSilentAudioBook` lists a book of tracks.
+    ///
+    /// - Parameters:
+    ///   - title: The book's title, which also orders it in its folder.
+    ///   - fileName: The audio file's name in the package.
+    ///   - savedPosition: Where the book was last read, if anywhere.
+    ///   - endOfBook: The book's own end-of-book behavior.
+    ///   - write: Writes the audio file at the URL given.
+    func makeOneFileAudioBook(
+        title: String,
+        fileName: String,
+        savedPosition: ReadingPosition? = nil,
+        endOfBook: EndOfBookBehavior = .stop,
+        write: (URL) throws -> Void
+    ) throws -> Book {
+        let packageName = "\(UUID().uuidString).tmb"
+        let file = TextMouthPaths.tmbPath(folderPath: folder.path, tmbName: packageName)
+            .appendingPathComponent(fileName)
+        try write(file)
+        let book = Book(
+            title: title,
+            format: .audio,
+            filePath: file.path,
+            md5Hash: UUID().uuidString,
+            folderPath: folder.path,
+            readingPosition: savedPosition,
+            tmbDirectoryName: packageName,
+            localEndOfBookBehavior: endOfBook.rawValue
         )
         return try indexAndList(book)
     }
@@ -257,6 +317,64 @@ extension XCTestCase {
         return world
     }
 
+    /// An audiobook of one file with chapter markers, an m4b, in a package
+    /// of its own in `world`'s folder, indexed and listed as
+    /// `IntegrationWorld.makeSilentAudioBook` lists a book of tracks:
+    /// `markers` name and time its chapters, which `AudioBookParser` makes
+    /// its headings (`AudioLayout.chaptersInOneFile`). A reader playing it
+    /// is never heard.
+    ///
+    /// - Parameters:
+    ///   - title: The book's title, which also names its file.
+    ///   - world: The world whose folder and library hold the book.
+    ///   - duration: Seconds of silence in the file.
+    ///   - markers: The file's chapter markers.
+    ///   - savedPosition: Where the book was last read, if anywhere.
+    ///   - endOfBook: The book's own end-of-book behavior.
+    @MainActor
+    func makeChapteredAudioBook(
+        title: String,
+        in world: IntegrationWorld,
+        duration: TimeInterval,
+        markers: [AudioTestFixtures.ChapterMarker],
+        savedPosition: ReadingPosition? = nil,
+        endOfBook: EndOfBookBehavior = .stop
+    ) throws -> Book {
+        try world.makeOneFileAudioBook(
+            title: title,
+            fileName: "\(title).m4b",
+            savedPosition: savedPosition,
+            endOfBook: endOfBook
+        ) { file in
+            try writeChapteredAudio(to: file, duration: duration, markers: markers)
+        }
+    }
+
+    /// Write `duration` seconds of silence to `url` as an m4b whose chapter
+    /// markers are `markers` (`AudioTestFixtures.writeChapteredAAC`). The
+    /// fixture is asynchronous: a task writes the file while this spins the
+    /// main run loop, as the hosted helpers do, until it is written.
+    @MainActor
+    private func writeChapteredAudio(
+        to url: URL,
+        duration: TimeInterval,
+        markers: [AudioTestFixtures.ChapterMarker]
+    ) throws {
+        let writing = FixtureWriting()
+        Task { @MainActor in
+            do {
+                try await AudioTestFixtures.writeChapteredAAC(to: url, duration: duration, chapters: markers)
+            } catch {
+                writing.error = error
+            }
+            writing.isDone = true
+        }
+        XCTAssertTrue(eventually(within: 30) { writing.isDone }, "The m4b was not written in time")
+        if let error = writing.error {
+            throw error
+        }
+    }
+
     /// Waits until `reader` has finished loading its book, successfully or
     /// not, including what it does as loading ends, and fails the test when
     /// it never does.
@@ -297,6 +415,13 @@ extension XCTestCase {
             }
         }
     }
+}
+
+/// Whether a fixture a task writes is written, and what went wrong.
+@MainActor
+private final class FixtureWriting {
+    var isDone = false
+    var error: Error?
 }
 
 // MARK: - Where Am I's End Sound, Passed by the Test

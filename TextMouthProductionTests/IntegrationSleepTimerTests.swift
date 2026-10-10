@@ -1127,67 +1127,6 @@ final class IntegrationSleepTimerTests: XCTestCase {
         }
     }
 
-    /// An audiobook of one file with chapter markers, an m4b, in a package
-    /// of its own in `world`'s folder, indexed and listed as
-    /// `IntegrationWorld.makeSilentAudioBook` lists a book of tracks:
-    /// `markers` name and time its chapters, which `AudioBookParser` makes
-    /// its headings. Its end-of-book behavior is Stop.
-    private func makeChapteredAudioBook(
-        title: String,
-        in world: IntegrationWorld,
-        duration: TimeInterval,
-        markers: [AudioTestFixtures.ChapterMarker]
-    ) throws -> Book {
-        let packageName = "\(UUID().uuidString).tmb"
-        let file = TextMouthPaths.tmbPath(folderPath: world.folder.path, tmbName: packageName)
-            .appendingPathComponent("\(title).m4b")
-        try writeChapteredAudio(to: file, duration: duration, markers: markers)
-        let book = Book(
-            title: title,
-            format: .audio,
-            filePath: file.path,
-            md5Hash: UUID().uuidString,
-            folderPath: world.folder.path,
-            tmbDirectoryName: packageName,
-            localEndOfBookBehavior: EndOfBookBehavior.stop.rawValue
-        )
-        let analysis = try BookContentAnalysisService.load(book: book)
-        try book.saveBookInfoThrowing(contentIndex: analysis.index)
-        world.library.library.addBook(book)
-        return book
-    }
-
-    /// Write `duration` seconds of silence to `url` as an m4b whose chapter
-    /// markers are `markers` (`AudioTestFixtures.writeChapteredAAC`). The
-    /// fixture is asynchronous: a task writes the file while this spins the
-    /// main run loop, as the hosted helpers do, until it is written.
-    private func writeChapteredAudio(
-        to url: URL,
-        duration: TimeInterval,
-        markers: [AudioTestFixtures.ChapterMarker]
-    ) throws {
-        let writing = FixtureWriting()
-        Task { @MainActor in
-            do {
-                try await AudioTestFixtures.writeChapteredAAC(to: url, duration: duration, chapters: markers)
-            } catch {
-                writing.error = error
-            }
-            writing.isDone = true
-        }
-        XCTAssertTrue(eventually(within: 30) { writing.isDone }, "The m4b was not written in time")
-        if let error = writing.error {
-            throw error
-        }
-    }
-
-    /// Whether a fixture a task writes is written, and what went wrong.
-    @MainActor
-    private final class FixtureWriting {
-        var isDone = false
-        var error: Error?
-    }
-
     /// A text book titled `title`, listed in `world`'s folder, whose file is
     /// not there.
     private func listTextBook(titled title: String, in world: IntegrationWorld, endOfBook: EndOfBookBehavior) -> Book {
