@@ -312,9 +312,9 @@ struct HeadingNavigatorView: View {
                 }
                 // The list's name, with how many headings it shows. It was
                 // on the whole sheet, whose controls are no one element, so
-                // every control in it took the name: the display and level
-                // pickers and Back to Book were each "Headings, 3 headings"
-                // to VoiceOver (TODO A10).
+                // the controls in it took the name: the display and level
+                // pickers were each "Headings, 3 headings" to VoiceOver
+                // (TODO A10).
                 .accessibilityLabel(Self.listLabel(headingCount: headingItems.count))
             }
         }
