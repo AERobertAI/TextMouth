@@ -1565,8 +1565,10 @@ extension ReaderViewModel {
     }
 
     /// Start the play a Where Am I announcement held, now that the
-    /// announcement has ended: a Play pressed during it, for a book it had
-    /// not paused (`isPlayHeldByWhereAmI`), starts the book as Play does
+    /// announcement has ended: a Play pressed during it
+    /// (`isPlayHeldByWhereAmI`), for a book it had not paused, or for the
+    /// one it paused that has not resumed (after a cancel nobody asked for,
+    /// or a resume the backend refused), starts the book as Play does
     /// (`playOrResume()`); an audiobook's chapter whose files were
     /// downloaded during it (`isChapterHeldByWhereAmI`) plays, as the
     /// download's end would have played it; a play that waited for its

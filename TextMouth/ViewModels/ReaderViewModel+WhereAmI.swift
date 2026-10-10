@@ -321,12 +321,22 @@ extension ReaderViewModel {
     /// is over (`startPlayHeldByWhereAmI()`), as a play waiting for its
     /// chapter's speech is held: the Play waits for the announcement, as
     /// Play always has, where a Play for a book paused before the
-    /// announcement was once dropped without a word (REV11). A book Where Am
-    /// I will play anyway, or one playing or waiting to play, needs nothing
-    /// held.
+    /// announcement was once dropped without a word (REV11).
+    ///
+    /// A Play for the book the announcement speaking paused is held too,
+    /// though the announcement's end resumes that book anyway, which answers
+    /// the Play (`resumeBookPausedForWhereAmI()`): a cancel nobody asked for
+    /// ends the announcement without that resume, and the held Play then
+    /// starts the book, where the cancel once dropped it (REV13's
+    /// leftovers). A book whose resume an announcement that ended still
+    /// owes, one a Play is held for already, a chapter held for the
+    /// announcement's end, and a book playing or waiting to play need
+    /// nothing held: each plays as the announcement ends, by itself or by a
+    /// cancel, with no help from the Play.
     func holdPlayForWhereAmI() {
-        guard !whereAmIWillPlayBook, !isPlaybackUnderWay else {
-            DiagnosticLog.trace(.playback, "play: Where Am I speaks; the book plays again as it ends")
+        let isPausedByTheAnnouncement = isWhereAmISpeaking && wasPlayingBeforeWhereAmI
+        guard isPausedByTheAnnouncement || (!whereAmIWillPlayBook && !isPlaybackUnderWay) else {
+            DiagnosticLog.trace(.playback, "play: Where Am I has the book in hand; it plays as the announcement ends")
             return
         }
         isPlayHeldByWhereAmI = true
@@ -450,9 +460,9 @@ extension ReaderViewModel {
     ///
     /// Every play that waited for the announcement starts as its end would
     /// have started it, now that it has ended (`startPlayHeldByWhereAmI()`):
-    /// a Play pressed during it, for a book it had not paused
-    /// (`isPlayHeldByWhereAmI`), starts the book as Play does; an
-    /// audiobook's chapter whose files came during it
+    /// a Play pressed during it (`isPlayHeldByWhereAmI`) starts the book as
+    /// Play does, the book the announcement paused included, which a Play
+    /// asked for; an audiobook's chapter whose files came during it
     /// (`isChapterHeldByWhereAmI`) plays; and a play waiting for its
     /// chapter's speech starts from the cursor, at once when the speech is
     /// ready, or as soon as it is. A play still waiting for its chapter's
@@ -599,14 +609,17 @@ extension ReaderViewModel {
 
     /// Resume the book a Where Am I announcement paused, as it was paused:
     /// directly, without the play sound or a new listening session, and
-    /// tell Now Playing it plays again once it does.
+    /// tell Now Playing it plays again once it does. A Play pressed for the
+    /// book during the announcement (`isPlayHeldByWhereAmI`) is answered by
+    /// the resume and let go.
     ///
     /// A book whose playback would not resume, its speech or its player
     /// gone since the announcement paused it, plays nothing, so the system
     /// is told nothing: told the book played, it would send the AirPods to
     /// a book that plays nothing. The book is left paused, its pause settled
     /// as one left by an announcement that ends without resuming
-    /// (`settlePauseLeftByWhereAmI()`), and the next Play starts it afresh.
+    /// (`settlePauseLeftByWhereAmI()`), and the next Play starts it afresh:
+    /// a Play held for it then starts it so at once (`startPlayHeldByWhereAmI()`).
     private func resumeBookPausedForWhereAmI() {
         let resumed = isAudioBook ? audioPlaybackService.resume() : speechService.resume()
         guard resumed else {
@@ -617,6 +630,7 @@ extension ReaderViewModel {
             settlePauseLeftByWhereAmI()
             return
         }
+        isPlayHeldByWhereAmI = false
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: true
         )

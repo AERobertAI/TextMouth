@@ -366,6 +366,37 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
+    /// A Play from the AirPods while Where Am I? speaks over the book it
+    /// paused, which the announcement's end would have played again, starts
+    /// the book when the system cancels the announcement instead, as the
+    /// speech engine does with a text it refuses: the announcement ends
+    /// without its end sound, and the book plays on from where it paused,
+    /// with the play sound, shown playing. Before, the cancel left the book
+    /// paused and the Play was dropped without a word (REV13's leftovers).
+    /// With no Play, a cancel still leaves the book paused
+    /// (`WhereAmIAnnouncementEndTests`), and the end's own resume answers a
+    /// Play with no second start (`testAPlayFromTheAirPodsDuringWhereAmILetsTheAnnouncementFinish`).
+    func testAPlayDuringWhereAmIStartsTheBookItPausedWhenTheSystemCancelsIt() throws {
+        for kind in BookKind.allCases {
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Where Am I Play Then Cancel \(kind)")
+            let book = try openPlayingBook(kind, in: world, joining: system)
+            let sounds = recordSounds(of: book, "Where Am I Play Then Cancel \(kind)")
+            let announcement = try pressWhereAmI(in: book)
+            XCTAssertEqual(system.press(.play), .success, "\(kind)")
+            XCTAssertTrue(book.isPaused, "\(kind): the Play resumed the book over the announcement")
+
+            book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didCancel: announcement)
+            handleQueuedCallbacks()
+
+            XCTAssertFalse(book.reader.isWhereAmIUnderWay, "\(kind): Where Am I? still has the book")
+            XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(kind): the Play did not start the book")
+            XCTAssertEqual(sounds.played, [.whereAmIStart, .play], "\(kind)")
+            XCTAssertFalse(book.endSound.hasWorkWaiting, "\(kind): work waits for an end sound")
+            assertToldSystem(system, that: book.reader, plays: true, "\(kind): a Play during Where Am I?, then a cancel")
+        }
+    }
+
     // MARK: - Where Am I? Over a Book That Was Not Playing
 
     /// Where Am I? over a book paused or stopped before it, ending by
