@@ -79,6 +79,12 @@ extension FeedCenter {
     /// For a feed whose choice downloads by hand, it takes back the rule's
     /// downloads not yet under way and removes nothing. Nothing runs while
     /// the library's index is recovered, its list of books provisional.
+    ///
+    /// For a feed the listener unsubscribed from (FR11, branch D), whose
+    /// rules stay in force while checking stops, the rule downloads nothing
+    /// by itself: it takes back its downloads not yet under way, asks for
+    /// none, and removes as step 3 says, so its downloads beyond the newest
+    /// still go. The listener's Download still downloads a listed item.
     @discardableResult
     func applyItemPolicy(to feedIDs: Set<UUID>? = nil, retrying: Set<UUID> = []) async -> FeedItemPolicyPassReport {
         var report = FeedItemPolicyPassReport()
@@ -92,16 +98,22 @@ extension FeedCenter {
                 continue
             }
             let newest = record.newestItems(count)
-            let counted = Set(newest.filter { $0.playedDate == nil }.map(\.id))
-            report.withdrawnItemIDs += downloads.withdrawRuleDownloads(of: feed.id) { !counted.contains($0) }
+            if feed.isSubscribed {
+                let counted = Set(newest.filter { $0.playedDate == nil }.map(\.id))
+                report.withdrawnItemIDs += downloads.withdrawRuleDownloads(of: feed.id) { !counted.contains($0) }
 
-            let asked = newest.filter { ruleDownloads($0, of: feed.id, retryingFailures: retrying.contains(feed.id)) }
-            for item in asked {
-                downloads.download(item.id, of: feed.id, origin: .window)
-            }
-            report.requestedItemIDs += asked.map(\.id)
-            if !asked.isEmpty {
-                DiagnosticLog.event(.feeds, "FEED_RULE_DOWNLOADS: \(feed.title): asked for \(asked.count) of the newest \(count)")
+                let asked = newest.filter { ruleDownloads($0, of: feed.id, retryingFailures: retrying.contains(feed.id)) }
+                for item in asked {
+                    downloads.download(item.id, of: feed.id, origin: .window)
+                }
+                report.requestedItemIDs += asked.map(\.id)
+                if !asked.isEmpty {
+                    DiagnosticLog.event(.feeds, "FEED_RULE_DOWNLOADS: \(feed.title): asked for \(asked.count) of the newest \(count)")
+                }
+            } else {
+                // Unsubscribed: nothing downloads by itself, and what the
+                // rule asked for before goes back.
+                report.withdrawnItemIDs += downloads.withdrawRuleDownloads(of: feed.id) { _ in true }
             }
 
             due += dueRemovals(in: record, keeping: count, newest: Set(newest.map(\.id)), library: library, report: &report)

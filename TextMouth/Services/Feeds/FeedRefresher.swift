@@ -138,6 +138,12 @@ struct FeedRefreshSummary: Equatable, Sendable {
 /// outcome. A feed's refreshes never overlap: a second request for a feed
 /// being refreshed waits for that refresh and reports its outcome. A
 /// failure is recorded for its feed alone and never stops the others.
+///
+/// A feed the listener unsubscribed from (`Feed.isSubscribed`, FR11, branch
+/// D) is never checked: not at launch, on the interval, or in Refresh All
+/// Feeds, which pass over it, nor by Check Feed, which the library does not
+/// offer for it; and a refresh under way as it is unsubscribed changes
+/// nothing, as one whose feed is gone changes nothing.
 @MainActor
 final class FeedRefresher {
     /// The records.
@@ -193,12 +199,15 @@ final class FeedRefresher {
     }
 
     /// Refreshes the feed `feedID`, or waits for the refresh of it under way,
-    /// and returns how it ended; nil when the feed is not subscribed.
+    /// and returns how it ended; nil when the feed is not subscribed: gone,
+    /// or unsubscribed (FR11, branch D), which is never checked, so it
+    /// never even shows as checking.
     @discardableResult
     func refresh(_ feedID: UUID, origin: FeedRefreshOrigin) async -> FeedRefreshReport? {
         if let underWay = running[feedID] {
             return await underWay.value
         }
+        guard isChecked(feedID) else { return nil }
         let refresh = Task { await perform(feedID, origin: origin) }
         running[feedID] = refresh
         let report = await refresh.value
@@ -209,11 +218,13 @@ final class FeedRefresher {
         return report
     }
 
-    /// Refreshes every feed, at most `concurrency` at once, and returns each
-    /// one's report, by title.
+    /// Refreshes every feed the listener is subscribed to, at most
+    /// `concurrency` at once, and returns each one's report, by title; a
+    /// feed unsubscribed from (FR11, branch D) is passed over, with no
+    /// report.
     func refreshAll(origin: FeedRefreshOrigin, concurrency: Int = 4) async -> FeedRefreshSummary {
         await store.loadRecordsInCloud()
-        let feedIDs = store.feeds.map(\.id)
+        let feedIDs = store.feeds.filter(\.isSubscribed).map(\.id)
         var reports: [FeedRefreshReport] = []
         await withTaskGroup(of: FeedRefreshReport?.self) { group in
             var next = 0
@@ -240,9 +251,15 @@ final class FeedRefresher {
 
     // MARK: One Refresh
 
+    /// Whether the feed `feedID` is one TextMouth checks: its record is
+    /// here, and says the listener is subscribed (FR11, branch D).
+    private func isChecked(_ feedID: UUID) -> Bool {
+        store.record(of: feedID)?.feed.isSubscribed == true
+    }
+
     /// Refreshes the feed `feedID` once.
     private func perform(_ feedID: UUID, origin: FeedRefreshOrigin) async -> FeedRefreshReport? {
-        guard let record = store.record(of: feedID) else { return nil }
+        guard let record = store.record(of: feedID), record.feed.isSubscribed else { return nil }
         let fetchState = fetchStates.state(of: feedID)
         let host = FeedHost.of(record.feed.feedURL)
         /// The report of this refresh, with the feed's title as it is now.
@@ -273,9 +290,11 @@ final class FeedRefresher {
             keptRecords: keptRecords(feedID),
             now: started
         )
-        // A feed unsubscribed while it was fetched is left alone, and its
-        // fetch details are not made again.
-        guard store.record(of: feedID) != nil else { return nil }
+        // A feed gone, or unsubscribed from (FR11, branch D), while it was
+        // fetched is left alone, and its fetch details are not made again,
+        // nor changed: the listener stopped its checking before this one
+        // ended.
+        guard isChecked(feedID) else { return nil }
 
         switch work {
         case let .unchanged(validators, movedTo):
