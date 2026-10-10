@@ -16,7 +16,8 @@ final class FeedItemUIBookInfoTests: XCTestCase {
 
     /// Book Info is read-only for an episode or article in its feed, and
     /// edits any book of the library's own; the reader's Book Info button
-    /// says which, and the line under the heading says why.
+    /// says which, and the line under the heading says why and the way out,
+    /// Move to Library… (FR11, branch D).
     func testBookInfoIsReadOnlyForAFeedItem() {
         XCTAssertFalse(Self.book.hasReadOnlyBookInfo)
         XCTAssertFalse(Self.audiobook.hasReadOnlyBookInfo)
@@ -25,8 +26,14 @@ final class FeedItemUIBookInfoTests: XCTestCase {
         XCTAssertEqual(FeedItemBookInfoWording.readerButtonLabel(readOnly: false), "Edit book metadata")
         XCTAssertEqual(FeedItemBookInfoWording.readerButtonLabel(readOnly: true), "Show book information")
         XCTAssertEqual(FeedItemBookInfoWording.heading, "Book Information")
-        XCTAssertEqual(FeedItemBookInfoWording.whyReadOnly(isArticle: false), "An episode's details come from its feed.")
-        XCTAssertEqual(FeedItemBookInfoWording.whyReadOnly(isArticle: true), "An article's details come from its feed.")
+        XCTAssertEqual(
+            FeedItemBookInfoWording.whyReadOnly(isArticle: false),
+            "An episode's details come from its feed; Move to Library… makes it a book you can edit."
+        )
+        XCTAssertEqual(
+            FeedItemBookInfoWording.whyReadOnly(isArticle: true),
+            "An article's details come from its feed; Move to Library… makes it a book you can edit."
+        )
         XCTAssertEqual(FeedItemBookInfoWording.done, "Done")
     }
 
@@ -34,8 +41,8 @@ final class FeedItemUIBookInfoTests: XCTestCase {
     /// them: its title, artist, feed, album, genre, the measured duration
     /// shown as the clock shows it and spoken in words, its format, and
     /// when it was added and last opened; a detail without a value is left
-    /// out, a duration never measured is the tags' as given, and a feed no
-    /// longer subscribed is not named.
+    /// out, a duration never measured is the tags' as given, and a feed
+    /// whose record is gone is not named.
     func testAnEpisodesDetails() {
         var episode = Self.episode
         episode.audioDuration = 3_840
@@ -62,7 +69,7 @@ final class FeedItemUIBookInfoTests: XCTestCase {
         episode.audioDuration = nil
         let unmeasured = FeedItemBookInfoWording.details(of: episode, info: .audio(metadata, isCloudOnly: true), feedTitle: nil)
         XCTAssertEqual(unmeasured.first { $0.label == "Duration" }, BookInfoDetail(label: "Duration", value: "1:04:00"))
-        XCTAssertFalse(unmeasured.contains { $0.label == "Feed" }, "a feed no longer subscribed was named")
+        XCTAssertFalse(unmeasured.contains { $0.label == "Feed" }, "a feed whose record is gone was named")
         XCTAssertTrue(LibraryBookInfo.audio(metadata, isCloudOnly: true).isCloudOnly)
         XCTAssertFalse(LibraryBookInfo.simple.isCloudOnly)
     }

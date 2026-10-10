@@ -15,9 +15,9 @@ extension Book {
 
 extension LibraryViewModel {
     /// The title of the feed `book` belongs to while it is an episode or
-    /// article in its feed (FR11), as Speak Info and Book Info name it; nil
-    /// for a book of the library's own, or once its feed is no longer
-    /// subscribed.
+    /// article in its feed (FR11), as Speak Info and Book Info name it, its
+    /// feed subscribed or not (FR11, branch D); nil for a book of the
+    /// library's own, or once its feed's record is gone.
     func feedTitle(of book: Book) -> String? {
         book.feedLink.flatMap { feeds.store.record(of: $0.feedID)?.feed.title }
     }
@@ -48,8 +48,7 @@ struct FeedItemBookInfoSheet: View {
     /// What was read of its file, for an episode's tags, or what the
     /// library keeps while its file is only in the cloud.
     let info: LibraryBookInfo
-    /// The title of the feed it belongs to, if the feed is still
-    /// subscribed.
+    /// The title of the feed it belongs to, while the feed's record is here.
     let feedTitle: String?
     @Environment(\.dismiss) private var dismiss
 
@@ -102,12 +101,12 @@ enum FeedItemBookInfoWording {
     /// The button that closes the sheet.
     static let done = "Done"
 
-    /// The line under the heading saying why nothing can be changed:
-    /// "An episode's details come from its feed." Branch D adds the way out
-    /// once its command exists: "; Move to Library… makes it a book you can
-    /// edit".
+    /// The line under the heading saying why nothing can be changed, and
+    /// the way out (FR11, branch D): "An episode's details come from its
+    /// feed; Move to Library… makes it a book you can edit."
     static func whyReadOnly(isArticle: Bool) -> String {
-        "\(isArticle ? "An article's" : "An episode's") details come from its feed."
+        "\(isArticle ? "An article's" : "An episode's") details come from its feed; "
+            + "\(ShortcutAction.moveToLibrary.title) makes it a book you can edit."
     }
 
     /// What VoiceOver says for the reader's Book Info button: "Edit book
