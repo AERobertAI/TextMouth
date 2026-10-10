@@ -159,7 +159,8 @@ extension BookInfoFacts {
             fileSize: measuresFileSize ? Self.fileSize(of: book, inTheCloud: cloudState?.isInTheCloud ?? false) : nil,
             cloudNote: cloudState?.spokenNote,
             isKeptOnThisMac: cloudStates.listsAsKept(book.id, in: keptBooks),
-            isOpenInWindow: library.openBookIDs.contains(book.id)
+            isOpenInWindow: library.openBookIDs.contains(book.id),
+            feedTitle: book.feedLink.flatMap { library.feeds.store.record(of: $0.feedID)?.feed.title }
         )
     }
 

@@ -269,9 +269,20 @@ extension LibraryViewModel {
         }
     }
 
-    /// Check whether a folder has any books or subfolders
+    /// Whether Delete Folder… asks before deleting `folder`: when it holds
+    /// books or subfolders, or is a feed's folder (FR03). A feed's folder
+    /// that lists only the feed's downloads holds no book of the library's
+    /// own, since a feed item names no folder (FR11), yet deleting it leaves
+    /// those downloads listed nowhere until Feed Info gives the feed another
+    /// folder, so it is asked about too (REV10, item 4).
     func folderHasContents(_ folder: BookFolder) -> Bool {
-        library.folderHasContents(folder)
+        library.folderHasContents(folder) || feeds.store.feed(inFolder: folder.id) != nil
+    }
+
+    /// The title of the feed whose folder `folder` is, if any (FR03), as the
+    /// question before Delete Folder… names it.
+    func feedTitle(ofFolder folder: BookFolder) -> String? {
+        feeds.store.feed(inFolder: folder.id)?.title
     }
 
     /// IDs of books whose folder differs between the published library and

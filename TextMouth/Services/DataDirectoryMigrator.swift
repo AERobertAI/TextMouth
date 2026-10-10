@@ -544,21 +544,20 @@ enum DataDirectoryMigrator {
 
     /// Writes each feed's index in the staged copy from `library`'s feed
     /// items (FR11, `Library.feedIndexRows`), each row placed where its
-    /// package is in the data directory at `destination`, as a save there
-    /// would write it (`FeedIndexFiles`). A feed the library keeps no row of
-    /// keeps the index copied with its folder; one whose folder is gone has
-    /// nothing to keep.
+    /// package is in the data directory at `destination`, exactly as a save
+    /// there writes it (`FeedIndexFiles.encodedIndexes(of:placedIn:)` and
+    /// `write(_:in:fileManager:)`, which the save uses too). A feed the
+    /// library keeps no row of keeps the index copied with its folder; one
+    /// whose folder is gone has nothing to keep; and an index left alone
+    /// (`FeedShelf.indexesLeftAlone`) is left out, keeping its copy.
     private static func stageFeedIndexes(
         of library: Library,
         at destination: DataDirectoryLocation,
         in staging: URL,
         fileManager: FileManager
     ) throws {
-        for (feedID, rows) in library.feedIndexRows where !rows.isEmpty {
-            let placed = rows.map { FeedIndexFiles.placed($0, in: destination.named, of: feedID) }
-            let data = try FeedIndexFiles.encoded(FeedIndex(feedID: feedID, books: placed))
-            try fileManager.createDirectory(at: FeedPaths.itemsFolder(of: feedID, in: staging), withIntermediateDirectories: true)
-            try data.write(to: FeedPaths.indexFile(of: feedID, in: staging), options: .atomic)
+        for index in try FeedIndexFiles.encodedIndexes(of: library, placedIn: destination.named) where index.rowCount > 0 {
+            try FeedIndexFiles.write(index, in: staging, fileManager: fileManager)
         }
     }
 

@@ -151,9 +151,13 @@ final class BookTextEditor {
     /// Whether `book`'s text can be edited here, given whether it is
     /// `isTranscribed`: a text book's, or a transcribed audiobook's, whose
     /// content.md is its transcript's text and whose transcript takes the
-    /// edit (`TranscriptStore.takeEdit`).
+    /// edit (`TranscriptStore.takeEdit`). Never a feed item's, an episode or
+    /// an article in its feed's folder: the user decided feed items are not
+    /// editable (FR11, question 4), and removing the download would take the
+    /// edit with it. Edit Text… and Edit Text With… are then not offered,
+    /// in the library's rows or the reader's Book menu.
     static func canEditText(of book: Book, isTranscribed: Bool) -> Bool {
-        !book.tmbDirectoryName.isEmpty && (!book.format.isAudio || isTranscribed)
+        !book.isFeedItem && !book.tmbDirectoryName.isEmpty && (!book.format.isAudio || isTranscribed)
     }
 
     /// Whether `book` has text to edit now: a text book always, an

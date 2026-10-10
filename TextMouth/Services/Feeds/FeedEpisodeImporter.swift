@@ -241,7 +241,7 @@ enum FeedEpisodeImporter {
             let keptPackage = FeedPaths.packageDirectory(named: kept.tmbDirectoryName, of: feed.id, in: root)
             let staging = try ImportStaging.makeEmpty(publishingTo: keptPackage)
             defer { staging.discard() }
-            try FeedItemPackage.copyWhatANewDownloadKeeps(from: keptPackage, to: staging.directory, format: format)
+            try FeedItemPackage.copyWhatANewDownloadKeeps(from: keptPackage, to: staging.directory)
             let keptState = (try? StoredBookRecord.read(from: keptPackage))?.info.state
 
             try run.begin(.copying, in: staging.directory)

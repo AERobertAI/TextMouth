@@ -210,8 +210,10 @@ extension LibraryViewModel {
     /// bookmarks, settings, and the reading list find it as they find any
     /// book; a row whose file is gone stays on the shelf, where nothing lists
     /// it and its feed's index keeps it. A checkpoint the journal names that
-    /// is newer than a joining row comes from its record, as a book's does
-    /// (`adoptNewerRecordedPositions(in:journaled:access:skips:)`).
+    /// is newer than a row comes from its record, as a book's does
+    /// (`adoptNewerRecordedPositions(in:journaled:access:skips:)`), for every
+    /// row on the shelf, the one that stays as well as the one that joins: a
+    /// kept row's place is where downloading the item again opens it.
     ///
     /// A book of the library's own sharing a joining row's ID, as library.json
     /// still lists a download whose first-launch move had moved its package
@@ -224,8 +226,16 @@ extension LibraryViewModel {
     func joinFeedItems(journaled: Set<UUID>, access: MaintenanceFileAccess = .live, skips: CloudSkips? = nil) -> Bool {
         guard !library.feedShelf.isEmpty else { return false }
         var joined = library
-        var rows = joined.feedShelf.takeRows { access.presence(of: $0.bookFileURL) != .absent }
-        let adopted = Self.adoptNewerRecordedPositions(in: &rows, journaled: journaled, access: access, skips: skips)
+        var shelved = joined.feedShelf.takeRows { _ in true }
+        let adopted = Self.adoptNewerRecordedPositions(in: &shelved, journaled: journaled, access: access, skips: skips)
+        var rows: [Book] = []
+        for row in shelved {
+            if access.presence(of: row.bookFileURL) != .absent {
+                rows.append(row)
+            } else {
+                joined.feedShelf.put(row)
+            }
+        }
         if adopted > 0 {
             DiagnosticLog.event(
                 .storage,

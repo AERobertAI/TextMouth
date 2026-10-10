@@ -84,8 +84,9 @@ extension LibraryFeedsPresenter {
     }
 
     /// The question asked before unsubscribing from the feed `feedID`,
-    /// naming the books its downloads made, which stay; nil once it is no
-    /// longer subscribed.
+    /// naming the books its downloads made, which stay, and what it kept of
+    /// downloads removed earlier, which goes; nil once it is no longer
+    /// subscribed.
     func unsubscribeConfirmation(for feedID: UUID, in context: FeedCommandContext) -> FeedConfirmation? {
         guard let feed = context.center.store.record(of: feedID)?.feed else { return nil }
         return FeedConfirmation(
@@ -93,22 +94,39 @@ extension LibraryFeedsPresenter {
             title: FeedWording.unsubscribeQuestion(title: feed.title),
             message: FeedWording.unsubscribeMessage(
                 bookTitles: downloadedBooks(of: feedID, in: context).map(\.title),
-                folderPath: context.center.folderPath(of: feed)
+                folderPath: context.center.folderPath(of: feed),
+                keptCount: context.library.feedItemRows(of: feedID).kept.count
             ),
             confirmTitle: FeedWording.unsubscribeButton
         )
     }
 
-    /// Ends the subscription to the feed `feedID`, once confirmed: its
-    /// downloads stay as books, and VoiceOver hears how many.
-    func unsubscribe(_ feedID: UUID, in context: FeedCommandContext) {
-        guard let feed = context.center.store.record(of: feedID)?.feed else { return }
+    /// Ends the subscription to the feed `feedID`, once confirmed, and
+    /// VoiceOver hears how many of its downloads stay. Until Unsubscribe
+    /// keeps a feed's downloads by the listener's choice (FR11, branch D),
+    /// they become books of the library's own, in the feed's folder, or at
+    /// the top level when that folder is gone, and what the feed kept of
+    /// downloads removed earlier is deleted
+    /// (`LibraryViewModel.returnDownloads(ofFeed:toFolderID:removingWith:)`,
+    /// REV10, item 3): without the feed, nothing would list them. The
+    /// subscription ends at once; the downloads follow as soon as no import
+    /// or analysis is writing into the library.
+    /// - Returns: The return of the feed's downloads, which tests await; nil
+    ///   when the feed is no longer subscribed.
+    @discardableResult
+    func unsubscribe(_ feedID: UUID, in context: FeedCommandContext) -> Task<FeedDownloadReturn, Never>? {
+        guard let feed = context.center.store.record(of: feedID)?.feed else { return nil }
         let books = downloadedBooks(of: feedID, in: context)
         context.center.unsubscribe(feedID)
         if feedInfo?.feedID == feedID {
             feedInfo = nil
         }
         announce(FeedWording.unsubscribed(title: feed.title, bookCount: books.count), context.window)
+        let library = context.library
+        let folderID = feed.folderID
+        return Task {
+            await library.returnDownloads(ofFeed: feedID, toFolderID: folderID)
+        }
     }
 
     /// The books the feed `feedID`'s downloads made that the library lists,
@@ -166,10 +184,27 @@ extension LibraryFeedsPresenter {
             confirmation = FeedConfirmation(
                 kind: .deleteItem(feedID: record.feed.id, itemID: item.id, title: item.title),
                 title: FeedWording.deleteItemQuestion(title: item.title),
-                message: FeedWording.deleteItemMessage(isArticle: item.isArticle),
+                message: FeedWording.deleteItemMessage(
+                    isArticle: item.isArticle,
+                    keepsListenerState: keepsListenerState(of: item.id, in: record.feed.id, context)
+                ),
                 confirmTitle: FeedWording.deleteItemButton(isArticle: item.isArticle)
             )
         }
+    }
+
+    /// Whether TextMouth keeps something of the listener's for the item
+    /// `itemID` of the feed `feedID`, which Delete Episode deletes with it
+    /// (FR11, branch A2): a package kept after its download went, or a
+    /// download whose package holds the listener's place, playback times,
+    /// bookmarks, settings, or transcript (`FeedItemPackage.holdsListenerState`).
+    private func keepsListenerState(of itemID: FeedItem.ID, in feedID: UUID, _ context: FeedCommandContext) -> Bool {
+        let rows = context.library.feedItemRows(of: feedID)
+        if rows.kept[itemID] != nil {
+            return true
+        }
+        guard let downloaded = rows.downloaded[itemID] else { return false }
+        return FeedItemPackage.holdsListenerState(downloaded, package: downloaded.tmbDirectory)
     }
 
     // MARK: Every Feed

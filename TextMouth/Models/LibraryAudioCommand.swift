@@ -40,16 +40,16 @@ enum LibraryAudioCommand: Hashable, Identifiable {
 
     /// The commands a row offers for `targets`, the books its commands act
     /// on, given which books `isTranscribed` says have a transcript: Edit
-    /// Audio… when the row acts on one such audiobook alone, then Transcribe
-    /// Audio… whenever one of them is an audiobook in a package of its own,
-    /// then Clean Up Transcript (Experimental)… and Delete Transcript… when
-    /// the row acts on one such audiobook alone and it is transcribed;
-    /// nothing for text books alone.
+    /// Audio… when the row acts on one audiobook alone whose audio can be
+    /// edited (`isAudioEditable(_:)`), then Transcribe Audio… whenever one of
+    /// them is an audiobook in a package of its own, then Clean Up Transcript
+    /// (Experimental)… and Delete Transcript… when the row acts on one such
+    /// audiobook alone and it is transcribed; nothing for text books alone.
     static func commands(for targets: [Book], isTranscribed: (UUID) -> Bool = { _ in false }) -> [LibraryAudioCommand] {
         guard targets.contains(where: isTranscribable) else { return [] }
         var commands: [LibraryAudioCommand] = []
         let single = targets.count == 1 ? targets.first : nil
-        if let book = single, isTranscribable(book) {
+        if let book = single, isAudioEditable(book) {
             commands.append(.editAudio(book))
         }
         commands.append(.transcribe(targets))
@@ -63,5 +63,14 @@ enum LibraryAudioCommand: Hashable, Identifiable {
     /// history, can be saved into.
     static func isTranscribable(_ book: Book) -> Bool {
         book.format.isAudio && !book.tmbDirectoryName.isEmpty
+    }
+
+    /// Whether `book`'s audio can be edited in the audio editor: an
+    /// audiobook in a package of its own (`isTranscribable(_:)`), and never
+    /// an episode in its feed's folder, since the user decided feed items
+    /// are not editable (FR11, question 4); a feed's episode can still be
+    /// transcribed.
+    static func isAudioEditable(_ book: Book) -> Bool {
+        isTranscribable(book) && !book.isFeedItem
     }
 }

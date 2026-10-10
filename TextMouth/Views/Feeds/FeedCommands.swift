@@ -269,10 +269,15 @@ extension FeedWording {
         "Delete “\(title)”?"
     }
 
-    /// The confirmation's message, saying what deleting does.
-    static func deleteItemMessage(isArticle: Bool) -> String {
+    /// The confirmation's message, saying what deleting does: the item
+    /// leaves the list and its download goes, and, when TextMouth keeps the
+    /// listener's place, bookmarks, or transcript for it
+    /// (`keepsListenerState`, FR11, branch A2), those go too.
+    static func deleteItemMessage(isArticle: Bool, keepsListenerState: Bool = false) -> String {
         let kind = isArticle ? "article" : "episode"
-        return "The \(kind) leaves the list for good, and its download, if any, is deleted. Checking the feed won't bring it back."
+        let kept = keepsListenerState ? " The place, bookmarks, and transcript kept for it are deleted too." : ""
+        return "The \(kind) leaves the list for good, and its download, if any, is deleted.\(kept) "
+            + "Checking the feed won't bring it back."
     }
 
     /// What VoiceOver hears once an item is deleted.
@@ -292,12 +297,15 @@ extension FeedWording {
 
     /// The Unsubscribe confirmation's message: TextMouth stops checking the
     /// feed, and the books its downloads made stay where they are, named,
-    /// the first three by title, as books.
-    static func unsubscribeMessage(bookTitles: [String], folderPath: String?) -> String {
+    /// the first three by title, as books. When the feed kept the places of
+    /// `keptCount` downloads removed earlier (FR11, branch A2), the message
+    /// ends by saying those go (REV10, item 3).
+    static func unsubscribeMessage(bookTitles: [String], folderPath: String?, keptCount: Int = 0) -> String {
         let stops = "TextMouth stops checking this feed and forgets the items it hasn't downloaded."
         let place = folderPath.map { " in \($0)" } ?? ""
+        let keptGo = keptRecordsDeleted(count: keptCount)
         guard !bookTitles.isEmpty else {
-            return "\(stops) Nothing it downloaded is left\(folderPath == nil ? "" : "; its folder stays\(place)")."
+            return "\(stops) Nothing it downloaded is left\(folderPath == nil ? "" : "; its folder stays\(place)").\(keptGo)"
         }
         let shown = bookTitles.prefix(3).map { "“\($0)”" }
         let rest = bookTitles.count - shown.count
@@ -305,7 +313,17 @@ extension FeedWording {
             ? shown.joined(separator: ", ") + ", and \(rest) more"
             : LibraryCloudWording.list(Array(shown))
         let these = bookTitles.count == 1 ? "This book it downloaded stays" : "These \(bookTitles.count) books it downloaded stay"
-        return "\(stops) \(these)\(place): \(names)."
+        return "\(stops) \(these)\(place): \(names).\(keptGo)"
+    }
+
+    /// The Unsubscribe confirmation's last sentence, with a space before it,
+    /// when the feed kept what the listener had of `count` downloads removed
+    /// earlier, which unsubscribing deletes; empty when it kept none.
+    private static func keptRecordsDeleted(count: Int) -> String {
+        guard count > 0 else { return "" }
+        return count == 1
+            ? " It also deletes the place, bookmarks, and transcript kept for 1 removed download."
+            : " It also deletes the places, bookmarks, and transcripts kept for \(count) removed downloads."
     }
 
     /// What VoiceOver hears once a feed is unsubscribed from.

@@ -365,16 +365,17 @@ extension LibraryViewModel {
     }
 }
 
-/// Where an audiobook's package is in the library: its folder and its
-/// package's name, the two parts that do not change with the data
-/// directory's location, and the book's file inside the package.
+/// Where an audiobook's package is in the library: its library folder, or,
+/// for a feed item, its feed's folder (FR11), and its package's name, the
+/// parts that do not change with the data directory's location, and the
+/// book's file inside the package.
 struct AudioBookPlace: Sendable {
     /// The book's identity.
     let bookID: UUID
-    /// The library folder holding its package.
-    let folderPath: String
-    /// Its package's name.
-    let tmbDirectoryName: String
+    /// Where its package is: its library folder or its feed, and its name.
+    /// The file path it holds is not used: the package is found again under
+    /// the data directory in use whenever it is asked for.
+    let location: Book.FileLocation
     /// The book's file, by its path inside the package: its one file, or
     /// "audio", the folder of a book of several tracks.
     let bookFile: String
@@ -382,15 +383,17 @@ struct AudioBookPlace: Sendable {
     /// Where `book`'s package is.
     init(book: Book) {
         bookID = book.id
-        folderPath = book.folderPath
-        tmbDirectoryName = book.tmbDirectoryName
+        location = book.fileLocation
         bookFile = book.fileInPackage
     }
 
-    /// The package, under the data directory in use now. Call it inside the
-    /// storage work, so a data-directory move cannot change it meanwhile.
+    /// The package, under the data directory in use now, in its library
+    /// folder or its feed's, as `Book.tmbDirectory` places it, so the
+    /// original policy's sweep and a save look where a feed item's package
+    /// is. Call it inside the storage work, so a data-directory move cannot
+    /// change it meanwhile.
     var package: URL {
-        TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbDirectoryName)
+        location.packageDirectory(inDataDirectory: TextMouthPaths.root)
     }
 
     /// The package as the original policy's sweep looks at it.

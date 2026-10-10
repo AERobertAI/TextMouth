@@ -228,13 +228,19 @@ struct Library: Codable {
     /// Each feed's rows as its own index keeps them: the feed items among
     /// `books`, then those on the shelf, by feed, and an empty list for each
     /// feed whose index the library keeps but which it holds no row of now,
-    /// so that index is written empty.
+    /// so that index is written empty. Every writer of a feed's index writes
+    /// from this, so a feed whose index file is left alone
+    /// (`FeedShelf.indexesLeftAlone`), such as one only in the cloud, is
+    /// left out: its rows here stand in for an index this Mac did not read.
     var feedIndexRows: [UUID: [Book]] {
         var rows = Dictionary(uniqueKeysWithValues: feedShelf.indexedFeedIDs.map { ($0, [Book]()) })
         for book in books + feedShelf.rows {
             if let feedID = book.feedLink?.feedID {
                 rows[feedID, default: []].append(book)
             }
+        }
+        for feedID in feedShelf.indexesLeftAlone {
+            rows.removeValue(forKey: feedID)
         }
         return rows
     }

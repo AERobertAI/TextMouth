@@ -27,18 +27,34 @@ struct FeedIndex: Equatable {
     var books: [Book]
 }
 
+/// Why an index was not read: a newer TextMouth wrote it, in a layout of a
+/// later version than this one writes (`FeedIndex.currentFormatVersion`),
+/// whose rows may be laid out otherwise. Such a file is left as it is,
+/// never read as this layout nor written over (`FeedIndexFiles.read`).
+struct FeedIndexNewerLayout: Error, Equatable {
+    /// The layout's version the file names.
+    let formatVersion: Int
+}
+
 extension FeedIndex: Codable {
     /// The index's keys: its layout's version, its feed, and its rows.
     private enum CodingKeys: String, CodingKey {
         case formatVersion, feedID, books
     }
 
-    /// Reads an index. The feed ID it names is read for completeness; the
-    /// folder it is found in decides which feed it lists, as a record's
-    /// file name does (`FeedIndexFiles.read(feedID:in:fromPackages:)`). Each
-    /// row reads as a library.json row does, leniently.
+    /// Reads an index: its layout's version first, so one a newer TextMouth
+    /// wrote is never read as this layout (`FeedIndexNewerLayout`); an index
+    /// naming no version is of the first. The feed ID it names is read for
+    /// completeness; the folder it is found in decides which feed it lists,
+    /// as a record's file name does
+    /// (`FeedIndexFiles.read(feedID:in:fromPackages:reader:)`). Each row
+    /// reads as a library.json row does, leniently.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let version = try container.decodeIfPresent(Int.self, forKey: .formatVersion) ?? 1
+        guard version <= Self.currentFormatVersion else {
+            throw FeedIndexNewerLayout(formatVersion: version)
+        }
         feedID = try container.decode(UUID.self, forKey: .feedID)
         books = try container.decode([Book].self, forKey: .books)
     }
@@ -79,11 +95,47 @@ enum FeedIndexFiles {
         return first.id.uuidString < second.id.uuidString
     }
 
-    /// The index `data` holds. Throws when it holds none.
+    /// The index `data` holds. Throws when it holds none, or
+    /// `FeedIndexNewerLayout` for one a newer TextMouth wrote.
     static func decoded(_ data: Data) throws -> FeedIndex {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(FeedIndex.self, from: data)
+    }
+
+    // MARK: Writing
+
+    /// One feed's index as it is written: the feed, how many rows it holds,
+    /// and its file's bytes.
+    struct EncodedIndex: Equatable {
+        /// The feed whose index this is.
+        let feedID: UUID
+        /// How many rows the index holds.
+        let rowCount: Int
+        /// The file's bytes (`encoded(_:)`).
+        let data: Data
+    }
+
+    /// Each feed's index `library` keeps (`Library.feedIndexRows`), in the
+    /// order of the feeds' IDs, its rows placed where their packages are in
+    /// the data directory at `root` (`placed(_:in:of:)`), as its file holds
+    /// it: what every writer of the feeds' indexes writes, a save in the
+    /// data directory in use (`LibraryPersistenceService`) and a
+    /// data-directory move's staged copy, whose rows are placed in the new
+    /// location (`DataDirectoryMigrator`).
+    static func encodedIndexes(of library: Library, placedIn root: URL) throws -> [EncodedIndex] {
+        try library.feedIndexRows.sorted { $0.key.uuidString < $1.key.uuidString }.map { feedID, rows in
+            let placedRows = rows.map { placed($0, in: root, of: feedID) }
+            return EncodedIndex(feedID: feedID, rowCount: rows.count, data: try encoded(FeedIndex(feedID: feedID, books: placedRows)))
+        }
+    }
+
+    /// Writes `index` as its feed's index in the data directory at `root`,
+    /// making the feed's folder when missing and replacing the file
+    /// atomically, so no reader ever finds half an index.
+    static func write(_ index: EncodedIndex, in root: URL, fileManager: FileManager = .default) throws {
+        try fileManager.createDirectory(at: FeedPaths.itemsFolder(of: index.feedID, in: root), withIntermediateDirectories: true)
+        try index.data.write(to: FeedPaths.indexFile(of: index.feedID, in: root), options: .atomic)
     }
 
     // MARK: Reading
@@ -96,20 +148,36 @@ enum FeedIndexFiles {
         /// the same bytes leaves in place; nil when no usable index was
         /// read.
         var indexBytes: Data?
+        /// Whether the index file is left as it is, neither read nor ever
+        /// written over (`FeedShelf.indexesLeftAlone`): it is only in the
+        /// cloud (FR02), so reading it would have downloaded it first, or a
+        /// newer TextMouth wrote it, in a layout this one does not read
+        /// (`FeedIndexNewerLayout`). The rows stand in for its own, read from
+        /// the packages' records.
+        var isLeftAlone = false
     }
 
     /// Every feed's rows in the data directory at `root`: each folder of its
     /// Feeds folder named by a feed's ID (`FeedPaths.feedID(ofItemsFolderNamed:)`),
-    /// read as `read(feedID:in:fromPackages:)` reads one. A feed without a
-    /// folder has downloaded nothing, and has no rows.
-    static func readAll(in root: URL, fromPackages: Bool = false) -> [UUID: Contents] {
+    /// read as `read(feedID:in:fromPackages:reader:)` reads one. The Feeds
+    /// folder is listed with dataless files left in the cloud, so a listing
+    /// only in the cloud reads as no feed's folder rather than waiting on
+    /// the network. A feed without a folder has downloaded nothing, and has
+    /// no rows.
+    static func readAll(
+        in root: URL,
+        fromPackages: Bool = false,
+        reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> [UUID: Contents] {
         let feedsFolder = FeedPaths.recordsFolder(in: root)
-        let names = (try? FileManager.default.contentsOfDirectory(atPath: feedsFolder.path)) ?? []
+        let names = DatalessFiles.withoutDownloading {
+            (try? FileManager.default.contentsOfDirectory(atPath: feedsFolder.path)) ?? []
+        }
         var contents: [UUID: Contents] = [:]
         for name in names.sorted() {
             guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name),
                   isFolder(feedsFolder.appendingPathComponent(name, isDirectory: true)) else { continue }
-            contents[feedID] = read(feedID: feedID, in: root, fromPackages: fromPackages)
+            contents[feedID] = read(feedID: feedID, in: root, fromPackages: fromPackages, reader: reader)
         }
         return contents
     }
@@ -117,8 +185,9 @@ enum FeedIndexFiles {
     /// The rows of the feed `feedID` in the data directory at `root`, each
     /// placed where its package is (`placed(_:in:of:)`):
     ///
-    /// - the rows of its index, which is read as library.json is, waiting
-    ///   for a file only in the cloud; unless `fromPackages`, as while the
+    /// - the rows of its index, read through `reader`, which the app's
+    ///   leaves a file only in the cloud there (`SavedFile.readWithoutDownloading`,
+    ///   as a feed's record is read); unless `fromPackages`, as while the
     ///   library index is recovered, when the packages' records, which hold
     ///   the latest state, are read instead, as the provisional library's
     ///   books are;
@@ -130,23 +199,56 @@ enum FeedIndexFiles {
     /// (`SavedFile.preserveUnusable`), with one FEED_INDEX_UNREADABLE line,
     /// and the rows come from the packages, each of which names its feed and
     /// item in its record.
-    static func read(feedID: UUID, in root: URL, fromPackages: Bool = false) -> Contents {
+    ///
+    /// An index only in the cloud is no damage, and is not preserved: its
+    /// download is asked of the sync service, one FEED_INDEX_IN_CLOUD line
+    /// says so, the rows come from the packages whose records are here, and
+    /// the index is left alone (`Contents.isLeftAlone`), so no save writes
+    /// those rows over what the cloud holds until a launch reads it. A
+    /// launch in a cloud data directory waits for every feed's index to be
+    /// on this Mac (`DataDirectoryCheck`), so this happens only when one
+    /// leaves between that check and this read. An index a newer TextMouth
+    /// wrote, in a later layout (`FeedIndexNewerLayout`), is left alone the
+    /// same way, with one FEED_INDEX_NEWER line, rather than taken for
+    /// damage and written over in this one's layout.
+    static func read(
+        feedID: UUID,
+        in root: URL,
+        fromPackages: Bool = false,
+        reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> Contents {
         let indexURL = FeedPaths.indexFile(of: feedID, in: root)
         var rows: [Book] = []
         var indexBytes: Data?
+        var isLeftAlone = false
         if !fromPackages {
-            switch SavedFile.read(indexURL, using: { try Data(contentsOf: $0) }) {
+            switch SavedFile.read(indexURL, using: reader) {
             case .missing:
                 break
             case .contents(let data):
                 do {
                     rows = try decoded(data).books
                     indexBytes = data
+                } catch let newer as FeedIndexNewerLayout {
+                    isLeftAlone = true
+                    DiagnosticLog.event(
+                        .feeds,
+                        "FEED_INDEX_NEWER: \(feedID.uuidString.prefix(8)): \(indexURL.lastPathComponent) is of layout "
+                            + "\(newer.formatVersion), which a newer TextMouth wrote; it is left as it is, and the feed's rows "
+                            + "are read from its packages"
+                    )
                 } catch {
                     preserveUnusable(indexURL, of: feedID, bytes: data, because: error.localizedDescription)
                 }
             case .inCloud:
-                preserveUnusable(indexURL, of: feedID, bytes: nil, because: "it is only in the cloud")
+                isLeftAlone = true
+                Task { @MainActor in SavedFile.requestDownload(of: indexURL) }
+                DiagnosticLog.event(
+                    .feeds,
+                    "FEED_INDEX_IN_CLOUD: \(feedID.uuidString.prefix(8)): \(indexURL.lastPathComponent) is only in the cloud, "
+                        + "so it was not read; asked the sync service for it, and until a launch reads it the feed's rows "
+                        + "are read from its packages and its index is not written"
+                )
             case .unreadable(let reason):
                 preserveUnusable(indexURL, of: feedID, bytes: nil, because: reason)
             }
@@ -160,7 +262,11 @@ enum FeedIndexFiles {
                     + "its index did not list from their records"
             )
         }
-        return Contents(rows: (rows + unlisted).map { placed($0, in: root, of: feedID) }, indexBytes: indexBytes)
+        return Contents(
+            rows: (rows + unlisted).map { placed($0, in: root, of: feedID) },
+            indexBytes: indexBytes,
+            isLeftAlone: isLeftAlone
+        )
     }
 
     /// A row for every package in the feed `feedID`'s folder whose name is

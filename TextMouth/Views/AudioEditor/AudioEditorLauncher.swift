@@ -88,9 +88,11 @@ extension AudioEditorWindowController: AudioEditorWindowing {}
 enum AudioEditorLauncher {
     /// Whether `book`'s audio can be edited: an audiobook kept in a package
     /// of its own, as the edit history and the originals live there, the
-    /// same books a transcript can be saved for.
+    /// same books a transcript can be saved for, and never a feed's episode
+    /// (`LibraryAudioCommand.isAudioEditable(_:)`), so the reader's Book menu
+    /// offers Edit Audio… as the library's rows do.
     static func canEdit(_ book: Book) -> Bool {
-        LibraryAudioCommand.isTranscribable(book)
+        LibraryAudioCommand.isAudioEditable(book)
     }
 
     /// How opening ended.
@@ -149,7 +151,8 @@ enum AudioEditorLauncher {
         services: Services
     ) async -> Outcome {
         guard canEdit(book) else {
-            return refuse(AudioEditorWording.notAnAudiobook, from: window, services: services)
+            let reason = book.isFeedItem ? AudioEditorWording.feedEpisodeNotEditable : AudioEditorWording.notAnAudiobook
+            return refuse(reason, from: window, services: services)
         }
         if controller.isOpen(book.id) {
             controller.bringForward(book.id)

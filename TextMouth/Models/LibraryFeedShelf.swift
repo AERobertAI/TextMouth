@@ -26,12 +26,32 @@ struct FeedShelf: Equatable {
     /// writes each of these feeds' indexes, so a feed whose last row left
     /// is written empty; a feed no library named is never written.
     private(set) var indexedFeedIDs: Set<UUID> = []
+    /// The feeds whose index files are left as they are, never written over
+    /// while TextMouth runs (`Library.feedIndexRows` leaves them out, for
+    /// every writer):
+    ///
+    /// - a feed whose index a read found only in the cloud (FR02), so it was
+    ///   not read, its rows here standing in, read from its packages'
+    ///   records (`FeedIndexFiles.Contents.isLeftAlone`). Writing those rows
+    ///   would replace what the cloud holds with what this Mac could read;
+    ///   the next launch, which waits for the index, reads it;
+    /// - a feed whose index a newer TextMouth wrote, in a layout this one
+    ///   does not read (`FeedIndexNewerLayout`), its rows standing in the
+    ///   same way, so it is never rewritten in this one's layout;
+    /// - and a feed no longer subscribed whose downloads returned to the
+    ///   library (`LibraryViewModel.returnDownloads(ofFeed:toFolderID:removingWith:)`):
+    ///   its index keeps listing them until library.json holds them and the
+    ///   feed's folder goes with the index, so a crash in between finds every
+    ///   row in one file or the other.
+    private(set) var indexesLeftAlone: Set<UUID> = []
 
     /// A shelf holding `rows`, keeping the indexes of `indexedFeedIDs` and
-    /// of every feed `rows` belong to.
-    init(rows: [Book] = [], indexedFeedIDs: Set<UUID> = []) {
+    /// of every feed `rows` belong to, and leaving alone the index files of
+    /// `indexesLeftAlone`.
+    init(rows: [Book] = [], indexedFeedIDs: Set<UUID> = [], indexesLeftAlone: Set<UUID> = []) {
         self.rows = rows
         self.indexedFeedIDs = indexedFeedIDs.union(rows.compactMap { $0.feedLink?.feedID })
+        self.indexesLeftAlone = indexesLeftAlone
     }
 
     /// Whether no row waits here.
@@ -53,6 +73,23 @@ struct FeedShelf: Equatable {
     /// library model's books without passing through here.
     mutating func keepIndex(of feedID: UUID) {
         indexedFeedIDs.insert(feedID)
+    }
+
+    /// Leaves the index file of the feed `feedID` as it is for as long as
+    /// TextMouth runs (`indexesLeftAlone`), as when a library read again
+    /// after the data directory came back found it only in the cloud, or
+    /// when an unsubscribed feed's downloads return to the library.
+    mutating func leaveIndexAlone(of feedID: UUID) {
+        indexesLeftAlone.insert(feedID)
+    }
+
+    /// Forgets the index of the feed `feedID` altogether, once its folder is
+    /// gone with it, as after an unsubscribed feed's downloads returned to
+    /// the library: no save writes it again, or leaves it alone. The caller
+    /// holds no row of the feed any more.
+    mutating func forgetIndex(of feedID: UUID) {
+        indexedFeedIDs.remove(feedID)
+        indexesLeftAlone.remove(feedID)
     }
 
     /// Takes out and returns the rows `shouldTake` chooses, in their order,

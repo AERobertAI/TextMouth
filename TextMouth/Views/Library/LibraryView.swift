@@ -318,11 +318,7 @@ struct LibraryView: View {
                         selectedBookIDs = []
                     },
                     onMove: {
-                        let books = selectedBooks
-                        if !books.isEmpty {
-                            booksToMove = books
-                            showMoveSheet = true
-                        }
+                        moveToFolder(selectedBooks)
                     },
                     onRemove: {
                         let books = selectedBooks
@@ -624,11 +620,7 @@ struct LibraryView: View {
         .onReceive(NotificationCenter.default.publisher(for: .moveToFolder)) { notification in
             // Cmd+Shift+M: move selected books to folder
             guard takesCommand(notification) else { return }
-            let books = selectedBooks
-            if !books.isEmpty {
-                booksToMove = books
-                showMoveSheet = true
-            }
+            moveToFolder(selectedBooks)
         }
         .onReceive(NotificationCenter.default.publisher(for: .selectAll)) { notification in
             // Cmd+A: select all visible books (in edit mode, use edit selection)
@@ -904,7 +896,8 @@ struct LibraryView: View {
         return FolderRemovalWording(
             mode: removalPreferences.deletionMode,
             folderName: folder?.name ?? "",
-            bookCount: folder.map { libraryViewModel.bookCount(inFolderTree: $0.fullPath) } ?? 0
+            bookCount: folder.map { libraryViewModel.bookCount(inFolderTree: $0.fullPath) } ?? 0,
+            feedTitle: folder.flatMap { libraryViewModel.feedTitle(ofFolder: $0) }
         )
     }
 
@@ -1146,7 +1139,9 @@ struct LibraryView: View {
                 }
                 bookRows(books, orderedBy: allBooks)
             } header: {
-                Text("Books (\(books.count))")
+                // Episodes and articles listed beside books, as in Recently
+                // Opened and the Reading List, are counted apart (FR11).
+                Text(CountWording.booksHeader(of: books))
                     .accessibilityAddTraits(.isHeader)
             }
         }
@@ -1260,8 +1255,7 @@ struct LibraryView: View {
                 toggleEditSelection(book.id)
             },
             moveToFolder: { books in
-                booksToMove = books
-                showMoveSheet = true
+                moveToFolder(books)
             },
             moveInManualOrder: { book, direction in
                 if let target = reorderTarget {
@@ -1329,6 +1323,25 @@ struct LibraryView: View {
     private func performKeepMenuCommand(_ keeping: Bool, _ notification: Notification) {
         guard takesCommand(notification) else { return }
         LibraryCloudCommands.shared.setKeptFromMenu(keeping, for: selectedBooks, in: libraryViewModel, from: hostWindow)
+    }
+
+    // MARK: - Moving Books
+
+    /// Opens the Move to Folder sheet for `books`, from a row's command, the
+    /// edit bar's Move, or Command-Shift-M, unless every one is a feed item,
+    /// which Move to Folder never moves (FR11): VoiceOver then hears at once
+    /// that they stay where they are, and no sheet opens. A mixed selection
+    /// opens the sheet, and its move says which items it left.
+    private func moveToFolder(_ books: [Book]) {
+        guard !books.isEmpty else { return }
+        guard books.contains(where: { !$0.isFeedItem }) else {
+            if let left = LibraryTransitionWording.feedItemsLeft(titles: books.map(\.title)) {
+                VoiceOverAnnouncer.announce(left, from: hostWindow)
+            }
+            return
+        }
+        booksToMove = books
+        showMoveSheet = true
     }
 
     // MARK: - Finishing Sheets

@@ -163,6 +163,15 @@ extension FeedCenter {
         let outcome = try library.removeFeedFiles(of: [book], keepingPackages: keepingPackage) { removal in
             let package = try FeedItemPackage.packageForRemoval(of: removal.row, in: root)
             if removal.keepsPackage {
+                // A text book's content.md is made from its file and goes
+                // with it, but it may hold an edit made with Edit Text, so
+                // it follows the Trash setting as the file does, rather than
+                // going for good with the caches; it goes first, so a
+                // refusal leaves both.
+                let text = TextMouthPaths.contentMarkdownPath(in: package)
+                if !removal.row.format.isAudio, FileManager.default.fileExists(atPath: text.path) {
+                    try environment.removeItem(text)
+                }
                 try environment.removeItem(FeedItemPackage.fileEntry(of: removal.row, in: package))
                 FeedItemPackage.removeWhatTheFileMade(of: removal.row, from: package)
             } else {

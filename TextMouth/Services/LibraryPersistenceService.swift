@@ -409,7 +409,10 @@ enum LibraryPersistenceService {
     /// A write that leaves no newer snapshot waiting holds every reading
     /// checkpoint made so far, so it clears the checkpoint journal (PERF15).
     /// The retry of an older failed snapshot, made while a newer one waits,
-    /// leaves the journal for that newer one to clear.
+    /// leaves the journal for that newer one to clear, and so does a write
+    /// while a feed's index is left alone (`FeedShelf.indexesLeftAlone`):
+    /// that index holds none of this session's checkpoints, which the next
+    /// launch then takes from the records the journal names.
     ///
     /// This is the one write path of library.json, and it splits the library
     /// (FR11): each feed's index takes that feed's rows first
@@ -432,7 +435,7 @@ enum LibraryPersistenceService {
         failureCenter.recordSuccess(.libraryIndex)
         // Writing again: a later hold is logged afresh.
         loggedIndexWriteHolds.remove(.dataDirectoryUnavailable)
-        if pendingLibrary == nil {
+        if pendingLibrary == nil, library.feedShelf.indexesLeftAlone.isEmpty {
             ReadingCheckpointJournal.clear()
         }
     }
@@ -470,8 +473,9 @@ enum LibraryPersistenceService {
     /// Writes each feed's index from `library`'s feed items
     /// (`Library.feedIndexRows`), each row placed where its package is
     /// (`FeedIndexFiles.placed(_:in:of:)`), and only the indexes whose bytes
-    /// differ from what this process last read or wrote of them: listening
-    /// to an episode rewrites its feed's small index, never another feed's.
+    /// differ from what this process last read or wrote of them, or whose
+    /// file is gone since: listening to an episode rewrites its feed's small
+    /// index, never another feed's.
     /// A feed the library keeps no row of now gets an empty index, unless its
     /// folder is gone too, when there is nothing left to keep and nothing is
     /// made again. Must run on saveQueue, after the data directory's folders
@@ -483,41 +487,52 @@ enum LibraryPersistenceService {
         if feedIndexesOnDisk.rootPath != root.path {
             feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path)
         }
-        let byFeed = library.feedIndexRows.sorted { $0.key.uuidString < $1.key.uuidString }
-        for (feedID, rows) in byFeed {
-            let placed = rows.map { FeedIndexFiles.placed($0, in: root, of: feedID) }
-            let data = try FeedIndexFiles.encoded(FeedIndex(feedID: feedID, books: placed))
-            guard feedIndexesOnDisk.bytes[feedID] != data else { continue }
-            let folder = FeedPaths.itemsFolder(of: feedID, in: root)
-            if placed.isEmpty, !FileManager.default.fileExists(atPath: folder.path) {
-                feedIndexesOnDisk.bytes[feedID] = data
+        for index in try FeedIndexFiles.encodedIndexes(of: library, placedIn: root) {
+            let file = FeedPaths.indexFile(of: index.feedID, in: root)
+            // The same bytes are written again when the file is gone, as when
+            // it was deleted outside TextMouth since this process wrote it.
+            if feedIndexesOnDisk.bytes[index.feedID] == index.data, FileManager.default.fileExists(atPath: file.path) {
                 continue
             }
-            let file = FeedPaths.indexFile(of: feedID, in: root)
+            let folder = FeedPaths.itemsFolder(of: index.feedID, in: root)
+            if index.rowCount == 0, !FileManager.default.fileExists(atPath: folder.path) {
+                feedIndexesOnDisk.bytes[index.feedID] = index.data
+                continue
+            }
             do {
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                try data.write(to: file, options: .atomic)
+                try FeedIndexFiles.write(index, in: root)
             } catch {
                 throw FeedIndexWriteError(file: file, underlying: error)
             }
-            feedIndexesOnDisk.bytes[feedID] = data
+            feedIndexesOnDisk.bytes[index.feedID] = index.data
         }
     }
 
     /// Every feed's rows, read from each feed's folder in the data directory
-    /// in use (`FeedIndexFiles.readAll(in:fromPackages:)`), on the shelf,
-    /// each feed's index kept, for the library model to join the rows whose
-    /// files are here to its books once the startup repair is done (FR11).
-    /// With `fromPackages`, as while the library index is recovered, the
-    /// packages' records are read in place of the indexes. What was read of
-    /// each index is noted, so the first save writes only what changed.
-    static func loadFeedShelf(fromPackages: Bool = false) -> FeedShelf {
+    /// in use (`FeedIndexFiles.readAll(in:fromPackages:reader:)`), on the
+    /// shelf, each feed's index kept, for the library model to join the rows
+    /// whose files are here to its books once the startup repair is done
+    /// (FR11). With `fromPackages`, as while the library index is recovered,
+    /// the packages' records are read in place of the indexes. What was read
+    /// of each index is noted, so the first save writes only what changed,
+    /// and an index left alone, such as one only in the cloud, is left alone
+    /// by every save (`FeedShelf.indexesLeftAlone`).
+    /// - Parameter reader: How each index file is read: with dataless files
+    ///   left in the cloud, unless a test pretends one is.
+    static func loadFeedShelf(
+        fromPackages: Bool = false,
+        reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> FeedShelf {
         saveQueue.sync {
             let root = TextMouthPaths.root
-            let read = FeedIndexFiles.readAll(in: root, fromPackages: fromPackages)
+            let read = FeedIndexFiles.readAll(in: root, fromPackages: fromPackages, reader: reader)
             feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path, bytes: read.compactMapValues(\.indexBytes))
             let rows = read.keys.sorted { $0.uuidString < $1.uuidString }.flatMap { read[$0]?.rows ?? [] }
-            return FeedShelf(rows: rows, indexedFeedIDs: Set(read.keys))
+            return FeedShelf(
+                rows: rows,
+                indexedFeedIDs: Set(read.keys),
+                indexesLeftAlone: Set(read.filter(\.value.isLeftAlone).keys)
+            )
         }
     }
 

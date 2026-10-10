@@ -31,8 +31,9 @@ enum FeedItemPackage {
 
     /// Whether the package at `package` of the feed item `row` holds
     /// something of the listener's: the item was opened, or it has a place,
-    /// playback times, bookmarks, a setting of its own, or a transcript.
-    /// Only such a package stays once its file is removed.
+    /// playback times, bookmarks, a setting of its own, a field of its
+    /// metadata edited by hand (`Book.HandEdits`), or a transcript. Only
+    /// such a package stays once its file is removed.
     static func holdsListenerState(_ row: Book, package: URL) -> Bool {
         row.lastOpened != nil
             || row.readingPosition != nil
@@ -44,6 +45,7 @@ enum FeedItemPackage {
             || row.localEndOfBookBehavior != nil
             || row.localSkipForwardUnit != nil
             || row.localSkipBackwardUnit != nil
+            || !(row.handEdits?.fields.isEmpty ?? true)
             || holdsTranscript(package)
     }
 
@@ -55,15 +57,18 @@ enum FeedItemPackage {
 
     /// Whether the entry named `name` at the top of a package whose book is
     /// of `format` stays there once the book's file goes: the record, the
-    /// content index, and the transcript's files; and, for an audiobook, its
-    /// content.md and the copies Edit Text kept beside it, which are its
+    /// content index, the transcript's files, and the copies Edit Text kept
+    /// of an edited text, for every format, since they may hold the only
+    /// copy of an edit; and, for an audiobook, its content.md, which is its
     /// transcript's text. An article's content.md is made from its file, and
-    /// goes with it.
+    /// goes with it, as the listener's own deletion removes it
+    /// (`FeedCenter`'s Delete Download, through `FeedEnvironment.removeItem`).
     static func staysWithoutTheFile(_ name: String, format: BookFormat) -> Bool {
-        if name == recordName || name == TextMouthPaths.contentIndexFileName || TextMouthPaths.isTranscriptFile(name) {
+        if name == recordName || name == TextMouthPaths.contentIndexFileName || TextMouthPaths.isTranscriptFile(name)
+            || TextMouthPaths.isKeptTextCopy(name) {
             return true
         }
-        return format.isAudio && (name == textName || TextMouthPaths.isKeptTextCopy(name))
+        return format.isAudio && name == textName
     }
 
     /// The names at the top of the package at `package`, listed without
@@ -176,16 +181,17 @@ enum FeedItemPackage {
 extension FeedItemPackage {
     /// Copies into `staged`, the package a new download of a kept item is
     /// built in, what it keeps of the kept package at `kept`: the
-    /// transcript's files and, for an audiobook, the copies Edit Text kept
-    /// beside its text. The record and the content index are written anew,
-    /// and an audiobook's content.md is written again from its transcript
-    /// when the episode opens (`TranscriptTextLoader`), or found stale when
-    /// the new file's audio differs.
+    /// transcript's files and the copies Edit Text kept of an edited text,
+    /// whatever the format, as the kept package kept them
+    /// (`staysWithoutTheFile(_:format:)`). The record and the content index
+    /// are written anew, and an audiobook's content.md is written again from
+    /// its transcript when the episode opens (`TranscriptTextLoader`), or
+    /// found stale when the new file's audio differs.
     /// - Throws: why one could not be copied: the download then fails and
     ///   the kept package stays as it was, so no transcript is lost.
-    static func copyWhatANewDownloadKeeps(from kept: URL, to staged: URL, format: BookFormat) throws {
+    static func copyWhatANewDownloadKeeps(from kept: URL, to staged: URL) throws {
         for name in entryNames(of: kept)
-        where TextMouthPaths.isTranscriptFile(name) || (format.isAudio && TextMouthPaths.isKeptTextCopy(name)) {
+        where TextMouthPaths.isTranscriptFile(name) || TextMouthPaths.isKeptTextCopy(name) {
             try FileManager.default.copyItem(at: kept.appendingPathComponent(name), to: staged.appendingPathComponent(name))
         }
     }
