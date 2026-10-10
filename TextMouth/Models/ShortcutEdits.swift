@@ -483,6 +483,25 @@ extension ShortcutEdits {
     }
 }
 
+extension ShortcutEdits {
+    /// Writes one STORED_VALUE_REPAIRED line to the debug log for each entry
+    /// of `field` in `source` left out because its action cannot take its
+    /// keys (FR12's branch D), in the order Settings lists the actions, such
+    /// as "config.json keyboardShortcuts.Open Book…: "w" cannot be its
+    /// shortcut: a menu command's shortcut is one press of a key with
+    /// Command or Control; keeping its shortcuts".
+    static func log(_ refusals: [ShortcutAction: ShortcutRefusal], source: String, field: String) {
+        for action in ShortcutAction.allCases {
+            guard let refusal = refusals[action] else { continue }
+            StoredValueRepair.log(
+                source: source,
+                codingPath: [LoggedName(field), LoggedName(action.rawValue)],
+                detail: "\"\(refusal.key.configText)\" cannot be its shortcut: \(refusal.reason); keeping its shortcuts"
+            )
+        }
+    }
+}
+
 /// Names a field, or an entry within it, in a repair log line: the parts of
 /// "keyboardShortcuts.Show Bookmarks".
 private struct LoggedName: CodingKey {

@@ -343,7 +343,77 @@ extension KeyBinding {
     /// (`TextEditingKeys`), which a key equivalent would take from the field,
     /// since the menus meet a key before the field does.
     var canBeKeyEquivalent: Bool {
-        !isDoublePress && (command || control) && !TextEditingKeys.contains(self)
+        keyEquivalentRefusal == nil
+    }
+
+    /// Why the binding cannot be a key equivalent (`canBeKeyEquivalent`),
+    /// or nil when it can.
+    var keyEquivalentRefusal: ShortcutRefusal? {
+        if isDoublePress || !(command || control) {
+            return .notOnePressWithCommandOrControl(self)
+        }
+        return TextEditingKeys.contains(self) ? .editsText(self) : nil
+    }
+}
+
+// MARK: - Keys an Action Cannot Take (FR12's Branch D)
+
+/// Why a key cannot be given to an action: the Shortcuts tab says so as it
+/// refuses the key, and reading config.json logs it, the action keeping the
+/// keys it had (FR12's branch D).
+enum ShortcutRefusal: Equatable, Sendable {
+    /// A menu command's or a Record window button's key is one press of a
+    /// key with Command or Control: no menu or button takes a double press,
+    /// and a key without Command or Control types in a text field.
+    case notOnePressWithCommandOrControl(KeyBinding)
+    /// A key a text field edits with (`TextEditingKeys`), which a menu
+    /// command's key would take from every field.
+    case editsText(KeyBinding)
+    /// A second key for a menu command or a Record window button, whose item
+    /// has one key equivalent.
+    case secondKeyEquivalent(KeyBinding)
+
+    /// The key refused.
+    var key: KeyBinding {
+        switch self {
+        case .notOnePressWithCommandOrControl(let key), .editsText(let key), .secondKeyEquivalent(let key):
+            return key
+        }
+    }
+
+    /// Why, in words, for VoiceOver, a braille display, and the debug log:
+    /// "a menu command's shortcut is one press of a key with Command or
+    /// Control".
+    var reason: String {
+        switch self {
+        case .notOnePressWithCommandOrControl:
+            return "a menu command's shortcut is one press of a key with Command or Control"
+        case .editsText:
+            return "a text field edits with it, and a menu command's shortcut would take it from the field"
+        case .secondKeyEquivalent:
+            return "a menu command has one shortcut"
+        }
+    }
+}
+
+extension ShortcutAction {
+    /// Why `key` cannot be one of this action's keys, or nil when it can: a
+    /// key equivalent's action takes only a key that can be one
+    /// (`KeyBinding.keyEquivalentRefusal`).
+    func refusal(of key: KeyBinding) -> ShortcutRefusal? {
+        isKeyEquivalent ? key.keyEquivalentRefusal : nil
+    }
+
+    /// Why `keys` cannot be this action's keys, or nil when they can: the
+    /// first key refused, or, for a key equivalent's action, a second key.
+    func refusal(ofKeys keys: [KeyBinding]) -> ShortcutRefusal? {
+        if let refused = keys.lazy.compactMap(refusal(of:)).first {
+            return refused
+        }
+        if isKeyEquivalent, keys.count > 1 {
+            return .secondKeyEquivalent(keys[1])
+        }
+        return nil
     }
 }
 
@@ -916,6 +986,13 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
     /// kept as written, since TextMouth never reads its words.
     var validated: ShortcutListing? {
         followsDefaults ? self : bindings.map(Self.edited)
+    }
+
+    /// Why the keys this entry gives `action` cannot be its keys
+    /// (`ShortcutAction.refusal(ofKeys:)`, FR12's branch D), or nil when
+    /// they can or the entry gives none.
+    func refusal(for action: ShortcutAction) -> ShortcutRefusal? {
+        bindings.flatMap(action.refusal(ofKeys:))
     }
 
     /// A list of shortcuts, written as an array literal.

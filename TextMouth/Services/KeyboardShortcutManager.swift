@@ -211,21 +211,45 @@ final class KeyboardShortcutManager: ObservableObject {
     /// every other action of its scope (`ShortcutEdits.setKeys(_:for:)`,
     /// the one rule a key's owner follows). Replacing a key in Settings comes
     /// through here, so it can no longer leave one key on two actions.
-    func updateBindings(for action: ShortcutAction, to newBindings: [KeyBinding]) {
+    /// Returns why nothing changed when `action` cannot take one of the keys
+    /// (`refusal(ofKeys:for:)`), or nil.
+    @discardableResult
+    func updateBindings(for action: ShortcutAction, to newBindings: [KeyBinding]) -> ShortcutRefusal? {
         change(action, to: newBindings)
     }
 
     /// Adds `binding` to `action`'s keys, which makes them the user's, and
     /// takes it from any other action of the same scope; an action of the
     /// other scope keeps it, as the editor's Space and the reader's do.
-    func addBinding(_ binding: KeyBinding, to action: ShortcutAction) {
+    /// Returns why nothing changed when `action` cannot take it, or nil.
+    @discardableResult
+    func addBinding(_ binding: KeyBinding, to action: ShortcutAction) -> ShortcutRefusal? {
         let keys = bindingsFor(action)
-        change(action, to: keys.contains(binding) ? keys : keys + [binding])
+        return change(action, to: keys.contains(binding) ? keys : keys + [binding])
     }
 
     /// Removes `binding` from `action`'s keys, which makes them the user's.
     func removeBinding(_ binding: KeyBinding, from action: ShortcutAction) {
-        change(action, to: bindingsFor(action).filter { $0 != binding })
+        // A removal adds no key, so nothing refuses it.
+        _ = change(action, to: bindingsFor(action).filter { $0 != binding })
+    }
+
+    /// Why `keys` cannot become `action`'s, or nil when they can (FR12's
+    /// branch D): a key they add that `action` cannot take
+    /// (`ShortcutAction.refusal(of:)`), or a second key for a key
+    /// equivalent's action, whose item has one. A key the action has in
+    /// force already is never refused, so a store edited by hand never stops
+    /// the user changing the action.
+    func refusal(ofKeys keys: [KeyBinding], for action: ShortcutAction) -> ShortcutRefusal? {
+        let held = bindingsFor(action)
+        let added = keys.filter { !held.contains($0) }
+        if let refused = added.lazy.compactMap(action.refusal(of:)).first {
+            return refused
+        }
+        if action.isKeyEquivalent, keys.count > max(1, held.count), let second = added.first {
+            return .secondKeyEquivalent(second)
+        }
+        return nil
     }
 
     /// Gives `action` back to this build's defaults (Reset to Default),
@@ -248,13 +272,18 @@ final class KeyboardShortcutManager: ObservableObject {
         edits.isEdited(action)
     }
 
-    /// Makes `keys` `action`'s, as the user's. Keys that leave an unedited
-    /// action as it is change nothing: it stays TextMouth's.
-    private func change(_ action: ShortcutAction, to keys: [KeyBinding]) {
-        guard edits.isEdited(action) || keys != bindingsFor(action) else { return }
+    /// Makes `keys` `action`'s, as the user's, unless `action` cannot take
+    /// them, whose refusal it returns. Keys that leave an unedited action as
+    /// it is change nothing: it stays TextMouth's.
+    private func change(_ action: ShortcutAction, to keys: [KeyBinding]) -> ShortcutRefusal? {
+        if let refusal = refusal(ofKeys: keys, for: action) {
+            return refusal
+        }
+        guard edits.isEdited(action) || keys != bindingsFor(action) else { return nil }
         var changed = edits
         changed.setKeys(keys, for: action)
         save(changed)
+        return nil
     }
 
     // MARK: - The Move to the Record (FR12)
@@ -315,18 +344,29 @@ final class KeyboardShortcutManager: ObservableObject {
     /// sections 5.1 and 5.2 of the design, `ShortcutEdits.adopting(_:)`):
     /// a list makes its action the user's, "default" gives it back, and a key
     /// two edited actions then hold is left to one of them and logged, naming
-    /// the key and both actions. No entries change nothing.
+    /// the key and both actions. An entry giving its action a key it cannot
+    /// take, such as a menu command's key without Command or Control
+    /// (`ShortcutListing.refusal(for:)`, FR12's branch D), is left out and
+    /// logged, the action keeping its keys. No entries change nothing.
     ///
-    /// - Returns: Whether such a key was settled, so the settings model
-    ///   saves config.json again at once and the file shows the keys in
-    ///   force, as it is saved after a repaired value.
+    /// - Returns: Whether such a key was settled or an entry left out, so
+    ///   the settings model saves config.json again at once and the file
+    ///   shows the keys in force, as it is saved after a repaired value.
     @discardableResult
     static func adopt(_ listings: [ShortcutAction: ShortcutListing], in store: UserDefaults) -> Bool {
         guard !listings.isEmpty else { return false }
-        let adopted = editsPreference.read(from: store).adopting(listings)
+        let record = editsPreference.read(from: store)
+        // Refused only when it would change the record: keys a store edited
+        // by hand already holds go on as they are.
+        let refusals = listings.reduce(into: [ShortcutAction: ShortcutRefusal]()) { refused, entry in
+            guard entry.value.bindings != record.keys(of: entry.key), let refusal = entry.value.refusal(for: entry.key) else { return }
+            refused[entry.key] = refusal
+        }
+        let adopted = record.adopting(listings.filter { refusals[$0.key] == nil })
+        ShortcutEdits.log(refusals, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
         ShortcutEdits.log(adopted.sharedKeys, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
         editsPreference.write(adopted.edits, to: store)
-        return !adopted.sharedKeys.isEmpty
+        return !adopted.sharedKeys.isEmpty || !refusals.isEmpty
     }
 
     // MARK: - Reading the Shortcuts

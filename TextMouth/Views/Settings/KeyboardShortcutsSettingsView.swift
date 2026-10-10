@@ -150,18 +150,23 @@ struct ShortcutBindingRow: View {
 
                 ForEach(Array(currentBindings.enumerated()), id: \.offset) { index, binding in
                     HStack(spacing: 4) {
-                        recorderButton(for: binding, at: index)
-                            // A double press made or undone without timing
-                            // two presses, as a VoiceOver action
-                            // (VO-Command-Space) and in the context menu.
-                            .accessibilityAction(named: Text(ShortcutsSettingsWording.pressChange(for: binding))) {
-                                togglePresses(at: index)
-                            }
-                            .contextMenu {
-                                Button(ShortcutsSettingsWording.pressChange(for: binding)) {
+                        if action.isKeyEquivalent {
+                            // A menu command's key: no menu takes a double press.
+                            recorderButton(for: binding, at: index)
+                        } else {
+                            recorderButton(for: binding, at: index)
+                                // A double press made or undone without timing
+                                // two presses, as a VoiceOver action
+                                // (VO-Command-Space) and in the context menu.
+                                .accessibilityAction(named: Text(ShortcutsSettingsWording.pressChange(for: binding))) {
                                     togglePresses(at: index)
                                 }
-                            }
+                                .contextMenu {
+                                    Button(ShortcutsSettingsWording.pressChange(for: binding)) {
+                                        togglePresses(at: index)
+                                    }
+                                }
+                        }
 
                         Button {
                             removeBinding(at: index)
@@ -176,7 +181,7 @@ struct ShortcutBindingRow: View {
                     }
                 }
 
-                if currentBindings.count < 3 {
+                if currentBindings.count < ShortcutsSettingsWording.mostKeys(for: action) {
                     recorderButton(for: nil, at: currentBindings.count)
                 }
             }
@@ -211,6 +216,8 @@ struct ShortcutBindingRow: View {
             binding: binding,
             isRecording: isRecording && recordingSlot == index,
             doublePressTime: shortcutManager.doublePressTime,
+            // A menu command's key is one press, recorded as it goes down.
+            takesDoublePresses: !action.isKeyEquivalent,
             shortcutManager: shortcutManager,
             onStartRecording: {
                 isRecording = true
@@ -245,7 +252,7 @@ struct ShortcutBindingRow: View {
 
     /// Puts `newBinding` in place of the key at `index`, as the user's,
     /// taking it from any other action of the scope that had it, and
-    /// announces it.
+    /// announces it, or why the action cannot take it.
     private func replaceBinding(at index: Int, with newBinding: KeyBinding) {
         var bindings = currentBindings
         guard bindings.indices.contains(index) else { return }
@@ -273,7 +280,8 @@ struct ShortcutBindingRow: View {
     }
 
     /// Adds `binding` to the action's keys, as the user's, taking it from
-    /// any other action of the scope that had it, and announces it.
+    /// any other action of the scope that had it, and announces it, or why
+    /// the action cannot take it.
     private func addBinding(_ binding: KeyBinding) {
         announcing(binding) {
             shortcutManager.addBinding(binding, to: action)
@@ -284,11 +292,16 @@ struct ShortcutBindingRow: View {
     /// VoiceOver, wherever its cursor is, the key recorded for the action;
     /// when other actions lost a key to it, which ones, since a key once
     /// moved silently; and when its key's single press now waits out the
-    /// double-press time, before which action.
-    private func announcing(_ binding: KeyBinding, _ change: () -> Void) {
+    /// double-press time, before which action. When the action cannot take
+    /// the key, which `change` returns, nothing changes, and VoiceOver hears
+    /// why (FR12's branch D).
+    private func announcing(_ binding: KeyBinding, _ change: () -> ShortcutRefusal?) {
         let keysBefore = shortcutManager.bindings
         let waitedBefore = shortcutManager.waitingAction(for: binding, in: action.scope)
-        change()
+        if let refusal = change() {
+            VoiceOverAnnouncer.announce(ShortcutsSettingsWording.refused(refusal, for: action))
+            return
+        }
         let waitsNow = shortcutManager.waitingAction(for: binding, in: action.scope)
         VoiceOverAnnouncer.announce(ShortcutsSettingsWording.recorded(
             binding,
@@ -333,6 +346,9 @@ enum ShortcutsSettingsWording {
     static let recordingHint = "Press any key to set, or click to cancel"
     /// What the recorder shows while it records.
     static let recordingPrompt = "Press a key..."
+    /// The recorder's label while it records a menu command's key, one press
+    /// of a key with Command or Control (FR12's branch D).
+    static let recordingKeyEquivalentLabel = "Recording shortcut. Press a key with Command or Control."
     /// The action on a single press's button, and in its context menu, that
     /// makes it a double press.
     static let makeDoublePress = "Make Double Press"
@@ -344,6 +360,21 @@ enum ShortcutsSettingsWording {
     /// press, Make Double Press for a single one.
     static func pressChange(for binding: KeyBinding) -> String {
         binding.isDoublePress ? makeSinglePress : makeDoublePress
+    }
+
+    /// The most keys `action`'s row records: one for a menu command's or a
+    /// Record window button's, whose item has one key equivalent (FR12's
+    /// branch D), and three for any other.
+    static func mostKeys(for action: ShortcutAction) -> Int {
+        action.isKeyEquivalent ? 1 : 3
+    }
+
+    /// What VoiceOver says when the action cannot take a key recorded for
+    /// it, which then changes nothing (FR12's branch D): "W not recorded for
+    /// Open Book…: a menu command's shortcut is one press of a key with
+    /// Command or Control."
+    static func refused(_ refusal: ShortcutRefusal, for action: ShortcutAction) -> String {
+        sentence("\(refusal.key.accessibleDisplayString) not recorded for \(action.rawValue): \(refusal.reason)")
     }
 
     // MARK: The Double-Press Time
@@ -494,6 +525,9 @@ struct ShortcutRecorderButton: View {
     let isRecording: Bool
     /// How long the recorder waits for a second press of the key.
     let doublePressTime: TimeInterval
+    /// Whether a key pressed twice records a double press; false for a menu
+    /// command's key, recorded as it goes down (FR12's branch D).
+    let takesDoublePresses: Bool
     /// The shortcut manager, which leaves every key press to the recorder
     /// while it records.
     let shortcutManager: KeyboardShortcutManager?
@@ -540,6 +574,7 @@ struct ShortcutRecorderButton: View {
             ShortcutRecorderEventHandler(
                 isActive: isRecording,
                 doublePressTime: doublePressTime,
+                takesDoublePresses: takesDoublePresses,
                 shortcutManager: shortcutManager,
                 onKeyRecorded: onKeyRecorded,
                 onCancel: onCancel
@@ -549,7 +584,7 @@ struct ShortcutRecorderButton: View {
 
     private var accessibilityLabel: String {
         if isRecording {
-            return ShortcutsSettingsWording.recordingLabel
+            return takesDoublePresses ? ShortcutsSettingsWording.recordingLabel : ShortcutsSettingsWording.recordingKeyEquivalentLabel
         } else if let binding = binding {
             return binding.accessibleDisplayString
         } else {
@@ -566,6 +601,8 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
     let isActive: Bool
     /// How long the recorder waits for a second press of the key.
     let doublePressTime: TimeInterval
+    /// Whether a key pressed twice records a double press.
+    let takesDoublePresses: Bool
     /// The shortcut manager, told when recording starts and stops.
     let shortcutManager: KeyboardShortcutManager?
     let onKeyRecorded: (KeyBinding) -> Void
@@ -583,6 +620,7 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
         coordinator.onKeyRecorded = onKeyRecorded
         coordinator.onCancel = onCancel
         coordinator.doublePressTime = doublePressTime
+        coordinator.takesDoublePresses = takesDoublePresses
         coordinator.shortcutManager = shortcutManager
         coordinator.updateMonitor(isActive: isActive)
     }
@@ -598,6 +636,7 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
             onKeyRecorded: onKeyRecorded,
             onCancel: onCancel,
             doublePressTime: doublePressTime,
+            takesDoublePresses: takesDoublePresses,
             shortcutManager: shortcutManager
         )
     }
@@ -608,6 +647,8 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
         var onCancel: () -> Void
         /// How long the recorder waits for a second press of the key.
         var doublePressTime: TimeInterval
+        /// Whether a key pressed twice records a double press.
+        var takesDoublePresses: Bool
         /// The shortcut manager, which leaves key presses to the recorder
         /// while it records.
         weak var shortcutManager: KeyboardShortcutManager?
@@ -620,11 +661,13 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
             onKeyRecorded: @escaping (KeyBinding) -> Void,
             onCancel: @escaping () -> Void,
             doublePressTime: TimeInterval,
+            takesDoublePresses: Bool,
             shortcutManager: KeyboardShortcutManager?
         ) {
             self.onKeyRecorded = onKeyRecorded
             self.onCancel = onCancel
             self.doublePressTime = doublePressTime
+            self.takesDoublePresses = takesDoublePresses
             self.shortcutManager = shortcutManager
         }
 
@@ -641,7 +684,7 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
         /// Takes every key press from now on and hands it to a new
         /// recording, telling the shortcut manager to act on none.
         private func startRecording() {
-            let recording = ShortcutRecording(doublePressTime: doublePressTime) { [weak self] outcome in
+            let recording = ShortcutRecording(doublePressTime: doublePressTime, takesDoublePresses: takesDoublePresses) { [weak self] outcome in
                 self?.finish(outcome)
             }
             self.recording = recording
@@ -691,8 +734,9 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
 /// press, and no second press, or another key, records a single press.
 /// Escape cancels, so it is never recorded; a held key's repeats are
 /// ignored, so holding a key never records it twice; and a key no binding
-/// can name goes on, as before. The clock and the timer are passed in, so
-/// tests never wait.
+/// can name goes on, as before. A recording that takes no double press, a
+/// menu command's (FR12's branch D), records the first press as it goes
+/// down. The clock and the timer are passed in, so tests never wait.
 @MainActor
 final class ShortcutRecording {
     /// How a recording ends.
@@ -705,6 +749,8 @@ final class ShortcutRecording {
 
     /// The time on the key presses' time line.
     private let clock: ShortcutPressDispatcher.Clock
+    /// Whether a key pressed twice records a double press.
+    private let takesDoublePresses: Bool
     /// The two presses the recording measures, and its outcome.
     private let presses: TwoPresses<Outcome>
 
@@ -713,15 +759,17 @@ final class ShortcutRecording {
         presses.hasEnded
     }
 
-    /// A recording waiting `doublePressTime` for a second press, ending
-    /// through `finish`.
+    /// A recording waiting `doublePressTime` for a second press, unless it
+    /// `takesDoublePresses` not, ending through `finish`.
     init(
         doublePressTime: TimeInterval,
+        takesDoublePresses: Bool = true,
         clock: @escaping ShortcutPressDispatcher.Clock = { ProcessInfo.processInfo.systemUptime },
         startTimer: @escaping ShortcutPressDispatcher.StartTimer = { delay, fire in MainQueuePressTimer(delay: delay, fire: fire) },
         finish: @escaping @MainActor (Outcome) -> Void
     ) {
         self.clock = clock
+        self.takesDoublePresses = takesDoublePresses
         presses = TwoPresses(doublePressTime: doublePressTime, startTimer: startTimer, finish: finish)
     }
 
@@ -742,6 +790,10 @@ final class ShortcutRecording {
         // The recording keeps a first press only of a key a binding names.
         guard let firstKey = presses.first?.stroke else {
             guard let stroke else { return false }
+            guard takesDoublePresses else {
+                presses.end(.recorded(stroke))
+                return true
+            }
             presses.keepFirst(stroke, at: time)
             presses.startTimer(after: max(0, time + presses.doublePressTime - clock())) { [weak self] in
                 self?.timeIsUp()

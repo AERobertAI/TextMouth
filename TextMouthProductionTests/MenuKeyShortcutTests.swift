@@ -370,6 +370,123 @@ final class MenuKeyShortcutTests: XCTestCase {
         )
     }
 
+    // MARK: - Keys a Menu Command Cannot Take
+
+    /// A menu command's key is one press of a key with Command or Control
+    /// that no text field edits with, and the command has one: anything else
+    /// is refused, with the reason VoiceOver hears and the log says; any
+    /// other action takes any key.
+    func testAMenuCommandRefusesWhatCannotBeItsKey() {
+        let plainW = KeyBinding(key: "w")
+        let commandLeft = KeyBinding(key: "leftArrow", command: true)
+        let controlG = KeyBinding(key: "g", control: true)
+
+        XCTAssertEqual(ShortcutAction.openBook.refusal(of: plainW), .notOnePressWithCommandOrControl(plainW))
+        XCTAssertEqual(ShortcutAction.openBook.refusal(of: commandO.asDoublePress(true)), .notOnePressWithCommandOrControl(commandO.asDoublePress(true)))
+        XCTAssertEqual(ShortcutAction.recordingStop.refusal(of: commandLeft), .editsText(commandLeft))
+        XCTAssertNil(ShortcutAction.openBook.refusal(of: controlG))
+        XCTAssertNil(ShortcutAction.whereAmI.refusal(of: plainW))
+        XCTAssertEqual(ShortcutAction.openBook.refusal(ofKeys: [commandO, controlG]), .secondKeyEquivalent(controlG))
+        XCTAssertNil(ShortcutAction.togglePlayback.refusal(ofKeys: [KeyBinding(key: "space"), KeyBinding(key: "k"), plainW]))
+
+        XCTAssertEqual(
+            ShortcutsSettingsWording.refused(.notOnePressWithCommandOrControl(plainW), for: .openBook),
+            "W not recorded for Open Book…: a menu command's shortcut is one press of a key with Command or Control."
+        )
+        XCTAssertEqual(
+            ShortcutsSettingsWording.refused(.editsText(commandLeft), for: .recordingStop),
+            "Command + Left Arrow not recorded for Recording Window: Stop: a text field edits with it, "
+                + "and a menu command's shortcut would take it from the field."
+        )
+        XCTAssertEqual(
+            ShortcutsSettingsWording.refused(.secondKeyEquivalent(controlG), for: .openBook),
+            "Control + G not recorded for Open Book…: a menu command has one shortcut."
+        )
+        XCTAssertEqual(ShortcutsSettingsWording.mostKeys(for: .openBook), 1)
+        XCTAssertEqual(ShortcutsSettingsWording.mostKeys(for: .whereAmI), 3)
+        XCTAssertEqual(ShortcutsSettingsWording.recordingKeyEquivalentLabel, "Recording shortcut. Press a key with Command or Control.")
+    }
+
+    /// The manager refuses what an action cannot take, changing nothing and
+    /// saying why, but never a key the action has already, so an action a
+    /// store edited by hand gave a key it cannot take can still be changed.
+    func testTheManagerRefusesAndChangesNothing() {
+        let plainW = KeyBinding(key: "w")
+        let controlG = KeyBinding(key: "g", control: true)
+        let manager = makeManager("refuses")
+
+        XCTAssertEqual(manager.updateBindings(for: .openBook, to: [plainW]), .notOnePressWithCommandOrControl(plainW))
+        XCTAssertEqual(manager.addBinding(controlG, to: .openBook), .secondKeyEquivalent(controlG))
+        XCTAssertEqual(manager.bindingsFor(.openBook), [commandO])
+        XCTAssertFalse(manager.isEdited(.openBook))
+        XCTAssertNil(manager.updateBindings(for: .openBook, to: [controlG]))
+        XCTAssertEqual(manager.keyEquivalent(for: .openBook), controlG)
+
+        let store = makeSandboxedPreferences("menu-keys-edited-by-hand")
+        KeyboardShortcutManager.editsPreference.write(ShortcutEdits([.openBook: [plainW]]), to: store)
+        let handEdited = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false, notificationCenter: NotificationCenter())
+        XCTAssertNil(handEdited.keyEquivalent(for: .openBook), "the menu shows no key it cannot take")
+        XCTAssertEqual(handEdited.addBinding(controlG, to: .openBook), .secondKeyEquivalent(controlG))
+        XCTAssertNil(handEdited.updateBindings(for: .openBook, to: [controlG]))
+        XCTAssertEqual(handEdited.keyEquivalent(for: .openBook), controlG)
+    }
+
+    /// A recording that takes no double press, a menu command's, records the
+    /// first key pressed as it goes down, with no wait and no timer.
+    func testARecordingThatTakesNoDoublePressRecordsAtOnce() {
+        var outcomes: [ShortcutRecording.Outcome] = []
+        var timers = 0
+        let recording = ShortcutRecording(
+            doublePressTime: 0.5,
+            takesDoublePresses: false,
+            clock: { 10 },
+            startTimer: { delay, fire in
+                timers += 1
+                return HandFiredTimer(delay: delay, fire: fire)
+            },
+            finish: { outcomes.append($0) }
+        )
+
+        XCTAssertTrue(recording.take(commandO, at: 10, isRepeat: false, isEscape: false))
+
+        XCTAssertEqual(outcomes, [.recorded(commandO)])
+        XCTAssertEqual(timers, 0)
+        XCTAssertFalse(recording.take(commandO, at: 10.1, isRepeat: false, isEscape: false), "the recording has ended")
+    }
+
+    /// config.json's entries giving a menu command keys it cannot take are
+    /// left out and logged, each command keeping its key, and the file is to
+    /// be saved again to show the keys in force; an entry it can take is
+    /// read; an entry the record already holds is never refused again.
+    func testConfigJSONLeavesOutKeysAMenuCommandCannotTake() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let store = makeSandboxedPreferences("menu-keys-config")
+        let controlG = KeyBinding(key: "g", control: true)
+
+        let repaired = KeyboardShortcutManager.adopt([
+            .openBook: ["w"],
+            .searchInBook: ["command+f twice"],
+            .copyReadingPosition: ["command+leftArrow"],
+            .newRecording: ["option+command+n", "control+g"],
+            .addFeed: ["control+g"],
+        ], in: store)
+
+        XCTAssertTrue(repaired)
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), ShortcutEdits([.addFeed: [controlG]]))
+        let logged = [
+            #"keyboardShortcuts.Open Book…: "w" cannot be its shortcut: a menu command's shortcut is one press of a key with Command or Control; keeping its shortcuts"#,
+            #"keyboardShortcuts.Search in Book: "command+f twice" cannot be its shortcut"#,
+            #"keyboardShortcuts.Copy Reading Position: "command+leftArrow" cannot be its shortcut: a text field edits with it"#,
+            #"keyboardShortcuts.New Recording…: "control+g" cannot be its shortcut: a menu command has one shortcut"#,
+        ]
+        for line in logged {
+            XCTAssertFalse(debugLogLines(containing: line).isEmpty, line)
+        }
+
+        KeyboardShortcutManager.editsPreference.write(ShortcutEdits([.openBook: [KeyBinding(key: "w")]]), to: store)
+        XCTAssertFalse(KeyboardShortcutManager.adopt([.openBook: ["w"]], in: store), "the record holds it already")
+    }
+
     // MARK: - Names in config.json
 
     /// A name ending in an ellipsis is read with three periods or none in
