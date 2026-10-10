@@ -478,7 +478,8 @@ enum SettingsPolicy {
     /// document is read for (`FeedParser.maximumItems`), or -1 to keep every
     /// entry; 10 until the listener picked another. Retired by the "List and
     /// download" choice (FR11, `feedItems` and `feedNewestCount`), which the
-    /// feed engine reads in its place.
+    /// move to the choice reads it for, once
+    /// (`FeedSettings.moveToItemPolicyIfNeeded(in:)`).
     static let feedKeepEntries = ThresholdSettingRule(
         key: "feedKeepEntries", range: 0...2_000, offValue: -1, defaultValue: 10
     )

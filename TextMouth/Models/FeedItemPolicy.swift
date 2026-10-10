@@ -104,6 +104,56 @@ struct FeedItemPolicy: Equatable, Sendable {
     }
 }
 
+// MARK: - From the Settings Before the Choice (FR11)
+
+extension FeedItemPolicy {
+    /// The global choice the settings before it ask for (FR11): how many of
+    /// each feed's newest entries were kept (`keepEntries`, -1 for every
+    /// entry) and whether new episodes downloaded by themselves
+    /// (`autoDownload`).
+    ///
+    /// Left as TextMouth shipped them, 10 entries and no downloads by
+    /// themselves, they are the listener's choices of October 4 that FR11
+    /// changes, so they become the new default: every item listed, the
+    /// newest 5 downloaded. Otherwise each says its part:
+    /// - downloading by themselves keeps the newest 5 downloaded, with
+    ///   every item listed, more than any number kept listed before;
+    /// - every entry kept, downloads by hand, lists every item, with
+    ///   downloads by hand;
+    /// - any other number kept, downloads by hand, lists only that many,
+    ///   at least 1, with downloads by hand.
+    static func migrated(keepEntries: Int, autoDownload: Bool) -> FeedItemPolicy {
+        let shippedKeepEntries = SettingsPolicy.feedKeepEntries.defaultValue
+        if autoDownload || keepEntries == shippedKeepEntries {
+            return .standard
+        }
+        if keepEntries < 0 {
+            return FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: standard.newestCount)
+        }
+        return FeedItemPolicy(choice: .onlyNewestListed, newestCount: keepEntries)
+    }
+
+    /// The choice of its own a feed's retired override of the number of
+    /// entries kept asks for (FR11), under the global choice `global`; nil
+    /// to use the global setting.
+    ///
+    /// A feed without the override followed the setting, and still does.
+    /// One keeping every entry, as "Finish It!" does, uses the global setting
+    /// when it lists every item, as the default does; otherwise it lists
+    /// every item with downloads by hand, since the setting it followed
+    /// downloaded nothing by itself. One keeping a number lists only that
+    /// many, at least 1, with downloads by hand.
+    static func migrated(keepEntriesOverride: Int?, under global: FeedItemPolicy) -> FeedItemPolicy? {
+        guard let keepEntries = keepEntriesOverride else { return nil }
+        if keepEntries < 0 {
+            return global.listing == .every
+                ? nil
+                : FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: global.newestCount)
+        }
+        return FeedItemPolicy(choice: .onlyNewestListed, newestCount: keepEntries)
+    }
+}
+
 // MARK: - In a Feed's Record
 
 extension FeedItemPolicy: Codable {

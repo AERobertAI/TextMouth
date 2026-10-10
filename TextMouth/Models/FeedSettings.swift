@@ -145,6 +145,35 @@ struct FeedSettings: Equatable, Sendable {
         )
     }
 
+    /// Moves the settings before the "List and download" choice to the
+    /// choice, once (FR11): when `store` holds no choice yet, as at the
+    /// first launch of the version that brought it, writes the choice and
+    /// its number the retired settings ask for
+    /// (`FeedItemPolicy.migrated(keepEntries:autoDownload:)`), the default
+    /// for the listener's settings of October 4. Both are written even when
+    /// they are the defaults, so the choice's key says from then on that the
+    /// move was made, and a value chosen later is never moved over. The
+    /// retired settings stay in the store as they were, unused, as a copy
+    /// to go back to.
+    /// - Returns: The choice written, or nil when the store held one.
+    @discardableResult
+    static func moveToItemPolicyIfNeeded(in store: UserDefaults) -> FeedItemPolicy? {
+        guard store.object(forKey: itemsPreference.key) == nil else { return nil }
+        let retired = read(from: store)
+        let policy = FeedItemPolicy.migrated(keepEntries: retired.keepEntries, autoDownload: retired.autoDownload)
+        store.set(policy.choice.rawValue, forKey: itemsPreference.key)
+        store.set(policy.newestCount, forKey: newestCountPreference.key)
+        let kept = retired.keepEntries < 0
+            ? "every entry"
+            : CountWording.phrase(retired.keepEntries, singular: "entry", plural: "entries")
+        let downloads = retired.autoDownload ? "new episodes downloading by themselves" : "downloads by hand"
+        DiagnosticLog.event(
+            .feeds,
+            "FEED_ITEM_POLICY_MOVED: keeping \(kept), with \(downloads), became \(policy.choice.rawValue) counting \(policy.newestCount)"
+        )
+        return policy
+    }
+
     /// Saves every setting that differs from what `store` holds, validated,
     /// so an unchanged setting is not written and observers hear only real
     /// changes.

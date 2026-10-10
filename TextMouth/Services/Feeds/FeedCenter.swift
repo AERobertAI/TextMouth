@@ -314,10 +314,12 @@ final class FeedCenter: ObservableObject {
 
     // MARK: Starting
 
-    /// Starts the engine in `library`, once: reads the records and this
-    /// Mac's fetch details off the main thread, then, when the engine works
-    /// on its own, asks again for the downloads TextMouth quit during,
-    /// refreshes every feed if the settings say to, and starts the scheduled
+    /// Starts the engine in `library`, once: moves the settings before the
+    /// "List and download" choice to it (FR11), reads the records and this
+    /// Mac's fetch details off the main thread, moving each feed's retired
+    /// override to a choice of its own, then, when the engine works on its
+    /// own, asks again for the downloads TextMouth quit during, refreshes
+    /// every feed if the settings say to, and starts the scheduled
     /// refreshes. Returns at once.
     /// - Returns: The work started, which tests may await.
     @discardableResult
@@ -325,8 +327,11 @@ final class FeedCenter: ObservableObject {
         guard !hasStarted else { return nil }
         hasStarted = true
         self.library = library
+        // Before anything reads the choice, so all read the same one.
+        FeedSettings.moveToItemPolicyIfNeeded(in: environment.preferences)
         return Task {
             await store.load()
+            moveKeptEntriesOverrides()
             await fetchStates.load()
             await downloads.sweepLeftovers()
             guard environment.worksOnItsOwn else { return }
@@ -571,9 +576,13 @@ final class FeedCenter: ObservableObject {
         await refresher.refresh(feedID, origin: .listener)
     }
 
-    /// Refreshes every feed, and announces one summary.
+    /// Refreshes every feed, and announces one summary. A record that was
+    /// only in the cloud until now is read first, and moves its retired
+    /// override to a choice of its own before it is refreshed (FR11).
     @discardableResult
     func refreshAll(origin: FeedRefreshOrigin = .listener) async -> FeedRefreshSummary {
+        await store.loadRecordsInCloud()
+        moveKeptEntriesOverrides()
         let summary = await refresher.refreshAll(origin: origin)
         events.send(.refreshedAll(summary))
         return summary
@@ -659,6 +668,36 @@ final class FeedCenter: ObservableObject {
     /// (FR11), or nil to use the global setting.
     func setItemPolicy(_ policy: FeedItemPolicy?, of feedID: UUID) {
         store.update(feedID) { $0.feed.itemPolicyOverride = policy }
+    }
+
+    /// Moves each feed's retired number of entries kept
+    /// (`Feed.keepEntriesOverride`) to a "List and download" choice of its
+    /// own (FR11), once: a feed whose record still holds one gets the choice
+    /// it asks for under the global choice
+    /// (`FeedItemPolicy.migrated(keepEntriesOverride:under:)`), unless it
+    /// has a choice of its own already, and loses the override, which marks
+    /// the move as made; its record is written then. "Finish It!", which
+    /// keeps every entry, uses the global setting from then on. Runs once
+    /// the records have loaded, and again as records that were only in the
+    /// cloud arrive.
+    /// - Returns: The feeds whose overrides moved, by title.
+    @discardableResult
+    func moveKeptEntriesOverrides() -> [UUID] {
+        let global = settings.itemPolicy
+        var moved: [UUID] = []
+        for feed in store.feeds {
+            guard let entries = feed.keepEntriesOverride else { continue }
+            let own = feed.itemPolicyOverride ?? FeedItemPolicy.migrated(keepEntriesOverride: entries, under: global)
+            store.update(feed.id) { record in
+                record.feed.itemPolicyOverride = own
+                record.feed.keepEntriesOverride = nil
+            }
+            moved.append(feed.id)
+            let kept = entries < 0 ? "every entry" : CountWording.phrase(entries, singular: "entry", plural: "entries")
+            let choice = own.map { "\($0.choice.rawValue) counting \($0.newestCount)" } ?? "the global setting"
+            DiagnosticLog.event(.feeds, "FEED_ITEM_POLICY_MOVED: \(feed.title): keeping \(kept) became \(choice)")
+        }
+        return moved
     }
 
     /// Gives the feed `feedID` its own number of entries kept, or nil to

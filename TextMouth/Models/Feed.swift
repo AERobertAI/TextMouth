@@ -70,7 +70,8 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
     /// How many entries this feed keeps, in place of the setting
     /// (`FeedSettings.keepEntries`); nil follows the setting. Retired by
     /// `itemPolicyOverride`, as the setting is by the "List and download"
-    /// choice.
+    /// choice: the move to the choice gives the feed the choice it asks for
+    /// and clears it (`FeedCenter.moveKeptEntriesOverrides()`).
     var keepEntriesOverride: Int?
     /// How many days after an episode plays to the end its download is
     /// deleted, in place of the setting

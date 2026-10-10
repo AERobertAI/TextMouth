@@ -137,7 +137,162 @@ final class FeedItemPolicyTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.feed.itemPolicy(under: world.center.settings), .standard)
     }
 
+    // MARK: - The Move From the Settings Before the Choice
+
+    /// The settings before the choice become it: left as TextMouth shipped
+    /// them (10 entries, downloads by hand), as the listener's are, they
+    /// become the new default; downloading by themselves keeps the newest 5
+    /// downloaded; every entry kept lists every item, downloads by hand; any
+    /// other number kept lists only that many, at least 1.
+    func testTheSettingsBeforeTheChoiceBecomeIt() {
+        let cases: [(keepEntries: Int, autoDownload: Bool, expected: FeedItemPolicy)] = [
+            (10, false, .standard),
+            (10, true, .standard),
+            (-1, true, .standard),
+            (3, true, .standard),
+            (-1, false, FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 5)),
+            (25, false, FeedItemPolicy(choice: .onlyNewestListed, newestCount: 25)),
+            (0, false, FeedItemPolicy(choice: .onlyNewestListed, newestCount: 1)),
+            (2_000, false, FeedItemPolicy(choice: .onlyNewestListed, newestCount: 2_000)),
+        ]
+        for (keepEntries, autoDownload, expected) in cases {
+            XCTAssertEqual(
+                FeedItemPolicy.migrated(keepEntries: keepEntries, autoDownload: autoDownload),
+                expected,
+                "keeping \(keepEntries), downloading by themselves \(autoDownload)"
+            )
+        }
+    }
+
+    /// A feed's number of entries kept becomes a choice of its own: none
+    /// follows the global setting still; every entry, as "Finish It!" keeps,
+    /// uses the global setting when it lists every item, and otherwise
+    /// lists every item with downloads by hand; a number lists only that
+    /// many, at least 1.
+    func testAFeedsNumberOfEntriesBecomesAChoiceOfItsOwn() {
+        let byHand = FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 5)
+        let shortList = FeedItemPolicy(choice: .onlyNewestListed, newestCount: 3)
+
+        XCTAssertNil(FeedItemPolicy.migrated(keepEntriesOverride: nil, under: .standard))
+        XCTAssertNil(FeedItemPolicy.migrated(keepEntriesOverride: -1, under: .standard), "Finish It! uses the global setting")
+        XCTAssertNil(FeedItemPolicy.migrated(keepEntriesOverride: -1, under: byHand))
+        XCTAssertEqual(
+            FeedItemPolicy.migrated(keepEntriesOverride: -1, under: shortList),
+            FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 3)
+        )
+        XCTAssertEqual(FeedItemPolicy.migrated(keepEntriesOverride: 7, under: .standard), FeedItemPolicy(choice: .onlyNewestListed, newestCount: 7))
+        XCTAssertEqual(FeedItemPolicy.migrated(keepEntriesOverride: 0, under: byHand), FeedItemPolicy(choice: .onlyNewestListed, newestCount: 1))
+    }
+
+    /// The global move is made once: a store holding no choice gets the one
+    /// its retired settings ask for, written even when it is the default; a
+    /// store holding a choice is left alone, whatever its retired settings
+    /// say; and the retired settings stay as they were.
+    func testTheGlobalMoveIsMadeOnce() {
+        let shipped = makeSandboxedPreferences("FeedPolicyMoveShipped")
+        XCTAssertEqual(FeedSettings.moveToItemPolicyIfNeeded(in: shipped), .standard)
+        XCTAssertEqual(shipped.object(forKey: "feedItems") as? String, "everyListedNewestDownloaded")
+        XCTAssertEqual(shipped.object(forKey: "feedNewestCount") as? Int, 5)
+        XCTAssertNil(FeedSettings.moveToItemPolicyIfNeeded(in: shipped), "the move was made twice")
+
+        let everyEntry = makeSandboxedPreferences("FeedPolicyMoveEvery")
+        FeedSettings.keepEntriesPreference.write(-1, to: everyEntry)
+        FeedSettings.autoDownloadPreference.write(false, to: everyEntry)
+        XCTAssertEqual(FeedSettings.moveToItemPolicyIfNeeded(in: everyEntry), FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 5))
+        XCTAssertEqual(everyEntry.object(forKey: "feedKeepEntries") as? Int, -1, "a retired setting was changed")
+
+        // A choice made since is never moved over, whatever the retired
+        // settings say now.
+        FeedSettings.keepEntriesPreference.write(3, to: everyEntry)
+        FeedSettings.itemsPreference.write(.everyListedNewestDownloaded, to: everyEntry)
+        XCTAssertNil(FeedSettings.moveToItemPolicyIfNeeded(in: everyEntry))
+        XCTAssertEqual(FeedSettings.read(from: everyEntry).itemPolicy.choice, .everyListedNewestDownloaded)
+    }
+
+    /// The user's settings and two feeds, as they were on October 7, at the
+    /// first start of the engine that brings the choice: the settings, as
+    /// TextMouth shipped them, become every item listed with the newest 5
+    /// downloaded; "Finish It!", which kept every entry, uses that global
+    /// setting, with all 381 items kept and its override cleared on disk;
+    /// "The Digital Antiquarian", which followed the setting, is left as it
+    /// was, its record not even written again. A later start moves nothing,
+    /// and a choice made in between stays.
+    func testTheUsersSettingsAndFeedsMoveOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedPolicyMoveUser")
+        let users = try UsersFeeds(world)
+        try users.write(to: world)
+        let antiquarianFile = FeedPaths.recordFile(of: users.antiquarian.feed.id, in: world.recordsFolder)
+        let antiquarianBefore = try Data(contentsOf: antiquarianFile)
+
+        await world.start()
+        await world.center.store.flush()
+
+        XCTAssertEqual(world.preferences.object(forKey: "feedItems") as? String, "everyListedNewestDownloaded")
+        XCTAssertEqual(world.preferences.object(forKey: "feedNewestCount") as? Int, 5)
+        XCTAssertNil(world.preferences.object(forKey: "feedKeepEntries"), "a retired setting was written")
+        XCTAssertNil(world.preferences.object(forKey: "feedAutoDownload"), "a retired setting was written")
+
+        let finishIt = try XCTUnwrap(world.center.store.record(of: users.finishIt.feed.id))
+        XCTAssertNil(finishIt.feed.itemPolicyOverride, "Finish It! does not use the global setting")
+        XCTAssertNil(finishIt.feed.keepEntriesOverride)
+        XCTAssertEqual(finishIt.items.count, 381)
+        XCTAssertEqual(finishIt.feed.itemPolicy(under: world.center.settings).listing, .every)
+        let finishItOnDisk = try Data(contentsOf: FeedPaths.recordFile(of: users.finishIt.feed.id, in: world.recordsFolder))
+        XCTAssertFalse(String(decoding: finishItOnDisk, as: UTF8.self).contains("keepEntriesOverride"))
+        XCTAssertEqual(try FeedRecordCoding.decoder().decode(FeedRecord.self, from: finishItOnDisk).items.count, 381)
+
+        XCTAssertEqual(try Data(contentsOf: antiquarianFile), antiquarianBefore, "The Digital Antiquarian's record was written again")
+        XCTAssertEqual(world.center.store.record(of: users.antiquarian.feed.id), users.antiquarian)
+
+        // A choice made since, and retired settings changed since: the next
+        // start moves nothing.
+        FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
+        FeedSettings.keepEntriesPreference.write(3, to: world.preferences)
+        let next = FeedCenter(environment: world.environment)
+        addTeardownBlock { await MainActor.run { next.stop() } }
+        await next.start(library: world.library)?.value
+        XCTAssertEqual(next.settings.itemPolicy, FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 5))
+        XCTAssertNil(next.store.record(of: users.finishIt.feed.id)?.feed.itemPolicyOverride)
+        XCTAssertEqual(next.moveKeptEntriesOverrides(), [], "a feed moved twice")
+    }
+
+    /// A feed's override met later, as when a record arrives from the cloud
+    /// after the first start, moves as the others did, keeping a choice of
+    /// its own the feed has already.
+    func testAnOverrideMetLaterMovesToo() async throws {
+        let world = try FeedTestWorld(self, label: "FeedPolicyMoveLater")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [FeedXML.Item(guid: "a", title: "A", published: world.day(-1))])))
+        let feed = try await world.subscribe("/feed.xml")
+        let other = try await subscribeAnother(world)
+
+        world.center.setKeepEntries(4, of: feed.id)
+        world.center.setKeepEntries(9, of: other.id)
+        world.center.setItemPolicy(FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 2), of: other.id)
+        let moved = world.center.moveKeptEntriesOverrides()
+
+        XCTAssertEqual(Set(moved), [feed.id, other.id])
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.feed.itemPolicyOverride, FeedItemPolicy(choice: .onlyNewestListed, newestCount: 4))
+        XCTAssertEqual(
+            world.center.store.record(of: other.id)?.feed.itemPolicyOverride,
+            FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 2),
+            "a feed's own choice was moved over"
+        )
+        XCTAssertNil(world.center.store.record(of: feed.id)?.feed.keepEntriesOverride)
+        XCTAssertNil(world.center.store.record(of: other.id)?.feed.keepEntriesOverride)
+    }
+
     // MARK: - Helpers
+
+    /// Subscribes `world` to a second feed, at /other.xml, in a folder of
+    /// its own.
+    private func subscribeAnother(_ world: FeedTestWorld) async throws -> Feed {
+        world.server.serve("/other.xml", .feed(FeedXML.rss(title: "Other Rooms", items: [FeedXML.Item(guid: "b", title: "B", published: world.day(-2))])))
+        let outcome = try await world.center.subscribe(to: world.server.url("/other.xml").absoluteString, into: .newFolder(inParentPath: world.folder.path))
+        guard case .subscribed(let feed) = outcome else {
+            throw NSError(domain: "FeedItemPolicyTests", code: 1, userInfo: [NSLocalizedDescriptionKey: "subscribing ended with \(outcome)"])
+        }
+        return feed
+    }
 
     /// A record of one feed with one item, as a subscription writes it.
     private static func record() throws -> FeedRecord {
