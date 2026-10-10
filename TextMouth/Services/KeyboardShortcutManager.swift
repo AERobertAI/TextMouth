@@ -420,8 +420,19 @@ final class KeyboardShortcutManager: ObservableObject {
     // MARK: - Trying a Double Press
 
     /// The Try a Double Press trial running, if any: the next key presses
-    /// are its, and no shortcut acts on them.
-    private var trial: DoublePressTrial?
+    /// are its, and no shortcut acts on them. A change is published, so the
+    /// Shortcuts tab says a trial waits for its presses.
+    private var trial: DoublePressTrial? {
+        willSet { objectWillChange.send() }
+    }
+
+    /// What the last Try a Double Press found, kept so the Shortcuts tab
+    /// shows it as text a braille display can read again after VoiceOver has
+    /// said it (the review of October 10, item C); nil before any trial
+    /// ends. A trial ended without a report keeps the one before.
+    private(set) var lastDoublePressTrialOutcome: DoublePressTrial.Outcome? {
+        willSet { objectWillChange.send() }
+    }
 
     /// Whether Try a Double Press is waiting for its two presses.
     var isTryingDoublePress: Bool {
@@ -431,11 +442,13 @@ final class KeyboardShortcutManager: ObservableObject {
     /// Starts Try a Double Press (FR12, section 6.2 of the design): for five
     /// seconds the next two key presses are no shortcuts, and `report` is
     /// told what they made, measured against the double-press time in
-    /// force. A trial already running ends without a report.
+    /// force, which is kept as the last outcome too. A trial already running
+    /// ends without a report.
     func tryDoublePress(report: @escaping @MainActor (DoublePressTrial.Outcome) -> Void) {
         trial?.cancel()
         let trial = DoublePressTrial(doublePressTime: doublePressTime, startTimer: startTimer) { [weak self] outcome in
             self?.trial = nil
+            self?.lastDoublePressTrialOutcome = outcome
             report(outcome)
         }
         self.trial = trial

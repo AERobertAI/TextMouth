@@ -903,6 +903,46 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(posted, [ShortcutAction.whereAmI.rawValue])
     }
 
+    /// The last trial's outcome stays, published, for the Shortcuts tab to
+    /// show as text a braille display can read again after VoiceOver has
+    /// said it (review item C): nothing before any trial, the prompt while
+    /// one waits, then "Last try: " and what it found; a trial cut short by
+    /// another keeps the outcome before it.
+    func testTheLastTrialsOutcomeStaysToReadAgain() throws {
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("press-dispatcher-trial-status"),
+            installsEventMonitor: false,
+            notificationCenter: NotificationCenter(),
+            startTimer: { delay, fire in HandFiredTimer(delay: delay, fire: fire) }
+        )
+        var publications = 0
+        let subscription = manager.objectWillChange.sink { publications += 1 }
+        defer { subscription.cancel() }
+        func status() -> String? {
+            ShortcutsSettingsWording.trialStatus(isTrying: manager.isTryingDoublePress, lastOutcome: manager.lastDoublePressTrialOutcome)
+        }
+        XCTAssertNil(status())
+
+        manager.tryDoublePress { _ in }
+        XCTAssertEqual(status(), "Press a key twice.")
+        XCTAssertEqual(publications, 1)
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10), keyWindow: nil, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10.2), keyWindow: nil, firstResponder: nil))
+
+        XCTAssertEqual(manager.lastDoublePressTrialOutcome, .doublePress)
+        XCTAssertEqual(status(), "Last try: Double press.")
+        XCTAssertEqual(publications, 3, "the trial's end and its outcome")
+
+        manager.tryDoublePress { _ in }
+        manager.tryDoublePress { _ in }
+        XCTAssertEqual(manager.lastDoublePressTrialOutcome, .doublePress, "a trial cut short reports nothing")
+        XCTAssertEqual(status(), "Press a key twice.")
+        XCTAssertEqual(
+            ShortcutsSettingsWording.trialStatus(isTrying: false, lastOutcome: .tooFarApart(0.7)),
+            "Last try: Two presses, 0.7 seconds apart. Set the time above 0.7 seconds to count them as one."
+        )
+    }
+
     // MARK: - Helpers
 
     /// A window the test owns, never shown.

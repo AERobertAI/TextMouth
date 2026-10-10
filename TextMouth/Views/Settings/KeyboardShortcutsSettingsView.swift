@@ -17,6 +17,15 @@ struct KeyboardShortcutsSettingsView: View {
                 DoublePressTimeStepper()
                 Button(ShortcutsSettingsWording.tryDoublePressTitle, action: tryDoublePress)
                     .accessibilityHint(ShortcutsSettingsWording.tryDoublePressHint)
+                // What a trial waits for, or what the last one found, as
+                // text to read again: VoiceOver says each once (review item
+                // C), and a braille display keeps this.
+                if let status = ShortcutsSettingsWording.trialStatus(
+                    isTrying: shortcutManager.isTryingDoublePress,
+                    lastOutcome: shortcutManager.lastDoublePressTrialOutcome
+                ) {
+                    Text(status)
+                }
             }
 
             ForEach(categories, id: \.self) { category in
@@ -389,6 +398,18 @@ enum ShortcutsSettingsWording {
         case .noSecondPress:
             return "No key was pressed twice."
         }
+    }
+
+    /// The text below Try a Double Press, which a braille display can read
+    /// again after VoiceOver has said it (review item C): the prompt while a
+    /// trial waits for its presses, "Last try: " and what the last one found
+    /// once one has ended, as in "Last try: Double press.", and nothing
+    /// before any trial.
+    static func trialStatus(isTrying: Bool, lastOutcome: DoublePressTrial.Outcome?) -> String? {
+        if isTrying {
+            return tryDoublePressPrompt
+        }
+        return lastOutcome.map { "Last try: \(trialResult($0))" }
     }
 
     // MARK: Rows and Announcements
