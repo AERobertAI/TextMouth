@@ -135,12 +135,15 @@ struct FeedRowContent: Equatable, Identifiable {
 ///
 /// The section shows where feeds are: at a folder holding feeds' folders,
 /// at any depth, which makes the top of the library list every feed, and
-/// in All Items, which lists every feed. Unopened lists the feeds with an
-/// item not yet played (an article: not read), each row counting its items
-/// as it does everywhere. A feed's own folder lists its items rather than
-/// itself, and Recent and the Reading List list no feeds. A feed whose folder is gone shows at
-/// the top of the library, in All Items, and, with an item unplayed, in
-/// Unopened, where it can still be found.
+/// in All Items, which lists every feed. Unopened lists a feed only while
+/// it has a new item (FR11, the user's answer to question 8): one published
+/// since the subscription began, neither played nor opened
+/// (`FeedCenter.isNew`), so a podcast's back catalogue, every item of which
+/// is listed and unplayed, never keeps its feed there. Each row counts its
+/// items as it does everywhere. A feed's own folder lists its items rather
+/// than itself, and Recently Opened and the Reading List list no feeds. A
+/// feed whose folder is gone shows at the top of the library, in All Items,
+/// and, with a new item, in Unopened, where it can still be found.
 enum LibraryFeedsSectionRows {
     /// The feeds the Feeds section lists at `location`, by title.
     @MainActor
@@ -155,8 +158,8 @@ enum LibraryFeedsSectionRows {
                 return base.isEmpty || path.hasPrefix(base + "/")
             }
         case .unopened:
-            // Every feed with an item not yet played, whatever its folder.
-            return center.feeds.filter { center.counts(of: $0.id).unplayed > 0 }
+            // Every feed with a new item, whatever its folder (FR11).
+            return center.feeds.filter { center.counts(of: $0.id).new > 0 }
         case .recent, .readingList:
             return []
         }

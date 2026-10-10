@@ -18,13 +18,18 @@ final class FeedUILibraryRowsTests: XCTestCase {
 
     /// The section lists the feeds whose folders are inside the location,
     /// at any depth, by title: every feed at the top of the library and in
-    /// All Items, and in Unopened while it has an episode not yet played,
-    /// none in a feed's own folder or in Recent.
+    /// All Items, and in Unopened only while it has a new episode (FR11,
+    /// question 8), not for its back catalogue, none in a feed's own folder
+    /// or in Recently Opened.
     func testTheFeedsSectionListsTheFeedsInsideTheLocation() async throws {
         let world = try FeedTestWorld(self, label: "FeedUISection")
         let base = world.folder.path
         try world.library.createFolderReturningFolder(name: "Shows", parentPath: base)
-        let atlas = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: base)
+        // An episode published after subscribing is new; the undated one
+        // seen as the feed is subscribed to is its back catalogue.
+        let atlas = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: base, items: [
+            FeedXML.Item(guid: "ep-1", title: "A map you can touch", published: world.day(1)),
+        ])
         let notes = try await subscribe(world, title: "Harbour Notes", path: "/notes.xml", into: "\(base)/Shows")
         let atlasFolder = try XCTUnwrap(world.library.feedFolderPath(forFolderID: atlas.folderID))
 
@@ -36,7 +41,8 @@ final class FeedUILibraryRowsTests: XCTestCase {
         XCTAssertEqual(titles(.folders, "\(base)/Shows"), ["Harbour Notes"])
         XCTAssertEqual(titles(.folders, atlasFolder), [], "a feed's own folder listed itself")
         XCTAssertEqual(titles(.allItems), ["Harbour Notes", "The Tactile Atlas"])
-        XCTAssertEqual(titles(.unopened), ["Harbour Notes", "The Tactile Atlas"], "each feed has an episode not yet played")
+        XCTAssertEqual(titles(.unopened), ["The Tactile Atlas"], "only a feed with a new episode is unopened")
+        XCTAssertEqual(world.center.counts(of: notes.id).unplayed, 1, "the back catalogue's episode is not played")
         XCTAssertEqual(titles(.recent), [])
         XCTAssertNotEqual(notes.id, atlas.id)
     }
