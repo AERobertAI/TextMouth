@@ -85,10 +85,13 @@ extension FeedCenter {
 
     /// Marks the item `itemID` of the feed `feedID` played (an article: read)
     /// now, as Mark as Played does; the delete-after-played rule counts from
-    /// now.
+    /// now, and the newest-N rule's pass over the feed, asked for at once,
+    /// takes back its download of the item not yet under way, which a
+    /// played item no longer needs (REV11 F3).
     func markPlayed(_ itemID: FeedItem.ID, of feedID: UUID) {
         store.updateItem(itemID, of: feedID) { $0.playedDate = environment.now() }
         requestSweep()
+        requestItemPolicyPass(for: [feedID])
     }
 
     /// Marks the item `itemID` of the feed `feedID` unplayed, as Mark as
@@ -101,7 +104,9 @@ extension FeedCenter {
     /// and that is not played yet played now, as Mark All Played does, those
     /// the short list hides among them (FR11), in one change of its record,
     /// so the record is written once; the delete-after-played rule counts
-    /// from now.
+    /// from now, and the newest-N rule's pass over the feed, asked for at
+    /// once, takes back its downloads not yet under way, as during the
+    /// first launch's batch, so no more played episodes download (REV11 F3).
     /// - Returns: How many items were marked.
     @discardableResult
     func markAllPlayed(of feedID: UUID) -> Int {
@@ -116,6 +121,7 @@ extension FeedCenter {
         }
         if marked > 0 {
             requestSweep()
+            requestItemPolicyPass(for: [feedID])
         }
         return marked
     }

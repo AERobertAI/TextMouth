@@ -538,6 +538,69 @@ final class FeedNewestRuleTests: XCTestCase {
         await waitFor("the engine's own work ends") { !world.center.isSweeping }
     }
 
+    /// Mark Played and Mark All Played ask for the rule's pass over their
+    /// feed at once (REV11 F3), which takes back its downloads of the played
+    /// items still waiting in the queue: marked during the batch the rule
+    /// started, no played episode downloads after the one under way, which
+    /// finishes.
+    func testMarkingPlayedTakesBackTheRulesQueuedDownloads() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleMarkPlayed", worksOnItsOwn: true)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        FeedSettings.newestCountPreference.write(4, to: world.preferences)
+        await world.start()
+        // Subscribing asks for the rule's pass, which asks for the newest 4,
+        // each file arriving over a second or more.
+        let feed = try await subscribeServed(world, episodes: 4, pausing: 0.05)
+        await waitFor("the first download is under way") { !world.server.requests(to: "/audio/1.m4a").isEmpty }
+        XCTAssertEqual(world.center.downloads.queue.map(\.itemID), ["guid:ep-2", "guid:ep-3", "guid:ep-4"])
+
+        world.center.markPlayed("guid:ep-2", of: feed.id)
+        await waitFor("the pass takes back the played episode's download") {
+            world.center.downloads.queue.map(\.itemID) == ["guid:ep-3", "guid:ep-4"]
+        }
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state, .notDownloaded)
+
+        XCTAssertEqual(world.center.markAllPlayed(of: feed.id), 3)
+        await waitFor("the pass takes back the queue") { world.center.downloads.queue.isEmpty }
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        await waitFor("the engine's own work ends") { !world.center.isSweeping && world.center.downloads.current == nil }
+
+        for number in 2...4 {
+            XCTAssertEqual(world.server.requests(to: "/audio/\(number).m4a"), [], "played episode \(number) downloaded")
+            XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-\(number)")?.state, .notDownloaded)
+        }
+    }
+
+    /// A refresh TextMouth makes by itself that reaches the network asks for
+    /// the rule's pass, and tries again only the put-off downloads the rule
+    /// still counts (REV11 F3): one whose item was played meanwhile stays put
+    /// off, never fetched, for the pass to take back.
+    func testARefreshTriesAgainOnlyThePutOffDownloadsTheRuleStillCounts() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleRetryCounted")
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        let audio = FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4")
+        world.server.serve("/audio/1.m4a", .refusedOnAMeteredNetwork(), audio)
+        world.server.serve("/audio/2.m4a", .refusedOnAMeteredNetwork(), audio)
+        let feed = try await subscribe(world, episodes: 2)
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        await waitFor("both downloads are put off") {
+            world.center.downloads.putOff.count == 2 && world.center.downloads.current == nil
+        }
+
+        // This engine does not work on its own, so marking runs no pass.
+        world.center.markPlayed("guid:ep-2", of: feed.id)
+        _ = await world.center.refreshAll(origin: .scheduled)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(world.server.requests(to: "/audio/2.m4a").count, 1, "a put-off download the rule no longer counts was tried again")
+        XCTAssertEqual(world.center.downloads.putOff.map(\.itemID), ["guid:ep-2"])
+        let pass = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(pass.withdrawnItemIDs, ["guid:ep-2"])
+        XCTAssertTrue(world.center.downloads.putOff.isEmpty)
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state, .notDownloaded)
+    }
+
     /// A reader closing lets the sweep of played downloads run, never the
     /// rule: a download open in a reader stays when its reader closes, and
     /// goes at the rule's next pass, after a refresh (the listener's answer

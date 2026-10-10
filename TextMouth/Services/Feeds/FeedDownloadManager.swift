@@ -405,13 +405,14 @@ final class FeedDownloadManager {
     }
 
     /// Asks again for the newest-N rule's downloads a network with data
-    /// limits put off, in their order, as a refresh TextMouth made by
-    /// itself, which such a network refuses too, has just reached the
-    /// network: it has no data limits now. One refused again is put off
-    /// again.
-    func retryPutOffDownloads() {
-        let waiting = putOff
-        putOff.removeAll()
+    /// limits put off that `shouldRetry` names, every one unless it names
+    /// fewer, in their order, as a refresh TextMouth made by itself, which
+    /// such a network refuses too, has just reached the network: it has no
+    /// data limits now. One refused again is put off again; one not named
+    /// stays put off, for the rule's next pass to take back (REV11 F3).
+    func retryPutOffDownloads(where shouldRetry: (Request) -> Bool = { _ in true }) {
+        let waiting = putOff.filter(shouldRetry)
+        putOff.removeAll { waiting.contains($0) }
         for request in waiting {
             download(request.itemID, of: request.feedID, origin: .window)
         }

@@ -99,15 +99,15 @@ extension FeedCenter {
         var due: [FeedDueRemoval] = []
         for feed in store.feeds where feedIDs?.contains(feed.id) ?? true {
             guard let record = store.record(of: feed.id) else { continue }
-            guard case .newest(let count) = (feed.itemPolicyOverride ?? global).downloading else {
-                report.withdrawnItemIDs += downloads.withdrawRuleDownloads(of: feed.id) { _ in true }
-                continue
-            }
+            let policy = feed.itemPolicyOverride ?? global
+            // What the rule no longer counts goes back: all of it for a
+            // choice that downloads by hand, and for a feed unsubscribed
+            // from, which downloads nothing by itself.
+            let counted = Self.countedItemIDs(in: record, under: policy)
+            report.withdrawnItemIDs += downloads.withdrawRuleDownloads(of: feed.id) { !counted.contains($0) }
+            guard case .newest(let count) = policy.downloading else { continue }
             let newest = record.newestItems(count)
             if feed.isSubscribed {
-                let counted = Set(newest.filter { $0.playedDate == nil }.map(\.id))
-                report.withdrawnItemIDs += downloads.withdrawRuleDownloads(of: feed.id) { !counted.contains($0) }
-
                 let asked = newest.filter { ruleDownloads($0, of: feed.id, retryingFailures: retrying.contains(feed.id)) }
                 for item in asked {
                     downloads.download(item.id, of: feed.id, origin: .window)
@@ -116,10 +116,6 @@ extension FeedCenter {
                 if !asked.isEmpty {
                     DiagnosticLog.event(.feeds, "FEED_RULE_DOWNLOADS: \(feed.title): asked for \(asked.count) of the newest \(count)")
                 }
-            } else {
-                // Unsubscribed: nothing downloads by itself, and what the
-                // rule asked for before goes back.
-                report.withdrawnItemIDs += downloads.withdrawRuleDownloads(of: feed.id) { _ in true }
             }
 
             due += dueRemovals(
@@ -145,6 +141,18 @@ extension FeedCenter {
             )
         }
         return report
+    }
+
+    /// The items of `record` the newest-N rule counts under `policy` (FR11):
+    /// the newest its choice downloads, less those played, while the feed is
+    /// subscribed; none for a choice that downloads by hand, or for a feed
+    /// unsubscribed from, for which the rule asks for nothing. A pass takes
+    /// back the rule's downloads of every other item not yet under way, and
+    /// a refresh tries again only the put-off downloads of counted items
+    /// (REV11 F3 and F4).
+    nonisolated static func countedItemIDs(in record: FeedRecord, under policy: FeedItemPolicy) -> Set<FeedItem.ID> {
+        guard record.feed.isSubscribed, case .newest(let count) = policy.downloading else { return [] }
+        return Set(record.newestItems(count).filter { $0.playedDate == nil }.map(\.id))
     }
 
     /// Whether the rule may ever download `item` by itself (FR11): it has

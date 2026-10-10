@@ -724,19 +724,37 @@ final class FeedCenter: ObservableObject {
     }
 
     /// Announces the end of one feed's refresh, and asks for the newest-N
-    /// rule's pass over the feed (FR11), which downloads its newest and
-    /// removes its oldest downloads beyond them, trying its failed downloads
-    /// again when the refresh reached the network. A refresh TextMouth made
-    /// by itself that was not put off reached a network without data limits,
-    /// which such a refresh needs, so the downloads one put off are tried
-    /// again first.
+    /// rule's pass over the feed (FR11), which takes back what it no longer
+    /// counts, downloads its newest, and removes its oldest downloads beyond
+    /// them, trying its failed downloads again when the refresh reached the
+    /// network. A refresh TextMouth made by itself that was not put off
+    /// reached a network without data limits, which such a refresh needs, so
+    /// the downloads one put off are tried again: once the pass is asked
+    /// for, and only those the rule still counts, so a put-off download
+    /// whose item was played, or left the newest, never starts before the
+    /// pass takes it back (REV11 F3).
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
         requestSweep()
-        if report.origin.isDiscretionary, report.outcome != .skipped {
-            downloads.retryPutOffDownloads()
-        }
         requestItemPolicyPass(for: [report.feedID], retryingFailures: report.outcome != .skipped)
+        if report.origin.isDiscretionary, report.outcome != .skipped {
+            retryCountedPutOffDownloads()
+        }
+    }
+
+    /// Asks again for the downloads a network with data limits put off whose
+    /// items the newest-N rule still counts (`countedItemIDs(in:under:)`),
+    /// working out each feed's count once; the others stay put off for the
+    /// rule's pass to take back (REV11 F3).
+    private func retryCountedPutOffDownloads() {
+        var counted: [UUID: Set<FeedItem.ID>] = [:]
+        downloads.retryPutOffDownloads { request in
+            let feedCounts = counted[request.feedID] ?? store.record(of: request.feedID).map {
+                Self.countedItemIDs(in: $0, under: itemPolicy(of: request.feedID))
+            } ?? []
+            counted[request.feedID] = feedCounts
+            return feedCounts.contains(request.itemID)
+        }
     }
 
     /// Passes a download's event on to the engine's listeners, and, when a
