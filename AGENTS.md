@@ -53,6 +53,7 @@ The orchestrator launches each agent in its own git worktree under `.claude/work
 - Agents can stall with "no progress for 600s"; a message to the agent's id resumes it with its context intact, and its branch keeps its commits. A background suite stopped at its time limit must be rerun.
 - An agent that follows the usage rule stops itself at a "critical" reading; say in the launch message when the user has overridden it.
 - Keep two gigabytes free before a merge suite: the archive-import tests refuse to run under the app's one-gigabyte reserve.
+- A hosted SwiftUI view whose width outgrows the width offered (a macOS form in the columns style did) makes its window chase it until AppKit raises "more Update Constraints in Window passes than there are views in the window" and the test host ends with a crash dialog the user sees (twice on October 10, 2026). Host such views inside a fixed frame, or measure them with `NSHostingController.sizeThatFits(in:)` and no window.
 - A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
 
 ## Where things stood on October 7, 2026 (evening)

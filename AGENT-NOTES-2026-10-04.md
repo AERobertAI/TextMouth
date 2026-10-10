@@ -1829,3 +1829,60 @@ ARCHITECTURE wording:
     - "The reading list's join after an import is announced at medium priority."
 - **Text cache line 104:** replace "(TextExtractionObserver)" with "(ProgressObserver)".
 - **Duplication list:** drop the #1461 bullet, and add one for the feed section's own observer (follow-up 3).
+
+## From the a10fixes agent (fix/a10-accessibility), Oct 10
+
+Not verified (the user should check these by hand):
+- **Live VoiceOver, Zoom, and Increase Contrast** were not used. Hosted windows expose only AppKit controls, so hidden captions and SwiftUI buttons were checked by reading the code. Worth checking by hand:
+  - each Settings tab: reading order, Tab bringing controls into view, and the new boxed look
+  - the headings list: the "Show levels" filter, and Skip Section among each row's VoiceOver actions (VO-Command-Space)
+  - a long Search in Book result list, to confirm the cursor stays put
+  - the jump panels' unit words
+  - a bookmark row's date
+- **The real Settings window** (its tabs are now built in a loop) was not opened. Only each tab's page was tested.
+- **The duplicate finder's change** was read, not tested: a scan can't be started in a hosted test.
+- **The edit bar test** that confirms there is no Done skips on this Mac, because SwiftUI buttons aren't exposed to hosted windows.
+
+Decisions and assumptions:
+- **Settings uses the grouped form style, not a `ScrollView`.** I measured each tab at the window's width. Shortcuts was 4,113 points tall in a 540-point window; Playback 894, Storage 790, and Miscellaneous 586 with its gesture on. The old style also made Shortcuts 223 points wider than any width it was given, so it was clipped on both sides as well. A `ScrollView` keeps that overflow; the grouped style fills exactly the width it is given and scrolls by itself.
+  - Toggles are kept as checkboxes and text fields keep their borders. The grouped style alone would have made switches and borderless number fields.
+  - The Text tab is unchanged; its rule list scrolls by itself.
+- **The `$1` hint** also says "a dollar sign" in words, because VoiceOver reads "$1" as "one dollar".
+- **Heading filter.** A probe showed that a segmented picker's own label never reaches VoiceOver, and that its title, "Max level", was showing on screen beside the caption. The picker now has no title and the accessibility label "Show levels", and the caption is hidden from VoiceOver.
+  - The hosted test also found that the sheet-wide label "Headings, N headings" was renaming the display picker and the filter. That label now names only the list.
+- **Lists keep their rows, and search is capped at 500 results.**
+  - Measured in a hosted window of the sheet's size: 2,000 kept rows took 1.1 seconds and about 197 MB, against 0.03 seconds and 1 MB lazily; 200 rows took 0.14 seconds and 20 MB.
+  - I lowered `BookSearchEngine.resultLimit` from 2,000 to 500: about a quarter of a second and 50 MB at worst. The status line already says "Showing the first 500 matches; refine your search".
+  - This is a behavior change the user may want to weigh.
+- **Jump panels: the units are now words ("hours", "minutes", "seconds", "percent"), not hidden.** A probe showed those plain fields have no accessibility label, only a placeholder, which a filled field doesn't speak. Hiding the letters would have lost the units. The fields stay plain, per the user's earlier request (commit 6206c738).
+  - The custom sleep timer field does have a label, so its "Custom:" and "min" are hidden.
+- **Same-kind fixes beyond the audit's list:**
+  - the Sounds tab's volume caption is hidden
+  - the fade-out's "1 seconds" is fixed
+  - Reset to Global Settings also names pitch
+  - the search sheet's unused display-mode label is removed
+  - the Edit button's hint now states a result
+- **The empty bookmark list** names the add-bookmark key as currently set, read from the preferences store.
+
+README wording:
+- **Settings:** "Every tab but Text scrolls when it is taller than the window, its groups in boxes; Tab, and VoiceOver as it moves, bring each control into view. The Text tab's rule list scrolls by itself."
+- **Edit mode:** "Leave edit mode with the toolbar's Done (VoiceOver calls it Exit edit mode) or Edit Mode in the Library menu, Command-E."
+- **Hints:** "Hints say what a control does, never a gesture or a key: a folder's row "Opens the folder.", a book's "Opens the book." (in edit mode "Selects this book." or "Deselects this book."), a bookmark's or heading's row "Goes to this bookmark (heading) and closes the list.""
+- **Headings list:** "Each heading's row offers Go To and Skip Section, or Include Section, as VoiceOver actions, as its context menu does. The level filter, Show levels, offers Level 1, Levels 1 to 2, and so on, and All levels."
+- **Bookmarks:** "A bookmark's row ends with the day it was added, as in "Bookmark 3, The Battle, Note: Check this, added October 9, 2026"; the Bookmarks rotor says the same. With no bookmarks, the list names the key that adds one, in words: "Command + B adds a bookmark at the current position.""
+- **Search:** "Search in Book lists the first 500 matches and keeps every row, so VoiceOver's cursor stays put in a long list."
+- **Sleep timer:** "The custom timer's field and its Adjust minutes stepper both say their minutes with the unit; the stepper moves by 5."
+- **Jump panels:** "The Jump to time fields are followed by the words hours, minutes, and seconds, and the percent field by percent."
+- **Save and reset:** "Save to Global Settings, in the voice sheet and on the playback bar, makes the book's voice, speed, and pitch the defaults; Reset to Global Settings removes all three."
+- **Text tab:** "Reset to Defaults asks first, naming how many rules it replaces. In a regular expression rule, $1, $2, and so on put back what each group matched."
+- **Restart gesture note:** "It names Restart Sleep Timer in the Shortcuts tab, default Shift + Command + R."
+
+ARCHITECTURE wording:
+- **Settings window:** "SettingsView shows one tab per SettingsTab case at the fixed SettingsView.windowSize. SettingsTabContent matches each tab with its view. SettingsTabPage draws every form tab in the grouped form style, which scrolls and fills the window's width, keeping checkboxes and bordered fields. SettingsTabFitTests finds every AppKit control of each page where the window shows it or a scroll view reaches it, and measures each tab's height and width without a window."
+- **CountWording:** "CountWording.minutes(_:), seconds(_:), and part(_:of:singular:plural:) ("0 of 1 book")."
+- **BookVoiceSettingsWording:** "BookVoiceSettingsWording (PlaybackControlsView.swift) words saving and resetting a book's voice, speed, and pitch for the playback bar and the voice sheet."
+- **Search limit:** "BookSearchEngine.resultLimit is 500, because the search and duplicate lists keep every row (a VStack), as the headings and bookmarks panels do; a kept row costs about half a millisecond and a tenth of a megabyte."
+- **Headings list label:** "HeadingNavigatorView labels its list's scroll area (listLabel(headingCount:)); a label on the whole sheet had renamed its pickers."
+- **Bookmark date:** "Bookmark.dateText is the row's visible date and the end of its label."
+- **ViewBodyCounter:** "ViewBodyCounter now counts SearchResultRow."
+- **Hosted-test sandbox, new item:** "A hosted view whose width outgrows the width offered (as the old columns-style forms did) makes the window chase it until AppKit raises an exception that ends the test host; host such views inside a fixed frame, or measure them with NSHostingController.sizeThatFits(in:) and no window."
