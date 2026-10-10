@@ -221,10 +221,10 @@ struct SleepTimerView: View {
                     }
                     .accessibilityLabel("Custom timer minutes")
                     .accessibilityValue("\(customMinutes) minutes")
-                    .accessibilityHint("Type a number or use the stepper arrows. Press Return to start the timer.")
-                Stepper("", value: $customMinutes, in: 1...480, step: 5)
+                    .accessibilityHint(Self.customMinutesHint)
+                Stepper("", value: $customMinutes, in: 1...480, step: Self.customMinutesStep)
                     .labelsHidden()
-                    .accessibilityLabel("Adjust minutes")
+                    .accessibilityLabel(Self.adjustMinutesLabel)
                     .accessibilityValue("\(customMinutes)")
                 Text("min")
                     .foregroundColor(.secondary)
@@ -292,6 +292,17 @@ struct SleepTimerView: View {
     }
 
     // MARK: - Wording
+
+    /// How many minutes the Adjust minutes stepper changes the custom timer
+    /// by.
+    nonisolated static let customMinutesStep = 5
+    /// The custom timer's stepper's label, which the field's hint names.
+    nonisolated static let adjustMinutesLabel = "Adjust minutes"
+    /// The custom minutes field's hint: what typing does, the stepper beside
+    /// it by name and step, and what Return does there (TODO A10; it said
+    /// "use the stepper arrows", which name no control VoiceOver lands on).
+    nonisolated static let customMinutesHint =
+        "Type the minutes, or change them \(customMinutesStep) at a time with \(adjustMinutesLabel). Return sets the timer and starts playing."
 
     /// The heading of the section of timers that stop at a place.
     nonisolated static let stopAtHeading = "Stop At"

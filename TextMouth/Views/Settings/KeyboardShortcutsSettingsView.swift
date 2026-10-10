@@ -410,13 +410,16 @@ enum ShortcutsSettingsWording {
 
     /// The label of the button adding a key.
     static let addShortcutLabel = "Add shortcut"
-    /// A key's button's hint, and the add button's, while not recording.
-    static let recordHint = "Click to record a new shortcut"
+    /// A key's button's hint, and the add button's, while not recording:
+    /// what pressing it does, never a click (TODO A10).
+    static let recordHint = "Records a new shortcut."
     /// The recorder's label while it records (FR12, section 6.1 of the
     /// design).
     static let recordingLabel = "Recording shortcut. Press a key, or press it twice for a double press."
-    /// The recorder's hint while it records.
-    static let recordingHint = "Press any key to set, or click to cancel"
+    /// The recorder's hint while it records. Every key, VoiceOver's own
+    /// included, goes to the recorder then, so Escape, not a click, is how
+    /// to stop (TODO A10).
+    static let recordingHint = "Press the new key, or Escape to cancel."
     /// What the recorder shows while it records.
     static let recordingPrompt = "Press a key..."
     /// The recorder's label while it records a menu command's key, one press

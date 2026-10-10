@@ -459,9 +459,7 @@ struct LibraryView: View {
                     Label(isEditMode ? "Done" : "Edit", systemImage: isEditMode ? "checkmark.circle.fill" : "checkmark.circle")
                 }
                 .accessibilityLabel(isEditMode ? "Exit edit mode" : "Enter edit mode")
-                .accessibilityHint(isEditMode
-                    ? "Exits edit mode. \(editSelection.count) books selected."
-                    : "Enter edit mode to select multiple books for moving or deleting")
+                .accessibilityHint(Self.editModeButtonHint(isEditMode: isEditMode, selectedCount: editSelection.count))
 
                 if category == .folders {
                     Button {
@@ -1417,6 +1415,17 @@ struct LibraryView: View {
             currentFolderPath = destination
         }
         return closingOnSuccess(outcome, close: close)
+    }
+
+    /// The hint of the toolbar's Edit button, which enters edit mode and
+    /// leaves it: what pressing it does, and, while in edit mode, how many
+    /// books are selected. A hint says the result, not what to do (TODO
+    /// A10; it said "Enter edit mode to select multiple books for moving or
+    /// deleting").
+    nonisolated static func editModeButtonHint(isEditMode: Bool, selectedCount: Int) -> String {
+        isEditMode
+            ? "Exits edit mode. \(selectedCount) books selected."
+            : "Enters edit mode, for selecting several books to move or remove."
     }
 
     /// Clear all selections (both native and edit mode) and exit edit mode

@@ -243,8 +243,9 @@ final class ShortcutsSettingsTabTests: XCTestCase {
     /// double-press time's stepper say what the design words.
     func testTheDoublePressWordingIsPinned() {
         XCTAssertEqual(ShortcutsSettingsWording.recordingLabel, "Recording shortcut. Press a key, or press it twice for a double press.")
-        XCTAssertEqual(ShortcutsSettingsWording.recordingHint, "Press any key to set, or click to cancel")
-        XCTAssertEqual(ShortcutsSettingsWording.recordHint, "Click to record a new shortcut")
+        // Results and keys, never a click (TODO A10).
+        XCTAssertEqual(ShortcutsSettingsWording.recordingHint, "Press the new key, or Escape to cancel.")
+        XCTAssertEqual(ShortcutsSettingsWording.recordHint, "Records a new shortcut.")
         XCTAssertEqual(ShortcutsSettingsWording.addShortcutLabel, "Add shortcut")
         XCTAssertEqual(ShortcutsSettingsWording.makeDoublePress, "Make Double Press")
         XCTAssertEqual(ShortcutsSettingsWording.makeSinglePress, "Make Single Press")

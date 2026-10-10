@@ -234,6 +234,7 @@ final class LegacyBookmarkAccessibilityTests: XCTestCase {
             bookmark: Bookmark(number: 1, chapterIndex: 0, characterOffset: 0),
             headingText: nil
         )
-        XCTAssertEqual(row.accessibilityHintText, "Double-tap to navigate to this bookmark")
+        // The result, never a gesture (TODO A10).
+        XCTAssertEqual(row.accessibilityHintText, "Goes to this bookmark and closes the list.")
     }
 }

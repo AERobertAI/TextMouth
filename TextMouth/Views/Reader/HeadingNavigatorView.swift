@@ -442,8 +442,10 @@ struct HeadingNavigatorView: View {
 
 /// One row of the headings sheet: a button that goes to its heading, whose
 /// VoiceOver label speaks the heading, its level, whether it is skipped or
-/// being read, and its time or percentage; its context menu goes to the
-/// heading or skips its section.
+/// being read, and its time or percentage. Its VoiceOver actions and its
+/// context menu offer the same commands under the same names: Go To, and
+/// Skip Section or Include Section, as a bookmark's row offers its own
+/// (TODO A10; until then skipping was in the context menu alone).
 ///
 /// Equatable on what it shows, never on its actions (PERF30): when the
 /// playback cursor crosses into another heading the sheet draws again, and
@@ -489,6 +491,7 @@ private struct HeadingNavigatorRow: View, Equatable {
         // exactly where VoiceOver speaks the human-readable "current heading"
         // status.
         .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
+        .accessibilityActions { commands }
         // This is the sole initial VoiceOver focus mechanism. It targets the
         // current heading when possible, while remaining fixed if playback
         // later advances into another heading.
@@ -496,10 +499,17 @@ private struct HeadingNavigatorRow: View, Equatable {
             isTarget: isInitialFocusTarget,
             delay: 0.2
         ))
-        .contextMenu {
-            Button("Go To", action: goTo)
-            Button(item.isSkipped ? "Include Section" : "Skip Section", action: toggleSkip)
-        }
+        .contextMenu { commands }
+    }
+
+    /// The row's commands, its VoiceOver actions and its context menu
+    /// alike: Go To, then Skip Section, or Include Section for a section
+    /// already skipped (`HeadingRow.commandTitles(isSkipped:)`).
+    @ViewBuilder
+    private var commands: some View {
+        let titles = HeadingRow.commandTitles(isSkipped: item.isSkipped)
+        Button(titles.goTo, action: goTo)
+        Button(titles.toggleSkip, action: toggleSkip)
     }
 }
 
@@ -544,8 +554,20 @@ struct HeadingRow: View {
         .opacity(isSkipped ? 0.5 : 1.0)
     }
 
+    /// What VoiceOver says the row's button does: its result, never a
+    /// gesture or a menu to open, since VoiceOver, a braille display, and
+    /// the keyboard each do it their own way; skipping is among the row's
+    /// VoiceOver actions (TODO A10; it said "Double-tap to navigate. Use
+    /// context menu to skip or include this section.").
     var accessibilityHintText: String {
-        "Double-tap to navigate. Use context menu to skip or include this section."
+        "Goes to this heading and closes the list."
+    }
+
+    /// The names of a heading row's commands, its VoiceOver actions and its
+    /// context menu items: Go To, and Skip Section, or Include Section for
+    /// a section that `isSkipped`.
+    nonisolated static func commandTitles(isSkipped: Bool) -> (goTo: String, toggleSkip: String) {
+        ("Go To", isSkipped ? "Include Section" : "Skip Section")
     }
 
     private func fontForLevel(_ level: Int) -> Font {

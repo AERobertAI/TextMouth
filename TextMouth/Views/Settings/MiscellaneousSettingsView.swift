@@ -73,7 +73,7 @@ struct MiscellaneousSettingsView: View {
                 gestureConfiguration
             }
 
-            Text("The keyboard shortcut for the same action is configurable under Keyboard Shortcuts (default ⌘⇧R).")
+            Text(Self.restartShortcutNote)
                 .font(.caption)
                 .foregroundColor(.secondary)
         } header: {
@@ -118,6 +118,19 @@ struct MiscellaneousSettingsView: View {
             }
         }
         .padding(.top, 4)
+    }
+
+    /// The note under the restart gesture: where its keyboard shortcut is
+    /// set, by the Shortcuts tab's own name for the action, and its default
+    /// key in words, which a braille display shows as words: "The keyboard
+    /// shortcut for the same action is Restart Sleep Timer in the Shortcuts
+    /// tab; its default is Shift + Command + R." It used to name a
+    /// "Keyboard Shortcuts" tab, and the key in symbols (TODO A10).
+    nonisolated static var restartShortcutNote: String {
+        let action = ShortcutAction.restartSleepTimer
+        let defaultKeys = KeyBinding.accessibleDisplayString(for: ShortcutAction.defaultBindings[action] ?? [])
+        return "The keyboard shortcut for the same action is \(action.title) in the \(SettingsTab.shortcuts.title) tab; "
+            + "its default is \(defaultKeys)."
     }
 
     /// The Bluetooth disconnect delay as the screen shows it and VoiceOver
