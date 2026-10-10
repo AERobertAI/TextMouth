@@ -101,9 +101,12 @@ enum FeedItemPackage {
     // MARK: Checking Before Removing
 
     /// The package of the feed item `row` in the data directory at `root`,
-    /// checked before anything in it is removed: a `.tmb` folder directly
-    /// inside its feed's own folder, as `Book.packageDirectory(inDataDirectory:)`
-    /// places it, not a symbolic link, and holding the row's file.
+    /// checked before anything in it is removed, as the library checks a
+    /// book's package before deleting it
+    /// (`FileImportService.managedPackageURLForDeletion`): a `.tmb` folder
+    /// directly inside its feed's own folder, as
+    /// `Book.packageDirectory(inDataDirectory:)` places it, not a symbolic
+    /// link, and holding the row's file.
     /// - Throws: `FeedItemPackageError.notAFeedPackage` when any of these
     ///   does not hold.
     static func packageForRemoval(of row: Book, in root: URL) throws -> URL {
@@ -112,32 +115,26 @@ enum FeedItemPackage {
             throw FeedItemPackageError.notAFeedPackage
         }
         let package = FeedPaths.packageDirectory(named: name, of: link.feedID, in: root)
-        // A link in the feed's folder could point anywhere.
-        guard (try? package.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink != true,
-              !row.filePath.isEmpty, isInside(row.bookFileURL, package) else {
+        guard !FileImportService.isSymbolicLink(package), !row.filePath.isEmpty, isInside(row.bookFileURL, package) else {
             throw FeedItemPackageError.notAFeedPackage
         }
         return package
     }
 
-    /// Whether `name` names a package directly in a feed's folder: one
-    /// component, not hidden, ending in ".tmb", as a download names one
-    /// (`TextMouthPaths.tmbName`), so no row can name the folder itself, or
-    /// a staged or set-aside package.
+    /// Whether `name` names a package directly in a feed's folder: as the
+    /// library names one (`FileImportService.isManagedPackageName(_:)`), and
+    /// not hidden, as a download names one (`TextMouthPaths.tmbName`), so no
+    /// row can name the folder itself, or a staged or set-aside package.
     static func isPackageName(_ name: String) -> Bool {
-        !name.isEmpty && !name.hasPrefix(".") && (name as NSString).lastPathComponent == name
-            && name.lowercased().hasSuffix(".tmb")
+        !name.hasPrefix(".") && FileImportService.isManagedPackageName(name)
     }
 
     /// Whether `item` is inside `folder`, comparing their paths as written
     /// and, failing that, with symbolic links resolved, as a temporary
     /// folder reached through /var and /private/var is one folder.
     private static func isInside(_ item: URL, _ folder: URL) -> Bool {
-        let written = folder.standardizedFileURL.path + "/"
-        if item.standardizedFileURL.path.hasPrefix(written) {
-            return true
-        }
-        return item.resolvingSymlinksInPath().path.hasPrefix(folder.resolvingSymlinksInPath().path + "/")
+        MaintenanceFileAccess.isItem(item, inside: folder)
+            || MaintenanceFileAccess.isItem(item.resolvingSymlinksInPath(), inside: folder.resolvingSymlinksInPath())
     }
 
     /// The entry at the top of `package` that holds `row`'s file: the file

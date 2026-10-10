@@ -791,6 +791,53 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: "FEED_SWEEP_PUT_OFF").count, putOffBefore + 1)
     }
 
+    // MARK: - Checking a Package Before Removing
+
+    /// A feed's package is named by the library's rule for a package's name
+    /// and is not hidden: a staged or set-aside package's name, a path of
+    /// two folders, a name without ".tmb", and no name at all name none.
+    func testAFeedsPackageNamesFollowTheLibrarysRule() {
+        for name in ["Episode One - Atlas - 2026-10-10 - 1A2B.tmb", "Loud.TMB"] {
+            XCTAssertTrue(FeedItemPackage.isPackageName(name), name)
+            XCTAssertTrue(FileImportService.isManagedPackageName(name), name)
+        }
+        for name in ["", "Folder/Episode.tmb", "Episode.html", "..", "Feeds"] {
+            XCTAssertFalse(FeedItemPackage.isPackageName(name), name)
+            XCTAssertFalse(FileImportService.isManagedPackageName(name), name)
+        }
+        for name in [".import-\(UUID().uuidString).tmb", FeedItemPackage.setAsidePrefix + "Episode.tmb"] {
+            XCTAssertFalse(FeedItemPackage.isPackageName(name), name)
+        }
+    }
+
+    /// Before anything in it is removed, a feed item's package must be a
+    /// folder of its feed's, not a symbolic link, and hold the row's file;
+    /// one that is a link, or a row whose file is elsewhere, is refused.
+    func testAPackageThatIsALinkOrHoldsNoneOfTheRowsFileIsRefused() throws {
+        let root = try makeSandboxDirectory("FeedPackageChecks")
+        let feedID = UUID()
+        let folder = FeedPaths.itemsFolder(of: feedID, in: root)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let elsewhere = root.appendingPathComponent("Elsewhere.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: elsewhere, withIntermediateDirectories: true)
+        let real = folder.appendingPathComponent("Real.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("Linked.tmb"), withDestinationURL: elsewhere)
+        var holding = Self.row("Real", feedID: feedID, itemID: "guid:real")
+        holding.filePath = real.appendingPathComponent("Real.m4a").path
+        var linked = Self.row("Linked", feedID: feedID, itemID: "guid:linked")
+        linked.filePath = folder.appendingPathComponent("Linked.tmb/Linked.m4a").path
+        var outside = holding
+        outside.filePath = elsewhere.appendingPathComponent("Real.m4a").path
+
+        XCTAssertEqual(try FeedItemPackage.packageForRemoval(of: holding, in: root).standardizedFileURL.path, real.standardizedFileURL.path)
+        for refused in [linked, outside] {
+            XCTAssertThrowsError(try FeedItemPackage.packageForRemoval(of: refused, in: root), refused.title) { error in
+                XCTAssertEqual(error as? FeedItemPackageError, .notAFeedPackage)
+            }
+        }
+    }
+
     // MARK: - What a Refusal Says
 
     /// What a refused removal says, as its alert shows it and VoiceOver

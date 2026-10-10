@@ -1308,11 +1308,26 @@ enum FileImportService {
     /// (FR11, `LibraryViewModel.downloadsToMoveIntoTheirFeeds(records:)`)
     /// both refuse such a row.
     static func namesManagedPackage(_ book: Book) -> Bool {
-        let name = book.tmbDirectoryName
-        return !name.isEmpty
+        isManagedPackageName(book.tmbDirectoryName) && BookFolder.isValidLibraryPath(book.folderPath)
+    }
+
+    /// Whether `name` names a package as the library manages one, by its
+    /// spelling alone: a single path component, not empty, ending in
+    /// ".tmb", so it can never name the folder it is in, or one above it.
+    /// A library book's package (`namesManagedPackage(_:)`) and a feed
+    /// item's (`FeedItemPackage.isPackageName(_:)`) are both named so.
+    static func isManagedPackageName(_ name: String) -> Bool {
+        !name.isEmpty
             && (name as NSString).lastPathComponent == name
             && name.lowercased().hasSuffix(".tmb")
-            && BookFolder.isValidLibraryPath(book.folderPath)
+    }
+
+    /// Whether the item at `url` is a symbolic link, which a deletion must
+    /// never take for the package it points to: a link in a library folder,
+    /// or in a feed's, could lead to another book's package, or anywhere.
+    /// An item whose metadata cannot be read counts as none.
+    static func isSymbolicLink(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
     }
 
     /// Validate the deletion target independently of filesystem mutation. A
@@ -1334,7 +1349,7 @@ enum FileImportService {
             .standardizedFileURL
         // Deleting a package alias must not delete the other book it points
         // to, even when both happen to live inside the managed library.
-        guard (try? requestedPackage.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink != true else {
+        guard !isSymbolicLink(requestedPackage) else {
             throw FileImportError.importFailed("A symbolic link cannot be deleted as a managed book package.")
         }
         let package = requestedPackage.resolvingSymlinksInPath()
