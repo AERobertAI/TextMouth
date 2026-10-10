@@ -115,6 +115,87 @@ final class FinishedBookReaderTests: XCTestCase {
         XCTAssertLessThan(other.currentCharacterOffset, Self.lastHalfSecond, "Skip Backward did not move the cursor")
     }
 
+    // MARK: - Play at the End
+
+    /// By default, Play on a finished book says "Finished: <title>" and
+    /// does nothing else (TODO P07; the user, October 10, 2026, question
+    /// 13: "it should just say "fished" if there not enabled to move to the
+    /// next book or start over"): it plays nothing, neither the end again
+    /// nor anything else; the book stays at its end, finished; no listening
+    /// session opens; and nothing is told or counted as finished. Each way
+    /// Play reaches a stopped reader does the same: Play, Play/Pause, and the
+    /// AirPods' Play (`playOrResume()`). Play once played the last moment
+    /// again, which ended the book again and counted it again.
+    func testPlayOnAFinishedBookSaysFinishedAndDoesNothingElse() throws {
+        let world = try makeIntegrationWorld("Finished Play Stop")
+        let book = try makeAudioBook(.filePerChapter, titled: "Harbour Soundings", in: world)
+        let reader = world.openReader(for: book, nowPlaying: privateMediaSession())
+        waitForReaderToLoad(reader)
+        reader.play()
+        waitForTheEnd(of: reader, "The end")
+        let told = recordFinishesTold()
+
+        let presses: [(name: String, press: (ReaderViewModel) -> Void)] = [
+            ("Play", { $0.play() }),
+            ("Play/Pause", { $0.togglePlayPause() }),
+            ("the AirPods' Play", { $0.playOrResume() }),
+        ]
+        for (name, press) in presses {
+            let recorder = recordingAnnouncements {
+                press(reader)
+            }
+            XCTAssertEqual(recorder.announcements.map(\.message), ["Finished: Harbour Soundings"], name)
+            XCTAssertFalse(reader.audioPlaybackService.isPlaying, "\(name) played the book")
+            XCTAssertFalse(reader.isCurrentlyPlaying, "\(name): the reader shows Playing")
+            XCTAssertTrue(reader.cursorRestsAtEnd, "\(name) moved the book from its end")
+            XCTAssertTrue(reader.hasFinishedBook, "\(name) left the book unfinished")
+            XCTAssertFalse(ReadingStatsService.shared.hasActiveSession, "\(name) opened a listening session")
+        }
+        XCTAssertEqual(told(), [], "Play at the end was told as a finish")
+        XCTAssertEqual(ReadingStatsService.shared.stats.finishedBooks.map(\.bookID), [book.id.uuidString])
+    }
+
+    /// Play on a finished book whose end goes on does what its end did,
+    /// without playing the end again or telling a finish (question 13):
+    /// with Continue to Next Book, the next book in the folder takes
+    /// listening over, "Starting: <title>", as at the end; with Loop to
+    /// Start, the book plays again from its beginning, "Restarting: <title>".
+    func testPlayOnAFinishedBookThatContinuesOrLoopsDoesWhatItsEndDoes() throws {
+        let world = try makeIntegrationWorld("Finished Play Continue")
+        let first = try makeAudioBook(
+            .filePerChapter, titled: "First Crossing", in: world, savedAt: Self.lastChapterEnd, endOfBook: .continueNext
+        )
+        let second = try makeAudioBook(.filePerChapter, titled: "Second Crossing", in: world)
+        let reader = world.openReader(for: first, nowPlaying: privateMediaSession())
+        waitForReaderToLoad(reader)
+        let told = recordFinishesTold()
+
+        let continuing = recordingAnnouncements {
+            reader.play()
+            XCTAssertTrue(
+                eventually { world.autoplayRequests.hasRequest(for: second.id) },
+                "Play at the end never asked for the next book"
+            )
+        }
+        XCTAssertEqual(continuing.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying, "Play at the end played the finished book")
+        XCTAssertTrue(reader.cursorRestsAtEnd, "Play at the end moved the finished book from its end")
+
+        let looping = try makeAudioBook(
+            .filePerChapter, titled: "Third Crossing", in: world, savedAt: Self.lastChapterEnd, endOfBook: .loop
+        )
+        let loopReader = world.openReader(for: looping, nowPlaying: privateMediaSession())
+        waitForReaderToLoad(loopReader)
+        let restarting = recordingAnnouncements {
+            loopReader.play()
+        }
+        XCTAssertEqual(restarting.announcements.map(\.message), ["Restarting: Third Crossing"])
+        XCTAssertTrue(loopReader.audioPlaybackService.isPlaying, "Play at the end did not play the looping book again")
+        XCTAssertEqual(loopReader.currentChapterIndex, 0, "The looping book did not start again from its beginning")
+        loopReader.stop()
+        XCTAssertEqual(told(), [], "Play at the end was told as a finish")
+    }
+
     // MARK: - Counting
 
     /// A rewind after a book's end replays the end, which is no new finish

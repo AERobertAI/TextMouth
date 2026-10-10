@@ -670,6 +670,46 @@ final class ReadingListReaderTests: XCTestCase {
         }
     }
 
+    /// Play on a finished book read from the list does what the list's end
+    /// did, without playing the end again or counting it again (TODO P07;
+    /// the user, October 10, 2026, question 13): with the list set to stop,
+    /// it says so again and plays nothing; once the list plays the book
+    /// below, Play goes on to that book, "Starting: <title>", as the end
+    /// would have.
+    func testPlayOnAFinishedBookReadFromTheListDoesWhatTheListsEndDoes() throws {
+        let world = try makeIntegrationWorld("ReadingListPlayAtTheEnd")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        list([first, second], in: world, continuation: .stop)
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        let asked = record(.continueToNextBook, in: world)
+        reader.handleEndOfBook()
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The book did not rest at its end")
+
+        let stopping = recordingAnnouncements {
+            reader.play()
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(
+            stopping.announcements.map(\.message),
+            ["Finished: First Crossing. The reading list is set to stop when a book ends."]
+        )
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying, "Play at the end played the book")
+        XCTAssertTrue(asked().isEmpty, "Play at the end asked for a book while the list stops")
+
+        list([first, second], in: world, continuation: .playBookBelow)
+        let continuing = recordingAnnouncements {
+            reader.play()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Play at the end never asked for the book below")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(continuing.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [second.id])
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying, "Play at the end played the book")
+        XCTAssertEqual(ReadingStatsService.shared.stats.finishedBooks.map(\.bookID), [first.id.uuidString])
+    }
+
     /// The sleep timer keeps its rules for a book read from the list: a
     /// timer of this reader's that is in effect starts nothing in the list,
     /// and says so; a timer that stopped playback at the book's end is said

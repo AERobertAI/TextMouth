@@ -27,7 +27,9 @@ extension ReaderViewModel {
     /// While this finished book hands listening over to the next book, Play
     /// starts that book instead, never this one (`playGoesToTheHandOver()`).
     /// Every Play of a finished book comes here, from the AirPods, the
-    /// keyboard, or the menu, since it is neither playing nor paused.
+    /// keyboard, or the menu, since it is neither playing nor paused. A book
+    /// resting at its end does not play its end again: Play does what its
+    /// end does (`playFromTheEnd()`, TODO P07).
     func play() {
         // Loading or closed readers cannot own a playback/statistics session.
         guard !hasClosed, !isLoading, let content,
@@ -42,6 +44,11 @@ extension ReaderViewModel {
         }
         // A play waiting for its chapter's speech starts once it is ready.
         guard !isWaitingForChapterSpeech else { return }
+        // A book resting at its end, finished, is not played from there.
+        guard !cursorRestsAtEnd else {
+            playFromTheEnd()
+            return
+        }
         // Find what a text book will say before claiming playback, so a book
         // with nothing left to say ends before any playback state is claimed.
         var speechStart: SpeechStart?
@@ -76,6 +83,51 @@ extension ReaderViewModel {
             startSpeakingAsNowPlaying(speechStart)
         } else if let awaitedSpeech {
             waitForChapterSpeech(awaitedSpeech)
+        }
+    }
+
+    /// What Play does on a book that rests at its end, finished (TODO P07):
+    /// what its end did, without playing the end again, and without telling
+    /// or counting a finish, since nothing new was heard. The user decided
+    /// on October 10, 2026: "I mean maybe this could be a setting but not by
+    /// default, it should just say "fished" if there not enabled to move to
+    /// the next book or start over". So:
+    /// - Stop: "Finished: <title>", and nothing else.
+    /// - Continue to Next Book: the next book in the folder takes listening
+    ///   over, "Starting: <title>", or the book says why none follows, as at
+    ///   the end.
+    /// - A book read from the reading list: the list's next book, or why
+    ///   none follows, as at the end.
+    /// - Loop to Start: the book plays again from its beginning,
+    ///   "Restarting: <title>", as at the end.
+    ///
+    /// Nothing else changes: the book keeps its media session, or the lack
+    /// of one, and stays finished. Play once played the book's last word
+    /// or moment again, which ended it again at once: "Finished" again, and
+    /// another entry in Books Finished, six of them for one book within nine
+    /// seconds on October 7. The sleep timer keeps its rule: this reader's
+    /// timer in effect starts no next book, since it could never pause it.
+    private func playFromTheEnd() {
+        DiagnosticLog.trace(.playback, "play: the book rests at its end; Play does what its end does")
+        if isOpenedFromReadingList {
+            followReadingListPastThisBook(
+                sleepTimerEndsListening: sleepTimerEndsListeningHere,
+                sleepTimerStoppedHere: false,
+                sayingNothingFollows: announceToVoiceOver(_:)
+            )
+            return
+        }
+        switch effectiveEndOfBookBehavior {
+        case .stop:
+            announceToVoiceOver(EndOfBookWording.finished(book.title))
+        case .loop:
+            playFromTheBeginning(announcing: EndOfBookWording.restarting(book.title))
+        case .continueNext:
+            continueToNextBookInFolder(
+                sleepTimerEndsListening: sleepTimerEndsListeningHere,
+                sleepTimerStoppedHere: false,
+                sayingNothingFollows: announceToVoiceOver(_:)
+            )
         }
     }
 
@@ -2261,55 +2313,92 @@ extension ReaderViewModel {
             )
 
         case .loop:
-            currentChapterIndex = 0
-            currentCharacterOffset = 0
-            // The book waits at its beginning, not its end: a backward skip
-            // from here has nowhere to go back to, and starts nothing.
-            hasFinishedBook = false
-            chapterPlaybackGeneration += 1
-            savePosition()
             if sleepTimerStoppedHere {
                 // The book waits at its beginning, where Play starts it again.
+                returnToTheBeginning()
                 DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer stopped playback here; not starting it again")
                 finishListening(
                     announcing: EndOfBookWording.finished(book.title, notes: [EndOfBookWording.notRestartedNote])
                 )
             } else {
-                announceToVoiceOver(EndOfBookWording.restarting(book.title))
-                // Route through the correct backend and start the next
-                // listening session. Audiobook placeholder text cannot be
-                // looped via TTS.
-                play()
+                playFromTheBeginning(announcing: EndOfBookWording.restarting(book.title))
             }
 
         case .continueNext:
             finishAtTheEnd(replayingAFinishedEnd: replayedFinishedEnd)
-            // Find the next book in the same folder by manual sort order
-            if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
-                if sleepTimerEndsListening {
-                    // The next book would play on past this reader's sleep
-                    // timer, which can pause only the reader that set it.
-                    DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book")
-                    finishListening(
-                        announcing: EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote])
-                    )
-                } else {
-                    // The next book takes over, so this one no longer rests
-                    // finished at its end.
-                    handOverToNextBook(to: nextBook.id, titled: nextBook.title) {
-                        self.continueToNextBook(nextBook.id)
-                    }
-                }
-            } else {
-                finishListening(
-                    announcing: EndOfBookWording.finished(
-                        book.title,
-                        notes: [EndOfBookWording.noMoreBooksInFolderNote],
-                        sleepTimerExpired: sleepTimerStoppedHere
-                    )
-                )
-            }
+            continueToNextBookInFolder(
+                sleepTimerEndsListening: sleepTimerEndsListening,
+                sleepTimerStoppedHere: sleepTimerStoppedHere,
+                sayingNothingFollows: finishListening(announcing:)
+            )
         }
+    }
+
+    /// Continue to Next Book from this finished book (`handleEndOfBook()`,
+    /// and Play on a book resting at its end, `playFromTheEnd()`): the next
+    /// book in its folder, by the folder's order, takes listening over
+    /// (`handOverToNextBook(to:titled:askingWith:)`), unless this reader's
+    /// sleep timer is in effect, which could never pause it, or no book
+    /// follows. Then `say` says that the book finished and why nothing
+    /// follows.
+    ///
+    /// - Parameters:
+    ///   - sleepTimerEndsListening: Whether this reader's sleep timer is in
+    ///     effect (`sleepTimerEndsListeningHere`).
+    ///   - sleepTimerStoppedHere: Whether that timer stopped playback where
+    ///     the book ended.
+    ///   - say: Says what the listener hears when nothing follows: at the
+    ///     end, it ends listening with it (`finishListening(announcing:)`).
+    private func continueToNextBookInFolder(
+        sleepTimerEndsListening: Bool,
+        sleepTimerStoppedHere: Bool,
+        sayingNothingFollows say: (String) -> Void
+    ) {
+        guard let nextBook = libraryViewModel.nextBookInFolder(after: book) else {
+            say(EndOfBookWording.finished(
+                book.title,
+                notes: [EndOfBookWording.noMoreBooksInFolderNote],
+                sleepTimerExpired: sleepTimerStoppedHere
+            ))
+            return
+        }
+        guard !sleepTimerEndsListening else {
+            // The next book would play on past this reader's sleep timer,
+            // which can pause only the reader that set it.
+            DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book")
+            say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote]))
+            return
+        }
+        // The next book takes over, so this one no longer rests finished at
+        // its end.
+        handOverToNextBook(to: nextBook.id, titled: nextBook.title) {
+            self.continueToNextBook(nextBook.id)
+        }
+    }
+
+    /// Puts the cursor at the book's beginning, saved, where a book that
+    /// loops starts again, or waits for Play: the book rests at its end no
+    /// longer, so a backward skip from there has nowhere to go back to,
+    /// and starts nothing. Moving the cursor begins a new playback
+    /// generation, as `restAtEnd()` does.
+    private func returnToTheBeginning() {
+        currentChapterIndex = 0
+        currentCharacterOffset = 0
+        hasFinishedBook = false
+        chapterPlaybackGeneration += 1
+        savePosition()
+    }
+
+    /// Says `announcement`, and plays the book from its beginning
+    /// (`returnToTheBeginning()`) as Play does, passing over what says
+    /// nothing, with the play sound and a listening session: a book that
+    /// loops, at its end and on Play at its end.
+    private func playFromTheBeginning(announcing announcement: String) {
+        returnToTheBeginning()
+        announceToVoiceOver(announcement)
+        // Route through the correct backend and start the next listening
+        // session. Audiobook placeholder text cannot be looped via TTS.
+        play()
     }
 
     /// End listening with this finished book, and say `announcement`.
