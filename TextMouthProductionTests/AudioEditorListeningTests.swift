@@ -139,7 +139,7 @@ final class AudioEditorListeningTests: XCTestCase {
         XCTAssertEqual(model.answer(.goToTime, with: "1:31"), "That's after the end of the audio, at 1 minute, 30 seconds.")
         XCTAssertEqual(harness.announcements.sentences.last, "That's after the end of the audio, at 1 minute, 30 seconds.")
         XCTAssertEqual(model.prompt, .goToTime)
-        XCTAssertEqual(model.answer(.goToTime, with: "soon"), AudioEditorTimeEntry.howToType)
+        XCTAssertEqual(model.answer(.goToTime, with: "soon"), TimeEntry.howToType)
 
         XCTAssertNil(model.answer(.goToTime, with: "1:04.5"))
         XCTAssertNil(model.prompt)
@@ -147,18 +147,8 @@ final class AudioEditorListeningTests: XCTestCase {
         XCTAssertEqual(harness.announcements.sentences.last, "1 minute, 4.5 seconds")
     }
 
-    /// Times are read as people type them.
-    func testTimesAreReadAsPeopleTypeThem() {
-        XCTAssertEqual(AudioEditorTimeEntry.reading("75.5"), .seconds(75.5))
-        XCTAssertEqual(AudioEditorTimeEntry.reading("12:04.3"), .seconds(724.3))
-        XCTAssertEqual(AudioEditorTimeEntry.reading(" 1 : 02 : 03 "), .seconds(3_723))
-        XCTAssertEqual(AudioEditorTimeEntry.reading("0:05"), .seconds(5))
-        XCTAssertEqual(AudioEditorTimeEntry.reading("1:60"), .problem("Seconds must be less than 60."))
-        XCTAssertEqual(AudioEditorTimeEntry.reading("1:60:00"), .problem("Minutes must be less than 60."))
-        for text in ["", "  ", "-5", "1e3", ":5", "12:", "1.5:00", "a:b", "1:2:3:4", "."] {
-            XCTAssertEqual(AudioEditorTimeEntry.reading(text), .problem(AudioEditorTimeEntry.howToType), text)
-        }
-    }
+    // How a typed time is read is `TimeEntry`'s, shared with the reader's
+    // Go to Time, and tested in TimeEntryTests.
 
     // MARK: - Chapters
 

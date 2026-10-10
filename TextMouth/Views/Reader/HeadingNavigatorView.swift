@@ -360,28 +360,82 @@ struct HeadingNavigatorView: View {
     }
 
     private func makeHeadingItems() -> [HeadingListItem] {
-        let filtered = filteredHeadings
-        let skippedIDs = shown.value.skippedHeadingIDs
+        Self.headingItems(
+            for: viewModel,
+            displayed: filteredHeadings,
+            allHeadings: shown.value.headings,
+            skippedIDs: shown.value.skippedHeadingIDs,
+            mode: displayMode
+        )
+    }
 
-        guard let content = viewModel.content else {
-            return filtered.map { heading in
-                let isSkipped = skippedIDs.contains(heading.id)
-                return HeadingListItem(
+    /// The rows the sheet shows for `reader`'s book: its places named on
+    /// its clock (`ReaderViewModel.placeClock`), an audiobook's lengths
+    /// heard at its speed, and that speed named beside each length while
+    /// the setting asks for it (`ReaderViewModel.namedListeningSpeed`).
+    /// Before the book's content loads, each row shows its heading alone.
+    static func headingItems(
+        for reader: ReaderViewModel,
+        displayed: [Heading],
+        allHeadings: [Heading],
+        skippedIDs: Set<String>,
+        mode: HeadingDisplayMode
+    ) -> [HeadingListItem] {
+        guard let content = reader.content, let clock = reader.placeClock else {
+            return displayed.map { heading in
+                HeadingListItem(
                     heading: heading,
-                    isSkipped: isSkipped,
+                    isSkipped: skippedIDs.contains(heading.id),
                     infoText: "",
                     accessibilitySuffix: ""
                 )
             }
         }
+        return headingItems(
+            displayed: displayed,
+            allHeadings: allHeadings,
+            skippedIDs: skippedIDs,
+            mode: mode,
+            content: content,
+            clock: clock,
+            listeningSpeed: reader.isAudioBook ? reader.audioSpeed : 1,
+            namedSpeed: reader.namedListeningSpeed
+        )
+    }
 
+    /// The rows the sheet shows for the `displayed` headings, in `mode`,
+    /// for a book whose `content` names its places on `clock`
+    /// (`ReaderViewModel.placeClock`, P08):
+    ///
+    /// - Time In: where each heading starts on the clock. An audiobook's is
+    ///   its time in the recording, the same at every speed, so typed into
+    ///   Go to Time it lands on the heading; a text book's is its time at
+    ///   its words per minute, as always.
+    /// - Duration: how long each heading lasts, to the next heading shown or
+    ///   the book's end, heard at `listeningSpeed`: an audiobook's speed, or
+    ///   1 for a text book, whose clock already counts its words at its
+    ///   speed. Headings the level filter hides stay part of the heading
+    ///   before them, rather than ending it. `namedSpeed`, while the setting
+    ///   names the speed, follows each length, shown and spoken ("25:03 at
+    ///   2.0x"); nil leaves the lengths as they always read.
+    /// - Percentage: where each heading starts, as a share of the book's
+    ///   units.
+    static func headingItems(
+        displayed: [Heading],
+        allHeadings: [Heading],
+        skippedIDs: Set<String>,
+        mode: HeadingDisplayMode,
+        content: DocumentContent,
+        clock: PlaceClock,
+        listeningSpeed: Double,
+        namedSpeed: ReaderTimeWording.ListeningSpeed? = nil
+    ) -> [HeadingListItem] {
         // Heading offsets and totalCharacterCount use UTF-16 coordinates;
         // grapheme counts shift every later chapter after emoji/combining text.
         let chapterStartOffsets = cumulativeChapterOffsets(content.chapters.map(\.text.utf16Length))
-        let allHeadings = shown.value.headings
         let totalCharacterCount = max(content.totalCharacterCount, 1)
-        let totalWordCount = content.totalWordCount
-        let totalReadingTime = content.estimatedReadingTime(wpm: viewModel.speechService.wordsPerMinute)
+        // A speed that is no number, or not above 0, hears lengths at 1x.
+        let speed = listeningSpeed.isFinite && listeningSpeed > 0 ? listeningSpeed : 1
 
         let globalOffsetsByID = Dictionary(uniqueKeysWithValues: allHeadings.map { heading in
             (heading.id, chapterStartOffsets[safe: heading.chapterIndex, default: 0] + heading.characterOffset)
@@ -390,50 +444,35 @@ struct HeadingNavigatorView: View {
         // Duration rows use the next heading visible under the current level
         // filter. Hidden subheadings remain part of the measured content, but
         // no longer truncate the displayed parent heading's duration.
-        let nextOffsetsByID = Self.nextDisplayedHeadingOffsets(
-            filtered,
+        let nextOffsetsByID = nextDisplayedHeadingOffsets(
+            displayed,
             globalOffsetsByID: globalOffsetsByID,
             totalCharacterCount: totalCharacterCount
         )
 
-        return filtered.map { heading in
+        return displayed.map { heading in
             let isSkipped = skippedIDs.contains(heading.id)
             let globalOffset = globalOffsetsByID[heading.id] ?? 0
-            let nextOffset = nextOffsetsByID[heading.id] ?? totalCharacterCount
+            let start = clock.time(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
 
-            switch displayMode {
+            switch mode {
             case .timeEstimate:
-                let charCount = max(nextOffset - globalOffset, 0)
-                let seconds: TimeInterval
-                if viewModel.isAudioBook {
-                    seconds = Double(charCount) / ReaderViewModel.audioCharsPerSecond / viewModel.audioSpeed
-                } else if totalWordCount > 0, viewModel.speechService.wordsPerMinute > 0 {
-                    let wordEstimate = Double(charCount) / Double(totalCharacterCount) * Double(totalWordCount)
-                    seconds = wordEstimate / viewModel.speechService.wordsPerMinute * 60.0
-                } else {
-                    seconds = 0
-                }
+                // The next heading shown, or the book's end, found as a place.
+                let next = content.location(forGlobalOffset: nextOffsetsByID[heading.id] ?? totalCharacterCount)
+                let end = clock.time(chapterIndex: next.chapterIndex, characterOffset: next.localOffset)
+                let seconds = max(0, end - start) / speed
                 return HeadingListItem(
                     heading: heading,
                     isSkipped: isSkipped,
-                    infoText: TimeFormatting.format(seconds),
-                    accessibilitySuffix: TimeFormatting.spoken(seconds)
+                    infoText: TimeFormatting.format(seconds) + ReaderTimeWording.shownSpeed(namedSpeed),
+                    accessibilitySuffix: TimeFormatting.spoken(seconds) + ReaderTimeWording.spokenSpeed(namedSpeed)
                 )
             case .timeIntoBook:
-                let seconds: TimeInterval
-                if viewModel.isAudioBook {
-                    seconds = Double(globalOffset) / ReaderViewModel.audioCharsPerSecond / viewModel.audioSpeed
-                } else if viewModel.speechService.wordsPerMinute > 0 {
-                    let fraction = Double(globalOffset) / Double(totalCharacterCount)
-                    seconds = totalReadingTime * fraction
-                } else {
-                    seconds = 0
-                }
                 return HeadingListItem(
                     heading: heading,
                     isSkipped: isSkipped,
-                    infoText: TimeFormatting.format(seconds),
-                    accessibilitySuffix: "\(TimeFormatting.spoken(seconds)) in"
+                    infoText: TimeFormatting.format(start),
+                    accessibilitySuffix: "\(TimeFormatting.spoken(start)) in"
                 )
             case .percentage:
                 let percent = min(Double(globalOffset) / Double(totalCharacterCount) * 100.0, 100.0)
@@ -459,7 +498,9 @@ struct HeadingNavigatorView: View {
         Self.levelsPresent(in: shown.value.headings)
     }
 
-    private func cumulativeChapterOffsets(_ counts: [Int]) -> [Int] {
+    /// Where each chapter starts, in UTF-16 code units: the counts before
+    /// it, together.
+    private static func cumulativeChapterOffsets(_ counts: [Int]) -> [Int] {
         var offsets: [Int] = []
         offsets.reserveCapacity(counts.count)
         var runningTotal = 0

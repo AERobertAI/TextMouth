@@ -222,7 +222,7 @@ extension AudioEditorModel {
     /// The length of silence `text` names, or what's wrong with it: a time
     /// of more than none and at most a day.
     private func silenceLength(typed text: String) -> (seconds: TimeInterval?, problem: String?) {
-        switch AudioEditorTimeEntry.reading(text) {
+        switch TimeEntry.reading(text) {
         case .problem(let sentence):
             return (nil, sentence)
         case .seconds(let seconds):

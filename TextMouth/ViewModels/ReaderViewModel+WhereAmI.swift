@@ -112,6 +112,7 @@ extension ReaderViewModel {
             percentComplete: percentComplete,
             timeRemaining: timeRemaining,
             isFinished: cursorRestsAtEnd,
+            speed: namedListeningSpeed,
             heardSentence: heardTranscriptSentence
         )
     }
@@ -121,6 +122,9 @@ extension ReaderViewModel {
     /// A book resting at its end, finished (`isFinished`), says "Finished" in
     /// place of its percent and time left (TODO P07): "Dune. Appendix.
     /// Heading 40 of 40. Finished."
+    /// With the setting that names the speed on (`speed`, P08), the time
+    /// left says the speed it counts at: "3 hours remaining at 2.0 times
+    /// speed"; nil, or an audiobook at 1x, says it as before.
     /// A transcribed audiobook's `heardSentence` follows, quoted as it is:
     /// "… 3 hours remaining. The salt road bends east."
     nonisolated static func briefWhereAmISummary(
@@ -130,11 +134,15 @@ extension ReaderViewModel {
         percentComplete: Double,
         timeRemaining: TimeInterval,
         isFinished: Bool = false,
+        speed: ReaderTimeWording.ListeningSpeed? = nil,
         heardSentence: String? = nil
     ) -> String {
         let progress = isFinished
             ? [EndOfBookWording.finishedProgress]
-            : [String(format: "%.0f percent", percentComplete), "\(TimeFormatting.spoken(timeRemaining)) remaining"]
+            : [
+                String(format: "%.0f percent", percentComplete),
+                "\(TimeFormatting.spoken(timeRemaining)) remaining\(ReaderTimeWording.spokenSpeed(speed))",
+            ]
         let parts = whereAmILocationParts(
             bookTitle: bookTitle,
             locationTitle: locationTitle,
@@ -158,6 +166,7 @@ extension ReaderViewModel {
             timeRemainingInHeading: position.heading.flatMap { remainingTime(inHeading: $0, content: content) },
             totalTime: totalEstimatedTime,
             isFinished: cursorRestsAtEnd,
+            speed: namedListeningSpeed,
             readingListPlace: readingListPlace,
             heardSentence: heardTranscriptSentence
         )
@@ -174,7 +183,10 @@ extension ReaderViewModel {
     /// audiobook's `heardSentence` follows last. A book resting at its end,
     /// finished (`isFinished`), says "Finished" in place of its percent and
     /// the times left in the book and the heading, and still gives its
-    /// whole time (TODO P07).
+    /// whole time (TODO P07). With the setting that names the speed on
+    /// (`speed`, P08), the book's time left and its total say the speed they
+    /// count at ("at 2.0 times speed"); the heading's time left, said just
+    /// after the book's, says none.
     nonisolated static func fullWhereAmISummary(
         bookTitle: String,
         locationTitle: String?,
@@ -184,6 +196,7 @@ extension ReaderViewModel {
         timeRemainingInHeading: TimeInterval?,
         totalTime: TimeInterval,
         isFinished: Bool = false,
+        speed: ReaderTimeWording.ListeningSpeed? = nil,
         readingListPlace: ReadingListPlace? = nil,
         heardSentence: String? = nil
     ) -> String {
@@ -192,16 +205,17 @@ extension ReaderViewModel {
             locationTitle: locationTitle,
             headingPosition: headingPosition
         )
+        let namedSpeed = ReaderTimeWording.spokenSpeed(speed)
         if isFinished {
             parts.append(EndOfBookWording.finishedProgress)
         } else {
             parts.append(String(format: "%.0f percent through the book", percentComplete))
-            parts.append("\(TimeFormatting.spoken(timeRemaining)) remaining")
+            parts.append("\(TimeFormatting.spoken(timeRemaining)) remaining\(namedSpeed)")
             if let timeRemainingInHeading {
                 parts.append("\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading")
             }
         }
-        parts.append("Total book time: \(TimeFormatting.spoken(totalTime))")
+        parts.append("Total book time: \(TimeFormatting.spoken(totalTime))\(namedSpeed)")
         if let readingListPlace {
             parts.append(ReadingListReaderWording.place(readingListPlace))
         }
@@ -653,27 +667,55 @@ extension ReaderViewModel {
     func copyReadingPosition() {
         guard content != nil else { return }
 
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(readingPositionText, forType: .string)
+        announceToVoiceOver("Reading position copied to clipboard")
+    }
+
+    /// The reading position as Copy Reading Position copies it
+    /// (`readingPositionSummary`): the book, its heading, its percent, the
+    /// place's time on the book's clock, which Go to Time takes back ("at
+    /// 2:13:05 of 9:41:07 in the recording", P08), and its time left, naming
+    /// the speed while the setting asks for it; "Finished" for a book
+    /// resting at its end. Tests read it without the pasteboard.
+    var readingPositionText: String {
         let position = currentHeadingPosition
-        let positionText = Self.readingPositionSummary(
+        return Self.readingPositionSummary(
             bookTitle: book.title,
             author: book.author,
             locationTitle: locationTitle(for: position, chapterIndex: currentChapterIndex),
             headingPosition: position,
             percentComplete: percentComplete,
             formattedTimeRemaining: formattedTimeRemaining,
-            isFinished: cursorRestsAtEnd
+            isFinished: cursorRestsAtEnd,
+            place: copiedPlace,
+            speed: namedListeningSpeed
         )
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(positionText, forType: .string)
-        announceToVoiceOver("Reading position copied to clipboard")
+    }
+
+    /// The reading position's place as Copy Reading Position names it (P08,
+    /// `ReaderTimeWording.copiedPlace`): its time on the book's clock and the
+    /// clock's whole length; nil before the book's content loads.
+    private var copiedPlace: String? {
+        guard let clock = placeClock else { return nil }
+        return ReaderTimeWording.copiedPlace(
+            clock.time(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset),
+            of: clock.length,
+            timeCount
+        )
     }
 
     /// Pure formatter for the copied reading position, using the same heading
     /// vocabulary as Where Am I. Example:
     /// "My Book | by An Author | The Battle | Heading 26 of 412 | 30.0% through | 3:00:00 remaining"
+    /// The place (`place`, P08) goes between the percent and the time left:
+    /// "… | 22.9% through | at 2:13:05 of 9:41:07 in the recording | 3:44:01
+    /// remaining". With the setting that names the speed on (`speed`), the
+    /// time left says it: "3:44:01 remaining at 2.0x"; nil, or an audiobook
+    /// at 1x, leaves it as before.
     /// A book resting at its end, finished (`isFinished`), says "Finished" in
-    /// place of its percent and time left (TODO P07): "Dune | by Frank
-    /// Herbert | Appendix | Heading 40 of 40 | Finished".
+    /// place of its percent, place, and time left (TODO P07): "Dune | by
+    /// Frank Herbert | Appendix | Heading 40 of 40 | Finished".
     nonisolated static func readingPositionSummary(
         bookTitle: String,
         author: String,
@@ -681,11 +723,17 @@ extension ReaderViewModel {
         headingPosition: HeadingPosition,
         percentComplete: Double,
         formattedTimeRemaining: String,
-        isFinished: Bool = false
+        isFinished: Bool = false,
+        place: String? = nil,
+        speed: ReaderTimeWording.ListeningSpeed? = nil
     ) -> String {
         let progress = isFinished
             ? [EndOfBookWording.finishedProgress]
-            : [String(format: "%.1f%% through", percentComplete), "\(formattedTimeRemaining) remaining"]
+            : [
+                String(format: "%.1f%% through", percentComplete),
+                place ?? "",
+                "\(formattedTimeRemaining) remaining\(ReaderTimeWording.shownSpeed(speed))",
+            ]
         return readingPositionSummary(parts: [
             bookTitle,
             author.isEmpty ? "" : "by \(author)",

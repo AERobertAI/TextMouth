@@ -292,6 +292,10 @@ final class ConfigService: ObservableObject {
         var showSpeedInPlaybackControls: Bool?
         /// Whether the reader's toolbar shows an Export button (FR05).
         var showExportInReaderToolbar: Bool?
+        /// Whether the reader names the speed beside time left and total
+        /// time (P08): "3:44:01 left at 2.0x" for an audiobook not at 1x,
+        /// "at 500 words a minute" for a text book.
+        var includeSpeedWithTimes: Bool?
         /// Whether sound effects play.
         var soundEffectsEnabled: Bool?
         /// How loud sound effects play, from 0 to 1, written to the
@@ -466,6 +470,7 @@ final class ConfigService: ObservableObject {
             showBookmarkInPlaybackControls = fields.optionalFlag(.showBookmarkInPlaybackControls)
             showSpeedInPlaybackControls = fields.optionalFlag(.showSpeedInPlaybackControls)
             showExportInReaderToolbar = fields.optionalFlag(.showExportInReaderToolbar)
+            includeSpeedWithTimes = fields.optionalFlag(.includeSpeedWithTimes)
             soundEffectsEnabled = fields.optionalFlag(.soundEffectsEnabled)
             soundEffectsVolume = fields.optionalNumber(.soundEffectsVolume, rule: SettingsPolicy.soundEffectsVolume)
             soundEffectAssignments = fields.entries(
@@ -561,7 +566,7 @@ final class ConfigService: ObservableObject {
                     "rewindOnResumeUnit", "rewindSmartMode", "rewindSmartThreshold", "punctuationPauseLevel",
                     "autoPlayOnNavigate", "endOfBookBehavior", "sleepFadeOutDuration", "sleepTimerAutoClose",
                     "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls",
-                    "showSpeedInPlaybackControls", "showExportInReaderToolbar",
+                    "showSpeedInPlaybackControls", "showExportInReaderToolbar", "includeSpeedWithTimes",
                 ])
                 // Shortcuts: the record of the ones the user edited (FR12),
                 // which the file lists with every other action's defaults,
@@ -649,9 +654,13 @@ final class ConfigService: ObservableObject {
             ///   window positions in the store too, and they stay there.
             /// - `editTextExplained`: whether Edit Text has explained what it
             ///   does on this Mac (FR05): state, not a setting.
+            /// - `library.finishedBooksAtEndVersion`: the version of the
+            ///   one-time move of finished books to their ends made on this
+            ///   Mac (`LibraryViewModel.finishedBooksAtEndKey`, P07): state,
+            ///   not a setting.
             static let localStoreKeys = DataDirectoryPreferences.keys
                 + [LibrarySessionLease.macIDPreference.key, "sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
-                + [BookTextEditor.explainedPreference.key]
+                + [BookTextEditor.explainedPreference.key, LibraryViewModel.finishedBooksAtEndKey]
 
             /// Pairs each key with the config.json field of the same name.
             private static func sameNames(_ keys: [String]) -> [(storeKey: String, field: String)] {
