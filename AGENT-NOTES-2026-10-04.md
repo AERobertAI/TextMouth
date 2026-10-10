@@ -1103,3 +1103,41 @@ ARCHITECTURE wording:
 - **Speak Info entry, Who may write it:** "ShortcutAction.speakInfo (I) and speakFullInfo (I twice), and Library > Speak Info and Speak Full Info". Command-I routes by `LibraryInfoRow.infoCommand(feedInFolder:)`, a plain folder getting its full summary.
 - **Keyboard shortcuts entry:** replace "(ShortcutAction.escalates, empty until branch C)" with "(ShortcutAction.escalations: Where Am I? Full Summary escalates Where Am I?, and Speak Full Info escalates Speak Info)".
 - **Duplication note (line 733):** "LibraryInfoSpeaker repeats Where Am I?'s utterance and its handling of the end of one: finishes and cancels by ReportedUtterance, a live check, and a refused synthesizer replaced (isLive/replaceSynthesizer beside isLiveWhereAmIUtterance/replaceWhereAmISynthesizer). One speaker of short announcements could serve both."
+
+## From the feeditemrecords agent (feature/feed-item-records), Oct 10
+
+What happens to the user's one downloaded article on Delete Download:
+It has been opened and has a position, so its package is kept. Step by step:
+1. Its record (`bookInfo.json`) is written at once with its place.
+2. Its row moves to the feed's shelf, and `Feeds/6452A5C0-…/library.json` is written with it and waited for.
+3. Only then does the HTML file go, to the Trash or deleted as your Trash setting says.
+4. Its `content.md` and any prepared speech are deleted for good, because they were made from the file.
+5. `bookInfo.json` and `contentIndex.json` stay.
+
+The item shows as not downloaded. The article leaves Recently Opened, and the reading list if it was on it. Download or Open later brings back the same book in the same package, opening at your place. If the feed's index can't be written, nothing is deleted and an alert says the download was kept.
+
+Not verified:
+- Real cloud drives, including whether the folder swap works inside one.
+- Live VoiceOver on the three new alert sentences.
+- The fallback for volumes that can't swap two folders (ExFAT, SMB) has no test.
+- Moving the file to the Trash; tests always delete for good.
+
+Decisions and assumptions:
+- **What counts as yours:** a package is kept if the item was opened, or has a place, playback times, bookmarks, a setting of its own, or a transcript file. A played date alone doesn't count, because it lives in the feed's record.
+- **What stays in a kept package:** `bookInfo.json`, `contentIndex.json` and the transcript's files. An audiobook also keeps its `content.md` and Edit Text's copies. Everything else goes, including any audio edits.
+- **Remove on an episode or article:**
+  - Remove & Delete acts as Delete Download.
+  - Remove from Library Only now refuses with an explanation, because retiring the package would delete its record.
+- **A restored book** keeps its old title, author, date added and hand edits, and takes the new file's details. The transcript is copied over and its text is rebuilt when the episode opens. If the new audio differs, the transcript is kept and logged `TRANSCRIPT_STALE` when the episode opens; the importer itself logs nothing.
+- **The new package replaces the kept one in a single swap** (`renamex_np` with `RENAME_SWAP`). If the volume can't swap, the kept package is set aside, then put back if publishing fails.
+- **Downloads not yet moved into their feed's folder** (made before FR11): Delete Download and Delete Episode refuse them, and the sweep passes them by, rather than lose a position.
+- **The after-playing sweep** reads cloud state off the main thread, then removes on the main thread, so it can't race a download restoring into the same package.
+- **A kept, opened item no longer counts as new.**
+- **Logging (#1411):** Delete Download and the sweep now write `FEED_DOWNLOAD_DELETED` / `FEED_DOWNLOAD_FORGOTTEN` lines.
+- **FR13 scope:** only the View picker and the window title name the category; no menu, summary bar, Speak Info or Where Am I does, and that includes fullsummary's merged code (I told fullsummary, #1598). A window saved with the category "Recent" reads it as Recently Opened, and its sort key `__recent__` is unchanged.
+
+README wording:
+"Deleting a download keeps your place. Delete Download, the after-playing rule, and Remove on an episode or article remove its file and what was made from it, and keep its place, playback times, bookmarks, its own settings, and its transcript in the feed's folder; a download you never opened goes entirely. Downloading it again brings back the same book, opening where you left off; its transcript shows its text again when the new file is the same audio (a host that inserts different advertisements makes it stale until you transcribe again). Remove from Library Only refuses an episode or article. Delete Episode deletes everything kept for it. A feed keeps every item you played, and every item whose place it keeps. If TextMouth can't save the feed's list first, the download is kept and an alert says so. Recent is now called Recently Opened."
+
+ARCHITECTURE wording:
+"Removing a feed item's file (FR11, A2) goes through `LibraryViewModel.removeFeedFiles(of:keepingPackages:remove:)`: a package holding the listener's state (`FeedItemPackage.holdsListenerState`) has its record written at once (`writePendingBookInfoNow`) and its row moved to `Library.feedShelf`, then the indexes are written and waited for (`LibraryPersistenceService.saveAndWait`, which returns whether they reached the disk), and only then does the caller remove the file and its caches (`staysWithoutTheFile`) or the whole package; a failed index write throws `FeedItemPackageError.indexNotWritten` with nothing touched, and a file that can't be removed puts its row back. Packages are checked against their feed's folder (`packageForRemoval`), never the Library folder. Delete Download, the library's Remove (`FeedCenter.deleteDownload(ofBook:in:)`), and Delete Episode use `FeedEnvironment.removeItem` (Trash-aware); the sweep deletes for good after reading cloud state off the main thread. Downloading an item with a kept row restores it (`FeedEpisodeImporter.restoreBook`): transcript files copied in, the kept record's note and a higher revision kept (`writeVerifiedRecord(replacing:)`), the package put in place by `renamex_np(RENAME_SWAP)` (`FeedItemPackage.putInPlace`), and the shelf row replaced (`addFeedBook`). Rows are found by item identity through `FeedItemRowLookup` (`feedItemRows(of:)`, `feedBook(withID:)`), refreshed once per library change; `FeedCenter.state(of:in:)`, `downloadedRow(of:in:)`, `isNew`, and `counts(of:)` use it. `FeedReconciler.kept` keeps played items and kept rows (`keepingRecordsOf:`, from `FeedCenter.keptRecordItemIDs(of:)`). `LibraryCategory.recent` is "Recently Opened" and reads "Recent" (`formerRecentName`)."
