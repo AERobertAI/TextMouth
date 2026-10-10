@@ -191,8 +191,15 @@ struct BookState: Codable {
     var localWPM: Double?
     /// Per-book pitch multiplier override (nil = use global setting, range 0.5–2.0)
     var localPitch: Double?
-    /// Heading IDs that should be skipped during playback
-    var skippedHeadingIDs: [String]?
+    /// Heading IDs that should be skipped during playback (`Heading.id`),
+    /// which all older builds keep; `skippedHeadings` follows every change
+    /// to them (T06), as `Book`'s do.
+    var skippedHeadingIDs: [String]? {
+        didSet { skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings) }
+    }
+    /// The headings skipped during playback, in step with
+    /// `skippedHeadingIDs` (`Book.skippedHeadings`, T06).
+    var skippedHeadings: [SkippedHeading]?
     /// Per-book end-of-book behavior override (nil = use global setting)
     var localEndOfBookBehavior: String?
     /// Per-book forward navigation unit override (nil = use global setting)
@@ -241,6 +248,7 @@ struct BookState: Codable {
         localWPM: Double? = nil,
         localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
+        skippedHeadings: [SkippedHeading]? = nil,
         localEndOfBookBehavior: String? = nil,
         localSkipForwardUnit: String? = nil,
         localSkipBackwardUnit: String? = nil,
@@ -263,6 +271,7 @@ struct BookState: Codable {
         self.localWPM = localWPM
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
+        self.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.localSkipForwardUnit = localSkipForwardUnit
         self.localSkipBackwardUnit = localSkipBackwardUnit
@@ -295,6 +304,9 @@ struct BookState: Codable {
         localWPM = fields.optionalValue(.localWPM, validate: SettingsPolicy.usableLocalSpeed)
         localPitch = fields.optionalValue(.localPitch, validate: SettingsPolicy.validatedLocalPitch)
         skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
+        // As `Book` decodes them: unreadable ones count as none, and they
+        // are put in step with the IDs.
+        skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
         localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
