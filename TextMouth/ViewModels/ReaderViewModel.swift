@@ -154,6 +154,7 @@ final class ReaderViewModel: ObservableObject {
     }
     @Published var currentChapterIndex = 0 {
         didSet {
+            letGoOfOpenedPlaceAnchorIfLeft()
             schedulePlaybackUIRefresh()
             scheduleLivePositionPublish()
         }
@@ -164,6 +165,7 @@ final class ReaderViewModel: ObservableObject {
     /// every spoken word.
     var currentCharacterOffset = 0 {
         didSet {
+            letGoOfOpenedPlaceAnchorIfLeft()
             schedulePlaybackUIRefresh()
             scheduleLivePositionPublish()
         }
@@ -468,6 +470,16 @@ final class ReaderViewModel: ObservableObject {
     private var livePositionWorkItem: DispatchWorkItem?
     private var lastLivePositionPublish = Date.distantPast
     private var lastPersistedCheckpoint: Date?
+    /// The measure of the text this reader shows, which every anchor it
+    /// captures records (T06; `noteLoadedTextForAnchors(cacheFormatVersion:)`):
+    /// nil before the text loads, or when the version of the content.md it
+    /// came from is not known.
+    var textAnchorMeasure: String?
+    /// The place the book opened at, with the anchor it was saved with,
+    /// while the cursor has not left it (T06): saved again there, the place
+    /// keeps the words it was saved with (`anchorToSave(at:)`). Nil once the
+    /// cursor moves, for an audiobook, and for a place saved without words.
+    var openedPlaceAnchor: OpenedPlaceAnchor?
     private struct PlaybackUIRefreshSnapshot {
         let chapterIndex: Int
         let offset: Int
@@ -1326,22 +1338,24 @@ final class ReaderViewModel: ObservableObject {
         showEPUBMetadata()
         audioMetadata = loaded.audioTags.map { book.mergingEditableAudioMetadata($0) }
 
-        // Clamp saved reading position to valid range. The chapter
-        // count can change if the book was re-imported or the cache
-        // was regenerated with different parsing.
-        if currentChapterIndex < 0 {
-            currentChapterIndex = 0
-            currentCharacterOffset = 0
-        } else if currentChapterIndex >= parsed.chapters.count {
-            currentChapterIndex = max(0, parsed.chapters.count - 1)
-            currentCharacterOffset = 0
+        // Bring the saved place into the book as loaded: its chapters and
+        // their lengths can change when the book is imported again or its
+        // text is extracted or edited anew. A place past its chapter's end
+        // opens at that end, which in the last chapter is the book's end, so
+        // a finished book opens finished (T06, question 7; see
+        // `openingPlace(of:savedGlobalOffset:in:)`).
+        let saved = TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset)
+        let opening = Self.openingPlace(of: saved, savedGlobalOffset: savedGlobalOffset(of: saved), in: parsed)
+        if opening != saved {
+            currentChapterIndex = opening.chapter
+            currentCharacterOffset = opening.offset
         }
-        if currentChapterIndex < parsed.chapters.count {
-            let chapterLen = parsed.chapters[currentChapterIndex].text.utf16Length
-            if currentCharacterOffset < 0 || currentCharacterOffset > chapterLen {
-                currentCharacterOffset = 0
-            }
-        }
+        // Every place saved from now on takes its words from this text, but
+        // the place the book opened at keeps the words it was saved with
+        // while the cursor stays there; the bookmarks and skipped headings
+        // saved before anchors take theirs from it now (T06).
+        noteLoadedTextForAnchors(cacheFormatVersion: loaded.cacheFormatVersion)
+        captureMissingAnchorsAtLoad()
         // A book that played to its end was saved exactly there, and opens
         // finished, as it rested before TextMouth quit (TODO P07): its next
         // backward skip plays its end again, and Play does what Play does at
@@ -1774,12 +1788,15 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Builds the one canonical snapshot used by reader persistence and live
-    /// library estimates, preventing formula inputs from drifting apart.
+    /// library estimates, preventing formula inputs from drifting apart. A
+    /// text book's place carries the words around it (T06), by which a
+    /// later text of the book can find it again (`anchorToSave(at:)`).
     private func makeCurrentReadingPosition() -> ReadingPosition {
         ReadingPosition(
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset,
-            globalCharacterOffset: currentGlobalOffset
+            globalCharacterOffset: currentGlobalOffset,
+            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
         )
     }
 

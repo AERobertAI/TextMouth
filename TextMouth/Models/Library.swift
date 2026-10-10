@@ -314,14 +314,26 @@ struct Library: Codable {
 
     // MARK: - Bookmark Operations
 
-    mutating func addBookmark(bookID: UUID, chapterIndex: Int, characterOffset: Int, label: String = "") {
+    /// Adds a bookmark to the book `bookID` at `chapterIndex` and
+    /// `characterOffset`, numbered after its others, with `label` and
+    /// `anchor`, the words around its place (T06): nil for an audiobook's
+    /// bookmark, whose place counts time, and for one made before the
+    /// book's text loaded.
+    mutating func addBookmark(
+        bookID: UUID,
+        chapterIndex: Int,
+        characterOffset: Int,
+        label: String = "",
+        anchor: TextAnchor? = nil
+    ) {
         guard let index = books.firstIndex(where: { $0.id == bookID }) else { return }
         let nextNumber = (books[index].bookmarks.map { $0.number }.max() ?? 0) + 1
         let bookmark = Bookmark(
             number: nextNumber,
             chapterIndex: chapterIndex,
             characterOffset: characterOffset,
-            label: label
+            label: label,
+            anchor: anchor
         )
         books[index].bookmarks.append(bookmark)
     }

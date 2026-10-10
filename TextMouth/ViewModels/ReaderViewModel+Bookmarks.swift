@@ -60,7 +60,8 @@ extension ReaderViewModel {
     /// Toggle a bookmark at the current position: if one exists nearby, remove it;
     /// otherwise add a new one. When adding, checks for overlap with existing
     /// bookmarks and adjusts position to avoid placing two bookmarks within
-    /// each other's proximity zones.
+    /// each other's proximity zones. A bookmark added keeps the words around
+    /// the offset it is saved at, the adjusted one (T06, `anchorToSave(at:)`).
     func toggleBookmarkAtCurrentPosition() {
         if let existing = nearbyBookmark(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset) {
             // Remove the nearby bookmark
@@ -83,7 +84,8 @@ extension ReaderViewModel {
                 bookID: book.id,
                 chapterIndex: currentChapterIndex,
                 characterOffset: adjustedOffset,
-                label: ""
+                label: "",
+                anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: adjustedOffset))
             )
             bookmarks = libraryViewModel.bookmarksForBook(book.id)
             announceToVoiceOver("Bookmark \(bookmarks.count) added")
@@ -135,7 +137,8 @@ extension ReaderViewModel {
         return clamped(adjusted)
     }
 
-    /// Add a bookmark at the current reading position with an optional label.
+    /// Add a bookmark at the current reading position with an optional label,
+    /// keeping the words around it (T06, `anchorToSave(at:)`).
     ///
     /// - Returns: The bookmark added, so the bookmarks panel can move focus
     ///   to its row; nil when the library holds no record of this book and
@@ -149,7 +152,8 @@ extension ReaderViewModel {
             bookID: book.id,
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset,
-            label: label
+            label: label,
+            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
         )
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
         announceToVoiceOver("Bookmark \(bookmarks.count) added")

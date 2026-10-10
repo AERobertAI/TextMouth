@@ -728,7 +728,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
         )
         model.markBookOpened(book.id)
         model.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: "voice.meanwhile", wpm: 240, pitch: 1.2)
-        model.updateSkippedHeadings(bookID: book.id, skippedIDs: ["heading-meanwhile"])
+        model.updateSkippedHeadings(bookID: book.id, headings: [Self.skippedMeanwhile])
         // Keep this change last: waits for these writes look for its stop time.
         model.updatePlaybackTimestamps(bookID: book.id, started: Self.playbackStart, stopped: Self.playbackStop)
     }
@@ -747,10 +747,14 @@ final class ContentAnalysisMergeTests: XCTestCase {
         XCTAssertEqual(record.state.localVoiceID, "voice.meanwhile", file: file, line: line)
         XCTAssertEqual(record.state.localWPM, 240, file: file, line: line)
         XCTAssertEqual(record.state.localPitch, 1.2, file: file, line: line)
-        XCTAssertEqual(record.state.skippedHeadingIDs, ["heading-meanwhile"], file: file, line: line)
+        XCTAssertEqual(record.state.skippedHeadings, [Self.skippedMeanwhile], file: file, line: line)
+        XCTAssertEqual(record.state.skippedHeadingIDs, [Self.skippedMeanwhile.id], file: file, line: line)
         XCTAssertEqual(record.state.lastPlaybackStarted, Self.playbackStart, file: file, line: line)
         XCTAssertEqual(record.state.lastPlaybackStopped, Self.playbackStop, file: file, line: line)
     }
+
+    /// The heading `makeNewerWrites` skips, as a reader saves a skip (T06).
+    private static let skippedMeanwhile = SkippedHeading(level: 2, label: "Meanwhile", chapterIndex: 0, characterOffset: 4)
 
     /// Whole-second times, which bookInfo.json's ISO 8601 dates keep exactly,
     /// for the playback `makeNewerWrites` records.

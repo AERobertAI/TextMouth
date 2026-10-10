@@ -1028,9 +1028,12 @@ final class FeedItemRecordTests: XCTestCase {
         library.updatePlaybackTimestamps(bookID: book.id, started: Self.whole(40), stopped: Self.whole(100))
         library.addBookmark(bookID: book.id, chapterIndex: 0, characterOffset: 21, label: "The good part")
         library.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: nil, wpm: Self.ownSpeed(of: book))
-        library.updateSkippedHeadings(bookID: book.id, skippedIDs: ["credits"])
+        library.updateSkippedHeadings(bookID: book.id, headings: [Self.skippedCredits])
         return try XCTUnwrap(library.bookByID(book.id))
     }
+
+    /// The heading `listen(to:in:)` skips, as a reader saves a skip (T06).
+    private static let skippedCredits = SkippedHeading(level: 1, label: "Credits", chapterIndex: 0, characterOffset: 30)
 
     /// The speed of its own `listen(to:in:)` gives `book`: for an episode a
     /// playback rate, 1.5 times; for an article words per minute, 220, as a
@@ -1095,7 +1098,8 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(kept.bookmarks.map(\.label), ["The good part"], what, file: file, line: line)
         XCTAssertEqual(kept.bookmarks.map(\.characterOffset), [21], what, file: file, line: line)
         XCTAssertEqual(kept.localWPM, Self.ownSpeed(of: listened), what, file: file, line: line)
-        XCTAssertEqual(kept.skippedHeadingIDs, ["credits"], what, file: file, line: line)
+        XCTAssertEqual(kept.skippedHeadings, [Self.skippedCredits], what, file: file, line: line)
+        XCTAssertEqual(kept.skippedHeadingIDs, [Self.skippedCredits.id], what, file: file, line: line)
     }
 
     /// Takes away the read permission of the folder `folder`, so it cannot

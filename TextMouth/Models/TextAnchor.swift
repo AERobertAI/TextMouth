@@ -46,7 +46,18 @@ struct TextAnchor: Codable, Hashable, Sendable {
     /// anchor's own words say whether they still stand; it lets a later
     /// diagnosis count places measured in older text without inferring it
     /// from dates.
-    static let currentMeasure = "\(MarkdownCacheService.currentCacheVersion)/\(BookContentIndex.currentVersion)"
+    static let currentMeasure = measure(ofTextCachedBy: MarkdownCacheService.currentCacheVersion)
+
+    /// The measure of the reading text this build reads from a content.md
+    /// that text cache version `cacheVersion` wrote: that version, and this
+    /// build's content index version, which names how this build reads a
+    /// content.md, as in "3.0.4/1.0.0". `currentMeasure` is the measure of a
+    /// content.md this build wrote. A place captured from a book's text read
+    /// before its cache was rebuilt by this build records the version that
+    /// wrote the content.md it was read from (T06's branch B).
+    static func measure(ofTextCachedBy cacheVersion: String) -> String {
+        "\(cacheVersion)/\(BookContentIndex.currentVersion)"
+    }
 
     /// The chapter's reading text just before the place: up to
     /// `quoteLength` UTF-16 units, ending at the place.

@@ -5,7 +5,9 @@ import Darwin
 /// resident or compressed inside malloc's per-process regions. Give malloc a
 /// pressure-relief opportunity after each book so a library-wide migration has
 /// the memory profile of its active books, rather than the sum of every book.
-private func releaseBatchParserMemory() {
+/// The launch's passes that parse books one after another call it: the text
+/// cache batch, and the pass that reads books for their places' words (T06).
+func releaseBatchParserMemory() {
     _ = malloc_zone_pressure_relief(nil, 0)
 }
 
@@ -540,8 +542,10 @@ extension LibraryViewModel {
     /// Bring every book's row and text up to date, each pass on a
     /// background queue: the metadata refresh first, which reads a book's
     /// file again when an older reader read it and takes seconds
-    /// (`refreshOutdatedMetadata(access:then:)`), then the text caches,
-    /// then the statistics, which can use them.
+    /// (`refreshOutdatedMetadata(access:then:)`), then the words of the
+    /// places saved before anchors, from each book's text as it reads before
+    /// any is rebuilt (`captureMissingTextAnchors(access:then:)`, T06), then
+    /// the text caches, then the statistics, which can use them.
     /// - Parameters:
     ///   - access: How the passes reach the books' files (FR02).
     ///   - completion: Called on the main actor once the last pass has ended.
@@ -554,12 +558,18 @@ extension LibraryViewModel {
                 completion?()
                 return
             }
-            self.extractMissingContentCaches(access: access) { [weak self] in
+            self.captureMissingTextAnchors(access: access) { [weak self] _ in
                 guard let self else {
                     completion?()
                     return
                 }
-                self.calculateMissingBookStats(access: access, then: completion)
+                self.extractMissingContentCaches(access: access) { [weak self] in
+                    guard let self else {
+                        completion?()
+                        return
+                    }
+                    self.calculateMissingBookStats(access: access, then: completion)
+                }
             }
         }
     }
