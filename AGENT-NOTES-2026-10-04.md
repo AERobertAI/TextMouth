@@ -880,3 +880,49 @@ The README and ARCHITECTURE wording of the five October 7 branches above (unopen
 - Unverified: Shift-Command-T opening New from Text… once Show Sleep Timer has another key (read from the code); an End of heading timer spent at a book's end, and the reading list acting as a folder for the timer rewind; live VoiceOver in the Shortcuts tab.
 - Findings: #1528 (Up One Level's place in `ShortcutAction` differs from the tab's), #1529 (punctuation keys left as symbols), and the shared scratchpad folder (another agent overwrote two of its commit-message files after use).
 - For the next documentation pass: once FR12's branch B shares one key-word table, ARCHITECTURE's duplication note about `AudioEditorWording.keyName` (#1508) goes.
+
+## From the refusalalert agent (feature/speech-refusal-alert), Oct 9
+
+Not verified:
+- **A real refusal.** I wrote an offline probe that uses the app's own guard and renders with `write`, so nothing plays. It found no text refused after the guards, in 23 shapes. Those included full-width, small-form, math, CJK and guillemet brackets, entities, embedded `[[ ]]` commands, CDATA-like text and control characters. The stop is tested only through simulated cancels.
+- **The probe did find a separate bug:** a NUL character (U+0000) silently drops the rest of its utterance. It is not a refusal, so no recovery and no report hears it. Posted as #1542.
+- **Live VoiceOver and braille on the sheet.** Neither was tried.
+- **Whether VoiceOver speaks an announcement posted from a window in the background.** Not tested.
+- **The "window in front" case is tested only as a pure rule.** In that case nothing is announced and VoiceOver moves to the sheet's heading. The reader-level tests have no window, so they only exercise the "behind" case, where the announcement is made.
+
+Decisions and assumptions:
+- **The sheet:** a heading, "Speech Stopped", and the brief's sentence, read together as one element. Below that, the whole report sits in a read-only, selectable text area labelled "Details". It reuses `FeedReadOnlyText` and `SilentKeyEquivalent`. The buttons are Copy Details, Show Logs in Finder, and Close; Return and Escape close it.
+- **What the report contains:** the book and its format; the position as the brief Where Am I? says it, without the title; the chapter, with its index as the logs count it; and the offsets in both the book's text and the spoken text. It also holds two passages, the book's own text and the text exactly as handed to the engine, at most 100 UTF-16 units before the stop and 400 from it. Where the refused text begins and ends is said in words, on lines of their own. Then come:
+  - the markup guard in force, and the voice, rate, pitch and volume as handed to the engine;
+  - macOS's version and TextMouth's build;
+  - the speech log's last 40 lines, in the log files' own format;
+  - the time, in the logs' UTC form, and how often this place was refused while the window has been open.
+- **One message at the stop:**
+  - If a reader is set up to be told, the speech service no longer announces anything itself; with no reader it still says its old words.
+  - The reader announces only when its sheet cannot speak for itself, saying "Speech stopped: the speech engine refused this passage. Details are in the book's window."
+  - The sheet moves VoiceOver only when the book's window, or a sheet over it, is the key window of the active app, so a refusal never takes the keyboard or VoiceOver from another window or app.
+  - The report waits while any of the reader's panels is open.
+- **One report at a time:** a second refusal updates the open report in place and is announced again. Closing the report keeps the counts. Play after a stop does not close the report. A closed reader shows and says nothing.
+- **Audiobooks:** they play their audio files and never use the speech engine, so a refusal cannot happen there.
+- **Wider changes:**
+  - `DIRECT_RETRY_FAILED` now names a refused fade segment's own range rather than the whole fade's.
+  - A new event line, `SPEECH_REFUSAL_REPORTED`, goes to the speech transitions log (chapter, offsets, chunk range, count, whether announced).
+  - The speech service now builds every transition line at once (routine trace lines included), since it keeps them in memory.
+- **Test changes:**
+  - I renamed `testACancelOfTheRetryEndsSpeechWithTheAnnouncement` to `...AndTellsTheReaderOrTheListener`. It now pins both cases: silent with a reader, the old announcement without one.
+  - The media-command refusal test now expects the new announcement and checks the report.
+- **Board:** finding #1542 (the NUL character), plus a notice, commit posts and `done`.
+
+README wording:
+Replacing the sentence that quotes the old announcement:
+
+"Refused there again, with no prepared audio to go on from, speech stops with the cursor at that passage, the book shows paused, and the book's window shows a sheet headed "Speech Stopped": "The Mac's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place." Below it, a read-only text area called Details, which VoiceOver reads line by line and a braille display pans, holds the report: the book and the place (as Where Am I? says it, the chapter, and the character where speech stopped, in the book's text and in the spoken text the speech log counts); how often that place was refused while the window has been open; the time; a few hundred characters of the passage as the book has it and of the text exactly as it was handed to the speech engine, after the substitutions and the markup guard, with where the refused text begins and ends said on lines of their own; the markup guard in force; the voice, speed, rate, pitch, and volume; macOS's version; TextMouth's build; and the speech log's last 40 lines, which hold offsets and lengths, never the book's words. Copy Details copies the whole report as plain text and says "Details copied"; Show Logs in Finder opens the folder the logs are written to; Close, Return, or Escape closes it. With the book's window in front, VoiceOver moves to the sheet and nothing else is announced; when another window or app is in front, a panel is open over the book, or the report is open already, VoiceOver says "Speech stopped: the speech engine refused this passage. Details are in the book's window." and the sheet waits in the book's window. A second refusal while it is open updates it."
+
+Logs bullet: add `SPEECH_REFUSAL_REPORTED` to the transition-log tags, as the report shown, with its count and whether it was announced.
+
+ARCHITECTURE wording:
+"Speech refusal reports (B05). `SpeechService.transitionLog` keeps every line, routine ones included, in `recentTransitionLines` (`RecentTransitionLines`, the newest 40, offsets only). `endDirectSpeechRefused(at:refusing:spanning:)` hands the reader a `SpeechRefusal` through `onSpeechRefused`: where speech stopped, the refused utterance's range and text as handed to the engine, the strictly guarded range, its voice, rate, pitch and volume, the speed, and the lines ending with `DIRECT_RETRY_FAILED`. The three recoveries (`recoverFromCancelledDirectUtterance(_:)`, `retryCancelledDirectUtteranceAtResume(_:)`, `recoverFromRefusedFadeSegment(_:at:)`) pass the refused utterance along. With a reader set, the service announces nothing; without one it says `engineRefusedAnnouncement`.
+
+`showPlaybackStoppedAfterRefusal(_:)` ends with `showSpeechRefusalReport(_:)` (ReaderViewModel+SpeechRefusal.swift). It builds a `SpeechRefusalReport` (Models) from the cursor's chapter, the offset map's `toOriginal`, the brief Where Am I? words without the title, `ProcessInfo.operatingSystemVersionString`, and `BuildIdentity.current`. It keeps the report in `speechRefusalAlert` (`SpeechRefusalAlert`: one at a time, counts per `SpeechRefusalPlace`). It announces `SpeechRefusalWording.announcement` unless `speechRefusalWindowStanding` is `.inFront`, and logs `SPEECH_REFUSAL_REPORTED`. `SpeechRefusalReport.lines` words every line, and `SpeechRefusalPassage` clamps each passage and never splits a character.
+
+`SpeechRefusalReportPresenter`, attached in `ReaderView`, presents `SpeechRefusalReportSheet` while a report is kept and no panel shows (`ReaderPanels.isShowingAny`). The sheet follows a `ReaderSnapshot` of the report (PERF30), decides once whether `InitialVoiceOverFocusModifier` targets its heading, and offers Copy Details (`copyDetails(of:to:)`), Show Logs in Finder (`LogsSettingsSection.showLogs(for:)`), and Close (default action; Escape through `SilentKeyEquivalent`)."
