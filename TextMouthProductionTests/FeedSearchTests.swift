@@ -298,15 +298,15 @@ final class FeedSearchTests: XCTestCase {
 
         var scrollViewsBefore = 0
         withHostedView(sheet(before, in: world), size: NSSize(width: 520, height: 720), until: {
-            self.feedEditableFields(in: $0).count == 2
+            self.editableTextFields(in: $0).count == 2
         }) { hosting in
-            XCTAssertEqual(feedEditableFields(in: hosting).count, 2, "the address and Search fields")
+            XCTAssertEqual(editableTextFields(in: hosting).count, 2, "the address and Search fields")
             scrollViewsBefore = descendants(of: hosting, as: NSScrollView.self).count
         }
         withHostedView(sheet(after, in: world), size: NSSize(width: 520, height: 720), until: {
             self.descendants(of: $0, as: NSScrollView.self).count > scrollViewsBefore
         }) { hosting in
-            XCTAssertEqual(feedEditableFields(in: hosting).count, 2, "a result drew a field of its own")
+            XCTAssertEqual(editableTextFields(in: hosting).count, 2, "a result drew a field of its own")
             XCTAssertEqual(
                 descendants(of: hosting, as: NSScrollView.self).count,
                 scrollViewsBefore + 1,

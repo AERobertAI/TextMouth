@@ -589,14 +589,14 @@ final class FeedUICommandsTests: XCTestCase {
         )
 
         try withHostedView(sheet, size: NSSize(width: 560, height: 680), until: {
-            self.feedEditableFields(in: $0).contains(where: \.isEnabled)
+            self.editableTextFields(in: $0).contains(where: \.isEnabled)
         }) { hosting in
             guard pressKeyEquivalent(.escape, in: hosting) else {
                 throw XCTSkip("This macOS hands an offscreen window no key equivalents")
             }
             XCTAssertEqual(dones, 1, "Escape did not press Done")
 
-            let fields = feedEditableFields(in: hosting).filter(\.isEnabled)
+            let fields = editableTextFields(in: hosting).filter(\.isEnabled)
             XCTAssertEqual(fields.count, 1, "fields taking typing: \(fields.map { $0.accessibilityLabel() ?? "" })")
             let field = try XCTUnwrap(fields.first)
             try typeReplacingText("25", in: field, of: hosting)

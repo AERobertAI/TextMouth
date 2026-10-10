@@ -347,9 +347,9 @@ final class FeedUIAddFeedTests: XCTestCase {
         )
 
         withHostedView(sheet, size: NSSize(width: 520, height: 600), until: {
-            !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty && self.feedEditableFields(in: $0).count == 2
+            !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty && self.editableTextFields(in: $0).count == 2
         }) { hosting in
-            XCTAssertEqual(feedEditableFields(in: hosting).count, 2, "the address field and the Search field")
+            XCTAssertEqual(editableTextFields(in: hosting).count, 2, "the address field and the Search field")
             let popUp = descendants(of: hosting, as: NSPopUpButton.self).first
             XCTAssertEqual(popUp?.itemTitles, [LibraryFolderOption.rootLabel, world.folder.path])
             XCTAssertEqual(popUp?.titleOfSelectedItem, world.folder.path)
@@ -410,7 +410,7 @@ final class FeedUIAddFeedTests: XCTestCase {
             let radios = feedRadioChoices(in: hosting)
             XCTAssertEqual(radios.count, 3)
             XCTAssertEqual(radios.chosen, 0, "the page's first feed is not the one chosen")
-            XCTAssertTrue(feedEditableFields(in: hosting).isEmpty, "the address field stayed at the second step")
+            XCTAssertTrue(editableTextFields(in: hosting).isEmpty, "the address field stayed at the second step")
         }
     }
 
@@ -617,7 +617,7 @@ final class FeedUIAddFeedTests: XCTestCase {
         try withHostedView(sheet, size: NSSize(width: 520, height: 720), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
             try typeNewFolderName("Shows", in: hosting)
             let search = try XCTUnwrap(
-                feedEditableFields(in: hosting).first { $0.placeholderString == FeedWording.searchLabel },
+                editableTextFields(in: hosting).first { $0.placeholderString == FeedWording.searchLabel },
                 "the Search field was not drawn"
             )
 
