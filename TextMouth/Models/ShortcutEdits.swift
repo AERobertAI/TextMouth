@@ -545,7 +545,8 @@ extension ShortcutEdits {
         // In the order of their names, so the entries left out are reported
         // in the same order every time.
         for (name, entry) in entries.sorted(by: { $0.key < $1.key }) {
-            guard let action = ShortcutAction(rawValue: name) else {
+            // A record written under an action's former name still names it.
+            guard let action = ShortcutAction.exactlyNamed(name) else {
                 skipped.append(SkippedEntry(name: name, reason: "names nothing TextMouth knows; leaving it out"))
                 continue
             }

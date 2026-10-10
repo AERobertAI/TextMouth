@@ -51,6 +51,48 @@ final class ShortcutConfigFileTests: XCTestCase {
         XCTAssertTrue(debugLogLines(containing: "keyboardShortcuts.\(lowerCaseName): names nothing").isEmpty)
     }
 
+    /// The Record window's buttons, named under "Recording Window" until
+    /// their group took the window's own name, New Recording (REV11), are
+    /// read under their former names, in config.json, in any letter case,
+    /// and in the record of the user's edits, without a repair logged, so an
+    /// edit made under them is kept; TextMouth writes them back under the new
+    /// names alone.
+    func testTheRecordWindowsFormerNamesAreStillRead() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let store = try isolatedDefaults()
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        let viewModel = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: store)
+        let optionCommandR = KeyBinding(key: "r", command: true, option: true)
+
+        let config = try ConfigService.decode(Data("""
+        {
+          "keyboardShortcuts": {
+            "Recording Window: Record": ["option+command+r"],
+            "recording window: stop": "default: command+."
+          }
+        }
+        """.utf8))
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertEqual(manager.edits, ShortcutEdits([.recordingRecord: [optionCommandR]]))
+        XCTAssertTrue(debugLogLines(containing: "keyboardShortcuts.Recording Window").isEmpty, "a former name was taken for none")
+        XCTAssertTrue(debugLogLines(containing: "keyboardShortcuts.recording window").isEmpty, "a former name was taken for none")
+        var written = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &written)
+        XCTAssertEqual(written.keyboardShortcuts["New Recording: Record"], ["option+command+r"])
+        XCTAssertEqual(written.keyboardShortcuts["New Recording: Stop"], "default: command+.")
+        XCTAssertNil(written.keyboardShortcuts["Recording Window: Record"])
+
+        // A record written under the former name reads as the same edit.
+        let stored = try XCTUnwrap(ShortcutEdits([.recordingRecord: [optionCommandR]]).storedData)
+        let storedText = try XCTUnwrap(String(data: stored, encoding: .utf8))
+        XCTAssertTrue(storedText.contains("New Recording: Record"), storedText)
+        let formerText = storedText.replacingOccurrences(of: "New Recording: Record", with: "Recording Window: Record")
+        let reading = ShortcutEdits.reading(Data(formerText.utf8))
+        XCTAssertEqual(reading.edits, ShortcutEdits([.recordingRecord: [optionCommandR]]))
+        XCTAssertEqual(reading.skipped, [])
+    }
+
     /// An entry written as an object makes its action the user's working
     /// where it says (FR12's branch E), its field names, its action's name,
     /// and its kind of window in any letter case, and the settings model
@@ -385,9 +427,9 @@ final class ShortcutConfigFileTests: XCTestCase {
             "Add Feed…": "default in Library windows: shift+command+f",
             "Copy Reading Position": "default in reader windows: shift+command+p",
             "Search in Book": "default in reader windows: command+f",
-            "Recording Window: Record": "default: command+r",
-            "Recording Window: Pause or Resume": "default: command+p",
-            "Recording Window: Stop": "default: command+.",
+            "New Recording: Record": "default: command+r",
+            "New Recording: Pause or Resume": "default: command+p",
+            "New Recording: Stop": "default: command+.",
         ]
         for (name, entry) in menuKeys {
             XCTAssertEqual(saved.keyboardShortcuts[name], entry, name)

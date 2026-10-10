@@ -36,9 +36,9 @@ final class MenuKeyShortcutTests: XCTestCase {
             (.openBook, "Open Book…", "File", commandO),
             (.newFromText, "New from Text…", "File", shiftCommandT),
             (.newRecording, "New Recording…", "File", KeyBinding(key: "n", command: true, option: true)),
-            (.recordingRecord, "Record", "Recording Window", KeyBinding(key: "r", command: true)),
-            (.recordingPauseOrResume, "Pause or Resume", "Recording Window", commandP),
-            (.recordingStop, "Stop", "Recording Window", KeyBinding(key: ".", command: true)),
+            (.recordingRecord, "Record", "New Recording", KeyBinding(key: "r", command: true)),
+            (.recordingPauseOrResume, "Pause or Resume", "New Recording", commandP),
+            (.recordingStop, "Stop", "New Recording", KeyBinding(key: ".", command: true)),
         ]
 
         XCTAssertEqual(ShortcutAction.allCases.filter(\.isKeyEquivalent), expected.map(\.action), "in Settings order")
@@ -48,7 +48,8 @@ final class MenuKeyShortcutTests: XCTestCase {
             XCTAssertEqual(ShortcutAction.defaultBindings[action], [key], title)
             XCTAssertTrue(key.canBeKeyEquivalent, title)
         }
-        XCTAssertEqual(ShortcutAction.recordingStop.rawValue, "Recording Window: Stop", "config.json tells it from the editor's Stop")
+        XCTAssertEqual(ShortcutAction.recordingStop.rawValue, "New Recording: Stop", "config.json tells it from the editor's Stop")
+        XCTAssertEqual(ShortcutAction.recordingWindowCategory, RecordingWording.windowTitle, "the group is named as VoiceOver names the window")
         XCTAssertEqual(ShortcutAction.addFeed.title, FeedWording.addFeedCommand)
         XCTAssertEqual(ShortcutAction.newRecording.title, RecordingWording.menuTitle)
         XCTAssertEqual(ShortcutAction.recordingRecord.title, RecordingWording.recordTitle)
@@ -605,7 +606,7 @@ final class MenuKeyShortcutTests: XCTestCase {
         )
         XCTAssertEqual(
             ShortcutsSettingsWording.refused(.editsText(commandLeft), for: .recordingStop),
-            "Command + Left Arrow not recorded for Recording Window: Stop: a text field edits with it, "
+            "Command + Left Arrow not recorded for New Recording: Stop: a text field edits with it, "
                 + "and a menu command's shortcut would take it from the field."
         )
         XCTAssertEqual(
@@ -748,12 +749,18 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.named("open book..."), .openBook)
         XCTAssertEqual(ShortcutAction.named("OPEN BOOK"), .openBook)
         XCTAssertEqual(ShortcutAction.named("Import DAISY Folder"), .importDAISYFolder)
-        XCTAssertEqual(ShortcutAction.named("recording window: stop"), .recordingStop)
+        XCTAssertEqual(ShortcutAction.named("new recording: stop"), .recordingStop)
         XCTAssertEqual(ShortcutAction.named("Audio Editor: Go to Time"), .editorGoToTime)
         XCTAssertEqual(ShortcutAction.named("where am i?"), .whereAmI)
         XCTAssertNil(ShortcutAction.named("Stop"), "Stop alone names neither the editor's nor the Record window's")
         XCTAssertNil(ShortcutAction.named("Open Book…?"))
-        let compared = ShortcutAction.allCases.map { ShortcutAction.comparableName($0.rawValue) }
+        // The Record window's buttons' former names, under "Recording
+        // Window", still name them (REV11), exactly and in any letter case.
+        XCTAssertEqual(ShortcutAction.named("Recording Window: Record"), .recordingRecord)
+        XCTAssertEqual(ShortcutAction.named("recording window: pause or resume"), .recordingPauseOrResume)
+        XCTAssertEqual(ShortcutAction.exactlyNamed("Recording Window: Stop"), .recordingStop)
+        XCTAssertNil(ShortcutAction.exactlyNamed("recording window: stop"), "the record names actions letter for letter")
+        let compared = (ShortcutAction.allCases.map(\.rawValue) + ShortcutAction.formerNames.keys).map(ShortcutAction.comparableName)
         XCTAssertEqual(Set(compared).count, compared.count)
     }
 

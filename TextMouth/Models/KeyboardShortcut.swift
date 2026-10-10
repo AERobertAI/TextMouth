@@ -94,11 +94,13 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
 
     // The Record window's buttons (FR12's branch D): a group of their own,
     // each a key equivalent of its button, whose raw values begin with the
-    // group's name, as the audio editor's do, so config.json never takes the
-    // window's Stop for another.
-    case recordingRecord = "Recording Window: Record"
-    case recordingPauseOrResume = "Recording Window: Pause or Resume"
-    case recordingStop = "Recording Window: Stop"
+    // group's name, the window's own as VoiceOver reads it, as the audio
+    // editor's do, so config.json never takes the window's Stop for another.
+    // Their former names, under "Recording Window", are still read
+    // (`formerNames`).
+    case recordingRecord = "New Recording: Record"
+    case recordingPauseOrResume = "New Recording: Pause or Resume"
+    case recordingStop = "New Recording: Stop"
 
     // The audio editor's (FR04): a group of their own, matched only while an
     // editor window is key (`ShortcutScope`), so they may share keys with
@@ -156,8 +158,11 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// D), named as their menu is.
     static let fileCategory = "File"
     /// The heading of the Record window's buttons in Settings (FR12's
-    /// branch D), and the start of each of their raw values.
-    static let recordingWindowCategory = "Recording Window"
+    /// branch D), and the start of each of their raw values: the window's
+    /// title, New Recording, as VoiceOver names the window
+    /// (`RecordingWording.windowTitle`, a test checks), where the group was
+    /// once named "Recording Window", a name the window never shows (REV11).
+    static let recordingWindowCategory = "New Recording"
     /// The groups whose actions' raw values begin with the group's name and
     /// a colon, so config.json tells them apart from actions of the same name
     /// elsewhere: the audio editor's Play / Pause from the reader's, the
@@ -1366,19 +1371,40 @@ extension ShortcutAction {
     /// Where Am I?; and a name ending in an ellipsis may end in three periods
     /// or none instead (FR12's branch D), so "open book..." and "Open Book"
     /// are Open Book…, as a name typed on a braille display is likely to
-    /// read. Nil for a name that names none. A renamed action would keep its
-    /// former name readable here.
+    /// read. A renamed action's former name (`formerNames`) names it the same
+    /// ways. Nil for a name that names none.
     static func named(_ name: String) -> ShortcutAction? {
-        if let exact = ShortcutAction(rawValue: name) {
+        if let exact = exactlyNamed(name) {
             return exact
         }
         let wanted = comparableName(name)
         return allCases.first { comparableName($0.rawValue) == wanted }
+            ?? formerNames.first { comparableName($0.key) == wanted }?.value
     }
+
+    /// The action `name` is, letter for letter: the name TextMouth writes for
+    /// it now (its raw value), or one it wrote before (`formerNames`), as the
+    /// record of the user's edits names actions (`ShortcutEdits.reading(_:)`).
+    static func exactlyNamed(_ name: String) -> ShortcutAction? {
+        ShortcutAction(rawValue: name) ?? formerNames[name]
+    }
+
+    /// The names actions had before they were renamed, each with its
+    /// action, still read in config.json and in the record of the user's
+    /// edits (`named(_:)`, `exactlyNamed(_:)`), so an edit made under a
+    /// former name is never lost; TextMouth writes only the names in force.
+    /// The Record window's buttons were named under "Recording Window" until
+    /// their group took the window's own name, New Recording (REV11).
+    static let formerNames: [String: ShortcutAction] = [
+        "Recording Window: Record": .recordingRecord,
+        "Recording Window: Pause or Resume": .recordingPauseOrResume,
+        "Recording Window: Stop": .recordingStop,
+    ]
 
     /// `name` as `named(_:)` compares names: in lower case, without an
     /// ellipsis at its end, written as one character or as three periods.
-    /// No two actions' names compare alike (a test checks).
+    /// No two actions' names, nor former names, compare alike (a test
+    /// checks).
     static func comparableName(_ name: String) -> String {
         var compared = name.lowercased()
         for ellipsis in ["…", "..."] where compared.hasSuffix(ellipsis) {

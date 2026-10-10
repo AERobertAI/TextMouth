@@ -161,7 +161,7 @@ final class ShortcutsSettingsTabTests: XCTestCase {
 
         XCTAssertEqual(
             groups,
-            ["Playback", "Navigation", "Bookmarks", "Panels", "Information", "Library", "File", "Recording Window", "Audio Editor"]
+            ["Playback", "Navigation", "Bookmarks", "Panels", "Information", "Library", "File", "New Recording", "Audio Editor"]
         )
         let navigation = ShortcutAction.allCases.filter { $0.category == "Navigation" }
         XCTAssertEqual(navigation.last, .navigateUpLevel, "the tab lists Up One Level last of its group, as before")
