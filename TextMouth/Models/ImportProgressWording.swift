@@ -86,8 +86,8 @@ enum ImportProgressWording {
     }
 
     /// `words` with their first letter in lowercase, to follow other words
-    /// in a sentence.
-    private static func lowercasedFirst(_ words: String) -> String {
+    /// in a sentence, as the feed downloads' announcements use it too.
+    static func lowercasedFirst(_ words: String) -> String {
         words.prefix(1).lowercased() + words.dropFirst()
     }
 
@@ -115,6 +115,15 @@ enum ImportProgressWording {
     /// book. About 4 minutes left." Empty lines are left out, and with none
     /// the title is read alone.
     static func spokenStatus(_ lines: [String]) -> String {
+        spokenStatus(title: title, lines: lines)
+    }
+
+    /// What VoiceOver reads for a progress display titled `title` that
+    /// shows `lines`: the title, then each line as a sentence, empty lines
+    /// left out, or the title alone with none. The import overlay and the
+    /// feed downloads section (`FeedDownloadProgressWording`) both read
+    /// their lines this way.
+    static func spokenStatus(title: String, lines: [String]) -> String {
         let shown = lines.filter { !$0.isEmpty }
         guard !shown.isEmpty else { return title }
         return "\(title): " + shown.map(sentence).joined(separator: " ")
