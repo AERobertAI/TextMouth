@@ -654,9 +654,13 @@ final class ConfigService: ObservableObject {
             ///   window positions in the store too, and they stay there.
             /// - `editTextExplained`: whether Edit Text has explained what it
             ///   does on this Mac (FR05): state, not a setting.
+            /// - `library.finishedBooksAtEndVersion`: the version of the
+            ///   one-time move of finished books to their ends made on this
+            ///   Mac (`LibraryViewModel.finishedBooksAtEndKey`, P07): state,
+            ///   not a setting.
             static let localStoreKeys = DataDirectoryPreferences.keys
                 + [LibrarySessionLease.macIDPreference.key, "sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
-                + [BookTextEditor.explainedPreference.key]
+                + [BookTextEditor.explainedPreference.key, LibraryViewModel.finishedBooksAtEndKey]
 
             /// Pairs each key with the config.json field of the same name.
             private static func sameNames(_ keys: [String]) -> [(storeKey: String, field: String)] {

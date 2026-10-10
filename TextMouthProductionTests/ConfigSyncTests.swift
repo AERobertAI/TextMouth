@@ -970,6 +970,19 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertEqual(listed.subtracting(stored), [], "listed as portable but kept by neither the model nor a service")
     }
 
+    /// The record of P07's one-time move of finished books to their ends
+    /// describes what this Mac has done, not a setting, so it is listed as
+    /// machine-local, and config.json neither mirrors nor holds it.
+    func testTheFinishedBooksMoveRecordIsMachineLocal() throws {
+        let portability = ConfigService.AppConfig.Portability.self
+        let key = LibraryViewModel.finishedBooksAtEndKey
+
+        XCTAssertEqual(key, "library.finishedBooksAtEndVersion")
+        XCTAssertTrue(portability.localStoreKeys.contains(key))
+        XCTAssertFalse(portability.mirrored.contains { $0.storeKey == key })
+        XCTAssertFalse(try jsonObject(.everyFieldCustomized).keys.contains(key))
+    }
+
     /// Every field config.json holds is listed, once, as portable or
     /// machine-local, and every listed field is in the file; no machine-local
     /// store key is.
