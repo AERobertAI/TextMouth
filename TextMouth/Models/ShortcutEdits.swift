@@ -19,24 +19,35 @@ import Foundation
 /// it in config.json. So an edited action set back to its default keys stays
 /// edited until then, as the user asked on October 7, 2026.
 ///
+/// An edited action may work in a kind of window the user chose (FR12's
+/// branch E): the record keeps the scope beside its keys only when it is
+/// not the action's default, so an action edited for its keys alone follows
+/// its default scope, and Reset to Default gives back both.
+///
 /// The preferences store keeps the record under `keyboardShortcutEdits`
 /// (`KeyboardShortcutManager.editsPreference`) in the form the whole map was
 /// saved in before: JSON keyed by the actions' names, each with its list of
-/// keys, holding only the edited actions.
-///
-/// Shortcuts scoped to a kind of window (FR12's branch E) would give an entry
-/// a scope beside its keys: the stored entry, a bare list today, would become
-/// an object holding the keys and the scope once the user changes the scope,
-/// read in both forms, and `effectiveBindings(defaults:)` would claim each
-/// key within the scope its action is given, as it claims it within the
-/// app's or the audio editor's today.
+/// keys, holding only the edited actions; an action working in a scope the
+/// user chose is an object holding its keys and the scope instead, as
+/// `{"keys": [...], "worksIn": "library"}`. Both forms are read.
 struct ShortcutEdits: Equatable, Sendable {
     /// Each edited action's keys, in the order the user gave them.
     private(set) var keysByEditedAction: [ShortcutAction: [KeyBinding]]
+    /// The scope each edited action works in when the user chose one other
+    /// than its default (FR12's branch E); an edited action left out works
+    /// where its default scope reaches.
+    private(set) var scopesByEditedAction: [ShortcutAction: ShortcutScope]
 
-    /// A record holding `keys`: each action it names edited, with its keys.
-    init(_ keys: [ShortcutAction: [KeyBinding]] = [:]) {
+    /// A record holding `keys`: each action it names edited, with its keys,
+    /// working where `scopes` says. A scope is kept only for an action the
+    /// record holds, only when the action may be given it
+    /// (`ShortcutAction.availableScopes`), and only when it is not the
+    /// action's default.
+    init(_ keys: [ShortcutAction: [KeyBinding]] = [:], scopes: [ShortcutAction: ShortcutScope] = [:]) {
         keysByEditedAction = keys
+        scopesByEditedAction = scopes.filter { action, scope in
+            keys[action] != nil && scope != action.defaultScope && action.availableScopes.contains(scope)
+        }
     }
 
     /// The edited actions, in the order Settings lists them.
@@ -91,9 +102,22 @@ struct ShortcutEdits: Equatable, Sendable {
         return KeyClaims.forms(of: otherKey, for: other).contains(where: forms.contains)
     }
 
-    /// Where `action`'s shortcuts work (FR12's branch E): its default scope.
+    /// Where `action`'s shortcuts work (FR12's branch E): the scope the user
+    /// chose, or its default.
     func scope(of action: ShortcutAction) -> ShortcutScope {
-        action.defaultScope
+        scopesByEditedAction[action] ?? action.defaultScope
+    }
+
+    /// Makes `action` the user's, working in `scope`, with `keys`, its keys
+    /// in force as the Shortcuts tab gives them (FR12's branch E): each key
+    /// that clashes with another edited action's where both now work is
+    /// taken from that action, which keeps its other keys and stays edited,
+    /// as recording a key takes it (`setKeys(_:for:)`). A scope the action
+    /// may not be given changes nothing.
+    mutating func setScope(_ scope: ShortcutScope, for action: ShortcutAction, keys: [KeyBinding]) {
+        guard action.availableScopes.contains(scope) else { return }
+        scopesByEditedAction[action] = scope == action.defaultScope ? nil : scope
+        setKeys(keys, for: action)
     }
 
     /// Every action's scope in force, for the press index.
@@ -101,9 +125,11 @@ struct ShortcutEdits: Equatable, Sendable {
         Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map { ($0, scope(of: $0)) })
     }
 
-    /// Gives `action` back to the defaults, as Reset to Default does.
+    /// Gives `action` back to the defaults, its keys and its scope, as Reset
+    /// to Default does.
     mutating func reset(_ action: ShortcutAction) {
         keysByEditedAction[action] = nil
+        scopesByEditedAction[action] = nil
     }
 
     /// Every action's keys in force, given a build's `defaults`
@@ -380,7 +406,9 @@ extension ShortcutEdits {
         for action in ShortcutAction.allCases {
             guard let listing = listings[action] else { continue }
             if listing.followsDefaults {
-                if adopted.keysByEditedAction.removeValue(forKey: action) != nil {
+                // Its keys and its scope, as Reset to Default gives back.
+                if adopted.isEdited(action) {
+                    adopted.reset(action)
                     changed.insert(action)
                 }
             } else if let keys = listing.bindings?.withoutRepeats, adopted.keysByEditedAction[action] != keys {
@@ -397,14 +425,20 @@ extension ShortcutEdits {
 extension ShortcutEdits {
     /// The record as the preferences store keeps it: JSON keyed by the
     /// edited actions' names, each with its list of keys, the form the whole
-    /// map was saved in before the record. Its entries are written in sorted
+    /// map was saved in before the record, or, for an action working in a
+    /// scope the user chose, an object holding its keys and the scope
+    /// (`StoredEntry`, FR12's branch E). Its entries are written in sorted
     /// order, so one record is always the same bytes, and saving it again
     /// changes nothing in the store. Nil only should encoding fail, which
     /// leaves the store as it was.
     var storedData: Data? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
-        return try? encoder.encode(keysByEditedAction.keyedByRawValue)
+        var entries: [String: StoredEntry] = [:]
+        for (action, keys) in keysByEditedAction {
+            entries[action.rawValue] = StoredEntry(keys: keys, worksIn: scopesByEditedAction[action])
+        }
+        return try? encoder.encode(entries)
     }
 
     /// An entry of stored shortcuts left out as they were read, and why.
@@ -427,7 +461,10 @@ extension ShortcutEdits {
     /// as `Book.HandEdits` is read: an entry naming no action this build
     /// knows, such as one a later release wrote, and an entry whose keys
     /// cannot be read are left out and reported, and the rest still load.
-    /// Data that is not such an object at all reads as an empty record.
+    /// An entry naming a scope this build does not know, or one its action
+    /// may not be given, keeps its keys and works where its default scope
+    /// does, which is reported too. Data that is not such an object at all
+    /// reads as an empty record.
     ///
     /// The whole map every release before the record saved is in the same
     /// form, so this reads it too, for the move to the record: each action
@@ -438,6 +475,7 @@ extension ShortcutEdits {
             return StoredReading(edits: ShortcutEdits(), skipped: [unreadable])
         }
         var keys: [ShortcutAction: [KeyBinding]] = [:]
+        var scopes: [ShortcutAction: ShortcutScope] = [:]
         var skipped: [SkippedEntry] = []
         // In the order of their names, so the entries left out are reported
         // in the same order every time.
@@ -451,20 +489,68 @@ extension ShortcutEdits {
                 continue
             }
             keys[action] = actionKeys
+            if let scopeName = entry.scopeName {
+                guard let scope = ShortcutScope(rawValue: scopeName), action.availableScopes.contains(scope) else {
+                    skipped.append(SkippedEntry(
+                        name: name,
+                        reason: "works in \"\(scopeName)\", which it cannot; working where it does by default"
+                    ))
+                    continue
+                }
+                scopes[action] = scope
+            }
         }
-        return StoredReading(edits: ShortcutEdits(keys), skipped: skipped)
+        return StoredReading(edits: ShortcutEdits(keys, scopes: scopes), skipped: skipped)
     }
 }
 
+/// One edited action as the preferences store keeps it (FR12's branch E):
+/// its list of keys, as every entry was before scopes, or, when it works in
+/// a scope the user chose, an object holding its keys and that scope's name.
+private struct StoredEntry: Encodable {
+    /// The action's keys.
+    let keys: [KeyBinding]
+    /// The scope the user chose, or nil for the action's default.
+    let worksIn: ShortcutScope?
+
+    /// Writes a list of keys for the default scope, else an object.
+    func encode(to encoder: Encoder) throws {
+        guard let worksIn else {
+            var container = encoder.singleValueContainer()
+            try container.encode(keys)
+            return
+        }
+        var container = encoder.container(keyedBy: StoredEntryField.self)
+        try container.encode(keys, forKey: .keys)
+        try container.encode(worksIn.rawValue, forKey: .worksIn)
+    }
+}
+
+/// The fields of a stored entry written as an object.
+private enum StoredEntryField: String, CodingKey {
+    case keys, worksIn
+}
+
 /// One stored entry's keys, or nil when they cannot be read, so that one
-/// entry never fails the others.
+/// entry never fails the others, and the name of the scope it works in,
+/// when it names one.
 private struct LenientStoredKeys: Decodable {
     /// The entry's keys, or nil.
     let keys: [KeyBinding]?
+    /// The name of the scope an entry written as an object gives, or nil.
+    let scopeName: String?
 
-    /// Reads the entry's value as a list of keys, or nil for anything else.
+    /// Reads the entry's value as a list of keys, or as an object holding
+    /// its keys and a scope's name; nil keys for anything else.
     init(from decoder: Decoder) throws {
-        keys = try? decoder.singleValueContainer().decode([KeyBinding].self)
+        if let keys = try? decoder.singleValueContainer().decode([KeyBinding].self) {
+            self.keys = keys
+            scopeName = nil
+            return
+        }
+        let object = try? decoder.container(keyedBy: StoredEntryField.self)
+        keys = try? object?.decode([KeyBinding].self, forKey: .keys)
+        scopeName = try? object?.decode(String.self, forKey: .worksIn)
     }
 }
 

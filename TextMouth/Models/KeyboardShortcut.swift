@@ -188,6 +188,18 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    /// The scopes the user may give the action, in the Shortcuts tab and in
+    /// config.json (FR12's branch E): the app's actions and the File menu's
+    /// commands work in every window, in Library windows, or in reader
+    /// windows; every other action works only where it does by nature, the
+    /// audio editor's in its windows, the Record window's buttons in it, and
+    /// the Library and Playback menus' commands where those menus show.
+    var availableScopes: [ShortcutScope] {
+        let fixed = defaultScope == .audioEditor || defaultScope == .recording
+            || (isKeyEquivalent && category != Self.fileCategory)
+        return fixed ? [defaultScope] : [.app, .library, .reader]
+    }
+
     /// The actions whose shortcuts work in one kind of window by default,
     /// though their groups' work in every window (FR12's branch E): New from
     /// Text in Library windows and Show Sleep Timer in reader windows, as the

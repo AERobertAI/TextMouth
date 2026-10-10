@@ -270,6 +270,19 @@ final class KeyboardShortcutManager: ObservableObject {
         save(ShortcutEdits())
     }
 
+    /// Makes `action` work in `scope`, as the user's (FR12's branch E): it
+    /// keeps its keys in force, each taken from every other action whose
+    /// scope now overlaps its own, as recording a key takes it. A scope the
+    /// action may not be given (`ShortcutAction.availableScopes`), or the
+    /// one it works in already, changes nothing. Reset to Default gives back
+    /// its default scope.
+    func setScope(_ scope: ShortcutScope, for action: ShortcutAction) {
+        guard action.availableScopes.contains(scope), scope != self.scope(of: action) else { return }
+        var changed = edits
+        changed.setScope(scope, for: action, keys: bindingsFor(action))
+        save(changed)
+    }
+
     /// Whether the user edited `action`'s keys, which then stay theirs until
     /// Reset to Default, even when they are its default keys.
     func isEdited(_ action: ShortcutAction) -> Bool {
