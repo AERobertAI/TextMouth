@@ -97,29 +97,115 @@ final class FeedDownloadProgressViewTests: XCTestCase {
         )
     }
 
-    // MARK: - The Library's Cancel
+    // MARK: - The Section
 
-    /// The library's Cancel, which the section's button calls, stops the
-    /// feed engine's downloads, saying what it stopped.
-    func testTheLibrarysCancelStopsTheFeedDownloads() async throws {
-        let world = try FeedTestWorld(self, label: "FeedProgressLibraryCancel")
+    /// The section a Library window shows is the library's feed downloads'
+    /// progress as it is at the moment shown, and its Cancel, the library's,
+    /// stops the feed engine's downloads, saying what it stopped.
+    func testTheWindowsSectionShowsTheLibrarysDownloadsAndItsCancelStopsThem() async throws {
+        let world = try FeedTestWorld(self, label: "FeedProgressSectionCancel")
         let words = (1...300).map { "word\($0)" }.joined(separator: " ")
         let items = (1...2).map { number in
             FeedXML.Item(guid: "post-\(number)", title: "Note \(number)", published: world.day(-Double(number)), description: "<p>\(words)</p>")
         }
         world.server.serve("/feed.xml", .feed(FeedXML.rss(title: "Corkboard News", items: items)))
         let feed = try await world.subscribe("/feed.xml")
-
         world.center.download("guid:post-1", of: feed.id)
         world.center.download("guid:post-2", of: feed.id)
+
+        let section = LibraryWindowView.feedDownloadSection(for: world.library)
+        XCTAssertEqual(section.state, world.library.feedDownloadProgress.state)
+        XCTAssertEqual(section.state.lines(at: section.now), ["0 of 2 done", "Download 1 of 2: “Note 1” from Corkboard News"])
         let recorder = recordingAnnouncements {
-            world.library.cancelFeedDownloads()
+            section.onCancel()
         }
         await waitFor("the download under way stops") { !world.center.downloads.isDownloading("guid:post-1", of: feed.id) }
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Stopped 2 feed downloads."])
         XCTAssertEqual(world.center.store.record(of: feed.id)?.items.map(\.state), [.notDownloaded, .notDownloaded])
         XCTAssertFalse(world.library.feedDownloadProgress.state.isRunning)
+    }
+
+    /// VoiceOver finds the section as one container labelled with every
+    /// line it shows, holding the Cancel Feed Downloads button, hint
+    /// included, as a control of its own; pressing it through accessibility
+    /// cancels once. SwiftUI builds these elements only for a connected
+    /// assistive app, so the test skips, rather than fails, without them;
+    /// the wording tests cover every label either way.
+    func testTheSectionIsAContainerReadingEveryLineThatHoldsItsCancel() throws {
+        let clock = CommandClock()
+        let progress = FeedDownloadProgress(now: { clock.now })
+        progress.begin(
+            title: "Ep. 368",
+            feedTitle: "Finish It!",
+            transfer: FeedDownloadProgressTests.transfer(25_200_000, of: 63_000_000),
+            queued: [nil],
+            waits: FeedDownloadWaits(network: 2)
+        )
+        let presses = CancelPresses()
+        let section = FeedDownloadProgressSection(state: progress.state, now: clock.now, onCancel: presses.press)
+        let status = progress.state.spokenStatus(at: clock.now)
+        XCTAssertEqual(
+            status,
+            "Feed Downloads: 0 of 2 done. Download 1 of 2: “Ep. 368” from Finish It!, 40% of 63 MB. 2 waiting for a network without data limits."
+        )
+
+        try withHostedView(section, until: { !self.accessibilityElements(labelled: status, in: $0).isEmpty }) { hostingView in
+            let containers = accessibilityElements(labelled: status, in: hostingView)
+            guard !containers.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no accessibility elements without an assistive app")
+            }
+            XCTAssertEqual(containers.count, 1, "One element carries the status")
+            let buttons = accessibleControls(in: hostingView).filter { $0.role == .button }
+            guard !buttons.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no button to accessibility without an assistive app")
+            }
+            XCTAssertEqual(buttons.map(\.label), [FeedDownloadProgressWording.cancelButtonLabel])
+            XCTAssertEqual(buttons.first?.hint, FeedDownloadProgressWording.cancelButtonHint)
+            XCTAssertTrue(buttons[0].element.accessibilityPerformPress())
+            XCTAssertTrue(waitUntil { presses.count == 1 }, "The button was pressed \(presses.count) times")
+        }
+    }
+
+    /// The observer shows the section only while downloads run, taking no
+    /// room otherwise, and a download's bytes do not redraw it: it reads
+    /// them as it shows itself anew every few seconds.
+    func testTheSectionShowsOnlyWhileDownloadsRunAndTheBytesRedrawNothing() throws {
+        let world = try FeedTestWorld(self, label: "FeedProgressObserver")
+        let progress = world.library.feedDownloadProgress
+        let hosted = hostOffscreen(
+            FeedDownloadProgressObserver(library: world.library, progress: progress),
+            size: NSSize(width: 600, height: 200)
+        )
+        defer {
+            progress.clear()
+            takeDown(hosted.window)
+        }
+        flush(hosted.hostingView)
+        XCTAssertEqual(hosted.hostingView.fittingSize.height, 0, "the section took room while no download ran")
+        let drawsBefore = ViewBodyCounter.count(of: "FeedDownloadProgressSection")
+
+        progress.begin(
+            title: "Ep. 368",
+            feedTitle: "Finish It!",
+            transfer: FeedDownloadProgressTests.transfer(0, of: 63_000_000),
+            queued: [],
+            waits: FeedDownloadWaits()
+        )
+        flush(hosted.hostingView)
+        XCTAssertGreaterThan(ViewBodyCounter.count(of: "FeedDownloadProgressSection"), drawsBefore, "the section was not drawn")
+        XCTAssertGreaterThan(hosted.hostingView.fittingSize.height, 0)
+
+        let runs = bodyRuns(of: ["FeedDownloadProgressSection"], in: hosted.hostingView, publishing: 10) { index in
+            progress.receive(FeedDownloadProgressTests.transfer(Int64(10 + max(index, 0)) * 1_000_000, of: 63_000_000))
+        }
+        // At most one redraw: the section's own tick may fall in the
+        // middle; each report of the bytes would make ten.
+        XCTAssertLessThanOrEqual(runs["FeedDownloadProgressSection", default: 0], 1, "a download's bytes redrew the section")
+
+        progress.end(.downloaded, queued: [], waits: FeedDownloadWaits())
+        flush(hosted.hostingView)
+        XCTAssertEqual(hosted.hostingView.fittingSize.height, 0, "the section stayed after the downloads ended")
     }
 }
 
@@ -128,4 +214,16 @@ final class FeedDownloadProgressViewTests: XCTestCase {
 private final class HeardAnnouncements {
     /// Every message, oldest first.
     var messages: [String] = []
+}
+
+/// Counts the times a section's Cancel button runs its action.
+@MainActor
+private final class CancelPresses {
+    /// How many times `press()` has run.
+    private(set) var count = 0
+
+    /// The Cancel action: counts one more press.
+    func press() {
+        count += 1
+    }
 }

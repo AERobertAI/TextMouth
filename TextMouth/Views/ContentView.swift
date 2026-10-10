@@ -50,6 +50,13 @@ struct LibraryWindowView: View {
                         openWindow(id: "book-reader", value: book.id)
                     }
                 )
+                // The feed downloads section, below the list while feed
+                // downloads run, which insets the list by its height and
+                // hides nothing of it, since downloads may run for many
+                // minutes; redrawn alone, as the downloads report (FR10).
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    FeedDownloadProgressObserver(library: libraryViewModel, progress: libraryViewModel.feedDownloadProgress)
+                }
 
                 // Import progress overlay, whose Cancel button stops ZIP
                 // imports, redrawn alone as the imports report (FR10)
