@@ -1553,3 +1553,40 @@ ARCHITECTURE wording:
 - "Shared helpers: `TextMouthPaths.bookInfoFileName` and `contentMarkdownFileName`, `FileImportService.isManagedPackageName(_:)` and `isSymbolicLink(_:)`, `LibraryListCache.index(of:)`, `noteDownloadGone(_:of:at:byListener:)`."
 - "`writePendingBookInfoNow` may run on the main thread."
 - "`FeedTestWorld.finish(_:)` waits for a test engine's writes before its sandbox goes."
+
+## From the feeddownloadprogress agent (feature/feed-download-progress), Oct 10
+
+Not verified:
+- Live VoiceOver and braille.
+- Real downloads and a real network.
+- How the section looks on screen.
+- The rule's first-launch run on your feeds (about 316 MB).
+- Whether a closed Library window's section keeps ticking.
+
+Decisions:
+- **Placement:** the section sits below the list, attached with `safeAreaInset`, not as a centered overlay. Downloads can run for minutes and it shouldn't cover the list. It takes no room when idle and has no Escape key.
+- **Requirement 4:** a download's bytes now go only to `FeedDownloadProgress`. They change its state without publishing, and the section reads them every 5 seconds.
+  - `FeedItemState.downloading` no longer carries a progress value.
+  - **Visible change:** item rows say "Downloading" with no live percent; the section and Speak Download Progress have it. A kept place beside it is still read as "50 percent read".
+  - Tests show the bytes redraw neither the list nor the feed rows.
+- **Counting:** "done" means downloaded or failed. Rule downloads that are waiting, and single cancels, leave the run. The waiting ones are counted apart by reason and outlast the run.
+- **Estimate:** finished downloads of known size give a byte rate; anything else uses the average time per download. Failures are not timed. The estimate appears after the first finished download and disappears after Cancel.
+- **Announcements** follow the ZIP half's rules. A one-item run names the item. A run where nothing finished and nothing waits ends silently.
+- **Cancel** stops the download under way and the queue, whoever asked, and marks each item yours so the rule won't restart it.
+  - A download whose book is already being added to the library finishes; the announcement says so.
+  - Rule downloads waiting for a network or for room keep waiting, as the brief worded it ("under way and the queue"). The announcement and the button's hint both say this.
+  - Making Cancel stop those too is a decision for you.
+- **Bug fixed:** an article stopped while its page was being fetched was still written from its summary. This also affected the existing Cancel Download. The new test fails without the fix.
+- **Board:** finding #1742 (stale comments in `FeedRows.swift`). Question #1717 to `readinglistfollowups`, answered yes. Notices #1723 and #1724 to `movetolibrary`, acknowledged.
+
+README wording:
+"While episodes and articles download, each Library window shows a Feed Downloads section at the bottom, below the list, which it never covers. It has a bar for the whole run, how many are done of the total ("3 of 9 done", with "1 failed" when one did), and the download under way with its feed and how far its file has come ("Download 4 of 9: “Ep. 368” from Finish It!, 40% of 63 MB", then "adding it to the library"). Once one has finished it shows the time left ("About 4 minutes left", worked out by size where feeds give sizes). Downloads waiting for a network without data limits or for room are counted apart by reason ("2 waiting for a network without data limits"). It shows only while downloads run, and its words change every 5 seconds. VoiceOver reads all of this on the section. For a run of 10 seconds or more it also hears each quarter ("Feed downloads: 3 of 12 done, about 4 minutes left.") and the end ("Feed downloads finished: 8 downloaded, 1 failed."), wherever you are. Cancel (VoiceOver: Cancel Feed Downloads) stops the download under way and those waiting to start, whether you or TextMouth asked for them, and says what it stopped. TextMouth won't download them again by itself, though Download on an item still does. A download whose book is already being added finishes, and downloads waiting for a network or for room keep waiting. Library > Speak Download Progress speaks the section's lines on request, or that no download is under way, with those waiting. Give it a key in Settings > Shortcuts (Information) to use it from any window. An item's row says "Downloading" without a percent; the section says how far it has got."
+
+ARCHITECTURE wording:
+"Feed download progress (FR10's feed half). `FeedDownloadManager.progress` (`FeedDownloadProgress`, ViewModels/FeedDownloadProgress.swift) holds what the feed downloads section shows, in `FeedDownloadProgressState`: one run, from the moment the manager has work until it has none. The state holds the downloads done and failed; the download under way (titles, its file's `BookDownloadProgress`, whether its book is being added); the sizes of those queued; the newest-N rule's waits (`FeedDownloadWaits`: `putOff` for a network, items' `.waiting` states for room); and `FeedDownloadTiming`. The manager tells it, on the main actor:
+- the queue after every change (`publishQueue()`);
+- each start (`beginProgress(of:)`);
+- every report of bytes (`receive(_:)`, which changes the state without publishing);
+- the book being added (`importAndCommit`);
+- how `run(_:)` ended (`FeedDownloadEnding`).
+Quitting clears it. `FeedDownloadTimeEstimate` works out the time left; `FeedDownloadProgressWording` words every line and announcement, reusing `ImportProgressWording`'s sizes, its time-left wording, and `spokenStatus(title:lines:)`. Only `FeedDownloadProgressObserver` (Views/Feeds/FeedDownloadProgressSection.swift) observes it. LibraryWindowView attaches it below LibraryView with `safeAreaInset`, inside a 5-second `TimelineView`. So a download's bytes never compare a feed's record (#1410) or redraw a list (PERF12), and `FeedItemState.downloading` carries no progress. Cancel is `FeedDownloadManager.cancelEveryDownload()` through `LibraryViewModel.cancelFeedDownloads()`. It cancels the task under way unless its book is being added, empties the queue, makes each item the listener's in one record change per feed, and removes resume data. Speak Download Progress (`ShortcutAction.speakDownloadProgress`, no key, Information) posts `.speakDownloadProgress`. `observeDownloadProgressRequests()` answers it with `FeedDownloadManager.spokenProgress()`, which recounts the waits first. `downloadArticle` checks for cancellation before writing its book."
