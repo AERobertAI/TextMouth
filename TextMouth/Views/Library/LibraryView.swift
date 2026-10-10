@@ -1125,6 +1125,7 @@ struct LibraryView: View {
                 shownBooks: books,
                 folderBooks: allBooks,
                 search: searchText,
+                wordsPerMinute: settingsViewModel.wordsPerMinute,
                 bookRow: { book, actions in bookRow(book, context: context, feedActions: actions) },
                 perform: performFeedItemAction
             )

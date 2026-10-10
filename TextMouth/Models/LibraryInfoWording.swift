@@ -180,7 +180,7 @@ enum LibraryInfoWording {
         if let lastOpened = book.lastOpened {
             parts.append("Last opened \(FeedWording.moment(lastOpened, now: now, calendar: calendar, locale: locale))")
         }
-        parts.append(CountWording.phrase(book.bookmarkCount, singular: "bookmark", plural: "bookmarks"))
+        parts.append(CountWording.bookmarks(book.bookmarkCount))
         if let size = book.fileSize {
             parts.append("File size \(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))")
         }
@@ -234,7 +234,7 @@ enum LibraryInfoWording {
     /// missing" when its folder is gone, its items counted with its row's
     /// own phrase (`FeedWording.countsPhrase`), its size first and its
     /// unplayed items last, and its last check. Example: "Planet Money.
-    /// Feed. 10 of 381 episodes kept, 3 downloaded, 2 new, 5 unplayed.
+    /// Feed. 10 of 381 episodes listed, 3 downloaded, 2 new, 5 unplayed.
     /// Checked today at 3:05 PM."
     static func briefParts(of feed: FeedInfoFacts) -> [String] {
         var parts = [feed.title, FeedWording.feedNote]

@@ -432,7 +432,7 @@ final class FeedUIAddFeedTests: XCTestCase {
         )
         XCTAssertEqual(
             FeedWording.subscribed(title: "Planet Money", counts: FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), noun: .episode)),
-            "Subscribed to Planet Money: 10 of 381 episodes kept."
+            "Subscribed to Planet Money: 10 of 381 episodes listed."
         )
     }
 

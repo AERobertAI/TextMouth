@@ -102,8 +102,9 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
     /// - Open, on an item row (a book's row has its own);
     /// - Download for an item not downloaded, whose download failed, or
     ///   whose download the newest-N rule put off (FR11), which downloads it
-    ///   now, and Cancel Download for one waiting in the queue or
-    ///   downloading;
+    ///   now; Cancel Download for one waiting in the queue or downloading,
+    ///   and for one the rule put off, which then waits no more and is left
+    ///   to the listener (FR11, branch C);
     /// - Mark Played for an unplayed item, or Mark Unplayed;
     /// - Show Description…;
     /// - for a downloaded item, Show in Finder on an item row (a book's row
@@ -126,8 +127,10 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
             commands.append(.open)
         }
         switch state {
-        case .notDownloaded, .waiting, .failed:
+        case .notDownloaded, .failed:
             commands.append(.download)
+        case .waiting:
+            commands += [.download, .cancelDownload]
         case .downloading:
             commands.append(.cancelDownload)
         case .downloaded:
@@ -244,6 +247,13 @@ extension FeedWording {
     /// What VoiceOver hears once Cancel Download stopped a download.
     static func downloadCancelled(title: String) -> String {
         "Stopped downloading “\(title)”."
+    }
+
+    /// What VoiceOver hears once Cancel Download took back a download the
+    /// newest-N rule had put off (FR11): it waits no more, and downloads
+    /// only when the listener asks.
+    static func waitingDownloadCancelled(title: String) -> String {
+        "“\(title)” no longer waits to download; it downloads when you choose Download."
     }
 
     /// What VoiceOver hears once Delete Download deleted a download.

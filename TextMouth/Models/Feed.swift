@@ -51,8 +51,9 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
     /// (`itunes:type` serial), rather than an episodic one.
     var isSerial: Bool
     /// How many entries the feed listed when it was last read: its size, of
-    /// which the record keeps the newest (`FeedReconciler`), as "10 of 381
-    /// episodes kept" says. Every merge of a body read records it; a check
+    /// which the library lists those the "List and download" choice lists
+    /// (`FeedReconciler`, FR11), as "10 of 381 episodes listed" says. Every
+    /// merge of a body read records it; a check
     /// that read nothing new (a 304, or the same bytes as last time) leaves
     /// it as it was. Nil until a merge records it, as in a record written
     /// before TextMouth recorded it, which still loads, since the decoder
