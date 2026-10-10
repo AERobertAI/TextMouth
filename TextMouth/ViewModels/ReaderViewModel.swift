@@ -378,7 +378,9 @@ final class ReaderViewModel: ObservableObject {
     /// output device instead of continuing a graph/synth paused on the old
     /// route. Also set when the library moves a paused audiobook's files, so
     /// resuming plays them from where they are then instead of from a player
-    /// still holding the old place (TODO P10).
+    /// still holding the old place (TODO P10). Play's resume and a Where Am
+    /// I? announcement's resume of the book it paused both honor it
+    /// (`restartPlaybackAtCursor()`), which clears it.
     var restartPlaybackBackendOnNextResume = false
     /// Whether the book has finished and rests at its end: its last chapter
     /// played or was spoken to its end, or nothing speakable was left, and

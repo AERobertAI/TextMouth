@@ -579,6 +579,38 @@ final class ReaderRefreshTests: XCTestCase {
         reader.stop()
     }
 
+    /// The library moves the package of an audiobook Where Am I? paused as
+    /// it played: the paused audio reads nothing and is left alone, marked
+    /// to be played afresh, and once the announcement's end sound has
+    /// played, the book plays on from the same place in the moved package,
+    /// with no play sound, rather than from the player that held the file
+    /// where it was. Before, the announcement's resume took up the old
+    /// player, ignoring the mark (REV13's leftovers).
+    func testAnAudiobookWhoseFilesMoveDuringWhereAmIPlaysOnFromTheMovedPackage() throws {
+        let playing = try openPlayingAudiobook("Reader Refresh Moved During Where Am I")
+        let reader = playing.reader
+        var announcements: [AVSpeechUtterance] = []
+        reader._whereAmIUtteranceRecorderForTesting = { announcements.append($0) }
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+        reader.whereAmI()
+        XCTAssertTrue(reader.audioPlaybackService.isPaused, "Where Am I? did not pause the book")
+
+        _ = try moveToShelf(playing) {}
+
+        XCTAssertTrue(reader.audioPlaybackService.isPaused, "The move started or stopped the paused audio")
+        XCTAssertTrue(reader.restartPlaybackBackendOnNextResume, "The move did not mark the paused audio to be played afresh")
+        let announcement = try XCTUnwrap(announcements.last, "No announcement was handed over")
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+        XCTAssertTrue(waitUntil(timeout: 5) { !reader.isWhereAmISpeaking }, "The announcement did not end")
+
+        endSound.passEndSound()
+
+        XCTAssertFalse(reader.restartPlaybackBackendOnNextResume, "The mark was left for the next resume")
+        try assertPlaysOnFromTheMovedPackage(playing, "As Where Am I? ended")
+        XCTAssertEqual(playing.sounds.played, [.whereAmIStart, .whereAmIEnd])
+        reader.stop()
+    }
+
     // MARK: - Applying Updates
 
     /// Two readers have the same book open when the library renames it:

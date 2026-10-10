@@ -204,9 +204,7 @@ extension ReaderViewModel {
         readingStatsService.startSession(bookID: book.id)
         sleepTimerService.resumeCountdown(by: readerID)
         if restartPlaybackBackendOnNextResume {
-            restartPlaybackBackendOnNextResume = false
-            audioPlaybackService.stop()
-            playAudioChapter()
+            restartPlaybackAtCursor()
             return
         }
         // Resume at the volume the place calls for, should this reader's
@@ -239,15 +237,9 @@ extension ReaderViewModel {
         // would restart that speech with nothing to say.
         if restartPlaybackBackendOnNextResume
             || !loadedSpeechHasSpeakableText(afterOriginalOffset: currentCharacterOffset) {
-            restartPlaybackBackendOnNextResume = false
-            speechService.stop()
             // The book ends instead when nothing speakable remains, for
             // example after skipping the rest of it while paused.
-            if speakCurrentChapter() {
-                nowPlayingService.updateNowPlayingInfo(
-                    title: book.title, author: book.author, isPlaying: true
-                )
-            }
+            restartPlaybackAtCursor()
             return
         }
         if speechService.resume() {
@@ -263,6 +255,32 @@ extension ReaderViewModel {
                     title: book.title, author: book.author, isPlaying: true
                 )
             }
+        }
+    }
+
+    /// Plays the book on from the cursor afresh, rather than resuming what
+    /// is paused, whose backend may be bound to an output that is gone or
+    /// to files the library has moved since
+    /// (`restartPlaybackBackendOnNextResume`, which it clears). An audiobook
+    /// loads the cursor's chapter from wherever its files are now, at the
+    /// volume it played at (`restartAudioAtCursor(volume:)`), showing
+    /// Playing and telling Now Playing as it starts. A text book speaks
+    /// afresh from the cursor in direct speech, the voice, never in rendered
+    /// audio (`speakCurrentChapter()`), and tells Now Playing once it
+    /// speaks; one with nothing left to say ends instead. No play sound,
+    /// listening session, or countdown is begun here: Play's resume begins
+    /// them, and Where Am I?'s keeps those the announcement left running.
+    func restartPlaybackAtCursor() {
+        restartPlaybackBackendOnNextResume = false
+        if isAudioBook {
+            restartAudioAtCursor(volume: audioPlaybackService.intendedVolume)
+            return
+        }
+        speechService.stop()
+        if speakCurrentChapter() {
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title, author: book.author, isPlaying: true
+            )
         }
     }
 

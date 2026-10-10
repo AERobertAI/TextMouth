@@ -621,7 +621,24 @@ extension ReaderViewModel {
     /// as one left by an announcement that ends without resuming
     /// (`settlePauseLeftByWhereAmI()`), and the next Play starts it afresh:
     /// a Play held for it then starts it so at once (`startPlayHeldByWhereAmI()`).
+    ///
+    /// A book whose output changed during the announcement, as when AirPods
+    /// connect, or whose files the library moved meanwhile, is marked to be
+    /// played afresh (`restartPlaybackBackendOnNextResume`), since its paused
+    /// engine, synthesizer, or player may stay bound to the old output or
+    /// files. It plays on afresh from the cursor instead, as Play's resume
+    /// plays such a book (`restartPlaybackAtCursor()`): a text book in direct
+    /// speech, the voice, never moved to rendered audio. Before, this resume
+    /// took up the paused backend whatever the mark said, so a book playing
+    /// rendered audio could resume on the output it began on (REV13's
+    /// leftovers).
     private func resumeBookPausedForWhereAmI() {
+        guard !restartPlaybackBackendOnNextResume else {
+            DiagnosticLog.trace(.playback, "Where Am I ended; the book's output or files changed during it, so it plays on afresh from the cursor")
+            isPlayHeldByWhereAmI = false
+            restartPlaybackAtCursor()
+            return
+        }
         let resumed = isAudioBook ? audioPlaybackService.resume() : speechService.resume()
         guard resumed else {
             DiagnosticLog.event(

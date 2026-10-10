@@ -197,8 +197,9 @@ extension ReaderViewModel {
     /// Plays the cursor's chapter again from the cursor, loading its audio
     /// from wherever the book's files are now, at `volume`, the volume it
     /// played at, which a sleep timer may be fading. The listening session,
-    /// the sleep timer, and the media controls carry on as they were.
-    private func restartAudioAtCursor(volume: Float) {
+    /// the sleep timer, and the media controls carry on as they were. Also
+    /// how a resume plays an audiobook afresh (`restartPlaybackAtCursor()`).
+    func restartAudioAtCursor(volume: Float) {
         audioPlaybackService.stop()
         audioPlaybackService.setVolume(volume)
         playAudioChapter()

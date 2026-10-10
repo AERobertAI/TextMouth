@@ -198,6 +198,50 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
+    // MARK: - The Output Changing During Where Am I?
+
+    /// The AirPods connecting while Where Am I? speaks over a playing book
+    /// change the output under the book the announcement paused, which
+    /// marks it to be played afresh, since a paused synthesizer, engine, or
+    /// player can stay bound to the output it began on. The announcement
+    /// goes on, and as its end sound passes the book plays on afresh from
+    /// where it paused, started once more and shown playing: the text book
+    /// in direct speech, the voice, never moved to rendered audio. Before,
+    /// Where Am I's own resume took up the paused backend, ignoring the mark
+    /// (REV13's leftovers).
+    func testTheAirPodsConnectingDuringWhereAmIHaveTheBookPlayAfreshAsItEnds() throws {
+        for kind in BookKind.allCases {
+            let system = MediaSystem()
+            system.takeAirPodsOut()
+            let world = try makeIntegrationWorld("Where Am I AirPods Connect \(kind)")
+            world.settings.bluetoothMonitoringEnabled = true
+            world.settings.bluetoothDisconnectDelay = 2
+            let book = try openPlayingBook(kind, in: world, joining: system)
+            system.coordinator.refreshPreviousDeviceInfo()
+            XCTAssertFalse(system.coordinator.previousDeviceWasBluetooth, "\(kind): the AirPods are the output already")
+            let place: Place = (book.reader.currentChapterIndex, book.reader.currentCharacterOffset)
+            let announcement = try pressWhereAmI(in: book)
+            let generation = book.reader.chapterPlaybackGeneration
+
+            system.putAirPodsIn()
+
+            XCTAssertTrue(book.reader.isWhereAmISpeaking, "\(kind): the AirPods connecting ended the announcement")
+            XCTAssertTrue(book.isPaused, "\(kind): the AirPods connecting resumed the book")
+            XCTAssertTrue(book.reader.restartPlaybackBackendOnNextResume, "\(kind): the book was not marked to be played afresh")
+            finishWhereAmIByItself(book, announcement)
+            book.endSound.passEndSound()
+
+            XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(kind): the book did not play on as the announcement ended")
+            XCTAssertFalse(book.reader.restartPlaybackBackendOnNextResume, "\(kind): the mark was left for the next resume")
+            XCTAssertEqual(book.reader.chapterPlaybackGeneration, generation + 1, "\(kind): the book was not played afresh, once")
+            assertPlays(book, from: place, "\(kind): the book played afresh as Where Am I? ended")
+            if kind == .text {
+                XCTAssertTrue(book.reader.speechService.usingDirectMode, "text: speech moved to rendered audio")
+            }
+            assertToldSystem(system, that: book.reader, plays: true, "\(kind): the book played afresh as Where Am I? ended")
+        }
+    }
+
     // MARK: - A Play During Where Am I?
 
     /// A Play from the AirPods or a media key while Where Am I? speaks does
@@ -2440,6 +2484,14 @@ final class MediaCommandPlaybackTests: XCTestCase {
         func takeAirPodsOut() {
             state.defaultOutput = MediaSystem.speakers
             state.outputs = [MediaSystem.speakers]
+            coordinator.handleDefaultOutputChange()
+        }
+
+        /// The AirPods come out of their case and connect: CoreAudio adds
+        /// them and reports the default output changed to them.
+        func putAirPodsIn() {
+            state.defaultOutput = MediaSystem.airPods
+            state.outputs = [MediaSystem.airPods, MediaSystem.speakers]
             coordinator.handleDefaultOutputChange()
         }
     }
