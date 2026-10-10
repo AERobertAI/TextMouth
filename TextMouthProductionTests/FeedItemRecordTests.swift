@@ -192,6 +192,68 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
     }
 
+    // MARK: - A Failed Index Write
+
+    /// When the feed's index cannot be written, Delete Download keeps the
+    /// file and the row among the books, with the place, refuses saying
+    /// why, and leaves the item downloaded, the failure reported; once the
+    /// index can be written, Delete Download goes ahead, and the write that
+    /// succeeds settles the failure.
+    func testAFailedIndexWriteKeepsTheFile() async throws {
+        let failures = cleanSharedFailureCenter()
+        let world = try FeedTestWorld(self, label: "FeedRecordIndexFails")
+        let (feed, books) = try await downloadedEpisodes(1, in: world)
+        LibraryPersistenceService.flushPendingSave()
+        let obstruction = try WriteObstruction.place(at: FeedPaths.indexFile(of: feed.id, in: TextMouthPaths.root))
+        defer { obstruction.clear() }
+        let book = try listen(to: try XCTUnwrap(books.first), in: world)
+
+        XCTAssertThrowsError(try world.center.deleteDownload("guid:ep-1", of: feed.id)) { error in
+            XCTAssertEqual(error as? FeedItemPackageError, .indexNotWritten)
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath), "the file went before its row was in the index")
+        XCTAssertEqual(world.library.bookByID(book.id)?.readingPosition?.characterOffset, 42)
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .downloaded(bookID: book.id))
+        XCTAssertEqual(failures.outstandingFailures().map(\.subject), [.libraryIndex])
+
+        obstruction.clear()
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.filePath))
+        XCTAssertEqual(try indexedRows(of: feed.id).map(\.id), [book.id])
+        XCTAssertEqual(failures.outstandingFailures().map(\.subject), [], "the index write that succeeded settled nothing")
+    }
+
+    /// When the feed's index cannot be written, the rule deleting played
+    /// downloads removes no file, of a download opened or not, keeps every
+    /// row among the books, and says so in one line of the debug log.
+    func testASweepWhoseIndexCannotBeWrittenKeepsEveryFile() async throws {
+        _ = cleanSharedFailureCenter()
+        let world = try FeedTestWorld(self, label: "FeedRecordSweepIndexFails")
+        let (feed, books) = try await downloadedEpisodes(2, in: world)
+        LibraryPersistenceService.flushPendingSave()
+        let obstruction = try WriteObstruction.place(at: FeedPaths.indexFile(of: feed.id, in: TextMouthPaths.root))
+        defer { obstruction.clear() }
+        _ = try listen(to: books[0], in: world)
+        FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        world.center.markPlayed("guid:ep-2", of: feed.id)
+        let putOffBefore = debugLogLines(containing: "FEED_SWEEP_PUT_OFF").count
+
+        let report = await world.center.sweepPlayedDownloads()
+
+        XCTAssertEqual(report.deletedBookIDs, [])
+        for book in books {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath), book.title)
+            XCTAssertNotNil(world.library.bookByID(book.id), book.title)
+        }
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        XCTAssertEqual(world.center.listedItems(of: feed.id).compactMap(\.state.bookID).count, 2)
+        XCTAssertEqual(debugLogLines(containing: "FEED_SWEEP_PUT_OFF").count, putOffBefore + 1)
+    }
+
     // MARK: - Helpers
 
     /// A date `seconds` after a fixed start, in whole seconds, which the
