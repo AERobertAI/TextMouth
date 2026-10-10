@@ -64,14 +64,30 @@ extension LibraryViewModel {
     /// its file and its index row make it downloaded again. An item deleted
     /// from its feed, or downloading or downloaded as another book, is left
     /// as it is.
+    ///
+    /// Only a file found here heals its item (FR02's rule: nothing is
+    /// decided from a check the cloud answers). A row joins the books while
+    /// its file may be only in the cloud, as when another Mac removed the
+    /// download and its package is not on this Mac yet; marking such an
+    /// item downloaded would undo the other Mac's removal, which would undo
+    /// this, back and forth. Such a row, and one whose file is gone, goes
+    /// back to its feed's shelf as kept, as the record has it, until a
+    /// launch finds its file here.
+    /// - Parameter access: How the files are looked for: with dataless files
+    ///   left in the cloud, unless a test pretends some are.
     /// - Returns: How many items were marked downloaded again.
     @discardableResult
-    func markFeedItemsDownloadedAgain() -> Int {
+    func markFeedItemsDownloadedAgain(access: MaintenanceFileAccess = .live) -> Int {
         var marked = 0
+        var shelved: [Book] = []
         for row in library.books {
             guard let link = row.feedLink,
                   let item = feeds.store.record(of: link.feedID)?.item(link.itemID),
                   item.deletedDate == nil, item.state.bookID == nil, !item.state.isDownloading else { continue }
+            guard access.presence(of: row.bookFileURL) == .present else {
+                shelved.append(row)
+                continue
+            }
             feeds.store.updateItem(link.itemID, of: link.feedID) { item in
                 item.state = .downloaded(bookID: row.id)
                 item.downloadDeletedDate = nil
@@ -83,6 +99,20 @@ extension LibraryViewModel {
                 .feeds,
                 "FEED_ITEMS_DOWNLOADED_AGAIN: marked \(CountWording.phrase(marked, singular: "item", plural: "items")) "
                     + "downloaded again whose packages and index rows an older TextMouth did not read"
+            )
+        }
+        if !shelved.isEmpty {
+            // The rows are the same, so the feeds' indexes and library.json
+            // stay as they are: only where the model holds them changes.
+            var updated = library
+            let shelvedIDs = Set(shelved.map(\.id))
+            updated.books.removeAll { shelvedIDs.contains($0.id) }
+            shelved.forEach { updated.feedShelf.put($0) }
+            library = updated
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_ITEMS_KEPT: \(CountWording.phrase(shelved.count, singular: "item", plural: "items")) whose feed's "
+                    + "record says not downloaded, and whose file is not on this Mac, went back to its feed's kept rows"
             )
         }
         return marked
