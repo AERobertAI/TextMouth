@@ -1760,3 +1760,72 @@ ARCHITECTURE wording:
 - **Feed commands (line ~510):** "Unsubscribe, once confirmed, stops checking and keeps the feed (FeedCenter.unsubscribe(_:): unsubscribedDate set, the rule's waiting downloads withdrawn, kept packages deleted through FeedLifecycle.deleteKeptPackages(of:), a FeedUnsubscribeOutcome worded by FeedWording.unsubscribed(title:outcome:noun:)); its question is unsubscribeMessage(downloadCount:keptCount:noun:); Resubscribe (FeedCenter.resubscribe(_:)) clears the date and checks at once; FeedAction.actions(for:in:) offers either by state, and Check Feed only while subscribed. deleteItemMessage(isArticle:keepsListenerState:isInLibrary:) says an In Library item's book stays."
 - **Line 697:** add Move to Library… to the users of namesManagedPackage(_:), and say "a gone feed's downloads".
 - **Line 753:** delete the note, since `unsubscribeMessage` no longer lists titles.
+
+## From the importandsheets agent (fix/import-and-sheet-followups), Oct 10
+
+Not verified:
+- Live VoiceOver and braille: focus landing in the name field, the Escape announcement, the waiting count, the no-new-books announcement, and whether the medium-priority reading-list join really waits for the end announcement or is cut off when an alert or sheet appears.
+- A real hundred-book archive, a large audiobook ZIP, and how accurate the size-weighted estimate is on a real mixed archive.
+- Pressing New Folder… itself. SwiftUI draws it as no button a test can press, so the focus test shows the fields from the start; the same code runs either way.
+- The key behaviour was measured in offscreen hosted windows, with Escape offered as a key equivalent first, as the existing Return tests do.
+- Feed Info's Escape is covered by a generic picker owner that keeps its own Escape button, not by Feed Info itself.
+
+What main did before:
+- Escape in the Move sheet with the New Folder fields shown pressed the sheet's own Cancel and closed the whole sheet, with the keyboard in the name field or out of it.
+- In Add Feed, Return in an empty Search field with a folder name typed made the folder. That is a real bug, not only two buttons drawn as default.
+
+Decisions:
+- **No new book (1):** the announcement names the archive, which the brief's example didn't: "No new books in “Library Export.zip”: all 24 were already in your library." Two books say "both", one says "its one book", and none says "No books were found in “Empty.zip”." It also replaces the long-run "…0 books imported, 24 skipped" wording. A short batch with a failure or a cancel stays quiet, since its alert speaks. The duplicate count moved into `ZipImportResult.skippedDuplicates`, so it has one source.
+- **Waiting imports (2):** "2 more imports waiting" is the queue's own count less the import shown. It is hidden after Cancel, because queued ZIPs never start, though queued single files still do.
+- **Audio ZIP bytes (3):** the line reads "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB". It comes through an overload, `importAudioZipWithReport(…extraction:)`, because tests name the old signature.
+- **Package and New from Text (4):** a package starts at "checking the package". New from Text is named by its title, not its file name. A finished package import now goes through the same end step as any single file, so a long one is announced.
+- **Checksum once (5):** `importFileWithReport(from:checksum:…)` takes the checksum the batch already read. A `checksum:` parameter on the batch lets the test count the reads.
+- **Estimate (6):**
+  - Only text formats are weighted by bytes. An audiobook's file reads its chapters, not every byte, so it counts at the average time instead; so do DAISY books, folders and ZIPs.
+  - Items without a size use their own average (feed review item 16). That changed one feed estimate expectation from 56 to 33.5 seconds.
+- **One observer view (7):** `ProgressObserver` lives in `ContentView.swift` beside `ProgressOverlay`. I left the feed section's own observer alone; its file and tests belong to the feed agents.
+- **Escape (9):** Import OPML's Cancel now also stands down while the fields show. Feed Info works by view order.
+- **Your added item:** I chose medium priority rather than folding the join into the end announcement.
+
+README wording:
+- **Import overlay paragraph:**
+  - After "…shows its name and its step the same way", add: "…as do a TextMouth package opened from the Finder, from "checking the package" on, and a book made with New from Text, by the title you typed. A ZIP holding one audiobook also counts the items and bytes extracted while it extracts, as in "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB"."
+  - After the time-left example, add: "The time left weighs each book still to come by its size where that tells its time, as an EPUB's, PDF's, or text file's does, so a large book still to come counts for more; an audiobook's file counts at the average time."
+  - Add: "When more imports wait behind the one shown, the overlay says how many, as in "2 more imports waiting", until Cancel is pressed."
+  - Add: "A ZIP import that brings no new book says what it found, however quickly it ends: "No new books in “Library Export.zip”: all 24 were already in your library." ("both" for two, "its one book" for one), or "No books were found in “Empty.zip”."; one with a failure says so in its alert instead."
+  - Add: "At the Reading List, VoiceOver hears the books join the list after the import's own words, not over them."
+- **Move dialog:** replace "while those fields are shown, … Return presses Move again." with "New Folder… opens fields with the keyboard in their name field, where VoiceOver lands. While those fields are shown, Return presses their Create, and Escape, like Cancel New Folder, closes them, keeps the folder chosen, and says so, as in "New Folder cancelled. Destination folder: Reports."; once they close, Return presses Move again and Escape closes the dialog."
+- **Add Feed:** append: "Escape closes the New Folder fields first, and presses Cancel only once they are closed. In the Search field, Return searches, and never makes a folder, even with the fields shown."
+- **Import OPML:** after "…Return presses their Create instead", add ", and Escape closes them before it presses Cancel".
+- **Feed Info:** append to the Return sentence: ", and Escape closes the fields before it presses Done."
+
+ARCHITECTURE wording:
+- **The library's sheets, Who may write it, add:**
+  - "The picker's name field takes the keyboard as the fields appear (`focusNameField()`, `onAppear`, then a turn of the run loop), so VoiceOver, which follows the keyboard, lands there."
+  - "Its Cancel New Folder takes Escape (`keyboardShortcut(.cancelAction)`) while the fields are shown. It closes them, clears the name, keeps the place chosen, and announces `LibraryFolderPicker.newFolderCancelledAnnouncement(pickerLabel:chosen:)`."
+  - "The Move sheet's, Add Feed's, and Import OPML's Cancel follow `isMakingFolder` and stand down meanwhile, so a second Escape closes the sheet. Feed Info's Done keeps Escape, and the picker, before it in view order, takes the key first."
+  - "`createTakesReturn` (true by default) lets an owner hand Return to a button of its own. Add Feed passes `!searchFocused`, so in the Search field Search alone is the default."
+  - "Measured on main before October 10: Escape offered as a key equivalent reached the sheet's own Cancel with the keyboard in the name field or out of it."
+  - "The key and typing test helpers (`pressKey(_:in:)`, `pressReturnKey(in:)`, `typeReplacingText(_:in:of:)`, `typeNewFolderName(_:in:)`, `newFolderNameFields(in:)`, `editableTextFields(in:)`, `isEditing(_:in:)`, `settleHostedView(_:)`) live in `AccessibilityTestSupport.swift`; `startTurningTheRunLoop(_:)` lives in `FeedUITestSupport.swift`."
+- **Imports, Who may write it, add:** "A ZIP batch reads each book's checksum once, for its duplicate check, and hands it to the book's import (`importFileWithReport(from:checksum:toFolder:observer:)`)."
+- **Import progress (FR10):**
+  - **Owner.** The state keeps:
+    - `timing`, a `WorkTiming`;
+    - `bookSizes`;
+    - the time left;
+    - `waitingImports`, kept across imports;
+    - for the book under way, a one-book audiobook archive's extraction (`BookUnderWay.extraction`), which its line says while extracting.
+  - **Who may write it:**
+    - "A batch reports `.foundBooks(sizes:)` once before its first book. Each size comes from `FileImportService.timedSize(of:)`: a text book's file size, nil for an audiobook's file or a DAISY book."
+    - "Single files, one-book archives, packages (from `.checkingPackage`), and New from Text (from `.preparingPackage`, by its title) report through `observeBook(_:startingAt:then:)`. An audiobook archive's extraction reports through `observeExtraction()`."
+    - "`TimeLeftEstimate` (`Models/TimeLeftEstimate.swift`, shared with the feed downloads section) gives the time left:
+      - each item of known size takes its bytes at the rate the sized items took theirs;
+      - any other item takes the average of the unsized items, or of every item before any unsized one finished;
+      - the result is rounded by `TimeLeftEstimate.rounded`."
+    - "The library follows the queue's count through `importActivityChanged(to:)`, started by `observeImportActivity()`."
+  - **How others observe it:**
+    - "Only `ProgressObserver`, a generic view in `Views/ContentView.swift`, observes it, as it observes the text cache's progress."
+    - "A batch that found no new book (`ZipImportResult.foundNoNewBook`) is announced however short, by `noNewBooks(in:alreadyInLibrary:)`."
+    - "The reading list's join after an import is announced at medium priority."
+- **Text cache line 104:** replace "(TextExtractionObserver)" with "(ProgressObserver)".
+- **Duplication list:** drop the #1461 bullet, and add one for the feed section's own observer (follow-up 3).
