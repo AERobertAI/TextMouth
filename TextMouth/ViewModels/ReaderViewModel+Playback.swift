@@ -757,6 +757,34 @@ extension ReaderViewModel {
         )
         isCurrentlyPlaying = false
         isCurrentlyPaused = false
+        settleStopMadeBySpeech()
+        showSpeechRefusalReport(refusal)
+    }
+
+    /// Speech paused itself, the cursor where it paused, because the voice
+    /// did not start the passage there, on fresh synthesizers too
+    /// (`SpeechService.onSpeechStalled`): the reader makes the pause its own,
+    /// as `showPlaybackStoppedAfterRefusal(_:)` makes a refusal's stop its
+    /// own, and tells the listener once
+    /// (`SpeechService.voiceDidNotStartAnnouncement`). The reader's flags
+    /// follow speech's, which shows itself paused, and Play speaks from there
+    /// afresh.
+    func showPlaybackPausedAfterStartStalls() {
+        guard !hasClosed else { return }
+        DiagnosticLog.event(
+            .playback,
+            "PLAYBACK_PAUSED_AFTER_START_STALLS: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset)"
+        )
+        settleStopMadeBySpeech()
+        announceToVoiceOver(SpeechService.voiceDidNotStartAnnouncement)
+    }
+
+    /// Everything a pause does but pausing speech, which has stopped or
+    /// paused itself: a minutes sleep timer's countdown waits for Play, the
+    /// listening session ends, Now Playing is told the book is paused, so
+    /// the next press of the AirPods or a media key is Play and reaches this
+    /// reader, and the stop is recorded and the place saved.
+    private func settleStopMadeBySpeech() {
         sleepTimerService.pauseCountdown(by: readerID)
         readingStatsService.endSession(bookID: book.id)
         nowPlayingService.updateNowPlayingInfo(
@@ -764,7 +792,6 @@ extension ReaderViewModel {
         )
         recordPlaybackStopped()
         savePosition()
-        showSpeechRefusalReport(refusal)
     }
 
     // MARK: - Where a Chapter's End Stops the Timer

@@ -687,6 +687,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// says `engineRefusedAnnouncement` itself. A reader may show playback
     /// stopped in turn; Play speaks on from the cursor.
     var onSpeechRefused: ((SpeechRefusal) -> Void)?
+    /// Called on the main queue when speech paused itself, the cursor where
+    /// it paused, because the voice did not start a passage, on fresh
+    /// synthesizers too (`pauseAfterStartStalls(at:)`). The reader makes the
+    /// pause its own and tells the listener; with no reader set, speech says
+    /// `voiceDidNotStartAnnouncement` itself. Play speaks on from there.
+    var onSpeechStalled: (() -> Void)?
 
     /// The full text currently being spoken, kept after a stop for a later
     /// seek or resume until `releaseSpeech()`. Readable outside this class
@@ -765,19 +771,62 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     private var directPlaybackWatchdogIdleChecks = 0
     /// How long the live utterance may go without starting, in seconds,
     /// while speech should be heard, before the start watchdog recovers
-    /// (`recoverFromUnstartedDirectUtterance()`): longer than the 3 to 4.5 s
-    /// a voice not loaded yet once made the first word wait (PERF03), so a
-    /// slow first start is never taken for a stall.
+    /// (`recoverFromUnstartedDirectUtterance()`), on a synthesizer that has
+    /// started an utterance before: longer than the 3 to 4.5 s a voice not
+    /// loaded yet once made the first word wait (PERF03).
     static let directStartWatchdogTimeout: TimeInterval = 5
+    /// The same for a synthesizer that has not started an utterance yet, as
+    /// the service's first and every fresh one are: twice the slowest cold
+    /// start measured (4.5 s, PERF03), since a voice still loading on a busy
+    /// Mac can take longer. A recovery that comes too soon skips and repeats
+    /// nothing, since nothing of the utterance was heard; a longer wait would
+    /// only lengthen the silence before a voice that never starts is noticed.
+    static let directStartWatchdogColdTimeout: TimeInterval = 10
     /// How many ticks in a row the start watchdog must find the live
-    /// utterance not started before it recovers: the timeout's worth, and
-    /// one more, so that a start reported on the main queue just before the
-    /// deadline is handled before the watchdog acts on it.
+    /// utterance not started before it recovers, on a synthesizer that has
+    /// started one: the timeout's worth, and one more, so that a start
+    /// reported on the main queue just before the deadline is handled before
+    /// the watchdog acts on it.
     static var directStartWatchdogRequiredTicks: Int {
-        Int((directStartWatchdogTimeout / directWatchdogInterval).rounded(.up)) + 1
+        requiredTicks(waiting: directStartWatchdogTimeout)
     }
+    /// The same on a synthesizer that has not started an utterance yet
+    /// (`directStartWatchdogColdTimeout`).
+    static var directStartWatchdogColdRequiredTicks: Int {
+        requiredTicks(waiting: directStartWatchdogColdTimeout)
+    }
+    /// How many ticks of `directWatchdogInterval` wait out `timeout`, and
+    /// one more.
+    private static func requiredTicks(waiting timeout: TimeInterval) -> Int {
+        Int((timeout / directWatchdogInterval).rounded(.up)) + 1
+    }
+    /// How many times the start watchdog recovers an utterance that never
+    /// starts at one place, the utterance's start offset, before it stops
+    /// speech there as a pause and tells the listener
+    /// (`pauseAfterStartStalls(at:)`), rather than recovering in silence
+    /// forever.
+    static let directStartWatchdogRecoveriesPerPlace = 2
     private var directStartWatchdogTimer: SpeechWatchdogTimer?
     private var directStartWatchdogTicks = 0
+    /// How many ticks the start watchdog watching now must count: the cold
+    /// timeout's on a synthesizer that has not started an utterance yet.
+    private var directStartWatchdogTicksNeeded = 0
+    /// Whether the direct synthesizer has started an utterance since it was
+    /// made: false for the service's first one, and for each fresh one
+    /// (`replaceDirectSynthesizer(after:)`), until one starts.
+    private var directSynthHasStarted = false
+    /// The place where the start watchdog last recovered an utterance that
+    /// never started, and how many times it has recovered there since an
+    /// utterance last started, speech stopped, or speech paused after them.
+    private var startStallRecoveries: StartStallRecoveries?
+
+    /// Where the start watchdog has recovered, and how often.
+    private struct StartStallRecoveries {
+        /// The start offset of the utterances that never started.
+        let place: Int
+        /// How many times the watchdog recovered at that place.
+        let count: Int
+    }
     /// Timer to poll playback position from audio engine
     private var positionTimer: Timer?
 
@@ -1131,15 +1180,28 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// speaking in silence until the listener pressed Pause and Play.
     private func startDirectStartWatchdog(for utterance: AVSpeechUtterance) {
         stopDirectWatchdogs()
+        directStartWatchdogTicksNeeded = directSynthHasStarted
+            ? Self.directStartWatchdogRequiredTicks
+            : Self.directStartWatchdogColdRequiredTicks
         let watchedUtteranceID = ObjectIdentifier(utterance)
         directStartWatchdogTimer = startWatchdogTimer { [weak self] in
             self?.directStartWatchdogTicked(watching: watchedUtteranceID)
         }
     }
 
+    /// The live utterance has started, as its start or a word of it shows:
+    /// the synthesizer can speak, so its next utterances wait the ordinary
+    /// timeout to start, the place's stall count goes, and the playback
+    /// watchdog takes over from the start watchdog.
+    private func directUtteranceStarted(_ utterance: AVSpeechUtterance) {
+        directSynthHasStarted = true
+        startStallRecoveries = nil
+        startDirectPlaybackWatchdog(for: utterance)
+    }
+
     /// One tick of the start watchdog watching the utterance
     /// `watchedUtteranceID` names, which has not started: once it has gone
-    /// unstarted for `directStartWatchdogRequiredTicks` ticks in a row while
+    /// unstarted for `directStartWatchdogTicksNeeded` ticks in a row while
     /// speech should be heard, recover
     /// (`recoverFromUnstartedDirectUtterance()`). A tick while speech is
     /// paused, stopped, playing rendered audio, or fading counts nothing and
@@ -1161,7 +1223,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             return
         }
         directStartWatchdogTicks += 1
-        guard directStartWatchdogTicks >= Self.directStartWatchdogRequiredTicks else { return }
+        guard directStartWatchdogTicks >= directStartWatchdogTicksNeeded else { return }
         stopDirectStartWatchdog()
         recoverFromUnstartedDirectUtterance()
     }
@@ -1223,27 +1285,84 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         speakDirect(currentText, fromCharOffset: safeOffset)
     }
 
-    /// Recover the live utterance, which the synthesizer was handed
-    /// `directStartWatchdogTimeout` seconds ago, or more, while speech
-    /// should be heard, and which it has neither started, nor cancelled,
-    /// nor finished (`DIRECT_START_WATCHDOG_RECOVERY`), as the playback
-    /// watchdog recovers from an idle synthesizer: from rendered audio of
-    /// this speech when the engine holds some, else directly, from where
-    /// the utterance begins, since nothing of it was heard.
+    /// Recover the live utterance, which the synthesizer was handed its
+    /// start timeout ago, or more, while speech should be heard, and which
+    /// it has neither started, nor cancelled, nor finished
+    /// (`DIRECT_START_WATCHDOG_RECOVERY`), as the playback watchdog recovers
+    /// from an idle synthesizer: from rendered audio of this speech when the
+    /// engine holds some, else directly, from where the utterance begins,
+    /// since nothing of it was heard.
     ///
     /// A fresh synthesizer takes the place of the one that held it first
     /// (`replaceDirectSynthesizer(after:)`): one that refused an utterance
     /// never starts another (on October 7 a plain text waited ten seconds on
     /// it for nothing, while a fresh one spoke it at once), so speaking
     /// again on it would stall again.
+    ///
+    /// At most `directStartWatchdogRecoveriesPerPlace` times at one place,
+    /// the utterance's start offset: when fresh synthesizers do not start
+    /// it either, speech pauses there and the listener is told
+    /// (`pauseAfterStartStalls(at:)`), where it once recovered in silence
+    /// every few seconds, without end.
     private func recoverFromUnstartedDirectUtterance() {
+        let place = directModeBaseOffset
         let offset = retryOffset(from: directModeBaseOffset, to: directModeChunkEnd)
-        transitionLog(.event, "DIRECT_START_WATCHDOG_RECOVERY: utterance at offset=\(directModeBaseOffset) chunkEnd=\(directModeChunkEnd) never started; going on at offset=\(offset)")
+        let recoveriesHere = startStallRecoveries.map { $0.place == place ? $0.count : 0 } ?? 0
+        guard recoveriesHere < Self.directStartWatchdogRecoveriesPerPlace else {
+            pauseAfterStartStalls(at: offset)
+            return
+        }
+        startStallRecoveries = StartStallRecoveries(place: place, count: recoveriesHere + 1)
+        transitionLog(
+            .event,
+            "DIRECT_START_WATCHDOG_RECOVERY: utterance at offset=\(place) chunkEnd=\(directModeChunkEnd) never started; "
+                + "going on at offset=\(offset), recovery \(recoveriesHere + 1) of \(Self.directStartWatchdogRecoveriesPerPlace) there"
+        )
         replaceDirectSynthesizer(after: "the live utterance never started")
         if renderedAudioMatchesSpeech {
             switchToRenderedAudioOrSpeakDirectly(at: offset, failureTag: "DIRECT_START_WATCHDOG_ENGINE_FAILED")
         } else {
             speakDirect(currentText, fromCharOffset: offset)
+        }
+    }
+
+    /// What the listener hears when the voice did not start a passage, on
+    /// fresh synthesizers too, and speech paused there
+    /// (`pauseAfterStartStalls(at:)`).
+    nonisolated static let voiceDidNotStartAnnouncement = "Speech stopped: the voice did not start. Press Play to try again."
+
+    /// Stop speech at `offset` as a pause, the cursor kept there, once the
+    /// start watchdog's recoveries at the place have all ended in an
+    /// utterance that never started (`DIRECT_START_STALLED`, offsets only):
+    /// the voice will not start, and recovering on would leave speech silent
+    /// while it showed itself speaking. The synthesizer that held the last
+    /// one is let go, and Play speaks from `offset` afresh, on a fresh one
+    /// (`pendingDirectSeekOffset`), the place's recoveries to come again.
+    /// The reader is told and tells the listener once (`onSpeechStalled`);
+    /// with no reader, speech says `voiceDidNotStartAnnouncement` itself.
+    private func pauseAfterStartStalls(at offset: Int) {
+        transitionLog(
+            .event,
+            "DIRECT_START_STALLED: offset=\(offset) chunkEnd=\(directModeChunkEnd) never started after "
+                + "\(Self.directStartWatchdogRecoveriesPerPlace) recoveries; speech paused there"
+        )
+        startStallRecoveries = nil
+        replaceDirectSynthesizer(after: "the live utterance never started")
+        pendingDirectSeekOffset = offset
+        isPaused = true
+        stopPositionTracking()
+        // The cursor stays where speech paused, for the reader too.
+        let range = NSRange(location: offset, length: 0)
+        currentWordRange = range
+        onWordSpoken?(range, "")
+        if let onSpeechStalled {
+            onSpeechStalled()
+        } else {
+            // The watchdog ticks on the main thread, where announcements are
+            // made.
+            MainActor.assumeIsolated {
+                VoiceOverAnnouncer.announce(Self.voiceDidNotStartAnnouncement)
+            }
         }
     }
 
@@ -1432,6 +1551,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         directSynth.delegate = nil
         directSynth = AVSpeechSynthesizer()
         directSynth.delegate = self
+        directSynthHasStarted = false
         transitionLog(.event, "DIRECT_SYNTH_REPLACED: fresh synthesizer after \(reason)")
     }
 
@@ -1846,6 +1966,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         pendingDirectSeekOffset = nil
         lastDirectRetryOffset = nil
         strictlyGuardedRange = nil
+        startStallRecoveries = nil
         stopPositionTracking()
     }
 
@@ -2221,7 +2342,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             // its start not been reported: the playback watchdog takes over,
             // so the start watchdog never speaks again what is being heard.
             if directStartWatchdogTimer != nil {
-                startDirectPlaybackWatchdog(for: spoken.utterance)
+                directUtteranceStarted(spoken.utterance)
             }
         } else {
             return
@@ -2283,7 +2404,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             self.transitionLog(.trace, "DIRECT_START_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) synthSpeaking=\(synthesizerIsSpeaking)")
             self.isSpeaking = true
             self.isPaused = false
-            self.startDirectPlaybackWatchdog(for: started.utterance)
+            self.directUtteranceStarted(started.utterance)
             // The next chunk waits in the synthesizer while this one speaks.
             self.queueNextDirectChunk()
         }

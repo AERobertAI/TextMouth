@@ -1031,6 +1031,57 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertFalse(reader.canReleaseMediaControls, "Release Media Controls is offered again")
     }
 
+    // MARK: - When the Voice Never Starts
+
+    /// The voice never starts the passage where speech begins, nor on the
+    /// fresh synthesizers the start watchdog speaks it again on, and speech
+    /// pauses there after the watchdog's second recovery, where it once
+    /// spoke the passage again in silence every few seconds without end.
+    /// The reader makes the pause its own: it shows Paused, the listening
+    /// session ends, the system is told the book is paused, so the next
+    /// press of the AirPods is Play, the place and the stop are saved, and
+    /// VoiceOver hears once that the voice did not start. Play speaks from
+    /// the place again. The watchdog's timers are ticked by hand.
+    func testAVoiceThatNeverStartsPausesTheBookAndPlaySpeaksFromThere() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Voice Never Starts")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let reader = quay.reader
+        let statistics = ReadingStatsService.shared
+        let timers = ManualWatchdogTimers()
+        reader.speechService._watchdogTimerForTesting = { interval, tick in
+            timers.start(interval: interval, tick: tick)
+        }
+
+        reader.play()
+        assertToldSystem(system, that: reader, plays: true, "Play")
+        let recorder = recordingAnnouncements {
+            letTheVoiceNeverStart(on: timers)
+        }
+        handleQueuedCallbacks()
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [SpeechService.voiceDidNotStartAnnouncement])
+        XCTAssertTrue(reader.speechService.isPaused, "Speech did not pause where the voice did not start")
+        XCTAssertTrue(reader.isCurrentlyPaused, "The reader does not show Paused")
+        XCTAssertEqual(
+            quay.handedOver.utterances.count,
+            1 + SpeechService.directStartWatchdogRecoveriesPerPlace,
+            "The passage was not spoken again exactly as often as the watchdog recovers"
+        )
+        XCTAssertEqual(reader.currentCharacterOffset, Self.openingOffset, "The cursor left the place")
+        XCTAssertFalse(statistics.hasActiveSession, "The listening session stayed open")
+        assertToldSystem(system, that: reader, plays: false, "The voice never started")
+        let row = try XCTUnwrap(world.library.bookByID(reader.book.id))
+        XCTAssertEqual(row.readingPosition?.characterOffset, Self.openingOffset, "The place was not saved")
+        XCTAssertNotNil(row.lastPlaybackStopped, "The stop was not recorded")
+
+        XCTAssertEqual(system.press(.play), .success)
+        handleQueuedCallbacks()
+        assertSpeaks(quay, from: Self.openingOffset, "Play after the voice never started")
+        assertToldSystem(system, that: reader, plays: true, "Play after the voice never started")
+        XCTAssertTrue(statistics.hasActiveSession, "Play opened no listening session")
+    }
+
     // MARK: - After the Book Has Finished
 
     /// Report of 2026-10-07: "after a book 'finished' trying to use the
@@ -1758,6 +1809,26 @@ final class MediaCommandPlaybackTests: XCTestCase {
             maximumLength: SpeechService.directModeFirstChunkSize
         )
         return DirectSpeechChunk.starting(at: firstChunk.end, in: book.text, maximumLength: SpeechService.directModeChunkSize).start
+    }
+
+    /// Has the voice never start what speech hands over, while `timers`
+    /// tick its start watchdog: the watchdog waits out its timeout for each
+    /// utterance, the first on a synthesizer that has started none, and
+    /// speaks it again on a fresh one, until, past its recoveries at the
+    /// place, speech pauses there and nothing is watched.
+    private func letTheVoiceNeverStart(
+        on timers: ManualWatchdogTimers,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        for _ in 0...SpeechService.directStartWatchdogRecoveriesPerPlace {
+            guard let watchdog = timers.running.last else {
+                XCTFail("Nothing watches the utterance handed over", file: file, line: line)
+                return
+            }
+            timers.tick(watchdog, times: SpeechService.directStartWatchdogColdRequiredTicks)
+        }
+        XCTAssertTrue(timers.running.isEmpty, "A watchdog still watches the paused speech", file: file, line: line)
     }
 
     /// Set a 15-minute sleep timer in `book`'s reader and run it out on its

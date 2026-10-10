@@ -684,6 +684,12 @@ final class ReaderViewModel: ObservableObject {
         speechService.onSpeechRefused = { [weak self] refusal in
             self?.showPlaybackStoppedAfterRefusal(refusal)
         }
+        // Speech that paused itself because the voice would not start a
+        // passage, on fresh synthesizers too, is made the reader's own pause,
+        // and the listener is told once.
+        speechService.onSpeechStalled = { [weak self] in
+            self?.showPlaybackPausedAfterStartStalls()
+        }
 
         // Sleep timer callbacks are no longer set here — they're passed
         // when this VM starts a timer (see startSleepTimer below). This
