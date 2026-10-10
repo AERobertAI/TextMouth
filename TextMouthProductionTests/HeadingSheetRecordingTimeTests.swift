@@ -75,7 +75,11 @@ final class HeadingSheetRecordingTimeTests: XCTestCase {
 
     /// Each heading's length is heard at the book's speed: half its
     /// recorded length at 2x, twice it at 0.5x, and its recorded length at
-    /// 1x, the last heading lasting to the end of the recording.
+    /// 1x, the last heading lasting to the end of the recording. Each
+    /// heading spans a whole chapter, so its length is exactly that
+    /// chapter's recorded duration, shown in whole seconds, even where the
+    /// difference of the chapters' times rounds a hair short of a whole
+    /// second (REV14).
     func testAnAudiobooksLengthsAreHeardAtItsSpeed() throws {
         let reader = Fixtures.makeReader(format: .audio)
         defer { reader.close() }
@@ -87,12 +91,37 @@ final class HeadingSheetRecordingTimeTests: XCTestCase {
             reader.audioSpeed = speed
             let rows = rows(of: reader, mode: .timeEstimate)
             XCTAssertEqual(rows.count, clock.chapterDurations.count)
-            for (chapterIndex, row) in rows.enumerated() {
+            for (chapterIndex, (row, duration)) in zip(rows, clock.chapterDurations).enumerated() {
                 let recorded = recordedSpan(ofChapter: chapterIndex, in: content, on: clock)
-                XCTAssertEqual(recorded, clock.chapterDurations[chapterIndex], accuracy: 1e-6)
-                XCTAssertEqual(row.infoText, TimeFormatting.format(recorded / speed), "\(row.heading.text) at \(speed)x")
-                XCTAssertEqual(row.accessibilitySuffix, TimeFormatting.spoken(recorded / speed))
+                XCTAssertEqual(recorded, duration, accuracy: 1e-6)
+                XCTAssertEqual(row.infoText, TimeFormatting.format(duration / speed), "\(row.heading.text) at \(speed)x")
+                XCTAssertEqual(row.accessibilitySuffix, TimeFormatting.spoken(duration / speed))
             }
+        }
+    }
+
+    /// The last heading lasts to the end of the recording, its whole last
+    /// chapter (REV14): a last chapter of exactly 25:03, after one of 900.2
+    /// seconds, shows 25:03 at 1x, 12:31 at 2x, and 50:06 at 0.5x, shown and
+    /// spoken. It once showed 25:02 and 50:05, measured to the book's last
+    /// unit, a tenth of a second short of its end.
+    func testTheLastHeadingLastsToTheEndOfTheRecording() throws {
+        let reader = Fixtures.makeReader(format: .audio)
+        defer { reader.close() }
+        reader.content = Fixtures.oneFileContent(lasting: Fixtures.wholeSecondLastChapter)
+        let cases: [(speed: Double, shown: String, spoken: String)] = [
+            (1, "25:03", "25 minutes, 3 seconds"),
+            (2, "12:31", "12 minutes, 31 seconds"),
+            (0.5, "50:06", "50 minutes, 6 seconds"),
+        ]
+
+        for testCase in cases {
+            reader.audioSpeed = testCase.speed
+            let rows = rows(of: reader, mode: .timeEstimate)
+            XCTAssertEqual(rows.map(\.heading.text), ["Part 1", "Part 2"])
+            let last = try XCTUnwrap(rows.last)
+            XCTAssertEqual(last.infoText, testCase.shown, "at \(testCase.speed)x")
+            XCTAssertEqual(last.accessibilitySuffix, testCase.spoken, "at \(testCase.speed)x")
         }
     }
 

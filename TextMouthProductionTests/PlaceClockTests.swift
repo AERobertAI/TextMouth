@@ -226,6 +226,64 @@ final class PlaceClockTests: XCTestCase {
         XCTAssertEqual(clock.place(forTypedTime: 12, headings: []), PlaceClock.Place(chapterIndex: 1, characterOffset: 20))
     }
 
+    // MARK: - Spans (REV14)
+
+    /// The clock's end is its last chapter at its full length, at the
+    /// clock's length. A span of whole chapters is exactly their durations:
+    /// a chapter of a whole 25:03 after one of 900.2 seconds spans 1,503
+    /// seconds to the end, where subtracting the two times leaves
+    /// 1502.9999999999998, which whole seconds show as 25:02. Within a
+    /// chapter and across chapters a span is the times' difference; a span
+    /// backwards is none; places outside the book read as its beginning and
+    /// end; a clock without chapters spans nothing.
+    func testASpanAddsWholeChaptersExactly() {
+        typealias Place = PlaceClock.Place
+        let clock = PlaceClock(chapterDurations: [900.2, 1_503], chapterLengths: [9_002, 15_030], unitsPerSecond: 10)
+        let secondChapter = Place(chapterIndex: 1, characterOffset: 0)
+        XCTAssertEqual(clock.end, Place(chapterIndex: 1, characterOffset: 15_030))
+        XCTAssertEqual(clock.time(of: clock.end), clock.length)
+        XCTAssertLessThan(
+            clock.length - clock.time(of: secondChapter),
+            1_503,
+            "The times' difference no longer falls short here, so this test no longer shows why a span is added"
+        )
+
+        XCTAssertEqual(clock.span(from: secondChapter, to: clock.end), 1_503)
+        XCTAssertEqual(TimeFormatting.format(clock.span(from: secondChapter, to: clock.end)), "25:03")
+        XCTAssertEqual(clock.span(from: Place(chapterIndex: 0, characterOffset: 0), to: secondChapter), 900.2)
+        XCTAssertEqual(clock.span(from: Place(chapterIndex: 1, characterOffset: 50), to: Place(chapterIndex: 1, characterOffset: 80)), 3, accuracy: 1e-9)
+        XCTAssertEqual(clock.span(from: Place(chapterIndex: 0, characterOffset: 2_000), to: Place(chapterIndex: 1, characterOffset: 30)), 703.2, accuracy: 1e-9)
+        XCTAssertEqual(clock.span(from: secondChapter, to: Place(chapterIndex: 0, characterOffset: 0)), 0)
+        XCTAssertEqual(clock.span(from: Place(chapterIndex: 1, characterOffset: 100), to: Place(chapterIndex: 1, characterOffset: 50)), 0)
+        XCTAssertEqual(clock.span(from: Place(chapterIndex: -1, characterOffset: 0), to: Place(chapterIndex: 5, characterOffset: 0)), clock.length, accuracy: 1e-9)
+
+        let empty = PlaceClock(chapterDurations: [], chapterLengths: [], unitsPerSecond: 10)
+        XCTAssertEqual(empty.end, Place(chapterIndex: 0, characterOffset: 0))
+        XCTAssertEqual(empty.span(from: Place(chapterIndex: 0, characterOffset: 0), to: Place(chapterIndex: 2, characterOffset: 9)), 0)
+    }
+
+    /// For every audiobook layout and the text book, the span between any
+    /// two sampled places, either way round, is the difference of their
+    /// times, give or take the rounding those times carry, and none when
+    /// the second comes first.
+    func testASpanIsTheDifferenceOfItsPlacesTimes() throws {
+        var clocks = try Fixtures.Layout.allCases.map { layout in
+            PlaceClock.recording(of: try Fixtures.audioContent(layout).contentIndex)
+        }
+        let text = Fixtures.textContent()
+        clocks.append(.reading(of: text.contentIndex, readingTime: text.estimatedReadingTime(wpm: 500)))
+
+        for clock in clocks {
+            let places = Fixtures.samplePlaces(on: clock) + [clock.end]
+            for from in places {
+                for to in places {
+                    let difference = clock.time(of: to) - clock.time(of: from)
+                    XCTAssertEqual(clock.span(from: from, to: to), max(0, difference), accuracy: 1e-6, "\(from) to \(to)")
+                }
+            }
+        }
+    }
+
     // MARK: - The Reader's Clock
 
     /// An audiobook's places keep their times at every speed: the reader's

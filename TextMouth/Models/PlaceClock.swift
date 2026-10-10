@@ -127,25 +127,62 @@ struct PlaceClock: Equatable, Sendable {
     /// the last chapter is the clock's end. A chapter before the first is at
     /// 0, and one after the last at the end.
     func time(chapterIndex: Int, characterOffset: Int) -> TimeInterval {
-        guard let last = chapterStarts.indices.last, chapterIndex >= 0 else { return 0 }
-        guard chapterIndex <= last else { return length }
-        let chapterLength = chapterLengths[chapterIndex]
-        let duration = chapterDurations[chapterIndex]
-        let offset = min(max(characterOffset, 0), chapterLength)
-        let intoChapter: TimeInterval
-        if offset >= chapterLength {
-            intoChapter = duration
-        } else if unitsPerSecond > 0 {
-            intoChapter = min(Double(offset) / unitsPerSecond, duration)
-        } else {
-            intoChapter = 0
-        }
-        return chapterStarts[chapterIndex] + intoChapter
+        guard let point = point(of: Place(chapterIndex: chapterIndex, characterOffset: characterOffset)) else { return 0 }
+        return chapterStarts[point.chapterIndex] + point.intoChapter
     }
 
     /// The time of `place`.
     func time(of place: Place) -> TimeInterval {
         time(chapterIndex: place.chapterIndex, characterOffset: place.characterOffset)
+    }
+
+    /// The clock's end as a place: its last chapter at its full length,
+    /// whose time is `length`, as a book that played to its end rests
+    /// (`ReaderViewModel.restAtEnd()`). The beginning for a clock without
+    /// chapters.
+    var end: Place {
+        guard let last = chapterLengths.indices.last else { return Place(chapterIndex: 0, characterOffset: 0) }
+        return Place(chapterIndex: last, characterOffset: chapterLengths[last])
+    }
+
+    /// How long the clock runs from `start` to `end`, 0 when `end` is not
+    /// after it: what is left of `start`'s chapter, every chapter between,
+    /// and the time `end` is into its own chapter, added chapter by chapter.
+    /// Each place is read as `time(chapterIndex:characterOffset:)` reads it.
+    ///
+    /// It is the difference of the two places' times, but for rounding:
+    /// those times carry the rounding of the running total of every chapter
+    /// before them, and a whole 25:03 chapter after one of 900.2 seconds
+    /// came out 1502.9999999999998 seconds long by subtraction, which whole
+    /// seconds show as 25:02 (REV14). Added this way, a span of whole
+    /// chapters is exactly their durations.
+    func span(from start: Place, to end: Place) -> TimeInterval {
+        guard let from = point(of: start), let to = point(of: end) else { return 0 }
+        if from.chapterIndex == to.chapterIndex {
+            return max(0, to.intoChapter - from.intoChapter)
+        }
+        guard from.chapterIndex < to.chapterIndex else { return 0 }
+        let between = chapterDurations[(from.chapterIndex + 1)..<to.chapterIndex].reduce(0, +)
+        return (chapterDurations[from.chapterIndex] - from.intoChapter) + between + to.intoChapter
+    }
+
+    /// `place` as the clock reads it: its chapter, held within the clock's,
+    /// and the time into that chapter its offset stands for, never past the
+    /// chapter's end. A chapter before the first reads as the beginning,
+    /// and one after the last as the end of the last; nil for a clock
+    /// without chapters.
+    private func point(of place: Place) -> (chapterIndex: Int, intoChapter: TimeInterval)? {
+        guard let last = chapterStarts.indices.last else { return nil }
+        guard place.chapterIndex >= 0 else { return (0, 0) }
+        guard place.chapterIndex <= last else { return (last, chapterDurations[last]) }
+        let chapterLength = chapterLengths[place.chapterIndex]
+        let duration = chapterDurations[place.chapterIndex]
+        let offset = min(max(place.characterOffset, 0), chapterLength)
+        if offset >= chapterLength {
+            return (place.chapterIndex, duration)
+        }
+        guard unitsPerSecond > 0 else { return (place.chapterIndex, 0) }
+        return (place.chapterIndex, min(Double(offset) / unitsPerSecond, duration))
     }
 
     /// The place at `time`: in the chapter that holds it, at the offset

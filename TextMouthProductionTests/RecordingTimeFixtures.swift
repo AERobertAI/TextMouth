@@ -28,6 +28,13 @@ enum RecordingTimeFixtures {
     /// The length of the one-file book: 9:41:07.4.
     static let oneFileDuration: TimeInterval = 34_867.4
 
+    /// The chapters of a one-file book whose last chapter ends on a whole
+    /// second (REV14): 900.2 seconds (its placeholder drops the 0.05), then
+    /// exactly 25:03. The Headings sheet once showed the last as 25:02,
+    /// measured to the book's last unit, a tenth short of its end, and
+    /// subtracting the chapters' times leaves 1502.9999999999998.
+    static let wholeSecondLastChapter: [TimeInterval] = [900.25, 1_503]
+
     /// Where the DAISY book's section shorter than a second is.
     static let shortSectionIndex = 2
 
@@ -37,11 +44,9 @@ enum RecordingTimeFixtures {
         let index: BookContentIndex
         switch layout {
         case .oneFile:
-            chapters = audioChapters(lasting: [oneFileDuration])
-            index = BookContentIndex.build(fromChapters: chapters, format: .audio)
+            return oneFileContent(lasting: [oneFileDuration])
         case .chapterMarks:
-            chapters = audioChapters(lasting: thirtyDurations)
-            index = BookContentIndex.build(fromChapters: chapters, format: .audio)
+            return oneFileContent(lasting: thirtyDurations)
         case .filePerChapter:
             chapters = audioChapters(lasting: thirtyDurations)
             let folder = URL(fileURLWithPath: "/tmp/RecordingTimeFixtures-files", isDirectory: true)
@@ -62,6 +67,15 @@ enum RecordingTimeFixtures {
                 audioBaseURL: URL(fileURLWithPath: "/tmp/RecordingTimeFixtures-daisy", isDirectory: true)
             )
         }
+        return DocumentContent(title: "Recording", author: "", chapters: chapters, contentIndex: index)
+    }
+
+    /// The content of an audiobook of one file, with its index: one chapter
+    /// for each of `durations`, as its chapter marks make them, or one for
+    /// a file without marks.
+    static func oneFileContent(lasting durations: [TimeInterval]) -> DocumentContent {
+        let chapters = audioChapters(lasting: durations)
+        let index = BookContentIndex.build(fromChapters: chapters, format: .audio)
         return DocumentContent(title: "Recording", author: "", chapters: chapters, contentIndex: index)
     }
 
