@@ -14,7 +14,10 @@ Only the windows not scoped to one model count (the 5-hour session and the
 weekly all-models window), as in usage-watch-unscoped.py: a cap on the Fable
 model does not count Opus work.
 
-Usage: wait-for-usage-reset.py [poll-minutes]   (at least 1 minute; 5 by default)
+Usage: wait-for-usage-reset.py [poll-minutes] [spent-left-percent]
+  poll-minutes: at least 1, 5 by default; spent-left-percent: 2 by default. On a day the
+  normal usage rule applies, agents stop themselves at 10% left, so pass about 12 to be
+  woken when a window they stopped at comes back.
 Exits 0, printing every counted window, once a window it saw at or below
 SPENT_LEFT percent left has at least BACK_LEFT percent left again.
 """
@@ -40,7 +43,8 @@ def counted_windows():
 def main():
     # Never poll faster than once a minute: a tight loop would hammer the usage endpoint.
     minutes = max(1.0, float(sys.argv[1])) if len(sys.argv) > 1 else 5.0
-    print(f"[wait-for-usage-reset] exits once a window seen at <= {SPENT_LEFT:.0f}% left has >= {BACK_LEFT:.0f}% left; polling every {minutes:g} min", flush=True)
+    spent_left = float(sys.argv[2]) if len(sys.argv) > 2 else SPENT_LEFT
+    print(f"[wait-for-usage-reset] exits once a window seen at <= {spent_left:.0f}% left has >= {BACK_LEFT:.0f}% left; polling every {minutes:g} min", flush=True)
     spent = set()
     while True:
         try:
@@ -53,7 +57,7 @@ def main():
             left = window.get("left_pct")
             if left is None:
                 continue
-            if left <= SPENT_LEFT and window["name"] not in spent:
+            if left <= spent_left and window["name"] not in spent:
                 spent.add(window["name"])
                 print(f"[wait-for-usage-reset] spent: {window['summary']}", flush=True)
             elif window["name"] in spent and left >= BACK_LEFT:
