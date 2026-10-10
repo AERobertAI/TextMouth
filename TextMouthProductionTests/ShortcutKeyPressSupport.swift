@@ -87,6 +87,38 @@ extension XCTestCase {
         addTeardownBlock { @MainActor in window.close() }
         return window
     }
+
+    /// A window, never shown, that says it is a sheet presented on `window`
+    /// (`ShortcutTestSheet`), as the shortcut manager and the menus read a
+    /// sheet, and a sheet over a sheet when `window` is one. It is closed
+    /// when the test ends.
+    @MainActor
+    func makeShortcutSheet(on window: NSWindow) -> NSWindow {
+        let sheet = ShortcutTestSheet(
+            contentRect: NSRect(x: 0, y: 0, width: 240, height: 100),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: true
+        )
+        // The test owns the window; AppKit must not release it again on close.
+        sheet.isReleasedWhenClosed = false
+        sheet.title = "Hosted test sheet"
+        sheet.presentedOn = window
+        addTeardownBlock { @MainActor in sheet.close() }
+        return sheet
+    }
+}
+
+/// A window, never shown, that says it is a sheet presented on
+/// `presentedOn`, as an attached sheet says (`sheetParent`), without a sheet
+/// being presented, which would show it.
+final class ShortcutTestSheet: NSWindow {
+    /// The window it says it is presented on.
+    weak var presentedOn: NSWindow?
+
+    override var sheetParent: NSWindow? {
+        presentedOn
+    }
 }
 
 /// Who holds each key where it works, for the tests that every key has one

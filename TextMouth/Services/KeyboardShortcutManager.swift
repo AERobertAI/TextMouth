@@ -643,9 +643,20 @@ final class KeyboardShortcutManager: ObservableObject {
     /// in, whose scopes' shortcuts match it (FR12's branch E): a sheet's
     /// window's kind (`pressKind(window:sheetParent:)`), and `.other` with no
     /// key window.
+    ///
+    /// A sheet over a sheet counts as the window under them both, which
+    /// commands are routed to too (`WindowCommandRouting.rootWindow(for:)`).
+    /// It once counted as a sheet over the sheet beneath it, a titled window,
+    /// which counts as a Library window (REV11): a reader's shortcuts did not
+    /// work there, the Library's did, and over an audio editor they matched
+    /// where none should.
     static func windowKind(ofKeyWindow keyWindow: NSWindow?) -> ShortcutWindowKind? {
         guard let keyWindow else { return .other }
-        return pressKind(window: windowKind(of: keyWindow), sheetParent: keyWindow.sheetParent.map(windowKind(of:)))
+        let underneath = WindowCommandRouting.rootWindow(for: keyWindow)
+        return pressKind(
+            window: windowKind(of: keyWindow),
+            sheetParent: underneath === keyWindow ? nil : windowKind(of: underneath)
+        )
     }
 
     /// The kind of window `window` is, apart from any sheet it is: an audio
