@@ -31,8 +31,9 @@ enum FeedItemPackage {
 
     /// Whether the package at `package` of the feed item `row` holds
     /// something of the listener's: the item was opened, or it has a place,
-    /// playback times, bookmarks, a setting of its own, or a transcript.
-    /// Only such a package stays once its file is removed.
+    /// playback times, bookmarks, a setting of its own, a field of its
+    /// metadata edited by hand (`Book.HandEdits`), or a transcript. Only
+    /// such a package stays once its file is removed.
     static func holdsListenerState(_ row: Book, package: URL) -> Bool {
         row.lastOpened != nil
             || row.readingPosition != nil
@@ -44,6 +45,7 @@ enum FeedItemPackage {
             || row.localEndOfBookBehavior != nil
             || row.localSkipForwardUnit != nil
             || row.localSkipBackwardUnit != nil
+            || !(row.handEdits?.fields.isEmpty ?? true)
             || holdsTranscript(package)
     }
 

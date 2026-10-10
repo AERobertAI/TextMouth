@@ -113,6 +113,55 @@ final class LibraryFeedItemEditTests: XCTestCase {
         XCTAssertEqual(world.library.feedItemRows(of: feed.id).kept["guid:post-1"]?.id, article.id)
     }
 
+    // MARK: - Hand Edits Are the Listener's
+
+    /// A field of a feed item's metadata edited by hand is something of the
+    /// listener's, as a place is, so its package stays when its file goes
+    /// (the A2 review's item H); a record of hand edits naming no field is
+    /// not.
+    func testAHandEditIsTheListenersState() throws {
+        let package = try makeSandboxDirectory("LibraryFeedHandEdits")
+        var row = Book(
+            title: "Renamed by Hand",
+            format: .audio,
+            filePath: package.appendingPathComponent("episode.m4a").path,
+            md5Hash: "renamed",
+            tmbDirectoryName: package.lastPathComponent,
+            feedLink: FeedBookLink(feedID: UUID(), itemID: "guid:ep-1")
+        )
+        XCTAssertFalse(FeedItemPackage.holdsListenerState(row, package: package))
+        row.handEdits = .noneSinceImport
+        XCTAssertFalse(FeedItemPackage.holdsListenerState(row, package: package))
+        row.handEdits = Book.HandEdits(fields: [.title], sinceImport: true)
+        XCTAssertTrue(FeedItemPackage.holdsListenerState(row, package: package))
+    }
+
+    /// Delete Download of an episode never opened whose title the listener
+    /// edited by hand keeps its package and its row, with the edited title,
+    /// on its feed's shelf.
+    @MainActor
+    func testDeleteDownloadKeepsAnEpisodeWhoseTitleWasEditedByHand() async throws {
+        let world = try FeedTestWorld(self, label: "LibraryFeedHandEdited")
+        await world.start()
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        let item = FeedXML.Item(guid: "ep-1", title: "Episode One", published: world.day(-1),
+                                enclosure: world.server.url("/audio/1.m4a").absoluteString, enclosureType: "audio/mp4")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [item])))
+        let feed = try await world.subscribe("/feed.xml")
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        let index = try XCTUnwrap(world.library.library.books.firstIndex { $0.id == book.id })
+        world.library.library.books[index].title = "My Own Title"
+        world.library.library.books[index].handEdits = Book.HandEdits(fields: [.title], sinceImport: true)
+
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+
+        let kept = try XCTUnwrap(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"], "the hand-edited episode's package went")
+        XCTAssertEqual(kept.title, "My Own Title")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.filePath))
+    }
+
     // MARK: - Fixtures
 
     /// The items the feed engine's removal was given, in order.
