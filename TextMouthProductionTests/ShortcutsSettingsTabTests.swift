@@ -73,7 +73,7 @@ final class ShortcutsSettingsTabTests: XCTestCase {
             let recorded = try XCTUnwrap(KeyBinding.from(event: event), key.words)
 
             XCTAssertEqual(recorded.key, character, "\(key.words) is held as AppKit's character")
-            XCTAssertTrue(recorded.matches(event), key.words)
+            XCTAssertEqual(recorded.stroke, recorded, "a press of the key is looked up as the binding recorded")
             XCTAssertEqual(recorded.accessibleDisplayString, "Command + \(key.words)")
             XCTAssertEqual(recorded.displayString, "\u{2318}\(key.words)")
             XCTAssertEqual(recorded.configText, "command+\(key.configName)")

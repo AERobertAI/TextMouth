@@ -142,7 +142,6 @@ final class TextFieldEditingKeysTests: XCTestCase {
             let event = try ShortcutKeyPresses.keyDown(keyCode: key.keyCode, characters: characters, modifiers: [.function, .command])
             let recorded = try XCTUnwrap(KeyBinding.from(event: event), key.name)
             XCTAssertEqual(recorded, KeyBinding(key: key.held, command: true), key.name)
-            XCTAssertTrue(recorded.matches(event), key.name)
             XCTAssertTrue(TextEditingKeys.contains(recorded), key.name)
         }
     }

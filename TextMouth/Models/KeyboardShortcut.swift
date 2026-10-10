@@ -469,31 +469,6 @@ struct KeyBinding: Codable, Equatable, Hashable {
         Self.keyName(forKey: key)?.shown ?? key.uppercased()
     }
 
-    /// Whether the key press `event` is this binding's stroke: its key with
-    /// exactly its modifiers. A double press's binding matches each of its
-    /// two presses; `ShortcutPressDispatcher` decides which press a key
-    /// press is.
-    func matches(_ event: NSEvent) -> Bool {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard flags.contains(.command) == command,
-              flags.contains(.option) == option,
-              flags.contains(.shift) == shift,
-              flags.contains(.control) == control else {
-            return false
-        }
-        return matchesKey(event)
-    }
-
-    /// Whether `event` presses this binding's key: a key named by its key
-    /// code by that code, any other by its character, in any letter case.
-    private func matchesKey(_ event: NSEvent) -> Bool {
-        if let keyCode = Self.keyName(forKey: key)?.keyCode {
-            return event.keyCode == keyCode
-        }
-        guard let chars = event.charactersIgnoringModifiers?.lowercased() else { return false }
-        return chars == key.lowercased()
-    }
-
     /// The binding a key press makes, as the Shortcuts tab records it and
     /// the dispatcher matches it: the key named by its key code, or else by
     /// the character it gives, in lower case, with the modifiers held. Nil

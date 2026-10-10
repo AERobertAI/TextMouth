@@ -133,7 +133,7 @@ final class DoublePressBindingTests: XCTestCase {
     // MARK: - The Stroke
 
     /// A double press is its stroke, the single press, pressed twice: the
-    /// two are different bindings, and a key press matches both.
+    /// two are different bindings, and a key press is the stroke of both.
     func testADoublePressIsItsStrokePressedTwice() throws {
         XCTAssertEqual(wTwice.stroke, plainW)
         XCTAssertEqual(plainW.stroke, plainW)
@@ -147,9 +147,12 @@ final class DoublePressBindingTests: XCTestCase {
             with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0, context: nil,
             characters: "w", charactersIgnoringModifiers: "w", isARepeat: false, keyCode: 13
         ))
-        XCTAssertTrue(plainW.matches(press))
-        XCTAssertTrue(wTwice.matches(press))
-        XCTAssertEqual(KeyBinding.from(event: press), plainW, "a key press is recorded as a single press")
+        // The dispatcher looks a press up by its stroke, which W and W
+        // twice share.
+        let pressed = try XCTUnwrap(KeyBinding.from(event: press))
+        XCTAssertEqual(pressed, plainW.stroke)
+        XCTAssertEqual(pressed, wTwice.stroke)
+        XCTAssertEqual(pressed, plainW, "a key press is recorded as a single press")
     }
 
     // MARK: - In Words
