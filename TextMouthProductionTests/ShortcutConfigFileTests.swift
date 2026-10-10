@@ -455,7 +455,7 @@ final class ShortcutConfigFileTests: XCTestCase {
     /// shortcuts change in Settings, are reset, or come from config.json.
     func testTheWholeMapsKeyIsReadOnceAndNeverWritten() throws {
         let portability = ConfigService.AppConfig.Portability.self
-        XCTAssertEqual(portability.retiredStoreKeys, ["customKeyboardBindings"])
+        XCTAssertEqual(portability.retiredStoreKeys, ["customKeyboardBindings", "feedKeepEntries", "feedAutoDownload"])
         XCTAssertFalse(portability.mirrored.map(\.storeKey).contains("customKeyboardBindings"))
         XCTAssertFalse(portability.localStoreKeys.contains("customKeyboardBindings"))
         XCTAssertFalse(SettingsViewModel.servicePreferenceKeys.contains("customKeyboardBindings"))

@@ -339,8 +339,10 @@ final class FeedItemPolicyTests: XCTestCase {
         let feed = try await world.subscribe("/feed.xml")
         let other = try await subscribeAnother(world)
 
-        world.center.setKeepEntries(4, of: feed.id)
-        world.center.setKeepEntries(9, of: other.id)
+        // As a record written before the choice holds them: nothing sets
+        // the retired override any more.
+        world.center.store.update(feed.id) { $0.feed.keepEntriesOverride = 4 }
+        world.center.store.update(other.id) { $0.feed.keepEntriesOverride = 9 }
         world.center.setItemPolicy(FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 2), of: other.id)
         let moved = world.center.moveKeptEntriesOverrides()
 

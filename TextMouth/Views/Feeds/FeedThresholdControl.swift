@@ -219,16 +219,6 @@ extension FeedThresholdWording {
         offHint: "When checked, feeds refresh only when TextMouth opens, if that is on, and when you choose Check Feed or Refresh All Feeds"
     )
 
-    /// How many of each feed's newest entries are kept besides its downloads.
-    static let keepEntries = FeedThresholdWording(
-        label: "Keep the newest",
-        valuePhrase: { CountWording.phrase($0, singular: "entry", plural: "entries") },
-        offPhrase: "every entry",
-        offTitle: "Keep every entry",
-        hint: "How many of each feed's newest episodes and articles are listed, from 0 to 2,000; downloaded ones are always kept",
-        offHint: "When checked, every entry the feed has listed since you subscribed is kept"
-    )
-
     /// How long after playing a download is deleted.
     static let deleteDownloadsAfterPlaying = FeedThresholdWording(
         label: "Delete downloads after playing",

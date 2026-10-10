@@ -3,11 +3,13 @@ import SwiftUI
 import XCTest
 @testable import TextMouth
 
-/// The Feeds tab of Preferences (FR03): the seven feed settings, each a
-/// labelled control, the three numbers with their units in their words and
-/// their off values as checkboxes, saved to the preferences store within
-/// the settings' ranges; and Refresh All Feeds Now, from the tab and the
-/// Library menu, saying what came. The settings live in a sandboxed store.
+/// The Feeds tab of Preferences (FR03): the feed settings, each a labelled
+/// control, the three numbers with their units in their words and the two
+/// with an off value with it as a checkbox, saved to the preferences store
+/// within the settings' ranges; and Refresh All Feeds Now, from the tab and
+/// the Library menu, saying what came. The "List and download" pop-up menu
+/// (FR11) has tests of its own (`FeedItemUIPolicyControlsTests`). The
+/// settings live in a sandboxed store.
 @MainActor
 final class FeedUISettingsTests: XCTestCase {
 
@@ -23,11 +25,6 @@ final class FeedUISettingsTests: XCTestCase {
         XCTAssertEqual(delete.caption(0, rule: rule), "Delete downloads after playing: at once")
         XCTAssertEqual(delete.caption(-1, rule: rule), "Delete downloads after playing: never")
         XCTAssertEqual(delete.offTitle, "Never delete played downloads")
-
-        let keep = FeedThresholdWording.keepEntries
-        XCTAssertEqual(keep.caption(10, rule: SettingsPolicy.feedKeepEntries), "Keep the newest: 10 entries")
-        XCTAssertEqual(keep.caption(1, rule: SettingsPolicy.feedKeepEntries), "Keep the newest: 1 entry")
-        XCTAssertEqual(keep.caption(-1, rule: SettingsPolicy.feedKeepEntries), "Keep the newest: every entry")
 
         let interval = FeedThresholdWording.refreshInterval
         XCTAssertEqual(interval.caption(1, rule: SettingsPolicy.feedRefreshIntervalHours), "Refresh feeds every: 1 hour")
@@ -61,28 +58,28 @@ final class FeedUISettingsTests: XCTestCase {
     }
 
     /// Every setting saves through the settings model within its range: a
-    /// number below the off value is the off value, and one above the range
-    /// its top.
+    /// number below the off value is the off value, one above the range its
+    /// top, and the number of the newest (FR11), which has no off value,
+    /// within 1 to 2,000.
     func testTheSettingsSaveWithinTheirRanges() {
         let store = makeSandboxedPreferences("FeedUISettingsRanges")
         let settings = makeSettings(store)
         XCTAssertEqual(settings.feedSettings, .standard)
 
         var changed = settings.feedSettings
-        changed.keepEntries = 5_000
+        changed.itemPolicy.choice = .everyListedDownloadsByHand
+        changed.itemPolicy.newestCount = 5_000
         changed.deleteDownloadsDaysAfterPlayed = -5
         changed.refreshIntervalHours = 500
-        changed.autoDownload = true
         changed.refreshAlert = true
         changed.notifications = true
         changed.refreshAtLaunch = false
         settings.feedSettings = changed
 
         let saved = FeedSettings.read(from: store)
-        XCTAssertEqual(saved.keepEntries, SettingsPolicy.feedKeepEntries.range.upperBound)
+        XCTAssertEqual(saved.itemPolicy, FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: SettingsPolicy.feedNewestCount.range.upperBound))
         XCTAssertEqual(saved.deleteDownloadsDaysAfterPlayed, -1)
         XCTAssertEqual(saved.refreshIntervalHours, 168)
-        XCTAssertTrue(saved.autoDownload)
         XCTAssertTrue(saved.refreshAlert)
         XCTAssertTrue(saved.notifications)
         XCTAssertFalse(saved.refreshAtLaunch)

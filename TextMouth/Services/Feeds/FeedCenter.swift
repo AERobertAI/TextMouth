@@ -827,17 +827,6 @@ final class FeedCenter: ObservableObject {
         return moved
     }
 
-    /// Gives the feed `feedID` its own retired number of entries kept, or
-    /// nil to follow the retired setting, as Feed Info's old control does
-    /// until the interface of the "List and download" choice takes its
-    /// place. The engine lists by the choice, so the number counts only once
-    /// the move to the choice turns it into a choice of the feed's own, at
-    /// the next refresh of every feed or the next launch
-    /// (`moveKeptEntriesOverrides()`).
-    func setKeepEntries(_ entries: Int?, of feedID: UUID) {
-        store.update(feedID) { $0.feed.keepEntriesOverride = entries.map(SettingsPolicy.feedKeepEntries.validated) }
-    }
-
     /// Gives the feed `feedID` its own days after playing that a download is
     /// deleted, or nil to follow the setting.
     func setDeleteDownloadsDaysAfterPlayed(_ days: Int?, of feedID: UUID) {

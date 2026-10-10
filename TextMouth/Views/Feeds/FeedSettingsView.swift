@@ -168,10 +168,6 @@ enum FeedSettingsWording {
     static let refreshAllNowHint = "Checks every feed now and says what came"
     /// What shows, and VoiceOver hears, while every feed is refreshed.
     static let refreshing = "Refreshing all feeds…"
-    /// Downloading by themselves.
-    static let autoDownload = "Download new episodes and articles by themselves"
-    /// Its hint.
-    static let autoDownloadHint = "When off, an episode downloads when you open it or choose Download"
     /// The note under the group's settings, naming the two a feed may have
     /// of its own.
     static let perFeedNote = "A feed can have its own List and download choice and its own days before deleting "

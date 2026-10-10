@@ -15,9 +15,11 @@ final class FeedSettingsTests: XCTestCase {
     /// With nothing saved, feeds refresh at launch and every hour, list every
     /// item with the newest 5 downloaded (FR11), delete a played download
     /// after a day, and announce nothing; the two settings the choice
-    /// retired read as they always did, out of the keys config.json mirrors.
+    /// retired read as they always did, for the move to the choice alone,
+    /// out of the keys config.json mirrors.
     func testTheDefaultsAreTheListenersDecisions() throws {
-        let settings = FeedSettings.read(from: makeSandboxedPreferences("FeedDefaults"))
+        let store = makeSandboxedPreferences("FeedDefaults")
+        let settings = FeedSettings.read(from: store)
 
         XCTAssertEqual(settings, .standard)
         XCTAssertTrue(settings.refreshAtLaunch)
@@ -29,8 +31,8 @@ final class FeedSettingsTests: XCTestCase {
         XCTAssertEqual(settings.deleteDownloadsDaysAfterPlayed, 1)
         XCTAssertFalse(settings.refreshAlert)
         XCTAssertFalse(settings.notifications)
-        XCTAssertEqual(settings.keepEntries, 10)
-        XCTAssertFalse(settings.autoDownload)
+        XCTAssertEqual(FeedSettings.keepEntriesPreference.read(from: store), 10)
+        XCTAssertFalse(FeedSettings.autoDownloadPreference.read(from: store))
         XCTAssertEqual(FeedSettings.preferenceKeys, [
             "feedRefreshAtLaunch", "feedRefreshIntervalHours", "feedItems", "feedNewestCount",
             "feedDeleteDownloadsDaysAfterPlayed", "feedRefreshAlert", "feedNotifications",
@@ -155,6 +157,37 @@ final class FeedSettingsTests: XCTestCase {
         XCTAssertEqual(feed.itemPolicy(under: settings), FeedItemPolicy(choice: .onlyNewestListed, newestCount: 1))
         XCTAssertEqual(feed.itemPolicy(under: settings).listing, .newest(1))
         XCTAssertEqual(feed.deleteDownloadsDaysAfterPlayed(under: settings), 0)
+    }
+
+    /// The two settings the "List and download" choice retired (FR11,
+    /// branch C) are kept in the store for the move to the choice alone:
+    /// listed as retired, neither mirrored in config.json nor machine-local,
+    /// and written by nothing, whether the settings change, come from
+    /// config.json, or move to the choice, so each stays as it was, a copy
+    /// to go back to.
+    func testTheRetiredSettingsAreKeptOnlyForTheMove() throws {
+        let portability = ConfigService.AppConfig.Portability.self
+        for key in ["feedKeepEntries", "feedAutoDownload"] {
+            XCTAssertTrue(portability.retiredStoreKeys.contains(key), key)
+            XCTAssertFalse(portability.mirrored.map(\.storeKey).contains(key), key)
+            XCTAssertFalse(portability.localStoreKeys.contains(key), key)
+            XCTAssertFalse(SettingsViewModel.servicePreferenceKeys.contains(key), key)
+        }
+
+        let store = makeSandboxedPreferences("FeedRetired")
+        FeedSettings.keepEntriesPreference.write(-1, to: store)
+        FeedSettings.autoDownloadPreference.write(true, to: store)
+        let viewModel = makeSettingsModel(store)
+        XCTAssertEqual(FeedSettings.moveToItemPolicyIfNeeded(in: store), .standard, "downloading by themselves moves to the default")
+        var settings = viewModel.feedSettings
+        settings.itemPolicy = FeedItemPolicy(choice: .onlyNewestListed, newestCount: 3)
+        settings.refreshAlert = true
+        viewModel.feedSettings = settings
+        viewModel.applyConfigChanges(try decodeConfig(#"{"feedKeepEntries": 3, "feedAutoDownload": false, "feedNewestCount": 4}"#))
+
+        XCTAssertEqual(store.object(forKey: "feedKeepEntries") as? Int, -1, "a retired setting was written")
+        XCTAssertEqual(store.object(forKey: "feedAutoDownload") as? Bool, true, "a retired setting was written")
+        XCTAssertEqual(FeedSettings.read(from: store).itemPolicy, FeedItemPolicy(choice: .onlyNewestListed, newestCount: 4))
     }
 
     // MARK: - config.json

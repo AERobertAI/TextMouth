@@ -34,20 +34,6 @@ struct FeedSettings: Equatable, Sendable {
     /// Whether new episodes are announced in a notification. Off by default.
     var notifications: Bool
 
-    // MARK: Retired by the "List and download" choice (FR11)
-
-    /// How many of each feed's newest entries were kept besides its
-    /// downloads, which were always kept: 0 to 2,000, or -1 for every entry.
-    /// 10 by default. Retired by `itemPolicy`, which config.json carries and
-    /// the feed engine reads in its place. It stays readable for the Feeds
-    /// tab's and Feed Info's old controls, until the interface of the choice
-    /// (FR11's branch C) takes their place.
-    var keepEntries: Int
-    /// Whether a new episode downloaded by itself when a refresh found it;
-    /// off by default. Retired by `itemPolicy`, whose newest-N rule the feed
-    /// engine follows in its place, as `keepEntries` is.
-    var autoDownload: Bool
-
     /// The settings until the listener changes any.
     static let standard = FeedSettings(
         refreshAtLaunch: true,
@@ -55,9 +41,7 @@ struct FeedSettings: Equatable, Sendable {
         itemPolicy: .standard,
         deleteDownloadsDaysAfterPlayed: SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed.defaultValue,
         refreshAlert: false,
-        notifications: false,
-        keepEntries: SettingsPolicy.feedKeepEntries.defaultValue,
-        autoDownload: false
+        notifications: false
     )
 
     /// The time between refreshes while TextMouth runs, or nil when feeds
@@ -99,12 +83,21 @@ struct FeedSettings: Equatable, Sendable {
     /// "feedNotifications".
     static let notificationsPreference = StoredPreference.flag("feedNotifications", default: standard.notifications)
 
-    /// The entries each feed kept, under "feedKeepEntries": retired with
-    /// `keepEntries`.
+    // MARK: Retired by the "List and download" choice (FR11)
+
+    /// How many of each feed's newest entries were kept besides its
+    /// downloads, under "feedKeepEntries": 0 to 2,000, or -1 for every
+    /// entry, 10 by default. Retired by `itemPolicy`, and read only by the
+    /// one move to it (`moveToItemPolicyIfNeeded(in:)`); the store keeps it
+    /// as it was, a copy to go back to, and config.json no longer holds it
+    /// (`ConfigService.AppConfig.Portability.retiredStoreKeys`).
     static let keepEntriesPreference = StoredPreference.threshold(SettingsPolicy.feedKeepEntries)
-    /// Whether new episodes downloaded by themselves, under
-    /// "feedAutoDownload": retired with `autoDownload`.
-    static let autoDownloadPreference = StoredPreference.flag("feedAutoDownload", default: standard.autoDownload)
+    /// Whether a new episode downloaded by itself when a refresh found it,
+    /// under "feedAutoDownload", off by default: retired as
+    /// `keepEntriesPreference` is.
+    static let autoDownloadPreference = StoredPreference.flag("feedAutoDownload", default: false)
+
+    // MARK: Keys and Reading
 
     /// The keys of every feed preference in force, in the order Settings
     /// lists them, which config.json mirrors.
@@ -136,9 +129,7 @@ struct FeedSettings: Equatable, Sendable {
             itemPolicy: itemPolicy(in: store),
             deleteDownloadsDaysAfterPlayed: deleteDownloadsDaysAfterPlayedPreference.read(from: store),
             refreshAlert: refreshAlertPreference.read(from: store),
-            notifications: notificationsPreference.read(from: store),
-            keepEntries: keepEntriesPreference.read(from: store),
-            autoDownload: autoDownloadPreference.read(from: store)
+            notifications: notificationsPreference.read(from: store)
         )
     }
 
@@ -164,18 +155,19 @@ struct FeedSettings: Equatable, Sendable {
     @discardableResult
     static func moveToItemPolicyIfNeeded(in store: UserDefaults) -> FeedItemPolicy? {
         guard store.object(forKey: itemsPreference.key) == nil else { return nil }
-        let retired = read(from: store)
-        var policy = FeedItemPolicy.migrated(keepEntries: retired.keepEntries, autoDownload: retired.autoDownload)
+        let keepEntries = keepEntriesPreference.read(from: store)
+        let autoDownload = autoDownloadPreference.read(from: store)
+        var policy = FeedItemPolicy.migrated(keepEntries: keepEntries, autoDownload: autoDownload)
         if store.object(forKey: newestCountPreference.key) != nil {
             policy.newestCount = newestCountPreference.read(from: store)
         } else {
             store.set(policy.newestCount, forKey: newestCountPreference.key)
         }
         store.set(policy.choice.rawValue, forKey: itemsPreference.key)
-        let kept = retired.keepEntries < 0
+        let kept = keepEntries < 0
             ? "every entry"
-            : CountWording.phrase(retired.keepEntries, singular: "entry", plural: "entries")
-        let downloads = retired.autoDownload ? "new episodes downloading by themselves" : "downloads by hand"
+            : CountWording.phrase(keepEntries, singular: "entry", plural: "entries")
+        let downloads = autoDownload ? "new episodes downloading by themselves" : "downloads by hand"
         DiagnosticLog.event(
             .feeds,
             "FEED_ITEM_POLICY_MOVED: keeping \(kept), with \(downloads), became \(policy.choice.rawValue) counting \(policy.newestCount)"
@@ -201,8 +193,6 @@ struct FeedSettings: Equatable, Sendable {
         save(\.deleteDownloadsDaysAfterPlayed, Self.deleteDownloadsDaysAfterPlayedPreference)
         save(\.refreshAlert, Self.refreshAlertPreference)
         save(\.notifications, Self.notificationsPreference)
-        save(\.keepEntries, Self.keepEntriesPreference)
-        save(\.autoDownload, Self.autoDownloadPreference)
     }
 }
 
@@ -213,14 +203,6 @@ extension Feed {
     /// (FR11): its own choice and number when it has them, or the setting's.
     func itemPolicy(under settings: FeedSettings) -> FeedItemPolicy {
         itemPolicyOverride ?? settings.itemPolicy
-    }
-
-    /// How many of this feed's newest entries were kept under `settings`:
-    /// its own retired override, validated, or the retired setting; -1 kept
-    /// every entry. Read only by Feed Info's old control, until the
-    /// interface of the "List and download" choice takes its place.
-    func keepEntries(under settings: FeedSettings) -> Int {
-        keepEntriesOverride.map(SettingsPolicy.feedKeepEntries.validated) ?? settings.keepEntries
     }
 
     /// How many days after playing this feed's downloads are deleted under

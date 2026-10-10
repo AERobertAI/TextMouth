@@ -67,11 +67,12 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
     /// loads, and written only when set, so such a record's file changes
     /// only once a feed has a choice of its own.
     var itemPolicyOverride: FeedItemPolicy?
-    /// How many entries this feed keeps, in place of the setting
-    /// (`FeedSettings.keepEntries`); nil follows the setting. Retired by
-    /// `itemPolicyOverride`, as the setting is by the "List and download"
-    /// choice: the move to the choice gives the feed the choice it asks for
-    /// and clears it (`FeedCenter.moveKeptEntriesOverrides()`).
+    /// How many entries this feed kept, in place of the retired setting
+    /// (`FeedSettings.keepEntriesPreference`); nil followed the setting.
+    /// Retired by `itemPolicyOverride`, as the setting is by the "List and
+    /// download" choice: nothing sets it any more, and the move to the
+    /// choice gives a feed whose record still holds one the choice it asks
+    /// for and clears it (`FeedCenter.moveKeptEntriesOverrides()`).
     var keepEntriesOverride: Int?
     /// How many days after an episode plays to the end its download is
     /// deleted, in place of the setting
