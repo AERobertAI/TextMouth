@@ -256,9 +256,13 @@ extension FeedWording {
         "“\(title)” no longer waits to download; it downloads when you choose Download."
     }
 
-    /// What VoiceOver hears once Delete Download deleted a download.
-    static func downloadDeleted(title: String) -> String {
-        "Deleted the download of “\(title)”. It can be downloaded again."
+    /// What VoiceOver hears once Delete Download deleted a download: that it
+    /// can be downloaded again, or, when its package kept what the listener
+    /// had of it (`keptPlace`, FR11, branch A2), that this waits for then,
+    /// in the nouns the library's own Remove of an episode uses.
+    static func downloadDeleted(title: String, keptPlace: Bool = false) -> String {
+        guard keptPlace else { return "Deleted the download of “\(title)”. It can be downloaded again." }
+        return "Deleted the download of “\(title)”. Its place, bookmarks, and transcript are kept for when you download it again."
     }
 
     /// The title of the alert saying why a download, or an item, could not

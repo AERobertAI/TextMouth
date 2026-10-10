@@ -162,6 +162,56 @@ final class FeedItemUIRowsTests: XCTestCase {
         )
     }
 
+    // MARK: - Delete Download
+
+    /// Delete Download of an episode the listener opened says its place,
+    /// bookmarks, and transcript are kept for when it is downloaded again,
+    /// and its row then says the place it kept; a download never opened
+    /// says it can be downloaded again.
+    func testDeleteDownloadSaysWhatItKept() async throws {
+        let world = try FeedTestWorld(self, label: "FeedItemUIDeleteDownload")
+        await world.start()
+        let audio = try FeedMediaFixtures.silentAAC()
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        world.server.serve("/audio/2.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        let feed = try await subscribe(world, items: [1, 2].map { number in
+            FeedXML.Item(
+                guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)),
+                enclosure: world.server.url("/audio/\(number).m4a").absoluteString, enclosureType: "audio/mp4"
+            )
+        })
+        world.center.download("guid:ep-1", of: feed.id)
+        let opened = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        world.center.download("guid:ep-2", of: feed.id)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-2")
+        world.library.persistReadingPosition(bookID: opened.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 1))
+        world.library.addBookmark(bookID: opened.id, chapterIndex: 0, characterOffset: 1, label: "Here")
+
+        let presenter = LibraryFeedsPresenter()
+        var heard: [String] = []
+        presenter.announce = { message, _ in heard.append(message) }
+        let context = FeedCommandContext(center: world.center, library: world.library, window: nil)
+        @MainActor func deleteDownload(_ itemID: FeedItem.ID) throws {
+            let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item(itemID))
+            let action = try XCTUnwrap(FeedItemAction.actions(
+                feedID: feed.id, itemID: itemID, itemTitle: item.title, state: world.center.state(of: item, in: feed.id),
+                isPlayed: false, isArticle: false, onBookRow: true
+            ).first { $0.command == .deleteDownload })
+            presenter.perform(action, in: context)
+        }
+
+        try deleteDownload("guid:ep-1")
+        XCTAssertEqual(
+            heard.last,
+            "Deleted the download of “Episode 1”. Its place, bookmarks, and transcript are kept for when you download it again."
+        )
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        XCTAssertEqual(FeedItemRowContent(item, of: feed, in: world.center, wordsPerMinute: 200).kept?.bookmarkCount, 1)
+
+        try deleteDownload("guid:ep-2")
+        XCTAssertEqual(heard.last, "Deleted the download of “Episode 2”. It can be downloaded again.")
+    }
+
     // MARK: - Helpers
 
     /// Starts `world`'s engine and subscribes it to "The Tactile Atlas",
