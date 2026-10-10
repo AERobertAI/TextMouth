@@ -45,7 +45,8 @@ enum FeedDownloadProgressWording {
     /// The downloads done of the total, as the section's count says it,
     /// with those that failed: "3 of 9 done", "3 of 9 done, 1 failed".
     static func count(done: Int, of total: Int, failed: Int) -> String {
-        let count = CountWording.progress(done, of: total, countNoun)
+        // "done" agrees with any total, so it is its own plural.
+        let count = CountWording.part(done, of: total, singular: countNoun, plural: countNoun)
         return failed > 0 ? "\(count), \(failed) failed" : count
     }
 

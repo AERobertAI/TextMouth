@@ -182,12 +182,4 @@ enum CountWording {
             }
         }
     }
-
-    /// How far a batch has got: `done` of `total`, then `noun` as it is,
-    /// whatever the total: "3 of 9 done", as the feed downloads section's
-    /// count says it (FR10). A noun that must agree with the total, as the
-    /// progress overlays' books do, is counted by `part(_:of:_:)` instead.
-    static func progress(_ done: Int, of total: Int, _ noun: String) -> String {
-        "\(done) of \(total) \(noun)"
-    }
 }
