@@ -133,6 +133,9 @@ final class FeedDownloadProgressViewTests: XCTestCase {
 
         let section = LibraryWindowView.feedDownloadSection(for: world.library)
         XCTAssertEqual(section.state, world.library.feedDownloadProgress.state)
+        // Both notes are among the feed's newest, which it downloads by
+        // itself, so the hint promises they come back (REV14 feeds 5).
+        XCTAssertEqual(section.cancelHint, FeedDownloadProgressWording.cancelButtonHint(FeedCancelReturn(byItself: 2)))
         XCTAssertEqual(section.state.lines(at: section.now), ["0 of 2 done", "Download 1 of 2: “Note 1” from Corkboard News"])
         section.onCancel()
         await waitFor("the download under way stops") { !world.center.downloads.isDownloading("guid:post-1", of: feed.id) }
@@ -161,7 +164,8 @@ final class FeedDownloadProgressViewTests: XCTestCase {
             waits: FeedDownloadWaits(network: 2)
         )
         let presses = CancelPresses()
-        let section = FeedDownloadProgressSection(state: progress.state, now: clock.now, onCancel: presses.press)
+        let hint = FeedDownloadProgressWording.cancelButtonHint(FeedCancelReturn(byItself: 2))
+        let section = FeedDownloadProgressSection(state: progress.state, now: clock.now, cancelHint: hint, onCancel: presses.press)
         let status = progress.state.spokenStatus(at: clock.now)
         XCTAssertEqual(
             status,
@@ -179,7 +183,7 @@ final class FeedDownloadProgressViewTests: XCTestCase {
                 throw XCTSkip("SwiftUI exposed no button to accessibility without an assistive app")
             }
             XCTAssertEqual(buttons.map(\.label), [FeedDownloadProgressWording.cancelButtonLabel])
-            XCTAssertEqual(buttons.first?.hint, FeedDownloadProgressWording.cancelButtonHint)
+            XCTAssertEqual(buttons.first?.hint, hint)
             XCTAssertTrue(buttons[0].element.accessibilityPerformPress())
             XCTAssertTrue(waitUntil { presses.count == 1 }, "The button was pressed \(presses.count) times")
         }

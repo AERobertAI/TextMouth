@@ -325,10 +325,17 @@ final class FeedDownloadManager {
     /// (`cancelEveryDownload()`, FR14), for the words VoiceOver hears and
     /// the newest-N rule's pause.
     struct Cancellation: Equatable, Sendable {
-        /// The titles of the downloads stopped, each once: the one under
-        /// way, those waiting to start, and the rule's waiting for a network
-        /// or for room.
-        var stopped: [String] = []
+        /// One download Cancel stops: its feed, its item, and its title.
+        struct Stopped: Equatable, Sendable {
+            let feedID: UUID
+            let itemID: FeedItem.ID
+            let title: String
+        }
+
+        /// The downloads stopped, each once: the one under way, those
+        /// waiting to start, and the rule's waiting for a network or for
+        /// room.
+        var stopped: [Stopped] = []
         /// The title of the download that finishes all the same, its book
         /// already being added to the library.
         var finishing: String?
@@ -359,20 +366,7 @@ final class FeedDownloadManager {
     @discardableResult
     func cancelEveryDownload() -> Cancellation {
         guard !isStoppedForQuit else { return Cancellation() }
-        // A book being added can't be stopped: it finishes as it began.
-        let finishing = progress.state.download?.isAddingToLibrary == true ? current : nil
-        let underWay = finishing == nil ? current : nil
-        // Every download asked for, the one under way first; then the
-        // rule's waiting for room, which only their items' states say.
-        var stopping = ((underWay.map { [$0] } ?? []) + queue + putOff).map { (feedID: $0.feedID, itemID: $0.itemID) }
-        for record in store.records.values {
-            for item in record.items where item.state.waitingReason != nil {
-                stopping.append((record.feed.id, item.id))
-            }
-        }
-        var seen = Set<String>()
-        stopping = stopping.filter { seen.insert("\($0.feedID)\u{1F}\($0.itemID)").inserted }
-        let titles = stopping.compactMap { store.record(of: $0.feedID)?.item($0.itemID)?.title }
+        let (underWay, finishing, stopping) = cancelTargets
         queue.removeAll()
         putOff.removeAll()
         if underWay != nil {
@@ -397,12 +391,44 @@ final class FeedDownloadManager {
         DiagnosticLog.event(
             .feeds,
             "FEED_DOWNLOADS_CANCELLED: \(stopping.count) download(s) stopped\(finishingTitle == nil ? "" : ", one finishing"), "
-                + "every partial download deleted; each feed's newest download again after its next check"
+                + "every partial download deleted; each feed's newest-N rule waits for its next check"
         )
         progress.cancel()
         publishQueue()
         let feedIDs = Set(stopping.map(\.feedID) + (finishing.map { [$0.feedID] } ?? []))
-        return Cancellation(stopped: titles, finishing: finishingTitle, feedIDs: feedIDs)
+        return Cancellation(stopped: stopping, finishing: finishingTitle, feedIDs: feedIDs)
+    }
+
+    /// The downloads the feed downloads section's Cancel stops if pressed
+    /// now (`cancelEveryDownload()`), each once, as its button's hint tells
+    /// how they come back (REV14 feeds 5); none once TextMouth quits.
+    var downloadsCancelWouldStop: [Cancellation.Stopped] {
+        isStoppedForQuit ? [] : cancelTargets.stopping
+    }
+
+    /// What the feed downloads section's Cancel stops if pressed now, and
+    /// the download it lets finish (`cancelEveryDownload()`): the download
+    /// under way, unless its book is already being added, which finishes as
+    /// it began, as an import is never stopped partway; those waiting to
+    /// start; and the newest-N rule's waiting for a network or for room,
+    /// the last only their items' states say. Each is stopped once, by its
+    /// feed, item, and title; one whose item is gone is no download.
+    private var cancelTargets: (underWay: Request?, finishing: Request?, stopping: [Cancellation.Stopped]) {
+        let finishing = progress.state.download?.isAddingToLibrary == true ? current : nil
+        let underWay = finishing == nil ? current : nil
+        var asked = ((underWay.map { [$0] } ?? []) + queue + putOff).map { (feedID: $0.feedID, itemID: $0.itemID) }
+        for record in store.records.values {
+            for item in record.items where item.state.waitingReason != nil {
+                asked.append((record.feed.id, item.id))
+            }
+        }
+        var seen = Set<String>()
+        let stopping = asked.compactMap { download -> Cancellation.Stopped? in
+            guard seen.insert("\(download.feedID)\u{1F}\(download.itemID)").inserted,
+                  let title = store.record(of: download.feedID)?.item(download.itemID)?.title else { return nil }
+            return Cancellation.Stopped(feedID: download.feedID, itemID: download.itemID, title: title)
+        }
+        return (underWay, finishing, stopping)
     }
 
     /// Marks the items `itemIDs` of the feed `feedID` not downloaded, as

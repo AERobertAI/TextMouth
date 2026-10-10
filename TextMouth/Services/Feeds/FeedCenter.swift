@@ -904,7 +904,9 @@ final class FeedCenter: ObservableObject {
     /// for a pass meanwhile, or until TextMouth next opens, whose first pass
     /// covers every feed. The listener's own Download is never held back.
     /// - Returns: What VoiceOver hears of it, which the window says once
-    ///   its focus has moved (REV13 item 3).
+    ///   its focus has moved (REV13 item 3): what stopped, and how it comes
+    ///   back, promising only what the rule will download again
+    ///   (`comingBack(of:)`, REV14 feeds 5).
     @discardableResult
     func cancelEveryDownload() -> String {
         let cancellation = downloads.cancelEveryDownload()
@@ -912,7 +914,38 @@ final class FeedCenter: ObservableObject {
             // A check under way began before Cancel, so ends no pause.
             rulePauses[feedID] = refreshingFeedIDs.contains(feedID) ? .untilTheCheckAfterTheOneUnderWay : .untilNextCheck
         }
-        return FeedDownloadProgressWording.cancelled(stopped: cancellation.stopped, finishing: cancellation.finishing)
+        return FeedDownloadProgressWording.cancelled(
+            stopped: cancellation.stopped.map(\.title),
+            finishing: cancellation.finishing,
+            comingBack: comingBack(of: cancellation.stopped)
+        )
+    }
+
+    /// What VoiceOver says the feed downloads section's Cancel button does,
+    /// as Cancel would act now: what it stops, and how what it would stop
+    /// comes back, as Cancel would then say it (REV14 feeds 5).
+    func cancelButtonHint() -> String {
+        FeedDownloadProgressWording.cancelButtonHint(comingBack(of: downloads.downloadsCancelWouldStop))
+    }
+
+    /// How the downloads `stopped` come back after Cancel (REV14 feeds 5):
+    /// those the newest-N rule downloads again by itself, after their feeds'
+    /// next checks, being items it would ever download
+    /// (`ruleWouldDownload(_:)`) among the newest its feed counts
+    /// (`countedItemIDs(in:under:)`, none for a feed that downloads by hand
+    /// or is unsubscribed from); and the others, which only the listener's
+    /// Download brings back. Each feed's count of its newest is worked out
+    /// once.
+    func comingBack(of stopped: [FeedDownloadManager.Cancellation.Stopped]) -> FeedCancelReturn {
+        var counted: [UUID: Set<FeedItem.ID>] = [:]
+        let byItself = stopped.filter { download in
+            guard let record = store.record(of: download.feedID), let item = record.item(download.itemID),
+                  Self.ruleWouldDownload(item) else { return false }
+            let feedCounts = counted[download.feedID] ?? Self.countedItemIDs(in: record, under: itemPolicy(of: download.feedID))
+            counted[download.feedID] = feedCounts
+            return feedCounts.contains(download.itemID)
+        }.count
+        return FeedCancelReturn(byItself: byItself, byDownload: stopped.count - byItself)
     }
 
     /// Asks again for the downloads a network with data limits put off whose

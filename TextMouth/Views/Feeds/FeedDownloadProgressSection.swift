@@ -24,6 +24,11 @@ struct FeedDownloadProgressSection: View {
     let state: FeedDownloadProgressState
     /// The moment it shows it at, which the time left counts from.
     let now: Date
+    /// What VoiceOver says the Cancel button does, as Cancel would act now:
+    /// what it stops, and how that comes back, promising only what the
+    /// newest-N rule will download again (`FeedCenter.cancelButtonHint()`,
+    /// REV14 feeds 5).
+    let cancelHint: String
     /// Stops the downloads, from the Cancel button.
     let onCancel: @MainActor () -> Void
 
@@ -41,7 +46,7 @@ struct FeedDownloadProgressSection: View {
                 Button(FeedDownloadProgressWording.cancelButtonTitle, action: onCancel)
                     .disabled(state.isCancelling)
                     .accessibilityLabel(FeedDownloadProgressWording.cancelButtonLabel)
-                    .accessibilityHint(FeedDownloadProgressWording.cancelButtonHint)
+                    .accessibilityHint(cancelHint)
             }
             ProgressView(value: state.fractionDone)
                 .progressViewStyle(.linear)
@@ -73,11 +78,16 @@ struct FeedDownloadProgressSection: View {
 extension LibraryWindowView {
     /// The feed downloads section a Library window shows for `library`'s
     /// feed downloads, as they are at `now`, whose Cancel stops them
-    /// (`LibraryViewModel.cancelFeedDownloads()`). The window shows exactly
-    /// this section, made here so tests can press the very button the
-    /// window shows.
+    /// (`LibraryViewModel.cancelFeedDownloads()`), its hint saying how what
+    /// Cancel would stop now comes back (REV14 feeds 5). The window shows
+    /// exactly this section, made here so tests can press the very button
+    /// the window shows.
     static func feedDownloadSection(for library: LibraryViewModel, at now: Date = Date()) -> FeedDownloadProgressSection {
-        FeedDownloadProgressSection(state: library.feedDownloadProgress.state, now: now) {
+        FeedDownloadProgressSection(
+            state: library.feedDownloadProgress.state,
+            now: now,
+            cancelHint: library.feeds.cancelButtonHint()
+        ) {
             cancelFeedDownloads(of: library, in: NSApp.keyWindow)
         }
     }
