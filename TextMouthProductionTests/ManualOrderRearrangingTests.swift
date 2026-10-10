@@ -124,10 +124,66 @@ final class ManualOrderRearrangingTests: XCTestCase {
         }
     }
 
+    /// Continue to Next Book passes over books resting at their ends,
+    /// finished (REV14): after Almanac comes Ledger, past two finished
+    /// books, and a finished book goes on to the first unfinished one after
+    /// it. Before only finished books nothing comes next, though books
+    /// follow, which tells the reader to say "Every book after it in the
+    /// folder is finished" rather than "No more books in folder". A book
+    /// whose place is unknown to be its end, its length not yet measured,
+    /// comes next as any unfinished book does.
+    @MainActor
+    func testNextBookPassesOverFinishedBooks() {
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [
+            LibrarySortStateTests.shelvedBook("Almanac", in: "Shelf", manualOrder: 0),
+            Self.finished(LibrarySortStateTests.shelvedBook("Bestiary", in: "Shelf", manualOrder: 1)),
+            Self.finished(LibrarySortStateTests.shelvedBook("Chronicle", in: "Shelf", manualOrder: 2)),
+            LibrarySortStateTests.shelvedBook("Ledger", in: "Shelf", manualOrder: 3),
+            Self.finished(LibrarySortStateTests.shelvedBook("Margins", in: "Shelf", manualOrder: 4)),
+            Self.finished(LibrarySortStateTests.shelvedBook("Notebook", in: "Shelf", manualOrder: 5)),
+        ])
+        /// The book titled `title` in the model's library.
+        func book(_ title: String) -> Book? {
+            model.library.books.first { $0.title == title }
+        }
+        /// The title of the book Continue to Next Book plays after `title`.
+        func next(after title: String) -> String? {
+            book(title).flatMap { model.nextBookInFolder(after: $0)?.title }
+        }
+        /// The titles of every book after `title`, finished or not.
+        func later(than title: String) -> [String] {
+            book(title).map { model.laterBooksInFolder(after: $0).map(\.title) } ?? []
+        }
+
+        XCTAssertEqual(Self.titlesInContinuingOrder(from: "Almanac", in: model), ["Almanac", "Ledger"])
+        XCTAssertEqual(next(after: "Bestiary"), "Ledger")
+        XCTAssertNil(next(after: "Ledger"), "Only finished books follow Ledger")
+        XCTAssertEqual(later(than: "Ledger"), ["Margins", "Notebook"])
+        XCTAssertNil(next(after: "Notebook"))
+        XCTAssertEqual(later(than: "Notebook"), [])
+
+        // Not measured, its place cannot be known to be its end.
+        if let index = model.library.books.firstIndex(where: { $0.title == "Margins" }) {
+            model.library.books[index].totalCharacterCount = nil
+        }
+        XCTAssertEqual(next(after: "Ledger"), "Margins")
+    }
+
     // MARK: - Fixtures
 
     /// The setting of a folder in manual order.
     private static let manual = FolderSortSetting(sortField: .manual, sortAscending: true)
+
+    /// `book`, measured at 1,000 units and resting at its end, finished
+    /// (`Book.restsAtEnd`), as a book that played to its end rests.
+    private static func finished(_ book: Book) -> Book {
+        var finished = book
+        finished.totalCharacterCount = 1_000
+        finished.readingPosition = ReadingPosition(chapterIndex: 0, characterOffset: 1_000, globalCharacterOffset: 1_000)
+        XCTAssertTrue(finished.restsAtEnd, "\(book.title) does not rest at its end")
+        return finished
+    }
 
     /// A book in `folder` with no manual position, as every book has until
     /// its folder is first rearranged. Nothing is written for it.

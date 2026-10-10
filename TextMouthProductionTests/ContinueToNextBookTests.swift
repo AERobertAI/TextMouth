@@ -11,7 +11,8 @@ import XCTest
 /// already open. Only that book's reader responds, a reader still loading
 /// waits until it has loaded, and a book that cannot be loaded drops the
 /// request. A sleep timer the finished book set keeps the next book from
-/// starting, since it could never pause that book.
+/// starting, since it could never pause that book. Finished books after it
+/// in its folder are passed over, at its end and on Play at its end (REV14).
 ///
 /// Every book is a package of silent audio tracks, so a reader that starts
 /// playing is never heard. Each test's readers listen on a private
@@ -379,6 +380,88 @@ final class ContinueToNextBookTests: XCTestCase {
         XCTAssertTrue(asked().isEmpty)
     }
 
+    // MARK: - Passing over finished books (REV14)
+
+    /// A book that finishes with Continue to Next Book passes over the
+    /// finished books after it in its folder: it says "Starting" for the
+    /// first one not finished and asks for that one alone. Each finished
+    /// book once came next, its reader opened, and its Play at the end went
+    /// straight on to the book after it, one window for each.
+    func testFinishingABookPassesOverFinishedBooksToTheNextUnfinishedOne() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let finishedBefore = try makeAudioBook(title: "Second Volume", restingAtItsEnd: true)
+        let next = try makeAudioBook(title: "Third Volume")
+        let world = try makeWorld(books: [finished, finishedBefore, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        waitUntilLoaded(finishedReader)
+        let asked = recordContinueRequests(in: world)
+
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
+            // Long enough for any second request to arrive.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Third Volume"])
+        XCTAssertEqual(asked().map(\.nextBookID), [next.id])
+        XCTAssertTrue(world.requests.hasRequest(for: next.id))
+        XCTAssertFalse(world.requests.hasRequest(for: finishedBefore.id), "The finished book was asked for")
+    }
+
+    /// A book that finishes with Continue to Next Book where only finished
+    /// books follow it says so, rests finished, and asks for nothing.
+    func testFinishingABookBeforeOnlyFinishedBooksSaysSo() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let finishedBefore = try makeAudioBook(title: "Second Volume", restingAtItsEnd: true)
+        let world = try makeWorld(books: [finished, finishedBefore])
+        let finishedReader = makeReader(for: finished, in: world)
+        waitUntilLoaded(finishedReader)
+        let asked = recordContinueRequests(in: world)
+
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Finished: First Volume. Every book after it in the folder is finished."]
+        )
+        XCTAssertEqual(EndOfBookWording.onlyFinishedBooksInFolderNote, "Every book after it in the folder is finished")
+        XCTAssertTrue(asked().isEmpty)
+        XCTAssertTrue(finishedReader.hasFinishedBook, "The book does not rest finished")
+    }
+
+    /// Play on a finished book whose end continues to the next book
+    /// (`playFromTheEnd()`, TODO P07) passes over the finished books after
+    /// it as its end does, plays nothing of its own, and asks for the first
+    /// book not finished alone.
+    func testPlayAtTheEndPassesOverFinishedBooks() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext, restingAtItsEnd: true)
+        let finishedBefore = try makeAudioBook(title: "Second Volume", restingAtItsEnd: true)
+        let next = try makeAudioBook(title: "Third Volume")
+        let world = try makeWorld(books: [finished, finishedBefore, next])
+        let reader = makeReader(
+            for: finished,
+            in: world,
+            nowPlaying: NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        )
+        waitUntilLoaded(reader)
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The finished book did not open at its end")
+        let asked = recordContinueRequests(in: world)
+
+        let recorder = recordingAnnouncements {
+            reader.play()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Play at the end never asked for the next book")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Third Volume"])
+        XCTAssertEqual(asked().map(\.nextBookID), [next.id])
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying, "Play at the end played the finished book")
+    }
+
     // MARK: - Resting at the end
 
     /// Where a finished book rests follows its end-of-book behavior, and
@@ -654,13 +737,20 @@ final class ContinueToNextBookTests: XCTestCase {
     }
 
     /// An audio book of two silent tracks in its own package, indexed as an
-    /// import indexes it, opening at `savedPosition`. The package is removed
-    /// when the test ends.
+    /// import indexes it, opening at `savedPosition`, or finished. The
+    /// package is removed when the test ends.
     ///
     /// - Parameters:
     ///   - title: The book's title, which also orders it in its folder.
     ///   - endOfBook: The book's own end-of-book behavior.
-    private func makeAudioBook(title: String, endOfBook: EndOfBookBehavior = .stop) throws -> Book {
+    ///   - restingAtItsEnd: Whether the book is finished: measured, and
+    ///     saved exactly at its end (`Book.restsAtEnd`), as a book that
+    ///     played to its end rests (TODO P07).
+    private func makeAudioBook(
+        title: String,
+        endOfBook: EndOfBookBehavior = .stop,
+        restingAtItsEnd: Bool = false
+    ) throws -> Book {
         let packageName = "\(UUID().uuidString).tmb"
         let package = TextMouthPaths.tmbPath(folderPath: "", tmbName: packageName)
         addTeardownBlock { try? FileManager.default.removeItem(at: package) }
@@ -671,7 +761,7 @@ final class ContinueToNextBookTests: XCTestCase {
                 duration: Self.trackDuration
             )
         }
-        let book = Book(
+        var book = Book(
             title: title,
             format: .audio,
             filePath: tracksFolder.path,
@@ -681,6 +771,17 @@ final class ContinueToNextBookTests: XCTestCase {
             localEndOfBookBehavior: endOfBook.rawValue
         )
         let analysis = try BookContentAnalysisService.load(book: book)
+        if restingAtItsEnd {
+            // Its last chapter at its full length, the book's total.
+            let index = analysis.index
+            book.totalCharacterCount = index.totalCharacterCount
+            book.readingPosition = ReadingPosition(
+                chapterIndex: max(0, index.chapters.count - 1),
+                characterOffset: index.chapters.last?.characterCount ?? 0,
+                globalCharacterOffset: index.totalCharacterCount
+            )
+            XCTAssertTrue(book.restsAtEnd, "\(title) does not rest at its end")
+        }
         try book.saveBookInfoThrowing(contentIndex: analysis.index)
         return book
     }
