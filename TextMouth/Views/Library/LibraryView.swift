@@ -327,9 +327,6 @@ struct LibraryView: View {
                             clearAllSelections()
                         }
                     },
-                    onDone: {
-                        clearAllSelections()
-                    },
                     // Add to and Remove from Reading List beside Move (FR09).
                     readingListCommands: editBarReadingListCommands,
                     onReadingListCommand: performReadingListCommand

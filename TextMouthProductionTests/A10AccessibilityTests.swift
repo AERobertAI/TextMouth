@@ -34,6 +34,37 @@ final class SubstitutionCaptureGroupHintTests: XCTestCase {
     }
 }
 
+// MARK: - One Way Out of Edit Mode
+
+/// The Library's edit bar has no Done of its own: it did exactly what the
+/// window's toolbar button, "Exit edit mode", does, and Command-E does too,
+/// so VoiceOver met one command twice.
+@MainActor
+final class EditModeBarExitTests: XCTestCase {
+    /// Hosted, the bar's buttons reach accessibility without an "Exit edit
+    /// mode" among them; skipped where SwiftUI exposes no buttons to a
+    /// hosted window, as the edit bar's other tests are.
+    func testTheEditBarHasNoExitButtonOfItsOwn() throws {
+        let bar = EditModeBar(
+            selectedCount: 1,
+            totalCount: 3,
+            removalPreferences: RemovalPreferences(confirmsFirst: true, movesToTrash: true),
+            onSelectAll: {},
+            onDeselectAll: {},
+            onMove: {},
+            onRemove: {}
+        )
+        try withHostedControls(bar) { controls in
+            let labels = controls.filter { $0.role == .button }.map(\.label)
+            guard !labels.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no AppKit button to accessibility in this run")
+            }
+            XCTAssertFalse(labels.contains("Exit edit mode"), "\(labels)")
+            XCTAssertFalse(labels.contains("Done"), "\(labels)")
+        }
+    }
+}
+
 // MARK: - Hints That Say What Happens
 
 /// Each hint the audit found naming a gesture, a click, a menu to open, or

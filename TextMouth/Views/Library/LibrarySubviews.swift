@@ -5,6 +5,11 @@ import SwiftUI
 
 /// Toolbar shown at the top of the library when edit mode is active.
 /// Provides batch actions and selection controls that work reliably with VoiceOver.
+///
+/// It has no way out of edit mode of its own: the window's toolbar button
+/// ("Exit edit mode") and the Library menu's Edit Mode, Command-E, are the
+/// ways out. A Done here did the same as the toolbar's button, a second
+/// control for one command (TODO A10).
 struct EditModeBar: View {
     let selectedCount: Int
     let totalCount: Int
@@ -15,7 +20,6 @@ struct EditModeBar: View {
     let onDeselectAll: () -> Void
     let onMove: () -> Void
     let onRemove: () -> Void
-    let onDone: () -> Void
     /// Add to Reading List and Remove from Reading List for the selected
     /// books, beside Move (FR09), by membership as a selection's row offers
     /// them, or the one the view suggests, dimmed, while none is selected
@@ -65,10 +69,6 @@ struct EditModeBar: View {
                 .disabled(selectedCount == 0)
                 .accessibilityLabel(removal.accessibilityLabel)
                 .accessibilityHint(removal.accessibilityHint)
-
-            Button("Done") { onDone() }
-                .fontWeight(.semibold)
-                .accessibilityLabel("Exit edit mode")
         }
         .padding(.horizontal)
         .padding(.vertical, 8)

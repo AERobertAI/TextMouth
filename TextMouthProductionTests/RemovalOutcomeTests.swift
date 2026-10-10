@@ -209,8 +209,7 @@ final class RemovalOutcomeTests: XCTestCase {
                 onSelectAll: {},
                 onDeselectAll: {},
                 onMove: {},
-                onRemove: {},
-                onDone: {}
+                onRemove: {}
             )
         }
 

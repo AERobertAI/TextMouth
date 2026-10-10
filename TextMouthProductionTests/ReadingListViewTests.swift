@@ -380,7 +380,6 @@ final class ReadingListViewTests: XCTestCase {
             onDeselectAll: {},
             onMove: {},
             onRemove: {},
-            onDone: {},
             readingListCommands: ReadingListCommand.editBarCommands(
                 for: shelf.books(titled: "Loose Pages", "Field Notes", "Travel Notes"),
                 inList: Set(shelf.ids("Field Notes")),
