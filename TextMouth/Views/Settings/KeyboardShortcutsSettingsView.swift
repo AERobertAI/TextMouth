@@ -11,9 +11,12 @@ struct KeyboardShortcutsSettingsView: View {
 
     var body: some View {
         Form {
-            // One double-press time for every shortcut, at the top (FR12).
+            // One double-press time for every shortcut, at the top (FR12),
+            // and a way to try it by ear.
             Section {
                 DoublePressTimeStepper()
+                Button(ShortcutsSettingsWording.tryDoublePressTitle, action: tryDoublePress)
+                    .accessibilityHint(ShortcutsSettingsWording.tryDoublePressHint)
             }
 
             ForEach(categories, id: \.self) { category in
@@ -56,6 +59,15 @@ struct KeyboardShortcutsSettingsView: View {
 
     private func actionsInCategory(_ category: String) -> [ShortcutAction] {
         ShortcutAction.allCases.filter { $0.category == category }
+    }
+
+    /// Try a Double Press: asks for a key pressed twice, then says what the
+    /// two presses made, measured against the double-press time in force.
+    private func tryDoublePress() {
+        VoiceOverAnnouncer.announce(ShortcutsSettingsWording.tryDoublePressPrompt)
+        shortcutManager.tryDoublePress { outcome in
+            VoiceOverAnnouncer.announce(ShortcutsSettingsWording.trialResult(outcome))
+        }
     }
 }
 
@@ -335,15 +347,48 @@ enum ShortcutsSettingsWording {
         "How soon a second press must follow the first to make a double press. "
             + "A key with a different action for each waits this long before its single press acts."
 
-    /// `value` seconds as the stepper says them: whole seconds counted as
-    /// the Miscellaneous tab counts its seconds (`CountWording`), "1 second"
-    /// and "2 seconds", and tenths as a decimal, "0.5 seconds".
+    /// `value` seconds as the stepper says them, to the nearest tenth:
+    /// whole seconds counted as the Miscellaneous tab counts its seconds
+    /// (`CountWording`), "1 second" and "2 seconds", and tenths as a
+    /// decimal, "0.5 seconds".
     static func seconds(_ value: Double) -> String {
         let tenths = (value * SettingsPolicy.shortcutDoublePressTenthsPerSecond).rounded()
         guard tenths.truncatingRemainder(dividingBy: SettingsPolicy.shortcutDoublePressTenthsPerSecond) != 0 else {
             return CountWording.phrase(Int(tenths / SettingsPolicy.shortcutDoublePressTenthsPerSecond), singular: "second", plural: "seconds")
         }
         return String(format: "%.1f seconds", tenths / SettingsPolicy.shortcutDoublePressTenthsPerSecond)
+    }
+
+    // MARK: Trying a Double Press (FR12, Section 6.2 of the Design)
+
+    /// The title of the button that tries a double press.
+    static let tryDoublePressTitle = "Try a Double Press"
+    /// Its hint.
+    static let tryDoublePressHint =
+        "For five seconds, the next two presses of any key are no shortcuts, and TextMouth says whether they make a double press."
+    /// What VoiceOver says as a trial starts.
+    static let tryDoublePressPrompt = "Press a key twice."
+
+    /// What VoiceOver says once a trial ends: "Double press.", or how far
+    /// apart two presses of one key came and what time would count them as
+    /// one: "Two presses, 0.7 seconds apart. Set the time above 0.7 seconds
+    /// to count them as one."
+    static func trialResult(_ outcome: DoublePressTrial.Outcome) -> String {
+        switch outcome {
+        case .doublePress:
+            return "Double press."
+        case .tooFarApart(let apart):
+            let gap = seconds(apart)
+            let longest = SettingsPolicy.shortcutDoublePressSeconds.range.upperBound
+            guard (apart * SettingsPolicy.shortcutDoublePressTenthsPerSecond).rounded() < longest * SettingsPolicy.shortcutDoublePressTenthsPerSecond else {
+                return "Two presses, \(gap) apart. The double press time goes up to \(seconds(longest))."
+            }
+            return "Two presses, \(gap) apart. Set the time above \(gap) to count them as one."
+        case .differentKeys:
+            return "Two different keys. A double press is one key pressed twice."
+        case .noSecondPress:
+            return "No key was pressed twice."
+        }
     }
 
     // MARK: Rows and Announcements

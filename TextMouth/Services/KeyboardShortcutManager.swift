@@ -386,6 +386,31 @@ final class KeyboardShortcutManager: ObservableObject {
         recorders.removeAll { $0.recorder == nil || $0.recorder === recorder }
     }
 
+    // MARK: - Trying a Double Press
+
+    /// The Try a Double Press trial running, if any: the next key presses
+    /// are its, and no shortcut acts on them.
+    private var trial: DoublePressTrial?
+
+    /// Whether Try a Double Press is waiting for its two presses.
+    var isTryingDoublePress: Bool {
+        trial != nil
+    }
+
+    /// Starts Try a Double Press (FR12, section 6.2 of the design): for five
+    /// seconds the next two key presses are no shortcuts, and `report` is
+    /// told what they made, measured against the double-press time in
+    /// force. A trial already running ends without a report.
+    func tryDoublePress(report: @escaping @MainActor (DoublePressTrial.Outcome) -> Void) {
+        trial?.cancel()
+        let trial = DoublePressTrial(doublePressTime: doublePressTime, startTimer: startTimer) { [weak self] outcome in
+            self?.trial = nil
+            report(outcome)
+        }
+        self.trial = trial
+        trial.start()
+    }
+
     // MARK: - Event Monitoring
 
     private func startMonitoring() {
@@ -426,8 +451,13 @@ final class KeyboardShortcutManager: ObservableObject {
         // below; AppKit raises an exception for them on any other event.
         // While the Shortcuts tab records a key, every press is its.
         guard event.type == .keyDown, !isRecordingShortcut else { return false }
+        let stroke = KeyBinding.from(event: event)
+        // While Try a Double Press runs, the presses it measures are its.
+        if let trial {
+            return trial.take(stroke, at: event.timestamp, isRepeat: event.isARepeat)
+        }
         return dispatcher.handle(ShortcutPressDispatcher.Press(
-            stroke: KeyBinding.from(event: event),
+            stroke: stroke,
             time: event.timestamp,
             window: keyWindow,
             // Only the shortcuts of the key window's scope match; in a sheet

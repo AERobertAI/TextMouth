@@ -514,6 +514,106 @@ extension ShortcutPressDispatcher {
     }
 }
 
+// MARK: - Trying a Double Press
+
+/// Try a Double Press (FR12, section 6.2 of the design): for five seconds,
+/// the next two presses of any key are no shortcuts, and how far apart they
+/// came is measured against the double-press time, so the user can set the
+/// time by ear. The timer is passed in, so tests never wait.
+@MainActor
+final class DoublePressTrial {
+    /// What the two presses made.
+    enum Outcome: Equatable {
+        /// One key pressed twice within the double-press time.
+        case doublePress
+        /// One key pressed twice, this many seconds apart: too far apart.
+        case tooFarApart(TimeInterval)
+        /// Two different keys.
+        case differentKeys
+        /// Fewer than two presses before the trial's time ran out.
+        case noSecondPress
+    }
+
+    /// How long a trial waits for its two presses: five seconds.
+    static let length: TimeInterval = 5
+
+    /// How soon a second press must follow the first to make a double press.
+    private let doublePressTime: TimeInterval
+    /// Starts the trial's timer.
+    private let startTimer: ShortcutPressDispatcher.StartTimer
+    /// Called once, when the trial ends.
+    private let finish: @MainActor (Outcome) -> Void
+    /// The first press, with its key, or nil for a key no binding names.
+    private var first: (stroke: KeyBinding?, time: TimeInterval)?
+    /// The timer ending the trial when its time is up.
+    private var timer: (any PressTimer)?
+    /// Whether the trial has ended.
+    private(set) var hasEnded = false
+
+    /// A trial measuring against `doublePressTime`, ending through `finish`.
+    init(
+        doublePressTime: TimeInterval,
+        startTimer: @escaping ShortcutPressDispatcher.StartTimer = { delay, fire in MainQueuePressTimer(delay: delay, fire: fire) },
+        finish: @escaping @MainActor (Outcome) -> Void
+    ) {
+        self.doublePressTime = doublePressTime
+        self.startTimer = startTimer
+        self.finish = finish
+    }
+
+    /// Starts the trial's five seconds.
+    func start() {
+        timer = startTimer(Self.length) { [weak self] in
+            self?.timeIsUp()
+        }
+    }
+
+    /// Takes one key press made during the trial, as no shortcut: the key
+    /// with its modifiers (`stroke`, nil for a key no binding names), when
+    /// it went down, and whether it is a held key's repeat, which is
+    /// ignored. Returns whether the trial took it: every press until the
+    /// trial ends.
+    @discardableResult
+    func take(_ stroke: KeyBinding?, at time: TimeInterval, isRepeat: Bool) -> Bool {
+        guard !hasEnded else { return false }
+        if isRepeat {
+            return true
+        }
+        guard let first else {
+            self.first = (stroke, time)
+            return true
+        }
+        let apart = time - first.time
+        if stroke == nil || stroke != first.stroke {
+            end(.differentKeys)
+        } else if apart < doublePressTime {
+            end(.doublePress)
+        } else {
+            end(.tooFarApart(apart))
+        }
+        return true
+    }
+
+    /// Ends the trial without an outcome.
+    func cancel() {
+        timer?.cancel()
+        timer = nil
+        hasEnded = true
+    }
+
+    /// Ends the trial once its time is up without two presses.
+    private func timeIsUp() {
+        guard !hasEnded else { return }
+        end(.noSecondPress)
+    }
+
+    /// Ends the trial with `outcome`.
+    private func end(_ outcome: Outcome) {
+        cancel()
+        finish(outcome)
+    }
+}
+
 // MARK: - The Timer
 
 /// A one-shot timer a waiting single press waits on, cancelled when a

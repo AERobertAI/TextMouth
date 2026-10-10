@@ -631,6 +631,81 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(posted.map(\.shiftHeld), [true, true, true, false])
     }
 
+    // MARK: - Try a Double Press
+
+    /// A trial measures its next two presses against the double-press time:
+    /// one key within the time is a double press, at the time or later too
+    /// far apart, two keys different keys; repeats are ignored, and with
+    /// fewer than two presses the trial ends when its five seconds are up.
+    func testATrialMeasuresTheNextTwoPresses() throws {
+        let cases: [(second: KeyBinding?, at: TimeInterval, outcome: DoublePressTrial.Outcome)] = [
+            (plainJ, 10.3, .doublePress),
+            (plainJ, 10.5, .tooFarApart(0.5)),
+            (plainJ, 11.25, .tooFarApart(1.25)),
+            (plainK, 10.2, .differentKeys),
+            (KeyBinding(key: "j", shift: true), 10.2, .differentKeys),
+            (nil, 10.2, .differentKeys),
+        ]
+        for (second, time, outcome) in cases {
+            var outcomes: [DoublePressTrial.Outcome] = []
+            let trial = DoublePressTrial(doublePressTime: 0.5, startTimer: { delay, fire in HandFiredTimer(delay: delay, fire: fire) }) {
+                outcomes.append($0)
+            }
+            trial.start()
+            XCTAssertTrue(trial.take(plainJ, at: 10, isRepeat: false))
+            XCTAssertTrue(trial.take(plainJ, at: 10.1, isRepeat: true), "a repeat is taken and ignored")
+            XCTAssertTrue(trial.take(second, at: time, isRepeat: false))
+            XCTAssertEqual(outcomes, [outcome], "\(second?.configText ?? "nameless") at \(time)")
+            XCTAssertFalse(trial.take(plainJ, at: time + 0.1, isRepeat: false), "an ended trial takes nothing")
+        }
+
+        var timers: [HandFiredTimer] = []
+        var outcomes: [DoublePressTrial.Outcome] = []
+        let lonely = DoublePressTrial(doublePressTime: 0.5, startTimer: { delay, fire in
+            let timer = HandFiredTimer(delay: delay, fire: fire)
+            timers.append(timer)
+            return timer
+        }) { outcomes.append($0) }
+        lonely.start()
+        lonely.take(plainJ, at: 10, isRepeat: false)
+        XCTAssertEqual(try XCTUnwrap(timers.first).delay, DoublePressTrial.length)
+        timers.forEach { $0.fire() }
+        XCTAssertEqual(outcomes, [.noSecondPress])
+    }
+
+    /// While a trial runs, the manager hands it every key press and posts
+    /// no shortcut, measuring against the double-press time in force; once
+    /// it reports, shortcuts act again.
+    func testTheManagerHandsATrialItsPressesAndThenActsAgain() throws {
+        let center = NotificationCenter()
+        let store = makeSandboxedPreferences("press-dispatcher-trial")
+        let manager = KeyboardShortcutManager(
+            userDefaults: store,
+            installsEventMonitor: false,
+            notificationCenter: center,
+            startTimer: { delay, fire in HandFiredTimer(delay: delay, fire: fire) }
+        )
+        manager.setDoublePressTime(1.5)
+        var posted: [String] = []
+        let names = Set(ShortcutAction.allCases.map(\.notificationName))
+        let subscription = Publishers.MergeMany(names.map { center.publisher(for: $0) }).sink { notification in
+            posted.append(notification.userInfo?["action"] as? String ?? "")
+        }
+        defer { subscription.cancel() }
+        var reports: [DoublePressTrial.Outcome] = []
+
+        manager.tryDoublePress { reports.append($0) }
+        XCTAssertTrue(manager.isTryingDoublePress)
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10), keyWindow: nil, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 11.2), keyWindow: nil, firstResponder: nil))
+
+        XCTAssertEqual(reports, [.doublePress], "1.2 seconds apart is within a time of 1.5")
+        XCTAssertEqual(posted, [], "no shortcut acted during the trial")
+        XCTAssertFalse(manager.isTryingDoublePress)
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 20), keyWindow: nil, firstResponder: nil))
+        XCTAssertEqual(posted, [ShortcutAction.whereAmI.rawValue])
+    }
+
     // MARK: - Helpers
 
     /// A window the test owns, never shown.

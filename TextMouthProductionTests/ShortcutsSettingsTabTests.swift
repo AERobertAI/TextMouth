@@ -441,6 +441,34 @@ final class ShortcutsSettingsTabTests: XCTestCase {
         XCTAssertEqual(recorder.outcomes, [])
     }
 
+    // MARK: - Try a Double Press (FR12, Section 6.2 of the Design)
+
+    /// Try a Double Press says what the design words: "Double press.", or
+    /// how far apart two presses came and the time that would count them as
+    /// one, or that no time can when they came more than two seconds apart.
+    func testTryADoublePressSaysWhatThePressesMade() {
+        XCTAssertEqual(ShortcutsSettingsWording.tryDoublePressTitle, "Try a Double Press")
+        XCTAssertEqual(
+            ShortcutsSettingsWording.tryDoublePressHint,
+            "For five seconds, the next two presses of any key are no shortcuts, and TextMouth says whether they make a double press."
+        )
+        XCTAssertEqual(ShortcutsSettingsWording.tryDoublePressPrompt, "Press a key twice.")
+        let said: [(DoublePressTrial.Outcome, String)] = [
+            (.doublePress, "Double press."),
+            (.tooFarApart(0.7), "Two presses, 0.7 seconds apart. Set the time above 0.7 seconds to count them as one."),
+            (.tooFarApart(0.66), "Two presses, 0.7 seconds apart. Set the time above 0.7 seconds to count them as one."),
+            (.tooFarApart(1), "Two presses, 1 second apart. Set the time above 1 second to count them as one."),
+            (.tooFarApart(1.94), "Two presses, 1.9 seconds apart. Set the time above 1.9 seconds to count them as one."),
+            (.tooFarApart(1.96), "Two presses, 2 seconds apart. The double press time goes up to 2 seconds."),
+            (.tooFarApart(3.42), "Two presses, 3.4 seconds apart. The double press time goes up to 2 seconds."),
+            (.differentKeys, "Two different keys. A double press is one key pressed twice."),
+            (.noSecondPress, "No key was pressed twice."),
+        ]
+        for (outcome, words) in said {
+            XCTAssertEqual(ShortcutsSettingsWording.trialResult(outcome), words)
+        }
+    }
+
     // MARK: - The Double-Press Time's Stepper
 
     /// The stepper says its label, the time in seconds, and its hint, as
