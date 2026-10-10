@@ -99,6 +99,35 @@ final class FeedMoveToLibraryOperationTests: XCTestCase {
         try assertStaysInItsFeed(fixture, in: world, model: world.library)
     }
 
+    /// A move of two episodes of which one cannot move says both (REV13
+    /// feeds 5): its sheet, left open, says what moved, as a whole move says
+    /// it, then which episode stayed in its feed and why; the one that moved
+    /// is a book of the library's own, keeping everything, and the other is
+    /// still its feed's download.
+    func testAPartlyFailedMoveNamesWhatMovedAndWhatStayed() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMoveToLibraryPartly")
+        let fixture = try await downloadedEpisode(world)
+        world.center.download("guid:ep-2", of: fixture.feed.id)
+        let second = try await downloadedBook(world, feed: fixture.feed, item: "guid:ep-2")
+        // A package of the second episode's name is in the folder chosen
+        // already, so it cannot move there.
+        var blocked = second
+        blocked.feedLink = nil
+        blocked.folderPath = fixture.keepers
+        try FileManager.default.createDirectory(at: blocked.packageDirectory(inDataDirectory: TextMouthPaths.root), withIntermediateDirectories: true)
+
+        let outcome = await world.library.moveToLibraryReturningOutcome([fixture.book, second], toFolder: fixture.keepers)
+
+        let message = try XCTUnwrap(outcome.failureMessage, "a move that left an episode in its feed closed its sheet")
+        let moved = FeedWording.movedToLibrary(titles: ["Episode 1"], noun: .episode, folderPath: fixture.keepers)
+        XCTAssertTrue(message.hasPrefix("\(moved) “Episode 2” stays in its feed: "), message)
+        XCTAssertGreaterThan(message.count, "\(moved) “Episode 2” stays in its feed: ".count, "no reason was given")
+        try await assertMoved(fixture, in: world, model: world.library)
+        XCTAssertEqual(world.library.bookByID(second.id)?.feedLink, second.feedLink, "the episode that could not move left its feed")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: second.filePath))
+        XCTAssertEqual(world.center.store.record(of: fixture.feed.id)?.item("guid:ep-2")?.state, .downloaded(bookID: second.id))
+    }
+
     /// An episode another Move to Library… has marked "In Library", its
     /// package still to move, cannot be moved by a second one (REV13 feeds
     /// 9): the second moves nothing, says why, and leaves the first's mark
@@ -425,6 +454,32 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
         XCTAssertEqual(
             FeedWording.nothingToMoveToLibrary,
             "Move to Library… moves an episode or article downloaded in its feed. Select one in its feed's folder."
+        )
+        // A move that moved only some says what moved, then what stayed and
+        // why, the items one reason kept named together (REV13 feeds 5).
+        XCTAssertEqual(
+            FeedWording.partlyMovedToLibrary(
+                moved: ["Ep. 1"],
+                noun: .episode,
+                folderPath: "Podcasts/Keepers",
+                stayed: [(title: "Ep. 2", reason: "The file couldn't be moved.")]
+            ),
+            "Moved “Ep. 1” into Podcasts/Keepers. It's a book of your library now, and its feed lists it In Library. "
+                + "“Ep. 2” stays in its feed: The file couldn't be moved."
+        )
+        XCTAssertEqual(
+            FeedWording.partlyMovedToLibrary(
+                moved: ["Ep. 1", "Ep. 2"],
+                noun: .episode,
+                folderPath: "",
+                stayed: [
+                    (title: "Ep. 3", reason: "No room."),
+                    (title: "Ep. 4", reason: "No permission."),
+                    (title: "Ep. 5", reason: "No room."),
+                ]
+            ),
+            "Moved 2 episodes into the top of your library. They're books of your library now, and their feeds list them In Library. "
+                + "“Ep. 3” and “Ep. 5” stay in their feeds: No room. “Ep. 4” stays in its feed: No permission."
         )
         let episode = Book(title: "E", format: .audio, filePath: "/e.m4a", md5Hash: "e")
         let article = Book(title: "A", format: .html, filePath: "/a.html", md5Hash: "a")

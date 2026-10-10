@@ -76,7 +76,10 @@ extension LibraryViewModel {
     /// what happened, presenting nothing, so the sheet can stay open with
     /// the reason after a failure. Each item's feed then lists it "In
     /// Library" (`FeedItemState.inLibrary`), the listener's from then on, and
-    /// never downloads it again.
+    /// never downloads it again. A move whose packages moved only in part
+    /// is a failure that says what moved and what stayed in its feed, and
+    /// why (`FeedWording.partlyMovedToLibrary`, REV13 feeds 5), so the sheet,
+    /// left open for the rest, never hides the move that happened.
     ///
     /// The order never loses a book or a place, and a crash at any point is
     /// settled at the next launch:
@@ -153,12 +156,16 @@ extension LibraryViewModel {
 
         let root = TextMouthPaths.root
         var moved: [Book] = []
+        // Each row whose package stayed, with why, for the words of a move
+        // that moved only some (REV13 feeds 5).
+        var stayed: [(title: String, reason: String)] = []
         var failure: (any Error)?
         for row in rows {
             do {
                 moved.append(try Self.moveIntoTheLibrary(row, folderPath: path, root: root))
             } catch {
                 failure = failure ?? error
+                stayed.append((title: row.title, reason: error.localizedDescription))
                 DiagnosticLog.event(
                     .storage,
                     "FEED_MOVE_TO_LIBRARY_FAILED: \"\(row.title)\": \(error.localizedDescription); it stays in its feed"
@@ -192,7 +199,15 @@ extension LibraryViewModel {
                     + (path.isEmpty ? "at the library's top level" : "in the folder chosen")
             )
         }
-        return failure.map { .failure(context, $0) } ?? .success(nil)
+        guard !stayed.isEmpty else { return .success(nil) }
+        // Some moved and some stayed: the sheet, left open, says both, so
+        // the move that happened is never hidden behind what failed.
+        return .failure(FeedWording.partlyMovedToLibrary(
+            moved: moved.map(\.title),
+            noun: FeedWording.noun(of: moved),
+            folderPath: path,
+            stayed: stayed
+        ))
     }
 
     /// `row`, a feed item's download, moved into the library folder
