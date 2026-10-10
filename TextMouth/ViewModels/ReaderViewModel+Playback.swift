@@ -2230,8 +2230,9 @@ extension ReaderViewModel {
 
     /// Called when the last chapter finishes playing, and when Play finds
     /// nothing left to say. Behavior depends on per-book override or global
-    /// setting: stop, loop, or continue to next book. A book read from the
-    /// reading list follows the list's "When a book ends" instead
+    /// setting: stop (Play then saying "Finished", or starting the book
+    /// over, `playFromTheEnd()`), loop, or continue to next book. A book
+    /// read from the reading list follows the list's "When a book ends" instead
     /// (`finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:replayingAFinishedEnd:)`,
     /// FR09), as the user decided on October 7, 2026.
     ///
@@ -2258,13 +2259,14 @@ extension ReaderViewModel {
     /// starting, or with no next book, rests finished.
     ///
     /// Every end but a loop's saves the book exactly at its end, its last
-    /// chapter at its full length (`finishAtTheEnd(replayingAFinishedEnd:)`, TODO P07), which the
-    /// library row then reads as finished (`Book.restsAtEnd`): the place a
-    /// book ended at was once the last word speech reported, or the last
-    /// quarter second the player reported, a few characters short of the
-    /// end, and a book whose last part says nothing, such as a skipped
-    /// licence, ended well short of it. A book that hands over to the next
-    /// one rests at its end too: it played to it.
+    /// chapter at its full length (`finishAtTheEnd(replayingAFinishedEnd:)`,
+    /// TODO P07), which the library row then reads as finished
+    /// (`Book.restsAtEnd`): the place a book ended at was once the last word
+    /// speech reported, or the last quarter second the player reported, a
+    /// few characters short of the end, and a book whose last part says
+    /// nothing, such as a skipped licence, ended well short of it. A book
+    /// that hands over to the next one rests at its end too: it played to
+    /// it.
     func handleEndOfBook() {
         // Time after the end of the book is not listening time, so close this
         // book's session here, once, for every way a book can end. Another

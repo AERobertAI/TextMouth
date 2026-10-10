@@ -761,6 +761,11 @@ struct FinishedBookEntry: Codable, Identifiable {
     var bookID: String
     var title: String
     var dateFinished: Date
+    /// What kind of book it was, when known (FR03): told as it finished.
+    /// None for a book finished before TextMouth recorded kinds, or one it
+    /// could not tell, which Books Finished counts by the library's answer
+    /// while the library holds it.
+    var kind: FinishedBookKind?
 
     /// The entry's own identity, its book and the moment it finished, by
     /// which Recently Finished keys its rows: no two entries share it,
@@ -769,11 +774,6 @@ struct FinishedBookEntry: Codable, Identifiable {
     var id: String {
         "\(bookID) \(dateFinished.timeIntervalSinceReferenceDate)"
     }
-    /// What kind of book it was, when known (FR03): told as it finished.
-    /// None for a book finished before TextMouth recorded kinds, or one it
-    /// could not tell, which Books Finished counts by the library's answer
-    /// while the library holds it.
-    var kind: FinishedBookKind?
 
     /// The keys of an entry in reading_stats.json.
     private enum CodingKeys: String, CodingKey {
