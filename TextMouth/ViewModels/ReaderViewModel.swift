@@ -666,7 +666,7 @@ final class ReaderViewModel: ObservableObject {
         // Speech the Mac's speech engine refused, on a fresh synthesizer
         // too, has stopped at the cursor; the reader makes that stop its
         // own, as a pause would be (#1308).
-        speechService.onSpeechRefused = { [weak self] in
+        speechService.onSpeechRefused = { [weak self] _ in
             self?.showPlaybackStoppedAfterRefusal()
         }
 

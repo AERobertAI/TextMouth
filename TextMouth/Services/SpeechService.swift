@@ -154,6 +154,14 @@ struct RecentTransitionLines: Equatable, Sendable {
     }
 }
 
+extension SpeechRefusal.Voice {
+    /// `voice` as the report of a refusal names it, its quality as the voice
+    /// pickers say it.
+    init(_ voice: AVSpeechSynthesisVoice) {
+        self.init(name: voice.name, identifier: voice.identifier, language: voice.language, quality: voice.qualityLabel)
+    }
+}
+
 /// One piece of a text that direct speech hands the synthesizer as a single
 /// utterance. Kept independent of AVFoundation so its boundaries can be
 /// tested on any text.
@@ -631,11 +639,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     var onUtteranceFinished: (() -> Void)?
     /// Called on the main queue when speech ended because the Mac's speech
     /// engine refused its text on a fresh synthesizer too
-    /// (`endDirectSpeechRefused(at:)`), after speech shows itself stopped
-    /// at the cursor and the listener has heard
-    /// `engineRefusedAnnouncement`. A reader may show playback stopped in
-    /// turn; nothing else is needed, since Play speaks on from the cursor.
-    var onSpeechRefused: (() -> Void)?
+    /// (`endDirectSpeechRefused(at:refusing:spanning:)`), after speech shows
+    /// itself stopped at the cursor and the listener has heard
+    /// `engineRefusedAnnouncement`, with what was refused (`SpeechRefusal`),
+    /// for the report of the refusal (B05). A reader may show playback
+    /// stopped in turn; nothing else is needed, since Play speaks on from
+    /// the cursor.
+    var onSpeechRefused: ((SpeechRefusal) -> Void)?
 
     /// The full text currently being spoken, kept after a stop for a later
     /// seek or resume until `releaseSpeech()`. Readable outside this class
@@ -673,8 +683,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// its live utterance (`DIRECT_RETRY`), or nil when it has not since
     /// speech was last stopped. A cancel that comes back to the same offset
     /// means the engine refuses the text there on a fresh synthesizer too:
-    /// speech then ends (`endDirectSpeechRefused(at:)`) instead of trying
-    /// forever.
+    /// speech then ends (`endDirectSpeechRefused(at:refusing:spanning:)`)
+    /// instead of trying forever.
     private var lastDirectRetryOffset: Int?
     /// The part of the text being spoken, in its UTF-16 offsets, that direct
     /// speech hands the synthesizer strictly guarded, every bracket silent
@@ -1090,7 +1100,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// What the listener hears when the Mac's speech engine refused the
     /// text twice, on a fresh synthesizer too, and speech ended where it
-    /// was (`endDirectSpeechRefused(at:)`). Play speaks on from there.
+    /// was (`endDirectSpeechRefused(at:refusing:spanning:)`). Play speaks
+    /// on from there.
     nonisolated static let engineRefusedAnnouncement = "Speech stopped: the Mac's speech engine refused this text."
 
     /// Speak again after the system cancelled the live utterance on its own
@@ -1125,10 +1136,14 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// to the default guard. Once per place: a cancel that comes back to
     /// the same offset means the engine refuses this text on any
     /// synthesizer, even with no bracket in it, and speech ends there
-    /// instead (`endDirectSpeechRefused(at:)`), as it does when there is no
-    /// text to speak again.
-    private func recoverFromCancelledDirectUtterance() {
+    /// instead (`endDirectSpeechRefused(at:refusing:spanning:)`), as it does
+    /// when there is no text to speak again.
+    ///
+    /// - Parameter refused: The live utterance the system cancelled, which
+    ///   the report of a refusal shows as it was handed over.
+    private func recoverFromCancelledDirectUtterance(_ refused: AVSpeechUtterance) {
         let offset = retryOffset(from: directModeBaseOffset, to: directModeChunkEnd)
+        let refusedChunk = liveDirectChunkRange
         let refusedChunkEnd = directModeChunkEnd
         replaceDirectSynthesizer()
         if renderedAudioMatchesSpeech {
@@ -1140,11 +1155,18 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             audioEngine.stop()
         }
         guard takeRetry(from: offset, to: refusedChunkEnd) else {
-            endDirectSpeechRefused(at: offset)
+            endDirectSpeechRefused(at: offset, refusing: refused, spanning: refusedChunk)
             return
         }
         transitionLog(.event, "DIRECT_RETRY offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(refusedChunkEnd); strictly guarded to the chunk's end")
         speakDirect(currentText, fromCharOffset: offset)
+    }
+
+    /// Where the direct chunk speaking now begins and ends in the text,
+    /// its end never before its start, which only a test's adopted
+    /// utterance could make it (`_adoptLiveDirectUtteranceForTesting`).
+    private var liveDirectChunkRange: Range<Int> {
+        directModeBaseOffset..<max(directModeBaseOffset, directModeChunkEnd)
     }
 
     /// The live utterance was cancelled while speech was paused, which the
@@ -1163,12 +1185,18 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// of the cancelled chunk strictly guarded, as the retry would speak it
     /// (`DIRECT_RETRY_AT_RESUME`). That counts as this place's one retry:
     /// refused there again after Play, speech ends with the announcement.
-    private func retryCancelledDirectUtteranceAtResume() {
+    /// When the place's retry was taken already, speech ends now
+    /// (`endDirectSpeechRefused(at:refusing:spanning:)`).
+    ///
+    /// - Parameter refused: The live utterance the system cancelled, which
+    ///   the report of a refusal shows as it was handed over.
+    private func retryCancelledDirectUtteranceAtResume(_ refused: AVSpeechUtterance) {
         let offset = retryOffset(from: directModeBaseOffset, to: directModeChunkEnd)
+        let refusedChunk = liveDirectChunkRange
         let refusedChunkEnd = directModeChunkEnd
         replaceDirectSynthesizer()
         guard takeRetry(from: offset, to: refusedChunkEnd) else {
-            endDirectSpeechRefused(at: offset)
+            endDirectSpeechRefused(at: offset, refusing: refused, spanning: refusedChunk)
             return
         }
         pendingDirectSeekOffset = offset
@@ -1190,16 +1218,17 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// was, with the rest of the segment strictly guarded
     /// (`SLEEP_FADE_DIRECT_SEGMENT_REFUSED`). Once per place, as for any
     /// refusal: refused there again, speech ends with the announcement
-    /// (`endDirectSpeechRefused(at:)`).
+    /// (`endDirectSpeechRefused(at:refusing:spanning:)`), the segment
+    /// reported as what was refused.
     private func recoverFromRefusedFadeSegment(_ segment: AVSpeechUtterance, at segmentStart: Int) {
-        let segmentEnd = segmentStart + (directFadeLengths[ObjectIdentifier(segment)] ?? 0)
+        let segmentEnd = segmentStart + max(0, directFadeLengths[ObjectIdentifier(segment)] ?? 0)
         let offset = retryOffset(from: segmentStart, to: segmentEnd)
         // Read before the synthesizer is replaced, which ends the fade's
         // bookkeeping.
         let continuationDuration = directFadeContinuationDuration
         replaceDirectSynthesizer()
         guard takeRetry(from: offset, to: segmentEnd) else {
-            endDirectSpeechRefused(at: offset)
+            endDirectSpeechRefused(at: offset, refusing: segment, spanning: segmentStart..<segmentEnd)
             return
         }
         transitionLog(.event, "SLEEP_FADE_DIRECT_SEGMENT_REFUSED: offset=\(offset) segmentEnd=\(segmentEnd); the fade goes on strictly guarded")
@@ -1228,7 +1257,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// when speech was refused at `offset` before, so that the engine
     /// refuses this text on any synthesizer, even with no bracket in it, or
     /// when there is no text to speak again; speech should then end there
-    /// (`endDirectSpeechRefused(at:)`).
+    /// (`endDirectSpeechRefused(at:refusing:spanning:)`).
     private func takeRetry(from offset: Int, to end: Int) -> Bool {
         guard !currentText.isEmpty, lastDirectRetryOffset != offset else { return false }
         lastDirectRetryOffset = offset
@@ -1255,13 +1284,19 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// so that Play speaks on from there, as the reader restarts stopped
     /// speech from its cursor, and the chapter neither ends nor moves on.
     /// The listener hears `engineRefusedAnnouncement`, and the reader is
-    /// told (`onSpeechRefused`).
+    /// told what was refused (`onSpeechRefused`, `SpeechRefusal`).
     ///
     /// The caller has already let go of the synthesizer that refused, and
     /// of what it held (`replaceDirectSynthesizer()`), so that Play speaks
     /// on a synthesizer that can still speak.
-    private func endDirectSpeechRefused(at offset: Int) {
-        transitionLog(.event, "DIRECT_RETRY_FAILED: offset=\(offset) chunkStart=\(directModeBaseOffset) chunkEnd=\(directModeChunkEnd); speech stopped, the listener told")
+    ///
+    /// - Parameters:
+    ///   - refused: The utterance the engine refused the second time, as it
+    ///     was handed over: its text, voice, rate, pitch, and volume.
+    ///   - refusedRange: Where that utterance begins and ends in the text:
+    ///     the chunk, or the sleep fade's segment, it spoke.
+    private func endDirectSpeechRefused(at offset: Int, refusing refused: AVSpeechUtterance, spanning refusedRange: Range<Int>) {
+        transitionLog(.event, "DIRECT_RETRY_FAILED: offset=\(offset) chunkStart=\(refusedRange.lowerBound) chunkEnd=\(refusedRange.upperBound); speech stopped, the listener told")
         stopPositionTracking()
         isSpeaking = false
         isPaused = false
@@ -1274,12 +1309,25 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         let range = NSRange(location: offset, length: 0)
         currentWordRange = range
         onWordSpoken?(range, "")
+        // Made after DIRECT_RETRY_FAILED is logged, so its lines end there.
+        let refusal = SpeechRefusal(
+            offset: offset,
+            refusedRange: refusedRange,
+            refusedText: refused.speechString,
+            strictlyGuardedRange: strictlyGuardedRange,
+            voice: refused.voice.map { SpeechRefusal.Voice($0) },
+            wordsPerMinute: wordsPerMinute,
+            rate: refused.rate,
+            pitchMultiplier: refused.pitchMultiplier,
+            volume: refused.volume,
+            recentLines: recentTransitionLines.lines
+        )
         // The synthesizer's callbacks reach this service on the main queue,
         // where announcements are made.
         MainActor.assumeIsolated {
             VoiceOverAnnouncer.announce(Self.engineRefusedAnnouncement)
         }
-        onSpeechRefused?()
+        onSpeechRefused?(refusal)
     }
 
     /// Stop the direct synthesizer and clear the live-utterance marker so
@@ -2149,9 +2197,9 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 let appState = self.isPaused ? "was paused" : "expected playback"
                 self.transitionLog(.event, "DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app \(appState); watchdog armed=\(self.directPlaybackWatchdogTimer != nil) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
                 if self.isPaused {
-                    self.retryCancelledDirectUtteranceAtResume()
+                    self.retryCancelledDirectUtteranceAtResume(cancelled.utterance)
                 } else {
-                    self.recoverFromCancelledDirectUtterance()
+                    self.recoverFromCancelledDirectUtterance(cancelled.utterance)
                 }
             } else {
                 self.transitionLog(.trace, "DIRECT_CANCEL_EXPECTED: stale or deliberately stopped utterance cancelled current=\(isCurrent) directMode=\(self.usingDirectMode) appSpeaking=\(self.isSpeaking) appPaused=\(self.isPaused)")
