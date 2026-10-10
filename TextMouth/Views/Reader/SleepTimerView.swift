@@ -210,7 +210,11 @@ struct SleepTimerView: View {
 
             // Custom duration
             HStack(spacing: 8) {
+                // "Custom:" and "min" are for the eye: the field's label,
+                // "Custom timer minutes", says both, so VoiceOver skips
+                // them as stops of their own (TODO A10).
                 Text("Custom:")
+                    .accessibilityHidden(true)
                 TextField("Minutes", value: $customMinutes, format: .number)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 60)
@@ -230,6 +234,7 @@ struct SleepTimerView: View {
                     .accessibilityValue(customMinutesSpoken)
                 Text("min")
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
 
                 Button("Set") {
                     customMinutes = max(1, min(customMinutes, 480))

@@ -498,6 +498,33 @@ final class SmallerWordingTests: XCTestCase {
     }
 }
 
+// MARK: - Units in Words
+
+/// A unit is said once, in a word. The sleep timer's "Custom:" and "min"
+/// are hidden from VoiceOver because the custom field's label names both;
+/// the jump panels' plain fields name their units only by placeholders,
+/// which a filled field never speaks, so their "h", "m", "s", and "%" became
+/// "hours", "minutes", "seconds", and "percent", read after each field.
+@MainActor
+final class UnitWordTests: XCTestCase {
+    /// The custom timer's field is labelled with what "Custom:" and "min"
+    /// said, so they need no stops of their own.
+    func testTheCustomTimerFieldNamesItsUnit() throws {
+        let reader = makeA10TextReader()
+        defer { reader.close() }
+        let sheet = SleepTimerView(
+            viewModel: reader,
+            sleepTimerService: SleepTimerService(userDefaults: makeSandboxedPreferences("a10-units")),
+            onClose: {},
+            autoClose: false
+        )
+        try withA10HostedControls(sheet) { controls in
+            let fields = controls.filter { $0.role == .textField }
+            XCTAssertEqual(fields.map(\.label), ["Custom timer minutes"])
+        }
+    }
+}
+
 // MARK: - Shared Fixtures
 
 extension XCTestCase {

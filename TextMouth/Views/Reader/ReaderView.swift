@@ -1351,7 +1351,11 @@ private struct JumpToPercentPanel: View {
                     .onChange(of: percentInput) { _, _ in
                         if !errorMessage.isEmpty { errorMessage = "" }
                     }
-                Text("%")
+                // The unit in a word, which VoiceOver reads after the
+                // field: the field is left plain, as the note above says,
+                // so its placeholder, "Percent", names it only while it is
+                // empty, and it never is. It said "%" (TODO A10).
+                Text("percent")
                     .foregroundColor(.secondary)
                 Button("Jump", action: performJump)
                     .keyboardShortcut(.defaultAction)
@@ -1462,26 +1466,30 @@ private struct JumpToTimePanel: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
 
+                // Each unit in a word, which VoiceOver reads after its
+                // field: the fields are left plain, as the note above says,
+                // so their placeholders name them only while empty, and they
+                // never are. They said "h", "m", and "s" (TODO A10).
                 TextField("Hours", text: $hoursText)
                     .frame(width: 50)
                     .focused($hoursFocused)
                     .onSubmit(performJump)
                     .onChange(of: hoursText) { _, _ in clearError() }
-                Text("h")
+                Text("hours")
                     .foregroundColor(.secondary)
 
                 TextField("Minutes", text: $minutesText)
                     .frame(width: 50)
                     .onSubmit(performJump)
                     .onChange(of: minutesText) { _, _ in clearError() }
-                Text("m")
+                Text("minutes")
                     .foregroundColor(.secondary)
 
                 TextField("Seconds", text: $secondsText)
                     .frame(width: 50)
                     .onSubmit(performJump)
                     .onChange(of: secondsText) { _, _ in clearError() }
-                Text("s")
+                Text("seconds")
                     .foregroundColor(.secondary)
 
                 Button("Jump", action: performJump)
