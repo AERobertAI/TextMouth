@@ -10,15 +10,35 @@ enum ManualBookOrder {
         let adjacentTitle: String
         /// -1 for up, +1 for down.
         let direction: Int
-        /// Where the moved book is now in the order.
+        /// Where the moved book is now in the order, from 0 at the top.
         let newIndex: Int
+        /// How many books the order holds, as the list shows it.
+        let count: Int
 
-        /// What VoiceOver says of the move, the same in a folder and in
+        /// What VoiceOver says of a move made from the Library menu, the
+        /// keyboard, or a row's context menu, the same in a folder and in
         /// the reading list: "Moved Bestiary above Almanac", or "Moved
         /// Almanac below Bestiary".
         var announcement: String {
             "Moved \(movedTitle) \(direction < 0 ? "above" : "below") \(adjacentTitle)"
         }
+
+        /// What VoiceOver says of a move made with a row's Move Up or Move
+        /// Down VoiceOver action: the book and its new place in the order,
+        /// counted from 1 at the top, "Dune, 3 of 12", short enough to hear
+        /// after each of many moves in a row.
+        var placeAnnouncement: String {
+            "\(movedTitle), \(newIndex + 1) of \(count)"
+        }
+    }
+
+    /// What VoiceOver says when a row's Move Up or Move Down VoiceOver
+    /// action finds the book `title` can no longer move that way (-1 up,
+    /// +1 down), as when the list changed after the row offered the action:
+    /// "Dune can't move up." The action is offered only where the book can
+    /// move, so this is said only after such a change.
+    static func cannotMoveAnnouncement(_ title: String, direction: Int) -> String {
+        "\(title) can't move \(direction < 0 ? "up" : "down")."
     }
 
     /// The books in `folderPath`, in the folder's manual order exactly as
@@ -49,7 +69,8 @@ enum ManualBookOrder {
             movedTitle: books[currentIndex].title,
             adjacentTitle: books[newIndex].title,
             direction: direction,
-            newIndex: newIndex
+            newIndex: newIndex,
+            count: books.count
         )
         books.swapAt(currentIndex, newIndex)
         renumber(books, in: &library)

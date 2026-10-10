@@ -177,6 +177,114 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(shelf.model.readingListBooks.map(\.title), ["Travel Notes", "Loose Pages", "Field Notes"])
     }
 
+    // MARK: - Moving a Row with VoiceOver
+
+    /// Move Up and Move Down have one name each, which a row's context menu
+    /// and its VoiceOver actions both give them, and each moves one place:
+    /// a book offers Move Up unless it is first, and Move Down unless it is
+    /// last, Move Up first; a book alone in its order offers neither.
+    func testTheMovesAreNamedOnceForTheMenuAndVoiceOver() {
+        XCTAssertEqual(LibraryManualMove.up.title, "Move Up")
+        XCTAssertEqual(LibraryManualMove.down.title, "Move Down")
+        XCTAssertEqual(LibraryManualMove.up.direction, -1)
+        XCTAssertEqual(LibraryManualMove.down.direction, 1)
+
+        let almanac = Self.book("Almanac", in: "")
+        let bestiary = Self.book("Bestiary", in: "")
+        let chronicle = Self.book("Chronicle", in: "")
+        let moves = LibraryManualMoves.moves(in: [almanac, bestiary, chronicle])
+        XCTAssertEqual(moves[almanac.id]?.offered, [.down])
+        XCTAssertEqual(moves[bestiary.id]?.offered, [.up, .down])
+        XCTAssertEqual(moves[chronicle.id]?.offered, [.up])
+
+        let alone = LibraryManualMoves.moves(in: [almanac])
+        XCTAssertEqual(alone[almanac.id]?.offered, [])
+        XCTAssertEqual(alone[almanac.id]?.canMove, false)
+    }
+
+    /// A row offers its moves as its first VoiceOver actions, before every
+    /// other action, under the names its context menu gives them; a row
+    /// whose list shows no order the user arranges offers none.
+    @MainActor
+    func testARowOffersItsMovesAsItsFirstVoiceOverActions() {
+        let book = Self.book("Loose Pages", in: "")
+        let removing = ReadingListCommand.commands(for: [book], isSelection: false, inList: [book.id])
+        func names(_ moves: LibraryManualMoves?) -> [String] {
+            BookRow(book: book, manualMoves: moves, readingListCommands: removing).accessibilityActionNames
+        }
+
+        XCTAssertEqual(
+            names(LibraryManualMoves(canMoveUp: true, canMoveDown: true)),
+            ["Move Up", "Move Down", "Remove from Reading List"]
+        )
+        XCTAssertEqual(names(LibraryManualMoves(canMoveUp: false, canMoveDown: true)), ["Move Down", "Remove from Reading List"])
+        XCTAssertEqual(names(LibraryManualMoves(canMoveUp: true, canMoveDown: false)), ["Move Up", "Remove from Reading List"])
+        XCTAssertEqual(names(LibraryManualMoves(canMoveUp: false, canMoveDown: false)), ["Remove from Reading List"])
+        XCTAssertEqual(names(nil), ["Remove from Reading List"])
+    }
+
+    /// A row's VoiceOver action runs the move it names: Move Up asks the
+    /// list to move the row's book one place up, and Move Down one place
+    /// down, through the list's own actions.
+    @MainActor
+    func testARowsMoveActionMovesItsOwnBook() {
+        let book = Self.book("Loose Pages", in: "")
+        var asked: [Int] = []
+        let row = BookRow(
+            book: book,
+            manualMoves: LibraryManualMoves(canMoveUp: true, canMoveDown: true),
+            performManualMove: { asked.append($0.direction) }
+        )
+        for move in row.manualMoves?.offered ?? [] {
+            row.performManualMove(move)
+        }
+        XCTAssertEqual(asked, [-1, 1])
+    }
+
+    /// A move from a row's VoiceOver action says the book's new place in
+    /// the order, counted from 1 at the top, "Field Notes, 2 of 4", in the
+    /// reading list, counted as the list shows it, and in a folder in
+    /// manual order alike; the menu's words are unchanged.
+    @MainActor
+    func testAMoveFromAVoiceOverActionSaysTheBooksNewPlace() {
+        let shelf = Self.shelf()
+        shelf.model.addToReadingList(shelf.ids("Loose Pages", "Unlisted Essay", "Field Notes", "Travel Notes"))
+
+        let up = shelf.model.moveBook(shelf.id("Field Notes"), direction: -1, in: .readingList)
+        XCTAssertEqual(up?.placeAnnouncement, "Field Notes, 2 of 4")
+        XCTAssertEqual(up?.announcement, "Moved Field Notes above Unlisted Essay")
+        let down = shelf.model.moveBook(shelf.id("Loose Pages"), direction: 1, in: .readingList)
+        XCTAssertEqual(down?.placeAnnouncement, "Loose Pages, 2 of 4")
+        XCTAssertEqual(shelf.model.readingListBooks.map(\.title), ["Field Notes", "Loose Pages", "Unlisted Essay", "Travel Notes"])
+
+        // In a folder in manual order: the folder's two books.
+        let essays = LibraryLocation(category: .folders, folderPath: "Essays")
+        shelf.model.userChangedSort(.choose(.manual), at: essays)
+        let ordered = shelf.model.displayedBooks(at: essays).map(\.title)
+        let last = ordered.last ?? ""
+        XCTAssertEqual(shelf.model.moveBook(shelf.id(last), direction: -1, in: .folder("Essays"))?.placeAnnouncement, "\(last), 1 of 2")
+    }
+
+    /// The place a move says counts only the books the Reading List shows:
+    /// an ID naming no book, which the next change drops, is not counted.
+    @MainActor
+    func testTheSaidPlaceCountsOnlyTheBooksShown() {
+        let shelf = Self.shelf()
+        let gone = UUID()
+        shelf.model.library.readingList = ReadingList(bookIDs: [shelf.id("Loose Pages"), gone, shelf.id("Field Notes")])
+
+        let moved = shelf.model.moveBook(shelf.id("Field Notes"), direction: -1, in: .readingList)
+
+        XCTAssertEqual(moved?.placeAnnouncement, "Field Notes, 1 of 2")
+    }
+
+    /// A move a row's VoiceOver action can no longer make, as when the
+    /// list changed after the row offered it, says so.
+    func testAMoveThatCanNoLongerBeMadeSaysSo() {
+        XCTAssertEqual(ManualBookOrder.cannotMoveAnnouncement("Dune", direction: -1), "Dune can't move up.")
+        XCTAssertEqual(ManualBookOrder.cannotMoveAnnouncement("Dune", direction: 1), "Dune can't move down.")
+    }
+
     // MARK: - The Rows Say "In reading list"
 
     /// A book's row says "In reading list" as its value, after its label,

@@ -113,9 +113,9 @@ extension LibraryViewModel {
     /// Moves the book `bookID` one place up or down the reading list, past
     /// the book beside it, as Move Book Up and Move Book Down do there, and
     /// saves the new order at once. Returns what VoiceOver says of the move
-    /// (the moved book, the book it passed, and where it went), or nil,
-    /// changing nothing, when the book is not in the list or is already at
-    /// that end of it.
+    /// (the moved book, the book it passed, and where it went, counted in
+    /// the list as shown), or nil, changing nothing, when the book is not in
+    /// the list or is already at that end of it.
     @discardableResult
     func moveInReadingList(bookID: UUID, direction: ReadingList.Direction) -> MoveResult? {
         editReadingList { list, books in
@@ -128,7 +128,10 @@ extension LibraryViewModel {
                 movedTitle: moved.title,
                 adjacentTitle: passed?.title ?? "",
                 direction: direction.step,
-                newIndex: newIndex
+                newIndex: newIndex,
+                // The list as shown: `editReadingList` left out every ID
+                // naming no book.
+                count: list.bookIDs.count
             )
         }
     }

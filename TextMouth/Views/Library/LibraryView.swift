@@ -1263,6 +1263,7 @@ struct LibraryView: View {
                     moveBook(book.id, direction: direction, in: target)
                 }
             },
+            moveSayingPlace: moveSayingPlace,
             performCloudCommand: performCloudCommand,
             remove: { books in
                 libraryViewModel.removeBooks(books)
@@ -1588,6 +1589,22 @@ struct LibraryView: View {
         if let result = libraryViewModel.moveBook(bookID, direction: direction, in: target) {
             announceToVoiceOver(result.announcement)
         }
+    }
+
+    /// A row's Move Up (-1) or Move Down (+1) VoiceOver action (FR09):
+    /// moves `book` one place in the order the list shows, a folder's
+    /// manual order or the reading list, which saves at once, and tells
+    /// VoiceOver the book's new place, "Dune, 3 of 12", so many moves in a
+    /// row each say where the book stands. Should the list have changed
+    /// since the row offered the action, so the book cannot move that way,
+    /// it says so rather than nothing.
+    private func moveSayingPlace(_ book: Book, direction: Int) {
+        guard let target = reorderTarget,
+              let result = libraryViewModel.moveBook(book.id, direction: direction, in: target) else {
+            announceToVoiceOver(ManualBookOrder.cannotMoveAnnouncement(book.title, direction: direction))
+            return
+        }
+        announceToVoiceOver(result.placeAnnouncement)
     }
 
     /// Announce what a library index recovery action did. When the action
