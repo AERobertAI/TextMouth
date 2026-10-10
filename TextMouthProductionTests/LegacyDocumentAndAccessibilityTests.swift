@@ -182,12 +182,15 @@ final class LegacyDocumentContentModelTests: XCTestCase {
 /// Bookmark rows are SwiftUI views, so their labels are read on the main actor.
 @MainActor
 final class LegacyBookmarkAccessibilityTests: XCTestCase {
+    // Each label ends with the day the bookmark was added, as its row shows
+    // it (TODO A10).
+
     func testLabelIncludesBookmarkNumberAndContainingHeading() {
         let row = BookmarkRow(
             bookmark: Bookmark(number: 3, chapterIndex: 4, characterOffset: 0),
             headingText: "The Long Walk"
         )
-        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 3, The Long Walk")
+        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 3, The Long Walk, added \(row.bookmark.dateText)")
     }
 
     func testLabelIncludesNoteWhenPresent() {
@@ -199,7 +202,7 @@ final class LegacyBookmarkAccessibilityTests: XCTestCase {
         )
         XCTAssertEqual(
             BookmarkRow(bookmark: bookmark, headingText: "Opening").bookmarkAccessibilityLabel,
-            "Bookmark 1, Opening, Note: Important passage"
+            "Bookmark 1, Opening, Note: Important passage, added \(bookmark.dateText)"
         )
     }
 
@@ -208,7 +211,7 @@ final class LegacyBookmarkAccessibilityTests: XCTestCase {
             bookmark: Bookmark(number: 2, chapterIndex: 1, characterOffset: 0),
             headingText: "Second Part"
         )
-        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 2, Second Part")
+        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 2, Second Part, added \(row.bookmark.dateText)")
     }
 
     func testLabelContainsBookmarkOnlyOnce() {
@@ -226,7 +229,7 @@ final class LegacyBookmarkAccessibilityTests: XCTestCase {
             bookmark: Bookmark(number: 5, chapterIndex: 99, characterOffset: 0),
             headingText: nil
         )
-        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 5")
+        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 5, added \(row.bookmark.dateText)")
     }
 
     func testRowProvidesNavigationHint() {

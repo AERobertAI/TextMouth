@@ -220,12 +220,14 @@ struct SleepTimerView: View {
                         setNewTimer(.minutes(customMinutes))
                     }
                     .accessibilityLabel("Custom timer minutes")
-                    .accessibilityValue("\(customMinutes) minutes")
+                    .accessibilityValue(customMinutesSpoken)
                     .accessibilityHint(Self.customMinutesHint)
+                // Its value is the field's, unit and all: it was the bare
+                // number, "Adjust minutes, 30" (TODO A10).
                 Stepper("", value: $customMinutes, in: 1...480, step: Self.customMinutesStep)
                     .labelsHidden()
                     .accessibilityLabel(Self.adjustMinutesLabel)
-                    .accessibilityValue("\(customMinutes)")
+                    .accessibilityValue(customMinutesSpoken)
                 Text("min")
                     .foregroundColor(.secondary)
 
@@ -272,6 +274,12 @@ struct SleepTimerView: View {
             .accessibilityHint(endOfBookHint)
             .help(endOfBookHint)
         }
+    }
+
+    /// The custom minutes as the field and its stepper both speak them,
+    /// unit and all: "30 minutes".
+    private var customMinutesSpoken: String {
+        "\(customMinutes) minutes"
     }
 
     /// Start (or restart) the timer and optionally dismiss the sheet.

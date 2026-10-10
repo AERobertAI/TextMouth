@@ -11,8 +11,10 @@ struct SoundEffectsSettingsView: View {
                     .accessibilityHint("When enabled, short sounds play for playback actions")
 
                 VStack(alignment: .leading, spacing: 4) {
+                    // The volume for the eye; VoiceOver hears it once, as
+                    // the slider's value (TODO A10).
                     Text("Volume: \(Int(soundEffectService.volume * 100))%")
-                        .accessibilityLabel("Sound effect volume: \(Int(soundEffectService.volume * 100)) percent")
+                        .accessibilityHidden(true)
 
                     Slider(value: $soundEffectService.volume, in: 0...1, step: 0.05) {
                         Text("Volume")

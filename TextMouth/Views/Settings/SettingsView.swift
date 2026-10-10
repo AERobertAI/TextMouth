@@ -190,8 +190,10 @@ struct VoiceSettingsView: View {
 
             Section {
                 VStack(alignment: .leading, spacing: 8) {
+                    // The speed for the eye; VoiceOver hears it once, as
+                    // the slider's value (TODO A10).
                     Text("Default Speed: \(Int(settingsViewModel.wordsPerMinute)) WPM")
-                        .accessibilityLabel("Default speed: \(Int(settingsViewModel.wordsPerMinute)) words per minute")
+                        .accessibilityHidden(true)
 
                     Slider(
                         value: $settingsViewModel.wordsPerMinute,
@@ -200,7 +202,9 @@ struct VoiceSettingsView: View {
                     ) {
                         Text("Words per minute")
                     }
-                    .accessibilityLabel("Speed slider")
+                    // VoiceOver says the control's kind itself, so the label
+                    // names the setting alone (TODO A10).
+                    .accessibilityLabel("Default speed")
                     .accessibilityValue("\(Int(settingsViewModel.wordsPerMinute)) words per minute")
 
                     Text("Default speed for new books. Each book can override this with its own speed.")
@@ -213,8 +217,10 @@ struct VoiceSettingsView: View {
 
             Section {
                 VStack(alignment: .leading, spacing: 8) {
+                    // The pitch for the eye; VoiceOver hears it once, as the
+                    // slider's value (TODO A10).
                     Text("Default Pitch: \(SpeechService.pitchLabel(settingsViewModel.pitchMultiplier))")
-                        .accessibilityLabel("Default pitch: \(SpeechService.pitchLabel(settingsViewModel.pitchMultiplier))")
+                        .accessibilityHidden(true)
 
                     Slider(
                         value: $settingsViewModel.pitchMultiplier,
@@ -223,7 +229,7 @@ struct VoiceSettingsView: View {
                     ) {
                         Text("Pitch")
                     }
-                    .accessibilityLabel("Pitch slider")
+                    .accessibilityLabel("Default pitch")
                     .accessibilityValue(SpeechService.pitchLabel(settingsViewModel.pitchMultiplier))
 
                     Text("Default pitch for new books. 1.0 is normal. Each book can override this.")
@@ -330,8 +336,10 @@ struct PlaybackSettingsView: View {
 
                     if settingsViewModel.rewindSmartMode {
                         VStack(alignment: .leading, spacing: 4) {
+                            // The pause for the eye; VoiceOver hears it
+                            // once, as the stepper's value (TODO A10).
                             Text("Minimum pause: \(Int(settingsViewModel.rewindSmartThreshold)) seconds")
-                                .accessibilityLabel("Minimum pause before rewinding: \(Int(settingsViewModel.rewindSmartThreshold)) seconds")
+                                .accessibilityHidden(true)
                             // The stepper's own label is empty: a hidden
                             // title would be spoken before the accessibility
                             // label ("Seconds, Minimum pause threshold").
@@ -359,8 +367,10 @@ struct PlaybackSettingsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     let level = Int(settingsViewModel.punctuationPauseLevel)
                     let levelName = ["Off", "Subtle", "Moderate", "Heavy"][min(level, 3)]
+                    // The level for the eye; VoiceOver hears it once, as the
+                    // slider's value (TODO A10).
                     Text("Punctuation pauses: \(levelName)")
-                        .accessibilityLabel("Punctuation pause level: \(levelName)")
+                        .accessibilityHidden(true)
 
                     Slider(
                         value: $settingsViewModel.punctuationPauseLevel,
@@ -385,9 +395,12 @@ struct PlaybackSettingsView: View {
                     .accessibilityLabel("Auto-play after navigation")
                     .accessibilityHint("When enabled, playback starts automatically after jumping to a heading, bookmark, or search result")
 
+                // The hint for the eye; VoiceOver hears it once, as the
+                // checkbox's hint (TODO A10).
                 Text("Automatically start playing when you navigate to a heading, bookmark, or search result.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
             } header: {
                 Text("Navigation")
             }
@@ -413,13 +426,17 @@ struct PlaybackSettingsView: View {
 
             Section {
                 VStack(alignment: .leading, spacing: 4) {
-                    if settingsViewModel.sleepFadeOutDuration > 0 {
-                        Text("Fade out: \(Int(settingsViewModel.sleepFadeOutDuration)) seconds")
-                            .accessibilityLabel("Sleep timer fade out: \(Int(settingsViewModel.sleepFadeOutDuration)) seconds")
-                    } else {
-                        Text("Fade out: Off")
-                            .accessibilityLabel("Sleep timer fade out: off, playback stops instantly")
+                    // The fade for the eye; VoiceOver hears it once, as the
+                    // stepper's value, and the caption below says what off
+                    // does (TODO A10).
+                    Group {
+                        if settingsViewModel.sleepFadeOutDuration > 0 {
+                            Text("Fade out: \(Int(settingsViewModel.sleepFadeOutDuration)) seconds")
+                        } else {
+                            Text("Fade out: Off")
+                        }
                     }
+                    .accessibilityHidden(true)
                     // The stepper's own label is empty: a hidden title
                     // would be spoken before the accessibility label
                     // ("Seconds, Fade out duration").

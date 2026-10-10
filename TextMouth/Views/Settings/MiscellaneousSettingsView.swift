@@ -28,9 +28,11 @@ struct MiscellaneousSettingsView: View {
 
             if settingsViewModel.bluetoothMonitoringEnabled {
                 VStack(alignment: .leading, spacing: 8) {
-                    // VoiceOver reads this text as shown, and the slider's
-                    // value is the same phrase, so both say "1 second".
+                    // The delay for the eye, in the slider's spoken words,
+                    // "1 second"; VoiceOver hears it once, as the slider's
+                    // value (TODO A10).
                     Text("Disconnect delay: \(disconnectDelay)")
+                        .accessibilityHidden(true)
 
                     Slider(
                         value: $settingsViewModel.bluetoothDisconnectDelay,
@@ -39,7 +41,9 @@ struct MiscellaneousSettingsView: View {
                     ) {
                         Text("Disconnect delay")
                     }
-                    .accessibilityLabel("Bluetooth disconnect delay slider")
+                    // VoiceOver says the control's kind itself, so the label
+                    // names the setting alone (TODO A10).
+                    .accessibilityLabel("Bluetooth disconnect delay")
                     .accessibilityValue(disconnectDelay)
 
                     Text("How long to suppress spurious media commands after a Bluetooth device disconnects. Increase if playback sometimes auto-resumes after removing headphones.")
@@ -101,8 +105,10 @@ struct MiscellaneousSettingsView: View {
 
             // Window slider
             VStack(alignment: .leading, spacing: 6) {
+                // The window for the eye; VoiceOver hears it once, as the
+                // slider's value (TODO A10).
                 Text("Time window: \(formattedWindow)")
-                    .accessibilityLabel("Time window: \(formattedWindow)")
+                    .accessibilityHidden(true)
                 Slider(
                     value: $settingsViewModel.restartTimerGestureWindow,
                     in: 0.5...10,
@@ -110,7 +116,7 @@ struct MiscellaneousSettingsView: View {
                 ) {
                     Text("Time window")
                 }
-                .accessibilityLabel("Gesture time window slider")
+                .accessibilityLabel("Gesture time window")
                 .accessibilityValue(formattedWindow)
                 Text("Maximum total elapsed time for the sequence to count as a match. Shorter windows reduce accidental matches but require quicker presses.")
                     .font(.caption)

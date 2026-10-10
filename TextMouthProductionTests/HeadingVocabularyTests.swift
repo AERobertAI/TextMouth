@@ -363,9 +363,12 @@ final class ReaderHeadingLocationTests: XCTestCase {
         XCTAssertEqual(reader.headingText(forBookmark: inLastUnit), "Middle")
         XCTAssertEqual(
             panel.bookmarkRow(for: beforeMiddle).bookmarkAccessibilityLabel,
-            "Bookmark 1, Opening, Note: Check"
+            "Bookmark 1, Opening, Note: Check, added \(beforeMiddle.dateText)"
         )
-        XCTAssertEqual(panel.bookmarkRow(for: inLastUnit).bookmarkAccessibilityLabel, "Bookmark 3, Middle")
+        XCTAssertEqual(
+            panel.bookmarkRow(for: inLastUnit).bookmarkAccessibilityLabel,
+            "Bookmark 3, Middle, added \(inLastUnit.dateText)"
+        )
     }
 
     func testBookmarkBeforeTheFirstHeadingOmitsItsLocation() {
@@ -387,7 +390,7 @@ final class ReaderHeadingLocationTests: XCTestCase {
         XCTAssertNil(reader.headingText(forBookmark: bookmark))
         XCTAssertEqual(
             BookmarkPanelView(viewModel: reader).bookmarkRow(for: bookmark).bookmarkAccessibilityLabel,
-            "Bookmark 1"
+            "Bookmark 1, added \(bookmark.dateText)"
         )
     }
 

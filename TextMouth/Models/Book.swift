@@ -1223,16 +1223,25 @@ struct Bookmark: Identifiable, Codable, Hashable {
     }
 
     /// Concise label shared by bookmark rows and the bookmarks rotor, such as
-    /// "Bookmark 3, The Battle, Note: Check this". `headingText` names the
-    /// heading containing the bookmark. When it is unknown (content not
-    /// loaded, or no heading at that point) the location is simply omitted:
-    /// internal content-unit numbers are never shown in its place.
+    /// "Bookmark 3, The Battle, Note: Check this, added October 9, 2026".
+    /// `headingText` names the heading containing the bookmark. When it is
+    /// unknown (content not loaded, or no heading at that point) the
+    /// location is simply omitted: internal content-unit numbers are never
+    /// shown in its place. The date is the one the row shows (`dateText`),
+    /// which VoiceOver did not hear until TODO A10.
     func accessibilityLabel(headingText: String?) -> String {
         var parts = ["Bookmark \(number)"]
         if let headingText = headingText?.nonBlank {
             parts.append(headingText)
         }
         if !label.isEmpty { parts.append("Note: \(label)") }
+        parts.append("added \(dateText)")
         return parts.joined(separator: ", ")
+    }
+
+    /// The day the bookmark was added, as its row shows it and its label
+    /// speaks it: the long date of the user's locale, "October 9, 2026".
+    var dateText: String {
+        dateCreated.formatted(date: .long, time: .omitted)
     }
 }

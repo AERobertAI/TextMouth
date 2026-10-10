@@ -718,7 +718,8 @@ struct BookmarkRow: View {
 
             Spacer()
 
-            Text(bookmark.dateCreated, style: .date)
+            // The same words the row's label ends with (TODO A10).
+            Text(bookmark.dateText)
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }

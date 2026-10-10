@@ -107,10 +107,13 @@ struct AudioEditorPromptSheet: View {
                 .accessibilityLabel(prompt.fieldLabel)
                 .accessibilityHint(prompt.explanation)
                 .modifier(InitialVoiceOverFocusModifier(isTarget: true))
+            // What to type, for the eye; VoiceOver hears it once, as the
+            // field's hint (TODO A10).
             Text(prompt.explanation)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityHidden(true)
             if !problem.isEmpty {
                 Text(problem)
                     .foregroundColor(.red)

@@ -891,8 +891,10 @@ struct BookVoicePickerView: View {
 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
+                        // The speed for the eye; VoiceOver hears it once, as
+                        // the slider's value (TODO A10).
                         Text("Speed: \(Int(viewModel.speechService.wordsPerMinute)) WPM")
-                            .accessibilityLabel("Speed: \(Int(viewModel.speechService.wordsPerMinute)) words per minute")
+                            .accessibilityHidden(true)
 
                         Slider(
                             value: Binding(
@@ -910,7 +912,9 @@ struct BookVoicePickerView: View {
                         ) {
                             Text("Words per minute")
                         }
-                        .accessibilityLabel("Speed slider")
+                        // VoiceOver says the control's kind itself, so the
+                        // label names the setting alone (TODO A10).
+                        .accessibilityLabel("Speed")
                         .accessibilityValue("\(Int(viewModel.speechService.wordsPerMinute)) words per minute")
                     }
                 } header: {
@@ -919,8 +923,10 @@ struct BookVoicePickerView: View {
 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
+                        // The pitch for the eye; VoiceOver hears it once, as
+                        // the slider's value (TODO A10).
                         Text("Pitch: \(SpeechService.pitchLabel(viewModel.speechService.pitchMultiplier))")
-                            .accessibilityLabel("Pitch: \(SpeechService.pitchLabel(viewModel.speechService.pitchMultiplier))")
+                            .accessibilityHidden(true)
 
                         Slider(
                             value: Binding(
@@ -937,7 +943,7 @@ struct BookVoicePickerView: View {
                         ) {
                             Text("Pitch")
                         }
-                        .accessibilityLabel("Pitch slider")
+                        .accessibilityLabel("Pitch")
                         .accessibilityValue(SpeechService.pitchLabel(viewModel.speechService.pitchMultiplier))
                     }
                 } header: {
@@ -1191,9 +1197,9 @@ struct BookInfoBar: View {
                 .foregroundColor(.orange)
                 .accessibilityElement(children: .combine)
                 // "Sleep timer: 4:59 remaining", or where a timer set for
-                // a place in the book stops playback.
+                // a place in the book stops playback. The label holds the
+                // time, so there is no value to read it again (TODO A10).
                 .accessibilityLabel(viewModel.sleepTimerService.spokenLabel)
-                .accessibilityValue(viewModel.sleepTimerService.formattedRemaining)
             }
         }
         .padding(.horizontal)

@@ -65,6 +65,133 @@ final class EditModeBarExitTests: XCTestCase {
     }
 }
 
+// MARK: - Read Once, Read Right
+
+/// Each value is read once and with its unit, and no label names the kind
+/// of control, which VoiceOver says itself. The captions above the sliders
+/// and steppers that repeated their values are hidden from VoiceOver; SwiftUI
+/// builds no accessibility element for text in a hosted window, so those are
+/// read from the code, and these tests read the controls.
+@MainActor
+final class ReadOnceTests: XCTestCase {
+    /// The Voice tab's sliders, the Miscellaneous tab's, and the reader's
+    /// voice sheet's are labelled by their setting alone, with their values
+    /// in words.
+    func testSlidersAreLabelledByTheirSettingAlone() throws {
+        let settings = try makeIsolatedSettings()
+        settings.bluetoothMonitoringEnabled = true
+        settings.restartTimerGestureEnabled = true
+
+        try withFixedHostedControls(VoiceSettingsView().environmentObject(settings)) { controls in
+            let sliders = controls.filter { $0.role == .slider }
+            XCTAssertEqual(sliders.map(\.label), ["Default speed", "Default pitch"])
+            XCTAssertEqual(
+                sliders.map(\.valueDescription),
+                ["\(Int(settings.wordsPerMinute)) words per minute", SpeechService.pitchLabel(settings.pitchMultiplier)]
+            )
+        }
+        try withFixedHostedControls(MiscellaneousSettingsView().environmentObject(settings)) { controls in
+            XCTAssertEqual(
+                controls.filter { $0.role == .slider }.map(\.label),
+                ["Bluetooth disconnect delay", "Gesture time window"]
+            )
+        }
+        let reader = makeTextReader()
+        defer { reader.close() }
+        try withFixedHostedControls(BookVoicePickerView(viewModel: reader)) { controls in
+            let sliders = controls.filter { $0.role == .slider }
+            XCTAssertEqual(sliders.map(\.label), ["Speed", "Pitch"])
+            XCTAssertFalse(controls.contains { $0.label.localizedCaseInsensitiveContains("slider") }, "\(controls.map(\.label))")
+        }
+    }
+
+    /// The custom sleep timer's stepper says its minutes with their unit,
+    /// as the field beside it does: "30 minutes", not "30".
+    func testTheCustomTimerStepperSaysItsUnit() throws {
+        let reader = makeTextReader()
+        defer { reader.close() }
+        let sheet = SleepTimerView(
+            viewModel: reader,
+            sleepTimerService: SleepTimerService(userDefaults: makeSandboxedPreferences("a10-sleep-timer")),
+            onClose: {},
+            autoClose: false
+        )
+        try withFixedHostedControls(sheet) { controls in
+            let stepper = try XCTUnwrap(controls.first { $0.role == .incrementor }, "\(controls.map(\.label))")
+            XCTAssertEqual(stepper.label, SleepTimerView.adjustMinutesLabel)
+            XCTAssertEqual(stepper.valueDescription, "30 minutes")
+        }
+    }
+
+    /// A bookmark's row shows the day it was added, and its label, which
+    /// the row and the Bookmarks rotor speak, ends with the same words.
+    func testABookmarksLabelEndsWithTheDayItsRowShows() throws {
+        let day = try XCTUnwrap(Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 9, hour: 12)))
+        let bookmark = Bookmark(number: 2, chapterIndex: 0, characterOffset: 0, label: "Ferry times", dateCreated: day)
+        XCTAssertEqual(bookmark.dateText, day.formatted(date: .long, time: .omitted))
+        XCTAssertTrue(bookmark.dateText.contains("2026"), bookmark.dateText)
+        XCTAssertEqual(
+            BookmarkRow(bookmark: bookmark, headingText: "Harbour").bookmarkAccessibilityLabel,
+            "Bookmark 2, Harbour, Note: Ferry times, added \(bookmark.dateText)"
+        )
+    }
+
+    // MARK: Fixtures
+
+    /// Hosts `view` in a frame of its own fixed size, so the window never
+    /// follows its content, and passes the AppKit controls VoiceOver reads
+    /// to `body`; skipped where hosted windows expose none.
+    private func withFixedHostedControls<Content: View>(
+        _ view: Content,
+        _ body: ([AccessibleControl]) throws -> Void
+    ) throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let size = NSSize(width: 600, height: 900)
+        try withHostedView(
+            view.frame(width: size.width, height: size.height),
+            size: size,
+            until: { !self.accessibleControls(in: $0).isEmpty }
+        ) { hostingView in
+            try body(accessibleControls(in: hostingView))
+        }
+    }
+
+    /// A reader of a text book whose file does not exist, with settings of
+    /// its own: enough for the sheets, which read but never play it.
+    private func makeTextReader() -> ReaderViewModel {
+        let book = Book(
+            title: "Read Once",
+            format: .txt,
+            filePath: TextMouthPaths.root.appendingPathComponent("missing-\(UUID().uuidString).txt").path,
+            md5Hash: UUID().uuidString
+        )
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library(books: [book])
+        return ReaderViewModel(
+            book: book,
+            libraryViewModel: library,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        )
+    }
+
+    /// A settings model of the test's own, whose preferences and config.json
+    /// are the test's.
+    private func makeIsolatedSettings() throws -> SettingsViewModel {
+        let configFile = try makeTestDirectory("A10ReadOnce").appendingPathComponent("config.json")
+        let configService = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
+            write: { data, url in try data.write(to: url, options: .atomic) },
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ))
+        return SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: makeSandboxedPreferences("a10-read-once"),
+            configService: configService
+        )
+    }
+}
+
 // MARK: - Hints That Say What Happens
 
 /// Each hint the audit found naming a gesture, a click, a menu to open, or
