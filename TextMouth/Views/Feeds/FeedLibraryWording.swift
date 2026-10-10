@@ -208,9 +208,10 @@ extension FeedWording {
     /// server says the file is gone, …"; "…, Waiting to Download, it
     /// downloads once this Mac is on a network without data limits, …";
     /// "Ep. 368, Not Downloaded, 42 percent, 16 minutes remaining, 2
-    /// bookmarks, July 17, 2026, 64 minutes"; and, moved into the library
-    /// (FR11, branch D), "Ep. 368, In Library, July 17, 2026, 64 minutes". A
-    /// played item says no progress, only its bookmarks.
+    /// bookmarks, July 17, 2026, 1 hour, 4 minutes"; and, moved into the
+    /// library (FR11, branch D), "Ep. 368, In Library, July 17, 2026, 1
+    /// hour, 4 minutes", each duration as `TimeFormatting.spoken` says it
+    /// (#1936). A played item says no progress, only its bookmarks.
     static func itemRowLabel(_ row: FeedItemRowContent) -> String {
         var parts = [row.title]
         if row.isPlayed { parts.append(playedNote(isArticle: row.isArticle)) }

@@ -181,11 +181,14 @@ enum FeedItemPackage {
     /// listener's own Delete Download does, to the Trash or for good as the
     /// removal setting says: for a text book, an article, with its
     /// content.md, which may hold an edit, as one item, so the Trash holds
-    /// one, which puts both back (REV11). Both first move, by rename, into a
+    /// one folder with both (REV11). Both first move, by rename, into a
     /// folder named after the file, inside a hidden holder beside the
-    /// package in its feed's folder; a refusal puts both back in the
-    /// package. Should something keep them from going back, they stay in
-    /// the holder, which is then left, with one log line, rather than lost.
+    /// package in its feed's folder, which is then deleted, so the Trash's
+    /// Put Back cannot return them into the package (#1935). A refusal puts both
+    /// back in the package. Should something keep them from going back, they
+    /// stay in the holder, which is then left, with one log line, rather
+    /// than lost; the next launch sweeps a holder left so, or by a crash
+    /// before the Trash took it (`FeedCenter.sweepRemovalHolders()`).
     /// - Throws: why the file, or the file and its text, could not be
     ///   removed; nothing was removed then.
     @MainActor
