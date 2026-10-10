@@ -407,12 +407,13 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(world.server.requests(to: "/audio/new.m4a").map(\.allowsExpensiveNetworkAccess), [false])
     }
 
-    /// An automatic download a network with data limits refuses says it
-    /// waits for one without them, and is tried again at the next refresh
-    /// TextMouth makes by itself that reaches the network, since such a
-    /// refresh is refused on that network too. A refresh the listener asks
-    /// for says nothing of the network's limits, and one put off by them
-    /// shows they are still there: neither tries it again.
+    /// An automatic download a network with data limits refuses waits
+    /// (FR11), saying it downloads on a network without them, never written
+    /// so, and is tried again at the next refresh TextMouth makes by itself
+    /// that reaches the network, since such a refresh is refused on that
+    /// network too. A refresh the listener asks for says nothing of the
+    /// network's limits, and one put off by them shows they are still
+    /// there: neither tries it again.
     func testAnAutomaticDownloadPutOffByAMeteredNetworkIsTriedAgainLater() async throws {
         let world = try FeedTestWorld(self, label: "FeedMetered")
         FeedSettings.autoDownloadPreference.write(true, to: world.preferences)
@@ -432,14 +433,19 @@ final class FeedDownloadTests: XCTestCase {
 
         _ = await world.center.refreshAll(origin: .scheduled)
         await waitFor("the new episode's download is put off") {
-            world.center.store.record(of: feed.id)?.item("guid:new")?.state.failureReason != nil
+            world.center.store.record(of: feed.id)?.item("guid:new")?.state.waitingReason != nil
                 && world.center.downloads.current == nil
         }
-        XCTAssertEqual(
-            world.center.store.record(of: feed.id)?.item("guid:new")?.state.failureReason,
-            "“New” waits for a network without data limits to download by itself."
-        )
+        let waiting = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:new")?.state)
+        XCTAssertEqual(waiting, .waiting("it downloads on a network without data limits"))
+        XCTAssertEqual(waiting.visibleNote, "Waiting to Download")
         XCTAssertEqual(world.center.downloads.putOff.map(\.itemID), ["guid:new"])
+        await world.center.store.flush()
+        let onDisk = try FeedRecordCoding.decoder().decode(
+            FeedRecord.self,
+            from: Data(contentsOf: FeedPaths.recordFile(of: feed.id, in: world.recordsFolder))
+        )
+        XCTAssertEqual(onDisk.item("guid:new")?.state, .notDownloaded, "a wait was written to disk")
 
         _ = await world.center.refresh(feed.id)
         let skipped = await world.center.refreshAll(origin: .scheduled)

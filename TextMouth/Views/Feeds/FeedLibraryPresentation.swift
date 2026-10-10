@@ -53,7 +53,7 @@ extension FeedCenter {
                 counts.downloaded += 1
             case .downloading:
                 counts.downloading += 1
-            case .notDownloaded, .failed:
+            case .notDownloaded, .waiting, .failed:
                 break
             }
             if isNew(item, of: record.feed) {

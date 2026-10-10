@@ -133,14 +133,19 @@ struct FeedItem: Codable, Equatable, Identifiable, Sendable {
 /// Where an item's download stands (FR03).
 ///
 /// A download in progress is published while it runs, with its progress, so
-/// the library can show "Downloading 40%" (`visibleNote`); the item's record
-/// file never holds it (`FeedRecord.durable`), since the download ends with
-/// the app.
+/// the library can show "Downloading 40%" (`visibleNote`), and so is one the
+/// newest-N rule put off (FR11, `waiting`); the item's record file never
+/// holds either (`FeedRecord.durable`), since both end with the app.
 enum FeedItemState: Equatable, Sendable {
     /// The item has no book.
     case notDownloaded
     /// The item is waiting to download, or downloading, with how far it has got.
     case downloading(BookDownloadProgress)
+    /// The newest-N rule's download of the item waits, put off by itself for
+    /// the reason given (`FeedDownloadWait.reason`), which a listener reads:
+    /// for a network without data limits, or for room on this Mac (FR11).
+    /// It is tried again by itself, and Download downloads it now.
+    case waiting(String)
     /// The item's last download failed, for the reason given, which a
     /// listener reads; Download tries it again.
     case failed(String)
@@ -165,6 +170,20 @@ enum FeedItemState: Equatable, Sendable {
         return nil
     }
 
+    /// Why the item waits to download, if the newest-N rule put its download
+    /// off (FR11).
+    var waitingReason: String? {
+        if case .waiting(let reason) = self { return reason }
+        return nil
+    }
+
+    /// Whether the state lasts only while TextMouth runs: a download under
+    /// way, or one waiting, each of which a record file holds as not
+    /// downloaded (`FeedRecord.durable`).
+    var isTransient: Bool {
+        isDownloading || waitingReason != nil
+    }
+
     /// The note a list shows for the state, which a braille display shows
     /// too: "Downloading 40%" is worded once, for books in the cloud and
     /// feed items alike (`BookCloudState`).
@@ -172,6 +191,7 @@ enum FeedItemState: Equatable, Sendable {
         switch self {
         case .notDownloaded: return "Not Downloaded"
         case .downloading(let progress): return BookCloudState.downloading(progress).visibleNote ?? "Downloading"
+        case .waiting: return "Waiting to Download"
         case .failed: return "Download Failed"
         case .downloaded: return "Downloaded"
         }
@@ -221,12 +241,12 @@ extension FeedItemState: Codable {
         }
     }
 
-    /// Writes a state. A download in progress is written as not downloaded:
-    /// it does not outlive the app that runs it.
+    /// Writes a state. A download in progress, or one waiting, is written as
+    /// not downloaded: it does not outlive the app that runs it.
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case .notDownloaded, .downloading:
+        case .notDownloaded, .downloading, .waiting:
             try container.encode(Kind.notDownloaded, forKey: .kind)
         case .failed(let reason):
             try container.encode(Kind.failed, forKey: .kind)

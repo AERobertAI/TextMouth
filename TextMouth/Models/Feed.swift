@@ -147,9 +147,10 @@ enum FeedTransport {
 /// keeps its own format.
 ///
 /// The items are kept newest first, the order the library lists them in. A
-/// download in progress is never written as such: its item is written as
-/// not downloaded, so neither a later launch nor another Mac sharing the
-/// library finds a download that is no longer running (`FeedItemState`).
+/// download in progress, or one waiting (FR11), is never written as such:
+/// its item is written as not downloaded, so neither a later launch nor
+/// another Mac sharing the library finds a download that is no longer
+/// running (`FeedItemState`).
 struct FeedRecord: Codable, Equatable, Sendable {
     /// The layout this version of TextMouth writes. A later version may add
     /// fields, which this version ignores and leaves out of its next write.
@@ -226,23 +227,24 @@ struct FeedRecord: Codable, Equatable, Sendable {
     /// deleted, or, under "Only the newest 5 listed", the short list: the
     /// newest of them (`newestItems(_:)`), less those played whose files are
     /// not here, so a played episode drops off the list, and every item
-    /// whose file is here (`hasFile`) or that downloads, wherever it falls.
-    /// The items left out stay in the record, hidden, and come back when the
-    /// list widens.
+    /// whose file is here (`hasFile`) or that downloads, or waits to,
+    /// wherever it falls. The items left out stay in the record, hidden, and
+    /// come back when the list widens.
     func listedItems(under listing: FeedItemPolicy.Listing, hasFile: (FeedItem) -> Bool) -> [FeedItem] {
         guard case .newest(let count) = listing else { return listedItems }
         let newest = Set(newestItems(count).map(\.id))
         return listedItems.filter { item in
-            hasFile(item) || item.state.isDownloading || (newest.contains(item.id) && item.playedDate == nil)
+            hasFile(item) || item.state.isTransient || (newest.contains(item.id) && item.playedDate == nil)
         }
     }
 
-    /// The record as its file holds it: each download in progress written as
-    /// not downloaded. Two records with the same durable form write the same
-    /// file, so a change of progress alone writes nothing.
+    /// The record as its file holds it: each download in progress, or
+    /// waiting (FR11), written as not downloaded. Two records with the same
+    /// durable form write the same file, so a change of progress alone, or a
+    /// download put off, writes nothing.
     var durable: FeedRecord {
         var durable = self
-        for index in durable.items.indices where durable.items[index].state.isDownloading {
+        for index in durable.items.indices where durable.items[index].state.isTransient {
             durable.items[index].state = .notDownloaded
         }
         return durable

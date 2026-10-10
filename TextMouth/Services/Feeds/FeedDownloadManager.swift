@@ -38,6 +38,47 @@ enum FeedDownloadError: Error, Equatable, Sendable {
     }
 }
 
+// MARK: - Why a Download Waits (FR11)
+
+/// Why a download the newest-N rule asked for waits rather than fails
+/// (FR11): it is put off by itself and tried again by itself, its item
+/// saying "Waiting to Download" and why (`FeedItemState.waiting`).
+enum FeedDownloadWait: Equatable, Sendable {
+    /// A network with data limits refused it: it is asked for again once a
+    /// refresh TextMouth makes by itself reaches a network without them.
+    case network
+    /// The library's disk lacks room for the file, of this many bytes, and
+    /// the space TextMouth keeps free: the rule tries it again at its next
+    /// pass, and never removes anything to make room.
+    case room(bytes: Int64)
+
+    /// The wait a failure of one of the rule's downloads is: a network with
+    /// data limits, or too little room; nil for any other failure, which
+    /// fails as a listener's download does.
+    init?(_ failure: FeedDownloadError) {
+        switch failure {
+        case .transfer(.constrainedNetwork):
+            self = .network
+        case .notEnoughSpace(let bytes):
+            self = .room(bytes: bytes)
+        default:
+            return nil
+        }
+    }
+
+    /// Why, as the item's row says it after "Waiting to Download": "it
+    /// downloads on a network without data limits", or "it needs room for
+    /// 61 MB on this Mac".
+    var reason: String {
+        switch self {
+        case .network:
+            return "it downloads on a network without data limits"
+        case .room(let bytes):
+            return "it needs room for \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)) on this Mac"
+        }
+    }
+}
+
 extension FeedFetchError {
     /// The sentence about a download of the item titled `title` that failed
     /// this way, naming the server by its host alone.
@@ -220,7 +261,7 @@ final class FeedDownloadManager {
 
     /// Stops the download of the item `itemID`, or takes it out of the
     /// queue, or out of the downloads put off, forgetting any part
-    /// downloaded; the item is not downloaded.
+    /// downloaded; the item is not downloaded, nor waiting (FR11).
     func cancel(_ itemID: FeedItem.ID, of feedID: UUID) {
         putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
         if let waiting = queue.firstIndex(where: { $0.feedID == feedID && $0.itemID == itemID }) {
@@ -228,14 +269,27 @@ final class FeedDownloadManager {
             store.updateItem(itemID, of: feedID) { $0.state = .notDownloaded }
         } else if current?.feedID == feedID, current?.itemID == itemID {
             currentTask?.cancel()
+        } else {
+            // Put off by itself, for a network or for room: no longer.
+            store.updateItem(itemID, of: feedID) { item in
+                if item.state.waitingReason != nil {
+                    item.state = .notDownloaded
+                }
+            }
         }
         try? FileManager.default.removeItem(at: resumeDataFile(for: itemID, of: feedID))
     }
 
-    /// Whether the item `itemID` waits or downloads.
+    /// Whether the item `itemID` waits in the queue or downloads.
     func isDownloading(_ itemID: FeedItem.ID, of feedID: UUID) -> Bool {
         (current?.feedID == feedID && current?.itemID == itemID)
             || queue.contains { $0.feedID == feedID && $0.itemID == itemID }
+    }
+
+    /// Whether the item `itemID`'s download was put off by a network with
+    /// data limits, waiting for a refresh to reach one without them (FR11).
+    func isPutOff(_ itemID: FeedItem.ID, of feedID: UUID) -> Bool {
+        putOff.contains { $0.feedID == feedID && $0.itemID == itemID }
     }
 
     /// Takes every waiting, running, and put-off download of the feed
@@ -322,12 +376,17 @@ final class FeedDownloadManager {
             }
             // As it stands now: the listener may have asked for it meanwhile.
             let asked = latest(request)
-            if failure == .transfer(.constrainedNetwork), asked.origin == .window,
-               !putOff.contains(where: { $0.feedID == request.feedID && $0.itemID == request.itemID }) {
-                // A network with data limits put it off: its failure says it
-                // waits, and it is tried again once one without them is
-                // reached.
-                putOff.append(asked)
+            if asked.origin == .window, let wait = FeedDownloadWait(failure) {
+                // The rule's download waits, rather than fails (FR11): for a
+                // network without data limits, asked for again once a
+                // refresh reaches one; for room, tried again at the rule's
+                // next pass. Nothing is announced: nobody asked to hear it.
+                if wait == .network, !isPutOff(request.itemID, of: request.feedID) {
+                    putOff.append(asked)
+                }
+                store.updateItem(request.itemID, of: request.feedID) { $0.state = .waiting(wait.reason) }
+                DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_WAITING: \(item.title) (\(feed.title)): \(wait.reason)")
+                return
             }
             let message = failure.message(about: item.title)
             store.updateItem(request.itemID, of: request.feedID) { item in

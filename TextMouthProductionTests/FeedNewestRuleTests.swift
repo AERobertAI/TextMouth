@@ -141,6 +141,67 @@ final class FeedNewestRuleTests: XCTestCase {
         XCTAssertEqual(saved.map(\.origin), [.window, .listener])
     }
 
+    // MARK: - Waiting to Download
+
+    /// Without room for a file beside the space TextMouth keeps free, the
+    /// rule's download waits, saying it needs room, fetching nothing and
+    /// never put off for a network; the listener's fails, saying there
+    /// isn't room. Cancel Download ends the wait, and with room again the
+    /// rule's download goes ahead.
+    func testADownloadWithoutRoomWaitsWhileTheListenersFails() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleRoom")
+        let audio = try FeedMediaFixtures.silentAAC()
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        world.server.serve("/audio/2.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        let feed = try await subscribe(world, episodes: 2)
+        // Room for 500 bytes beside the reserve; each episode says 1,000.
+        world.freeSpace.value = ArchiveLimits.standard.freeSpaceReserve + 500
+
+        world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        world.center.download("guid:ep-2", of: feed.id)
+        await waitFor("both downloads end") {
+            let record = world.center.store.record(of: feed.id)
+            return record?.item("guid:ep-1")?.state.waitingReason != nil
+                && record?.item("guid:ep-2")?.state.failureReason != nil
+                && world.center.downloads.current == nil
+        }
+
+        let rules = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state)
+        XCTAssertEqual(rules, .waiting("it needs room for 1 KB on this Mac"))
+        XCTAssertEqual(rules.visibleNote, "Waiting to Download")
+        XCTAssertFalse(world.center.downloads.isPutOff("guid:ep-1", of: feed.id), "a wait for room waits for a network")
+        XCTAssertEqual(
+            world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state,
+            .failed("There isn't room on this Mac for this episode (1 KB).")
+        )
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [], "a file was fetched without room for it")
+
+        world.center.cancelDownload("guid:ep-1", of: feed.id)
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
+
+        world.freeSpace.value = 100_000_000_000
+        world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        XCTAssertEqual(origin(of: "guid:ep-1", in: feed, world), .window)
+    }
+
+    /// A wait, like a download under way, ends with the app: the record's
+    /// file holds the item as not downloaded.
+    func testAWaitIsNeverWrittenToDisk() throws {
+        let waiting = FeedItemState.waiting(FeedDownloadWait.network.reason)
+        XCTAssertTrue(waiting.isTransient)
+        XCTAssertEqual(waiting.waitingReason, "it downloads on a network without data limits")
+        XCTAssertNil(waiting.failureReason)
+        XCTAssertEqual(FeedDownloadWait.room(bytes: 61_000_000).reason, "it needs room for 61 MB on this Mac")
+        XCTAssertNil(FeedDownloadWait(.transfer(.notFound)))
+
+        let item = FeedItem(id: "guid:a", title: "A", firstSeen: Date(timeIntervalSince1970: 1_791_000_000), state: waiting)
+        let record = FeedRecord(feed: Feed(feedURL: try XCTUnwrap(URL(string: "https://atlas.example/feed.xml")), folderID: UUID(), subscribedDate: item.firstSeen), items: [item])
+        XCTAssertEqual(record.durable.items.first?.state, .notDownloaded)
+        let written = try FeedRecordCoding.decoder().decode(FeedRecord.self, from: FeedRecordCoding.encoder().encode(record))
+        XCTAssertEqual(written.items.first?.state, .notDownloaded)
+    }
+
     // MARK: - Helpers
 
     /// Subscribes `world` to a feed of `episodes` audio episodes, "guid:ep-1"
