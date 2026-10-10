@@ -234,6 +234,29 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertEqual(try stagedNamesInLibrary(), [])
     }
 
+    /// A package whose own folder cannot be written to, as a locked folder
+    /// can be, is imported all the same, and left exactly as it was: the
+    /// import stages a package of its own and copies the source's items
+    /// into it. Until October 10, 2026 it staged a copy of the whole
+    /// folder, which kept the folder's read-only permissions, so the book's
+    /// text cache and record could not be written into it (REV13).
+    func testAPackageWhoseFolderCannotBeWrittenToIsImported() throws {
+        let external = try makeStatefulPackage()
+        let before = try snapshot(of: external.url)
+        XCTAssertEqual(chmod(external.url.path, 0o555), 0)
+        // Before the package's own removal, which needs the folder writable.
+        addTeardownBlock { chmod(external.url.path, 0o755) }
+
+        let book = try FileImportService.importTMBPackageWithReport(from: external.url).book
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+
+        XCTAssertEqual(book.id, external.bookID)
+        XCTAssertNotNil(try BookInfo.load(from: book.tmbDirectory).contentIndex)
+        XCTAssertTrue(FileManager.default.isWritableFile(atPath: book.tmbDirectory.path))
+        XCTAssertEqual(try snapshot(of: external.url), before)
+        XCTAssertEqual(try stagedNamesInLibrary(), [])
+    }
+
     /// A package that still carries a removal marker (a copy taken of a
     /// removed book's package) is published without it, so the book stays
     /// in the library at the next launch. The source keeps its marker.

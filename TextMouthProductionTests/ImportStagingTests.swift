@@ -208,23 +208,33 @@ final class ImportStagingTests: XCTestCase {
         XCTAssertEqual(try entries(), ["Taken.tmb"])
     }
 
-    /// A staged copy holds the whole source package and leaves the source
-    /// as it was; a copy that fails leaves nothing behind.
-    func testCopyStagesTheWholePackageAndAFailedCopyLeavesNothing() throws {
+    /// A staged package's copy of another package holds every item of the
+    /// source, hidden ones and folders included, and leaves the source as
+    /// it was; a copy that fails leaves nothing behind once discarded.
+    func testCopyingAPackageStagesAllItHoldsAndAFailedCopyLeavesNothing() throws {
         let source = FileManager.default.temporaryDirectory
             .appendingPathComponent("StagingSource-\(UUID().uuidString).tmb", isDirectory: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: source) }
-        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: source.appendingPathComponent("tracks"), withIntermediateDirectories: true)
         try Data("chapter".utf8).write(to: source.appendingPathComponent("book.txt"))
+        try Data("track".utf8).write(to: source.appendingPathComponent("tracks/01.mp3"))
+        try Data("hidden".utf8).write(to: source.appendingPathComponent(".hidden"))
 
-        let staging = try ImportStaging.copy(of: source, publishingTo: folder.appendingPathComponent("Copy.tmb"))
+        let staging = try ImportStaging.makeEmpty(publishingTo: folder.appendingPathComponent("Copy.tmb"))
         defer { staging.discard() }
+        try staging.copyContents(of: source)
 
-        XCTAssertEqual(try String(contentsOf: staging.directory.appendingPathComponent("book.txt"), encoding: .utf8), "chapter")
+        XCTAssertEqual(
+            Set(try FileManager.default.contentsOfDirectory(atPath: staging.directory.path)),
+            [".hidden", "book.txt", "tracks"]
+        )
+        XCTAssertEqual(try String(contentsOf: staging.directory.appendingPathComponent("tracks/01.mp3"), encoding: .utf8), "track")
         XCTAssertEqual(try String(contentsOf: source.appendingPathComponent("book.txt"), encoding: .utf8), "chapter")
 
         let missing = source.deletingLastPathComponent().appendingPathComponent("Missing-\(UUID().uuidString).tmb")
-        XCTAssertThrowsError(try ImportStaging.copy(of: missing, publishingTo: folder.appendingPathComponent("Other.tmb")))
+        let failed = try ImportStaging.makeEmpty(publishingTo: folder.appendingPathComponent("Other.tmb"))
+        XCTAssertThrowsError(try failed.copyContents(of: missing))
+        failed.discard()
         XCTAssertEqual(try entries(), [staging.name])
     }
 

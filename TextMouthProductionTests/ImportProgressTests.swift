@@ -661,6 +661,57 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the open")
     }
 
+    /// A TextMouth package copied into the library is shown copying while
+    /// it copies: held at its copy, the overlay says so. Until October 10,
+    /// 2026 a package's copy reached no step observer, and the overlay
+    /// said "checking the package" throughout it (REV13).
+    func testAPackagesCopyIsShownWhileItCopies() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let opened = CallLog<UUID>()
+        model.readerOpener = { opened.record($0) }
+        let package = try makeExternalPackage(named: "Tube Patching")
+        let gate = holdImport(of: model, at: .copying)
+
+        model.openTMBPackage(from: package)
+
+        XCTAssertTrue(
+            waitUntil(timeout: 10) {
+                model.importProgress.state.message == "“Tube Patching.tmb”, copying it into the library"
+            },
+            model.importProgress.state.message
+        )
+        gate.signal()
+        XCTAssertTrue(waitUntil(timeout: 10) { !opened.calls.isEmpty || model.showError }, "the package never opened")
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        let book = try XCTUnwrap(model.library.books.first)
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
+    }
+
+    /// A package's copy reports each of its steps on the package it stages,
+    /// the copy first, as every import's copy is reported: then checking
+    /// the copy, reading its text, saving its record, and publishing it,
+    /// all on the one staged package, under its hidden staging name.
+    func testAPackagesCopyReportsEachStepOnItsStagedPackage() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let package = try makeExternalPackage(named: "Spoke Tension")
+        var heard: [(step: ImportStep, package: URL)] = []
+
+        let imported = try FileImportService.importTMBPackage(
+            FileImportService.identifyTMBPackage(at: package),
+            observer: { step, staged in heard.append((step, staged)) }
+        )
+        addTeardownBlock { try? FileManager.default.removeItem(at: imported.book.tmbDirectory) }
+
+        XCTAssertEqual(heard.map(\.step), [.copying, .checkingPackage, .readingText, .savingRecord, .publishing])
+        XCTAssertEqual(Set(heard.map { $0.package.standardizedFileURL.path }).count, 1, "the steps named other packages")
+        XCTAssertTrue(heard.first?.package.lastPathComponent.hasPrefix(ImportStaging.namePrefix) == true, "\(heard)")
+    }
+
     /// An archive holding one audiobook, imported through the library's own
     /// queue, tells the overlay what its extraction has done: held at the
     /// step after it, the overlay has the whole archive counted, every item
