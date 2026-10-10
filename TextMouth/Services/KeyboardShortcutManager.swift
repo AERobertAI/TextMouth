@@ -497,8 +497,24 @@ final class KeyboardShortcutManager: ObservableObject {
             // A field being edited keeps its typing and the keys it edits
             // with (`shouldHandle`).
             textInputIsFocused: Self.isTextInput(firstResponder),
-            isRepeat: event.isARepeat
+            isRepeat: event.isARepeat,
+            // A sheet's or an alert's buttons keep Return and Escape.
+            keyWindowIsDialog: Self.isDialog(keyWindow)
         ))
+    }
+
+    /// Whether `window` is a dialog whose own buttons answer Return and
+    /// Escape (the review of October 10, item B): a sheet, attached to its
+    /// window or styled as one (AppKit makes every sheet, an alert's
+    /// included, a document-modal window), or the window of a modal session,
+    /// such as an alert run on its own. No shortcut takes those keys there
+    /// (`KeyBinding.isDialogKey`), so a sheet's default button answers
+    /// Return though Open Selected Book has it everywhere else.
+    static func isDialog(_ window: NSWindow?) -> Bool {
+        guard let window else { return false }
+        return window.sheetParent != nil
+            || window.styleMask.contains(.docModalWindow)
+            || window === NSApp.modalWindow
     }
 
     /// Posts the action `trigger` names, with the window it was pressed in,

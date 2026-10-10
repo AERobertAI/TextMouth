@@ -718,6 +718,66 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(harness.performed, [.skipBackward, .skipForward, .skipBackward], "J then Shift-J is no double press")
     }
 
+    // MARK: - A Dialog's Own Keys (Review Item B)
+
+    /// While a sheet or an alert is the key window, no shortcut takes the
+    /// keys its own buttons answer: Return, Open Selected Book's elsewhere,
+    /// and the keypad's Enter go on to its default button, and Escape and
+    /// Command-Period, given to actions here, to its Cancel button. In any
+    /// other window the same keys act, and in the dialog every other key
+    /// still reaches its shortcut. Each press goes through the manager's own
+    /// event handling; the dialog is a panel styled as AppKit styles every
+    /// sheet, never shown.
+    func testADialogKeepsReturnAndEscapeForItsButtons() throws {
+        let center = NotificationCenter()
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("press-dispatcher-dialog"),
+            installsEventMonitor: false,
+            notificationCenter: center
+        )
+        let keypadEnter = KeyBinding(key: "\u{3}")
+        manager.addBinding(keypadEnter, to: .openSelectedBook)
+        manager.updateBindings(for: .whereAmI, to: [KeyBinding(key: "escape")])
+        manager.updateBindings(for: .goToLibrary, to: [KeyBinding(key: ".", command: true)])
+        let posted = PostedShortcutActions(on: center)
+        let dialog = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 300, height: 120),
+            styleMask: [.titled, .docModalWindow],
+            backing: .buffered,
+            defer: true
+        )
+        dialog.isReleasedWhenClosed = false
+        defer { dialog.close() }
+        let window = makeWindow()
+        XCTAssertTrue(KeyboardShortcutManager.isDialog(dialog))
+        XCTAssertFalse(KeyboardShortcutManager.isDialog(window))
+        XCTAssertFalse(KeyboardShortcutManager.isDialog(nil))
+        let presses: [(event: NSEvent, action: ShortcutAction)] = [
+            (try ShortcutKeyPresses.keyPress(of: KeyBinding(key: "return")), .openSelectedBook),
+            (try ShortcutKeyPresses.keyDown(keyCode: 76, characters: "\u{3}", modifiers: [.numericPad]), .openSelectedBook),
+            (try ShortcutKeyPresses.keyPress(of: KeyBinding(key: "escape")), .whereAmI),
+            (try ShortcutKeyPresses.keyPress(of: KeyBinding(key: ".", command: true)), .goToLibrary),
+        ]
+
+        for press in presses {
+            XCTAssertFalse(manager.handleKeyEvent(press.event, keyWindow: dialog, firstResponder: nil), press.action.rawValue)
+        }
+        XCTAssertEqual(posted.names, [], "the dialog's buttons took every one")
+
+        for press in presses {
+            XCTAssertTrue(manager.handleKeyEvent(press.event, keyWindow: window, firstResponder: nil), press.action.rawValue)
+        }
+        XCTAssertEqual(posted.names, presses.map(\.action.rawValue))
+
+        let bookInfo = try ShortcutKeyPresses.keyPress(of: KeyBinding(key: "i", command: true))
+        XCTAssertTrue(manager.handleKeyEvent(bookInfo, keyWindow: dialog, firstResponder: nil))
+        XCTAssertEqual(posted.names.last, ShortcutAction.showBookInfo.rawValue)
+        XCTAssertEqual(
+            KeyBinding.dialogKeys,
+            [KeyBinding(key: "return"), keypadEnter, KeyBinding(key: "escape"), KeyBinding(key: ".", command: true)]
+        )
+    }
+
     /// Shift never reaches a double press whose action takes no Shift along:
     /// with J twice Go to Library's, Shift-J acts at once as Skip Backward
     /// with Shift, waiting for nothing, and Shift-J twice skips back twice.

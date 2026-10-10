@@ -347,6 +347,29 @@ extension KeyBinding {
     }
 }
 
+// MARK: - A Dialog's Own Keys
+
+extension KeyBinding {
+    /// The keys a dialog's own buttons answer, which no shortcut takes while
+    /// a sheet or an alert is the key window (the review of October 10,
+    /// item B): Return and the keypad's Enter, for its default button, and
+    /// Escape and Command-Period, for its Cancel button, each with no other
+    /// modifier. The keypad's Enter is held as the character it gives, as
+    /// `keyNames` names it.
+    static let dialogKeys: Set<KeyBinding> = [
+        KeyBinding(key: "return"),
+        KeyBinding(key: "\u{3}"),
+        KeyBinding(key: "escape"),
+        KeyBinding(key: ".", command: true),
+    ]
+
+    /// Whether a press of this binding's key is one a dialog's own buttons
+    /// answer (`dialogKeys`), pressed once or twice.
+    var isDialogKey: Bool {
+        Self.dialogKeys.contains(stroke)
+    }
+}
+
 /// A keyboard binding: key + modifiers, pressed once or, for a double press,
 /// twice (FR12).
 struct KeyBinding: Codable, Equatable, Hashable {

@@ -52,6 +52,10 @@ import AppKit
 ///   branch D) is never taken: it goes on to the menu item or button that
 ///   acts on it, as an unmatched key does, and Shift never turns it into
 ///   another action's.
+/// - In a dialog, a sheet or an alert, the keys its own buttons answer
+///   (`KeyBinding.isDialogKey`: Return, the keypad's Enter, Escape, and
+///   Command-Period) are never taken, so its default button takes Return
+///   and its Cancel button Escape, whatever shortcut has them elsewhere.
 ///
 /// The clock and the timer a waiting single press waits on are passed in,
 /// so tests decide when time passes and never wait themselves.
@@ -90,6 +94,10 @@ final class ShortcutPressDispatcher {
         var textInputIsFocused: Bool
         /// Whether the press is a held key's automatic repeat.
         var isRepeat: Bool
+        /// Whether the key window is a dialog, a sheet or an alert, whose
+        /// own buttons answer Return and Escape
+        /// (`KeyboardShortcutManager.isDialog(_:)`).
+        var keyWindowIsDialog = false
     }
 
     /// An action a press triggered, for the manager to post.
@@ -315,7 +323,8 @@ final class ShortcutPressDispatcher {
     private func match(_ press: Press) -> Match? {
         guard let stroke = press.stroke, let scope = press.scope,
               KeyboardShortcutManager.shouldHandle(binding: stroke, whenTextInputIsFocused: press.textInputIsFocused),
-              !index.isKeyEquivalent(stroke, in: scope) else {
+              !index.isKeyEquivalent(stroke, in: scope),
+              !(press.keyWindowIsDialog && stroke.isDialogKey) else {
             return nil
         }
         if let actions = index.actions(for: stroke, in: scope) {
