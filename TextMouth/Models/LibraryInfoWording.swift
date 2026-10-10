@@ -79,12 +79,13 @@ enum LibraryInfoSubject: Equatable {
     case feed(FeedInfoFacts)
 }
 
-/// The sentences Speak Info speaks (the I key, `LibraryInfoSpeaker`): a
-/// brief summary on the first press, the full one on a quick second press,
-/// as Where Am I speaks a position. Pure functions, so every sentence is
-/// pinned by a test without a window; counts through `CountWording`, times
-/// through `TimeFormatting`, dates through `FeedWording.moment`, and a
-/// feed's counts through its row's own phrase, so nothing is spelled twice.
+/// The sentences Speak Info speaks (`LibraryInfoSpeaker`): the brief
+/// summary for Speak Info, the I key, and the full one for Speak Full Info,
+/// I twice (FR12), as Where Am I speaks a position. Pure functions, so
+/// every sentence is pinned by a test without a window; counts through
+/// `CountWording`, times through `TimeFormatting`, dates through
+/// `FeedWording.moment`, and a feed's counts through its row's own phrase,
+/// so nothing is spelled twice.
 enum LibraryInfoWording {
     /// What a press says when no row is selected.
     static let nothingSelected = "Nothing is selected."

@@ -6,43 +6,44 @@ import AVFoundation
 
 extension ReaderViewModel {
 
-    /// How soon a second Where Am I must follow the first to ask for the
-    /// expanded announcement. A constant, so it is nonisolated like
-    /// `shouldUseFullWhereAmI(last:now:)`, which reads it.
-    nonisolated static let whereAmIEscalationInterval: TimeInterval = 3
-
-    /// A rapid repeat asks for the expanded announcement; the exact boundary
-    /// remains brief so a press at three seconds is deterministic.
-    nonisolated static func shouldUseFullWhereAmI(last: Date, now: Date) -> Bool {
-        now.timeIntervalSince(last) < whereAmIEscalationInterval
-    }
-
     // MARK: - Where Am I?
 
-    /// Pauses the book (if playing), then speaks a summary of current position
-    /// using a separate synthesizer so the book engine state is preserved.
-    /// First press: brief summary (heading, heading number, percentage).
-    /// Quick second press (within 3 seconds): full details including time estimates.
-    /// If already speaking: stops the announcement, resuming the book it
-    /// paused or starting the play it held (`startPlayHeldByWhereAmI()`).
-    func whereAmI() {
-        // If already speaking a Where Am I announcement, stop it
-        if isWhereAmISpeaking {
-            stopWhereAmISynthesizer()
-            isWhereAmISpeaking = false
-            if wasPlayingBeforeWhereAmI {
-                wasPlayingBeforeWhereAmI = false
-                resumeBookPausedForWhereAmI()
-            }
-            startPlayHeldByWhereAmI()
-            return
+    /// Handles a press of Where Am I? (`.brief`, the W key) or Where Am I?
+    /// Full Summary (`.full`, W twice), as `SummaryPress` decides (FR12,
+    /// section 3 of the design). An announcement speaks through a
+    /// synthesizer of its own, so the book's engine state is preserved.
+    /// - With no announcement speaking, the book pauses, if it plays, and
+    ///   the summary pressed for speaks after the start sound: the brief one
+    ///   (the heading, its number, the percentage, and the time left) or the
+    ///   full one (adding the time left in the heading and the book's whole
+    ///   time). The book resumes when it ends (`whereAmIAnnouncementFinished()`).
+    /// - A brief press while an announcement speaks stops it, resuming the
+    ///   book it paused or starting the play it held, as a command that
+    ///   interrupts it does (`cancelWhereAmIIfActive()`); so does a full
+    ///   press while the full summary speaks.
+    /// - A full press while the brief summary speaks, the second press of W
+    ///   twice, switches to the full summary, the book still paused until
+    ///   the full one ends.
+    ///
+    /// No press depends on when the last one came: the three-second rule
+    /// is retired (question 4), so W always speaks the brief summary.
+    func whereAmI(_ detail: SummaryDetail = .brief) {
+        switch SummaryPress.outcome(pressing: detail, while: isWhereAmISpeaking ? whereAmIDetail : nil) {
+        case .stop:
+            cancelWhereAmIIfActive()
+        case .replace(with: let replacement):
+            // The announcement goes on in more detail: the book stays as the
+            // first left it, and no second start sound plays.
+            speakWhereAmISummary(replacement)
+        case .speak(let summary):
+            pauseBookForWhereAmI()
+            speakWhereAmISummary(summary)
         }
+    }
 
-        // Determine detail level: brief on first press, full on quick second press
-        let now = Date()
-        let useFull = Self.shouldUseFullWhereAmI(last: lastWhereAmITime, now: now)
-        lastWhereAmITime = now
-
+    /// Begins an announcement: records whether the book plays, plays the
+    /// start sound, and pauses the book if it plays.
+    private func pauseBookForWhereAmI() {
         if isAudioBook {
             wasPlayingBeforeWhereAmI = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
         } else {
@@ -55,7 +56,9 @@ extension ReaderViewModel {
         // This deliberately bypasses ReaderViewModel.pause() — Where Am I is a
         // brief announcement (a few seconds), and we don't want it to fire the
         // pause sound effect, end the reading-stats session, or halt the sleep
-        // timer countdown. The companion resume calls below are likewise direct.
+        // timer countdown. The companion resume calls below are likewise direct;
+        // an announcement that ends with the book left paused settles the pause
+        // then (`settlePauseLeftByWhereAmI()`).
         if wasPlayingBeforeWhereAmI {
             if isAudioBook {
                 audioPlaybackService.pause()
@@ -67,14 +70,17 @@ extension ReaderViewModel {
             )
             savePosition()
         }
+    }
 
-        guard let content = content else {
+    /// Speaks the `detail` summary of the position as it is now, or, with
+    /// no book loaded, says so, and records which summary speaks.
+    private func speakWhereAmISummary(_ detail: SummaryDetail) {
+        whereAmIDetail = detail
+        guard let content else {
             speakWhereAmI("No book is loaded.")
             return
         }
-
-        let summary = useFull ? buildFullWhereAmI(content: content) : buildBriefWhereAmI()
-        speakWhereAmI(summary)
+        speakWhereAmI(detail == .full ? buildFullWhereAmI(content: content) : buildBriefWhereAmI())
     }
 
     /// Brief summary: book title, current heading, heading number,
@@ -240,7 +246,8 @@ extension ReaderViewModel {
     /// Cancel a Where Am I announcement if one is active, resuming book
     /// playback if it was playing before, or starting the play the
     /// announcement held (`startPlayHeldByWhereAmI()`).
-    /// Used by skip/play/pause to cleanly interrupt an announcement.
+    /// Used by skips and moves to cleanly interrupt an announcement, and by
+    /// a press of Where Am I? that stops one (`whereAmI(_:)`).
     func cancelWhereAmIIfActive() {
         guard isWhereAmISpeaking else { return }
         stopWhereAmISynthesizer()
@@ -386,6 +393,31 @@ extension ReaderViewModel {
             // Asked only now: a pause, or another announcement, since the
             // end leaves no play to start.
             self.startPlayHeldByWhereAmI()
+        }
+    }
+
+    /// Settles the pause a Where Am I announcement made, now that the
+    /// announcement ends with the book left paused: by Play/Pause pressed
+    /// during it, or by a cancel nobody asked for
+    /// (`endWhereAmIWithoutResuming()`). The announcement paused the book
+    /// without the rest of a pause, expecting to resume it seconds later;
+    /// left paused, the book gets the rest now, as `pause()` would have
+    /// given it: the listening session ends, a minutes sleep timer's
+    /// countdown waits for Play, the stop is recorded for rewind-on-resume,
+    /// and an audiobook shows paused, so its Play/Pause button says Play
+    /// rather than Pause. Its place was saved, and Now Playing told, as the
+    /// announcement paused it.
+    func settlePauseLeftByWhereAmI() {
+        sleepTimerService.pauseCountdown(by: readerID)
+        readingStatsService.endSession(bookID: book.id)
+        recordPlaybackStopped()
+        // An audiobook's Playing state is the reader's own, which the
+        // announcement's direct pause left showing Playing; still loaded,
+        // it shows paused, as `pause()` leaves it. A text book's follows
+        // its speech service, which shows the pause already.
+        if isAudioBook, audioPlaybackService.isPaused {
+            isCurrentlyPlaying = true
+            isCurrentlyPaused = true
         }
     }
 

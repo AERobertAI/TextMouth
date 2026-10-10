@@ -651,11 +651,17 @@ extension ShortcutAction {
     /// The single actions double actions escalate (FR12, section 2.3 of the
     /// design): a key with such a pair acts on its first press at once, and
     /// its double press takes over, where any other pair makes the single
-    /// press wait. Empty until the full summaries have actions of their own
-    /// (FR12's branch C: Speak Full Info escalating Speak Info, and Where Am
-    /// I? Full Summary escalating Where Am I?). The rule follows the actions,
-    /// whatever keys the user gives them, and there is no setting for it.
-    static let escalations: [ShortcutAction: ShortcutAction] = [:]
+    /// press wait. The two full summaries are the only ones (FR12's branch
+    /// C): Where Am I? Full Summary escalates Where Am I?, and Speak Full
+    /// Info escalates Speak Info, so the first W or I starts the brief
+    /// summary at once and a second within the double-press time switches
+    /// to the full one. The rule follows the actions, whatever keys the user
+    /// gives them, and there is no setting for it; a later escalation would
+    /// join the table here.
+    static let escalations: [ShortcutAction: ShortcutAction] = [
+        .whereAmIFull: .whereAmI,
+        .speakFullInfo: .speakInfo,
+    ]
 
     /// The single action this double action escalates, if any. An action
     /// on both presses of one key counts as its own escalation, which the

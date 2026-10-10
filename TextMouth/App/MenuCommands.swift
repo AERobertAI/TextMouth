@@ -95,6 +95,13 @@ struct PlaybackCommands: Commands {
                 NotificationCenter.default.post(name: .whereAmI, object: nil)
             }
 
+            // The full announcement (FR12, question 8). Its key, W twice
+            // unless changed, is handled by KeyboardShortcutManager for
+            // window targeting, and no menu can show a double press.
+            Button(ShortcutAction.whereAmIFull.title) {
+                NotificationCenter.default.post(name: .whereAmIFull, object: nil)
+            }
+
             if canReleaseMediaControls == true {
                 Divider()
 
@@ -249,6 +256,12 @@ struct LibraryCommands: Commands {
             // menu's, and from a feed's row it opens Feed Info.
             Button(ShortcutAction.speakInfo.title) {
                 NotificationCenter.default.post(name: .speakInfo, object: nil)
+            }
+
+            // The selected row's full summary (FR12, question 8), I twice
+            // unless changed, likewise handled by KeyboardShortcutManager.
+            Button(ShortcutAction.speakFullInfo.title) {
+                NotificationCenter.default.post(name: .speakFullInfo, object: nil)
             }
 
             Divider()
@@ -485,6 +498,10 @@ extension Notification.Name {
     static let goForward = Notification.Name("goForward")
     static let navigateUpLevel = Notification.Name("navigateUpLevel")
     static let whereAmI = Notification.Name("whereAmI")
+    /// Posted by Playback > Where Am I? Full Summary and its key, W twice
+    /// unless the user changed it (FR12): the key reader speaks its full
+    /// Where Am I? announcement.
+    static let whereAmIFull = Notification.Name("whereAmIFull")
     static let openBookFile = Notification.Name("openBookFile")
     /// Posted by Library > Import DAISY Folder…. One Library window
     /// presents the folder-only panel and imports the folders chosen.
@@ -494,6 +511,10 @@ extension Notification.Name {
     /// that takes the command speaks its selected row's information with
     /// the app's own voice (`LibraryInfoSpeaker`).
     static let speakInfo = Notification.Name("speakInfo")
+    /// Posted by Library > Speak Full Info and its key, I twice unless the
+    /// user changed it (FR12): the Library window that takes the command
+    /// speaks its selected row's full summary (`LibraryInfoSpeaker`).
+    static let speakFullInfo = Notification.Name("speakFullInfo")
     /// Posted by Library > Speak Import Progress and its key, when the user
     /// gave it one: the library model has VoiceOver speak how the imports
     /// under way have got (FR10).

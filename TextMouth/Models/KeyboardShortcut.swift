@@ -36,10 +36,19 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case showSleepTimer = "Show Sleep Timer"
     case restartSleepTimer = "Restart Sleep Timer"
     case whereAmI = "Where Am I?"
+    /// Speaks a reader's full Where Am I? announcement, W twice by default
+    /// (FR12): the first W speaks the brief one at once, and a second within
+    /// the double-press time switches to this one, which escalates it
+    /// (`escalates`).
+    case whereAmIFull = "Where Am I? Full Summary"
     /// Speaks the selected book's, folder's, or feed's information in
     /// the Library window with the app's own voice, as Where Am I? speaks
     /// a position in a reader (`LibraryInfoSpeaker`).
     case speakInfo = "Speak Info"
+    /// Speaks the selected row's full summary in the Library window, I
+    /// twice by default (FR12), escalating Speak Info as Where Am I? Full
+    /// Summary escalates Where Am I?.
+    case speakFullInfo = "Speak Full Info"
     /// Has VoiceOver speak how the imports under way have got, as the
     /// import overlay says it, from any window (FR10). It has no key until
     /// the user gives it one in Settings.
@@ -154,7 +163,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .showSleepTimer: return .showSleepTimer
         case .restartSleepTimer: return .restartSleepTimer
         case .whereAmI: return .whereAmI
+        case .whereAmIFull: return .whereAmIFull
         case .speakInfo: return .speakInfo
+        case .speakFullInfo: return .speakFullInfo
         case .speakImportProgress: return .speakImportProgress
         case .openSelectedBook: return .openSelectedBook
         case .showBookInfo: return .showBookInfo
@@ -197,7 +208,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Bookmarks"
         case .showHeadingList, .showSleepTimer, .restartSleepTimer:
             return "Panels"
-        case .whereAmI, .speakInfo, .speakImportProgress:
+        case .whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress:
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown,
              .addToReadingList, .removeFromReadingList:
@@ -951,12 +962,23 @@ extension ShortcutAction {
             .whereAmI: [
                 KeyBinding(key: "w")
             ],
+            // W twice (FR12, the user's yes of October 7): the first W
+            // speaks the brief summary at once, and a second within the
+            // double-press time switches to the full one, which escalates
+            // it (`escalates`), so W never waits.
+            .whereAmIFull: [
+                KeyBinding(key: "w", isDoublePress: true)
+            ],
             .speakInfo: [
                 // A plain key beside Where Am I's W, as the user asked on
                 // October 7: it never reaches a text field (plain keys
                 // are left to typing), and Book Info keeps Command-I.
                 // The audio editor's Mark In has I in its own scope.
                 KeyBinding(key: "i")
+            ],
+            // I twice, as W twice is Where Am I's full summary (FR12).
+            .speakFullInfo: [
+                KeyBinding(key: "i", isDoublePress: true)
             ],
             // No key by default (FR10): the user gives it a key of their
             // choosing in Settings, as Release Media Controls.

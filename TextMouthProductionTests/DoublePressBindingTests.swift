@@ -97,7 +97,7 @@ final class DoublePressBindingTests: XCTestCase {
         XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [shiftR])
 
         // The design's excerpt of this user's config.json (section 5.1),
-        // less the two actions branch C adds.
+        // the full summaries' double presses included (FR12's branch C).
         let entries: [String: ShortcutListing] = [
             "Add Bookmark": "default: command+b",
             "Add to Reading List": "default: none",
@@ -105,8 +105,10 @@ final class DoublePressBindingTests: XCTestCase {
             "Play / Pause": "default: space, k",
             "Release Media Controls": ["shift+r"],
             "Show Bookmarks": "default: shift+command+b",
+            "Speak Full Info": "default: i twice",
             "Speak Info": "default: i",
             "Where Am I?": "default: w",
+            "Where Am I? Full Summary": "default: w twice",
         ]
         let file = try JSONEncoder().encode(["keyboardShortcuts": entries])
         let config = try ConfigService.decode(file)

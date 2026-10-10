@@ -20,12 +20,12 @@ final class ShortcutMigrationTests: XCTestCase {
 
     // MARK: - This User's Shortcuts
 
-    /// The six actions added after the October 5 build that wrote this
-    /// user's shortcuts: Speak Info, Speak Import Progress, and the reading
-    /// list's four commands.
+    /// The eight actions added after the October 5 build that wrote this
+    /// user's shortcuts: Speak Info, Speak Import Progress, the reading
+    /// list's four commands, and the two full summaries (FR12).
     static let actionsAddedSinceOctober5: Set<ShortcutAction> = [
         .speakInfo, .speakImportProgress, .addToReadingList, .removeFromReadingList,
-        .nextInReadingList, .previousInReadingList,
+        .nextInReadingList, .previousInReadingList, .whereAmIFull, .speakFullInfo,
     ]
 
     /// Every action the October 5 build had, in the order Settings lists
@@ -113,6 +113,9 @@ final class ShortcutMigrationTests: XCTestCase {
         XCTAssertEqual(inForce[.nextBookmark], [optionShiftCommandB], file: file, line: line)
         XCTAssertEqual(inForce[.showBookmarkList], [shiftCommandB], file: file, line: line)
         XCTAssertEqual(inForce[.speakInfo], [KeyBinding(key: "i")], file: file, line: line)
+        // The full summaries, newer than the map, get their double presses.
+        XCTAssertEqual(inForce[.speakFullInfo], [KeyBinding(key: "i", isDoublePress: true)], file: file, line: line)
+        XCTAssertEqual(inForce[.whereAmIFull], [KeyBinding(key: "w", isDoublePress: true)], file: file, line: line)
         for action in ShortcutAction.allCases where action != .releaseMediaControls {
             XCTAssertEqual(inForce[action], ShortcutAction.defaultBindings[action], "\(action.rawValue)", file: file, line: line)
         }

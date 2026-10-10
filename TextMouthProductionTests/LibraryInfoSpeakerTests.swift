@@ -28,18 +28,21 @@ final class InfoSynthesizerRecorder: LibraryInfoSynthesizing {
     }
 }
 
-/// Speak Info's speaker (October 7, 2026): the brief summary on the first
-/// press, the full one on a quick second press, a stop on a press while it
-/// speaks, with the app's own voice and speed, through a recorder, so no
-/// test plays sound; and the Library window's part: which row is spoken,
-/// the facts gathered for it, and the I key and Command-I in a hosted
-/// window.
+/// Speak Info's speaker (October 7, 2026; FR12): Speak Info's brief summary
+/// and Speak Full Info's full one, each press doing what section 3 of the
+/// design says with nothing speaking, the brief summary speaking, or the
+/// full one; each summary tied to the row it describes (REV07, Library
+/// finding 2); a summary's end told by its utterance, and a cancel nobody
+/// asked for ending it and replacing the synthesizer (finding 4); with the
+/// app's own voice and speed, through a recorder, so no test plays sound;
+/// and the Library window's part: which row is spoken, the facts gathered
+/// for it, and I, I twice, and Command-I in a hosted window.
 @MainActor
 final class LibraryInfoSpeakerTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    /// A moment presses are timed from.
+    /// The moment every press is made at.
     private let start = Date(timeIntervalSince1970: 1_791_000_000)
 
     /// A folder's facts, whose summaries differ between brief and full.
@@ -47,141 +50,263 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         FolderInfoFacts(name: "Classics", bookCount: 2, unopenedCount: 1, feedCount: 0, subfolderCount: 1, timeRemaining: 120)
     )
 
-    /// A speaker speaking through a recorder.
+    /// Another folder's facts, for a press on another row.
+    private let history = LibraryInfoSubject.folder(
+        FolderInfoFacts(name: "History", bookCount: 1, unopenedCount: 0, feedCount: 0, subfolderCount: 0, timeRemaining: nil)
+    )
+
+    /// The IDs of Classics' row and History's.
+    private let classicsRow = UUID()
+    private let historyRow = UUID()
+
+    /// The recorders a speaker made, oldest first.
+    private final class Recorders {
+        var made: [InfoSynthesizerRecorder] = []
+    }
+
+    /// A speaker speaking through a recorder, which also stands in for any
+    /// fresh synthesizer it makes.
     private func makeSpeaker() -> (speaker: LibraryInfoSpeaker, recorder: InfoSynthesizerRecorder) {
         let recorder = InfoSynthesizerRecorder()
         return (LibraryInfoSpeaker(synthesizer: recorder), recorder)
     }
 
+    /// A speaker making a fresh recorder for each synthesizer it makes, with
+    /// the recorders it made.
+    private func makeSpeakerCountingSynthesizers() -> (speaker: LibraryInfoSpeaker, recorders: Recorders) {
+        let recorders = Recorders()
+        let speaker = LibraryInfoSpeaker(makingSynthesizersWith: {
+            let recorder = InfoSynthesizerRecorder()
+            recorders.made.append(recorder)
+            return recorder
+        })
+        return (speaker, recorders)
+    }
+
+    /// Presses `detail` on the row `row`, whose facts are `subject`, at
+    /// `start`, and returns what was spoken, or nil for a stop.
+    @discardableResult
+    private func press(_ detail: SummaryDetail, on speaker: LibraryInfoSpeaker, row: UUID?, subject: LibraryInfoSubject?) -> String? {
+        speaker.press(detail, about: row, voice: nil, wordsPerMinute: 200, now: start) { _ in subject }
+    }
+
+    /// Presses `detail` on Classics' row.
+    @discardableResult
+    private func pressOnClassics(_ detail: SummaryDetail, _ speaker: LibraryInfoSpeaker) -> String? {
+        press(detail, on: speaker, row: classicsRow, subject: classics)
+    }
+
+    /// Tells `recorder`'s delegate, as a synthesizer tells it on the main
+    /// thread, that `utterance` finished, or was cancelled when `cancelled`.
+    private func report(
+        _ utterance: AVSpeechUtterance?,
+        to recorder: InfoSynthesizerRecorder,
+        cancelled: Bool = false,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard let utterance, let delegate = recorder.delegate else {
+            return XCTFail("no utterance, or nothing hears the synthesizer", file: file, line: line)
+        }
+        // A synthesizer that speaks nothing here stands in for the one
+        // reporting.
+        let synthesizer = AVSpeechSynthesizer()
+        if cancelled {
+            delegate.speechSynthesizer?(synthesizer, didCancel: utterance)
+        } else {
+            delegate.speechSynthesizer?(synthesizer, didFinish: utterance)
+        }
+    }
+
     // MARK: - Pressing
 
-    /// The first press speaks the brief summary with the chosen voice at the
-    /// chosen speed, never VoiceOver's, and the speaker knows it speaks.
-    func testTheFirstPressSpeaksTheBriefSummaryWithTheChosenVoiceAndSpeed() throws {
+    /// A brief press speaks the brief summary with the chosen voice at the
+    /// chosen speed, never VoiceOver's, and the speaker knows it speaks it.
+    func testABriefPressSpeaksTheBriefSummaryWithTheChosenVoiceAndSpeed() throws {
         let (speaker, recorder) = makeSpeaker()
         let voice = AVSpeechSynthesisVoice.speechVoices().first
-        var asked: [Bool] = []
+        var asked: [SummaryDetail] = []
 
-        let text = speaker.press(voice: voice, wordsPerMinute: 250, now: start) { full in
-            asked.append(full)
+        let text = speaker.press(.brief, about: classicsRow, voice: voice, wordsPerMinute: 250, now: start) { spoken in
+            asked.append(spoken)
             return classics
         }
 
         XCTAssertEqual(text, LibraryInfoWording.brief(classics))
         XCTAssertEqual(text, "Classics. Folder. 2 books, 1 unopened.")
         XCTAssertEqual(recorder.spoken, [text])
-        XCTAssertEqual(asked, [false])
+        XCTAssertEqual(asked, [.brief])
         XCTAssertTrue(speaker.isSpeaking)
+        XCTAssertEqual(speaker.detailSpeaking, .brief)
         XCTAssertEqual(speaker.lastSpokenText, text)
         let utterance = try XCTUnwrap(recorder.utterances.first)
         XCTAssertEqual(utterance.rate, SpeechService.rateForWPM(250))
         XCTAssertFalse(utterance.prefersAssistiveTechnologySettings)
         XCTAssertEqual(utterance.voice?.identifier, voice?.identifier)
-        XCTAssertNotNil(recorder.delegate, "nothing tells the speaker when the announcement ends")
+        XCTAssertNotNil(recorder.delegate, "nothing tells the speaker when the summary ends")
     }
 
-    /// A second press within three seconds of the first speaks the full
-    /// summary, and a press three seconds or more after the last one that
-    /// started an announcement is brief again, at the boundary Where Am I
-    /// keeps.
-    func testASecondPressWithinThreeSecondsSpeaksTheFullSummary() {
-        let (speaker, recorder) = makeSpeaker()
-        var asked: [Bool] = []
-        func press(after seconds: TimeInterval) -> String? {
-            speaker.press(voice: nil, wordsPerMinute: 200, now: start.addingTimeInterval(seconds)) { full in
-                asked.append(full)
+    /// Each press does what section 3 of the design says: with nothing
+    /// speaking, it speaks the summary pressed for; a brief press stops the
+    /// summary speaking; a full press switches the brief summary to the full
+    /// one, asking for the full one's facts, and stops the full one. A stop
+    /// asks for no facts and speaks nothing.
+    func testEachPressDoesWhatTheDesignSays() {
+        let brief = LibraryInfoWording.brief(classics)
+        let full = LibraryInfoWording.full(classics, now: start)
+        XCTAssertEqual(full, "Classics. Folder. 2 books, 1 unopened. 1 subfolder. 2 minutes remaining in total.")
+        // What speaks, the press, what the press speaks (nil for a stop),
+        // and what speaks after it.
+        let cases: [(speaking: SummaryDetail?, pressed: SummaryDetail, spoken: String?, after: SummaryDetail?)] = [
+            (nil, .brief, brief, .brief),
+            (nil, .full, full, .full),
+            (.brief, .brief, nil, nil),
+            (.brief, .full, full, .full),
+            (.full, .brief, nil, nil),
+            (.full, .full, nil, nil),
+        ]
+        for (speaking, pressed, spoken, after) in cases {
+            let (speaker, recorder) = makeSpeaker()
+            if let speaking {
+                pressOnClassics(speaking, speaker)
+            }
+            let stopsBefore = recorder.stops
+            let utterancesBefore = recorder.utterances.count
+            var asked: [SummaryDetail] = []
+
+            let text = speaker.press(pressed, about: classicsRow, voice: nil, wordsPerMinute: 200, now: start) { detail in
+                asked.append(detail)
                 return classics
             }
-        }
 
-        XCTAssertEqual(press(after: 0), LibraryInfoWording.brief(classics))
-        speaker.announcementFinished()
-        XCTAssertFalse(speaker.isSpeaking)
-        let full = press(after: 2)
-        XCTAssertEqual(full, LibraryInfoWording.full(classics, now: start.addingTimeInterval(2)))
-        XCTAssertEqual(full, "Classics. Folder. 2 books, 1 unopened. 1 subfolder. 2 minutes remaining in total.")
-        speaker.announcementFinished()
-        // Three seconds after the press that started the full summary.
-        XCTAssertEqual(press(after: 5), LibraryInfoWording.brief(classics))
-        XCTAssertEqual(asked, [false, true, false])
-        XCTAssertEqual(recorder.spoken.count, 3)
+            let label = "\(pressed) pressed while \(speaking.map { "\($0)" } ?? "nothing") speaks"
+            XCTAssertEqual(text, spoken, label)
+            XCTAssertEqual(speaker.detailSpeaking, after, label)
+            XCTAssertEqual(asked, spoken == nil ? [] : [pressed], label)
+            XCTAssertEqual(recorder.utterances.count, utterancesBefore + (spoken == nil ? 0 : 1), label)
+            if speaking != nil {
+                XCTAssertGreaterThan(recorder.stops, stopsBefore, "\(label): the summary speaking was not silenced")
+            }
+        }
     }
 
-    /// A press while an announcement speaks stops it, speaks nothing, and
-    /// asks for no subject; a stop while nothing speaks does nothing.
-    func testAPressWhileSpeakingStopsTheAnnouncement() {
+    /// The three-second rule is retired (question 4): however soon after
+    /// the last summary, a brief press speaks the brief summary and never
+    /// the full one unasked, after a summary that ended as after one a
+    /// press stopped.
+    func testABriefPressNeverSpeaksTheFullSummaryUnasked() {
         let (speaker, recorder) = makeSpeaker()
-        speaker.stop()
-        XCTAssertEqual(recorder.stops, 0)
+        let brief = LibraryInfoWording.brief(classics)
 
-        speaker.press(voice: nil, wordsPerMinute: 200, now: start) { _ in classics }
-        let stopsBefore = recorder.stops
-        var asked = 0
-        let text = speaker.press(voice: nil, wordsPerMinute: 200, now: start.addingTimeInterval(1)) { _ in
-            asked += 1
-            return classics
-        }
+        XCTAssertEqual(pressOnClassics(.brief, speaker), brief)
+        report(recorder.utterances.last, to: recorder)
+        XCTAssertEqual(pressOnClassics(.brief, speaker), brief, "a press just after a summary ended")
+        XCTAssertNil(pressOnClassics(.brief, speaker))
+        XCTAssertEqual(pressOnClassics(.brief, speaker), brief, "a press just after a stop")
 
-        XCTAssertNil(text)
-        XCTAssertEqual(asked, 0)
-        XCTAssertFalse(speaker.isSpeaking)
-        XCTAssertEqual(recorder.stops, stopsBefore + 1)
-        XCTAssertEqual(recorder.spoken.count, 1)
+        XCTAssertEqual(recorder.spoken, [brief, brief, brief])
     }
 
-    /// The escalation window counts from the press that started the brief
-    /// summary, as Where Am I's does: a quick third press after a stop
-    /// speaks the full summary, and a later one the brief.
-    func testAQuickThirdPressAfterAStopSpeaksTheFullSummary() {
-        let (speaker, _) = makeSpeaker()
-        func press(after seconds: TimeInterval) -> String? {
-            speaker.press(voice: nil, wordsPerMinute: 200, now: start.addingTimeInterval(seconds)) { _ in classics }
-        }
-
-        XCTAssertEqual(press(after: 0), LibraryInfoWording.brief(classics))
-        XCTAssertNil(press(after: 1), "the second press should have stopped the announcement")
-        XCTAssertEqual(press(after: 2), LibraryInfoWording.full(classics, now: start.addingTimeInterval(2)))
-        XCTAssertNil(press(after: 2.5))
-        XCTAssertEqual(press(after: 6), LibraryInfoWording.brief(classics))
-    }
-
-    /// With nothing selected, every press says so, the quick second one
-    /// included.
-    func testNothingSelectedIsSaidOnEveryPress() {
+    /// With nothing selected, a press of either summary says so, and a
+    /// brief press while it says so stops it, as for a row.
+    func testNothingSelectedIsSaidForEitherSummary() {
         let (speaker, recorder) = makeSpeaker()
 
-        XCTAssertEqual(speaker.press(voice: nil, wordsPerMinute: 200, now: start) { _ in nil }, "Nothing is selected.")
-        speaker.announcementFinished()
-        XCTAssertEqual(speaker.press(voice: nil, wordsPerMinute: 200, now: start.addingTimeInterval(1)) { _ in nil }, "Nothing is selected.")
+        XCTAssertEqual(press(.brief, on: speaker, row: nil, subject: nil), "Nothing is selected.")
+        report(recorder.utterances.last, to: recorder)
+        XCTAssertEqual(press(.full, on: speaker, row: nil, subject: nil), "Nothing is selected.")
+        XCTAssertNil(press(.brief, on: speaker, row: nil, subject: nil))
+
         XCTAssertEqual(recorder.spoken, ["Nothing is selected.", "Nothing is selected."])
     }
 
-    /// The synthesizer's delegate ends the announcement at once on the main
-    /// thread, so the next press speaks instead of stopping.
-    func testTheSynthesizersDelegateEndsTheAnnouncement() throws {
+    // MARK: - A Summary Tied to Its Row (REV07, Library Finding 2)
+
+    /// A press on another row while a summary speaks speaks that row's
+    /// summary in its place, the one the press asks for, rather than only
+    /// stopping the summary speaking; and a full press on the row the brief
+    /// summary describes switches to that row's full summary.
+    func testAPressOnAnotherRowSpeaksThatRowsSummary() {
         let (speaker, recorder) = makeSpeaker()
-        speaker.press(voice: nil, wordsPerMinute: 200, now: start) { _ in classics }
-        let utterance = try XCTUnwrap(recorder.utterances.first)
-        let delegate = try XCTUnwrap(recorder.delegate)
+        pressOnClassics(.brief, speaker)
 
-        // The speaker's delegate is told as the synthesizer tells it, by a
-        // synthesizer that speaks nothing here.
-        delegate.speechSynthesizer?(AVSpeechSynthesizer(), didFinish: utterance)
+        XCTAssertEqual(press(.brief, on: speaker, row: historyRow, subject: history), LibraryInfoWording.brief(history))
+        XCTAssertEqual(press(.full, on: speaker, row: historyRow, subject: history), LibraryInfoWording.full(history, now: start))
+        XCTAssertEqual(pressOnClassics(.brief, speaker), LibraryInfoWording.brief(classics), "a brief press on another row while a full summary speaks")
+        XCTAssertEqual(press(.full, on: speaker, row: nil, subject: nil), "Nothing is selected.", "a press once nothing is selected")
+        XCTAssertNil(press(.brief, on: speaker, row: nil, subject: nil), "a press with still nothing selected stops it")
 
-        XCTAssertFalse(speaker.isSpeaking, "the announcement never ended")
-        XCTAssertEqual(speaker.press(voice: nil, wordsPerMinute: 200, now: start.addingTimeInterval(10)) { _ in classics }, LibraryInfoWording.brief(classics))
+        XCTAssertEqual(recorder.spoken.count, 5)
     }
 
-    // MARK: - Shared With Where Am I
+    // MARK: - How a Summary Ends (REV07, Library Finding 4)
 
-    /// The escalation interval is Where Am I's, and the text of a press is
-    /// the wording's.
-    func testTheEscalationIntervalAndTextAreSharedWithWhereAmI() {
-        XCTAssertEqual(LibraryInfoSpeaker.escalationInterval, ReaderViewModel.whereAmIEscalationInterval)
-        XCTAssertEqual(LibraryInfoSpeaker.escalationInterval, 3)
-        XCTAssertEqual(LibraryInfoSpeaker.text(for: nil, full: true, now: start), LibraryInfoWording.nothingSelected)
-        XCTAssertEqual(LibraryInfoSpeaker.text(for: classics, full: false, now: start), LibraryInfoWording.brief(classics))
-        XCTAssertEqual(LibraryInfoSpeaker.text(for: classics, full: true, now: start), LibraryInfoWording.full(classics, now: start))
+    /// The end of the summary speaking ends it, so the next press speaks:
+    /// the synthesizer's delegate is told on the main thread and ends it at
+    /// once.
+    func testTheSynthesizersDelegateEndsTheSummary() {
+        let (speaker, recorder) = makeSpeaker()
+        pressOnClassics(.brief, speaker)
+
+        report(recorder.utterances.last, to: recorder)
+
+        XCTAssertFalse(speaker.isSpeaking, "the summary never ended")
+        XCTAssertEqual(pressOnClassics(.brief, speaker), LibraryInfoWording.brief(classics))
+    }
+
+    /// A cancel nobody asked for, as when the speech engine refuses the
+    /// summary's text, ends the summary, so the next press speaks rather
+    /// than stopping nothing (board #1378), and replaces the synthesizer,
+    /// which would never speak again: the next summary speaks through a
+    /// fresh one, and the old one is let go. The debug log says so.
+    func testACancelNobodyAskedForEndsTheSummaryAndReplacesTheSynthesizer() throws {
+        let (speaker, recorders) = makeSpeakerCountingSynthesizers()
+        pressOnClassics(.brief, speaker)
+        let refused = try XCTUnwrap(recorders.made.first)
+
+        report(refused.utterances.last, to: refused, cancelled: true)
+
+        XCTAssertFalse(speaker.isSpeaking, "the speaking flag stuck after the cancel")
+        XCTAssertEqual(recorders.made.count, 2, "the synthesizer that refused was kept")
+        XCTAssertNil(refused.delegate, "the refused synthesizer still reports to the speaker")
+        XCTAssertEqual(pressOnClassics(.brief, speaker), LibraryInfoWording.brief(classics))
+        XCTAssertEqual(recorders.made.last?.spoken, [LibraryInfoWording.brief(classics)])
+        XCTAssertEqual(refused.spoken.count, 1)
+        XCTAssertFalse(debugLogLines(containing: "SPEAK_INFO_CANCEL_UNEXPECTED").isEmpty)
+    }
+
+    /// The end of a summary the speaker stopped or replaced changes
+    /// nothing: neither its cancel nor its finish ends the summary speaking
+    /// after it, and the synthesizer is kept.
+    func testTheEndOfAStoppedOrReplacedSummaryChangesNothing() throws {
+        let (speaker, recorders) = makeSpeakerCountingSynthesizers()
+        pressOnClassics(.brief, speaker)
+        let recorder = try XCTUnwrap(recorders.made.first)
+        let brief = try XCTUnwrap(recorder.utterances.last)
+        pressOnClassics(.full, speaker)
+        let full = try XCTUnwrap(recorder.utterances.last)
+
+        report(brief, to: recorder, cancelled: true)
+        report(brief, to: recorder)
+
+        XCTAssertEqual(speaker.detailSpeaking, .full, "the replaced summary's end ended the full one")
+        XCTAssertNil(pressOnClassics(.full, speaker), "a full press stops the full summary")
+        report(full, to: recorder, cancelled: true)
+        XCTAssertFalse(speaker.isSpeaking)
+        XCTAssertEqual(recorders.made.count, 1, "a cancel the speaker asked for replaced the synthesizer")
+        XCTAssertEqual(pressOnClassics(.brief, speaker), LibraryInfoWording.brief(classics))
+    }
+
+    // MARK: - The Text of a Press
+
+    /// The text of a press is the wording's: its subject's brief summary or
+    /// full one, or, with no subject, that nothing is selected, whichever
+    /// summary was asked for.
+    func testTheTextOfAPressIsTheWordings() {
+        XCTAssertEqual(LibraryInfoSpeaker.text(for: nil, detail: .brief, now: start), LibraryInfoWording.nothingSelected)
+        XCTAssertEqual(LibraryInfoSpeaker.text(for: nil, detail: .full, now: start), LibraryInfoWording.nothingSelected)
+        XCTAssertEqual(LibraryInfoSpeaker.text(for: classics, detail: .brief, now: start), LibraryInfoWording.brief(classics))
+        XCTAssertEqual(LibraryInfoSpeaker.text(for: classics, detail: .full, now: start), LibraryInfoWording.full(classics, now: start))
     }
 
     /// A title holding a tag-shaped run the synthesizer would take as
@@ -193,7 +318,7 @@ final class LibraryInfoSpeakerTests: XCTestCase {
             FolderInfoFacts(name: "<sm>Classics</sm>", bookCount: 1, unopenedCount: 0, feedCount: 0, subfolderCount: 0, timeRemaining: nil)
         )
 
-        let text = try XCTUnwrap(speaker.press(voice: nil, wordsPerMinute: 200, now: start) { _ in marked })
+        let text = try XCTUnwrap(speaker.press(.brief, about: nil, voice: nil, wordsPerMinute: 200, now: start) { _ in marked })
 
         XCTAssertEqual(text, "<sm>Classics</sm>. Folder. 1 book.")
         XCTAssertEqual(recorder.spoken, [SpeechMarkupGuard.neutralized(text)])
@@ -242,6 +367,52 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         XCTAssertEqual(selected([UUID()], edit: [books[1].id]), .book(books[1]))
         XCTAssertNil(selected([UUID()]))
         XCTAssertNil(selected([]))
+    }
+
+    /// Command-I opens Book Info for a book's row and Feed Info for a
+    /// feed's row or a feed's folder, by the feed's ID, and speaks a plain
+    /// folder's full summary, since a folder has no sheet (REV07, Library
+    /// finding 8: what Command-I does for each row, not only that a feed's
+    /// row speaks nothing).
+    func testCommandIOpensEachRowsInfo() {
+        let book = Book(title: "First", format: .txt, filePath: "/nonexistent/first.txt", md5Hash: "first")
+        let plain = BookFolder(name: "Classics")
+        let feedsFolder = BookFolder(name: "Planet Money")
+        let feedID = UUID()
+        let feed = FeedRowContent(
+            id: feedID,
+            title: "Planet Money",
+            folderPath: "Podcasts/Planet Money",
+            counts: FeedItemCounts(),
+            check: FeedWording.Check(visible: "Not checked yet", spoken: "not checked yet", failed: false)
+        )
+        /// The feed whose folder is `folderID`: Planet Money's alone.
+        func feedInFolder(_ folderID: UUID) -> UUID? {
+            folderID == feedsFolder.id ? feedID : nil
+        }
+
+        XCTAssertEqual(LibraryInfoRow.book(book).infoCommand(feedInFolder: feedInFolder), .bookInfo(book))
+        XCTAssertEqual(LibraryInfoRow.feed(feed).infoCommand(feedInFolder: feedInFolder), .feedInfo(feedID))
+        XCTAssertEqual(LibraryInfoRow.folder(feedsFolder).infoCommand(feedInFolder: feedInFolder), .feedInfo(feedID))
+        XCTAssertEqual(LibraryInfoRow.folder(plain).infoCommand(feedInFolder: feedInFolder), .speakFullInfo)
+    }
+
+    /// A row's identity, by which a summary is tied to the row it
+    /// describes, is its book's, folder's, or feed's ID.
+    func testARowsIdentityIsItsBooksFoldersOrFeedsID() {
+        let book = Book(title: "First", format: .txt, filePath: "/nonexistent/first.txt", md5Hash: "first")
+        let folder = BookFolder(name: "Classics")
+        let feed = FeedRowContent(
+            id: UUID(),
+            title: "Planet Money",
+            folderPath: nil,
+            counts: FeedItemCounts(),
+            check: FeedWording.Check(visible: "Not checked yet", spoken: "not checked yet", failed: false)
+        )
+
+        XCTAssertEqual(LibraryInfoRow.book(book).id, book.id)
+        XCTAssertEqual(LibraryInfoRow.folder(folder).id, folder.id)
+        XCTAssertEqual(LibraryInfoRow.feed(feed).id, feed.id)
     }
 
     // MARK: - A Book's Facts
@@ -415,13 +586,15 @@ final class LibraryInfoSpeakerTests: XCTestCase {
 
     /// In a hosted Library window, the I key speaks that nothing is
     /// selected, then, once a row is selected (the List selects a folder's
-    /// row by its ID as a book's), that row's information: a plain
-    /// folder's, a feed's row's as the feed, and a book's. The feed's
-    /// folder has no row of its own here, since the feed's row stands for
-    /// it, so the feed is heard once. Command-I on the plain folder speaks
-    /// it too, since a folder has no sheet, and on the feed's row speaks
-    /// nothing, opening Feed Info instead. The window's speaker speaks
-    /// through a recorder, so nothing is heard.
+    /// row by its ID as a book's), that row's brief summary, every time,
+    /// however quick the presses: a plain folder's, a feed's row's as the
+    /// feed, and a book's. The feed's folder has no row of its own here,
+    /// since the feed's row stands for it, so the feed is heard once. I
+    /// twice speaks a row's full summary, and I on another row while a
+    /// summary speaks speaks that row's. Command-I on the plain folder
+    /// speaks its full summary, since a folder has no sheet, and on the
+    /// feed's row opens Feed Info and speaks nothing. The window's speaker
+    /// speaks through a recorder, so nothing is heard.
     func testThePlainIKeyInAHostedLibraryWindowSpeaksTheSelectedRow() async throws {
         let recorder = InfoSynthesizerRecorder()
         let previous = LibraryInfoSpeaker.makeSynthesizer
@@ -432,6 +605,9 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         let base = world.bookFolder.fullPath
         let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: base)
         try world.library.createFolderReturningFolder(name: "Classics", parentPath: base)
+        // A shelf in Classics, which Classics' full summary counts and its
+        // brief one does not.
+        try world.library.createFolderReturningFolder(name: "Shelf", parentPath: "\(base)/Classics")
         world.library.library.books.append(Book(
             title: "Middlemarch",
             author: "George Eliot",
@@ -456,36 +632,40 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         defer { takeDown(hosted.window) }
         settle(hosted.hostingView, seconds: 0.5)
         let userInfo: [AnyHashable: Any] = ["sourceWindow": hosted.window]
+        let list = try XCTUnwrap(descendants(of: hosted.hostingView, as: NSTableView.self).first, "the window shows no list")
 
         /// Posts `name` as the key pressed in the window would, and returns
-        /// what was spoken for it, if anything, ending that announcement so
-        /// the next press speaks rather than stops.
-        func press(_ name: Notification.Name) -> String? {
+        /// what was spoken for it, if anything, ending that summary, unless
+        /// `leavingItSpeaking`, so the next press speaks rather than stops.
+        func press(_ name: Notification.Name, leavingItSpeaking: Bool = false) -> String? {
             let before = recorder.utterances.count
             NotificationCenter.default.post(name: name, object: nil, userInfo: userInfo)
             flush(hosted.hostingView)
             guard recorder.utterances.count > before, let utterance = recorder.utterances.last else { return nil }
-            // Told on the main thread, the speaker's delegate ends the
-            // announcement at once.
-            recorder.delegate?.speechSynthesizer?(AVSpeechSynthesizer(), didFinish: utterance)
-            flush(hosted.hostingView)
+            if !leavingItSpeaking {
+                // Told on the main thread, the speaker's delegate ends the
+                // summary at once.
+                recorder.delegate?.speechSynthesizer?(AVSpeechSynthesizer(), didFinish: utterance)
+                flush(hosted.hostingView)
+            }
             return utterance.speechString
+        }
+
+        /// Selects the list's row at `index` alone.
+        func select(_ index: Int) {
+            list.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
+            flush(hosted.hostingView)
         }
 
         XCTAssertEqual(press(.speakInfo), LibraryInfoWording.nothingSelected)
 
         // Each row of the list selected in turn, from the top, and spoken.
-        let list = try XCTUnwrap(descendants(of: hosted.hostingView, as: NSTableView.self).first, "the window shows no list")
-        // The presses follow within three seconds of each other, so the
-        // summaries alternate between brief and full: each is known by
-        // its opening.
         var heard: [(row: Int, text: String)] = []
         var outcomes: [String] = []
         for row in 0..<list.numberOfRows {
             list.deselectAll(nil)
             flush(hosted.hostingView)
-            list.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-            flush(hosted.hostingView)
+            select(row)
             let stopsBefore = recorder.stops
             if let text = press(.speakInfo) {
                 outcomes.append("\(row): \(text)")
@@ -499,21 +679,41 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         let texts = heard.map(\.text)
         let report = outcomes.joined(separator: " | ")
         let atlasPrefix = "The Tactile Atlas. Feed. 1 episode"
-        XCTAssertEqual(texts.filter { $0.hasPrefix("Classics. Folder. 0 books.") }.count, 1, report)
+        let classicsBrief = "Classics. Folder. 0 books."
+        let middlemarchBrief = "Middlemarch. By George Eliot. EPUB. In \(base). Unopened."
+        XCTAssertEqual(texts.filter { $0 == classicsBrief }.count, 1, report)
         XCTAssertEqual(texts.filter { $0.hasPrefix(atlasPrefix) }.count, 1, "the feed's row alone, its folder not listed twice: " + report)
-        XCTAssertEqual(texts.filter { $0.hasPrefix("Middlemarch. By George Eliot. EPUB. In \(base). Unopened.") }.count, 1, report)
+        XCTAssertEqual(texts.filter { $0.hasPrefix(middlemarchBrief) }.count, 1, report)
         XCTAssertEqual(texts.count, 3, report)
+        XCTAssertFalse(
+            texts.contains { $0.contains("Added ") || $0.contains("Address ") || $0.contains("subfolder") },
+            "a press of I spoke a full summary: " + report
+        )
         XCTAssertNotNil(FeedInfoFacts.of(feedID: feed.id, center: world.center, now: Date()))
 
-        // Command-I on the plain folder speaks it; on the feed's row it
-        // speaks nothing, opening Feed Info.
-        let classicsRow = try XCTUnwrap(heard.first { $0.text.hasPrefix("Classics. Folder.") }?.row)
-        list.selectRowIndexes(IndexSet(integer: classicsRow), byExtendingSelection: false)
-        flush(hosted.hostingView)
-        XCTAssertEqual(press(.showBookInfo)?.hasPrefix("Classics. Folder. 0 books."), true)
-        let feedRow = try XCTUnwrap(heard.filter { $0.text.hasPrefix(atlasPrefix) }.last?.row)
-        list.selectRowIndexes(IndexSet(integer: feedRow), byExtendingSelection: false)
-        flush(hosted.hostingView)
+        // I twice on Middlemarch's row: its brief summary, then its full one.
+        let middlemarchIndex = try XCTUnwrap(heard.first { $0.text.hasPrefix(middlemarchBrief) }?.row)
+        select(middlemarchIndex)
+        XCTAssertNotNil(press(.speakInfo, leavingItSpeaking: true))
+        let full = try XCTUnwrap(press(.speakFullInfo), "I twice spoke nothing")
+        XCTAssertTrue(full.hasPrefix(middlemarchBrief) && full.contains("Added "), full)
+
+        // I on Classics while Middlemarch's summary speaks: Classics' own
+        // summary, never a silent stop (REV07, Library finding 2).
+        XCTAssertNotNil(press(.speakInfo, leavingItSpeaking: true))
+        let classicsIndex = try XCTUnwrap(heard.first { $0.text == classicsBrief }?.row)
+        select(classicsIndex)
+        let stopsBefore = recorder.stops
+        XCTAssertEqual(press(.speakInfo), classicsBrief, "I on another row while a summary spoke said nothing")
+        XCTAssertGreaterThan(recorder.stops, stopsBefore, "Middlemarch's summary went on under Classics'")
+
+        // Command-I on the plain folder speaks its full summary; on the
+        // feed's row it speaks nothing, opening Feed Info instead, as
+        // `testCommandIOpensEachRowsInfo` pins (a sheet never shows on a
+        // window kept off the screen).
+        XCTAssertEqual(press(.showBookInfo), "Classics. Folder. 0 books. 1 subfolder.")
+        let feedIndex = try XCTUnwrap(heard.first { $0.text.hasPrefix(atlasPrefix) }?.row)
+        select(feedIndex)
         XCTAssertNil(press(.showBookInfo), "Command-I on a feed's row spoke instead of opening Feed Info")
         settle(hosted.hostingView, seconds: 0.3)
     }

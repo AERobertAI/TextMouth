@@ -39,12 +39,13 @@ final class ShortcutEditsTests: XCTestCase {
 
     /// An entry naming no action this build knows, as a later release may
     /// write, and an entry whose keys cannot be read are left out and
-    /// reported; every other entry still loads.
+    /// reported; every other entry still loads. (Speak Full Info was this
+    /// test's later action until FR12's branch C made it one.)
     func testUnknownAndUnreadableEntriesAreLeftOutAndTheRestLoads() {
         let json = """
         {
           "Release Media Controls": [{"key": "r", "command": false, "option": false, "shift": true, "control": false}],
-          "Speak Full Info": [{"key": "i", "command": false, "option": false, "shift": false, "control": false}],
+          "Spell Current Word": [{"key": "i", "command": false, "option": false, "shift": false, "control": false}],
           "Where Am I?": "w",
           "Go Back": [{"key": 7}],
           "Go to Library": []
@@ -54,7 +55,7 @@ final class ShortcutEditsTests: XCTestCase {
         let reading = ShortcutEdits.reading(Data(json.utf8))
 
         XCTAssertEqual(reading.edits, ShortcutEdits([.releaseMediaControls: [shiftR], .goToLibrary: []]))
-        XCTAssertEqual(reading.skipped.map(\.name), ["Go Back", "Speak Full Info", "Where Am I?"])
+        XCTAssertEqual(reading.skipped.map(\.name), ["Go Back", "Spell Current Word", "Where Am I?"])
         XCTAssertEqual(reading.skipped.first?.reason, "could not be read as a list of shortcuts; leaving it out")
         XCTAssertEqual(reading.skipped.dropFirst().first?.reason, "names nothing TextMouth knows; leaving it out")
     }

@@ -180,10 +180,11 @@ final class ShortcutManagerTests: XCTestCase {
         XCTAssertEqual(KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false).doublePressTime, 2)
     }
 
-    /// A stored record with an entry this build cannot use loads the rest.
+    /// A stored record with an entry this build cannot use, an action no
+    /// build has yet, loads the rest.
     func testAStoredRecordWithAnUnusableEntryLoadsTheRest() {
         let store = makeSandboxedPreferences("shortcut-manager-lenient")
-        let json = #"{"Release Media Controls":[{"command":false,"control":false,"key":"r","option":false,"shift":true}],"Speak Full Info":[]}"#
+        let json = #"{"Release Media Controls":[{"command":false,"control":false,"key":"r","option":false,"shift":true}],"Spell Current Word":[]}"#
         store.set(Data(json.utf8), forKey: KeyboardShortcutManager.editsPreference.key)
 
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
