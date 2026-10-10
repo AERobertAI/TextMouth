@@ -351,6 +351,54 @@ final class SpeechMarkupGuardTests: XCTestCase {
         XCTAssertLessThan(elapsed, .seconds(1), "four 20,000-space runs took \(elapsed)")
     }
 
+    // MARK: - The NUL character
+
+    /// Texts holding a NUL, with what each becomes.
+    private static let nulTexts: [(input: String, output: String)] = [
+        ("the story a\u{0}b and on", "the story a b and on"),
+        ("\u{0}", " "),
+        ("\u{0}\u{0}", "  "),
+        ("\u{0}begins the text", " begins the text"),
+        ("ends the text\u{0}", "ends the text "),
+        // Brackets are guarded as ever beside it.
+        ("a <sm>quiet\u{0}word</sm> here", "a \(open)sm\(close)quiet word\(open)/sm\(close) here"),
+        ("x < y \u{0} and y > z", "x < y   and y > z"),
+    ]
+
+    /// A NUL (U+0000) ended the text for the speech engine, which dropped
+    /// every word after it without the cancel a refusal makes, so nothing
+    /// heard the loss (board #1542). Each NUL becomes a space, one UTF-16
+    /// unit for one, wherever it is, in the strict guard too, and brackets
+    /// are guarded beside it as ever; guarding the result again changes
+    /// nothing.
+    func testEveryNULBecomesASpace() {
+        XCTAssertEqual(SpeechMarkupGuard.nulReplacement, " ")
+        for (input, output) in Self.nulTexts {
+            let guarded = SpeechMarkupGuard.neutralized(input)
+            XCTAssertEqual(guarded, output, input.debugDescription)
+            XCTAssertEqual(guarded.utf16.count, input.utf16.count, input.debugDescription)
+            XCTAssertEqual(SpeechMarkupGuard.neutralized(guarded), guarded, input.debugDescription)
+            let strict = SpeechMarkupGuard.neutralizedStrictly(input)
+            XCTAssertEqual(strict.utf16.count, input.utf16.count, input.debugDescription)
+            XCTAssertFalse(strict.utf16.contains(0), "the strict guard kept a NUL in \(input.debugDescription)")
+        }
+    }
+
+    /// Every other control character was spoken in full in the offline
+    /// probe of October 10, 2026 (`Scripts/agents/probes/speech-control-character-probe.swift`):
+    /// the rest of C0, tab and line breaks among them, DEL, and C1. The
+    /// guard leaves them all as they are.
+    func testOtherControlCharactersStayAsTheyAre() {
+        let codePoints = Array(UInt32(0x01)...0x1F) + [0x7F] + Array(UInt32(0x80)...0x9F)
+        let controls = codePoints.compactMap { Unicode.Scalar($0) }
+        XCTAssertEqual(controls.count, 64)
+        for control in controls {
+            let text = "the story a\(Character(control))b and on"
+            XCTAssertEqual(SpeechMarkupGuard.neutralized(text), text, "U+\(String(control.value, radix: 16))")
+            XCTAssertEqual(SpeechMarkupGuard.neutralizedStrictly(text), text, "U+\(String(control.value, radix: 16))")
+        }
+    }
+
     // MARK: - The engine itself, offline
 
     /// The voice the engine's behaviour was measured in.
@@ -376,11 +424,12 @@ final class SpeechMarkupGuardTests: XCTestCase {
     }
 
     /// Shapes that swallowed the rest of their sentence on October 7, which
-    /// the first guard left alone, render it in full once guarded: at least
-    /// nine tenths of the frames the sentence renders without the shape.
-    /// What the engine on this Mac does with each raw shape is printed for
-    /// the record, not asserted, since the guard must hold whatever it does.
-    /// Rendered offline: nothing is heard.
+    /// the first guard left alone, and the NUL character of October 9
+    /// (#1542), render it in full once guarded: at least nine tenths of the
+    /// frames the sentence renders without the shape. What the engine on
+    /// this Mac does with each raw shape is printed for the record, not
+    /// asserted, since the guard must hold whatever it does. Rendered
+    /// offline: nothing is heard.
     func testShapesThatSwallowedTheirSentenceRenderInFullOnceGuarded() throws {
         let voice = try Self.probeVoice()
         let lead = "The reader went on with the story"
@@ -388,7 +437,7 @@ final class SpeechMarkupGuardTests: XCTestCase {
         let plain = OfflineRenderProbe("\(lead) \(tail)", voice: voice)
         XCTAssertEqual(render(plain), .finished, "the sentence alone did not render")
 
-        for shape in ["the omitted <...> passage", "<>", "a <=> b", "<a=b>"] {
+        for shape in ["the omitted <...> passage", "<>", "a <=> b", "<a=b>", "a\u{0}b"] {
             let sentence = "\(lead) \(shape) \(tail)"
             let raw = OfflineRenderProbe(sentence, voice: voice)
             let rawEnd = render(raw)

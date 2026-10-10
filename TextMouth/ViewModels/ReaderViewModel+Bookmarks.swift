@@ -262,8 +262,10 @@ extension ReaderViewModel {
     /// the reason, so the user can save to the library only or try again.
     ///
     /// Only a save that succeeded changes this reader: its metadata, its
-    /// book, and Now Playing then show exactly what the library row and the
-    /// book's record hold, content hash included. After a failure all of them
+    /// book, and Now Playing, while the reader holds the media controls
+    /// (`showSavedMetadataInNowPlaying()`), then show exactly what the
+    /// library row and the book's record hold, content hash included.
+    /// After a failure all of them
     /// stay as they were. Either way VoiceOver hears the outcome, which names
     /// the library's copy of the EPUB file whenever that file was, or could
     /// not be, written. A failure is not also set as `errorMessage`: the open
@@ -297,11 +299,7 @@ extension ReaderViewModel {
             // library changed while the editor was open shows as the row
             // has it, not as the editor opened with it.
             epubMetadata = saved.mergingEditableEPUBMetadata(metadata)
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title,
-                author: book.author,
-                isPlaying: isCurrentlyPlaying && !isCurrentlyPaused
-            )
+            showSavedMetadataInNowPlaying()
         }
         announceToVoiceOver(save.message)
         return save.outcome
@@ -311,9 +309,10 @@ extension ReaderViewModel {
     /// artist as the author, and the album, genre, and year, each only if
     /// the user changed it since the editor opened with `opened`, which is
     /// recorded as edited by hand on the row and in bookInfo.json inside the
-    /// .tmb package. The reader's book, its metadata, and Now Playing then
-    /// show the row as saved. A book that has left the library is not saved,
-    /// and the reader stays as it was and says so.
+    /// .tmb package. The reader's book, its metadata, and Now Playing, while
+    /// the reader holds the media controls (`showSavedMetadataInNowPlaying()`),
+    /// then show the row as saved. A book that has left the library is not
+    /// saved, and the reader stays as it was and says so.
     func saveAudioMetadata(_ metadata: AudioMetadata, openedAs opened: AudioMetadata) {
         // The row as saved carries the record of hand edits.
         guard let saved = libraryViewModel.updateBookMetadata(
@@ -328,12 +327,25 @@ extension ReaderViewModel {
         // The row's fields, over the edit for the rest, as for an EPUB.
         audioMetadata = saved.mergingEditableAudioMetadata(metadata)
         announceToVoiceOver("Metadata updated")
+        showSavedMetadataInNowPlaying()
+    }
 
-        // Update NowPlaying with the new metadata
+    /// Shows the book's title and author, as a metadata save left them, in
+    /// the system's Now Playing, only while this reader holds the media
+    /// controls (`NowPlayingSession.holdsMediaControls`): its book playing,
+    /// paused, or resting finished there, shown as it is. A reader that
+    /// holds nothing, because it never played, stopped, or released them,
+    /// or because another book's item replaced its own, shows nothing, so a
+    /// save never takes the AirPods and the media keys from the app or the
+    /// book they were with. Both saves once published whatever the reader's
+    /// state, so a stopped reader's save showed its book paused and took
+    /// them (#1498).
+    private func showSavedMetadataInNowPlaying() {
+        guard nowPlayingService.holdsMediaControls else { return }
         nowPlayingService.updateNowPlayingInfo(
             title: book.title,
             author: book.author,
-            isPlaying: isCurrentlyPlaying && !isCurrentlyPaused
+            isPlaying: isPlaybackActivelyAdvancing
         )
     }
 }

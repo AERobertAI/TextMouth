@@ -52,6 +52,17 @@ import Foundation
 /// - The ampersand never stopped or swallowed anything, bare or in an
 ///   entity: the engine speaks `&amp;` as "and", and a `&lt;sm&gt;` it
 ///   decodes is spoken, never taken as a tag. The guard leaves it alone.
+/// - A NUL character (U+0000) ends the text for the engine: every word
+///   after it is dropped, silently, with no cancel that `SpeechService`
+///   could hear as a refusal (board #1542). "The reader went on with the
+///   story a<NUL>b and every word after it …" rendered 39,434 frames
+///   against 150,282 without the NUL, and 151,050 with a space in its
+///   place. Every other control character was spoken in full: C0 (U+0001
+///   to U+001F, tab and line breaks among them), DEL, and C1 (U+0080 to
+///   U+009F); in the legacy Alex voice nothing was lost, the NUL included
+///   (`Scripts/agents/probes/speech-control-character-probe.swift` holds
+///   every result, of October 10, 2026). The guard turns each NUL into a
+///   space.
 ///
 /// The guard replaces the two brackets of every tag-shaped run with the
 /// single angle quotation marks U+2039 and U+203A, which the engine does
@@ -124,6 +135,16 @@ enum SpeechMarkupGuard {
     private static let openingReplacementUnit: UInt16 = 0x2039
     private static let closingReplacementUnit: UInt16 = 0x203A
 
+    /// What a NUL character becomes: a space, one UTF-16 unit like it.
+    static let nulReplacement = " "
+
+    /// The UTF-16 unit of the NUL character, U+0000, which ends the text
+    /// for the speech engine.
+    private static let nulUnit: UInt16 = 0x0000
+
+    /// `nulReplacement` as the single UTF-16 unit it is.
+    private static let nulReplacementUnit: UInt16 = 0x0020
+
     /// The ranges of the tag-shaped runs in `text`, in UTF-16 units as
     /// `NSRange` counts them, in text order; each begins with the run's `<`
     /// and ends with its `>`.
@@ -135,10 +156,18 @@ enum SpeechMarkupGuard {
     }
 
     /// `text` with the brackets of every tag-shaped run replaced by the
-    /// angle quotation marks, and nothing else changed; `text` itself when
-    /// it holds no such run. The result has exactly the UTF-16 length of
-    /// `text`, so every offset into it is an offset into `text`.
+    /// angle quotation marks and every NUL character by a space, and nothing
+    /// else changed; `text` itself when it holds neither. The result has
+    /// exactly the UTF-16 length of `text`, so every offset into it is an
+    /// offset into `text`.
     static func neutralized(_ text: String) -> String {
+        replacingNULs(in: neutralizingTags(in: text))
+    }
+
+    /// `text` with the brackets of every tag-shaped run replaced by the
+    /// angle quotation marks, and nothing else changed; `text` itself when
+    /// it holds no such run.
+    private static func neutralizingTags(in text: String) -> String {
         let ranges = tagRanges(in: text)
         guard !ranges.isEmpty else { return text }
         let guarded = NSMutableString(string: text)
@@ -158,11 +187,23 @@ enum SpeechMarkupGuard {
         return guarded as String
     }
 
+    /// `text` with every NUL character (U+0000) replaced by a space, one
+    /// UTF-16 unit for one, and nothing else changed; `text` itself when it
+    /// holds none, as nearly every text does.
+    private static func replacingNULs(in text: String) -> String {
+        guard text.utf16.contains(nulUnit) else { return text }
+        let units = text.utf16.map { $0 == nulUnit ? nulReplacementUnit : $0 }
+        // A NUL and a space are single units outside the surrogate range,
+        // so replacing one never splits a character.
+        return String(decoding: units, as: UTF16.self)
+    }
+
     // MARK: - The strict guard
 
     /// `text` with every `<` and `>` replaced by the angle quotation marks,
-    /// tag-shaped or not, one UTF-16 unit for one, and nothing else changed,
-    /// so it has exactly the length of `text`.
+    /// tag-shaped or not, and every NUL by a space, as `neutralized(_:)`
+    /// replaces it, one UTF-16 unit for one, and nothing else changed, so it
+    /// has exactly the length of `text`.
     ///
     /// For text the engine refused although `neutralized(_:)` had guarded
     /// it, which only a shape this guard does not know could make it do:

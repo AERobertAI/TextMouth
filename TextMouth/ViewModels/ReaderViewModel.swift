@@ -262,11 +262,20 @@ final class ReaderViewModel: ObservableObject {
     /// (`performSkip(unit:forward:)`), when playback is stopped (`stop()`),
     /// and when the book hands listening over to the next book, in its
     /// folder or in the reading list, which takes the media controls
-    /// (`handOverToNextBook(titled:askingWith:)`).
+    /// (`handOverToNextBook(to:titled:askingWith:)`).
     /// A book that loops back to its beginning is not finished: it plays
     /// again, or waits at its start. Accessed from the Playback and
     /// Navigation extensions.
     var hasFinishedBook = false
+    /// The latest hand-over of listening from this finished book to the
+    /// next one, in its folder or in the reading list
+    /// (`handOverToNextBook(to:titled:askingWith:)`). While it is under way,
+    /// from "Starting: <title>" until the next book's reader claims the
+    /// request to play it, a Play that reaches this reader starts the next
+    /// book instead of playing this one (`NextBookHandOver`). Nil until a
+    /// book hands over, and again once a Play finds the hand-over done.
+    /// Accessed from the Playback extension.
+    var nextBookHandOver: NextBookHandOver?
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is
     /// not newer is ignored. Written only by `applyLibraryUpdate(_:)` and
