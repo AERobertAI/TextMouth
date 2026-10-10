@@ -3,14 +3,15 @@ import XCTest
 
 // MARK: - A Feed's Downloads Return to the Library
 
-/// Until Unsubscribe keeps a feed's downloads by the listener's choice (FR11,
-/// branch D), a feed whose record is gone gets its downloads back as books of
-/// the library's own, at Unsubscribe and at launch (REV10, item 3): each keeps
-/// its book ID, place, bookmarks, and place on the reading list, and what the
-/// feed kept of downloads removed earlier is deleted. A crash between any two
-/// steps is finished at the next launch. The fixture is this test's feed's
-/// folder, holding one download the listener opened and one package kept after
-/// its download went, with this test's library folder as the feed's own.
+/// A feed whose record is truly gone (lost, or deleted by an Unsubscribe of a
+/// build before FR11's branch D, which keeps the record now) gets its
+/// downloads back as books of the library's own, at launch (REV10, item 3):
+/// each keeps its book ID, place, bookmarks, and place on the reading list,
+/// and what the feed kept of downloads removed earlier is deleted. A crash
+/// between any two steps is finished at the next launch. The fixture is this
+/// test's feed's folder, holding one download the listener opened and one
+/// package kept after its download went, with this test's library folder as
+/// the feed's own.
 final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
 
     // MARK: - One Feed
@@ -126,14 +127,14 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         let model = launchedModel()
         let others = model.library.feedShelf.indexedFeedIDs.subtracting([feedID])
 
-        XCTAssertEqual(model.feedsWithoutRecords(subscribed: others.union([feedID])), [])
+        XCTAssertEqual(model.feedsWithoutRecords(knownFeeds: others.union([feedID])), [])
         let record = FeedPaths.recordFile(of: feedID, in: FeedPaths.recordsFolder(in: TextMouthPaths.root))
         try Data("{ unreadable".utf8).write(to: record)
-        XCTAssertEqual(model.feedsWithoutRecords(subscribed: others), [], "a feed whose record file is there was taken for gone")
+        XCTAssertEqual(model.feedsWithoutRecords(knownFeeds: others), [], "a feed whose record file is there was taken for gone")
         try FileManager.default.removeItem(at: record)
-        XCTAssertEqual(model.feedsWithoutRecords(subscribed: others), [feedID])
+        XCTAssertEqual(model.feedsWithoutRecords(knownFeeds: others), [feedID])
 
-        let returned = await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, removingWith: Self.deleteForGood)
+        let returned = await model.returnDownloadsOfFeedsWithoutRecords(knownFeeds: others, removingWith: Self.deleteForGood)
 
         XCTAssertEqual(returned, 1)
         try assertReturned(fixture, toFolder: "", in: model)
@@ -148,7 +149,7 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         let others = model.library.feedShelf.indexedFeedIDs.subtracting([feedID])
         model.library.feedShelf.leaveIndexAlone(of: feedID)
 
-        XCTAssertEqual(model.feedsWithoutRecords(subscribed: others), [])
+        XCTAssertEqual(model.feedsWithoutRecords(knownFeeds: others), [])
     }
 
     // MARK: - At Launch, in a Cloud Library
@@ -167,8 +168,8 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         let others = model.library.feedShelf.indexedFeedIDs.subtracting([feedID])
         let first = Self.thisMac(at: UUID())
 
-        let atFirst = await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, absence: first, removingWith: Self.deleteForGood)
-        let again = await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, absence: first, removingWith: Self.deleteForGood)
+        let atFirst = await model.returnDownloadsOfFeedsWithoutRecords(knownFeeds: others, absence: first, removingWith: Self.deleteForGood)
+        let again = await model.returnDownloadsOfFeedsWithoutRecords(knownFeeds: others, absence: first, removingWith: Self.deleteForGood)
 
         XCTAssertEqual(atFirst, 0, "a record gone at one launch returned the downloads")
         XCTAssertEqual(again, 0, "one launch counted as two")
@@ -176,7 +177,7 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         XCTAssertEqual(try absenceNotes(), [Self.noteName(at: first)])
 
         let atSecond = await model.returnDownloadsOfFeedsWithoutRecords(
-            subscribed: others,
+            knownFeeds: others,
             absence: Self.thisMac(at: UUID()),
             removingWith: Self.deleteForGood
         )
@@ -198,18 +199,18 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         let third = Self.thisMac(at: UUID())
 
         let beforeTheRecord = await model.returnDownloadsOfFeedsWithoutRecords(
-            subscribed: others,
+            knownFeeds: others,
             absence: Self.thisMac(at: UUID()),
             removingWith: Self.deleteForGood
         )
         XCTAssertEqual(try absenceNotes().count, 1)
         let withTheRecord = await model.returnDownloadsOfFeedsWithoutRecords(
-            subscribed: others.union([feedID]),
+            knownFeeds: others.union([feedID]),
             absence: Self.thisMac(at: UUID()),
             removingWith: Self.deleteForGood
         )
         XCTAssertEqual(try absenceNotes(), [], "the note outlived the record's arrival")
-        let goneAgain = await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, absence: third, removingWith: Self.deleteForGood)
+        let goneAgain = await model.returnDownloadsOfFeedsWithoutRecords(knownFeeds: others, absence: third, removingWith: Self.deleteForGood)
 
         XCTAssertEqual([beforeTheRecord, withTheRecord, goneAgain], [0, 0, 0])
         try assertStaysInItsFeed(fixture.download, in: model)
@@ -231,7 +232,7 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         XCTAssertFalse(otherMac.wasGoneAtAnEarlierLaunch(feed: feedID, folder: feedFolderURL))
 
         let afterTheOtherMac = await model.returnDownloadsOfFeedsWithoutRecords(
-            subscribed: others,
+            knownFeeds: others,
             absence: Self.thisMac(at: UUID()),
             removingWith: Self.deleteForGood
         )
@@ -243,9 +244,9 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         XCTAssertEqual(placeholder.lastPathComponent, ".\(feedID.uuidString).json.icloud")
         try Data().write(to: placeholder)
         addTeardownBlock { try? FileManager.default.removeItem(at: placeholder) }
-        XCTAssertEqual(model.feedsWithoutRecords(subscribed: others), [], "a placeholder of the record was taken for none")
+        XCTAssertEqual(model.feedsWithoutRecords(knownFeeds: others), [], "a placeholder of the record was taken for none")
         let withAPlaceholder = await model.returnDownloadsOfFeedsWithoutRecords(
-            subscribed: others,
+            knownFeeds: others,
             absence: Self.thisMac(at: UUID()),
             removingWith: Self.deleteForGood
         )
@@ -255,7 +256,7 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
 
         try FileManager.default.removeItem(at: placeholder)
         let local = FeedRecordAbsence(isCloud: false, macID: Self.thisMacID, launchID: UUID())
-        let returned = await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, absence: local, removingWith: Self.deleteForGood)
+        let returned = await model.returnDownloadsOfFeedsWithoutRecords(knownFeeds: others, absence: local, removingWith: Self.deleteForGood)
 
         XCTAssertEqual(returned, 1)
         try assertReturned(fixture, toFolder: "", in: model)
@@ -303,7 +304,7 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         case keptPackageDeleted
     }
 
-    /// A feed no longer subscribed, as its folder holds it.
+    /// A feed whose record is gone, as its folder holds it.
     struct UnsubscribedFeed {
         /// The library folder that was the feed's: this test's folder.
         var folder: BookFolder
@@ -370,7 +371,7 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
 
         let model = launchedModel()
         let others = model.library.feedShelf.indexedFeedIDs.subtracting([feedID])
-        await model.returnDownloadsOfFeedsWithoutRecords(subscribed: others, removingWith: Self.deleteForGood)
+        await model.returnDownloadsOfFeedsWithoutRecords(knownFeeds: others, removingWith: Self.deleteForGood)
         model.save()
         LibraryPersistenceService.flushPendingSave()
 

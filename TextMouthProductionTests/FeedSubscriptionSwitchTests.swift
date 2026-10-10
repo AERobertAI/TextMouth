@@ -270,6 +270,88 @@ final class FeedSubscriptionCheckingTests: XCTestCase {
     }
 }
 
+// MARK: - A Gone Feed's Return, Kept for a Record Truly Gone
+
+/// The stopgap that returned an unsubscribed feed's downloads as books no
+/// longer runs at Unsubscribe (FR11, branch D, item 4): an unsubscribed feed
+/// keeps its record, so the launch never takes it for gone, and its
+/// downloads stay its items; the launch's return stays for a record truly
+/// gone (`LibraryFeedDownloadReturnTests`).
+final class FeedUnsubscribedReturnTests: XCTestCase {
+
+    /// An unsubscribed feed, its record kept, is never taken for gone at
+    /// launch, in a library on this Mac or in the cloud: nothing returns,
+    /// and its download stays its item, in its folder.
+    @MainActor
+    func testAnUnsubscribedFeedIsNeverTakenForGone() async throws {
+        let world = try FeedTestWorld(self, label: "FeedSwitchNotGone")
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [
+            FeedXML.Item(guid: "ep-1", title: "Episode 1", published: world.day(-1),
+                         enclosure: world.server.url("/audio/1.m4a").absoluteString, enclosureType: "audio/mp4"),
+        ])))
+        let feed = try await world.subscribe("/feed.xml")
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        world.center.unsubscribe(feed.id)
+
+        XCTAssertEqual(world.library.feedsWithoutRecords(), [])
+        for isCloud in [false, true] {
+            let absence = FeedRecordAbsence(isCloud: isCloud, macID: "this Mac", launchID: UUID())
+            let returned = await world.library.returnDownloadsOfFeedsWithoutRecords(absence: absence)
+            XCTAssertEqual(returned, 0, "an unsubscribed feed's downloads returned, the library \(isCloud ? "in" : "out of") the cloud")
+        }
+        XCTAssertEqual(world.library.bookByID(book.id)?.feedLink, book.feedLink)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath))
+    }
+}
+
+/// A download made before FR11 of an unsubscribed feed, named by the record
+/// the feed kept (FR11, branch D), moves into its feed's folder at the first
+/// launch as any other does.
+final class FeedUnsubscribedDownloadMoveTests: FeedItemIndexTestCase {
+
+    /// A download made before FR11 whose feed is unsubscribed is named by
+    /// the record the feed kept, and moves into the feed's folder at the
+    /// first launch, as a subscribed feed's does.
+    @MainActor
+    func testADownloadMadeBeforeFR11OfAnUnsubscribedFeedMovesIntoItsFeed() async throws {
+        let link = FeedBookLink(feedID: feedID, itemID: "guid:lemmings")
+        let bookID = UUID()
+        let name = TextMouthPaths.tmbName(title: "Lemmings", author: "Antiquarian", dateAdded: Self.date(), bookID: bookID)
+        let package = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: name)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let file = package.appendingPathComponent("Lemmings.html")
+        try "<html><body><p>Words.</p></body></html>".write(to: file, atomically: true, encoding: .utf8)
+        let article = Book(
+            id: bookID,
+            title: "Lemmings",
+            author: "Antiquarian",
+            format: .html,
+            filePath: file.path,
+            md5Hash: UUID().uuidString,
+            folderPath: folderPath,
+            dateAdded: Self.date(),
+            tmbDirectoryName: name
+        )
+        var record = article.makeBookInfo()
+        record.metadata.feedLink = link
+        try record.save(to: package)
+        saveNow(Library(books: [article]))
+        var feed = Feed(id: feedID, feedURL: try XCTUnwrap(URL(string: "https://www.filfre.net/feed/")), folderID: UUID(), subscribedDate: Self.date())
+        feed.unsubscribedDate = Self.date(60)
+        let item = FeedItem(id: link.itemID, title: "Lemmings", firstSeen: Self.date(), state: .downloaded(bookID: bookID))
+        let model = launchedModel()
+
+        let moved = await model.moveDownloadsIntoTheirFeeds(records: [feedID: FeedRecord(feed: feed, items: [item])])
+
+        XCTAssertEqual(moved, 1)
+        XCTAssertEqual(model.bookByID(bookID)?.feedLink, link)
+        XCTAssertEqual(try indexedRows().map(\.id), [bookID])
+        try assertLibraryJSONHoldsNoFeedItem([article])
+    }
+}
+
 // MARK: - The Switch Shown
 
 /// The feed's context menu, its VoiceOver actions, and Feed Info offer

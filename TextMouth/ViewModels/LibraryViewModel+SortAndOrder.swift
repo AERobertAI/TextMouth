@@ -148,7 +148,7 @@ extension LibraryViewModel {
     /// item, newest first as the folder lists them (`FeedRecord.listedItems`),
     /// whose file is here (FR11): the next episode or article down the
     /// list, skipping those not downloaded. Nil after the last, and for a
-    /// feed no longer subscribed.
+    /// feed whose record is gone.
     private func nextFeedItem(after book: Book, of feedID: UUID) -> Book? {
         guard let items = feeds.store.record(of: feedID)?.listedItems else { return nil }
         let itemID = book.feedLink?.itemID

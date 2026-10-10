@@ -43,7 +43,8 @@ extension FeedCenter {
     }
 
     /// The items of the feed `feedID` counted as the library shows them,
-    /// with the feed's size; none for a feed no longer subscribed. Each
+    /// with the feed's size and whether the listener is subscribed (FR11,
+    /// branch D); none for a feed whose record is gone. Each
     /// item's row is found by its identity in the feed's rows (FR11), so a
     /// count takes one step per item, however many books the library holds.
     /// The items are those the library lists, the short list's under "Only
