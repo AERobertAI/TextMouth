@@ -634,6 +634,22 @@ final class FeedTestWorld {
         clock.value = clock.value.addingTimeInterval(interval)
     }
 
+    /// Holds the engine's import queue, where its rules remove files off the
+    /// main thread and downloads are imported, until the gate it returns is
+    /// released, as heavy load can hold it: a removal begun meanwhile has
+    /// taken its rows out of the books and written its records and indexes,
+    /// but has removed no file and settled no item's state (REV11 F5, and
+    /// the races of board #1821). `test`'s teardown releases it too.
+    func holdImports(_ test: XCTestCase) async -> WorkGate {
+        let gate = WorkGate()
+        gate.arm()
+        test.addTeardownBlock { gate.release() }
+        let downloads = center.downloads
+        Task { await downloads.runBesideImports { gate.pass() } }
+        await test.waitFor("the import queue is held") { gate.wasReached }
+        return gate
+    }
+
     /// A date `days` days from the clock's start.
     func day(_ days: Double) -> Date {
         Date(timeIntervalSince1970: 1_791_000_000 + days * 86_400)
@@ -663,6 +679,50 @@ extension XCTestCase {
                 return
             }
             try? await Task.sleep(for: .milliseconds(10))
+        }
+    }
+}
+
+// MARK: - Holding Work Partway
+
+/// Holds work on a background thread at its first pass once armed, until
+/// the test lets it go, so the test can see what is under way at that
+/// moment: an export reading its first file, or the feed engine's import
+/// queue (`FeedTestWorld.holdImports(_:)`). The wait gives up after 30
+/// seconds, so no thread waits for good should a test end early, and each
+/// test releases it in its teardown as well.
+final class WorkGate: Sendable {
+    /// Whether the gate holds the next pass, and whether one reached it.
+    private let state = OSAllocatedUnfairLock(initialState: (armed: false, reached: false))
+    /// Signalled to let the held pass go.
+    private let released = DispatchSemaphore(value: 0)
+
+    /// Makes the next pass wait at the gate.
+    func arm() {
+        state.withLock { $0.armed = true }
+    }
+
+    /// Whether a pass has reached the armed gate.
+    var wasReached: Bool {
+        state.withLock { $0.reached }
+    }
+
+    /// Lets the held pass go; a release with none held only lets the next
+    /// one through.
+    func release() {
+        released.signal()
+    }
+
+    /// Called by the work at each pass: the first once the gate is armed
+    /// waits until `release()`, and every other passes at once.
+    func pass() {
+        let holds = state.withLock { state -> Bool in
+            guard state.armed, !state.reached else { return false }
+            state.reached = true
+            return true
+        }
+        if holds {
+            _ = released.wait(timeout: .now() + 30)
         }
     }
 }

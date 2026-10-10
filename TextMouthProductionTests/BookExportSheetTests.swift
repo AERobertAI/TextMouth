@@ -1,5 +1,4 @@
 import AppKit
-import os
 import SwiftUI
 import XCTest
 @testable import TextMouth
@@ -151,7 +150,7 @@ final class BookExportSheetTests: XCTestCase {
     func testAnExportHoldsItsBooksInUseUntilItEnds() async throws {
         let world = try makeIntegrationWorld("Export Dialog In Use")
         let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
-        let gate = ExportReadGate()
+        let gate = WorkGate()
         addTeardownBlock { gate.release() }
         let access = MaintenanceFileAccess(isDataless: { _ in false }, refusesRead: { _ in
             gate.pass()
@@ -431,47 +430,6 @@ final class BookExportSheetTests: XCTestCase {
 }
 
 // MARK: - Test Support
-
-/// Holds an export at its first read of a file once armed, on the export's
-/// own thread, until the test lets it go, so the test can see what the
-/// export holds while it runs. The wait gives up after 30 seconds, so no
-/// thread waits for good should a test end early, and its teardown lets it
-/// go as well.
-final class ExportReadGate: Sendable {
-    /// Whether the gate holds the next read, and whether a read reached it.
-    private let state = OSAllocatedUnfairLock(initialState: (armed: false, reached: false))
-    /// Signalled to let the held read go.
-    private let released = DispatchSemaphore(value: 0)
-
-    /// Makes the next read wait at the gate.
-    func arm() {
-        state.withLock { $0.armed = true }
-    }
-
-    /// Whether a read has reached the armed gate.
-    var wasReached: Bool {
-        state.withLock { $0.reached }
-    }
-
-    /// Lets the held read go; a release with none held only lets the next
-    /// one through.
-    func release() {
-        released.signal()
-    }
-
-    /// Called for every read: the first once the gate is armed waits until
-    /// `release()`, and every other passes at once.
-    func pass() {
-        let holds = state.withLock { state -> Bool in
-            guard state.armed, !state.reached else { return false }
-            state.reached = true
-            return true
-        }
-        if holds {
-            _ = released.wait(timeout: .now() + 30)
-        }
-    }
-}
 
 /// Captures what VoiceOver is asked to announce, for a test that awaits,
 /// until `stop()` puts the previous poster back.

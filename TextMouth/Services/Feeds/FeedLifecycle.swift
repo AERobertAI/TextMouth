@@ -216,9 +216,23 @@ extension FeedCenter {
     /// listener's from then on (`noteDownloadRemoved(_:of:)`); a rule's
     /// removal, and a book the library no longer lists, leave who asked for
     /// the download as it was.
-    private func noteDownloadGone(_ itemID: FeedItem.ID, of feedID: UUID, at date: Date, byListener: Bool) {
+    ///
+    /// A rule's removal, whose files go off the main thread, names the book
+    /// it removed (`removing`), and ends a step after it began: an item
+    /// asked for again meanwhile, as Open asks for one, says so for its
+    /// whole transfer, so its state changes only while it still names that
+    /// book; the date its download went is noted either way (REV11 F5).
+    private func noteDownloadGone(
+        _ itemID: FeedItem.ID,
+        of feedID: UUID,
+        at date: Date,
+        byListener: Bool,
+        removing bookID: UUID? = nil
+    ) {
         store.updateItem(itemID, of: feedID) { item in
-            item.state = .notDownloaded
+            if bookID == nil || item.state.bookID == bookID {
+                item.state = .notDownloaded
+            }
             item.downloadDeletedDate = date
             if byListener {
                 item.downloadOrigin = .listener
@@ -501,7 +515,7 @@ extension FeedCenter {
         let removal = library.settleFeedFileRemovals(readied, failures: failed.mapValues { FeedFileRemovalFailure(errorDescription: $0) })
         for removed in removal.removed {
             guard let entry = removable.first(where: { $0.book.id == removed.row.id }) else { continue }
-            noteDownloadGone(entry.itemID, of: entry.feedID, at: now, byListener: false)
+            noteDownloadGone(entry.itemID, of: entry.feedID, at: now, byListener: false, removing: removed.row.id)
             outcome.removed.append(removed)
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETED: \(removed.row.title): \(entry.reason), \(Self.removalNote(removed)) by \(rule)")
         }

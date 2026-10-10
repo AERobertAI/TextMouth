@@ -182,6 +182,43 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertEqual(report.deletedBookIDs, [book.id])
     }
 
+    /// An item opened while a rule removes its file downloads again, and the
+    /// removal, ending a step later off the main thread, leaves the new
+    /// download's state alone (REV11 F5): the item says Downloading for its
+    /// whole transfer, never Not Downloaded, while the date its download
+    /// went is noted all the same.
+    func testAnItemOpenedDuringARulesRemovalStaysDownloading() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRemovalOpened")
+        let (feed, book) = try await downloadedEpisode(in: world)
+        // Opened once, so its package is kept with its place, and Open
+        // restores it.
+        world.library.markBookOpened(book.id)
+        FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        // The next download arrives over seconds, so it is under way when
+        // the removal ends.
+        let audio = try FeedMediaFixtures.silentAAC()
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.2
+        world.server.serve("/audio/1.m4a", slow)
+        let imports = await world.holdImports(self)
+
+        let sweep = Task { await world.center.sweepPlayedDownloads() }
+        await waitFor("the removal readies the row") { world.library.bookByID(book.id) == nil }
+        world.center.open("guid:ep-1", of: feed.id)
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .downloading)
+        imports.release()
+        let report = await sweep.value
+
+        XCTAssertEqual(report.deletedBookIDs, [book.id])
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        XCTAssertEqual(item.state, .downloading, "the removal reset an item downloading again")
+        XCTAssertEqual(item.downloadDeletedDate, world.clock.value)
+        world.center.cancelDownload("guid:ep-1", of: feed.id)
+        await waitFor("the download stops") { world.center.downloads.current == nil }
+    }
+
     /// In a cloud library, a due download is deleted only when this Mac
     /// holds its package whole; one only in the cloud is left, with one log
     /// line, for a Mac that has it.
