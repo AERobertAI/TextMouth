@@ -1169,3 +1169,65 @@ Documented B05, FR12's branches B and C, FR11's branches A1 and A2 with FR13, an
 - **FR11 A2:**
   - Nothing in the app saves the Library category, so the README says only that Recently Opened keeps its sort (its key is still `__recent__`).
   - Remove from Library… on an episode acts as Delete Download, though its question and last message still speak of a book.
+
+## From the feeditempolicy agent (feature/feed-item-policy), Oct 10
+
+What the user's data becomes (tested on a fixture shaped like it):
+Tested on records and settings shaped like the user's; the live library was never touched.
+- **Global setting:** left as shipped (10 entries, no automatic downloads), it becomes "Every item listed, newest 5 downloaded" with the number 5. config.json gains `feedItems` and `feedNewestCount` and loses `feedKeepEntries` and `feedAutoDownload`. The old values stay in the preferences store, unused.
+- **"Finish It!":** its own -1 ("keep every entry") becomes "Use the global setting". All 381 items stay listed, and its record is rewritten once without the old override.
+- **"The Digital Antiquarian":** its record is untouched. Its next check reads the feed in full and lists every entry.
+- **What the first launch downloads:** "Finish It!"'s newest 5 (315.8 MB by the feed's sizes) and the 4 of The Digital Antiquarian's newest 5 not yet downloaded (2 articles, 2 episodes).
+  - These are discretionary downloads, so a network with data limits puts them off ("Waiting to Download, it downloads on a network without data limits").
+  - Without room beside the 1 GB reserve, each one waits.
+  - "Ep. 368" is not downloaded.
+  - The downloaded article counts as the listener's and stays.
+  - Nothing is removed.
+
+Decisions and assumptions:
+- **The policy type:** `FeedItemPolicy` stores the choice and the number, and derives what is listed and what downloads, so the unoffered fourth combination can't occur. The number is always kept within 1 to 2,000.
+  - Saved names: `everyListedNewestDownloaded`, `everyListedDownloadsByHand`, `onlyNewestListed`.
+  - In a feed's record: `itemPolicyOverride` holding `items` and `newestCount`.
+  - Reading a feed's choice never fails: anything odd reads as the default, so one bad value can't make a record unreadable.
+- **The global move** runs once; writing the choice's key marks it done, and a number already in the store is kept.
+  - Translation of other old values: automatic downloads on → the default; every entry kept, downloads by hand → "Every item listed, downloads by hand"; any other number n → "Only the newest n listed".
+  - **Per feed:** the old override moves once and is then cleared. -1 means "use the global setting" when the global setting lists every item; a number n becomes "only the newest n listed".
+- **Who asked for a download** is recorded on each item.
+  - The listener's Cancel Download, Delete Download, the library's Remove, and a failed download the listener asked for all make the item the listener's, so the rule never downloads it again by itself.
+  - Downloads made before this change count as the listener's.
+- **What the rule removes:** when it holds more of its own downloads than the number, it removes its oldest outside the newest, keeping the package of anything opened.
+  - It never removes the listener's downloads, anything on the reading list, anything open in a reader, or, in a cloud library, anything not wholly on this Mac. Those are looked at again at the next pass.
+  - It may remove an episode that was started but not finished.
+  - A failed download is retried only at a pass that follows a refresh.
+- **When the rule runs:** at launch, after subscribing, after each refresh, when one of its downloads finishes, and 10 seconds after the choice or number stops changing. That wait applies to larger numbers too, which avoids download churn. It never runs when a reader closes, and it runs one piece of work at a time with the after-playing sweep.
+- **Waiting rather than failing:** the rule's downloads wait for a network without limits, or for room. A download the listener asked for still fails when there is no room. A wait is never written to disk.
+- **The short list** hides played items without files, even within the newest. Items downloaded, downloading or waiting are always listed.
+- **Unchanged:** I kept `keptEntriesOfLastBody` as it was (-1 means every entry), so "Finish It!" isn't re-read for this change while The Digital Antiquarian is. Mark All Played already covered hidden items; only its doc changed.
+- **Old controls left in place:** "Keep the newest … entries", "Download new episodes and articles by themselves" and Feed Info's entries number still show until branch C replaces them, and they do nothing. Don't install between this merge and C's. An entries number set in Feed Info's old control becomes the feed's own short list at the next Refresh All or launch.
+- **Review item 1:** the sweep's and the rule's file removals now run off the main thread, on the download manager's import queue. The record write and the index write stay on the main actor, because `saveAndWait` discards older waiting saves and, off the main actor, could discard a newer one. The comment states why a removal can't race a restore. Delete Download stays wholly on the main thread, since its move to the Trash is main-actor work.
+- **Review item 2:** an import whose item was deleted meanwhile adds no row and deletes the package it just published (only inside a feed's folder), and ends as stopped. The test uses a hook, `FeedDownloadManager.beforeCommit`, which is nil in the app.
+
+No findings were posted. I told `feedindexfixes` which of my lines in `FeedLifecycle.swift` sit near theirs: merging both branches may meet adjacent-line conflicts there; keep both sides.
+
+Not verified:
+- Real networks, real discretionary downloads, and real disk use.
+- The user's real preferences and config.json; the defaults were assumed.
+- Real cloud drives.
+- Live VoiceOver and braille: this branch adds no interface.
+- The import queue's ordering under real load (the test only shows the work runs off the main thread).
+
+What branch C needs:
+- **The choice:** `FeedItemPolicy.Choice` (`.everyListedNewestDownloaded`, `.everyListedDownloadsByHand`, `.onlyNewestListed`), with `listing` and `downloading` derived from it.
+- **The number:** `FeedItemPolicy.newestCount`, within `SettingsPolicy.feedNewestCount` (1 to 2,000, default 5).
+- **The global setting:** `SettingsViewModel.feedSettings.itemPolicy`, saved as `FeedSettings.itemsPreference` and `newestCountPreference`.
+- **The per-feed setting:** `Feed.itemPolicyOverride` (nil means "Use the global setting"), set with `FeedCenter.setItemPolicy(_:of:)` and read with `itemPolicy(of:)`.
+- **The listing:** `FeedCenter.listedItems(of:)`.
+- **Waiting:** `FeedItemState.waiting(String)`, `.waitingReason`, `.isTransient`, and `FeedDownloadWait.network` / `.room(bytes:)` with `.reason`.
+- **Who asked:** `FeedItem.downloadOrigin`.
+- **The ten-second wait:** `FeedCenter.itemPolicyQuietTime`.
+
+README wording:
+"Every feed follows one choice, List and download. Under the default, every episode and article the feed has listed is listed, and the newest 5 stay downloaded: TextMouth downloads each of the newest 5 not yet played by itself, at launch, after you subscribe, and after each refresh, on a network without data limits. An episode waiting for such a network, or for room on your Mac, says "Waiting to Download" and why. When TextMouth holds more than 5 of its own downloads of a feed, it removes the oldest beyond the newest 5, keeping the place, bookmarks, and settings of any you opened. It never removes a download you asked for, one on your reading list, or one open in a reader, and it never downloads again an item you deleted or stopped. Played episodes count among the newest 5, so playing one never downloads an older one. "Every item listed, downloads by hand" downloads nothing by itself. "Only the newest 5 listed" lists the newest 5, less those you have played, plus every download, and leaves downloading to you. The number runs from 1 to 2,000, and a change of the choice or the number takes effect once it has stayed for ten seconds. The first launch of this version moves the old settings over: kept as TextMouth shipped them, they become the new default, and a feed that kept every entry uses it, so each feed's newest 5 download once. In config.json the choice is feedItems ("everyListedNewestDownloaded", "everyListedDownloadsByHand", or "onlyNewestListed") and the number is feedNewestCount; they replace feedKeepEntries and feedAutoDownload."
+
+ARCHITECTURE wording:
+"`FeedItemPolicy` (Models/FeedItemPolicy.swift, FR11) is the List and download choice and its number: `Choice`, `newestCount` (a `WholeNumberSettingRule`, `SettingsPolicy.feedNewestCount`), and the derived `listing` (whose `keptEntries` the reconciler takes) and `downloading`. `FeedSettings.itemPolicy` is the global one (`feedItems`, `feedNewestCount`, mirrored in config.json); `Feed.itemPolicyOverride` is a feed's own. The move from the retired settings runs once: `FeedSettings.moveToItemPolicyIfNeeded(in:)` at `FeedCenter.start`, and `FeedCenter.moveKeptEntriesOverrides()` per record. `FeedCenter.listedItems(of:)` lists by the policy (`FeedRecord.listedItems(under:hasFile:)`), and the counts and a feed's folder read it. `FeedItem.downloadOrigin` (`FeedDownloadOrigin`: `.listener`, or `.window` for the rule's discretionary downloads) records who asked for a download. A rule download put off for its network or for room is `FeedItemState.waiting` (`FeedDownloadWait`) and is never written to disk. The newest-N rule (Services/Feeds/FeedNewestRule.swift, `FeedCenter.applyItemPolicy(to:retrying:)`) asks for the newest not played, takes back its waiting requests no longer counted, and removes its oldest downloads beyond the number through `removeDue`, which it shares with the after-playing sweep: records and indexes on the main actor (`LibraryViewModel.readyFeedFilesForRemoval`), files on the import queue (`FeedDownloadManager.runBesideImports`), then the outcome on the main actor (`settleFeedFileRemovals`). Passes run one at a time with the sweep (`requestItemPolicyPass`): at launch, after subscribing, after each refresh, when a rule download finishes, and ten seconds after a change (`itemPolicyChanged(for:)`); never when a reader closes. An import whose item was deleted meanwhile lists nothing and deletes its package (`FeedDownloadManager.commit`)."
