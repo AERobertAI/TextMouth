@@ -112,6 +112,37 @@ final class FeedItemIndexMoveTests: FeedItemIndexTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
     }
 
+    // MARK: - After an Older TextMouth
+
+    /// An older TextMouth, which reads no feed index, marks a download it
+    /// cannot find not downloaded; this build marks it downloaded again,
+    /// its package and index row being here, and leaves alone an item
+    /// deleted from its feed.
+    @MainActor
+    func testAnItemAnOlderBuildMarkedNotDownloadedIsDownloadedAgain() async throws {
+        let world = try FeedTestWorld(self, label: "FeedItemHeal")
+        let episodes = [
+            FeedXML.Item(guid: "ep-2", title: "Kept", enclosure: "https://atlas.example/audio/2.mp3"),
+            FeedXML.Item(guid: "ep-1", title: "Deleted", enclosure: "https://atlas.example/audio/1.mp3"),
+        ]
+        world.server.serve("/heal.xml", .feed(FeedXML.rss(items: episodes)))
+        let feed = try await world.subscribe("/heal.xml")
+        let kept = try makeFeedItem(title: "Kept", itemID: "guid:ep-2", of: feed.id)
+        let deleted = try makeFeedItem(title: "Deleted", itemID: "guid:ep-1", of: feed.id)
+        world.library.addFeedBook(kept)
+        world.library.addFeedBook(deleted)
+        world.center.store.updateItem("guid:ep-2", of: feed.id) { $0.downloadDeletedDate = world.clock.value }
+        world.center.store.updateItem("guid:ep-1", of: feed.id) { $0.deletedDate = world.clock.value }
+
+        XCTAssertEqual(world.library.markFeedItemsDownloadedAgain(), 1)
+
+        let healed = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-2"))
+        XCTAssertEqual(healed.state, .downloaded(bookID: kept.id))
+        XCTAssertNil(healed.downloadDeletedDate)
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
+        XCTAssertEqual(world.library.markFeedItemsDownloadedAgain(), 0, "a second pass marks nothing")
+    }
+
     // MARK: - The Fixture
 
     /// The steps of the move after which a crash is mended.

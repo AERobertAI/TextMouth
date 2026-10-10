@@ -29,7 +29,9 @@ extension LibraryViewModel {
     /// the feeds' records have loaded, which happens off the main thread
     /// just after the library has: the records say which of the library's
     /// books are downloads. Until then each download shows where it always
-    /// did. Called once, as the feeds start.
+    /// did. Then marks downloaded again the items an older TextMouth marked
+    /// otherwise (`markFeedItemsDownloadedAgain()`). Called once, as the
+    /// feeds start.
     func moveFeedDownloadsOnceRecordsLoad() {
         feeds.store.$hasLoaded
             .filter { $0 }
@@ -37,9 +39,42 @@ extension LibraryViewModel {
             .sink { [weak self] _ in
                 Task { @MainActor [weak self] in
                     await self?.moveDownloadsIntoTheirFeeds()
+                    self?.markFeedItemsDownloadedAgain()
                 }
             }
             .store(in: &cancellables)
+    }
+
+    /// Marks downloaded again, as its book, each feed item whose row joined
+    /// the library's books, its file here, while its feed's record says it
+    /// is not downloaded (FR11). An older TextMouth, which reads no feed
+    /// index, never finds such a download among its books and marks its
+    /// item not downloaded; once this build is run again, the package with
+    /// its file and its index row make it downloaded again. An item deleted
+    /// from its feed, or downloading or downloaded as another book, is left
+    /// as it is.
+    /// - Returns: How many items were marked downloaded again.
+    @discardableResult
+    func markFeedItemsDownloadedAgain() -> Int {
+        var marked = 0
+        for row in library.books {
+            guard let link = row.feedLink,
+                  let item = feeds.store.record(of: link.feedID)?.item(link.itemID),
+                  item.deletedDate == nil, item.state.bookID == nil, !item.state.isDownloading else { continue }
+            feeds.store.updateItem(link.itemID, of: link.feedID) { item in
+                item.state = .downloaded(bookID: row.id)
+                item.downloadDeletedDate = nil
+            }
+            marked += 1
+        }
+        if marked > 0 {
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_ITEMS_DOWNLOADED_AGAIN: marked \(CountWording.phrase(marked, singular: "item", plural: "items")) "
+                    + "downloaded again whose packages and index rows an older TextMouth did not read"
+            )
+        }
+        return marked
     }
 
     /// The downloads made before FR11 still among the library's own books,
