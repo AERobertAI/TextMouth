@@ -406,6 +406,32 @@ final class FeedDownloadProgressTests: XCTestCase {
         XCTAssertFalse(progress.state.isCancelling, "Cancel outlasted its run")
     }
 
+    /// A download asked for after Cancel, while the one Cancel let finish was
+    /// still being added, ends the cancelling as it begins: the section no
+    /// longer says "Cancelling...", and its Cancel is offered again (feed
+    /// review item 13).
+    func testADownloadBegunAfterCancelEndsTheCancelling() {
+        let clock = CommandClock()
+        let progress = FeedDownloadProgress(now: { clock.now })
+        let none = FeedDownloadWaits()
+
+        _ = recordingAnnouncements {
+            progress.begin(title: "Ep. 370", feedTitle: "Finish It!", transfer: nil, queued: [], waits: none)
+            progress.beginAddingToLibrary()
+            progress.cancel(stopped: [], finishing: "Ep. 370")
+            XCTAssertTrue(progress.state.isCancelling)
+            // The listener asks for another while the first is being added.
+            progress.update(queued: [nil], waits: none)
+            progress.end(.downloaded, queued: [nil], waits: none)
+            XCTAssertTrue(progress.state.isCancelling, "the cancelling ended before a download began")
+            progress.begin(title: "Ep. 371", feedTitle: "Finish It!", transfer: nil, queued: [], waits: none)
+        }
+
+        XCTAssertTrue(progress.state.isRunning)
+        XCTAssertFalse(progress.state.isCancelling, "Cancelling outlasted the downloads it stopped")
+        XCTAssertFalse(progress.state.lines(at: clock.now).contains(FeedDownloadProgressWording.cancelling))
+    }
+
     /// As TextMouth quits, the progress shows nothing and says nothing, and
     /// a download that stops afterwards changes nothing.
     func testQuittingClearsTheProgressWithoutAWord() {

@@ -123,9 +123,13 @@ struct FeedDownloadProgressState: Equatable {
         self.waits = waits
     }
 
-    /// The download `download` began.
+    /// The download `download` began. One beginning after Cancel, as one the
+    /// listener asked for while the download Cancel let finish was still
+    /// being added, ends the cancelling: the section stops saying
+    /// "Cancelling..." and offers Cancel again (feed review item 13).
     mutating func begin(_ download: Download) {
         self.download = download
+        isCancelling = false
     }
 
     /// The file of the download under way has come as far as `transfer`
