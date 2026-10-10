@@ -189,8 +189,9 @@ final class ImportProgressWordingTests: XCTestCase {
 
     /// A quarter is announced with the archive's name, the books processed,
     /// and the time left when there is an estimate. A batch's end says what
-    /// came of it, with only the counts that are not 0, or that no book was
-    /// found; one book's end, and a failure, name it.
+    /// came of it, with only the counts that are not 0, or, when it brought
+    /// no new book and lost none, what it found; one book's end, and a
+    /// failure, name it.
     func testAnnouncementsSayWhatCameOfTheImport() {
         XCTAssertEqual(
             ImportProgressWording.quarter(of: "Library Export.zip", done: 25, total: 100, secondsLeft: 250),
@@ -213,14 +214,45 @@ final class ImportProgressWordingTests: XCTestCase {
             "Finished importing “Shelf.zip”: 1 book imported, 1 skipped as a duplicate."
         )
         XCTAssertEqual(
+            ImportProgressWording.finished(batch: "Shelf.zip", imported: 0, skippedDuplicates: 2, failed: 1),
+            "Finished importing “Shelf.zip”: 0 books imported, 2 skipped as duplicates, 1 failed."
+        )
+        // A batch that brought no new book and lost none says what it found.
+        XCTAssertEqual(
             ImportProgressWording.finished(batch: "Shelf.zip", imported: 0, skippedDuplicates: 3, failed: 0),
-            "Finished importing “Shelf.zip”: 0 books imported, 3 skipped as duplicates."
+            ImportProgressWording.noNewBooks(in: "Shelf.zip", alreadyInLibrary: 3)
         )
         XCTAssertEqual(
             ImportProgressWording.finished(batch: "Empty.zip", imported: 0, skippedDuplicates: 0, failed: 0),
-            "Finished importing “Empty.zip”: no books were found in it."
+            ImportProgressWording.noNewBooks(in: "Empty.zip", alreadyInLibrary: 0)
         )
         XCTAssertEqual(ImportProgressWording.finished(book: "Moby Dick.epub"), "Finished importing “Moby Dick.epub”.")
         XCTAssertEqual(ImportProgressWording.failed("Moby Dick.epub"), "Could not import “Moby Dick.epub”.")
+    }
+
+    /// A batch that found no new book says what it found: every book was
+    /// already in the library, counted, both of them, or its one book, or
+    /// the archive held no book TextMouth reads (FR10).
+    func testABatchWithNoNewBookSaysWhatItFound() {
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Library Export.zip", alreadyInLibrary: 24),
+            "No new books in “Library Export.zip”: all 24 were already in your library."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Library Export.zip", alreadyInLibrary: 3),
+            "No new books in “Library Export.zip”: all 3 were already in your library."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Pair.zip", alreadyInLibrary: 2),
+            "No new books in “Pair.zip”: both were already in your library."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Shelf.zip", alreadyInLibrary: 1),
+            "No new books in “Shelf.zip”: its one book was already in your library."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Empty.zip", alreadyInLibrary: 0),
+            "No books were found in “Empty.zip”."
+        )
     }
 }

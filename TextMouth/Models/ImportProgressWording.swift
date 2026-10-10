@@ -148,12 +148,13 @@ enum ImportProgressWording {
 
     /// Announced as a ZIP batch that ran long ends: "Finished importing
     /// “Library Export.zip”: 97 books imported, 2 skipped as duplicates,
-    /// 1 failed." Only the counts that are not 0 follow the books imported,
-    /// and an archive with no book in it says so. The library's alert names
-    /// each file that failed.
+    /// 1 failed." Only the counts that are not 0 follow the books imported.
+    /// A batch that imported no book and in which nothing failed says what
+    /// it found instead (`noNewBooks(in:alreadyInLibrary:)`). The library's
+    /// alert names each file that failed.
     static func finished(batch subject: String, imported: Int, skippedDuplicates: Int, failed: Int) -> String {
-        guard imported + skippedDuplicates + failed > 0 else {
-            return "Finished importing “\(subject)”: no books were found in it."
+        guard imported + failed > 0 else {
+            return noNewBooks(in: subject, alreadyInLibrary: skippedDuplicates)
         }
         var counts = ["\(CountWording.books(imported)) imported"]
         if skippedDuplicates > 0 {
@@ -163,6 +164,27 @@ enum ImportProgressWording {
             counts.append("\(failed) failed")
         }
         return "Finished importing “\(subject)”: \(counts.joined(separator: ", "))."
+    }
+
+    /// Announced as a ZIP batch that brought no new book into the library,
+    /// and in which nothing failed, ends, however short it was, since no
+    /// alert and no question follow it to say so: "No new books in “Library
+    /// Export.zip”: all 24 were already in your library.", "…: both were
+    /// already in your library.", "…: its one book was already in your
+    /// library.", or, for an archive holding no book TextMouth reads, "No
+    /// books were found in “Empty.zip”." `duplicates` counts the books it
+    /// found, each skipped as already in the library.
+    static func noNewBooks(in subject: String, alreadyInLibrary duplicates: Int) -> String {
+        switch duplicates {
+        case ...0:
+            return "No books were found in “\(subject)”."
+        case 1:
+            return "No new books in “\(subject)”: its one book was already in your library."
+        case 2:
+            return "No new books in “\(subject)”: both were already in your library."
+        default:
+            return "No new books in “\(subject)”: all \(duplicates) were already in your library."
+        }
     }
 
     /// Announced as the import of one book that ran long ends: "Finished

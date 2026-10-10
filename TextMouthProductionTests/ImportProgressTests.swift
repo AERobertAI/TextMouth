@@ -342,6 +342,48 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
     }
 
+    /// A ZIP archive whose books are all in the library already imports
+    /// nothing and raises no alert and no question, so VoiceOver hears what
+    /// it found as soon as it ends, however quickly; until October 10, 2026
+    /// such an import ended in silence.
+    func testAnArchiveOfBooksAlreadyInTheLibrarySaysSoAtOnce() throws {
+        let folder = makeIntegrationLibraryFolder("Import Progress No New Books")
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        useAfterImportingBehavior(.askEachTime)
+        let sources = try makeSandboxDirectory("ImportProgressNoNewBooks")
+        let texts = [
+            "Tide Tables.txt": Data("Tide Tables\n\nHigh water at the outer harbour comes late today.\n".utf8),
+            "Knots.txt": Data("Knots\n\nA bowline holds fast and unties easily.\n".utf8)
+        ]
+        var hashes: [String] = []
+        for (name, data) in texts {
+            let file = sources.appendingPathComponent(name)
+            try data.write(to: file)
+            hashes.append(try FileImportService.md5Hash(of: file))
+        }
+        let model = LibraryViewModel(initializeServices: false)
+        // The library already holds both books, known by their checksums.
+        model.library = Library(books: hashes.enumerated().map { index, hash in
+            Book(title: "Held \(index + 1)", format: .txt, filePath: "/nowhere/held-\(index + 1).txt", md5Hash: hash)
+        })
+        let archive = sources.appendingPathComponent("Harbour Notes.zip")
+        try FileManager.default.moveItem(at: try makeTemporaryZip(prefix: "ImportProgressNoNew", entries: texts), to: archive)
+        let heard = HeardMessages()
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in heard.messages.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+
+        model.importZipAsync(from: archive, toFolder: folder.path)
+
+        let expected = "No new books in “Harbour Notes.zip”: both were already in your library."
+        XCTAssertTrue(waitUntil(timeout: 20) { heard.messages.contains(expected) }, heard.messages.joined(separator: " | "))
+        XCTAssertEqual(heard.messages, [expected])
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(model.library.books.count, 2, "a book was imported")
+        XCTAssertNil(model.importDecisions.current, "a question was asked")
+    }
+
     // MARK: - What VoiceOver Hears Unasked
 
     /// A batch that runs long is announced at each quarter of its books it
@@ -413,7 +455,7 @@ final class ImportProgressTests: XCTestCase {
             progress.receive(.importingBook(number: 3, total: 3, book: "Atlas.pdf", step: .readingSource))
             clock.advance(by: 30)
             progress.receive(.importing(done: 3, total: 3))
-            progress.end(.batch(ZipImportResult(books: Self.books(1), failures: [failure])))
+            progress.end(.batch(ZipImportResult(books: Self.books(1), failures: [failure], skippedDuplicates: 1)))
 
             progress.showBook("Moby Dick.epub")
             clock.advance(by: 12)
@@ -444,8 +486,55 @@ final class ImportProgressTests: XCTestCase {
             "Finished importing “Moby Dick.epub”.",
             "Could not import “Too Big.zip”.",
             "Cancelling after this book...",
-            "Finished importing “Empty.zip”: no books were found in it."
+            "No books were found in “Empty.zip”."
         ])
+    }
+
+    /// A batch that found no new book, its every book already in the
+    /// library or none found, and in which nothing failed, says what it
+    /// found however short it was, since no alert or question follows it.
+    /// A short batch with a failure, whose alert speaks for it, a short one
+    /// cancelled, whose alert says where it stopped, and one ended after
+    /// Cancel stay quiet, as every import's end after Cancel does.
+    func testABatchThatFindsNoNewBookSaysSoHoweverShort() {
+        let clock = CommandClock()
+        let progress = ImportProgress(now: { clock.now })
+        let failure = ZipImportFailure(fileName: "Knots.docx", message: "Reading its text failed: unreadable")
+
+        let recorder = recordingAnnouncements {
+            progress.showArchive("Library Export.zip")
+            for number in 1...24 {
+                progress.receive(.importingBook(number: number, total: 24, book: "Copy \(number).epub", step: .readingSource))
+                progress.receive(.importing(done: number, total: 24, skippedDuplicate: true))
+            }
+            clock.advance(by: 1)
+            progress.end(.batch(ZipImportResult(books: [], failures: [], skippedDuplicates: 24)))
+
+            progress.showArchive("Shelf.zip")
+            progress.end(.batch(ZipImportResult(books: [], failures: [], skippedDuplicates: 1)))
+
+            progress.showArchive("Empty.zip")
+            progress.end(.batch(ZipImportResult(books: [], failures: [])))
+
+            progress.showArchive("Damaged.zip")
+            progress.end(.batch(ZipImportResult(books: [], failures: [failure], skippedDuplicates: 2)))
+
+            progress.showArchive("Stopped.zip")
+            progress.end(.batch(ZipImportResult(books: [], failures: [], cancellation: .whileExtracting)))
+
+            progress.showArchive("Late.zip")
+            progress.cancel()
+            progress.end(.batch(ZipImportResult(books: [], failures: [], skippedDuplicates: 3)))
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "No new books in “Library Export.zip”: all 24 were already in your library.",
+            "No new books in “Shelf.zip”: its one book was already in your library.",
+            "No books were found in “Empty.zip”.",
+            "Cancelling..."
+        ])
+        XCTAssertEqual(recorder.announcements.map(\.priority), [.high, .high, .high, .high])
+        XCTAssertEqual(progress.state, ImportProgressState(), "the end clears the overlay")
     }
 
     /// Cancel is announced at once, in the overlay's own words, and once

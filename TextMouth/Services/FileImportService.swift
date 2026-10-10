@@ -209,6 +209,19 @@ struct ZipImportResult {
     /// Where the batch stopped when the reader cancelled it (TODO I05); nil
     /// when it ran to its end. A cancelled batch keeps the ZIP.
     var cancellation: ZipImportCancellation?
+    /// How many of the books found were skipped as duplicates, already in
+    /// the library or found earlier in the archive: none of them is
+    /// imported, and none is a failure.
+    var skippedDuplicates = 0
+
+    /// Whether the batch ran to its end without bringing a book into the
+    /// library and without anything in it failing: every book it found was
+    /// already in the library, or it found none. No alert follows such a
+    /// batch (`failureSummary` is nil) and no question, so only VoiceOver's
+    /// announcement says what it found (FR10).
+    var foundNoNewBook: Bool {
+        books.isEmpty && failures.isEmpty && cancellation == nil
+    }
 
     /// Whether the original ZIP must be kept whatever the "After Importing
     /// a Book" preference says: a file in it failed, a book from it is
@@ -1133,7 +1146,8 @@ enum FileImportService {
                 books: imported.books,
                 failures: candidates.failures + imported.failures,
                 incompleteBooks: imported.incompleteBooks,
-                cancellation: imported.cancellation
+                cancellation: imported.cancellation,
+                skippedDuplicates: imported.skippedDuplicates
             )
         }
         if let cancellation = result.cancellation {
@@ -1235,6 +1249,9 @@ enum FileImportService {
         var books: [Book] = []
         var failures: [ZipImportFailure] = []
         var incompleteBooks: [ZipImportFailure] = []
+        // The books skipped as duplicates, which the batch's end says when
+        // it brings no new book (FR10).
+        var skippedDuplicates = 0
         // Track hashes from this batch to avoid creating duplicate .tmbs
         // when the same file appears multiple times in a single zip
         var seenHashes = existingHashes
@@ -1248,7 +1265,8 @@ enum FileImportService {
                     books: books,
                     failures: failures,
                     incompleteBooks: incompleteBooks,
-                    cancellation: .afterBooks(completed: index, total: total)
+                    cancellation: .afterBooks(completed: index, total: total),
+                    skippedDuplicates: skippedDuplicates
                 )
             }
 
@@ -1263,6 +1281,7 @@ enum FileImportService {
             // duplicate; a DAISY book in a folder has its package's.
             beganStep(.readingSource)
             if let hash = try? importHash(of: fileURL), seenHashes.contains(hash) {
+                skippedDuplicates += 1
                 progress?(.importing(done: number, total: total, skippedDuplicate: true))
                 continue
             }
@@ -1297,7 +1316,12 @@ enum FileImportService {
             progress?(.importing(done: number, total: total))
         }
 
-        return ZipImportResult(books: books, failures: failures, incompleteBooks: incompleteBooks)
+        return ZipImportResult(
+            books: books,
+            failures: failures,
+            incompleteBooks: incompleteBooks,
+            skippedDuplicates: skippedDuplicates
+        )
     }
 
     /// Delete a book's entire .tmb package.

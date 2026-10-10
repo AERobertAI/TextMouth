@@ -36,8 +36,6 @@ struct ImportProgressState: Equatable {
     /// seconds they took in all, which the time left is estimated from.
     private(set) var timedBooks = 0
     private(set) var timedSeconds: TimeInterval = 0
-    /// The batch's books skipped as duplicates, which its end says.
-    private(set) var skippedDuplicates = 0
     /// The seconds the batch has left, estimated as its last book finished;
     /// nil while no estimate applies (`ImportTimeEstimate`).
     private(set) var secondsLeft: TimeInterval?
@@ -95,12 +93,12 @@ struct ImportProgressState: Equatable {
         case let .importing(done, total, skippedDuplicate):
             current = done
             self.total = total
-            // The book done is the one under way, timed from its start.
+            // The book done is the one under way, timed from its start,
+            // unless it was skipped as a duplicate, which takes next to no
+            // time (`ImportTimeEstimate`).
             if let finished = book, finished.number == done, !finished.isDone {
                 book?.isDone = true
-                if skippedDuplicate {
-                    skippedDuplicates += 1
-                } else {
+                if !skippedDuplicate {
                     timedBooks += 1
                     timedSeconds += max(0, date.timeIntervalSince(finished.startedAt))
                 }
@@ -177,7 +175,8 @@ struct ImportProgressState: Equatable {
 /// overlay (FR10): each quarter of a ZIP batch's books, once, and how the
 /// import ended; and, at once, that Cancel was pressed. An import that ends
 /// within `announcedAfter` stays quiet, as before: its questions and alerts
-/// speak for it.
+/// speak for it. A ZIP batch that found no new book, and in which nothing
+/// failed, has neither, so what it found is said however short it was.
 @MainActor
 final class ImportProgress: ObservableObject {
     /// How an import shown in the overlay ended, which its announcement says.
@@ -301,22 +300,26 @@ final class ImportProgress: ObservableObject {
 
     /// What VoiceOver hears as the import shown ends as `ending`, or nil
     /// when it hears nothing: the import was short, cancelled, or named
-    /// neither an archive nor a book.
+    /// neither an archive nor a book. A ZIP batch that found no new book,
+    /// and in which nothing failed, is said however short it was: no alert
+    /// and no question follow it, so nothing else would say what it found
+    /// (`ZipImportResult.foundNoNewBook`).
     private func endAnnouncement(for ending: Ending) -> String? {
-        guard let subject, !state.isCancelling, hasRunLong(at: now()) else { return nil }
+        guard let subject, !state.isCancelling else { return nil }
+        let ranLong = hasRunLong(at: now())
         switch ending {
         case .batch(let result):
-            guard result.cancellation == nil else { return nil }
+            guard result.cancellation == nil, ranLong || result.foundNoNewBook else { return nil }
             return ImportProgressWording.finished(
                 batch: subject,
                 imported: result.books.count,
-                skippedDuplicates: state.skippedDuplicates,
+                skippedDuplicates: result.skippedDuplicates,
                 failed: result.failures.count
             )
         case .book:
-            return ImportProgressWording.finished(book: subject)
+            return ranLong ? ImportProgressWording.finished(book: subject) : nil
         case .failure:
-            return ImportProgressWording.failed(subject)
+            return ranLong ? ImportProgressWording.failed(subject) : nil
         }
     }
 

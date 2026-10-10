@@ -154,6 +154,8 @@ final class ZIPImportTests: XCTestCase {
 
         XCTAssertEqual(result.books.map(\.title), ["Rope Splicing"])
         XCTAssertEqual(result.failures.map(\.fileName), ["Tides.txt"])
+        XCTAssertEqual(result.skippedDuplicates, 1)
+        XCTAssertFalse(result.foundNoNewBook)
         XCTAssertEqual(reports, [
             .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .readingSource),
             .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .copying),
@@ -222,6 +224,9 @@ final class ZIPImportTests: XCTestCase {
         )
     }
 
+    /// A file already in the library is skipped, counted among the batch's
+    /// duplicates, and is no failure; a batch of nothing else found no new
+    /// book, which VoiceOver is told however short it was (FR10).
     func testDuplicateFilesAreSkippedWithoutBeingReportedAsFailures() throws {
         let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: file) }
@@ -240,5 +245,21 @@ final class ZIPImportTests: XCTestCase {
 
         XCTAssertTrue(result.books.isEmpty)
         XCTAssertTrue(result.failures.isEmpty)
+        XCTAssertEqual(result.skippedDuplicates, 1)
+        XCTAssertTrue(result.foundNoNewBook)
+        XCTAssertNil(result.failureSummary, "an alert would follow the batch")
+    }
+
+    /// A batch found no new book only when it imported none, nothing in it
+    /// failed, and it ran to its end; a cancelled batch, or one with a
+    /// failure, has an alert that speaks for it.
+    func testABatchFoundNoNewBookOnlyWithNothingImportedFailedOrCancelled() {
+        let book = Book(title: "Kept", format: .txt, filePath: "/tmp/kept.txt", md5Hash: "kept")
+        let failure = ZipImportFailure(fileName: "bad.epub", message: "unreadable")
+        XCTAssertTrue(ZipImportResult(books: [], failures: []).foundNoNewBook)
+        XCTAssertTrue(ZipImportResult(books: [], failures: [], skippedDuplicates: 3).foundNoNewBook)
+        XCTAssertFalse(ZipImportResult(books: [book], failures: []).foundNoNewBook)
+        XCTAssertFalse(ZipImportResult(books: [], failures: [failure]).foundNoNewBook)
+        XCTAssertFalse(ZipImportResult(books: [], failures: [], cancellation: .whileExtracting).foundNoNewBook)
     }
 }
