@@ -943,6 +943,75 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertFalse(lines.contains { $0.contains("DIRECT_RETRY_FAILED:") }, "\(lines)")
     }
 
+    // MARK: - An Engine That Cannot Start
+
+    // The engine is made to fail to start, as it does when macOS has no
+    // output it can use (`_refusesToStartForTesting`), so it plays nothing.
+
+    /// A seek in direct speech switches to the audio the engine holds of
+    /// this speech; when the engine cannot start, speech goes on directly
+    /// from the new place (`SEEK_ENGINE_FAILED`), as the other switches fall
+    /// back, rather than showing itself speaking with neither the
+    /// synthesizer nor the engine playing.
+    func testASeekWhoseEngineCannotStartSpeaksDirectlyFromThere() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        speech.audioEngine._refusesToStartForTesting = true
+        report(start: try handedOver(0, by: recorder), to: speech)
+        let handedBeforeTheSeek = recorder.utterances.count
+
+        speech.seek(toCharOffset: 50_000)
+
+        XCTAssertTrue(speech.usingDirectMode, "speech was left on an engine that did not start")
+        XCTAssertFalse(speech.audioEngine.isPlaying)
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheSeek + 1, "nothing was spoken from the new place")
+        XCTAssertEqual(
+            try handedOver(handedBeforeTheSeek, by: recorder).speechString,
+            chunk(at: 50_000, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText)
+        )
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: 50_000, length: 0))
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(
+            lines.contains { $0 == "SEEK_ENGINE_FAILED: rendered audio did not start; speaking directly at offset=50000" },
+            "\(lines)"
+        )
+    }
+
+    /// A refused chunk whose rendered audio cannot play, the engine failing
+    /// to start, is spoken again directly from where it was refused,
+    /// strictly guarded, as without rendered audio
+    /// (`DIRECT_RETRY_ENGINE_FAILED`), on a fresh synthesizer.
+    func testARefusalWhoseEngineCannotStartIsSpokenAgainDirectly() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        speech.audioEngine._refusesToStartForTesting = true
+        let refusing = try synthesizer(0, by: recorder)
+
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+
+        XCTAssertTrue(speech.usingDirectMode, "speech was left on an engine that did not start")
+        XCTAssertFalse(speech.audioEngine.isPlaying)
+        XCTAssertTrue(speech.isSpeaking)
+        let retry = try handedOver(1, by: recorder)
+        XCTAssertEqual(
+            retry.speechString,
+            SpeechMarkupGuard.neutralizedStrictly(chunk(at: start, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText))
+        )
+        XCTAssertFalse(try synthesizer(1, by: recorder) === refusing, "the retry went to the synthesizer that refused")
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(lines.contains { $0.hasPrefix("DIRECT_RETRY_ENGINE_FAILED: rendered audio did not start at offset=\(start);") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.hasPrefix("DIRECT_RETRY offset=\(start) ") }, "\(lines)")
+    }
+
+    // MARK: - Benchmark
+
     /// What the synthesizer itself does with the two changes, muted: the
     /// first word of a 1,000-unit utterance against a 5,000-unit one (the
     /// review measured 66 and 111 ms), and the silence between two

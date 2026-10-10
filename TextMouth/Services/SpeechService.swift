@@ -1069,14 +1069,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         let safeOffset = max(0, min(reportedOffset, currentText.utf16Length))
         if renderedAudioMatchesSpeech {
             transitionLog(.event, "DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
-            if !switchToRenderedAudio(at: safeOffset) {
-                // A rendered buffer can survive an engine-start failure. Fall
-                // back to direct speech rather than leaving the logical state
-                // active with a second silent backend.
-                transitionLog(.event, "DIRECT_WATCHDOG_ENGINE_FAILED: rendered audio did not start; restarting direct speech at offset=\(safeOffset)")
-                audioEngine.stop()
-                speakDirect(currentText, fromCharOffset: safeOffset)
-            }
+            switchToRenderedAudioOrSpeakDirectly(at: safeOffset, failureTag: "DIRECT_WATCHDOG_ENGINE_FAILED")
             return
         }
 
@@ -1399,6 +1392,21 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         guard audioEngine.isPlaying else { return false }
         startPositionTracking()
         return true
+    }
+
+    /// Switch to rendered audio of this speech at `offset`, where nothing is
+    /// heard (`switchToRenderedAudio(at:)`), or, when the engine does not
+    /// start, as a rendered buffer that survived an engine-start failure can
+    /// leave it, speak directly from `offset` instead, logging an event
+    /// tagged `failureTag`: speech that shows itself speaking is never left
+    /// in neither backend. A seek and the watchdog's recovery go on this way;
+    /// a refusal's recovery, which must speak the refused text strictly
+    /// guarded, goes on its own way.
+    private func switchToRenderedAudioOrSpeakDirectly(at offset: Int, failureTag: String) {
+        guard !switchToRenderedAudio(at: offset) else { return }
+        transitionLog(.event, "\(failureTag): rendered audio did not start; speaking directly at offset=\(offset)")
+        audioEngine.stop()
+        speakDirect(currentText, fromCharOffset: offset)
     }
 
     /// Apply one step of a sleep timer's fade, `volume`, to the speech being
@@ -1741,7 +1749,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// Rendered audio already playing seeks within itself. Direct speech
     /// switches to rendered audio of this speech, in the current voice, for
     /// instant seeking once it is ready, and otherwise restarts direct speech
-    /// from the new offset.
+    /// from the new offset. When the engine does not start, as after an
+    /// output device went away, direct speech restarts there too
+    /// (`SEEK_ENGINE_FAILED`), as the watchdog's switch falls back: the seek
+    /// once left speech in neither backend while it showed itself speaking.
     func seek(toCharOffset offset: Int) {
         // Bump the position-tracking generation so any in-flight 100ms
         // polling dispatch (offset captured pre-seek, word extraction
@@ -1762,7 +1773,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 transitionLog(.trace, "SEEK_SWITCH: direct→engine at offset=\(offset)")
                 // The switch stops the synthesizer again, which, stopped
                 // above, changes nothing.
-                switchToRenderedAudio(at: offset)
+                switchToRenderedAudioOrSpeakDirectly(at: offset, failureTag: "SEEK_ENGINE_FAILED")
             } else {
                 // No rendered audio of this speech yet, or only audio from
                 // before the voice changed: restart direct speech here.

@@ -1038,12 +1038,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         engine.connect(playerNode, to: timePitch, format: audio.format)
         engine.connect(timePitch, to: engine.mainMixerNode, format: audio.format)
 
-        if !engine.isRunning {
-            do { try engine.start() } catch {
-                print("AudioEngine failed to start: \(error)")
-                return
-            }
-        }
+        guard startEngineIfStopped(for: "a play") else { return }
 
         // Re-apply the tracked volume after engine start. The
         // stop→reconnect→start cycle during chapter transitions can
@@ -1052,6 +1047,25 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         engine.mainMixerNode.outputVolume = currentVolume
 
         scheduleAndPlay(audio, fromCharOffset: charOffset)
+    }
+
+    /// Starts the audio engine unless it is running already, as a play and
+    /// a resume need, and says whether it runs. It cannot start when macOS
+    /// has no output it can use, as when an output device has gone away;
+    /// the failure is printed with `purpose`, "a play" or "a resume", and
+    /// the caller then plays nothing.
+    private func startEngineIfStopped(for purpose: String) -> Bool {
+        guard !engine.isRunning else { return true }
+        do {
+            if _refusesToStartForTesting {
+                throw CocoaError(.featureUnsupported)
+            }
+            try engine.start()
+            return true
+        } catch {
+            print("AudioEngine could not start for \(purpose): \(error)")
+            return false
+        }
     }
 
     /// Begin a new play of `audio` from the frame `charOffset` maps to. Its
@@ -1203,14 +1217,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // A player node cannot resume while its containing engine is stopped.
         // This state can arise after the Mac sleeps for several hours even
         // though our scheduled slices and logical pause state remain intact.
-        if !engine.isRunning {
-            do {
-                try engine.start()
-            } catch {
-                print("AudioEngine failed to restart while resuming: \(error)")
-                return false
-            }
-        }
+        guard startEngineIfStopped(for: "a resume") else { return false }
 
         // Engine restarts can reset mixer state, so preserve the user's
         // current volume just as the normal play path does.
@@ -1528,6 +1535,12 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     func _charOffsetForFrameForTesting(_ frame: AVAudioFramePosition) -> Int {
         charOffsetForFrame(frame)
     }
+
+    /// Makes the audio engine fail to start, as it does when macOS has no
+    /// output it can use, so that a test can see what speech does when its
+    /// rendered audio cannot play (`startEngineIfStopped(for:)`); false,
+    /// as in the app, starts it. An engine already running is not stopped.
+    var _refusesToStartForTesting = false
 
     /// What the synthesizer is handed for a render's text, in place of the
     /// markup guard (`SpeechMarkupGuard.neutralized`), so a test can hand it
