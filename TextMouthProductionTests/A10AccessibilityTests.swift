@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import SwiftUI
 import XCTest
 @testable import TextMouth
@@ -78,11 +79,11 @@ final class ReadOnceTests: XCTestCase {
     /// voice sheet's are labelled by their setting alone, with their values
     /// in words.
     func testSlidersAreLabelledByTheirSettingAlone() throws {
-        let settings = try makeIsolatedSettings()
+        let settings = try makeA10Settings()
         settings.bluetoothMonitoringEnabled = true
         settings.restartTimerGestureEnabled = true
 
-        try withFixedHostedControls(VoiceSettingsView().environmentObject(settings)) { controls in
+        try withA10HostedControls(VoiceSettingsView().environmentObject(settings)) { controls in
             let sliders = controls.filter { $0.role == .slider }
             XCTAssertEqual(sliders.map(\.label), ["Default speed", "Default pitch"])
             XCTAssertEqual(
@@ -90,15 +91,15 @@ final class ReadOnceTests: XCTestCase {
                 ["\(Int(settings.wordsPerMinute)) words per minute", SpeechService.pitchLabel(settings.pitchMultiplier)]
             )
         }
-        try withFixedHostedControls(MiscellaneousSettingsView().environmentObject(settings)) { controls in
+        try withA10HostedControls(MiscellaneousSettingsView().environmentObject(settings)) { controls in
             XCTAssertEqual(
                 controls.filter { $0.role == .slider }.map(\.label),
                 ["Bluetooth disconnect delay", "Gesture time window"]
             )
         }
-        let reader = makeTextReader()
+        let reader = makeA10TextReader()
         defer { reader.close() }
-        try withFixedHostedControls(BookVoicePickerView(viewModel: reader)) { controls in
+        try withA10HostedControls(BookVoicePickerView(viewModel: reader)) { controls in
             let sliders = controls.filter { $0.role == .slider }
             XCTAssertEqual(sliders.map(\.label), ["Speed", "Pitch"])
             XCTAssertFalse(controls.contains { $0.label.localizedCaseInsensitiveContains("slider") }, "\(controls.map(\.label))")
@@ -108,7 +109,7 @@ final class ReadOnceTests: XCTestCase {
     /// The custom sleep timer's stepper says its minutes with their unit,
     /// as the field beside it does: "30 minutes", not "30".
     func testTheCustomTimerStepperSaysItsUnit() throws {
-        let reader = makeTextReader()
+        let reader = makeA10TextReader()
         defer { reader.close() }
         let sheet = SleepTimerView(
             viewModel: reader,
@@ -116,7 +117,7 @@ final class ReadOnceTests: XCTestCase {
             onClose: {},
             autoClose: false
         )
-        try withFixedHostedControls(sheet) { controls in
+        try withA10HostedControls(sheet) { controls in
             let stepper = try XCTUnwrap(controls.first { $0.role == .incrementor }, "\(controls.map(\.label))")
             XCTAssertEqual(stepper.label, SleepTimerView.adjustMinutesLabel)
             XCTAssertEqual(stepper.valueDescription, "30 minutes")
@@ -133,61 +134,6 @@ final class ReadOnceTests: XCTestCase {
         XCTAssertEqual(
             BookmarkRow(bookmark: bookmark, headingText: "Harbour").bookmarkAccessibilityLabel,
             "Bookmark 2, Harbour, Note: Ferry times, added \(bookmark.dateText)"
-        )
-    }
-
-    // MARK: Fixtures
-
-    /// Hosts `view` in a frame of its own fixed size, so the window never
-    /// follows its content, and passes the AppKit controls VoiceOver reads
-    /// to `body`; skipped where hosted windows expose none.
-    private func withFixedHostedControls<Content: View>(
-        _ view: Content,
-        _ body: ([AccessibleControl]) throws -> Void
-    ) throws {
-        try skipUnlessHostedWindowsExposeAccessibility()
-        let size = NSSize(width: 600, height: 900)
-        try withHostedView(
-            view.frame(width: size.width, height: size.height),
-            size: size,
-            until: { !self.accessibleControls(in: $0).isEmpty }
-        ) { hostingView in
-            try body(accessibleControls(in: hostingView))
-        }
-    }
-
-    /// A reader of a text book whose file does not exist, with settings of
-    /// its own: enough for the sheets, which read but never play it.
-    private func makeTextReader() -> ReaderViewModel {
-        let book = Book(
-            title: "Read Once",
-            format: .txt,
-            filePath: TextMouthPaths.root.appendingPathComponent("missing-\(UUID().uuidString).txt").path,
-            md5Hash: UUID().uuidString
-        )
-        let library = LibraryViewModel(initializeServices: false)
-        library.library = Library(books: [book])
-        return ReaderViewModel(
-            book: book,
-            libraryViewModel: library,
-            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
-        )
-    }
-
-    /// A settings model of the test's own, whose preferences and config.json
-    /// are the test's.
-    private func makeIsolatedSettings() throws -> SettingsViewModel {
-        let configFile = try makeTestDirectory("A10ReadOnce").appendingPathComponent("config.json")
-        let configService = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
-            write: { data, url in try data.write(to: url, options: .atomic) },
-            openForEvents: { _ in -1 },
-            close: { _ in }
-        ))
-        return SettingsViewModel(
-            notificationCenter: NotificationCenter(),
-            initializeServices: false,
-            userDefaults: makeSandboxedPreferences("a10-read-once"),
-            configService: configService
         )
     }
 }
@@ -297,5 +243,81 @@ final class ResultHintTests: XCTestCase {
                 XCTAssertFalse(text.localizedCaseInsensitiveContains(forbidden), "\"\(text)\" says \"\(forbidden)\"")
             }
         }
+    }
+}
+
+// MARK: - Shared Fixtures
+
+extension XCTestCase {
+    /// Hosts `view` in a frame of its own fixed size, so the window never
+    /// follows its content, and passes the AppKit controls VoiceOver reads
+    /// to `body`; skipped where hosted windows expose none.
+    @MainActor
+    fileprivate func withA10HostedControls<Content: View>(
+        _ view: Content,
+        _ body: ([AccessibleControl]) throws -> Void
+    ) throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let size = NSSize(width: 600, height: 900)
+        try withHostedView(
+            view.frame(width: size.width, height: size.height),
+            size: size,
+            until: { !self.accessibleControls(in: $0).isEmpty }
+        ) { hostingView in
+            try body(accessibleControls(in: hostingView))
+        }
+    }
+
+    /// A reader of a text book whose file does not exist, in a library of
+    /// its own: enough for the sheets, which read it but never play it.
+    /// `content`, given, is the book's as though it had loaded; the book's
+    /// own voice, speed, and pitch are those given; and `settings` are the
+    /// global settings, a model without services unless a test passes one.
+    @MainActor
+    fileprivate func makeA10TextReader(
+        content: DocumentContent? = nil,
+        settings: SettingsViewModel? = nil,
+        voiceID: String? = nil,
+        wordsPerMinute: Double? = nil,
+        pitch: Double? = nil
+    ) -> ReaderViewModel {
+        let book = Book(
+            title: "A10 Fixture",
+            format: .txt,
+            filePath: TextMouthPaths.root.appendingPathComponent("missing-\(UUID().uuidString).txt").path,
+            md5Hash: UUID().uuidString,
+            localVoiceID: voiceID,
+            localWPM: wordsPerMinute,
+            localPitch: pitch
+        )
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library(books: [book])
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: library,
+            settingsViewModel: settings ?? SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        )
+        if let content {
+            reader.content = content
+        }
+        return reader
+    }
+
+    /// A settings model of the test's own, whose preferences and config.json
+    /// are the test's.
+    @MainActor
+    fileprivate func makeA10Settings() throws -> SettingsViewModel {
+        let configFile = try makeTestDirectory("A10Settings").appendingPathComponent("config.json")
+        let configService = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
+            write: { data, url in try data.write(to: url, options: .atomic) },
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ))
+        return SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: makeSandboxedPreferences("a10-settings"),
+            configService: configService
+        )
     }
 }
