@@ -918,22 +918,29 @@ enum FileImportService {
     /// publishes the package under its final name. `staged` describes the
     /// book inside the staged package; the book returned describes it where
     /// it was published. A feed download names the feed item the book comes
-    /// from in `feedLink`, which its record keeps (FR03).
+    /// from in `feedLink`, which its record keeps (FR03). A download of a
+    /// feed item whose package was kept after an earlier download's file
+    /// went (FR11, branch A2) gives the state of the record it replaces in
+    /// `replacing` (`writeVerifiedRecord`), and puts the package in place of
+    /// the kept one with `publish`, which otherwise renames the staged
+    /// package to its destination (`ImportStaging.publish()`).
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
         run: inout ImportRun,
-        feedLink: FeedBookLink? = nil
+        feedLink: FeedBookLink? = nil,
+        replacing replaced: BookState? = nil,
+        publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
         let content = try readableContent(of: &staged, run: &run)
         let book = staging.published(staged)
 
         try run.begin(.savingRecord, in: staging.directory)
-        try writeVerifiedRecord(of: book, contentIndex: content.index, into: staging.directory, feedLink: feedLink)
+        try writeVerifiedRecord(of: book, contentIndex: content.index, into: staging.directory, feedLink: feedLink, replacing: replaced)
 
         try run.begin(.publishing, in: staging.directory)
-        try staging.publish()
+        try publish(staging)
         return ImportedBook(book: book, report: content.report)
     }
 
