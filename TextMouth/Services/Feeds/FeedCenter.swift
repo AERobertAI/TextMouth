@@ -170,9 +170,10 @@ enum FeedEvent: Equatable, Sendable {
     case downloadFailed(feedID: UUID, itemID: FeedItem.ID, reason: String)
     /// A change of the "List and download" choice or its number took effect,
     /// once it had stayed unchanged for `FeedCenter.itemPolicyQuietTime`
-    /// (FR11): the global setting's, which covers every feed, when
-    /// `feedIDs` is nil, or else those feeds' own.
-    case itemPolicyApplied(feedIDs: Set<UUID>?)
+    /// (FR11): the global setting's, which covers every feed, when `global`,
+    /// and the feeds `feedIDs`' own, both when both changed within one wait
+    /// (feed review item 20).
+    case itemPolicyApplied(global: Bool, feedIDs: Set<UUID>)
 }
 
 // MARK: - Subscribing
@@ -321,9 +322,14 @@ final class FeedCenter: ObservableObject {
     /// The wait for the choice and its number to stay unchanged before the
     /// newest-N rule acts on a change, while it runs (FR11).
     private var itemPolicyWait: Task<Void, Never>?
-    /// The feeds whose choice or number changed since the rule last acted on
-    /// a change, every feed when nil (FR11).
-    private var feedsWithChangedItemPolicy: Set<UUID>? = []
+    /// The feeds whose own choice or number changed since the rule last
+    /// acted on a change (FR11).
+    private var feedsWithChangedItemPolicy: Set<UUID> = []
+    /// Whether the global choice or number changed since the rule last acted
+    /// on a change, kept beside the feeds' own, so a feed's change made
+    /// within the global change's wait is announced too (feed review item
+    /// 20).
+    private var globalItemPolicyChanged = false
     /// Passes the stores' changes on to this engine's observers.
     private var forwarding: [AnyCancellable] = []
     /// Hears finished books, and the readers that open and close.
@@ -889,13 +895,19 @@ final class FeedCenter: ObservableObject {
     /// one, and, for a choice that downloads by hand, takes back the rule's
     /// downloads not yet under way and removes nothing. As the wait ends,
     /// the engine announces that the change took effect
-    /// (`FeedEvent.itemPolicyApplied`), for VoiceOver to say so (branch C).
-    /// Only an engine working on its own waits; a test runs the pass
-    /// itself.
+    /// (`FeedEvent.itemPolicyApplied`), for VoiceOver to say so (branch C):
+    /// the global change and each feed's own, both when both were made
+    /// within one wait (feed review item 20). Only an engine working on its
+    /// own waits; a test runs the pass itself.
     func itemPolicyChanged(for feedIDs: Set<UUID>?) {
         guard environment.worksOnItsOwn else { return }
-        // Every feed when either change covers every feed.
-        feedsWithChangedItemPolicy = feedsWithChangedItemPolicy.flatMap { changed in feedIDs.map { changed.union($0) } }
+        // The global change and the feeds' own are kept apart, so neither
+        // hides the other from what VoiceOver hears.
+        if let feedIDs {
+            feedsWithChangedItemPolicy.formUnion(feedIDs)
+        } else {
+            globalItemPolicyChanged = true
+        }
         itemPolicyWait?.cancel()
         let sleep = environment.sleep
         itemPolicyWait = Task { [weak self] in
@@ -905,11 +917,14 @@ final class FeedCenter: ObservableObject {
                 return
             }
             guard let self, !Task.isCancelled else { return }
+            let global = self.globalItemPolicyChanged
             let feeds = self.feedsWithChangedItemPolicy
+            self.globalItemPolicyChanged = false
             self.feedsWithChangedItemPolicy = []
             self.itemPolicyWait = nil
-            self.events.send(.itemPolicyApplied(feedIDs: feeds))
-            self.requestItemPolicyPass(for: feeds)
+            self.events.send(.itemPolicyApplied(global: global, feedIDs: feeds))
+            // A global change covers every feed.
+            self.requestItemPolicyPass(for: global ? nil : feeds)
         }
     }
 

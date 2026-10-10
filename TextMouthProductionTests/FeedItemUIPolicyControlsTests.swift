@@ -205,6 +205,40 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         withExtendedLifetime(arrivals) {}
     }
 
+    /// A feed's own change made within the global change's wait is heard
+    /// with it, after the global setting's sentence, rather than lost under
+    /// it (feed review item 20).
+    func testAFeedsChangeWithinTheGlobalWaitIsHeardToo() async throws {
+        let world = try FeedTestWorld(self, label: "FeedItemUIAppliedBoth", worksOnItsOwn: true)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        // A choice that downloads by hand, so no pass downloads anything.
+        FeedSettings.itemsPreference.write(.onlyNewestListed, to: world.preferences)
+        let arrivals = FeedArrivals(center: world.center, notifier: InertFeedNotifier())
+        var heard: [String] = []
+        arrivals.announce = { heard.append($0) }
+        await world.start()
+        world.server.serve("/ferries.xml", .feed(FeedXML.rss(title: "Night Ferries", items: [
+            FeedXML.Item(guid: "ep-1", title: "A crossing at dusk", published: world.day(-1), enclosure: "https://ferries.example/1.mp3"),
+        ])))
+        let feed = try await world.subscribe("/ferries.xml")
+        await waitFor("the engine's own work ends") { !world.center.isSweeping }
+
+        FeedSettings.newestCountPreference.write(3, to: world.preferences)
+        await waitFor("the wait starts") { world.sleep.requestedWaits.count == 1 }
+        world.center.setItemPolicy(FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 2), of: feed.id)
+        await waitFor("the wait starts over") { world.sleep.requestedWaits.count == 2 }
+        world.sleep.wakeOldest()
+        await waitFor("the changes are heard") { !heard.isEmpty }
+
+        XCTAssertEqual(heard, [
+            "List and download is now in effect: Only the newest 3 listed. "
+                + "List and download for Night Ferries is now in effect: Every episode listed, downloads by hand.",
+        ])
+        await waitFor("the engine's own work ends") { !world.center.isSweeping }
+        withExtendedLifetime(arrivals) {}
+    }
+
     // MARK: - The Tab as Drawn
 
     /// The Feeds tab draws the List and download pop-up menu, which

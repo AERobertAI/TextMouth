@@ -207,23 +207,25 @@ extension FeedWording {
         return "List and download for \(feedTitle) is now in effect: \(itemPolicyTitle(own, noun: noun))."
     }
 
-    /// What VoiceOver hears once a change made for `feedIDs` takes effect in
-    /// `center` (`FeedEvent.itemPolicyApplied`): the global setting's
-    /// sentence when nil, which covers every feed, or a sentence for each of
-    /// those feeds `center` still has, by title, an unsubscribed one among
-    /// them, since its rules still act (FR11, branch D); nil when none is.
+    /// What VoiceOver hears once changes take effect in `center`
+    /// (`FeedEvent.itemPolicyApplied`): the global setting's sentence when
+    /// `global` changed, which covers every feed, then a sentence for each
+    /// of the feeds `feedIDs` whose own changed that `center` still has, by
+    /// title, an unsubscribed one among them, since its rules still act
+    /// (FR11, branch D), so a feed's change made within the global change's
+    /// wait is heard too (feed review item 20); nil when none is.
     @MainActor
-    static func itemPolicyApplied(to feedIDs: Set<UUID>?, in center: FeedCenter) -> String? {
-        let global = center.settings.itemPolicy
-        guard let feedIDs else { return itemPolicyApplied(global: global) }
-        let sentences = center.feeds.filter { feedIDs.contains($0.id) }.map { feed in
+    static func itemPolicyApplied(global: Bool, feedIDs: Set<UUID>, in center: FeedCenter) -> String? {
+        let globalPolicy = center.settings.itemPolicy
+        let feeds = center.feeds.filter { feedIDs.contains($0.id) }.map { feed in
             itemPolicyApplied(
                 feedTitle: feed.title,
                 own: feed.itemPolicyOverride,
-                global: global,
+                global: globalPolicy,
                 noun: center.counts(of: feed.id).noun
             )
         }
+        let sentences = (global ? [itemPolicyApplied(global: globalPolicy)] : []) + feeds
         return sentences.isEmpty ? nil : sentences.joined(separator: " ")
     }
 }
