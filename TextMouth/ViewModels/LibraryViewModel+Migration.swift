@@ -1613,10 +1613,14 @@ extension LibraryViewModel {
     /// Each book's content index is read off the main thread, with dataless
     /// files left in the cloud, for its last chapter and that chapter's
     /// length (`finishedBookEnd(of:index:)`). Each move goes to the row and
-    /// its record, as a reader saves a place (`persistReadingPosition`),
-    /// dated now; a book whose row moved meanwhile, or that a reader window
-    /// opened meanwhile, keeps its place and waits. One `FINISHED_BOOKS_AT_END`
-    /// line in the debug log counts what was done.
+    /// its record, as a reader saves a place (`persistReadingPosition`), the
+    /// place dated now, so a launch after a crash takes it from the record,
+    /// but the book's last-opened date kept as it was: nobody opened the
+    /// book, and Recently Opened, the Last Opened sort, and Speak Info's
+    /// "Last opened" read that date (REV14). A book whose row moved
+    /// meanwhile, or that a reader window opened meanwhile, keeps its place
+    /// and waits. One `FINISHED_BOOKS_AT_END` line in the debug log counts
+    /// what was done.
     func moveFinishedBooksToTheirEnds(
         counted: Set<UUID>,
         access: MaintenanceFileAccess = .live,
@@ -1656,7 +1660,8 @@ extension LibraryViewModel {
                         outcome.waiting += 1
                         continue
                     }
-                    self.persistReadingPosition(bookID: move.bookID, position: move.to)
+                    // Nobody opened the book: its last-opened date stays.
+                    self.persistReadingPosition(bookID: move.bookID, position: move.to, markingOpened: false)
                     outcome.moved += 1
                 }
                 DiagnosticLog.event(.storage, outcome.logLine)

@@ -306,10 +306,22 @@ struct Library: Codable {
         books[index].folderPath = folderPath
     }
 
-    mutating func updateReadingPosition(bookID: UUID, position: ReadingPosition) {
+    /// Saves `position` as the reading position of the book `bookID`, and,
+    /// while `markingOpened`, dates the book's last opening now, as a
+    /// reader's save does: the book a reader saves a place in is open.
+    ///
+    /// A place moved for a book nobody opened passes false, so the book's
+    /// last-opened date stays the user's own: the one-time move of finished
+    /// books to their ends (TODO P07) would otherwise have dated every book
+    /// it moves as opened at the user's first launch, for good, and Recently
+    /// Opened, the Last Opened sort, and Speak Info's "Last opened" would
+    /// all have said so (REV14).
+    mutating func updateReadingPosition(bookID: UUID, position: ReadingPosition, markingOpened: Bool = true) {
         guard let index = books.firstIndex(where: { $0.id == bookID }) else { return }
         books[index].readingPosition = position
-        books[index].lastOpened = Date()
+        if markingOpened {
+            books[index].lastOpened = Date()
+        }
     }
 
     // MARK: - Bookmark Operations

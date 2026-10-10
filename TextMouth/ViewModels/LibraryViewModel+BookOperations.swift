@@ -663,8 +663,15 @@ extension LibraryViewModel {
     /// crash takes the newer position from the record
     /// (`adoptNewerRecordedPositions`). A book without a package has no
     /// record, so library.json takes its checkpoint as soon as any change.
-    func persistReadingPosition(bookID: UUID, position: ReadingPosition) {
-        library.updateReadingPosition(bookID: bookID, position: position)
+    ///
+    /// - Parameter markingOpened: Whether the checkpoint dates the book's
+    ///   last opening now, in its row and so in its record, as a reader's
+    ///   checkpoint does (the default). A place moved for a book nobody
+    ///   opened, as the one-time move of finished books to their ends moves
+    ///   one, passes false and keeps the date
+    ///   (`Library.updateReadingPosition(bookID:position:markingOpened:)`).
+    func persistReadingPosition(bookID: UUID, position: ReadingPosition, markingOpened: Bool = true) {
+        library.updateReadingPosition(bookID: bookID, position: position, markingOpened: markingOpened)
         guard let book = bookByID(bookID) else { return }
         guard !book.tmbDirectoryName.isEmpty else {
             save()
