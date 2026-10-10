@@ -294,6 +294,54 @@ final class FeedDownloadManager {
         try? FileManager.default.removeItem(at: resumeDataFile(for: itemID, of: feedID))
     }
 
+    /// Stops the download under way and takes every download waiting to
+    /// start out of the queue, as the feed downloads section's Cancel does
+    /// (FR10), whether the listener or the newest-N rule asked for each:
+    /// each item is not downloaded, forgets any part downloaded, and is the
+    /// listener's from then on, so the rule never downloads it again by
+    /// itself (`FeedItem.downloadOrigin`), as Cancel Download makes one the
+    /// listener's. A download whose book is already being added to the
+    /// library finishes, since an import is never stopped partway; the
+    /// rule's downloads waiting for a network or for room keep waiting.
+    /// VoiceOver hears at once what stopped, and what still waits.
+    func cancelEveryDownload() {
+        guard !isStoppedForQuit else { return }
+        // A book being added can't be stopped: it finishes as it began.
+        let finishing = progress.state.download?.isAddingToLibrary == true ? current : nil
+        let underWay = finishing == nil ? current : nil
+        let waiting = queue
+        let stopping = (underWay.map { [$0] } ?? []) + waiting
+        let titles = stopping.compactMap { store.record(of: $0.feedID)?.item($0.itemID)?.title }
+        queue.removeAll()
+        if underWay != nil {
+            // Its task ends as Cancel Download's does, its item not
+            // downloaded (`run(_:)`).
+            currentTask?.cancel()
+        }
+        // One change of each feed's record for all of its items stopped:
+        // those waiting to start are not downloaded now, and every one is
+        // the listener's.
+        for (feedID, requests) in Dictionary(grouping: stopping, by: \.feedID) {
+            let itemIDs = Set(requests.map(\.itemID))
+            let waitingIDs = Set(waiting.filter { $0.feedID == feedID }.map(\.itemID))
+            store.update(feedID) { record in
+                for index in record.items.indices where itemIDs.contains(record.items[index].id) {
+                    if waitingIDs.contains(record.items[index].id) {
+                        record.items[index].state = .notDownloaded
+                    }
+                    record.items[index].downloadOrigin = .listener
+                }
+            }
+        }
+        for request in stopping {
+            try? FileManager.default.removeItem(at: resumeDataFile(for: request.itemID, of: request.feedID))
+        }
+        let finishingTitle = finishing.flatMap { store.record(of: $0.feedID)?.item($0.itemID)?.title }
+        DiagnosticLog.event(.feeds, "FEED_DOWNLOADS_CANCELLED: \(stopping.count) download(s) stopped\(finishingTitle == nil ? "" : ", one finishing")")
+        progress.cancel(stopped: titles, finishing: finishingTitle)
+        publishQueue()
+    }
+
     /// Whether the item `itemID` waits in the queue or downloads.
     func isDownloading(_ itemID: FeedItem.ID, of feedID: UUID) -> Bool {
         (current?.feedID == feedID && current?.itemID == itemID)
@@ -529,6 +577,11 @@ final class FeedDownloadManager {
             guard case .body(let page)? = try? await network.fetch(link, discretionary: discretionary) else { return nil }
             return page.text
         }
+        // Stopped meanwhile, by Cancel Download or the downloads section's
+        // Cancel (FR10): it stops here, before its book is written. A page
+        // whose fetch was stopped reads as none, and the article would
+        // otherwise be written from its summary all the same.
+        try Task.checkCancellation()
         let html = FeedEpisodeImporter.articleHTML(for: item, of: feed, body: body)
         let now = environment.now()
         return try await importAndCommit(request) {
