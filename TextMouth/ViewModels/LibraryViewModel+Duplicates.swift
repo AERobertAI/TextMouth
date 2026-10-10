@@ -278,6 +278,9 @@ extension LibraryViewModel {
         // held two copies: the new copy joins directly.
         library.books.append(duplicate.book)
         save()
+        // Imported at the Reading List, the copy joins the list's end, unless
+        // Replace already gave it the old copy's place there.
+        addImportedBooksToReadingList([duplicate.book], request: decision.request)
         finishAddedBook(duplicate.book, originalURL: duplicate.originalURL, request: decision.request, followingAnswer: true)
         return .success(nil)
     }

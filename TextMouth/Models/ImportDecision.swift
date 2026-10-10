@@ -24,6 +24,12 @@ struct ImportRequest: Sendable {
     /// library and every question about it is answered, as for a book opened
     /// from Finder.
     var opensAfterImport = false
+    /// Whether the books the import adds join the end of the reading list,
+    /// as an import made at the Reading List asks (FR09): Import Book, Open
+    /// Book..., Import DAISY Folder…, or New from Text while the window
+    /// shows it. The books themselves go to the folder the window showed
+    /// last, as they would anywhere.
+    var addsToReadingList = false
     /// The cancellation the import shares with every import queued with it
     /// (`SerialImportQueue.currentCancellation`). The progress overlay's
     /// Cancel sets it, which withdraws the questions of the whole batch too

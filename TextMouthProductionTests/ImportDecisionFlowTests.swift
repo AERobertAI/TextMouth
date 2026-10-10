@@ -573,6 +573,121 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(saved.readingList.bookIDs, [bestiary.existing.id, copy.id, charts.id])
     }
 
+    /// A book imported at the Reading List goes to the folder the window
+    /// showed last and joins the end of the list, and VoiceOver hears that
+    /// it joined the list and where the book itself is. A book imported
+    /// anywhere else leaves the list alone and says nothing of it.
+    func testABookImportedAtTheReadingListJoinsItsEnd() throws {
+        let scene = try makeScene()
+        let charts = try FileImportService.importFileWithReport(
+            from: writeSource("Chart Notes", in: scene),
+            toFolder: scene.folder.path
+        ).book
+        scene.model.library = Library(books: [charts], readingList: ReadingList(bookIDs: [charts.id]))
+        useAfterImportingBehavior(.keepOriginal)
+        let atlas = try writeSource("Atlas of Tides", in: scene)
+        let bestiary = try writeSource("Bestiary of Knots", in: scene)
+
+        let recorder = recordingAnnouncements {
+            scene.model.importFiles(urls: [atlas], toFolder: scene.folder.path, addingToReadingList: true)
+            drainImports(of: scene.model)
+            scene.model.importFiles(urls: [bestiary], toFolder: scene.folder.path)
+            drainImports(of: scene.model)
+        }
+
+        let imported = try XCTUnwrap(scene.model.library.books.first { $0.title == "Atlas of Tides" })
+        XCTAssertEqual(imported.folderPath, scene.folder.path)
+        XCTAssertTrue(scene.model.library.books.contains { $0.title == "Bestiary of Knots" })
+        XCTAssertEqual(scene.model.readingListBooks.map(\.title), [charts.title, "Atlas of Tides"])
+        XCTAssertEqual(
+            Self.readingListAnnouncements(recorder),
+            ["Added to reading list: Atlas of Tides. The book is in \(scene.folder.path)."]
+        )
+    }
+
+    /// A ZIP archive's books imported at the Reading List join it in the
+    /// order they reach the library, said together; the archive's own
+    /// question is still asked.
+    func testAnArchiveImportedAtTheReadingListJoinsItInOrder() throws {
+        let scene = try makeScene()
+        useAfterImportingBehavior(.keepOriginal)
+        let archive = try writeArchive("Logbooks", titles: ["Atlas of Tides", "Bestiary of Knots"], in: scene)
+
+        let recorder = recordingAnnouncements {
+            scene.model.importFiles(urls: [archive], toFolder: scene.folder.path, addingToReadingList: true)
+            drainImports(of: scene.model)
+        }
+
+        XCTAssertEqual(scene.model.library.books.count, 2)
+        XCTAssertEqual(scene.model.readingList.bookIDs, scene.model.library.books.map(\.id))
+        XCTAssertEqual(
+            Self.readingListAnnouncements(recorder),
+            ["Added 2 books to the reading list. The books are in \(scene.folder.path)."]
+        )
+        XCTAssertEqual(waitingQuestions(of: scene.model), ["folder: Logbooks.zip"])
+    }
+
+    /// A duplicate imported at the Reading List joins it only once it is
+    /// kept, as Keep Both keeps it; Replace gives the copy the old copy's
+    /// place instead, and adds nothing more.
+    func testADuplicateImportedAtTheReadingListJoinsItOnceKept() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        let bestiary = try existingBookAndCopy("Bestiary of Knots", in: scene)
+        scene.model.library = Library(
+            books: [atlas.existing, bestiary.existing],
+            readingList: ReadingList(bookIDs: [bestiary.existing.id])
+        )
+        useAfterImportingBehavior(.keepOriginal)
+
+        scene.model.importFiles(urls: [atlas.copy, bestiary.copy], toFolder: scene.folder.path, addingToReadingList: true)
+        drainImports(of: scene.model)
+        XCTAssertEqual(scene.model.readingList.bookIDs, [bestiary.existing.id], "a copy joined before it was kept")
+
+        let recorder = recordingAnnouncements {
+            scene.model.answerCurrentImportDecision(.keepBoth)
+            scene.model.answerCurrentImportDecision(.replaceExisting)
+        }
+
+        let atlasCopy = try XCTUnwrap(scene.model.library.books.first { $0.title == "Atlas of Tides" })
+        let bestiaryCopy = try XCTUnwrap(scene.model.library.books.first { $0.title == "Bestiary of Knots" })
+        XCTAssertEqual(scene.model.readingList.bookIDs, [bestiaryCopy.id, atlasCopy.id])
+        XCTAssertEqual(
+            Self.readingListAnnouncements(recorder),
+            ["Added to reading list: Atlas of Tides. The book is in \(scene.folder.path)."]
+        )
+    }
+
+    /// New from Text at the Reading List makes a book in the folder the
+    /// window showed last, which joins the end of the list and says so.
+    func testNewFromTextAtTheReadingListJoinsIt() throws {
+        let scene = try makeScene()
+
+        let recorder = recordingAnnouncements {
+            scene.model.createBookFromText(
+                title: "Deck Notes",
+                author: "",
+                text: "Coil the line and dry it before stowing.",
+                toFolder: scene.folder.path,
+                addingToReadingList: true
+            )
+            drainImports(of: scene.model)
+        }
+
+        let book = try XCTUnwrap(scene.model.library.books.first)
+        XCTAssertEqual(book.folderPath, scene.folder.path)
+        XCTAssertEqual(scene.model.readingList.bookIDs, [book.id])
+        XCTAssertEqual(
+            Self.readingListAnnouncements(recorder),
+            ["Added to reading list: Deck Notes. The book is in \(scene.folder.path)."]
+        )
+    }
+
+    /// The announcements `recorder` heard of the reading list.
+    private static func readingListAnnouncements(_ recorder: AnnouncementRecorder) -> [String] {
+        recorder.announcements.map(\.message).filter { $0.contains("reading list") }
+    }
+
     // MARK: - Fixtures
 
     /// What one test imports from and into.

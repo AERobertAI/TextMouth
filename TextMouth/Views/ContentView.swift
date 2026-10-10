@@ -116,10 +116,13 @@ struct LibraryWindowView: View {
         ) { result in
             switch result {
             case .success(let urls):
+                // Chosen at the Reading List, the books join it, and go to
+                // the folder this window showed last (FR09).
                 libraryViewModel.importFiles(
                     urls: urls,
                     toFolder: currentFolderPath,
-                    from: ImportOrigin(window: hostWindow)
+                    from: ImportOrigin(window: hostWindow),
+                    addingToReadingList: category == .readingList
                 )
             case .failure(let error):
                 libraryViewModel.errorMessage = error.localizedDescription
@@ -346,15 +349,22 @@ struct LibraryWindowView: View {
     /// Presents the folder-only panel of Library > Import DAISY Folder… as a
     /// sheet on this Library window (on its own while the window is not yet
     /// known), and imports the folders chosen into the folder being viewed
-    /// (TODO I02).
+    /// (TODO I02), or, at the Reading List, into the folder viewed last, the
+    /// books then joining the list (FR09).
     private func presentDAISYFolderPanel() {
         let panel = LibraryViewModel.makeDAISYFolderPanel()
         let destination = currentFolderPath
         let origin = ImportOrigin(window: hostWindow)
+        let addsToReadingList = category == .readingList
         let viewModel = libraryViewModel
         let importChosenFolders: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK else { return }
-            viewModel.importDAISYFolders(panel.urls, toFolder: destination, from: origin)
+            viewModel.importDAISYFolders(
+                panel.urls,
+                toFolder: destination,
+                from: origin,
+                addingToReadingList: addsToReadingList
+            )
         }
         if let hostWindow {
             panel.beginSheetModal(for: hostWindow, completionHandler: importChosenFolders)

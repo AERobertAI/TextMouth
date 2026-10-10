@@ -535,6 +535,23 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(shelf.model.library.books.count, 4)
     }
 
+    /// An import made at the Reading List says that its books joined the
+    /// list, as Add to Reading List does, and, since the list is no folder,
+    /// where the books themselves went, naming the folder as the folder
+    /// pickers do: its path, or "Library Root" for the top of the library.
+    func testAnImportAtTheReadingListSaysWhereItsBooksWent() {
+        XCTAssertEqual(LibraryFolderOption.rootLabel, "Library Root")
+        XCTAssertEqual(
+            ReadingListWording.importedAnnouncement(added: ["Moby-Dick"], folderPath: "Essays/Sea"),
+            "Added to reading list: Moby-Dick. The book is in Essays/Sea."
+        )
+        XCTAssertEqual(
+            ReadingListWording.importedAnnouncement(added: ["Almanac", "Bestiary", "Chronicle"], folderPath: ""),
+            "Added 3 books to the reading list. The books are in Library Root."
+        )
+        XCTAssertFalse(ImportRequest().addsToReadingList, "an import joins the list only when asked")
+    }
+
     /// A row offers its reading list command as a VoiceOver action, after
     /// its other actions, under the name its context menu gives it.
     @MainActor

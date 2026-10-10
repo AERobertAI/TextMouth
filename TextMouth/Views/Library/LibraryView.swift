@@ -656,12 +656,15 @@ struct LibraryView: View {
         .sheet(isPresented: $showTextInput) {
             TextInputView(
                 onAdd: { title, author, text in
+                    // Made at the Reading List, the book joins it, and goes
+                    // to the folder this window showed last (FR09).
                     libraryViewModel.createBookFromText(
                         title: title,
                         author: author,
                         text: text,
                         toFolder: currentFolderPath,
-                        from: ImportOrigin(window: hostWindow)
+                        from: ImportOrigin(window: hostWindow),
+                        addingToReadingList: category == .readingList
                     )
                     showTextInput = false
                 },

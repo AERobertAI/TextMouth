@@ -145,6 +145,19 @@ enum ReadingListWording {
         return sentences(done, "\(CountWording.phrase(notIn, singular: "book was", plural: "books were")) not in it.")
     }
 
+    /// What VoiceOver hears after an import made at the Reading List added
+    /// `titles`, the titles of the books it made, in order, to the end of
+    /// the list: that they joined it, as Add to Reading List says it, and,
+    /// since the list is no folder, the folder the books themselves went to,
+    /// `folderPath`, named as the folder pickers name it: "Added to reading
+    /// list: Moby-Dick. The book is in Essays/Sea." or "Added 3 books to the
+    /// reading list. The books are in Library Root."
+    static func importedAnnouncement(added titles: [String], folderPath: String) -> String {
+        let folder = folderPath.isEmpty ? LibraryFolderOption.rootLabel : folderPath
+        let place = titles.count == 1 ? "The book is in \(folder)." : "The books are in \(folder)."
+        return sentences(addedAnnouncement(added: titles, alreadyIn: 0), place)
+    }
+
     /// Why Add to Reading List from the Library menu added nothing, for the
     /// books selected, titled `titles`: none is selected, or every one is
     /// in the list already.
