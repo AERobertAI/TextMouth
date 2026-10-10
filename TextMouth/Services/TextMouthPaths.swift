@@ -274,9 +274,13 @@ enum TextMouthPaths {
         tmbDir.appendingPathComponent(originalFileName)
     }
 
+    /// Name of a package's record, which holds its book's metadata, state,
+    /// and bookmarks. See `BookInfo`.
+    static let bookInfoFileName = "bookInfo.json"
+
     /// Path to bookInfo.json inside a .tmb package
     static func bookInfoPath(in tmbDir: URL) -> URL {
-        tmbDir.appendingPathComponent("bookInfo.json")
+        tmbDir.appendingPathComponent(bookInfoFileName)
     }
 
     /// Name of the file holding a package's content index (PERF15), beside
@@ -298,9 +302,13 @@ enum TextMouthPaths {
         tmbDir.appendingPathComponent(removedFromLibraryMarkerName)
     }
 
+    /// Name of a package's text as the reader reads it: a text book's
+    /// cached Markdown, or a transcribed audiobook's transcript text.
+    static let contentMarkdownFileName = "content.md"
+
     /// Path to the cached Markdown content file inside a .tmb package
     static func contentMarkdownPath(in tmbDir: URL) -> URL {
-        tmbDir.appendingPathComponent("content.md")
+        tmbDir.appendingPathComponent(contentMarkdownFileName)
     }
 
     /// Name of a transcribed audiobook's transcript inside its package
@@ -317,7 +325,7 @@ enum TextMouthPaths {
     /// Whether `name`, an entry at the top of a package, is a copy Edit Text
     /// kept of the user's edited text (`keptTextCopyMarker`).
     static func isKeptTextCopy(_ name: String) -> Bool {
-        name.hasPrefix("content.md" + keptTextCopyMarker)
+        name.hasPrefix(contentMarkdownFileName + keptTextCopyMarker)
     }
 
     /// Path to the transcript inside a .tmb package

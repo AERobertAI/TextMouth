@@ -918,22 +918,29 @@ enum FileImportService {
     /// publishes the package under its final name. `staged` describes the
     /// book inside the staged package; the book returned describes it where
     /// it was published. A feed download names the feed item the book comes
-    /// from in `feedLink`, which its record keeps (FR03).
+    /// from in `feedLink`, which its record keeps (FR03). A download of a
+    /// feed item whose package was kept after an earlier download's file
+    /// went (FR11, branch A2) gives the state of the record it replaces in
+    /// `replacing` (`writeVerifiedRecord`), and puts the package in place of
+    /// the kept one with `publish`, which otherwise renames the staged
+    /// package to its destination (`ImportStaging.publish()`).
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
         run: inout ImportRun,
-        feedLink: FeedBookLink? = nil
+        feedLink: FeedBookLink? = nil,
+        replacing replaced: BookState? = nil,
+        publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
         let content = try readableContent(of: &staged, run: &run)
         let book = staging.published(staged)
 
         try run.begin(.savingRecord, in: staging.directory)
-        try writeVerifiedRecord(of: book, contentIndex: content.index, into: staging.directory, feedLink: feedLink)
+        try writeVerifiedRecord(of: book, contentIndex: content.index, into: staging.directory, feedLink: feedLink, replacing: replaced)
 
         try run.begin(.publishing, in: staging.directory)
-        try staging.publish()
+        try publish(staging)
         return ImportedBook(book: book, report: content.report)
     }
 
@@ -994,9 +1001,17 @@ enum FileImportService {
     /// that is on disk and names its book. `package` is where the record goes
     /// now, which for a staged package is not yet the book's own location.
     /// `feedLink` names the feed item a downloaded book comes from (FR03).
-    /// `replacing` is the state of the record a download of a kept feed item
-    /// replaces (FR11, branch A2): the new record keeps its note of the
-    /// transcript the package keeps, and a revision above its own.
+    ///
+    /// The record's note of a transcript follows `contentIndex`, as every
+    /// record write carrying an index makes it follow
+    /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`). An index
+    /// read from a new file holds no transcript layer, so a download of a
+    /// kept feed item notes no transcript, though its package keeps one,
+    /// until the episode opens and its text is laid over its index again
+    /// (`TranscriptTextLoader`), which the record then notes; a transcript
+    /// of other audio is found stale then, and stays unnoted. `replacing` is
+    /// the state of the record such a download replaces (FR11, branch A2):
+    /// the new record's revision rises above its own.
     static func writeVerifiedRecord(
         of book: Book,
         contentIndex: BookContentIndex,
@@ -1007,8 +1022,8 @@ enum FileImportService {
         var info = book.makeBookInfo()
         info.contentIndex = contentIndex
         info.metadata.feedLink = feedLink
+        info.state.transcript = contentIndex.transcript?.transcript
         if let replaced {
-            info.state.transcript = replaced.transcript
             info.state.revision = BookState.revision(after: replaced.revision ?? 0)
         }
         try info.save(to: package)
@@ -1308,11 +1323,26 @@ enum FileImportService {
     /// (FR11, `LibraryViewModel.downloadsToMoveIntoTheirFeeds(records:)`)
     /// both refuse such a row.
     static func namesManagedPackage(_ book: Book) -> Bool {
-        let name = book.tmbDirectoryName
-        return !name.isEmpty
+        isManagedPackageName(book.tmbDirectoryName) && BookFolder.isValidLibraryPath(book.folderPath)
+    }
+
+    /// Whether `name` names a package as the library manages one, by its
+    /// spelling alone: a single path component, not empty, ending in
+    /// ".tmb", so it can never name the folder it is in, or one above it.
+    /// A library book's package (`namesManagedPackage(_:)`) and a feed
+    /// item's (`FeedItemPackage.isPackageName(_:)`) are both named so.
+    static func isManagedPackageName(_ name: String) -> Bool {
+        !name.isEmpty
             && (name as NSString).lastPathComponent == name
             && name.lowercased().hasSuffix(".tmb")
-            && BookFolder.isValidLibraryPath(book.folderPath)
+    }
+
+    /// Whether the item at `url` is a symbolic link, which a deletion must
+    /// never take for the package it points to: a link in a library folder,
+    /// or in a feed's, could lead to another book's package, or anywhere.
+    /// An item whose metadata cannot be read counts as none.
+    static func isSymbolicLink(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
     }
 
     /// Validate the deletion target independently of filesystem mutation. A
@@ -1334,7 +1364,7 @@ enum FileImportService {
             .standardizedFileURL
         // Deleting a package alias must not delete the other book it points
         // to, even when both happen to live inside the managed library.
-        guard (try? requestedPackage.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink != true else {
+        guard !isSymbolicLink(requestedPackage) else {
             throw FileImportError.importFailed("A symbolic link cannot be deleted as a managed book package.")
         }
         let package = requestedPackage.resolvingSymlinksInPath()

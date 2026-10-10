@@ -282,7 +282,9 @@ final class FeedUIAddFeedTests: XCTestCase {
     }
 
     /// An https feed is announced once the sheet has closed, with its
-    /// episodes counted, and shows no warning.
+    /// episodes counted, and shows no warning. Only what the subscription
+    /// announces is counted: anything else VoiceOver hears meanwhile, such
+    /// as the failure of a save some other work made, is another matter.
     func testAnHttpsFeedIsAnnouncedOnceTheSheetCloses() async throws {
         let world = try FeedTestWorld(self, label: "FeedUISecure")
         world.server.serve("/feed.xml", .feed(FeedXML.rss(title: "Closed Wire", items: [Self.item, Self.secondItem])))
@@ -295,13 +297,17 @@ final class FeedUIAddFeedTests: XCTestCase {
         let feed = try XCTUnwrap(model.subscribedFeed)
         let announcements = AnnouncementCapture()
         defer { announcements.stop() }
+        /// What the capture heard of this subscription, in order.
+        func subscriptionAnnouncements() -> [String] {
+            announcements.messages.filter { $0.hasPrefix("Subscribed to \(feed.title)") }
+        }
 
         presenter.addFeedSubscribed(feed)
         presenter.addFeedDidClose(in: nil, center: world.center)
 
         XCTAssertNil(presenter.notice)
-        await waitFor("the subscription is announced") { !announcements.messages.isEmpty }
-        XCTAssertEqual(announcements.messages, ["Subscribed to Closed Wire: 2 episodes."])
+        await waitFor("the subscription is announced") { !subscriptionAnnouncements().isEmpty }
+        XCTAssertEqual(subscriptionAnnouncements(), ["Subscribed to Closed Wire: 2 episodes."])
     }
 
     /// Cancel closes the sheet and stops the subscription under way.
@@ -719,5 +725,49 @@ extension XCTestCase {
     @MainActor
     func newFolderNameFields(in root: NSView) -> [NSTextField] {
         feedEditableFields(in: root).filter { $0.placeholderString == "Folder name" }
+    }
+}
+
+// MARK: - The Feed Test World's Teardown
+
+/// The feed test world's teardown (`FeedTestWorld.finishFeedWork()`) waits
+/// for every record write its engine asked for, so none lands once the
+/// world's sandbox is gone. Such a write fails, and its failure is announced
+/// to VoiceOver into whichever later test captures announcements, as
+/// `testAnHttpsFeedIsAnnouncedOnceTheSheetCloses` once heard under load.
+@MainActor
+final class FeedTestWorldTeardownTests: XCTestCase {
+
+    /// A record write still held up as the test ends, as one waiting for the
+    /// storage work under load is, lands before the teardown goes on: the
+    /// teardown waits while the write is held, the record is on disk once
+    /// it is let go, and no failure is reported.
+    func testTheTeardownWaitsForARecordWriteStillToLand() async throws {
+        let boundary = StorageBoundary(root: try makeSandboxDirectory("FeedWorldTeardownBoundary"))
+        let world = try FeedTestWorld(self, label: "FeedWorldTeardown", recordsBoundary: boundary)
+        let hold = try boundary.holdWork(for: .movingBooksBetweenFolders)
+        // Let go however the test ends, or the world's own teardown would
+        // wait for the held write for good.
+        defer { hold.release() }
+        let address = try XCTUnwrap(URL(string: "https://held.example/feed.xml"))
+        let record = FeedRecord(feed: Feed(feedURL: address, folderID: world.bookFolder.id, subscribedDate: world.clock.value))
+        let file = FeedPaths.recordFile(of: record.feed.id, in: world.recordsFolder)
+        world.center.store.add(record)
+
+        let finished = CallLog<Bool>()
+        let teardown = Task {
+            await world.finishFeedWork()
+            finished.record(true)
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertEqual(finished.calls, [], "the teardown went on while a record write was still held")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "the held write landed")
+
+        hold.release()
+        await teardown.value
+
+        XCTAssertEqual(finished.calls, [true])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: file.path), "the teardown went on before the write landed")
+        XCTAssertEqual(world.failures.outstandingFailures().map(\.subject), [])
     }
 }

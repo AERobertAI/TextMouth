@@ -163,10 +163,12 @@ extension FeedCenter {
         let outcome = try library.removeFeedFiles(of: [book], keepingPackages: keepingPackage) { removal in
             let package = try FeedItemPackage.packageForRemoval(of: removal.row, in: root)
             if removal.keepsPackage {
-                // A text book's content.md is made from its file and goes
-                // with it, but it may hold an edit made with Edit Text, so
-                // it follows the Trash setting as the file does, rather than
-                // going for good with the caches; it goes first, so a
+                // A text book's content.md may hold an edit made with Edit
+                // Text, so it stays in a kept package whenever one of the
+                // engine's rules removes the file
+                // (`FeedItemPackage.staysWithoutTheFile(_:)`); the listener's
+                // own Delete Download takes it with the file, following the
+                // Trash setting as the file does. It goes first, so a
                 // refusal leaves both.
                 let text = TextMouthPaths.contentMarkdownPath(in: package)
                 if !removal.row.format.isAudio, FileManager.default.fileExists(atPath: text.path) {
@@ -191,10 +193,22 @@ extension FeedCenter {
     /// downloaded, and it is the listener's, so the newest-N rule never
     /// downloads it again by itself (FR11).
     private func noteDownloadRemoved(_ itemID: FeedItem.ID, of feedID: UUID) {
+        noteDownloadGone(itemID, of: feedID, at: environment.now(), byListener: true)
+    }
+
+    /// Notes in the record that the download of the item `itemID` of the
+    /// feed `feedID` went at `date`: the item is not downloaded, with the
+    /// date its download went. With `byListener`, the item is the
+    /// listener's from then on (`noteDownloadRemoved(_:of:)`); a rule's
+    /// removal, and a book the library no longer lists, leave who asked for
+    /// the download as it was.
+    private func noteDownloadGone(_ itemID: FeedItem.ID, of feedID: UUID, at date: Date, byListener: Bool) {
         store.updateItem(itemID, of: feedID) { item in
             item.state = .notDownloaded
-            item.downloadDeletedDate = environment.now()
-            item.downloadOrigin = .listener
+            item.downloadDeletedDate = date
+            if byListener {
+                item.downloadOrigin = .listener
+            }
         }
     }
 
@@ -276,10 +290,12 @@ extension FeedCenter {
     /// never; `FeedSettings.deleteDownloadsDaysAfterPlayed` unless the feed
     /// overrides it). Each file goes as Delete Download's does, keeping its
     /// package while it holds something of the listener's (FR11, branch
-    /// A2): the records and the feeds' indexes are written first, and a
-    /// failed write keeps every file; the files themselves then go off the
-    /// main thread (`removeDue`). Its item stays, not downloaded, with the
-    /// date its download went.
+    /// A2), except that an article's content.md, which may hold an edit,
+    /// stays in a kept package (`FeedItemPackage.staysWithoutTheFile(_:)`):
+    /// the records and the feeds' indexes are written first, and a failed
+    /// write keeps every file; the files themselves then go off the main
+    /// thread (`removeDue`). Its item stays, not downloaded, with the date
+    /// its download went.
     ///
     /// Files are deleted for good, rather than moved to the Trash, so played
     /// episodes never fill the Trash, with dataless files left in the cloud.
@@ -304,10 +320,7 @@ extension FeedCenter {
             let days = record.feed.deleteDownloadsDaysAfterPlayed(under: settings)
             for item in record.items where item.state.bookID != nil {
                 guard let book = downloadedRow(of: item, in: record.feed.id) else {
-                    store.updateItem(item.id, of: record.feed.id) { item in
-                        item.state = .notDownloaded
-                        item.downloadDeletedDate = now
-                    }
+                    noteDownloadGone(item.id, of: record.feed.id, at: now, byListener: false)
                     report.forgottenItemIDs.append(item.id)
                     DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FORGOTTEN: \(item.title): the library no longer lists its book")
                     continue
@@ -409,10 +422,7 @@ extension FeedCenter {
         let removal = library.settleFeedFileRemovals(readied, failures: failed.mapValues { FeedFileRemovalFailure(errorDescription: $0) })
         for removed in removal.removed {
             guard let entry = removable.first(where: { $0.book.id == removed.row.id }) else { continue }
-            store.updateItem(entry.itemID, of: entry.feedID) { item in
-                item.state = .notDownloaded
-                item.downloadDeletedDate = now
-            }
+            noteDownloadGone(entry.itemID, of: entry.feedID, at: now, byListener: false)
             outcome.removed.append(removed)
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETED: \(removed.row.title): \(entry.reason), \(Self.removalNote(removed)) by \(rule)")
         }

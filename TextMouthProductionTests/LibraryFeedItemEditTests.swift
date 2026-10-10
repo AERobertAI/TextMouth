@@ -5,9 +5,10 @@ import XCTest
 /// With… are not offered for an episode or an article in its feed's folder,
 /// and an article edited before keeps its edit when its download goes: the
 /// copies Edit Text kept stay in its kept package, and stay when it
-/// downloads again, and its content.md, which holds the edit, goes through
-/// the listener's own removal, which follows the Trash setting, rather than
-/// for good with the caches (the A2 review's item E).
+/// downloads again, and its content.md, which holds the edit, stays in the
+/// kept package when one of the engine's rules removes the file, and goes
+/// only through the listener's own removal, which follows the Trash
+/// setting, never for good with the caches (the A2 review's item E, REV10).
 final class LibraryFeedItemEditTests: XCTestCase {
 
     // MARK: - Edit Text
@@ -37,15 +38,19 @@ final class LibraryFeedItemEditTests: XCTestCase {
 
     // MARK: - What a Kept Package Keeps
 
-    /// The copies Edit Text kept stay in a kept package whatever the book's
-    /// format, while an article's content.md, made from its file, does not.
-    func testTheCopiesEditTextKeptStayForEveryFormat() {
+    /// The copies Edit Text kept and content.md, which may hold an edit,
+    /// stay in a kept package whatever the book's format, with the record,
+    /// the content index, and the transcript, while the speech prepared from
+    /// the file and the file itself go.
+    func testTheTextAndTheCopiesEditTextKeptStayForEveryFormat() {
         let copy = "content.md\(TextMouthPaths.keptTextCopyMarker)20261010T020000Z"
 
-        XCTAssertTrue(FeedItemPackage.staysWithoutTheFile(copy, format: .html))
-        XCTAssertTrue(FeedItemPackage.staysWithoutTheFile(copy, format: .audio))
-        XCTAssertFalse(FeedItemPackage.staysWithoutTheFile("content.md", format: .html))
-        XCTAssertTrue(FeedItemPackage.staysWithoutTheFile("content.md", format: .audio))
+        for name in [copy, "content.md", "bookInfo.json", TextMouthPaths.contentIndexFileName, TextMouthPaths.transcriptFileName] {
+            XCTAssertTrue(FeedItemPackage.staysWithoutTheFile(name), name)
+        }
+        for name in ["cachedAudio", "Corkboard 712 Released.html", "Episode One.m4a"] {
+            XCTAssertFalse(FeedItemPackage.staysWithoutTheFile(name), name)
+        }
     }
 
     /// Downloading a kept article again carries the copies Edit Text kept
