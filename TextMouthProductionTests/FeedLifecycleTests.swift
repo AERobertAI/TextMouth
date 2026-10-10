@@ -173,12 +173,13 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
     }
 
-    /// An item whose book the listener deleted from the library becomes not
+    /// An item whose book left the library without the engine hearing of
+    /// it, as an older build or a lost row can leave one, becomes not
     /// downloaded at the next sweep.
     func testAnItemWhoseBookWasDeletedIsNotDownloaded() async throws {
         let world = try FeedTestWorld(self, label: "FeedBookGone")
         let (feed, book) = try await downloadedEpisode(in: world)
-        world.library.removeFeedBook(book)
+        world.library.library.removeBook(id: book.id)
         XCTAssertEqual(world.center.state(of: try XCTUnwrap(world.center.listedItems(of: feed.id).first), in: feed.id), .notDownloaded)
 
         let report = await world.center.sweepPlayedDownloads()

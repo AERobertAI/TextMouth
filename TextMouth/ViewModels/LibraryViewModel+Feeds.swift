@@ -87,14 +87,6 @@ extension LibraryViewModel: FeedLibraryHost {
         save()
     }
 
-    /// Takes a feed book whose package was deleted out of the library,
-    /// through the same bookkeeping as every removal that deletes a package
-    /// (`removeDeletedBook(_:)`), and saves the library.
-    func removeFeedBook(_ book: Book) {
-        removeDeletedBook(book)
-        save()
-    }
-
     /// Removes the files of the feed items `books` the library lists, in the
     /// order that never loses the listener's place (FR11, branch A2;
     /// FEED-ITEMS-ADDENDUM-2026-10-07.md, section 6):
