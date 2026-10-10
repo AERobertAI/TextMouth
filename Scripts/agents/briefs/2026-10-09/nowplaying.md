@@ -1,0 +1,25 @@
+# Task brief: nowplaying — the Now Playing follow-ups of October 7 late, and a NUL in speech
+
+Slug `nowplaying`; branch `fix/now-playing-followups`. Read `common.md` beside this file first. Main is at 8abb7353 or later: since the common brief was written, the documentation pass (d6c0426e) and B05, the speech refusal report (6c5b4d9d, `feature/speech-refusal-alert`), merged; main's suite counts **4970 tests, 65 skipped, 0 failures**.
+
+## Why
+The user listens with AirPods and the media keys, often with two books open, and reads with VoiceOver. The finished-book branch (377edc97, `fix/finished-book-followups`) made Release Media Controls follow `NowPlayingService.holdsMediaControls(ownerID:)` and settled a finished book's hand-over, and its agent found the problems below without fixing them. Read "From the finishedbook agent" in `AGENT-NOTES-2026-10-04.md` (October 7 late) and the TODO's line "Still open after the finished-book merge (October 7 late)" first. B05's agent found item 7.
+
+## Items, one commit each, each with its tests
+1. **A book that pauses while another reader's window is focused is never shown paused.** An AirPods Pause, or its sleep timer running out in the background, pauses the playing book, but `NowPlayingService.updateNowPlayingInfo(ownerID:…)` publishes only for the focused reader, so the system still shows the book playing: the next press pauses the focused reader and the one after plays the focused book. A pause, whoever's window is in front, must show the paused book paused, and the next Play must reach the book that paused.
+2. **Closing a reader whose book is shown but which is not the active owner leaves its item shown** (`NowPlayingService.unregister(ownerID:)`): closing must take down the item it shows.
+3. **Release Media Controls by a mapped key in a window that holds nothing does nothing and says nothing.** It should say, through `VoiceOverAnnouncer`, that this book does not hold the media controls (pin the words), and change nothing.
+4. **`pause(playingPauseSound:)` plays the pause sound even when nothing was playing** (ReaderViewModel+Playback.swift): play it only when a pause pauses something. No test may play sound aloud: test through the coordinator or sound hook the existing pause-sound tests use.
+5. **An AirPods Play during the hand-over** (`handOverToNextBook(titled:askingWith:)`, the half second before the next book starts) reaches the finished book, which ends again and says "Starting" twice, or, after a rewind, plays a few seconds until the next book's start pauses it. A Play or skip in that moment should do one clear thing; choose the smallest rule that never plays the finished book over the book announced (for example, the Play goes to the hand-over and starts the next book at once), say which in your report, and pin it.
+6. **#1498: the reader's two metadata saves publish Now Playing for a reader that is not playing** (`ReaderViewModel+Bookmarks.swift`, the two `updateNowPlayingInfo` calls around lines 300 and 333), so a stopped reader's save shows its book paused and takes the AirPods. Drop them, or publish only while the reader holds the media controls (`holdsMediaControls`), so a save never takes the controls.
+7. **#1542: a NUL character (U+0000) in a passage silently drops the rest of its utterance**, which is no refusal, so no recovery and no report hears it. The markup guard (`SpeechMarkupGuard.swift`) turns it into a space, one UTF-16 unit for one, so every offset holds; test with an offline render (`AVSpeechSynthesizer.write(_:toBufferCallback:)`, which plays nothing) if the existing guard tests do, and with the guard's own pure tests in any case. Check whether other C0 controls the guard passes through do the same and report what you find.
+8. Optional, if all else is green: `makeSilentAudioBook` (test support) makes the Thread Performance Checker print a priority-inversion backtrace for each silent audiobook a test makes (log noise only).
+
+Do not change what happens at a book's end beyond these items: where a finished book's position rests (P07) and the audiobook jump time convention (P08) are the user's open decisions.
+
+## Files you own
+TextMouth/Services/NowPlayingService.swift (and the session type beside it), TextMouth/ViewModels/ReaderViewModel+Playback.swift (`pause(playingPauseSound:)`, `releaseMediaControls()`, `handOverToNextBook(titled:askingWith:)`, and what items 1, 3, and 5 need; leave `showPlaybackStoppedAfterRefusal(_:)` as B05 left it), TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift (only the two metadata saves' Now Playing calls), TextMouth/Services/SpeechMarkupGuard.swift, and their tests. No other agent edits these files now. Leave ReaderViewModel+WhereAmI.swift alone (FR12's branch C changes it), and the keyboard files (FR12's branch B is changing them).
+
+## Verify or report as unverified
+- Real AirPods, media keys, and the system's Now Playing display cannot be tried by you: say so, and list what the user should try by hand with two books open.
+- Report the README and ARCHITECTURE wording each item needs.
