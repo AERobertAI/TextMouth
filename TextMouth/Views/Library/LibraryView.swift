@@ -801,8 +801,8 @@ struct LibraryView: View {
     @ViewBuilder
     private func sortItems(hasSubfolders: Bool) -> some View {
         // A checkmark marks the field shown, for VoiceOver as well as on
-        // screen; choosing that field again reverses its direction, as the
-        // menu always has.
+        // screen; choosing that field again leaves the sort as it is and
+        // says it (TODO A11), and only the direction command reverses it.
         ForEach(LibrarySortField.allCases, id: \.self) { field in
             Toggle(field.rawValue, isOn: Binding(
                 get: { sort.isChecked(field) },

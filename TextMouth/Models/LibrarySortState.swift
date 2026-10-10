@@ -110,8 +110,9 @@ enum LibraryReorderTarget: Equatable {
 /// A change the user makes in the Sort menu. Only these are ever saved:
 /// showing a location's sort never writes anything (TODO A06).
 enum LibrarySortChange: Equatable {
-    /// A field was chosen. Choosing the field already shown reverses its
-    /// direction, as it always has; manual order has none to reverse.
+    /// A field was chosen. Choosing the field already shown, the one the
+    /// menu checks, leaves the sort as it is (TODO A11): only the direction
+    /// command reverses it.
     case choose(LibrarySortField)
     /// Sort Ascending or Sort Descending was chosen: the direction reverses.
     case reverseDirection
@@ -188,15 +189,19 @@ struct LibrarySortState: Equatable {
     }
 
     /// The sort after the user makes `change`. A change that does nothing,
-    /// such as reversing manual order or choosing it again, returns the sort
-    /// unchanged, so it compares equal and nothing needs saving.
+    /// such as reversing manual order or choosing the field already shown,
+    /// returns the sort unchanged, so it compares equal and nothing needs
+    /// saving.
     func applying(_ change: LibrarySortChange) -> LibrarySortState {
         var next = setting
         switch change {
         case .reverseDirection:
             next.sortAscending.toggle()
         case .choose(let chosen) where chosen == field:
-            next.sortAscending.toggle()
+            // The checked field chosen again leaves the books as they are
+            // (TODO A11). It used to reverse them; only the direction
+            // command does that now.
+            return self
         case .choose(let chosen):
             // Remember the direction being left, then show the chosen field
             // the way this location last showed it, or ascending.

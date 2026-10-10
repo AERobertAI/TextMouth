@@ -131,17 +131,28 @@ final class LibrarySortStateTests: XCTestCase {
         XCTAssertEqual(sort.applying(.choose(.title)).titleFragment, "Title Descending")
     }
 
-    /// Choosing the field already shown reverses it, as the Sort menu always
-    /// has; Sort Ascending and Sort Descending reverse it too.
-    func testChoosingTheFieldShownReversesIt() {
-        let titleAscending = LibrarySortState(restoring: .defaultSort)
+    /// Choosing the field already shown, the one the Sort menu checks,
+    /// leaves the sort exactly as it is, in either direction and with what
+    /// the location remembers (TODO A11). It used to reverse it; now only
+    /// Sort Ascending or Sort Descending does, and reversing twice puts the
+    /// sort back.
+    func testChoosingTheFieldShownLeavesTheSortAsItIs() {
+        for field in LibrarySortField.allCases {
+            for ascending in [true, false] {
+                let sort = LibrarySortState(restoring: FolderSortSetting(
+                    sortField: field,
+                    sortAscending: ascending,
+                    rememberedDirections: [.author: false, .fileSize: true]
+                ))
+                XCTAssertEqual(sort.applying(.choose(field)), sort, "\(field.rawValue), ascending: \(ascending)")
+            }
+        }
 
-        XCTAssertEqual(titleAscending.applying(.choose(.title)).titleFragment, "Title Descending")
-        XCTAssertEqual(titleAscending.applying(.reverseDirection).titleFragment, "Title Descending")
-        XCTAssertEqual(
-            titleAscending.applying(.reverseDirection).applying(.reverseDirection),
-            titleAscending
-        )
+        let titleAscending = LibrarySortState(restoring: .defaultSort)
+        let titleDescending = titleAscending.applying(.reverseDirection)
+        XCTAssertEqual(titleDescending.titleFragment, "Title Descending")
+        XCTAssertEqual(titleDescending.applying(.choose(.title)).titleFragment, "Title Descending")
+        XCTAssertEqual(titleDescending.applying(.reverseDirection), titleAscending)
     }
 
     /// Restoring forgets what a sort never remembers: the direction of the
