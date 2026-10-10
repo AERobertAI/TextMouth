@@ -3,8 +3,9 @@ import SwiftUI
 /// What the import overlay shows at one moment (FR10): the bar's books done
 /// of the total, which is 0 of 0 while the bar only spins, the line beneath
 /// it, which says what the import is doing, and the lines under that: how
-/// long the book under way has taken, once that is long enough to say, and
-/// the time a ZIP batch has left, or that the imports are cancelling.
+/// long the book under way has taken, once that is long enough to say, the
+/// time a ZIP batch has left, or that the imports are cancelling, and how
+/// many imports wait behind the one shown.
 struct ImportProgressState: Equatable {
     /// A book being imported, the step it is at, and when it began.
     struct BookUnderWay: Equatable {
@@ -41,6 +42,11 @@ struct ImportProgressState: Equatable {
     private(set) var secondsLeft: TimeInterval?
     /// Whether Cancel was pressed while this import runs (TODO I05).
     private(set) var isCancelling = false
+    /// The imports queued behind the one shown, waiting their turn on the
+    /// import queue, which the overlay counts (FR10). They outlast the
+    /// import shown, so a new import's state keeps them
+    /// (`ImportProgress.begin(_:subject:at:)`).
+    var waitingImports = 0
 
     /// The state that shows `message` alone, under a bar that only spins:
     /// an import starting or waiting.
@@ -129,7 +135,9 @@ struct ImportProgressState: Equatable {
     /// (`ImportProgressWording.timeOnBook(_:)`);
     /// then that the import is cancelling, once Cancel is pressed, or else
     /// the time left, once a book of a batch of several is done and while
-    /// books are left.
+    /// books are left, and how many imports wait behind this one. Once
+    /// Cancel is pressed the waiting imports are not counted: the ZIP
+    /// archives among them never start.
     func details(at now: Date) -> [String] {
         var details: [String] = []
         if let book, !book.isDone,
@@ -138,8 +146,13 @@ struct ImportProgressState: Equatable {
         }
         if isCancelling {
             details.append(ImportProgressWording.cancelling(afterBook: book != nil))
-        } else if let secondsLeft {
+            return details
+        }
+        if let secondsLeft {
             details.append(ImportProgressWording.timeLeft(secondsLeft))
+        }
+        if waitingImports > 0 {
+            details.append(ImportProgressWording.waiting(waitingImports))
         }
         return details
     }
@@ -235,12 +248,25 @@ final class ImportProgress: ObservableObject {
     }
 
     /// Shows `newState`, the start of an import known as `subject`, begun
-    /// at `date`, with none of its quarters reached.
+    /// at `date`, with none of its quarters reached, and the imports still
+    /// waiting behind it.
     private func begin(_ newState: ImportProgressState, subject: String?, at date: Date) {
-        state = newState
+        var started = newState
+        started.waitingImports = state.waitingImports
+        state = started
         self.subject = subject
         startedAt = date
         quarterReached = 0
+    }
+
+    /// Takes the import queue's count of the imports queued or running
+    /// (`SerialImportQueue.onActivityChanged`): those behind the one shown
+    /// are waiting, and the overlay counts them (FR10). Publishes only a
+    /// change, since the overlay redraws for each.
+    func noteImportsQueued(_ count: Int) {
+        let waiting = max(0, count - 1)
+        guard state.waitingImports != waiting else { return }
+        state.waitingImports = waiting
     }
 
     /// Shows that the import of one book began `step`.
@@ -339,9 +365,13 @@ final class ImportProgress: ObservableObject {
         return date.timeIntervalSince(startedAt) >= Self.announcedAfter
     }
 
-    /// Shows nothing more: an import ended, or none is under way.
+    /// Shows nothing more of the import shown: it ended, or none is under
+    /// way. The imports waiting behind it are still counted until the queue
+    /// says how many are left (`noteImportsQueued(_:)`).
     func clear() {
-        state = ImportProgressState()
+        var cleared = ImportProgressState()
+        cleared.waitingImports = state.waitingImports
+        state = cleared
         subject = nil
         startedAt = nil
         quarterReached = 0

@@ -114,6 +114,13 @@ final class ImportProgressWordingTests: XCTestCase {
         XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: .infinity, timedBooks: 3, remaining: 2))
     }
 
+    /// The imports waiting behind the one shown are counted, in agreement
+    /// with their number (FR10).
+    func testTheImportsWaitingAreCounted() {
+        XCTAssertEqual(ImportProgressWording.waiting(1), "1 more import waiting")
+        XCTAssertEqual(ImportProgressWording.waiting(2), "2 more imports waiting")
+    }
+
     /// Once Cancel is pressed the overlay says the import stops after the
     /// book under way, or, before any book, only that it is cancelling.
     func testCancellingIsSaidInPlaceOfTheTimeLeft() {

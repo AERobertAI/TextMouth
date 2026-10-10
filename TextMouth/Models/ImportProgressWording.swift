@@ -107,6 +107,14 @@ enum ImportProgressWording {
         afterBook ? "Cancelling after this book..." : "Cancelling..."
     }
 
+    /// How many imports wait their turn behind the one the overlay shows:
+    /// "1 more import waiting", "2 more imports waiting". Each file chosen
+    /// or opened, each archive, each text made with New from Text, and each
+    /// recording saved is an import of its own on the import queue.
+    static func waiting(_ count: Int) -> String {
+        CountWording.phrase(count, singular: "more import waiting", plural: "more imports waiting")
+    }
+
     // MARK: - What VoiceOver Reads
 
     /// What VoiceOver reads for the overlay: the title, then each line it

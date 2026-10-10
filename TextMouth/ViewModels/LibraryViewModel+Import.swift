@@ -386,6 +386,28 @@ extension LibraryViewModel {
         withdrawCancelledImportDecisions()
     }
 
+    // MARK: - The Import Queue's Activity (FR10)
+
+    /// Starts following the import queue's count of imports queued or
+    /// running (`importActivityChanged(to:)`). The library starts it once,
+    /// with its other observers.
+    func observeImportActivity() {
+        importOperationQueue.onActivityChanged = { [weak self] activeCount in
+            self?.importActivityChanged(to: activeCount)
+        }
+    }
+
+    /// Takes the import queue's new count of imports queued or running:
+    /// the import overlay shows while any is, says how many wait behind the
+    /// one it shows (FR10), and is cleared once none is.
+    func importActivityChanged(to activeCount: Int) {
+        isImporting = activeCount > 0
+        importProgress.noteImportsQueued(activeCount)
+        if activeCount == 0 {
+            importProgress.clear()
+        }
+    }
+
     // MARK: - Speak Import Progress (FR10)
 
     /// Starts answering Speak Import Progress, from the Library menu or the

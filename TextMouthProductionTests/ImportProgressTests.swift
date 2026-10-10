@@ -213,6 +213,66 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertFalse(progress.state.isCancelling, "the next import starts afresh")
     }
 
+    // MARK: - Imports Waiting
+
+    /// The imports queued behind the one shown are counted under it, and
+    /// VoiceOver reads them with the rest; the count outlasts the import
+    /// shown, which a new import or its end replaces, and follows the
+    /// queue's count down to none. Once Cancel is pressed they are not
+    /// counted, since the ZIP archives among them never start.
+    func testImportsWaitingBehindTheOneShownAreCounted() {
+        let clock = CommandClock()
+        let progress = ImportProgress(now: { clock.now })
+
+        progress.noteImportsQueued(3)
+        progress.showArchive("Library Export.zip")
+        XCTAssertEqual(progress.state.lines(at: clock.now), ["Extracting archive...", "2 more imports waiting"])
+        XCTAssertEqual(
+            progress.state.spokenStatus(at: clock.now),
+            "Importing Books: Extracting archive... 2 more imports waiting."
+        )
+
+        // The archive ends; the queue has not yet counted it out.
+        progress.end(.batch(ZipImportResult(books: Self.books(1), failures: [])))
+        XCTAssertEqual(progress.state.details(at: clock.now), ["2 more imports waiting"])
+        XCTAssertEqual(progress.state.spokenStatus(at: clock.now), "Importing Books: 2 more imports waiting.")
+        progress.noteImportsQueued(2)
+        progress.showBook("Moby Dick.epub")
+        XCTAssertEqual(progress.state.lines(at: clock.now), ["“Moby Dick.epub”, reading the file", "1 more import waiting"])
+
+        progress.cancel()
+        XCTAssertEqual(progress.state.details(at: clock.now), ["Cancelling after this book..."])
+
+        progress.noteImportsQueued(1)
+        progress.showBook("Bleak House.pdf")
+        XCTAssertEqual(progress.state.details(at: clock.now), [], "no import waits behind the last")
+        progress.noteImportsQueued(0)
+        progress.clear()
+        XCTAssertEqual(progress.state, ImportProgressState())
+    }
+
+    /// The library follows its import queue's count: the overlay shows while
+    /// any import is queued or running and counts those waiting behind the
+    /// one it shows, Speak Import Progress says them too, and once none is
+    /// left the overlay goes with nothing counted.
+    func testTheLibraryCountsTheImportsItsQueueHolds() {
+        let library = LibraryViewModel(initializeServices: false)
+
+        let recorder = recordingAnnouncements {
+            library.importActivityChanged(to: 3)
+            library.importProgress.showBook("Leading Lights.txt")
+            library.speakImportProgress()
+        }
+
+        XCTAssertTrue(library.isImporting)
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Importing Books: “Leading Lights.txt”, reading the file. 2 more imports waiting."
+        ])
+        library.importActivityChanged(to: 0)
+        XCTAssertFalse(library.isImporting)
+        XCTAssertEqual(library.importProgress.state, ImportProgressState())
+    }
+
     // MARK: - It Is Moving
 
     /// While one book takes long, the overlay the window shows says so: the
@@ -340,6 +400,45 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 20) { !model.library.books.isEmpty || model.showError }, "the import never finished")
         XCTAssertFalse(model.showError, model.errorMessage ?? "")
         XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
+    }
+
+    /// Files imported one after another through the library's own queue:
+    /// while the first is held at a step, the overlay names it and counts
+    /// the two waiting behind it; the second, once it runs, counts one; the
+    /// last, none; and the overlay goes once all three are in the library.
+    func testImportsQueuedBehindTheOneShownAreCountedAsTheyRun() throws {
+        let folder = makeIntegrationLibraryFolder("Import Progress Waiting")
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        useAfterImportingBehavior(.askEachTime)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        model.observeImportActivity()
+        let sources = try makeSandboxDirectory("ImportProgressWaiting")
+        let titles = ["Leading Lights", "Range Marks", "Day Beacons"]
+        for title in titles {
+            let text = "\(title)\n\nWhat the \(title.lowercased()) show a pilot coming in.\n"
+            try Data(text.utf8).write(to: sources.appendingPathComponent("\(title).txt"))
+        }
+        let gate = holdImport(of: model, at: .readingText)
+
+        for title in titles {
+            model.importSingleFileAsync(from: sources.appendingPathComponent("\(title).txt"), toFolder: folder.path)
+        }
+
+        for (index, title) in titles.enumerated() {
+            let waiting = titles.count - 1 - index
+            let expected = ["“\(title).txt”, reading its text"] + (waiting > 0 ? [ImportProgressWording.waiting(waiting)] : [])
+            XCTAssertTrue(
+                waitUntil(timeout: 10) { model.importProgress.state.lines(at: Date()) == expected },
+                "the overlay shows \(model.importProgress.state.lines(at: Date())) for \(title)"
+            )
+            XCTAssertTrue(model.isImporting)
+            gate.signal()
+        }
+        XCTAssertTrue(waitUntil(timeout: 10) { model.library.books.count == 3 && !model.isImporting }, "the imports never finished")
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the imports")
     }
 
     /// A ZIP archive whose books are all in the library already imports
