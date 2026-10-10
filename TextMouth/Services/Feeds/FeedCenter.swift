@@ -242,6 +242,7 @@ final class FeedCenter: ObservableObject {
         network: environment.network,
         settings: { [weak self] in self?.settings ?? .standard },
         now: environment.now,
+        keptRecords: { [weak self] feedID in self?.keptRecordItemIDs(of: feedID) ?? [] },
         refreshingChanged: { [weak self] feedIDs in self?.refreshingFeedIDs = feedIDs },
         reportRefresh: { [weak self] report in self?.refreshEnded(report) }
     )
@@ -614,6 +615,13 @@ final class FeedCenter: ObservableObject {
     /// it out of the queue.
     func cancelDownload(_ itemID: FeedItem.ID, of feedID: UUID) {
         downloads.cancel(itemID, of: feedID)
+    }
+
+    /// The items of the feed `feedID` whose packages were kept with the
+    /// listener's place after their files went (FR11, branch A2), which
+    /// every refresh keeps in the feed's record.
+    func keptRecordItemIDs(of feedID: UUID) -> Set<FeedItem.ID> {
+        Set((library?.feedItemRows(of: feedID).kept ?? [:]).keys)
     }
 
     /// The state the library shows for `item` of the feed `feedID`: its own,

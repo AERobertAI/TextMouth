@@ -148,6 +148,9 @@ final class FeedRefresher {
     private let settings: () -> FeedSettings
     /// The time now.
     private let now: @Sendable () -> Date
+    /// The items of a feed whose packages were kept with the listener's
+    /// place after their files went, which every merge keeps (FR11).
+    private let keptRecords: (UUID) -> Set<FeedItem.ID>
     /// Told which feeds are refreshing, whenever that changes.
     private let refreshingChanged: (Set<UUID>) -> Void
     /// Told of each refresh that ended.
@@ -159,13 +162,16 @@ final class FeedRefresher {
 
     /// A refresher of `store`'s feeds through `network`, recording each
     /// check in `fetchStates`, telling `refreshingChanged` which feeds are
-    /// refreshing, and `reportRefresh` how each refresh ended.
+    /// refreshing, and `reportRefresh` how each refresh ended. Each merge
+    /// keeps the items `keptRecords` names for a feed, whose packages were
+    /// kept with the listener's place after their files went (FR11).
     init(
         store: FeedStore,
         fetchStates: FeedFetchStates,
         network: FeedNetwork,
         settings: @escaping () -> FeedSettings,
         now: @escaping @Sendable () -> Date,
+        keptRecords: @escaping (UUID) -> Set<FeedItem.ID> = { _ in [] },
         refreshingChanged: @escaping (Set<UUID>) -> Void,
         reportRefresh: @escaping (FeedRefreshReport) -> Void
     ) {
@@ -174,6 +180,7 @@ final class FeedRefresher {
         self.network = network
         self.settings = settings
         self.now = now
+        self.keptRecords = keptRecords
         self.refreshingChanged = refreshingChanged
         self.reportRefresh = reportRefresh
     }
@@ -259,6 +266,7 @@ final class FeedRefresher {
             network: network,
             discretionary: origin.isDiscretionary,
             keepEntries: keepEntries,
+            keptRecords: keptRecords(feedID),
             now: started
         )
         // A feed unsubscribed while it was fetched is left alone, and its
@@ -302,7 +310,14 @@ final class FeedRefresher {
                 // The number in force now, which the setting may have
                 // changed while the feed was fetched.
                 keptEntries = current.feed.keepEntries(under: settings())
-                merged = FeedReconciler.merge(feed, into: &current, keepEntries: keptEntries, now: started, texts: &texts)
+                merged = FeedReconciler.merge(
+                    feed,
+                    into: &current,
+                    keepEntries: keptEntries,
+                    now: started,
+                    texts: &texts,
+                    keepingRecordsOf: keptRecords(feedID)
+                )
             }
             fetchStates.update(feedID) { state in
                 state.recordSuccess(at: started)
@@ -383,6 +398,7 @@ final class FeedRefresher {
         network: FeedNetwork,
         discretionary: Bool,
         keepEntries: Int,
+        keptRecords: Set<FeedItem.ID> = [],
         now: Date
     ) async -> Work {
         // The last body counts only when it was merged keeping as many
@@ -418,7 +434,7 @@ final class FeedRefresher {
                 let feed = try FeedParser.parse(body.data, baseURL: body.finalURL)
                 var copy = record
                 var texts = FeedTextCache()
-                FeedReconciler.merge(feed, into: &copy, keepEntries: keepEntries, now: now, texts: &texts)
+                FeedReconciler.merge(feed, into: &copy, keepEntries: keepEntries, now: now, texts: &texts, keepingRecordsOf: keptRecords)
                 return .read(feed, body, texts)
             } catch let error as FeedParseError {
                 return .failed(.parse(error))

@@ -240,6 +240,60 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: stale).count, staleBefore + 1)
     }
 
+    // MARK: - What a Refresh Keeps
+
+    /// A merge keeps in the record, however far outside the newest it
+    /// falls, an item played, with its played date (board #1412), and an
+    /// item whose package was kept; an item neither played nor kept leaves
+    /// the record outside the newest, as before.
+    func testAMergeKeepsPlayedItemsAndKeptRecordsOutsideTheNewest() throws {
+        let address = try XCTUnwrap(URL(string: "https://atlas.example/feed.xml"))
+        let items = (1...4).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: Self.whole(Double(number) * 86_400))
+        }
+        var record = FeedRecord(feed: Feed(feedURL: address, folderID: UUID(), subscribedDate: Self.whole(0)))
+        var texts = FeedTextCache()
+        let everything = try FeedParser.parse(Data(FeedXML.rss(items: items).utf8), baseURL: address)
+        FeedReconciler.merge(everything, into: &record, keepEntries: -1, now: Self.whole(5 * 86_400), texts: &texts)
+        let played = Self.whole(6 * 86_400)
+        let playedIndex = try XCTUnwrap(record.index(of: "guid:ep-1"))
+        record.items[playedIndex].playedDate = played
+
+        let newestOnly = try FeedParser.parse(Data(FeedXML.rss(items: [items[3]]).utf8), baseURL: address)
+        FeedReconciler.merge(
+            newestOnly,
+            into: &record,
+            keepEntries: 1,
+            now: Self.whole(7 * 86_400),
+            texts: &texts,
+            keepingRecordsOf: ["guid:ep-2"]
+        )
+
+        XCTAssertEqual(Set(record.items.map(\.id)), ["guid:ep-4", "guid:ep-2", "guid:ep-1"])
+        XCTAssertEqual(record.item("guid:ep-1")?.playedDate, played)
+    }
+
+    /// A refresh keeps the item of a row the library kept after its file
+    /// went, found through the library model, and a played item, when the
+    /// feed's own number of entries leaves both outside the newest.
+    func testARefreshKeepsTheItemsOfKeptRowsAndPlayedItems() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordRefreshKeeps")
+        await world.start()
+        let items = (1...3).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(Double(-4 + number)))
+        }
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: items)))
+        let feed = try await world.subscribe("/feed.xml")
+        world.library.library.feedShelf.put(Self.row("Two", feedID: feed.id, itemID: "guid:ep-2"))
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        world.center.setKeepEntries(1, of: feed.id)
+
+        await world.center.refresh(feed.id)
+
+        XCTAssertEqual(Set(world.center.listedItems(of: feed.id).map(\.id)), ["guid:ep-3", "guid:ep-2", "guid:ep-1"])
+        XCTAssertEqual(world.center.keptRecordItemIDs(of: feed.id), ["guid:ep-2"])
+    }
+
     // MARK: - A Failed Index Write
 
     /// When the feed's index cannot be written, Delete Download keeps the

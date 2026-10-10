@@ -15,7 +15,10 @@ import Foundation
 ///
 /// Then the kept-entries rule decides what the record keeps (the listener's
 /// decision of October 4): every item downloaded, or downloading, always;
-/// and the newest `keepEntries` of the others, by publication date (by
+/// every item played, whose played date would otherwise be lost (board
+/// #1412), and every item whose package was kept with the listener's place
+/// after its file went (FR11, branch A2), always too; and the newest
+/// `keepEntries` of the others, by publication date (by
 /// first sight for an item the feed dates nowhere, and by its place in the
 /// feed between items of the same date, an item the feed lists before one
 /// it no longer lists), or all of them when `keepEntries` is -1. An item the listener deleted stays, out of every list, while the
@@ -66,15 +69,18 @@ enum FeedReconciler {
     static let futureDateTolerance: TimeInterval = 2 * 86_400
 
     /// Merges `feed`, read at `now`, into `record`, keeping `keepEntries` of
-    /// its newest entries besides its downloads (-1 keeps all), and reading
-    /// each text that is needed through `texts`.
+    /// its newest entries besides its downloads, its played items, and the
+    /// items `keptRecords` names, whose packages were kept after their files
+    /// went (-1 keeps all), and reading each text that is needed through
+    /// `texts`.
     @discardableResult
     static func merge(
         _ feed: ParsedFeed,
         into record: inout FeedRecord,
         keepEntries: Int,
         now: Date,
-        texts: inout FeedTextCache
+        texts: inout FeedTextCache,
+        keepingRecordsOf keptRecords: Set<FeedItem.ID> = []
     ) -> MergeResult {
         let before = record.durable
         var result = MergeResult()
@@ -128,7 +134,13 @@ enum FeedReconciler {
         candidates += matcher.unclaimed.filter { $0.deletedDate == nil }
 
         // The kept-entries rule.
-        var kept = Self.kept(candidates, keepEntries: keepEntries, positions: positions, isSerial: feed.isSerial)
+        var kept = Self.kept(
+            candidates,
+            keepEntries: keepEntries,
+            positions: positions,
+            isSerial: feed.isSerial,
+            keepingRecordsOf: keptRecords
+        )
         for index in kept.indices {
             guard let pending = pendingTexts[kept[index].id] else { continue }
             kept[index].summary = texts.read(pending.summary, keeping: kept[index].summary)
@@ -175,14 +187,19 @@ enum FeedReconciler {
     }
 
     /// The items kept of `candidates` under the kept-entries rule, newest
-    /// first: every item downloaded or downloading, every item the listener
-    /// deleted (`merge` passes only those the feed still lists), and the
-    /// newest `keepEntries` of the rest, or all when `keepEntries` is -1.
+    /// first: every item downloaded or downloading; every item played, so
+    /// its played date is never lost (board #1412), and every item
+    /// `keptRecords` names, whose package was kept with the listener's place
+    /// after its file went (FR11, branch A2), each listed as a downloaded
+    /// item is; every item the listener deleted (`merge` passes only those
+    /// the feed still lists); and the newest `keepEntries` of the rest, or
+    /// all when `keepEntries` is -1.
     static func kept(
         _ candidates: [FeedItem],
         keepEntries: Int,
         positions: [FeedItem.ID: Int],
-        isSerial: Bool
+        isSerial: Bool,
+        keepingRecordsOf keptRecords: Set<FeedItem.ID> = []
     ) -> [FeedItem] {
         let ordered = candidates.sorted { isNewer($0, than: $1, positions: positions, isSerial: isSerial) }
         var kept: [FeedItem] = []
@@ -193,7 +210,8 @@ enum FeedReconciler {
                 continue
             }
             let isWithinNewest = keepEntries < 0 || listedKept < keepEntries
-            if isWithinNewest || item.state.bookID != nil || item.state.isDownloading {
+            let holdsTheListenersRecord = item.playedDate != nil || keptRecords.contains(item.id)
+            if isWithinNewest || item.state.bookID != nil || item.state.isDownloading || holdsTheListenersRecord {
                 kept.append(item)
             }
             listedKept += 1
