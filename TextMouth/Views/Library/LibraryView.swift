@@ -160,6 +160,9 @@ struct LibraryView: View {
     @State private var newFolderParentPath = ""
     @State private var booksToMove: [Book] = []
     @State private var showMoveSheet = false
+    /// What a move made from the Move sheet left to say, the feed items it
+    /// left where they are, kept while the sheet closes (REV11 F6).
+    @State private var afterMoveSheet = AnnouncementAfterSheet()
     @State private var folderToMove: BookFolder?
     @State private var showMoveFolderSheet = false
     @State private var folderToRename: BookFolder?
@@ -500,14 +503,18 @@ struct LibraryView: View {
                 }
             )
         }
-        .sheet(isPresented: $showMoveSheet) {
+        // Which feed items a move left is said once the sheet has closed,
+        // so its closing never cuts the words off (REV11 F6).
+        .sheet(isPresented: $showMoveSheet, onDismiss: sayWhatTheMoveLeft) {
             if !booksToMove.isEmpty {
                 MoveFolderSheet(
                     books: booksToMove,
                     library: libraryViewModel.library,
                     lastMovedFolderPath: libraryViewModel.lastMovedFolderPath,
                     onMove: { path in
-                        closingOnSuccess(await libraryViewModel.moveBooksReturningOutcome(booksToMove, toFolder: path)) {
+                        let outcome = await libraryViewModel.moveBooksReturningOutcome(booksToMove, toFolder: path)
+                        return closingOnSuccess(outcome) {
+                            afterMoveSheet.keep(outcome.message)
                             clearAllSelections()
                             showMoveSheet = false
                         }
@@ -1370,6 +1377,13 @@ struct LibraryView: View {
         }
         booksToMove = books
         showMoveSheet = true
+    }
+
+    /// Says which feed items the Move sheet's move left where they are,
+    /// from this window, once the sheet has closed (REV11 F6).
+    private func sayWhatTheMoveLeft() {
+        let window = hostWindow
+        afterMoveSheet.sheetDidClose { note in VoiceOverAnnouncer.announce(note, from: window) }
     }
 
     // MARK: - Finishing Sheets

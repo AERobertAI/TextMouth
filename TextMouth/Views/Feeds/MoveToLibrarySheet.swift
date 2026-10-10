@@ -37,17 +37,51 @@ struct MoveToLibraryRequest: Identifiable, Equatable {
     }
 
     /// Moves the books into the library folder at `path` through `library`
-    /// (`LibraryViewModel.moveToLibraryReturningOutcome(_:toFolder:)`), and,
-    /// once they have moved, says so through `announce`.
-    /// - Returns: What happened, for the sheet: it closes after a success,
-    ///   and stays open with the reason after a failure.
+    /// (`LibraryViewModel.moveToLibraryReturningOutcome(_:toFolder:)`).
+    /// - Returns: What happened, for the sheet: after a success, what moving
+    ///   did, as its message, which the sheet's owner says once the sheet
+    ///   has closed, so the closing never cuts it off (REV11 F6); after a
+    ///   failure, the reason, the sheet staying open.
     @MainActor
-    func move(toFolder path: String, in library: LibraryViewModel, announce: (String) -> Void) async -> OperationOutcome {
+    func move(toFolder path: String, in library: LibraryViewModel) async -> OperationOutcome {
         let outcome = await library.moveToLibraryReturningOutcome(books, toFolder: path)
-        if outcome.succeeded {
-            announce(FeedWording.movedToLibrary(titles: books.map(\.title), noun: noun, folderPath: path))
+        guard outcome.succeeded else { return outcome }
+        return .success(FeedWording.movedToLibrary(titles: books.map(\.title), noun: noun, folderPath: path))
+    }
+}
+
+/// Shows Move to Library…'s sheet (FR11, branch D) while `request` names
+/// what moves, over a Library window or a reader, and says what the move
+/// did through `say` once the sheet has closed, so the closing never cuts
+/// the words off (REV11 F6). A modifier of its own, shared by both owners,
+/// so their long chains of modifiers stay within what the type checker
+/// takes.
+struct MoveToLibrarySheetPresentation: ViewModifier {
+    /// What moves while the sheet shows; nil closes it.
+    @Binding var request: MoveToLibraryRequest?
+    /// The library the books move in.
+    let library: LibraryViewModel
+    /// Speaks what the move did, from the owner's window.
+    let say: @MainActor (String) -> Void
+    /// What the move did, kept while the sheet closes.
+    @State private var afterMove = AnnouncementAfterSheet()
+
+    func body(content: Content) -> some View {
+        content.sheet(item: $request, onDismiss: sayWhatTheMoveDid) { request in
+            MoveToLibrarySheet(request: request, library: library, onClose: close)
         }
-        return outcome
+    }
+
+    /// Closes the sheet, keeping `sentence`, what the move did, nil after
+    /// Cancel, to say once the sheet has closed.
+    private func close(saying sentence: String?) {
+        afterMove.keep(sentence)
+        request = nil
+    }
+
+    /// Says what the move did, once the sheet has closed.
+    private func sayWhatTheMoveDid() {
+        afterMove.sheetDidClose(say: say)
     }
 }
 
@@ -56,18 +90,18 @@ struct MoveToLibraryRequest: Identifiable, Equatable {
 /// what moves, and saying what moving does under its heading and as its
 /// Move button's hint: "Moves this episode into a folder of your library,
 /// where it becomes a book you can edit; it leaves the feed". Move moves the
-/// books, says so, and closes the sheet; a failure keeps it open, saying
-/// why. A Library window shows it for an item's row or its selection, and a
-/// reader for its book.
+/// books and closes the sheet, handing its owner what moving did, which
+/// the owner says once the sheet has closed (REV11 F6); a failure keeps it
+/// open, saying why. A Library window shows it for an item's row or its
+/// selection, and a reader for its book.
 struct MoveToLibrarySheet: View {
     /// What moves.
     let request: MoveToLibraryRequest
     /// The library the books move in.
     let library: LibraryViewModel
-    /// Speaks what moving did, from the window the sheet is over.
-    let announce: @MainActor (String) -> Void
-    /// Closes the sheet: after a move, or Cancel.
-    let onClose: () -> Void
+    /// Closes the sheet, with what to say once it has closed: what moving
+    /// did after a move, or nil after Cancel.
+    let onClose: (String?) -> Void
 
     var body: some View {
         MoveFolderSheet(
@@ -75,16 +109,16 @@ struct MoveToLibrarySheet: View {
             library: library.library,
             lastMovedFolderPath: library.lastMovedFolderPath,
             onMove: { path in
-                let outcome = await request.move(toFolder: path, in: library, announce: announce)
+                let outcome = await request.move(toFolder: path, in: library)
                 if outcome.succeeded {
-                    onClose()
+                    onClose(outcome.message)
                 }
                 return outcome
             },
             onCreateFolder: { name, parentPath in
                 library.createFolderReturningOutcome(name: name, parentPath: parentPath)
             },
-            onCancel: onClose,
+            onCancel: { onClose(nil) },
             heading: request.heading,
             explanation: request.hint
         )

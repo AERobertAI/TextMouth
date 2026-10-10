@@ -123,14 +123,12 @@ struct ReaderBookCommandsSupport: ViewModifier {
             .sheet(item: $exportModel) { model in
                 BookExportSheet(model: model, close: { exportModel = nil })
             }
-            .sheet(item: $moveToLibrary) { request in
-                MoveToLibrarySheet(
-                    request: request,
-                    library: viewModel.libraryViewModel,
-                    announce: { [weak viewModel] message in VoiceOverAnnouncer.announce(message, from: viewModel?.hostWindow) },
-                    onClose: { moveToLibrary = nil }
-                )
-            }
+            // What the move did is said once the sheet has closed (REV11 F6).
+            .modifier(MoveToLibrarySheetPresentation(
+                request: $moveToLibrary,
+                library: viewModel.libraryViewModel,
+                say: { [weak viewModel] message in VoiceOverAnnouncer.announce(message, from: viewModel?.hostWindow) }
+            ))
             .modifier(TranscriptionPresentation(presenter: transcription))
     }
 

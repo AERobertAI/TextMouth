@@ -146,8 +146,9 @@ final class LibraryFeedRemoveTests: XCTestCase {
 
     /// Removing an episode the listener opened, as the library's Remove does
     /// once its question is confirmed, deletes its download, keeps its row
-    /// on its feed's shelf, and says so through VoiceOver in the words of
-    /// the removal setting in force.
+    /// on its feed's shelf, and returns what it did in the words of the
+    /// removal setting in force, saying nothing itself, for the question's
+    /// owner to say once the question has closed (REV11 F6).
     @MainActor
     func testRemovingAnOpenedEpisodeSaysItsPlaceIsKept() async throws {
         let world = try FeedTestWorld(self, label: "LibraryFeedRemove")
@@ -162,18 +163,25 @@ final class LibraryFeedRemoveTests: XCTestCase {
         world.library.persistReadingPosition(bookID: book.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 42))
         let mode = world.library.removalPreferences.deletionMode
 
+        var report: String?
         let heard = recordingAnnouncements {
-            world.library.performRemoveBooks([book], deleteTMB: true)
+            report = world.library.removeBooksAndDelete([book])
         }
 
         XCTAssertFalse(world.library.showError, world.library.errorMessage ?? "")
         XCTAssertNil(world.library.bookByID(book.id))
         XCTAssertEqual(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"]?.id, book.id)
-        XCTAssertEqual(
-            heard.announcements.map(\.message),
-            [FeedDownloadRemovalWording(mode, items: [book]).completionMessage(keptCount: 1)]
-        )
-        XCTAssertTrue(heard.announcements.first?.message.hasSuffix("Its place, bookmarks, and transcript are kept.") == true)
+        XCTAssertEqual(heard.announcements, [], "the report was said while the question closed")
+        XCTAssertEqual(report, FeedDownloadRemovalWording(mode, items: [book]).completionMessage(keptCount: 1))
+        XCTAssertTrue(report?.hasSuffix("Its place, bookmarks, and transcript are kept.") == true)
+
+        // The question's button says it a moment after the question closes.
+        let words = try XCTUnwrap(report)
+        let capture = AnnouncementCapture()
+        defer { capture.stop() }
+        VoiceOverAnnouncer.announceAfterSheetCloses(words, from: nil)
+        XCTAssertEqual(capture.messages, [], "the report was said before the question had closed")
+        await waitFor("the report is said once the question has closed") { capture.messages == [words] }
     }
 
     // MARK: - Fixtures
