@@ -46,8 +46,9 @@ final class FeedUICommandsTests: XCTestCase {
         XCTAssertEqual(titles(.notDownloaded, played: true, article: true).dropFirst(2).first, "Mark Unread")
     }
 
-    /// A feed offers Check Feed, Feed Info…, Mark All Played (Mark All Read
-    /// for articles), and Unsubscribe…, always.
+    /// A subscribed feed offers Check Feed, Feed Info…, Mark All Played (Mark
+    /// All Read for articles), and Unsubscribe…, always; an unsubscribed
+    /// one's are `FeedSubscriptionShownTests`' (FR11, branch D).
     func testAFeedOffersItsCommands() {
         let feedID = UUID()
         XCTAssertEqual(

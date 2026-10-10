@@ -12,8 +12,12 @@ enum FeedCommand: Hashable, Sendable {
     case feedInfo
     /// Mark All Played: marks every item played.
     case markAllPlayed
-    /// Unsubscribe…: ends the subscription, after a confirmation.
+    /// Unsubscribe…: stops checking the feed, after a confirmation (FR11,
+    /// branch D); the feed stays.
     case unsubscribe
+    /// Resubscribe: checks an unsubscribed feed again, from now on and at
+    /// once (FR11, branch D).
+    case resubscribe
 }
 
 /// One feed command, as a menu or a row's VoiceOver actions offer it.
@@ -28,22 +32,44 @@ struct FeedAction: Identifiable, Equatable, Sendable {
     /// A row offers each command at most once, so the command identifies it.
     var id: FeedCommand { command }
 
-    /// The command's role in a menu: Unsubscribe ends something, and says
-    /// so.
+    /// The command's role in a menu: Unsubscribe stops the feed's checking
+    /// and deletes what it kept of removed downloads (FR11, branch D), and
+    /// says so.
     var role: ButtonRole? {
         command == .unsubscribe ? .destructive : nil
     }
 
     /// The commands for the feed `feedID`, whose items are called `noun`, in
-    /// menu order. Every one is always offered: Mark All Played with nothing
-    /// left to mark says so.
-    static func actions(for feedID: UUID, noun: FeedWording.ItemNoun) -> [FeedAction] {
-        [
+    /// menu order, by whether the listener `isSubscribed` to it (FR11,
+    /// branch D, the listener's "subscribe / resubscribe toggling action in
+    /// the context menu for feeds"): Check Feed, Feed Info…, Mark All
+    /// Played, and Unsubscribe… for a subscribed feed; Feed Info…, Mark All
+    /// Played, and Resubscribe for an unsubscribed one, which is not
+    /// checked. Mark All Played with nothing left to mark says so.
+    static func actions(for feedID: UUID, noun: FeedWording.ItemNoun, isSubscribed: Bool = true) -> [FeedAction] {
+        let markAll = FeedAction(command: .markAllPlayed, feedID: feedID, title: FeedWording.markAllPlayedTitle(noun))
+        let info = FeedAction(command: .feedInfo, feedID: feedID, title: FeedWording.feedInfoTitle)
+        guard isSubscribed else {
+            return [info, markAll, FeedAction(command: .resubscribe, feedID: feedID, title: FeedWording.resubscribeTitle)]
+        }
+        return [
             FeedAction(command: .checkFeed, feedID: feedID, title: FeedWording.checkFeedTitle),
-            FeedAction(command: .feedInfo, feedID: feedID, title: FeedWording.feedInfoTitle),
-            FeedAction(command: .markAllPlayed, feedID: feedID, title: FeedWording.markAllPlayedTitle(noun)),
+            info,
+            markAll,
             FeedAction(command: .unsubscribe, feedID: feedID, title: FeedWording.unsubscribeTitle),
         ]
+    }
+
+    /// The commands for the feed `feedID` of `center` as it is now: its
+    /// items' noun and whether the listener is subscribed come from its
+    /// record (`actions(for:noun:isSubscribed:)`).
+    @MainActor
+    static func actions(for feedID: UUID, in center: FeedCenter) -> [FeedAction] {
+        actions(
+            for: feedID,
+            noun: .of(center.listedItems(of: feedID)),
+            isSubscribed: center.store.record(of: feedID)?.feed.isSubscribed ?? true
+        )
     }
 }
 
@@ -179,6 +205,9 @@ extension FeedWording {
     static let feedInfoTitle = "Feed Info…"
     /// Unsubscribe's title.
     static let unsubscribeTitle = "Unsubscribe…"
+    /// Resubscribe's title (FR11, branch D): no ellipsis, since it asks
+    /// nothing first.
+    static let resubscribeTitle = "Resubscribe"
 
     /// Mark All Played's title, or Mark All Read's for a feed of articles.
     static func markAllPlayedTitle(_ noun: ItemNoun) -> String {
@@ -219,6 +248,20 @@ extension FeedWording {
     /// What VoiceOver hears as Check Feed starts.
     static func checking(title: String) -> String {
         "Checking \(title)…"
+    }
+
+    /// What VoiceOver hears when Check Feed is chosen for a feed the
+    /// listener unsubscribed from (FR11, branch D), as from a menu drawn
+    /// before Unsubscribe: nothing is checked.
+    static func notChecked(title: String) -> String {
+        "\(title) is unsubscribed, so TextMouth doesn't check it. Choose Resubscribe to check it again."
+    }
+
+    /// What VoiceOver hears as Resubscribe starts the check it makes at once
+    /// (FR11, branch D); the check's outcome follows, as Check Feed's does
+    /// (`checked(_:noun:)`).
+    static func resubscribed(title: String) -> String {
+        "Resubscribed to \(title). Checking it now…"
     }
 
     // MARK: Marking

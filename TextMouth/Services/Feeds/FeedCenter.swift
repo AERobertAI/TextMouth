@@ -210,6 +210,10 @@ enum FeedSubscribeError: Error, Equatable, Sendable {
     case folderMissing
     /// The feed is subscribed already, under the title given.
     case alreadySubscribed(title: String)
+    /// The feed is in the library already, under the title given, and the
+    /// listener unsubscribed from it (FR11, branch D): Resubscribe, not
+    /// a second subscription, checks it again.
+    case unsubscribedAlready(title: String)
     /// The address is a web page that names no feed.
     case pageNamesNoFeed
     /// The feed could not be fetched or read.
@@ -227,6 +231,8 @@ enum FeedSubscribeError: Error, Equatable, Sendable {
             return "The folder chosen for this feed is no longer in the library. Choose another folder."
         case .alreadySubscribed(let title):
             return "You're already subscribed to \(title)."
+        case .unsubscribedAlready(let title):
+            return "\(title) is in your library, unsubscribed. Choose Resubscribe on its row, or in its Feed Info, to check it again."
         case .pageNamesNoFeed:
             return "That page doesn't name a feed."
         case let .refreshFailed(error, host):
@@ -527,7 +533,7 @@ final class FeedCenter: ObservableObject {
     /// that is a web page is searched for the feeds it names.
     private func subscribe(_ url: URL, into choice: FeedFolderChoice, followingPage: Bool) async throws -> FeedSubscribeOutcome {
         if let existing = subscribedFeed(at: url) {
-            throw FeedSubscribeError.alreadySubscribed(title: existing.title)
+            throw Self.alreadyInTheLibrary(existing)
         }
         let host = FeedHost.of(url)
         let fetched: FeedFetchResult
@@ -566,7 +572,7 @@ final class FeedCenter: ObservableObject {
         case .success(var record):
             // Another subscription to the same feed may have finished meanwhile.
             if let existing = subscribedFeed(at: record.feed.feedURL) {
-                throw FeedSubscribeError.alreadySubscribed(title: existing.title)
+                throw Self.alreadyInTheLibrary(existing)
             }
             record.feed.folderID = try folderID(for: record.feed, choice: choice)
             store.add(record)
@@ -624,10 +630,18 @@ final class FeedCenter: ObservableObject {
     }
 
     /// The subscription to the feed at `url`, whatever its scheme or a
-    /// trailing slash, if there is one.
+    /// trailing slash, if there is one: subscribed, or unsubscribed from and
+    /// kept (FR11, branch D).
     func subscribedFeed(at url: URL) -> Feed? {
         let key = FeedAddress.comparisonKey(url)
         return store.feeds.first { FeedAddress.comparisonKey($0.feedURL) == key }
+    }
+
+    /// Why subscribing to the feed `existing` is refused, as the library has
+    /// it already: subscribed, or unsubscribed from (FR11, branch D), which
+    /// Resubscribe checks again.
+    private static func alreadyInTheLibrary(_ existing: Feed) -> FeedSubscribeError {
+        existing.isSubscribed ? .alreadySubscribed(title: existing.title) : .unsubscribedAlready(title: existing.title)
     }
 
     /// Unsubscribes from the feed `feedID` (FR11, branch D), as the listener

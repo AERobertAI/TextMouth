@@ -23,7 +23,8 @@ final class FeedInfoModel: ObservableObject, Identifiable {
         self.library = library
     }
 
-    /// The feed as its record holds it now; nil once it is unsubscribed.
+    /// The feed as its record holds it now, subscribed or not (FR11, branch
+    /// D); nil once its record is gone.
     var feed: Feed? {
         center.store.record(of: feedID)?.feed
     }
@@ -100,8 +101,10 @@ final class FeedInfoModel: ObservableObject, Identifiable {
 /// itself, each with "Use the global setting": its "List and download"
 /// choice and number (FR11), worded with the feed's own noun, and its days
 /// before deleting played downloads; Unsubscribe…, which asks first and
-/// names the books left behind; and Done, which Escape presses. Every
-/// change is saved as it is made.
+/// says what stays and what goes, or, for a feed the listener unsubscribed
+/// from, Resubscribe, which checks it again at once (FR11, branch D); and
+/// Done, which Escape presses. Every change is saved as it is made, and the
+/// sheet stays open across Unsubscribe and Resubscribe.
 struct FeedInfoSheet: View {
     /// What the sheet shows and changes.
     @ObservedObject var model: FeedInfoModel
@@ -113,6 +116,8 @@ struct FeedInfoSheet: View {
     let unsubscribeConfirmation: () -> FeedConfirmation?
     /// Unsubscribes, once confirmed.
     let onUnsubscribe: () -> Void
+    /// Subscribes again, checking the feed at once (FR11, branch D).
+    let onResubscribe: () -> Void
     /// Closes the sheet.
     let onDone: () -> Void
 
@@ -127,6 +132,7 @@ struct FeedInfoSheet: View {
         feedFolders: LibraryFeedFolders,
         unsubscribeConfirmation: @escaping () -> FeedConfirmation?,
         onUnsubscribe: @escaping () -> Void,
+        onResubscribe: @escaping () -> Void = {},
         onDone: @escaping () -> Void
     ) {
         _model = ObservedObject(wrappedValue: model)
@@ -134,6 +140,7 @@ struct FeedInfoSheet: View {
         self.feedFolders = feedFolders
         self.unsubscribeConfirmation = unsubscribeConfirmation
         self.onUnsubscribe = onUnsubscribe
+        self.onResubscribe = onResubscribe
         self.onDone = onDone
     }
 
@@ -159,10 +166,18 @@ struct FeedInfoSheet: View {
             }
             OperationFailureNotice(message: folderFailure)
             HStack {
-                Button(FeedWording.unsubscribeTitle, role: .destructive) {
-                    confirmation = unsubscribeConfirmation()
+                // Unsubscribe… or Resubscribe by the feed's state, the
+                // listener's toggle (FR11, branch D).
+                if model.feed?.isSubscribed == false {
+                    Button(FeedWording.resubscribeTitle, action: onResubscribe)
+                        .accessibilityHint(FeedWording.resubscribeHint)
+                } else {
+                    Button(FeedWording.unsubscribeTitle, role: .destructive) {
+                        confirmation = unsubscribeConfirmation()
+                    }
+                    .accessibilityHint(FeedWording.unsubscribeHint)
+                    .disabled(model.feed == nil)
                 }
-                .disabled(model.feed == nil)
                 Spacer()
                 // Escape presses Done: every change is kept as it is made,
                 // and Return stays with the number fields, which it enters,
@@ -198,6 +213,11 @@ struct FeedInfoSheet: View {
         FeedInfoValue(label: FeedWording.itemsLabel(counts.noun), value: FeedWording.countsPhrase(counts))
         FeedInfoValue(label: FeedWording.lastCheckLabel, value: center.checkWording(of: feed.id, now: Date()).visible)
         FeedInfoValue(label: FeedWording.subscribedLabel, value: FeedWording.itemDate(feed.subscribedDate))
+        // When the listener unsubscribed, which stopped its checking (FR11,
+        // branch D).
+        if let unsubscribed = feed.unsubscribedDate {
+            FeedInfoValue(label: FeedWording.unsubscribedLabel, value: FeedWording.itemDate(unsubscribed))
+        }
         if feed.usesInsecureTransport {
             FeedInfoValue(label: FeedWording.securityLabel, value: FeedWording.insecureNote)
         }
@@ -497,8 +517,16 @@ struct FeedItemDescriptionSheet: View {
 // MARK: - Words
 
 extension FeedWording {
-    /// Feed Info's line for a feed unsubscribed while it was open.
-    static let feedGone = "This feed is no longer subscribed."
+    /// Feed Info's line for a feed whose record went while it was open:
+    /// unsubscribing keeps a feed (FR11, branch D), so only a record lost
+    /// outside TextMouth does.
+    static let feedGone = "This feed is no longer in your library."
+    /// The unsubscription date's label in Feed Info (FR11, branch D).
+    static let unsubscribedLabel = "Unsubscribed"
+    /// Unsubscribe…'s spoken hint in Feed Info (FR11, branch D).
+    static let unsubscribeHint = "Asks first, then stops checking this feed; the feed and its downloads stay"
+    /// Resubscribe's spoken hint in Feed Info (FR11, branch D).
+    static let resubscribeHint = "Checks this feed again from now on, and at once"
     /// The address's label in Feed Info.
     static let addressLabelInInfo = "Address"
     /// The web site's label.

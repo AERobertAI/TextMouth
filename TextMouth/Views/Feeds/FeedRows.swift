@@ -33,7 +33,7 @@ struct LibraryFeedsSection<FolderMenu: View>: View {
         if !rows.isEmpty {
             Section {
                 ForEach(rows) { row in
-                    let actions = FeedAction.actions(for: row.id, noun: row.counts.noun)
+                    let actions = FeedAction.actions(for: row.id, noun: row.counts.noun, isSubscribed: row.counts.isSubscribed)
                     Button {
                         open(row)
                     } label: {
@@ -65,9 +65,10 @@ struct LibraryFeedsSection<FolderMenu: View>: View {
 }
 
 /// One feed's row in the Feeds section (FR03): its title and the note
-/// "Feed", its items counted, and its last check or why it failed, all
-/// spoken as one sentence. Equatable on what it shows, so a change to
-/// another feed leaves it as it was.
+/// "Feed", with "Unsubscribed" while the listener is unsubscribed (FR11,
+/// branch D), its items counted, and its last check or why it failed, or
+/// that it is not checked, all spoken as one sentence. Equatable on what it
+/// shows, so a change to another feed leaves it as it was.
 struct FeedRow: View, Equatable {
     /// What the row shows.
     let content: FeedRowContent
@@ -83,6 +84,9 @@ struct FeedRow: View, Equatable {
                     Text(content.title)
                         .font(.headline)
                     FeedBadge(text: FeedWording.feedNote, color: .secondary)
+                    if !content.counts.isSubscribed {
+                        FeedBadge(text: FeedWording.unsubscribedNote, color: .secondary)
+                    }
                     if content.folderPath == nil {
                         FeedBadge(text: FeedWording.folderMissingNote, color: .red)
                     }

@@ -30,7 +30,9 @@ extension FeedCenter {
 }
 
 /// A question asked before a command that can't be undone (FR03): Delete
-/// Episode or Delete Article, and Unsubscribe.
+/// Episode or Delete Article, and Unsubscribe, which Resubscribe undoes but
+/// for the places kept for removed downloads, which it deletes (FR11,
+/// branch D).
 struct FeedConfirmation: Identifiable, Equatable {
     /// What confirming does.
     enum Kind: Equatable {
@@ -57,14 +59,20 @@ extension LibraryFeedsPresenter {
 
     /// Runs `action` for a feed, from its row in the Feeds section or its
     /// folder's row, saying what it did from the window it was chosen in.
-    /// - Returns: The work Check Feed started, which tests await; nil for
-    ///   the commands that finish at once or ask first.
+    /// - Returns: The work Check Feed and Resubscribe started, which tests
+    ///   await; nil for the commands that finish at once or ask first.
     @discardableResult
     func perform(_ action: FeedAction, in context: FeedCommandContext) -> Task<Void, Never>? {
         let center = context.center
         guard let feed = center.store.record(of: action.feedID)?.feed else { return nil }
         switch action.command {
         case .checkFeed:
+            // A menu drawn before Unsubscribe may still offer it (FR11,
+            // branch D): an unsubscribed feed is never checked.
+            guard feed.isSubscribed else {
+                announce(FeedWording.notChecked(title: feed.title), context.window)
+                return nil
+            }
             announce(FeedWording.checking(title: feed.title), context.window)
             let noun = FeedWording.ItemNoun.of(center.listedItems(of: feed.id))
             return Task {
@@ -79,8 +87,27 @@ extension LibraryFeedsPresenter {
             announce(FeedWording.markedAll(count: marked, title: feed.title, noun: noun), context.window)
         case .unsubscribe:
             confirmation = unsubscribeConfirmation(for: feed.id, in: context)
+        case .resubscribe:
+            return resubscribe(feed.id, in: context)
         }
         return nil
+    }
+
+    /// Subscribes again to the feed `feedID` (FR11, branch D), which asks
+    /// nothing first: VoiceOver hears that it is checked now, and then what
+    /// the check found, as Check Feed says it.
+    /// - Returns: The check, which tests await; nil when the feed is
+    ///   subscribed already, or gone.
+    @discardableResult
+    func resubscribe(_ feedID: UUID, in context: FeedCommandContext) -> Task<Void, Never>? {
+        let center = context.center
+        guard let feed = center.store.record(of: feedID)?.feed, !feed.isSubscribed else { return nil }
+        let noun = FeedWording.ItemNoun.of(center.listedItems(of: feedID))
+        announce(FeedWording.resubscribed(title: feed.title), context.window)
+        return Task {
+            guard let report = await center.resubscribe(feedID) else { return }
+            announce(FeedWording.checked(report, noun: noun), context.window)
+        }
     }
 
     /// The question asked before unsubscribing from the feed `feedID`, saying
@@ -107,6 +134,7 @@ extension LibraryFeedsPresenter {
     /// only checking stops, the feed staying with its folder, its settings,
     /// and its downloads, and the packages it kept for downloads removed
     /// earlier go (`FeedCenter.unsubscribe(_:)`); VoiceOver hears so at once.
+    /// Feed Info, should it show the feed, stays open, offering Resubscribe.
     /// - Returns: What unsubscribing did; nil when the feed was no longer
     ///   subscribed, which changes nothing.
     @discardableResult
@@ -114,9 +142,6 @@ extension LibraryFeedsPresenter {
         guard let feed = context.center.store.record(of: feedID)?.feed else { return nil }
         let noun = FeedWording.ItemNoun.of(context.center.listedItems(of: feedID))
         guard let outcome = context.center.unsubscribe(feedID) else { return nil }
-        if feedInfo?.feedID == feedID {
-            feedInfo = nil
-        }
         announce(FeedWording.unsubscribed(title: feed.title, outcome: outcome, noun: noun), context.window)
         return outcome
     }

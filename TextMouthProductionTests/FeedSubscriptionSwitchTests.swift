@@ -269,3 +269,160 @@ final class FeedSubscriptionCheckingTests: XCTestCase {
         return books
     }
 }
+
+// MARK: - The Switch Shown
+
+/// The feed's context menu, its VoiceOver actions, and Feed Info offer
+/// Unsubscribe… or Resubscribe by its state (FR11, branch D, item 3; the
+/// listener's "subscribe / resubscribe toggling action in the contetxt menu
+/// for feeds and changing the info menu"), and no Check Feed while it is not
+/// checked; its row, its folder's row, entering its folder, Speak Info, and
+/// Feed Info say it is unsubscribed and not checked; Resubscribe checks it
+/// at once and says so; Add Feed with its address points to Resubscribe.
+@MainActor
+final class FeedSubscriptionShownTests: XCTestCase {
+
+    // MARK: - The Words
+
+    /// A subscribed feed offers Check Feed, Feed Info…, Mark All Played, and
+    /// Unsubscribe…; an unsubscribed one Feed Info…, Mark All Played (Mark
+    /// All Read for articles), and Resubscribe, which asks nothing first.
+    func testAFeedOffersUnsubscribeOrResubscribeByItsState() {
+        let feedID = UUID()
+        XCTAssertEqual(
+            FeedAction.actions(for: feedID, noun: .episode, isSubscribed: true).map(\.title),
+            ["Check Feed", "Feed Info…", "Mark All Played", "Unsubscribe…"]
+        )
+        let unsubscribed = FeedAction.actions(for: feedID, noun: .article, isSubscribed: false)
+        XCTAssertEqual(unsubscribed.map(\.title), ["Feed Info…", "Mark All Read", "Resubscribe"])
+        XCTAssertEqual(unsubscribed.map(\.command), [.feedInfo, .markAllPlayed, .resubscribe])
+        XCTAssertNil(unsubscribed.last?.role, "Resubscribe was offered as destructive")
+    }
+
+    /// An unsubscribed feed's last check says it is not checked, since when
+    /// this Mac last checked it, a failed check included; its row, its
+    /// folder's row and rotor entry, entering its folder, and Speak Info say
+    /// "unsubscribed" after "Feed".
+    func testTheUnsubscribedStateIsSaidWhereverTheFeedIs() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "UTC"))
+        let locale = Locale(identifier: "en_US")
+        let now = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 10, day: 10, hour: 9)))
+        /// The check as an unsubscribed feed reads it, a narrow space before
+        /// AM or PM made a plain one, as some systems write it.
+        func reading(_ fetch: FeedFetchState) -> FeedWording.Check {
+            let check = FeedWording.check(fetch, isRefreshing: false, isSubscribed: false, now: now, calendar: calendar, locale: locale)
+            return FeedWording.Check(
+                visible: check.visible.replacingOccurrences(of: "\u{202F}", with: " "),
+                spoken: check.spoken.replacingOccurrences(of: "\u{202F}", with: " "),
+                failed: check.failed
+            )
+        }
+        var fetch = FeedFetchState()
+        XCTAssertEqual(reading(fetch), FeedWording.Check(visible: "Not checked", spoken: "not checked", failed: false))
+        fetch.lastCheck = calendar.date(from: DateComponents(year: 2026, month: 10, day: 9, hour: 15, minute: 5))
+        let check = reading(fetch)
+        XCTAssertEqual(check, FeedWording.Check(
+            visible: "Not checked since yesterday at 3:05 PM",
+            spoken: "not checked since yesterday at 3:05 PM",
+            failed: false
+        ))
+        fetch.lastError = FeedRefreshFailure(message: "The server didn't answer.", date: try XCTUnwrap(fetch.lastCheck))
+        XCTAssertEqual(reading(fetch), check, "an unsubscribed feed's old failure was read as its check")
+
+        var counts = FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), downloaded: 2, noun: .episode)
+        counts.isSubscribed = false
+        XCTAssertEqual(
+            FeedWording.feedRowLabel(title: "Finish It!", counts: counts, check: check, folderMissing: false),
+            "Finish It!, Feed, unsubscribed, 10 of 381 episodes listed, 2 downloaded, not checked since yesterday at 3:05 PM"
+        )
+        XCTAssertEqual(
+            FeedWording.feedRowLabel(title: "Finish It!", counts: counts, check: check, folderMissing: true),
+            "Finish It!, Feed, unsubscribed, Folder missing, 10 of 381 episodes listed, 2 downloaded, not checked since yesterday at 3:05 PM"
+        )
+        let announcement = "Finish It!, Feed, unsubscribed, 10 of 381 episodes listed, 2 downloaded"
+        XCTAssertEqual(FeedWording.folderAnnouncement(name: "Finish It!", counts: counts), announcement)
+        XCTAssertEqual(FolderRow.accessibilityLabel(name: "Finish It!", bookCount: 0, feedCounts: counts), announcement)
+        let facts = FeedInfoFacts(title: "Finish It!", counts: counts, check: check.visible, folderPath: "Podcasts/Finish It!", address: nil)
+        XCTAssertEqual(
+            LibraryInfoWording.briefParts(of: facts),
+            ["Finish It!", "Feed", "Unsubscribed", "10 of 381 episodes listed, 2 downloaded", "Not checked since yesterday at 3:05 PM"]
+        )
+        counts.isSubscribed = true
+        XCTAssertEqual(FeedWording.folderAnnouncement(name: "Finish It!", counts: counts), "Finish It!, Feed, 10 of 381 episodes listed, 2 downloaded")
+    }
+
+    // MARK: - Through the Commands
+
+    /// Unsubscribe… from Feed Info leaves the sheet open, its feed now
+    /// counted unsubscribed and its commands Feed Info…, Mark All Played,
+    /// and Resubscribe; Check Feed from a menu drawn before checks nothing
+    /// and says why; Resubscribe says it checks the feed now, checks it, and
+    /// says what came; and the folders' publisher tells the Library window of
+    /// each toggle.
+    func testUnsubscribeAndResubscribeThroughTheCommands() async throws {
+        let world = try FeedTestWorld(self, label: "FeedSwitchCommands")
+        let episodeA = FeedXML.Item(guid: "a", title: "A", published: world.day(-1), enclosure: "https://atlas.example/a.mp3")
+        let episodeB = FeedXML.Item(guid: "b", title: "B", published: world.day(1), enclosure: "https://atlas.example/b.mp3")
+        world.server.serve("/atlas.xml", .feed(FeedXML.rss(items: [episodeA])))
+        let feed = try await world.subscribe("/atlas.xml")
+        let folders = LibraryFeedFolders(center: world.center)
+        var publishes = 0
+        let watching = folders.objectWillChange.sink { publishes += 1 }
+        defer { watching.cancel() }
+        let presenter = LibraryFeedsPresenter()
+        var heard: [String] = []
+        presenter.announce = { message, _ in heard.append(message) }
+        let context = FeedCommandContext(center: world.center, library: world.library, window: nil)
+        let checkFeed = try XCTUnwrap(FeedAction.actions(for: feed.id, in: world.center).first { $0.command == .checkFeed })
+        presenter.perform(try XCTUnwrap(FeedAction.actions(for: feed.id, in: world.center).first { $0.command == .feedInfo }), in: context)
+        let info = try XCTUnwrap(presenter.feedInfo)
+
+        presenter.unsubscribe(feed.id, in: context)
+
+        XCTAssertTrue(presenter.feedInfo === info, "Feed Info closed as the feed was unsubscribed")
+        XCTAssertEqual(info.feed?.isSubscribed, false)
+        XCTAssertFalse(world.center.counts(of: feed.id).isSubscribed)
+        XCTAssertEqual(FeedAction.actions(for: feed.id, in: world.center).map(\.command), [.feedInfo, .markAllPlayed, .resubscribe])
+        XCTAssertEqual(folders.unsubscribedFeedIDs, [feed.id])
+        XCTAssertGreaterThan(publishes, 0, "the Library window heard nothing of the toggle")
+        let row = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).first)
+        XCTAssertTrue(row.label.hasPrefix("The Tactile Atlas, Feed, unsubscribed, 1 episode"), row.label)
+
+        let asked = world.server.requests(to: "/atlas.xml").count
+        XCTAssertNil(presenter.perform(checkFeed, in: context))
+        XCTAssertEqual(heard.last, "The Tactile Atlas is unsubscribed, so TextMouth doesn't check it. Choose Resubscribe to check it again.")
+        XCTAssertEqual(world.server.requests(to: "/atlas.xml").count, asked, "Check Feed checked an unsubscribed feed")
+
+        world.server.serve("/atlas.xml", .feed(FeedXML.rss(items: [episodeB, episodeA])))
+        world.advance(by: 2 * 86_400)
+        let resubscribe = try XCTUnwrap(FeedAction.actions(for: feed.id, in: world.center).last)
+        await presenter.perform(resubscribe, in: context)?.value
+
+        XCTAssertEqual(heard.suffix(2), ["Resubscribed to The Tactile Atlas. Checking it now…", "The Tactile Atlas: 1 new episode."])
+        XCTAssertEqual(info.feed?.isSubscribed, true)
+        XCTAssertEqual(folders.unsubscribedFeedIDs, [])
+        XCTAssertEqual(FeedAction.actions(for: feed.id, in: world.center).map(\.command), [.checkFeed, .feedInfo, .markAllPlayed, .unsubscribe])
+    }
+
+    /// Add Feed with the address of a feed the listener unsubscribed from
+    /// subscribes nothing new, and says to choose Resubscribe.
+    func testAddFeedPointsAnUnsubscribedFeedToResubscribe() async throws {
+        let world = try FeedTestWorld(self, label: "FeedSwitchAddFeed")
+        world.server.serve("/atlas.xml", .feed(FeedXML.rss(items: [FeedXML.Item(guid: "a", title: "A")])))
+        let feed = try await world.subscribe("/atlas.xml")
+        world.center.unsubscribe(feed.id)
+
+        do {
+            _ = try await world.center.subscribe(to: world.server.url("/atlas.xml").absoluteString, folderID: world.bookFolder.id)
+            XCTFail("an unsubscribed feed was subscribed to again")
+        } catch let error as FeedSubscribeError {
+            XCTAssertEqual(error, .unsubscribedAlready(title: "The Tactile Atlas"))
+            XCTAssertEqual(
+                error.message,
+                "The Tactile Atlas is in your library, unsubscribed. Choose Resubscribe on its row, or in its Feed Info, to check it again."
+            )
+        }
+        XCTAssertEqual(world.center.feeds.map(\.id), [feed.id])
+    }
+}

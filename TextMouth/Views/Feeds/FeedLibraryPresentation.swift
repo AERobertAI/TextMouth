@@ -21,6 +21,11 @@ struct FeedItemCounts: Equatable, Sendable {
     var unplayed = 0
     /// What the items are called.
     var noun: FeedWording.ItemNoun = .episode
+    /// Whether the listener is subscribed to the feed (FR11, branch D): the
+    /// counts of an unsubscribed one are said with the note "unsubscribed"
+    /// after "Feed", wherever its row, its folder's row, its rotor entry,
+    /// entering its folder, and Speak Info name it.
+    var isSubscribed = true
 }
 
 extension FeedCenter {
@@ -46,7 +51,7 @@ extension FeedCenter {
     func counts(of feedID: UUID) -> FeedItemCounts {
         guard let record = store.record(of: feedID) else { return FeedItemCounts() }
         let items = listedItems(of: feedID)
-        var counts = FeedItemCounts(listed: items.count, total: record.feed.entryTotal, noun: .of(items))
+        var counts = FeedItemCounts(listed: items.count, total: record.feed.entryTotal, noun: .of(items), isSubscribed: record.feed.isSubscribed)
         for item in items {
             switch state(of: item, in: feedID) {
             case .downloaded:
@@ -66,9 +71,16 @@ extension FeedCenter {
         return counts
     }
 
-    /// How the feed `feedID`'s last check reads now.
+    /// How the feed `feedID`'s last check reads now: for a feed the listener
+    /// unsubscribed from (FR11, branch D), that it is not checked, and since
+    /// when.
     func checkWording(of feedID: UUID, now: Date) -> FeedWording.Check {
-        FeedWording.check(fetchState(of: feedID), isRefreshing: refreshingFeedIDs.contains(feedID), now: now)
+        FeedWording.check(
+            fetchState(of: feedID),
+            isRefreshing: refreshingFeedIDs.contains(feedID),
+            isSubscribed: store.record(of: feedID)?.feed.isSubscribed ?? true,
+            now: now
+        )
     }
 
     /// What the summary bar of the feed `feedID`'s folder says of the feed.

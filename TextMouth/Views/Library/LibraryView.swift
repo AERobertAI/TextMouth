@@ -1192,11 +1192,12 @@ struct LibraryView: View {
         currentFolderPath = path
     }
 
-    /// The commands of the feed whose folder `folder` is, or none for any
-    /// other folder (FR03).
+    /// The commands of the feed whose folder `folder` is, by its state
+    /// (Unsubscribe… or Resubscribe, FR11, branch D), or none for any other
+    /// folder (FR03).
     private func feedActions(forFolder folder: BookFolder) -> [FeedAction] {
         guard let feedID = feedFolders.feedID(inFolder: folder.id) else { return [] }
-        return FeedAction.actions(for: feedID, noun: .of(feedFolders.center.listedItems(of: feedID)))
+        return FeedAction.actions(for: feedID, in: feedFolders.center)
     }
 
     /// What the feed commands chosen in this window work with (FR03).

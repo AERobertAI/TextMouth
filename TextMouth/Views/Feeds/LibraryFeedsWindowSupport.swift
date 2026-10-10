@@ -211,6 +211,7 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                     feedFolders: feedFolders,
                     unsubscribeConfirmation: { presenter.unsubscribeConfirmation(for: model.feedID, in: context) },
                     onUnsubscribe: { presenter.unsubscribe(model.feedID, in: context) },
+                    onResubscribe: { presenter.resubscribe(model.feedID, in: context) },
                     onDone: { presenter.feedInfo = nil }
                 )
             }
