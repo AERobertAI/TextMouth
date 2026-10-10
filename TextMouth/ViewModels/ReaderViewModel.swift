@@ -705,8 +705,19 @@ final class ReaderViewModel: ObservableObject {
             // suppress window: during that window, a spurious toggle command
             // is converted into a pause if playing, or ignored if already
             // paused (blocking macOS's spurious auto-resume bug).
+            //
+            // A book Where Am I? paused counts as playing: the announcement
+            // plays it again as it ends. So the AirPods leaving pause it,
+            // which ends the announcement and leaves the book paused, and so
+            // does a recording starting (`pauseEveryPlayingReader()`); with
+            // the book counted as paused, nothing was paused, and the book
+            // played on through the Mac's speakers once the announcement
+            // ended.
             isCurrentlyPlaying: { [weak self] in
                 guard let self = self else { return false }
+                if self.isWhereAmISpeaking && self.wasPlayingBeforeWhereAmI {
+                    return true
+                }
                 if self.isAudioBook {
                     return self.audioPlaybackService.isPlaying && !self.audioPlaybackService.isPaused
                 }

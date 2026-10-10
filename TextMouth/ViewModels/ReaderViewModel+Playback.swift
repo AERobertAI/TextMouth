@@ -2573,7 +2573,20 @@ extension ReaderViewModel {
     /// paused. Such a pause tells Now Playing nothing either, unless the
     /// book holds the media controls: it once told the system a stopped
     /// book was paused, which took the AirPods.
+    ///
+    /// A pause while Where Am I? speaks ends the announcement first, as
+    /// Play/Pause during it does (`endWhereAmIWithoutResuming()`): the book
+    /// it paused stays paused, its pause settled. Left speaking, the
+    /// announcement resumed the book as it ended, undoing the pause: a
+    /// sleep timer that ran out during it, a Pause from the AirPods or a
+    /// media key, and the AirPods leaving, which paused nothing then, all
+    /// had the book play on, at full volume and with no timer, or through
+    /// the Mac's speakers.
     func pause(playingPauseSound: Bool) {
+        if isWhereAmISpeaking {
+            stopWhereAmISynthesizer()
+            endWhereAmIWithoutResuming()
+        }
         // Capture pre-pause playing state BEFORE we issue any pause calls.
         // The audio / speech services flip their flags synchronously, so
         // checking after would always return "not playing" and the guard
