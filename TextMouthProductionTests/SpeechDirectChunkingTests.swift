@@ -348,17 +348,19 @@ final class SpeechDirectChunkingTests: XCTestCase {
 
     /// Cancelled again at the same place, on the fresh synthesizer, speech
     /// ends there: it shows itself stopped at the cursor, not paused, keeps
-    /// its text for Play, the chapter neither ends nor moves on, the reader
-    /// is told, and the listener hears why, in the pinned words.
-    func testACancelOfTheRetryEndsSpeechWithTheAnnouncement() throws {
+    /// its text for Play, the chapter neither ends nor moves on, and the
+    /// reader is told, which tells the listener itself (B05), so that speech
+    /// says nothing over it. Speech with no reader to tell says why itself,
+    /// in the pinned words.
+    func testACancelOfTheRetryEndsSpeechAndTellsTheReaderOrTheListener() throws {
         try TextMouthPaths.ensureDirectoryStructure()
         let (speech, recorder) = makeDirectSpeech()
         defer { speech.stop() }
         var finishes = 0
-        var refusals = 0
+        var refusals: [SpeechRefusal] = []
         var cursor: [NSRange] = []
         speech.onUtteranceFinished = { finishes += 1 }
-        speech.onSpeechRefused = { refusals += 1 }
+        speech.onSpeechRefused = { refusals.append($0) }
         speech.onWordSpoken = { range, _ in cursor.append(range) }
         // The refused chunk never starts, so nothing is queued after it.
         let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
@@ -381,10 +383,100 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(cursor.last, NSRange(location: start, length: 0))
         XCTAssertEqual(speech.currentText, Self.longText, "the text is kept for Play")
         XCTAssertEqual(finishes, 0, "the chapter did not end")
-        XCTAssertEqual(refusals, 1)
+        XCTAssertEqual(refusals.count, 1)
+        XCTAssertEqual(refusals.first?.offset, start)
         XCTAssertEqual(recorder.utterances.count, 2, "nothing more is handed over")
-        XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
+        XCTAssertEqual(announced.announcements, [], "speech spoke over the reader it told")
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY_FAILED: offset=\(start) ") }, "\(lines)")
+
+        // With no reader to tell, speech tells the listener itself.
+        speech.onSpeechRefused = nil
+        speech.speak(Self.longText, fromCharOffset: start)
+        report(cancel: try handedOver(2, by: recorder), to: speech)
+        let alone = try recordingAnnouncements {
+            report(cancel: try handedOver(3, by: recorder), to: speech)
+        }
+        XCTAssertFalse(speech.isActive)
+        XCTAssertEqual(alone.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
         XCTAssertEqual(SpeechService.engineRefusedAnnouncement, "Speech stopped: the Mac's speech engine refused this text.")
+    }
+
+    /// Speech that ends on a refusal tells its reader what was refused, for
+    /// the report of the refusal (B05): where speech stopped; the retry the
+    /// engine refused, exactly as it was handed over, strictly guarded, with
+    /// its voice, rate, pitch, and volume; the speed; and the speech log's
+    /// newest lines, which end with the stop and hold no words of the book.
+    func testARefusalTellsTheReaderWhatWasRefused() throws {
+        let text = Self.distinctText
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var refusals: [SpeechRefusal] = []
+        speech.onSpeechRefused = { refusals.append($0) }
+        let refusedChunk = DirectSpeechChunk.starting(at: 20_000, in: text, maximumLength: SpeechService.directModeFirstChunkSize)
+        speech.speak(text, fromCharOffset: refusedChunk.start)
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+        let retry = try handedOver(1, by: recorder)
+
+        recordingAnnouncements {
+            report(cancel: retry, to: speech)
+        }
+
+        XCTAssertEqual(refusals.count, 1)
+        let refusal = try XCTUnwrap(refusals.first)
+        XCTAssertEqual(refusal.offset, refusedChunk.start)
+        XCTAssertEqual(refusal.refusedRange, refusedChunk.start..<refusedChunk.end, "the retry spoke the refused chunk again")
+        XCTAssertEqual(refusal.refusedText, retry.speechString, "not the text as it was handed over")
+        XCTAssertEqual(refusal.refusedText, SpeechMarkupGuard.neutralizedStrictly(refusedChunk.words(of: text)))
+        XCTAssertEqual(refusal.strictlyGuardedRange, refusedChunk.start..<refusedChunk.end)
+        XCTAssertEqual(refusal.voice, retry.voice.map { SpeechRefusal.Voice($0) })
+        XCTAssertEqual(refusal.voice?.identifier, speech.currentVoice?.identifier)
+        XCTAssertEqual(refusal.wordsPerMinute, speech.wordsPerMinute)
+        XCTAssertEqual(refusal.rate, retry.rate)
+        XCTAssertEqual(refusal.pitchMultiplier, retry.pitchMultiplier)
+        XCTAssertEqual(refusal.volume, retry.volume)
+
+        let messages = refusal.recentLines.map(\.message)
+        XCTAssertLessThanOrEqual(messages.count, RecentTransitionLines.defaultCapacity)
+        XCTAssertEqual(
+            messages.last,
+            "DIRECT_RETRY_FAILED: offset=\(refusedChunk.start) chunkStart=\(refusedChunk.start) "
+                + "chunkEnd=\(refusedChunk.end); speech stopped, the listener told"
+        )
+        for tag in ["DIRECT_CANCEL_UNEXPECTED:", "DIRECT_SYNTH_REPLACED:", "DIRECT_RETRY offset=\(refusedChunk.start) "] {
+            XCTAssertTrue(messages.contains { $0.hasPrefix(tag) }, "\(tag) is missing: \(messages)")
+        }
+        for word in Self.distinctWords {
+            XCTAssertFalse(messages.contains { $0.contains(word) }, "\(word) reached the lines: \(messages)")
+        }
+    }
+
+    /// A refusal heard while paused, at a place whose one retry was taken
+    /// already, ends speech there at once, the pause notwithstanding, and
+    /// the reader is told of the retry the engine refused.
+    func testARefusalWhilePausedAfterTheRetryEndsSpeechThere() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var refusals: [SpeechRefusal] = []
+        speech.onSpeechRefused = { refusals.append($0) }
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+        let retry = try handedOver(1, by: recorder)
+        speech.pause()
+
+        let lines = logLines(in: .speechTransitions) {
+            _ = recordingAnnouncements {
+                report(cancel: retry, to: speech)
+            }
+        }
+
+        XCTAssertFalse(speech.isActive, "a refusal of the retry while paused did not end speech")
+        XCTAssertEqual(recorder.utterances.count, 2, "something was handed over again")
+        XCTAssertEqual(refusals.count, 1)
+        XCTAssertEqual(refusals.first?.offset, start)
+        XCTAssertEqual(refusals.first?.refusedText, retry.speechString)
+        XCTAssertTrue(lines.contains { $0.contains("DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app was paused") }, "\(lines)")
         XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY_FAILED: offset=\(start) ") }, "\(lines)")
     }
 
@@ -601,11 +693,20 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertLessThanOrEqual(goesOn.volume, refused.volume, "the fade grew louder")
         XCTAssertFalse(try synthesizer(goesOnIndex, by: recorder) === refusing)
 
-        let announced = recordingAnnouncements {
-            report(cancel: goesOn, to: speech)
+        var announced = AnnouncementRecorder()
+        let ending = logLines(in: .speechTransitions) {
+            announced = recordingAnnouncements {
+                report(cancel: goesOn, to: speech)
+            }
         }
         XCTAssertFalse(speech.isActive, "a second refusal at the same place did not end speech")
         XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
+        // What was refused is the segment, not the whole fade (B05).
+        let segmentEnd = three + goesOn.speechString.utf16.count
+        XCTAssertTrue(
+            ending.contains { $0.contains("DIRECT_RETRY_FAILED: offset=\(three) chunkStart=\(three) chunkEnd=\(segmentEnd);") },
+            "\(ending)"
+        )
     }
 
     /// A sleep-fade segment cancelled by the app's own stop, as a pause
@@ -778,7 +879,7 @@ final class SpeechDirectChunkingTests: XCTestCase {
         let (speech, recorder) = makeDirectSpeech()
         defer { speech.stop() }
         var refusals = 0
-        speech.onSpeechRefused = { refusals += 1 }
+        speech.onSpeechRefused = { _ in refusals += 1 }
         let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
         speech.speak(Self.longText, fromCharOffset: start)
         report(cancel: try handedOver(0, by: recorder), to: speech)
@@ -869,6 +970,17 @@ final class SpeechDirectChunkingTests: XCTestCase {
         var prose = BenchmarkProse(seed: 71)
         return prose.text(utf16Length: SpeechRenderCoordinator.maximumTextLength + 20_000)
     }()
+
+    /// A text longer than the render limit made of words found nowhere in
+    /// speech's log lines (`distinctWords`), so a line that held the book's
+    /// words would show.
+    private static let distinctText: String = {
+        let sentence = "Quillwort edges the salt flats beyond the ferry slip. "
+        return String(repeating: sentence, count: SpeechRenderCoordinator.maximumTextLength / sentence.utf16.count + 400)
+    }()
+
+    /// The words of `distinctText` that no log line may hold.
+    private static let distinctWords = ["Quillwort", "edges", "flats", "ferry"]
 
     /// A text longer than the render limit with lone brackets all through
     /// it, which the default guard leaves to be spoken as "less than" and

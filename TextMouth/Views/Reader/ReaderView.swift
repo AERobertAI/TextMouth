@@ -30,6 +30,8 @@ struct ReaderView: View {
             .modifier(ReaderErrorAlert(viewModel: viewModel))
             .modifier(ReaderPanelSheets(viewModel: viewModel, panels: $panels))
             .modifier(ReaderPanelCommands(viewModel: viewModel, panels: $panels))
+            // The report of a speech refusal, once no panel shows (B05).
+            .modifier(SpeechRefusalReportPresenter(viewModel: viewModel, panels: panels))
     }
 
     // MARK: - Content

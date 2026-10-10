@@ -497,7 +497,9 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// ends, so no time away is credited as listening; the system is told
     /// the book is paused, never stopped, so the AirPods stay with TextMouth
     /// and their next press is Play; and the place where speech stopped and
-    /// the stop itself are saved. Play then speaks on from that place.
+    /// the stop itself are saved. VoiceOver hears once that speech stopped
+    /// and that the details are in the book's window, which is not in front
+    /// (B05). Play then speaks on from that place.
     func testARefusedTextStopsAsAPauseAndPlaySpeaksOnFromThere() throws {
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Refusal")
@@ -513,7 +515,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             refusedAt = refuseTheChunkAfterTheFirst(of: quay)
         }
 
-        XCTAssertEqual(recorder.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
+        XCTAssertEqual(recorder.announcements.map(\.message), [SpeechRefusalWording.announcement])
         XCTAssertFalse(reader.speechService.isSpeaking, "Speech did not stop")
         XCTAssertEqual(reader.currentCharacterOffset, refusedAt, "The cursor is not where speech stopped")
         XCTAssertFalse(statistics.hasActiveSession, "The listening session stayed open")
@@ -521,12 +523,17 @@ final class MediaCommandPlaybackTests: XCTestCase {
         let row = try XCTUnwrap(world.library.bookByID(reader.book.id))
         XCTAssertEqual(row.readingPosition?.characterOffset, refusedAt, "The place where speech stopped was not saved")
         XCTAssertNotNil(row.lastPlaybackStopped, "The stop was not recorded")
+        // The report of the refusal waits for the window to show it (B05).
+        let report = try XCTUnwrap(reader.speechRefusalAlert.report, "The reader keeps no report of the refusal")
+        XCTAssertEqual(report.chapterOffset, refusedAt)
+        XCTAssertEqual(report.timesRefusedHere, 1)
 
         XCTAssertEqual(system.press(.play), .success)
         handleQueuedCallbacks()
         assertSpeaks(quay, from: refusedAt, "Play after the refusal")
         assertToldSystem(system, that: reader, plays: true, "Play after the refusal")
         XCTAssertTrue(statistics.hasActiveSession, "Play after the refusal opened no listening session")
+        XCTAssertEqual(reader.speechRefusalAlert.report, report, "Play changed the report, which stays until it is closed")
     }
 
     /// A 15-minute sleep timer's countdown halts where the speech engine's

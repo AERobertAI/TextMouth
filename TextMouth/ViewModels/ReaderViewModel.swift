@@ -87,6 +87,10 @@ final class ReaderViewModel: ObservableObject {
     /// The audio failure `errorMessage` reports, kept while the message is
     /// shown so its alert can offer Retry. Nil for every other error.
     @Published var audioPlaybackFailure: AudioPlaybackFailure?
+    /// What the reader keeps of the speech engine's refusals while its
+    /// window is open (B05): the report its sheet shows, and how often each
+    /// place was refused. Changed only by ReaderViewModel+SpeechRefusal.
+    @Published var speechRefusalAlert = SpeechRefusalAlert()
     /// Every heading in the book, in reading order: the headings panel's rows
     /// and the list that heading numbers count. Kept in step with `content`.
     @Published var headings: [Heading] = []
@@ -665,9 +669,10 @@ final class ReaderViewModel: ObservableObject {
 
         // Speech the Mac's speech engine refused, on a fresh synthesizer
         // too, has stopped at the cursor; the reader makes that stop its
-        // own, as a pause would be (#1308).
-        speechService.onSpeechRefused = { [weak self] in
-            self?.showPlaybackStoppedAfterRefusal()
+        // own, as a pause would be (#1308), and keeps the report of what
+        // was refused for its window (B05).
+        speechService.onSpeechRefused = { [weak self] refusal in
+            self?.showPlaybackStoppedAfterRefusal(refusal)
         }
 
         // Sleep timer callbacks are no longer set here — they're passed
@@ -1531,7 +1536,7 @@ final class ReaderViewModel: ObservableObject {
     /// then, since only then is there anything to release. That covers a
     /// book that plays or is paused; a finished book resting at its end
     /// (`hasFinishedBook`); and a book shown paused where its speech stopped
-    /// on a refusal (`showPlaybackStoppedAfterRefusal()`) or where its sleep
+    /// on a refusal (`showPlaybackStoppedAfterRefusal(_:)`) or where its sleep
     /// timer stopped it, neither of which was offered it before. A book
     /// whose controls another book has taken, by playing, has nothing to
     /// release, and is not offered it (REV07, speech finding 5); nor is a

@@ -712,8 +712,7 @@ extension ReaderViewModel {
     /// Makes the reader's own the stop the speech service made when the
     /// Mac's speech engine refused a text on a fresh synthesizer too
     /// (`SpeechService.onSpeechRefused`, #1308): speech has stopped where it
-    /// was, the cursor is there, and the listener has heard why
-    /// (`SpeechService.engineRefusedAnnouncement`).
+    /// was, and the cursor is there.
     ///
     /// The reader treats it as a pause, as `stopPlaybackForSleepTimer`
     /// treats the timer's stop: it shows nothing playing; ends this book's
@@ -727,7 +726,11 @@ extension ReaderViewModel {
     /// waiting for its chapter's speech never does
     /// (`isWaitingForChapterSpeech`), and a book that has finished speaks
     /// nothing (`hasFinishedBook`). A closed reader shows nothing.
-    func showPlaybackStoppedAfterRefusal() {
+    ///
+    /// Last, it keeps the report of `refusal`, what was refused and where,
+    /// for its window to show, and tells the listener why speech stopped,
+    /// once (`showSpeechRefusalReport(_:)`, B05).
+    func showPlaybackStoppedAfterRefusal(_ refusal: SpeechRefusal) {
         guard !hasClosed else { return }
         DiagnosticLog.event(
             .playback,
@@ -742,6 +745,7 @@ extension ReaderViewModel {
         )
         recordPlaybackStopped()
         savePosition()
+        showSpeechRefusalReport(refusal)
     }
 
     // MARK: - Where a Chapter's End Stops the Timer
