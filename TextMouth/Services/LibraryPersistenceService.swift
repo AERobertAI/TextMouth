@@ -473,8 +473,9 @@ enum LibraryPersistenceService {
     /// Writes each feed's index from `library`'s feed items
     /// (`Library.feedIndexRows`), each row placed where its package is
     /// (`FeedIndexFiles.placed(_:in:of:)`), and only the indexes whose bytes
-    /// differ from what this process last read or wrote of them: listening
-    /// to an episode rewrites its feed's small index, never another feed's.
+    /// differ from what this process last read or wrote of them, or whose
+    /// file is gone since: listening to an episode rewrites its feed's small
+    /// index, never another feed's.
     /// A feed the library keeps no row of now gets an empty index, unless its
     /// folder is gone too, when there is nothing left to keep and nothing is
     /// made again. Must run on saveQueue, after the data directory's folders
@@ -490,13 +491,17 @@ enum LibraryPersistenceService {
         for (feedID, rows) in byFeed {
             let placed = rows.map { FeedIndexFiles.placed($0, in: root, of: feedID) }
             let data = try FeedIndexFiles.encoded(FeedIndex(feedID: feedID, books: placed))
-            guard feedIndexesOnDisk.bytes[feedID] != data else { continue }
+            let file = FeedPaths.indexFile(of: feedID, in: root)
+            // The same bytes are written again when the file is gone, as when
+            // it was deleted outside TextMouth since this process wrote it.
+            if feedIndexesOnDisk.bytes[feedID] == data, FileManager.default.fileExists(atPath: file.path) {
+                continue
+            }
             let folder = FeedPaths.itemsFolder(of: feedID, in: root)
             if placed.isEmpty, !FileManager.default.fileExists(atPath: folder.path) {
                 feedIndexesOnDisk.bytes[feedID] = data
                 continue
             }
-            let file = FeedPaths.indexFile(of: feedID, in: root)
             do {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
                 try data.write(to: file, options: .atomic)
