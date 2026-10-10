@@ -187,6 +187,51 @@ final class FullSummaryReaderTests: XCTestCase {
         XCTAssertFalse(reader.isCurrentlyPaused)
     }
 
+    // MARK: - The Toolbar's Where Am I? Button
+
+    /// The toolbar's Where Am I? button names its VoiceOver action as the
+    /// Playback menu names the command, "Where Am I? Full Summary", and the
+    /// action asks for the full summary, since quick clicks no longer reach
+    /// it (board #1593); VoiceOver calls the button by what a press does.
+    func testTheToolbarButtonsFullSummaryActionAsksForTheFullSummary() {
+        XCTAssertEqual(ReaderWhereAmIToolbarButton.fullSummaryActionName, "Where Am I? Full Summary")
+        XCTAssertEqual(ReaderWhereAmIToolbarButton.title, "Where Am I?")
+        XCTAssertEqual(ReaderWhereAmIToolbarButton.spokenLabel, "Where Am I? Announces current position in the book")
+        XCTAssertEqual(ReaderWhereAmIToolbarButton.stopLabel, "Stop Where Am I announcement")
+        var asked: [SummaryDetail] = []
+        let button = ReaderWhereAmIToolbarButton(isSpeaking: false) { asked.append($0) }
+
+        button.speakFullSummary()
+
+        XCTAssertEqual(asked, [.full], "the action did not ask for the full summary")
+    }
+
+    /// Hosted, the button offers VoiceOver that action, and performing it
+    /// asks for the full summary. SwiftUI builds the button's elements only
+    /// for an assistive app, so without one this is skipped; the test above
+    /// holds either way.
+    func testTheToolbarButtonOffersTheFullSummaryToVoiceOver() throws {
+        var asked: [SummaryDetail] = []
+        let button = ReaderWhereAmIToolbarButton(isSpeaking: false) { asked.append($0) }
+        let label = ReaderWhereAmIToolbarButton.spokenLabel
+        try withHostedView(button, until: { !self.accessibilityElements(labelled: label, in: $0).isEmpty }) { hosting in
+            guard let element = accessibilityElements(labelled: label, in: hosting).first else {
+                throw XCTSkip("SwiftUI exposed no accessibility elements without an assistive app")
+            }
+            let actions = element.accessibilityCustomActions() ?? []
+            XCTAssertEqual(actions.map(\.name), [ReaderWhereAmIToolbarButton.fullSummaryActionName])
+            guard let action = actions.first else { return }
+            // Performed as VoiceOver performs it: by its handler, or by its
+            // target and selector.
+            if let handler = action.handler {
+                _ = handler()
+            } else if let target = action.target, let selector = action.selector {
+                _ = target.perform(selector, with: action)
+            }
+            XCTAssertEqual(asked, [.full], "the VoiceOver action did not ask for the full summary")
+        }
+    }
+
     // MARK: - Fixtures
 
     /// A reader playing a silent audiobook, with what it handed over.
