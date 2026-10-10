@@ -308,6 +308,35 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertTrue(secondHTML.contains("Another short summary"))
     }
 
+    /// The rule's download of an article whose feed gives only a summary
+    /// waits when a network with data limits refuses its web page, as the
+    /// rule's episodes wait, rather than be written for good from its
+    /// summary; once a refresh TextMouth makes by itself reaches the
+    /// network, it downloads from its page (feed review item 14).
+    func testTheRulesArticleWaitsForItsPageOnAMeteredNetwork() async throws {
+        let world = try FeedTestWorld(self, label: "FeedArticlePageMetered")
+        let words = (1...300).map { "word\($0)" }.joined(separator: " ")
+        let page = StubResponse(headers: ["Content-Type": "text/html"], body: Data("<html><body><article><p>\(words)</p></article></body></html>".utf8))
+        world.server.serve("/posts/1", .refusedOnAMeteredNetwork(), page)
+        let item = FeedXML.Item(guid: "post-1", title: "First", published: world.day(-1), description: "A short summary [...]",
+                                link: world.server.url("/posts/1").absoluteString)
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [item])))
+        let feed = try await world.subscribe("/feed.xml")
+
+        world.center.downloads.download("guid:post-1", of: feed.id, origin: .window)
+        await waitFor("the article's download waits") {
+            world.center.store.record(of: feed.id)?.item("guid:post-1")?.state.waitingReason != nil
+                && world.center.downloads.current == nil
+        }
+        XCTAssertEqual(world.center.downloads.putOff.map(\.itemID), ["guid:post-1"])
+        XCTAssertEqual(world.library.feedItemRows(of: feed.id).downloaded, [:], "the article was written from its summary")
+
+        _ = await world.center.refreshAll(origin: .scheduled)
+        let article = try await downloadedBook(world, feed: feed, item: "guid:post-1")
+        XCTAssertTrue(try String(contentsOf: article.bookFileURL, encoding: .utf8).contains("word300"), "the page was not read")
+        XCTAssertEqual(world.server.requests(to: "/posts/1").count, 2)
+    }
+
     // MARK: - The Queue
 
     /// Downloads run one at a time, in the order asked: every one waiting

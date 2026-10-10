@@ -585,9 +585,19 @@ final class FeedDownloadManager {
     private func downloadArticle(_ item: FeedItem, of feed: Feed, request: Request, restoring kept: Book?) async throws -> Book {
         let network = environment.network
         let discretionary = request.origin == .window
-        let body = await FeedEpisodeImporter.articleBody(for: item) { link in
-            guard case .body(let page)? = try? await network.fetch(link, discretionary: discretionary) else { return nil }
-            return page.text
+        let body = try await FeedEpisodeImporter.articleBody(for: item) { link in
+            do {
+                guard case .body(let page) = try await network.fetch(link, discretionary: discretionary) else { return nil }
+                return page.text
+            } catch let refusal as FeedFetchError where discretionary && Self.waitsForANetwork(refusal) {
+                // The rule's article waits for a network without data
+                // limits, as its episodes do, rather than be written for
+                // good from its summary (feed review item 14).
+                throw FeedDownloadError.transfer(refusal)
+            } catch {
+                // Any other failure leaves the item's own text to stand.
+                return nil
+            }
         }
         // Stopped meanwhile, by Cancel Download or the downloads section's
         // Cancel (FR10): it stops here, before its book is written. A page
@@ -902,6 +912,13 @@ final class FeedDownloadManager {
     /// How long resume data is kept: a week, past which a server has most
     /// likely changed the file or forgotten the download.
     static let resumeDataLifetime: TimeInterval = 7 * 86_400
+
+    /// Whether a fetch that failed as `refusal` waits for a network, when
+    /// the newest-N rule asked for it: refused on a network with data
+    /// limits, or this Mac offline (`FeedDownloadWait.network`).
+    nonisolated static func waitsForANetwork(_ refusal: FeedFetchError) -> Bool {
+        FeedDownloadWait(.transfer(refusal)) == .network
+    }
 
     /// `error` as a download error.
     private static func downloadError(_ error: Error) -> FeedDownloadError {

@@ -350,11 +350,13 @@ enum FeedEpisodeImporter {
     /// `shortArticleWords` words and the item links a page, whose article
     /// (`readablePart(ofPage:)`) is used when it reads as more words.
     /// `fetchPage` fetches the page's HTML, or returns nil when it can't.
-    static func articleBody(for item: FeedItem, fetchPage: @Sendable (URL) async -> String?) async -> String {
+    /// - Throws: what `fetchPage` throws, as a download that must wait for
+    ///   its page rather than be written from its summary does.
+    static func articleBody(for item: FeedItem, fetchPage: @Sendable (URL) async throws -> String?) async rethrows -> String {
         let own = item.content ?? item.summary
         let ownWords = own.map { wordCount($0.plainText) } ?? 0
         guard ownWords < shortArticleWords, let link = item.link,
-              let page = await fetchPage(link),
+              let page = try await fetchPage(link),
               let readable = readablePart(ofPage: page),
               let pageText = FeedTextConverter.read(html: readable),
               wordCount(pageText.plainText) > ownWords else {
