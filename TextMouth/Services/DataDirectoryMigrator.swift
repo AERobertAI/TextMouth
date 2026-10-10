@@ -522,8 +522,10 @@ enum DataDirectoryMigrator {
         try encoder.encode(migratedLibrary).write(to: libraryURL, options: .atomic)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+        // library.json holds the library's own books, never a feed item's
+        // row (FR11, `Library.encode(to:)`).
         guard let validated = try? decoder.decode(Library.self, from: Data(contentsOf: libraryURL)),
-              validated.books.count == migratedLibrary.books.count else {
+              validated.books.count == migratedLibrary.libraryBookCount else {
             throw DataDirectoryMigrationError.invalidLibrary
         }
         return migratedLibrary

@@ -110,6 +110,10 @@ struct EquivalentFolderRepair: Equatable {
 }
 
 struct Library: Codable {
+    /// The rows of the library model's books: every book of the library's
+    /// own, and, while TextMouth runs, the rows of feed items whose files
+    /// are here (FR11), which the library's lists and counts leave out
+    /// (`libraryBooks`) and library.json never holds (`encode(to:)`).
     var books: [Book]
     var folders: [BookFolder]
     /// Per-folder sort settings keyed by folder path (empty string = root).
@@ -118,17 +122,37 @@ struct Library: Codable {
     /// The reading list (FR09): books from anywhere in the library in the
     /// order the user arranged, with its options. Saved with the index.
     var readingList: ReadingList
+    /// The feed items' rows held apart from `books`, and the feeds whose own
+    /// indexes the library keeps (FR11). Never written to library.json: each
+    /// feed's index holds its rows (`feedIndexRows`).
+    var feedShelf: FeedShelf
 
+    /// A library of `books` and the rest. The shelf keeps the index of every
+    /// feed whose rows are among `books` too, so a feed whose last row later
+    /// leaves the library has its index written without it (FR11).
     init(
         books: [Book] = [],
         folders: [BookFolder] = [],
         folderSortSettings: [String: FolderSortSetting] = [:],
-        readingList: ReadingList = ReadingList()
+        readingList: ReadingList = ReadingList(),
+        feedShelf: FeedShelf = FeedShelf()
     ) {
         self.books = books
         self.folders = folders
         self.folderSortSettings = folderSortSettings
         self.readingList = readingList
+        self.feedShelf = feedShelf
+        for feedID in Set(books.compactMap { $0.feedLink?.feedID }) {
+            self.feedShelf.keepIndex(of: feedID)
+        }
+    }
+
+    // MARK: - Coding
+
+    /// The keys of library.json. The feed shelf has none: it is never
+    /// written there.
+    private enum CodingKeys: String, CodingKey {
+        case books, folders, folderSortSettings, readingList
     }
 
     /// Backward-compatible decoding: folderSortSettings may be absent in
@@ -136,12 +160,60 @@ struct Library: Codable {
     /// it existed (FR09). A reading list that cannot be read at all is left
     /// empty rather than making the whole index unreadable; its own reading
     /// already skips an entry it cannot read and keeps the rest.
+    ///
+    /// library.json holds only books of the library's own, so every row read
+    /// from it is one, without a feed link, whatever a damaged or hand-edited
+    /// file says (FR11): only a feed's own index makes a row a feed item's.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        books = try container.decode([Book].self, forKey: .books)
+        books = try container.decode([Book].self, forKey: .books).map { $0.placedInLibraryFolder() }
         folders = try container.decode([BookFolder].self, forKey: .folders)
         folderSortSettings = try container.decodeIfPresent([String: FolderSortSetting].self, forKey: .folderSortSettings) ?? [:]
         readingList = (try? container.decodeIfPresent(ReadingList.self, forKey: .readingList)) ?? ReadingList()
+        feedShelf = FeedShelf()
+    }
+
+    /// Writes the library as library.json holds it: the books of the
+    /// library's own, its folders, sort settings, and reading list, as the
+    /// encoding it replaces wrote them, key for key. A feed item's row is
+    /// never written here, wherever the library holds it (FR11): every
+    /// writer of library.json (saves, checkpoints, the quit flush, retries,
+    /// Rebuild Library Index, and the data-directory move) encodes a library
+    /// this way, so none can.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(libraryBooks, forKey: .books)
+        try container.encode(folders, forKey: .folders)
+        try container.encode(folderSortSettings, forKey: .folderSortSettings)
+        try container.encode(readingList, forKey: .readingList)
+    }
+
+    // MARK: - Books and Feed Items (FR11)
+
+    /// The books of the library's own: every row but a feed item's. The
+    /// library's lists, counts, and maintenance read these; library.json
+    /// holds exactly these.
+    var libraryBooks: [Book] {
+        books.filter { !$0.isFeedItem }
+    }
+
+    /// How many books the library counts: its own, never a feed's items.
+    var libraryBookCount: Int {
+        books.reduce(0) { $1.isFeedItem ? $0 : $0 + 1 }
+    }
+
+    /// Each feed's rows as its own index keeps them: the feed items among
+    /// `books`, then those on the shelf, by feed, and an empty list for each
+    /// feed whose index the library keeps but which it holds no row of now,
+    /// so that index is written empty.
+    var feedIndexRows: [UUID: [Book]] {
+        var rows = Dictionary(uniqueKeysWithValues: feedShelf.indexedFeedIDs.map { ($0, [Book]()) })
+        for book in books + feedShelf.rows {
+            if let feedID = book.feedLink?.feedID {
+                rows[feedID, default: []].append(book)
+            }
+        }
+        return rows
     }
 
     // MARK: - Sort Settings
@@ -187,8 +259,13 @@ struct Library: Codable {
 
     /// Takes the book `id` out of the library, and off the reading list
     /// (FR09): every removal of a book from the library, whether its package
-    /// is deleted or kept, ends here or in `removeFolderAndContents(id:)`.
+    /// is deleted or kept, ends here or in `removeFolderAndContents(id:)`. A
+    /// feed item's row leaving keeps its feed's index, which the next save
+    /// writes without it (FR11).
     mutating func removeBook(id: UUID) {
+        for feedID in Set(books.filter { $0.id == id }.compactMap { $0.feedLink?.feedID }) {
+            feedShelf.keepIndex(of: feedID)
+        }
         books.removeAll { $0.id == id }
         readingList.remove([id])
     }
