@@ -11,7 +11,11 @@ import SwiftUI
 /// ways out. A Done here did the same as the toolbar's button, a second
 /// control for one command (TODO A10).
 struct EditModeBar: View {
+    /// The listed books selected, by the list's own selection or edit
+    /// mode's checks: those Move and Remove act on, as the Edit button's
+    /// hint counts them too (`LibrarySelectionPolicy.selected(in:native:edit:)`).
     let selectedCount: Int
+    /// The books listed.
     let totalCount: Int
     /// Whether removing asks first and where deleted files go, so the
     /// Remove button says what it will do.
@@ -47,13 +51,17 @@ struct EditModeBar: View {
 
             Spacer()
 
-            Button(selectedCount == totalCount ? "Deselect All" : "Select All") {
-                if selectedCount == totalCount {
+            // Select All, or Deselect All once every book listed is
+            // selected; with no book listed, Select All, dimmed.
+            let deselects = Self.offersDeselectAll(selectedCount: selectedCount, totalCount: totalCount)
+            Button(deselects ? "Deselect All" : "Select All") {
+                if deselects {
                     onDeselectAll()
                 } else {
                     onSelectAll()
                 }
             }
+            .disabled(totalCount == 0)
             .accessibilityLabel(Self.selectAllLabel(selectedCount: selectedCount, totalCount: totalCount))
 
             Button("Move") { onMove() }
@@ -88,11 +96,22 @@ struct EditModeBar: View {
         "Edit mode, \(CountWording.part(selectedCount, of: totalCount, singular: "book", plural: "books")) selected"
     }
 
+    /// Whether the bar's selection button deselects: once every book listed
+    /// is selected, and only while a book is listed, so a list of none
+    /// offers Select All, dimmed, where it offered Deselect All (REV13).
+    nonisolated static func offersDeselectAll(selectedCount: Int, totalCount: Int) -> Bool {
+        totalCount > 0 && selectedCount >= totalCount
+    }
+
     /// What VoiceOver calls Select All, or Deselect All once every book is
     /// selected: "Select all 1 book", "Select all 12 books", "Deselect all
-    /// books" (TODO A10; it said "Select all 1 books").
+    /// books" (TODO A10; it said "Select all 1 books"), and "Select all
+    /// books", dimmed, while none is listed.
     nonisolated static func selectAllLabel(selectedCount: Int, totalCount: Int) -> String {
-        selectedCount == totalCount ? "Deselect all books" : "Select all \(CountWording.books(totalCount))"
+        if offersDeselectAll(selectedCount: selectedCount, totalCount: totalCount) {
+            return "Deselect all books"
+        }
+        return totalCount > 0 ? "Select all \(CountWording.books(totalCount))" : "Select all books"
     }
 }
 

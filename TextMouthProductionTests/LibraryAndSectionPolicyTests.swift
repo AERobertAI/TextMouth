@@ -29,6 +29,41 @@ final class LibraryAndSectionPolicyTests: XCTestCase {
         )
     }
 
+    /// The books selected are the listed books either selection holds, in
+    /// the list's order: a folder's row selected in the list is no book, and
+    /// a book no longer listed is not counted. The edit bar and the Edit
+    /// button's hint both count these; until October 10, 2026 the hint
+    /// counted edit mode's checks alone, and the bar every ID either
+    /// selection held (REV13).
+    func testTheBooksSelectedAreTheListedBooksEitherSelectionHolds() {
+        let books = ["Atlas", "Bridges", "Canals"].map {
+            Book(title: $0, format: .txt, filePath: "/nowhere/\($0).txt", md5Hash: $0)
+        }
+        let folderRow = UUID(), unlisted = UUID()
+
+        let selected = LibrarySelectionPolicy.selected(
+            in: books,
+            native: [books[2].id, folderRow],
+            edit: [books[0].id, unlisted]
+        )
+
+        XCTAssertEqual(selected.map(\.title), ["Atlas", "Canals"])
+        XCTAssertEqual(LibrarySelectionPolicy.selected(in: books, native: [], edit: []), [])
+        XCTAssertEqual(LibrarySelectionPolicy.selected(in: [], native: [folderRow], edit: [unlisted]), [])
+    }
+
+    /// The edit bar offers Deselect All only once every listed book is
+    /// selected, and never while no book is listed, when it offers Select
+    /// All, dimmed, where it offered Deselect All (REV13).
+    func testTheEditBarOffersNoDeselectAllWhileNothingIsListed() {
+        XCTAssertFalse(EditModeBar.offersDeselectAll(selectedCount: 0, totalCount: 0))
+        XCTAssertEqual(EditModeBar.selectAllLabel(selectedCount: 0, totalCount: 0), "Select all books")
+        XCTAssertFalse(EditModeBar.offersDeselectAll(selectedCount: 2, totalCount: 3))
+        XCTAssertTrue(EditModeBar.offersDeselectAll(selectedCount: 3, totalCount: 3))
+        XCTAssertEqual(EditModeBar.selectAllLabel(selectedCount: 3, totalCount: 3), "Deselect all books")
+        XCTAssertEqual(EditModeBar.selectAllLabel(selectedCount: 2, totalCount: 3), "Select all 3 books")
+    }
+
     func testSelectAllUsesEveryVisibleBookID() {
         let ids = (0..<10).map { _ in UUID() }
         XCTAssertEqual(Set(ids).count, 10)
