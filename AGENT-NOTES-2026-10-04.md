@@ -1304,3 +1304,45 @@ ARCHITECTURE wording changes (second report):
 - **Where Am I?:** "playOrResume() goes through WhereAmIInterruptionPolicy.blocksBookPlayback as play() does, so a Play from the AirPods or a media key during an announcement changes nothing."
 - **Now Playing:** "prepareForPlayback(ownerID:) pauses the playing owner, then every other reader whose isCurrentlyPlaying() holds, such as a book a Where Am I? announcement holds paused ("exclusive pause other=")."
 - **Audio engine:** "render(_:completion:) runs its job on the engine's renderQueue (the global queue unless a test passes its own); a job whose engine is gone reports false on the main queue, so SpeechRenderCoordinator's queue, which waits for each report, is never held."
+
+## From the feedindexfixes agent (fix/feed-index-review), Oct 10
+
+What changes for the user's library:
+- **Items 1, 2, 9, 10, 11, G, H:** nothing visible.
+- **Item 3:** nothing happens at launch, since both feeds are subscribed. If the user unsubscribes from The Digital Antiquarian, the article becomes a book in that feed's folder, keeping its place, Stats and reading-list place, and `Feeds/6452A5C0-…/` goes. There are no kept packages to delete.
+- **Item 4:** Delete Folder… on either feed's folder now asks first and names the feed.
+- **Items 5, 6, E:** the article's row no longer offers Edit Text… or Move to Folder…. Episodes downloaded later won't offer Edit Audio….
+- **Item 7:** Speak Info on the article says "In The Digital Antiquarian, a feed".
+- **Item 8:** Recently Opened says, for example, "9 books, 1 article", with the header "Books (9), Articles (1)". This wording is the user's to confirm.
+- **Items F and I:** Delete Article's question adds the kept-place sentence. Remove on the article asks "Delete Download?" with no Remove from Library Only, then says that the place is kept.
+
+Decisions and assumptions:
+- **Item 2:** in the rare race where an index leaves the Mac between the launch check and the read, that feed's index is left alone for the session. Its rows are read from the packages' records, and the checkpoint journal is kept so positions survive.
+- **Item 3:**
+  - Unsubscribe returns the downloads into the feed's library folder. The launch path uses the top level, because once the record is gone nothing names that folder.
+  - A record counts as gone only when it is neither loaded nor only in the cloud, and no `<id>.json` file exists. A record folder that can't be listed without downloading decides nothing.
+  - Kept packages and the feed's folder go through the feed engine's removal, so they follow the Trash setting.
+  - The announcement is spoken at once, as before, and the return follows in a task.
+  - I added a sentence to the Unsubscribe question naming what it deletes; that wording is the user's to confirm.
+- **Item E:** a re-download also carries the `.edited-` copies into the new package, which needed a one-line change to `copyWhatANewDownloadKeeps`'s caller in `FeedEpisodeImporter`.
+- **Item F:** the sentence also appears for a downloaded item whose package holds the listener's state.
+- **Item I:** a removal of feed items alone is also announced through VoiceOver.
+
+**Board:** `feeditempolicy` approved the `Services/Feeds` edits (#1630, #1646). I told them about the signature change and the edited test, answered `feeditemui` (#1683), and posted a finding on `FeedItemPackage.swift` (follow-up 2).
+
+README wording:
+"Unsubscribing keeps a feed's downloads: each becomes a book in the feed's folder, or at the top of the library when that folder is gone, with its place, bookmarks, and place on the reading list. What the feed kept of downloads you removed earlier is deleted, and the question before Unsubscribe says so. A feed whose record is gone gets its downloads back as books at the next launch. Episodes and articles can't be edited: Edit Text…, Edit Audio…, and Move to Folder… aren't offered for them, and moving a mixed selection says which items stayed in their feeds. Remove on episodes or articles alone asks "Delete Download?", offers no Remove from Library Only, and says what it kept. Delete Episode… says when it deletes a kept place, bookmarks, or transcript, and Delete Folder… asks before deleting a feed's folder. Speak Info names an item's feed. Recently Opened and the Reading List count "2 books, 5 episodes". In a cloud data directory, TextMouth waits for each feed's index, as it waits for the library index."
+
+ARCHITECTURE wording:
+"`FileImportService.namesManagedPackage(_:)` is the one check of a row's package name and folder, shared by the deletion guard and the first launch's move; `Book.FileLocation.packageDirectory(inDataDirectory:)` is the one package rule, which `AudioBookPlace` follows. `DataDirectoryCheck.assessLibrary` waits for the Feeds folder, each feed's folder, and each feed's index. `FeedIndexFiles.read` takes an injectable reader, and leaves alone an index that is only in the cloud or of a newer layout (`FeedIndexNewerLayout`) through `FeedShelf.indexesLeftAlone`, which `Library.feedIndexRows` leaves out for both writers. Those writers share `FeedIndexFiles.encodedIndexes(of:placedIn:)` and `write(_:in:fileManager:)`. `LibraryViewModel+FeedDownloadReturn.swift` returns an unsubscribed feed's downloads (`returnDownloads`, `returnIntoTheLibrary` through `relocatePackage`, `feedsWithoutRecords`), called by `FeedCommandRunner.unsubscribe` and after the launch's move. `markFeedItemsDownloadedAgain(access:)` heals only present files, and `joinFeedItems` adopts journaled checkpoints for every shelf row. `canEditText` and `LibraryAudioCommand.isAudioEditable` exclude feed items; `FeedItemPackage.staysWithoutTheFile` keeps edit copies and `holdsListenerState` counts hand edits; `RemovalChoiceWording.feedDownloads` and `LibraryViewModel.removalCompletion` word Remove of feed items; and `CountWording.listItems(of:feeds:)` and `booksHeader(of:)` do the counts."
+
+Suite and what was not verified:
+`Executed 5239 tests, with 59 tests skipped and 0 failures (0 unexpected)`. That is 54 new tests on top of main's 5185.
+
+**Not verified:**
+- **Real cloud drives.** A user of one should put the data directory in iCloud Drive with a feed that has downloads, remove the download of the feed's folder in Finder, and launch. The Library Not Available screen should appear, and the library should open after Try Again once the files are back, with no `.unreadable-` copy beside the feed's `library.json`.
+- Two Macs sharing a library (item G).
+- Live VoiceOver and braille on the new sentences.
+- The Remove alert without Remove from Library Only, and the edit bar's Move or Command-Shift-M with only feed items selected. That is view code; the wording it uses is tested.
+- Moving to the Trash (tests delete for good).
+- The launch step running inside a real app launch (it is tested through the model).
