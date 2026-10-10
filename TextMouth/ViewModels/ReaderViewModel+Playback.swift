@@ -727,7 +727,10 @@ extension ReaderViewModel {
     /// waiting for its chapter's speech never does
     /// (`isWaitingForChapterSpeech`), and a book that has finished speaks
     /// nothing (`hasFinishedBook`). A closed reader shows nothing.
-    func showPlaybackStoppedAfterRefusal() {
+    ///
+    /// Last, it keeps the report of `refusal`, what was refused and where,
+    /// for its window to show (`showSpeechRefusalReport(_:)`, B05).
+    func showPlaybackStoppedAfterRefusal(_ refusal: SpeechRefusal) {
         guard !hasClosed else { return }
         DiagnosticLog.event(
             .playback,
@@ -742,6 +745,7 @@ extension ReaderViewModel {
         )
         recordPlaybackStopped()
         savePosition()
+        showSpeechRefusalReport(refusal)
     }
 
     // MARK: - Where a Chapter's End Stops the Timer

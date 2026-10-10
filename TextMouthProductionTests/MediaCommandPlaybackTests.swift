@@ -521,12 +521,17 @@ final class MediaCommandPlaybackTests: XCTestCase {
         let row = try XCTUnwrap(world.library.bookByID(reader.book.id))
         XCTAssertEqual(row.readingPosition?.characterOffset, refusedAt, "The place where speech stopped was not saved")
         XCTAssertNotNil(row.lastPlaybackStopped, "The stop was not recorded")
+        // The report of the refusal waits for the window to show it (B05).
+        let report = try XCTUnwrap(reader.speechRefusalAlert.report, "The reader keeps no report of the refusal")
+        XCTAssertEqual(report.chapterOffset, refusedAt)
+        XCTAssertEqual(report.timesRefusedHere, 1)
 
         XCTAssertEqual(system.press(.play), .success)
         handleQueuedCallbacks()
         assertSpeaks(quay, from: refusedAt, "Play after the refusal")
         assertToldSystem(system, that: reader, plays: true, "Play after the refusal")
         XCTAssertTrue(statistics.hasActiveSession, "Play after the refusal opened no listening session")
+        XCTAssertEqual(reader.speechRefusalAlert.report, report, "Play changed the report, which stays until it is closed")
     }
 
     /// A 15-minute sleep timer's countdown halts where the speech engine's
