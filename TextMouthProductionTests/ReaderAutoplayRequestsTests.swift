@@ -136,6 +136,30 @@ final class ReaderAutoplayRequestsTests: XCTestCase {
         XCTAssertNil(store.consume(for: nextBook))
     }
 
+    // MARK: - One Store for Both Kinds
+
+    /// The autoplay requests and the reading list's are kept by one store
+    /// shape (`ReaderRequestStore`), each kind in a store of its own: a
+    /// request of one kind is never found as the other, both last as long,
+    /// and each store tells of each request as it is made.
+    func testOneStoreShapeServesBothKindsOfRequest() {
+        let (autoplay, _) = makeStore()
+        let readingList = ReadingListOpenRequests()
+        XCTAssertEqual(ReaderAutoplayRequests.lifetime, ReadingListOpenRequests.lifetime)
+
+        var told: [UUID] = []
+        let subscription = autoplay.requestsMade.sink { told.append($0) }
+        defer { subscription.cancel() }
+        autoplay.request(for: nextBook, from: finishedBook)
+        readingList.request(for: otherBook)
+
+        XCTAssertEqual(told, [nextBook])
+        XCTAssertTrue(autoplay.hasRequest(for: nextBook))
+        XCTAssertFalse(readingList.hasRequest(for: nextBook))
+        XCTAssertFalse(autoplay.hasRequest(for: otherBook))
+        XCTAssertEqual(readingList.consume(for: otherBook)?.bookID, otherBook)
+    }
+
     // MARK: - Notification
 
     /// The notification announcing a request names the next book where

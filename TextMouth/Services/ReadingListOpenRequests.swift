@@ -1,4 +1,3 @@
-import Combine
 import Foundation
 
 // MARK: - Reading List Open Request
@@ -12,67 +11,33 @@ import Foundation
 /// list cannot ride on the window's value; the reader claims this request
 /// instead, exactly once: as the reader is made, when the open makes a
 /// window for the book, or at once, when the book's window is already open
-/// and the open brings it forward.
-struct ReadingListOpenRequest: Equatable {
+/// and the open brings it forward (`ReaderRequestStore.requestsMade`). It
+/// waits in `ReadingListOpenRequests`, a `ReaderRequestStore`.
+struct ReadingListOpenRequest: ReaderRequest {
     /// The book to read from the reading list.
     let bookID: UUID
     /// When the request was made.
     let createdAt: Date
-
-    /// Whether the request may still be claimed at `date`: no further than
-    /// `ReadingListOpenRequests.lifetime` from when it was made. The limit
-    /// holds in both directions, so a clock set back after the request
-    /// cannot keep it usable any longer either.
-    func isUsable(at date: Date) -> Bool {
-        abs(date.timeIntervalSince(createdAt)) <= ReadingListOpenRequests.lifetime
-    }
 }
 
 // MARK: - Request Store
 
 /// The requests to read a book from the reading list that wait for the
-/// books' readers (FR09), shaped like `ReaderAutoplayRequests`.
-///
-/// A book has at most one waiting request; a newer request replaces it.
-/// Claiming a request removes it, so each marks one reader at most, however
-/// many readers look for it. A request that has outlived `lifetime` is
-/// thrown away rather than claimed, so a book whose window failed to open
-/// is not read from the list when someone opens it much later from a
-/// folder. Each request is told as it is made (`requestsMade`), so that a
-/// reader already open for its book claims it at once.
-@MainActor
-final class ReadingListOpenRequests {
+/// books' readers (FR09): a store of the one shape every reader request
+/// takes (`ReaderRequestStore`), as the autoplay requests' is. The two
+/// stay apart, since a reader claims each at its own moment: this one as
+/// the reader is made, an autoplay request once the book has loaded.
+typealias ReadingListOpenRequests = ReaderRequestStore<ReadingListOpenRequest>
+
+/// The store readers and Library windows use unless a test gives a reader
+/// its own, made on the main actor at its first use.
+@MainActor private let sharedReadingListOpenRequests = ReadingListOpenRequests()
+
+extension ReaderRequestStore where Request == ReadingListOpenRequest {
     /// The store readers and Library windows use unless a test gives a
     /// reader its own.
-    static let shared = ReadingListOpenRequests()
-
-    /// How long a request stays usable, in seconds: as long as an autoplay
-    /// request, since a book continuing through the list leaves the next
-    /// book both, and the window router keeps an open waiting as long.
-    nonisolated static let lifetime: TimeInterval = ReaderAutoplayRequests.lifetime
-
-    /// The waiting requests, keyed by the book each one is for.
-    private var waiting: [UUID: ReadingListOpenRequest] = [:]
-
-    /// The clock that dates and ages requests.
-    private let now: () -> Date
-
-    /// Tells, with the book's ID, of each request as it is made.
-    private let made = PassthroughSubject<UUID, Never>()
-
-    /// Create an empty store.
-    ///
-    /// - Parameter now: The current time: the system clock, unless a test
-    ///   needs to control how old requests are.
-    init(now: @escaping () -> Date = { Date() }) {
-        self.now = now
-    }
-
-    /// The book of each request as it is made, on the main actor, after the
-    /// request waits: a reader already open for that book, whose window the
-    /// open is bringing forward, claims it there and then.
-    var requestsMade: AnyPublisher<UUID, Never> {
-        made.eraseToAnyPublisher()
+    static var shared: ReadingListOpenRequests {
+        sharedReadingListOpenRequests
     }
 
     /// Ask that `bookID` be read from the reading list, replacing any
@@ -82,42 +47,13 @@ final class ReadingListOpenRequests {
     ///   have claimed it by the time this returns.
     @discardableResult
     func request(for bookID: UUID) -> ReadingListOpenRequest {
-        discardUnusableRequests()
-        let request = ReadingListOpenRequest(bookID: bookID, createdAt: now())
-        waiting[bookID] = request
-        // Told last, once the request waits, so a reader told of it finds
-        // it to claim.
-        made.send(bookID)
-        return request
-    }
-
-    /// Claim the request waiting for `bookID`, removing it so that nothing
-    /// can claim it again.
-    ///
-    /// - Returns: The request, or nil when none is waiting for this book or
-    ///   the one waiting is too old, in which case it is thrown away.
-    func consume(for bookID: UUID) -> ReadingListOpenRequest? {
-        discardUnusableRequests()
-        return waiting.removeValue(forKey: bookID)
-    }
-
-    /// Whether a usable request is waiting for `bookID`. Unlike
-    /// `consume(for:)`, this leaves the request waiting.
-    func hasRequest(for bookID: UUID) -> Bool {
-        waiting[bookID]?.isUsable(at: now()) ?? false
-    }
-
-    /// Throw away every request too old to use, so none can be claimed
-    /// later and the store never holds more than the fresh ones.
-    private func discardUnusableRequests() {
-        let date = now()
-        waiting = waiting.filter { $0.value.isUsable(at: date) }
+        add(ReadingListOpenRequest(bookID: bookID, createdAt: currentDate))
     }
 }
 
 // MARK: - Opening a Book from a Library Window
 
-extension ReadingListOpenRequests {
+extension ReaderRequestStore where Request == ReadingListOpenRequest {
     /// Whether a Library window showing `category` opens its books to be
     /// read from the reading list: only at the Reading List, and not while
     /// the library moves, when the window refuses every open (FR02), so no
