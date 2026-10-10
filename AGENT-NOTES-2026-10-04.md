@@ -1531,3 +1531,25 @@ ARCHITECTURE wording:
   "Clean Up Transcript is offered only where LibraryAudioCommand.isTranscriptCleanable allows (the isAudioEditable rule, never a feed item), in rows and in the reader's canCleanUpBookTranscript."
 - **Test support entry:**
   "SwiftUI gives a menu Picker's NSPopUpButton no action of its own; a test chooses an item through NSMenu.performActionForItem(at:), as a click does."
+
+## From the feedfollowups agent (fix/feed-followups), Oct 10
+
+Decisions and assumptions:
+- **Item 3:** the rules keep content.md rather than sending it to the Trash. The rules' file removal runs off the main thread, while the Trash-aware removal must run on the main actor, and the rules avoid the Trash by design. Delete Download still moves the text to the Trash, as the user's Trash setting says.
+- **Item 4:** the absence note is an empty hidden file named `.record-absent-<Mac ID>-<launch ID>`. The Mac ID is `LibrarySessionLease.macID`. Another Mac's notes count for nothing. When the record comes back, this Mac's notes are removed. iCloud's older `.<id>.json.icloud` placeholder counts as the record being there.
+- **Item 9:** `FeedStore.flush()` already worked as the test-only drain, so `FeedStore.swift` is unchanged. The teardown also waits for fetch-detail writes (which recreate missing folders) and statistics saves (whose failures are announced).
+
+README wording:
+- "If TextMouth can't read a kept episode's or article's folder when you download it again, the download fails and your place, bookmarks, and transcript stay as they were."
+- "The rules that delete played downloads and keep the newest never delete an article's text: an opened article keeps it beside its place when its file goes, as it may hold an edit you made before feed items lost Edit Text. Delete Download still removes the text with the file, as your Trash setting says."
+- "In a library in a cloud folder, TextMouth returns an unsubscribed feed's downloads to the library only after this Mac has found the feed's subscription missing at two launches. A feed you subscribe to on another Mac can reach this one before its subscription does."
+
+ARCHITECTURE wording:
+- "`FeedItemPackage.listedEntryNames(of:)` throws for a package it cannot list. So a restore fails rather than empty such a package, and `holdsListenersFiles(_:)` (a transcript, a copy of one, or a copy Edit Text kept) counts it as the listener's."
+- "`staysWithoutTheFile(_:)` keeps content.md for every format; only Delete Download removes an article's, through `FeedEnvironment.removeItem`."
+- "`putInPlace(_:of:swap:)` sets a kept package aside as `.replaced-<name>` on a volume that cannot swap, and logs FEED_PACKAGE_SWAP_FAILED with the errno. `restoreBook` first runs `recoverSetAside(of:)` (FEED_PACKAGE_PUT_BACK, FEED_PACKAGE_SET_ASIDE_REMOVED)."
+- "`restoreBook` publishes through `FileImportService.publishReadableBook(_:from:run:feedLink:replacing:publish:)`. `writeVerifiedRecord` notes a transcript only as its index holds one."
+- "The launch returns the feeds chosen by `LibraryViewModel.feedsTakenForUnsubscribed(subscribed:absence:)`: at once outside the cloud, and in a cloud library only after `FeedRecordAbsence` notes (FEED_RECORD_ABSENT, FEED_RECORD_BACK). `returnDownloads` does nothing for a feed that left nothing (`leftSomething(feedID:)`)."
+- "Shared helpers: `TextMouthPaths.bookInfoFileName` and `contentMarkdownFileName`, `FileImportService.isManagedPackageName(_:)` and `isSymbolicLink(_:)`, `LibraryListCache.index(of:)`, `noteDownloadGone(_:of:at:byListener:)`."
+- "`writePendingBookInfoNow` may run on the main thread."
+- "`FeedTestWorld.finish(_:)` waits for a test engine's writes before its sandbox goes."
