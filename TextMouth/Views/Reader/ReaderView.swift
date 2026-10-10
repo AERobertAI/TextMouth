@@ -1354,7 +1354,7 @@ private struct JumpToPercentPanel: View {
                 // The unit in a word, which VoiceOver reads after the
                 // field: the field is left plain, as the note above says,
                 // so its placeholder, "Percent", names it only while it is
-                // empty, and it never is. It said "%" (TODO A10).
+                // empty, and it opens filled in. It said "%" (TODO A10).
                 Text("percent")
                     .foregroundColor(.secondary)
                 Button("Jump", action: performJump)
@@ -1469,7 +1469,7 @@ private struct JumpToTimePanel: View {
                 // Each unit in a word, which VoiceOver reads after its
                 // field: the fields are left plain, as the note above says,
                 // so their placeholders name them only while empty, and they
-                // never are. They said "h", "m", and "s" (TODO A10).
+                // open filled in. They said "h", "m", and "s" (TODO A10).
                 TextField("Hours", text: $hoursText)
                     .frame(width: 50)
                     .focused($hoursFocused)
