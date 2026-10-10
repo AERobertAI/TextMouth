@@ -145,7 +145,13 @@ struct ReaderView: View {
                 panels.voice.toggle()
             }
 
-            toolbarButton("Book Info", systemImage: "info.circle", spokenLabel: "Edit book metadata") {
+            // An episode's or article's Book Info edits nothing (FR11), and
+            // the button says so.
+            toolbarButton(
+                "Book Info",
+                systemImage: "info.circle",
+                spokenLabel: LocalizedStringKey(FeedItemBookInfoWording.readerButtonLabel(readOnly: viewModel.book.hasReadOnlyBookInfo))
+            ) {
                 panels.bookInfo.toggle()
             }
 
@@ -518,11 +524,21 @@ struct ReaderPanelSheets: ViewModifier {
 /// and its save hands that on, so the save changes, and marks, only what
 /// the user changed in it (`Book.MetadataEdit`): the library's change is
 /// neither put back nor counted as the user's.
+///
+/// An episode or article in its feed has no editor here (FR11,
+/// `Book.hasReadOnlyBookInfo`): its Book Info is read-only, as in the
+/// Library.
 struct ReaderBookInfoSheet: View {
     @ObservedObject var viewModel: ReaderViewModel
 
     var body: some View {
-        if let metadata = viewModel.epubMetadata {
+        if viewModel.book.hasReadOnlyBookInfo {
+            FeedItemBookInfoSheet(
+                book: viewModel.book,
+                info: viewModel.audioMetadata.map { .audio($0, isCloudOnly: false) } ?? .simple,
+                feedTitle: viewModel.libraryViewModel.feedTitle(of: viewModel.book)
+            )
+        } else if let metadata = viewModel.epubMetadata {
             MetadataEditorView(
                 metadata: metadata,
                 isEPUB: viewModel.book.format == .epub,

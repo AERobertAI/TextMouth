@@ -285,13 +285,18 @@ struct FeedInfoSheet: View {
     }
 }
 
-/// One labelled value of Feed Info, which VoiceOver reads as one element,
-/// "Address, https://…", and whose value can be selected and copied.
+/// One labelled value of Feed Info, and of a feed item's read-only Book
+/// Info (FR11), which VoiceOver reads as one element, "Address, https://…",
+/// and whose value can be selected and copied.
 struct FeedInfoValue: View {
     /// What the value is.
     let label: String
     /// The value.
     let value: String
+    /// The value as VoiceOver says it, where it differs from what is shown,
+    /// as a duration shown "1:04:00" is said "1 hour, 4 minutes"; nil to say
+    /// it as shown.
+    var spokenValue: String? = nil
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -304,7 +309,7 @@ struct FeedInfoValue: View {
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label), \(value)")
+        .accessibilityLabel("\(label), \(spokenValue ?? value)")
     }
 }
 
