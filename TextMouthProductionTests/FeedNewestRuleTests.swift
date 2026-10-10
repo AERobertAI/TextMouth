@@ -461,6 +461,69 @@ final class FeedNewestRuleTests: XCTestCase {
         await waitFor("the engine's own work ends") { !world.center.isSweeping }
     }
 
+    /// A changed number applies once it has stayed unchanged for ten seconds:
+    /// typing 15 passes through 1, which removes nothing while it is
+    /// replaced within the wait; 15, once it stays, downloads what it newly
+    /// counts; and a smaller number, once it stays, removes the rule's
+    /// downloads beyond it.
+    func testAChangedNumberAppliesOnceItHasStayedUnchanged() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleQuiet", worksOnItsOwn: true)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        await world.start()
+        let feed = try await subscribeServed(world, episodes: 4)
+        let books = try await downloadedBooks(world, feed: feed, items: ["guid:ep-1", "guid:ep-2"])
+        await waitFor("the engine's own work ends") { !world.center.isSweeping }
+        XCTAssertEqual(world.sleep.requestedWaits, [])
+
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        await waitFor("the wait starts") { world.sleep.requestedWaits.count == 1 }
+        XCTAssertEqual(world.sleep.requestedWaits, [FeedCenter.itemPolicyQuietTime])
+        XCTAssertEqual(FeedCenter.itemPolicyQuietTime, .seconds(10))
+        FeedSettings.newestCountPreference.write(15, to: world.preferences)
+        await waitFor("the wait starts over") { world.sleep.requestedWaits.count == 2 }
+
+        world.sleep.wakeOldest()
+        _ = try await downloadedBooks(world, feed: feed, items: ["guid:ep-3", "guid:ep-4"])
+        XCTAssertNotNil(world.library.bookByID(books[1].id), "the number passed through 1")
+
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        await waitFor("the next wait starts") { world.sleep.requestedWaits.count == 3 }
+        world.sleep.wakeOldest()
+        await waitFor("the downloads beyond the newest go") {
+            world.center.store.record(of: feed.id)?.items.filter { $0.state.bookID != nil }.map(\.id) == ["guid:ep-1"]
+        }
+        await waitFor("the engine's own work ends") { !world.center.isSweeping }
+    }
+
+    /// A feed's own choice applies after the same wait, to that feed: its
+    /// own larger number downloads what it newly counts, and its own choice
+    /// that downloads by hand removes nothing.
+    func testAFeedsOwnChoiceAppliesAfterTheWait() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleOwnChoice", worksOnItsOwn: true)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        await world.start()
+        let feed = try await subscribeServed(world, episodes: 2)
+        let first = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        await waitFor("the engine's own work ends") { !world.center.isSweeping }
+
+        world.center.setItemPolicy(FeedItemPolicy(choice: .everyListedNewestDownloaded, newestCount: 2), of: feed.id)
+        await waitFor("the wait starts") { world.sleep.requestedWaits.count == 1 }
+        XCTAssertEqual(world.server.requests(to: "/audio/2.m4a"), [], "the feed's own number applied before the wait ended")
+        world.sleep.wakeOldest()
+        let second = try await downloadedBook(world, feed: feed, item: "guid:ep-2")
+
+        world.center.setItemPolicy(FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 1), of: feed.id)
+        await waitFor("the next wait starts") { world.sleep.requestedWaits.count == 2 }
+        world.sleep.wakeOldest()
+        await waitFor("the pass runs and ends") { !world.center.isWaitingOnItemPolicyChange && !world.center.isSweeping }
+        XCTAssertNotNil(world.library.bookByID(first.id))
+        XCTAssertNotNil(world.library.bookByID(second.id), "a choice that downloads by hand removed a download")
+    }
+
     /// The first launch of the version that brings the rule, on records and
     /// settings shaped like the user's (FEED-ITEMS-RESEARCH-2026-10-07.md,
     /// section 6): "Finish It!" downloads its newest 5, 315.8 MB as its feed

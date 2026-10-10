@@ -289,6 +289,14 @@ final class FeedCenter: ObservableObject {
     private var schedule: Task<Void, Never>?
     /// Hears the interval setting change, to reschedule.
     private var intervalObserver: PreferenceObserver?
+    /// Hears the "List and download" choice and its number change (FR11).
+    private var itemPolicyObserver: PreferenceObserver?
+    /// The wait for the choice and its number to stay unchanged before the
+    /// newest-N rule acts on a change, while it runs (FR11).
+    private var itemPolicyWait: Task<Void, Never>?
+    /// The feeds whose choice or number changed since the rule last acted on
+    /// a change, every feed when nil (FR11).
+    private var feedsWithChangedItemPolicy: Set<UUID>? = []
     /// Passes the stores' changes on to this engine's observers.
     private var forwarding: [AnyCancellable] = []
     /// Hears finished books, and the readers that open and close.
@@ -374,6 +382,14 @@ final class FeedCenter: ObservableObject {
             ) { [weak self] _ in
                 self?.startSchedule()
             }
+            // The global choice or number changed, wherever it was changed:
+            // the rule acts on it once it has stayed unchanged (FR11).
+            itemPolicyObserver = PreferenceObserver(
+                keys: [FeedSettings.itemsPreference.key, FeedSettings.newestCountPreference.key],
+                in: environment.preferences
+            ) { [weak self] _ in
+                self?.itemPolicyChanged(for: nil)
+            }
             startSchedule()
             if settings.refreshAtLaunch {
                 await refreshAll(origin: .launch)
@@ -386,6 +402,9 @@ final class FeedCenter: ObservableObject {
         schedule?.cancel()
         schedule = nil
         intervalObserver = nil
+        itemPolicyWait?.cancel()
+        itemPolicyWait = nil
+        itemPolicyObserver = nil
     }
 
     /// Whether refreshes run on the interval setting: not before the engine
@@ -720,9 +739,53 @@ final class FeedCenter: ObservableObject {
     /// Gives the feed `feedID` its own "List and download" choice and number
     /// (FR11), or nil to use the global setting. The list changes at once;
     /// when what it lists changes, the next check reads the feed whole, so a
-    /// widened list brings back the entries a short one let go.
+    /// widened list brings back the entries a short one let go. The
+    /// newest-N rule acts on the change once it has stayed unchanged for ten
+    /// seconds (`itemPolicyChanged(for:)`).
     func setItemPolicy(_ policy: FeedItemPolicy?, of feedID: UUID) {
+        guard let feed = store.record(of: feedID)?.feed, feed.itemPolicyOverride != policy else { return }
         store.update(feedID) { $0.feed.itemPolicyOverride = policy }
+        itemPolicyChanged(for: [feedID])
+    }
+
+    /// How long the "List and download" choice and its number must stay
+    /// unchanged before the newest-N rule acts on a change (FR11): ten
+    /// seconds, so typing 15 in the number never passes through 1, removing
+    /// what 1 would remove.
+    static let itemPolicyQuietTime: Duration = .seconds(10)
+
+    /// Whether a change of the choice or its number waits to be acted on
+    /// (FR11).
+    var isWaitingOnItemPolicyChange: Bool {
+        itemPolicyWait != nil
+    }
+
+    /// Notes that the choice or its number changed for the feeds `feedIDs`,
+    /// every feed when nil (FR11), and asks for the newest-N rule's pass
+    /// over them once neither has changed for `itemPolicyQuietTime`, each
+    /// change starting the wait over. The pass then downloads what a larger
+    /// number newly counts, removes the rule's downloads beyond a smaller
+    /// one, and, for a choice that downloads by hand, takes back the rule's
+    /// downloads not yet under way and removes nothing. Only an engine
+    /// working on its own waits; a test runs the pass itself.
+    func itemPolicyChanged(for feedIDs: Set<UUID>?) {
+        guard environment.worksOnItsOwn else { return }
+        // Every feed when either change covers every feed.
+        feedsWithChangedItemPolicy = feedsWithChangedItemPolicy.flatMap { changed in feedIDs.map { changed.union($0) } }
+        itemPolicyWait?.cancel()
+        let sleep = environment.sleep
+        itemPolicyWait = Task { [weak self] in
+            do {
+                try await sleep(Self.itemPolicyQuietTime)
+            } catch {
+                return
+            }
+            guard let self, !Task.isCancelled else { return }
+            let feeds = self.feedsWithChangedItemPolicy
+            self.feedsWithChangedItemPolicy = []
+            self.itemPolicyWait = nil
+            self.requestItemPolicyPass(for: feeds)
+        }
     }
 
     /// Moves each feed's retired number of entries kept
