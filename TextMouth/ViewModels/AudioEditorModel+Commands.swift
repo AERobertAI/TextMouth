@@ -89,7 +89,7 @@ extension AudioEditorModel {
         case .editorWhereAmI:
             whereAmI()
         default:
-            if action.scope == .audioEditor {
+            if action.defaultScope == .audioEditor {
                 announce(AudioEditorWording.stillRecording)
             }
         }
@@ -109,7 +109,7 @@ extension AudioEditorModel {
     /// records. A command that would only say why it can't, such as Undo
     /// with nothing to undo, stays available, so it says so.
     func canPerform(_ action: ShortcutAction) -> Bool {
-        guard action.scope == .audioEditor else { return false }
+        guard action.defaultScope == .audioEditor else { return false }
         if punchIn != nil {
             return [.editorStop, .editorPlayPause, .editorPunchIn, .editorClearSelection, .editorWhereAmI].contains(action)
         }

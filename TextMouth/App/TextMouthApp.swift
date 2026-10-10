@@ -36,28 +36,12 @@ struct TextMouthApp: App {
                 }
         }
         .commands {
-            // Keep "Open Book..." alongside the standard "New Window" (Cmd+N)
-            CommandGroup(after: .newItem) {
-                Button("Open Book...") {
-                    NotificationCenter.default.post(name: .openBookFile, object: nil)
-                }
-                .keyboardShortcut("o", modifiers: .command)
-
-                Button("New from Text...") {
-                    NotificationCenter.default.post(name: .newFromText, object: nil)
-                }
-                .keyboardShortcut("t", modifiers: [.command, .shift])
-
-                // Records from a microphone into a new audiobook (FR04).
-                Button(RecordingWording.menuTitle) {
-                    RecordingWindowController.shared.show(library: libraryViewModel)
-                }
-                .keyboardShortcut(RecordingShortcuts.newRecording)
-            }
-
-            PlaybackCommands()
+            // Open Book…, New from Text…, and New Recording… beside the
+            // standard New Window (Command-N), each with its key in force.
+            FileCommands(shortcuts: shortcutManager, library: libraryViewModel)
+            PlaybackCommands(shortcuts: shortcutManager)
             NavigationCommands()
-            LibraryCommands()
+            LibraryCommands(shortcuts: shortcutManager)
             BookmarkCommands()
             BookCommands()
         }

@@ -10,6 +10,12 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case cycleBackwardNavigationUnit = "Cycle Backward Navigation Unit"
     case increaseSpeed = "Increase Speed"
     case decreaseSpeed = "Decrease Speed"
+    /// Playback > Copy Reading Position, a menu command whose key is its
+    /// menu item's key equivalent (FR12's branch D, `isKeyEquivalent`).
+    case copyReadingPosition = "Copy Reading Position"
+    /// Playback > Search in Book, a menu command whose key is its menu
+    /// item's key equivalent (FR12's branch D).
+    case searchInBook = "Search in Book"
     case goToLibrary = "Go to Library"
     case goBack = "Go Back"
     case goForward = "Go Forward"
@@ -68,6 +74,26 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// Takes the selected books off the reading list (FR09). It has no key
     /// until the user gives it one in Settings.
     case removeFromReadingList = "Remove from Reading List"
+    /// Library > Import DAISY Folder…, a menu command whose key is its menu
+    /// item's key equivalent (FR12's branch D).
+    case importDAISYFolder = "Import DAISY Folder…"
+    /// Library > Add Feed…, a menu command whose key is its menu item's key
+    /// equivalent (FR12's branch D).
+    case addFeed = "Add Feed…"
+
+    // The File menu's commands (FR12's branch D): a group named as their
+    // menu is, each a key equivalent of its menu item.
+    case openBook = "Open Book…"
+    case newFromText = "New from Text…"
+    case newRecording = "New Recording…"
+
+    // The Record window's buttons (FR12's branch D): a group of their own,
+    // each a key equivalent of its button, whose raw values begin with the
+    // group's name, as the audio editor's do, so config.json never takes the
+    // window's Stop for another.
+    case recordingRecord = "Recording Window: Record"
+    case recordingPauseOrResume = "Recording Window: Pause or Resume"
+    case recordingStop = "Recording Window: Stop"
 
     // The audio editor's (FR04): a group of their own, matched only while an
     // editor window is key (`ShortcutScope`), so they may share keys with
@@ -121,22 +147,79 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// The heading of the audio editor's group in Settings, and the start
     /// of each of its actions' raw values.
     static let audioEditorCategory = "Audio Editor"
+    /// The heading of the File menu's commands in Settings (FR12's branch
+    /// D), named as their menu is.
+    static let fileCategory = "File"
+    /// The heading of the Record window's buttons in Settings (FR12's
+    /// branch D), and the start of each of their raw values.
+    static let recordingWindowCategory = "Recording Window"
+    /// The groups whose actions' raw values begin with the group's name and
+    /// a colon, so config.json tells them apart from actions of the same name
+    /// elsewhere: the audio editor's Play / Pause from the reader's, the
+    /// Record window's Stop from the editor's.
+    private static let groupsNamingTheirActions = [audioEditorCategory, recordingWindowCategory]
 
     /// The action's name as Settings lists it under its group's heading:
-    /// its raw value, less the group's name that begins an audio editor
-    /// action's.
+    /// its raw value, less the group's name that begins the raw value of an
+    /// action of the audio editor or the Record window.
     var title: String {
-        let prefix = Self.audioEditorCategory + ": "
-        return rawValue.hasPrefix(prefix) ? String(rawValue.dropFirst(prefix.count)) : rawValue
+        for group in Self.groupsNamingTheirActions {
+            let prefix = group + ": "
+            if rawValue.hasPrefix(prefix) {
+                return String(rawValue.dropFirst(prefix.count))
+            }
+        }
+        return rawValue
     }
 
-    /// Where the action's shortcuts work: the audio editor's group in its
-    /// windows alone, every other action everywhere else.
-    var scope: ShortcutScope {
-        category == Self.audioEditorCategory ? .audioEditor : .app
+    /// Where the action's shortcuts work unless the user chooses otherwise
+    /// (FR12's branch E): the audio editor's group in its windows, the
+    /// Record window's in it, a few actions in one kind of window
+    /// (`defaultScopesOfTheirOwn`), and every other in every window but an
+    /// audio editor's, as all of them always did.
+    var defaultScope: ShortcutScope {
+        if let scope = Self.defaultScopesOfTheirOwn[self] {
+            return scope
+        }
+        switch category {
+        case Self.audioEditorCategory: return .audioEditor
+        case Self.recordingWindowCategory: return .recording
+        default: return .app
+        }
     }
 
-    /// The notification to post when this action is triggered
+    /// The scopes the user may give the action, in the Shortcuts tab and in
+    /// config.json (FR12's branch E): the app's actions and the File menu's
+    /// commands work in every window, in Library windows, or in reader
+    /// windows; every other action works only where it does by nature, the
+    /// audio editor's in its windows, the Record window's buttons in it, and
+    /// the Library and Playback menus' commands where those menus show.
+    var availableScopes: [ShortcutScope] {
+        let fixed = defaultScope == .audioEditor || defaultScope == .recording
+            || (isKeyEquivalent && category != Self.fileCategory)
+        return fixed ? [defaultScope] : [.app, .library, .reader]
+    }
+
+    /// The actions whose shortcuts work in one kind of window by default,
+    /// though their groups' work in every window (FR12's branch E): New from
+    /// Text in Library windows and Show Sleep Timer in reader windows, as the
+    /// user chose on October 7, so Shift-Command-T is each's in its own kind
+    /// of window (#1451); and the Library and Playback menus' commands where
+    /// their menus show, as their keys always worked.
+    static let defaultScopesOfTheirOwn: [ShortcutAction: ShortcutScope] = [
+        .newFromText: .library,
+        .showSleepTimer: .reader,
+        .importDAISYFolder: .library,
+        .addFeed: .library,
+        .copyReadingPosition: .reader,
+        .searchInBook: .reader,
+    ]
+
+    /// The notification to post when this action is triggered. A key
+    /// equivalent's action (`isKeyEquivalent`) is never posted by the
+    /// shortcut manager: its menu item or button acts on its key itself, and
+    /// this names the notification choosing that command posts, or
+    /// `actsWithoutNotification` for one that acts directly.
     var notificationName: Notification.Name {
         switch self {
         case .togglePlayback: return .togglePlayback
@@ -147,6 +230,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .cycleBackwardNavigationUnit: return .cycleBackwardNavigationUnit
         case .increaseSpeed: return .increaseSpeed
         case .decreaseSpeed: return .decreaseSpeed
+        case .copyReadingPosition: return .copyReadingPosition
+        case .searchInBook: return .searchInBook
         case .goToLibrary: return .goToLibrary
         case .goBack: return .goBack
         case .goForward: return .goForward
@@ -178,6 +263,14 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .moveBookDown: return .moveBookDown
         case .addToReadingList: return .addToReadingList
         case .removeFromReadingList: return .removeFromReadingList
+        case .importDAISYFolder: return .importDAISYFolder
+        case .addFeed: return .addFeed
+        case .openBook: return .openBookFile
+        case .newFromText: return .newFromText
+        // File > New Recording… opens the Record window itself, and the
+        // window's buttons call its model: no notification is theirs.
+        case .newRecording, .recordingRecord, .recordingPauseOrResume, .recordingStop:
+            return .actsWithoutNotification
         // The audio editor's actions all post one name, carrying the action
         // in their user info, and its window performs them.
         case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
@@ -199,7 +292,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .togglePlayback, .releaseMediaControls, .skipForward, .skipBackward,
              .cycleForwardNavigationUnit, .cycleBackwardNavigationUnit,
-             .increaseSpeed, .decreaseSpeed:
+             .increaseSpeed, .decreaseSpeed, .copyReadingPosition, .searchInBook:
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading,
              .nextInReadingList, .previousInReadingList:
@@ -211,8 +304,12 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress:
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown,
-             .addToReadingList, .removeFromReadingList:
+             .addToReadingList, .removeFromReadingList, .importDAISYFolder, .addFeed:
             return "Library"
+        case .openBook, .newFromText, .newRecording:
+            return Self.fileCategory
+        case .recordingRecord, .recordingPauseOrResume, .recordingStop:
+            return Self.recordingWindowCategory
         case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
              .editorSkipBackLong, .editorSkipForwardLong, .editorSkipBackShort, .editorSkipForwardShort,
              .editorGoToStart, .editorGoToEnd, .editorGoToTime, .editorPreviousChapter, .editorNextChapter,
@@ -228,32 +325,132 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     }
 }
 
-/// Where a shortcut works.
-enum ShortcutScope: Hashable, Sendable {
-    /// Every window but the audio editor's: the Library, the readers,
-    /// Settings, and the rest, as TextMouth's shortcuts always have.
+/// Where an action's shortcuts work: in every window but an audio editor's,
+/// or in one kind of window (FR12's branch E, as the user asked on October
+/// 7: "new from text should only work in Library view and sleep timer only
+/// in reader view"). One key belongs to at most one action wherever their
+/// scopes overlap (`overlaps(_:)`), so a key may mean one thing in a Library
+/// window and another in a reader, as Shift-Command-T does.
+enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
+    /// Every window but an audio editor's: the Library, the readers, the
+    /// Record window, Settings, and the rest, as the app's shortcuts always
+    /// worked. An audio editor's window has shortcuts of its own; a menu
+    /// command works there too, as menus do.
     case app
+    /// Library windows.
+    case library
+    /// Reader windows.
+    case reader
     /// The audio editor's windows (FR04), and nowhere else: so the editor
     /// can take Space, J, K, and L for itself.
     case audioEditor
+    /// The Record window: its Record, Pause or Resume, and Stop.
+    case recording
 
-    /// Whether a press with Shift that matches no binding of its own
-    /// matches its binding without Shift there, telling the action that
-    /// Shift was held (finding 4 of FR12's design), as `hasExtraShift`
-    /// always meant: Shift-J and Shift-Command-Right Arrow then skip by the
-    /// Playback tab's Shift units, and Increase Speed's Command with "+",
-    /// which a US keyboard types with Shift, matches.
-    ///
-    /// True in the app's windows, where the Shift units are. False in an
-    /// audio editor's, whose Shift keys are actions of their own (Shift-J
-    /// and Shift-L skip ten seconds, Shift-W says the selection) and whose
-    /// actions have no use for Shift: there a press with Shift matches only
-    /// a binding with Shift, as it always has, so Shift-R, this user's
-    /// Release Media Controls elsewhere, never falls back to R's Punch In,
-    /// nor Shift-T to Trim to Selection.
-    var matchesShiftBeyondItsBindings: Bool {
-        self == .app
+    /// The kinds of window whose key presses the scope's shortcuts match, a
+    /// sheet's counting as its window's.
+    var windowKinds: Set<ShortcutWindowKind> {
+        switch self {
+        case .app: return [.library, .reader, .recording, .other]
+        case .library: return [.library]
+        case .reader: return [.reader]
+        case .audioEditor: return [.audioEditor]
+        case .recording: return [.recording]
+        }
     }
+
+    /// Whether the scope's shortcuts work in windows of `kind`.
+    func reaches(_ kind: ShortcutWindowKind) -> Bool {
+        windowKinds.contains(kind)
+    }
+
+    /// Whether this scope and `other` share a kind of window, where a key
+    /// held in both would mean two things.
+    func overlaps(_ other: ShortcutScope) -> Bool {
+        !windowKinds.isDisjoint(with: other.windowKinds)
+    }
+
+    /// The scope as the Shortcuts tab's Works in pop-up names it, and as
+    /// config.json writes it: "Every window", "Library windows", "Reader
+    /// windows", "The audio editor", or "The recording window".
+    var title: String {
+        switch self {
+        case .app: return "Every window"
+        case .library: return "Library windows"
+        case .reader: return "Reader windows"
+        case .audioEditor: return "The audio editor"
+        case .recording: return "The recording window"
+        }
+    }
+
+    /// The scope named within a sentence: "every window", "Library
+    /// windows", "reader windows", "the audio editor", or "the recording
+    /// window", the Library keeping its capital as the window's name.
+    var inSentence: String {
+        self == .library ? title : title.prefix(1).lowercased() + title.dropFirst()
+    }
+
+    /// Whether the scope is said where it is an action's default, in the
+    /// Shortcuts tab's rows and in config.json's "default" text: Library and
+    /// reader windows are, since a key may mean one thing in each; every
+    /// window, most actions' default, goes unsaid, and so do the audio
+    /// editor and the Record window, which their actions' names and groups
+    /// say already.
+    var isSaidAsADefault: Bool {
+        self == .library || self == .reader
+    }
+
+    /// The scope config.json's `name` names (FR12's branch E): the Works in
+    /// pop-up's words, as "Library windows", or the scope's short name, as
+    /// "library", in any letter case, with spaces or without, and with or
+    /// without "the" before it and "window" or "windows" after it. So "every
+    /// window", "Every", and "app" all name every window, and "the audio
+    /// editor" and "audioEditor" the audio editor. Nil for a name that names
+    /// none.
+    static func named(_ name: String) -> ShortcutScope? {
+        let wanted = comparableName(name)
+        return allCases.first { comparableName($0.title) == wanted || comparableName($0.rawValue) == wanted }
+    }
+
+    /// `name` as `named(_:)` compares names: in lower case, without spaces,
+    /// and without "the" before it or "window" or "windows" after it. No two
+    /// scopes' names compare alike (a test checks).
+    private static func comparableName(_ name: String) -> String {
+        var compared = name.lowercased().filter { !$0.isWhitespace }
+        if compared.hasPrefix("the") {
+            compared.removeFirst("the".count)
+        }
+        if let ending = ["windows", "window"].first(where: { compared.hasSuffix($0) }) {
+            compared.removeLast(ending.count)
+        }
+        return compared
+    }
+
+    /// Whether a menu command working here acts while a window of `kind` is
+    /// in front, nil meaning no window at all (FR12's branch E): one working
+    /// in every window acts in any, an audio editor's included, as menus
+    /// always have; one working in a kind of window acts in that kind; and
+    /// any acts with no window open, as a menu's key must.
+    func admitsMenuCommand(in kind: ShortcutWindowKind?) -> Bool {
+        guard let kind else { return true }
+        return self == .app || reaches(kind)
+    }
+}
+
+/// The kind of window a key is pressed in, whose shortcuts in force there
+/// are those of the scopes that reach it (FR12's branch E).
+enum ShortcutWindowKind: CaseIterable, Hashable, Sendable {
+    /// A Library window.
+    case library
+    /// A reader window.
+    case reader
+    /// An audio editor's window.
+    case audioEditor
+    /// The Record window.
+    case recording
+    /// Any other window, Settings, a panel, or an alert run on its own among
+    /// them, or none at all.
+    case other
 }
 
 extension Notification.Name {
@@ -261,6 +458,186 @@ extension Notification.Name {
     /// value under "action" in its user info, and the window it was pressed
     /// in under "sourceWindow": that window's editor performs it.
     static let audioEditorShortcut = Notification.Name("audioEditorShortcut")
+    /// Never posted: the notification name of the actions whose command acts
+    /// directly, with no notification of its own, File > New Recording… and
+    /// the Record window's buttons (FR12's branch D). The shortcut manager
+    /// posts no key equivalent's action, so nothing listens for this.
+    static let actsWithoutNotification = Notification.Name("actsWithoutNotification")
+}
+
+// MARK: - Key Equivalents (FR12's Branch D)
+
+extension ShortcutAction {
+    /// The actions whose keys are key equivalents (FR12's branch D): the
+    /// menu commands whose keys were fixed before, and the Record window's
+    /// buttons. Their menu item or button shows the key in force and acts on
+    /// it; the shortcut manager never takes it. A command added later joins
+    /// them here.
+    static let keyEquivalentActions: Set<ShortcutAction> = [
+        .copyReadingPosition, .searchInBook, .importDAISYFolder, .addFeed,
+        .openBook, .newFromText, .newRecording,
+        .recordingRecord, .recordingPauseOrResume, .recordingStop,
+    ]
+
+    /// Whether the action's key is a key equivalent: of its menu item, or of
+    /// its button in the Record window, which acts on it as menus always
+    /// have, from a text field and with no window open. Such a key is one
+    /// press with Command or Control (`KeyBinding.canBeKeyEquivalent`), the
+    /// shortcut manager never takes it, and it is the action's only key, as
+    /// an item has one key equivalent.
+    var isKeyEquivalent: Bool {
+        Self.keyEquivalentActions.contains(self)
+    }
+}
+
+extension KeyBinding {
+    /// Whether the binding can be a key equivalent (FR12's branch D): one
+    /// press, since no menu or button takes a double press; with Command or
+    /// Control, so that it acts from a text field, where a key without them
+    /// types; and none of the keys a text field edits with
+    /// (`TextEditingKeys`), which a key equivalent would take from the field,
+    /// since the menus meet a key before the field does.
+    var canBeKeyEquivalent: Bool {
+        keyEquivalentRefusal == nil
+    }
+
+    /// Why the binding cannot be a key equivalent (`canBeKeyEquivalent`),
+    /// or nil when it can.
+    var keyEquivalentRefusal: ShortcutRefusal? {
+        if isDoublePress || !(command || control) {
+            return .notOnePressWithCommandOrControl(self)
+        }
+        return TextEditingKeys.contains(self) ? .editsText(self) : nil
+    }
+}
+
+// MARK: - Keys an Action Cannot Take (FR12's Branch D)
+
+/// Why a key cannot be given to an action: the Shortcuts tab says so as it
+/// refuses the key, and reading config.json logs it, the action keeping the
+/// keys it had (FR12's branch D).
+enum ShortcutRefusal: Equatable, Sendable {
+    /// A menu command's or a Record window button's key is one press of a
+    /// key with Command or Control: no menu or button takes a double press,
+    /// and a key without Command or Control types in a text field.
+    case notOnePressWithCommandOrControl(KeyBinding)
+    /// A key a text field edits with (`TextEditingKeys`), which a menu
+    /// command's key would take from every field.
+    case editsText(KeyBinding)
+    /// A second key for a menu command or a Record window button, whose item
+    /// has one key equivalent.
+    case secondKeyEquivalent(KeyBinding)
+    /// A key of one of macOS's own commands (`KeyBinding.systemCommands`),
+    /// named here, which a shortcut would take from it: the manager meets a
+    /// key before the menus do (finding 10 of FR12's design).
+    case systemCommand(KeyBinding, command: String)
+
+    /// The key refused.
+    var key: KeyBinding {
+        switch self {
+        case .notOnePressWithCommandOrControl(let key), .editsText(let key), .secondKeyEquivalent(let key),
+             .systemCommand(let key, _):
+            return key
+        }
+    }
+
+    /// Why, in words, for VoiceOver, a braille display, and the debug log:
+    /// "a menu command's shortcut is one press of a key with Command or
+    /// Control".
+    var reason: String {
+        switch self {
+        case .notOnePressWithCommandOrControl:
+            return "a menu command's shortcut is one press of a key with Command or Control"
+        case .editsText:
+            return "a text field edits with it, and a menu command's shortcut would take it from the field"
+        case .secondKeyEquivalent:
+            return "a menu command has one shortcut"
+        case .systemCommand(_, let command):
+            return "\(command) has it in the menus, and no shortcut may take it"
+        }
+    }
+}
+
+extension KeyBinding {
+    /// The keys of macOS's own commands in TextMouth's menus, which no
+    /// shortcut may take (finding 10 of FR12's design), each with its
+    /// command's name: Quit, Close, Settings, Hide, and Minimize, and the
+    /// Edit menu's. A key held for its own command, as Select All's
+    /// Command-A or the audio editor's Undo and Copy are, is no taking
+    /// (`ShortcutAction.refusal(of:)`).
+    static let systemCommands: [KeyBinding: String] = [
+        KeyBinding(key: "q", command: true): "Quit TextMouth",
+        KeyBinding(key: "w", command: true): "Close",
+        KeyBinding(key: "w", command: true, option: true): "Close All",
+        KeyBinding(key: ",", command: true): "Settings",
+        KeyBinding(key: "h", command: true): "Hide TextMouth",
+        KeyBinding(key: "h", command: true, option: true): "Hide Others",
+        KeyBinding(key: "m", command: true): "Minimize",
+        KeyBinding(key: "m", command: true, option: true): "Minimize All",
+        KeyBinding(key: "z", command: true): "Undo",
+        KeyBinding(key: "z", command: true, shift: true): "Redo",
+        KeyBinding(key: "x", command: true): "Cut",
+        KeyBinding(key: "c", command: true): "Copy",
+        KeyBinding(key: "v", command: true): "Paste",
+        KeyBinding(key: "v", command: true, option: true, shift: true): "Paste and Match Style",
+        KeyBinding(key: "a", command: true): "Select All",
+    ]
+
+    /// The name of the system command whose key this binding's stroke is,
+    /// pressed once or twice (a double press's first press would keep it
+    /// from the command), or nil.
+    var systemCommand: String? {
+        Self.systemCommands[stroke]
+    }
+}
+
+extension ShortcutAction {
+    /// Why `key` cannot be one of this action's keys, or nil when it can: no
+    /// action takes a system command's key, unless it is one of the action's
+    /// own defaults, which stand for that command, as Select All's Command-A
+    /// does; and a key equivalent's action takes only a key that can be one
+    /// (`KeyBinding.keyEquivalentRefusal`).
+    func refusal(of key: KeyBinding) -> ShortcutRefusal? {
+        if let command = key.systemCommand, Self.defaultBindings[self]?.contains(key) != true {
+            return .systemCommand(key, command: command)
+        }
+        return isKeyEquivalent ? key.keyEquivalentRefusal : nil
+    }
+
+    /// Why `keys` cannot be this action's keys, or nil when they can: the
+    /// first key refused, or, for a key equivalent's action, a second key.
+    func refusal(ofKeys keys: [KeyBinding]) -> ShortcutRefusal? {
+        if let refused = keys.lazy.compactMap(refusal(of:)).first {
+            return refused
+        }
+        if isKeyEquivalent, keys.count > 1 {
+            return .secondKeyEquivalent(keys[1])
+        }
+        return nil
+    }
+}
+
+// MARK: - A Dialog's Own Keys
+
+extension KeyBinding {
+    /// The keys a dialog's own buttons answer, which no shortcut takes while
+    /// a sheet or an alert is the key window (the review of October 10,
+    /// item B): Return and the keypad's Enter, for its default button, and
+    /// Escape and Command-Period, for its Cancel button, each with no other
+    /// modifier. The keypad's Enter is held as the character it gives, as
+    /// `keyNames` names it.
+    static let dialogKeys: Set<KeyBinding> = [
+        KeyBinding(key: "return"),
+        KeyBinding(key: "\u{3}"),
+        KeyBinding(key: "escape"),
+        KeyBinding(key: ".", command: true),
+    ]
+
+    /// Whether a press of this binding's key is one a dialog's own buttons
+    /// answer (`dialogKeys`), pressed once or twice.
+    var isDialogKey: Bool {
+        Self.dialogKeys.contains(stroke)
+    }
 }
 
 /// A keyboard binding: key + modifiers, pressed once or, for a double press,
@@ -360,31 +737,6 @@ struct KeyBinding: Codable, Equatable, Hashable {
     /// Down", or the character in capitals.
     private var keyDisplayName: String {
         Self.keyName(forKey: key)?.shown ?? key.uppercased()
-    }
-
-    /// Whether the key press `event` is this binding's stroke: its key with
-    /// exactly its modifiers. A double press's binding matches each of its
-    /// two presses; `ShortcutPressDispatcher` decides which press a key
-    /// press is.
-    func matches(_ event: NSEvent) -> Bool {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard flags.contains(.command) == command,
-              flags.contains(.option) == option,
-              flags.contains(.shift) == shift,
-              flags.contains(.control) == control else {
-            return false
-        }
-        return matchesKey(event)
-    }
-
-    /// Whether `event` presses this binding's key: a key named by its key
-    /// code by that code, any other by its character, in any letter case.
-    private func matchesKey(_ event: NSEvent) -> Bool {
-        if let keyCode = Self.keyName(forKey: key)?.keyCode {
-            return event.keyCode == keyCode
-        }
-        guard let chars = event.charactersIgnoringModifiers?.lowercased() else { return false }
-        return chars == key.lowercased()
     }
 
     /// The binding a key press makes, as the Shortcuts tab records it and
@@ -764,30 +1116,41 @@ private enum ConfigModifier: CaseIterable {
 
 // MARK: - An Action's Entry in config.json
 
-/// One action's entry in config.json's `keyboardShortcuts`, in either of the
-/// file's two forms (FR12, as the user chose on October 7, 2026):
+/// One action's entry in config.json's `keyboardShortcuts`, in any of the
+/// file's three forms (FR12, as the user chose on October 7, 2026, and its
+/// branch E):
 /// - a list of shortcuts, written as `KeyBinding.configText` writes them,
 ///   makes the action the user's, with those keys or, for an empty list,
-///   none: `"Release Media Controls": ["shift+r"]`;
+///   none, working where it does by default: `"Release Media Controls":
+///   ["shift+r"]`;
+/// - an object holding such a list and the kind of window the action works
+///   in makes it the user's, working there: `"New from Text…": {"keys":
+///   ["shift+command+t"], "worksIn": "Every window"}`. TextMouth writes the
+///   Works in pop-up's words, the ones the Shortcuts tab says, and reads a
+///   scope's short name too, as "library", in any letter case
+///   (`ShortcutScope.named(_:)`); its field names may be in any letter case,
+///   its keys may be one shortcut written as text, and one without
+///   "worksIn" is a list;
 /// - text beginning with "default", in any letter case, gives the action
-///   TextMouth's defaults and, as TextMouth writes it, says what they are:
-///   `"Where Am I?": "default: w"`.
+///   TextMouth's defaults, its keys and where it works, and, as TextMouth
+///   writes it, says what they are: `"Where Am I?": "default: w"`, or, for
+///   an action working in one kind of window by default, `"Show Sleep
+///   Timer": "default in reader windows: shift+command+t"`.
 ///
 /// Any other text is one shortcut, read as a list of one. The words after
 /// "default" are never read back, so changing them changes nothing: that is
 /// what lets a later release's defaults reach every action written so,
 /// however old the file, without TextMouth ever having to tell an older
 /// release's defaults from the user's edits.
-///
-/// Shortcuts scoped to a kind of window (FR12's branch E) would add a third
-/// form, an object holding a list and a scope, for an action whose scope the
-/// user changed; a list would keep the action's default scope, and the text
-/// following the defaults could name the scope in its words.
 enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, ExpressibleByStringLiteral {
     /// A list of shortcuts: the user's keys for the action.
     case list([String])
     /// Text: "default" and what the defaults are, or one shortcut.
     case text(String)
+    /// An object: the user's keys for the action and, when it names one,
+    /// the kind of window it works in, as the file names it (FR12's branch
+    /// E).
+    case object(keys: [String], worksIn: String?)
 
     /// The word that begins an entry following the defaults.
     static let defaultWord = "default"
@@ -798,12 +1161,25 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
         .list(keys.map(\.configText))
     }
 
+    /// The entry TextMouth writes for an action the user edited that works
+    /// in a scope the user chose (FR12's branch E): its keys, and the scope
+    /// in the Works in pop-up's words, as in `{"keys": ["shift+command+t"],
+    /// "worksIn": "Every window"}`.
+    static func edited(_ keys: [KeyBinding], worksIn scope: ShortcutScope) -> ShortcutListing {
+        .object(keys: keys.map(\.configText), worksIn: scope.title)
+    }
+
     /// The entry TextMouth writes for an action following the defaults:
     /// "default: " and its keys in force, such as "default: space, k", or
-    /// "default: none" for an action that has none.
-    static func followingDefaults(_ keysInForce: [KeyBinding]) -> ShortcutListing {
+    /// "default: none" for an action that has none; and, for one working
+    /// where its default scope is said (`ShortcutScope.isSaidAsADefault`,
+    /// FR12's branch E), that kind of window after "default", so the file
+    /// says why another action may have the same key: "default in reader
+    /// windows: shift+command+t".
+    static func followingDefaults(_ keysInForce: [KeyBinding], worksIn scope: ShortcutScope = .app) -> ShortcutListing {
         let keys = keysInForce.isEmpty ? "none" : keysInForce.map(\.configText).joined(separator: ", ")
-        return .text("\(defaultWord): \(keys)")
+        let words = scope.isSaidAsADefault ? "\(defaultWord) in \(scope.inSentence)" : defaultWord
+        return .text("\(words): \(keys)")
     }
 
     /// Whether the entry gives the action TextMouth's defaults: text that
@@ -813,14 +1189,26 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
         return words.drop(while: \.isWhitespace).lowercased().hasPrefix(Self.defaultWord)
     }
 
-    /// The keys the entry makes the user's: a list's, each read as
-    /// `KeyBinding(configText:)` reads it and kept once, or the one shortcut
-    /// other text names. Nil for an entry following the defaults, and for
-    /// one holding a shortcut that cannot be read, which leaves the action
-    /// as it is rather than dropping that shortcut and keeping the rest.
+    /// Whether the entry is in a form only the record of the user's edits
+    /// writes (FR12): text following the defaults, or an object (FR12's
+    /// branch E). The form earlier releases wrote, a list for every
+    /// action, holds neither.
+    var isInTheRecordsForm: Bool {
+        if case .object = self {
+            return true
+        }
+        return followsDefaults
+    }
+
+    /// The keys the entry makes the user's: a list's or an object's, each
+    /// read as `KeyBinding(configText:)` reads it and kept once, or the one
+    /// shortcut other text names. Nil for an entry following the defaults,
+    /// and for one holding a shortcut that cannot be read, which leaves the
+    /// action as it is rather than dropping that shortcut and keeping the
+    /// rest.
     var bindings: [KeyBinding]? {
         switch self {
-        case .list(let shortcuts):
+        case .list(let shortcuts), .object(let shortcuts, _):
             return KeyBinding.bindings(fromConfigTexts: shortcuts)
         case .text(let shortcut):
             guard !followsDefaults else { return nil }
@@ -828,12 +1216,39 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
         }
     }
 
+    /// Where the entry has `action` work (FR12's branch E): the kind of
+    /// window an object names, read as `ShortcutScope.named(_:)` reads it,
+    /// or the action's default for every other entry and an object naming
+    /// none. Nil for an object naming no kind of window TextMouth knows,
+    /// which cannot be used. Whether `action` may work there is
+    /// `ShortcutEdits.entriesLeftOut(of:)`'s to say.
+    func scope(for action: ShortcutAction) -> ShortcutScope? {
+        guard case .object(_, let name?) = self else { return action.defaultScope }
+        return ShortcutScope.named(name)
+    }
+
     /// The entry as TextMouth writes it, or nil when it cannot be used: a
-    /// list, or one shortcut written as text, becomes a list of shortcuts
-    /// written as TextMouth writes them; text following the defaults is
-    /// kept as written, since TextMouth never reads its words.
+    /// list, one shortcut written as text, or an object naming no kind of
+    /// window becomes a list of shortcuts written as TextMouth writes them,
+    /// and an object naming one holds them with that kind of window in the
+    /// Works in pop-up's words; text following the defaults is kept as
+    /// written, since TextMouth never reads its words. An object naming a
+    /// kind of window TextMouth does not know cannot be used, as a shortcut
+    /// it cannot read cannot.
     var validated: ShortcutListing? {
-        followsDefaults ? self : bindings.map(Self.edited)
+        if followsDefaults {
+            return self
+        }
+        guard let keys = bindings else { return nil }
+        guard case .object(_, let name?) = self else { return .edited(keys) }
+        return ShortcutScope.named(name).map { .edited(keys, worksIn: $0) }
+    }
+
+    /// Why the keys this entry gives `action` cannot be its keys
+    /// (`ShortcutAction.refusal(ofKeys:)`, FR12's branch D), or nil when
+    /// they can or the entry gives none.
+    func refusal(for action: ShortcutAction) -> ShortcutRefusal? {
+        bindings.flatMap(action.refusal(ofKeys:))
     }
 
     /// A list of shortcuts, written as an array literal.
@@ -846,24 +1261,60 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
         self = .text(words)
     }
 
-    /// Reads a list of text or text; anything else cannot be read.
+    /// Reads a list of text, text, or an object holding its keys and, when
+    /// it names one, the kind of window they work in (`object(from:)`);
+    /// anything else cannot be read.
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let shortcuts = try? container.decode([String].self) {
             self = .list(shortcuts)
+        } else if let words = try? container.decode(String.self) {
+            self = .text(words)
         } else {
-            self = .text(try container.decode(String.self))
+            self = try Self.object(from: decoder)
         }
     }
 
-    /// Writes a list as a list, and text as text.
+    /// Reads an entry written as an object (FR12's branch E): "keys", a list
+    /// of text or one text, and "worksIn", text, which may be left out or
+    /// null; each field named in any letter case, with spaces or without, as
+    /// "Works In". An object without keys cannot be read.
+    private static func object(from decoder: Decoder) throws -> ShortcutListing {
+        let object = try decoder.container(keyedBy: ShortcutJSONKey.self)
+        // The object's own spelling of `field`, if it has the field.
+        func spelling(of field: ShortcutJSONKey) -> ShortcutJSONKey? {
+            object.allKeys.first { $0.comparableName == field.comparableName }
+        }
+        guard let keysField = spelling(of: .keys) else {
+            throw DecodingError.keyNotFound(ShortcutJSONKey.keys, DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "An entry written as an object lists its keys"
+            ))
+        }
+        let keys: [String]
+        if let shortcuts = try? object.decode([String].self, forKey: keysField) {
+            keys = shortcuts
+        } else {
+            keys = [try object.decode(String.self, forKey: keysField)]
+        }
+        let worksIn = try spelling(of: .worksIn).flatMap { try object.decodeIfPresent(String.self, forKey: $0) }
+        return .object(keys: keys, worksIn: worksIn)
+    }
+
+    /// Writes a list as a list, text as text, and an object as an object of
+    /// its keys and, when it names one, the kind of window they work in.
     func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
         switch self {
         case .list(let shortcuts):
+            var container = encoder.singleValueContainer()
             try container.encode(shortcuts)
         case .text(let words):
+            var container = encoder.singleValueContainer()
             try container.encode(words)
+        case .object(let shortcuts, let worksIn):
+            var container = encoder.container(keyedBy: ShortcutJSONKey.self)
+            try container.encode(shortcuts, forKey: .keys)
+            try container.encodeIfPresent(worksIn, forKey: .worksIn)
         }
     }
 }
@@ -871,11 +1322,28 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
 extension ShortcutAction {
     /// The action config.json's `name` names: its name as Settings shows it,
     /// in any letter case, the exact name tried first, so "where am i?" is
-    /// Where Am I?. Nil for a name that names none. A renamed action would
-    /// keep its former name readable here.
+    /// Where Am I?; and a name ending in an ellipsis may end in three periods
+    /// or none instead (FR12's branch D), so "open book..." and "Open Book"
+    /// are Open Book…, as a name typed on a braille display is likely to
+    /// read. Nil for a name that names none. A renamed action would keep its
+    /// former name readable here.
     static func named(_ name: String) -> ShortcutAction? {
-        ShortcutAction(rawValue: name)
-            ?? allCases.first { $0.rawValue.caseInsensitiveCompare(name) == .orderedSame }
+        if let exact = ShortcutAction(rawValue: name) {
+            return exact
+        }
+        let wanted = comparableName(name)
+        return allCases.first { comparableName($0.rawValue) == wanted }
+    }
+
+    /// `name` as `named(_:)` compares names: in lower case, without an
+    /// ellipsis at its end, written as one character or as three periods.
+    /// No two actions' names compare alike (a test checks).
+    static func comparableName(_ name: String) -> String {
+        var compared = name.lowercased()
+        for ellipsis in ["…", "..."] where compared.hasSuffix(ellipsis) {
+            compared.removeLast(ellipsis.count)
+        }
+        return compared
     }
 }
 
@@ -912,6 +1380,12 @@ extension ShortcutAction {
             .decreaseSpeed: [
                 KeyBinding(key: "-", command: true)
             ],
+            // The menu commands' keys, fixed before FR12's branch D and
+            // their defaults since, as are the Record window's below: one
+            // press with Command or Control each, the key equivalent of its
+            // menu item or button.
+            .copyReadingPosition: [KeyBinding(key: "p", command: true, shift: true)],
+            .searchInBook: [KeyBinding(key: "f", command: true)],
             .goToLibrary: [
                 KeyBinding(key: "l", command: true)
             ],
@@ -1013,7 +1487,21 @@ extension ShortcutAction {
             // No keys by default (FR09): the user gives them keys of their
             // choosing in Settings, as Release Media Controls.
             .addToReadingList: [],
-            .removeFromReadingList: []
+            .removeFromReadingList: [],
+            .importDAISYFolder: [KeyBinding(key: "o", command: true, shift: true)],
+            // Shift-Command-F: Command-F alone searches a book.
+            .addFeed: [KeyBinding(key: "f", command: true, shift: true)],
+            .openBook: [KeyBinding(key: "o", command: true)],
+            // Show Sleep Timer's default too: New from Text has it in
+            // Library windows, and Show Sleep Timer in reader windows (FR12's
+            // branch E, #1451), where each works.
+            .newFromText: [KeyBinding(key: "t", command: true, shift: true)],
+            // Beside Command-N for a new Library window.
+            .newRecording: [KeyBinding(key: "n", command: true, option: true)],
+            // The Record window's Record, Pause or Resume, and Stop.
+            .recordingRecord: [KeyBinding(key: "r", command: true)],
+            .recordingPauseOrResume: [KeyBinding(key: "p", command: true)],
+            .recordingStop: [KeyBinding(key: ".", command: true)],
         ]
         return everywhereElse.merging(audioEditorDefaultBindings) { existing, _ in existing }
     }

@@ -410,11 +410,11 @@ final class ShortcutPressDispatcherTests: XCTestCase {
     func testScopesKeepTheirKeysApart() {
         let harness = Harness([.skipBackward: [plainJ], .goToLibrary: [jTwice], .editorSkipBack: [plainJ]])
 
-        harness.press(plainJ, at: 10, scope: .audioEditor)
+        harness.press(plainJ, at: 10, kind: .audioEditor)
         XCTAssertEqual(harness.performed, [.editorSkipBack], "the editor's J has no double action")
 
         harness.press(plainJ, at: 20)
-        XCTAssertFalse(harness.press(plainJ, at: 20.1, scope: nil))
+        XCTAssertFalse(harness.press(plainJ, at: 20.1, kind: nil))
         XCTAssertEqual(harness.performed, [.editorSkipBack, .skipBackward])
     }
 
@@ -436,7 +436,7 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
             let index = ShortcutPressDispatcher.Index(bindings)
 
-            XCTAssertEqual(index.actions(for: shiftCommandB, in: .app)?.single, .nextBookmark)
+            XCTAssertEqual(index.actions(for: shiftCommandB, in: .reader)?.single, .nextBookmark)
         }
     }
 
@@ -449,11 +449,14 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             .editorSkipBack: [plainJ],
         ])
 
-        XCTAssertEqual(index.actions(for: plainJ, in: .app), .init(single: .skipBackward, double: .goToLibrary, singleWaits: true))
-        XCTAssertEqual(index.actions(for: jTwice, in: .app), index.actions(for: plainJ, in: .app), "looked up by its stroke")
+        XCTAssertEqual(index.actions(for: plainJ, in: .library), .init(single: .skipBackward, double: .goToLibrary, singleWaits: true))
+        XCTAssertEqual(index.actions(for: jTwice, in: .library), index.actions(for: plainJ, in: .library), "looked up by its stroke")
         XCTAssertEqual(index.actions(for: plainJ, in: .audioEditor), .init(single: .editorSkipBack, double: nil, singleWaits: false))
-        XCTAssertNil(index.actions(for: plainK, in: .app))
-        XCTAssertEqual(index.waitingKeys, [.init(scope: .app, stroke: plainJ, single: .skipBackward, double: .goToLibrary)])
+        XCTAssertNil(index.actions(for: plainK, in: .library))
+        // J waits in every kind of window the app's actions reach.
+        XCTAssertEqual(index.waitingKeys, [ShortcutWindowKind.library, .reader, .recording, .other].map {
+            .init(kind: $0, stroke: plainJ, single: .skipBackward, double: .goToLibrary)
+        })
     }
 
     // MARK: - Through the Manager
@@ -527,14 +530,24 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
         XCTAssertEqual(index.waitingKeys, [])
         for action in ShortcutAction.allCases {
+            // In every kind of window the action's default scope reaches.
             for binding in defaults[action] ?? [] {
-                guard let actions = index.actions(for: binding, in: action.scope) else {
-                    XCTFail("\(action.rawValue)'s \(binding.configText) is in no index")
-                    continue
-                }
-                XCTAssertFalse(actions.singleWaits, "\(action.rawValue)'s \(binding.configText) waits")
-                if let single = actions.single, let double = actions.double {
-                    XCTAssertTrue(double == single || double.escalates == single, "\(binding.configText)")
+                for kind in ShortcutWindowKind.allCases where action.defaultScope.reaches(kind) {
+                    let label = "\(action.rawValue)'s \(binding.configText) in \(kind)"
+                    // A key equivalent's key goes on to its menu item or
+                    // button (FR12's branch D).
+                    if action.isKeyEquivalent {
+                        XCTAssertTrue(index.isKeyEquivalent(binding, in: kind), label)
+                        continue
+                    }
+                    guard let actions = index.actions(for: binding, in: kind) else {
+                        XCTFail("\(label) is in no index")
+                        continue
+                    }
+                    XCTAssertFalse(actions.singleWaits, "\(label) waits")
+                    if let single = actions.single, let double = actions.double {
+                        XCTAssertTrue(double == single || double.escalates == single, label)
+                    }
                 }
             }
         }
@@ -553,7 +566,7 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(ShortcutPressDispatcher.Index(manager.bindings).waitingKeys, [])
         for action in ShortcutAction.allCases {
             for binding in manager.bindingsFor(action) {
-                XCTAssertNil(manager.waitingAction(for: binding, in: action.scope), "\(action.rawValue)'s \(binding.configText)")
+                XCTAssertNil(manager.waitingAction(for: binding, in: action.defaultScope), "\(action.rawValue)'s \(binding.configText)")
             }
         }
     }
@@ -622,21 +635,70 @@ final class ShortcutPressDispatcherTests: XCTestCase {
     func testAnAudioEditorMatchesShiftExactly() {
         let harness = Harness(ShortcutAction.defaultBindings)
 
-        XCTAssertTrue(harness.press(KeyBinding(key: "j", shift: true), at: 10, scope: .audioEditor))
-        XCTAssertFalse(harness.press(KeyBinding(key: "r", shift: true), at: 11, scope: .audioEditor))
-        XCTAssertFalse(harness.press(KeyBinding(key: "t", shift: true), at: 12, scope: .audioEditor))
+        XCTAssertTrue(harness.press(KeyBinding(key: "j", shift: true), at: 10, kind: .audioEditor))
+        XCTAssertFalse(harness.press(KeyBinding(key: "r", shift: true), at: 11, kind: .audioEditor))
+        XCTAssertFalse(harness.press(KeyBinding(key: "t", shift: true), at: 12, kind: .audioEditor))
 
         XCTAssertEqual(harness.performed, [.editorSkipBackLong])
-        XCTAssertFalse(ShortcutScope.audioEditor.matchesShiftBeyondItsBindings)
-        XCTAssertTrue(ShortcutScope.app.matchesShiftBeyondItsBindings)
+        XCTAssertFalse(ShortcutAction.allCases.contains { $0.defaultScope == .audioEditor && $0.takesShiftAlong })
+    }
+
+    /// Shift reaches only the actions that take it along: Skip Forward and
+    /// Skip Backward, by letter and by arrow, and Increase Speed, whose
+    /// Command-Plus a US keyboard types as Shift-Command-Equals. Through the
+    /// manager, real key presses with Shift and no binding of their own
+    /// (Shift-Command-Delete, Shift-Space, Shift-Return, Shift-K, Shift-W,
+    /// Shift-I, Shift-Command-L, -I, -E, and -A) post nothing and go on to
+    /// the window, while Shift-J, Shift-L, Shift-Command with the arrows, and
+    /// Shift-Command-Equals still act, saying Shift was held.
+    func testShiftReachesOnlyTheActionsThatTakeIt() throws {
+        XCTAssertEqual(ShortcutAction.actionsTakingShiftAlong, [.skipForward, .skipBackward, .increaseSpeed])
+        let center = NotificationCenter()
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("press-dispatcher-shift-narrow"),
+            installsEventMonitor: false,
+            notificationCenter: center
+        )
+        let posted = PostedShortcutActions(on: center)
+        let ignored: [KeyBinding] = [
+            KeyBinding(key: "delete", command: true, shift: true),
+            KeyBinding(key: "space", shift: true),
+            KeyBinding(key: "return", shift: true),
+            KeyBinding(key: "k", shift: true),
+            KeyBinding(key: "w", shift: true),
+            KeyBinding(key: "i", shift: true),
+            KeyBinding(key: "l", command: true, shift: true),
+            KeyBinding(key: "i", command: true, shift: true),
+            KeyBinding(key: "e", command: true, shift: true),
+            KeyBinding(key: "a", command: true, shift: true),
+        ]
+        for (offset, key) in ignored.enumerated() {
+            let event = try ShortcutKeyPresses.keyPress(of: key, at: Double(10 + offset))
+            XCTAssertFalse(manager.handleKeyEvent(event, keyWindow: nil, firstResponder: nil), key.configText)
+        }
+        XCTAssertEqual(posted.names, [])
+
+        let acting: [(characters: String, keyCode: UInt16, modifiers: NSEvent.ModifierFlags, action: ShortcutAction)] = [
+            ("J", 38, [.shift], .skipBackward),
+            ("L", 37, [.shift], .skipForward),
+            ("\u{F702}", 123, [.shift, .command, .numericPad, .function], .skipBackward),
+            ("\u{F703}", 124, [.shift, .command, .numericPad, .function], .skipForward),
+            ("+", 24, [.shift, .command], .increaseSpeed),
+        ]
+        for (offset, press) in acting.enumerated() {
+            let event = try keyDown(press.characters, keyCode: press.keyCode, at: Double(30 + offset), modifiers: press.modifiers)
+            XCTAssertTrue(manager.handleKeyEvent(event, keyWindow: nil, firstResponder: nil), press.action.rawValue)
+        }
+        XCTAssertEqual(posted.names, acting.map(\.action.rawValue))
     }
 
     /// A waiting single press keeps whether Shift was held: Shift-J, with
-    /// J's double press another action's, waits, then skips back by the
-    /// Shift unit in its window when the time is up; Shift held for both
-    /// presses makes the double press, with Shift.
+    /// J's double press another action's that takes Shift along too, Skip
+    /// Forward's, waits, then skips back by the Shift unit in its window
+    /// when the time is up; Shift held for both presses makes the double
+    /// press, with Shift.
     func testAWaitingPressKeepsItsShift() {
-        let harness = Harness([.skipBackward: [plainJ], .goToLibrary: [jTwice]])
+        let harness = Harness([.skipBackward: [plainJ], .skipForward: [jTwice]])
         let window = makeWindow()
         let shiftJ = KeyBinding(key: "j", shift: true)
 
@@ -649,12 +711,87 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
         harness.press(shiftJ, at: 20, in: window)
         harness.press(shiftJ, at: 20.2, in: window)
-        XCTAssertEqual(harness.performed, [.skipBackward, .goToLibrary])
+        XCTAssertEqual(harness.performed, [.skipBackward, .skipForward])
         XCTAssertEqual(harness.triggers.last?.shiftHeld, true)
 
         harness.press(plainJ, at: 30, in: window)
         harness.press(shiftJ, at: 30.2, in: window)
-        XCTAssertEqual(harness.performed, [.skipBackward, .goToLibrary, .skipBackward], "J then Shift-J is no double press")
+        XCTAssertEqual(harness.performed, [.skipBackward, .skipForward, .skipBackward], "J then Shift-J is no double press")
+    }
+
+    // MARK: - A Dialog's Own Keys (Review Item B)
+
+    /// While a sheet or an alert is the key window, no shortcut takes the
+    /// keys its own buttons answer: Return, Open Selected Book's elsewhere,
+    /// and the keypad's Enter go on to its default button, and Escape and
+    /// Command-Period, given to actions here, to its Cancel button. In any
+    /// other window the same keys act, and in the dialog every other key
+    /// still reaches its shortcut. Each press goes through the manager's own
+    /// event handling; the dialog is a panel styled as AppKit styles every
+    /// sheet, never shown.
+    func testADialogKeepsReturnAndEscapeForItsButtons() throws {
+        let center = NotificationCenter()
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("press-dispatcher-dialog"),
+            installsEventMonitor: false,
+            notificationCenter: center
+        )
+        let keypadEnter = KeyBinding(key: "\u{3}")
+        manager.addBinding(keypadEnter, to: .openSelectedBook)
+        manager.updateBindings(for: .whereAmI, to: [KeyBinding(key: "escape")])
+        manager.updateBindings(for: .goToLibrary, to: [KeyBinding(key: ".", command: true)])
+        let posted = PostedShortcutActions(on: center)
+        let dialog = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 300, height: 120),
+            styleMask: [.titled, .docModalWindow],
+            backing: .buffered,
+            defer: true
+        )
+        dialog.isReleasedWhenClosed = false
+        defer { dialog.close() }
+        let window = makeWindow()
+        XCTAssertTrue(KeyboardShortcutManager.isDialog(dialog))
+        XCTAssertFalse(KeyboardShortcutManager.isDialog(window))
+        XCTAssertFalse(KeyboardShortcutManager.isDialog(nil))
+        let presses: [(event: NSEvent, action: ShortcutAction)] = [
+            (try ShortcutKeyPresses.keyPress(of: KeyBinding(key: "return")), .openSelectedBook),
+            (try ShortcutKeyPresses.keyDown(keyCode: 76, characters: "\u{3}", modifiers: [.numericPad]), .openSelectedBook),
+            (try ShortcutKeyPresses.keyPress(of: KeyBinding(key: "escape")), .whereAmI),
+            (try ShortcutKeyPresses.keyPress(of: KeyBinding(key: ".", command: true)), .goToLibrary),
+        ]
+
+        for press in presses {
+            XCTAssertFalse(manager.handleKeyEvent(press.event, keyWindow: dialog, firstResponder: nil), press.action.rawValue)
+        }
+        XCTAssertEqual(posted.names, [], "the dialog's buttons took every one")
+
+        for press in presses {
+            XCTAssertTrue(manager.handleKeyEvent(press.event, keyWindow: window, firstResponder: nil), press.action.rawValue)
+        }
+        XCTAssertEqual(posted.names, presses.map(\.action.rawValue))
+
+        let bookInfo = try ShortcutKeyPresses.keyPress(of: KeyBinding(key: "i", command: true))
+        XCTAssertTrue(manager.handleKeyEvent(bookInfo, keyWindow: dialog, firstResponder: nil))
+        XCTAssertEqual(posted.names.last, ShortcutAction.showBookInfo.rawValue)
+        XCTAssertEqual(
+            KeyBinding.dialogKeys,
+            [KeyBinding(key: "return"), keypadEnter, KeyBinding(key: "escape"), KeyBinding(key: ".", command: true)]
+        )
+    }
+
+    /// Shift never reaches a double press whose action takes no Shift along:
+    /// with J twice Go to Library's, Shift-J acts at once as Skip Backward
+    /// with Shift, waiting for nothing, and Shift-J twice skips back twice.
+    func testShiftLeavesADoublePressThatTakesNoShift() {
+        let harness = Harness([.skipBackward: [plainJ], .goToLibrary: [jTwice]])
+        let shiftJ = KeyBinding(key: "j", shift: true)
+
+        harness.press(shiftJ, at: 10)
+        harness.press(shiftJ, at: 10.2)
+
+        XCTAssertEqual(harness.performed, [.skipBackward, .skipBackward])
+        XCTAssertEqual(harness.triggers.map(\.shiftHeld), [true, true])
+        XCTAssertTrue(harness.timers.isEmpty, "no press waited")
     }
 
     /// Through the manager, real key presses with Shift post the skips with
@@ -765,6 +902,80 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertFalse(manager.isTryingDoublePress)
         XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 20), keyWindow: nil, firstResponder: nil))
         XCTAssertEqual(posted, [ShortcutAction.whereAmI.rawValue])
+    }
+
+    /// The two presses Try a Double Press and the Shortcuts tab's recorder
+    /// both measure (review item D): the first press's key again within the
+    /// double-press time is a double press, at the time or later too late,
+    /// and another key or a nameless one another key's; the outcome is
+    /// reported once, and its timer, once it has ended, reports nothing.
+    func testTwoPressesMeasureTheSecondAgainstTheFirst() {
+        var outcomes: [String] = []
+        var timers: [HandFiredTimer] = []
+        let presses = TwoPresses<String>(
+            doublePressTime: 0.5,
+            startTimer: { delay, fire in
+                let timer = HandFiredTimer(delay: delay, fire: fire)
+                timers.append(timer)
+                return timer
+            },
+            finish: { outcomes.append($0) }
+        )
+        XCTAssertEqual(presses.second(plainW, at: 10), .otherKey, "no first press yet")
+
+        presses.keepFirst(plainW, at: 10)
+
+        XCTAssertEqual(presses.second(plainW, at: 10.4), .doublePress)
+        XCTAssertEqual(presses.second(plainW, at: 10.5), .sameKeyTooLate(0.5))
+        XCTAssertEqual(presses.second(plainK, at: 10.1), .otherKey)
+        XCTAssertEqual(presses.second(nil, at: 10.1), .otherKey)
+        presses.startTimer(after: 1) { presses.end("time is up") }
+        XCTAssertEqual(timers.map(\.delay), [1])
+        presses.end("second press")
+        presses.end("another")
+        timers.forEach { $0.fire() }
+        XCTAssertEqual(outcomes, ["second press"])
+        XCTAssertTrue(presses.hasEnded)
+    }
+
+    /// The last trial's outcome stays, published, for the Shortcuts tab to
+    /// show as text a braille display can read again after VoiceOver has
+    /// said it (review item C): nothing before any trial, the prompt while
+    /// one waits, then "Last try: " and what it found; a trial cut short by
+    /// another keeps the outcome before it.
+    func testTheLastTrialsOutcomeStaysToReadAgain() throws {
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("press-dispatcher-trial-status"),
+            installsEventMonitor: false,
+            notificationCenter: NotificationCenter(),
+            startTimer: { delay, fire in HandFiredTimer(delay: delay, fire: fire) }
+        )
+        var publications = 0
+        let subscription = manager.objectWillChange.sink { publications += 1 }
+        defer { subscription.cancel() }
+        func status() -> String? {
+            ShortcutsSettingsWording.trialStatus(isTrying: manager.isTryingDoublePress, lastOutcome: manager.lastDoublePressTrialOutcome)
+        }
+        XCTAssertNil(status())
+
+        manager.tryDoublePress { _ in }
+        XCTAssertEqual(status(), "Press a key twice.")
+        XCTAssertEqual(publications, 1)
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10), keyWindow: nil, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10.2), keyWindow: nil, firstResponder: nil))
+
+        XCTAssertEqual(manager.lastDoublePressTrialOutcome, .doublePress)
+        XCTAssertEqual(status(), "Last try: Double press.")
+        XCTAssertEqual(publications, 3, "the trial's end and its outcome")
+
+        manager.tryDoublePress { _ in }
+        manager.tryDoublePress { _ in }
+        XCTAssertEqual(manager.lastDoublePressTrialOutcome, .doublePress, "a trial cut short reports nothing")
+        XCTAssertEqual(status(), "Press a key twice.")
+        XCTAssertEqual(
+            ShortcutsSettingsWording.trialStatus(isTrying: false, lastOutcome: .tooFarApart(0.7)),
+            "Last try: Two presses, 0.7 seconds apart. Set the time above 0.7 seconds to count them as one."
+        )
     }
 
     // MARK: - Helpers
@@ -878,7 +1089,7 @@ final class Harness {
         _ binding: KeyBinding?,
         at time: TimeInterval,
         in window: NSWindow? = nil,
-        scope: ShortcutScope? = .app,
+        kind: ShortcutWindowKind? = .reader,
         inTextField: Bool = false,
         isRepeat: Bool = false
     ) -> ShortcutPressDispatcher.Press {
@@ -886,7 +1097,7 @@ final class Harness {
             stroke: binding?.stroke,
             time: time,
             window: window,
-            scope: scope,
+            kind: kind,
             textInputIsFocused: inTextField,
             isRepeat: isRepeat
         )
@@ -899,12 +1110,12 @@ final class Harness {
         _ binding: KeyBinding?,
         at time: TimeInterval,
         in window: NSWindow? = nil,
-        scope: ShortcutScope? = .app,
+        kind: ShortcutWindowKind? = .reader,
         inTextField: Bool = false,
         isRepeat: Bool = false
     ) -> Bool {
         now = time
-        return dispatcher.handle(makePress(binding, at: time, in: window, scope: scope, inTextField: inTextField, isRepeat: isRepeat))
+        return dispatcher.handle(makePress(binding, at: time, in: window, kind: kind, inTextField: inTextField, isRepeat: isRepeat))
     }
 
     /// Fires every timer started and not cancelled, as the time running out

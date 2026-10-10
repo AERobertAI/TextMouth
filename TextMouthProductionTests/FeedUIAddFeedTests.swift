@@ -582,24 +582,16 @@ final class FeedUIAddFeedTests: XCTestCase {
 
     // MARK: - The Command
 
-    /// Library > Add Feed… takes Shift-Command-F, which no default shortcut
-    /// and no other menu command uses.
+    /// Library > Add Feed… takes Shift-Command-F, the Add Feed action's
+    /// default since it became editable (FR12's branch D), which no other
+    /// default shortcut and no other menu command uses.
     func testAddFeedsShortcutClashesWithNothing() throws {
-        let shortcut = FeedShortcuts.addFeed
-        let binding = KeyBinding(
-            key: String(shortcut.key.character),
-            command: shortcut.modifiers.contains(.command),
-            option: shortcut.modifiers.contains(.option),
-            shift: shortcut.modifiers.contains(.shift),
-            control: shortcut.modifiers.contains(.control)
-        )
+        let binding = KeyBinding(key: "f", command: true, shift: true)
+        XCTAssertEqual(ShortcutAction.defaultBindings[.addFeed], [binding])
         XCTAssertFalse(
-            ShortcutAction.defaultBindings.values.flatMap { $0 }.contains(binding),
-            "\(binding.displayString) is a default shortcut already"
+            ShortcutAction.defaultBindings.filter { $0.key != .addFeed }.values.flatMap { $0 }.contains(binding),
+            "\(binding.displayString) is another action's default too"
         )
-        for other in [RecordingShortcuts.record, RecordingShortcuts.pauseOrResume, RecordingShortcuts.stop, RecordingShortcuts.newRecording] {
-            XCTAssertFalse(other.key == shortcut.key && other.modifiers == shortcut.modifiers)
-        }
         // The app's menus, which hold every other menu command's key.
         guard let menu = NSApp.mainMenu else { throw XCTSkip("the test host has no main menu") }
         let items = feedMenuItems(of: menu)

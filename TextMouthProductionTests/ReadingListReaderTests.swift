@@ -854,7 +854,7 @@ final class ReadingListReaderTests: XCTestCase {
         for action in [ShortcutAction.nextInReadingList, .previousInReadingList] {
             XCTAssertEqual(action.title, action.rawValue)
             XCTAssertEqual(action.category, "Navigation", action.rawValue)
-            XCTAssertEqual(action.scope, .app, action.rawValue)
+            XCTAssertEqual(action.defaultScope, .app, action.rawValue)
             XCTAssertEqual(ShortcutAction.defaultBindings[action], [], action.rawValue)
         }
         XCTAssertEqual(ShortcutAction.nextInReadingList.notificationName, .nextInReadingList)

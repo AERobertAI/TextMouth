@@ -345,7 +345,7 @@ final class PreferenceStoreTests: XCTestCase {
 
         KeyboardShortcutManager.editsPreference.write(changed, to: store)
 
-        var expected = ShortcutAction.defaultBindings
+        var expected = ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings)
         expected[.whereAmI] = [KeyBinding(key: "w", option: true)]
         XCTAssertEqual(manager.edits, changed)
         XCTAssertEqual(manager.bindings, expected)

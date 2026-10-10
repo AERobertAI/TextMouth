@@ -539,19 +539,16 @@ test("Every ShortcutAction has a default binding entry") {
 
 test("No default binding is shared between actions of one scope") {
     // The audio editor's actions, matched only in its windows, may share a
-    // key with an action that works everywhere else (ShortcutScope); within
-    // either scope a key means one thing.
+    // key with an action that works everywhere else (ShortcutScope); in
+    // each kind of window a key means one thing, so actions working in
+    // different kinds of window may share one, as New from Text and Show
+    // Sleep Timer share Shift-Command-T (FR12's branch E).
     let defaults = ShortcutAction.defaultBindings
-    var seen: [ShortcutScope: [KeyBinding: ShortcutAction]] = [:]
-    for (action, bindings) in defaults {
-        for binding in bindings {
-            if let existing = seen[action.scope]?[binding] {
-                throw TestError.assertionFailed("Binding \(binding.displayString) is shared by \(action.rawValue) and \(existing.rawValue)")
-            }
-            seen[action.scope, default: [:]][binding] = action
-        }
+    let clashes = ShortcutKeyOwners.keysOnTwoActions(in: defaults)
+    if !clashes.isEmpty {
+        throw TestError.assertionFailed("Bindings shared: \(clashes.joined(separator: "; "))")
     }
-    print("    All \(seen.values.map(\.count).reduce(0, +)) bindings are unique within their scope")
+    print("    All \(defaults.values.map(\.count).reduce(0, +)) bindings are unique within their kinds of window")
 }
 
 test("Panel shortcuts have the expected categories") {

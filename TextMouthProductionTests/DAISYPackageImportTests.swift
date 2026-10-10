@@ -581,9 +581,11 @@ final class DAISYPackageImportTests: XCTestCase {
     // MARK: - Import DAISY Folder…
 
     /// The running app's Library menu offers Import DAISY Folder… as an
-    /// ordinary menu item, enabled, with Command-Shift-O, which neither the
-    /// app's other menu items nor its default key bindings use. The item is
-    /// only read, never chosen: choosing it would present a real panel.
+    /// ordinary menu item, enabled, with Command-Shift-O, its action's
+    /// default since the key became editable (FR12's branch D), which
+    /// neither the app's other menu items nor any other action's default key
+    /// bindings use. The item is only read, never chosen: choosing it would
+    /// present a real panel.
     /// Skipped when this run's menu bar has no Library menu at all.
     @MainActor
     func testLibraryMenuOffersImportDAISYFolder() throws {
@@ -606,8 +608,10 @@ final class DAISYPackageImportTests: XCTestCase {
         // The shortcut is the command's alone.
         let otherItems = Self.allItems(of: NSApp.mainMenu).filter { $0 !== item && Self.answersCommandShiftO($0) }
         XCTAssertEqual(otherItems.map(\.title), [])
+        let commandShiftO = KeyBinding(key: "o", command: true, shift: true)
+        XCTAssertEqual(ShortcutAction.defaultBindings[.importDAISYFolder], [commandShiftO])
         XCTAssertFalse(
-            ShortcutAction.defaultBindings.values.joined().contains(KeyBinding(key: "o", command: true, shift: true))
+            ShortcutAction.defaultBindings.filter { $0.key != .importDAISYFolder }.values.joined().contains(commandShiftO)
         )
     }
 

@@ -20,13 +20,15 @@ final class ShortcutMigrationTests: XCTestCase {
 
     // MARK: - This User's Shortcuts
 
-    /// The eight actions added after the October 5 build that wrote this
+    /// The eighteen actions added after the October 5 build that wrote this
     /// user's shortcuts: Speak Info, Speak Import Progress, the reading
-    /// list's four commands, and the two full summaries (FR12).
-    static let actionsAddedSinceOctober5: Set<ShortcutAction> = [
+    /// list's four commands, the two full summaries (FR12), and the menu
+    /// commands and Record window buttons whose keys were fixed before (FR12's
+    /// branch D).
+    static let actionsAddedSinceOctober5: Set<ShortcutAction> = ShortcutAction.keyEquivalentActions.union([
         .speakInfo, .speakImportProgress, .addToReadingList, .removeFromReadingList,
         .nextInReadingList, .previousInReadingList, .whereAmIFull, .speakFullInfo,
-    ]
+    ])
 
     /// Every action the October 5 build had, in the order Settings lists
     /// them.
@@ -79,7 +81,7 @@ final class ShortcutMigrationTests: XCTestCase {
     /// existed, without its 41 actions, while config.json lists all 72.
     func testThisUsersShortcutsSavedBeforeTheAudioEditorMoveTheSame() {
         let fileLists = mapShapedLikeThisUsers()
-        let savedMap = mapShapedLikeThisUsers(including: Self.actionsOfTheOctober5Build.filter { $0.scope == .app })
+        let savedMap = mapShapedLikeThisUsers(including: Self.actionsOfTheOctober5Build.filter { $0.defaultScope != .audioEditor })
         XCTAssertEqual(savedMap.count, 31)
 
         let migrated = ShortcutEdits.migrating(savedMap: savedMap, fileLists: fileLists)
@@ -116,8 +118,10 @@ final class ShortcutMigrationTests: XCTestCase {
         // The full summaries, newer than the map, get their double presses.
         XCTAssertEqual(inForce[.speakFullInfo], [KeyBinding(key: "i", isDoublePress: true)], file: file, line: line)
         XCTAssertEqual(inForce[.whereAmIFull], [KeyBinding(key: "w", isDoublePress: true)], file: file, line: line)
+        // Every other action has its defaults in force, as with nothing edited.
+        let defaultsInForce = ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings)
         for action in ShortcutAction.allCases where action != .releaseMediaControls {
-            XCTAssertEqual(inForce[action], ShortcutAction.defaultBindings[action], "\(action.rawValue)", file: file, line: line)
+            XCTAssertEqual(inForce[action], defaultsInForce[action], "\(action.rawValue)", file: file, line: line)
         }
     }
 
@@ -232,7 +236,7 @@ final class ShortcutMigrationTests: XCTestCase {
     /// Settings would: what other actions hold is read from the file's
     /// lists where they differ from the saved map.
     func testAKeyMovedInTheFileWhileClosedLeavesTheLoserUnedited() {
-        let savedMap = ShortcutAction.defaultBindings.filter { $0.key.scope == .app }
+        let savedMap = ShortcutAction.defaultBindings.filter { $0.key.defaultScope != .audioEditor }
         var fileLists = savedMap
         fileLists[.whereAmI] = [plainW, plainK]
         fileLists[.togglePlayback] = [space]

@@ -15,15 +15,19 @@ import Combine
 ///
 /// Each key press goes to a `ShortcutPressDispatcher`, which tells single
 /// presses from double presses by the double-press time the store holds, and
-/// says which action, if any, the press triggers; the manager posts it.
+/// says which action, if any, the press triggers; the manager posts it. A key
+/// equivalent's key, a menu command's or one of the Record window's buttons'
+/// (FR12's branch D), is never taken: its menu item or button shows the key
+/// in force (`keyEquivalent(for:)`) and acts on it, as menus always have.
 @MainActor
 final class KeyboardShortcutManager: ObservableObject {
     /// The record of the shortcuts the user edited, as the store holds it.
     private(set) var edits: ShortcutEdits
     /// Every action's keys in force: the record's, with this build's
     /// defaults (`ShortcutEdits.effectiveBindings(defaults:)`), so no key
-    /// belongs to two actions of one scope. Key presses match these. A
-    /// change of the record and these is published once (`take(_:)`).
+    /// belongs to two actions in one kind of window. Key presses match these
+    /// where each action's scope reaches (`scope(of:)`). A change of the
+    /// record and these is published once (`take(_:)`).
     private(set) var bindings: [ShortcutAction: [KeyBinding]]
     /// How soon a second press must follow the first to make a double press,
     /// in seconds (FR12), as the store holds it: one time for every
@@ -48,6 +52,7 @@ final class KeyboardShortcutManager: ObservableObject {
     /// rebuilt whenever the bindings change (`take(_:)`).
     private lazy var dispatcher = ShortcutPressDispatcher(
         bindings: bindings,
+        scopes: edits.scopesInForce,
         doublePressTime: { [weak self] in
             self?.doublePressTime ?? SettingsPolicy.shortcutDoublePressSeconds.defaultValue
         },
@@ -191,7 +196,7 @@ final class KeyboardShortcutManager: ObservableObject {
         objectWillChange.send()
         edits = newEdits
         bindings = newEdits.effectiveBindings(defaults: ShortcutAction.defaultBindings)
-        dispatcher.rebuild(from: bindings)
+        dispatcher.rebuild(from: bindings, scopes: newEdits.scopesInForce)
     }
 
     /// Puts `changed` in force, then saves it. In force first: the store
@@ -205,29 +210,55 @@ final class KeyboardShortcutManager: ObservableObject {
     // MARK: - Changing the Shortcuts
 
     /// Gives `action` exactly `newBindings`, as the user's, each taken from
-    /// every other action of its scope (`ShortcutEdits.setKeys(_:for:)`,
+    /// every other action whose scope overlaps its own (`ShortcutEdits.setKeys(_:for:)`,
     /// the one rule a key's owner follows). Replacing a key in Settings comes
     /// through here, so it can no longer leave one key on two actions.
-    func updateBindings(for action: ShortcutAction, to newBindings: [KeyBinding]) {
+    /// Returns why nothing changed when `action` cannot take one of the keys
+    /// (`refusal(ofKeys:for:)`), or nil.
+    @discardableResult
+    func updateBindings(for action: ShortcutAction, to newBindings: [KeyBinding]) -> ShortcutRefusal? {
         change(action, to: newBindings)
     }
 
     /// Adds `binding` to `action`'s keys, which makes them the user's, and
-    /// takes it from any other action of the same scope; an action of the
-    /// other scope keeps it, as the editor's Space and the reader's do.
-    func addBinding(_ binding: KeyBinding, to action: ShortcutAction) {
+    /// takes it from any other action whose scope overlaps its own; an
+    /// action working elsewhere keeps it, as the editor's Space and the
+    /// reader's do.
+    /// Returns why nothing changed when `action` cannot take it, or nil.
+    @discardableResult
+    func addBinding(_ binding: KeyBinding, to action: ShortcutAction) -> ShortcutRefusal? {
         let keys = bindingsFor(action)
-        change(action, to: keys.contains(binding) ? keys : keys + [binding])
+        return change(action, to: keys.contains(binding) ? keys : keys + [binding])
     }
 
     /// Removes `binding` from `action`'s keys, which makes them the user's.
     func removeBinding(_ binding: KeyBinding, from action: ShortcutAction) {
-        change(action, to: bindingsFor(action).filter { $0 != binding })
+        // A removal adds no key, so nothing refuses it.
+        _ = change(action, to: bindingsFor(action).filter { $0 != binding })
+    }
+
+    /// Why `keys` cannot become `action`'s, or nil when they can (FR12's
+    /// branch D): a key they add that `action` cannot take
+    /// (`ShortcutAction.refusal(of:)`), or a second key for a key
+    /// equivalent's action, whose item has one. A key the action has in
+    /// force already is never refused, so a store edited by hand never stops
+    /// the user changing the action.
+    func refusal(ofKeys keys: [KeyBinding], for action: ShortcutAction) -> ShortcutRefusal? {
+        let held = bindingsFor(action)
+        let added = keys.filter { !held.contains($0) }
+        if let refused = added.lazy.compactMap(action.refusal(of:)).first {
+            return refused
+        }
+        if action.isKeyEquivalent, keys.count > max(1, held.count), let second = added.first {
+            return .secondKeyEquivalent(second)
+        }
+        return nil
     }
 
     /// Gives `action` back to this build's defaults (Reset to Default),
-    /// less any key an edited action of its scope holds; every key it held
-    /// goes back to the unedited action whose default it is.
+    /// less any key an edited action whose scope overlaps its own holds;
+    /// every key it held goes back to the unedited action whose default it
+    /// is.
     func resetToDefault(_ action: ShortcutAction) {
         var changed = edits
         changed.reset(action)
@@ -239,19 +270,37 @@ final class KeyboardShortcutManager: ObservableObject {
         save(ShortcutEdits())
     }
 
+    /// Makes `action` work in `scope`, as the user's (FR12's branch E): it
+    /// keeps its keys in force, each taken from every other action whose
+    /// scope now overlaps its own, as recording a key takes it. A scope the
+    /// action may not be given (`ShortcutAction.availableScopes`), or the
+    /// one it works in already, changes nothing. Reset to Default gives back
+    /// its default scope.
+    func setScope(_ scope: ShortcutScope, for action: ShortcutAction) {
+        guard action.availableScopes.contains(scope), scope != self.scope(of: action) else { return }
+        var changed = edits
+        changed.setScope(scope, for: action, keys: bindingsFor(action))
+        save(changed)
+    }
+
     /// Whether the user edited `action`'s keys, which then stay theirs until
     /// Reset to Default, even when they are its default keys.
     func isEdited(_ action: ShortcutAction) -> Bool {
         edits.isEdited(action)
     }
 
-    /// Makes `keys` `action`'s, as the user's. Keys that leave an unedited
-    /// action as it is change nothing: it stays TextMouth's.
-    private func change(_ action: ShortcutAction, to keys: [KeyBinding]) {
-        guard edits.isEdited(action) || keys != bindingsFor(action) else { return }
+    /// Makes `keys` `action`'s, as the user's, unless `action` cannot take
+    /// them, whose refusal it returns. Keys that leave an unedited action as
+    /// it is change nothing: it stays TextMouth's.
+    private func change(_ action: ShortcutAction, to keys: [KeyBinding]) -> ShortcutRefusal? {
+        if let refusal = refusal(ofKeys: keys, for: action) {
+            return refusal
+        }
+        guard edits.isEdited(action) || keys != bindingsFor(action) else { return nil }
         var changed = edits
         changed.setKeys(keys, for: action)
         save(changed)
+        return nil
     }
 
     // MARK: - The Move to the Record (FR12)
@@ -269,14 +318,15 @@ final class KeyboardShortcutManager: ObservableObject {
     /// form.
     ///
     /// Nothing is moved when the store holds a record already, nor when
-    /// config.json is in the new form already (an entry written "default"),
-    /// which is then read as any edit is: over an empty record, written now,
-    /// so that the move never runs again. The whole map (`savedMapKey`) is
-    /// read and left as it is; nothing writes it again.
+    /// config.json is in the new form already (an entry written "default",
+    /// or as an object naming where its action works), which is then read
+    /// as any edit is: over an empty record, written now, so that the move
+    /// never runs again. The whole map (`savedMapKey`) is read and left as
+    /// it is; nothing writes it again.
     @discardableResult
     static func moveSavedShortcutsIfNeeded(in store: UserDefaults, fileListings: [ShortcutAction: ShortcutListing]?) -> Bool {
         guard store.data(forKey: editsPreference.key) == nil else { return false }
-        if let fileListings, fileListings.values.contains(where: \.followsDefaults) {
+        if let fileListings, fileListings.values.contains(where: \.isInTheRecordsForm) {
             DiagnosticLog.event(
                 .storage,
                 "SHORTCUT_EDITS_MOVED: config.json is in the new form already; reading it over an empty record"
@@ -310,20 +360,29 @@ final class KeyboardShortcutManager: ObservableObject {
 
     /// Puts config.json's entries in place in `store`'s record (FR12,
     /// sections 5.1 and 5.2 of the design, `ShortcutEdits.adopting(_:)`):
-    /// a list makes its action the user's, "default" gives it back, and a key
-    /// two edited actions then hold is left to one of them and logged, naming
-    /// the key and both actions. No entries change nothing.
+    /// a list makes its action the user's, an object makes it the user's
+    /// working in the kind of window it names (FR12's branch E), "default"
+    /// gives it back, and a key two edited actions then hold where their
+    /// scopes overlap is left to one of them and logged, naming the key and
+    /// both actions. An entry naming a kind of window its action cannot work
+    /// in, or giving it a key it cannot take, such as a menu command's key
+    /// without Command or Control (FR12's branch D), is left out and logged,
+    /// the action keeping what it has (`ShortcutEdits.entriesLeftOut(of:)`).
+    /// No entries change nothing.
     ///
-    /// - Returns: Whether such a key was settled, so the settings model
-    ///   saves config.json again at once and the file shows the keys in
-    ///   force, as it is saved after a repaired value.
+    /// - Returns: Whether such a key was settled or an entry left out, so
+    ///   the settings model saves config.json again at once and the file
+    ///   shows the keys in force, as it is saved after a repaired value.
     @discardableResult
     static func adopt(_ listings: [ShortcutAction: ShortcutListing], in store: UserDefaults) -> Bool {
         guard !listings.isEmpty else { return false }
-        let adopted = editsPreference.read(from: store).adopting(listings)
+        let record = editsPreference.read(from: store)
+        let leftOut = record.entriesLeftOut(of: listings)
+        let adopted = record.adopting(listings.filter { leftOut[$0.key] == nil })
+        ShortcutEdits.log(leftOut, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
         ShortcutEdits.log(adopted.sharedKeys, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
         editsPreference.write(adopted.edits, to: store)
-        return !adopted.sharedKeys.isEmpty
+        return !adopted.sharedKeys.isEmpty || !leftOut.isEmpty
     }
 
     // MARK: - Reading the Shortcuts
@@ -344,10 +403,61 @@ final class KeyboardShortcutManager: ObservableObject {
         KeyBinding.accessibleDisplayString(for: bindingsFor(action))
     }
 
-    /// The action of `scope` whose keys in force hold `binding`, if any: the
-    /// one a key recorded in Settings is taken from.
+    /// Where `action`'s shortcuts work (FR12's branch E).
+    func scope(of action: ShortcutAction) -> ShortcutScope {
+        edits.scope(of: action)
+    }
+
+    /// The action whose keys in force hold `binding` where `scope` reaches,
+    /// if any: the first Settings lists whose scope overlaps it.
     func action(holding binding: KeyBinding, in scope: ShortcutScope) -> ShortcutAction? {
-        ShortcutAction.allCases.first { $0.scope == scope && bindingsFor($0).contains(binding) }
+        ShortcutAction.allCases.first { self.scope(of: $0).overlaps(scope) && bindingsFor($0).contains(binding) }
+    }
+
+    /// The actions other than `action` that hold fewer keys in force than
+    /// `earlier` gave them, in the order Settings lists them: the ones a
+    /// change of `action`'s keys took a key from, whether the very key or one
+    /// clashing with it (a key equivalent's key and its double press, FR12's
+    /// branch D), as the Shortcuts tab says after recording a key.
+    func actions(thatLostKeysSince earlier: [ShortcutAction: [KeyBinding]], besides action: ShortcutAction) -> [ShortcutAction] {
+        ShortcutAction.allCases.filter { other in
+            other != action && !(earlier[other] ?? []).allSatisfy(bindingsFor(other).contains)
+        }
+    }
+
+    /// The default keys `action` goes without while it follows its defaults,
+    /// each with the action that has it in force (FR12's branch D), in the
+    /// order its defaults list them: New from Text's Shift-Command-T, Show
+    /// Sleep Timer's too, or a default the user gave another action. Empty
+    /// for an action the user edited, whose keys are the user's, and for one
+    /// with all its defaults.
+    func defaultKeysHeldElsewhere(for action: ShortcutAction) -> [DefaultKeyHeldElsewhere] {
+        guard !isEdited(action) else { return [] }
+        let inForce = bindingsFor(action)
+        return (ShortcutAction.defaultBindings[action] ?? []).filter { !inForce.contains($0) }.compactMap { key in
+            let holder = ShortcutAction.allCases.first { other in
+                other != action && bindingsFor(other).contains { edits.key(key, of: action, clashesWith: $0, of: other) }
+            }
+            return holder.map { DefaultKeyHeldElsewhere(key: key, holder: $0) }
+        }
+    }
+
+    // MARK: - Key Equivalents (FR12's Branch D)
+
+    /// The key `action`'s menu item or button shows and acts on, for an
+    /// action whose key is a key equivalent (`ShortcutAction.isKeyEquivalent`):
+    /// its first key in force that can be one, or nil for none, as while
+    /// another action has its default key. Nil for every other action, whose
+    /// keys the manager matches itself.
+    func keyEquivalent(for action: ShortcutAction) -> KeyBinding? {
+        Self.keyEquivalent(for: action, in: bindings)
+    }
+
+    /// `keyEquivalent(for:)` among `bindings`, every action's keys in force,
+    /// for whoever reads them from a store without a manager of its own.
+    nonisolated static func keyEquivalent(for action: ShortcutAction, in bindings: [ShortcutAction: [KeyBinding]]) -> KeyBinding? {
+        guard action.isKeyEquivalent else { return nil }
+        return bindings[action]?.first(where: \.canBeKeyEquivalent)
     }
 
     /// The action whose single press waits on the key `binding` is a press
@@ -356,8 +466,10 @@ final class KeyboardShortcutManager: ObservableObject {
     /// single press waits out the double-press time before it acts. Nil
     /// when the key's presses act at once.
     func waitingAction(for binding: KeyBinding, in scope: ShortcutScope) -> ShortcutAction? {
-        guard let actions = dispatcher.index.actions(for: binding, in: scope), actions.singleWaits else { return nil }
-        return actions.single
+        // The first kind of window the scope reaches where the key waits.
+        ShortcutWindowKind.allCases.lazy.filter(scope.reaches).compactMap { kind in
+            self.dispatcher.index.actions(for: binding, in: kind).flatMap { $0.singleWaits ? $0.single : nil }
+        }.first
     }
 
     // MARK: - Recording a Shortcut
@@ -389,8 +501,19 @@ final class KeyboardShortcutManager: ObservableObject {
     // MARK: - Trying a Double Press
 
     /// The Try a Double Press trial running, if any: the next key presses
-    /// are its, and no shortcut acts on them.
-    private var trial: DoublePressTrial?
+    /// are its, and no shortcut acts on them. A change is published, so the
+    /// Shortcuts tab says a trial waits for its presses.
+    private var trial: DoublePressTrial? {
+        willSet { objectWillChange.send() }
+    }
+
+    /// What the last Try a Double Press found, kept so the Shortcuts tab
+    /// shows it as text a braille display can read again after VoiceOver has
+    /// said it (the review of October 10, item C); nil before any trial
+    /// ends. A trial ended without a report keeps the one before.
+    private(set) var lastDoublePressTrialOutcome: DoublePressTrial.Outcome? {
+        willSet { objectWillChange.send() }
+    }
 
     /// Whether Try a Double Press is waiting for its two presses.
     var isTryingDoublePress: Bool {
@@ -400,11 +523,13 @@ final class KeyboardShortcutManager: ObservableObject {
     /// Starts Try a Double Press (FR12, section 6.2 of the design): for five
     /// seconds the next two key presses are no shortcuts, and `report` is
     /// told what they made, measured against the double-press time in
-    /// force. A trial already running ends without a report.
+    /// force, which is kept as the last outcome too. A trial already running
+    /// ends without a report.
     func tryDoublePress(report: @escaping @MainActor (DoublePressTrial.Outcome) -> Void) {
         trial?.cancel()
         let trial = DoublePressTrial(doublePressTime: doublePressTime, startTimer: startTimer) { [weak self] outcome in
             self?.trial = nil
+            self?.lastDoublePressTrialOutcome = outcome
             report(outcome)
         }
         self.trial = trial
@@ -460,14 +585,31 @@ final class KeyboardShortcutManager: ObservableObject {
             stroke: stroke,
             time: event.timestamp,
             window: keyWindow,
-            // Only the shortcuts of the key window's scope match; in a sheet
-            // over an audio editor none do, so its own controls take every key.
-            scope: Self.scope(ofKeyWindow: keyWindow),
+            // Only the shortcuts whose scopes reach the key window's kind
+            // match; in a sheet over an audio editor none do, so its own
+            // controls take every key.
+            kind: Self.windowKind(ofKeyWindow: keyWindow),
             // A field being edited keeps its typing and the keys it edits
             // with (`shouldHandle`).
             textInputIsFocused: Self.isTextInput(firstResponder),
-            isRepeat: event.isARepeat
+            isRepeat: event.isARepeat,
+            // A sheet's or an alert's buttons keep Return and Escape.
+            keyWindowIsDialog: Self.isDialog(keyWindow)
         ))
+    }
+
+    /// Whether `window` is a dialog whose own buttons answer Return and
+    /// Escape (the review of October 10, item B): a sheet, attached to its
+    /// window or styled as one (AppKit makes every sheet, an alert's
+    /// included, a document-modal window), or the window of a modal session,
+    /// such as an alert run on its own. No shortcut takes those keys there
+    /// (`KeyBinding.isDialogKey`), so a sheet's default button answers
+    /// Return though Open Selected Book has it everywhere else.
+    static func isDialog(_ window: NSWindow?) -> Bool {
+        guard let window else { return false }
+        return window.sheetParent != nil
+            || window.styleMask.contains(.docModalWindow)
+            || window === NSApp.modalWindow
     }
 
     /// Posts the action `trigger` names, with the window it was pressed in,
@@ -492,25 +634,45 @@ final class KeyboardShortcutManager: ObservableObject {
         notificationCenter.post(name: trigger.action.notificationName, object: nil, userInfo: userInfo)
     }
 
-    /// The scope whose shortcuts a key pressed in `keyWindow` matches: the
-    /// audio editor's in an editor window (FR04); none in a sheet over one,
-    /// whose fields and buttons take every key; the app's everywhere else,
-    /// as before the editor, with no key window included.
-    static func scope(ofKeyWindow keyWindow: NSWindow?) -> ShortcutScope? {
-        scope(
-            windowIdentifier: keyWindow?.identifier?.rawValue,
-            sheetParentIdentifier: keyWindow?.sheetParent?.identifier?.rawValue
-        )
+    /// The kind of window a key pressed while `keyWindow` is key is pressed
+    /// in, whose scopes' shortcuts match it (FR12's branch E): a sheet's
+    /// window's kind (`pressKind(window:sheetParent:)`), and `.other` with no
+    /// key window.
+    static func windowKind(ofKeyWindow keyWindow: NSWindow?) -> ShortcutWindowKind? {
+        guard let keyWindow else { return .other }
+        return pressKind(window: windowKind(of: keyWindow), sheetParent: keyWindow.sheetParent.map(windowKind(of:)))
     }
 
-    /// The scope for a key window identified as `windowIdentifier`, a sheet
-    /// over a window identified as `sheetParentIdentifier` when it is one:
-    /// `scope(ofKeyWindow:)`'s rule, apart from AppKit.
-    nonisolated static func scope(windowIdentifier: String?, sheetParentIdentifier: String?) -> ShortcutScope? {
-        let editor = AudioEditorWindowController.windowIdentifier
-        if windowIdentifier == editor { return .audioEditor }
-        if sheetParentIdentifier == editor { return nil }
-        return .app
+    /// The kind of window `window` is, apart from any sheet it is: an audio
+    /// editor's or the Record window by their identifiers; a panel of its
+    /// own, such as an Open panel or an alert run on its own, or the window
+    /// of a modal session, `.other`; a reader or a Library window as the menu
+    /// bar tells them apart (`MenuVisibilityManager.detectWindowType`); and
+    /// any other, Settings among them, `.other`.
+    static func windowKind(of window: NSWindow) -> ShortcutWindowKind {
+        switch window.identifier?.rawValue {
+        case AudioEditorWindowController.windowIdentifier: return .audioEditor
+        case RecordingWindowController.windowIdentifier: return .recording
+        default: break
+        }
+        if window.sheetParent == nil, window is NSPanel || window === NSApp.modalWindow {
+            return .other
+        }
+        switch MenuVisibilityManager.detectWindowType(for: window) {
+        case .library: return .library
+        case .reader: return .reader
+        case nil: return .other
+        }
+    }
+
+    /// The kind whose shortcuts a key pressed in a window of `kind` matches,
+    /// a sheet over a window of `parentKind` when it is one: a sheet counts
+    /// as its window, so a reader's shortcuts work in a sheet over a reader,
+    /// as they always have; none match in a sheet over an audio editor,
+    /// whose fields and buttons take every key.
+    nonisolated static func pressKind(window kind: ShortcutWindowKind, sheetParent parentKind: ShortcutWindowKind?) -> ShortcutWindowKind? {
+        guard let parentKind else { return kind }
+        return parentKind == .audioEditor ? nil : parentKind
     }
 
     /// Whether the manager acts on a key press matching `binding`, given
@@ -536,8 +698,9 @@ final class KeyboardShortcutManager: ObservableObject {
     /// matched: the press had Shift and the binding has none. The action is
     /// told so (`shiftHeld`), and Skip Forward and Skip Backward then go by
     /// the Playback tab's Shift units; the dispatcher matches such a press
-    /// to its binding without Shift where none with Shift is its own
-    /// (finding 4 of FR12's design).
+    /// to its binding without Shift where none with Shift is its own, for
+    /// an action that takes Shift along (finding 4 of FR12's design,
+    /// `ShortcutAction.takesShiftAlong`).
     nonisolated static func hasExtraShift(
         eventHasShift: Bool,
         bindingRequiresShift: Bool
@@ -557,10 +720,47 @@ final class KeyboardShortcutManager: ObservableObject {
     }
 }
 
+/// A default key an action following its defaults goes without, and the
+/// action that has it in force (FR12's branch D), which the Shortcuts tab
+/// names on the action's row.
+struct DefaultKeyHeldElsewhere: Equatable, Sendable {
+    /// The default key.
+    let key: KeyBinding
+    /// The action holding it, or a key clashing with it.
+    let holder: ShortcutAction
+}
+
 /// A recorder of the Shortcuts tab, held weakly by the shortcut manager.
 private struct WeakRecorder {
     /// The recorder, while it lives.
     weak var recorder: AnyObject?
+}
+
+/// The key equivalents in force as a preferences store's record gives them,
+/// followed as it changes, for a window with no shortcut manager of its own:
+/// the Record window's buttons show and answer their keys in force (FR12's
+/// branch D), as the menus show theirs from the app's manager.
+@MainActor
+final class StoredKeyEquivalents: ObservableObject {
+    /// The store holding the record.
+    private let store: UserDefaults
+    /// Reports a change of the record, which may change a key.
+    private var recordObserver: PreferenceObserver?
+
+    /// Follows the record in `store`: the app's preferences unless a test
+    /// passes a store of its own.
+    init(store: UserDefaults = TextMouthRuntime.current.preferences) {
+        self.store = store
+        recordObserver = PreferenceObserver(keys: [KeyboardShortcutManager.editsPreference.key], in: store) { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+    }
+
+    /// `action`'s key equivalent in force
+    /// (`KeyboardShortcutManager.keyEquivalent(for:in:)`), or nil for none.
+    func keyEquivalent(for action: ShortcutAction) -> KeyBinding? {
+        KeyboardShortcutManager.keyEquivalent(for: action, in: KeyboardShortcutManager.bindingsPreference.read(from: store))
+    }
 }
 
 /// Every action's keys in force as a preferences store's record of the

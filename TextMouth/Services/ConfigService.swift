@@ -344,16 +344,18 @@ final class ConfigService: ObservableObject {
         /// each move (`AudioEditorPreferences.playAfterMoves`).
         var audioEditorPlaysAfterMoves: Bool?
         /// The keyboard shortcuts of each action, keyed by the action's name
-        /// as Settings shows it, in any letter case, in either of two forms
+        /// as Settings shows it, in any letter case, in any of three forms
         /// (FR12, `ShortcutListing`): an action the user edited is a list of
         /// shortcuts such as ["option+shift+command+b"]
         /// (`KeyBinding.configText`), an empty list leaving it without one,
-        /// and every other action is text beginning with "default", such as
-        /// "default: w". Writing a list makes an action the user's, and
-        /// writing "default" gives it back to TextMouth's defaults.
-        /// TextMouth writes every action from the record of the user's edits
-        /// (`ShortcutEdits`); an action the file leaves out keeps its
-        /// shortcuts.
+        /// or, when it works in a kind of window the user chose, an object
+        /// such as {"keys": ["shift+command+t"], "worksIn": "Every window"}
+        /// (FR12's branch E); every other action is text beginning with
+        /// "default", such as "default: w". Writing a list or an object makes
+        /// an action the user's, and writing "default" gives it back to
+        /// TextMouth's defaults. TextMouth writes every action from the
+        /// record of the user's edits (`ShortcutEdits`); an action the file
+        /// leaves out keeps its shortcuts.
         var keyboardShortcuts: [String: ShortcutListing] = [:]
         /// How soon a second press of a key must follow the first to make a
         /// double press, such as "w twice" in `keyboardShortcuts`, in

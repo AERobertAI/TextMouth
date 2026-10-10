@@ -19,24 +19,37 @@ import Foundation
 /// it in config.json. So an edited action set back to its default keys stays
 /// edited until then, as the user asked on October 7, 2026.
 ///
+/// An edited action may work in a kind of window the user chose (FR12's
+/// branch E): the record keeps the scope beside its keys only when it is
+/// not the action's default, so an action edited for its keys alone follows
+/// its default scope, and Reset to Default gives back both.
+///
 /// The preferences store keeps the record under `keyboardShortcutEdits`
 /// (`KeyboardShortcutManager.editsPreference`) in the form the whole map was
 /// saved in before: JSON keyed by the actions' names, each with its list of
-/// keys, holding only the edited actions.
-///
-/// Shortcuts scoped to a kind of window (FR12's branch E) would give an entry
-/// a scope beside its keys: the stored entry, a bare list today, would become
-/// an object holding the keys and the scope once the user changes the scope,
-/// read in both forms, and `effectiveBindings(defaults:)` would claim each
-/// key within the scope its action is given, as it claims it within the
-/// app's or the audio editor's today.
+/// keys, holding only the edited actions; an action working in a scope the
+/// user chose is an object holding its keys and the scope instead, as
+/// `{"keys": [...], "worksIn": "library"}`. Both forms are read. config.json
+/// lists every action (`listings(defaults:)`), in forms of its own
+/// (`ShortcutListing`).
 struct ShortcutEdits: Equatable, Sendable {
     /// Each edited action's keys, in the order the user gave them.
     private(set) var keysByEditedAction: [ShortcutAction: [KeyBinding]]
+    /// The scope each edited action works in when the user chose one other
+    /// than its default (FR12's branch E); an edited action left out works
+    /// where its default scope reaches.
+    private(set) var scopesByEditedAction: [ShortcutAction: ShortcutScope]
 
-    /// A record holding `keys`: each action it names edited, with its keys.
-    init(_ keys: [ShortcutAction: [KeyBinding]] = [:]) {
+    /// A record holding `keys`: each action it names edited, with its keys,
+    /// working where `scopes` says. A scope is kept only for an action the
+    /// record holds, only when the action may be given it
+    /// (`ShortcutAction.availableScopes`), and only when it is not the
+    /// action's default.
+    init(_ keys: [ShortcutAction: [KeyBinding]] = [:], scopes: [ShortcutAction: ShortcutScope] = [:]) {
         keysByEditedAction = keys
+        scopesByEditedAction = scopes.filter { action, scope in
+            keys[action] != nil && scope != action.defaultScope && action.availableScopes.contains(scope)
+        }
     }
 
     /// The edited actions, in the order Settings lists them.
@@ -55,9 +68,10 @@ struct ShortcutEdits: Equatable, Sendable {
         keysByEditedAction[action]
     }
 
-    /// Makes `action` the user's with `keys`, each once, and takes each of
-    /// them from every other edited action of its scope, which keeps its
-    /// other keys and stays edited: no key means two things in one place.
+    /// Makes `action` the user's with `keys`, each once, and takes from
+    /// every other edited action each key that clashes with one of them
+    /// (`key(_:of:clashesWith:of:)`); that action keeps its other keys and
+    /// stays edited: no key means two things in one place.
     ///
     /// An unedited action that had one of the keys goes without it while
     /// this action holds it (`effectiveBindings(defaults:)`), and is not made
@@ -65,35 +79,80 @@ struct ShortcutEdits: Equatable, Sendable {
     /// go.
     mutating func setKeys(_ keys: [KeyBinding], for action: ShortcutAction) {
         let given = keys.withoutRepeats
-        for other in editedActions where other != action && other.scope == action.scope {
-            keysByEditedAction[other]?.removeAll(where: given.contains)
+        for other in editedActions where other != action {
+            guard let held = keysByEditedAction[other] else { continue }
+            // Worked out before the record changes, which the clash rule reads.
+            let kept = held.filter { heldKey in
+                !given.contains { key(heldKey, of: other, clashesWith: $0, of: action) }
+            }
+            keysByEditedAction[other] = kept
         }
         keysByEditedAction[action] = given
     }
 
-    /// Gives `action` back to the defaults, as Reset to Default does.
+    /// Whether `key`, held by `action`, and `otherKey`, held by `other`,
+    /// cannot both be in force: where both actions work (their scopes
+    /// overlap, FR12's branch E), the same key, or, when either is a key
+    /// equivalent, one key's single and double press (FR12's branch D). A
+    /// menu or button takes a key's first press, so a double press of a key
+    /// equivalent's key would never reach the shortcut manager, and a double
+    /// press's first press, which the manager takes, would never reach the
+    /// menu (`KeyClaims.forms(of:for:)`).
+    func key(_ key: KeyBinding, of action: ShortcutAction, clashesWith otherKey: KeyBinding, of other: ShortcutAction) -> Bool {
+        guard scope(of: action).overlaps(scope(of: other)) else { return false }
+        let forms = KeyClaims.forms(of: key, for: action)
+        return KeyClaims.forms(of: otherKey, for: other).contains(where: forms.contains)
+    }
+
+    /// Where `action`'s shortcuts work (FR12's branch E): the scope the user
+    /// chose, or its default.
+    func scope(of action: ShortcutAction) -> ShortcutScope {
+        scopesByEditedAction[action] ?? action.defaultScope
+    }
+
+    /// Makes `action` the user's, working in `scope`, with `keys`, its keys
+    /// in force as the Shortcuts tab gives them (FR12's branch E): each key
+    /// that clashes with another edited action's where both now work is
+    /// taken from that action, which keeps its other keys and stays edited,
+    /// as recording a key takes it (`setKeys(_:for:)`). A scope the action
+    /// may not be given changes nothing.
+    mutating func setScope(_ scope: ShortcutScope, for action: ShortcutAction, keys: [KeyBinding]) {
+        guard action.availableScopes.contains(scope) else { return }
+        scopesByEditedAction[action] = scope == action.defaultScope ? nil : scope
+        setKeys(keys, for: action)
+    }
+
+    /// Every action's scope in force, for the press index.
+    var scopesInForce: [ShortcutAction: ShortcutScope] {
+        Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map { ($0, scope(of: $0)) })
+    }
+
+    /// Gives `action` back to the defaults, its keys and its scope, as Reset
+    /// to Default does.
     mutating func reset(_ action: ShortcutAction) {
         keysByEditedAction[action] = nil
+        scopesByEditedAction[action] = nil
     }
 
     /// Every action's keys in force, given a build's `defaults`
     /// (`ShortcutAction.defaultBindings`): an edited action has its own
     /// keys, and every other action its defaults less any key an edited
-    /// action of its scope holds.
+    /// action whose scope overlaps its own holds.
     ///
     /// The actions claim their keys in the order Settings lists them, the
-    /// edited ones first, so no key ever belongs to two actions of one scope
-    /// here, whatever the record holds. Every change keeps one owner for
-    /// each key, so two edited actions can hold one only in a store edited
-    /// by hand; the one Settings lists first then keeps it, the rule
+    /// edited ones first, so no key ever belongs to two actions in one kind
+    /// of window here, whatever the record holds; a key equivalent's key
+    /// counts as pressed once and twice (`KeyClaims`). Every change keeps one
+    /// owner for each key, so two edited actions can hold one only in a store
+    /// edited by hand; the one Settings lists first then keeps it, the rule
     /// config.json's own conflicts follow (`resolvingSharedKeys(favoring:)`).
     func effectiveBindings(defaults: [ShortcutAction: [KeyBinding]]) -> [ShortcutAction: [KeyBinding]] {
-        var claimed: [ShortcutScope: Set<KeyBinding>] = [:]
+        var claims = KeyClaims()
         var bindings: [ShortcutAction: [KeyBinding]] = [:]
-        // The keys of `keys` no action of `action`'s scope has claimed yet,
-        // each claimed for `action` as it is kept.
+        // The keys of `keys` that clash with no key claimed yet, each
+        // claimed for `action` as it is kept.
         func claim(_ keys: [KeyBinding], for action: ShortcutAction) -> [KeyBinding] {
-            keys.filter { claimed[action.scope, default: []].insert($0).inserted }
+            keys.filter { claims.claim($0, for: action, in: scope(of: action)) == nil }
         }
         // The edited actions claim their keys first, so that no default, a
         // later release's new one included, ever takes one of them.
@@ -107,72 +166,136 @@ struct ShortcutEdits: Equatable, Sendable {
     }
 }
 
+// MARK: - One Owner for Each Key
+
+/// The keys claimed so far, each for one action, as the keys in force are
+/// handed out and as a key two edited actions hold is settled (FR12): a key
+/// that clashes with one claimed where both actions work goes without.
+///
+/// Keys are claimed in each kind of window an action's scope reaches (FR12's
+/// branch E), and a key claimed in any of them is lost to every later
+/// action whose scope reaches that kind: an action's key works wherever its
+/// scope reaches, or it goes without it.
+///
+/// A key equivalent's key stands for its stroke pressed once and pressed
+/// twice (`forms(of:for:)`, FR12's branch D), since a menu or button takes
+/// a key's first press: no other action may have the key's double press, nor
+/// the key itself. A single press and a double press of one key held by
+/// two other actions are no clash; the shortcut manager tells them apart.
+struct KeyClaims {
+    /// A key claimed: the action it was claimed for, and the key as that
+    /// action holds it.
+    struct Holder: Equatable {
+        let action: ShortcutAction
+        let key: KeyBinding
+    }
+
+    /// Each kind of window's claimed keys, each form of a key with its
+    /// holder.
+    private var holders: [ShortcutWindowKind: [KeyBinding: Holder]] = [:]
+
+    /// The keys `key` of `action` stands for: itself, or, for a key
+    /// equivalent's action, its stroke pressed once and twice.
+    static func forms(of key: KeyBinding, for action: ShortcutAction) -> [KeyBinding] {
+        action.isKeyEquivalent ? [key.stroke, key.stroke.asDoublePress(true)] : [key]
+    }
+
+    /// Claims `key` for `action` in every kind of window `scope` reaches,
+    /// unless a key clashing with it is claimed in one of them already.
+    /// Returns nil once claimed, or the holder of the clashing key, found in
+    /// the kinds in their fixed order, which keeps it.
+    mutating func claim(_ key: KeyBinding, for action: ShortcutAction, in scope: ShortcutScope) -> Holder? {
+        let forms = Self.forms(of: key, for: action)
+        let kinds = ShortcutWindowKind.allCases.filter(scope.reaches)
+        for kind in kinds {
+            let claimedThere = holders[kind] ?? [:]
+            if let holder = forms.compactMap({ claimedThere[$0] }).first {
+                return holder
+            }
+        }
+        for kind in kinds {
+            for form in forms {
+                holders[kind, default: [:]][form] = Holder(action: action, key: key)
+            }
+        }
+        return nil
+    }
+}
+
 // MARK: - A Key Two Edited Actions Hold
 
 extension ShortcutEdits {
-    /// A key two edited actions of one scope held, which only an edit of
+    /// A key two edited actions whose scopes overlap held, which only an edit of
     /// config.json or the move from the old saved map can give, and the
     /// action left holding it.
     struct SharedKey: Equatable, Sendable {
-        /// The key.
+        /// The key, as the action that goes without it held it.
         let key: KeyBinding
         /// The action that keeps it.
         let keeper: ShortcutAction
         /// The action that goes without it, keeping its other keys, still
         /// edited.
         let loser: ShortcutAction
+        /// The keeper's key when it is not the same key but clashes with it:
+        /// a key equivalent's key and the same key pressed twice (FR12's
+        /// branch D); nil when the two held one key.
+        var keepersKey: KeyBinding? = nil
     }
 
     /// A record with each key two edited actions held left to one of them,
     /// and every key so settled, in the order they were found.
     typealias Settlement = (edits: ShortcutEdits, sharedKeys: [SharedKey])
 
-    /// The record with every key that two or more edited actions of one
-    /// scope hold left to one of them (FR12, section 5.2 of the design), and
-    /// each key so settled.
+    /// The record with every key that clashes with another edited action's
+    /// left to one of them (FR12, section 5.2 of the design): the same key
+    /// where both actions work, or a key equivalent's key and the same key
+    /// pressed twice.
+    /// Each key so settled is returned too.
     ///
     /// The holder whose entry is in `changed` keeps the key, as recording a
     /// key in Settings takes it for the action recorded. When several
     /// holders changed, or none did (a file edited while TextMouth was closed
     /// that lists one key twice), the one Settings lists first keeps it.
     /// Every other holder goes without that key, keeps its other keys, and
-    /// stays edited.
+    /// stays edited. The keys settled are listed by the actions that lost
+    /// them, in the order Settings lists those, so the result is the same at
+    /// every launch.
     func resolvingSharedKeys(favoring changed: Set<ShortcutAction>) -> Settlement {
-        // Each key's holders in the order Settings lists them, and the keys
-        // in the order they are first held, so the result is the same at
-        // every launch.
-        var holders: [ScopedKey: [ShortcutAction]] = [:]
-        var order: [ScopedKey] = []
-        for action in editedActions {
-            for key in keysByEditedAction[action] ?? [] {
-                let scoped = ScopedKey(scope: action.scope, key: key)
-                if holders[scoped] == nil {
-                    order.append(scoped)
-                }
-                if holders[scoped]?.contains(action) != true {
-                    holders[scoped, default: []].append(action)
-                }
-            }
-        }
+        // The changed holders claim their keys first, then every other, each
+        // group in Settings order; a key clashing with one claimed is lost.
+        let claimingOrder = editedActions.filter(changed.contains) + editedActions.filter { !changed.contains($0) }
+        var claims = KeyClaims()
         var settled = self
         var sharedKeys: [SharedKey] = []
-        for scoped in order {
-            guard let actions = holders[scoped], actions.count > 1 else { continue }
-            let favored = actions.filter(changed.contains)
-            guard let keeper = (favored.isEmpty ? actions : favored).first else { continue }
-            for loser in actions where loser != keeper {
-                settled.keysByEditedAction[loser]?.removeAll { $0 == scoped.key }
-                sharedKeys.append(SharedKey(key: scoped.key, keeper: keeper, loser: loser))
+        for action in claimingOrder {
+            for key in keysByEditedAction[action] ?? [] {
+                // One action's own keys never clash with each other here.
+                guard let keeper = claims.claim(key, for: action, in: scope(of: action)), keeper.action != action else { continue }
+                settled.keysByEditedAction[action]?.removeAll { $0 == key }
+                sharedKeys.append(SharedKey(
+                    key: key,
+                    keeper: keeper.action,
+                    loser: action,
+                    keepersKey: keeper.key == key ? nil : keeper.key
+                ))
             }
         }
-        return (settled, sharedKeys)
+        // By the losers' places in Settings, and, for one loser, in the
+        // order it held its keys.
+        let rank = ShortcutAction.settingsRank
+        let ordered = sharedKeys.enumerated().sorted { first, second in
+            let ranks = (rank[first.element.loser, default: 0], rank[second.element.loser, default: 0])
+            return ranks.0 != ranks.1 ? ranks.0 < ranks.1 : first.offset < second.offset
+        }
+        return (settled, ordered.map(\.element))
     }
 }
 
-/// A key within one scope, as the keys two actions hold are found.
-private struct ScopedKey: Hashable {
-    let scope: ShortcutScope
-    let key: KeyBinding
+extension ShortcutAction {
+    /// Each action's place in the order Settings lists them, from 0.
+    static let settingsRank: [ShortcutAction: Int] = Dictionary(
+        uniqueKeysWithValues: allCases.enumerated().map { ($1, $0) }
+    )
 }
 
 // MARK: - The Move From the Whole Saved Map
@@ -190,7 +313,8 @@ extension ShortcutEdits {
     ///    old release wrote from its defaults. An action neither lists, such
     ///    as one added since, is unedited.
     /// 2. It is unedited when those keys are its default, today's or one it
-    ///    had before, whole or less the keys other actions of its scope hold
+    ///    had before, whole or less the keys other actions whose scopes
+    ///    overlap its own hold
     ///    among the keys of step 1: a key the user gave another action leaves
     ///    this one without it, and does not make it the user's. From then on
     ///    it follows the defaults, where counting it edited would freeze an
@@ -234,7 +358,7 @@ extension ShortcutEdits {
         var edited: [ShortcutAction: [KeyBinding]] = [:]
         for action in ShortcutAction.allCases {
             guard let actionKeys = keys[action] else { continue }
-            let heldElsewhere = Set(keys.lazy.filter { $0.key != action && $0.key.scope == action.scope }.flatMap(\.value))
+            let heldElsewhere = Set(keys.lazy.filter { $0.key != action && $0.key.defaultScope.overlaps(action.defaultScope) }.flatMap(\.value))
             let given = Set(actionKeys)
             let isADefault = ([defaults[action] ?? []] + (formerDefaults[action] ?? [])).contains { aDefault in
                 given == Set(aDefault) || given == Set(aDefault.filter { !heldElsewhere.contains($0) })
@@ -252,16 +376,25 @@ extension ShortcutEdits {
 
 extension ShortcutEdits {
     /// Every action's entry as config.json lists it (FR12, section 5.1 of
-    /// the design), given a build's `defaults`: an edited action's keys in
-    /// force as a list, and every other action "default: " and its keys in
-    /// force (`ShortcutListing`). An edited action set back to its default
+    /// the design), given a build's `defaults` (`ShortcutListing`): an
+    /// edited action's keys in force as a list, or, for one working in a
+    /// scope the user chose, as an object holding them and that scope (FR12's
+    /// branch E); and every other action "default: " and its keys in force,
+    /// naming its default scope when that is said, as in "default in reader
+    /// windows: shift+command+t". An edited action set back to its default
     /// keys is still a list: it stays the user's.
     func listings(defaults: [ShortcutAction: [KeyBinding]]) -> [ShortcutAction: ShortcutListing] {
         let inForce = effectiveBindings(defaults: defaults)
         var listings: [ShortcutAction: ShortcutListing] = [:]
         for action in ShortcutAction.allCases {
             let keys = inForce[action] ?? []
-            listings[action] = isEdited(action) ? .edited(keys) : .followingDefaults(keys)
+            if !isEdited(action) {
+                listings[action] = .followingDefaults(keys, worksIn: action.defaultScope)
+            } else if let scope = scopesByEditedAction[action] {
+                listings[action] = .edited(keys, worksIn: scope)
+            } else {
+                listings[action] = .edited(keys)
+            }
         }
         return listings
     }
@@ -271,28 +404,77 @@ extension ShortcutEdits {
     /// held, left to one of them.
     ///
     /// A list makes its action the user's with those keys, even keys equal
-    /// to its default; text beginning with "default" gives it back to the
-    /// defaults, as Reset to Default does; an action the listings leave out,
-    /// or whose entry cannot be read, keeps what it has. A key two edited
-    /// actions then hold goes to the one whose entry changed the record, as
-    /// recording a key in Settings takes it for the action recorded, and
-    /// when both or neither did, to the one Settings lists first
-    /// (`resolvingSharedKeys(favoring:)`).
+    /// to its default, working where it does by default; an object makes it
+    /// the user's with its keys, working in the kind of window it names
+    /// (FR12's branch E); text beginning with "default" gives it back to the
+    /// defaults, its keys and its scope, as Reset to Default does. An action
+    /// the listings leave out, or whose entry cannot be read or names a kind
+    /// of window it cannot work in (`entriesLeftOut(of:)`), keeps what it
+    /// has. A key two edited actions whose scopes then overlap hold goes to
+    /// the one whose entry changed the record, as recording a key in
+    /// Settings takes it for the action recorded, and when both or neither
+    /// did, to the one Settings lists first (`resolvingSharedKeys(favoring:)`).
     func adopting(_ listings: [ShortcutAction: ShortcutListing]) -> Settlement {
         var adopted = self
         var changed: Set<ShortcutAction> = []
         for action in ShortcutAction.allCases {
             guard let listing = listings[action] else { continue }
             if listing.followsDefaults {
-                if adopted.keysByEditedAction.removeValue(forKey: action) != nil {
+                // Its keys and its scope, as Reset to Default gives back.
+                if adopted.isEdited(action) {
+                    adopted.reset(action)
                     changed.insert(action)
                 }
-            } else if let keys = listing.bindings?.withoutRepeats, adopted.keysByEditedAction[action] != keys {
+                continue
+            }
+            guard let keys = listing.bindings?.withoutRepeats,
+                  let scope = listing.scope(for: action),
+                  action.availableScopes.contains(scope) else { continue }
+            if adopted.keysByEditedAction[action] != keys || adopted.scope(of: action) != scope {
                 adopted.keysByEditedAction[action] = keys
+                adopted.scopesByEditedAction[action] = scope == action.defaultScope ? nil : scope
                 changed.insert(action)
             }
         }
         return adopted.resolvingSharedKeys(favoring: changed)
+    }
+
+    /// Why an entry of config.json is left out, its action keeping what it
+    /// has (FR12's branches D and E).
+    enum LeftOutEntry: Equatable, Sendable {
+        /// The entry names a kind of window its action cannot work in.
+        case cannotWorkIn(ShortcutScope)
+        /// The entry gives its action keys it cannot take.
+        case refused(ShortcutRefusal)
+
+        /// Why, as the repair log says it: "works in reader windows, which
+        /// it cannot", or ""w" cannot be its shortcut: a menu command's
+        /// shortcut is one press of a key with Command or Control".
+        var reason: String {
+            switch self {
+            case .cannotWorkIn(let scope):
+                return "works in \(scope.inSentence), which it cannot"
+            case .refused(let refusal):
+                return "\"\(refusal.key.configText)\" cannot be its shortcut: \(refusal.reason)"
+            }
+        }
+    }
+
+    /// The entries of `listings` this record would not take, each with why:
+    /// one naming a kind of window its action cannot work in (FR12's branch
+    /// E), as Add Feed… cannot work in reader windows, and one giving its
+    /// action keys it cannot take (`ShortcutListing.refusal(for:)`, FR12's
+    /// branch D), unless the record holds those keys already, as a store
+    /// edited by hand may, which then go on as they are.
+    func entriesLeftOut(of listings: [ShortcutAction: ShortcutListing]) -> [ShortcutAction: LeftOutEntry] {
+        listings.reduce(into: [:]) { leftOut, entry in
+            let (action, listing) = entry
+            if let scope = listing.scope(for: action), !action.availableScopes.contains(scope) {
+                leftOut[action] = .cannotWorkIn(scope)
+            } else if listing.bindings != keys(of: action), let refusal = listing.refusal(for: action) {
+                leftOut[action] = .refused(refusal)
+            }
+        }
     }
 }
 
@@ -301,14 +483,20 @@ extension ShortcutEdits {
 extension ShortcutEdits {
     /// The record as the preferences store keeps it: JSON keyed by the
     /// edited actions' names, each with its list of keys, the form the whole
-    /// map was saved in before the record. Its entries are written in sorted
+    /// map was saved in before the record, or, for an action working in a
+    /// scope the user chose, an object holding its keys and the scope
+    /// (`StoredEntry`, FR12's branch E). Its entries are written in sorted
     /// order, so one record is always the same bytes, and saving it again
     /// changes nothing in the store. Nil only should encoding fail, which
     /// leaves the store as it was.
     var storedData: Data? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
-        return try? encoder.encode(keysByEditedAction.keyedByRawValue)
+        var entries: [String: StoredEntry] = [:]
+        for (action, keys) in keysByEditedAction {
+            entries[action.rawValue] = StoredEntry(keys: keys, worksIn: scopesByEditedAction[action])
+        }
+        return try? encoder.encode(entries)
     }
 
     /// An entry of stored shortcuts left out as they were read, and why.
@@ -331,7 +519,10 @@ extension ShortcutEdits {
     /// as `Book.HandEdits` is read: an entry naming no action this build
     /// knows, such as one a later release wrote, and an entry whose keys
     /// cannot be read are left out and reported, and the rest still load.
-    /// Data that is not such an object at all reads as an empty record.
+    /// An entry naming a scope this build does not know, or one its action
+    /// may not be given, keeps its keys and works where its default scope
+    /// does, which is reported too. Data that is not such an object at all
+    /// reads as an empty record.
     ///
     /// The whole map every release before the record saved is in the same
     /// form, so this reads it too, for the move to the record: each action
@@ -342,6 +533,7 @@ extension ShortcutEdits {
             return StoredReading(edits: ShortcutEdits(), skipped: [unreadable])
         }
         var keys: [ShortcutAction: [KeyBinding]] = [:]
+        var scopes: [ShortcutAction: ShortcutScope] = [:]
         var skipped: [SkippedEntry] = []
         // In the order of their names, so the entries left out are reported
         // in the same order every time.
@@ -355,20 +547,63 @@ extension ShortcutEdits {
                 continue
             }
             keys[action] = actionKeys
+            if let scopeName = entry.scopeName {
+                guard let scope = ShortcutScope(rawValue: scopeName), action.availableScopes.contains(scope) else {
+                    skipped.append(SkippedEntry(
+                        name: name,
+                        reason: "works in \"\(scopeName)\", which it cannot; working where it does by default"
+                    ))
+                    continue
+                }
+                scopes[action] = scope
+            }
         }
-        return StoredReading(edits: ShortcutEdits(keys), skipped: skipped)
+        return StoredReading(edits: ShortcutEdits(keys, scopes: scopes), skipped: skipped)
+    }
+}
+
+/// One edited action as the preferences store keeps it (FR12's branch E):
+/// its list of keys, as every entry was before scopes, or, when it works in
+/// a scope the user chose, an object holding its keys and that scope's name.
+private struct StoredEntry: Encodable {
+    /// The action's keys.
+    let keys: [KeyBinding]
+    /// The scope the user chose, or nil for the action's default.
+    let worksIn: ShortcutScope?
+
+    /// Writes a list of keys for the default scope, else an object.
+    func encode(to encoder: Encoder) throws {
+        guard let worksIn else {
+            var container = encoder.singleValueContainer()
+            try container.encode(keys)
+            return
+        }
+        var container = encoder.container(keyedBy: ShortcutJSONKey.self)
+        try container.encode(keys, forKey: .keys)
+        try container.encode(worksIn.rawValue, forKey: .worksIn)
     }
 }
 
 /// One stored entry's keys, or nil when they cannot be read, so that one
-/// entry never fails the others.
+/// entry never fails the others, and the name of the scope it works in,
+/// when it names one.
 private struct LenientStoredKeys: Decodable {
     /// The entry's keys, or nil.
     let keys: [KeyBinding]?
+    /// The name of the scope an entry written as an object gives, or nil.
+    let scopeName: String?
 
-    /// Reads the entry's value as a list of keys, or nil for anything else.
+    /// Reads the entry's value as a list of keys, or as an object holding
+    /// its keys and a scope's name; nil keys for anything else.
     init(from decoder: Decoder) throws {
-        keys = try? decoder.singleValueContainer().decode([KeyBinding].self)
+        if let keys = try? decoder.singleValueContainer().decode([KeyBinding].self) {
+            self.keys = keys
+            scopeName = nil
+            return
+        }
+        let object = try? decoder.container(keyedBy: ShortcutJSONKey.self)
+        keys = try? object?.decode([KeyBinding].self, forKey: .keys)
+        scopeName = try? object?.decode(String.self, forKey: .worksIn)
     }
 }
 
@@ -383,7 +618,7 @@ extension ShortcutEdits {
         for entry in skipped {
             StoredValueRepair.log(
                 source: source,
-                codingPath: [LoggedName(field)] + (entry.name.map { [LoggedName($0)] } ?? []),
+                codingPath: [ShortcutJSONKey(field)] + (entry.name.map { [ShortcutJSONKey($0)] } ?? []),
                 detail: entry.reason
             )
         }
@@ -394,22 +629,56 @@ extension ShortcutEdits {
     /// action that keeps it, and the one that goes without it, such as
     /// "config.json keyboardShortcuts.Show Bookmarks: shared
     /// "shift+command+b" with "Next Bookmark", which keeps it; "Show
-    /// Bookmarks" goes without it".
+    /// Bookmarks" goes without it". A key clashing with a different key of
+    /// the keeper's, a key equivalent's and its double press, names both:
+    /// "…: "command+o" clashed with "Book Info"'s "command+o twice", which
+    /// keeps it; "Open Book…" goes without it".
     static func log(_ sharedKeys: [SharedKey], source: String, field: String) {
         for shared in sharedKeys {
+            let clash = shared.keepersKey.map { keepersKey in
+                "\"\(shared.key.configText)\" clashed with \"\(shared.keeper.rawValue)\"'s \"\(keepersKey.configText)\""
+            } ?? "shared \"\(shared.key.configText)\" with \"\(shared.keeper.rawValue)\""
             StoredValueRepair.log(
                 source: source,
-                codingPath: [LoggedName(field), LoggedName(shared.loser.rawValue)],
-                detail: "shared \"\(shared.key.configText)\" with \"\(shared.keeper.rawValue)\", which keeps it; "
-                    + "\"\(shared.loser.rawValue)\" goes without it"
+                codingPath: [ShortcutJSONKey(field), ShortcutJSONKey(shared.loser.rawValue)],
+                detail: "\(clash), which keeps it; \"\(shared.loser.rawValue)\" goes without it"
             )
         }
     }
 }
 
-/// Names a field, or an entry within it, in a repair log line: the parts of
-/// "keyboardShortcuts.Show Bookmarks".
-private struct LoggedName: CodingKey {
+extension ShortcutEdits {
+    /// Writes one STORED_VALUE_REPAIRED line to the debug log for each entry
+    /// of `field` in `source` left out (`entriesLeftOut(of:)`, FR12's
+    /// branches D and E), in the order Settings lists the actions, such as
+    /// "config.json keyboardShortcuts.Open Book…: "w" cannot be its
+    /// shortcut: a menu command's shortcut is one press of a key with
+    /// Command or Control; keeping its shortcuts", or "config.json
+    /// keyboardShortcuts.Add Feed…: works in reader windows, which it
+    /// cannot; keeping its shortcuts".
+    static func log(_ leftOut: [ShortcutAction: LeftOutEntry], source: String, field: String) {
+        for action in ShortcutAction.allCases {
+            guard let entry = leftOut[action] else { continue }
+            StoredValueRepair.log(
+                source: source,
+                codingPath: [ShortcutJSONKey(field), ShortcutJSONKey(action.rawValue)],
+                detail: "\(entry.reason); keeping its shortcuts"
+            )
+        }
+    }
+}
+
+/// A key of a JSON object, named by text (FR12): a field of a shortcut
+/// entry written as an object, "keys" or "worksIn", in the preferences store
+/// or in config.json, or a field or an entry a repair log line names, the
+/// parts of "keyboardShortcuts.Show Bookmarks".
+struct ShortcutJSONKey: CodingKey, Equatable {
+    /// The field of an entry written as an object holding its keys.
+    static let keys = ShortcutJSONKey("keys")
+    /// The field of an entry written as an object naming the kind of window
+    /// its keys work in (FR12's branch E).
+    static let worksIn = ShortcutJSONKey("worksIn")
+
     let stringValue: String
     var intValue: Int? { nil }
 
@@ -425,6 +694,12 @@ private struct LoggedName: CodingKey {
     /// Entries are named by text, never by position.
     init?(intValue: Int) {
         nil
+    }
+
+    /// The name as config.json's field names are compared: in lower case,
+    /// without spaces, so "Works In" is "worksIn".
+    var comparableName: String {
+        stringValue.lowercased().filter { !$0.isWhitespace }
     }
 }
 

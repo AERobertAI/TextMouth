@@ -217,7 +217,7 @@ final class AudioEditorSettingsTests: XCTestCase {
             categories.append(action.category)
         }
         XCTAssertEqual(categories.last, ShortcutAction.audioEditorCategory)
-        let titles = ShortcutAction.allCases.filter { $0.scope == .audioEditor }.map(\.title)
+        let titles = ShortcutAction.allCases.filter { $0.defaultScope == .audioEditor }.map(\.title)
         XCTAssertEqual(titles.first, "Play / Pause")
         XCTAssertTrue(titles.contains("Punch In"))
         XCTAssertFalse(titles.contains { $0.hasPrefix("Audio Editor") })

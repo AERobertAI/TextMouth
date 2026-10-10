@@ -3,8 +3,10 @@ import SwiftUI
 /// The Shortcuts settings tab: the double-press time, then every action's
 /// shortcuts, by group, each changeable; the audio editor's actions are a
 /// group of their own, matched only in its windows (`ShortcutScope`), so
-/// their keys may be the reader's. An action the user edited says so, and
-/// can be given back to its defaults on its own (FR12).
+/// their keys may be the reader's, and an action that may work in more than
+/// one kind of window says where it does, which the user may change (FR12's
+/// branch E). An action the user edited says so, and can be given back to
+/// its defaults, and where it works by default, on its own (FR12).
 struct KeyboardShortcutsSettingsView: View {
     @EnvironmentObject var shortcutManager: KeyboardShortcutManager
     @State private var showResetConfirmation = false
@@ -17,6 +19,15 @@ struct KeyboardShortcutsSettingsView: View {
                 DoublePressTimeStepper()
                 Button(ShortcutsSettingsWording.tryDoublePressTitle, action: tryDoublePress)
                     .accessibilityHint(ShortcutsSettingsWording.tryDoublePressHint)
+                // What a trial waits for, or what the last one found, as
+                // text to read again: VoiceOver says each once (review item
+                // C), and a braille display keeps this.
+                if let status = ShortcutsSettingsWording.trialStatus(
+                    isTrying: shortcutManager.isTryingDoublePress,
+                    lastOutcome: shortcutManager.lastDoublePressTrialOutcome
+                ) {
+                    Text(status)
+                }
             }
 
             ForEach(categories, id: \.self) { category in
@@ -116,11 +127,13 @@ struct DoublePressTimeStepper: View {
 
 /// One action's row: its name; a button for each of its keys, which records
 /// a key in that one's place, offers Make Double Press or Make Single Press,
-/// and has one removing it beside it; a button adding a key; and, for an
-/// action the user edited, "Edited" and Reset to Default. VoiceOver reads
-/// the row as one label in words (`ShortcutsSettingsWording.rowLabel`) and
-/// offers Reset to Default as an action of the row as well, and every key
-/// recorded is announced.
+/// and has one removing it beside it; a button adding a key; a Works in
+/// pop-up, for an action that may work in more than one kind of window
+/// (FR12's branch E); and, for an action the user edited, "Edited" and Reset
+/// to Default. VoiceOver reads the row as one label in words
+/// (`ShortcutsSettingsWording.rowLabel`) and offers Reset to Default as an
+/// action of the row as well, and every key recorded, and every change of
+/// where it works, is announced.
 struct ShortcutBindingRow: View {
     let action: ShortcutAction
     @EnvironmentObject var shortcutManager: KeyboardShortcutManager
@@ -141,18 +154,23 @@ struct ShortcutBindingRow: View {
 
                 ForEach(Array(currentBindings.enumerated()), id: \.offset) { index, binding in
                     HStack(spacing: 4) {
-                        recorderButton(for: binding, at: index)
-                            // A double press made or undone without timing
-                            // two presses, as a VoiceOver action
-                            // (VO-Command-Space) and in the context menu.
-                            .accessibilityAction(named: Text(ShortcutsSettingsWording.pressChange(for: binding))) {
-                                togglePresses(at: index)
-                            }
-                            .contextMenu {
-                                Button(ShortcutsSettingsWording.pressChange(for: binding)) {
+                        if action.isKeyEquivalent {
+                            // A menu command's key: no menu takes a double press.
+                            recorderButton(for: binding, at: index)
+                        } else {
+                            recorderButton(for: binding, at: index)
+                                // A double press made or undone without timing
+                                // two presses, as a VoiceOver action
+                                // (VO-Command-Space) and in the context menu.
+                                .accessibilityAction(named: Text(ShortcutsSettingsWording.pressChange(for: binding))) {
                                     togglePresses(at: index)
                                 }
-                            }
+                                .contextMenu {
+                                    Button(ShortcutsSettingsWording.pressChange(for: binding)) {
+                                        togglePresses(at: index)
+                                    }
+                                }
+                        }
 
                         Button {
                             removeBinding(at: index)
@@ -167,9 +185,36 @@ struct ShortcutBindingRow: View {
                     }
                 }
 
-                if currentBindings.count < 3 {
+                if currentBindings.count < ShortcutsSettingsWording.mostKeys(for: action) {
                     recorderButton(for: nil, at: currentBindings.count)
                 }
+            }
+
+            // Where the action works, for one that may work in more than
+            // one kind of window (FR12's branch E): VoiceOver reads it as
+            // "Works in, Library windows, pop-up button".
+            if action.availableScopes.count > 1 {
+                HStack {
+                    Spacer()
+                    Picker(ShortcutsSettingsWording.worksInLabel, selection: scopeSelection) {
+                        ForEach(action.availableScopes, id: \.self) { scope in
+                            Text(scope.title).tag(scope)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .fixedSize()
+                    .accessibilityLabel(ShortcutsSettingsWording.worksInLabel)
+                    .accessibilityHint(ShortcutsSettingsWording.worksInHint)
+                }
+            }
+
+            // An action following its defaults says which of them another
+            // action has (FR12's branch D), as New from Text's
+            // Shift-Command-T is Show Sleep Timer's.
+            if !defaultsHeldElsewhere.isEmpty {
+                Text(ShortcutsSettingsWording.defaultsHeldElsewhere(defaultsHeldElsewhere))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
 
             // An action the user edited says so, after its keys, and can go
@@ -187,7 +232,13 @@ struct ShortcutBindingRow: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(ShortcutsSettingsWording.rowLabel(for: action, keys: currentBindings, isEdited: isEdited))
+        .accessibilityLabel(ShortcutsSettingsWording.rowLabel(
+            for: action,
+            keys: currentBindings,
+            isEdited: isEdited,
+            defaultsHeldElsewhere: defaultsHeldElsewhere,
+            worksIn: shortcutManager.scope(of: action)
+        ))
         .accessibilityActions {
             if isEdited {
                 Button(ShortcutsSettingsWording.resetToDefaultTitle, action: resetToDefault)
@@ -202,6 +253,8 @@ struct ShortcutBindingRow: View {
             binding: binding,
             isRecording: isRecording && recordingSlot == index,
             doublePressTime: shortcutManager.doublePressTime,
+            // A menu command's key is one press, recorded as it goes down.
+            takesDoublePresses: !action.isKeyEquivalent,
             shortcutManager: shortcutManager,
             onStartRecording: {
                 isRecording = true
@@ -234,9 +287,38 @@ struct ShortcutBindingRow: View {
         shortcutManager.isEdited(action)
     }
 
+    /// The default keys the action goes without, each with the action that
+    /// has it, while it follows its defaults.
+    private var defaultsHeldElsewhere: [DefaultKeyHeldElsewhere] {
+        shortcutManager.defaultKeysHeldElsewhere(for: action)
+    }
+
+    /// The Works in pop-up's choice: the action's scope in force, changed
+    /// through the manager, which makes the action the user's.
+    private var scopeSelection: Binding<ShortcutScope> {
+        Binding(
+            get: { shortcutManager.scope(of: action) },
+            set: { changeScope(to: $0) }
+        )
+    }
+
+    /// Makes the action work in `scope`, as the user's (FR12's branch E),
+    /// and tells VoiceOver where it works now and which actions lost a key
+    /// to it where their scopes now overlap its own.
+    private func changeScope(to scope: ShortcutScope) {
+        guard scope != shortcutManager.scope(of: action) else { return }
+        let keysBefore = shortcutManager.bindings
+        shortcutManager.setScope(scope, for: action)
+        VoiceOverAnnouncer.announce(ShortcutsSettingsWording.scopeChanged(
+            action,
+            to: shortcutManager.scope(of: action),
+            takenFrom: shortcutManager.actions(thatLostKeysSince: keysBefore, besides: action)
+        ))
+    }
+
     /// Puts `newBinding` in place of the key at `index`, as the user's,
     /// taking it from any other action of the scope that had it, and
-    /// announces it.
+    /// announces it, or why the action cannot take it.
     private func replaceBinding(at index: Int, with newBinding: KeyBinding) {
         var bindings = currentBindings
         guard bindings.indices.contains(index) else { return }
@@ -264,7 +346,8 @@ struct ShortcutBindingRow: View {
     }
 
     /// Adds `binding` to the action's keys, as the user's, taking it from
-    /// any other action of the scope that had it, and announces it.
+    /// any other action of the scope that had it, and announces it, or why
+    /// the action cannot take it.
     private func addBinding(_ binding: KeyBinding) {
         announcing(binding) {
             shortcutManager.addBinding(binding, to: action)
@@ -273,27 +356,39 @@ struct ShortcutBindingRow: View {
 
     /// Makes `change`, which gives the action `binding`, then tells
     /// VoiceOver, wherever its cursor is, the key recorded for the action;
-    /// when another action had it, which one it was taken from, since a key
-    /// once moved silently; and when its key's single press now waits out
-    /// the double-press time, before which action.
-    private func announcing(_ binding: KeyBinding, _ change: () -> Void) {
-        let previousOwner = shortcutManager.action(holding: binding, in: action.scope)
-        let waitedBefore = shortcutManager.waitingAction(for: binding, in: action.scope)
-        change()
-        let waitsNow = shortcutManager.waitingAction(for: binding, in: action.scope)
+    /// when other actions lost a key to it, which ones, since a key once
+    /// moved silently; and when its key's single press now waits out the
+    /// double-press time, before which action. When the action cannot take
+    /// the key, which `change` returns, nothing changes, and VoiceOver hears
+    /// why (FR12's branch D).
+    private func announcing(_ binding: KeyBinding, _ change: () -> ShortcutRefusal?) {
+        let keysBefore = shortcutManager.bindings
+        let waitedBefore = shortcutManager.waitingAction(for: binding, in: shortcutManager.scope(of: action))
+        if let refusal = change() {
+            VoiceOverAnnouncer.announce(ShortcutsSettingsWording.refused(refusal, for: action))
+            return
+        }
+        let waitsNow = shortcutManager.waitingAction(for: binding, in: shortcutManager.scope(of: action))
         VoiceOverAnnouncer.announce(ShortcutsSettingsWording.recorded(
             binding,
             for: action,
-            takenFrom: previousOwner == action ? nil : previousOwner,
+            takenFrom: shortcutManager.actions(thatLostKeysSince: keysBefore, besides: action),
             nowWaitsBefore: waitsNow == waitedBefore ? nil : waitsNow
         ))
     }
 
     /// Gives the action back to its defaults and says what they are, since
-    /// the button that did it goes away with the row's edit.
+    /// the button that did it goes away with the row's edit, with where it
+    /// works again when that changed too (FR12's branch E).
     private func resetToDefault() {
+        let scopeBefore = shortcutManager.scope(of: action)
         shortcutManager.resetToDefault(action)
-        VoiceOverAnnouncer.announce(ShortcutsSettingsWording.resetAnnouncement(for: action, keys: currentBindings))
+        let scopeNow = shortcutManager.scope(of: action)
+        VoiceOverAnnouncer.announce(ShortcutsSettingsWording.resetAnnouncement(
+            for: action,
+            keys: currentBindings,
+            worksIn: scopeNow == scopeBefore ? nil : scopeNow
+        ))
     }
 }
 
@@ -324,6 +419,9 @@ enum ShortcutsSettingsWording {
     static let recordingHint = "Press any key to set, or click to cancel"
     /// What the recorder shows while it records.
     static let recordingPrompt = "Press a key..."
+    /// The recorder's label while it records a menu command's key, one press
+    /// of a key with Command or Control (FR12's branch D).
+    static let recordingKeyEquivalentLabel = "Recording shortcut. Press a key with Command or Control."
     /// The action on a single press's button, and in its context menu, that
     /// makes it a double press.
     static let makeDoublePress = "Make Double Press"
@@ -335,6 +433,21 @@ enum ShortcutsSettingsWording {
     /// press, Make Double Press for a single one.
     static func pressChange(for binding: KeyBinding) -> String {
         binding.isDoublePress ? makeSinglePress : makeDoublePress
+    }
+
+    /// The most keys `action`'s row records: one for a menu command's or a
+    /// Record window button's, whose item has one key equivalent (FR12's
+    /// branch D), and three for any other.
+    static func mostKeys(for action: ShortcutAction) -> Int {
+        action.isKeyEquivalent ? 1 : 3
+    }
+
+    /// What VoiceOver says when the action cannot take a key recorded for
+    /// it, which then changes nothing (FR12's branch D): "W not recorded for
+    /// Open Book…: a menu command's shortcut is one press of a key with
+    /// Command or Control."
+    static func refused(_ refusal: ShortcutRefusal, for action: ShortcutAction) -> String {
+        sentence("\(refusal.key.accessibleDisplayString) not recorded for \(action.rawValue): \(refusal.reason)")
     }
 
     // MARK: The Double-Press Time
@@ -391,15 +504,82 @@ enum ShortcutsSettingsWording {
         }
     }
 
+    /// The text below Try a Double Press, which a braille display can read
+    /// again after VoiceOver has said it (review item C): the prompt while a
+    /// trial waits for its presses, "Last try: " and what the last one found
+    /// once one has ended, as in "Last try: Double press.", and nothing
+    /// before any trial.
+    static func trialStatus(isTrying: Bool, lastOutcome: DoublePressTrial.Outcome?) -> String? {
+        if isTrying {
+            return tryDoublePressPrompt
+        }
+        return lastOutcome.map { "Last try: \(trialResult($0))" }
+    }
+
     // MARK: Rows and Announcements
 
     /// A row's VoiceOver label: the action's name as config.json names it,
-    /// an audio editor action's with its group's, then its keys in words,
-    /// and, for an action the user edited, "Edited.": "Release Media
-    /// Controls: Shift + R. Edited.", "Where Am I?: W".
-    static func rowLabel(for action: ShortcutAction, keys: [KeyBinding], isEdited: Bool) -> String {
+    /// an audio editor action's with its group's, then its keys in words;
+    /// where it works, when that is one kind of window or a scope the user
+    /// chose (FR12's branch E): "Show Sleep Timer: Shift + Command + T.
+    /// Works in reader windows."; and, for an action the user edited,
+    /// "Edited.": "Release Media Controls: Shift + R. Edited.", "Where Am
+    /// I?: W"; or, for an action following its defaults that goes without
+    /// one, which action has it (FR12's branch D), as Show Sleep Timer does
+    /// once the user gives New from Text every window: "Show Sleep Timer: No
+    /// shortcut. Works in reader windows. New from Text… has its default,
+    /// Shift + Command + T."
+    static func rowLabel(
+        for action: ShortcutAction,
+        keys: [KeyBinding],
+        isEdited: Bool,
+        defaultsHeldElsewhere held: [DefaultKeyHeldElsewhere] = [],
+        worksIn scope: ShortcutScope? = nil
+    ) -> String {
         let label = "\(action.rawValue): \(KeyBinding.accessibleDisplayString(for: keys))"
-        return isEdited ? "\(sentence(label)) \(edited)." : label
+        var more: [String] = []
+        if let scope, saysScope(scope, of: action) {
+            more.append(sentence("Works in \(scope.inSentence)"))
+        }
+        if isEdited {
+            more.append("\(edited).")
+        } else if !held.isEmpty {
+            more.append(defaultsHeldElsewhere(held))
+        }
+        return more.isEmpty ? label : ([sentence(label)] + more).joined(separator: " ")
+    }
+
+    /// Whether a row says where `action` works, in `scope`: when the user
+    /// chose it, and otherwise when it is a default said
+    /// (`ShortcutScope.isSaidAsADefault`), Library or reader windows.
+    private static func saysScope(_ scope: ShortcutScope, of action: ShortcutAction) -> Bool {
+        scope != action.defaultScope || scope.isSaidAsADefault
+    }
+
+    /// The Works in pop-up's label (FR12's branch E).
+    static let worksInLabel = "Works in"
+    /// The Works in pop-up's hint.
+    static let worksInHint =
+        "Where this shortcut works. Choosing makes it yours; Reset to Default gives back where it works by default."
+
+    /// What VoiceOver says once a row's Works in choice is made (FR12's
+    /// branch E): "New from Text… works in every window.", followed, when
+    /// actions lost a key to it where their scopes now overlap its own, by
+    /// "Taken from Show Sleep Timer."
+    static func scopeChanged(_ action: ShortcutAction, to scope: ShortcutScope, takenFrom previousOwners: [ShortcutAction]) -> String {
+        var sentences = ["\(action.rawValue) works in \(scope.inSentence)."]
+        if !previousOwners.isEmpty {
+            sentences.append(sentence("Taken from \(LibraryCloudWording.list(previousOwners.map(\.rawValue)))"))
+        }
+        return sentences.joined(separator: " ")
+    }
+
+    /// What a row says, on screen and to VoiceOver, of the default keys its
+    /// action goes without (FR12's branch D): "Show Sleep Timer has its
+    /// default, Shift + Command + T.", a sentence for each.
+    static func defaultsHeldElsewhere(_ held: [DefaultKeyHeldElsewhere]) -> String {
+        held.map { sentence("\($0.holder.rawValue) has its default, \($0.key.accessibleDisplayString)") }
+            .joined(separator: " ")
     }
 
     /// The reset button's VoiceOver label: "Reset Release Media Controls to
@@ -419,9 +599,22 @@ enum ShortcutsSettingsWording {
         takenFrom previousOwner: ShortcutAction?,
         nowWaitsBefore waitingAction: ShortcutAction? = nil
     ) -> String {
+        recorded(key, for: action, takenFrom: previousOwner.map { [$0] } ?? [], nowWaitsBefore: waitingAction)
+    }
+
+    /// `recorded(_:for:takenFrom:nowWaitsBefore:)` for a key taken from
+    /// any number of actions, every one named: "Command + O twice, recorded
+    /// for Book Info. Taken from Open Book…", or "… Taken from Play / Pause
+    /// and Where Am I?" when two actions lost a key to it.
+    static func recorded(
+        _ key: KeyBinding,
+        for action: ShortcutAction,
+        takenFrom previousOwners: [ShortcutAction],
+        nowWaitsBefore waitingAction: ShortcutAction? = nil
+    ) -> String {
         var sentences = [sentence("\(key.accessibleDisplayString), recorded for \(action.rawValue)")]
-        if let previousOwner {
-            sentences.append(sentence("Taken from \(previousOwner.rawValue)"))
+        if !previousOwners.isEmpty {
+            sentences.append(sentence("Taken from \(LibraryCloudWording.list(previousOwners.map(\.rawValue)))"))
         }
         if let waitingAction {
             sentences.append(nowWaits(key, before: waitingAction))
@@ -438,9 +631,12 @@ enum ShortcutsSettingsWording {
     }
 
     /// What VoiceOver says once an action is reset to its default: "Next
-    /// Bookmark reset to default: Option + Shift + Command + B."
-    static func resetAnnouncement(for action: ShortcutAction, keys: [KeyBinding]) -> String {
-        sentence("\(action.rawValue) reset to default: \(KeyBinding.accessibleDisplayString(for: keys))")
+    /// Bookmark reset to default: Option + Shift + Command + B.", and, when
+    /// the reset gave back where it works too (FR12's branch E), "Works in
+    /// Library windows."
+    static func resetAnnouncement(for action: ShortcutAction, keys: [KeyBinding], worksIn scope: ShortcutScope? = nil) -> String {
+        let reset = sentence("\(action.rawValue) reset to default: \(KeyBinding.accessibleDisplayString(for: keys))")
+        return scope.map { "\(reset) Works in \($0.inSentence)." } ?? reset
     }
 
     /// `text` ended as a sentence: with a period, unless it ends in a
@@ -460,6 +656,9 @@ struct ShortcutRecorderButton: View {
     let isRecording: Bool
     /// How long the recorder waits for a second press of the key.
     let doublePressTime: TimeInterval
+    /// Whether a key pressed twice records a double press; false for a menu
+    /// command's key, recorded as it goes down (FR12's branch D).
+    let takesDoublePresses: Bool
     /// The shortcut manager, which leaves every key press to the recorder
     /// while it records.
     let shortcutManager: KeyboardShortcutManager?
@@ -506,6 +705,7 @@ struct ShortcutRecorderButton: View {
             ShortcutRecorderEventHandler(
                 isActive: isRecording,
                 doublePressTime: doublePressTime,
+                takesDoublePresses: takesDoublePresses,
                 shortcutManager: shortcutManager,
                 onKeyRecorded: onKeyRecorded,
                 onCancel: onCancel
@@ -515,7 +715,7 @@ struct ShortcutRecorderButton: View {
 
     private var accessibilityLabel: String {
         if isRecording {
-            return ShortcutsSettingsWording.recordingLabel
+            return takesDoublePresses ? ShortcutsSettingsWording.recordingLabel : ShortcutsSettingsWording.recordingKeyEquivalentLabel
         } else if let binding = binding {
             return binding.accessibleDisplayString
         } else {
@@ -532,6 +732,8 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
     let isActive: Bool
     /// How long the recorder waits for a second press of the key.
     let doublePressTime: TimeInterval
+    /// Whether a key pressed twice records a double press.
+    let takesDoublePresses: Bool
     /// The shortcut manager, told when recording starts and stops.
     let shortcutManager: KeyboardShortcutManager?
     let onKeyRecorded: (KeyBinding) -> Void
@@ -549,6 +751,7 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
         coordinator.onKeyRecorded = onKeyRecorded
         coordinator.onCancel = onCancel
         coordinator.doublePressTime = doublePressTime
+        coordinator.takesDoublePresses = takesDoublePresses
         coordinator.shortcutManager = shortcutManager
         coordinator.updateMonitor(isActive: isActive)
     }
@@ -564,6 +767,7 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
             onKeyRecorded: onKeyRecorded,
             onCancel: onCancel,
             doublePressTime: doublePressTime,
+            takesDoublePresses: takesDoublePresses,
             shortcutManager: shortcutManager
         )
     }
@@ -574,6 +778,8 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
         var onCancel: () -> Void
         /// How long the recorder waits for a second press of the key.
         var doublePressTime: TimeInterval
+        /// Whether a key pressed twice records a double press.
+        var takesDoublePresses: Bool
         /// The shortcut manager, which leaves key presses to the recorder
         /// while it records.
         weak var shortcutManager: KeyboardShortcutManager?
@@ -586,11 +792,13 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
             onKeyRecorded: @escaping (KeyBinding) -> Void,
             onCancel: @escaping () -> Void,
             doublePressTime: TimeInterval,
+            takesDoublePresses: Bool,
             shortcutManager: KeyboardShortcutManager?
         ) {
             self.onKeyRecorded = onKeyRecorded
             self.onCancel = onCancel
             self.doublePressTime = doublePressTime
+            self.takesDoublePresses = takesDoublePresses
             self.shortcutManager = shortcutManager
         }
 
@@ -607,7 +815,7 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
         /// Takes every key press from now on and hands it to a new
         /// recording, telling the shortcut manager to act on none.
         private func startRecording() {
-            let recording = ShortcutRecording(doublePressTime: doublePressTime) { [weak self] outcome in
+            let recording = ShortcutRecording(doublePressTime: doublePressTime, takesDoublePresses: takesDoublePresses) { [weak self] outcome in
                 self?.finish(outcome)
             }
             self.recording = recording
@@ -657,8 +865,9 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
 /// press, and no second press, or another key, records a single press.
 /// Escape cancels, so it is never recorded; a held key's repeats are
 /// ignored, so holding a key never records it twice; and a key no binding
-/// can name goes on, as before. The clock and the timer are passed in, so
-/// tests never wait.
+/// can name goes on, as before. A recording that takes no double press, a
+/// menu command's (FR12's branch D), records the first press as it goes
+/// down. The clock and the timer are passed in, so tests never wait.
 @MainActor
 final class ShortcutRecording {
     /// How a recording ends.
@@ -669,33 +878,30 @@ final class ShortcutRecording {
         case cancelled
     }
 
-    /// How soon a second press must follow the first to make a double press.
-    private let doublePressTime: TimeInterval
     /// The time on the key presses' time line.
     private let clock: ShortcutPressDispatcher.Clock
-    /// Starts the timer the first press waits on.
-    private let startTimer: ShortcutPressDispatcher.StartTimer
-    /// Called once, when the recording ends with an outcome.
-    private let finish: @MainActor (Outcome) -> Void
-    /// The first press of the key being recorded, waiting for a second.
-    private var first: (stroke: KeyBinding, time: TimeInterval)?
-    /// The timer the first press waits on.
-    private var timer: (any PressTimer)?
-    /// Whether the recording has ended.
-    private(set) var hasEnded = false
+    /// Whether a key pressed twice records a double press.
+    private let takesDoublePresses: Bool
+    /// The two presses the recording measures, and its outcome.
+    private let presses: TwoPresses<Outcome>
 
-    /// A recording waiting `doublePressTime` for a second press, ending
-    /// through `finish`.
+    /// Whether the recording has ended.
+    var hasEnded: Bool {
+        presses.hasEnded
+    }
+
+    /// A recording waiting `doublePressTime` for a second press, unless it
+    /// `takesDoublePresses` not, ending through `finish`.
     init(
         doublePressTime: TimeInterval,
+        takesDoublePresses: Bool = true,
         clock: @escaping ShortcutPressDispatcher.Clock = { ProcessInfo.processInfo.systemUptime },
         startTimer: @escaping ShortcutPressDispatcher.StartTimer = { delay, fire in MainQueuePressTimer(delay: delay, fire: fire) },
         finish: @escaping @MainActor (Outcome) -> Void
     ) {
-        self.doublePressTime = doublePressTime
         self.clock = clock
-        self.startTimer = startTimer
-        self.finish = finish
+        self.takesDoublePresses = takesDoublePresses
+        presses = TwoPresses(doublePressTime: doublePressTime, startTimer: startTimer, finish: finish)
     }
 
     /// Takes one key press: the key with its modifiers (`stroke`, nil for a
@@ -704,50 +910,46 @@ final class ShortcutRecording {
     /// the recording's, which goes no further.
     @discardableResult
     func take(_ stroke: KeyBinding?, at time: TimeInterval, isRepeat: Bool, isEscape: Bool) -> Bool {
-        guard !hasEnded else { return false }
+        guard !presses.hasEnded else { return false }
         if isEscape {
-            end(.cancelled)
+            presses.end(.cancelled)
             return true
         }
         if isRepeat {
             return true
         }
-        guard let first else {
+        // The recording keeps a first press only of a key a binding names.
+        guard let firstKey = presses.first?.stroke else {
             guard let stroke else { return false }
-            self.first = (stroke, time)
-            let delay = max(0, time + doublePressTime - clock())
-            timer = startTimer(delay) { [weak self] in
+            guard takesDoublePresses else {
+                presses.end(.recorded(stroke))
+                return true
+            }
+            presses.keepFirst(stroke, at: time)
+            presses.startTimer(after: max(0, time + presses.doublePressTime - clock())) { [weak self] in
                 self?.timeIsUp()
             }
             return true
         }
-        if let stroke, stroke == first.stroke, time - first.time < doublePressTime {
-            end(.recorded(stroke.asDoublePress(true)))
+        if presses.second(stroke, at: time) == .doublePress {
+            presses.end(.recorded(firstKey.asDoublePress(true)))
             return true
         }
         // Another key, or the same one too late: the first was pressed once.
         // A key no binding names goes on; any other is the recording's.
-        end(.recorded(first.stroke))
+        presses.end(.recorded(firstKey))
         return stroke != nil
     }
 
     /// Ends the recording without a key, as the recorder going away does.
     func cancel() {
-        timer?.cancel()
-        timer = nil
-        hasEnded = true
+        presses.cancel()
     }
 
     /// Records the first press as a single press once no second press has
     /// come within the time.
     private func timeIsUp() {
-        guard !hasEnded, let first else { return }
-        end(.recorded(first.stroke))
-    }
-
-    /// Ends the recording with `outcome`.
-    private func end(_ outcome: Outcome) {
-        cancel()
-        finish(outcome)
+        guard let firstKey = presses.first?.stroke else { return }
+        presses.end(.recorded(firstKey))
     }
 }

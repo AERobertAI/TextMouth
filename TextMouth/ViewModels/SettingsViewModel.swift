@@ -940,8 +940,10 @@ final class SettingsViewModel: ObservableObject {
         config.audioEditorPreviewsFilters = AudioEditorPreferences.previewFiltersFirst.read(from: preferences)
         config.audioEditorPlaysAfterMoves = AudioEditorPreferences.playAfterMoves.read(from: preferences)
         config.showExportInReaderToolbar = BookExportPreferences.showInReaderToolbar.read(from: preferences)
-        // Every action: an edited one as the list of its keys, every other
-        // as "default: " and its keys in force (FR12).
+        // Every action: an edited one as the list of its keys, or as an
+        // object of its keys and where they work when the user chose that
+        // (FR12's branch E), every other as "default: " and its keys in
+        // force (FR12).
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.editsPreference.read(from: preferences).listings(defaults: ShortcutAction.defaultBindings)
         )
@@ -1012,8 +1014,8 @@ final class SettingsViewModel: ObservableObject {
         adopt(config.audioEditorPreviewsFilters, into: AudioEditorPreferences.previewFiltersFirst)
         adopt(config.audioEditorPlaysAfterMoves, into: AudioEditorPreferences.playAfterMoves)
         adopt(config.showExportInReaderToolbar, into: BookExportPreferences.showInReaderToolbar)
-        // A list makes its action the user's, "default" gives it back, and
-        // a key two edited actions then hold goes to one (FR12).
+        // A list or an object makes its action the user's, "default" gives
+        // it back, and a key two edited actions then hold goes to one (FR12).
         let shortcutsWereRepaired = KeyboardShortcutManager.adopt(
             SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),
             in: preferences

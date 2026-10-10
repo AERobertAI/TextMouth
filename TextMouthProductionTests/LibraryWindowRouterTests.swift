@@ -850,7 +850,7 @@ final class LibraryWindowRouterTests: XCTestCase {
 
     /// The running app's File menu offers no way to open a reader without a
     /// book: New Window (Command-N) opens a Library window, and nothing opens
-    /// the Book Reader scene. Open Book... and New from Text... stay enabled,
+    /// the Book Reader scene. Open Book… and New from Text… stay enabled,
     /// since the router takes them whichever window is key, opening a
     /// Library window when none is open. The items are only read, never
     /// chosen. Skipped when this run's menu bar has no File menu.
@@ -867,7 +867,7 @@ final class LibraryWindowRouterTests: XCTestCase {
             "The File menu holds \(titles)"
         )
         XCTAssertEqual(newWindow.title, "New Window")
-        for title in ["Open Book...", "New from Text..."] {
+        for title in [ShortcutAction.openBook.title, ShortcutAction.newFromText.title] {
             let item = try XCTUnwrap(items.first { $0.title == title }, "The File menu holds \(titles)")
             XCTAssertTrue(item.isEnabled, title)
         }

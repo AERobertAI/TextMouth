@@ -532,19 +532,20 @@ final class RecordingWindowTests: XCTestCase {
 
     // MARK: - Shortcuts and Menus
 
-    /// The window's shortcuts are none of the reader's or the library's
-    /// default shortcuts.
+    /// The window's shortcuts, and File > New Recording…'s, are their own
+    /// actions' defaults since they became editable (FR12's branch D), and
+    /// none of the reader's or the library's.
     func testTheShortcutsAreNoneOfTheReadersOrTheLibrarys() {
-        let defaults = ShortcutAction.defaultBindings.values.flatMap { $0 }
-        for shortcut in [RecordingShortcuts.record, RecordingShortcuts.pauseOrResume, RecordingShortcuts.stop, RecordingShortcuts.newRecording] {
-            let binding = KeyBinding(
-                key: String(shortcut.key.character),
-                command: shortcut.modifiers.contains(.command),
-                option: shortcut.modifiers.contains(.option),
-                shift: shortcut.modifiers.contains(.shift),
-                control: shortcut.modifiers.contains(.control)
-            )
-            XCTAssertFalse(defaults.contains(binding), "\(binding.displayString) is a default shortcut already")
+        let shortcuts: [(action: ShortcutAction, binding: KeyBinding)] = [
+            (.recordingRecord, KeyBinding(key: "r", command: true)),
+            (.recordingPauseOrResume, KeyBinding(key: "p", command: true)),
+            (.recordingStop, KeyBinding(key: ".", command: true)),
+            (.newRecording, KeyBinding(key: "n", command: true, option: true)),
+        ]
+        for (action, binding) in shortcuts {
+            XCTAssertEqual(ShortcutAction.defaultBindings[action], [binding], action.rawValue)
+            let others = ShortcutAction.defaultBindings.filter { $0.key != action }.values.flatMap { $0 }
+            XCTAssertFalse(others.contains(binding), "\(binding.displayString) is another action's default too")
         }
     }
 
@@ -564,7 +565,7 @@ final class RecordingWindowTests: XCTestCase {
 
         let file = try XCTUnwrap(menu.items.first { $0.title == "File" }?.submenu)
         let titles = file.items.map(\.title)
-        let fromText = try XCTUnwrap(titles.firstIndex(of: "New from Text..."))
+        let fromText = try XCTUnwrap(titles.firstIndex(of: ShortcutAction.newFromText.title))
         XCTAssertEqual(titles[safe: fromText + 1], RecordingWording.menuTitle)
         let library = try XCTUnwrap(menu.items.first { $0.title == "Library" }?.submenu)
         XCTAssertTrue(library.items.contains { $0.title == RecordingWording.menuTitle })

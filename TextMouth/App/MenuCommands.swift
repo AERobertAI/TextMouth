@@ -49,8 +49,64 @@ extension FocusedValues {
 
 // MARK: - Menu Commands
 
+/// The File menu's commands beside New Window (Command-N): Open Book…, New
+/// from Text…, and New Recording…, each showing and answering its key in
+/// force, which the Shortcuts tab and config.json can change (FR12's branch
+/// D), or none while another action has its key; and each acting only where
+/// its action works (FR12's branch E): New from Text… in Library windows,
+/// so a reader's Shift-Command-T is Show Sleep Timer's.
+struct FileCommands: Commands {
+    /// The shortcuts, observed so each item's key equivalent follows a
+    /// change at once.
+    @ObservedObject var shortcuts: KeyboardShortcutManager
+    /// The window in front, observed so each item acts only where its
+    /// command works.
+    @ObservedObject private var front = FrontWindowKind.shared
+    /// The library recordings are saved into.
+    let library: LibraryViewModel
+
+    /// The File menu's commands, their keys those of `shortcuts`, saving
+    /// recordings into `library`.
+    init(shortcuts: KeyboardShortcutManager, library: LibraryViewModel) {
+        _shortcuts = ObservedObject(wrappedValue: shortcuts)
+        self.library = library
+    }
+
+    var body: some Commands {
+        CommandGroup(after: .newItem) {
+            Button(ShortcutAction.openBook.title) {
+                NotificationCenter.default.post(name: .openBookFile, object: nil)
+            }
+            .menuCommandKey(.openBook, shortcuts: shortcuts, frontKind: front.kind)
+
+            Button(ShortcutAction.newFromText.title) {
+                NotificationCenter.default.post(name: .newFromText, object: nil)
+            }
+            .menuCommandKey(.newFromText, shortcuts: shortcuts, frontKind: front.kind)
+
+            // Records from a microphone into a new audiobook (FR04).
+            Button(ShortcutAction.newRecording.title) {
+                RecordingWindowController.shared.show(library: library)
+            }
+            .menuCommandKey(.newRecording, shortcuts: shortcuts, frontKind: front.kind)
+        }
+    }
+}
+
 struct PlaybackCommands: Commands {
     @FocusedValue(\.canReleaseMediaControls) var canReleaseMediaControls
+    /// The shortcuts, observed so Copy Reading Position's and Search in
+    /// Book's key equivalents follow a change at once (FR12's branch D).
+    @ObservedObject var shortcuts: KeyboardShortcutManager
+    /// The window in front, observed so those items act only where their
+    /// commands work (FR12's branch E).
+    @ObservedObject private var front = FrontWindowKind.shared
+
+    /// The Playback menu, its keys in force those of `shortcuts`.
+    init(shortcuts: KeyboardShortcutManager) {
+        _shortcuts = ObservedObject(wrappedValue: shortcuts)
+    }
+
     var body: some Commands {
         CommandMenu("Playback") {
             Button("Play / Pause") {
@@ -112,15 +168,15 @@ struct PlaybackCommands: Commands {
 
             Divider()
 
-            Button("Copy Reading Position") {
+            Button(ShortcutAction.copyReadingPosition.title) {
                 NotificationCenter.default.post(name: .copyReadingPosition, object: nil)
             }
-            .keyboardShortcut("p", modifiers: [.command, .shift])
+            .menuCommandKey(.copyReadingPosition, shortcuts: shortcuts, frontKind: front.kind)
 
-            Button("Search in Book") {
+            Button(ShortcutAction.searchInBook.title) {
                 NotificationCenter.default.post(name: .searchInBook, object: nil)
             }
-            .keyboardShortcut("f", modifiers: .command)
+            .menuCommandKey(.searchInBook, shortcuts: shortcuts, frontKind: front.kind)
         }
     }
 }
@@ -195,17 +251,28 @@ struct LibraryCommands: Commands {
     /// The removal preferences, observed so the Remove command's title
     /// always says what choosing it will do (TODO A08).
     @ObservedObject private var removal = RemovalPreferencesModel.shared
+    /// The shortcuts, observed so Import DAISY Folder's and Add Feed's key
+    /// equivalents follow a change at once (FR12's branch D).
+    @ObservedObject var shortcuts: KeyboardShortcutManager
+    /// The window in front, observed so those items act only where their
+    /// commands work (FR12's branch E).
+    @ObservedObject private var front = FrontWindowKind.shared
+
+    /// The Library menu, its keys in force those of `shortcuts`.
+    init(shortcuts: KeyboardShortcutManager) {
+        _shortcuts = ObservedObject(wrappedValue: shortcuts)
+    }
 
     var body: some Commands {
         CommandMenu("Library") {
             // Chooses DAISY books kept as loose files by their folders, in a
             // folder-only panel the Library window presents (TODO I02). The
-            // Open Book... panel stays file-only, so Return on a folder there
+            // Open Book… panel stays file-only, so Return on a folder there
             // keeps opening it.
-            Button("Import DAISY Folder…") {
+            Button(ShortcutAction.importDAISYFolder.title) {
                 NotificationCenter.default.post(name: .importDAISYFolder, object: nil)
             }
-            .keyboardShortcut("o", modifiers: [.command, .shift])
+            .menuCommandKey(.importDAISYFolder, shortcuts: shortcuts, frontKind: front.kind)
 
             // VoiceOver speaks how the imports under way have got (FR10).
             // It has no key until the user gives it one in Settings, which
@@ -223,12 +290,12 @@ struct LibraryCommands: Commands {
             Divider()
 
             // Subscribes to a podcast or article feed (FR03): the key
-            // Library window opens the Add Feed sheet. Shift-Command-F is
-            // used by no other command or default shortcut.
-            Button(FeedWording.addFeedCommand) {
+            // Library window opens the Add Feed sheet. Its key,
+            // Shift-Command-F unless changed, is no other default's.
+            Button(ShortcutAction.addFeed.title) {
                 NotificationCenter.default.post(name: .addFeed, object: nil)
             }
-            .keyboardShortcut(FeedShortcuts.addFeed)
+            .menuCommandKey(.addFeed, shortcuts: shortcuts, frontKind: front.kind)
 
             // Checks every feed now; the key Library window says what came.
             Button(FeedWording.refreshAllCommand) {
@@ -464,6 +531,119 @@ struct BookCommands: Commands {
                 NotificationCenter.default.post(name: .editBookAudio, object: nil)
             }
             .disabled(canEditBookAudio != true)
+        }
+    }
+}
+
+// MARK: - The Window in Front (FR12's Branch E)
+
+/// The kind of window in front, which the menus act on: the main window's,
+/// or the key window's while no window is main, as the menu bar's own
+/// menus go by (`MenuVisibilityManager`); nil with no window at all. A menu
+/// command working in one kind of window shows its key and acts only while
+/// a window of that kind is in front (`menuCommandKey(_:shortcuts:frontKind:)`).
+@MainActor
+final class FrontWindowKind: ObservableObject {
+    /// The app's one.
+    static let shared = FrontWindowKind()
+
+    /// The kind of window in front, or nil with none.
+    @Published private(set) var kind: ShortcutWindowKind?
+
+    /// The notification observers, kept for the app's life.
+    private var observers: [NSObjectProtocol] = []
+
+    /// Follows the window in front from now on.
+    private init() {
+        kind = Self.kind(of: NSApp.mainWindow ?? NSApp.keyWindow)
+        let center = NotificationCenter.default
+        // A window that becomes main or key is in front at once; one that
+        // resigns, or the app going away or coming back, leaves the next
+        // window to settle first, as the menu bar's own update does.
+        for name in [NSWindow.didBecomeMainNotification, NSWindow.didBecomeKeyNotification] {
+            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.refresh() }
+            })
+        }
+        for name in [
+            NSWindow.didResignMainNotification, NSWindow.didResignKeyNotification,
+            NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification,
+        ] {
+            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated { self?.refresh() }
+                }
+            })
+        }
+    }
+
+    /// Takes the kind of the window now in front, published when it changed.
+    private func refresh() {
+        let current = Self.kind(of: NSApp.mainWindow ?? NSApp.keyWindow)
+        if current != kind {
+            kind = current
+        }
+    }
+
+    /// The kind of `window`, as the shortcut manager tells kinds of window
+    /// apart, or nil for no window.
+    static func kind(of window: NSWindow?) -> ShortcutWindowKind? {
+        window.flatMap(KeyboardShortcutManager.windowKind(ofKeyWindow:))
+    }
+}
+
+extension View {
+    /// A menu item for `action`, whose key the user may change (FR12's
+    /// branches D and E): it shows `action`'s key in force and acts while
+    /// `action` works where the window in front is (`frontKind`,
+    /// `ShortcutScope.admitsMenuCommand(in:)`); elsewhere it has no key, so
+    /// the key goes on to the window's own action, and is dimmed, doing
+    /// nothing there. The menu observes `shortcuts` and the front window, so
+    /// the item follows each.
+    func menuCommandKey(_ action: ShortcutAction, shortcuts: KeyboardShortcutManager, frontKind: ShortcutWindowKind?) -> some View {
+        let acts = shortcuts.scope(of: action).admitsMenuCommand(in: frontKind)
+        return keyboardShortcut(acts ? shortcuts.keyboardShortcut(for: action) : nil)
+            .disabled(!acts)
+    }
+}
+
+// MARK: - Key Equivalents in Force (FR12's Branch D)
+
+extension KeyboardShortcutManager {
+    /// `action`'s key in force as its menu item or button takes it: its key
+    /// equivalent (`keyEquivalent(for:)`), or nil for none, so the item
+    /// shows no key rather than one that does something else.
+    func keyboardShortcut(for action: ShortcutAction) -> KeyboardShortcut? {
+        keyEquivalent(for: action)?.keyboardShortcut
+    }
+}
+
+extension KeyBinding {
+    /// The binding as SwiftUI's key equivalent, for a menu item or a button:
+    /// its key with its modifiers; nil for a binding that cannot be a key
+    /// equivalent (`canBeKeyEquivalent`), a double press among them.
+    var keyboardShortcut: KeyboardShortcut? {
+        guard canBeKeyEquivalent, let key = keyEquivalent else { return nil }
+        var modifiers: EventModifiers = []
+        if command { modifiers.insert(.command) }
+        if option { modifiers.insert(.option) }
+        if shift { modifiers.insert(.shift) }
+        if control { modifiers.insert(.control) }
+        return KeyboardShortcut(key, modifiers: modifiers)
+    }
+
+    /// The key as SwiftUI names it: Space, Tab, Return, and Escape by name,
+    /// and any other key by the one character a binding holds for it, the
+    /// character AppKit gives a function key included, which a menu item
+    /// takes as that key. The arrows and Delete never come here: a text field
+    /// edits with them, so no key equivalent may have them.
+    private var keyEquivalent: KeyEquivalent? {
+        switch key {
+        case "space": return .space
+        case "tab": return .tab
+        case "return": return .return
+        case "escape": return .escape
+        default: return key.count == 1 ? KeyEquivalent(Character(key)) : nil
         }
     }
 }

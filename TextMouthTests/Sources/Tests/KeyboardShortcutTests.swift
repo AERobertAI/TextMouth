@@ -375,20 +375,16 @@ test("Restart Sleep Timer default doesn't collide with any existing binding") {
 test("No duplicate bindings across actions in defaults") {
     // One key press must mean one thing wherever it is pressed: the audio
     // editor's actions, matched only in its windows, may share keys with
-    // the reader's, but never with each other, and the reader's and the
-    // library's never share one either.
+    // the reader's, but never with each other, and an action working in
+    // one kind of window may share a key only with actions working
+    // elsewhere, as New from Text and Show Sleep Timer share Shift-Command-T
+    // (FR12's branch E).
     let defaults = ShortcutAction.defaultBindings
-    var seen: [ShortcutScope: [KeyBinding: ShortcutAction]] = [:]
-    var total = 0
-    for (action, bindings) in defaults {
-        for binding in bindings {
-            if let existing = seen[action.scope]?[binding] {
-                throw TestError.assertionFailed("Duplicate binding \(binding.displayString) for \(action.rawValue) and \(existing.rawValue)")
-            }
-            seen[action.scope, default: [:]][binding] = action
-            total += 1
-        }
+    let clashes = ShortcutKeyOwners.keysOnTwoActions(in: defaults)
+    if !clashes.isEmpty {
+        throw TestError.assertionFailed("Duplicate bindings: \(clashes.joined(separator: "; "))")
     }
+    let total = defaults.values.map(\.count).reduce(0, +)
     print("    No duplicate bindings found across \(total) total bindings")
 }
 
@@ -457,7 +453,9 @@ test("Select All has Cmd+A binding") {
 
 test("Library category includes all library actions") {
     let libraryActions = ShortcutAction.allCases.filter { $0.category == "Library" }
-    try assertEqual(libraryActions.count, 11, "Should have 11 library actions")
+    // With Import DAISY Folder… and Add Feed…, the Library menu's commands
+    // whose keys became editable (FR12's branch D).
+    try assertEqual(libraryActions.count, 13, "Should have 13 library actions")
     let names = libraryActions.map { $0.rawValue }
     try assertTrue(names.contains("Remove from Library"))
     try assertTrue(names.contains("New Folder"))
@@ -470,6 +468,8 @@ test("Library category includes all library actions") {
     try assertTrue(names.contains("Move Book Down"))
     try assertTrue(names.contains("Add to Reading List"))
     try assertTrue(names.contains("Remove from Reading List"))
+    try assertTrue(names.contains("Import DAISY Folder…"))
+    try assertTrue(names.contains("Add Feed…"))
     print("    Library category has \(libraryActions.count) actions")
 }
 

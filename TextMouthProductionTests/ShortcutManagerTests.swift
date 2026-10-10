@@ -90,10 +90,7 @@ final class ShortcutManagerTests: XCTestCase {
         XCTAssertEqual(manager.bindingsFor(.goToLibrary), [shiftR])
         XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [], "the edited action lost Shift-R")
         XCTAssertTrue(manager.isEdited(.releaseMediaControls), "and stays edited")
-        for scope in [ShortcutScope.app, .audioEditor] {
-            let keys = ShortcutAction.allCases.filter { $0.scope == scope }.flatMap(manager.bindingsFor)
-            XCTAssertEqual(keys.count, Set(keys).count, "a key on two actions in \(scope)")
-        }
+        XCTAssertEqual(ShortcutKeyOwners.keysOnTwoActions(in: manager.bindings, scopes: manager.scope(of:)), [])
     }
 
     // MARK: - Resetting
@@ -127,7 +124,7 @@ final class ShortcutManagerTests: XCTestCase {
         manager.resetToDefaults()
 
         XCTAssertEqual(manager.edits, ShortcutEdits())
-        XCTAssertEqual(manager.bindings, ShortcutAction.defaultBindings)
+        XCTAssertEqual(manager.bindings, ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings))
         XCTAssertEqual(store.data(forKey: KeyboardShortcutManager.editsPreference.key), Data("{}".utf8))
     }
 
@@ -142,7 +139,7 @@ final class ShortcutManagerTests: XCTestCase {
         savedMap[.releaseMediaControls] = [shiftR]
         store.set(try JSONEncoder().encode(savedMap.keyedByRawValue), forKey: KeyboardShortcutManager.savedMapKey)
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
-        XCTAssertEqual(manager.bindings, ShortcutAction.defaultBindings)
+        XCTAssertEqual(manager.bindings, ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings))
         var publications = 0
         let subscription = manager.objectWillChange.sink { publications += 1 }
 
