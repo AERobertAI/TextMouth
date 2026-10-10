@@ -133,7 +133,13 @@ final class FeedUIDeleteFeedTests: XCTestCase {
         let subscribed = FeedSubscriptionToggle(isSubscribed: true)
         XCTAssertEqual(subscribed.title, "Unsubscribe…")
         XCTAssertTrue(subscribed.isDestructive)
-        XCTAssertEqual(subscribed.hint, FeedWording.unsubscribeHint)
+        XCTAssertEqual(subscribed.hint, "Asks first, then stops checking this feed; the feed and its downloads stay")
+        // With nothing kept of removed downloads to delete, it asks nothing
+        // (FR14).
+        let atOnce = FeedSubscriptionToggle(isSubscribed: true, unsubscribeAsks: false)
+        XCTAssertEqual(atOnce.title, "Unsubscribe")
+        XCTAssertFalse(atOnce.isDestructive)
+        XCTAssertEqual(atOnce.hint, "Stops checking this feed; the feed and its downloads stay")
         let unsubscribed = FeedSubscriptionToggle(isSubscribed: false)
         XCTAssertEqual(unsubscribed.title, "Resubscribe")
         XCTAssertFalse(unsubscribed.isDestructive)

@@ -729,7 +729,9 @@ final class RemovalPreferencesModel: ObservableObject {
 
 // MARK: - Sentence Case
 
-private extension String {
+/// Sentence case for words built from parts, shared with the feed reader's
+/// words, which start sentences with a phrase it built (FR14).
+extension String {
     /// The text with its first letter in upper case, to start a sentence.
     var capitalizingFirstLetter: String {
         prefix(1).uppercased() + dropFirst()

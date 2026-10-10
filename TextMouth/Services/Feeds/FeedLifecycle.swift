@@ -296,12 +296,7 @@ extension FeedCenter {
     /// - Returns: How many packages went.
     func deleteKeptPackages(of feedID: UUID) -> Int {
         guard let library else { return 0 }
-        // In a fixed order, so the log and the index's writes never depend
-        // on a dictionary's.
-        let kept = library.feedItemRows(of: feedID).kept
-            .filter { !downloads.isDownloading($0.key, of: feedID) }
-            .sorted { $0.key < $1.key }
-            .map(\.value)
+        let kept = keptRowsUnsubscribeDeletes(of: feedID)
         guard !kept.isEmpty else { return 0 }
         let root = TextMouthPaths.root
         let outcome: FeedFileRemovalOutcome
@@ -324,6 +319,20 @@ extension FeedCenter {
             )
         }
         return outcome.removed.count
+    }
+
+    /// The rows of the feed `feedID` kept after their downloads went that
+    /// Unsubscribe deletes (`deleteKeptPackages(of:)`): every one but an
+    /// item's downloading again, whose download restores it, in the order
+    /// of their items, so the log and the index's writes never depend on a
+    /// dictionary's. What Unsubscribe's question counts and names, and
+    /// whether it asks at all, come from these alone (FR14; REV13 item 5).
+    func keptRowsUnsubscribeDeletes(of feedID: UUID) -> [Book] {
+        guard let library else { return [] }
+        return library.feedItemRows(of: feedID).kept
+            .filter { !downloads.isDownloading($0.key, of: feedID) }
+            .sorted { $0.key < $1.key }
+            .map(\.value)
     }
 
     // MARK: The Engine's Own Work

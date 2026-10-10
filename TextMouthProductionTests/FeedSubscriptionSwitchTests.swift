@@ -355,7 +355,7 @@ final class FeedUnsubscribedDownloadMoveTests: FeedItemIndexTestCase {
 // MARK: - The Switch Shown
 
 /// The feed's context menu, its VoiceOver actions, and Feed Info offer
-/// Unsubscribe… or Resubscribe by its state (FR11, branch D, item 3; the
+/// Unsubscribe or Resubscribe by its state (FR11, branch D, item 3; the
 /// listener's "subscribe / resubscribe toggling action in the contetxt menu
 /// for feeds and changing the info menu"), and no Check Feed while it is not
 /// checked; its row, its folder's row, entering its folder, Speak Info, and
@@ -438,7 +438,7 @@ final class FeedSubscriptionShownTests: XCTestCase {
 
     // MARK: - Through the Commands
 
-    /// Unsubscribe… from Feed Info leaves the sheet open, its feed now
+    /// Unsubscribe from Feed Info leaves the sheet open, its feed now
     /// counted unsubscribed and its commands Feed Info…, Mark All Played,
     /// Resubscribe, and Delete Feed… (FR14); Check Feed from a menu drawn
     /// before checks nothing and says why; Resubscribe says it checks the

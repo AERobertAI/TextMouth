@@ -16,7 +16,7 @@ import Foundation
 /// change the engine many times a minute. So the Library window observes
 /// this rather than the engine, and only the views that show a feed's items
 /// and counts redraw as they change; the window redraws as a feed is
-/// unsubscribed or resubscribed, so its feed folders' rows offer Unsubscribe…
+/// unsubscribed or resubscribed, so its feed folders' rows offer Unsubscribe
 /// or Resubscribe by the feed's state.
 @MainActor
 final class LibraryFeedFolders: ObservableObject {

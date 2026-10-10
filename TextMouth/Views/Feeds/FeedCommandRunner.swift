@@ -88,7 +88,7 @@ extension LibraryFeedsPresenter {
             let marked = center.markAllPlayed(of: feed.id)
             announce(FeedWording.markedAll(count: marked, title: feed.title, noun: noun), context.window)
         case .unsubscribe:
-            confirmation = unsubscribeConfirmation(for: feed.id, in: context)
+            confirmation = requestUnsubscribe(feed.id, in: context)
         case .resubscribe:
             return resubscribe(feed.id, in: context)
         case .deleteFeed:
@@ -114,21 +114,42 @@ extension LibraryFeedsPresenter {
         }
     }
 
+    /// Unsubscribes from the feed `feedID` as the listener chose Unsubscribe
+    /// (FR14, "yes"): at once, saying so, when unsubscribing would delete
+    /// nothing; otherwise not yet, the question to ask first returned, which
+    /// says what it would delete. A menu drawn before the feed's kept places
+    /// changed asks, or not, as the feed is now.
+    /// - Returns: The question to ask first; nil when it acted at once, or
+    ///   the feed is not subscribed.
+    func requestUnsubscribe(_ feedID: UUID, in context: FeedCommandContext) -> FeedConfirmation? {
+        guard context.center.store.record(of: feedID)?.feed.isSubscribed == true else { return nil }
+        guard let question = unsubscribeConfirmation(for: feedID, in: context) else {
+            unsubscribe(feedID, in: context, afterAlert: false)
+            return nil
+        }
+        return question
+    }
+
     /// The question asked before unsubscribing from the feed `feedID`, saying
     /// what happens now (FR11, branch D): checking stops, the feed stays
     /// with its settings and its downloads, which it counts, and what it
-    /// kept of downloads removed earlier goes; nil once it is no longer
-    /// subscribed.
+    /// kept of downloads removed earlier goes, counted and named as what
+    /// Unsubscribe will delete (`FeedCenter.keptRowsUnsubscribeDeletes(of:)`,
+    /// REV13 item 5); nil once it is no longer subscribed, or when it would
+    /// delete nothing, as Unsubscribe then asks nothing (FR14).
     func unsubscribeConfirmation(for feedID: UUID, in context: FeedCommandContext) -> FeedConfirmation? {
-        guard let feed = context.center.store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
-        let rows = context.library.feedItemRows(of: feedID)
+        let center = context.center
+        guard let feed = center.store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
+        let kept = center.keptRowsUnsubscribeDeletes(of: feedID)
+        guard !kept.isEmpty else { return nil }
         return FeedConfirmation(
             kind: .unsubscribe(feedID: feedID),
             title: FeedWording.unsubscribeQuestion(title: feed.title),
             message: FeedWording.unsubscribeMessage(
-                downloadCount: rows.downloaded.count,
-                keptCount: rows.kept.count,
-                noun: .of(context.center.listedItems(of: feedID))
+                downloadCount: context.library.feedItemRows(of: feedID).downloaded.count,
+                keptCount: kept.count,
+                keptParts: .of(kept),
+                noun: .of(center.listedItems(of: feedID))
             ),
             confirmTitle: FeedWording.unsubscribeButton
         )
@@ -145,10 +166,17 @@ extension LibraryFeedsPresenter {
     ///   subscribed, which changes nothing.
     @discardableResult
     func unsubscribe(_ feedID: UUID, in context: FeedCommandContext, afterAlert: Bool = true) -> FeedUnsubscribeOutcome? {
-        guard let feed = context.center.store.record(of: feedID)?.feed else { return nil }
-        let noun = FeedWording.ItemNoun.of(context.center.listedItems(of: feedID))
-        guard let outcome = context.center.unsubscribe(feedID) else { return nil }
-        say(FeedWording.unsubscribed(title: feed.title, outcome: outcome, noun: noun), afterAlert: afterAlert, in: context)
+        let center = context.center
+        guard let feed = center.store.record(of: feedID)?.feed else { return nil }
+        let noun = FeedWording.ItemNoun.of(center.listedItems(of: feedID))
+        // What the packages about to go hold, named once they have gone.
+        let keptParts = FeedWording.KeptParts.of(center.keptRowsUnsubscribeDeletes(of: feedID))
+        guard let outcome = center.unsubscribe(feedID) else { return nil }
+        say(
+            FeedWording.unsubscribed(title: feed.title, outcome: outcome, keptParts: keptParts, noun: noun),
+            afterAlert: afterAlert,
+            in: context
+        )
         return outcome
     }
 

@@ -218,7 +218,7 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                 FeedInfoSheet(
                     model: model,
                     feedFolders: feedFolders,
-                    unsubscribeConfirmation: { presenter.unsubscribeConfirmation(for: model.feedID, in: context) },
+                    requestUnsubscribe: { presenter.requestUnsubscribe(model.feedID, in: context) },
                     onUnsubscribe: { presenter.unsubscribe(model.feedID, in: context) },
                     onResubscribe: { presenter.resubscribe(model.feedID, in: context) },
                     deleteFeedConfirmation: { presenter.deleteFeedConfirmation(for: model.feedID, in: context) },

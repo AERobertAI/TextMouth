@@ -36,7 +36,7 @@ struct LibraryFeedsSection<FolderMenu: View>: View {
         if !rows.isEmpty {
             Section {
                 ForEach(rows) { row in
-                    let actions = FeedAction.actions(for: row.id, noun: row.counts.noun, isSubscribed: row.counts.isSubscribed)
+                    let actions = FeedAction.actions(for: row.id, counts: row.counts)
                     Button {
                         open(row)
                     } label: {

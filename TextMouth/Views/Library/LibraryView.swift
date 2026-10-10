@@ -1220,7 +1220,7 @@ struct LibraryView: View {
     }
 
     /// The commands of the feed whose folder `folder` is, by its state
-    /// (Unsubscribe… or Resubscribe, FR11, branch D), or none for any other
+    /// (Unsubscribe or Resubscribe, FR11, branch D), or none for any other
     /// folder (FR03).
     private func feedActions(forFolder folder: BookFolder) -> [FeedAction] {
         guard let feedID = feedFolders.feedID(inFolder: folder.id) else { return [] }
