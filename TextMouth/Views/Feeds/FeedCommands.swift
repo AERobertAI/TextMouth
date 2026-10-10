@@ -269,10 +269,15 @@ extension FeedWording {
         "Delete “\(title)”?"
     }
 
-    /// The confirmation's message, saying what deleting does.
-    static func deleteItemMessage(isArticle: Bool) -> String {
+    /// The confirmation's message, saying what deleting does: the item
+    /// leaves the list and its download goes, and, when TextMouth keeps the
+    /// listener's place, bookmarks, or transcript for it
+    /// (`keepsListenerState`, FR11, branch A2), those go too.
+    static func deleteItemMessage(isArticle: Bool, keepsListenerState: Bool = false) -> String {
         let kind = isArticle ? "article" : "episode"
-        return "The \(kind) leaves the list for good, and its download, if any, is deleted. Checking the feed won't bring it back."
+        let kept = keepsListenerState ? " The place, bookmarks, and transcript kept for it are deleted too." : ""
+        return "The \(kind) leaves the list for good, and its download, if any, is deleted.\(kept) "
+            + "Checking the feed won't bring it back."
     }
 
     /// What VoiceOver hears once an item is deleted.

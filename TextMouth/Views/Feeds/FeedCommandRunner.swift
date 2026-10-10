@@ -184,10 +184,27 @@ extension LibraryFeedsPresenter {
             confirmation = FeedConfirmation(
                 kind: .deleteItem(feedID: record.feed.id, itemID: item.id, title: item.title),
                 title: FeedWording.deleteItemQuestion(title: item.title),
-                message: FeedWording.deleteItemMessage(isArticle: item.isArticle),
+                message: FeedWording.deleteItemMessage(
+                    isArticle: item.isArticle,
+                    keepsListenerState: keepsListenerState(of: item.id, in: record.feed.id, context)
+                ),
                 confirmTitle: FeedWording.deleteItemButton(isArticle: item.isArticle)
             )
         }
+    }
+
+    /// Whether TextMouth keeps something of the listener's for the item
+    /// `itemID` of the feed `feedID`, which Delete Episode deletes with it
+    /// (FR11, branch A2): a package kept after its download went, or a
+    /// download whose package holds the listener's place, playback times,
+    /// bookmarks, settings, or transcript (`FeedItemPackage.holdsListenerState`).
+    private func keepsListenerState(of itemID: FeedItem.ID, in feedID: UUID, _ context: FeedCommandContext) -> Bool {
+        let rows = context.library.feedItemRows(of: feedID)
+        if rows.kept[itemID] != nil {
+            return true
+        }
+        guard let downloaded = rows.downloaded[itemID] else { return false }
+        return FeedItemPackage.holdsListenerState(downloaded, package: downloaded.tmbDirectory)
     }
 
     // MARK: Every Feed
