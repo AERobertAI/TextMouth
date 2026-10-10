@@ -331,6 +331,49 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
+    /// A Play held for the end of Where Am I?, for a book paused or stopped
+    /// before the announcement, survives the system cancelling the
+    /// announcement, as the speech engine does with a text it refuses: the
+    /// announcement ends without its end sound, and the book starts at once,
+    /// as the Play asked, with the play sound, and is shown playing. Before,
+    /// the cancel let the held Play go with the announcement, and the book
+    /// stayed as it was, the Play dropped without a word (REV12).
+    func testAPlayHeldByWhereAmIStartsTheBookWhenTheSystemCancelsTheAnnouncement() throws {
+        let befores: [(name: String, settle: (PlayingBook, MediaSystem) -> Void)] = [
+            ("paused before", { _, system in
+                XCTAssertEqual(system.press(.pause), .success)
+            }),
+            ("stopped before", { book, _ in
+                book.reader.stop()
+            }),
+        ]
+        for kind in BookKind.allCases {
+            for (name, settle) in befores {
+                let context = "\(kind), \(name)"
+                let system = MediaSystem()
+                let world = try makeIntegrationWorld("Where Am I Held Play Cancelled \(kind) \(name)")
+                let book = try openPlayingBook(kind, in: world, joining: system)
+                settle(book, system)
+                let sounds = recordSounds(of: book, "Where Am I Held Play Cancelled \(kind) \(name)")
+                book.reader.whereAmI()
+                let announcement = try XCTUnwrap(book.announcements.utterances.last, "\(context): no announcement was handed over")
+                XCTAssertEqual(system.press(.play), .success, context)
+                XCTAssertTrue(book.reader.isPlayHeldByWhereAmI, "\(context): the Play was not held for the announcement")
+
+                book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didCancel: announcement)
+                handleQueuedCallbacks()
+
+                XCTAssertFalse(book.reader.isWhereAmIUnderWay, "\(context): Where Am I? still has the book")
+                XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(context): the held Play did not start the book")
+                XCTAssertEqual(sounds.played, [.whereAmIStart, .play], context)
+                XCTAssertFalse(book.endSound.hasWorkWaiting, "\(context): work waits for an end sound")
+                let playing = NowPlayingItem(title: book.reader.book.title, author: book.reader.book.author, isPlaying: true)
+                XCTAssertEqual(system.told.last, .some(playing), "\(context): the system was not told the book plays")
+                XCTAssertEqual(system.coordinator.playingOwnerID, book.reader.nowPlayingService.ownerID, context)
+            }
+        }
+    }
+
     // MARK: - Another Book Started During Where Am I?
 
     /// Another book started while Where Am I? speaks pauses the book the

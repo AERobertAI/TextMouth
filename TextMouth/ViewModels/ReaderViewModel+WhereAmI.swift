@@ -405,21 +405,32 @@ extension ReaderViewModel {
     /// A cancel of the announcement speaking, which the reader did not ask
     /// for, as when the speech engine refuses its text, ends it without the
     /// end sound or the resume a finished announcement makes: the book it
-    /// paused stays paused, and a play it held pauses, as when Play/Pause
-    /// ends an announcement (`endWhereAmIWithoutResuming()`), so Play/Pause
-    /// works at once instead of only ending an announcement nobody hears.
-    /// Its synthesizer is replaced, since one the engine refused never
-    /// speaks again, as the speech service replaces its own.
+    /// paused stays paused, and a play waiting for its chapter's speech or
+    /// files pauses, as when Play/Pause ends an announcement
+    /// (`endWhereAmIWithoutResuming()`), so Play/Pause works at once instead
+    /// of only ending an announcement nobody hears. Its synthesizer is
+    /// replaced, since one the engine refused never speaks again, as the
+    /// speech service replaces its own.
+    ///
+    /// A Play pressed during the announcement, for a book it had not paused
+    /// (`isPlayHeldByWhereAmI`), was the listener's own and waited only for
+    /// the announcement: it starts the book now that the announcement has
+    /// ended, as Play does (`playOrResume()`). The cancel once let it go
+    /// with the rest, so the Play was dropped without a word (REV12).
     func whereAmISynthesizerCancelled(_ cancelled: ReportedUtterance) {
         guard isLiveWhereAmIUtterance(cancelled) else { return }
+        let playWasHeld = isPlayHeldByWhereAmI
         DiagnosticLog.event(
             .playback,
-            "WHERE_AM_I_CANCEL_UNEXPECTED: the announcement was cancelled before it ended; "
-                + "synthesizer replaced, book left paused"
+            "WHERE_AM_I_CANCEL_UNEXPECTED: the announcement was cancelled before it ended; synthesizer replaced, "
+                + (playWasHeld ? "the Play held for it starts the book" : "book left paused")
         )
         liveWhereAmIUtterance = nil
         replaceWhereAmISynthesizer()
         endWhereAmIWithoutResuming()
+        if playWasHeld {
+            playOrResume()
+        }
     }
 
     /// Whether `reported` is the announcement speaking now
