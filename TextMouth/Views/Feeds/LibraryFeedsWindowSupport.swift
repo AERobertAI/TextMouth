@@ -219,7 +219,9 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                     model: model,
                     feedFolders: feedFolders,
                     requestUnsubscribe: { presenter.requestUnsubscribe(model.feedID, in: context) },
-                    onUnsubscribe: { presenter.unsubscribe(model.feedID, in: context) },
+                    // Confirmed in Feed Info's own alert: deletes only what
+                    // that question named (REV14 feeds 1).
+                    onUnsubscribe: { confirmation in presenter.confirm(confirmation, in: context) },
                     onResubscribe: { presenter.resubscribe(model.feedID, in: context) },
                     deleteFeedConfirmation: { presenter.deleteFeedConfirmation(for: model.feedID, in: context) },
                     onDeleteFeed: { presenter.deleteFeed(model.feedID, in: context) },

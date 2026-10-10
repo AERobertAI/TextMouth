@@ -234,7 +234,8 @@ struct FeedUnsubscribeOutcome: Equatable, Sendable {
     /// How many of the feed's downloads stay, its items in its own folder.
     var downloadCount: Int
     /// How many packages the feed kept for downloads removed earlier were
-    /// deleted, with their places, bookmarks, and transcripts.
+    /// deleted, with their places, bookmarks, and transcripts: of those
+    /// Unsubscribe's question named, never another (REV14 feeds 1).
     var deletedKeptCount: Int
 }
 
@@ -739,15 +740,24 @@ final class FeedCenter: ObservableObject {
     /// under way are taken back, since it downloads nothing for an
     /// unsubscribed feed, and the one under way, like the listener's, runs
     /// on. The packages the feed kept for downloads removed earlier go, with
-    /// their places and bookmarks (`deleteKeptPackages(of:)`), as the
+    /// their places and bookmarks (`deleteKeptPackages(_:of:)`), as the
     /// listener accepted: "Clearing out old deleted episodes itself seems
-    /// fine". Resubscribe (`resubscribe(_:)`) checks the feed again.
+    /// fine"; but only those of the items `keptItemIDs` names, the ones
+    /// Unsubscribe's question named (none when it asked nothing), less any
+    /// downloading again since, which their downloads restore. Those are
+    /// decided first: taking back the rule's downloads leaves more kept
+    /// packages with no download to restore them, and none of those was
+    /// asked about (REV14 feeds 1). Resubscribe (`resubscribe(_:)`) checks
+    /// the feed again.
     /// - Returns: What unsubscribing did, for the words the listener hears;
     ///   nil for a feed TextMouth has no record of, or one already
     ///   unsubscribed, which changes nothing.
     @discardableResult
-    func unsubscribe(_ feedID: UUID) -> FeedUnsubscribeOutcome? {
+    func unsubscribe(_ feedID: UUID, deletingKeptOf keptItemIDs: Set<FeedItem.ID> = []) -> FeedUnsubscribeOutcome? {
         guard let feed = store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
+        // Decided before the rule's downloads are taken back below, which
+        // would add the packages they were restoring.
+        let deleting = keptRowsUnsubscribeDeletes(of: feedID, among: keptItemIDs)
         store.update(feedID) { $0.feed.unsubscribedDate = environment.now() }
         downloads.withdrawRuleDownloads(of: feedID) { _ in true }
         // The rule downloads nothing for it by itself now, so a pause Cancel
@@ -755,7 +765,7 @@ final class FeedCenter: ObservableObject {
         rulePauses[feedID] = nil
         let outcome = FeedUnsubscribeOutcome(
             downloadCount: library?.feedItemRows(of: feedID).downloaded.count ?? 0,
-            deletedKeptCount: deleteKeptPackages(of: feedID)
+            deletedKeptCount: deleteKeptPackages(deleting, of: feedID)
         )
         DiagnosticLog.event(
             .feeds,

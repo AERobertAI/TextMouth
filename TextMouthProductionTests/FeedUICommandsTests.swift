@@ -437,7 +437,7 @@ final class FeedUICommandsTests: XCTestCase {
             model: model,
             feedFolders: LibraryFeedFolders(center: harness.world.center),
             requestUnsubscribe: { nil },
-            onUnsubscribe: {},
+            onUnsubscribe: { _ in },
             onDone: {}
         )
 
@@ -514,7 +514,7 @@ final class FeedUICommandsTests: XCTestCase {
             model: model,
             feedFolders: LibraryFeedFolders(center: harness.world.center),
             requestUnsubscribe: { nil },
-            onUnsubscribe: {},
+            onUnsubscribe: { _ in },
             onDone: {}
         )
 
@@ -545,7 +545,7 @@ final class FeedUICommandsTests: XCTestCase {
             model: model,
             feedFolders: LibraryFeedFolders(center: harness.world.center),
             requestUnsubscribe: { nil },
-            onUnsubscribe: {},
+            onUnsubscribe: { _ in },
             onDone: { dones += 1 },
             makingFolder: true
         )
@@ -584,7 +584,7 @@ final class FeedUICommandsTests: XCTestCase {
             model: model,
             feedFolders: LibraryFeedFolders(center: harness.world.center),
             requestUnsubscribe: { nil },
-            onUnsubscribe: {},
+            onUnsubscribe: { _ in },
             onDone: { dones += 1 }
         )
 
