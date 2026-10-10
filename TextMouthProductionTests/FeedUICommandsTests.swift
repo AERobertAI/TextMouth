@@ -532,6 +532,43 @@ final class FeedUICommandsTests: XCTestCase {
         }
     }
 
+    /// Feed Info itself, with its folder picker's New Folder fields shown:
+    /// Escape closes the fields and never Feed Info, its Done giving Escape
+    /// up meanwhile, so the fields' Cancel New Folder alone takes it, as in
+    /// the Move sheet; once they are closed, a second Escape presses Done
+    /// (REV13 app 5, until then tested only through a stand-in sheet).
+    func testEscapeClosesFeedInfosNewFolderFieldsBeforeFeedInfo() async throws {
+        let harness = try await Harness(self, label: "FeedUICommandsInfoEscape")
+        let model = FeedInfoModel(feedID: harness.feed.id, center: harness.world.center, library: harness.world.library)
+        var dones = 0
+        let sheet = FeedInfoSheet(
+            model: model,
+            feedFolders: LibraryFeedFolders(center: harness.world.center),
+            requestUnsubscribe: { nil },
+            onUnsubscribe: {},
+            onDone: { dones += 1 },
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 560, height: 680), until: {
+            !self.newFolderNameFields(in: $0).isEmpty
+        }) { hosting in
+            try typeNewFolderName("Charts", in: hosting)
+            guard pressKey(.escape, in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                return self.newFolderNameFields(in: hosting).isEmpty
+            }, "Escape left the New Folder fields open")
+            XCTAssertEqual(dones, 0, "Done took Escape while the New Folder fields were shown")
+
+            settleHostedView(hosting)
+            XCTAssertTrue(pressKey(.escape, in: hosting), "nothing took the second Escape")
+            XCTAssertEqual(dones, 1, "the second Escape did not press Done")
+        }
+    }
+
     /// Feed Info has no Return-key button of its own: Escape presses Done,
     /// and Return stays with the number fields, entering the number typed,
     /// so while the folder picker's New Folder fields are shown their
