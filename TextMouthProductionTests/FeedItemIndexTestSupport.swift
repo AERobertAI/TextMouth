@@ -41,6 +41,31 @@ class FeedItemIndexTestCase: CloudMaintenanceTestCase {
         Date(timeIntervalSince1970: 1_790_000_000 + seconds)
     }
 
+    /// A reading position at `offset` in the first chapter, saved `seconds`
+    /// after the fixed start (`date(_:)`).
+    static func position(_ offset: Int, at seconds: TimeInterval) -> ReadingPosition {
+        var position = ReadingPosition(chapterIndex: 0, characterOffset: offset)
+        position.lastUpdated = date(seconds)
+        return position
+    }
+
+    /// Saves `library` as every save does, and waits until it is on disk.
+    func saveNow(_ library: Library) {
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+    }
+
+    /// The library model the next launch makes: one reading library.json
+    /// and each feed's index from disk, with the startup repair, and the
+    /// feed items' join after it, done.
+    @MainActor
+    func launchedModel() -> LibraryViewModel {
+        LibraryPersistenceService.flushPendingSave()
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        return model
+    }
+
     /// A downloaded article of this test's feed, as a download publishes
     /// one: a package in the feed's folder holding its HTML and its record,
     /// which names the feed and item, and the row the library holds for it.

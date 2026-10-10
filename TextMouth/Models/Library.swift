@@ -202,6 +202,17 @@ struct Library: Codable {
         books.reduce(0) { $1.isFeedItem ? $0 : $0 + 1 }
     }
 
+    /// Moves every feed item's row from `books` to the shelf (FR11), as the
+    /// startup repair does before it reconciles the library's own books with
+    /// the Library folder, which a feed item's package is never in.
+    mutating func shelveFeedItems() {
+        guard books.contains(where: \.isFeedItem) else { return }
+        for row in books where row.isFeedItem {
+            feedShelf.put(row)
+        }
+        books.removeAll(where: \.isFeedItem)
+    }
+
     /// Each feed's rows as its own index keeps them: the feed items among
     /// `books`, then those on the shelf, by feed, and an empty list for each
     /// feed whose index the library keeps but which it holds no row of now,

@@ -72,7 +72,8 @@ extension LibraryViewModel {
         case .loaded(let loaded):
             library = loaded
         case .missing:
-            library = Library()
+            // No library.json, but each feed's index may be there (FR11).
+            library = Library(feedShelf: LibraryPersistenceService.loadFeedShelf())
         case .unreadable(let failure):
             beginIndexRecovery(failure)
         }
@@ -108,8 +109,17 @@ extension LibraryViewModel {
     /// Enters recovery for an index that exists but can't be read: the
     /// library shown starts empty, to be rebuilt from disk by the repair,
     /// and the recovery options are presented.
+    ///
+    /// The feed items are not in library.json, so its failure loses none of
+    /// them (FR11): the rows the model holds stay, on the shelf, and when it
+    /// holds none, as at launch, each feed's rows are read from its packages,
+    /// whose records hold their latest state, as the provisional library's
+    /// books are read from theirs.
     private func beginIndexRecovery(_ failure: LibraryIndexReadFailure) {
-        library = Library()
+        var feedItems = library
+        feedItems.shelveFeedItems()
+        let heldNone = feedItems.feedShelf.isEmpty && feedItems.feedShelf.indexedFeedIDs.isEmpty
+        library = Library(feedShelf: heldNone ? LibraryPersistenceService.loadFeedShelf(fromPackages: true) : feedItems.feedShelf)
         indexRecovery = LibraryIndexRecovery(failure: failure)
         showIndexRecoveryOptions = true
     }
@@ -227,16 +237,23 @@ extension LibraryViewModel {
     /// - the reading position with its playback times, and the last-opened
     ///   date, when they are newer. They are timestamped, so newer is known
     ///   to be the latest progress, which was saved to bookInfo.json.
+    ///
+    /// The feed items' rows are the session's (FR11), on the shelf for the
+    /// startup repair to join again: no feed's index was written while the
+    /// library index could not be, or while the data directory was away, so
+    /// the session holds their latest state. A feed only the loaded library
+    /// read keeps its rows from there.
     nonisolated static func carryingRecoverySessionState(
         from provisional: Library,
         into loaded: Library,
         fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
     ) -> Library {
         let sessionBooks = Dictionary(
-            provisional.books.map { ($0.id, $0) },
+            provisional.libraryBooks.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
         )
         var merged = loaded
+        merged.feedShelf = feedItems(of: provisional, over: loaded)
         for index in merged.books.indices {
             guard let session = sessionBooks[merged.books[index].id] else { continue }
             var book = merged.books[index]
@@ -257,5 +274,24 @@ extension LibraryViewModel {
             merged.books[index] = book
         }
         return merged
+    }
+
+    /// The feed shelf of a library merged from `session` into `loaded`
+    /// (FR11): every feed item of `session`, among its books or on its
+    /// shelf, and, of each feed `session` keeps no index of, the rows
+    /// `loaded` read, with every feed's index either keeps kept.
+    nonisolated static func feedItems(of session: Library, over loaded: Library) -> FeedShelf {
+        var items = session
+        items.shelveFeedItems()
+        var shelf = items.feedShelf
+        let sessionFeeds = shelf.indexedFeedIDs
+        for row in loaded.feedShelf.rows {
+            guard let feedID = row.feedLink?.feedID, !sessionFeeds.contains(feedID) else { continue }
+            shelf.put(row)
+        }
+        for feedID in loaded.feedShelf.indexedFeedIDs {
+            shelf.keepIndex(of: feedID)
+        }
+        return shelf
     }
 }
