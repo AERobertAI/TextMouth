@@ -808,6 +808,7 @@ final class SettingsViewModel: ObservableObject {
             + RecordingPreferences.keys
             + AudioEditingPreferences.keys
             + [KeyboardShortcutManager.editsPreference.key, LogLocation.preference.key]
+            + [KeyboardShortcutManager.doublePressTimePreference.key]
             + [TranscriptionLanguage.preference.key, TranscriptionPreferences.offerAfterImport.key]
             + [BookExportPreferences.showInReaderToolbar.key]
     }
@@ -944,6 +945,7 @@ final class SettingsViewModel: ObservableObject {
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.editsPreference.read(from: preferences).listings(defaults: ShortcutAction.defaultBindings)
         )
+        config.shortcutDoublePressSeconds = KeyboardShortcutManager.doublePressTimePreference.read(from: preferences)
         config.logLocation = LogLocation.preference.read(from: preferences).rawValue
         config.transcriptionLocale = TranscriptionLanguage.preference.read(from: preferences)
         config.offerTranscriptionAfterImport = TranscriptionPreferences.offerAfterImport.read(from: preferences)
@@ -1015,6 +1017,11 @@ final class SettingsViewModel: ObservableObject {
         let shortcutsWereRepaired = KeyboardShortcutManager.adopt(
             SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),
             in: preferences
+        )
+        // The double-press time, in range and in tenths, as decoding left it.
+        adopt(
+            config.shortcutDoublePressSeconds.map(SettingsPolicy.validatedDoublePressSeconds),
+            into: KeyboardShortcutManager.doublePressTimePreference
         )
         // An empty or unsupported choice leaves the current one alone.
         adopt(SettingsPolicy.logLocation.requestedValue(fromConfig: config.logLocation), into: LogLocation.preference)

@@ -355,6 +355,12 @@ final class ConfigService: ObservableObject {
         /// (`ShortcutEdits`); an action the file leaves out keeps its
         /// shortcuts.
         var keyboardShortcuts: [String: ShortcutListing] = [:]
+        /// How soon a second press of a key must follow the first to make a
+        /// double press, such as "w twice" in `keyboardShortcuts`, in
+        /// seconds (FR12): one time for every shortcut, from 0.2 to 2 in
+        /// tenths. A value out of range is read as the nearest bound, and
+        /// one between tenths as the nearest tenth.
+        var shortcutDoublePressSeconds: Double?
         /// Whether every feed is refreshed when TextMouth opens (FR03,
         /// `FeedSettings`).
         var feedRefreshAtLaunch: Bool?
@@ -477,6 +483,11 @@ final class ConfigService: ObservableObject {
             audioEditorPreviewsFilters = fields.optionalFlag(.audioEditorPreviewsFilters)
             audioEditorPlaysAfterMoves = fields.optionalFlag(.audioEditorPlaysAfterMoves)
             keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
+            // Moved into range and to the nearest tenth, which is logged as a
+            // repair, as a clamped number is.
+            shortcutDoublePressSeconds = fields.optionalValue(.shortcutDoublePressSeconds) { (seconds: Double) in
+                SettingsPolicy.validatedDoublePressSeconds(seconds)
+            }
             feedRefreshAtLaunch = fields.optionalFlag(.feedRefreshAtLaunch)
             feedRefreshIntervalHours = fields.optionalThreshold(
                 .feedRefreshIntervalHours,
@@ -541,8 +552,10 @@ final class ConfigService: ObservableObject {
                     "showSpeedInPlaybackControls", "showExportInReaderToolbar",
                 ])
                 // Shortcuts: the record of the ones the user edited (FR12),
-                // which the file lists with every other action's defaults.
+                // which the file lists with every other action's defaults,
+                // and the double-press time.
                 mirrored.append((storeKey: KeyboardShortcutManager.editsPreference.key, field: "keyboardShortcuts"))
+                mirrored += sameNames([KeyboardShortcutManager.doublePressTimePreference.key])
                 // Text: the switch and the repeated-symbol settings. The rules
                 // are kept in substitutions.json.
                 mirrored += sameNames([

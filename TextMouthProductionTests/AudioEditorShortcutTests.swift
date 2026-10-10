@@ -129,12 +129,17 @@ final class AudioEditorShortcutTests: XCTestCase {
 
     // MARK: - Words
 
-    /// Every shortcut is said in words, its modifiers first.
+    /// Every shortcut is said in words, its modifiers first, as the
+    /// Shortcuts tab says it, from the one table of key names (#1508):
+    /// "Shift + J", where the editor's hints once said "Shift-J".
     func testShortcutsAreSaidInWords() {
-        XCTAssertEqual(AudioEditorWording.spokenShortcut(KeyBinding(key: "j", shift: true)), "Shift-J")
-        XCTAssertEqual(AudioEditorWording.spokenShortcut(KeyBinding(key: ",", option: true)), "Option-Comma")
-        XCTAssertEqual(AudioEditorWording.spokenShortcut(KeyBinding(key: "upArrow", command: true, option: true)), "Option-Command-Up Arrow")
-        XCTAssertEqual(AudioEditorWording.spokenShortcut(KeyBinding(key: "space")), "Space")
+        XCTAssertEqual(AudioEditorWording.shortcutSentence([KeyBinding(key: "j", shift: true)]), "Shortcut: Shift + J.")
+        XCTAssertEqual(AudioEditorWording.shortcutSentence([KeyBinding(key: ",", option: true)]), "Shortcut: Option + Comma.")
+        XCTAssertEqual(
+            AudioEditorWording.shortcutSentence([KeyBinding(key: "upArrow", command: true, option: true)]),
+            "Shortcut: Option + Command + Up Arrow."
+        )
+        XCTAssertEqual(AudioEditorWording.shortcutSentence([KeyBinding(key: "space")]), "Shortcut: Space.")
         XCTAssertEqual(AudioEditorWording.shortcutSentence([]), "No shortcut.")
         XCTAssertEqual(AudioEditorWording.shortcutSentence([KeyBinding(key: "w")]), "Shortcut: W.")
         XCTAssertEqual(AudioEditorWording.shortcutSentence([KeyBinding(key: "j"), KeyBinding(key: ",")]), "Shortcuts: J or Comma.")
@@ -142,6 +147,13 @@ final class AudioEditorShortcutTests: XCTestCase {
             AudioEditorWording.shortcutSentence([KeyBinding(key: "j"), KeyBinding(key: ","), KeyBinding(key: "delete")]),
             "Shortcuts: J, Comma, or Delete."
         )
+        XCTAssertEqual(
+            AudioEditorWording.hint(for: .editorSkipBackLong, bindings: [KeyBinding(key: "j", shift: true)]),
+            "Moves the cursor back ten seconds. Shortcut: Shift + J."
+        )
+        for binding in ShortcutAction.audioEditorDefaultBindings.values.flatMap({ $0 }) {
+            XCTAssertEqual(AudioEditorWording.shortcutSentence([binding]), "Shortcut: \(binding.accessibleDisplayString).")
+        }
         for action in editorActions {
             XCTAssertFalse(AudioEditorWording.explanation(of: action).isEmpty, "\(action.rawValue) says nothing of what it does")
         }

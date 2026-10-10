@@ -207,12 +207,14 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
         }
     }
 
-    /// Text that names no key, or a key that is neither a special key's name
-    /// nor one character, is not a shortcut.
+    /// Text that names no key, or a key that is neither a named key (F1 to
+    /// F35 among them, so "command+f13" is F13's) nor one character, is not
+    /// a shortcut; nor is a private-use character no name says.
     func testUnreadableShortcutTextIsNotAShortcut() {
-        for text in ["", "   ", "command+", "comand+k", "command+kk", "hyper+k", "++", "command+f13"] {
+        for text in ["", "   ", "command+", "comand+k", "command+kk", "hyper+k", "++", "command+f36", "command+f0", "\u{F8FF}"] {
             XCTAssertNil(KeyBinding(configText: text), text)
         }
+        XCTAssertEqual(KeyBinding(configText: "command+f13")?.accessibleDisplayString, "Command + F13")
     }
 
     /// An action's list of shortcuts is read whole, without repeats, or not

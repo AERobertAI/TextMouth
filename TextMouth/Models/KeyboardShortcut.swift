@@ -23,11 +23,16 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// from the list (FR09). It has no key until the user gives it one in
     /// Settings.
     case previousInReadingList = "Previous in Reading List"
+    // Up One Level last of the Navigation group, and Show Bookmarks last of
+    // the Bookmarks group, as the Shortcuts tab lists them: `allCases` is
+    // Settings order, which the record of edits, the press index, and the
+    // settling of a key two edited actions share all follow (#1528).
+    case navigateUpLevel = "Up One Level"
     case addBookmark = "Add Bookmark"
     case nextBookmark = "Next Bookmark"
     case previousBookmark = "Previous Bookmark"
-    case showHeadingList = "Show Headings"
     case showBookmarkList = "Show Bookmarks"
+    case showHeadingList = "Show Headings"
     case showSleepTimer = "Show Sleep Timer"
     case restartSleepTimer = "Restart Sleep Timer"
     case whereAmI = "Where Am I?"
@@ -39,7 +44,6 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// import overlay says it, from any window (FR10). It has no key until
     /// the user gives it one in Settings.
     case speakImportProgress = "Speak Import Progress"
-    case navigateUpLevel = "Up One Level"
     case openSelectedBook = "Open Selected Book"
     case showBookInfo = "Book Info"
     case removeFromLibrary = "Remove from Library"
@@ -221,6 +225,24 @@ enum ShortcutScope: Hashable, Sendable {
     /// The audio editor's windows (FR04), and nowhere else: so the editor
     /// can take Space, J, K, and L for itself.
     case audioEditor
+
+    /// Whether a press with Shift that matches no binding of its own
+    /// matches its binding without Shift there, telling the action that
+    /// Shift was held (finding 4 of FR12's design), as `hasExtraShift`
+    /// always meant: Shift-J and Shift-Command-Right Arrow then skip by the
+    /// Playback tab's Shift units, and Increase Speed's Command with "+",
+    /// which a US keyboard types with Shift, matches.
+    ///
+    /// True in the app's windows, where the Shift units are. False in an
+    /// audio editor's, whose Shift keys are actions of their own (Shift-J
+    /// and Shift-L skip ten seconds, Shift-W says the selection) and whose
+    /// actions have no use for Shift: there a press with Shift matches only
+    /// a binding with Shift, as it always has, so Shift-R, this user's
+    /// Release Media Controls elsewhere, never falls back to R's Punch In,
+    /// nor Shift-T to Trim to Selection.
+    var matchesShiftBeyondItsBindings: Bool {
+        self == .app
+    }
 }
 
 extension Notification.Name {
@@ -230,7 +252,8 @@ extension Notification.Name {
     static let audioEditorShortcut = Notification.Name("audioEditorShortcut")
 }
 
-/// A keyboard binding: key + modifiers
+/// A keyboard binding: key + modifiers, pressed once or, for a double press,
+/// twice (FR12).
 struct KeyBinding: Codable, Equatable, Hashable {
     /// The key character (lowercased letter) or special key name:
     /// "space", "rightArrow", "leftArrow", "upArrow", "downArrow", "tab",
@@ -240,8 +263,42 @@ struct KeyBinding: Codable, Equatable, Hashable {
     var option: Bool = false
     var shift: Bool = false
     var control: Bool = false
+    /// Whether the binding is its key pressed twice within the double-press
+    /// time (FR12, `SettingsPolicy.shortcutDoublePressSeconds`), rather than
+    /// once. A double press and a single press of one key are two bindings,
+    /// which two actions may hold; `ShortcutPressDispatcher` tells them
+    /// apart as the key is pressed.
+    var isDoublePress: Bool = false
 
-    /// Human-readable display string
+    /// The word that follows a double press's shortcut where it is shown,
+    /// spoken, or written in config.json: "W twice", "w twice".
+    static let twiceWord = "twice"
+
+    /// The key press the binding is made of: the binding as a single press,
+    /// its key as a key press gives it (`from(event:)`), a character in
+    /// lower case. A double press is its stroke pressed twice; key presses
+    /// are matched by their strokes.
+    var stroke: KeyBinding {
+        KeyBinding(
+            key: key.count == 1 ? key.lowercased() : key,
+            command: command,
+            option: option,
+            shift: shift,
+            control: control
+        )
+    }
+
+    /// The binding pressed twice when `isDouble`, or once: the same key and
+    /// modifiers, as the Shortcuts tab's Make Double Press and Make Single
+    /// Press change them.
+    func asDoublePress(_ isDouble: Bool) -> KeyBinding {
+        var binding = self
+        binding.isDoublePress = isDouble
+        return binding
+    }
+
+    /// Human-readable display string, such as "⌘I", or "⌘I twice" for a
+    /// double press.
     var displayString: String {
         var parts: [String] = []
         if control { parts.append("\u{2303}") }      // ⌃
@@ -249,13 +306,14 @@ struct KeyBinding: Codable, Equatable, Hashable {
         if shift { parts.append("\u{21E7}") }         // ⇧
         if command { parts.append("\u{2318}") }       // ⌘
         parts.append(keyDisplayName)
-        return parts.joined()
+        return withTwice(parts.joined())
     }
 
     /// The binding in words, as VoiceOver speaks it and a braille display
     /// shows it: its modifiers, then its key, joined by " + ", such as
-    /// "Shift + Command + B" or "Command + Right Arrow". No part is a
-    /// symbol, which a braille display shows as a sign (FR12).
+    /// "Shift + Command + B" or "Command + Right Arrow", and " twice" after
+    /// a double press: "W twice", "Command + I twice". No part is a symbol,
+    /// which a braille display shows as a sign (FR12).
     var accessibleDisplayString: String {
         var parts: [String] = []
         if control { parts.append("Control") }
@@ -263,7 +321,14 @@ struct KeyBinding: Codable, Equatable, Hashable {
         if shift { parts.append("Shift") }
         if command { parts.append("Command") }
         parts.append(keyNameInWords)
-        return parts.joined(separator: " + ")
+        return withTwice(parts.joined(separator: " + "))
+    }
+
+    /// `text`, naming the binding's key and modifiers, followed by " twice"
+    /// for a double press: the one place every form of a binding, on the
+    /// screen, in words, and in config.json, says that it is one.
+    private func withTwice(_ text: String) -> String {
+        isDoublePress ? "\(text) \(Self.twiceWord)" : text
     }
 
     /// The keys of one action in words, as the Shortcuts tab says them:
@@ -272,41 +337,24 @@ struct KeyBinding: Codable, Equatable, Hashable {
         keys.isEmpty ? "No shortcut" : keys.map(\.accessibleDisplayString).joined(separator: " or ")
     }
 
-    /// The key in words: a special key's name, such as "Right Arrow" or
-    /// "Delete", or the character in capitals.
+    /// The key in words (`KeyName.words`): a named key's name, such as
+    /// "Right Arrow", "Page Down", "F5", or "Comma", or the character in
+    /// capitals.
     private var keyNameInWords: String {
-        switch key {
-        case "space": return "Space"
-        case "rightArrow": return "Right Arrow"
-        case "leftArrow": return "Left Arrow"
-        case "upArrow": return "Up Arrow"
-        case "downArrow": return "Down Arrow"
-        case "tab": return "Tab"
-        case "return": return "Return"
-        case "delete": return "Delete"
-        case "escape": return "Escape"
-        default: return key.uppercased()
-        }
+        Self.words(forKey: key)
     }
 
-    /// The key as the screen shows it: a special key's symbol, such as "→"
-    /// or "⌫", "Space", or the character in capitals.
+    /// The key as the screen shows it (`KeyName.shown`): a named key's
+    /// symbol, such as "→" or "⌫", or its words, such as "Space" or "Page
+    /// Down", or the character in capitals.
     private var keyDisplayName: String {
-        switch key {
-        case "space": return "Space"
-        case "rightArrow": return "\u{2192}"   // →
-        case "leftArrow": return "\u{2190}"    // ←
-        case "upArrow": return "\u{2191}"      // ↑
-        case "downArrow": return "\u{2193}"    // ↓
-        case "tab": return "\u{21E5}"          // ⇥
-        case "return": return "\u{21A9}"       // ↩
-        case "delete": return "\u{232B}"       // ⌫
-        case "escape": return "\u{238B}"       // ⎋
-        default: return key.uppercased()
-        }
+        Self.keyName(forKey: key)?.shown ?? key.uppercased()
     }
 
-    /// Check if this binding matches an NSEvent
+    /// Whether the key press `event` is this binding's stroke: its key with
+    /// exactly its modifiers. A double press's binding matches each of its
+    /// two presses; `ShortcutPressDispatcher` decides which press a key
+    /// press is.
     func matches(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         guard flags.contains(.command) == command,
@@ -318,34 +366,21 @@ struct KeyBinding: Codable, Equatable, Hashable {
         return matchesKey(event)
     }
 
+    /// Whether `event` presses this binding's key: a key named by its key
+    /// code by that code, any other by its character, in any letter case.
     private func matchesKey(_ event: NSEvent) -> Bool {
-        switch key {
-        case "space":
-            return event.keyCode == 49
-        case "rightArrow":
-            return event.keyCode == 124
-        case "leftArrow":
-            return event.keyCode == 123
-        case "upArrow":
-            return event.keyCode == 126
-        case "downArrow":
-            return event.keyCode == 125
-        case "tab":
-            return event.keyCode == 48
-        case "return":
-            return event.keyCode == 36
-        case "delete":
-            return event.keyCode == 51
-        case "escape":
-            return event.keyCode == 53
-        default:
-            // Regular character — case-insensitive comparison
-            guard let chars = event.charactersIgnoringModifiers?.lowercased() else { return false }
-            return chars == key.lowercased()
+        if let keyCode = Self.keyName(forKey: key)?.keyCode {
+            return event.keyCode == keyCode
         }
+        guard let chars = event.charactersIgnoringModifiers?.lowercased() else { return false }
+        return chars == key.lowercased()
     }
 
-    /// Create a KeyBinding from an NSEvent (used in the shortcut recorder)
+    /// The binding a key press makes, as the Shortcuts tab records it and
+    /// the dispatcher matches it: the key named by its key code, or else by
+    /// the character it gives, in lower case, with the modifiers held. Nil
+    /// for a key that gives no character, or one of the private-use area
+    /// that no name in `keyNames` says, which nothing could show or speak.
     static func from(event: NSEvent) -> KeyBinding? {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let cmd = flags.contains(.command)
@@ -354,18 +389,11 @@ struct KeyBinding: Codable, Equatable, Hashable {
         let ctrl = flags.contains(.control)
 
         let key: String
-        switch event.keyCode {
-        case 49: key = "space"
-        case 124: key = "rightArrow"
-        case 123: key = "leftArrow"
-        case 126: key = "upArrow"
-        case 125: key = "downArrow"
-        case 48: key = "tab"
-        case 36: key = "return"
-        case 51: key = "delete"
-        case 53: key = "escape"
-        default:
-            guard let chars = event.charactersIgnoringModifiers?.lowercased(), !chars.isEmpty else {
+        if let named = keyNamesByKeyCode[event.keyCode] {
+            key = named.key
+        } else {
+            guard let chars = event.charactersIgnoringModifiers?.lowercased(), !chars.isEmpty,
+                  !isUnnamedPrivateUseCharacter(chars) else {
                 return nil
             }
             key = chars
@@ -375,35 +403,244 @@ struct KeyBinding: Codable, Equatable, Hashable {
     }
 }
 
+// MARK: - Keys in Words
+
+/// A key named rather than spelled by its character (FR12; #1452 and
+/// #1508), in the one table the Shortcuts tab, the audio editor's hints,
+/// VoiceOver, braille, and config.json all read (`KeyBinding.keyNames`).
+struct KeyName: Sendable {
+    /// The key as a binding holds it: a name such as "rightArrow", or a
+    /// character: AppKit's private-use one for a key with no name of its
+    /// own, such as Page Down's, or the key's own, such as ",".
+    let key: String
+    /// The key in words, as VoiceOver speaks it and a braille display shows
+    /// it: "Right Arrow", "Page Down", "F5", "Comma".
+    let words: String
+    /// The key as the screen shows it: a symbol such as "→", or its words,
+    /// or a punctuation mark itself.
+    let shown: String
+    /// The key as config.json writes it, read back in any letter case:
+    /// "rightArrow", "pageDown", "f5", or a punctuation mark itself, ",".
+    let configName: String
+    /// The key code a press of the key has, for a key matched by its code
+    /// rather than its character; nil for every other.
+    let keyCode: UInt16?
+}
+
+extension KeyBinding {
+    /// Every key named rather than spelled by its character: the keys the
+    /// keyboard's key codes name, AppKit's function keys, the keypad's
+    /// Enter, and the punctuation marks.
+    static let keyNames: [KeyName] = codeNamedKeys + functionKeys + [keypadEnter] + punctuationMarks
+
+    /// The special keys' names, spelled as `from(event:)` records them. Any
+    /// other key is a character.
+    static let namedKeys = codeNamedKeys.map(\.key)
+
+    /// The keys matched by their key codes, as `from(event:)` records them,
+    /// each shown as macOS's menus show it.
+    private static let codeNamedKeys: [KeyName] = [
+        KeyName(key: "space", words: "Space", shown: "Space", configName: "space", keyCode: 49),
+        KeyName(key: "tab", words: "Tab", shown: "\u{21E5}", configName: "tab", keyCode: 48),                // ⇥
+        KeyName(key: "return", words: "Return", shown: "\u{21A9}", configName: "return", keyCode: 36),       // ↩
+        KeyName(key: "delete", words: "Delete", shown: "\u{232B}", configName: "delete", keyCode: 51),       // ⌫
+        KeyName(key: "escape", words: "Escape", shown: "\u{238B}", configName: "escape", keyCode: 53),       // ⎋
+        KeyName(key: "leftArrow", words: "Left Arrow", shown: "\u{2190}", configName: "leftArrow", keyCode: 123),     // ←
+        KeyName(key: "rightArrow", words: "Right Arrow", shown: "\u{2192}", configName: "rightArrow", keyCode: 124),  // →
+        KeyName(key: "upArrow", words: "Up Arrow", shown: "\u{2191}", configName: "upArrow", keyCode: 126),           // ↑
+        KeyName(key: "downArrow", words: "Down Arrow", shown: "\u{2193}", configName: "downArrow", keyCode: 125),     // ↓
+    ]
+
+    /// The keys AppKit gives a private-use character of its own (NSEvent.h's
+    /// function-key constants), which a binding holds as that character, as
+    /// `from(event:)` records it and `TextEditingKeys` keeps Forward Delete,
+    /// Home, End, Page Up, and Page Down for a text field. Each is shown,
+    /// spoken, and written in config.json in words, never as its character,
+    /// which no screen or braille display can show.
+    private static let functionKeys: [KeyName] = {
+        var keys = [
+            functionKey(NSDeleteFunctionKey, "Forward Delete", "forwardDelete"),
+            functionKey(NSHomeFunctionKey, "Home", "home"),
+            functionKey(NSEndFunctionKey, "End", "end"),
+            functionKey(NSPageUpFunctionKey, "Page Up", "pageUp"),
+            functionKey(NSPageDownFunctionKey, "Page Down", "pageDown"),
+            functionKey(NSHelpFunctionKey, "Help", "help"),
+            functionKey(NSClearLineFunctionKey, "Clear", "clear"),
+            functionKey(NSInsertFunctionKey, "Insert", "insert"),
+            functionKey(NSBeginFunctionKey, "Begin", "begin"),
+            functionKey(NSPrintScreenFunctionKey, "Print Screen", "printScreen"),
+            functionKey(NSScrollLockFunctionKey, "Scroll Lock", "scrollLock"),
+            functionKey(NSPauseFunctionKey, "Pause", "pause"),
+            functionKey(NSSysReqFunctionKey, "System Request", "sysReq"),
+            functionKey(NSBreakFunctionKey, "Break", "break"),
+            functionKey(NSResetFunctionKey, "Reset", "reset"),
+            functionKey(NSStopFunctionKey, "Stop", "stop"),
+            functionKey(NSMenuFunctionKey, "Menu", "menu"),
+            functionKey(NSUserFunctionKey, "User", "user"),
+            functionKey(NSSystemFunctionKey, "System", "system"),
+            functionKey(NSPrintFunctionKey, "Print", "print"),
+            functionKey(NSClearDisplayFunctionKey, "Clear Display", "clearDisplay"),
+            functionKey(NSInsertLineFunctionKey, "Insert Line", "insertLine"),
+            functionKey(NSDeleteLineFunctionKey, "Delete Line", "deleteLine"),
+            functionKey(NSInsertCharFunctionKey, "Insert Character", "insertCharacter"),
+            functionKey(NSDeleteCharFunctionKey, "Delete Character", "deleteCharacter"),
+            functionKey(NSPrevFunctionKey, "Previous", "previous"),
+            functionKey(NSNextFunctionKey, "Next", "next"),
+            functionKey(NSSelectFunctionKey, "Select", "select"),
+            functionKey(NSExecuteFunctionKey, "Execute", "execute"),
+            functionKey(NSUndoFunctionKey, "Undo", "undo"),
+            functionKey(NSRedoFunctionKey, "Redo", "redo"),
+            functionKey(NSFindFunctionKey, "Find", "find"),
+            functionKey(NSModeSwitchFunctionKey, "Mode Switch", "modeSwitch"),
+        ]
+        // F1 to F35, which AppKit numbers in a row from F1's character.
+        for number in 1...35 {
+            keys.append(functionKey(NSF1FunctionKey + number - 1, "F\(number)", "f\(number)"))
+        }
+        return keys
+    }()
+
+    /// The keypad's Enter, whose character is a control character no screen
+    /// shows: named "Enter" everywhere.
+    private static let keypadEnter = KeyName(key: "\u{3}", words: "Enter", shown: "Enter", configName: "enter", keyCode: nil)
+
+    /// The punctuation marks, named in words for VoiceOver and braille, as
+    /// the audio editor's hints always named them, and shown and written in
+    /// config.json as themselves.
+    private static let punctuationMarks: [KeyName] = [
+        (",", "Comma"), (".", "Period"), ("<", "Less Than"), (">", "Greater Than"), ("/", "Slash"),
+        ("\\", "Backslash"), (";", "Semicolon"), ("'", "Apostrophe"), ("`", "Grave Accent"),
+        ("[", "Left Bracket"), ("]", "Right Bracket"), ("-", "Minus"), ("=", "Equals"), ("+", "Plus"),
+        (":", "Colon"), ("\"", "Quotation Mark"), ("?", "Question Mark"), ("{", "Left Brace"),
+        ("}", "Right Brace"), ("|", "Vertical Bar"), ("_", "Underscore"), ("~", "Tilde"),
+        ("!", "Exclamation Mark"), ("@", "At Sign"), ("#", "Number Sign"), ("$", "Dollar Sign"),
+        ("%", "Percent Sign"), ("^", "Caret"), ("&", "Ampersand"), ("*", "Asterisk"),
+        ("(", "Left Parenthesis"), (")", "Right Parenthesis"),
+    ].map { mark, words in
+        KeyName(key: mark, words: words, shown: mark, configName: mark, keyCode: nil)
+    }
+
+    /// The name of the AppKit function key whose constant is `code`: its
+    /// character as a binding holds it, shown and spoken as `words`, and
+    /// written `configName` in config.json.
+    private static func functionKey(_ code: Int, _ words: String, _ configName: String) -> KeyName {
+        let character = UInt32(exactly: code).flatMap(Unicode.Scalar.init).map { String(Character($0)) } ?? ""
+        return KeyName(key: character, words: words, shown: words, configName: configName, keyCode: nil)
+    }
+
+    /// The table by the key a binding holds.
+    private static let keyNamesByKey = Dictionary(keyNames.map { ($0.key, $0) }) { first, _ in first }
+
+    /// The keys matched by their key codes, by those codes.
+    private static let keyNamesByKeyCode = Dictionary(
+        keyNames.compactMap { name in name.keyCode.map { ($0, name) } }
+    ) { first, _ in first }
+
+    /// The table by config.json's names that are words, in lower case; a
+    /// punctuation mark is read as the one character it is.
+    private static let keyNamesByConfigName = Dictionary(
+        keyNames.filter { $0.configName.count > 1 }.map { ($0.configName.lowercased(), $0) }
+    ) { first, _ in first }
+
+    /// The name of the key `key`, as a binding holds it, if it has one.
+    static func keyName(forKey key: String) -> KeyName? {
+        keyNamesByKey[key]
+    }
+
+    /// The key `key` in words, as VoiceOver speaks it and a braille display
+    /// shows it: a named key's words, or the character in capitals. The
+    /// Shortcuts tab and the audio editor's hints both say keys so.
+    static func words(forKey key: String) -> String {
+        keyName(forKey: key)?.words ?? key.uppercased()
+    }
+
+    /// Whether `characters` are one character of the private-use area that
+    /// no name says: no key TextMouth can show, speak, or write.
+    static func isUnnamedPrivateUseCharacter(_ characters: String) -> Bool {
+        guard characters.unicodeScalars.count == 1, let scalar = characters.unicodeScalars.first else { return false }
+        return (0xE000...0xF8FF).contains(scalar.value) && keyName(forKey: characters) == nil
+    }
+}
+
+// MARK: - A Binding as the Preferences Store Saves It
+
+/// Written by hand, in an extension so the memberwise initializer stays, to
+/// keep every binding saved before double presses existed readable (FR12):
+/// Swift's synthesized decoding would require `isDoublePress` in every
+/// saved binding, and a record that fails to read is lost. A single press
+/// is written exactly as before, with no flag, so this user's record and
+/// config.json read and write unchanged, and an older build reads a double
+/// press as its single press rather than failing.
+extension KeyBinding {
+    /// The binding's fields as they are saved, in the order every release
+    /// has written them.
+    private enum CodingKeys: String, CodingKey {
+        case key, command, option, shift, control, isDoublePress
+    }
+
+    /// Reads a saved binding: its key and four modifiers, which every
+    /// release writes, and the double press flag, written only when true,
+    /// so a binding saved without it is a single press.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        key = try container.decode(String.self, forKey: .key)
+        command = try container.decode(Bool.self, forKey: .command)
+        option = try container.decode(Bool.self, forKey: .option)
+        shift = try container.decode(Bool.self, forKey: .shift)
+        control = try container.decode(Bool.self, forKey: .control)
+        isDoublePress = try container.decodeIfPresent(Bool.self, forKey: .isDoublePress) ?? false
+    }
+
+    /// Writes the key and the four modifiers as every release has, and the
+    /// double press flag only for a double press.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(key, forKey: .key)
+        try container.encode(command, forKey: .command)
+        try container.encode(option, forKey: .option)
+        try container.encode(shift, forKey: .shift)
+        try container.encode(control, forKey: .control)
+        if isDoublePress {
+            try container.encode(true, forKey: .isDoublePress)
+        }
+    }
+}
+
 // MARK: - Shortcuts as config.json Writes Them
 
 extension KeyBinding {
-    /// The special keys' names, spelled as `from(event:)` records them. Any
-    /// other key is a single character.
-    static let namedKeys = [
-        "space", "tab", "return", "delete", "escape", "leftArrow", "rightArrow", "upArrow", "downArrow",
-    ]
+    /// The word config.json also reads before a double press's shortcut, as
+    /// in "double w", though it writes "w twice".
+    static let doubleWord = "double"
 
     /// The binding as config.json writes it: its modifiers in the order
     /// Settings shows them (Control, Option, Shift, Command), then its key,
     /// joined by "+", such as "space", "command+rightArrow", or
-    /// "option+shift+command+b".
+    /// "option+shift+command+b", and " twice" after a double press, such as
+    /// "w twice" (FR12). A named key is written by its name in
+    /// `KeyBinding.keyNames`, such as "command+pageDown" or "f5", never as
+    /// the private-use character a binding holds for it.
     var configText: String {
-        (ConfigModifier.allCases.filter { $0.isHeld(in: self) }.map(\.word) + [key]).joined(separator: "+")
+        let keyText = Self.keyName(forKey: key)?.configName ?? key
+        return withTwice((ConfigModifier.allCases.filter { $0.isHeld(in: self) }.map(\.word) + [keyText]).joined(separator: "+"))
     }
 
     /// Reads a shortcut written in config.json: modifier names joined to a
-    /// key by "+", as `configText` writes them.
+    /// key by "+", as `configText` writes them, and "twice" after a double
+    /// press.
     ///
     /// Text edited by hand is read generously: names may be capitalized,
     /// spaces are ignored, cmd, ctrl, opt, and alt stand for command,
     /// control, and option, and a letter key may be a capital. The key comes
-    /// last and may itself be the plus key, as in "command++". Returns nil
-    /// for text that names no key, or a key that is neither a special key's
-    /// name nor a single character.
+    /// last and may itself be the plus key, as in "command++". A double
+    /// press may say "twice" after the shortcut, in any letter case, with or
+    /// without a space before it, or "double" before it: "w twice",
+    /// "W Twice", "wtwice", and "double w" are all W pressed twice. Returns
+    /// nil for text that names no key, or a key that is neither a special
+    /// key's name nor a single character.
     init?(configText: String) {
         var remaining = Substring(configText.filter { !$0.isWhitespace })
-        var binding = KeyBinding(key: "")
+        var binding = KeyBinding(key: "", isDoublePress: Self.takeDoublePressWord(from: &remaining))
         // Take modifiers off the front while one is followed by "+"; what
         // remains is the key.
         while let leading = ConfigModifier.leading(in: remaining) {
@@ -413,6 +650,23 @@ extension KeyBinding {
         guard let key = Self.storedKey(named: remaining) else { return nil }
         binding.key = key
         self = binding
+    }
+
+    /// Takes the word marking a double press off `text`, spaces already
+    /// removed: "twice" at its end, or else "double" at its start, in any
+    /// letter case. Returns whether there was one. Only one word is taken,
+    /// and never the whole text, so "twice" alone, "w twice twice", and
+    /// "double w twice" name no key.
+    private static func takeDoublePressWord(from text: inout Substring) -> Bool {
+        if text.count > twiceWord.count, text.suffix(twiceWord.count).lowercased() == twiceWord {
+            text = text.dropLast(twiceWord.count)
+            return true
+        }
+        if text.count > doubleWord.count, text.prefix(doubleWord.count).lowercased() == doubleWord {
+            text = text.dropFirst(doubleWord.count)
+            return true
+        }
+        return false
     }
 
     /// Reads the shortcuts config.json lists for one action, keeping the
@@ -430,14 +684,18 @@ extension KeyBinding {
         return bindings
     }
 
-    /// The key as bindings store it: a special key's name in its usual
-    /// spelling, or a single character in lower case, as recorded; nil for
-    /// anything else.
+    /// The key as bindings store it: the key a name of `keyNames` names, in
+    /// any letter case, such as "pageDown" or "F5"; or a single character
+    /// in lower case, as recorded, AppKit's own for a named key included, so
+    /// a file that wrote one reads back as the name does. Nil for anything
+    /// else, a private-use character no name says among them.
     private static func storedKey(named text: Substring) -> String? {
-        if let named = namedKeys.first(where: { $0.caseInsensitiveCompare(text) == .orderedSame }) {
-            return named
+        if let named = keyNamesByConfigName[text.lowercased()] {
+            return named.key
         }
-        return text.count == 1 ? text.lowercased() : nil
+        guard text.count == 1 else { return nil }
+        let character = text.lowercased()
+        return isUnnamedPrivateUseCharacter(character) ? nil : character
     }
 }
 

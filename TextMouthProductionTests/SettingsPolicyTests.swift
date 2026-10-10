@@ -19,12 +19,37 @@ final class SettingsPolicyTests: XCTestCase {
             (SettingsPolicy.bluetoothDisconnectDelay, 1...10, 2),
             (SettingsPolicy.restartTimerGestureWindow, 0.5...10, 2),
             (SettingsPolicy.soundEffectsVolume, 0...1, 0.5),
+            (SettingsPolicy.shortcutDoublePressSeconds, 0.2...2, 0.5),
         ]
         for (rule, range, defaultValue) in expected {
             XCTAssertEqual(rule.range, range, rule.key)
             XCTAssertEqual(rule.defaultValue, defaultValue, rule.key)
             XCTAssertTrue(rule.range.contains(rule.defaultValue), rule.key)
         }
+    }
+
+    /// The double-press time (FR12) is half a second until the user picks
+    /// another, and always 0.2 to 2 seconds in tenths, as the Shortcuts
+    /// tab's stepper sets it: a value out of range moves to the nearest
+    /// bound, one between tenths to the nearest tenth, and one with no
+    /// magnitude to the default.
+    func testTheDoublePressTimeIsInTenthsWithinItsRange() {
+        let validated: [(Double, Double)] = [
+            (0.5, 0.5), (0.2, 0.2), (2, 2), (1, 1),
+            (0.75, 0.8), (0.74, 0.7), (1.25, 1.3), (0.30000000000000004, 0.3), (0.7999999999999999, 0.8),
+            (0.1, 0.2), (0, 0.2), (-3, 0.2), (2.04, 2), (9, 2), (1e308, 2),
+            (.nan, 0.5), (.infinity, 0.5), (-.infinity, 0.5),
+        ]
+        for (value, expected) in validated {
+            XCTAssertEqual(SettingsPolicy.validatedDoublePressSeconds(value), expected, "\(value)")
+        }
+        // Each tenth is the decimal it says, as config.json writes it, even
+        // from a stepper's sum such as 3 × 0.1.
+        for tenths in 2...20 {
+            let seconds = SettingsPolicy.validatedDoublePressSeconds(Double(tenths) * 0.1)
+            XCTAssertEqual("\(seconds)", "\(tenths / 10).\(tenths % 10)", "\(tenths) tenths")
+        }
+        XCTAssertEqual(SettingsPolicy.shortcutDoublePressSeconds.key, "shortcutDoublePressSeconds")
     }
 
     /// Only speed and pitch use 0 to mean "not chosen yet"; every other

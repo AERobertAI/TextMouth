@@ -12,6 +12,10 @@ import Combine
 /// there by anyone else, such as the settings model applying an edit of
 /// config.json, which mirrors the shortcuts; key presses match the keys in
 /// force at once.
+///
+/// Each key press goes to a `ShortcutPressDispatcher`, which tells single
+/// presses from double presses by the double-press time the store holds, and
+/// says which action, if any, the press triggers; the manager posts it.
 @MainActor
 final class KeyboardShortcutManager: ObservableObject {
     /// The record of the shortcuts the user edited, as the store holds it.
@@ -21,6 +25,11 @@ final class KeyboardShortcutManager: ObservableObject {
     /// belongs to two actions of one scope. Key presses match these. A
     /// change of the record and these is published once (`take(_:)`).
     private(set) var bindings: [ShortcutAction: [KeyBinding]]
+    /// How soon a second press must follow the first to make a double press,
+    /// in seconds (FR12), as the store holds it: one time for every
+    /// shortcut. A change made anywhere, in the Shortcuts tab or in
+    /// config.json, is published, and the next key press goes by it.
+    private(set) var doublePressTime: TimeInterval
 
     private var eventMonitor: Any?
     /// The store holding the record.
@@ -28,8 +37,26 @@ final class KeyboardShortcutManager: ObservableObject {
     /// Where the actions' notifications are posted: the app's own center,
     /// which every window hears, unless a test passes one of its own.
     private let notificationCenter: NotificationCenter
-    /// Reports changes to the record in the store.
+    /// Reports changes to the record and the double-press time in the store.
     private var storeObserver: PreferenceObserver?
+    /// Reads the time on the key presses' time line, for the dispatcher.
+    private let clock: ShortcutPressDispatcher.Clock
+    /// Starts the timer a waiting single press waits on, for the dispatcher.
+    private let startTimer: ShortcutPressDispatcher.StartTimer
+    /// Decides what each key press does, from the bindings in force: made
+    /// on first use, since its closures reach back to the manager, and
+    /// rebuilt whenever the bindings change (`take(_:)`).
+    private lazy var dispatcher = ShortcutPressDispatcher(
+        bindings: bindings,
+        doublePressTime: { [weak self] in
+            self?.doublePressTime ?? SettingsPolicy.shortcutDoublePressSeconds.defaultValue
+        },
+        clock: clock,
+        startTimer: startTimer,
+        perform: { [weak self] trigger in
+            self?.post(trigger)
+        }
+    )
 
     /// Loads the record, follows its changes in the store from then on,
     /// and, unless told not to, starts watching key presses.
@@ -40,18 +67,33 @@ final class KeyboardShortcutManager: ObservableObject {
     ///   - notificationCenter: Where the actions' notifications go: the
     ///     default center unless a test passes its own, so that a key it
     ///     presses through the manager reaches no window of the app.
+    ///   - clock: The time on the key presses' time line, the Mac's uptime
+    ///     unless a test passes its own.
+    ///   - startTimer: Starts the timer a waiting single press waits on, a
+    ///     work item on the main queue unless a test passes its own, so
+    ///     that no test waits.
     init(
         userDefaults: UserDefaults = TextMouthRuntime.current.preferences,
         installsEventMonitor: Bool = true,
-        notificationCenter: NotificationCenter = .default
+        notificationCenter: NotificationCenter = .default,
+        clock: ShortcutPressDispatcher.Clock? = nil,
+        startTimer: ShortcutPressDispatcher.StartTimer? = nil
     ) {
         self.userDefaults = userDefaults
         self.notificationCenter = notificationCenter
+        self.clock = clock ?? { ProcessInfo.processInfo.systemUptime }
+        self.startTimer = startTimer ?? { delay, fire in MainQueuePressTimer(delay: delay, fire: fire) }
         let stored = Self.storedEdits(in: userDefaults)
         edits = stored
         bindings = stored.effectiveBindings(defaults: ShortcutAction.defaultBindings)
-        storeObserver = PreferenceObserver(keys: [Self.editsPreference.key], in: userDefaults) { [weak self] _ in
-            self?.takeEditsFromStore()
+        doublePressTime = Self.doublePressTimePreference.read(from: userDefaults)
+        let observedKeys = [Self.editsPreference.key, Self.doublePressTimePreference.key]
+        storeObserver = PreferenceObserver(keys: observedKeys, in: userDefaults) { [weak self] key in
+            if key == Self.doublePressTimePreference.key {
+                self?.takeDoublePressTimeFromStore()
+            } else {
+                self?.takeEditsFromStore()
+            }
         }
         if installsEventMonitor {
             startMonitoring()
@@ -73,6 +115,23 @@ final class KeyboardShortcutManager: ObservableObject {
         write: { edits, store, key in
             guard let data = edits.storedData else { return }
             store.set(data, forKey: key)
+        }
+    )
+
+    /// How soon a second press must follow the first to make a double press
+    /// (FR12), in seconds, in the preferences store: one time for every
+    /// shortcut, set in the Shortcuts tab and in config.json. It is read and
+    /// written through `SettingsPolicy.validatedDoublePressSeconds(_:)`, so
+    /// it is always 0.2 to 2 seconds in tenths, and half a second while the
+    /// store holds none. The settings model mirrors it in config.json
+    /// through this same definition.
+    nonisolated static let doublePressTimePreference = StoredPreference<Double>(
+        key: SettingsPolicy.shortcutDoublePressSeconds.key,
+        read: { store, _ in
+            SettingsPolicy.validatedDoublePressSeconds(SettingsPolicy.shortcutDoublePressSeconds.storedValue(in: store))
+        },
+        write: { seconds, store, key in
+            store.set(SettingsPolicy.validatedDoublePressSeconds(seconds), forKey: key)
         }
     )
 
@@ -107,13 +166,32 @@ final class KeyboardShortcutManager: ObservableObject {
         take(Self.storedEdits(in: userDefaults))
     }
 
-    /// Makes `newEdits` the record in force, with its keys, publishing once
+    /// Takes the double-press time from the store whenever it changes
+    /// there, by `setDoublePressTime(_:)` or by anyone else, publishing it
     /// when it differs from the one in force.
+    private func takeDoublePressTimeFromStore() {
+        let stored = Self.doublePressTimePreference.read(from: userDefaults)
+        guard stored != doublePressTime else { return }
+        objectWillChange.send()
+        doublePressTime = stored
+    }
+
+    /// Saves `seconds` as the double-press time, as the Shortcuts tab's
+    /// stepper sets it: validated and in tenths of a second. The store
+    /// reports the change at once, and the time in force follows.
+    func setDoublePressTime(_ seconds: TimeInterval) {
+        Self.doublePressTimePreference.write(seconds, to: userDefaults)
+    }
+
+    /// Makes `newEdits` the record in force, with its keys, publishing once
+    /// when it differs from the one in force; key presses go by the new keys
+    /// at once.
     private func take(_ newEdits: ShortcutEdits) {
         guard newEdits != edits else { return }
         objectWillChange.send()
         edits = newEdits
         bindings = newEdits.effectiveBindings(defaults: ShortcutAction.defaultBindings)
+        dispatcher.rebuild(from: bindings)
     }
 
     /// Puts `changed` in force, then saves it. In force first: the store
@@ -272,6 +350,67 @@ final class KeyboardShortcutManager: ObservableObject {
         ShortcutAction.allCases.first { $0.scope == scope && bindingsFor($0).contains(binding) }
     }
 
+    /// The action whose single press waits on the key `binding` is a press
+    /// of, single or double, in `scope` (FR12): the key's single action, when
+    /// the key also has a double action that does not escalate it, so each
+    /// single press waits out the double-press time before it acts. Nil
+    /// when the key's presses act at once.
+    func waitingAction(for binding: KeyBinding, in scope: ShortcutScope) -> ShortcutAction? {
+        guard let actions = dispatcher.index.actions(for: binding, in: scope), actions.singleWaits else { return nil }
+        return actions.single
+    }
+
+    // MARK: - Recording a Shortcut
+
+    /// The Shortcuts tab's recorders that are recording, held weakly: while
+    /// one records, every key press is left to it and no shortcut acts, so
+    /// the key it records never runs the action that has it, whichever key
+    /// monitor AppKit asks first. A recorder that goes away without saying
+    /// so stops counting.
+    private var recorders: [WeakRecorder] = []
+
+    /// Whether a recorder of the Shortcuts tab is recording.
+    var isRecordingShortcut: Bool {
+        recorders.contains { $0.recorder != nil }
+    }
+
+    /// Says that `recorder` is recording: key presses are left to it.
+    func recordingStarted(by recorder: AnyObject) {
+        recorders.removeAll { $0.recorder == nil || $0.recorder === recorder }
+        recorders.append(WeakRecorder(recorder: recorder))
+    }
+
+    /// Says that `recorder` has stopped: shortcuts act again once no
+    /// recorder records.
+    func recordingStopped(by recorder: AnyObject) {
+        recorders.removeAll { $0.recorder == nil || $0.recorder === recorder }
+    }
+
+    // MARK: - Trying a Double Press
+
+    /// The Try a Double Press trial running, if any: the next key presses
+    /// are its, and no shortcut acts on them.
+    private var trial: DoublePressTrial?
+
+    /// Whether Try a Double Press is waiting for its two presses.
+    var isTryingDoublePress: Bool {
+        trial != nil
+    }
+
+    /// Starts Try a Double Press (FR12, section 6.2 of the design): for five
+    /// seconds the next two key presses are no shortcuts, and `report` is
+    /// told what they made, measured against the double-press time in
+    /// force. A trial already running ends without a report.
+    func tryDoublePress(report: @escaping @MainActor (DoublePressTrial.Outcome) -> Void) {
+        trial?.cancel()
+        let trial = DoublePressTrial(doublePressTime: doublePressTime, startTimer: startTimer) { [weak self] outcome in
+            self?.trial = nil
+            report(outcome)
+        }
+        self.trial = trial
+        trial.start()
+    }
+
     // MARK: - Event Monitoring
 
     private func startMonitoring() {
@@ -297,64 +436,60 @@ final class KeyboardShortcutManager: ObservableObject {
     }
 
     /// Acts on the key press `event`, made in `keyWindow` while
-    /// `firstResponder` has the keyboard: posts the notification of the
-    /// action one of whose bindings it matches and returns true, so that
-    /// the press goes no further, or returns false and leaves the press to
-    /// the window, its menus, and its first responder.
+    /// `firstResponder` has the keyboard: hands it to the dispatcher, which
+    /// posts the action it triggers, now or, for a single press waiting to
+    /// see whether a second follows, once the double-press time is up.
+    /// Returns true when the press was a shortcut's and goes no further, or
+    /// false to leave it to the window, its menus, and its first responder.
     ///
     /// The event monitor passes the key window and its first responder.
     /// Tests pass a key press made up for them, no window or one never
     /// shown, and a stand-in for the first responder, such as the field
     /// editor of a text field being edited: no key is really pressed.
     func handleKeyEvent(_ event: NSEvent, keyWindow: NSWindow?, firstResponder: NSResponder?) -> Bool {
-        let textInputIsFocused = Self.isTextInput(firstResponder)
-        // Only the shortcuts of the key window's scope match; in a sheet over
-        // an audio editor none do, so its own controls take every key.
-        guard let scope = Self.scope(ofKeyWindow: keyWindow) else { return false }
-
-        // Check each action's bindings
-        for (action, actionBindings) in bindings where action.scope == scope {
-            for binding in actionBindings {
-                if binding.matches(event) {
-                    // A field being edited keeps its typing and the keys it
-                    // edits with, which go on to it untouched. Other Command-
-                    // and Control-based bindings are explicit shortcuts and
-                    // keep working from fields such as the sleep timer's
-                    // custom-minutes input, so they can close the panel they
-                    // opened.
-                    guard Self.shouldHandle(
-                        binding: binding,
-                        whenTextInputIsFocused: textInputIsFocused
-                    ) else {
-                        continue
-                    }
-
-                    // Pass whether Shift was held (for secondary skip amounts)
-                    // Only count it as "extra shift" if the binding itself doesn't require Shift
-                    let shiftHeld = Self.hasExtraShift(
-                        eventHasShift: event.modifierFlags.contains(.shift),
-                        bindingRequiresShift: binding.shift
-                    )
-                    // Include the key window so only the focused book reader responds
-                    var userInfo: [String: Any] = ["action": action.rawValue]
-                    if shiftHeld { userInfo["shiftHeld"] = true }
-                    if let keyWindow {
-                        userInfo["sourceWindow"] = keyWindow
-                    }
-                    if action == .restartSleepTimer {
-                        let windowNumber = keyWindow.map { String($0.windowNumber) } ?? "none"
-                        SleepTimerService.log(
-                            .event,
-                            "SHORTCUT_RECEIVED action=restart-sleep-timer binding=\(binding.displayString) "
-                                + "sourceWindow=\(windowNumber)"
-                        )
-                    }
-                    notificationCenter.post(name: action.notificationName, object: nil, userInfo: userInfo)
-                    return true
-                }
-            }
+        // A key press alone has the characters and the repeat flag read
+        // below; AppKit raises an exception for them on any other event.
+        // While the Shortcuts tab records a key, every press is its.
+        guard event.type == .keyDown, !isRecordingShortcut else { return false }
+        let stroke = KeyBinding.from(event: event)
+        // While Try a Double Press runs, the presses it measures are its.
+        if let trial {
+            return trial.take(stroke, at: event.timestamp, isRepeat: event.isARepeat)
         }
-        return false
+        return dispatcher.handle(ShortcutPressDispatcher.Press(
+            stroke: stroke,
+            time: event.timestamp,
+            window: keyWindow,
+            // Only the shortcuts of the key window's scope match; in a sheet
+            // over an audio editor none do, so its own controls take every key.
+            scope: Self.scope(ofKeyWindow: keyWindow),
+            // A field being edited keeps its typing and the keys it edits
+            // with (`shouldHandle`).
+            textInputIsFocused: Self.isTextInput(firstResponder),
+            isRepeat: event.isARepeat
+        ))
+    }
+
+    /// Posts the action `trigger` names, with the window it was pressed in,
+    /// so that only that window acts (`WindowCommandRouting`), and whether
+    /// Shift was held beyond the binding's own modifiers.
+    private func post(_ trigger: ShortcutPressDispatcher.Trigger) {
+        var userInfo: [String: Any] = ["action": trigger.action.rawValue]
+        if trigger.shiftHeld {
+            userInfo["shiftHeld"] = true
+        }
+        if let window = trigger.window {
+            userInfo["sourceWindow"] = window
+        }
+        if trigger.action == .restartSleepTimer {
+            let windowNumber = trigger.window.map { String($0.windowNumber) } ?? "none"
+            SleepTimerService.log(
+                .event,
+                "SHORTCUT_RECEIVED action=restart-sleep-timer binding=\(trigger.binding.displayString) "
+                    + "sourceWindow=\(windowNumber)"
+            )
+        }
+        notificationCenter.post(name: trigger.action.notificationName, object: nil, userInfo: userInfo)
     }
 
     /// The scope whose shortcuts a key pressed in `keyWindow` matches: the
@@ -397,6 +532,12 @@ final class KeyboardShortcutManager: ObservableObject {
         return (binding.command || binding.control) && !TextEditingKeys.contains(binding)
     }
 
+    /// Whether Shift was held beyond the modifiers of the binding a press
+    /// matched: the press had Shift and the binding has none. The action is
+    /// told so (`shiftHeld`), and Skip Forward and Skip Backward then go by
+    /// the Playback tab's Shift units; the dispatcher matches such a press
+    /// to its binding without Shift where none with Shift is its own
+    /// (finding 4 of FR12's design).
     nonisolated static func hasExtraShift(
         eventHasShift: Bool,
         bindingRequiresShift: Bool
@@ -414,6 +555,12 @@ final class KeyboardShortcutManager: ObservableObject {
     static func isTextInput(_ responder: NSResponder?) -> Bool {
         responder is NSTextView || responder is NSTextField
     }
+}
+
+/// A recorder of the Shortcuts tab, held weakly by the shortcut manager.
+private struct WeakRecorder {
+    /// The recorder, while it lives.
+    weak var recorder: AnyObject?
 }
 
 /// Every action's keys in force as a preferences store's record of the
