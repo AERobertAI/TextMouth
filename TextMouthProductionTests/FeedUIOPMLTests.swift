@@ -168,6 +168,45 @@ final class FeedUIOPMLTests: XCTestCase {
         XCTAssertNil(model.start(), "an ended import started again")
     }
 
+    /// A feed the file lists that is in the library already, unsubscribed
+    /// from (FR11, branch D), stays as the listener chose, unsubscribed, and
+    /// the import names it by the library's title, saying Resubscribe checks
+    /// it again, rather than calling it subscribed already (REV11, board
+    /// #1814).
+    func testAnImportNamesAFeedYouUnsubscribedFrom() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUIOPMLUnsubscribed")
+        world.server.serve("/old.xml", .feed(FeedXML.rss(title: "Old Friend", items: [Self.item])))
+        let old = try await world.subscribe("/old.xml")
+        world.center.unsubscribe(old.id)
+        var heard: [String] = []
+        let model = OPMLImportModel(
+            fileName: "subscriptions.opml",
+            subscriptions: [OPMLSubscription(title: "Old Friend, from my other reader", feedURL: world.server.url("/old.xml"), siteURL: nil)],
+            center: world.center,
+            parentPath: world.folder.path,
+            announce: { heard.append($0) }
+        )
+
+        await model.start()?.value
+
+        let summary = try XCTUnwrap(model.summary)
+        XCTAssertEqual(summary.unsubscribed, ["Old Friend"])
+        XCTAssertEqual(summary.alreadySubscribed, [])
+        XCTAssertEqual(summary.subscribed, [])
+        XCTAssertEqual(
+            summary.sentence,
+            "No feed was subscribed to. Old Friend is in your library, unsubscribed. "
+                + "Choose Resubscribe on its row, or in its Feed Info, to check it again."
+        )
+        XCTAssertEqual(heard, [summary.sentence])
+        XCTAssertEqual(world.center.store.record(of: old.id)?.feed.isSubscribed, false, "the import resubscribed the feed")
+        XCTAssertEqual(
+            FeedWording.importFoundUnsubscribed(["Old Friend", "Night Trams"]),
+            "Old Friend and Night Trams are in your library, unsubscribed. "
+                + "Choose Resubscribe on a feed's row, or in its Feed Info, to check it again."
+        )
+    }
+
     /// Stopped before it starts, an import subscribes to nothing and says
     /// it was stopped.
     func testStoppingAnImport() async throws {
@@ -239,6 +278,44 @@ final class FeedUIOPMLTests: XCTestCase {
         let read = try FeedOPML.subscriptions(in: Data(contentsOf: file))
         XCTAssertEqual(read.map(\.title), ["Harbour Notes", "The Tactile Atlas"])
         XCTAssertEqual(heard.last, "Exported 2 subscriptions to Mine.opml.")
+    }
+
+    /// An export leaves out a feed the listener unsubscribed from (FR11,
+    /// branch D), which is no subscription, so another reader importing the
+    /// file never subscribes to it again, and says how many it left out;
+    /// with every feed unsubscribed from, it says there is nothing to export
+    /// and why (REV11, board #1814).
+    func testAnExportLeavesOutTheFeedsYouUnsubscribedFrom() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUIOPMLExportUnsubscribed")
+        let presenter = LibraryFeedsPresenter()
+        var heard: [String] = []
+        presenter.announce = { message, _ in heard.append(message) }
+        let context = FeedCommandContext(center: world.center, library: world.library, window: nil)
+        world.server.serve("/atlas.xml", .feed(FeedXML.rss(title: "The Tactile Atlas", items: [Self.item])))
+        world.server.serve("/harbour.xml", .feed(FeedXML.rss(title: "Harbour Notes", items: [Self.item])))
+        let atlas = try await world.subscribe("/atlas.xml")
+        let outcome = try await world.center.subscribe(
+            to: world.server.url("/harbour.xml").absoluteString,
+            into: .newFolder(inParentPath: world.folder.path)
+        )
+        guard case .subscribed(let harbour) = outcome else { return XCTFail("\(outcome)") }
+        world.center.unsubscribe(harbour.id)
+        let file = try makeSandboxDirectory("FeedUIOPMLExportUnsubscribedFolder").appendingPathComponent("Mine.opml")
+
+        presenter.exportOPML(to: file, in: context)
+
+        let read = try FeedOPML.subscriptions(in: Data(contentsOf: file))
+        XCTAssertEqual(read.map(\.title), ["The Tactile Atlas"])
+        XCTAssertEqual(heard.last, "Exported 1 subscription to Mine.opml. 1 feed you unsubscribed from was left out.")
+        XCTAssertEqual(
+            FeedWording.exported(count: 0, fileName: "Mine.opml", unsubscribedCount: 2),
+            "Exported 0 subscriptions to Mine.opml. 2 feeds you unsubscribed from were left out."
+        )
+
+        world.center.unsubscribe(atlas.id)
+        presenter.chooseOPMLDestination(in: context)
+        XCTAssertEqual(presenter.notice?.message, FeedWording.nothingSubscribedToExport)
+        XCTAssertEqual(heard.last, "There are no subscriptions to export: every feed in your library is unsubscribed.")
     }
 
     // MARK: - The Sheet as Drawn
