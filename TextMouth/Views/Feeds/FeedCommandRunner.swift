@@ -31,8 +31,8 @@ extension FeedCenter {
 
 /// A question asked before a command that can't be undone (FR03): Delete
 /// Episode or Delete Article, and Unsubscribe, which Resubscribe undoes but
-/// for the places kept for removed downloads, which it deletes (FR11,
-/// branch D).
+/// for the places kept for removed downloads, which Unsubscribe deletes
+/// (FR11, branch D).
 struct FeedConfirmation: Identifiable, Equatable {
     /// What confirming does.
     enum Kind: Equatable {
