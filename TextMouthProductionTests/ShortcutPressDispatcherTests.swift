@@ -453,6 +453,50 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(harness.performed, [.skipBackward, .skipBackward])
     }
 
+    // MARK: - No Default Key Waits
+
+    /// No default key has a single action and an unrelated double action in
+    /// one scope, so no default key waits before it acts: the wait the user
+    /// accepted on October 7 (question 2) falls only on keys the user sets
+    /// up so. Every default key with both a single and a double action has
+    /// a double that escalates the single one, or is the same action.
+    func testNoDefaultKeyWaits() {
+        let defaults = ShortcutAction.defaultBindings
+        let index = ShortcutPressDispatcher.Index(defaults)
+
+        XCTAssertEqual(index.waitingKeys, [])
+        for action in ShortcutAction.allCases {
+            for binding in defaults[action] ?? [] {
+                guard let actions = index.actions(for: binding, in: action.scope) else {
+                    XCTFail("\(action.rawValue)'s \(binding.configText) is in no index")
+                    continue
+                }
+                XCTAssertFalse(actions.singleWaits, "\(action.rawValue)'s \(binding.configText) waits")
+                if let single = actions.single, let double = actions.double {
+                    XCTAssertTrue(double == single || double.escalates == single, "\(binding.configText)")
+                }
+            }
+        }
+    }
+
+    /// This user's shortcuts, the defaults with Shift-R on Release Media
+    /// Controls, as the record holds them, wait nowhere: every key of the
+    /// manager loading them acts at once.
+    func testThisUsersShortcutsWaitNowhere() {
+        let store = makeSandboxedPreferences("press-dispatcher-this-user")
+        let shiftR = KeyBinding(key: "r", shift: true)
+        KeyboardShortcutManager.editsPreference.write(ShortcutEdits([.releaseMediaControls: [shiftR]]), to: store)
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+
+        XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [shiftR])
+        XCTAssertEqual(ShortcutPressDispatcher.Index(manager.bindings).waitingKeys, [])
+        for action in ShortcutAction.allCases {
+            for binding in manager.bindingsFor(action) {
+                XCTAssertNil(manager.waitingAction(for: binding, in: action.scope), "\(action.rawValue)'s \(binding.configText)")
+            }
+        }
+    }
+
     // MARK: - Shift Beyond a Binding's Own (Finding 4)
 
     /// Shift held with a key that has no Shift binding of its own matches
