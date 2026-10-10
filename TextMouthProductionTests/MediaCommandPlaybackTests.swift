@@ -430,6 +430,63 @@ final class MediaCommandPlaybackTests: XCTestCase {
         assertToldSystem(system, that: quay.reader, plays: true, "Play")
     }
 
+    // MARK: - A Book That Pauses Behind Another Window
+
+    /// The listener's book plays while another book's window, which never
+    /// played, is in front, and the AirPods pause it. The system is told the
+    /// book that paused is paused, whichever window is in front, so the
+    /// next press is Play, which reaches that book and resumes it where it
+    /// paused, and the book in front stays silent. Before the repair the
+    /// system went on showing the book playing: the next press was a Pause,
+    /// which reached the window in front, and the press after that played
+    /// the book in front.
+    func testABookPausedBehindAnotherWindowIsShownPausedAndPlayResumesIt() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Paused Behind")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let slipway = openTextBook(titled: "Slipway Ledger", in: world, joining: system)
+
+        quay.reader.play()
+        reportWordSpoken(by: quay)
+        slipway.reader.windowBecameKey()
+
+        XCTAssertEqual(system.press(.pause), .success)
+        XCTAssertTrue(quay.reader.speechService.isPaused, "Pause did not reach the playing book")
+        assertToldSystem(system, that: quay.reader, plays: false, "Pause behind another window")
+
+        XCTAssertEqual(system.press(.play), .success)
+        assertSpeaks(quay, from: Self.openingOffset, "Play after the pause behind another window")
+        assertToldSystem(system, that: quay.reader, plays: true, "Play after the pause behind another window")
+        XCTAssertTrue(slipway.handedOver.utterances.isEmpty, "The book in front spoke")
+    }
+
+    /// The same when the book's sleep timer runs out while another book's
+    /// window is in front: the timer's fade pauses the book, the system is
+    /// told it is paused, and Play from the AirPods resumes it where the
+    /// fade began, at full volume, while the book in front stays silent.
+    func testABookWhoseSleepTimerRunsOutBehindAnotherWindowIsShownPausedAndPlayResumesIt() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Timer Behind")
+        world.settings.sleepFadeOutDuration = 2
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let slipway = openTextBook(titled: "Slipway Ledger", in: world, joining: system)
+
+        quay.reader.play()
+        reportWordSpoken(by: quay)
+        slipway.reader.windowBecameKey()
+        recordingAnnouncements {
+            expireFifteenMinuteTimerWithItsFade(in: quay, timer: timer)
+        }
+        assertToldSystem(system, that: quay.reader, plays: false, "The timer's pause behind another window")
+
+        XCTAssertEqual(system.press(.play), .success)
+        assertSpeaks(quay, from: Self.openingOffset, "Play after the timer ran out behind another window")
+        assertToldSystem(system, that: quay.reader, plays: true, "Play after the timer ran out behind another window")
+        XCTAssertTrue(slipway.handedOver.utterances.isEmpty, "The book in front spoke")
+    }
+
     // MARK: - Bluetooth
 
     /// The AirPods go back in their case while speech plays: CoreAudio
