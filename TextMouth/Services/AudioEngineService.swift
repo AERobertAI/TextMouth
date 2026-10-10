@@ -812,18 +812,25 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     private var currentRender: (synth: AVSpeechSynthesizer, ticket: RenderTicket)?
     private let renderLock = NSLock()
 
+    /// Where a render's job runs, off the main thread: the global queue in
+    /// the app; a test passes a queue of its own, held until it lets it go.
+    private let renderQueue: DispatchQueue
+
     /// - Parameters:
     ///   - sliceFrameCount: Frames in each slice of a play scheduled on the
     ///     player node. Hosted tests make slices short, to watch a play cross
     ///     many of them.
     ///   - slicesAhead: How many slices of a play stand scheduled at a time.
+    ///   - renderQueue: Where a render's job runs.
     init(
         sliceFrameCount: Int = AudioEngineService.defaultSliceFrameCount,
-        slicesAhead: Int = AudioEngineService.defaultSlicesAhead
+        slicesAhead: Int = AudioEngineService.defaultSlicesAhead,
+        renderQueue: DispatchQueue = .global(qos: .userInitiated)
     ) {
         let node = AVAudioPlayerNode()
         playerNode = node
         feeder = RenderedSpeechFeeder(node: node, sliceFrameCount: sliceFrameCount, slicesAhead: slicesAhead)
+        self.renderQueue = renderQueue
         setupEngine()
     }
 
@@ -916,8 +923,16 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // Render at 0.7 rate (~457 WPM empirically) for a good balance of speed and quality
         renderWPM = 457.0
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
+        renderQueue.async { [weak self] in
+            // An engine let go of before its render began renders nothing,
+            // but still reports, so that whatever waits for the report, as
+            // the render coordinator's queue does, is never left waiting:
+            // the job once returned without a word, which would have held
+            // every later render and voice warm-up forever.
+            guard let self = self else {
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
 
             // Identifies this render to its completion on the main queue,
             // where the synthesizer, which is not Sendable, cannot go.

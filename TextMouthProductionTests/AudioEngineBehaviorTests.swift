@@ -1009,6 +1009,30 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(AudioEngineService.RenderGuard.markup.apply(to: request.text), SpeechMarkupGuard.neutralized(request.text))
     }
 
+    /// An engine let go of before its render's job begins still reports the
+    /// render, as failed, on the main queue, so that the render
+    /// coordinator's queue, which waits for every report, is never left
+    /// waiting forever. The job runs on a queue the test holds until the
+    /// engine is gone. Nothing is rendered or heard.
+    @MainActor
+    func testARenderWhoseEngineIsGoneStillReports() {
+        let held = DispatchQueue(label: "playbackfixes.held-render")
+        held.suspend()
+        let reported = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+        var engine: AudioEngineService? = AudioEngineService(renderQueue: held)
+        weak var released = engine
+        engine?.render(SpeechRenderRequest(text: "Tide tables for the outer harbour.", voice: nil)) { installed in
+            reported.withLock { $0 = installed }
+        }
+        engine = nil
+        XCTAssertNil(released, "the engine was not let go")
+
+        held.resume()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { reported.withLock { $0 } != nil }, "the render never reported")
+        XCTAssertEqual(reported.withLock { $0 }, false, "a render whose engine is gone reported audio installed")
+    }
+
     /// A render cancelled by the engine wakes the render queue's wait
     /// without a sound: the observer signals the semaphore it was given and
     /// remembers the cancel.
