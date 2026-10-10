@@ -576,7 +576,8 @@ final class TextAnchorFinderTests: XCTestCase {
           Heading(level: 2, text: "CHAPTER II. The Pool of Tears", chapterIndex: 2, characterOffset: 0)])
     }
 
-    /// The skipped heading `heading` of `book`, with its anchor at its start.
+    /// The skip of `heading` in the book whose chapters' reading texts are
+    /// `texts`: its anchor, captured at the heading's start, and that start.
     private func skip(_ heading: Heading, in texts: [String], file: StaticString = #filePath, line: UInt = #line) throws -> (anchor: TextAnchor, saved: TextPlace) {
         let saved = TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
         return (try XCTUnwrap(TextAnchor(capturingAt: saved, in: BookWords(texts: texts)), file: file, line: line), saved)

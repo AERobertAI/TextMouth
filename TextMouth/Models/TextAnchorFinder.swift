@@ -32,7 +32,10 @@ import Foundation
 ///    where three of them stand together, so a word edited, added, or
 ///    dropped inside the quote no longer stops the search.
 /// 6. **The last guess.** A place whose words are found nowhere goes to the
-///    same share of its chapter, at a word start.
+///    same share of its chapter, at a word start: its share when the
+///    chapter's old length is known (a relocation that has the old text),
+///    else its saved offset held within the chapter, and for a chapter the
+///    book no longer has, its share of the whole book.
 ///
 /// Skipped headings are found among the headings of their level
 /// (`findHeading`).
