@@ -2,13 +2,11 @@ import Foundation
 
 // MARK: - Jump-to-Percent / Jump-to-Time
 //
-// Both jumps reduce to the same underlying operation: translate a
-// user-facing position (a percent of the book or a wall-clock time)
-// into a global character offset, then look up the (chapter,
-// localOffset) pair the navigation system already understands.
-// Audio books and TTS books share the same code path — the only
-// difference is how time maps to characters (10 chars/sec for audio
-// vs the WPM-derived rate for TTS).
+// Both jumps translate what the user typed into a place, a chapter and an
+// offset within it, and go there. A percent is a share of the book's units.
+// A time names a place on the book's clock (P08, `placeClock`): for an
+// audiobook its recording's own time, whatever speed it plays at; for a text
+// book its words at the reader's words per minute.
 //
 // The implementation deliberately funnels through `navigateTo`, the
 // same entry point the headings/bookmarks panels use. That keeps the
@@ -29,42 +27,60 @@ extension ReaderViewModel {
         // jumps to e.g. "47.0%" and lands at one character earlier.
         let target = Int((clamped / 100.0 * Double(content.totalCharacterCount)).rounded())
         jumpToGlobalOffset(target)
-        announceToVoiceOver(String(format: "Jumped to %.1f percent.", clamped))
+        announceToVoiceOver(ReaderTimeWording.jumped(toPercent: clamped))
     }
 
-    /// Jump to a specific wall-clock time within the book. The time is
-    /// interpreted as "time from the start of the book at the current
-    /// playback rate" — so a 1-hour audio book takes a 30-minute jump
-    /// to its midpoint, regardless of speed setting.
-    /// Behaviour for ranges outside [0, totalTime]: clamped to the
-    /// nearest endpoint. No-op if the book hasn't loaded.
+    /// Jump to `seconds` on the book's clock (P08, `placeClock`): for an
+    /// audiobook, that time in its recording, whatever speed it plays at, so
+    /// a time from its chapter list, its show notes, the audio editor, or
+    /// any time the reader shows lands where it says; for a text book, that
+    /// time at the reader's words per minute. A heading starting less than
+    /// a second after the time is landed on instead
+    /// (`PlaceClock.place(forTypedTime:headings:)`), so a heading's time,
+    /// shown in whole seconds, lands on the heading. A time outside the
+    /// book is clamped to it. Nothing happens before the book loads, or for
+    /// a book with no time to count (a text book without words). Announces
+    /// the time jumped to, an audiobook's "in the recording".
     func jumpToTime(seconds: TimeInterval) {
-        guard let content = content, content.totalCharacterCount > 0 else { return }
-        let clampedSeconds = max(0, seconds)
-
-        // Compute the target global offset using the same formulas the
-        // book-info-bar uses for its forward-direction display, so a
-        // round-trip (offset → display → jump back) lands on itself.
-        let target: Int
-        if isAudioBook {
-            // 10 chars per second is the fixed audio-book mapping.
-            target = Int((clampedSeconds * Self.audioCharsPerSecond).rounded())
-        } else {
-            // TTS uses the same proportional formula as the time
-            // display: timeRemaining = totalTime * (remainingChars /
-            // totalChars), which inverts to:
-            // globalOffset = (timeElapsed / totalTime) * totalChars.
-            let totalTime = content.estimatedReadingTime(wpm: speechService.wordsPerMinute)
-            guard totalTime > 0 else { return }
-            let elapsed = min(clampedSeconds, totalTime)
-            target = Int((elapsed / totalTime * Double(content.totalCharacterCount)).rounded())
-        }
-
-        jumpToGlobalOffset(target)
-        announceToVoiceOver("Jumped to \(TimeFormatting.spoken(clampedSeconds)).")
+        guard let content, content.totalCharacterCount > 0,
+              let clock = placeClock, clock.length > 0 else { return }
+        let time = seconds.isNaN ? 0 : min(max(0, seconds), clock.length)
+        let target = clock.place(forTypedTime: time, headings: content.allHeadings)
+        // The shared departure-point helper keeps the Return affordance
+        // heading and bookmark jumps have.
+        navigatePreservingReturnPosition(chapterIndex: target.chapterIndex, characterOffset: target.characterOffset)
+        announceToVoiceOver(ReaderTimeWording.jumped(to: time, timeCount))
     }
 
-    /// Lower-level jump used by both `jumpToPercent` and `jumpToTime`.
+    /// Go to Percent's answer: jumps to the percent `text` names and returns
+    /// nil, or returns why it will not do, as a sentence the panel shows and
+    /// announces. An empty field is refused rather than taken as 0.
+    func goToPercent(typed text: String) -> String? {
+        switch JumpInputValidator.percent(text) {
+        case .value(let percent):
+            jumpToPercent(percent)
+            return nil
+        case .error(let message):
+            return message
+        }
+    }
+
+    /// Go to Time's answer (P08): jumps to the time `text` names on the
+    /// book's clock (`jumpToTime(seconds:)`) and returns nil, or returns
+    /// why it will not do: not a time, or after the end of the clock
+    /// (`JumpInputValidator.time`), as a sentence the panel shows and
+    /// announces.
+    func goToTime(typed text: String) -> String? {
+        switch JumpInputValidator.time(text, length: placeClock?.length ?? 0, count: timeCount) {
+        case .value(let time):
+            jumpToTime(seconds: time)
+            return nil
+        case .error(let message):
+            return message
+        }
+    }
+
+    /// Lower-level jump used by `jumpToPercent`.
     /// Translates a global character offset into a (chapter, local
     /// offset) pair via DocumentContent.location(forGlobalOffset:),
     /// then routes through `navigateTo` so all the existing seek /
@@ -98,6 +114,22 @@ extension ReaderViewModel {
         return .reading(
             of: content.contentIndex,
             readingTime: content.estimatedReadingTime(wpm: speechService.wordsPerMinute)
+        )
+    }
+
+    /// How this book's times are counted (P08), which Go to Time's field and
+    /// words name: an audiobook's recording, or a text book's words at the
+    /// reader's words per minute.
+    var timeCount: ReaderTimeWording.Count {
+        isAudioBook ? .recording : .words(perMinute: speechService.wordsPerMinute)
+    }
+
+    /// Go to Time's starting value: the reading position's time on the
+    /// book's clock, in whole seconds as every time is shown ("2:13:05"), at
+    /// every speed the same for an audiobook; "0:00" before the book loads.
+    var goToTimeStartingText: String {
+        TimeFormatting.format(
+            placeClock?.time(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset) ?? 0
         )
     }
 }

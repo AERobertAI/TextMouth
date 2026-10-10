@@ -6,17 +6,23 @@ import SwiftUI
 
 // MARK: - Jump-To Panels
 
+/// Reads what is typed into Go to Percent's and Go to Time's fields, and
+/// says why it will not do, as a sentence the panel shows and announces.
 enum JumpInputValidator {
+    /// A percent through the book, or why not.
     enum PercentResult: Equatable {
         case value(Double)
         case error(String)
     }
 
+    /// A time on the book's clock, or why not.
     enum TimeResult: Equatable {
         case value(TimeInterval)
         case error(String)
     }
 
+    /// Go to Percent's field: a number from 0 to 100, spaces around it
+    /// ignored.
     static func percent(_ raw: String) -> PercentResult {
         let trimmed = raw.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return .error("Enter a percent.") }
@@ -27,94 +33,161 @@ enum JumpInputValidator {
         return .value(value)
     }
 
-    static func time(
-        hours: String,
-        minutes: String,
-        seconds: String,
-        bookLength: TimeInterval
-    ) -> TimeResult {
-        func parse(_ text: String, field: String) -> (value: Int?, error: String?) {
-            let trimmed = text.trimmingCharacters(in: .whitespaces)
-            if trimmed.isEmpty { return (0, nil) }
-            guard let value = Int(trimmed), value >= 0 else {
-                return (nil, "\(field) must be a whole number.")
-            }
-            return (value, nil)
-        }
+    /// How far past the end of a book's clock a typed time still names its
+    /// end: half the tenth of a second an audiobook's places are counted
+    /// in, so a total shown in whole seconds, or a length whose chapters
+    /// sum a hair short of it, is never refused.
+    static let lengthTolerance: TimeInterval = 0.05
 
-        let parsed = [
-            parse(hours, field: "Hours"),
-            parse(minutes, field: "Minutes"),
-            parse(seconds, field: "Seconds"),
-        ]
-        let values = parsed.compactMap(\.value)
-        if values.count != 3 {
-            let error = parsed.compactMap(\.error).first ?? "Enter a valid time."
-            return .error(error)
+    /// Go to Time's field (P08): the time `raw` names, typed or pasted as
+    /// people write a time (`TimeEntry`: "1:02:03", "62:03", "3723",
+    /// "12:04.3"), when it is no later than `length`, the end of the clock
+    /// the book's places count on (`PlaceClock.length`: an audiobook's
+    /// recording, a text book's reading time at its words per minute),
+    /// within `lengthTolerance`; a time within it is the end. Otherwise why
+    /// not, `count` naming the clock in the refusal. Hours too many for an
+    /// integer are refused as no time at all, never trapping.
+    static func time(_ raw: String, length: TimeInterval, count: ReaderTimeWording.Count) -> TimeResult {
+        switch TimeEntry.reading(raw) {
+        case .problem(let sentence):
+            return .error(sentence)
+        case .seconds(let seconds):
+            guard length.isFinite, seconds <= length + lengthTolerance else {
+                return .error(ReaderTimeWording.pastTheEnd(length, count))
+            }
+            return .value(min(seconds, length))
         }
-        let (hoursValue, minutesValue, secondsValue) = (values[0], values[1], values[2])
-        guard minutesValue < 60 else { return .error("Minutes must be less than 60.") }
-        guard secondsValue < 60 else { return .error("Seconds must be less than 60.") }
-        // Convert before multiplying: a valid Int in the hours field can still
-        // overflow integer arithmetic before normal book-length validation.
-        let total = TimeInterval(hoursValue) * 3_600 + TimeInterval(minutesValue) * 60 + TimeInterval(secondsValue)
-        guard bookLength.isFinite, total <= bookLength else {
-            return .error("Time exceeds book length. Maximum is \(TimeFormatting.spoken(bookLength)).")
-        }
-        return .value(total)
     }
 }
 
-/// Expanded panel below the info bar offering a single text input for
-/// jumping to a percent through the book.
-/// Stripped to a plain TextField — earlier iterations layered on
-/// auto-focus, character filtering, and accessibility overrides, but
-/// each piece of "special handling" turned out to compromise how
-/// VoiceOver classified the field (announcing it as "text" instead
-/// of "edit text"). Validation now happens on submit; bad input
-/// surfaces an inline error instead of being silently clamped or
-/// stripped while typing.
+/// Go to Percent's panel: one field, "Percent through the book", starting
+/// at the reading position's percent, which jumps to the percent typed.
 struct JumpToPercentPanel: View {
     @ObservedObject var viewModel: ReaderViewModel
     let onJump: () -> Void
     let onCancel: () -> Void
 
-    @State private var percentInput: String = ""
-    /// Inline error message shown after a failed submit. Cleared on
-    /// the next successful submit or when the user starts editing
-    /// the field. Empty string means no error.
+    var body: some View {
+        JumpFieldPanel(
+            label: ReaderTimeWording.percentFieldLabel,
+            hint: ReaderTimeWording.percentFieldHint,
+            fieldWidth: 80,
+            // The current percent, so the user can adjust it rather than
+            // type from nothing.
+            startingText: { String(format: "%.1f", viewModel.displayPercentComplete) },
+            submit: viewModel.goToPercent(typed:),
+            announce: viewModel.announceToVoiceOver,
+            onJump: onJump,
+            onCancel: onCancel
+        )
+    }
+}
+
+/// Go to Time's panel (P08): one field taking a time typed or pasted as
+/// people write it ("1:02:03", "62:03", "3723", "12:04.3"), starting at the
+/// reading position's time on the book's clock. For an audiobook the field
+/// is "Time in the recording" and counts the recording's own time, whatever
+/// its speed, so a time from its chapter list, its show notes, the audio
+/// editor, or any of the reader's own times lands where it says; for a text
+/// book it is "Time at 500 words a minute", its own speed, as its times
+/// always counted. It took the place of three whole-number fields, Hours,
+/// Minutes, and Seconds, known to VoiceOver only by their placeholders,
+/// which refused a pasted time and counted an audiobook's starting value
+/// and limit at its speed while jumping on its recording.
+struct JumpToTimePanel: View {
+    @ObservedObject var viewModel: ReaderViewModel
+    let onJump: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        JumpFieldPanel(
+            label: ReaderTimeWording.timeFieldLabel(viewModel.timeCount),
+            hint: ReaderTimeWording.timeFieldHint,
+            fieldWidth: 100,
+            // The current time, so the user can adjust it rather than type
+            // from nothing.
+            startingText: { viewModel.goToTimeStartingText },
+            submit: viewModel.goToTime(typed:),
+            announce: viewModel.announceToVoiceOver,
+            onJump: onJump,
+            onCancel: onCancel
+        )
+    }
+}
+
+/// One labelled field below the status row, as Go to Percent and Go to
+/// Time each are: its name shown before it for the eye and spoken as the
+/// field's own label, the field starting at a value and taking the keyboard
+/// as the panel opens, Jump (Return) and Cancel (Escape), and what is wrong
+/// with a refused answer shown under the field and announced, so it can be
+/// corrected where it was typed.
+///
+/// ## A plain field
+/// Earlier panels layered auto-focus per field, character filtering, an
+/// arrow-key monitor, and accessibility overrides on their fields, an
+/// overridden value among them, and VoiceOver called the fields "text"
+/// rather than "edit text" (stripped by commit 6206c738, May 4). The
+/// stripped fields then had no name a Tab user heard: a filled field speaks
+/// no placeholder, and their unit words were separate text (REV13). So the
+/// field has a label and a hint of its own, as the audio editor's prompt
+/// field has (`AudioEditorPromptSheet`), and nothing else: never an
+/// overridden value, so VoiceOver reads it as the edit text it is, its
+/// value whatever is typed. Validation runs once, on submit.
+struct JumpFieldPanel: View {
+    /// The field's name, shown before it and spoken as its label.
+    let label: String
+    /// What the field takes, spoken as its hint.
+    let hint: String
+    /// How wide the field is drawn.
+    let fieldWidth: CGFloat
+    /// The value the field starts at, read as the panel opens.
+    let startingText: @MainActor () -> String
+    /// Takes what was typed: jumps and returns nil, or returns why it will
+    /// not do.
+    let submit: @MainActor (String) -> String?
+    /// Announces a refusal to VoiceOver, which hears it even while its
+    /// cursor stays in the field.
+    let announce: @MainActor (String) -> Void
+    /// Closes the panel after a jump.
+    let onJump: () -> Void
+    /// Closes the panel with nothing done.
+    let onCancel: () -> Void
+
+    /// What is typed in the field.
+    @State private var text: String = ""
+    /// Inline error message shown after a refused submit. Cleared on the
+    /// next submit that jumps, or as soon as the user edits the field.
+    /// Empty means no error.
     @State private var errorMessage: String = ""
-    /// Drives the auto-focus on appear. A plain Bool @FocusState on
-    /// just this single field — no other accessibility overrides on
-    /// the TextField — so VoiceOver still classifies it correctly.
+    /// Drives the field's focus as the panel opens: a plain Bool
+    /// `@FocusState` on the one field, so VoiceOver still classifies it as
+    /// a text field.
     @FocusState private var inputFocused: Bool
-    /// Cancellable Task for the focus-after-animation delay so a
-    /// quick dismiss doesn't fire focus against a vanishing view.
+    /// The focus-after-animation delay, cancellable so a quick dismiss
+    /// doesn't focus a vanishing view.
     @State private var focusTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Text("Jump to:")
+                // The field's name, for the eye; VoiceOver hears it once,
+                // as the field's own label.
+                Text(label)
                     .font(.caption)
                     .foregroundColor(.secondary)
-                TextField("Percent", text: $percentInput)
-                    .frame(width: 80)
+                    .accessibilityHidden(true)
+                TextField(label, text: $text)
+                    .frame(width: fieldWidth)
                     .focused($inputFocused)
-                    .onSubmit(performJump)
-                    // Clear stale error as soon as the user starts
-                    // editing — the message refers to the previous
-                    // submit, not the current text.
-                    .onChange(of: percentInput) { _, _ in
+                    .onSubmit(take)
+                    // Clear a stale error as soon as the user starts
+                    // editing: it refers to the previous submit.
+                    .onChange(of: text) { _, _ in
                         if !errorMessage.isEmpty { errorMessage = "" }
                     }
-                // The unit in a word, which VoiceOver reads after the
-                // field: the field is left plain, as the note above says,
-                // so its placeholder, "Percent", names it only while it is
-                // empty, and it opens filled in. It said "%" (TODO A10).
-                Text("percent")
-                    .foregroundColor(.secondary)
-                Button("Jump", action: performJump)
+                    .accessibilityLabel(label)
+                    .accessibilityHint(hint)
+                Button("Jump", action: take)
                     .keyboardShortcut(.defaultAction)
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.cancelAction)
@@ -131,15 +204,12 @@ struct JumpToPercentPanel: View {
         .padding(.vertical, 6)
         .background(Color.secondary.opacity(0.05))
         .onAppear {
-            // Pre-fill with the current percent so the user can edit
-            // an offset rather than typing from scratch when fine-
-            // tuning their position.
-            percentInput = String(format: "%.1f", viewModel.displayPercentComplete)
+            text = startingText()
             errorMessage = ""
 
-            // Auto-focus the input after the panel-appearance
-            // animation (~150ms) settles. Earlier focus changes get
-            // reverted as SwiftUI finalises the layout.
+            // Focus the field after the panel-appearance animation (about
+            // 150 ms) settles; an earlier focus change is reverted as
+            // SwiftUI finalises the layout.
             focusTask?.cancel()
             focusTask = Task { @MainActor in
                 try? await Task.sleep(nanoseconds: 150_000_000)
@@ -153,174 +223,15 @@ struct JumpToPercentPanel: View {
         }
     }
 
-    /// Validate the input on submit and either jump or surface an
-    /// error. Empty input is rejected (the user typed nothing OR
-    /// erased the pre-fill — either way, asking them to be explicit
-    /// beats silently jumping to 0%). Out-of-range and non-numeric
-    /// input both produce inline errors AND a VoiceOver announcement
-    /// so blind users hear the failure even without focus on the
-    /// error text.
-    private func performJump() {
-        switch JumpInputValidator.percent(percentInput) {
-        case .value(let value):
+    /// Hands what was typed to `submit`: closes the panel once it jumps,
+    /// or shows and announces why not, keeping the panel open.
+    private func take() {
+        if let problem = submit(text) {
+            errorMessage = problem
+            announce(problem)
+        } else {
             errorMessage = ""
-            viewModel.jumpToPercent(value)
             onJump()
-        case .error(let message):
-            showError(message)
         }
-    }
-
-    private func showError(_ msg: String) {
-        errorMessage = msg
-        viewModel.announceToVoiceOver(msg)
-    }
-}
-
-/// Expanded panel offering hours / minutes / seconds inputs to jump to
-/// a wall-clock time within the book.
-///
-/// ## Why three plain TextFields
-/// Earlier iterations had auto-focus, an NSEvent monitor for arrow
-/// keys, a digit-only onChange filter, and overridden accessibility
-/// label/value. The combination broke VoiceOver's classification —
-/// fields announced as "text" instead of "edit text" — and the arrow
-/// monitor ran into stale-state issues across re-renders. Stripped
-/// back to bare TextFields so each behaves exactly like a normal
-/// macOS text input. Validation runs once on submit; bad input
-/// produces an inline error AND a VoiceOver announcement.
-///
-/// ## Validation rules
-/// - Empty / non-numeric in any field → error.
-/// - Hours, minutes, seconds individually must be non-negative
-///   integers. Minutes / seconds capped at 59 with an explicit
-///   error rather than silent clamp.
-/// - Total must not exceed the book's estimated total time. This
-///   is the "jump past end of book" check the user asked about.
-struct JumpToTimePanel: View {
-    @ObservedObject var viewModel: ReaderViewModel
-    let onJump: () -> Void
-    let onCancel: () -> Void
-
-    @State private var hoursText: String = "0"
-    @State private var minutesText: String = "0"
-    @State private var secondsText: String = "0"
-    @State private var errorMessage: String = ""
-    /// Auto-focus drives ONLY the hours field. Plain Bool focus
-    /// state without per-field overrides keeps VoiceOver's text-
-    /// field classification intact — the previous design used a
-    /// per-field enum @FocusState plus an arrow-key NSEvent monitor,
-    /// and those layered customizations were what broke VO's
-    /// classification. Tab still works to move between fields
-    /// because that's the SwiftUI default for focusable inputs.
-    @FocusState private var hoursFocused: Bool
-    @State private var focusTask: Task<Void, Never>?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Text("Jump to:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                // Each unit in a word, which VoiceOver reads after its
-                // field: the fields are left plain, as the note above says,
-                // so their placeholders name them only while empty, and they
-                // open filled in. They said "h", "m", and "s" (TODO A10).
-                TextField("Hours", text: $hoursText)
-                    .frame(width: 50)
-                    .focused($hoursFocused)
-                    .onSubmit(performJump)
-                    .onChange(of: hoursText) { _, _ in clearError() }
-                Text("hours")
-                    .foregroundColor(.secondary)
-
-                TextField("Minutes", text: $minutesText)
-                    .frame(width: 50)
-                    .onSubmit(performJump)
-                    .onChange(of: minutesText) { _, _ in clearError() }
-                Text("minutes")
-                    .foregroundColor(.secondary)
-
-                TextField("Seconds", text: $secondsText)
-                    .frame(width: 50)
-                    .onSubmit(performJump)
-                    .onChange(of: secondsText) { _, _ in clearError() }
-                Text("seconds")
-                    .foregroundColor(.secondary)
-
-                Button("Jump", action: performJump)
-                    .keyboardShortcut(.defaultAction)
-                Button("Cancel", action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-            }
-            if !errorMessage.isEmpty {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .accessibilityLabel("Error: \(errorMessage)")
-            }
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
-        .background(Color.secondary.opacity(0.05))
-        .onAppear {
-            // Pre-fill with current elapsed (totalTime - timeRemaining)
-            // so the user can adjust by a delta rather than typing
-            // from zero.
-            let elapsed = max(0, viewModel.totalEstimatedTime - viewModel.displayTimeRemaining)
-            let total = Int(elapsed)
-            hoursText = "\(total / 3600)"
-            minutesText = "\((total % 3600) / 60)"
-            secondsText = "\(total % 60)"
-            errorMessage = ""
-
-            // Auto-focus the hours field after the panel-appearance
-            // animation (~150ms) settles. Same rationale as the
-            // matching code in JumpToPercentPanel.
-            focusTask?.cancel()
-            focusTask = Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 150_000_000)
-                guard !Task.isCancelled else { return }
-                hoursFocused = true
-            }
-        }
-        .onDisappear {
-            focusTask?.cancel()
-            focusTask = nil
-        }
-    }
-
-    private func clearError() {
-        if !errorMessage.isEmpty { errorMessage = "" }
-    }
-
-    /// Parse one of the H/M/S fields. Empty input is treated as zero
-    /// (typing only minutes shouldn't fail because the seconds field
-    /// is blank). Non-numeric input returns nil so the caller can
-    /// surface a precise error.
-    /// Validate H/M/S and jump or surface an error. The error message
-    /// is mirrored to VoiceOver so blind users hear the failure even
-    /// when their cursor stays in the input field.
-    private func performJump() {
-        switch JumpInputValidator.time(
-            hours: hoursText,
-            minutes: minutesText,
-            seconds: secondsText,
-            bookLength: viewModel.totalEstimatedTime
-        ) {
-        case .value(let total):
-            errorMessage = ""
-            viewModel.jumpToTime(seconds: total)
-            onJump()
-        case .error(let message):
-            showError(message)
-        }
-    }
-
-    private func showError(_ msg: String) {
-        errorMessage = msg
-        viewModel.announceToVoiceOver(msg)
     }
 }

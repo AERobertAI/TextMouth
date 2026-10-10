@@ -501,10 +501,11 @@ final class SmallerWordingTests: XCTestCase {
 // MARK: - Units in Words
 
 /// A unit is said once, in a word. The sleep timer's "Custom:" and "min"
-/// are hidden from VoiceOver because the custom field's label names both;
-/// the jump panels' plain fields name their units only by placeholders,
-/// which a filled field never speaks, so their "h", "m", "s", and "%" became
-/// "hours", "minutes", "seconds", and "percent", read after each field.
+/// are hidden from VoiceOver because the custom field's label names both.
+/// The jump panels' fields, which named their units only by placeholders
+/// and the words after them, now each have a label that names the unit
+/// ("Time in the recording", "Percent through the book"), tested in
+/// JumpToTimeTests (P08).
 @MainActor
 final class UnitWordTests: XCTestCase {
     /// The custom timer's field is labelled with what "Custom:" and "min"

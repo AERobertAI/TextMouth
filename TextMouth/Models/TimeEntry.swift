@@ -1,9 +1,10 @@
 import Foundation
 
 /// Reads a time typed or pasted into one text field, as people write it:
-/// the audio editor's Go to Time and its length of silence to insert (FR04).
-/// One plain text field takes the whole time, so VoiceOver reads it as the
-/// edit text it is, and a time copied from anywhere goes in with one paste.
+/// the audio editor's Go to Time and its length of silence to insert (FR04),
+/// and the reader's Go to Time (P08, `JumpInputValidator.time`). One plain
+/// text field takes the whole time, so VoiceOver reads it as the edit text
+/// it is, and a time copied from anywhere goes in with one paste.
 enum TimeEntry: Equatable {
     /// The time typed, in seconds.
     case seconds(TimeInterval)

@@ -6,9 +6,7 @@ final class PlaybackPolicyProductionTests: XCTestCase {
     /// Oversized input should report an ordinary validation error rather than
     /// trapping while converting a valid Int number of hours into seconds.
     func testJumpHoursCannotOverflowBeforeLengthValidation() {
-        let result = JumpInputValidator.time(
-            hours: String(Int.max), minutes: "0", seconds: "0", bookLength: 3_600
-        )
+        let result = JumpInputValidator.time("\(Int.max):00:00", length: 3_600, count: .words(perMinute: 200))
         XCTAssertEqual(result, .error("Time exceeds book length. Maximum is 1 hour."))
     }
 
@@ -63,39 +61,7 @@ final class PlaybackPolicyProductionTests: XCTestCase {
         XCTAssertEqual(JumpInputValidator.percent(" 47.5 "), .value(47.5))
     }
 
-    func testTimeValidationTreatsEmptyFieldsAsZero() {
-        XCTAssertEqual(time("", "", "", length: 3_600), .value(0))
-        XCTAssertEqual(time("", "5", "", length: 3_600), .value(300))
-    }
-
-    func testTimeValidationRejectsNonNumericHours() {
-        XCTAssertEqual(time("abc", "0", "0", length: 3_600), .error("Hours must be a whole number."))
-    }
-
-    func testTimeValidationRejectsNonNumericMinutesAndSeconds() {
-        XCTAssertEqual(time("0", "5x", "0", length: 3_600), .error("Minutes must be a whole number."))
-        XCTAssertEqual(time("0", "0", "..", length: 3_600), .error("Seconds must be a whole number."))
-    }
-
-    func testTimeValidationRejectsMinutesOverFiftyNine() {
-        XCTAssertEqual(time("0", "60", "0", length: 999_999), .error("Minutes must be less than 60."))
-    }
-
-    func testTimeValidationRejectsSecondsOverFiftyNine() {
-        XCTAssertEqual(time("0", "0", "75", length: 999_999), .error("Seconds must be less than 60."))
-    }
-
-    func testTimeValidationRejectsTimeBeyondBookEnd() {
-        guard case .error(let message) = time("2", "0", "0", length: 3_600) else {
-            return XCTFail("Expected error")
-        }
-        XCTAssertTrue(message.hasPrefix("Time exceeds book length"))
-    }
-
-    func testTimeValidationAcceptsEndAndOrdinaryValues() {
-        XCTAssertEqual(time("1", "0", "0", length: 3_600), .value(3_600))
-        XCTAssertEqual(time("1", "30", "45", length: 7_200), .value(5_445))
-    }
+    // Go to Time's one field (P08) is tested in JumpToTimeTests.
 
     func testSpeechRateTableInterpolatesDirectModeRate() {
         let middle = SpeechService.rateForWPM(250)
@@ -373,10 +339,6 @@ final class PlaybackPolicyProductionTests: XCTestCase {
     func testPositionBeforeFirstHeadingHasNoCurrentID() {
         let list = [Heading(level: 1, text: "First", chapterIndex: 0, characterOffset: 10)]
         XCTAssertNil(ReaderViewModel.currentHeading(in: list, chapterIndex: 0, characterOffset: 0))
-    }
-
-    private func time(_ h: String, _ m: String, _ s: String, length: TimeInterval) -> JumpInputValidator.TimeResult {
-        JumpInputValidator.time(hours: h, minutes: m, seconds: s, bookLength: length)
     }
 
     private func layout(files: Bool, segments: Bool, chapters: Int) -> ReaderViewModel.AudioLayout {
