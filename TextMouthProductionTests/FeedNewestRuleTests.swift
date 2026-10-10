@@ -87,8 +87,8 @@ final class FeedNewestRuleTests: XCTestCase {
     }
 
     /// A download the listener asked for that fails is the listener's, to
-    /// try again by hand; one the rule asked for that fails stays the
-    /// rule's.
+    /// try again by hand; one the rule asked for that fails is the rule's
+    /// (REV11 F4), which a pass takes back once the item no longer counts.
     func testAFailedDownloadKeepsWhoAskedForIt() async throws {
         let world = try FeedTestWorld(self, label: "FeedRuleOriginFailed")
         world.server.serve("/audio/1.m4a", StubResponse(status: 404))
@@ -105,7 +105,80 @@ final class FeedNewestRuleTests: XCTestCase {
         let listeners = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
         XCTAssertEqual(listeners.state, .failed("The server says the file is gone."))
         XCTAssertEqual(listeners.downloadOrigin, .listener)
-        XCTAssertNil(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.downloadOrigin)
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.downloadOrigin, .window)
+    }
+
+    // MARK: - Failures Nobody Asked For (REV11 F4)
+
+    /// Offline, as at a first launch away from any network, the rule's
+    /// downloads wait for a network rather than fail, saying so, fetching
+    /// nothing, and never written as failures; the listener's own download
+    /// fails, saying the Mac is offline. Online again, the next refresh
+    /// TextMouth makes by itself tries the rule's again, and they download.
+    func testOfflineTheRulesDownloadsWaitForANetwork() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleOffline")
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        let feed = try await subscribeServed(world, episodes: 3)
+        world.online.value = false
+
+        let report = await world.center.applyItemPolicy(to: [feed.id])
+        world.center.download("guid:ep-3", of: feed.id)
+        await waitFor("every download ends") {
+            let items = world.center.store.record(of: feed.id)?.items ?? []
+            return items.allSatisfy { !$0.state.isDownloading } && world.center.downloads.current == nil
+        }
+
+        XCTAssertEqual(report.requestedItemIDs, ["guid:ep-1", "guid:ep-2"])
+        for itemID in ["guid:ep-1", "guid:ep-2"] {
+            let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item(itemID))
+            XCTAssertEqual(item.state, .waiting(FeedDownloadWait.network.reason), itemID)
+            XCTAssertFalse(item.hasRulesFailedDownload, itemID)
+        }
+        XCTAssertEqual(world.center.downloads.putOff.map(\.itemID), ["guid:ep-1", "guid:ep-2"])
+        XCTAssertEqual(
+            world.center.store.record(of: feed.id)?.item("guid:ep-3")?.state,
+            .failed("This Mac is offline, so “Episode 3” can't be downloaded. Connect to the internet and try again.")
+        )
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [], "an offline download reached the server")
+
+        world.online.value = true
+        _ = await world.center.refreshAll(origin: .scheduled)
+        _ = try await downloadedBooks(world, feed: feed, items: ["guid:ep-1", "guid:ep-2"])
+        XCTAssertTrue(world.center.downloads.putOff.isEmpty)
+    }
+
+    /// The rule's failed download is the rule's, and a pass that no longer
+    /// counts its item, as when the number shrinks, takes the failure back:
+    /// the item is not downloaded, so no row keeps "Download Failed" for a
+    /// download nobody asked for. A failure the rule still counts stays,
+    /// tried again after a refresh, and the listener's own failure stays
+    /// whatever the rule counts.
+    func testTheRulesFailureIsTakenBackOnceItsItemNoLongerCounts() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleFailureTakenBack")
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        for number in 1...3 {
+            world.server.serve("/audio/\(number).m4a", StubResponse(status: 404))
+        }
+        let feed = try await subscribe(world, episodes: 3)
+
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        world.center.download("guid:ep-3", of: feed.id)
+        await waitFor("every download fails") {
+            let items = world.center.store.record(of: feed.id)?.items ?? []
+            return items.allSatisfy { $0.state.failureReason != nil } && world.center.downloads.current == nil
+        }
+        XCTAssertEqual(origin(of: "guid:ep-2", in: feed, world), .window)
+
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        let report = await world.center.applyItemPolicy(to: [feed.id])
+
+        XCTAssertEqual(report.withdrawnItemIDs, ["guid:ep-2"])
+        let record = try XCTUnwrap(world.center.store.record(of: feed.id))
+        XCTAssertEqual(record.item("guid:ep-2")?.state, .notDownloaded)
+        XCTAssertEqual(record.item("guid:ep-2")?.downloadOrigin, .window, "the item stopped being the rule's")
+        XCTAssertNotNil(record.item("guid:ep-1")?.state.failureReason, "a failure the rule still counts went")
+        XCTAssertNotNil(record.item("guid:ep-3")?.state.failureReason, "the listener's failure went")
+        XCTAssertEqual(record.item("guid:ep-3")?.downloadOrigin, .listener)
     }
 
     /// Who asked is read without ever making a record unreadable: a name

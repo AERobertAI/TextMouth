@@ -44,8 +44,9 @@ enum FeedDownloadError: Error, Equatable, Sendable {
 /// (FR11): it is put off by itself and tried again by itself, its item
 /// saying "Waiting to Download" and why (`FeedItemState.waiting`).
 enum FeedDownloadWait: Equatable, Sendable {
-    /// A network with data limits refused it: it is asked for again once a
-    /// refresh TextMouth makes by itself reaches a network without them.
+    /// A network with data limits refused it, or this Mac was offline (REV11
+    /// F4): it is asked for again once a refresh TextMouth makes by itself
+    /// reaches a network without data limits.
     case network
     /// The library's disk lacks room for the file, of this many bytes, and
     /// the space TextMouth keeps free: the rule tries it again at its next
@@ -53,11 +54,12 @@ enum FeedDownloadWait: Equatable, Sendable {
     case room(bytes: Int64)
 
     /// The wait a failure of one of the rule's downloads is: a network with
-    /// data limits, or too little room; nil for any other failure, which
-    /// fails as a listener's download does.
+    /// data limits, this Mac being offline, as at a first launch away from
+    /// any network (REV11 F4), or too little room; nil for any other
+    /// failure, which fails as a listener's download does.
     init?(_ failure: FeedDownloadError) {
         switch failure {
-        case .transfer(.constrainedNetwork):
+        case .transfer(.constrainedNetwork), .transfer(.offline):
             self = .network
         case .notEnoughSpace(let bytes):
             self = .room(bytes: bytes)
@@ -367,10 +369,13 @@ final class FeedDownloadManager {
 
     /// Takes back the newest-N rule's downloads of the feed `feedID` not yet
     /// under way whose items `shouldWithdraw` names (FR11): those waiting in
-    /// the queue, those a network with data limits put off, and those
-    /// waiting for room. Each item is not downloaded, and stays the rule's,
-    /// to be asked for again should it count again; the download under way
-    /// runs on, and the listener's downloads are never taken back.
+    /// the queue, those a network with data limits put off, those waiting
+    /// for room, and those that failed (REV11 F4), so no row says "Download
+    /// Failed" of a download nobody asked for once its item no longer
+    /// counts. Each item is not downloaded, and stays the rule's, to be
+    /// asked for again should it count again; the download under way runs
+    /// on, and the listener's downloads, failed or not, are never taken
+    /// back.
     /// - Returns: The items taken back.
     @discardableResult
     func withdrawRuleDownloads(of feedID: UUID, where shouldWithdraw: (FeedItem.ID) -> Bool) -> [FeedItem.ID] {
@@ -381,11 +386,13 @@ final class FeedDownloadManager {
         var withdrawn = (queue + putOff).filter(goes).map(\.itemID)
         queue.removeAll(where: goes)
         putOff.removeAll(where: goes)
-        // A wait for room holds no request: its item alone says it waits.
-        let waitingForRoom = store.record(of: feedID)?.items.filter { item in
-            item.state.waitingReason != nil && !withdrawn.contains(item.id) && shouldWithdraw(item.id)
+        // A wait for room holds no request, and neither does the rule's
+        // failed download: their items alone say so.
+        let settled = store.record(of: feedID)?.items.filter { item in
+            (item.state.waitingReason != nil || item.hasRulesFailedDownload)
+                && !withdrawn.contains(item.id) && shouldWithdraw(item.id)
         }.map(\.id) ?? []
-        withdrawn += waitingForRoom
+        withdrawn += settled
         guard !withdrawn.isEmpty else { return [] }
         store.update(feedID) { record in
             for index in record.items.indices where withdrawn.contains(record.items[index].id) {
@@ -493,10 +500,10 @@ final class FeedDownloadManager {
             store.updateItem(request.itemID, of: request.feedID) { item in
                 item.state = .failed(message)
                 // A download the listener asked for stays the listener's to
-                // try again, never the newest-N rule's (FR11).
-                if asked.origin == .listener {
-                    item.downloadOrigin = .listener
-                }
+                // try again, never the newest-N rule's (FR11); the rule's
+                // failure is the rule's, which a pass takes back once the
+                // item no longer counts (REV11 F4).
+                item.downloadOrigin = FeedDownloadOrigin.after(asked.origin, given: item.downloadOrigin)
             }
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FAILED: \(item.title) (\(feed.title)): \(message)")
             announce(.downloadFailed(feedID: request.feedID, itemID: request.itemID, reason: message))

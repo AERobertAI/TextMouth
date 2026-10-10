@@ -326,6 +326,24 @@ enum FeedDownloadOrigin: String, Codable, Equatable, Sendable {
         let name = try? decoder.singleValueContainer().decode(String.self)
         self = name == Self.window.rawValue || name == "automatic" ? .window : .listener
     }
+
+    /// Who an item's download is, once a download `asked` asked for ends,
+    /// the item having been `current`'s: the listener's stays the
+    /// listener's, as an item the listener asked for, stopped, or deleted
+    /// is never the rule's again; otherwise it is whoever asked (REV11 F4).
+    static func after(_ asked: FeedDownloadOrigin, given current: FeedDownloadOrigin?) -> FeedDownloadOrigin {
+        current == .listener ? .listener : asked
+    }
+}
+
+extension FeedItem {
+    /// Whether the item's last download failed when the newest-N rule asked
+    /// for it (REV11 F4): a failure the rule takes back, the item no longer
+    /// downloaded, once it no longer counts the item, so no row says
+    /// "Download Failed" of a download nobody asked for.
+    var hasRulesFailedDownload: Bool {
+        state.failureReason != nil && downloadOrigin == .window
+    }
 }
 
 // MARK: - The File an Item Offers

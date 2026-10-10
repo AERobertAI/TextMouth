@@ -7,9 +7,10 @@ import Foundation
 struct FeedItemPolicyPassReport: Equatable, Sendable {
     /// The downloads the pass asked for, each feed's newest first.
     var requestedItemIDs: [FeedItem.ID] = []
-    /// The rule's downloads not yet under way that the pass took back: their
-    /// items no longer counted among the newest, were played, or their
-    /// feed's choice no longer downloads by itself.
+    /// The rule's downloads not yet under way, or failed (REV11 F4), that
+    /// the pass took back, each item now not downloaded: their items no
+    /// longer counted among the newest, were played, or their feed's choice
+    /// no longer downloads by itself.
     var withdrawnItemIDs: [FeedItem.ID] = []
     /// The downloads whose files the pass removed, by book ID, each feed's
     /// oldest first.
@@ -56,7 +57,9 @@ extension FeedCenter {
     ///
     /// For a feed whose choice is "Every item listed, newest 5 downloaded":
     /// 1. It takes back the rule's downloads not yet under way whose items
-    ///    no longer count: outside the newest, or played.
+    ///    no longer count, outside the newest, or played, and the rule's
+    ///    failed downloads of such items, which are then not downloaded, so
+    ///    no row keeps a failure nobody asked for (REV11 F4).
     /// 2. It asks for each of the newest items not played, unless it is
     ///    here, downloading, waiting for a network without data limits, the
     ///    listener's (`ruleMayDownload(_:)`), or failed and the feed not in
