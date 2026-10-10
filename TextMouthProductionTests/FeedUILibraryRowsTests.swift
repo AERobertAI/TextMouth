@@ -390,10 +390,16 @@ final class FeedUILibraryRowsTests: XCTestCase {
                 world.library.bookCount(inFolderTree: $0.fullPath)
             }
         }
-        /// A plain folder's rotor entry, on its own row.
+        /// A plain folder's rotor entry, on its own row, naming the feeds
+        /// below it beside its books (FR11).
         func folderEntry(_ folder: BookFolder) -> FolderRotorEntry {
             FolderRotorEntry(
-                label: FolderRow.accessibilityLabel(name: folder.name, bookCount: world.library.bookCount(inFolderTree: folder.fullPath), feedCounts: nil),
+                label: FolderRow.accessibilityLabel(
+                    name: folder.name,
+                    bookCount: world.library.bookCount(inFolderTree: folder.fullPath),
+                    feedCounts: nil,
+                    feedsBelow: feedFolders.feedCount(below: folder)
+                ),
                 id: folder.id
             )
         }
@@ -414,6 +420,7 @@ final class FeedUILibraryRowsTests: XCTestCase {
         let inside = rows(base)
         XCTAssertEqual(inside.shown, [shows])
         XCTAssertEqual(inside.rotorEntries, [folderEntry(shows), feedEntry(atlas)])
+        XCTAssertEqual(inside.rotorEntries.first?.label, "Shows, 1 feed", "a plain folder names the feeds below it")
 
         // Inside Shows: only the Notes' folder, left out.
         let nested = rows(shows.fullPath)
@@ -535,7 +542,8 @@ final class FeedUILibraryRowsTests: XCTestCase {
     }
 
     /// Entering a feed's folder says its name, "Feed", and the feed's items
-    /// counted; any other folder is announced as before.
+    /// counted; any other folder says its books and the feeds below it, as
+    /// the Feeds section lists them there (FR11).
     func testEnteringAFeedsFolderSaysItsItems() async throws {
         let world = try FeedTestWorld(self, label: "FeedUIEnter")
         let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: world.folder.path, items: [
@@ -551,7 +559,11 @@ final class FeedUILibraryRowsTests: XCTestCase {
         )
         XCTAssertEqual(
             FolderNavigationHistory.announcement(for: world.folder.path, library: world.library.library, feedFolders: folders),
-            FolderNavigationHistory.announcement(for: world.folder.path, library: world.library.library)
+            FolderNavigationHistory.announcement(for: world.folder.path, library: world.library.library, feedCount: 1)
+        )
+        XCTAssertEqual(
+            FolderNavigationHistory.announcement(for: world.folder.path, library: world.library.library, feedFolders: folders),
+            "\(world.folder.path), 1 feed"
         )
     }
 

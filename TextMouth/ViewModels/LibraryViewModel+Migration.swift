@@ -989,12 +989,18 @@ extension LibraryViewModel {
         waiting: (StorageWork?) async -> Void = { _ in }
     ) async -> OperationOutcome {
         let run = await runDirectoryRebuild(waiting: waiting)
-        let bookCount = library.books.count
         return Self.maintenanceOutcome(
             run,
             failureContext: Self.rebuildFailureContext,
-            done: "Done. \(bookCount) \(bookCount == 1 ? "book" : "books") in library."
+            done: Self.rebuildDirectoryDoneMessage(library)
         )
+    }
+
+    /// What Rebuild Directory says once it is done: "Done. 743 books in
+    /// library.", counting the library's own books, never a feed's items
+    /// (FR11), which the rebuild leaves where they are.
+    nonisolated static func rebuildDirectoryDoneMessage(_ library: Library) -> String {
+        "Done. \(CountWording.books(library.libraryBookCount)) in library."
     }
 
     /// The work of Rebuild Directory: the legacy migration report, or the

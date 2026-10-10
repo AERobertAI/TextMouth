@@ -331,15 +331,14 @@ struct StorageSettingsView: View {
             }
 
             Section {
-                LabeledContent("Books") {
-                    Text("\(libraryViewModel.library.books.count)")
-                }
-                LabeledContent("Folders") {
-                    Text("\(libraryViewModel.library.folders.count)")
-                }
-                let tmbCount = libraryViewModel.library.books.count { !$0.tmbDirectoryName.isEmpty }
-                LabeledContent("TMB Packages") {
-                    Text("\(tmbCount) of \(libraryViewModel.library.books.count)")
+                let statistics = LibraryStatistics(
+                    library: libraryViewModel.library,
+                    feedCount: libraryViewModel.feeds.store.records.count
+                )
+                ForEach(statistics.lines) { line in
+                    LabeledContent(line.label) {
+                        Text(line.value)
+                    }
                 }
             } header: {
                 Text("Library Statistics")
@@ -685,7 +684,8 @@ struct StorageSettingsView: View {
         let isAvailable = unavailability == nil
         return StorageChoice.CurrentLibrary(
             folder: TextMouthPaths.rootPath,
-            bookCount: libraryViewModel.library.books.count,
+            bookCount: libraryViewModel.library.libraryBookCount,
+            feedCount: libraryViewModel.feeds.store.records.count,
             isAvailable: isAvailable,
             unsavedChanges: isAvailable ? [] : failureCenter.unsavedRows.map(\.text)
         )
@@ -772,5 +772,40 @@ struct StorageSettingsView: View {
             let message = work?.waitingMessage ?? operation.runningMessage
             status = StorageStatus(message: message, isFailure: false).announced()
         }
+    }
+}
+
+// MARK: - Library Statistics
+
+/// What Storage settings' Library Statistics section says, line by line,
+/// each a label and a value, shown and spoken alike: the library's own books,
+/// the feeds beside them where there are any (FR11), its folders, and how
+/// many of its books are in packages. A feed's episodes and articles are
+/// never counted as books; their feeds are counted instead.
+struct LibraryStatistics: Equatable {
+    /// One line: "Books" and "743".
+    struct Line: Equatable, Identifiable {
+        /// What the line counts.
+        let label: String
+        /// The count, as the line shows it.
+        let value: String
+
+        var id: String { label }
+    }
+
+    /// The lines, in the order the section shows them.
+    let lines: [Line]
+
+    /// The statistics of `library`, subscribed to `feedCount` feeds.
+    init(library: Library, feedCount: Int) {
+        let books = library.libraryBooks
+        var lines = [Line(label: "Books", value: "\(books.count)")]
+        if feedCount > 0 {
+            lines.append(Line(label: "Feeds", value: "\(feedCount)"))
+        }
+        lines.append(Line(label: "Folders", value: "\(library.folders.count)"))
+        let packaged = books.count { !$0.tmbDirectoryName.isEmpty }
+        lines.append(Line(label: "TMB Packages", value: "\(packaged) of \(books.count)"))
+        self.lines = lines
     }
 }

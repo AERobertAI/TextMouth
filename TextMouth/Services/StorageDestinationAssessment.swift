@@ -378,8 +378,11 @@ enum StorageChoice: Equatable {
     struct CurrentLibrary: Equatable {
         /// The data directory's full path.
         var folder: String
-        /// How many books the library lists.
+        /// How many books the library lists: its own, never a feed's items.
         var bookCount: Int
+        /// How many feeds the library is subscribed to, which the words name
+        /// beside its books (FR11); 0 for none.
+        var feedCount: Int = 0
         /// Whether the library is available.
         var isAvailable: Bool
         /// What can't be saved while the library isn't available, in the
@@ -500,7 +503,8 @@ enum StorageWording {
                 + "available. Nothing is copied, and nothing is created in \(current.folder). TextMouth will quit and "
                 + "open again to load it."
         }
-        return "TextMouth will stop using the library in \(current.folder) (\(CountWording.books(current.bookCount))) "
+        let counts = CountWording.booksAndFeeds(books: current.bookCount, feeds: current.feedCount)
+        return "TextMouth will stop using the library in \(current.folder) (\(counts)) "
             + "and open the library in \(path) instead. Nothing is copied, and the library in \(current.folder) stays "
             + "as it is. TextMouth will quit and open again to load it."
     }

@@ -85,15 +85,17 @@ class FolderNavigationHistory: ObservableObject {
     /// VoiceOver announcement used after folder navigation. Keeping this
     /// formatter beside the navigation model prevents view-only string copies
     /// from drifting away from the behavior covered by hosted tests.
-    static func announcement(for path: String, library: Library) -> String {
+    ///
+    /// It counts the library's own books, and names beside them the
+    /// `feedCount` feeds the Feeds section lists there, as in "Library, 743
+    /// books, 2 feeds" (FR11): a feed's items are counted as their feed.
+    static func announcement(for path: String, library: Library, feedCount: Int = 0) -> String {
         let folderName = path.isEmpty
             ? "Library"
             : (path.components(separatedBy: "/").last ?? "Library")
-        // The library's own books: a feed's items are counted as their feed
-        // (FR11).
         let bookCount = path.isEmpty
             ? library.libraryBookCount
             : library.totalBooksInFolderTree(path)
-        return "\(folderName), \(CountWording.books(bookCount))"
+        return "\(folderName), \(CountWording.booksAndFeeds(books: bookCount, feeds: feedCount))"
     }
 }
