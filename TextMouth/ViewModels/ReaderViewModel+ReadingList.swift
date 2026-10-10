@@ -148,8 +148,9 @@ extension ReaderViewModel {
     ///
     /// A playing book pauses where it is, without the pause sound, since
     /// the book that starts makes its own; a Where Am I announcement
-    /// speaking ends without resuming its book, and counts as playing when
-    /// it paused a playing one. The book that follows is announced, then
+    /// speaking ends with that pause, without resuming its book
+    /// (`pause(playingPauseSound:)`), and counts as playing when it paused a
+    /// playing one, or holds a Play. The book that follows is announced, then
     /// asked for after the moment Continue to Next Book gives VoiceOver to
     /// begin: "Starting: <title>" for one that plays, which continues as a
     /// finished book continues through the list
@@ -181,11 +182,10 @@ extension ReaderViewModel {
         // has played (`whereAmIWillPlayBook`).
         let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook
         let sleepTimerKeepsItFromStarting = wasPlaying && sleepTimerEndsListeningHere
-        if isWhereAmISpeaking {
-            stopWhereAmISynthesizer()
-            endWhereAmIWithoutResuming()
-        }
-        if wasPlaying {
+        // The pause ends a Where Am I announcement too, without resuming
+        // this book, even for a book that was not playing, whose
+        // announcement would otherwise speak over the one below.
+        if wasPlaying || isWhereAmIUnderWay {
             pause(playingPauseSound: false)
         }
         let plays = wasPlaying && !sleepTimerKeepsItFromStarting
