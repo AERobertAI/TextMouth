@@ -47,6 +47,7 @@ final class FeedItemIndexWordingTests: FeedItemIndexTestCase {
 
     /// A folder's row, and its entry in the Folders rotor, name the feeds
     /// below it beside its books, or alone where it holds no book.
+    @MainActor
     func testAFolderRowNamesTheFeedsBelowIt() {
         XCTAssertEqual(FolderRow.accessibilityLabel(name: "Podcasts", bookCount: 3, feedCounts: nil, feedsBelow: 2), "Podcasts, 3 books, 2 feeds")
         XCTAssertEqual(FolderRow.accessibilityLabel(name: "Shows", bookCount: 0, feedCounts: nil, feedsBelow: 1), "Shows, 1 feed")
