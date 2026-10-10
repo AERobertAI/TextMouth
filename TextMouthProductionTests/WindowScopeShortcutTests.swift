@@ -157,6 +157,36 @@ final class WindowScopeShortcutTests: XCTestCase {
         XCTAssertEqual(posted.names, [ShortcutAction.showSleepTimer.rawValue])
     }
 
+    /// Recording a key takes it only from the actions whose scopes overlap
+    /// the recording action's, and the tab names those: Shift-Command-T
+    /// recorded for Where Am I?, given reader windows, is taken from Show
+    /// Sleep Timer alone, New from Text keeping it in Library windows;
+    /// recorded for Play / Pause, which works in every window, it is taken
+    /// from both actions that had it then.
+    func testRecordingAKeyTakesItOnlyWhereScopesOverlap() {
+        let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("window-scope-recording"), installsEventMonitor: false)
+        manager.setScope(.reader, for: .whereAmI)
+
+        var before = manager.bindings
+        manager.addBinding(shiftCommandT, to: .whereAmI)
+
+        XCTAssertEqual(manager.actions(thatLostKeysSince: before, besides: .whereAmI), [.showSleepTimer])
+        XCTAssertEqual(manager.bindingsFor(.newFromText), [shiftCommandT])
+        XCTAssertEqual(
+            ShortcutsSettingsWording.recorded(shiftCommandT, for: .whereAmI, takenFrom: [.showSleepTimer]),
+            "Shift + Command + T, recorded for Where Am I? Taken from Show Sleep Timer."
+        )
+
+        before = manager.bindings
+        manager.addBinding(shiftCommandT, to: .togglePlayback)
+
+        XCTAssertEqual(manager.actions(thatLostKeysSince: before, besides: .togglePlayback), [.whereAmI, .newFromText])
+        XCTAssertEqual(
+            ShortcutsSettingsWording.recorded(shiftCommandT, for: .togglePlayback, takenFrom: [.whereAmI, .newFromText]),
+            "Shift + Command + T, recorded for Play / Pause. Taken from Where Am I? and New from Text…"
+        )
+    }
+
     // MARK: - The Store
 
     /// The store keeps an action working in a scope the user chose as an
