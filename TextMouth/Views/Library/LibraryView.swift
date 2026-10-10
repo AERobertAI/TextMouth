@@ -310,6 +310,8 @@ struct LibraryView: View {
                     selectedCount: effectiveSelection.count,
                     totalCount: books.count,
                     removalPreferences: removalPreferences,
+                    // Feed items alone: Remove is their Delete Download (REV11 F2).
+                    selectedAreFeedItems: selectedBooks.allSatisfy(\.isFeedItem),
                     onSelectAll: {
                         editSelection = Set(books.map(\.id))
                     },

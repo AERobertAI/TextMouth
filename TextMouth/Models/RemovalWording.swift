@@ -281,19 +281,25 @@ struct FeedDownloadRemovalWording: Equatable {
 
     /// The words for deleting the downloads of `items` in `mode`.
     init(_ mode: RemovalMode, items: [Book]) {
+        self.init(mode, count: items.count, title: items.first?.title)
+    }
+
+    /// The words for deleting `count` downloads in `mode`; `title` names the
+    /// item when there is exactly one.
+    init(_ mode: RemovalMode, count: Int, title: String? = nil) {
         self.mode = mode
-        count = items.count
-        title = items.count == 1 ? items.first?.title : nil
+        self.count = count
+        self.title = count == 1 ? title : nil
     }
 
     /// Whether the words speak of several downloads (or none).
     private var isPlural: Bool { count != 1 }
 
     /// The downloads as a sentence names them: "the download of “Ep. 368”",
-    /// or "3 downloads".
+    /// "1 download" when its title is not known, or "3 downloads".
     private var subject: String {
         if let title { return "the download of “\(title)”" }
-        return "\(count) downloads"
+        return isPlural ? "\(count) downloads" : "1 download"
     }
 
     /// "Delete Download?" or "Delete 3 Downloads?"
@@ -312,10 +318,47 @@ struct FeedDownloadRemovalWording: Equatable {
     /// the Trash is emptied. Its place, bookmarks, and transcript, if it has
     /// any, are kept, and it can be downloaded again."
     var confirmationMessage: String {
-        let kept = isPlural
+        "\(subject.capitalizingFirstLetter) will be deleted. " + mode.filesSentence(plural: isPlural) + " " + keptSentence
+    }
+
+    /// What deleting the downloads keeps: "Its place, bookmarks, and
+    /// transcript, if it has any, are kept, and it can be downloaded again."
+    private var keptSentence: String {
+        isPlural
             ? "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again."
             : "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again."
-        return "\(subject.capitalizingFirstLetter) will be deleted. " + mode.filesSentence(plural: isPlural) + " " + kept
+    }
+
+    // MARK: As the Library's Remove Command (REV11 F2)
+
+    /// The library's Remove in a context menu, when it is these downloads'
+    /// Delete Download: "Delete Download…" or "Delete 3 Downloads…" when it
+    /// asks first, the ellipsis saying a question follows, otherwise
+    /// "Delete Download" or "Delete 3 Downloads". A menu item is read by its
+    /// title alone, so the title names how many.
+    func commandTitle(asksFirst: Bool) -> String {
+        (isPlural ? "Delete \(count) Downloads" : "Delete Download") + (asksFirst ? "…" : "")
+    }
+
+    /// The edit bar's short button, which names no count: "Delete
+    /// Download…" or "Delete Downloads…" when it asks first, otherwise
+    /// "Delete Download" or "Delete Downloads".
+    func shortTitle(asksFirst: Bool) -> String {
+        buttonTitle + (asksFirst ? "…" : "")
+    }
+
+    /// What VoiceOver says for the command: "Delete the download of
+    /// “Ep. 368”", or "Delete 3 downloads".
+    var accessibilityLabel: String {
+        "Delete \(subject)"
+    }
+
+    /// What VoiceOver adds after a pause: that it asks first, or where the
+    /// files go, and then what is kept, never a choice the question does
+    /// not offer: "Asks before deleting. Its place, bookmarks, and
+    /// transcript, if it has any, are kept, and it can be downloaded again."
+    func accessibilityHint(asksFirst: Bool) -> String {
+        (asksFirst ? "Asks before deleting." : mode.filesSentence(plural: isPlural)) + " " + keptSentence
     }
 
     /// The report once the downloads are deleted, of which `keptCount` kept
@@ -342,22 +385,50 @@ struct FeedDownloadRemovalWording: Equatable {
 /// the edit bar. With "Confirm before removing a book" on, it asks how to
 /// remove the books, so it promises nothing about their files; with it off,
 /// it deletes them at once, so it says how.
+///
+/// When every book it removes is a feed item, an episode or an article in
+/// its feed's folder (FR11), the library's Remove is their Delete Download,
+/// and the command says so (`feedDownloads`, REV11 F2): "Delete Download…",
+/// with no promise of the choice to keep the files, which the question then
+/// does not offer.
 struct LibraryRemoveCommandWording: Equatable {
     let preferences: RemovalPreferences
     /// The words for deleting the books at once in the mode the Trash
     /// preference chooses.
     let removal: RemovalWording
+    /// The words of Delete Download, which the command speaks instead when
+    /// every book it removes is a feed item; nil otherwise.
+    let feedDownloads: FeedDownloadRemovalWording?
 
     /// The command for `count` books; `title` names the book when there is
-    /// exactly one.
-    init(preferences: RemovalPreferences, count: Int, title: String? = nil) {
+    /// exactly one, and `feedItemsOnly` says every one is a feed item.
+    init(preferences: RemovalPreferences, count: Int, title: String? = nil, feedItemsOnly: Bool = false) {
         self.preferences = preferences
         removal = RemovalWording(preferences.deletionMode, count: count, title: title)
+        feedDownloads = feedItemsOnly && count > 0
+            ? FeedDownloadRemovalWording(preferences.deletionMode, count: count, title: title)
+            : nil
     }
 
     /// The command for `books`.
     init(preferences: RemovalPreferences, books: [Book]) {
-        self.init(preferences: preferences, count: books.count, title: books.first?.title)
+        self.init(
+            preferences: preferences,
+            count: books.count,
+            title: books.first?.title,
+            feedItemsOnly: !books.isEmpty && books.allSatisfy(\.isFeedItem)
+        )
+    }
+
+    /// Whether a book row's context menu offers the library's Remove for
+    /// `targets`, the books its commands act on (REV11 F2): not for one
+    /// feed item whose own commands, `feedActions`, offer Delete Download,
+    /// which is what the library's Remove does for it, so the menu offers
+    /// no command twice; for any other book, and for several, which Remove
+    /// names together.
+    static func isOfferedOnRow(for targets: [Book], feedActions: [FeedItemAction]) -> Bool {
+        guard targets.count == 1, targets.first?.isFeedItem == true else { return true }
+        return !feedActions.contains { $0.command == .deleteDownload }
     }
 
     /// The command's title when it asks how to remove before removing
@@ -369,6 +440,9 @@ struct LibraryRemoveCommandWording: Equatable {
     /// "Move 3 Books to Trash", or "Delete 3 Books Permanently". A menu item
     /// is read by its title, so the title alone must say all of this.
     var menuTitle: String {
+        if let feedDownloads {
+            return feedDownloads.commandTitle(asksFirst: preferences.confirmsFirst)
+        }
         guard preferences.confirmsFirst else { return removal.buttonTitle }
         return removal.count == 1 ? Self.askFirstTitle : "Remove \(removal.count) Books from Library..."
     }
@@ -383,20 +457,33 @@ struct LibraryRemoveCommandWording: Equatable {
     }
 
     /// The edit bar's short button: "Remove..." when it asks first,
-    /// otherwise "Move to Trash" or "Delete Permanently".
+    /// otherwise "Move to Trash" or "Delete Permanently"; for feed items
+    /// alone, "Delete Downloads…" or "Delete Downloads".
     var shortTitle: String {
-        preferences.confirmsFirst ? "Remove..." : removal.mode.buttonTitle()
+        if let feedDownloads {
+            return feedDownloads.shortTitle(asksFirst: preferences.confirmsFirst)
+        }
+        return preferences.confirmsFirst ? "Remove..." : removal.mode.buttonTitle()
     }
 
     /// What VoiceOver says for the button: "Remove 3 books from the library"
-    /// when it asks first, otherwise "Move 3 books to the Trash".
+    /// when it asks first, otherwise "Move 3 books to the Trash"; for feed
+    /// items alone, "Delete 3 downloads".
     var accessibilityLabel: String {
-        preferences.confirmsFirst ? "Remove \(removal.subject) from the library" : removal.accessibilityLabel
+        if let feedDownloads {
+            return feedDownloads.accessibilityLabel
+        }
+        return preferences.confirmsFirst ? "Remove \(removal.subject) from the library" : removal.accessibilityLabel
     }
 
     /// What VoiceOver adds after a pause: the choice that follows, or what
-    /// happens to the files.
+    /// happens to the files; for feed items alone, what Delete Download
+    /// does and keeps, never the choice to keep the files, which their
+    /// question does not offer.
     var accessibilityHint: String {
+        if let feedDownloads {
+            return feedDownloads.accessibilityHint(asksFirst: preferences.confirmsFirst)
+        }
         guard preferences.confirmsFirst else {
             return removal.mode.filesSentence(plural: removal.count != 1)
         }
