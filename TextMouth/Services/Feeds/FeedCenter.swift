@@ -192,6 +192,16 @@ enum FeedSubscribeOutcome: Equatable, Sendable {
     case choose([FeedLink])
 }
 
+/// What unsubscribing from a feed did (FR11, branch D,
+/// `FeedCenter.unsubscribe(_:)`), for the words the listener hears.
+struct FeedUnsubscribeOutcome: Equatable, Sendable {
+    /// How many of the feed's downloads stay, its items in its own folder.
+    var downloadCount: Int
+    /// How many packages the feed kept for downloads removed earlier were
+    /// deleted, with their places, bookmarks, and transcripts.
+    var deletedKeptCount: Int
+}
+
 /// Why subscribing to an address failed (FR03), in sentences a listener reads.
 enum FeedSubscribeError: Error, Equatable, Sendable {
     /// The address is not an http or https address.
@@ -200,6 +210,10 @@ enum FeedSubscribeError: Error, Equatable, Sendable {
     case folderMissing
     /// The feed is subscribed already, under the title given.
     case alreadySubscribed(title: String)
+    /// The feed is in the library already, under the title given, and the
+    /// listener unsubscribed from it (FR11, branch D): Resubscribe, not
+    /// a second subscription, checks it again.
+    case unsubscribedAlready(title: String)
     /// The address is a web page that names no feed.
     case pageNamesNoFeed
     /// The feed could not be fetched or read.
@@ -217,6 +231,8 @@ enum FeedSubscribeError: Error, Equatable, Sendable {
             return "The folder chosen for this feed is no longer in the library. Choose another folder."
         case .alreadySubscribed(let title):
             return "You're already subscribed to \(title)."
+        case .unsubscribedAlready(let title):
+            return "\(title) is in your library, unsubscribed. Choose Resubscribe on its row, or in its Feed Info, to check it again."
         case .pageNamesNoFeed:
             return "That page doesn't name a feed."
         case let .refreshFailed(error, host):
@@ -517,7 +533,7 @@ final class FeedCenter: ObservableObject {
     /// that is a web page is searched for the feeds it names.
     private func subscribe(_ url: URL, into choice: FeedFolderChoice, followingPage: Bool) async throws -> FeedSubscribeOutcome {
         if let existing = subscribedFeed(at: url) {
-            throw FeedSubscribeError.alreadySubscribed(title: existing.title)
+            throw Self.alreadyInTheLibrary(existing)
         }
         let host = FeedHost.of(url)
         let fetched: FeedFetchResult
@@ -556,7 +572,7 @@ final class FeedCenter: ObservableObject {
         case .success(var record):
             // Another subscription to the same feed may have finished meanwhile.
             if let existing = subscribedFeed(at: record.feed.feedURL) {
-                throw FeedSubscribeError.alreadySubscribed(title: existing.title)
+                throw Self.alreadyInTheLibrary(existing)
             }
             record.feed.folderID = try folderID(for: record.feed, choice: choice)
             store.add(record)
@@ -614,20 +630,70 @@ final class FeedCenter: ObservableObject {
     }
 
     /// The subscription to the feed at `url`, whatever its scheme or a
-    /// trailing slash, if there is one.
+    /// trailing slash, if there is one: subscribed, or unsubscribed from and
+    /// kept (FR11, branch D).
     func subscribedFeed(at url: URL) -> Feed? {
         let key = FeedAddress.comparisonKey(url)
         return store.feeds.first { FeedAddress.comparisonKey($0.feedURL) == key }
     }
 
-    /// Ends the subscription `feedID`: its record and this Mac's fetch
-    /// details go, and every book it downloaded stays in its folder.
-    func unsubscribe(_ feedID: UUID) {
-        guard let feed = store.record(of: feedID)?.feed else { return }
-        downloads.cancelAll(of: feedID)
-        store.remove(feedID)
-        fetchStates.remove(feedID)
-        DiagnosticLog.event(.feeds, "FEED_UNSUBSCRIBED: \(feed.title)")
+    /// Why subscribing to the feed `existing` is refused, as the library has
+    /// it already: subscribed, or unsubscribed from (FR11, branch D), which
+    /// Resubscribe checks again.
+    private static func alreadyInTheLibrary(_ existing: Feed) -> FeedSubscribeError {
+        existing.isSubscribed ? .alreadySubscribed(title: existing.title) : .unsubscribedAlready(title: existing.title)
+    }
+
+    /// Unsubscribes from the feed `feedID` (FR11, branch D), as the listener
+    /// asked on October 9: "just keep it a feed with rules kept except you
+    /// can't check it or manually check it for new items". Only checking
+    /// stops (`Feed.isSubscribed`; `FeedRefresher`). The feed keeps its
+    /// record, which notes when it was unsubscribed, its library folder,
+    /// still a feed's, its own settings, its downloads, which stay its items
+    /// in its own folder, and this Mac's fetch details; its rules go on
+    /// removing what they remove. The newest-N rule's downloads not yet
+    /// under way are taken back, since it downloads nothing for an
+    /// unsubscribed feed, and the one under way, like the listener's, runs
+    /// on. The packages the feed kept for downloads removed earlier go, with
+    /// their places and bookmarks (`deleteKeptPackages(of:)`), as the
+    /// listener accepted: "Clearing out old deleted episodes itself seems
+    /// fine". Resubscribe (`resubscribe(_:)`) checks the feed again.
+    /// - Returns: What unsubscribing did, for the words the listener hears;
+    ///   nil for a feed TextMouth has no record of, or one already
+    ///   unsubscribed, which changes nothing.
+    @discardableResult
+    func unsubscribe(_ feedID: UUID) -> FeedUnsubscribeOutcome? {
+        guard let feed = store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
+        store.update(feedID) { $0.feed.unsubscribedDate = environment.now() }
+        downloads.withdrawRuleDownloads(of: feedID) { _ in true }
+        let outcome = FeedUnsubscribeOutcome(
+            downloadCount: library?.feedItemRows(of: feedID).downloaded.count ?? 0,
+            deletedKeptCount: deleteKeptPackages(of: feedID)
+        )
+        DiagnosticLog.event(
+            .feeds,
+            "FEED_UNSUBSCRIBED: \(feed.title): checking stops; "
+                + "\(CountWording.phrase(outcome.downloadCount, singular: "download stays", plural: "downloads stay")); "
+                + "deleted \(CountWording.phrase(outcome.deletedKeptCount, singular: "package", plural: "packages")) "
+                + "kept for removed downloads"
+        )
+        return outcome
+    }
+
+    /// Subscribes again to the feed `feedID`, which the listener unsubscribed
+    /// from (FR11, branch D): checking starts again, at launch, on the
+    /// interval, and in Refresh All Feeds, and the feed is checked at once,
+    /// as Check Feed checks it, on any network; the end of that check asks
+    /// for the newest-N rule's pass over the feed, as every check's end
+    /// does, which downloads its newest again.
+    /// - Returns: How the check at once ended; nil for a feed TextMouth has
+    ///   no record of, or one subscribed already, which changes nothing.
+    @discardableResult
+    func resubscribe(_ feedID: UUID) async -> FeedRefreshReport? {
+        guard let feed = store.record(of: feedID)?.feed, !feed.isSubscribed else { return nil }
+        store.update(feedID) { $0.feed.unsubscribedDate = nil }
+        DiagnosticLog.event(.feeds, "FEED_RESUBSCRIBED: \(feed.title): checking starts again, at once")
+        return await refresh(feedID)
     }
 
     // MARK: Refreshing
@@ -682,16 +748,31 @@ final class FeedCenter: ObservableObject {
     // MARK: Downloading
 
     /// Downloads the item `itemID` of the feed `feedID` because the listener
-    /// asked (Download, or trying a failed download again).
+    /// asked (Download, or trying a failed download again). An item moved
+    /// into the library, whose book the library still lists, is never
+    /// downloaded again (FR11, branch D).
     func download(_ itemID: FeedItem.ID, of feedID: UUID) {
+        guard libraryBook(of: itemID, in: feedID) == nil else { return }
         downloads.download(itemID, of: feedID, origin: .listener)
     }
 
     /// Opens the item `itemID` of the feed `feedID`: its book at once when
-    /// it is downloaded, or else once it has downloaded, ahead of the others
-    /// waiting, as a book in the cloud downloads before it opens.
+    /// it is downloaded, or moved into the library (FR11, branch D), or else
+    /// once it has downloaded, ahead of the others waiting, as a book in the
+    /// cloud downloads before it opens.
     func open(_ itemID: FeedItem.ID, of feedID: UUID) {
+        if let book = libraryBook(of: itemID, in: feedID) {
+            library?.openFeedBook(book.id)
+            return
+        }
         downloads.download(itemID, of: feedID, origin: .listener, opening: true)
+    }
+
+    /// The book the item `itemID` of the feed `feedID` became in the library
+    /// by Move to Library… (FR11, branch D), while the library lists it.
+    func libraryBook(of itemID: FeedItem.ID, in feedID: UUID) -> Book? {
+        guard let bookID = store.record(of: feedID)?.item(itemID)?.state.libraryBookID else { return nil }
+        return library?.feedBook(withID: bookID)
     }
 
     /// Stops the download of the item `itemID` of the feed `feedID`, or takes
@@ -712,9 +793,13 @@ final class FeedCenter: ObservableObject {
 
     /// The state the library shows for `item` of the feed `feedID`: its own,
     /// except that an item whose book the library no longer lists, as after
-    /// the book was deleted from the library, is not downloaded.
+    /// the book was deleted from the library, is not downloaded, whether it
+    /// was its feed's download or moved into the library (FR11, branch D).
     func state(of item: FeedItem, in feedID: UUID) -> FeedItemState {
         if item.state.bookID != nil, downloadedRow(of: item, in: feedID) == nil {
+            return .notDownloaded
+        }
+        if let bookID = item.state.libraryBookID, let library, library.feedBook(withID: bookID) == nil {
             return .notDownloaded
         }
         return item.state

@@ -38,7 +38,7 @@ struct FeedShelf: Equatable {
     /// - a feed whose index a newer TextMouth wrote, in a layout this one
     ///   does not read (`FeedIndexNewerLayout`), its rows standing in the
     ///   same way, so it is never rewritten in this one's layout;
-    /// - and a feed no longer subscribed whose downloads returned to the
+    /// - and a feed whose record is gone, whose downloads returned to the
     ///   library (`LibraryViewModel.returnDownloads(ofFeed:toFolderID:removingWith:)`):
     ///   its index keeps listing them until library.json holds them and the
     ///   feed's folder goes with the index, so a crash in between finds every
@@ -78,14 +78,15 @@ struct FeedShelf: Equatable {
     /// Leaves the index file of the feed `feedID` as it is for as long as
     /// TextMouth runs (`indexesLeftAlone`), as when a library read again
     /// after the data directory came back found it only in the cloud, or
-    /// when an unsubscribed feed's downloads return to the library.
+    /// when the downloads of a feed whose record is gone return to the
+    /// library.
     mutating func leaveIndexAlone(of feedID: UUID) {
         indexesLeftAlone.insert(feedID)
     }
 
     /// Forgets the index of the feed `feedID` altogether, once its folder is
-    /// gone with it, as after an unsubscribed feed's downloads returned to
-    /// the library: no save writes it again, or leaves it alone. The caller
+    /// gone with it, as after the downloads of a feed whose record is gone
+    /// returned to the library: no save writes it again, or leaves it alone. The caller
     /// holds no row of the feed any more.
     mutating func forgetIndex(of feedID: UUID) {
         indexedFeedIDs.remove(feedID)

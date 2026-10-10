@@ -32,6 +32,7 @@ struct ReaderView: View {
             .modifier(ReaderBookCommandsSupport(
                 viewModel: viewModel,
                 exportModel: $panels.export,
+                moveToLibrary: $panels.moveToLibrary,
                 transcription: transcription
             ))
             .modifier(ReaderErrorAlert(viewModel: viewModel))
@@ -230,6 +231,10 @@ struct ReaderPanels {
     /// (FR05), which File > Export… and the toolbar's Export button open
     /// (`ReaderBookCommandsSupport`): the export it shows, or nil.
     var export: BookExportModel?
+    /// Move to Library…'s sheet (`MoveToLibrarySheet`) for an episode or
+    /// article in its feed (FR11, branch D), which Book > Move to Library…
+    /// opens (`ReaderBookCommandsSupport`): what it moves, or nil.
+    var moveToLibrary: MoveToLibraryRequest?
 }
 
 /// The reader toolbar's Where Am I? button (FR12). Pressed, it speaks the

@@ -248,9 +248,10 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertNotNil(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.deletedDate)
     }
 
-    /// Ending a subscription removes its record and this Mac's fetch details
-    /// and leaves every book it downloaded in its folder.
-    func testUnsubscribingLeavesTheBooks() async throws {
+    /// Unsubscribing is a switch (FR11, branch D): the feed keeps its record,
+    /// which says it is unsubscribed, and this Mac's fetch details, and
+    /// every download stays its item, in its feed's own folder.
+    func testUnsubscribingKeepsTheFeedAndItsDownloads() async throws {
         let world = try FeedTestWorld(self, label: "FeedUnsubscribe")
         let (feed, book) = try await downloadedEpisode(in: world)
         await world.center.store.flush()
@@ -259,11 +260,15 @@ final class FeedLifecycleTests: XCTestCase {
         await world.center.store.flush()
         await world.center.fetchStates.flush()
 
-        XCTAssertNil(world.center.store.record(of: feed.id))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: FeedPaths.recordFile(of: feed.id, in: world.recordsFolder).path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: FeedPaths.recordFile(of: feed.id, in: world.fetchStateFolder).path))
-        XCTAssertNotNil(world.library.bookByID(book.id))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.feed.isSubscribed, false)
+        let written = try FeedRecordCoding.decoder().decode(
+            FeedRecord.self,
+            from: Data(contentsOf: FeedPaths.recordFile(of: feed.id, in: world.recordsFolder))
+        )
+        XCTAssertEqual(written.feed.unsubscribedDate, world.clock.value)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: FeedPaths.recordFile(of: feed.id, in: world.fetchStateFolder).path))
+        XCTAssertEqual(world.library.bookByID(book.id)?.feedLink, book.feedLink)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath))
     }
 
     // MARK: - Helpers

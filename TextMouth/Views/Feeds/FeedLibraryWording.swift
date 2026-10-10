@@ -17,6 +17,18 @@ extension FeedWording {
     static let newNote = "New"
     /// What a feed row says when its folder is no longer in the library.
     static let folderMissingNote = "Folder missing"
+    /// The note after a feed's title, or its folder's name, while the
+    /// listener is unsubscribed from it (FR11, branch D), which TextMouth
+    /// then does not check; spoken in lower case after "Feed", as in
+    /// "Finish It!, Feed, unsubscribed, 10 of 381 episodes listed".
+    static let unsubscribedNote = "Unsubscribed"
+
+    /// The notes that follow "Feed" for a feed counted as `counts`: the
+    /// note "unsubscribed" while the listener is unsubscribed from it,
+    /// spoken in lower case, as in the middle of a sentence.
+    private static func notesAfterFeed(_ counts: FeedItemCounts) -> [String] {
+        counts.isSubscribed ? [] : [unsubscribedNote.lowercased()]
+    }
 
     // MARK: Counts
 
@@ -78,14 +90,23 @@ extension FeedWording {
     /// How the feed's last check reads: being checked now, never checked
     /// on this Mac, failed (with the reason, which names the feed's host,
     /// never its address), or the day and time of the last check, given as
-    /// a time of day so nothing redraws on a clock.
+    /// a time of day so nothing redraws on a clock. For a feed the listener
+    /// is not subscribed to (`isSubscribed` false, FR11, branch D), that it
+    /// is not checked, since the day and time of the last check when this
+    /// Mac made one: "Not checked since October 9 at 3:05 PM", or "Not
+    /// checked".
     static func check(
         _ fetch: FeedFetchState,
         isRefreshing: Bool,
+        isSubscribed: Bool = true,
         now: Date,
         calendar: Calendar = .current,
         locale: Locale = .current
     ) -> Check {
+        guard isSubscribed else {
+            let since = fetch.lastCheck.map { " since \(moment($0, now: now, calendar: calendar, locale: locale))" } ?? ""
+            return Check(visible: "Not checked\(since)", spoken: "not checked\(since)", failed: false)
+        }
         if isRefreshing {
             return Check(visible: "Checking now", spoken: "checking now", failed: false)
         }
@@ -130,10 +151,12 @@ extension FeedWording {
 
     /// A feed's row as VoiceOver speaks it, in one sentence: "Planet Money,
     /// Feed, 10 of 381 episodes listed, 3 downloaded, 2 new, checked today
-    /// at 3:05 PM", with "Folder missing" after the note when its folder is
-    /// gone.
+    /// at 3:05 PM", with "unsubscribed" after the note while the listener is
+    /// unsubscribed (FR11, branch D), "Finish It!, Feed, unsubscribed, 10 of
+    /// 381 episodes listed, not checked since October 9 at 3:05 PM", and
+    /// "Folder missing" after the notes when its folder is gone.
     static func feedRowLabel(title: String, counts: FeedItemCounts, check: Check, folderMissing: Bool) -> String {
-        var parts = [title, feedNote]
+        var parts = [title, feedNote] + notesAfterFeed(counts)
         if folderMissing { parts.append(folderMissingNote) }
         parts.append(countsPhrase(counts))
         parts.append(check.spoken)
@@ -157,9 +180,10 @@ extension FeedWording {
 
     /// What entering a feed's folder says, and its folder's row and Folders
     /// rotor entry: "Planet Money, Feed, 10 of 381 episodes listed, 3
-    /// downloaded, 2 new".
+    /// downloaded, 2 new", with "unsubscribed" after "Feed" while the
+    /// listener is unsubscribed (FR11, branch D).
     static func folderAnnouncement(name: String, counts: FeedItemCounts) -> String {
-        "\(name), \(feedNote), \(countsPhrase(counts))"
+        ([name, feedNote] + notesAfterFeed(counts) + [countsPhrase(counts)]).joined(separator: ", ")
     }
 
     // MARK: Item Rows
@@ -184,8 +208,9 @@ extension FeedWording {
     /// server says the file is gone, …"; "…, Waiting to Download, it
     /// downloads on a network without data limits, …"; "Ep. 368, Not
     /// Downloaded, 42 percent, 16 minutes remaining, 2 bookmarks, July 17,
-    /// 2026, 64 minutes". A played item says no progress, only its
-    /// bookmarks.
+    /// 2026, 64 minutes"; and, moved into the library (FR11, branch D), "Ep.
+    /// 368, In Library, July 17, 2026, 64 minutes". A played item says no
+    /// progress, only its bookmarks.
     static func itemRowLabel(_ row: FeedItemRowContent) -> String {
         var parts = [row.title]
         if row.isPlayed { parts.append(playedNote(isArticle: row.isArticle)) }
@@ -199,11 +224,14 @@ extension FeedWording {
     }
 
     /// An item row's spoken hint, which says what its default action does:
-    /// "Opens it" for a downloaded item; for one whose place was kept after
-    /// its file went (`keptPlace`, FR11), "Downloads it again, then opens it
-    /// where you left off"; for any other, "Downloads it, then opens it".
+    /// "Opens it" for a downloaded item; "Opens its book in your library" for
+    /// one moved into the library (FR11, branch D); for one whose place was
+    /// kept after its file went (`keptPlace`, FR11), "Downloads it again,
+    /// then opens it where you left off"; for any other, "Downloads it, then
+    /// opens it".
     static func itemRowHint(_ state: FeedItemState, keptPlace: Bool = false) -> String {
         if state.bookID != nil { return "Opens it" }
+        if state.libraryBookID != nil { return "Opens its book in your library" }
         return keptPlace ? "Downloads it again, then opens it where you left off" : "Downloads it, then opens it"
     }
 

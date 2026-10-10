@@ -63,8 +63,9 @@ final class FeedItemIndexMoveTests: FeedItemIndexTestCase {
 
     // MARK: - What Does Not Move
 
-    /// A download whose feed is no longer subscribed stays a book of the
-    /// library's own, as Unsubscribe has always promised.
+    /// A download whose feed's record is gone, as an older build's
+    /// Unsubscribe left it, stays a book of the library's own (an unsubscribed
+    /// feed keeps its record since FR11's branch D).
     @MainActor
     func testADownloadOfAFeedNoLongerSubscribedStaysABook() async throws {
         let fixture = try makeUsersLibrary()

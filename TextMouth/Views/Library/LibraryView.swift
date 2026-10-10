@@ -551,7 +551,9 @@ struct LibraryView: View {
             library: libraryViewModel,
             hostWindow: hostWindow,
             shownFolderPath: category == .folders ? currentFolderPath : nil,
-            takesCommand: takesCommand
+            takesCommand: takesCommand,
+            // Move to Library…'s key acts on the selection (FR11, branch D).
+            selectedBooks: { selectedBooks }
         ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
@@ -1192,11 +1194,12 @@ struct LibraryView: View {
         currentFolderPath = path
     }
 
-    /// The commands of the feed whose folder `folder` is, or none for any
-    /// other folder (FR03).
+    /// The commands of the feed whose folder `folder` is, by its state
+    /// (Unsubscribe… or Resubscribe, FR11, branch D), or none for any other
+    /// folder (FR03).
     private func feedActions(forFolder folder: BookFolder) -> [FeedAction] {
         guard let feedID = feedFolders.feedID(inFolder: folder.id) else { return [] }
-        return FeedAction.actions(for: feedID, noun: .of(feedFolders.center.listedItems(of: feedID)))
+        return FeedAction.actions(for: feedID, in: feedFolders.center)
     }
 
     /// What the feed commands chosen in this window work with (FR03).

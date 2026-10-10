@@ -1,9 +1,9 @@
 import Foundation
 
-// MARK: - An Unsubscribed Feed's Downloads Return to the Library
+// MARK: - A Gone Feed's Downloads Return to the Library
 
-/// What returning one unsubscribed feed's downloads to the library did
-/// (`LibraryViewModel.returnDownloads(ofFeed:toFolderID:removingWith:)`).
+/// What returning the downloads of one feed whose record is gone to the
+/// library did (`LibraryViewModel.returnDownloads(ofFeed:toFolderID:removingWith:)`).
 struct FeedDownloadReturn: Equatable {
     /// The downloads that are books of the library's own now, as the library
     /// lists them.
@@ -17,37 +17,40 @@ struct FeedDownloadReturn: Equatable {
     var removedFeedFolder = false
 }
 
-/// Until Unsubscribe keeps a feed's downloads by the listener's choice (FR11,
-/// branch D), a feed whose record is gone gets its downloads back as books of
-/// the library's own (REV10, item 3): the inverse of the first launch's move
-/// of downloads into their feeds' folders (`LibraryViewModel+FeedItemMove.swift`).
-/// Without the feed nothing lists a feed item, so a download left in the
-/// feed's folder would be listed nowhere, though the app said it stays.
+/// A feed whose record is truly gone gets its downloads back as books of the
+/// library's own, at launch (REV10, item 3): the inverse of the first
+/// launch's move of downloads into their feeds' folders
+/// (`LibraryViewModel+FeedItemMove.swift`). Without its record nothing lists
+/// a feed's items, so a download left in the feed's folder would be listed
+/// nowhere.
 ///
-/// Unsubscribe returns its feed's downloads into the feed's library folder,
-/// or the top level when that folder is gone; the launch returns those of
-/// every feed whose folder is here while its record is gone, at the top
-/// level, since nothing names that feed's library folder any more (in a
-/// cloud library, only once this Mac has found the record gone at two
-/// launches, as another Mac's sync can bring a feed's folder before its
-/// record: `FeedRecordAbsence`). Each keeps
-/// its book ID, place, playback times, bookmarks, settings, transcript, and
-/// place on the reading list. What the feed kept of downloads removed earlier
-/// goes, since nothing can download them again without the feed: the user
-/// accepted that for unsubscribing ("Clearing out old deleted episodes
-/// itself seems fine").
+/// Unsubscribe no longer comes here (FR11, branch D): it keeps the feed, its
+/// record among the rest, so its downloads stay its items. A record is truly
+/// gone when it was lost outside TextMouth, or when an Unsubscribe made by a
+/// build before branch D deleted it and that build did not return the
+/// downloads. The launch returns the downloads of every feed whose folder is
+/// here while its record is gone, at the library's top level, since nothing
+/// names that feed's library folder any more (in a cloud library, only once
+/// this Mac has found the record gone at two launches, as another Mac's sync
+/// can bring a feed's folder before its record: `FeedRecordAbsence`). Each
+/// keeps its book ID, place, playback times, bookmarks, settings,
+/// transcript, and place on the reading list. What the feed kept of
+/// downloads removed earlier goes, since nothing can download them again
+/// without the feed: the user accepted that for unsubscribing ("Clearing out
+/// old deleted episodes itself seems fine").
 extension LibraryViewModel {
 
     // MARK: At Launch
 
     /// Returns to the library, as books of its own at its top level, the
-    /// downloads of every feed this launch takes for unsubscribed
-    /// (`feedsTakenForUnsubscribed(subscribed:absence:)`), one feed at a
-    /// time, as `returnDownloads(ofFeed:toFolderID:removingWith:)` does.
-    /// Called once the feeds' records have loaded.
+    /// downloads of every feed this launch takes for gone
+    /// (`feedsTakenForGone(knownFeeds:absence:)`), one feed at a time, as
+    /// `returnDownloads(ofFeed:toFolderID:removingWith:)` does. Called once
+    /// the feeds' records have loaded.
     /// - Parameters:
-    ///   - subscribed: The feeds whose records are known: unless a test gives
-    ///     its own, the feed engine's, read or found only in the cloud.
+    ///   - knownFeeds: The feeds whose records are known, subscribed or not:
+    ///     unless a test gives its own, the feed engine's, read or found only
+    ///     in the cloud.
     ///   - absence: How a record's absence is judged: where the data
     ///     directory is, this Mac, and this launch (`feedRecordAbsence`),
     ///     unless a test gives its own.
@@ -57,22 +60,23 @@ extension LibraryViewModel {
     /// - Returns: How many downloads became books of the library's own.
     @discardableResult
     func returnDownloadsOfFeedsWithoutRecords(
-        subscribed: Set<UUID>? = nil,
+        knownFeeds: Set<UUID>? = nil,
         absence: FeedRecordAbsence? = nil,
         removingWith remove: (@MainActor (URL) throws -> Void)? = nil
     ) async -> Int {
         var returned = 0
-        for feedID in feedsTakenForUnsubscribed(subscribed: subscribed, absence: absence ?? feedRecordAbsence) {
+        for feedID in feedsTakenForGone(knownFeeds: knownFeeds, absence: absence ?? feedRecordAbsence) {
             returned += await returnDownloads(ofFeed: feedID, toFolderID: nil, removingWith: remove).returned.count
         }
         return returned
     }
 
     /// The feeds whose folders this library read at launch
-    /// (`FeedShelf.indexedFeedIDs`) while none of `subscribed` (by default
+    /// (`FeedShelf.indexedFeedIDs`) while none of `knownFeeds` (by default
     /// the feed engine's records, read or only in the cloud, once they have
-    /// loaded) is theirs and the records' folder, listed without downloading
-    /// anything, shows no record of theirs and no placeholder of one
+    /// loaded, an unsubscribed feed's among them) is theirs and the records'
+    /// folder, listed without downloading anything, shows no record of
+    /// theirs and no placeholder of one
     /// (`FeedRecordAbsence.placeholderName(of:)`), in the order of their IDs.
     ///
     /// A record that can't be read, preserved and left out, still has its
@@ -81,21 +85,21 @@ extension LibraryViewModel {
     /// engine's records have not loaded, or for a feed whose index is left
     /// alone (`FeedShelf.indexesLeftAlone`), whose rows here may be only some
     /// of its own.
-    func feedsWithoutRecords(subscribed: Set<UUID>? = nil) -> [UUID] {
-        recordPresence(subscribed: subscribed)?.gone ?? []
+    func feedsWithoutRecords(knownFeeds: Set<UUID>? = nil) -> [UUID] {
+        recordPresence(knownFeeds: knownFeeds)?.gone ?? []
     }
 
-    /// The feeds this launch takes for unsubscribed, whose downloads return
-    /// to the library, in the order of their IDs: in a data directory that
-    /// is not in a cloud location, every feed without its record
-    /// (`feedsWithoutRecords(subscribed:)`); in a cloud one, only those this
+    /// The feeds this launch takes for gone, whose downloads return to the
+    /// library, in the order of their IDs: in a data directory that is not
+    /// in a cloud location, every feed without its record
+    /// (`feedsWithoutRecords(knownFeeds:)`); in a cloud one, only those this
     /// Mac also found without their records at an earlier launch, as the
     /// note it left beside each one's index then says (`FeedRecordAbsence`).
     /// A feed found without its record for the first time is noted and
     /// passed over, and a feed whose record is here has this Mac's notes
     /// taken away, so an absence counts only while it lasts.
-    func feedsTakenForUnsubscribed(subscribed: Set<UUID>? = nil, absence: FeedRecordAbsence) -> [UUID] {
-        guard let presence = recordPresence(subscribed: subscribed) else { return [] }
+    func feedsTakenForGone(knownFeeds: Set<UUID>? = nil, absence: FeedRecordAbsence) -> [UUID] {
+        guard let presence = recordPresence(knownFeeds: knownFeeds) else { return [] }
         guard absence.isCloud else { return presence.gone }
         let root = TextMouthPaths.root
         for feedID in presence.here {
@@ -123,14 +127,14 @@ extension LibraryViewModel {
     /// What this launch knows of the records of the feeds whose folders this
     /// library read (`FeedShelf.indexedFeedIDs`), each in the order of their
     /// IDs: those whose records are gone while their folders are here, and
-    /// those whose records are here, known to the feed engine or listed in
-    /// the records' folder, a placeholder of one included. A feed whose
-    /// index is left alone is in neither. Nil while nothing can be known: the
-    /// feed engine's records have not loaded, or the records' folder cannot
-    /// be listed without downloading it.
-    private func recordPresence(subscribed: Set<UUID>?) -> (gone: [UUID], here: [UUID])? {
+    /// those whose records are here, known (`knownFeeds`, by default the feed
+    /// engine's) or listed in the records' folder, a placeholder of one
+    /// included. A feed whose index is left alone is in neither. Nil while
+    /// nothing can be known: the feed engine's records have not loaded, or
+    /// the records' folder cannot be listed without downloading it.
+    private func recordPresence(knownFeeds: Set<UUID>?) -> (gone: [UUID], here: [UUID])? {
         let store = feeds.store
-        let known = subscribed ?? (store.hasLoaded ? Set(store.records.keys).union(store.recordsInCloud) : nil)
+        let known = knownFeeds ?? (store.hasLoaded ? Set(store.records.keys).union(store.recordsInCloud) : nil)
         guard let known else { return nil }
         let decidable = library.feedShelf.indexedFeedIDs
             .subtracting(library.feedShelf.indexesLeftAlone)
@@ -162,10 +166,11 @@ extension LibraryViewModel {
 
     // MARK: One Feed
 
-    /// Turns the downloads of the feed `feedID`, which is no longer
-    /// subscribed, back into books of the library's own, in the library
-    /// folder `folderID` names, or at the top level when it names none that
-    /// is still there, and deletes what the feed kept of removed downloads.
+    /// Turns the downloads of the feed `feedID`, whose record is gone, back
+    /// into books of the library's own, in the library folder `folderID`
+    /// names, or at the top level when it names none that is still there
+    /// (as the launch asks, nothing naming it), and deletes what the feed
+    /// kept of removed downloads.
     /// In order:
     ///
     /// 1. each download's package moves from the feed's folder into that
@@ -186,7 +191,7 @@ extension LibraryViewModel {
     /// (`joinFeedItems(journaled:access:skips:)`); then the launch returns
     /// the feed's other downloads, and deletes what is left of the feed's
     /// folder, since its record is gone
-    /// (`returnDownloadsOfFeedsWithoutRecords(subscribed:absence:removingWith:)`;
+    /// (`returnDownloadsOfFeedsWithoutRecords(knownFeeds:absence:removingWith:)`;
     /// in a cloud library, at the second launch that finds it gone). A
     /// download that cannot move stays where it is, its package put back
     /// when its record could not be written, and the feed's folder stays
@@ -198,7 +203,7 @@ extension LibraryViewModel {
     /// It does nothing while the library index is recovered, the data
     /// directory is away or moving, or another operation holds the storage
     /// work; the next launch tries again. Nor does it do anything for a feed
-    /// that left nothing (`leftSomething(feedID:)`), as one unsubscribed
+    /// that left nothing (`leftSomething(feedID:)`), as one whose record went
     /// before it downloaded anything: no storage work, and no save.
     /// - Parameter remove: How a package kept for a removed download, and the
     ///   feed's folder, are removed: as the feed engine removes them, unless
@@ -236,7 +241,7 @@ extension LibraryViewModel {
         var outcome = FeedDownloadReturn()
         for row in downloads {
             do {
-                outcome.returned.append(try Self.returnIntoTheLibrary(row, folderPath: folderPath, root: root))
+                outcome.returned.append(try Self.moveIntoTheLibrary(row, folderPath: folderPath, root: root))
             } catch {
                 outcome.stayed.append(row)
                 DiagnosticLog.event(
@@ -275,7 +280,7 @@ extension LibraryViewModel {
             .storage,
             "FEED_DOWNLOADS_RETURNED: \(feedID.uuidString.prefix(8)): "
                 + "\(CountWording.phrase(outcome.returned.count, singular: "download", plural: "downloads")) of a feed "
-                + "no longer subscribed became books \(folderPath.isEmpty ? "at the library's top level" : "in its folder"); "
+                + "whose record is gone became books \(folderPath.isEmpty ? "at the library's top level" : "in its folder"); "
                 + "deleted \(CountWording.phrase(outcome.deletedKeptPackages, singular: "package", plural: "packages")) "
                 + "kept for removed downloads"
                 + (outcome.stayed.isEmpty ? "" : "; \(outcome.stayed.count) stayed in the feed's folder")
@@ -293,25 +298,6 @@ extension LibraryViewModel {
             || library.feedShelf.rows.contains { $0.feedLink?.feedID == feedID }
             || library.feedShelf.indexedFeedIDs.contains(feedID)
             || FileManager.default.fileExists(atPath: FeedPaths.itemsFolder(of: feedID, in: TextMouthPaths.root).path)
-    }
-
-    /// `row`, a download of a feed no longer subscribed, moved back into the
-    /// library folder `folderPath` of the data directory at `root` as a book
-    /// of the library's own, and its row as it is there: step 1 of
-    /// `returnDownloads(ofFeed:toFolderID:removingWith:)`, the inverse of
-    /// `moveIntoItsFeed(_:link:root:)`. A package an earlier launch moved
-    /// before it stopped is found in the library folder and not moved again.
-    /// - Throws: `FeedItemMoveError.packageNotManaged` for a row that is no
-    ///   feed item's or names no package the library manages, before anything
-    ///   on disk is touched, or the errors of `relocatePackage(of:as:root:)`.
-    nonisolated static func returnIntoTheLibrary(_ row: Book, folderPath: String, root: URL) throws -> Book {
-        var book = row
-        book.feedLink = nil
-        book.folderPath = folderPath
-        guard row.isFeedItem, FileImportService.namesManagedPackage(book) else {
-            throw FeedItemMoveError.packageNotManaged
-        }
-        return try relocatePackage(of: row, as: book, root: root)
     }
 
     /// Deletes, through `remove`, the package of each of `rows`, the feed
@@ -388,21 +374,23 @@ extension LibraryViewModel {
 // MARK: - A Record Gone, or Not Here Yet
 
 /// How a launch judges that a feed whose folder is here has no record, so
-/// that it is no longer subscribed and its downloads return to the library
-/// (`LibraryViewModel.feedsTakenForUnsubscribed(subscribed:absence:)`;
-/// REV10, the A1 review's cloud item).
+/// that the feed is gone and its downloads return to the library
+/// (`LibraryViewModel.feedsTakenForGone(knownFeeds:absence:)`;
+/// REV10, the A1 review's cloud item). An unsubscribed feed keeps its record
+/// (FR11, branch D), so it is never one.
 ///
 /// In a data directory that is not in a cloud location, a record's absence
 /// decides at once. In a cloud location (FR02) it decides nothing alone: a
 /// feed subscribed on another Mac can reach this one as its folder before
-/// its record does, and an Unsubscribe there, which moves the downloads
-/// itself, can reach it as the record's removal before those moves. So the
+/// its record does, and an Unsubscribe there by a build before branch D,
+/// which moved the downloads itself, could reach it as the record's removal
+/// before those moves. So the
 /// records' folder, listed without downloading anything, must show no
 /// record and no placeholder of one at two launches of this Mac: the first
 /// leaves a note beside the feed's index, an empty hidden file named after
 /// this Mac and that launch (`.record-absent-<Mac ID>-<launch ID>`), and a
 /// later launch that finds the record still gone and that note there takes
-/// the feed for unsubscribed. A launch that finds the record here takes
+/// the feed for gone. A launch that finds the record here takes
 /// this Mac's notes away. Another Mac's notes count for nothing here; every
 /// note goes with the feed's folder once its downloads have returned.
 struct FeedRecordAbsence: Equatable, Sendable {

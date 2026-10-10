@@ -38,7 +38,7 @@ extension LibraryViewModel {
     /// books are downloads. Until then each download shows where it always
     /// did. Then returns to the library the downloads of every feed whose
     /// folder is here while its record is gone
-    /// (`returnDownloadsOfFeedsWithoutRecords(subscribed:absence:removingWith:)`),
+    /// (`returnDownloadsOfFeedsWithoutRecords(knownFeeds:absence:removingWith:)`),
     /// and marks downloaded again the items an older TextMouth marked
     /// otherwise (`markFeedItemsDownloadedAgain()`). Called once, as the
     /// feeds start.
@@ -61,9 +61,11 @@ extension LibraryViewModel {
     /// is not downloaded (FR11). An older TextMouth, which reads no feed
     /// index, never finds such a download among its books and marks its
     /// item not downloaded; once this build is run again, the package with
-    /// its file and its index row make it downloaded again. An item deleted
-    /// from its feed, or downloading or downloaded as another book, is left
-    /// as it is.
+    /// its file and its index row make it downloaded again. So, too, an item
+    /// a Move to Library… marked "in library" before it stopped short of
+    /// moving its package (FR11, branch D): its book is still its feed's,
+    /// and stays so. An item deleted from its feed, or downloading or
+    /// downloaded as another book, is left as it is.
     ///
     /// Only a file found here heals its item (FR02's rule: nothing is
     /// decided from a check the cloud answers). A row joins the books while
@@ -98,7 +100,7 @@ extension LibraryViewModel {
             DiagnosticLog.event(
                 .feeds,
                 "FEED_ITEMS_DOWNLOADED_AGAIN: marked \(CountWording.phrase(marked, singular: "item", plural: "items")) "
-                    + "downloaded again whose packages and index rows an older TextMouth did not read"
+                    + "downloaded again, their files and index rows here while their records said otherwise"
             )
         }
         if !shelved.isEmpty {
@@ -120,10 +122,12 @@ extension LibraryViewModel {
 
     /// The downloads made before FR11 still among the library's own books,
     /// each with the link it takes (FR11): every row of the library's own
-    /// whose book a subscribed feed's record, in `records`, names as an
-    /// item's download (`FeedItemState.downloaded`). A book whose feed is no
-    /// longer subscribed is named by no record, and stays a book of the
-    /// library's own, as Unsubscribe has always promised.
+    /// whose book a feed's record, in `records`, names as an item's download
+    /// (`FeedItemState.downloaded`), the feed subscribed or not, since an
+    /// unsubscribed feed keeps its record and its downloads (FR11, branch
+    /// D). A book whose feed's record is gone, as one an older build's
+    /// Unsubscribe deleted, is named by no record, and stays a book of the
+    /// library's own.
     ///
     /// A row whose package name or folder path names no package the library
     /// manages (`FileImportService.namesManagedPackage(_:)`) is left out and
@@ -296,8 +300,10 @@ extension LibraryViewModel {
     /// `relocated` with its file at its place in the moved package. The two
     /// moves between a library folder and a feed's folder both take this
     /// step: a download made before FR11 moving into its feed's folder
-    /// (`moveIntoItsFeed(_:link:root:)`), and an unsubscribed feed's
-    /// download returning to the library (`returnIntoTheLibrary(_:folderPath:root:)`).
+    /// (`moveIntoItsFeed(_:link:root:)`), and a feed item's download moving
+    /// into the library (`moveIntoTheLibrary(_:folderPath:root:)`), by Move
+    /// to Library… (FR11, branch D) or as the download of a feed whose
+    /// record is gone returns.
     ///
     /// A package already where `relocated` puts it, and not where `book`
     /// does, was moved by an earlier launch that stopped before it was done,

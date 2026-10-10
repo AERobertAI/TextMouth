@@ -636,8 +636,10 @@ final class FeedRefresherTests: XCTestCase {
         XCTAssertEqual(world.center.refreshingFeedIDs, [])
     }
 
-    /// A refresh that ends after its feed was unsubscribed changes nothing:
-    /// it reports nothing, and makes no fetch details again.
+    /// A refresh that ends after its feed went, its record and fetch details
+    /// gone, changes nothing: it reports nothing, and makes no fetch details
+    /// again. (Unsubscribing keeps the feed since FR11's branch D; a refresh
+    /// under way as it is unsubscribed is `FeedSubscriptionCheckingTests`'.)
     func testARefreshEndingAfterItsFeedWentChangesNothing() async throws {
         let world = try FeedTestWorld(self, label: "FeedGoneMidRefresh")
         world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [FeedXML.Item(guid: "a", title: "A")])))
@@ -648,7 +650,8 @@ final class FeedRefresherTests: XCTestCase {
 
         async let ending = world.center.refresh(feed.id)
         await waitFor("the feed is refreshing") { world.center.refreshingFeedIDs.contains(feed.id) }
-        world.center.unsubscribe(feed.id)
+        world.center.store.remove(feed.id)
+        world.center.fetchStates.remove(feed.id)
         let report = await ending
 
         XCTAssertNil(report)

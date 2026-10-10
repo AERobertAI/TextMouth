@@ -195,6 +195,18 @@ final class FeedStore: ObservableObject {
         return nil
     }
 
+    /// The feed and item linked to a book, found by the book's ID: the
+    /// item downloaded as it, or moved into the library as it by Move to
+    /// Library… (FR11, branch D, `FeedRecord.item(linkedTo:)`).
+    func item(linkedTo bookID: UUID) -> (feed: Feed, item: FeedItem)? {
+        for record in records.values {
+            if let item = record.item(linkedTo: bookID) {
+                return (record.feed, item)
+            }
+        }
+        return nil
+    }
+
     /// Reads every record in the Feeds folder off the main thread and makes
     /// them the store's. A record added meanwhile, by a subscription made
     /// before the folder was read, is kept. Records found only in the cloud

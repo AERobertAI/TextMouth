@@ -154,7 +154,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
     /// once, after the wait and not before, with the number it settled on;
     /// a feed's own choice is heard after its own wait, worded with its
     /// items; the feed's return to the global setting is heard too; and a
-    /// feed unsubscribed during its wait is heard of no more.
+    /// feed gone during its wait is heard of no more.
     func testVoiceOverHearsWhenAChangeTakesEffect() async throws {
         let world = try FeedTestWorld(self, label: "FeedItemUIApplied", worksOnItsOwn: true)
         FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
@@ -195,11 +195,13 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
 
         world.center.setItemPolicy(FeedItemPolicy(choice: .onlyNewestListed, newestCount: 9), of: feed.id)
         await waitFor("the last wait starts") { world.sleep.requestedWaits.count == 5 }
-        world.center.unsubscribe(feed.id)
+        // Gone, its record with it: unsubscribing keeps a feed, whose
+        // rules still act, since FR11's branch D.
+        world.center.store.remove(feed.id)
         world.sleep.wakeOldest()
         await waitFor("the wait ends") { !world.center.isWaitingOnItemPolicyChange }
         await waitFor("the engine's own work ends") { !world.center.isSweeping }
-        XCTAssertEqual(heard.count, 3, "a feed unsubscribed during its wait was heard of: \(heard)")
+        XCTAssertEqual(heard.count, 3, "a feed gone during its wait was heard of: \(heard)")
         withExtendedLifetime(arrivals) {}
     }
 

@@ -608,9 +608,10 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         let row = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .folders, folderPath: ""), center: world.center, now: now).first)
         XCTAssertEqual(subject(.feed(row)), .feed(atlas))
 
-        // Unsubscribed since the row was drawn: the row's facts, with no
+        // Gone since the row was drawn, its record with it (unsubscribing
+        // keeps a feed since FR11's branch D): the row's facts, with no
         // address; and the folder, no longer a feed's, is a folder again.
-        world.center.unsubscribe(feed.id)
+        world.center.store.remove(feed.id)
         XCTAssertNil(FeedInfoFacts.of(feedID: feed.id, center: world.center, now: now))
         XCTAssertEqual(subject(.feed(row)), .feed(FeedInfoFacts(row)))
         XCTAssertNil(FeedInfoFacts(row).address)

@@ -153,9 +153,12 @@ final class SpeechRefusalSheetTests: XCTestCase {
         var exporting = ReaderPanels()
         exporting.export = BookExportModel(books: [])
         XCTAssertTrue(exporting.isShowingAny, "the Export dialog does not count")
+        var moving = ReaderPanels()
+        moving.moveToLibrary = MoveToLibraryRequest(books: [])
+        XCTAssertTrue(moving.isShowingAny, "Move to Library…'s sheet does not count")
         XCTAssertEqual(
             Mirror(reflecting: ReaderPanels()).children.count,
-            eachPanel.count + 1,
+            eachPanel.count + 2,
             "a panel is missing from isShowingAny"
         )
     }

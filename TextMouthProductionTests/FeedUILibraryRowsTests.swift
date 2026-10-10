@@ -483,8 +483,8 @@ final class FeedUILibraryRowsTests: XCTestCase {
     }
 
     /// Which folders hold feeds follows the engine, and changes only when a
-    /// feed is subscribed or unsubscribed, never as its items' downloads
-    /// start and end.
+    /// feed comes or goes, never as its items' downloads start and end; an
+    /// unsubscribed feed's folder stays a feed's (FR11, branch D).
     func testWhichFoldersHoldFeedsChangesOnlyWithTheFeeds() async throws {
         let world = try FeedTestWorld(self, label: "FeedUIFolderMap")
         let folders = LibraryFeedFolders(center: world.center)
@@ -505,6 +505,9 @@ final class FeedUILibraryRowsTests: XCTestCase {
         XCTAssertEqual(publishes, afterSubscribing, "a download starting or stopping published the folders")
 
         world.center.unsubscribe(feed.id)
+        XCTAssertEqual(folders.feedID(inFolder: feed.folderID), feed.id, "an unsubscribed feed's folder stopped being its")
+
+        world.center.store.remove(feed.id)
         XCTAssertNil(folders.feedID(inFolder: feed.folderID))
         XCTAssertGreaterThan(publishes, afterSubscribing)
     }

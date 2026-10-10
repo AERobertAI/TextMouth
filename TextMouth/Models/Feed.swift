@@ -79,6 +79,17 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
     /// deleted, in place of the setting
     /// (`FeedSettings.deleteDownloadsDaysAfterPlayed`); nil follows it.
     var deleteDownloadsDaysAfterPlayedOverride: Int?
+    /// When the listener unsubscribed from the feed (FR11, branch D); nil
+    /// while it is subscribed (`isSubscribed`). Unsubscribing is a switch,
+    /// as the listener asked on October 9 ("just keep it a feed with rules
+    /// kept except you can't check it or manually check it for new
+    /// items"): the feed keeps its record, its folder, its settings, and
+    /// its downloads, and only checking stops; Resubscribe clears it. Read
+    /// through `decodeIfPresent`, as every optional field of the record is,
+    /// so a record written before it existed reads as subscribed, and
+    /// written only when set, so a subscribed feed's record file is
+    /// exactly as it was.
+    var unsubscribedDate: Date?
 
     /// A new subscription to the feed at `feedURL`, whose downloads go to
     /// the folder `folderID`, begun at `date`. Its title is the address's
@@ -100,6 +111,16 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
         itemPolicyOverride = nil
         keepEntriesOverride = nil
         deleteDownloadsDaysAfterPlayedOverride = nil
+        unsubscribedDate = nil
+    }
+
+    /// Whether TextMouth checks the feed for new items (FR11, branch D): at
+    /// launch, on the interval, in Refresh All Feeds, and by Check Feed.
+    /// An unsubscribed feed is checked by none of them, while its rules
+    /// still act on its downloads and Download still downloads a listed
+    /// item (`unsubscribedDate`).
+    var isSubscribed: Bool {
+        unsubscribedDate == nil
     }
 }
 
@@ -207,6 +228,13 @@ struct FeedRecord: Codable, Equatable, Sendable {
         items.first { $0.state.bookID == bookID }
     }
 
+    /// The item linked to the book `bookID`, if any: its download, in its
+    /// feed's folder, or the book it became in the library by Move to
+    /// Library… (FR11, branch D, `FeedItemState.linkedBookID`).
+    func item(linkedTo bookID: UUID) -> FeedItem? {
+        items.first { $0.state.linkedBookID == bookID }
+    }
+
     /// Every item the listener has not deleted, newest first: what the
     /// library lists while the feed lists every item, and what the "List
     /// and download" choice's newest are counted among
@@ -229,14 +257,17 @@ struct FeedRecord: Codable, Equatable, Sendable {
     /// deleted, or, under "Only the newest 5 listed", the short list: the
     /// newest of them (`newestItems(_:)`), less those played whose files are
     /// not here, so a played episode drops off the list, and every item
-    /// whose file is here (`hasFile`) or that downloads, or waits to,
-    /// wherever it falls. The items left out stay in the record, hidden, and
-    /// come back when the list widens.
+    /// whose file is here (`hasFile`), that downloads, or waits to, or that
+    /// was moved into the library (FR11, branch D), wherever it falls, as
+    /// its row says "In Library" until Delete Episode hides it. The items
+    /// left out stay in the record, hidden, and come back when the list
+    /// widens.
     func listedItems(under listing: FeedItemPolicy.Listing, hasFile: (FeedItem) -> Bool) -> [FeedItem] {
         guard case .newest(let count) = listing else { return listedItems }
         let newest = Set(newestItems(count).map(\.id))
         return listedItems.filter { item in
-            hasFile(item) || item.state.isTransient || (newest.contains(item.id) && item.playedDate == nil)
+            hasFile(item) || item.state.isTransient || item.state.libraryBookID != nil
+                || (newest.contains(item.id) && item.playedDate == nil)
         }
     }
 

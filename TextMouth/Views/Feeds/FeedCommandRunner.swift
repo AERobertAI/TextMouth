@@ -30,7 +30,9 @@ extension FeedCenter {
 }
 
 /// A question asked before a command that can't be undone (FR03): Delete
-/// Episode or Delete Article, and Unsubscribe.
+/// Episode or Delete Article, and Unsubscribe, which Resubscribe undoes but
+/// for the places kept for removed downloads, which Unsubscribe deletes
+/// (FR11, branch D).
 struct FeedConfirmation: Identifiable, Equatable {
     /// What confirming does.
     enum Kind: Equatable {
@@ -57,14 +59,20 @@ extension LibraryFeedsPresenter {
 
     /// Runs `action` for a feed, from its row in the Feeds section or its
     /// folder's row, saying what it did from the window it was chosen in.
-    /// - Returns: The work Check Feed started, which tests await; nil for
-    ///   the commands that finish at once or ask first.
+    /// - Returns: The work Check Feed and Resubscribe started, which tests
+    ///   await; nil for the commands that finish at once or ask first.
     @discardableResult
     func perform(_ action: FeedAction, in context: FeedCommandContext) -> Task<Void, Never>? {
         let center = context.center
         guard let feed = center.store.record(of: action.feedID)?.feed else { return nil }
         switch action.command {
         case .checkFeed:
+            // A menu drawn before Unsubscribe may still offer it (FR11,
+            // branch D): an unsubscribed feed is never checked.
+            guard feed.isSubscribed else {
+                announce(FeedWording.notChecked(title: feed.title), context.window)
+                return nil
+            }
             announce(FeedWording.checking(title: feed.title), context.window)
             let noun = FeedWording.ItemNoun.of(center.listedItems(of: feed.id))
             return Task {
@@ -79,62 +87,63 @@ extension LibraryFeedsPresenter {
             announce(FeedWording.markedAll(count: marked, title: feed.title, noun: noun), context.window)
         case .unsubscribe:
             confirmation = unsubscribeConfirmation(for: feed.id, in: context)
+        case .resubscribe:
+            return resubscribe(feed.id, in: context)
         }
         return nil
     }
 
-    /// The question asked before unsubscribing from the feed `feedID`,
-    /// naming the books its downloads made, which stay, and what it kept of
-    /// downloads removed earlier, which goes; nil once it is no longer
+    /// Subscribes again to the feed `feedID` (FR11, branch D), which asks
+    /// nothing first: VoiceOver hears that it is checked now, and then what
+    /// the check found, as Check Feed says it.
+    /// - Returns: The check, which tests await; nil when the feed is
+    ///   subscribed already, or gone.
+    @discardableResult
+    func resubscribe(_ feedID: UUID, in context: FeedCommandContext) -> Task<Void, Never>? {
+        let center = context.center
+        guard let feed = center.store.record(of: feedID)?.feed, !feed.isSubscribed else { return nil }
+        let noun = FeedWording.ItemNoun.of(center.listedItems(of: feedID))
+        announce(FeedWording.resubscribed(title: feed.title), context.window)
+        return Task {
+            guard let report = await center.resubscribe(feedID) else { return }
+            announce(FeedWording.checked(report, noun: noun), context.window)
+        }
+    }
+
+    /// The question asked before unsubscribing from the feed `feedID`, saying
+    /// what happens now (FR11, branch D): checking stops, the feed stays
+    /// with its settings and its downloads, which it counts, and what it
+    /// kept of downloads removed earlier goes; nil once it is no longer
     /// subscribed.
     func unsubscribeConfirmation(for feedID: UUID, in context: FeedCommandContext) -> FeedConfirmation? {
-        guard let feed = context.center.store.record(of: feedID)?.feed else { return nil }
+        guard let feed = context.center.store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
+        let rows = context.library.feedItemRows(of: feedID)
         return FeedConfirmation(
             kind: .unsubscribe(feedID: feedID),
             title: FeedWording.unsubscribeQuestion(title: feed.title),
             message: FeedWording.unsubscribeMessage(
-                bookTitles: downloadedBooks(of: feedID, in: context).map(\.title),
-                folderPath: context.center.folderPath(of: feed),
-                keptCount: context.library.feedItemRows(of: feedID).kept.count
+                downloadCount: rows.downloaded.count,
+                keptCount: rows.kept.count,
+                noun: .of(context.center.listedItems(of: feedID))
             ),
             confirmTitle: FeedWording.unsubscribeButton
         )
     }
 
-    /// Ends the subscription to the feed `feedID`, once confirmed, and
-    /// VoiceOver hears how many of its downloads stay. Until Unsubscribe
-    /// keeps a feed's downloads by the listener's choice (FR11, branch D),
-    /// they become books of the library's own, in the feed's folder, or at
-    /// the top level when that folder is gone, and what the feed kept of
-    /// downloads removed earlier is deleted
-    /// (`LibraryViewModel.returnDownloads(ofFeed:toFolderID:removingWith:)`,
-    /// REV10, item 3): without the feed, nothing would list them. The
-    /// subscription ends at once; the downloads follow as soon as no import
-    /// or analysis is writing into the library.
-    /// - Returns: The return of the feed's downloads, which tests await; nil
-    ///   when the feed is no longer subscribed.
+    /// Unsubscribes from the feed `feedID`, once confirmed (FR11, branch D):
+    /// only checking stops, the feed staying with its folder, its settings,
+    /// and its downloads, and the packages it kept for downloads removed
+    /// earlier go (`FeedCenter.unsubscribe(_:)`); VoiceOver hears so at once.
+    /// Feed Info, should it show the feed, stays open, offering Resubscribe.
+    /// - Returns: What unsubscribing did; nil when the feed was no longer
+    ///   subscribed, which changes nothing.
     @discardableResult
-    func unsubscribe(_ feedID: UUID, in context: FeedCommandContext) -> Task<FeedDownloadReturn, Never>? {
+    func unsubscribe(_ feedID: UUID, in context: FeedCommandContext) -> FeedUnsubscribeOutcome? {
         guard let feed = context.center.store.record(of: feedID)?.feed else { return nil }
-        let books = downloadedBooks(of: feedID, in: context)
-        context.center.unsubscribe(feedID)
-        if feedInfo?.feedID == feedID {
-            feedInfo = nil
-        }
-        announce(FeedWording.unsubscribed(title: feed.title, bookCount: books.count), context.window)
-        let library = context.library
-        let folderID = feed.folderID
-        return Task {
-            await library.returnDownloads(ofFeed: feedID, toFolderID: folderID)
-        }
-    }
-
-    /// The books the feed `feedID`'s downloads made that the library lists,
-    /// newest item first.
-    private func downloadedBooks(of feedID: UUID, in context: FeedCommandContext) -> [Book] {
-        context.center.listedItems(of: feedID).compactMap { item in
-            context.center.downloadedRow(of: item, in: feedID)
-        }
+        let noun = FeedWording.ItemNoun.of(context.center.listedItems(of: feedID))
+        guard let outcome = context.center.unsubscribe(feedID) else { return nil }
+        announce(FeedWording.unsubscribed(title: feed.title, outcome: outcome, noun: noun), context.window)
+        return outcome
     }
 
     // MARK: An Item's Commands
@@ -149,7 +158,9 @@ extension LibraryFeedsPresenter {
         let state = center.state(of: item, in: action.feedID)
         switch action.command {
         case .open:
-            if state.bookID == nil {
+            // A download, or a book moved into the library (FR11, branch D),
+            // opens at once; anything else downloads first.
+            if state.linkedBookID == nil {
                 announce(FeedWording.downloadingToOpen(title: item.title), context.window)
             }
             center.open(item.id, of: record.feed.id)
@@ -184,6 +195,10 @@ extension LibraryFeedsPresenter {
             announce(FeedWording.marked(title: item.title, played: played, isArticle: item.isArticle), context.window)
         case .showDescription:
             itemDescription = FeedItemDescription(item, of: record.feed)
+        case .moveToLibrary:
+            if let book = center.downloadedRow(of: item, in: record.feed.id) {
+                requestMoveToLibrary([book], in: context)
+            }
         case .showInFinder:
             if let bookID = state.bookID, let book = context.library.bookByID(bookID) {
                 revealBooks([book])
@@ -194,7 +209,8 @@ extension LibraryFeedsPresenter {
                 title: FeedWording.deleteItemQuestion(title: item.title),
                 message: FeedWording.deleteItemMessage(
                     isArticle: item.isArticle,
-                    keepsListenerState: keepsListenerState(of: item.id, in: record.feed.id, context)
+                    keepsListenerState: keepsListenerState(of: item.id, in: record.feed.id, context),
+                    isInLibrary: state.libraryBookID != nil
                 ),
                 confirmTitle: FeedWording.deleteItemButton(isArticle: item.isArticle)
             )
@@ -213,6 +229,21 @@ extension LibraryFeedsPresenter {
         }
         guard let downloaded = rows.downloaded[itemID] else { return false }
         return FeedItemPackage.holdsListenerState(downloaded, package: downloaded.tmbDirectory)
+    }
+
+    // MARK: Move to Library… (FR11, Branch D)
+
+    /// Opens Move to Library…'s sheet for the books of `books` it can move,
+    /// from an item's row or a Library window's selection: episodes and
+    /// articles downloaded in their feeds
+    /// (`LibraryViewModel.booksMovableToLibrary(_:)`). When none of them is
+    /// one, VoiceOver hears why, and no sheet opens.
+    func requestMoveToLibrary(_ books: [Book], in context: FeedCommandContext) {
+        guard let request = MoveToLibraryRequest.forBooks(books, in: context.library) else {
+            announce(FeedWording.nothingToMoveToLibrary, context.window)
+            return
+        }
+        moveToLibrary = request
     }
 
     // MARK: Every Feed
@@ -237,7 +268,10 @@ extension LibraryFeedsPresenter {
         case let .deleteItem(feedID, itemID, title):
             do {
                 try context.center.deleteItem(itemID, of: feedID)
-                announce(FeedWording.itemDeleted(title: title), context.window)
+                // An item moved into the library keeps its book there (FR11,
+                // branch D), and its state says so after the deletion too.
+                let inLibrary = context.center.store.record(of: feedID)?.item(itemID)?.state.libraryBookID != nil
+                announce(FeedWording.itemDeleted(title: title, isInLibrary: inLibrary), context.window)
             } catch {
                 refuse(error, in: context)
             }

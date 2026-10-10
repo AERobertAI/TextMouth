@@ -206,7 +206,8 @@ extension FolderInfoFacts {
 extension FeedInfoFacts {
     /// The facts of the feed `feedID` as `center` has it now, as its row
     /// shows them (`LibraryFeedsSectionRows.rows(at:center:now:)`), with
-    /// its address; nil for a feed no longer subscribed.
+    /// its address; nil for a feed whose record is gone (an unsubscribed
+    /// feed keeps its record, FR11, branch D).
     @MainActor
     static func of(feedID: UUID, center: FeedCenter, now: Date) -> FeedInfoFacts? {
         guard let feed = center.store.record(of: feedID)?.feed else { return nil }
@@ -220,7 +221,8 @@ extension FeedInfoFacts {
     }
 
     /// The facts of the feed whose row is `row`, as the row shows them,
-    /// with no address: for a feed unsubscribed since its row was drawn.
+    /// with no address: for a feed whose record went since its row was
+    /// drawn.
     init(_ row: FeedRowContent) {
         self.init(title: row.title, counts: row.counts, check: row.check.visible, folderPath: row.folderPath, address: nil)
     }

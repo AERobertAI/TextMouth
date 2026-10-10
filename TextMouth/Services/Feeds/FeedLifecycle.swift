@@ -53,13 +53,14 @@ extension FeedCenter {
     // MARK: Played
 
     /// Records that the book `bookID` played or was read to its end, when it
-    /// is a feed item's download: the item is played from now. The reader
-    /// reaches here through the completion that counts Books Finished
-    /// (`ReadingStatsService.markBookFinished(bookID:title:)`, which posts
-    /// `.bookDidFinish`), so finished episodes and articles count as finished
-    /// books, as the listener decided for now.
+    /// is a feed item's download, or the book an item became in the library
+    /// by Move to Library… (FR11, branch D): the item is played from now.
+    /// The reader reaches here through the completion that counts Books
+    /// Finished (`ReadingStatsService.markBookFinished(bookID:title:)`, which
+    /// posts `.bookDidFinish`), so finished episodes and articles count as
+    /// finished books, as the listener decided for now.
     func bookDidFinish(_ bookID: UUID) {
-        guard let (feed, item) = store.item(downloadedAs: bookID) else { return }
+        guard let (feed, item) = store.item(linkedTo: bookID) else { return }
         store.updateItem(item.id, of: feed.id) { $0.playedDate = environment.now() }
         DiagnosticLog.event(.feeds, "FEED_ITEM_PLAYED: \(item.title) (\(feed.title))")
         requestSweep()
@@ -67,12 +68,14 @@ extension FeedCenter {
 
     /// What kind of book the book `bookID` is, as Books Finished counts it
     /// (`ReadingStatsService.finishedBookKind`): a podcast episode when this
-    /// engine downloaded it as an episode, and otherwise an audiobook or a
+    /// engine downloaded it as an episode, in its feed or moved into the
+    /// library since (FR11, branch D: the moved book keeps its feed link in
+    /// its record, and its item names it), and otherwise an audiobook or a
     /// text book by its format, an article being a text book; nil when the
     /// library no longer lists it, or the engine has not started.
     func finishedBookKind(of bookID: UUID) -> FinishedBookKind? {
         guard let book = library?.feedBook(withID: bookID) else { return nil }
-        return FinishedBookKind.of(format: book.format, isFeedDownload: store.item(downloadedAs: bookID) != nil)
+        return FinishedBookKind.of(format: book.format, isFeedDownload: store.item(linkedTo: bookID) != nil)
     }
 
     /// Marks the item `itemID` of the feed `feedID` played (an article: read)
@@ -236,6 +239,51 @@ extension FeedCenter {
         store.updateItem(itemID, of: feedID) { $0.deletedDate = environment.now() }
     }
 
+    /// Deletes the packages the feed `feedID` kept for downloads removed
+    /// earlier, as Unsubscribe does (FR11, branch D), with the places,
+    /// playback times, bookmarks, settings, and transcripts they hold, as the
+    /// listener accepted ("Clearing out old deleted episodes itself seems
+    /// fine"): each as Delete Episode deletes a kept package, through the
+    /// listener's own removal (`FeedEnvironment.removeItem`, the Trash or for
+    /// good as the removal setting says), once the feed's index is written
+    /// without its row (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`).
+    /// A kept package whose item is downloading again stays, for its
+    /// download to restore. A failed index write keeps every package, and a
+    /// package that cannot be removed keeps its row on the feed's shelf;
+    /// each is logged, and nothing is lost.
+    /// - Returns: How many packages went.
+    func deleteKeptPackages(of feedID: UUID) -> Int {
+        guard let library else { return 0 }
+        // In a fixed order, so the log and the index's writes never depend
+        // on a dictionary's.
+        let kept = library.feedItemRows(of: feedID).kept
+            .filter { !downloads.isDownloading($0.key, of: feedID) }
+            .sorted { $0.key < $1.key }
+            .map(\.value)
+        guard !kept.isEmpty else { return 0 }
+        let root = TextMouthPaths.root
+        let outcome: FeedFileRemovalOutcome
+        do {
+            outcome = try library.removeFeedFiles(of: kept, keepingPackages: false) { removal in
+                try environment.removeItem(FeedItemPackage.packageForRemoval(of: removal.row, in: root))
+            }
+        } catch {
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_KEPT_PACKAGES_PUT_OFF: \(feedID.uuidString.prefix(8)): \(error.localizedDescription); "
+                    + "the packages kept for removed downloads stay"
+            )
+            return 0
+        }
+        for failure in outcome.failures {
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_KEPT_PACKAGE_DELETE_FAILED: \(failure.row.title): \(failure.error.localizedDescription); its place stays kept"
+            )
+        }
+        return outcome.removed.count
+    }
+
     // MARK: The Engine's Own Work
 
     /// Asks for a sweep of played downloads: one starts at once, or after the
@@ -317,6 +365,15 @@ extension FeedCenter {
         let settings = self.settings
         var due: [FeedDueRemoval] = []
         for record in store.records.values {
+            // An item moved into the library whose book has left it is not
+            // downloaded from now (FR11, branch D); one whose book is still
+            // there is the library's, which no rule of the feed's touches.
+            for item in record.items {
+                guard let bookID = item.state.libraryBookID, library.feedBook(withID: bookID) == nil else { continue }
+                noteDownloadGone(item.id, of: record.feed.id, at: now, byListener: false)
+                report.forgottenItemIDs.append(item.id)
+                DiagnosticLog.event(.feeds, "FEED_LIBRARY_BOOK_GONE: \(item.title): the book it was moved into the library as left it")
+            }
             let days = record.feed.deleteDownloadsDaysAfterPlayed(under: settings)
             for item in record.items where item.state.bookID != nil {
                 guard let book = downloadedRow(of: item, in: record.feed.id) else {

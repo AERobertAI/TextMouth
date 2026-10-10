@@ -154,11 +154,34 @@ enum FeedItemState: Equatable, Sendable {
     case failed(String)
     /// The item's download is the book `bookID`, in the feed's folder.
     case downloaded(bookID: UUID)
+    /// The item's download was moved into the library by Move to Library…
+    /// (FR11, branch D): it is the book `bookID`, a book of the library's
+    /// own in the folder the listener chose. Its feed lists it "In
+    /// Library", whose Open opens the book; it counts among the newest-N
+    /// rule's newest, and the feed never downloads it again by itself. Once
+    /// the book leaves the library, the item is not downloaded.
+    case inLibrary(bookID: UUID)
 
-    /// The book the item downloaded as, if it is downloaded.
+    /// The book the item downloaded as, if it is downloaded: a book of its
+    /// feed's own folder, never one moved into the library (`libraryBookID`).
     var bookID: UUID? {
         if case .downloaded(let bookID) = self { return bookID }
         return nil
+    }
+
+    /// The book the item became in the library by Move to Library…, if it
+    /// did (FR11, branch D).
+    var libraryBookID: UUID? {
+        if case .inLibrary(let bookID) = self { return bookID }
+        return nil
+    }
+
+    /// The book the item is linked to wherever it is: its download in its
+    /// feed's folder (`bookID`), or the book it became in the library
+    /// (`libraryBookID`). Finishing that book plays the item, and Books
+    /// Finished counts it as the episode it came from.
+    var linkedBookID: UUID? {
+        bookID ?? libraryBookID
     }
 
     /// Whether the item is waiting to download or downloading.
@@ -207,6 +230,7 @@ enum FeedItemState: Equatable, Sendable {
         case .waiting: return "Waiting to Download"
         case .failed: return "Download Failed"
         case .downloaded: return "Downloaded"
+        case .inLibrary: return "In Library"
         }
     }
 
@@ -229,23 +253,25 @@ extension FeedItemState: Codable {
         case notDownloaded
         case failed
         case downloaded
+        /// Moved into the library (FR11, branch D). A TextMouth older than
+        /// it reads the kind as unknown, so as not downloaded.
+        case inLibrary
     }
 
-    /// Reads a state. A kind this version does not know, or a failure or
-    /// download missing its details, reads as not downloaded, so one odd
-    /// item never makes its whole record unreadable.
+    /// Reads a state. A kind this version does not know, or a failure,
+    /// download, or move into the library missing its details, reads as not
+    /// downloaded, so one odd item never makes its whole record unreadable.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let bookID = try? container.decode(UUID.self, forKey: .bookID)
         switch try? container.decode(Kind.self, forKey: .kind) {
         case .failed:
             let reason = (try? container.decode(String.self, forKey: .reason)) ?? ""
             self = .failed(reason)
         case .downloaded:
-            if let bookID = try? container.decode(UUID.self, forKey: .bookID) {
-                self = .downloaded(bookID: bookID)
-            } else {
-                self = .notDownloaded
-            }
+            self = bookID.map { .downloaded(bookID: $0) } ?? .notDownloaded
+        case .inLibrary:
+            self = bookID.map { .inLibrary(bookID: $0) } ?? .notDownloaded
         case .notDownloaded, nil:
             self = .notDownloaded
         }
@@ -263,6 +289,9 @@ extension FeedItemState: Codable {
             try container.encode(reason, forKey: .reason)
         case .downloaded(let bookID):
             try container.encode(Kind.downloaded, forKey: .kind)
+            try container.encode(bookID, forKey: .bookID)
+        case .inLibrary(let bookID):
+            try container.encode(Kind.inLibrary, forKey: .kind)
             try container.encode(bookID, forKey: .bookID)
         }
     }

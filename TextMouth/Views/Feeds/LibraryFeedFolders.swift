@@ -11,10 +11,13 @@ import Foundation
 /// another feed's folder.
 ///
 /// It follows one feed engine and publishes only when a feed is subscribed,
-/// unsubscribed, or given another folder: never for a download's progress
-/// or a refresh, which change the engine many times a minute. So the
-/// Library window observes this rather than the engine, and only the views
-/// that show a feed's items and counts redraw as they change.
+/// unsubscribed, resubscribed (FR11, branch D), or given another folder:
+/// never for a download's progress or a refresh, which change the engine
+/// many times a minute. So the Library window observes this rather than the
+/// engine, and only the views that show a feed's items and counts redraw as
+/// they change; the window redraws as a feed is unsubscribed or
+/// resubscribed, so its feed folders' rows offer Unsubscribe… or Resubscribe
+/// by the feed's state.
 @MainActor
 final class LibraryFeedFolders: ObservableObject {
     /// The app's, following the app's feed engine.
@@ -26,23 +29,47 @@ final class LibraryFeedFolders: ObservableObject {
     /// feeds share one folder, the first by title holds it, as
     /// `FeedCenter.feed(inFolder:)` finds it.
     @Published private(set) var feedIDsByFolderID: [UUID: UUID]
+    /// The feeds the listener unsubscribed from (FR11, branch D).
+    @Published private(set) var unsubscribedFeedIDs: Set<UUID>
     /// Hears the engine's records change.
     private var subscription: AnyCancellable?
 
     /// The folders holding the feeds `center` keeps, followed from now on.
     init(center: FeedCenter) {
         self.center = center
-        feedIDsByFolderID = Self.feedIDsByFolderID(of: center.store.records.values.map(\.feed))
+        let feeds = center.store.records.values.map(\.feed)
+        feedIDsByFolderID = Self.feedIDsByFolderID(of: feeds)
+        unsubscribedFeedIDs = Self.unsubscribedFeedIDs(of: feeds)
         // The records' publisher sends each new value before it is stored,
-        // so the map is made from the value sent, and only a changed map is
-        // published.
+        // so the map and the set are made from the value sent, and only a
+        // changed one is published.
         subscription = center.store.$records
-            .map { records in Self.feedIDsByFolderID(of: records.values.map(\.feed)) }
-            .removeDuplicates()
-            .sink { [weak self] map in
-                guard let self, self.feedIDsByFolderID != map else { return }
-                self.feedIDsByFolderID = map
+            .map { records in
+                let feeds = records.values.map(\.feed)
+                return Shape(folders: Self.feedIDsByFolderID(of: feeds), unsubscribed: Self.unsubscribedFeedIDs(of: feeds))
             }
+            .removeDuplicates()
+            .sink { [weak self] shape in
+                guard let self else { return }
+                if self.feedIDsByFolderID != shape.folders {
+                    self.feedIDsByFolderID = shape.folders
+                }
+                if self.unsubscribedFeedIDs != shape.unsubscribed {
+                    self.unsubscribedFeedIDs = shape.unsubscribed
+                }
+            }
+    }
+
+    /// What this follows of the engine's records: the folders holding
+    /// feeds, and the feeds unsubscribed from.
+    private struct Shape: Equatable {
+        let folders: [UUID: UUID]
+        let unsubscribed: Set<UUID>
+    }
+
+    /// The feeds of `feeds` the listener unsubscribed from (FR11, branch D).
+    nonisolated static func unsubscribedFeedIDs(of feeds: [Feed]) -> Set<UUID> {
+        Set(feeds.filter { !$0.isSubscribed }.map(\.id))
     }
 
     /// The feed whose downloads go to the folder `folderID`, if any.

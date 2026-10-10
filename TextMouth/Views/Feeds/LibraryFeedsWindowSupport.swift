@@ -38,6 +38,8 @@ final class LibraryFeedsPresenter: ObservableObject {
     @Published var confirmation: FeedConfirmation?
     /// The Import OPML sheet's work while the sheet shows.
     @Published var opmlImport: OPMLImportModel?
+    /// What Move to Library…'s sheet moves while it shows (FR11, branch D).
+    @Published var moveToLibrary: MoveToLibraryRequest?
 
     /// Speaks what a command did, from the window it was chosen in: through
     /// VoiceOver, unless a test listens instead.
@@ -121,6 +123,9 @@ struct LibraryFeedsWindowSupport: ViewModifier {
     let shownFolderPath: String?
     /// Whether this window takes the menu command `notification` posts.
     let takesCommand: (Notification) -> Bool
+    /// The books selected in the window now, which Move to Library…'s key
+    /// acts on (FR11, branch D).
+    var selectedBooks: () -> [Book] = { [] }
     /// The alert after a refresh TextMouth made by itself brought new
     /// items, which one Library window in front shows.
     @ObservedObject var arrivals: FeedArrivals = .shared
@@ -174,10 +179,16 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 presenter.chooseOPMLDestination(in: context)
             }
+            // Move to Library…'s key, when the user gave it one (FR11,
+            // branch D): the selected episodes and articles.
+            .onReceive(NotificationCenter.default.publisher(for: .moveToLibrary)) { notification in
+                guard takesCommand(notification) else { return }
+                presenter.requestMoveToLibrary(selectedBooks(), in: context)
+            }
     }
 
-    /// The feed sheets: Import OPML, Add Feed, Feed Info, and an item's
-    /// description.
+    /// The feed sheets: Import OPML, Add Feed, Feed Info, an item's
+    /// description, and Move to Library… (FR11, branch D).
     private func withSheets(_ view: some View) -> some View {
         view
             .sheet(item: $presenter.opmlImport) { model in
@@ -211,6 +222,7 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                     feedFolders: feedFolders,
                     unsubscribeConfirmation: { presenter.unsubscribeConfirmation(for: model.feedID, in: context) },
                     onUnsubscribe: { presenter.unsubscribe(model.feedID, in: context) },
+                    onResubscribe: { presenter.resubscribe(model.feedID, in: context) },
                     onDone: { presenter.feedInfo = nil }
                 )
             }
@@ -218,6 +230,14 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                 FeedItemDescriptionSheet(description: description) {
                     presenter.itemDescription = nil
                 }
+            }
+            .sheet(item: $presenter.moveToLibrary) { request in
+                MoveToLibrarySheet(
+                    request: request,
+                    library: library,
+                    announce: { message in presenter.announce(message, hostWindow) },
+                    onClose: { presenter.moveToLibrary = nil }
+                )
             }
     }
 

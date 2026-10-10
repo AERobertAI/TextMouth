@@ -207,7 +207,8 @@ extension FeedWording {
     /// What VoiceOver hears once a change made for `feedIDs` takes effect in
     /// `center` (`FeedEvent.itemPolicyApplied`): the global setting's
     /// sentence when nil, which covers every feed, or a sentence for each of
-    /// those feeds still subscribed, by title; nil when none is.
+    /// those feeds `center` still has, by title, an unsubscribed one among
+    /// them, since its rules still act (FR11, branch D); nil when none is.
     @MainActor
     static func itemPolicyApplied(to feedIDs: Set<UUID>?, in center: FeedCenter) -> String? {
         let global = center.settings.itemPolicy

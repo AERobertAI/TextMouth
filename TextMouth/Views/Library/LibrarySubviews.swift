@@ -306,6 +306,11 @@ struct FolderRow: View {
             if feedCounts != nil {
                 FeedBadge(text: FeedWording.feedNote, color: .secondary)
             }
+            // A feed the listener unsubscribed from, which is not checked
+            // (FR11, branch D); its label says so too.
+            if feedCounts?.isSubscribed == false {
+                FeedBadge(text: FeedWording.unsubscribedNote, color: .secondary)
+            }
             Spacer()
             Text(Self.countText(bookCount: bookCount, feedCounts: feedCounts, feedsBelow: feedsBelow))
                 .font(.caption)

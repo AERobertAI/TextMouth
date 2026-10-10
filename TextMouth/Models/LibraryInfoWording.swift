@@ -75,7 +75,8 @@ struct FeedInfoFacts: Equatable {
     var check: String
     /// The path of its folder, or nil when the folder is gone.
     var folderPath: String?
-    /// Its address, or nil when the feed is no longer subscribed.
+    /// Its address, or nil when the feed's record is gone (an unsubscribed
+    /// feed keeps its record, FR11, branch D).
     var address: String?
 }
 
@@ -246,14 +247,19 @@ enum LibraryInfoWording {
 
     // MARK: A Feed
 
-    /// A feed's brief summary, in parts: its title, "Feed", "Folder
+    /// A feed's brief summary, in parts: its title, "Feed", "Unsubscribed"
+    /// while the listener is unsubscribed from it (FR11, branch D), "Folder
     /// missing" when its folder is gone, its items counted with its row's
     /// own phrase (`FeedWording.countsPhrase`), its size first and its
     /// unplayed items last, and its last check. Example: "Planet Money.
     /// Feed. 10 of 381 episodes listed, 3 downloaded, 2 new, 5 unplayed.
-    /// Checked today at 3:05 PM."
+    /// Checked today at 3:05 PM."; "Finish It!. Feed. Unsubscribed. 10 of
+    /// 381 episodes listed. Not checked since October 9 at 3:05 PM."
     static func briefParts(of feed: FeedInfoFacts) -> [String] {
         var parts = [feed.title, FeedWording.feedNote]
+        if !feed.counts.isSubscribed {
+            parts.append(FeedWording.unsubscribedNote)
+        }
         if feed.folderPath == nil {
             parts.append(FeedWording.folderMissingNote)
         }
@@ -263,7 +269,7 @@ enum LibraryInfoWording {
     }
 
     /// What a feed's full summary adds: its folder when it has one, and its
-    /// address when it is still subscribed. Example: "In Podcasts/Planet
+    /// address while its record is here. Example: "In Podcasts/Planet
     /// Money. Address https://example.com/feed.xml."
     static func fullParts(of feed: FeedInfoFacts) -> [String] {
         var parts: [String] = []

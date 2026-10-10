@@ -21,16 +21,22 @@ struct FeedItemCounts: Equatable, Sendable {
     var unplayed = 0
     /// What the items are called.
     var noun: FeedWording.ItemNoun = .episode
+    /// Whether the listener is subscribed to the feed (FR11, branch D): the
+    /// counts of an unsubscribed one are said with the note "unsubscribed"
+    /// after "Feed", wherever its row, its folder's row, its rotor entry,
+    /// entering its folder, and Speak Info name it.
+    var isSubscribed = true
 }
 
 extension FeedCenter {
     /// Whether `item` of `feed` is new: published (or, undated, first seen)
     /// after the subscription began, so subscribing marks none of a feed's
     /// back catalog new, never played, and never opened, whether its file is
-    /// here or its row was kept after its file went (FR11). Its row is found
-    /// by the item's identity, in one step.
+    /// here or its row was kept after its file went (FR11), and not moved
+    /// into the library, where it is the listener's own book (FR11, branch
+    /// D). Its row is found by the item's identity, in one step.
     func isNew(_ item: FeedItem, of feed: Feed) -> Bool {
-        guard item.playedDate == nil, item.sortDate > feed.subscribedDate else { return false }
+        guard item.playedDate == nil, item.sortDate > feed.subscribedDate, item.state.libraryBookID == nil else { return false }
         if let book = downloadedRow(of: item, in: feed.id) ?? library?.feedItemRows(of: feed.id).kept[item.id] {
             return book.lastOpened == nil
         }
@@ -38,7 +44,8 @@ extension FeedCenter {
     }
 
     /// The items of the feed `feedID` counted as the library shows them,
-    /// with the feed's size; none for a feed no longer subscribed. Each
+    /// with the feed's size and whether the listener is subscribed (FR11,
+    /// branch D); none for a feed whose record is gone. Each
     /// item's row is found by its identity in the feed's rows (FR11), so a
     /// count takes one step per item, however many books the library holds.
     /// The items are those the library lists, the short list's under "Only
@@ -46,14 +53,16 @@ extension FeedCenter {
     func counts(of feedID: UUID) -> FeedItemCounts {
         guard let record = store.record(of: feedID) else { return FeedItemCounts() }
         let items = listedItems(of: feedID)
-        var counts = FeedItemCounts(listed: items.count, total: record.feed.entryTotal, noun: .of(items))
+        var counts = FeedItemCounts(listed: items.count, total: record.feed.entryTotal, noun: .of(items), isSubscribed: record.feed.isSubscribed)
         for item in items {
             switch state(of: item, in: feedID) {
             case .downloaded:
                 counts.downloaded += 1
             case .downloading:
                 counts.downloading += 1
-            case .notDownloaded, .waiting, .failed:
+            // An item moved into the library is no download of its feed's
+            // (FR11, branch D).
+            case .notDownloaded, .waiting, .failed, .inLibrary:
                 break
             }
             if isNew(item, of: record.feed) {
@@ -66,9 +75,16 @@ extension FeedCenter {
         return counts
     }
 
-    /// How the feed `feedID`'s last check reads now.
+    /// How the feed `feedID`'s last check reads now: for a feed the listener
+    /// unsubscribed from (FR11, branch D), that it is not checked, and since
+    /// when.
     func checkWording(of feedID: UUID, now: Date) -> FeedWording.Check {
-        FeedWording.check(fetchState(of: feedID), isRefreshing: refreshingFeedIDs.contains(feedID), now: now)
+        FeedWording.check(
+            fetchState(of: feedID),
+            isRefreshing: refreshingFeedIDs.contains(feedID),
+            isSubscribed: store.record(of: feedID)?.feed.isSubscribed ?? true,
+            now: now
+        )
     }
 
     /// What the summary bar of the feed `feedID`'s folder says of the feed.
@@ -378,7 +394,11 @@ struct FeedFolderListing: Equatable {
                         state: state,
                         isPlayed: item.playedDate != nil,
                         isArticle: item.isArticle,
-                        onBookRow: true
+                        onBookRow: true,
+                        // A download in its feed's folder moves into the
+                        // library (FR11, branch D); one made before FR11,
+                        // a book of the library's own, needs no move.
+                        canMoveToLibrary: book.isFeedItem
                     )
                     listing.entries.append(.book(book, actions: actions))
                     continue

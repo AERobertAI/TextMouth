@@ -12,8 +12,12 @@ enum FeedCommand: Hashable, Sendable {
     case feedInfo
     /// Mark All Played: marks every item played.
     case markAllPlayed
-    /// Unsubscribe…: ends the subscription, after a confirmation.
+    /// Unsubscribe…: stops checking the feed, after a confirmation (FR11,
+    /// branch D); the feed stays.
     case unsubscribe
+    /// Resubscribe: checks an unsubscribed feed again, from now on and at
+    /// once (FR11, branch D).
+    case resubscribe
 }
 
 /// One feed command, as a menu or a row's VoiceOver actions offer it.
@@ -28,22 +32,44 @@ struct FeedAction: Identifiable, Equatable, Sendable {
     /// A row offers each command at most once, so the command identifies it.
     var id: FeedCommand { command }
 
-    /// The command's role in a menu: Unsubscribe ends something, and says
-    /// so.
+    /// The command's role in a menu: Unsubscribe stops the feed's checking
+    /// and deletes what it kept of removed downloads (FR11, branch D), and
+    /// says so.
     var role: ButtonRole? {
         command == .unsubscribe ? .destructive : nil
     }
 
     /// The commands for the feed `feedID`, whose items are called `noun`, in
-    /// menu order. Every one is always offered: Mark All Played with nothing
-    /// left to mark says so.
-    static func actions(for feedID: UUID, noun: FeedWording.ItemNoun) -> [FeedAction] {
-        [
+    /// menu order, by whether the listener `isSubscribed` to it (FR11,
+    /// branch D, the listener's "subscribe / resubscribe toggling action in
+    /// the context menu for feeds"): Check Feed, Feed Info…, Mark All
+    /// Played, and Unsubscribe… for a subscribed feed; Feed Info…, Mark All
+    /// Played, and Resubscribe for an unsubscribed one, which is not
+    /// checked. Mark All Played with nothing left to mark says so.
+    static func actions(for feedID: UUID, noun: FeedWording.ItemNoun, isSubscribed: Bool = true) -> [FeedAction] {
+        let markAll = FeedAction(command: .markAllPlayed, feedID: feedID, title: FeedWording.markAllPlayedTitle(noun))
+        let info = FeedAction(command: .feedInfo, feedID: feedID, title: FeedWording.feedInfoTitle)
+        guard isSubscribed else {
+            return [info, markAll, FeedAction(command: .resubscribe, feedID: feedID, title: FeedWording.resubscribeTitle)]
+        }
+        return [
             FeedAction(command: .checkFeed, feedID: feedID, title: FeedWording.checkFeedTitle),
-            FeedAction(command: .feedInfo, feedID: feedID, title: FeedWording.feedInfoTitle),
-            FeedAction(command: .markAllPlayed, feedID: feedID, title: FeedWording.markAllPlayedTitle(noun)),
+            info,
+            markAll,
             FeedAction(command: .unsubscribe, feedID: feedID, title: FeedWording.unsubscribeTitle),
         ]
+    }
+
+    /// The commands for the feed `feedID` of `center` as it is now: its
+    /// items' noun and whether the listener is subscribed come from its
+    /// record (`actions(for:noun:isSubscribed:)`).
+    @MainActor
+    static func actions(for feedID: UUID, in center: FeedCenter) -> [FeedAction] {
+        actions(
+            for: feedID,
+            noun: .of(center.listedItems(of: feedID)),
+            isSubscribed: center.store.record(of: feedID)?.feed.isSubscribed ?? true
+        )
     }
 }
 
@@ -66,6 +92,10 @@ enum FeedItemCommand: Hashable, Sendable {
     case markUnplayed
     /// Show Description…: the item's text in a sheet.
     case showDescription
+    /// Move to Library…: moves the item's download out of its feed into a
+    /// folder of the library, as a book of its own, after asking which
+    /// folder (FR11, branch D).
+    case moveToLibrary
     /// Show in Finder: the item's book's package in Finder.
     case showInFinder
     /// Delete Episode… (an article: Delete Article…): hides the item for
@@ -107,12 +137,21 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
     ///   to the listener (FR11, branch C);
     /// - Mark Played for an unplayed item, or Mark Unplayed;
     /// - Show Description…;
+    /// - Move to Library…, for a download in its feed's folder on its book's
+    ///   row (`canMoveToLibrary`, FR11, branch D);
     /// - for a downloaded item, Show in Finder on an item row (a book's row
     ///   has its own), and Delete Download;
     /// - Delete Episode….
+    ///
+    /// An item moved into the library (FR11, branch D) offers Open, which
+    /// opens its book there, Mark Played or Unplayed, Show Description…, and
+    /// Delete Episode…, which hides its row and leaves the book: nothing
+    /// downloads it again.
     /// - Parameters:
     ///   - onBookRow: Whether the commands are for a downloaded item's book's
     ///     row, which offers Open and Show in Finder itself.
+    ///   - canMoveToLibrary: Whether the item's download, its book's row's
+    ///     book, is its feed's, which Move to Library… can move.
     static func actions(
         feedID: UUID,
         itemID: FeedItem.ID,
@@ -120,7 +159,8 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
         state: FeedItemState,
         isPlayed: Bool,
         isArticle: Bool,
-        onBookRow: Bool = false
+        onBookRow: Bool = false,
+        canMoveToLibrary: Bool = false
     ) -> [FeedItemAction] {
         var commands: [FeedItemCommand] = []
         if !onBookRow {
@@ -133,11 +173,14 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
             commands += [.download, .cancelDownload]
         case .downloading:
             commands.append(.cancelDownload)
-        case .downloaded:
+        case .downloaded, .inLibrary:
             break
         }
         commands.append(isPlayed ? .markUnplayed : .markPlayed)
         commands.append(.showDescription)
+        if canMoveToLibrary, state.bookID != nil {
+            commands.append(.moveToLibrary)
+        }
         if state.bookID != nil {
             if !onBookRow {
                 commands.append(.showInFinder)
@@ -179,6 +222,9 @@ extension FeedWording {
     static let feedInfoTitle = "Feed Info…"
     /// Unsubscribe's title.
     static let unsubscribeTitle = "Unsubscribe…"
+    /// Resubscribe's title (FR11, branch D): no ellipsis, since it asks
+    /// nothing first.
+    static let resubscribeTitle = "Resubscribe"
 
     /// Mark All Played's title, or Mark All Read's for a feed of articles.
     static func markAllPlayedTitle(_ noun: ItemNoun) -> String {
@@ -196,6 +242,7 @@ extension FeedWording {
         case .markPlayed: return isArticle ? "Mark Read" : "Mark Played"
         case .markUnplayed: return isArticle ? "Mark Unread" : "Mark Unplayed"
         case .showDescription: return "Show Description…"
+        case .moveToLibrary: return ShortcutAction.moveToLibrary.title
         case .showInFinder: return "Show in Finder"
         case .deleteItem: return deleteItemButton(isArticle: isArticle) + "…"
         }
@@ -219,6 +266,20 @@ extension FeedWording {
     /// What VoiceOver hears as Check Feed starts.
     static func checking(title: String) -> String {
         "Checking \(title)…"
+    }
+
+    /// What VoiceOver hears when Check Feed is chosen for a feed the
+    /// listener unsubscribed from (FR11, branch D), as from a menu drawn
+    /// before Unsubscribe: nothing is checked.
+    static func notChecked(title: String) -> String {
+        "\(title) is unsubscribed, so TextMouth doesn't check it. Choose Resubscribe to check it again."
+    }
+
+    /// What VoiceOver hears as Resubscribe starts the check it makes at once
+    /// (FR11, branch D); the check's outcome follows, as Check Feed's does
+    /// (`checked(_:noun:)`).
+    static func resubscribed(title: String) -> String {
+        "Resubscribed to \(title). Checking it now…"
     }
 
     // MARK: Marking
@@ -269,6 +330,53 @@ extension FeedWording {
     /// be deleted.
     static let deleteRefusedTitle = "Couldn't Delete"
 
+    // MARK: Moving Into the Library (FR11, Branch D)
+
+    /// What `books`, feed items' downloads, are called together: episodes
+    /// when all are audio, articles when none is, and items for a mix.
+    static func noun(of books: [Book]) -> ItemNoun {
+        let audio = books.filter { $0.format.isAudio }.count
+        if audio == books.count { return .episode }
+        return audio == 0 ? .article : .item
+    }
+
+    /// The Move to Library sheet's heading: "Move “Ep. 368” to Library" for
+    /// one item, titled as `titles` names it, or "Move 3 Episodes to
+    /// Library" for several, called `noun`.
+    static func moveToLibraryHeading(titles: [String], noun: ItemNoun) -> String {
+        guard titles.count != 1, !titles.isEmpty else { return "Move “\(titles.first ?? "")” to Library" }
+        return "Move \(titles.count) \(noun.plural.capitalized) to Library"
+    }
+
+    /// What Move to Library… does, which its sheet says under its heading
+    /// and VoiceOver hears as its Move button's hint, as the listener's
+    /// design asked: "Moves this episode into a folder of your library,
+    /// where it becomes a book you can edit; it leaves the feed", in an
+    /// article's words for an article, and a plural's for several.
+    static func moveToLibraryHint(count: Int, noun: ItemNoun) -> String {
+        guard count != 1 else {
+            return "Moves this \(noun.singular) into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+        }
+        return "Moves these \(count) \(noun.plural) into a folder of your library, where they become books you can edit; they leave their feeds"
+    }
+
+    /// What VoiceOver hears once Move to Library… moved the items titled
+    /// `titles`, called `noun`, into the folder at `folderPath` ("" for the
+    /// library's top level): "Moved “Ep. 368” into Podcasts/Keepers. It's a
+    /// book of your library now, and its feed lists it In Library."
+    static func movedToLibrary(titles: [String], noun: ItemNoun, folderPath: String) -> String {
+        let place = folderPath.isEmpty ? "the top of your library" : folderPath
+        guard titles.count != 1, !titles.isEmpty else {
+            return "Moved “\(titles.first ?? "")” into \(place). It's a book of your library now, and its feed lists it In Library."
+        }
+        return "Moved \(count(titles.count, noun)) into \(place). They're books of your library now, and their feeds list them In Library."
+    }
+
+    /// What VoiceOver hears when Move to Library… is chosen with nothing it
+    /// can move: no episode or article downloaded in its feed among the books
+    /// chosen.
+    static let nothingToMoveToLibrary = "Move to Library… moves an episode or article downloaded in its feed. Select one in its feed's folder."
+
     // MARK: Deleting an Item
 
     /// The confirmation's button, which the menu's command names with an
@@ -286,17 +394,24 @@ extension FeedWording {
     /// The confirmation's message, saying what deleting does: the item
     /// leaves the list and its download goes, and, when TextMouth keeps the
     /// listener's place, bookmarks, or transcript for it
-    /// (`keepsListenerState`, FR11, branch A2), those go too.
-    static func deleteItemMessage(isArticle: Bool, keepsListenerState: Bool = false) -> String {
+    /// (`keepsListenerState`, FR11, branch A2), those go too. For an item
+    /// moved into the library (`isInLibrary`, FR11, branch D), the item
+    /// leaves the list and its book stays.
+    static func deleteItemMessage(isArticle: Bool, keepsListenerState: Bool = false, isInLibrary: Bool = false) -> String {
         let kind = isArticle ? "article" : "episode"
+        guard !isInLibrary else {
+            return "The \(kind) leaves the list for good; the book it became in your library stays. "
+                + "Checking the feed won't bring it back."
+        }
         let kept = keepsListenerState ? " The place, bookmarks, and transcript kept for it are deleted too." : ""
         return "The \(kind) leaves the list for good, and its download, if any, is deleted.\(kept) "
             + "Checking the feed won't bring it back."
     }
 
-    /// What VoiceOver hears once an item is deleted.
-    static func itemDeleted(title: String) -> String {
-        "Deleted “\(title)”."
+    /// What VoiceOver hears once an item is deleted: for one moved into the
+    /// library (`isInLibrary`, FR11, branch D), that its book stays.
+    static func itemDeleted(title: String, isInLibrary: Bool = false) -> String {
+        isInLibrary ? "Deleted “\(title)” from its feed; its book stays in your library." : "Deleted “\(title)”."
     }
 
     // MARK: Unsubscribing
@@ -309,25 +424,27 @@ extension FeedWording {
     /// The Unsubscribe confirmation's button.
     static let unsubscribeButton = "Unsubscribe"
 
-    /// The Unsubscribe confirmation's message: TextMouth stops checking the
-    /// feed, and the books its downloads made stay where they are, named,
-    /// the first three by title, as books. When the feed kept the places of
-    /// `keptCount` downloads removed earlier (FR11, branch A2), the message
-    /// ends by saying those go (REV10, item 3).
-    static func unsubscribeMessage(bookTitles: [String], folderPath: String?, keptCount: Int = 0) -> String {
-        let stops = "TextMouth stops checking this feed and forgets the items it hasn't downloaded."
-        let place = folderPath.map { " in \($0)" } ?? ""
-        let keptGo = keptRecordsDeleted(count: keptCount)
-        guard !bookTitles.isEmpty else {
-            return "\(stops) Nothing it downloaded is left\(folderPath == nil ? "" : "; its folder stays\(place)").\(keptGo)"
-        }
-        let shown = bookTitles.prefix(3).map { "“\($0)”" }
-        let rest = bookTitles.count - shown.count
-        let names = rest > 0
-            ? shown.joined(separator: ", ") + ", and \(rest) more"
-            : LibraryCloudWording.list(Array(shown))
-        let these = bookTitles.count == 1 ? "This book it downloaded stays" : "These \(bookTitles.count) books it downloaded stay"
-        return "\(stops) \(these)\(place): \(names).\(keptGo)"
+    /// The Unsubscribe confirmation's message, saying what unsubscribing
+    /// does now (FR11, branch D): TextMouth stops checking the feed for new
+    /// items, called `noun`, and the feed stays, with its settings and its
+    /// `downloadCount` downloads, until Resubscribe checks it again. When the
+    /// feed kept the places of `keptCount` downloads removed earlier (FR11,
+    /// branch A2), the message ends by saying those go. "TextMouth stops
+    /// checking this feed for new episodes. The feed stays in your library
+    /// with its settings and its 2 downloaded episodes, and Resubscribe
+    /// checks it again. It also deletes the places, bookmarks, and
+    /// transcripts kept for 3 removed downloads."
+    static func unsubscribeMessage(downloadCount: Int, keptCount: Int, noun: ItemNoun) -> String {
+        let stops = "TextMouth stops checking this feed for new \(noun.plural)."
+        let downloads = downloadCount > 0 ? " and its \(downloadedCount(downloadCount, noun))" : ""
+        let stays = "The feed stays in your library with its settings\(downloads), and Resubscribe checks it again."
+        return "\(stops) \(stays)\(keptRecordsDeleted(count: keptCount))"
+    }
+
+    /// `count` downloads of items called `noun`: "1 downloaded episode", "2
+    /// downloaded articles".
+    private static func downloadedCount(_ count: Int, _ noun: ItemNoun) -> String {
+        "\(count) downloaded \(count == 1 ? noun.singular : noun.plural)"
     }
 
     /// The Unsubscribe confirmation's last sentence, with a space before it,
@@ -340,9 +457,24 @@ extension FeedWording {
             : " It also deletes the places, bookmarks, and transcripts kept for \(count) removed downloads."
     }
 
-    /// What VoiceOver hears once a feed is unsubscribed from.
-    static func unsubscribed(title: String, bookCount: Int) -> String {
-        guard bookCount > 0 else { return "Unsubscribed from \(title)." }
-        return "Unsubscribed from \(title). \(CountWording.phrase(bookCount, singular: "book it downloaded stays", plural: "books it downloaded stay")) in the library."
+    /// What VoiceOver hears once the feed titled `title`, whose items are
+    /// called `noun`, is unsubscribed from (FR11, branch D): checking
+    /// stopped, its downloads stay, and what it kept of removed downloads
+    /// was deleted, as `outcome` counts them. "Unsubscribed from Finish It!:
+    /// TextMouth no longer checks it for new episodes; its 2 downloaded
+    /// episodes stay. The places and bookmarks kept for 3 removed downloads
+    /// were deleted."
+    static func unsubscribed(title: String, outcome: FeedUnsubscribeOutcome, noun: ItemNoun) -> String {
+        let stays = outcome.downloadCount == 1 ? "stays" : "stay"
+        let downloads = outcome.downloadCount > 0 ? "; its \(downloadedCount(outcome.downloadCount, noun)) \(stays)" : ""
+        let stopped = "Unsubscribed from \(title): TextMouth no longer checks it for new \(noun.plural)\(downloads)."
+        switch outcome.deletedKeptCount {
+        case 0:
+            return stopped
+        case 1:
+            return "\(stopped) The place and bookmarks kept for 1 removed download were deleted."
+        case let count:
+            return "\(stopped) The places and bookmarks kept for \(count) removed downloads were deleted."
+        }
     }
 }

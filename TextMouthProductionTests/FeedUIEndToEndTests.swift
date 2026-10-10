@@ -73,7 +73,7 @@ final class FeedUIEndToEndTests: XCTestCase {
         listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [book], folderBooks: [book], search: "", wordsPerMinute: 200)
         guard case .book(let listed, let actions)? = listing.entries.first else { return XCTFail("\(listing.entries)") }
         XCTAssertEqual(listed.id, book.id)
-        XCTAssertEqual(actions.map(\.title), ["Mark Played", "Show Description…", "Delete Download", "Delete Episode…"])
+        XCTAssertEqual(actions.map(\.title), ["Mark Played", "Show Description…", "Move to Library…", "Delete Download", "Delete Episode…"])
         XCTAssertEqual(world.center.counts(of: feed.id).downloaded, 1)
 
         // Mark Played, from the book's row.
@@ -89,17 +89,18 @@ final class FeedUIEndToEndTests: XCTestCase {
         XCTAssertEqual(after.state, .notDownloaded)
         XCTAssertTrue(after.isPlayed)
 
-        // Unsubscribe, after a confirmation: the feed goes, and its folder
-        // stays as a plain folder.
+        // Unsubscribe, after a confirmation: checking stops, and the feed
+        // stays, its folder still its own (FR11, branch D).
         let unsubscribe = try XCTUnwrap(FeedAction.actions(for: feed.id, noun: .episode).first { $0.command == .unsubscribe })
         presenter.perform(unsubscribe, in: context)
         let question = try XCTUnwrap(presenter.confirmation)
-        XCTAssertEqual(question.message, FeedWording.unsubscribeMessage(bookTitles: [], folderPath: folderPath))
+        XCTAssertEqual(question.message, FeedWording.unsubscribeMessage(downloadCount: 0, keptCount: 0, noun: .episode))
         presenter.confirm(question, in: context)
-        XCTAssertTrue(world.center.feeds.isEmpty)
+        XCTAssertEqual(world.center.feeds.map(\.id), [feed.id])
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.feed.isSubscribed, false)
         XCTAssertNotNil(world.library.library.folders.first { $0.id == feed.folderID }, "unsubscribing removed the folder")
-        XCTAssertNil(feedFolders.feedID(inFolder: feed.folderID), "the plain folder still says Feed")
-        XCTAssertTrue(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).isEmpty)
-        XCTAssertEqual(heard.last, "Unsubscribed from The Tactile Atlas.")
+        XCTAssertEqual(feedFolders.feedID(inFolder: feed.folderID), feed.id, "the feed's folder stopped being its")
+        XCTAssertEqual(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).map(\.id), [feed.id])
+        XCTAssertEqual(heard.last, "Unsubscribed from The Tactile Atlas: TextMouth no longer checks it for new episodes.")
     }
 }
