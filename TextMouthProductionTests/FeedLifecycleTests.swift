@@ -331,7 +331,7 @@ final class FeedLifecycleTests: XCTestCase {
         let (feed, book) = try await downloadedEpisode(in: world)
         world.library.openBookIDs = [book.id]
         XCTAssertThrowsError(try world.center.deleteDownload("guid:ep-1", of: feed.id)) { error in
-            XCTAssertEqual(error as? BookCloudError, .bookIsOpen)
+            XCTAssertEqual(error as? FeedDownloadInUseError, FeedDownloadInUseError(title: "Episode One", use: .openInReader))
         }
         world.library.openBookIDs = []
 
@@ -340,6 +340,79 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertNil(world.library.bookByID(book.id))
         XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
         XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.state), [.notDownloaded])
+    }
+
+    /// The listener's own deletions refuse a download in use, where the
+    /// rules wait for it (feed follow-ups item 1): while it is transcribed,
+    /// whose transcript would be lost with its file, and while it is
+    /// exported, Delete Download, the library's Remove, and Delete Episode
+    /// each throw why, naming the download, and nothing goes: the book, its
+    /// file, and its item, still downloaded and listed. Once the work ends,
+    /// Delete Download deletes it.
+    func testTheListenersDeletionsRefuseADownloadInUse() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeleteRefusedInUse")
+        let (feed, book) = try await downloadedEpisode(in: world)
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+        addTeardownBlock { @MainActor in BookExportModel.noteExportEnded([book.id]) }
+
+        for use in [FeedBookUse.transcribing, .exporting] {
+            switch use {
+            case .transcribing: transcriptions.setTranscribing(book.id)
+            case .exporting: BookExportModel.noteExportStarted([book.id])
+            case .openInReader: world.library.openBookIDs.insert(book.id)
+            }
+            XCTAssertEqual(world.library.feedBookUse(of: book.id), use)
+            XCTAssertTrue(world.library.feedBooksInUse.contains(book.id), "the rules would not wait for a book \(use)")
+            let refusal = FeedDownloadInUseError(title: "Episode One", use: use)
+
+            XCTAssertThrowsError(try world.center.deleteDownload("guid:ep-1", of: feed.id)) { error in
+                XCTAssertEqual(error as? FeedDownloadInUseError, refusal, "Delete Download")
+            }
+            XCTAssertThrowsError(try world.center.deleteDownload(ofBook: book, in: world.library)) { error in
+                XCTAssertEqual(error as? FeedDownloadInUseError, refusal, "the library's Remove")
+            }
+            XCTAssertThrowsError(try world.center.deleteItem("guid:ep-1", of: feed.id)) { error in
+                XCTAssertEqual(error as? FeedDownloadInUseError, refusal, "Delete Episode")
+            }
+
+            XCTAssertNotNil(world.library.bookByID(book.id), "a download \(use) left the library")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: book.bookFileURL.path), "the file of a download \(use) went")
+            let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+            XCTAssertEqual(item.state, .downloaded(bookID: book.id))
+            XCTAssertNil(item.deletedDate, "Delete Episode hid an item whose download is \(use)")
+            XCTAssertEqual(world.removedItems.value, [], "something went while the download was \(use)")
+            transcriptions.setTranscribing(nil)
+            BookExportModel.noteExportEnded([book.id])
+        }
+        XCTAssertNil(world.library.feedBookUse(of: book.id))
+
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        XCTAssertNil(world.library.bookByID(book.id))
+    }
+
+    /// How a book is in use, which the listener's deletions refuse, is the
+    /// first of open in a reader, being transcribed, and being exported, and
+    /// the rules' set of books in use holds exactly the books in some use.
+    func testABooksUseIsTheFirstThatHolds() throws {
+        let library = LibraryViewModel(initializeServices: false)
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        let (open, transcribed, exported, idle) = (UUID(), UUID(), UUID(), UUID())
+        addTeardownBlock { @MainActor in
+            transcriptions.setTranscribing(transcribingBefore)
+            BookExportModel.noteExportEnded([open, exported])
+        }
+        library.openBookIDs = [open]
+        transcriptions.setTranscribing(transcribed)
+        BookExportModel.noteExportStarted([open, exported])
+
+        XCTAssertEqual(library.feedBookUse(of: open), .openInReader, "open in a reader comes first")
+        XCTAssertEqual(library.feedBookUse(of: transcribed), .transcribing)
+        XCTAssertEqual(library.feedBookUse(of: exported), .exporting)
+        XCTAssertNil(library.feedBookUse(of: idle))
+        XCTAssertEqual(library.feedBooksInUse.intersection([open, transcribed, exported, idle]), [open, transcribed, exported])
     }
 
     /// Delete Episode deletes the download and the item, which no refresh

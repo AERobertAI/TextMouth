@@ -156,8 +156,9 @@ extension FeedCenter {
     /// holds something of the listener's, keeping the place, the playback
     /// times, the bookmarks, the item's own settings, and its transcript for
     /// a later download; otherwise it goes whole (FR11, branch A2). Refused
-    /// for a book open in a reader.
-    /// - Throws: `BookCloudError.bookIsOpen`, `FeedItemPackageError`, or why
+    /// while the download is in use: open in a reader, being transcribed,
+    /// or being exported (`FeedBookUse`).
+    /// - Throws: `FeedDownloadInUseError`, `FeedItemPackageError`, or why
     ///   the file could not be removed; the download then stays.
     func deleteDownload(_ itemID: FeedItem.ID, of feedID: UUID) throws {
         guard let item = store.record(of: feedID)?.item(itemID), item.state.bookID != nil else { return }
@@ -187,12 +188,17 @@ extension FeedCenter {
     /// written first, then the file goes
     /// (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`);
     /// `command` names what asked, for the debug log.
-    /// - Throws: `BookCloudError.bookIsOpen` for a book open in a reader,
+    /// - Throws: `FeedDownloadInUseError` for a download in use, open in a
+    ///   reader, being transcribed, or being exported, whose transcript or
+    ///   export would be lost with its file (feed follow-ups item 1);
     ///   `FeedItemPackageError.notAFeedPackage` for a download not in its
-    ///   feed's folder, as one made before FR11 until it moves there, or
+    ///   feed's folder, as one made before FR11 until it moves there; or
     ///   whatever kept the file; nothing was removed then.
     private func removeDownload(_ book: Book, in library: FeedLibraryHost, keepingPackage: Bool, by command: String) throws {
-        guard !library.feedBooksOpenInReaders.contains(book.id) else { throw BookCloudError.bookIsOpen }
+        if let use = library.feedBookUse(of: book.id) {
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETE_REFUSED: \(book.title): it \(use.clause), by \(command)")
+            throw FeedDownloadInUseError(title: book.title, use: use)
+        }
         guard book.isFeedItem else { throw FeedItemPackageError.notAFeedPackage }
         let root = TextMouthPaths.root
         let outcome = try library.removeFeedFiles(of: [book], keepingPackages: keepingPackage) { removal in
@@ -267,7 +273,8 @@ extension FeedCenter {
     /// as the removal setting says, whether its file is here or the package
     /// was kept with the listener's place after its file went (FR11, branch
     /// A2); and the item leaves every list, while its record keeps it so no
-    /// refresh brings it back. Refused for a book open in a reader.
+    /// refresh brings it back. Refused while the download is in use, as
+    /// Delete Download is.
     /// - Throws: what `deleteDownload(_:of:)` throws; the item then stays.
     func deleteItem(_ itemID: FeedItem.ID, of feedID: UUID) throws {
         downloads.cancel(itemID, of: feedID)

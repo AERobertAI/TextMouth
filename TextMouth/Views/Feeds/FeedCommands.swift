@@ -681,14 +681,15 @@ extension FeedWording {
     }
 
     /// Why Delete Feed… left the feed titled `title` as it is (FR14), as the
-    /// alert after it says and VoiceOver hears: a download open in a reader,
-    /// an index that could not be saved, or the downloads or kept packages
-    /// that could not go, each named with why, in the words of the removal
-    /// setting `mode`.
+    /// alert after it says and VoiceOver hears: a download in use, open in a
+    /// reader, being transcribed, or being exported (feed follow-ups item
+    /// 1), an index that could not be saved, or the downloads or kept
+    /// packages that could not go, each named with why, in the words of the
+    /// removal setting `mode`.
     static func deleteFeedRefused(_ error: FeedDeleteError, title: String, mode: RemovalMode) -> String {
         switch error {
-        case .downloadIsOpen(let download):
-            return "“\(download)” is open in a reader. Close it, then choose \(deleteFeedTitle) again."
+        case let .downloadInUse(download, use):
+            return use.refusal(of: "“\(download)”", retry: "choose \(deleteFeedTitle) again")
         case .indexNotWritten:
             return "TextMouth couldn't save the library before deleting the feed “\(title)”, so nothing was deleted."
         case .filesStayed(let stayed):

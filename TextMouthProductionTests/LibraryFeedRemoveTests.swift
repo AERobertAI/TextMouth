@@ -184,6 +184,44 @@ final class LibraryFeedRemoveTests: XCTestCase {
         await waitFor("the report is said once the question has closed") { capture.messages == [words] }
     }
 
+    /// The library's Remove leaves an episode being transcribed, whose
+    /// transcript would be lost with its file (feed follow-ups item 1): the
+    /// library's error alert names it and says why and what to do, and the
+    /// episode, its file, and its item stay; nothing is said as done.
+    @MainActor
+    func testRemovingAnEpisodeBeingTranscribedLeavesItAndSaysWhy() async throws {
+        let world = try FeedTestWorld(self, label: "LibraryFeedRemoveTranscribing")
+        await world.start()
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        let item = FeedXML.Item(guid: "ep-1", title: "Episode One", published: world.day(-1),
+                                enclosure: world.server.url("/audio/1.m4a").absoluteString, enclosureType: "audio/mp4")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [item])))
+        let feed = try await world.subscribe("/feed.xml")
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+        transcriptions.setTranscribing(book.id)
+        let mode = world.library.removalPreferences.deletionMode
+
+        let report = world.library.removeBooksAndDelete([book])
+        transcriptions.setTranscribing(nil)
+
+        XCTAssertNil(report, "a removal that deleted nothing was reported as done")
+        XCTAssertTrue(world.library.showError)
+        XCTAssertEqual(
+            world.library.errorMessage,
+            mode.failureMessage([
+                "Episode One: It is being transcribed, and deleting its download now would lose the transcript. "
+                    + "Wait until the transcription ends, or cancel it, then try again.",
+            ])
+        )
+        XCTAssertNotNil(world.library.bookByID(book.id), "the episode being transcribed left the library")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.bookFileURL.path))
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .downloaded(bookID: book.id))
+    }
+
     // MARK: - Fixtures
 
     /// A feed item's row titled `title`, with no package behind it.

@@ -100,7 +100,8 @@ final class FeedUICommandsTests: XCTestCase {
     }
 
     /// Delete Download is refused while the book is open in a reader, in
-    /// the engine's words, shown and spoken, and the book stays.
+    /// the engine's words, naming the episode, shown and spoken, and the
+    /// book stays.
     func testDeleteDownloadIsRefusedWhileTheBookIsOpen() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsOpenBook")
         harness.presenter.perform(harness.action(.download), in: harness.context)
@@ -109,12 +110,45 @@ final class FeedUICommandsTests: XCTestCase {
 
         harness.presenter.perform(harness.action(.deleteDownload), in: harness.context)
 
-        let refusal = BookCloudError.bookIsOpen.explanation(in: nil)
+        let refusal = "“A map you can touch” is open in a reader. Close it, then try again."
         XCTAssertEqual(harness.presenter.notice?.title, FeedWording.deleteRefusedTitle)
         XCTAssertEqual(harness.presenter.notice?.message, refusal)
         XCTAssertEqual(harness.heard.last, refusal)
         XCTAssertNotNil(harness.world.library.bookByID(book.id), "an open book's download was deleted")
         harness.world.library.openBookIDs.remove(book.id)
+    }
+
+    /// Delete Download and Delete Episode… are refused while the episode is
+    /// transcribed, whose transcript would be lost with its file (feed
+    /// follow-ups item 1): the alert names it and says what to do, VoiceOver
+    /// hears the same, and the episode, its file, and its row stay.
+    func testDeleteDownloadAndDeleteEpisodeAreRefusedWhileTheEpisodeIsTranscribed() async throws {
+        let harness = try await Harness(self, label: "FeedUICommandsTranscribing")
+        harness.presenter.perform(harness.action(.download), in: harness.context)
+        let book = try await downloadedBook(harness.world, feed: harness.feed, item: Harness.episodeID)
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+        transcriptions.setTranscribing(book.id)
+        let refusal = "“A map you can touch” is being transcribed, and deleting its download now would lose the transcript. "
+            + "Wait until the transcription ends, or cancel it, then try again."
+
+        harness.presenter.perform(harness.action(.deleteDownload), in: harness.context)
+
+        XCTAssertEqual(harness.presenter.notice?.title, FeedWording.deleteRefusedTitle)
+        XCTAssertEqual(harness.presenter.notice?.message, refusal)
+        XCTAssertEqual(harness.heard.last, refusal)
+
+        harness.presenter.notice = nil
+        harness.presenter.perform(harness.action(.deleteItem), in: harness.context)
+        harness.presenter.confirm(try XCTUnwrap(harness.presenter.confirmation), in: harness.context)
+
+        XCTAssertEqual(harness.presenter.notice?.message, refusal)
+        XCTAssertNotNil(harness.world.library.bookByID(book.id), "a download being transcribed was deleted")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.bookFileURL.path))
+        XCTAssertEqual(harness.item?.state, .downloaded(bookID: book.id))
+        XCTAssertNil(harness.item?.deletedDate, "Delete Episode hid an episode being transcribed")
+        transcriptions.setTranscribing(nil)
     }
 
     /// Open on an item not downloaded says it downloads first, then opens

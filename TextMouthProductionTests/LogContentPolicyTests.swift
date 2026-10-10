@@ -307,6 +307,8 @@ final class LogContentPolicyTests: XCTestCase {
         "FEED_PARSE_REPAIRED",
         "FEED_DOWNLOAD_STARTED", "FEED_DOWNLOAD_FINISHED", "FEED_DOWNLOAD_FAILED", "FEED_DOWNLOAD_CANCELLED",
         "FEED_ITEM_PLAYED", "FEED_DOWNLOAD_DELETED", "FEED_DOWNLOAD_DELETE_FAILED", "FEED_SWEEP_LEFT_IN_CLOUD",
+        // The listener's own deletion of a download in use, refused (feed follow-ups item 1).
+        "FEED_DOWNLOAD_DELETE_REFUSED",
         // Feed items in their feeds' own folders (FR11): each feed's index and the first launch's
         // move into it; a download kept, restored, set aside, or held aside, and an article's
         // earlier text kept; the rules' downloads, waits, and removals; Cancel; the feed's
@@ -325,9 +327,9 @@ final class LogContentPolicyTests: XCTestCase {
         "FEED_RESUBSCRIBED", "FEED_RECORD_ABSENT", "FEED_RECORD_BACK",
         "FEED_DOWNLOADS_RETURN", "FEED_DOWNLOADS_RETURNED", "FEED_DOWNLOAD_RETURN_FAILED",
         // Delete Feed… (FR14): a feed deleted; one that stays, its index unwritten, so nothing went,
-        // or a file it could not delete; and a folder left behind: the feed's own in the data
+        // a file it could not delete, or a download in use; and a folder left behind: the feed's own in the data
         // directory, or its emptied library folder.
-        "FEED_DELETED", "FEED_DELETE_PUT_OFF", "FEED_DELETE_STOPPED",
+        "FEED_DELETED", "FEED_DELETE_PUT_OFF", "FEED_DELETE_STOPPED", "FEED_DELETE_REFUSED",
         "FEED_DELETE_FOLDER_LEFT", "FEED_DELETE_FOLDER_KEPT",
         // The logs themselves (the user's decision of October 3): lines changing place between the
         // data directory's Logs folder and this Mac's, and a log started over because it could not
