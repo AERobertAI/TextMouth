@@ -1141,3 +1141,31 @@ README wording:
 
 ARCHITECTURE wording:
 "Removing a feed item's file (FR11, A2) goes through `LibraryViewModel.removeFeedFiles(of:keepingPackages:remove:)`: a package holding the listener's state (`FeedItemPackage.holdsListenerState`) has its record written at once (`writePendingBookInfoNow`) and its row moved to `Library.feedShelf`, then the indexes are written and waited for (`LibraryPersistenceService.saveAndWait`, which returns whether they reached the disk), and only then does the caller remove the file and its caches (`staysWithoutTheFile`) or the whole package; a failed index write throws `FeedItemPackageError.indexNotWritten` with nothing touched, and a file that can't be removed puts its row back. Packages are checked against their feed's folder (`packageForRemoval`), never the Library folder. Delete Download, the library's Remove (`FeedCenter.deleteDownload(ofBook:in:)`), and Delete Episode use `FeedEnvironment.removeItem` (Trash-aware); the sweep deletes for good after reading cloud state off the main thread. Downloading an item with a kept row restores it (`FeedEpisodeImporter.restoreBook`): transcript files copied in, the kept record's note and a higher revision kept (`writeVerifiedRecord(replacing:)`), the package put in place by `renamex_np(RENAME_SWAP)` (`FeedItemPackage.putInPlace`), and the shelf row replaced (`addFeedBook`). Rows are found by item identity through `FeedItemRowLookup` (`feedItemRows(of:)`, `feedBook(withID:)`), refreshed once per library change; `FeedCenter.state(of:in:)`, `downloadedRow(of:in:)`, `isNew`, and `counts(of:)` use it. `FeedReconciler.kept` keeps played items and kept rows (`keepingRecordsOf:`, from `FeedCenter.keptRecordItemIDs(of:)`). `LibraryCategory.recent` is "Recently Opened" and reads "Recent" (`formerRecentName`)."
+
+## From the docs8 agent (docs/october-10), Oct 10
+
+Documented B05, FR12's branches B and C, FR11's branches A1 and A2 with FR13, and the Now Playing follow-ups (merged ada6c7cf). Where the code contradicted the agents' proposed wording, the code won:
+- **B05:**
+  - The reader does not "show paused": its flags show nothing playing, and only Now Playing is told paused. I kept "treats that stop as a pause".
+  - The report's 40 log lines are kept in memory, routine lines included, which the log file holds only while tracing is on.
+  - Show Logs in Finder also says why, aloud and on screen, when Finder can't open the folder.
+  - B05's offline probe was never committed.
+- **FR12 B:**
+  - The screen shows modifier symbols and then the key's name in words, as "⌘Page Down". "Command + Page Down" is only what VoiceOver says.
+  - The dispatcher's index is rebuilt by `rebuild(from:)`, which the manager's `take(_:)` calls, and a rebuild runs any waiting single press at once.
+  - `validatedDoublePressSeconds(_:)` is on `SettingsPolicy`.
+  - `escalates` is a computed property over the table `escalations`. The two agents named different ones; both exist.
+  - Since #1528, `allCases` follows the Shortcuts tab's order, so the config.json tie rule is now "the one the Shortcuts tab lists first".
+- **FR11 A1:**
+  - Recently Opened lists at most ten books.
+  - "The next episode" from Continue to Next Book is the next older download, because the feed's folder lists the newest first.
+  - Only downloads that a subscribed feed's record names move at the first launch; a download from an earlier-unsubscribed feed stays a library book.
+  - The recovery merge is `carryingRecoverySessionState(from:into:)`. The unchecked pins are now 26 and 14, confirmed in the test.
+- **Unsubscribe:** the brief's "listed nowhere" isn't exact. Recently Opened (the last one opened) and the Reading List still show a stranded download, because those rows rejoin at every launch from the feed's folder. The README says this plainly.
+- **Now Playing:**
+  - When the closed window's reader held the focus, the focus falls to the reader registered last, not necessarily the window in front. I wrote "the book whose window you used last".
+  - A book pausing behind another window also covers the headphones disconnecting and a recording starting.
+- **FR12 C:** I didn't put the "pause like any other" sentence after the chapter-preparation passage the agent named. That passage is about a text book still waiting for its chapter, where Where Am I? pauses nothing. The sentence went with Where Am I?'s own description.
+- **FR11 A2:**
+  - Nothing in the app saves the Library category, so the README says only that Recently Opened keeps its sort (its key is still `__recent__`).
+  - Remove from Library… on an episode acts as Delete Download, though its question and last message still speak of a book.
