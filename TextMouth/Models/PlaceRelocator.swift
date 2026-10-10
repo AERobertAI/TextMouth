@@ -78,7 +78,8 @@ import Foundation
 /// text's words. In optimized code that took about 20 ms for a novel of
 /// 750,000 UTF-16 units and 100 to 130 ms for a book of 3.8 million, holding
 /// 25 to 130 MB with the texts; moving a place then takes a few
-/// microseconds. Nothing is said or shown.
+/// microseconds. Nothing is said or shown; the counts go to the debug log
+/// (`Counts.logLine`).
 struct PlaceRelocator: Sendable {
     // MARK: - What a Move Comes To
 
@@ -673,5 +674,172 @@ struct PlaceRelocator: Sendable {
         /// Where the anchor was read in the old text, for a place saved
         /// without one; nil for an anchor as saved.
         let readInOldText: TextPlace?
+    }
+}
+
+// MARK: - Moving a Book's Places
+
+extension PlaceRelocator {
+    /// A book's saved places in its text, as the relocator moves them
+    /// together.
+    struct Places: Equatable, Sendable {
+        /// The reading position; nil for a book without one.
+        var position: ReadingPosition?
+        /// The bookmarks, in order.
+        var bookmarks: [Bookmark] = []
+        /// The skipped headings, in order.
+        var skippedHeadings: [SkippedHeading] = []
+    }
+
+    /// What moving a book's places came to.
+    struct Outcome: Equatable, Sendable {
+        /// The places as they should now be saved: each at its place in the
+        /// new text, with its anchor captured there anew (for a place that
+        /// stayed too, since the book around it may have grown or shrunk),
+        /// and a position's offset across the whole book worked out anew when
+        /// it kept one. A move is not a read: a position's time and heading
+        /// index, and a bookmark's identity, number, note, and date, stay as
+        /// they were. A skipped heading takes its heading's place and label;
+        /// one that waits stays as it was, with the words it was read by, so
+        /// a later rebuild may find its heading; two skips that now name one
+        /// heading are one.
+        let places: Places
+        /// How the position was found; nil for a book without one.
+        let positionFinding: Finding?
+        /// How each bookmark was found, in order.
+        let bookmarkFindings: [Finding]
+        /// How each skipped heading was found, in order; nil for a skip that
+        /// waits.
+        let skippedHeadingFindings: [Finding?]
+        /// The counts, for the debug log's line.
+        let counts: Counts
+    }
+
+    /// How a book's places were found, counted for the debug log's line
+    /// (`logLine(title:)`).
+    struct Counts: Equatable, Sendable {
+        /// Places whose saved words still stood around their numbers.
+        var unchanged = 0
+        /// Places the diff carried across, the end of the book among them.
+        var movedByTheDiff = 0
+        /// Places the saved words found where the diff could not decide.
+        var foundBySavedWords = 0
+        /// Places put at a best guess.
+        var guessed = 0
+        /// Skipped headings that nothing names now, whose skips wait.
+        var waiting = 0
+
+        /// How many places were counted.
+        var total: Int { unchanged + movedByTheDiff + foundBySavedWords + guessed + waiting }
+
+        /// Whether any place moved, or any skip now waits: the debug log
+        /// gets a line only then.
+        var anythingMoved: Bool { unchanged < total }
+
+        /// Counts one place found as `finding`; nil is a skip that waits.
+        mutating func count(_ finding: Finding?) {
+            switch finding {
+            case .unchanged?: unchanged += 1
+            case .movedByTheDiff?: movedByTheDiff += 1
+            case .foundBySavedWords?: foundBySavedWords += 1
+            case .guessed?: guessed += 1
+            case nil: waiting += 1
+            }
+        }
+
+        /// The debug log's line for the book titled `title`, an event line
+        /// (which may name a book) of counts only, never text
+        /// (`DiagnosticLog`): "PLACES_RELOCATED: <title>: unchanged U, moved
+        /// by the diff D, by the saved words W, guessed G", and ", waiting S"
+        /// when a skip waits.
+        func logLine(title: String) -> String {
+            var line = "PLACES_RELOCATED: \(title): unchanged \(unchanged), moved by the diff \(movedByTheDiff), "
+                + "by the saved words \(foundBySavedWords), guessed \(guessed)"
+            if waiting > 0 { line += ", waiting \(waiting)" }
+            return line
+        }
+    }
+
+    /// Moves a book's places from the old text to the new by the type's
+    /// rules: the position, each bookmark, and each skipped heading.
+    func relocate(_ places: Places) -> Outcome {
+        var counts = Counts()
+        var moved = places
+
+        var positionFinding: Finding?
+        if let position = places.position {
+            let result = relocate(position.anchor, savedAt: TextPlace(chapter: position.chapterIndex, offset: position.characterOffset))
+            moved.position = self.moved(position, to: result)
+            positionFinding = result.finding
+            counts.count(result.finding)
+        }
+
+        var bookmarkFindings: [Finding] = []
+        moved.bookmarks = places.bookmarks.map { bookmark in
+            let result = relocate(bookmark.anchor, savedAt: TextPlace(chapter: bookmark.chapterIndex, offset: bookmark.characterOffset))
+            bookmarkFindings.append(result.finding)
+            counts.count(result.finding)
+            return self.moved(bookmark, to: result)
+        }
+
+        var skippedHeadingFindings: [Finding?] = []
+        // Each heading ID once: two skips that now name one heading are one.
+        var namedIDs = Set<String>()
+        moved.skippedHeadings = places.skippedHeadings.compactMap { skipped in
+            let result = relocate(skipped)
+            skippedHeadingFindings.append(result?.finding)
+            counts.count(result?.finding)
+            let movedSkip = result.map { self.skip(of: $0.heading, keeping: skipped) } ?? waiting(skipped)
+            return namedIDs.insert(movedSkip.id).inserted ? movedSkip : nil
+        }
+
+        return Outcome(
+            places: moved,
+            positionFinding: positionFinding,
+            bookmarkFindings: bookmarkFindings,
+            skippedHeadingFindings: skippedHeadingFindings,
+            counts: counts
+        )
+    }
+
+    /// `position` at `result`'s place: its chapter and offset, its offset
+    /// across the whole book when it kept one, and its anchor captured
+    /// there; its time and heading index as they were.
+    private func moved(_ position: ReadingPosition, to result: Result) -> ReadingPosition {
+        var moved = position
+        moved.chapterIndex = result.place.chapter
+        moved.characterOffset = result.place.offset
+        moved.globalCharacterOffset = position.globalCharacterOffset.map { _ in new.globalOffset(of: result.place) }
+        moved.anchor = TextAnchor(capturingAt: result.place, in: new) ?? position.anchor
+        return moved
+    }
+
+    /// `bookmark` at `result`'s place, with its anchor captured there; its
+    /// identity, number, note, and date as they were.
+    private func moved(_ bookmark: Bookmark, to result: Result) -> Bookmark {
+        var moved = bookmark
+        moved.chapterIndex = result.place.chapter
+        moved.characterOffset = result.place.offset
+        moved.anchor = TextAnchor(capturingAt: result.place, in: new) ?? bookmark.anchor
+        return moved
+    }
+
+    /// The skip of `heading` in the new text, with the anchor at its start;
+    /// `skipped`'s own anchor when none can be captured there.
+    private func skip(of heading: Heading, keeping skipped: SkippedHeading) -> SkippedHeading {
+        let start = TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
+        return SkippedHeading(heading, anchor: TextAnchor(capturingAt: start, in: new) ?? skipped.anchor)
+    }
+
+    /// A skip that waits: as it was, with the words it was read by (for a
+    /// skip saved without words, those read in the old text at its numbers),
+    /// so that a later rebuild may find its heading by them.
+    private func waiting(_ skipped: SkippedHeading) -> SkippedHeading {
+        var waiting = skipped
+        if waiting.anchor == nil {
+            let read = savedWords(nil, savedAt: TextPlace(chapter: skipped.chapterIndex, offset: skipped.characterOffset))
+            if read.readInOldText != nil { waiting.anchor = read.anchor }
+        }
+        return waiting
     }
 }
