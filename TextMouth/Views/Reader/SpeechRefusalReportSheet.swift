@@ -12,6 +12,9 @@ import SwiftUI
 ///   VoiceOver reads with its text navigation and a braille display pans,
 ///   its text selectable and copyable;
 /// - Copy Details, which copies the whole report as plain text;
+/// - Show Logs in Finder, which opens the folder the logs are written to
+///   now, as Storage settings' button of that name does, with a line under
+///   the buttons, in words, should Finder not open it;
 /// - Close, the default button, which Return and Escape press too.
 struct SpeechRefusalReportView: View {
     /// The report shown.
@@ -19,8 +22,16 @@ struct SpeechRefusalReportView: View {
     /// Whether VoiceOver moves to the heading as the sheet opens: only when
     /// it opens in front of the listener (`SpeechRefusalWindowStanding`).
     let takesVoiceOverFocus: Bool
+    /// The folder the logs are written to now, which Show Logs in Finder
+    /// opens and its hint names.
+    let logsFolder: URL
+    /// Why Show Logs in Finder could not open the folder, when it could
+    /// not; nil otherwise.
+    let logsFailure: String?
     /// What Copy Details does.
     let onCopy: () -> Void
+    /// What Show Logs in Finder does.
+    let onShowLogs: () -> Void
     /// What Close, Return, and Escape do.
     let onClose: () -> Void
 
@@ -45,6 +56,9 @@ struct SpeechRefusalReportView: View {
             HStack {
                 Button(SpeechRefusalWording.copyTitle, action: onCopy)
                     .accessibilityHint(SpeechRefusalWording.copyHint)
+                Button(LogsSettingsWording.showTitle, action: onShowLogs)
+                    .accessibilityHint(LogsSettingsWording.showHint(folder: logsFolder))
+                    .help(LogsSettingsWording.showHint(folder: logsFolder))
                 Spacer()
                 // Return presses Close: nothing in the sheet takes typing.
                 // A button carries one shortcut, so Escape closes through
@@ -52,6 +66,15 @@ struct SpeechRefusalReportView: View {
                 Button(SpeechRefusalWording.closeTitle, action: onClose)
                     .keyboardShortcut(.defaultAction)
                     .accessibilityHint(SpeechRefusalWording.closeHint)
+            }
+
+            if let logsFailure {
+                // The words say it failed, so the color is never the only
+                // sign; VoiceOver heard them as it failed.
+                Text(logsFailure)
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding()
@@ -80,6 +103,9 @@ struct SpeechRefusalReportSheet: SheetOverOneReader {
     @StateObject private var shown: ReaderSnapshot<SpeechRefusalReport?>
     /// Whether VoiceOver moves to the sheet's heading as it opens.
     @State private var takesVoiceOverFocus: Bool
+    /// Why the last Show Logs in Finder could not open the folder, if it
+    /// could not.
+    @State private var logsFailure: String?
 
     /// A sheet showing the report `viewModel` keeps.
     init(viewModel: ReaderViewModel) {
@@ -94,10 +120,20 @@ struct SpeechRefusalReportSheet: SheetOverOneReader {
             SpeechRefusalReportView(
                 report: report,
                 takesVoiceOverFocus: takesVoiceOverFocus,
+                logsFolder: TextMouthPaths.logDestination(for: logLocation).folder,
+                logsFailure: logsFailure,
                 onCopy: { Self.copyDetails(of: report, to: .general) },
+                // Storage settings' own Show Logs in Finder, which makes
+                // this Mac's folder first when it is missing.
+                onShowLogs: { logsFailure = LogsSettingsSection.showLogs(for: logLocation) },
                 onClose: { viewModel.closeSpeechRefusalReport() }
             )
         }
+    }
+
+    /// Where the logs are written, as Storage settings choose.
+    private var logLocation: LogLocation {
+        viewModel.settingsViewModel.logLocation
     }
 
     /// Copy Details: puts the whole report on `pasteboard` as plain text,

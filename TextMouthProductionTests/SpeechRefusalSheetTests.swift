@@ -20,7 +20,7 @@ final class SpeechRefusalSheetTests: XCTestCase {
     /// one, called "Details": read-only, its text selectable.
     func testTheSheetShowsTheWholeReportInAReadOnlyTextArea() {
         let report = SpeechRefusalReportTests.sampleReport()
-        let view = SpeechRefusalReportView(report: report, takesVoiceOverFocus: false, onCopy: {}, onClose: {})
+        let view = reportView(of: report)
 
         withHostedView(view, size: NSSize(width: 660, height: 600), until: {
             !self.descendants(of: $0, as: NSTextView.self).isEmpty
@@ -39,7 +39,7 @@ final class SpeechRefusalSheetTests: XCTestCase {
     func testReturnAndEscapeCloseTheSheetFromTheTextArea() throws {
         let report = SpeechRefusalReportTests.sampleReport()
         var closes = 0
-        let view = SpeechRefusalReportView(report: report, takesVoiceOverFocus: false, onCopy: {}, onClose: { closes += 1 })
+        let view = reportView(of: report, onClose: { closes += 1 })
 
         try withHostedView(view, size: NSSize(width: 660, height: 600), until: {
             self.descendants(of: $0, as: NSTextView.self).contains { $0.string == report.text }
@@ -61,6 +61,21 @@ final class SpeechRefusalSheetTests: XCTestCase {
             XCTAssertEqual(catcher.frame.size, .zero, "the key's view takes space")
             XCTAssertFalse(catcher.isAccessibilityElement(), "the key's view is an element to VoiceOver")
         }
+    }
+
+    /// The report's view of `report`, which moves VoiceOver nowhere, with a
+    /// logs folder of no consequence: its Show Logs in Finder is never
+    /// pressed here, since it would open Finder.
+    private func reportView(of report: SpeechRefusalReport, onClose: @escaping () -> Void = {}) -> SpeechRefusalReportView {
+        SpeechRefusalReportView(
+            report: report,
+            takesVoiceOverFocus: false,
+            logsFolder: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Logs", isDirectory: true),
+            logsFailure: nil,
+            onCopy: {},
+            onShowLogs: {},
+            onClose: onClose
+        )
     }
 
     // MARK: - Copy Details
