@@ -61,6 +61,71 @@ enum ShortcutKeyPresses {
     }
 }
 
+extension XCTestCase {
+    /// A window, never shown, that the shortcut manager takes for a window
+    /// of `kind` (`KeyboardShortcutManager.windowKind(of:)`, FR12's branch
+    /// E): a reader's, an audio editor's, or the Record window by their
+    /// identifiers, a Library window as any other titled window is taken,
+    /// and a panel for any other kind. It is closed when the test ends.
+    @MainActor
+    func makeShortcutWindow(_ kind: ShortcutWindowKind) -> NSWindow {
+        let frame = NSRect(x: 0, y: 0, width: 320, height: 120)
+        let window = kind == .other
+            ? NSPanel(contentRect: frame, styleMask: [.titled], backing: .buffered, defer: true)
+            : NSWindow(contentRect: frame, styleMask: [.titled], backing: .buffered, defer: true)
+        // The test owns the window; AppKit must not release it again on close.
+        window.isReleasedWhenClosed = false
+        // A titled window that is not key stays off screen, as a hosted test
+        // view's does (`withHostedView`).
+        window.title = "Hosted test view"
+        switch kind {
+        case .reader: window.identifier = NSUserInterfaceItemIdentifier("book-reader-AppWindow-1")
+        case .audioEditor: window.identifier = NSUserInterfaceItemIdentifier(AudioEditorWindowController.windowIdentifier)
+        case .recording: window.identifier = NSUserInterfaceItemIdentifier(RecordingWindowController.windowIdentifier)
+        case .library, .other: break
+        }
+        addTeardownBlock { @MainActor in window.close() }
+        return window
+    }
+}
+
+/// Who holds each key where it works, for the tests that every key has one
+/// owner in each kind of window (FR12's branches D and E).
+enum ShortcutKeyOwners {
+    /// Each key `bindings` gives two actions in one kind of window, each
+    /// action working where `scopes` says, its default scope unless given:
+    /// the same key, or a key equivalent's key and the same key pressed twice
+    /// (`KeyClaims.forms(of:for:)`). Each is described once, as "⇧⌘T in
+    /// library: Show Sleep Timer and New from Text…", in the order Settings
+    /// lists the actions; none when every key has one owner wherever it
+    /// works.
+    static func keysOnTwoActions(
+        in bindings: [ShortcutAction: [KeyBinding]],
+        scopes: (ShortcutAction) -> ShortcutScope = { $0.defaultScope }
+    ) -> [String] {
+        var owners: [ShortcutWindowKind: [KeyBinding: ShortcutAction]] = [:]
+        var clashes: [String] = []
+        for action in ShortcutAction.allCases {
+            for binding in bindings[action] ?? [] {
+                let forms = KeyClaims.forms(of: binding, for: action)
+                for kind in ShortcutWindowKind.allCases where scopes(action).reaches(kind) {
+                    if let owner = forms.lazy.compactMap({ owners[kind]?[$0] }).first(where: { $0 != action }) {
+                        let clash = "\(binding.displayString) in \(kind): \(owner.rawValue) and \(action.rawValue)"
+                        if !clashes.contains(clash) {
+                            clashes.append(clash)
+                        }
+                        continue
+                    }
+                    for form in forms {
+                        owners[kind, default: [:]][form] = action
+                    }
+                }
+            }
+        }
+        return clashes
+    }
+}
+
 /// Every shortcut action posted on a notification center, in the order
 /// posted: each action's name, or the notification's own name for one that
 /// carries no action. It listens until it is released.

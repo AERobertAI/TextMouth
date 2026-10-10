@@ -486,7 +486,7 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.speakImportProgress.title, "Speak Import Progress")
         XCTAssertEqual(ShortcutAction(rawValue: "Speak Import Progress"), .speakImportProgress)
         XCTAssertEqual(ShortcutAction.defaultBindings[.speakImportProgress], [])
-        XCTAssertEqual(ShortcutAction.speakImportProgress.scope, .app)
+        XCTAssertEqual(ShortcutAction.speakImportProgress.defaultScope, .app)
         XCTAssertEqual(ShortcutAction.speakImportProgress.category, "Information")
         XCTAssertEqual(ShortcutAction.speakImportProgress.category, ShortcutAction.speakInfo.category)
         XCTAssertEqual(ShortcutAction.speakImportProgress.notificationName, .speakImportProgress)

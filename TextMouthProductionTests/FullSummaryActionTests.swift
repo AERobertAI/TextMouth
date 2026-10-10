@@ -28,7 +28,7 @@ final class FullSummaryActionTests: XCTestCase {
         for action in [ShortcutAction.whereAmIFull, .speakFullInfo] {
             XCTAssertEqual(action.title, action.rawValue)
             XCTAssertEqual(ShortcutAction.named(action.rawValue.lowercased()), action)
-            XCTAssertEqual(action.scope, .app)
+            XCTAssertEqual(action.defaultScope, .app)
             XCTAssertEqual(action.category, "Information")
         }
         XCTAssertEqual(ShortcutAction.whereAmIFull.notificationName, .whereAmIFull)

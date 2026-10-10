@@ -14,23 +14,28 @@ final class AudioEditorShortcutTests: XCTestCase {
 
     /// The editor's actions, in the order Settings lists them.
     private var editorActions: [ShortcutAction] {
-        ShortcutAction.allCases.filter { $0.scope == .audioEditor }
+        ShortcutAction.allCases.filter { $0.defaultScope == .audioEditor }
     }
 
     // MARK: - Where the Keys Work
 
-    /// An editor window matches the editor's keys; a sheet over it matches
-    /// none, so its fields take every key; every other window, or none,
-    /// matches the app's.
+    /// An editor window matches the editor's keys and no other; a sheet over
+    /// it matches none, so its fields take every key; every other window, or
+    /// none, matches the app's, which never reach an editor's window.
     func testTheEditorsKeysAreMatchedOnlyInItsWindows() {
-        let editor = AudioEditorWindowController.windowIdentifier
-        XCTAssertEqual(KeyboardShortcutManager.scope(windowIdentifier: editor, sheetParentIdentifier: nil), .audioEditor)
-        XCTAssertNil(KeyboardShortcutManager.scope(windowIdentifier: nil, sheetParentIdentifier: editor))
-        XCTAssertEqual(KeyboardShortcutManager.scope(windowIdentifier: "book-reader-AppWindow-2", sheetParentIdentifier: nil), .app)
-        XCTAssertEqual(KeyboardShortcutManager.scope(windowIdentifier: nil, sheetParentIdentifier: "book-reader-AppWindow-2"), .app)
-        XCTAssertEqual(KeyboardShortcutManager.scope(windowIdentifier: nil, sheetParentIdentifier: nil), .app)
-        XCTAssertEqual(ShortcutAction.togglePlayback.scope, .app)
-        XCTAssertEqual(ShortcutAction.editorPlayPause.scope, .audioEditor)
+        let editorWindow = NSWindow(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: true)
+        editorWindow.isReleasedWhenClosed = false
+        editorWindow.identifier = NSUserInterfaceItemIdentifier(AudioEditorWindowController.windowIdentifier)
+        defer { editorWindow.close() }
+        XCTAssertEqual(KeyboardShortcutManager.windowKind(ofKeyWindow: editorWindow), .audioEditor)
+        XCTAssertNil(KeyboardShortcutManager.pressKind(window: .other, sheetParent: .audioEditor))
+        XCTAssertEqual(KeyboardShortcutManager.pressKind(window: .other, sheetParent: .reader), .reader)
+        XCTAssertEqual(KeyboardShortcutManager.windowKind(ofKeyWindow: nil), .other)
+        XCTAssertEqual(ShortcutScope.audioEditor.windowKinds, [.audioEditor])
+        XCTAssertFalse(ShortcutScope.app.reaches(.audioEditor))
+        XCTAssertFalse(ShortcutScope.app.overlaps(.audioEditor))
+        XCTAssertEqual(ShortcutAction.togglePlayback.defaultScope, .app)
+        XCTAssertEqual(ShortcutAction.editorPlayPause.defaultScope, .audioEditor)
         XCTAssertEqual(ShortcutAction.editorPlayPause.title, "Play / Pause")
         XCTAssertEqual(ShortcutAction.editorPlayPause.category, "Audio Editor")
         XCTAssertEqual(ShortcutAction.togglePlayback.title, "Play / Pause")
@@ -104,7 +109,7 @@ final class AudioEditorShortcutTests: XCTestCase {
     /// existed, moved to the record of the user's edits (FR12), skipping
     /// only the keys the editor's own group holds.
     func testDefaultsAddedLaterSkipOnlyTheirOwnGroupsKeys() {
-        var saved = ShortcutAction.defaultBindings.filter { $0.key.scope == .app }
+        var saved = ShortcutAction.defaultBindings.filter { $0.key.defaultScope != .audioEditor }
         saved[.whereAmI] = [KeyBinding(key: "w"), KeyBinding(key: "j", command: true)]
 
         let moved = ShortcutEdits.migrating(savedMap: saved, fileLists: nil)

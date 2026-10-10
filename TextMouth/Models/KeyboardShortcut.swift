@@ -172,11 +172,36 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         return rawValue
     }
 
-    /// Where the action's shortcuts work: the audio editor's group in its
-    /// windows alone, every other action everywhere else.
-    var scope: ShortcutScope {
-        category == Self.audioEditorCategory ? .audioEditor : .app
+    /// Where the action's shortcuts work unless the user chooses otherwise
+    /// (FR12's branch E): the audio editor's group in its windows, the
+    /// Record window's in it, a few actions in one kind of window
+    /// (`defaultScopesOfTheirOwn`), and every other in every window but an
+    /// audio editor's, as all of them always did.
+    var defaultScope: ShortcutScope {
+        if let scope = Self.defaultScopesOfTheirOwn[self] {
+            return scope
+        }
+        switch category {
+        case Self.audioEditorCategory: return .audioEditor
+        case Self.recordingWindowCategory: return .recording
+        default: return .app
+        }
     }
+
+    /// The actions whose shortcuts work in one kind of window by default,
+    /// though their groups' work in every window (FR12's branch E): New from
+    /// Text in Library windows and Show Sleep Timer in reader windows, as the
+    /// user chose on October 7, so Shift-Command-T is each's in its own kind
+    /// of window (#1451); and the Library and Playback menus' commands where
+    /// their menus show, as their keys always worked.
+    static let defaultScopesOfTheirOwn: [ShortcutAction: ShortcutScope] = [
+        .newFromText: .library,
+        .showSleepTimer: .reader,
+        .importDAISYFolder: .library,
+        .addFeed: .library,
+        .copyReadingPosition: .reader,
+        .searchInBook: .reader,
+    ]
 
     /// The notification to post when this action is triggered. A key
     /// equivalent's action (`isKeyEquivalent`) is never posted by the
@@ -288,14 +313,66 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     }
 }
 
-/// Where a shortcut works.
-enum ShortcutScope: Hashable, Sendable {
-    /// Every window but the audio editor's: the Library, the readers,
-    /// Settings, and the rest, as TextMouth's shortcuts always have.
+/// Where an action's shortcuts work: in every window but an audio editor's,
+/// or in one kind of window (FR12's branch E, as the user asked on October
+/// 7: "new from text should only work in Library view and sleep timer only
+/// in reader view"). One key belongs to at most one action wherever their
+/// scopes overlap (`overlaps(_:)`), so a key may mean one thing in a Library
+/// window and another in a reader, as Shift-Command-T does.
+enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
+    /// Every window but an audio editor's: the Library, the readers, the
+    /// Record window, Settings, and the rest, as the app's shortcuts always
+    /// worked. An audio editor's window has shortcuts of its own; a menu
+    /// command works there too, as menus do.
     case app
+    /// Library windows.
+    case library
+    /// Reader windows.
+    case reader
     /// The audio editor's windows (FR04), and nowhere else: so the editor
     /// can take Space, J, K, and L for itself.
     case audioEditor
+    /// The Record window: its Record, Pause or Resume, and Stop.
+    case recording
+
+    /// The kinds of window whose key presses the scope's shortcuts match, a
+    /// sheet's counting as its window's.
+    var windowKinds: Set<ShortcutWindowKind> {
+        switch self {
+        case .app: return [.library, .reader, .recording, .other]
+        case .library: return [.library]
+        case .reader: return [.reader]
+        case .audioEditor: return [.audioEditor]
+        case .recording: return [.recording]
+        }
+    }
+
+    /// Whether the scope's shortcuts work in windows of `kind`.
+    func reaches(_ kind: ShortcutWindowKind) -> Bool {
+        windowKinds.contains(kind)
+    }
+
+    /// Whether this scope and `other` share a kind of window, where a key
+    /// held in both would mean two things.
+    func overlaps(_ other: ShortcutScope) -> Bool {
+        !windowKinds.isDisjoint(with: other.windowKinds)
+    }
+}
+
+/// The kind of window a key is pressed in, whose shortcuts in force there
+/// are those of the scopes that reach it (FR12's branch E).
+enum ShortcutWindowKind: CaseIterable, Hashable, Sendable {
+    /// A Library window.
+    case library
+    /// A reader window.
+    case reader
+    /// An audio editor's window.
+    case audioEditor
+    /// The Record window.
+    case recording
+    /// Any other window, Settings, a panel, or an alert run on its own among
+    /// them, or none at all.
+    case other
 }
 
 extension Notification.Name {
@@ -1245,10 +1322,9 @@ extension ShortcutAction {
             // Shift-Command-F: Command-F alone searches a book.
             .addFeed: [KeyBinding(key: "f", command: true, shift: true)],
             .openBook: [KeyBinding(key: "o", command: true)],
-            // Show Sleep Timer's default too, which Show Sleep Timer, listed
-            // first, keeps, as it always took the key before this menu
-            // item: New from Text has it once each works in a kind of
-            // window of its own (FR12's branch E, #1451).
+            // Show Sleep Timer's default too: New from Text has it in
+            // Library windows, and Show Sleep Timer in reader windows (FR12's
+            // branch E, #1451), where each works.
             .newFromText: [KeyBinding(key: "t", command: true, shift: true)],
             // Beside Command-N for a new Library window.
             .newRecording: [KeyBinding(key: "n", command: true, option: true)],

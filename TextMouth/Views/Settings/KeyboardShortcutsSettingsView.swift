@@ -317,12 +317,12 @@ struct ShortcutBindingRow: View {
     /// why (FR12's branch D).
     private func announcing(_ binding: KeyBinding, _ change: () -> ShortcutRefusal?) {
         let keysBefore = shortcutManager.bindings
-        let waitedBefore = shortcutManager.waitingAction(for: binding, in: action.scope)
+        let waitedBefore = shortcutManager.waitingAction(for: binding, in: shortcutManager.scope(of: action))
         if let refusal = change() {
             VoiceOverAnnouncer.announce(ShortcutsSettingsWording.refused(refusal, for: action))
             return
         }
-        let waitsNow = shortcutManager.waitingAction(for: binding, in: action.scope)
+        let waitsNow = shortcutManager.waitingAction(for: binding, in: shortcutManager.scope(of: action))
         VoiceOverAnnouncer.announce(ShortcutsSettingsWording.recorded(
             binding,
             for: action,

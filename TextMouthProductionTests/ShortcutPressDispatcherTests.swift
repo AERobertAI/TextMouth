@@ -410,11 +410,11 @@ final class ShortcutPressDispatcherTests: XCTestCase {
     func testScopesKeepTheirKeysApart() {
         let harness = Harness([.skipBackward: [plainJ], .goToLibrary: [jTwice], .editorSkipBack: [plainJ]])
 
-        harness.press(plainJ, at: 10, scope: .audioEditor)
+        harness.press(plainJ, at: 10, kind: .audioEditor)
         XCTAssertEqual(harness.performed, [.editorSkipBack], "the editor's J has no double action")
 
         harness.press(plainJ, at: 20)
-        XCTAssertFalse(harness.press(plainJ, at: 20.1, scope: nil))
+        XCTAssertFalse(harness.press(plainJ, at: 20.1, kind: nil))
         XCTAssertEqual(harness.performed, [.editorSkipBack, .skipBackward])
     }
 
@@ -436,7 +436,7 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
             let index = ShortcutPressDispatcher.Index(bindings)
 
-            XCTAssertEqual(index.actions(for: shiftCommandB, in: .app)?.single, .nextBookmark)
+            XCTAssertEqual(index.actions(for: shiftCommandB, in: .reader)?.single, .nextBookmark)
         }
     }
 
@@ -449,11 +449,14 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             .editorSkipBack: [plainJ],
         ])
 
-        XCTAssertEqual(index.actions(for: plainJ, in: .app), .init(single: .skipBackward, double: .goToLibrary, singleWaits: true))
-        XCTAssertEqual(index.actions(for: jTwice, in: .app), index.actions(for: plainJ, in: .app), "looked up by its stroke")
+        XCTAssertEqual(index.actions(for: plainJ, in: .library), .init(single: .skipBackward, double: .goToLibrary, singleWaits: true))
+        XCTAssertEqual(index.actions(for: jTwice, in: .library), index.actions(for: plainJ, in: .library), "looked up by its stroke")
         XCTAssertEqual(index.actions(for: plainJ, in: .audioEditor), .init(single: .editorSkipBack, double: nil, singleWaits: false))
-        XCTAssertNil(index.actions(for: plainK, in: .app))
-        XCTAssertEqual(index.waitingKeys, [.init(scope: .app, stroke: plainJ, single: .skipBackward, double: .goToLibrary)])
+        XCTAssertNil(index.actions(for: plainK, in: .library))
+        // J waits in every kind of window the app's actions reach.
+        XCTAssertEqual(index.waitingKeys, [ShortcutWindowKind.library, .reader, .recording, .other].map {
+            .init(kind: $0, stroke: plainJ, single: .skipBackward, double: .goToLibrary)
+        })
     }
 
     // MARK: - Through the Manager
@@ -527,26 +530,24 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
         XCTAssertEqual(index.waitingKeys, [])
         for action in ShortcutAction.allCases {
+            // In every kind of window the action's default scope reaches.
             for binding in defaults[action] ?? [] {
-                // A key equivalent's key goes on to its menu item or button
-                // (FR12's branch D), but New from Text's Shift-Command-T,
-                // which Show Sleep Timer, listed first, keeps until each
-                // works in a kind of window of its own (branch E).
-                if action.isKeyEquivalent {
-                    XCTAssertEqual(
-                        index.isKeyEquivalent(binding, in: action.scope),
-                        action != .newFromText,
-                        "\(action.rawValue)'s \(binding.configText)"
-                    )
-                    continue
-                }
-                guard let actions = index.actions(for: binding, in: action.scope) else {
-                    XCTFail("\(action.rawValue)'s \(binding.configText) is in no index")
-                    continue
-                }
-                XCTAssertFalse(actions.singleWaits, "\(action.rawValue)'s \(binding.configText) waits")
-                if let single = actions.single, let double = actions.double {
-                    XCTAssertTrue(double == single || double.escalates == single, "\(binding.configText)")
+                for kind in ShortcutWindowKind.allCases where action.defaultScope.reaches(kind) {
+                    let label = "\(action.rawValue)'s \(binding.configText) in \(kind)"
+                    // A key equivalent's key goes on to its menu item or
+                    // button (FR12's branch D).
+                    if action.isKeyEquivalent {
+                        XCTAssertTrue(index.isKeyEquivalent(binding, in: kind), label)
+                        continue
+                    }
+                    guard let actions = index.actions(for: binding, in: kind) else {
+                        XCTFail("\(label) is in no index")
+                        continue
+                    }
+                    XCTAssertFalse(actions.singleWaits, "\(label) waits")
+                    if let single = actions.single, let double = actions.double {
+                        XCTAssertTrue(double == single || double.escalates == single, label)
+                    }
                 }
             }
         }
@@ -565,7 +566,7 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(ShortcutPressDispatcher.Index(manager.bindings).waitingKeys, [])
         for action in ShortcutAction.allCases {
             for binding in manager.bindingsFor(action) {
-                XCTAssertNil(manager.waitingAction(for: binding, in: action.scope), "\(action.rawValue)'s \(binding.configText)")
+                XCTAssertNil(manager.waitingAction(for: binding, in: action.defaultScope), "\(action.rawValue)'s \(binding.configText)")
             }
         }
     }
@@ -634,12 +635,12 @@ final class ShortcutPressDispatcherTests: XCTestCase {
     func testAnAudioEditorMatchesShiftExactly() {
         let harness = Harness(ShortcutAction.defaultBindings)
 
-        XCTAssertTrue(harness.press(KeyBinding(key: "j", shift: true), at: 10, scope: .audioEditor))
-        XCTAssertFalse(harness.press(KeyBinding(key: "r", shift: true), at: 11, scope: .audioEditor))
-        XCTAssertFalse(harness.press(KeyBinding(key: "t", shift: true), at: 12, scope: .audioEditor))
+        XCTAssertTrue(harness.press(KeyBinding(key: "j", shift: true), at: 10, kind: .audioEditor))
+        XCTAssertFalse(harness.press(KeyBinding(key: "r", shift: true), at: 11, kind: .audioEditor))
+        XCTAssertFalse(harness.press(KeyBinding(key: "t", shift: true), at: 12, kind: .audioEditor))
 
         XCTAssertEqual(harness.performed, [.editorSkipBackLong])
-        XCTAssertFalse(ShortcutAction.allCases.contains { $0.scope == .audioEditor && $0.takesShiftAlong })
+        XCTAssertFalse(ShortcutAction.allCases.contains { $0.defaultScope == .audioEditor && $0.takesShiftAlong })
     }
 
     /// Shift reaches only the actions that take it along: Skip Forward and
@@ -1088,7 +1089,7 @@ final class Harness {
         _ binding: KeyBinding?,
         at time: TimeInterval,
         in window: NSWindow? = nil,
-        scope: ShortcutScope? = .app,
+        kind: ShortcutWindowKind? = .reader,
         inTextField: Bool = false,
         isRepeat: Bool = false
     ) -> ShortcutPressDispatcher.Press {
@@ -1096,7 +1097,7 @@ final class Harness {
             stroke: binding?.stroke,
             time: time,
             window: window,
-            scope: scope,
+            kind: kind,
             textInputIsFocused: inTextField,
             isRepeat: isRepeat
         )
@@ -1109,12 +1110,12 @@ final class Harness {
         _ binding: KeyBinding?,
         at time: TimeInterval,
         in window: NSWindow? = nil,
-        scope: ShortcutScope? = .app,
+        kind: ShortcutWindowKind? = .reader,
         inTextField: Bool = false,
         isRepeat: Bool = false
     ) -> Bool {
         now = time
-        return dispatcher.handle(makePress(binding, at: time, in: window, scope: scope, inTextField: inTextField, isRepeat: isRepeat))
+        return dispatcher.handle(makePress(binding, at: time, in: window, kind: kind, inTextField: inTextField, isRepeat: isRepeat))
     }
 
     /// Fires every timer started and not cancelled, as the time running out

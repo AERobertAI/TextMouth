@@ -270,16 +270,24 @@ final class TextFieldEditingKeysTests: XCTestCase {
     /// the brief summary it escalates. A key equivalent's key, a menu
     /// command's or a Record window button's (FR12's branch D), posts
     /// nothing and goes on to its menu item or button, from a field and
-    /// elsewhere. The keys are each action's in force, so New from Text,
-    /// whose Shift-Command-T is Show Sleep Timer's until each works in a kind
-    /// of window of its own, has none. Restart Sleep Timer's key, which is
-    /// no field's, is left out: its press writes the sleep timer's
-    /// diagnostic log.
+    /// elsewhere. The keys are each action's in force, each pressed in a
+    /// window where the action works (FR12's branch E): none for one working
+    /// in every window, and a reader's, a Library window, or the Record
+    /// window for one working in a kind of window. Restart Sleep Timer's
+    /// key, which is no field's, is left out: its press writes the sleep
+    /// timer's diagnostic log.
     func testNoActionFiresForAKeyAFieldTakes() throws {
         let manager = makeManager()
         try withEditorWindow { editorWindow in
             for action in ShortcutAction.allCases where action != .restartSleepTimer {
-                let keyWindow = action.scope == .audioEditor ? editorWindow : nil
+                let keyWindow: NSWindow?
+                switch action.defaultScope {
+                case .app: keyWindow = nil
+                case .audioEditor: keyWindow = editorWindow
+                case .library: keyWindow = makeShortcutWindow(.library)
+                case .reader: keyWindow = makeShortcutWindow(.reader)
+                case .recording: keyWindow = makeShortcutWindow(.recording)
+                }
                 let bindings = manager.bindingsFor(action)
                 if action.isKeyEquivalent {
                     for binding in bindings {

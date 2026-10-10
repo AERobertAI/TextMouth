@@ -90,10 +90,7 @@ final class ShortcutManagerTests: XCTestCase {
         XCTAssertEqual(manager.bindingsFor(.goToLibrary), [shiftR])
         XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [], "the edited action lost Shift-R")
         XCTAssertTrue(manager.isEdited(.releaseMediaControls), "and stays edited")
-        for scope in [ShortcutScope.app, .audioEditor] {
-            let keys = ShortcutAction.allCases.filter { $0.scope == scope }.flatMap(manager.bindingsFor)
-            XCTAssertEqual(keys.count, Set(keys).count, "a key on two actions in \(scope)")
-        }
+        XCTAssertEqual(ShortcutKeyOwners.keysOnTwoActions(in: manager.bindings, scopes: manager.scope(of:)), [])
     }
 
     // MARK: - Resetting

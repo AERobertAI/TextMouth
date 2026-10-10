@@ -252,7 +252,7 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.removeFromReadingList.title, "Remove from Reading List")
         for action in [ShortcutAction.addToReadingList, .removeFromReadingList] {
             XCTAssertEqual(action.category, "Library", action.rawValue)
-            XCTAssertEqual(action.scope, .app, action.rawValue)
+            XCTAssertEqual(action.defaultScope, .app, action.rawValue)
             XCTAssertEqual(ShortcutAction.defaultBindings[action], [], action.rawValue)
         }
         XCTAssertEqual(ShortcutAction.addToReadingList.notificationName, .addToReadingList)

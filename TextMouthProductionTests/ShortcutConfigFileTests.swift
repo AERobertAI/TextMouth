@@ -188,7 +188,7 @@ final class ShortcutConfigFileTests: XCTestCase {
         XCTAssertEqual(saved.keyboardShortcuts["Add to Reading List"], "default: none")
         // The menu commands' keys, newer than the map (FR12's branch D).
         XCTAssertEqual(saved.keyboardShortcuts["Open Book…"], "default: command+o")
-        XCTAssertEqual(saved.keyboardShortcuts["New from Text…"], "default: none", "Show Sleep Timer keeps Shift-Command-T")
+        XCTAssertEqual(saved.keyboardShortcuts["New from Text…"], "default: shift+command+t", "each in its own kind of window")
         XCTAssertEqual(saved.keyboardShortcuts["Show Sleep Timer"], "default: shift+command+t")
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
         XCTAssertEqual(manager.bindingsFor(.nextBookmark), [optionShiftCommandB])
@@ -300,8 +300,8 @@ final class ShortcutConfigFileTests: XCTestCase {
 
     /// This user's record and config.json with the menu commands' keys
     /// (FR12's branch D, item 5): a file written before them gains each as
-    /// "default: " and its key, New from Text "default: none" while Show
-    /// Sleep Timer keeps Shift-Command-T; Release Media Controls keeps
+    /// "default: " and its key, New from Text Shift-Command-T, which Show
+    /// Sleep Timer has in reader windows; Release Media Controls keeps
     /// Shift-R as the user's own, every other action follows the defaults,
     /// and the record is left as it was. A second launch changes nothing.
     func testAFileWrittenBeforeTheMenuKeysGainsThemAsDefaults() throws {
@@ -320,7 +320,7 @@ final class ShortcutConfigFileTests: XCTestCase {
         let saved = try ConfigService.decode(Data(contentsOf: url))
         let menuKeys: [String: ShortcutListing] = [
             "Open Book…": "default: command+o",
-            "New from Text…": "default: none",
+            "New from Text…": "default: shift+command+t",
             "New Recording…": "default: option+command+n",
             "Import DAISY Folder…": "default: shift+command+o",
             "Add Feed…": "default: shift+command+f",

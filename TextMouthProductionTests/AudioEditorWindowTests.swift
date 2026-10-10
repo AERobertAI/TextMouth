@@ -24,7 +24,7 @@ final class AudioEditorWindowTests: XCTestCase {
 
     /// The editor's commands, in the order Settings lists them.
     private var editorActions: [ShortcutAction] {
-        ShortcutAction.allCases.filter { $0.scope == .audioEditor }
+        ShortcutAction.allCases.filter { $0.defaultScope == .audioEditor }
     }
 
     // MARK: - The Buttons

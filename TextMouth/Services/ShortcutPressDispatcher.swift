@@ -6,10 +6,11 @@ import AppKit
 /// section 2 of the design): the one place a key press becomes an action.
 ///
 /// A press is looked up in an index of the bindings in force (`Index`),
-/// built for each scope from the shortcut manager's bindings and rebuilt
-/// whenever they change, so which action a key triggers never depends on the
-/// order of a dictionary, as it did while presses were matched by walking
-/// one. For one key, meaning one key with the same modifiers in one scope:
+/// built for each kind of window from the shortcut manager's bindings and
+/// the scopes they work in (FR12's branch E), and rebuilt whenever they
+/// change, so which action a key triggers never depends on the order of a
+/// dictionary, as it did while presses were matched by walking one. For one
+/// key, meaning one key with the same modifiers in one kind of window:
 /// - With a single action only, each press acts at once, as before.
 /// - With a double action only, the first press is taken and does nothing,
 ///   and a second press within the double-press time runs the double action.
@@ -87,9 +88,10 @@ final class ShortcutPressDispatcher {
         var time: TimeInterval
         /// The window that was key, or nil when none was.
         var window: NSWindow?
-        /// The scope whose shortcuts the press matches, or nil where none
-        /// do, as in a sheet over an audio editor.
-        var scope: ShortcutScope?
+        /// The kind of window the press was made in, whose scopes'
+        /// shortcuts it matches (FR12's branch E), or nil where none do, as
+        /// in a sheet over an audio editor.
+        var kind: ShortcutWindowKind?
         /// Whether a text field or text view had the keyboard.
         var textInputIsFocused: Bool
         /// Whether the press is a held key's automatic repeat.
@@ -116,7 +118,7 @@ final class ShortcutPressDispatcher {
 
     // MARK: State
 
-    /// The bindings in force, by scope and key.
+    /// The bindings in force, by kind of window and key.
     private(set) var index: Index
     /// How soon a second press must follow the first to make a double
     /// press, in seconds, read at each press.
@@ -144,6 +146,8 @@ final class ShortcutPressDispatcher {
     /// `perform`.
     /// - Parameters:
     ///   - bindings: Every action's keys in force.
+    ///   - scopes: Where each action's keys work; an action left out works
+    ///     where its default scope reaches.
     ///   - doublePressTime: Reads the double-press time, in seconds.
     ///   - clock: Reads the time on the events' time line; the Mac's uptime
     ///     unless a test passes its own.
@@ -154,6 +158,7 @@ final class ShortcutPressDispatcher {
     ///   - perform: Posts a triggered action.
     init(
         bindings: [ShortcutAction: [KeyBinding]],
+        scopes: [ShortcutAction: ShortcutScope] = [:],
         doublePressTime: @escaping @MainActor () -> TimeInterval,
         clock: @escaping Clock = { ProcessInfo.processInfo.systemUptime },
         startTimer: @escaping StartTimer = { delay, fire in MainQueuePressTimer(delay: delay, fire: fire) },
@@ -165,14 +170,15 @@ final class ShortcutPressDispatcher {
         self.startTimer = startTimer
         self.escalation = escalation
         self.perform = perform
-        index = Index(bindings, escalation: escalation)
+        index = Index(bindings, scopes: scopes, escalation: escalation)
     }
 
-    /// Takes `bindings` as the bindings in force. A single press still
-    /// waiting acts at once, and a double press's further presses count
-    /// again, since the keys they were pressed for may have changed.
-    func rebuild(from bindings: [ShortcutAction: [KeyBinding]]) {
-        index = Index(bindings, escalation: escalation)
+    /// Takes `bindings`, working where `scopes` say, as the bindings in
+    /// force. A single press still waiting acts at once, and a double press's
+    /// further presses count again, since the keys they were pressed for may
+    /// have changed.
+    func rebuild(from bindings: [ShortcutAction: [KeyBinding]], scopes: [ShortcutAction: ShortcutScope] = [:]) {
+        index = Index(bindings, scopes: scopes, escalation: escalation)
         runWaitingSingle()
         state = .idle
     }
@@ -220,7 +226,7 @@ final class ShortcutPressDispatcher {
     /// Acts on `press`, the first press of its key, or a repeat, now that
     /// no earlier press is waiting on it.
     private func act(on press: Press, match: Match?) -> Bool {
-        guard let match, let stroke = press.stroke, let scope = press.scope else { return false }
+        guard let match, let stroke = press.stroke, let kind = press.kind else { return false }
         if press.isRepeat {
             // A held key repeats its single action, unless the key has a
             // double action, whose presses its repeats would fake.
@@ -236,7 +242,7 @@ final class ShortcutPressDispatcher {
             return true
         }
         let first = FirstPress(
-            key: PressedKey(stroke: stroke, scope: scope, window: PressWindow(press.window)),
+            key: PressedKey(stroke: stroke, kind: kind, window: PressWindow(press.window)),
             time: press.time,
             matchedStroke: match.stroke,
             shiftHeld: match.shiftHeld,
@@ -298,7 +304,7 @@ final class ShortcutPressDispatcher {
     private struct Match {
         /// The binding it matched, as a single press.
         let stroke: KeyBinding
-        /// That key's actions in the press's scope.
+        /// That key's actions in the press's kind of window.
         let actions: Index.Actions
         /// Whether Shift was held beyond the binding's own modifiers.
         let shiftHeld: Bool
@@ -319,19 +325,19 @@ final class ShortcutPressDispatcher {
     /// before that, so Shift-Command-P stays Copy Reading Position's
     /// whatever action has Command-P.
     private func match(_ press: Press) -> Match? {
-        guard let stroke = press.stroke, let scope = press.scope,
+        guard let stroke = press.stroke, let kind = press.kind,
               KeyboardShortcutManager.shouldHandle(binding: stroke, whenTextInputIsFocused: press.textInputIsFocused),
-              !index.isKeyEquivalent(stroke, in: scope),
+              !index.isKeyEquivalent(stroke, in: kind),
               !(press.keyWindowIsDialog && stroke.isDialogKey) else {
             return nil
         }
-        if let actions = index.actions(for: stroke, in: scope) {
+        if let actions = index.actions(for: stroke, in: kind) {
             return Match(stroke: stroke, actions: actions, shiftHeld: false)
         }
         guard stroke.shift, !press.textInputIsFocused else { return nil }
         var unshifted = stroke
         unshifted.shift = false
-        guard let actions = index.actions(for: unshifted, in: scope)?.takingShiftAlong() else { return nil }
+        guard let actions = index.actions(for: unshifted, in: kind)?.takingShiftAlong() else { return nil }
         return Match(
             stroke: unshifted,
             actions: actions,
@@ -348,14 +354,16 @@ final class ShortcutPressDispatcher {
 // MARK: - The Index
 
 extension ShortcutPressDispatcher {
-    /// Each key's single and double action in force, for each scope, built
-    /// in the order Settings lists the actions, so the same bindings always
-    /// make the same index. The bindings in force give each key one owner
-    /// in each scope (`ShortcutEdits.effectiveBindings(defaults:)`), its
-    /// single and double presses counting as two keys; should two actions
-    /// hold one anyway, the one Settings lists first has it here.
+    /// Each key's single and double action in force, for each kind of
+    /// window, an action's keys entered in every kind its scope reaches
+    /// (FR12's branch E), built in the order Settings lists the actions, so
+    /// the same bindings always make the same index. The bindings in force
+    /// give each key one owner in each kind of window
+    /// (`ShortcutEdits.effectiveBindings(defaults:)`), its single and double
+    /// presses counting as two keys; should two actions hold one anyway, the
+    /// one Settings lists first has it here.
     struct Index {
-        /// One key's actions in one scope.
+        /// One key's actions in one kind of window.
         struct Actions: Equatable {
             /// The action a single press runs, if any.
             var single: ShortcutAction?
@@ -380,8 +388,8 @@ extension ShortcutPressDispatcher {
 
         /// A key whose single press waits, and the two actions that make it.
         struct WaitingKey: Equatable {
-            /// The scope it waits in.
-            let scope: ShortcutScope
+            /// The kind of window it waits in.
+            let kind: ShortcutWindowKind
             /// The key, as a single press.
             let stroke: KeyBinding
             /// The action its single press runs, after the wait.
@@ -390,70 +398,79 @@ extension ShortcutPressDispatcher {
             let double: ShortcutAction
         }
 
-        /// Each scope's keys, with their actions.
-        private var actionsByScope: [ShortcutScope: [KeyBinding: Actions]] = [:]
-        /// Each scope's keys that are key equivalents (FR12's branch D), as
-        /// single presses: a menu item or a button acts on each, and a press
-        /// of one goes on to it untouched.
-        private var keyEquivalentsByScope: [ShortcutScope: Set<KeyBinding>] = [:]
+        /// Each kind of window's keys, with their actions.
+        private var actionsByKind: [ShortcutWindowKind: [KeyBinding: Actions]] = [:]
+        /// Each kind of window's keys that are key equivalents (FR12's
+        /// branch D), as single presses: a menu item or a button acts on
+        /// each, and a press of one goes on to it untouched.
+        private var keyEquivalentsByKind: [ShortcutWindowKind: Set<KeyBinding>] = [:]
         /// Every key whose single press waits, in the order Settings lists
         /// their actions.
         private(set) var waitingKeys: [WaitingKey] = []
 
-        /// The index of `bindings`, telling which double actions escalate
-        /// which single ones by `escalation`. A key equivalent's key is
-        /// noted as one, never given to its action, which the shortcut
-        /// manager never posts; it counts as pressed once and twice, so
-        /// between a key equivalent and another action holding its key,
-        /// once or twice, the one Settings lists first has it here.
-        init(_ bindings: [ShortcutAction: [KeyBinding]], escalation: Escalation = { $0.escalates }) {
-            var keyOrder: [(scope: ShortcutScope, stroke: KeyBinding)] = []
+        /// The index of `bindings`, each action's working where `scopes`
+        /// says, or where its default scope reaches when left out, telling
+        /// which double actions escalate which single ones by `escalation`.
+        /// A key equivalent's key is noted as one, never given to its
+        /// action, which the shortcut manager never posts; it counts as
+        /// pressed once and twice, so between a key equivalent and another
+        /// action holding its key, once or twice, the one Settings lists
+        /// first has it here.
+        init(
+            _ bindings: [ShortcutAction: [KeyBinding]],
+            scopes: [ShortcutAction: ShortcutScope] = [:],
+            escalation: Escalation = { $0.escalates }
+        ) {
+            var keyOrder: [(kind: ShortcutWindowKind, stroke: KeyBinding)] = []
             for action in ShortcutAction.allCases {
+                let scope = scopes[action] ?? action.defaultScope
                 for binding in bindings[action] ?? [] {
                     let stroke = binding.stroke
-                    if action.isKeyEquivalent {
-                        if actionsByScope[action.scope]?[stroke] == nil {
-                            keyEquivalentsByScope[action.scope, default: []].insert(stroke)
+                    for kind in ShortcutWindowKind.allCases where scope.reaches(kind) {
+                        if action.isKeyEquivalent {
+                            if actionsByKind[kind]?[stroke] == nil {
+                                keyEquivalentsByKind[kind, default: []].insert(stroke)
+                            }
+                            continue
                         }
-                        continue
+                        guard keyEquivalentsByKind[kind]?.contains(stroke) != true else { continue }
+                        var actions = actionsByKind[kind]?[stroke] ?? Actions()
+                        if actions == Actions() {
+                            keyOrder.append((kind, stroke))
+                        }
+                        if binding.isDoublePress {
+                            actions.double = actions.double ?? action
+                        } else {
+                            actions.single = actions.single ?? action
+                        }
+                        actionsByKind[kind, default: [:]][stroke] = actions
                     }
-                    guard keyEquivalentsByScope[action.scope]?.contains(stroke) != true else { continue }
-                    var actions = actionsByScope[action.scope]?[stroke] ?? Actions()
-                    if actions == Actions() {
-                        keyOrder.append((action.scope, stroke))
-                    }
-                    if binding.isDoublePress {
-                        actions.double = actions.double ?? action
-                    } else {
-                        actions.single = actions.single ?? action
-                    }
-                    actionsByScope[action.scope, default: [:]][stroke] = actions
                 }
             }
             // Which single presses wait, now that every key's actions are known.
-            for (scope, stroke) in keyOrder {
-                guard var actions = actionsByScope[scope]?[stroke], let single = actions.single, let double = actions.double else {
+            for (kind, stroke) in keyOrder {
+                guard var actions = actionsByKind[kind]?[stroke], let single = actions.single, let double = actions.double else {
                     continue
                 }
                 actions.singleWaits = double != single && escalation(double) != single
-                actionsByScope[scope]?[stroke] = actions
+                actionsByKind[kind]?[stroke] = actions
                 if actions.singleWaits {
-                    waitingKeys.append(WaitingKey(scope: scope, stroke: stroke, single: single, double: double))
+                    waitingKeys.append(WaitingKey(kind: kind, stroke: stroke, single: single, double: double))
                 }
             }
         }
 
-        /// The actions of the key `stroke`, pressed in `scope`, or nil when
-        /// it has none there.
-        func actions(for stroke: KeyBinding, in scope: ShortcutScope) -> Actions? {
-            actionsByScope[scope]?[stroke.stroke]
+        /// The actions of the key `stroke`, pressed in a window of `kind`, or
+        /// nil when it has none there.
+        func actions(for stroke: KeyBinding, in kind: ShortcutWindowKind) -> Actions? {
+            actionsByKind[kind]?[stroke.stroke]
         }
 
-        /// Whether the key `stroke`, pressed in `scope`, is a key
+        /// Whether the key `stroke`, pressed in a window of `kind`, is a key
         /// equivalent's key there (FR12's branch D), which a menu item or a
         /// button acts on.
-        func isKeyEquivalent(_ stroke: KeyBinding, in scope: ShortcutScope) -> Bool {
-            keyEquivalentsByScope[scope]?.contains(stroke.stroke) == true
+        func isKeyEquivalent(_ stroke: KeyBinding, in kind: ShortcutWindowKind) -> Bool {
+            keyEquivalentsByKind[kind]?.contains(stroke.stroke) == true
         }
     }
 }
@@ -472,20 +489,21 @@ extension ShortcutPressDispatcher {
         case afterDouble(Pressed)
     }
 
-    /// A key as it was pressed: the key with its modifiers, in a scope and
-    /// a window, which every later press of a double press must share.
+    /// A key as it was pressed: the key with its modifiers, in a kind of
+    /// window and a window, which every later press of a double press must
+    /// share.
     private struct PressedKey {
         /// The key pressed, as a single press.
         let stroke: KeyBinding
-        /// The scope it was pressed in.
-        let scope: ShortcutScope
+        /// The kind of window it was pressed in.
+        let kind: ShortcutWindowKind
         /// The window it was pressed in.
         let window: PressWindow
 
         /// Whether `press` is of this key, with the same modifiers, in the
-        /// same scope and window.
+        /// same kind of window and window.
         func isPressed(by press: Press) -> Bool {
-            press.stroke == stroke && press.scope == scope && window.isSame(as: press.window)
+            press.stroke == stroke && press.kind == kind && window.isSame(as: press.window)
         }
     }
 

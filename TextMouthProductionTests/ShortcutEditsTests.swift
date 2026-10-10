@@ -117,14 +117,11 @@ final class ShortcutEditsTests: XCTestCase {
 
     // MARK: - The Keys in Force
 
-    /// With nothing edited, every action has exactly its defaults, but New
-    /// from Text: its Shift-Command-T is Show Sleep Timer's default too,
-    /// which Show Sleep Timer, listed first, keeps until each works in a
-    /// kind of window of its own (FR12's branch E).
+    /// With nothing edited, every action has exactly its defaults: New from
+    /// Text and Show Sleep Timer both have Shift-Command-T, each in its own
+    /// kind of window (FR12's branch E).
     func testAnEmptyRecordGivesEveryActionItsDefaults() {
-        var expected = ShortcutAction.defaultBindings
-        expected[.newFromText] = []
-        XCTAssertEqual(ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings), expected)
+        XCTAssertEqual(ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings), ShortcutAction.defaultBindings)
     }
 
     /// A default changed by a later release reaches every action the user
@@ -188,10 +185,7 @@ final class ShortcutEditsTests: XCTestCase {
         XCTAssertEqual(inForce[.showBookmarkList], [])
         XCTAssertEqual(inForce[.whereAmI], [plainW], "the editor's W leaves the app's alone")
         XCTAssertEqual(inForce[.editorWhereAmI], [], "the editor's own Where Am I? goes without it")
-        for scope in [ShortcutScope.app, .audioEditor] {
-            let keys = ShortcutAction.allCases.filter { $0.scope == scope }.flatMap { inForce[$0] ?? [] }
-            XCTAssertEqual(keys.count, Set(keys).count, "a key in force twice in \(scope)")
-        }
+        XCTAssertEqual(ShortcutKeyOwners.keysOnTwoActions(in: inForce, scopes: edits.scope(of:)), [])
     }
 
     // MARK: - Changing a Record

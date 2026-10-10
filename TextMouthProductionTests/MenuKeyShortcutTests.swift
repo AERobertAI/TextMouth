@@ -96,52 +96,56 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertFalse(KeyBinding(key: "o", control: true).canBeKeyEquivalent, "Control-O opens a line in a field")
     }
 
-    // MARK: - Shift-Command-T Until Branch E
+    // MARK: - Shift-Command-T in Its Two Kinds of Window (FR12's Branch E)
 
-    /// Show Sleep Timer keeps Shift-Command-T, its default before New from
-    /// Text's, so New from Text's menu item shows no key rather than one
-    /// that does something else; once Show Sleep Timer lets it go, New from
-    /// Text's menu has it.
-    func testShowSleepTimerKeepsShiftCommandTAndNewFromTextShowsNoKey() {
-        let manager = makeManager("sleep-timer-keeps")
+    /// New from Text works in Library windows and Show Sleep Timer in reader
+    /// windows, as the user chose, so both have Shift-Command-T (#1451): in
+    /// a reader the manager takes it for Show Sleep Timer; in a Library
+    /// window it goes on to New from Text's menu item, which shows it; and in
+    /// any other window, Settings's say, it is neither's.
+    func testShiftCommandTIsEachsInItsOwnKindOfWindow() throws {
+        let center = NotificationCenter()
+        let manager = makeManager("shift-command-t", center: center)
+        let posted = PostedShortcutActions(on: center)
 
+        XCTAssertEqual(ShortcutAction.newFromText.defaultScope, .library)
+        XCTAssertEqual(ShortcutAction.showSleepTimer.defaultScope, .reader)
         XCTAssertEqual(manager.bindingsFor(.showSleepTimer), [shiftCommandT])
-        XCTAssertEqual(manager.bindingsFor(.newFromText), [])
-        XCTAssertNil(manager.keyEquivalent(for: .newFromText))
-        XCTAssertEqual(manager.keyEquivalent(for: .openBook), commandO)
+        XCTAssertEqual(manager.keyEquivalent(for: .newFromText), shiftCommandT)
         XCTAssertNil(manager.keyEquivalent(for: .showSleepTimer), "the manager matches its own actions' keys")
 
-        manager.updateBindings(for: .showSleepTimer, to: [KeyBinding(key: "t", control: true)])
-
-        XCTAssertEqual(manager.keyEquivalent(for: .newFromText), shiftCommandT)
-        XCTAssertFalse(manager.isEdited(.newFromText), "having its default again leaves it TextMouth's")
+        let press = try ShortcutKeyPresses.keyPress(of: shiftCommandT)
+        XCTAssertTrue(manager.handleKeyEvent(press, keyWindow: makeShortcutWindow(.reader), firstResponder: nil))
+        XCTAssertEqual(posted.names, [ShortcutAction.showSleepTimer.rawValue])
+        XCTAssertFalse(manager.handleKeyEvent(press, keyWindow: makeShortcutWindow(.library), firstResponder: nil))
+        XCTAssertFalse(manager.handleKeyEvent(press, keyWindow: makeShortcutWindow(.other), firstResponder: nil))
+        XCTAssertEqual(posted.names, [ShortcutAction.showSleepTimer.rawValue], "nothing else posted")
     }
 
     /// The Shortcuts tab says, for an action following its defaults, which
-    /// action has a default key it goes without: New from Text's row says
-    /// Show Sleep Timer has its Shift-Command-T, and Book Info's says Where
+    /// action has a default key it goes without: no default does with
+    /// nothing edited, now New from Text and Show Sleep Timer each have
+    /// Shift-Command-T in its own kind of window; Book Info's row says Where
     /// Am I? has Command-I once given it, as Open Book's names the action
     /// whose double press keeps Command-O from its menu item; an edited
     /// action says nothing of the kind.
     func testTheTabSaysWhoHasADefaultKey() {
         let manager = makeManager("defaults-held")
         let commandI = KeyBinding(key: "i", command: true)
-
-        XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .newFromText), [DefaultKeyHeldElsewhere(key: shiftCommandT, holder: .showSleepTimer)])
-        XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .openBook), [])
-        XCTAssertEqual(
-            ShortcutsSettingsWording.rowLabel(
-                for: .newFromText,
-                keys: [],
-                isEdited: false,
-                defaultsHeldElsewhere: manager.defaultKeysHeldElsewhere(for: .newFromText)
-            ),
-            "New from Text…: No shortcut. Show Sleep Timer has its default, Shift + Command + T."
-        )
+        XCTAssertEqual(ShortcutAction.allCases.flatMap(manager.defaultKeysHeldElsewhere(for:)), [])
 
         manager.addBinding(commandI, to: .whereAmI)
         manager.updateBindings(for: .goToLibrary, to: [commandO.asDoublePress(true)])
 
+        XCTAssertEqual(
+            ShortcutsSettingsWording.rowLabel(
+                for: .showBookInfo,
+                keys: [],
+                isEdited: false,
+                defaultsHeldElsewhere: manager.defaultKeysHeldElsewhere(for: .showBookInfo)
+            ),
+            "Book Info: No shortcut. Where Am I? has its default, Command + I."
+        )
         XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .showBookInfo), [DefaultKeyHeldElsewhere(key: commandI, holder: .whereAmI)])
         XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .openBook), [DefaultKeyHeldElsewhere(key: commandO, holder: .goToLibrary)])
         XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .whereAmI), [], "an edited action's keys are the user's")
@@ -154,44 +158,44 @@ final class MenuKeyShortcutTests: XCTestCase {
     // MARK: - The Manager Never Takes Them
 
     /// Every key equivalent's key in force goes on to its menu item or
-    /// button, from a field and elsewhere, with nothing posted; Shift-Command-T,
-    /// Show Sleep Timer's, is the manager's.
+    /// button, pressed in a window where its command works, from a field and
+    /// elsewhere, with nothing posted.
     func testTheManagerLeavesEveryKeyEquivalentsKeyToItsItem() throws {
         let center = NotificationCenter()
         let manager = makeManager("leaves-key-equivalents", center: center)
         let posted = PostedShortcutActions(on: center)
         let firstResponders: [NSResponder?] = [nil, NSTextView(), NSTableView()]
 
-        for action in ShortcutAction.keyEquivalentActions where action != .newFromText {
+        for action in ShortcutAction.keyEquivalentActions {
             let key = try XCTUnwrap(manager.keyEquivalent(for: action), action.rawValue)
+            let kind = try XCTUnwrap(ShortcutWindowKind.allCases.first(where: action.defaultScope.reaches))
+            let window = makeShortcutWindow(kind)
             for firstResponder in firstResponders {
                 XCTAssertFalse(
-                    manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: key), keyWindow: nil, firstResponder: firstResponder),
+                    manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: key), keyWindow: window, firstResponder: firstResponder),
                     action.rawValue
                 )
             }
         }
         XCTAssertEqual(posted.names, [])
-
-        XCTAssertTrue(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: shiftCommandT), keyWindow: nil, firstResponder: nil))
-        XCTAssertEqual(posted.names, [ShortcutAction.showSleepTimer.rawValue])
     }
 
-    /// Shift never turns a key equivalent's key into another action's:
-    /// with Command-P given to Play / Pause, Shift-Command-P stays Copy
-    /// Reading Position's, while Command-P plays.
+    /// Shift never turns a key equivalent's key into another action's: with
+    /// Command-P given to Skip Forward, which takes Shift along, Shift-Command-P
+    /// stays Copy Reading Position's in a reader, while Command-P skips.
     func testShiftNeverTurnsAKeyEquivalentsKeyIntoAnotherAction() throws {
         let center = NotificationCenter()
         let manager = makeManager("shift-and-key-equivalents", center: center)
         let posted = PostedShortcutActions(on: center)
+        let reader = makeShortcutWindow(.reader)
 
-        manager.updateBindings(for: .togglePlayback, to: [commandP])
+        manager.updateBindings(for: .skipForward, to: [commandP])
 
         XCTAssertEqual(manager.bindingsFor(.recordingPauseOrResume), [], "the Record window's Pause or Resume lost Command-P")
-        XCTAssertFalse(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: shiftCommandP), keyWindow: nil, firstResponder: nil))
+        XCTAssertFalse(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: shiftCommandP), keyWindow: reader, firstResponder: nil))
         XCTAssertEqual(posted.names, [])
-        XCTAssertTrue(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: commandP), keyWindow: nil, firstResponder: nil))
-        XCTAssertEqual(posted.names, [ShortcutAction.togglePlayback.rawValue])
+        XCTAssertTrue(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: commandP), keyWindow: reader, firstResponder: nil))
+        XCTAssertEqual(posted.names, [ShortcutAction.skipForward.rawValue])
     }
 
     // MARK: - One Owner for a Key Equivalent's Key
@@ -281,15 +285,23 @@ final class MenuKeyShortcutTests: XCTestCase {
     /// key, once or twice, leaves it to the one Settings lists first.
     func testTheIndexNotesKeyEquivalentsAndTheFirstListedHasAKey() {
         let defaults = ShortcutPressDispatcher.Index(ShortcutAction.defaultBindings)
-        XCTAssertTrue(defaults.isKeyEquivalent(commandO, in: .app))
-        XCTAssertNil(defaults.actions(for: commandO, in: .app))
+        for kind in [ShortcutWindowKind.library, .reader, .recording, .other] {
+            XCTAssertTrue(defaults.isKeyEquivalent(commandO, in: kind), "\(kind)")
+            XCTAssertNil(defaults.actions(for: commandO, in: kind), "\(kind)")
+        }
         XCTAssertFalse(defaults.isKeyEquivalent(commandO, in: .audioEditor))
-        XCTAssertFalse(defaults.isKeyEquivalent(shiftCommandT, in: .app), "Show Sleep Timer, listed first, has it")
-        XCTAssertEqual(defaults.actions(for: shiftCommandT, in: .app)?.single, .showSleepTimer)
+        // Shift-Command-T is New from Text's key equivalent in a Library
+        // window, Show Sleep Timer's in a reader, and neither's elsewhere.
+        XCTAssertTrue(defaults.isKeyEquivalent(shiftCommandT, in: .library))
+        XCTAssertNil(defaults.actions(for: shiftCommandT, in: .library))
+        XCTAssertFalse(defaults.isKeyEquivalent(shiftCommandT, in: .reader))
+        XCTAssertEqual(defaults.actions(for: shiftCommandT, in: .reader)?.single, .showSleepTimer)
+        XCTAssertFalse(defaults.isKeyEquivalent(shiftCommandT, in: .other))
+        XCTAssertNil(defaults.actions(for: shiftCommandT, in: .other))
 
         let raw = ShortcutPressDispatcher.Index([.showBookInfo: [commandO.asDoublePress(true)], .openBook: [commandO]])
-        XCTAssertFalse(raw.isKeyEquivalent(commandO, in: .app))
-        XCTAssertEqual(raw.actions(for: commandO, in: .app)?.double, .showBookInfo)
+        XCTAssertFalse(raw.isKeyEquivalent(commandO, in: .library))
+        XCTAssertEqual(raw.actions(for: commandO, in: .library)?.double, .showBookInfo)
     }
 
     // MARK: - The Menus and the Record Window Show the Keys in Force
@@ -319,7 +331,7 @@ final class MenuKeyShortcutTests: XCTestCase {
         }
         let manager = makeManager("keyboard-shortcuts")
         XCTAssertEqual(manager.keyboardShortcut(for: .openBook)?.key, "o")
-        XCTAssertNil(manager.keyboardShortcut(for: .newFromText), "Show Sleep Timer has its key")
+        XCTAssertEqual(manager.keyboardShortcut(for: .newFromText)?.key, "t")
         XCTAssertNil(manager.keyboardShortcut(for: .whereAmI), "no key equivalent's action")
     }
 
@@ -343,8 +355,8 @@ final class MenuKeyShortcutTests: XCTestCase {
     }
 
     /// The running app's menus show each menu command's key in force:
-    /// Command-O for Open Book…, none for New from Text… while Show Sleep
-    /// Timer has Shift-Command-T, Option-Command-N for New Recording…,
+    /// Command-O for Open Book…, Shift-Command-T for New from Text… (FR12's
+    /// branch E), Option-Command-N for New Recording…,
     /// Shift-Command-O and Shift-Command-F in the Library menu, and
     /// Shift-Command-P and Command-F in the Playback menu. Given another key
     /// in the app's own store, a test sandbox's, Open Book… shows it, and
@@ -356,7 +368,7 @@ final class MenuKeyShortcutTests: XCTestCase {
         }
         let shown: [(menu: String, action: ShortcutAction, key: String, modifiers: NSEvent.ModifierFlags)] = [
             ("File", .openBook, "o", .command),
-            ("File", .newFromText, "", []),
+            ("File", .newFromText, "t", [.shift, .command]),
             ("File", .newRecording, "n", [.option, .command]),
             ("Library", .importDAISYFolder, "o", [.shift, .command]),
             ("Library", .addFeed, "f", [.shift, .command]),

@@ -81,7 +81,7 @@ final class ShortcutMigrationTests: XCTestCase {
     /// existed, without its 41 actions, while config.json lists all 72.
     func testThisUsersShortcutsSavedBeforeTheAudioEditorMoveTheSame() {
         let fileLists = mapShapedLikeThisUsers()
-        let savedMap = mapShapedLikeThisUsers(including: Self.actionsOfTheOctober5Build.filter { $0.scope == .app })
+        let savedMap = mapShapedLikeThisUsers(including: Self.actionsOfTheOctober5Build.filter { $0.defaultScope != .audioEditor })
         XCTAssertEqual(savedMap.count, 31)
 
         let migrated = ShortcutEdits.migrating(savedMap: savedMap, fileLists: fileLists)
@@ -236,7 +236,7 @@ final class ShortcutMigrationTests: XCTestCase {
     /// Settings would: what other actions hold is read from the file's
     /// lists where they differ from the saved map.
     func testAKeyMovedInTheFileWhileClosedLeavesTheLoserUnedited() {
-        let savedMap = ShortcutAction.defaultBindings.filter { $0.key.scope == .app }
+        let savedMap = ShortcutAction.defaultBindings.filter { $0.key.defaultScope != .audioEditor }
         var fileLists = savedMap
         fileLists[.whereAmI] = [plainW, plainK]
         fileLists[.togglePlayback] = [space]
