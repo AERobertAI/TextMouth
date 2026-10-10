@@ -54,7 +54,10 @@ extension ReaderViewModel {
 
     /// Go to Percent's answer: jumps to the percent `text` names and returns
     /// nil, or returns why it will not do, as a sentence the panel shows and
-    /// announces. An empty field is refused rather than taken as 0.
+    /// announces. An empty field is refused rather than taken as 0. The
+    /// panel never hands it the field's unchanged starting value, which
+    /// would move the place by what its rounding left off
+    /// (`JumpFieldOutcome`).
     func goToPercent(typed text: String) -> String? {
         switch JumpInputValidator.percent(text) {
         case .value(let percent):
@@ -69,7 +72,9 @@ extension ReaderViewModel {
     /// book's clock (`jumpToTime(seconds:)`) and returns nil, or returns
     /// why it will not do: not a time, or after the end of the clock
     /// (`JumpInputValidator.time`), as a sentence the panel shows and
-    /// announces.
+    /// announces. The panel never hands it the field's unchanged starting
+    /// value, which would move the place back by the fraction of a second
+    /// it leaves off (`JumpFieldOutcome`).
     func goToTime(typed text: String) -> String? {
         switch JumpInputValidator.time(text, length: placeClock?.length ?? 0, count: timeCount) {
         case .value(let time):
@@ -136,9 +141,19 @@ extension ReaderViewModel {
     /// Go to Time's starting value: the reading position's time on the
     /// book's clock, in whole seconds as every time is shown ("2:13:05"), at
     /// every speed the same for an audiobook; "0:00" before the book loads.
+    /// It falls up to a second before the place, so Jump on it unchanged
+    /// moves nothing (`JumpFieldOutcome.unchanged`, REV14).
     var goToTimeStartingText: String {
         TimeFormatting.format(
             placeClock?.time(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset) ?? 0
         )
+    }
+
+    /// Go to Percent's starting value: the reading position's percent
+    /// through the book as the status row shows it, to a tenth ("47.0"). It
+    /// falls up to 0.05 percent from the place, so Jump on it unchanged moves
+    /// nothing (`JumpFieldOutcome.unchanged`, REV14).
+    var goToPercentStartingText: String {
+        String(format: "%.1f", displayPercentComplete)
     }
 }

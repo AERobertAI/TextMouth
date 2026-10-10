@@ -60,6 +60,50 @@ enum JumpInputValidator {
     }
 }
 
+/// What Jump, or Return, does with what a jump panel's field holds
+/// (`JumpFieldPanel`): nothing at all while the field holds the value it
+/// started at, and otherwise the jump the panel makes, or its refusal.
+///
+/// A starting value names the reading position as every time and percent
+/// is shown, so it misses the place itself by a little: a time drops its
+/// fraction of a second, so at 2:13:05.7 Go to Time starts at "2:13:05",
+/// and an audiobook finished at 9:41:07.4 at "9:41:07"; a percent is
+/// rounded to a tenth. Taken as typed, Go to Time's moved the place back by
+/// what the field leaves off, up to a second of an audiobook or about 8
+/// words of a text book, or onto a heading starting in that second; it also
+/// kept a Return position, said "Jumped to…", restarted a playing text
+/// book's speech, and left a finished book short of its end (REV14). Go to
+/// Percent's moved the place by up to 0.05 percent of the book.
+enum JumpFieldOutcome: Equatable {
+    /// The field holds the value it started at: nothing moves and nothing
+    /// is said, and the panel closes as Cancel closes it.
+    case unchanged
+    /// The place moved to what was typed, and the panel closes.
+    case jumped
+    /// What was typed was refused, for the reason given: the panel stays
+    /// open, showing and announcing why.
+    case refused(String)
+
+    /// What taking `text` does, its field having started at `startingText`:
+    /// `unchanged`, without calling `submit`, when the two are the same once
+    /// spaces and line breaks around them are set aside; otherwise what
+    /// `submit` makes of it, a jump (nil) or why not.
+    @MainActor
+    static func taking(
+        _ text: String,
+        startedAt startingText: String,
+        submit: @MainActor (String) -> String?
+    ) -> JumpFieldOutcome {
+        /// The text as the field's value, without what surrounds it.
+        func value(_ text: String) -> String {
+            text.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        guard value(text) != value(startingText) else { return .unchanged }
+        guard let problem = submit(text) else { return .jumped }
+        return .refused(problem)
+    }
+}
+
 /// Go to Percent's panel: one field, "Percent through the book", starting
 /// at the reading position's percent, which jumps to the percent typed.
 struct JumpToPercentPanel: View {
@@ -74,7 +118,7 @@ struct JumpToPercentPanel: View {
             fieldWidth: 80,
             // The current percent, so the user can adjust it rather than
             // type from nothing.
-            startingText: { String(format: "%.1f", viewModel.displayPercentComplete) },
+            startingText: { viewModel.goToPercentStartingText },
             submit: viewModel.goToPercent(typed:),
             announce: viewModel.announceToVoiceOver,
             onJump: onJump,
@@ -120,7 +164,9 @@ struct JumpToTimePanel: View {
 /// field's own label, the field starting at a value and taking the keyboard
 /// as the panel opens, Jump (Return) and Cancel (Escape), and what is wrong
 /// with a refused answer shown under the field and announced, so it can be
-/// corrected where it was typed.
+/// corrected where it was typed. Jump on the value the field started at
+/// closes the panel as Cancel does, with nothing moved or said
+/// (`JumpFieldOutcome.unchanged`).
 ///
 /// ## A plain field
 /// Earlier panels layered auto-focus per field, character filtering, an
@@ -155,6 +201,9 @@ struct JumpFieldPanel: View {
 
     /// What is typed in the field.
     @State private var text: String = ""
+    /// What the field held as the panel opened (`startingText`), which Jump
+    /// takes as no change (`JumpFieldOutcome.unchanged`).
+    @State private var openingText: String = ""
     /// Inline error message shown after a refused submit. Cleared on the
     /// next submit that jumps, or as soon as the user edits the field.
     /// Empty means no error.
@@ -204,7 +253,8 @@ struct JumpFieldPanel: View {
         .padding(.vertical, 6)
         .background(Color.secondary.opacity(0.05))
         .onAppear {
-            text = startingText()
+            openingText = startingText()
+            text = openingText
             errorMessage = ""
 
             // Focus the field after the panel-appearance animation (about
@@ -223,15 +273,21 @@ struct JumpFieldPanel: View {
         }
     }
 
-    /// Hands what was typed to `submit`: closes the panel once it jumps,
-    /// or shows and announces why not, keeping the panel open.
+    /// Takes what the field holds (`JumpFieldOutcome.taking`): the value it
+    /// opened with closes the panel as Cancel does, with nothing moved or
+    /// said; anything else goes to `submit`, which closes the panel once it
+    /// jumps, or shows and announces why not, keeping the panel open.
     private func take() {
-        if let problem = submit(text) {
-            errorMessage = problem
-            announce(problem)
-        } else {
+        switch JumpFieldOutcome.taking(text, startedAt: openingText, submit: submit) {
+        case .unchanged:
+            errorMessage = ""
+            onCancel()
+        case .jumped:
             errorMessage = ""
             onJump()
+        case .refused(let problem):
+            errorMessage = problem
+            announce(problem)
         }
     }
 }

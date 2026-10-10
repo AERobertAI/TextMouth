@@ -6,8 +6,10 @@ import XCTest
 /// Go to Time's one field and Go to Percent's labelled field (P08, REV13): a
 /// time read as people write it, its limit the end of the book's clock, an
 /// audiobook's time counted on its recording at every speed, a text book's
-/// at its words per minute, each heading's time landing on its heading, and
-/// each panel's field one labelled edit text. Pure (`RecordingTimeFixtures`
+/// at its words per minute, each heading's time landing on its heading,
+/// each panel's field one labelled edit text, and Jump on a field's
+/// starting value moving nothing (REV14), tested at places between two
+/// whole seconds or two tenths of a percent. Pure (`RecordingTimeFixtures`
 /// readers, whose content each test assigns), except the hosted checks of
 /// the panels' fields, which draw them offscreen in a fixed frame.
 @MainActor
@@ -90,10 +92,12 @@ final class JumpToTimeTests: XCTestCase {
     // MARK: - Through the Reader
 
     /// The design's book, one file of 9:41:07.4 with the reading position
-    /// at 2:13:05: at 0.5x, 1x, and 2x Go to Time starts at "2:13:05" and
-    /// Jump leaves the position where it is (at 2x it once went back to
-    /// 1:06:32), saying so; a time from the recording past half the book,
-    /// which 2x once refused, lands on it.
+    /// at 2:13:05.7, between two whole seconds: at 0.5x, 1x, and 2x Go to
+    /// Time starts at "2:13:05", and Jump on it leaves the position exactly
+    /// where it is, saying nothing (REV14: it once went back the 0.7 seconds
+    /// the field leaves off, and at 2x, before P08, to 1:06:32); a time
+    /// typed from the recording lands on it, saying so, 2:13:05 itself as
+    /// well as a time past half the book, which 2x once refused.
     func testTheDesignsBookStaysPutAtEverySpeed() throws {
         let reader = Fixtures.makeReader(format: .audio)
         defer { reader.close() }
@@ -102,10 +106,13 @@ final class JumpToTimeTests: XCTestCase {
         for speed in [0.5, 1, 2] {
             reader.audioSpeed = speed
             reader.currentChapterIndex = 0
-            reader.currentCharacterOffset = 79_850
-            XCTAssertEqual(reader.goToTimeStartingText, "2:13:05", "at \(speed)x")
+            reader.currentCharacterOffset = 79_857
+            let starting = reader.goToTimeStartingText
+            XCTAssertEqual(starting, "2:13:05", "at \(speed)x")
 
-            XCTAssertNil(reader.goToTime(typed: reader.goToTimeStartingText))
+            assertJumpOnTheStartingValueMovesNothing(reader, startingText: starting, submit: reader.goToTime(typed:), "at \(speed)x")
+
+            XCTAssertNil(reader.goToTime(typed: "2:13:05"))
             XCTAssertEqual(reader.currentCharacterOffset, 79_850, "at \(speed)x")
             XCTAssertEqual(reader.lastAnnouncement, "Jumped to 2 hours, 13 minutes, 5 seconds in the recording.")
 
@@ -121,7 +128,8 @@ final class JumpToTimeTests: XCTestCase {
 
     /// For an audiobook of every layout, at 0.5x, 1x, and 2x, a place's
     /// time from Go to Time is its time in the recording, the same at every
-    /// speed, and Jump comes back within a second of the place, give or
+    /// speed; Jump on it unchanged leaves the place where it is, and the
+    /// time typed back comes back within a second of the place, give or
     /// take the half tenth a place is rounded to.
     func testGoToTimeComesBackToItsPlaceForEveryLayoutAndSpeed() throws {
         for layout in Fixtures.Layout.allCases {
@@ -139,6 +147,9 @@ final class JumpToTimeTests: XCTestCase {
                     reader.currentCharacterOffset = place.characterOffset
                     let starting = reader.goToTimeStartingText
                     XCTAssertEqual(starting, TimeFormatting.format(placeTime), "\(layout) at \(speed)x")
+                    assertJumpOnTheStartingValueMovesNothing(
+                        reader, startingText: starting, submit: reader.goToTime(typed:), "\(layout) at \(speed)x: \(starting)"
+                    )
 
                     XCTAssertNil(reader.goToTime(typed: starting), "\(layout) at \(speed)x: \(starting)")
                     let landed = clock.time(chapterIndex: reader.currentChapterIndex, characterOffset: reader.currentCharacterOffset)
@@ -168,9 +179,9 @@ final class JumpToTimeTests: XCTestCase {
     /// A text book's Go to Time counts its words at its speed, as before,
     /// and says so: at 200 and 500 words a minute its field is "Time at 500
     /// words a minute", its starting value the position's time at that
-    /// speed, Jump comes back within a second of the position and says so
-    /// as before, and every heading's time from the Headings sheet lands
-    /// on it.
+    /// speed, Jump on it unchanged leaves the position where it is, the time
+    /// typed back comes back within a second of the position and says so as
+    /// before, and every heading's time from the Headings sheet lands on it.
     func testATextBooksGoToTimeCountsItsWordsAtItsSpeed() throws {
         let reader = Fixtures.makeReader(format: .txt)
         defer { reader.close() }
@@ -192,6 +203,9 @@ final class JumpToTimeTests: XCTestCase {
                 XCTAssertEqual(placeTime, readingTime * Double(global) / total, accuracy: 1e-6)
                 let starting = reader.goToTimeStartingText
                 XCTAssertEqual(starting, TimeFormatting.format(placeTime))
+                assertJumpOnTheStartingValueMovesNothing(
+                    reader, startingText: starting, submit: reader.goToTime(typed:), "\(starting) at \(wordsPerMinute) words a minute"
+                )
 
                 XCTAssertNil(reader.goToTime(typed: starting))
                 let landed = clock.time(chapterIndex: reader.currentChapterIndex, characterOffset: reader.currentCharacterOffset)
@@ -221,6 +235,101 @@ final class JumpToTimeTests: XCTestCase {
         XCTAssertEqual(reader.percentComplete, 47.5, accuracy: 0.05)
         XCTAssertEqual(reader.goToPercent(typed: ""), "Enter a percent.")
         XCTAssertEqual(reader.goToPercent(typed: "101"), "Percent must be between 0 and 100.")
+    }
+
+    // MARK: - Jump on the Starting Value (REV14)
+
+    /// A text book's place half a second past a whole second on its clock:
+    /// Go to Time starts at that whole second, and Jump on it unchanged
+    /// leaves the place where it is, saying nothing. The same text typed
+    /// over another value goes back to the whole second, as it once did on
+    /// Jump unchanged, which is why the panel never hands it over.
+    func testJumpOnGoToTimesStartingValueLeavesATextBookWhereItIs() throws {
+        let reader = Fixtures.makeReader(format: .txt)
+        defer { reader.close() }
+        reader.content = Fixtures.textContent()
+        reader.speechService.wordsPerMinute = 500
+        let clock = try XCTUnwrap(reader.placeClock)
+        let place = clock.place(atTime: 80.5)
+        let placeTime = clock.time(of: place)
+        XCTAssertEqual(placeTime - placeTime.rounded(.down), 0.5, accuracy: 0.1, "The place is not between two whole seconds")
+        reader.currentChapterIndex = place.chapterIndex
+        reader.currentCharacterOffset = place.characterOffset
+        let placeOffset = reader.currentGlobalOffset
+        let starting = reader.goToTimeStartingText
+        XCTAssertEqual(starting, "1:20")
+
+        assertJumpOnTheStartingValueMovesNothing(reader, startingText: starting, submit: reader.goToTime(typed:), "a text book")
+
+        XCTAssertEqual(JumpFieldOutcome.taking(starting, startedAt: "0:00", submit: reader.goToTime(typed:)), .jumped)
+        XCTAssertLessThan(reader.currentGlobalOffset, placeOffset, "1:20 typed over another value did not go back to 1:20")
+        XCTAssertTrue(reader.hasSavedPosition, "A typed jump kept no Return position")
+    }
+
+    /// An audiobook resting at its end, 9:41:07.4: Go to Time starts at
+    /// "9:41:07", and Jump on it unchanged leaves the book at its end,
+    /// finished. It once moved the book 0.4 seconds back from its end, so
+    /// the book read as unfinished; typed over another value, 9:41:07 still
+    /// names that moment before the end.
+    func testJumpOnGoToTimesStartingValueLeavesAFinishedBookAtItsEnd() throws {
+        let reader = Fixtures.makeReader(format: .audio)
+        defer { reader.close() }
+        reader.content = try Fixtures.audioContent(.oneFile)
+        let end = try XCTUnwrap(reader.endOfBookPlace)
+        reader.currentChapterIndex = end.chapterIndex
+        reader.currentCharacterOffset = end.characterOffset
+        XCTAssertTrue(reader.cursorRestsAtEnd)
+        let starting = reader.goToTimeStartingText
+        XCTAssertEqual(starting, "9:41:07")
+
+        assertJumpOnTheStartingValueMovesNothing(reader, startingText: starting, submit: reader.goToTime(typed:), "a finished book")
+        XCTAssertTrue(reader.cursorRestsAtEnd, "Jump on the starting value left the finished book short of its end")
+
+        XCTAssertEqual(JumpFieldOutcome.taking(starting, startedAt: "0:00", submit: reader.goToTime(typed:)), .jumped)
+        XCTAssertFalse(reader.cursorRestsAtEnd, "9:41:07 typed over another value landed at the end")
+    }
+
+    /// Go to Percent at a place between two tenths of a percent, 47.04:
+    /// its field starts at "47.0", and Jump on it unchanged leaves the
+    /// place where it is, saying nothing; typed over another value, 47.0
+    /// moves it to 47.0 percent, as Jump unchanged once did.
+    func testJumpOnGoToPercentsStartingValueLeavesThePlaceAlone() throws {
+        let reader = Fixtures.makeReader(format: .txt)
+        defer { reader.close() }
+        let content = Fixtures.textContent()
+        reader.content = content
+        let placeOffset = Int((0.4704 * Double(content.totalCharacterCount)).rounded())
+        let place = content.location(forGlobalOffset: placeOffset)
+        reader.currentChapterIndex = place.chapterIndex
+        reader.currentCharacterOffset = place.localOffset
+        // The status row's percent follows the cursor, as it does once a
+        // jump or playback has moved it.
+        reader.refreshPlaybackUI()
+        let starting = reader.goToPercentStartingText
+        XCTAssertEqual(starting, "47.0")
+        XCTAssertNotEqual(reader.percentComplete, 47.0, "The place is on a tenth of a percent")
+
+        assertJumpOnTheStartingValueMovesNothing(reader, startingText: starting, submit: reader.goToPercent(typed:), "Go to Percent")
+
+        XCTAssertEqual(JumpFieldOutcome.taking(starting, startedAt: "50.0", submit: reader.goToPercent(typed:)), .jumped)
+        XCTAssertNotEqual(reader.currentGlobalOffset, placeOffset, "47.0 typed over another value left the place at 47.04 percent")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to 47.0 percent.")
+    }
+
+    /// The field's value is compared without the spaces or line breaks
+    /// around it, and anything else typed goes to the jump, which may
+    /// refuse it.
+    func testOnlyTheStartingValueItselfIsTakenAsNoChange() {
+        var submitted: [String] = []
+        let submit: @MainActor (String) -> String? = { text in
+            submitted.append(text)
+            return text == "soon" ? TimeEntry.howToType : nil
+        }
+
+        XCTAssertEqual(JumpFieldOutcome.taking(" 2:13:05\n", startedAt: "2:13:05", submit: submit), .unchanged)
+        XCTAssertEqual(JumpFieldOutcome.taking("2:13:06", startedAt: "2:13:05", submit: submit), .jumped)
+        XCTAssertEqual(JumpFieldOutcome.taking("soon", startedAt: "2:13:05", submit: submit), .refused(TimeEntry.howToType))
+        XCTAssertEqual(submitted, ["2:13:06", "soon"])
     }
 
     // MARK: - The Panels' Fields
@@ -273,7 +382,7 @@ final class JumpToTimeTests: XCTestCase {
         let reader = Fixtures.makeReader(format: .txt)
         defer { reader.close() }
         reader.content = Fixtures.textContent()
-        let starting = String(format: "%.1f", reader.displayPercentComplete)
+        let starting = reader.goToPercentStartingText
         let panel = JumpToPercentPanel(viewModel: reader, onJump: {}, onCancel: {})
 
         try withHostedField(panel, holding: starting) { field, controls in
@@ -312,7 +421,70 @@ final class JumpToTimeTests: XCTestCase {
         }
     }
 
+    /// Return on the time Go to Time's field started at, 2:13:05 for a
+    /// place at 2:13:05.7, closes the panel as Cancel does and moves
+    /// nothing, keeps no Return position, and says nothing (REV14).
+    /// Skipped where an offscreen window gives the field no keyboard focus
+    /// or takes no key.
+    func testReturnOnTheStartingTimeClosesThePanelAndMovesNothing() throws {
+        let reader = Fixtures.makeReader(format: .audio)
+        defer { reader.close() }
+        reader.content = try Fixtures.audioContent(.oneFile)
+        reader.currentCharacterOffset = 79_857
+        var jumped = false
+        var cancelled = false
+        let panel = JumpToTimePanel(viewModel: reader, onJump: { jumped = true }, onCancel: { cancelled = true })
+
+        try withHostedField(panel, holding: "2:13:05") { field, _ in
+            let hostingView = field.hostingView
+            let textField = try XCTUnwrap(
+                editableTextFields(in: hostingView).first { $0.placeholderString == "Time in the recording" },
+                "the field was not drawn"
+            )
+            // The starting time typed back over itself, which gives the
+            // field the keyboard as the user's own typing would.
+            try typeReplacingText("2:13:05", in: textField, of: hostingView)
+
+            let recorder = recordingAnnouncements {
+                _ = pressReturnKey(in: hostingView)
+                settleHostedView(hostingView)
+            }
+            guard jumped || cancelled else { throw XCTSkip("This macOS hands an offscreen window's field no Return") }
+            XCTAssertTrue(cancelled, "Return on the starting time did not close the panel as Cancel does")
+            XCTAssertFalse(jumped, "Return on the starting time jumped")
+            XCTAssertEqual(reader.currentCharacterOffset, 79_857, "Return on the starting time moved the place")
+            XCTAssertFalse(reader.hasSavedPosition, "Return on the starting time kept a Return position")
+            XCTAssertEqual(recorder.announcements.map(\.message), [], "Return on the starting time said something")
+        }
+    }
+
     // MARK: - Helpers
+
+    /// Checks that Jump on `startingText`, the value a panel's field started
+    /// at, closes the panel with nothing done (REV14): `submit` is never
+    /// called, `reader`'s place stays where it is, no Return position is
+    /// kept, and nothing is announced.
+    private func assertJumpOnTheStartingValueMovesNothing(
+        _ reader: ReaderViewModel,
+        startingText: String,
+        submit: @MainActor (String) -> String?,
+        _ context: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let chapterIndex = reader.currentChapterIndex
+        let characterOffset = reader.currentCharacterOffset
+        let keptReturnPosition = reader.hasSavedPosition
+        var outcome: JumpFieldOutcome?
+        let recorder = recordingAnnouncements {
+            outcome = JumpFieldOutcome.taking(startingText, startedAt: startingText, submit: submit)
+        }
+        XCTAssertEqual(outcome, .unchanged, "\(context): the starting value was taken as a jump", file: file, line: line)
+        XCTAssertEqual(reader.currentChapterIndex, chapterIndex, "\(context): the chapter changed", file: file, line: line)
+        XCTAssertEqual(reader.currentCharacterOffset, characterOffset, "\(context): the place moved", file: file, line: line)
+        XCTAssertEqual(reader.hasSavedPosition, keptReturnPosition, "\(context): a Return position was kept", file: file, line: line)
+        XCTAssertEqual(recorder.announcements.map(\.message), [], "\(context): something was said", file: file, line: line)
+    }
 
     /// The Headings sheet's Time In rows for `reader`'s headings, each shown.
     private func timeInRows(of reader: ReaderViewModel) -> [HeadingNavigatorView.HeadingListItem] {
