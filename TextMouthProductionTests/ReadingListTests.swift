@@ -276,6 +276,29 @@ final class ReadingListTests: XCTestCase {
         XCTAssertFalse(shelf.model.isInReadingList(shelf.id("Almanac")))
     }
 
+    /// A book replaced by a new copy of itself, which has an ID of its own,
+    /// gives the copy its place: the copy is where the book was, the others
+    /// keep their order and the options stay. A book not in the list is
+    /// replaced in nothing; a copy already in the list elsewhere gives that
+    /// place up, so each book is held once; and a book replaced by itself
+    /// stays as it is.
+    func testAReplacedBooksCopyTakesItsPlace() {
+        let (almanac, bestiary, chronicle, copy) = (UUID(), UUID(), UUID(), UUID())
+        var list = ReadingList(bookIDs: [almanac, bestiary, chronicle], continuation: .stop, skipsFinished: false)
+
+        XCTAssertTrue(list.replace(bestiary, with: copy))
+        XCTAssertEqual(list, ReadingList(bookIDs: [almanac, copy, chronicle], continuation: .stop, skipsFinished: false))
+
+        XCTAssertFalse(list.replace(UUID(), with: bestiary))
+        XCTAssertEqual(list.bookIDs, [almanac, copy, chronicle])
+
+        XCTAssertTrue(list.replace(chronicle, with: almanac))
+        XCTAssertEqual(list.bookIDs, [copy, almanac])
+
+        XCTAssertTrue(list.replace(copy, with: copy))
+        XCTAssertEqual(list.bookIDs, [copy, almanac])
+    }
+
     // MARK: - Order
 
     /// Move Book Up and Move Book Down at the list swap a book with the one

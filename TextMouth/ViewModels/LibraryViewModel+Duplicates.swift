@@ -235,9 +235,10 @@ extension LibraryViewModel {
 
     /// Answers a duplicate's question. Replace removes the library's copy
     /// that matches now, which an earlier answer may have changed since the
-    /// question arose, and adds the new copy; Keep Both adds it beside the
-    /// old one; either then follows the "After Importing a Book" preference
-    /// for the new copy's original and opens the book when its import asked.
+    /// question arose, and adds the new copy, which takes the old copy's
+    /// place on the reading list (FR09); Keep Both adds it beside the old
+    /// one; either then follows the "After Importing a Book" preference for
+    /// the new copy's original and opens the book when its import asked.
     /// Cancel discards the new copy, which leaves its original alone.
     private func settle(
         _ duplicate: ImportDecision.DuplicateBook,
@@ -252,6 +253,10 @@ extension LibraryViewModel {
                 } catch {
                     return .failure("Could not replace duplicate", error)
                 }
+                // The new copy has an ID of its own: it takes the old copy's
+                // place on the list before the old copy leaves the library,
+                // which would take that place off the list.
+                library.readingList.replace(existing.id, with: duplicate.book.id)
                 removeDeletedBook(existing)
             }
         case .keepBoth:

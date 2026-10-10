@@ -538,6 +538,41 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(scene.model.importDecisions.waiting.map(\.request.origin), [window, window])
     }
 
+    // MARK: - The Reading List (FR09)
+
+    /// Replace gives the new copy, which has an ID of its own, the replaced
+    /// book's place on the reading list: the list names the copy where the
+    /// book was, the others keep their order, and the list saved in the
+    /// index says the same. Keep Both leaves the list as it was.
+    func testReplaceGivesTheCopyTheReplacedBooksPlaceOnTheReadingList() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        let bestiary = try existingBookAndCopy("Bestiary of Knots", in: scene)
+        let charts = try FileImportService.importFileWithReport(
+            from: writeSource("Chart Notes", in: scene),
+            toFolder: scene.folder.path
+        ).book
+        let listed = [bestiary.existing.id, atlas.existing.id, charts.id]
+        scene.model.library = Library(
+            books: [atlas.existing, bestiary.existing, charts],
+            readingList: ReadingList(bookIDs: listed)
+        )
+        useAfterImportingBehavior(.keepOriginal)
+
+        scene.model.importFiles(urls: [atlas.copy, bestiary.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.keepBoth).succeeded)
+        LibraryPersistenceService.flushPendingSave()
+
+        let copy = try XCTUnwrap(scene.model.library.books.first { $0.title == "Atlas of Tides" })
+        XCTAssertNotEqual(copy.id, atlas.existing.id)
+        XCTAssertEqual(scene.model.library.readingList.bookIDs, [bestiary.existing.id, copy.id, charts.id])
+        XCTAssertEqual(scene.model.readingListBooks.map(\.title), [bestiary.existing.title, "Atlas of Tides", charts.title])
+        let saved = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(saved.readingList.bookIDs, [bestiary.existing.id, copy.id, charts.id])
+    }
+
     // MARK: - Fixtures
 
     /// What one test imports from and into.
