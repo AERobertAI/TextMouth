@@ -10,8 +10,10 @@ import SwiftUI
 /// context menu. Where it lists a feed, the Folders section leaves out the
 /// feed's folder, which this row stands for (October 7).
 ///
-/// It observes the feed engine itself, so a download's progress or a
-/// refresh redraws this section and nothing else of the list.
+/// It observes the feed engine itself, so a download starting or ending, or
+/// a refresh, redraws this section and nothing else of the list; how far a
+/// download has got redraws nothing here, being the feed downloads
+/// section's alone (FR10).
 struct LibraryFeedsSection<FolderMenu: View>: View {
     /// The feed engine.
     @ObservedObject var center: FeedCenter
@@ -161,8 +163,10 @@ struct FeedFolderRow: View {
 /// its VoiceOver actions; then, under "Books", the folder's books that came
 /// from no item of the feed.
 ///
-/// It observes the feed engine itself, so a download's progress redraws
-/// these rows and nothing else of the list.
+/// It observes the feed engine itself, so a download starting or ending
+/// redraws these rows and nothing else of the list; how far a download has
+/// got redraws nothing here, being the feed downloads section's alone
+/// (FR10).
 struct FeedFolderSections<BookRowView: View>: View {
     /// The feed engine.
     @ObservedObject var center: FeedCenter

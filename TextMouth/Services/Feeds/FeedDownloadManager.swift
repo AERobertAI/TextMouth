@@ -357,7 +357,11 @@ final class FeedDownloadManager {
     }
 
     /// Takes every waiting, running, and put-off download of the feed
-    /// `feedID` away, as when it is no longer subscribed.
+    /// `feedID` away, as a feed leaving the library would need. No command
+    /// calls it since Unsubscribe keeps the feed and only withdraws the
+    /// rule's downloads (FR11, branch D, `withdrawRuleDownloads`); it stays
+    /// for a Delete Feed…, which is still the listener's to decide, with
+    /// `FeedStore.remove(_:)` and `FeedFetchStates.remove(_:)`.
     func cancelAll(of feedID: UUID) {
         defer { publishQueue() }
         queue.removeAll { $0.feedID == feedID }
@@ -738,8 +742,9 @@ final class FeedDownloadManager {
 
     /// What Speak Download Progress says now (FR10): every line the feed
     /// downloads section shows, or that no download is under way, with the
-    /// downloads waiting apart counted anew first, as a feed unsubscribed
-    /// since the queue last changed takes its items' waits with it.
+    /// downloads waiting apart counted anew first, as a wait for room lives
+    /// only in its item's state, which can change, or go with its feed's
+    /// record, without the queue changing.
     func spokenProgress() -> String {
         publishQueue()
         return progress.spokenStatus()

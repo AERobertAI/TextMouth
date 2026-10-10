@@ -122,8 +122,10 @@ final class FeedFetchStates: ObservableObject {
         write(state, of: feedID)
     }
 
-    /// Forgets the feed `feedID`, removing its file, as when it is no longer
-    /// subscribed.
+    /// Forgets the feed `feedID`, removing its file, as a feed leaving the
+    /// library would need. Unsubscribe keeps this Mac's fetch details for
+    /// Resubscribe's check (FR11, branch D), so no command calls it; it
+    /// stays for a Delete Feed…, which is still the listener's to decide.
     func remove(_ feedID: UUID) {
         states[feedID] = nil
         guard let folder else { return }

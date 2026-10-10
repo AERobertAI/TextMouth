@@ -333,8 +333,9 @@ final class FeedRecordTests: XCTestCase {
     /// every other save is: naming the feed and its file, with a retry, as
     /// an unsaved change. A retry that still fails says so; one that works
     /// writes the record as it is now, settles the failure, and says the
-    /// subscriptions are saved. Unsubscribing withdraws a failure still
-    /// outstanding, since nothing is left to save.
+    /// subscriptions are saved. Removing the feed's record, as a Delete
+    /// Feed… would (Unsubscribe keeps it since FR11's branch D), withdraws a
+    /// failure still outstanding, since nothing is left to save.
     func testARecordThatCannotBeSavedIsReportedAndRetried() async throws {
         let folder = try makeSandboxDirectory("FeedSaveFailure").appendingPathComponent("Feeds", isDirectory: true)
         let center = PersistenceFailureCenter()
@@ -381,7 +382,7 @@ final class FeedRecordTests: XCTestCase {
         await store.flush()
         XCTAssertEqual(center.outstandingFailures().count, 1)
         store.remove(feedID)
-        XCTAssertTrue(center.outstandingFailures().isEmpty, "an unsubscribed feed's failure stayed")
+        XCTAssertTrue(center.outstandingFailures().isEmpty, "a removed feed's failure stayed")
         again.clear()
     }
 

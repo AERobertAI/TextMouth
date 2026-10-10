@@ -87,8 +87,10 @@ enum FeedRecordCoding {
 /// The store is the live copy of the data directory's Feeds folder: it reads
 /// every record once (`load()`), off the main thread, and writes a record
 /// whenever its durable form changes (`update(_:_:)`), on a serial queue of
-/// its own. A change of a download's progress alone writes nothing
-/// (`FeedRecord.durable`). Each write replaces its file atomically, as
+/// its own. A download asked for, under way, or waiting is published but
+/// never written (`FeedRecord.durable`), and how far a download has got
+/// never reaches the store (FR10, `FeedDownloadProgress`). Each write
+/// replaces its file atomically, as
 /// storage work (`StorageWork.savingFeeds`): a data-directory move waits for
 /// a write under way and holds the next, which then goes to the new data
 /// directory, so no record is written into the old one after the copy.
@@ -100,8 +102,8 @@ enum FeedRecordCoding {
 /// next change and once the data directory is back. A write that fails is
 /// reported to `PersistenceFailureCenter`, as every other save is, with a
 /// retry, so the Library window's banner names the feed and quitting asks
-/// first; the feed's next write that succeeds settles it, and
-/// unsubscribing withdraws it.
+/// first; the feed's next write that succeeds settles it, and removing the
+/// feed's record (`remove(_:)`) withdraws it.
 @MainActor
 final class FeedStore: ObservableObject {
     /// Where a store keeps its records.
@@ -307,9 +309,13 @@ final class FeedStore: ObservableObject {
         write(record.feed.id)
     }
 
-    /// Removes the feed `feedID` and deletes its record file. Its books stay
-    /// in the library, and a failed write of its record no longer needs
-    /// saving.
+    /// Removes the feed `feedID` and deletes its record file, and a failed
+    /// write of its record no longer needs saving. Its downloads stay in its
+    /// feed's folder, which a later launch returns to the library as books,
+    /// as for any feed whose record is gone
+    /// (`LibraryViewModel.returnDownloadsOfFeedsWithoutRecords`). No command calls it since
+    /// Unsubscribe keeps the feed's record (FR11, branch D); it stays for a
+    /// Delete Feed…, which is still the listener's to decide.
     func remove(_ feedID: UUID) {
         guard records.removeValue(forKey: feedID) != nil else { return }
         unsavedFeedIDs.remove(feedID)
@@ -390,7 +396,7 @@ final class FeedStore: ObservableObject {
     /// One that succeeded settles any failure reported for the feed. One
     /// that failed leaves the feed unsaved, for its next change or the data
     /// directory's return to write again, and is reported to the failure
-    /// center with a retry, unless the feed was unsubscribed meanwhile.
+    /// center with a retry, unless the feed's record was removed meanwhile.
     private func noteWrite(of feedID: UUID, title: String, failure: WriteFailure?) {
         guard let failure else {
             unsavedFeedIDs.remove(feedID)
