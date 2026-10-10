@@ -120,6 +120,13 @@ final class ReaderRequestStore<Request: ReaderRequest> {
         waiting[bookID].map { isUsable($0, at: now()) } ?? false
     }
 
+    /// Throws away the request waiting for `bookID`, if any, whatever its
+    /// age, so no reader of the book claims it: the open it was made for was
+    /// refused (`ReaderOpenRefusal`, FR02).
+    func discard(for bookID: UUID) {
+        waiting.removeValue(forKey: bookID)
+    }
+
     // MARK: Holding Requests While a Book Downloads (FR02)
 
     /// Keeps every request for `bookID`, the one waiting and any made later,
@@ -158,5 +165,37 @@ final class ReaderRequestStore<Request: ReaderRequest> {
     private func discardUnusableRequests() {
         let date = now()
         waiting = waiting.filter { isUsable($0.value, at: date) }
+    }
+}
+
+// MARK: - An Open Refused (FR02)
+
+/// What becomes of the requests waiting for a book's reader when the open
+/// that would make the reader is refused: a Library window refuses every
+/// open of a book while the library moves, and while the data directory is
+/// unavailable (FR02), saying so. The requests are dropped there and then,
+/// rather than waiting out their lifetime for a reader the refused open
+/// never makes, ready to start the book or mark it as read from the reading
+/// list should it be opened some other way meanwhile.
+enum ReaderOpenRefusal {
+    /// Drops the autoplay request and the reading list's request waiting
+    /// for the book `action` opens (`GlobalAction.bookToOpen`); an action
+    /// that opens no book drops nothing.
+    ///
+    /// - Parameters:
+    ///   - action: The app-wide action refused.
+    ///   - autoplay: The autoplay requests: the app's, unless a test gives
+    ///     its own.
+    ///   - readingList: The reading list's requests: the app's, unless a
+    ///     test gives its own.
+    @MainActor
+    static func dropRequests(
+        for action: GlobalAction,
+        autoplay: ReaderAutoplayRequests = .shared,
+        readingList: ReadingListOpenRequests = .shared
+    ) {
+        guard let bookID = action.bookToOpen else { return }
+        autoplay.discard(for: bookID)
+        readingList.discard(for: bookID)
     }
 }

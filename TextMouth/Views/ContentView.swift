@@ -279,11 +279,13 @@ struct LibraryWindowView: View {
     /// must appear where the user and VoiceOver are.
     private func takeGlobalAction(_ action: GlobalAction, openingReadersWith openReaderWindow: OpenWindowAction) {
         // Nothing is added to the library or opened from it while it can't
-        // be used (FR02): the window comes forward and says so instead.
+        // be used (FR02): the window comes forward and says so instead, and
+        // a refused open's requests are dropped with it.
         if libraryViewModel.dataDirectoryUnavailability != nil,
            let refusal = DataDirectoryUnavailableText.refusal(of: action) {
             bringToFront()
             libraryViewModel.refuseWhileDataDirectoryUnavailable(refusal, from: hostWindow)
+            ReaderOpenRefusal.dropRequests(for: action)
             return
         }
         // Nor while it moves (FR02).
@@ -336,13 +338,16 @@ struct LibraryWindowView: View {
 
     /// Refuses `action` while the library moves, when it opens or adds a
     /// book: the move's sheet shows why and VoiceOver hears it, from the key
-    /// window, which is the sheet itself while it is in front. Returns
-    /// whether it was refused.
+    /// window, which is the sheet itself while it is in front. A refused
+    /// open's requests to start the book or read it from the reading list
+    /// are dropped at once, rather than left to wait out their lifetime
+    /// (`ReaderOpenRefusal`). Returns whether it was refused.
     private func refuseWhileTheLibraryMoves(_ action: GlobalAction) -> Bool {
         guard let move = libraryViewModel.dataDirectoryMove,
               let refusal = DataDirectoryMoveWording.refusal(of: action) else { return false }
         move.notice = refusal
         VoiceOverAnnouncer.announce(refusal)
+        ReaderOpenRefusal.dropRequests(for: action)
         return true
     }
 

@@ -197,6 +197,51 @@ final class ReaderAutoplayRequestsTests: XCTestCase {
         XCTAssertNotNil(store.consume(for: nextBook))
     }
 
+    // MARK: - An Open Refused (FR02)
+
+    /// An open a Library window refuses, while the library moves or is
+    /// unavailable, drops the requests waiting for its book at once, of
+    /// both kinds, however young; another book's requests stay, and an
+    /// action that opens no book drops nothing.
+    func testARefusedOpenDropsItsBooksRequestsAtOnce() {
+        let (autoplay, _) = makeStore()
+        let readingList = ReadingListOpenRequests()
+        for book in [nextBook, otherBook] {
+            autoplay.request(for: book, from: finishedBook)
+            readingList.request(for: book)
+        }
+
+        ReaderOpenRefusal.dropRequests(for: .continueToNextBook(nextBook), autoplay: autoplay, readingList: readingList)
+
+        XCTAssertFalse(autoplay.hasRequest(for: nextBook))
+        XCTAssertFalse(readingList.hasRequest(for: nextBook))
+        XCTAssertTrue(autoplay.hasRequest(for: otherBook))
+        XCTAssertTrue(readingList.hasRequest(for: otherBook))
+
+        ReaderOpenRefusal.dropRequests(for: .openBookWindow(otherBook), autoplay: autoplay, readingList: readingList)
+        XCTAssertFalse(autoplay.hasRequest(for: otherBook))
+        XCTAssertFalse(readingList.hasRequest(for: otherBook))
+
+        autoplay.request(for: nextBook, from: finishedBook)
+        for action in [GlobalAction.goToLibrary, .openBookFile, .newFromText, .importDAISYFolder, .openFiles([])] {
+            ReaderOpenRefusal.dropRequests(for: action, autoplay: autoplay, readingList: readingList)
+        }
+        XCTAssertTrue(autoplay.hasRequest(for: nextBook), "an action that opens no book dropped a request")
+    }
+
+    /// Dropping a request leaves the hold of its book's reader as it was:
+    /// the reader lets go of its own hold.
+    func testDroppingARequestLeavesItsReadersHold() {
+        let (store, _) = makeStore()
+        store.request(for: nextBook, from: finishedBook)
+        store.hold(for: nextBook)
+
+        store.discard(for: nextBook)
+
+        XCTAssertNil(store.consume(for: nextBook))
+        XCTAssertTrue(store.isHolding(nextBook))
+    }
+
     // MARK: - One Store for Both Kinds
 
     /// The autoplay requests and the reading list's are kept by one store
