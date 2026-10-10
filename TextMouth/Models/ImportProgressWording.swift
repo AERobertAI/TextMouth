@@ -6,10 +6,11 @@ import Foundation
 enum ImportProgressWording {
     /// The import overlay's title, which VoiceOver reads first.
     static let title = "Importing Books"
-    /// What the overlay's count counts, after the books done of the total:
-    /// "3 of 10 books processed". A book skipped as a duplicate, or one
-    /// that failed, is processed too.
-    static let itemNoun = "books processed"
+    /// What the overlay's count counts, after the books done of the total,
+    /// agreeing with the total: "3 of 10 books processed", "0 of 1 book
+    /// processed". A book skipped as a duplicate, or one that failed, is
+    /// processed too.
+    static let itemNoun = CountWording.Noun(singular: "book processed", plural: "books processed")
     /// What the overlay says as a ZIP import starts, before its archive is
     /// opened.
     static let startingArchive = "Extracting archive..."
@@ -17,9 +18,10 @@ enum ImportProgressWording {
     // MARK: - The Overlay's Lines
 
     /// The books done of the total, as the overlay's count says it:
-    /// "3 of 10 books processed".
+    /// "3 of 10 books processed", and for one book "0 of 1 book processed"
+    /// (REV13; it said "0 of 1 books processed").
     static func count(done: Int, of total: Int) -> String {
-        CountWording.progress(done, of: total, itemNoun)
+        CountWording.part(done, of: total, itemNoun)
     }
 
     /// How far the extraction of the archive named `archive`, the archive

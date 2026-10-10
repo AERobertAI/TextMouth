@@ -42,6 +42,19 @@ final class CountWordingTests: XCTestCase {
         XCTAssertEqual(TimeFormatting.spoken(120), "2 minutes")
     }
 
+    /// A part of a whole counts its noun by the whole: "0 of 1 book
+    /// processed", as the import overlay and the text cache's overlay
+    /// count their books, where they said "0 of 1 books processed".
+    func testAPartsNounAgreesWithTheWhole() {
+        let noun = CountWording.Noun(singular: "book processed", plural: "books processed")
+        XCTAssertEqual(CountWording.part(0, of: 1, noun), "0 of 1 book processed")
+        XCTAssertEqual(CountWording.part(1, of: 1, noun), "1 of 1 book processed")
+        XCTAssertEqual(CountWording.part(3, of: 10, noun), "3 of 10 books processed")
+        XCTAssertEqual(CountWording.part(0, of: 0, noun), "0 of 0 books processed")
+        // A noun that needs no agreement, as the feed downloads' "done".
+        XCTAssertEqual(CountWording.progress(3, of: 9, "done"), "3 of 9 done")
+    }
+
     // MARK: - Shown and Spoken Alike
 
     /// The Bluetooth disconnect delay reads the same on screen and to

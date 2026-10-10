@@ -8,6 +8,17 @@ import Foundation
 /// They now share these functions, so every count follows one rule, and the
 /// words on screen agree with the words VoiceOver speaks.
 enum CountWording {
+    /// A noun as a count says it: `singular` after exactly one, `plural`
+    /// after every other count, as in "1 book processed" and "3 books
+    /// processed". A progress overlay is given the noun it counts its
+    /// items by this way.
+    struct Noun: Equatable, Sendable {
+        /// The words after a count of exactly one.
+        let singular: String
+        /// The words after every other count.
+        let plural: String
+    }
+
     /// `count` followed by the words for that many: `singular` for exactly
     /// one and `plural` for every other count, zero included, as in "0 days",
     /// "1 day", "2 days". The words may include a verb that agrees with the
@@ -49,6 +60,14 @@ enum CountWording {
     /// 1 books").
     static func part(_ part: Int, of whole: Int, singular: String, plural: String) -> String {
         "\(part) of \(phrase(whole, singular: singular, plural: plural))"
+    }
+
+    /// `part` of `whole` things named by `noun`, which agrees with the
+    /// whole: "0 of 1 book processed", "3 of 10 books processed", as the
+    /// import overlay and the text cache's overlay count their books (REV13;
+    /// they said "0 of 1 books processed").
+    static func part(_ part: Int, of whole: Int, _ noun: Noun) -> String {
+        self.part(part, of: whole, singular: noun.singular, plural: noun.plural)
     }
 
     /// The library's books and the feeds beside them, as the library counts
@@ -141,10 +160,10 @@ enum CountWording {
         }
     }
 
-    /// How far a batch has got: `done` of `total`, then `noun`, as in "3 of
-    /// 10 books processed". The noun counts the total, so it is the plural
-    /// whatever `done` is. A progress overlay's count says it, and VoiceOver
-    /// reads it the same way (FR10).
+    /// How far a batch has got: `done` of `total`, then `noun` as it is,
+    /// whatever the total: "3 of 9 done", as the feed downloads section's
+    /// count says it (FR10). A noun that must agree with the total, as the
+    /// progress overlays' books do, is counted by `part(_:of:_:)` instead.
     static func progress(_ done: Int, of total: Int, _ noun: String) -> String {
         "\(done) of \(total) \(noun)"
     }

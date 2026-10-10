@@ -25,10 +25,25 @@ final class ProgressOverlayTests: XCTestCase {
             current: 3,
             total: 60,
             message: "Updating text cache: 3 of 60...",
-            itemNoun: "books extracted"
+            itemNoun: TextExtractionProgress.itemNoun
         )
 
         XCTAssertEqual(overlay.spokenStatus, "Extracting Text: 3 of 60 books extracted")
+    }
+
+    /// A total of one book is counted as one, on screen and to VoiceOver:
+    /// "0 of 1 book extracted", where both said "0 of 1 books extracted"
+    /// until October 10, 2026 (REV13).
+    func testOneBookIsCountedAsOne() {
+        let overlay = ProgressOverlay(
+            title: "Extracting Text",
+            current: 0,
+            total: 1,
+            message: "Updating text cache: 0 of 1...",
+            itemNoun: TextExtractionProgress.itemNoun
+        )
+
+        XCTAssertEqual(overlay.spokenStatus, "Extracting Text: 0 of 1 book extracted")
     }
 
     /// An overlay whose caller words what VoiceOver reads, as the import
@@ -39,7 +54,7 @@ final class ProgressOverlayTests: XCTestCase {
             current: 3,
             total: 10,
             message: "Book 4 of 10: “Rope Splicing.txt”, reading its text",
-            itemNoun: "books processed",
+            itemNoun: ImportProgressWording.itemNoun,
             spokenSummary: "Importing Books: 3 of 10 books processed. Book 4 of 10: “Rope Splicing.txt”, reading its text."
         )
 
@@ -60,7 +75,7 @@ final class ProgressOverlayTests: XCTestCase {
 
     /// With neither a total nor a message, the title is read alone, as before.
     func testStatusIsTheTitleAloneWithNothingMoreToTell() {
-        let overlay = ProgressOverlay(title: "Extracting Text", current: 0, total: 0, message: "", itemNoun: "books extracted")
+        let overlay = ProgressOverlay(title: "Extracting Text", current: 0, total: 0, message: "", itemNoun: TextExtractionProgress.itemNoun)
 
         XCTAssertEqual(overlay.spokenStatus, "Extracting Text")
     }
@@ -73,7 +88,7 @@ final class ProgressOverlayTests: XCTestCase {
             ProgressOverlay.cancelButtonHint,
             "Stops importing ZIP archives after the current book. Books already imported stay in the library."
         )
-        XCTAssertNil(ProgressOverlay(title: "Extracting Text", current: 1, total: 2, message: "", itemNoun: "books extracted").onCancel)
+        XCTAssertNil(ProgressOverlay(title: "Extracting Text", current: 1, total: 2, message: "", itemNoun: TextExtractionProgress.itemNoun).onCancel)
     }
 
     // MARK: - Rendered Overlay
@@ -109,7 +124,7 @@ final class ProgressOverlayTests: XCTestCase {
     /// Without a cancel action the overlay holds no button, as the text
     /// extraction overlay never has.
     func testOverlayWithoutACancelActionHoldsNoButton() throws {
-        let overlay = ProgressOverlay(title: "Extracting Text", current: 2, total: 5, message: "", itemNoun: "books extracted")
+        let overlay = ProgressOverlay(title: "Extracting Text", current: 2, total: 5, message: "", itemNoun: TextExtractionProgress.itemNoun)
 
         try withHostedView(overlay, until: { !self.accessibilityElements(labelled: overlay.spokenStatus, in: $0).isEmpty }) { hostingView in
             guard !accessibilityElements(labelled: overlay.spokenStatus, in: hostingView).isEmpty else {
@@ -149,7 +164,7 @@ final class ProgressOverlayTests: XCTestCase {
         XCTAssertEqual(overlay.title, "Importing Books")
         XCTAssertEqual(overlay.current, 3)
         XCTAssertEqual(overlay.total, 10)
-        XCTAssertEqual(overlay.itemNoun, "books processed")
+        XCTAssertEqual(overlay.itemNoun, ImportProgressWording.itemNoun)
         XCTAssertEqual(
             overlay.spokenStatus,
             "Importing Books: 3 of 10 books processed. Book 4 of 10: “Rope Splicing.txt”, reading its text."
@@ -183,7 +198,7 @@ final class ProgressOverlayTests: XCTestCase {
             current: 0,
             total: 0,
             message: "Extracting “Library Export.zip”: 37 of 120 items...",
-            itemNoun: "books processed",
+            itemNoun: ImportProgressWording.itemNoun,
             onCancel: onCancel
         )
     }
