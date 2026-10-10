@@ -192,6 +192,69 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
     }
 
+    // MARK: - An Article's Text
+
+    /// The after-playing rule never deletes an article's text: it removes an
+    /// opened article's HTML file and keeps its content.md, edited by hand
+    /// before feed items lost Edit Text, beside its record; an article never
+    /// opened whose package holds a copy Edit Text kept counts as the
+    /// listener's, so its package stays with the copy and its text.
+    func testTheAfterPlayingRuleKeepsAnArticlesText() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordArticleSweep")
+        let feed = try await subscribeToArticles(2, in: world)
+        var articles: [Book] = []
+        for number in 1...2 {
+            world.center.download("guid:post-\(number)", of: feed.id)
+            articles.append(try await downloadedBook(world, feed: feed, item: "guid:post-\(number)"))
+        }
+        let opened = try listen(to: articles[0], in: world)
+        let editedText = TextMouthPaths.contentMarkdownPath(in: opened.tmbDirectory)
+        try "# Edited by hand".write(to: editedText, atomically: true, encoding: .utf8)
+        let neverOpened = articles[1]
+        let copy = neverOpened.tmbDirectory.appendingPathComponent("content.md\(TextMouthPaths.keptTextCopyMarker)20261010T020000Z")
+        try "# An edit not taken".write(to: copy, atomically: true, encoding: .utf8)
+        FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
+        world.center.markPlayed("guid:post-1", of: feed.id)
+        world.center.markPlayed("guid:post-2", of: feed.id)
+
+        let report = await world.center.sweepPlayedDownloads()
+
+        XCTAssertEqual(Set(report.deletedBookIDs), [opened.id, neverOpened.id])
+        XCTAssertEqual(Set(report.keptPackageBookIDs), [opened.id, neverOpened.id], "an article holding the listener's text went whole")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: opened.filePath), "the opened article's file stayed")
+        XCTAssertEqual(try String(contentsOf: editedText, encoding: .utf8), "# Edited by hand")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: opened.tmbDirectory).path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: neverOpened.filePath), "the unopened article's file stayed")
+        XCTAssertEqual(try String(contentsOf: copy, encoding: .utf8), "# An edit not taken")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.contentMarkdownPath(in: neverOpened.tmbDirectory).path))
+        XCTAssertEqual(Set(world.library.feedItemRows(of: feed.id).kept.keys), ["guid:post-1", "guid:post-2"])
+    }
+
+    /// The newest-N rule never deletes an article's text either: holding
+    /// more of its downloads than the number, it removes the oldest's HTML
+    /// file, keeping its package with its place and its content.md, edited
+    /// by hand, beside its record.
+    func testTheNewestRuleKeepsAnArticlesText() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordArticleNewest")
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        let feed = try await subscribeToArticles(2, in: world)
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        let newest = try await downloadedBook(world, feed: feed, item: "guid:post-1")
+        let oldest = try listen(to: try await downloadedBook(world, feed: feed, item: "guid:post-2"), in: world)
+        let editedText = TextMouthPaths.contentMarkdownPath(in: oldest.tmbDirectory)
+        try "# Edited by hand".write(to: editedText, atomically: true, encoding: .utf8)
+
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        let report = await world.center.applyItemPolicy(to: [feed.id])
+
+        XCTAssertEqual(report.removedBookIDs, [oldest.id])
+        XCTAssertEqual(report.keptPackageBookIDs, [oldest.id])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldest.filePath), "the oldest article's file stayed")
+        XCTAssertEqual(try String(contentsOf: editedText, encoding: .utf8), "# Edited by hand")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: oldest.tmbDirectory).path))
+        XCTAssertNotNil(world.library.bookByID(newest.id))
+    }
+
     // MARK: - Downloading Again
 
     /// Downloading again an item whose package was kept restores the same
@@ -261,12 +324,12 @@ final class FeedItemRecordTests: XCTestCase {
         let staged = try makeSandboxDirectory("FeedPackageListingStaged")
         let neverOpened = Self.row("Never Opened", feedID: UUID(), itemID: "guid:never")
 
-        XCTAssertFalse(FeedItemPackage.holdsTranscript(listable))
+        XCTAssertFalse(FeedItemPackage.holdsListenersFiles(listable))
         try Data("{}".utf8).write(to: TextMouthPaths.transcriptPath(in: listable))
-        XCTAssertTrue(FeedItemPackage.holdsTranscript(listable))
-        XCTAssertTrue(FeedItemPackage.holdsTranscript(unlistable), "a package that cannot be listed was taken to hold no transcript")
+        XCTAssertTrue(FeedItemPackage.holdsListenersFiles(listable))
+        XCTAssertTrue(FeedItemPackage.holdsListenersFiles(unlistable), "a package that cannot be listed was taken to hold no transcript")
         XCTAssertTrue(FeedItemPackage.holdsListenerState(neverOpened, package: unlistable))
-        XCTAssertFalse(FeedItemPackage.holdsTranscript(gone))
+        XCTAssertFalse(FeedItemPackage.holdsListenersFiles(gone))
         XCTAssertFalse(FeedItemPackage.holdsListenerState(neverOpened, package: gone))
         XCTAssertThrowsError(try FeedItemPackage.copyWhatANewDownloadKeeps(from: unlistable, to: staged))
         XCTAssertNoThrow(try FeedItemPackage.copyWhatANewDownloadKeeps(from: gone, to: staged))
@@ -732,6 +795,25 @@ final class FeedItemRecordTests: XCTestCase {
             books.append(try await downloadedBook(world, feed: feed, item: "guid:ep-\(number)"))
         }
         return (feed, books)
+    }
+
+    /// Starts `world`'s engine and subscribes it to a feed of `count`
+    /// articles, "guid:post-1" onwards, the first the newest, each of 270
+    /// words, so its web page is never fetched in place of its own text.
+    private func subscribeToArticles(_ count: Int, in world: FeedTestWorld) async throws -> Feed {
+        await world.start()
+        let text = (1...30).map { "<p>Paragraph \($0) says what the release changed and why.</p>" }.joined()
+        let items = (1...count).map { number in
+            FeedXML.Item(
+                guid: "post-\(number)",
+                title: "Post \(number)",
+                published: world.day(Double(-number)),
+                description: text,
+                link: "https://news.example/post-\(number)"
+            )
+        }
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(title: "Corkboard News", items: items)))
+        return try await world.subscribe("/feed.xml")
     }
 
     /// A feed item's row titled `title`, of the item `itemID` of the feed

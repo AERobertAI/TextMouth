@@ -163,10 +163,12 @@ extension FeedCenter {
         let outcome = try library.removeFeedFiles(of: [book], keepingPackages: keepingPackage) { removal in
             let package = try FeedItemPackage.packageForRemoval(of: removal.row, in: root)
             if removal.keepsPackage {
-                // A text book's content.md is made from its file and goes
-                // with it, but it may hold an edit made with Edit Text, so
-                // it follows the Trash setting as the file does, rather than
-                // going for good with the caches; it goes first, so a
+                // A text book's content.md may hold an edit made with Edit
+                // Text, so it stays in a kept package whenever one of the
+                // engine's rules removes the file
+                // (`FeedItemPackage.staysWithoutTheFile(_:)`); the listener's
+                // own Delete Download takes it with the file, following the
+                // Trash setting as the file does. It goes first, so a
                 // refusal leaves both.
                 let text = TextMouthPaths.contentMarkdownPath(in: package)
                 if !removal.row.format.isAudio, FileManager.default.fileExists(atPath: text.path) {
@@ -276,10 +278,12 @@ extension FeedCenter {
     /// never; `FeedSettings.deleteDownloadsDaysAfterPlayed` unless the feed
     /// overrides it). Each file goes as Delete Download's does, keeping its
     /// package while it holds something of the listener's (FR11, branch
-    /// A2): the records and the feeds' indexes are written first, and a
-    /// failed write keeps every file; the files themselves then go off the
-    /// main thread (`removeDue`). Its item stays, not downloaded, with the
-    /// date its download went.
+    /// A2), except that an article's content.md, which may hold an edit,
+    /// stays in a kept package (`FeedItemPackage.staysWithoutTheFile(_:)`):
+    /// the records and the feeds' indexes are written first, and a failed
+    /// write keeps every file; the files themselves then go off the main
+    /// thread (`removeDue`). Its item stays, not downloaded, with the date
+    /// its download went.
     ///
     /// Files are deleted for good, rather than moved to the Trash, so played
     /// episodes never fill the Trash, with dataless files left in the cloud.

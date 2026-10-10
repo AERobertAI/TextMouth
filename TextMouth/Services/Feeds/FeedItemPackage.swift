@@ -3,16 +3,21 @@ import Foundation
 // MARK: - A Feed Item's Package Without Its File (FR11)
 
 /// What becomes of a feed item's package when its downloaded file is
-/// removed (FR11, branch A2): by Delete Download, by the rule that deletes
-/// played downloads, or by the library's Remove.
+/// removed (FR11, branch A2): by Delete Download, by the library's Remove,
+/// or by one of the engine's rules, which delete played downloads and keep
+/// the newest.
 ///
 /// A package that holds something of the listener's stays, without the
 /// file: its record (bookInfo.json, with the place, the playback times, the
-/// bookmarks, and the item's own settings), its content index, and its
-/// transcript with the transcript's text. Everything made from the file goes
-/// with it: an article's content.md, the speech prepared for it
-/// (cachedAudio), and any audio edits. Downloading the item again puts the
-/// new file into the same package, under the same book ID
+/// bookmarks, and the item's own settings), its content index, its
+/// transcript, the copies Edit Text kept of an edited text, and its
+/// content.md, which is an audiobook's transcript text and may hold an edit
+/// of an article's text made with Edit Text before feed items lost it. No
+/// rule of the engine ever deletes an article's content.md; the listener's
+/// own Delete Download takes it with the file, as the Trash setting says.
+/// Everything else made from the file goes with it: the speech prepared for
+/// it (cachedAudio), and any audio edits. Downloading the item again puts
+/// the new file into the same package, under the same book ID
 /// (`FeedEpisodeImporter`). A package that holds nothing of the listener's
 /// goes whole, so an automatic download that aged out unopened leaves
 /// nothing behind.
@@ -32,8 +37,9 @@ enum FeedItemPackage {
     /// Whether the package at `package` of the feed item `row` holds
     /// something of the listener's: the item was opened, or it has a place,
     /// playback times, bookmarks, a setting of its own, a field of its
-    /// metadata edited by hand (`Book.HandEdits`), or a transcript. Only
-    /// such a package stays once its file is removed.
+    /// metadata edited by hand (`Book.HandEdits`), or files of the
+    /// listener's (`holdsListenersFiles(_:)`). Only such a package stays
+    /// once its file is removed.
     static func holdsListenerState(_ row: Book, package: URL) -> Bool {
         row.lastOpened != nil
             || row.readingPosition != nil
@@ -46,33 +52,32 @@ enum FeedItemPackage {
             || row.localSkipForwardUnit != nil
             || row.localSkipBackwardUnit != nil
             || !(row.handEdits?.fields.isEmpty ?? true)
-            || holdsTranscript(package)
+            || holdsListenersFiles(package)
     }
 
-    /// Whether the package at `package` holds a transcript, or a copy of one
-    /// kept beside it, looked for without downloading anything. A package
-    /// that is there but cannot be listed, as one whose folder is only in
-    /// the cloud or cannot be read, is taken to hold one, so it is kept
-    /// rather than deleted on a guess.
-    static func holdsTranscript(_ package: URL) -> Bool {
+    /// Whether the package at `package` holds files of the listener's: a
+    /// transcript, a copy of one kept beside it, or a copy Edit Text kept of
+    /// an edited text, which may be the only copy of the edit. Looked for
+    /// without downloading anything; a package that is there but cannot be
+    /// listed, as one whose folder is only in the cloud or cannot be read,
+    /// is taken to hold them, so it is kept rather than deleted on a guess.
+    static func holdsListenersFiles(_ package: URL) -> Bool {
         guard let names = try? listedEntryNames(of: package) else { return true }
-        return names.contains(where: TextMouthPaths.isTranscriptFile)
+        return names.contains { TextMouthPaths.isTranscriptFile($0) || TextMouthPaths.isKeptTextCopy($0) }
     }
 
-    /// Whether the entry named `name` at the top of a package whose book is
-    /// of `format` stays there once the book's file goes: the record, the
-    /// content index, the transcript's files, and the copies Edit Text kept
-    /// of an edited text, for every format, since they may hold the only
-    /// copy of an edit; and, for an audiobook, its content.md, which is its
-    /// transcript's text. An article's content.md is made from its file, and
-    /// goes with it, as the listener's own deletion removes it
+    /// Whether the entry named `name` at the top of a package stays there
+    /// once the book's file goes, whatever the book's format: the record,
+    /// the content index, the transcript's files, the copies Edit Text kept
+    /// of an edited text, and content.md, which is an audiobook's transcript
+    /// text and may hold an edit of an article's text made with Edit Text.
+    /// Each may hold the only copy of something the listener made, so no
+    /// rule of the engine removes it; only the listener's own Delete
+    /// Download takes an article's content.md, with its file
     /// (`FeedCenter`'s Delete Download, through `FeedEnvironment.removeItem`).
-    static func staysWithoutTheFile(_ name: String, format: BookFormat) -> Bool {
-        if name == recordName || name == TextMouthPaths.contentIndexFileName || TextMouthPaths.isTranscriptFile(name)
-            || TextMouthPaths.isKeptTextCopy(name) {
-            return true
-        }
-        return format.isAudio && name == textName
+    static func staysWithoutTheFile(_ name: String) -> Bool {
+        name == recordName || name == TextMouthPaths.contentIndexFileName || name == textName
+            || TextMouthPaths.isTranscriptFile(name) || TextMouthPaths.isKeptTextCopy(name)
     }
 
     /// The names at the top of the package at `package`, listed without
@@ -153,12 +158,12 @@ enum FeedItemPackage {
     // MARK: Removing
 
     /// Removes from `package` everything the file of `row` made that its
-    /// removal leaves: each entry `staysWithoutTheFile(_:format:)` does not
-    /// keep, for good, without downloading anything. An entry that cannot
-    /// be removed is a cache, so it stays, with one FEED_DOWNLOAD_CACHE_LEFT
+    /// removal leaves: each entry `staysWithoutTheFile(_:)` does not keep,
+    /// for good, without downloading anything. An entry that cannot be
+    /// removed is a cache, so it stays, with one FEED_DOWNLOAD_CACHE_LEFT
     /// line in the debug log; the listener loses nothing by it.
     static func removeWhatTheFileMade(of row: Book, from package: URL) {
-        for name in entryNames(of: package) where !staysWithoutTheFile(name, format: row.format) {
+        for name in entryNames(of: package) where !staysWithoutTheFile(name) {
             do {
                 try DatalessFiles.withoutDownloading {
                     try FileManager.default.removeItem(at: package.appendingPathComponent(name))
@@ -172,9 +177,10 @@ enum FeedItemPackage {
     }
 
     /// Removes what `removal` says from the data directory at `root`, for
-    /// good, without downloading anything, as the rule deleting played
-    /// downloads does: the file and what it made, keeping the package, or
-    /// the whole package. A file or package already gone counts as removed.
+    /// good, without downloading anything, as the engine's rules do: the
+    /// file and what it made, keeping the package with what stays in it
+    /// (`staysWithoutTheFile(_:)`, an article's content.md among it), or the
+    /// whole package. A file or package already gone counts as removed.
     /// - Throws: `FeedItemPackageError.notAFeedPackage` for a row whose
     ///   package is not where its feed keeps it, or why the file or package
     ///   could not be removed; nothing was removed then.
@@ -201,10 +207,11 @@ extension FeedItemPackage {
     /// built in, what it keeps of the kept package at `kept`: the
     /// transcript's files and the copies Edit Text kept of an edited text,
     /// whatever the format, as the kept package kept them
-    /// (`staysWithoutTheFile(_:format:)`). The record and the content index
-    /// are written anew, and an audiobook's content.md is written again from
-    /// its transcript when the episode opens (`TranscriptTextLoader`), or
-    /// found stale when the new file's audio differs.
+    /// (`staysWithoutTheFile(_:)`). The record and the content index are
+    /// written anew, and so is content.md: an article's from its new file,
+    /// as every import writes it, and an audiobook's from its transcript
+    /// when the episode opens (`TranscriptTextLoader`), or found stale when
+    /// the new file's audio differs.
     /// - Throws: why the kept package, which is there, could not be listed,
     ///   or why one could not be copied: the download then fails and the
     ///   kept package stays as it was, so no transcript is lost. A listing
