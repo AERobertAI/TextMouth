@@ -89,8 +89,10 @@ class FolderNavigationHistory: ObservableObject {
         let folderName = path.isEmpty
             ? "Library"
             : (path.components(separatedBy: "/").last ?? "Library")
+        // The library's own books: a feed's items are counted as their feed
+        // (FR11).
         let bookCount = path.isEmpty
-            ? library.books.count
+            ? library.libraryBookCount
             : library.totalBooksInFolderTree(path)
         return "\(folderName), \(CountWording.books(bookCount))"
     }

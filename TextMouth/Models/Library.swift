@@ -213,6 +213,18 @@ struct Library: Codable {
         books.removeAll(where: \.isFeedItem)
     }
 
+    /// Runs `body` on this library with its feed items' rows set aside, and
+    /// puts them back after it, as they were (FR11): for a pass that
+    /// reconciles the library's own books with the Library folder, as
+    /// Rebuild Directory does, which a feed item's package is never in.
+    mutating func withFeedItemsSetAside<Result>(_ body: (inout Library) throws -> Result) rethrows -> Result {
+        let feedItems = books.filter(\.isFeedItem)
+        guard !feedItems.isEmpty else { return try body(&self) }
+        books.removeAll(where: \.isFeedItem)
+        defer { books.append(contentsOf: feedItems) }
+        return try body(&self)
+    }
+
     /// Each feed's rows as its own index keeps them: the feed items among
     /// `books`, then those on the shelf, by feed, and an empty list for each
     /// feed whose index the library keeps but which it holds no row of now,
@@ -263,8 +275,10 @@ struct Library: Codable {
     // MARK: - Book Operations
 
     mutating func addBook(_ book: Book) {
-        // Check for duplicate by MD5 hash
-        guard !books.contains(where: { $0.md5Hash == book.md5Hash }) else { return }
+        // Check for duplicate by MD5 hash among the library's own books: a
+        // feed item may carry the same file as a book (FR11), as two shows
+        // can carry one file.
+        guard !books.contains(where: { !$0.isFeedItem && $0.md5Hash == book.md5Hash }) else { return }
         books.append(book)
     }
 
@@ -745,20 +759,24 @@ struct Library: Codable {
         folderSortSettings = otherSettings.merging(relocatedSettings) { _, relocated in relocated }
     }
 
-    /// Check whether a folder contains any books or subfolders
+    /// Check whether a folder contains any books or subfolders. A feed's
+    /// items are in no folder (FR11), so they never count.
     func folderHasContents(_ folder: BookFolder) -> Bool {
         let path = folder.fullPath
         let hasBooks = books.contains {
-            $0.folderPath == path || $0.folderPath.hasPrefix(path + "/")
+            !$0.isFeedItem && ($0.folderPath == path || $0.folderPath.hasPrefix(path + "/"))
         }
         let hasSubfolders = folders.contains { $0.parentPath == path }
         return hasBooks || hasSubfolders
     }
 
-    /// Count all books recursively inside a folder (including subfolders)
+    /// Count all books recursively inside a folder (including subfolders):
+    /// the library's own, never a feed's items (FR11), which the library
+    /// counts as their feeds instead. For the top level ("") it counts the
+    /// books there, as it always has; `libraryBookCount` counts them all.
     func totalBooksInFolderTree(_ path: String) -> Int {
         books.filter {
-            $0.folderPath == path || $0.folderPath.hasPrefix(path + "/")
+            !$0.isFeedItem && ($0.folderPath == path || $0.folderPath.hasPrefix(path + "/"))
         }.count
     }
 
@@ -770,20 +788,26 @@ struct Library: Codable {
 
     // MARK: - Query
 
+    /// The library's own books in the folder at `path` ("" for the top
+    /// level): never a feed's items, which name no folder (FR11) and which
+    /// their feed's folder lists instead
+    /// (`LibraryViewModel.feedItems(listedIn:)`).
     func booksInFolder(_ path: String) -> [Book] {
-        books.filter { $0.folderPath == path }
+        books.filter { !$0.isFeedItem && $0.folderPath == path }
     }
 
-    /// All books with no folder assignment
+    /// All books of the library's own with no folder assignment.
     func booksWithNoFolder() -> [Book] {
-        books.filter { $0.folderPath.isEmpty }
+        booksInFolder("")
     }
 
     /// All books never opened, from the root and every folder: what the
     /// Unopened category lists. A book is unopened while it has no
-    /// `lastOpened`, which is what `BookState.isNew` reads too.
+    /// `lastOpened`, which is what `BookState.isNew` reads too. A feed's
+    /// items are left out (FR11): their feed's row stands for them, as the
+    /// user asked on October 7.
     func unopenedBooks() -> [Book] {
-        books.filter { $0.lastOpened == nil }
+        books.filter { !$0.isFeedItem && $0.lastOpened == nil }
     }
 
     func subfolders(of parentPath: String) -> [BookFolder] {

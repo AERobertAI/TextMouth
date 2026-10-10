@@ -66,16 +66,19 @@ class FeedItemIndexTestCase: CloudMaintenanceTestCase {
         return model
     }
 
-    /// A downloaded article of this test's feed, as a download publishes
-    /// one: a package in the feed's folder holding its HTML and its record,
-    /// which names the feed and item, and the row the library holds for it.
+    /// A downloaded article of this test's feed, or of the feed `feedID`, as
+    /// a download publishes one: a package in the feed's folder holding its
+    /// HTML and its record, which names the feed and item, and the row the
+    /// library holds for it.
     func makeFeedItem(
         title: String = "Lamentable Lemmings",
         itemID: String = UUID().uuidString,
+        of feedID: UUID? = nil,
         dateAdded: Date = FeedItemIndexTestCase.date(),
         lastOpened: Date? = nil,
         position: ReadingPosition? = nil
     ) throws -> Book {
+        let feedID = feedID ?? self.feedID
         let bookID = UUID()
         let name = TextMouthPaths.tmbName(title: title, author: "Antiquarian", dateAdded: dateAdded, bookID: bookID)
         let package = FeedPaths.packageDirectory(named: name, of: feedID, in: TextMouthPaths.root)

@@ -52,6 +52,13 @@ extension LibraryViewModel {
 
     // MARK: - Duplicate Detection
 
+    /// The books Find Duplicate Books scans: the library's own, never a
+    /// feed's items (FR11), which belong to their feed, where one file may
+    /// come from two shows.
+    var booksForDuplicateScan: [Book] {
+        library.libraryBooks
+    }
+
     /// The book in the library that `book` is a copy of: one with the same
     /// file content, or failing that one imported from the same source path.
     /// Nil when the library holds no copy.
@@ -61,7 +68,9 @@ extension LibraryViewModel {
             guard let sourcePath = book.sourceFilePath, !sourcePath.isEmpty else { return false }
             return existing.sourceFilePath == sourcePath
         }
-        let others = library.books.lazy.filter { $0.id != book.id }
+        // Only the library's own books: a feed's item may carry the same file
+        // as a book, as two shows can carry one file (FR11).
+        let others = library.libraryBooks.lazy.filter { $0.id != book.id }
         return others.first { $0.md5Hash == book.md5Hash } ?? others.first(where: isFromSameSource)
     }
 

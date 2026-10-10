@@ -336,14 +336,17 @@ extension LibraryViewModel {
     /// the user arranged (FR09), and a search narrows that order.
     func displayedBooks(at location: LibraryLocation, matching search: String = "") -> [Book] {
         let sort = sortState(at: location)
-        let unsearched = LibraryListCache.Key(location: location, sort: sort, search: "")
+        // A feed's folder lists its items beside its books (FR11), so which
+        // feed the folder shown holds is part of what the list is.
+        let feedID = location.category == .folders ? feedID(listedIn: location.folderPath) : nil
+        let unsearched = LibraryListCache.Key(location: location, sort: sort, search: "", feedID: feedID)
         let books = listCache.books(for: unsearched, in: library) {
             let listed = booksForCategory(location.category, folderPath: location.folderPath)
             return location.keepsItsOwnOrder ? listed : sortedBooks(listed, by: sort)
         }
         guard !search.isEmpty else { return books }
         let query = search.lowercased()
-        let searched = LibraryListCache.Key(location: location, sort: sort, search: query)
+        let searched = LibraryListCache.Key(location: location, sort: sort, search: query, feedID: feedID)
         return listCache.books(for: searched, in: library) {
             books.filter { $0.title.lowercased().contains(query) || $0.author.lowercased().contains(query) }
         }
@@ -373,12 +376,18 @@ extension LibraryViewModel {
     /// the reading list's books in the Reading List, in the list's order,
     /// which is never sorted (FR09). All Items, Unopened, Recent, and the
     /// Reading List ignore `folderPath`.
+    ///
+    /// A feed's downloaded items are listed in their feed's folder alone,
+    /// beside its books (FR11): All Items, Unopened, and the top of Folders
+    /// leave them out, their feeds' rows standing for them; Recent lists,
+    /// of each feed's items, the one opened last; the Reading List lists any
+    /// it holds.
     func booksForCategory(_ category: LibraryCategory, folderPath: String) -> [Book] {
         switch category {
         case .folders:
-            return library.booksInFolder(folderPath)
+            return library.booksInFolder(folderPath) + feedItems(listedIn: folderPath)
         case .allItems:
-            return library.books
+            return library.libraryBooks
         case .unopened:
             return library.unopenedBooks()
         case .recent:

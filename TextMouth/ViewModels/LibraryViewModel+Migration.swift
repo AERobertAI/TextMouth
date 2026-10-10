@@ -1011,7 +1011,11 @@ extension LibraryViewModel {
         do {
             try ensureLibraryIndexIsReadable()
             let migration = try await withStorageWorkHeld(moving: nil, waiting: waiting) { () throws -> LegacyMigrationReport? in
-                let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
+                // A feed's items are never in the Library folder the rebuild
+                // reconciles (FR11), so they wait aside while it does.
+                let migration = try library.withFeedItemsSetAside {
+                    try FileImportService.rebuildDirectoryStructure(library: &$0)
+                }
                 save()
                 LibraryPersistenceService.saveAllBookInfos(library)
                 return migration
@@ -1075,7 +1079,10 @@ extension LibraryViewModel {
                 : DataDirectoryMoveRequest(destination: defaultRoot, isResetToDefault: true, access: access)
             let migration = try await withStorageWorkHeld(moving: move, waiting: waiting) { () throws -> LegacyMigrationReport? in
                 try TextMouthPaths.ensureDirectoryStructure()
-                let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
+                // As in Rebuild Directory, a feed's items wait aside (FR11).
+                let migration = try library.withFeedItemsSetAside {
+                    try FileImportService.rebuildDirectoryStructure(library: &$0)
+                }
                 configService.config.dataDirectoryPath = ""
                 configService.saveToDisk()
                 save()

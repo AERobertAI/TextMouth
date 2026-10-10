@@ -252,6 +252,11 @@ final class LibraryViewModel: ObservableObject {
     /// The reason last announced to VoiceOver, so each is announced once.
     private(set) var announcedUnavailability: DataDirectoryUnavailability?
 
+    /// The feed engine whose feeds' items this library lists in their feeds'
+    /// folders (FR11): the app's (`FeedCenter.shared`) while nil, or the one
+    /// a test starts in this library, as `FeedTestWorld` does (`feeds`).
+    var feedEngine: FeedCenter?
+
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
     /// Shared config service used across extension files. Reached when
