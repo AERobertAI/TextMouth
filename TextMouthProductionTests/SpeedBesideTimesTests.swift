@@ -9,7 +9,8 @@ import XCTest
 /// off every surface reads as before. With it on, an audiobook not at 1x
 /// names its speed ("3:44:01 left at 2.0x", "remaining at 2.0 times
 /// speed"), and a text book its words a minute ("at 500 words a minute"),
-/// on the reader's status row and in the Headings sheet's durations.
+/// on the reader's status row, in the Headings sheet's durations, in Where
+/// Am I? (brief and full), and in Copy Reading Position's time left.
 /// config.json carries it as "includeSpeedWithTimes". Pure: readers from
 /// `RecordingTimeFixtures`, settings on preferences of the test's own.
 @MainActor
@@ -206,6 +207,110 @@ final class SpeedBesideTimesTests: XCTestCase {
             XCTAssertTrue(row.infoText.hasSuffix(" at 500 words a minute"), row.infoText)
             XCTAssertTrue(row.accessibilitySuffix.hasSuffix(" at 500 words a minute"), row.accessibilitySuffix)
         }
+    }
+
+    /// While the setting is off, Where Am I? (brief and full) and Copy
+    /// Reading Position read as before; with it on, each names the speed
+    /// beside the book's time left, and the full Where Am I? beside the
+    /// total too, while the time left in the heading, said just after the
+    /// book's, names none. An audiobook at 1x reads as before.
+    func testWhereAmIAndTheCopiedPositionNameTheSpeedWithTheSettingOn() {
+        let heading = Fixtures.headingPosition(number: 26, of: 412)
+        let brief = { (speed: ReaderTimeWording.ListeningSpeed?) in
+            ReaderViewModel.briefWhereAmISummary(
+                bookTitle: "Dune",
+                locationTitle: "The Battle",
+                headingPosition: heading,
+                percentComplete: 22.9,
+                timeRemaining: 13_441,
+                speed: speed
+            )
+        }
+        XCTAssertEqual(brief(nil), "Dune. The Battle. Heading 26 of 412. 23 percent. 3 hours, 44 minutes, 1 second remaining.")
+        XCTAssertEqual(brief(.audio(1)), brief(nil))
+        XCTAssertEqual(
+            brief(.audio(2)),
+            "Dune. The Battle. Heading 26 of 412. 23 percent. 3 hours, 44 minutes, 1 second remaining at 2.0 times speed."
+        )
+        XCTAssertEqual(
+            brief(.words(perMinute: 500)),
+            "Dune. The Battle. Heading 26 of 412. 23 percent. 3 hours, 44 minutes, 1 second remaining at 500 words a minute."
+        )
+
+        let full = { (speed: ReaderTimeWording.ListeningSpeed?) in
+            ReaderViewModel.fullWhereAmISummary(
+                bookTitle: "Dune",
+                locationTitle: "The Battle",
+                headingPosition: heading,
+                percentComplete: 22.9,
+                timeRemaining: 13_441,
+                timeRemainingInHeading: 600,
+                totalTime: 17_433,
+                speed: speed
+            )
+        }
+        XCTAssertEqual(
+            full(nil),
+            "Dune. The Battle. Heading 26 of 412. 23 percent through the book. 3 hours, 44 minutes, 1 second remaining. "
+                + "10 minutes remaining in this heading. Total book time: 4 hours, 50 minutes, 33 seconds."
+        )
+        XCTAssertEqual(
+            full(.audio(2)),
+            "Dune. The Battle. Heading 26 of 412. 23 percent through the book. "
+                + "3 hours, 44 minutes, 1 second remaining at 2.0 times speed. 10 minutes remaining in this heading. "
+                + "Total book time: 4 hours, 50 minutes, 33 seconds at 2.0 times speed."
+        )
+
+        let copied = { (speed: ReaderTimeWording.ListeningSpeed?) in
+            ReaderViewModel.readingPositionSummary(
+                bookTitle: "Dune",
+                author: "Frank Herbert",
+                locationTitle: "The Battle",
+                headingPosition: heading,
+                percentComplete: 22.9,
+                formattedTimeRemaining: "3:44:01",
+                speed: speed
+            )
+        }
+        XCTAssertEqual(copied(nil), "Dune | by Frank Herbert | The Battle | Heading 26 of 412 | 22.9% through | 3:44:01 remaining")
+        XCTAssertEqual(copied(.audio(1)), copied(nil))
+        XCTAssertEqual(
+            copied(.audio(2)),
+            "Dune | by Frank Herbert | The Battle | Heading 26 of 412 | 22.9% through | 3:44:01 remaining at 2.0x"
+        )
+        XCTAssertEqual(
+            copied(.words(perMinute: 500)),
+            "Dune | by Frank Herbert | The Battle | Heading 26 of 412 | 22.9% through | 3:44:01 remaining at 500 words a minute"
+        )
+    }
+
+    /// A reader names its speed in Where Am I? and the copied position only
+    /// with the setting on, and a finished book says only that it is.
+    func testTheReadersSummariesFollowTheSetting() throws {
+        let settings = makeSettings("recordingtime-speed-summaries")
+        let reader = Fixtures.makeReader(format: .audio, settings: settings)
+        defer { reader.close() }
+        reader.content = try Fixtures.audioContent(.oneFile)
+        reader.audioSpeed = 2
+        reader.currentCharacterOffset = 79_850
+
+        XCTAssertFalse(reader.buildBriefWhereAmI().contains("times speed"), reader.buildBriefWhereAmI())
+        XCTAssertFalse(reader.readingPositionText.contains("remaining at"), reader.readingPositionText)
+        settings.includeSpeedWithTimes = true
+        XCTAssertTrue(reader.buildBriefWhereAmI().hasSuffix("remaining at 2.0 times speed."), reader.buildBriefWhereAmI())
+        XCTAssertTrue(reader.readingPositionText.hasSuffix("remaining at 2.0x"), reader.readingPositionText)
+
+        let finished = ReaderViewModel.readingPositionSummary(
+            bookTitle: "Dune",
+            author: "Frank Herbert",
+            locationTitle: "Appendix",
+            headingPosition: Fixtures.headingPosition(number: 40, of: 40),
+            percentComplete: 100,
+            formattedTimeRemaining: "0:00",
+            isFinished: true,
+            speed: .audio(2)
+        )
+        XCTAssertEqual(finished, "Dune | by Frank Herbert | Appendix | Heading 40 of 40 | \(EndOfBookWording.finishedProgress)")
     }
 
     // MARK: - Helpers

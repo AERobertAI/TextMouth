@@ -167,6 +167,14 @@ enum RecordingTimeFixtures {
         )
     }
 
+    /// A heading position, "Heading `number` of `count`", in a book of
+    /// `count` headings at the starts of chapters, for the summaries'
+    /// formatters.
+    static func headingPosition(number: Int, of count: Int) -> HeadingPosition {
+        let headings = (0..<count).map { Heading(level: 1, text: "Part \($0 + 1)", chapterIndex: $0, characterOffset: 0) }
+        return HeadingPosition(in: headings, chapterIndex: number - 1, characterOffset: 0)
+    }
+
     /// The time a surface shows, read back as Go to Time reads it; nil when
     /// it cannot be read, which the caller reports.
     static func typedBack(_ shown: String) -> TimeInterval? {
