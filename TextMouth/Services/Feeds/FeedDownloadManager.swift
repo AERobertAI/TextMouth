@@ -748,15 +748,24 @@ final class FeedDownloadManager {
 
     /// Tells the downloads' progress that the download `request` began, by
     /// its item's and its feed's titles, an episode's file at none of the
-    /// bytes its feed gives; an article's page comes uncounted. A request
-    /// whose item went begins nothing, and ends at once.
+    /// bytes its feed gives; an article's page comes uncounted, and whether
+    /// the newest-N rule asked for it by itself, which nobody heard begin
+    /// (feed review item 17). A request whose item went begins nothing, and
+    /// ends at once.
     private func beginProgress(of request: Request) {
         guard let record = store.record(of: request.feedID), let item = record.item(request.itemID) else {
             publishQueue()
             return
         }
         let transfer = Self.isEpisode(item) ? Self.progress(written: 0, expected: 0, estimate: item.enclosure?.length) : nil
-        progress.begin(title: item.title, feedTitle: record.feed.title, transfer: transfer, queued: queuedSizes, waits: waitingApart())
+        progress.begin(
+            title: item.title,
+            feedTitle: record.feed.title,
+            transfer: transfer,
+            queued: queuedSizes,
+            waits: waitingApart(),
+            byItself: request.origin == .window
+        )
     }
 
     /// Tells the downloads' progress the downloads waiting to start and

@@ -271,6 +271,12 @@ final class FeedDownloadProgress: ObservableObject {
     /// The run's last download done, by its title, and whether it failed,
     /// which the end of a run of one names.
     private var lastDone: (title: String, failed: Bool)?
+    /// Whether the run under way began with a download TextMouth asked for
+    /// by itself, the newest-N rule's, which nobody heard begin; nil before
+    /// its first download begins (feed review item 17).
+    private var runBeganByItself: Bool?
+    /// Whether such a run was announced once it had run long.
+    private var startAnnounced = false
 
     /// Progress timed by `now`: the system's clock unless a test passes its
     /// own.
@@ -288,13 +294,26 @@ final class FeedDownloadProgress: ObservableObject {
 
     /// The download of the item titled `title`, of the feed titled
     /// `feedTitle`, began, its file at `transfer` (nil for an article),
-    /// leaving `queued` waiting to start and `waits` waiting apart.
-    func begin(title: String, feedTitle: String, transfer: BookDownloadProgress?, queued: [Int64?], waits: FeedDownloadWaits) {
+    /// leaving `queued` waiting to start and `waits` waiting apart; asked
+    /// for `byItself` by the newest-N rule, when the first of its run, the
+    /// run is announced once it has run long (feed review item 17).
+    func begin(
+        title: String,
+        feedTitle: String,
+        transfer: BookDownloadProgress?,
+        queued: [Int64?],
+        waits: FeedDownloadWaits,
+        byItself: Bool = false
+    ) {
         let download = FeedDownloadProgressState.Download(title: title, feedTitle: feedTitle, startedAt: now(), transfer: transfer)
         change { state in
             state.begin(download)
             state.setQueue(queued, waits: waits)
         }
+        if runBeganByItself == nil {
+            runBeganByItself = byItself
+        }
+        announceStartIfDue(at: now())
     }
 
     /// The file of the download under way has come as far as `transfer`
@@ -302,6 +321,7 @@ final class FeedDownloadProgress: ObservableObject {
     /// bytes redraw nothing; the section reads them as it shows itself anew.
     func receive(_ transfer: BookDownloadProgress) {
         change(publishing: false) { $0.receive(transfer) }
+        announceStartIfDue(at: now())
     }
 
     /// The book of the download under way is being added to the library.
@@ -324,6 +344,7 @@ final class FeedDownloadProgress: ObservableObject {
         if ending.isDone {
             announceQuarter(at: date)
         }
+        announceStartIfDue(at: date)
     }
 
     /// Notes that Cancel stopped the downloads titled `stopped`, and that
@@ -341,6 +362,8 @@ final class FeedDownloadProgress: ObservableObject {
     func clear() {
         quarterReached = 0
         lastDone = nil
+        runBeganByItself = nil
+        startAnnounced = false
         guard state != FeedDownloadProgressState() else { return }
         objectWillChange.send()
         state = FeedDownloadProgressState()
@@ -377,6 +400,8 @@ final class FeedDownloadProgress: ObservableObject {
             next.resetRun()
             quarterReached = 0
             lastDone = nil
+            runBeganByItself = nil
+            startAnnounced = false
         }
         guard next != state else { return }
         if publishing {
@@ -400,6 +425,8 @@ final class FeedDownloadProgress: ObservableObject {
         guard quarter > quarterReached else { return }
         quarterReached = quarter
         guard quarter < 4, !state.isCancelling, hasRunLong(state, at: date) else { return }
+        // A quarter heard says more than the run's start would.
+        startAnnounced = true
         VoiceOverAnnouncer.announce(
             FeedDownloadProgressWording.quarter(
                 done: state.done,
@@ -407,6 +434,21 @@ final class FeedDownloadProgress: ObservableObject {
                 failed: state.failed,
                 secondsLeft: state.secondsLeft(at: date)
             ),
+            priority: .medium
+        )
+    }
+
+    /// Announces, once, at medium priority, a run TextMouth started by
+    /// itself, which nobody heard begin, as soon as it has run long by
+    /// `date`: how many downloads are under way and the time left, as in
+    /// "Feed downloads: 9 under way, about 4 minutes left." (feed review
+    /// item 17). Not once a quarter has been heard, nor after Cancel.
+    private func announceStartIfDue(at date: Date) {
+        guard runBeganByItself == true, !startAnnounced, state.isRunning, !state.isCancelling,
+              hasRunLong(state, at: date) else { return }
+        startAnnounced = true
+        VoiceOverAnnouncer.announce(
+            FeedDownloadProgressWording.underWay(state.total - state.done, secondsLeft: state.secondsLeft(at: date)),
             priority: .medium
         )
     }
