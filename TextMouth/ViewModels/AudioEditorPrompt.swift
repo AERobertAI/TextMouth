@@ -73,7 +73,7 @@ enum AudioEditorPrompt: Identifiable, Equatable {
     /// What to type, said by the field's hint and shown under it.
     var explanation: String {
         switch self {
-        case .goToTime: return AudioEditorTimeEntry.howToType
+        case .goToTime: return TimeEntry.howToType
         case .insertSilence: return AudioEditorWording.silenceExplanation
         case .insertChapter: return AudioEditorWording.chapterExplanation
         }

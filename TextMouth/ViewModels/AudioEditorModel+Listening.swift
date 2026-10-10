@@ -161,7 +161,7 @@ extension AudioEditorModel {
     /// holds it; returns the sentence saying what's wrong with it, or nil
     /// once moved.
     func goToTime(typed text: String) -> String? {
-        switch AudioEditorTimeEntry.reading(text) {
+        switch TimeEntry.reading(text) {
         case .problem(let sentence):
             return sentence
         case .seconds(let time):
