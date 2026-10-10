@@ -176,7 +176,7 @@ final class TextAnchorRecordTests: XCTestCase {
     }
 
     /// A book's skipped headings stay in step with its heading IDs, which
-    /// are what the reader saves today: a change to the IDs keeps each
+    /// an older build's row names alone: a change to the IDs keeps each
     /// skipped heading still named (with its anchor), reads each new one
     /// from its ID, and drops each no longer named; an ID in no heading's
     /// form stays among the IDs but names no skipped heading. Both are
@@ -212,5 +212,38 @@ final class TextAnchorRecordTests: XCTestCase {
         var state = BookState(skippedHeadingIDs: [skippedNotes.id], skippedHeadings: [skippedNotes])
         state.skippedHeadingIDs = [intro.id]
         XCTAssertEqual(state.skippedHeadings, [SkippedHeading(intro)])
+    }
+
+    /// What the reader saves since T06's branch B is the skipped headings
+    /// themselves, each with its anchor, and the IDs are written from them:
+    /// in their order, replacing any ID in no heading's form, with each
+    /// heading's own anchor, never one kept from before; none, or nil, skips
+    /// nothing and writes neither. The record takes both, in step.
+    func testSavedSkippedHeadingsWriteTheirIDs() throws {
+        var book = anchoredBook()
+        book.skippedHeadingIDs = [skippedNotes.id, "heading-5"]
+        let intro = SkippedHeading(
+            Heading(level: 1, text: "Introduction", chapterIndex: 0, characterOffset: 0),
+            anchor: TextAnchor(before: "", after: "Introduction", fraction: 0, measuredIn: "3.0.7/1.0.0")
+        )
+        var renewed = skippedNotes
+        renewed.anchor = TextAnchor(before: "a new spanner ", after: "without looking up", fraction: 0.3)
+
+        book.setSkippedHeadings([intro, renewed])
+
+        XCTAssertEqual(book.skippedHeadings, [intro, renewed])
+        XCTAssertEqual(book.skippedHeadingIDs, [intro.id, renewed.id])
+        let record = try roundTrip(book.makeBookInfo())
+        XCTAssertEqual(record.state.skippedHeadings, [intro, renewed])
+        XCTAssertEqual(record.state.skippedHeadingIDs, [intro.id, renewed.id])
+        XCTAssertEqual(try roundTrip(book).skippedHeadings, [intro, renewed], "the row lost them")
+
+        book.setSkippedHeadings([])
+        XCTAssertNil(book.skippedHeadings)
+        XCTAssertNil(book.skippedHeadingIDs)
+        book.setSkippedHeadings([intro])
+        book.setSkippedHeadings(nil)
+        XCTAssertNil(book.skippedHeadings)
+        XCTAssertNil(book.skippedHeadingIDs)
     }
 }

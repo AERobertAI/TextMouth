@@ -122,18 +122,23 @@ struct Book: Identifiable, Codable, Hashable {
     var localPitch: Double?
     /// Heading IDs that should be skipped during playback (`Heading.id`):
     /// what the reader matches against the book's headings, and all older
-    /// builds keep. `skippedHeadings` follows every change to them (T06).
+    /// builds read. Written from `skippedHeadings`, which the reader saves
+    /// (`setSkippedHeadings(_:)`, T06's branch B). A caller that names
+    /// skips by their IDs alone, as an older build's row does, may still
+    /// set them: `skippedHeadings` then follows, keeping the anchor of each
+    /// heading still named.
     var skippedHeadingIDs: [String]? {
         didSet { skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings) }
     }
     /// The headings skipped during playback by their level, label, and
     /// place, with the text at their start (T06), so a skip can follow its
-    /// heading when the book's text is read anew. In step with
-    /// `skippedHeadingIDs`: made from the IDs when a row or record has none
-    /// (every one written before T06), and following every change to them,
-    /// since the IDs are what the reader saves until it saves skipped
-    /// headings itself (T06's branch B).
-    var skippedHeadings: [SkippedHeading]?
+    /// heading when the book's text is read anew: what TextMouth saves,
+    /// through `setSkippedHeadings(_:)`, which writes `skippedHeadingIDs`
+    /// from them. A row or record holding IDs alone, as every one written
+    /// before T06 does, has them made from its IDs, without anchors; one
+    /// holding both keeps the anchor of each heading its IDs name, since
+    /// the IDs, which every build writes, say which headings are skipped.
+    private(set) var skippedHeadings: [SkippedHeading]?
     /// Per-book end-of-book behavior override (nil = use global)
     var localEndOfBookBehavior: String?
     /// Per-book forward navigation unit (nil or invalid = use global).
@@ -1382,5 +1387,23 @@ struct SkippedHeading: Codable, Hashable, Sendable {
         }
         let headings = ids.compactMap { keptByID[$0] ?? SkippedHeading(id: $0) }
         return headings.isEmpty ? nil : headings
+    }
+}
+
+// MARK: - Saving Skipped Headings (T06)
+
+extension Book {
+    /// Saves `headings` as the headings this book skips during playback,
+    /// each with the text at its start (T06's branch B): what the reader
+    /// saves when a skip is toggled. `skippedHeadingIDs` is written from
+    /// them, for the reader's filter and for older builds, which read the
+    /// IDs alone. None, or nil, skips nothing and writes neither.
+    mutating func setSkippedHeadings(_ headings: [SkippedHeading]?) {
+        let skipped = headings.flatMap { $0.isEmpty ? nil : $0 }
+        // The IDs first: their observer puts the skipped headings in step
+        // with them, keeping old anchors, and the headings saved then
+        // replace those with their own.
+        skippedHeadingIDs = skipped?.map(\.id)
+        skippedHeadings = skipped
     }
 }

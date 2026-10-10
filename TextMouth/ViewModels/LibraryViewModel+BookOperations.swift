@@ -815,8 +815,28 @@ extension LibraryViewModel {
         updateBook(id: bookID) { $0.localEndOfBookBehavior = behavior }
     }
 
-    func updateSkippedHeadings(bookID: UUID, skippedIDs: [String]) {
-        updateBook(id: bookID) { $0.skippedHeadingIDs = skippedIDs.isEmpty ? nil : skippedIDs }
+    /// Saves `headings` as the headings the book `bookID` skips during
+    /// playback, each with the text at its start (T06's branch B), in its
+    /// row and its record; their IDs are written from them for the reader's
+    /// filter and for older builds (`Book.setSkippedHeadings(_:)`). None
+    /// skips nothing.
+    ///
+    /// A heading saved without its text keeps the text the row holds for
+    /// the same heading, so a reader whose copy of the book predates a
+    /// capture never drops one.
+    func updateSkippedHeadings(bookID: UUID, headings: [SkippedHeading]) {
+        updateBook(id: bookID) { book in
+            var heldAnchors: [String: TextAnchor] = [:]
+            for held in book.skippedHeadings ?? [] where heldAnchors[held.id] == nil {
+                heldAnchors[held.id] = held.anchor
+            }
+            book.setSkippedHeadings(headings.map { heading in
+                guard heading.anchor == nil, let anchor = heldAnchors[heading.id] else { return heading }
+                var kept = heading
+                kept.anchor = anchor
+                return kept
+            })
+        }
     }
 
     /// Gives the book `bookID` its own voice, speed, and pitch, nil for each

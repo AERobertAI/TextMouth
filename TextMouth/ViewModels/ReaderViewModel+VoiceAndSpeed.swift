@@ -189,17 +189,22 @@ extension ReaderViewModel {
     /// Toggle the skip state for a heading section. A next chapter already
     /// rendered ahead is rendered again when the change alters what it says,
     /// or which chapter comes next.
+    ///
+    /// The skips are saved as the headings themselves (`SkippedHeading`,
+    /// T06's branch B), in the reader's copy of the book and in the
+    /// library; their IDs, which the reader's filter matches, are written
+    /// from them.
     func toggleHeadingSkip(_ heading: Heading) {
-        var ids = book.skippedHeadingIDs ?? []
-        if ids.contains(heading.id) {
-            ids.removeAll { $0 == heading.id }
+        var skipped = book.skippedHeadings ?? []
+        if skipped.contains(where: { $0.id == heading.id }) {
+            skipped.removeAll { $0.id == heading.id }
             announceToVoiceOver("Section included: \(heading.text)")
         } else {
-            ids.append(heading.id)
+            skipped.append(SkippedHeading(heading))
             announceToVoiceOver("Section skipped: \(heading.text)")
         }
-        book.skippedHeadingIDs = ids
-        libraryViewModel.updateSkippedHeadings(bookID: book.id, skippedIDs: ids)
+        book.setSkippedHeadings(skipped)
+        libraryViewModel.updateSkippedHeadings(bookID: book.id, headings: skipped)
         refreshLookAhead()
     }
 }
