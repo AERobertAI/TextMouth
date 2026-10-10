@@ -189,13 +189,13 @@ final class ShortcutPressDispatcher {
         case .waiting(let first):
             // The same key again, as a shortcut: held, its repeats are
             // ignored; pressed again in time, it is the double press.
-            if match != nil, first.isPressOfSameKey(press) {
+            if match != nil, first.key.isPressed(by: press) {
                 if press.isRepeat {
                     return true
                 }
                 if press.time - first.time < doublePressTime() {
                     endWait()
-                    state = .afterDouble(Pressed(of: first, lastPressedAt: press.time))
+                    state = .afterDouble(Pressed(key: first.key, lastPressedAt: press.time))
                     trigger(first.double, binding: first.doubleBinding, shiftHeld: first.shiftHeld, window: press.window)
                     return true
                 }
@@ -206,8 +206,8 @@ final class ShortcutPressDispatcher {
         case .afterDouble(let pressed):
             // The same key again within the time of its last press, held or
             // pressed: ignored.
-            if match != nil, pressed.isPressOfSameKey(press), press.time - pressed.lastPressedAt < doublePressTime() {
-                state = .afterDouble(Pressed(of: pressed, lastPressedAt: press.time))
+            if match != nil, pressed.key.isPressed(by: press), press.time - pressed.lastPressedAt < doublePressTime() {
+                state = .afterDouble(Pressed(key: pressed.key, lastPressedAt: press.time))
                 return true
             }
             state = .idle
@@ -236,9 +236,7 @@ final class ShortcutPressDispatcher {
             return true
         }
         let first = FirstPress(
-            stroke: stroke,
-            scope: scope,
-            window: PressWindow(press.window),
+            key: PressedKey(stroke: stroke, scope: scope, window: PressWindow(press.window)),
             time: press.time,
             matchedStroke: match.stroke,
             shiftHeld: match.shiftHeld,
@@ -282,8 +280,8 @@ final class ShortcutPressDispatcher {
     private func runWaitingSingle() {
         guard case .waiting(let first) = state else { return }
         endWait()
-        guard first.singleWaits, let single = first.single, !first.window.isGone else { return }
-        trigger(single, binding: first.matchedStroke, shiftHeld: first.shiftHeld, window: first.window.window)
+        guard first.singleWaits, let single = first.single, !first.key.window.isGone else { return }
+        trigger(single, binding: first.matchedStroke, shiftHeld: first.shiftHeld, window: first.key.window.window)
     }
 
     /// Ends the wait of a first press, cancelling its timer.
@@ -474,14 +472,27 @@ extension ShortcutPressDispatcher {
         case afterDouble(Pressed)
     }
 
-    /// The first press of a key with a double action.
-    private struct FirstPress {
+    /// A key as it was pressed: the key with its modifiers, in a scope and
+    /// a window, which every later press of a double press must share.
+    private struct PressedKey {
         /// The key pressed, as a single press.
         let stroke: KeyBinding
         /// The scope it was pressed in.
         let scope: ShortcutScope
         /// The window it was pressed in.
         let window: PressWindow
+
+        /// Whether `press` is of this key, with the same modifiers, in the
+        /// same scope and window.
+        func isPressed(by press: Press) -> Bool {
+            press.stroke == stroke && press.scope == scope && window.isSame(as: press.window)
+        }
+    }
+
+    /// The first press of a key with a double action.
+    private struct FirstPress {
+        /// The key pressed, where, and in which window.
+        let key: PressedKey
         /// When it was pressed.
         let time: TimeInterval
         /// The binding it matched, as a single press.
@@ -500,47 +511,15 @@ extension ShortcutPressDispatcher {
         var doubleBinding: KeyBinding {
             matchedStroke.asDoublePress(true)
         }
-
-        /// Whether `press` is of the same key, with the same modifiers, in
-        /// the same scope and window.
-        func isPressOfSameKey(_ press: Press) -> Bool {
-            press.stroke == stroke && press.scope == scope && window.isSame(as: press.window)
-        }
     }
 
     /// A key whose double press acted, and when it was last pressed.
     private struct Pressed {
-        /// The key, as a single press.
-        let stroke: KeyBinding
-        /// The scope it was pressed in.
-        let scope: ShortcutScope
-        /// The window it was pressed in.
-        let window: PressWindow
+        /// The key, where it was pressed, and in which window.
+        let key: PressedKey
         /// When it was last pressed: the second press, or a further one
         /// ignored since.
         let lastPressedAt: TimeInterval
-
-        /// The key of `first`, last pressed at `time`.
-        init(of first: FirstPress, lastPressedAt time: TimeInterval) {
-            stroke = first.stroke
-            scope = first.scope
-            window = first.window
-            lastPressedAt = time
-        }
-
-        /// The same key as `pressed`, last pressed at `time`.
-        init(of pressed: Pressed, lastPressedAt time: TimeInterval) {
-            stroke = pressed.stroke
-            scope = pressed.scope
-            window = pressed.window
-            lastPressedAt = time
-        }
-
-        /// Whether `press` is of the same key, with the same modifiers, in
-        /// the same scope and window.
-        func isPressOfSameKey(_ press: Press) -> Bool {
-            press.stroke == stroke && press.scope == scope && window.isSame(as: press.window)
-        }
     }
 
     /// The window a press was made in, held weakly, so a waiting press never
