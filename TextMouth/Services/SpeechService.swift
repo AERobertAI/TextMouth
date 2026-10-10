@@ -656,13 +656,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// Whether the engine holds audio rendered from exactly the text being
     /// spoken, in the voice chosen now.
     ///
-    /// Direct speech switches to rendered audio, at a seek, a resume, the
-    /// start of a sleep fade, or a recovery, only then. Any other audio is
-    /// stale: rendered in the previous voice when a voice was chosen part-way
-    /// through the text, or from another text when a render finished after
-    /// it was abandoned. Speech then carries on directly in the current
-    /// voice. Rendered audio already playing keeps playing until its text
-    /// ends, since switching mid-playback is never seamless.
+    /// Direct speech switches to rendered audio, at a seek, a resume, or a
+    /// recovery, only then. Any other audio is stale: rendered in the
+    /// previous voice when a voice was chosen part-way through the text, or
+    /// from another text when a render finished after it was abandoned.
+    /// Speech then carries on directly in the current voice. Rendered audio
+    /// already playing keeps playing until its text ends, since switching
+    /// mid-playback is never seamless.
     private var renderedAudioMatchesSpeech: Bool {
         // Most direct speech has no rendered audio yet; skip hashing the text.
         guard let rendered = madeAudioEngine?.renderedSignature else { return false }
@@ -887,7 +887,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             // in the current voice (renderedAudioMatchesSpeech), it is used when:
             // - User seeks (seek() switches to engine)
             // - User pauses then resumes (resume() switches to engine)
-            // - A sleep fade starts, or the direct-speech watchdog recovers
+            // - The direct-speech watchdog, or a refusal's recovery, recovers
+            // A sleep fade never switches: it fades the backend being heard.
             }
         )
     }
@@ -1376,13 +1377,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// the caller decides how to go on.
     ///
     /// The synthesizer is stopped first and its utterance let go
-    /// (`stopDirectSynthesizer()`). `willSpeakRangeOfSpeechString` runs
-    /// ahead of the audio by a few words, so a switch while an utterance is
-    /// heard can repeat or cut words: a seek, a resume, the watchdog's
-    /// recovery from an idle synthesizer, and the recovery from an utterance
-    /// the engine refused switch where nothing is heard; the start of a
-    /// sleep fade switches while speech is heard, since only rendered audio
-    /// follows the fade's volume. Every caller has checked
+    /// (`stopDirectSynthesizer()`). The place `willSpeakRangeOfSpeechString`
+    /// reports is a few words from the place heard, so a switch while an
+    /// utterance is heard can repeat or cut words. Every caller switches
+    /// where nothing is heard: a seek, a resume, the watchdog's recovery
+    /// from an idle synthesizer, and the recovery from an utterance the
+    /// engine refused; a sleep fade never switches
+    /// (`setSleepTimerFadeVolume(_:duration:)`). Every caller has checked
     /// that the audio is of this speech in the current voice
     /// (`renderedAudioMatchesSpeech`).
     @discardableResult
@@ -1397,45 +1398,44 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         return true
     }
 
-    /// Apply a sleep timer volume update to whichever speech backend is
-    /// actually audible. Rendered playback supports mixer updates directly.
-    /// Direct synthesis is switched to rendered audio of this speech when
-    /// available; otherwise, as for very large chapters, it fades through
-    /// pre-volume-adjusted utterance segments.
+    /// Apply one step of a sleep timer's fade, `volume`, to the speech being
+    /// heard, in the backend it is heard from: speech never moves to the
+    /// other backend for a fade.
+    ///
+    /// Speech playing from rendered audio fades through the engine's mixer,
+    /// step by step. Direct speech fades through quieter utterances
+    /// (`prepareDirectSleepFade`, planned by `DirectSpeechFadePlanner`) from
+    /// the last word reported, planned at the fade's first step over what
+    /// is left of the fade, `duration` times `volume`; the steps after it
+    /// find that fade under way.
+    ///
+    /// Direct speech once switched to rendered audio of this speech as the
+    /// fade began, whenever the engine held some, since only the engine
+    /// follows a volume while it plays (`SLEEP_FADE_SWITCH`). That was the
+    /// one switch made while speech was heard: the place the synthesizer
+    /// last reported is a few words from the place heard, and the engine
+    /// spreads its frames evenly over the text, so the switch could repeat
+    /// or skip a few words just as the listener was falling asleep. The
+    /// utterance fade, which served already when the engine could not
+    /// start and for chapters too long to render, now serves every fade of
+    /// direct speech. Rendered audio is switched to only where nothing is
+    /// heard: a seek, a resume, or a recovery (`switchToRenderedAudio(at:)`).
     func setSleepTimerFadeVolume(_ volume: Float, duration: TimeInterval) {
         guard isSpeaking, !isPaused else { return }
-
-        if usingDirectMode && !isDirectSleepFadeActive {
-            let offset = max(
-                0,
-                min(currentWordRange?.location ?? directModeBaseOffset, currentText.utf16Length)
-            )
-
-            if renderedAudioMatchesSpeech {
-                transitionLog(.trace, "SLEEP_FADE_SWITCH: direct→engine at offset=\(offset)")
-                if !switchToRenderedAudio(at: offset) {
-                    // Preserve an audible fade when a retained render cannot
-                    // restart, for example after a device-route transition.
-                    transitionLog(.event, "SLEEP_FADE_ENGINE_FAILED: using direct utterance fade at offset=\(offset)")
-                    audioEngine.stop()
-                    prepareDirectSleepFade(
-                        fromUTF16Offset: offset,
-                        duration: duration * Double(max(0, volume)),
-                        startingVolume: volume
-                    )
-                }
-            } else {
-                prepareDirectSleepFade(
-                    fromUTF16Offset: offset,
-                    duration: duration * Double(max(0, volume)),
-                    startingVolume: volume
-                )
-            }
-        }
-
-        if !usingDirectMode {
+        guard usingDirectMode else {
             madeAudioEngine?.setVolume(volume)
+            return
         }
+        guard !isDirectSleepFadeActive else { return }
+        let offset = max(
+            0,
+            min(currentWordRange?.location ?? directModeBaseOffset, currentText.utf16Length)
+        )
+        prepareDirectSleepFade(
+            fromUTF16Offset: offset,
+            duration: duration * Double(max(0, volume)),
+            startingVolume: volume
+        )
     }
 
     /// Replace the current direct utterance with a bounded queue whose volume

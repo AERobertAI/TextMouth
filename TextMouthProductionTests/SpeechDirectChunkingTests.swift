@@ -794,10 +794,13 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertTrue(lines.contains { $0.contains("DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=300 ") }, "\(lines)")
     }
 
-    /// A sleep fade that begins during direct speech switches to audio
-    /// rendered from it at the last word reported, whose volume the engine
-    /// fades, instead of queuing quieter utterances.
-    func testASleepFadeSwitchesDirectSpeechToRenderedAudio() throws {
+    /// A sleep fade that begins during direct speech fades it through
+    /// quieter utterances from the last word reported, planned once at the
+    /// fade's first step, and never switches it to the audio the engine
+    /// holds of this speech: that switch, made while speech was heard,
+    /// could repeat or skip a few words as the fade began. At every step of
+    /// the fade, down to silence, speech stays direct and the engine silent.
+    func testASleepFadeNeverSwitchesDirectSpeechToRenderedAudio() throws {
         let (speech, recorder) = makeDirectSpeech()
         defer { speech.stop() }
         speech.speak(Self.longText)
@@ -805,13 +808,51 @@ final class SpeechDirectChunkingTests: XCTestCase {
         let first = try handedOver(0, by: recorder)
         report(start: first, to: speech)
         report(word: NSRange(location: 300, length: 5), of: first, to: speech)
+        let handedBeforeTheFade = recorder.utterances.count
 
-        speech.setSleepTimerFadeVolume(0.5, duration: 10)
+        // The fade's steps, from full volume to silence, as the sleep timer
+        // takes them over its ten seconds.
+        for step in stride(from: 10, through: 0, by: -1) {
+            speech.setSleepTimerFadeVolume(Float(step) / 10, duration: 10)
+            XCTAssertTrue(speech.usingDirectMode, "the step to \(step) tenths switched speech to rendered audio")
+            XCTAssertFalse(speech.audioEngine.isPlaying, "the step to \(step) tenths started the rendered audio")
+        }
 
-        XCTAssertFalse(speech.usingDirectMode)
+        let planned = DirectSpeechFadePlanner.segments(
+            in: Self.longText, fromUTF16Offset: 300, duration: 10, wordsPerMinute: speech.wordsPerMinute
+        )
+        let fade = recorder.utterances.dropFirst(handedBeforeTheFade)
+        XCTAssertFalse(planned.isEmpty)
+        XCTAssertEqual(fade.map(\.speechString), planned.map(\.text), "the fade was not planned once, from the last word")
+        XCTAssertEqual(fade.map(\.volume), planned.map(\.volume))
+        XCTAssertTrue(speech.isSpeaking)
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertFalse(lines.contains { $0.hasPrefix("SLEEP_FADE_SWITCH") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.hasPrefix("SLEEP_FADE_DIRECT_STARTED: offset=300 ") }, "\(lines)")
+    }
+
+    /// Speech already playing from rendered audio, switched to at a seek,
+    /// where nothing is heard, fades through the engine's mixer at every
+    /// step of a sleep fade and stays with the engine: nothing is handed to
+    /// the synthesizer. The audio is silence, so nothing is heard at any
+    /// volume.
+    func testASleepFadeOfRenderedAudioFadesTheEngine() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        report(start: try handedOver(0, by: recorder), to: speech)
+        speech.seek(toCharOffset: 300)
+        XCTAssertFalse(speech.usingDirectMode, "the seek did not switch to rendered audio")
         XCTAssertTrue(speech.audioEngine.isPlaying, "the rendered audio did not start")
-        XCTAssertEqual(speech.audioEngine.outputVolume, 0.5)
-        XCTAssertEqual(recorder.utterances.count, 2, "fade segments were queued")
+        let handedBeforeTheFade = recorder.utterances.count
+
+        for volume: Float in [0.8, 0.5, 0.2, 0] {
+            speech.setSleepTimerFadeVolume(volume, duration: 10)
+            XCTAssertEqual(speech.audioEngine.outputVolume, volume, "the engine did not fade to \(volume)")
+            XCTAssertFalse(speech.usingDirectMode, "the fade moved speech off the engine")
+        }
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheFade, "the fade handed utterances to the synthesizer")
     }
 
     /// When the engine holds audio rendered from this speech in the current
