@@ -6,8 +6,8 @@ import SwiftUI
 /// These used to be four published properties of the library model, so
 /// each finished book published the whole model, which re-rendered every
 /// Library window's list. They are an object of their own now, which only
-/// the views that show them observe (`TextExtractionObserver`): the
-/// overlay over each Library window and the Storage settings tab.
+/// the views that show them observe (`ProgressObserver`): the overlay over
+/// each Library window and the Storage settings tab.
 @MainActor
 final class TextExtractionProgress: ObservableObject {
     /// Whether a batch runs. A second batch is refused while one does.
@@ -49,20 +49,5 @@ final class TextExtractionProgress: ObservableObject {
     /// books.
     static func message(_ activity: String, done: Int, of total: Int) -> String {
         "\(activity): \(done) of \(total)..."
-    }
-}
-
-/// Shows `content` with the text extraction batch's progress, and redraws
-/// only that content when the progress changes (TODO PERF12): the Library
-/// window and Storage settings around it are not redrawn for each finished
-/// book.
-struct TextExtractionObserver<Content: View>: View {
-    /// The batch's progress, observed here alone.
-    @ObservedObject var progress: TextExtractionProgress
-    /// What to show for the progress as it is now.
-    @ViewBuilder let content: (TextExtractionProgress) -> Content
-
-    var body: some View {
-        content(progress)
     }
 }

@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -31,6 +32,50 @@ final class ImportProgressTests: XCTestCase {
 
         XCTAssertEqual(progressPublishes, 4)
         XCTAssertEqual(libraryPublishes, 0, "the library model published, which redraws every Library window's list")
+    }
+
+    /// One view observes every progress shown apart from the library model
+    /// (`ProgressObserver`, #1461): hosted over the text extraction's
+    /// progress or the imports', it draws its content anew each time that
+    /// progress publishes, with the progress as it is then.
+    func testOneObserverViewRedrawsAsEachKindOfProgressPublishes() {
+        let extraction = TextExtractionProgress()
+        let extractionDraws = CallLog<String>()
+        let extractionView = ProgressObserver(progress: extraction) { progress in
+            let _ = extractionDraws.record(progress.message)
+            Text(progress.message)
+        }
+        withHostedView(extractionView, until: { _ in !extractionDraws.calls.isEmpty }) { hostingView in
+            extraction.begin("Updating text cache", total: 3)
+            XCTAssertTrue(waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return extractionDraws.calls.last == "Updating text cache: 0 of 3..."
+            }, "\(extractionDraws.calls)")
+            extraction.advance()
+            XCTAssertTrue(waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return extractionDraws.calls.last == "Updating text cache: 1 of 3..."
+            }, "\(extractionDraws.calls)")
+        }
+
+        let imports = ImportProgress()
+        let importDraws = CallLog<String>()
+        let importView = ProgressObserver(progress: imports) { progress in
+            let _ = importDraws.record(progress.state.message)
+            Text(progress.state.message)
+        }
+        withHostedView(importView, until: { _ in !importDraws.calls.isEmpty }) { hostingView in
+            imports.showBook("Moby Dick.epub")
+            XCTAssertTrue(waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return importDraws.calls.last == "“Moby Dick.epub”, reading the file"
+            }, "\(importDraws.calls)")
+            imports.reach(.readingText)
+            XCTAssertTrue(waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return importDraws.calls.last == "“Moby Dick.epub”, reading its text"
+            }, "\(importDraws.calls)")
+        }
     }
 
     /// A message shown alone leaves the bar spinning with no count, and
