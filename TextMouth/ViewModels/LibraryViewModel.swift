@@ -340,6 +340,8 @@ final class LibraryViewModel: ObservableObject {
         }
         // Speak Import Progress, from any window (FR10).
         observeImportProgressRequests()
+        // Speak Download Progress, from any window (FR10's feed half).
+        observeDownloadProgressRequests()
         updateContentCachesAndStatistics()
         // The podcast and article feeds start in the background (FR03).
         startFeeds()

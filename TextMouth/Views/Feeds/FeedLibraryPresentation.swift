@@ -248,7 +248,9 @@ struct FeedKeptProgress: Equatable, Sendable {
     /// one whose package kept no place.
     let shownProgress: String?
     /// The progress as the row speaks it: "42 percent", or "42 percent
-    /// read" beside a download's own percentage, as a book row says it.
+    /// read" beside "Downloading", which would otherwise seem to say how far
+    /// the download has got, as a book row says it beside a cloud
+    /// download's percentage.
     let spokenProgress: String?
     /// The time left after the place; nil with no progress to say, since
     /// the row's own duration then says how long the item is.
@@ -257,9 +259,10 @@ struct FeedKeptProgress: Equatable, Sendable {
     let bookmarkCount: Int
 
     /// What the row says of `row`, the item's kept row on its feed's shelf,
-    /// for an item that `isPlayed`, whose download's own percentage the row
-    /// speaks too when `besideDownloadPercentage`, an article's time left
-    /// estimated at `wordsPerMinute`.
+    /// for an item that `isPlayed`, whose row says "Downloading" too when
+    /// `besideDownloadPercentage` (its download's percent is the feed
+    /// downloads section's, FR10), an article's time left estimated at
+    /// `wordsPerMinute`.
     init(_ row: Book, isPlayed: Bool, besideDownloadPercentage: Bool, wordsPerMinute: Double) {
         let shown = isPlayed ? nil : BookRow.progressText(for: row)?.visible
         shownProgress = shown

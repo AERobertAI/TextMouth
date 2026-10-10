@@ -75,9 +75,7 @@ final class FeedUILibraryRowsTests: XCTestCase {
         ])
         // One downloaded, one downloading.
         let book = addBook(titled: "Second", to: world, feed: feed, item: "guid:ep-2")
-        world.center.store.updateItem("guid:ep-3", of: feed.id) {
-            $0.state = .downloading(BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 40, totalBytes: 100))
-        }
+        world.center.store.updateItem("guid:ep-3", of: feed.id) { $0.state = .downloading }
 
         let row = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).first)
 
@@ -270,10 +268,9 @@ final class FeedUILibraryRowsTests: XCTestCase {
 
         XCTAssertEqual(try label(), "How tides are measured, Not Downloaded, New, \(date), 28 minutes, 3 seconds")
 
-        world.center.store.updateItem(itemID, of: feed.id) {
-            $0.state = .downloading(BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 40, totalBytes: 100))
-        }
-        XCTAssertEqual(try label(), "How tides are measured, Downloading, 40 percent, New, \(date), 28 minutes, 3 seconds")
+        // How far it has got is the feed downloads section's (FR10).
+        world.center.store.updateItem(itemID, of: feed.id) { $0.state = .downloading }
+        XCTAssertEqual(try label(), "How tides are measured, Downloading, New, \(date), 28 minutes, 3 seconds")
 
         world.center.store.updateItem(itemID, of: feed.id) { $0.state = .failed("The server says the file is gone.") }
         XCTAssertEqual(try label(), "How tides are measured, Download Failed, The server says the file is gone., New, \(date), 28 minutes, 3 seconds")
@@ -486,7 +483,8 @@ final class FeedUILibraryRowsTests: XCTestCase {
     }
 
     /// Which folders hold feeds follows the engine, and changes only when a
-    /// feed is subscribed or unsubscribed, never with a download's progress.
+    /// feed is subscribed or unsubscribed, never as its items' downloads
+    /// start and end.
     func testWhichFoldersHoldFeedsChangesOnlyWithTheFeeds() async throws {
         let world = try FeedTestWorld(self, label: "FeedUIFolderMap")
         let folders = LibraryFeedFolders(center: world.center)
@@ -499,12 +497,12 @@ final class FeedUILibraryRowsTests: XCTestCase {
         let afterSubscribing = publishes
         XCTAssertGreaterThan(afterSubscribing, 0)
 
-        for percent in stride(from: 10, through: 90, by: 10) {
+        for round in 1...9 {
             world.center.store.updateItem("guid:ep-1", of: feed.id) {
-                $0.state = .downloading(BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: Int64(percent), totalBytes: 100))
+                $0.state = round.isMultiple(of: 2) ? .notDownloaded : .downloading
             }
         }
-        XCTAssertEqual(publishes, afterSubscribing, "a download's progress published the folders")
+        XCTAssertEqual(publishes, afterSubscribing, "a download starting or stopping published the folders")
 
         world.center.unsubscribe(feed.id)
         XCTAssertNil(folders.feedID(inFolder: feed.folderID))
@@ -612,9 +610,10 @@ final class FeedUILibraryRowsTests: XCTestCase {
 
     /// The library list draws a Feeds row for each feed at the top of the
     /// library, and, in a feed's folder, an item row for each item; a
-    /// download's progress then redraws the feed's rows and never the list
-    /// around them.
-    func testTheListDrawsFeedRowsAndAProgressRedrawsOnlyThem() async throws {
+    /// download's progress then redraws neither the feed's rows nor the
+    /// list around them (FR10), and a change of an item's state redraws the
+    /// feed's rows and never the list.
+    func testTheListDrawsFeedRowsAndAProgressRedrawsNeitherThemNorTheList() async throws {
         let world = try FeedTestWorld(self, label: "FeedUIDrawn")
         let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: world.folder.path, items: [
             FeedXML.Item(guid: "ep-2", title: "Second", published: world.day(0.5)),
@@ -660,14 +659,25 @@ final class FeedUILibraryRowsTests: XCTestCase {
         settle(inside.hostingView, seconds: 0.5)
         XCTAssertGreaterThanOrEqual(ViewBodyCounter.count(of: "FeedItemRow") - itemsBefore, 2, "the items were not drawn")
 
+        // A download's progress goes to the downloads' progress alone (FR10).
+        world.center.store.updateItem("guid:ep-2", of: feed.id) { $0.state = .downloading }
+        let progress = world.center.downloads.progress
+        progress.begin(title: "Second", feedTitle: "The Tactile Atlas", transfer: nil, queued: [], waits: FeedDownloadWaits())
         let runs = bodyRuns(of: ["LibraryView.list", "FeedFolderSections"], in: inside.hostingView, publishing: 10) { index in
             let written = Int64(10 + max(index, 0) * 5)
-            world.center.store.updateItem("guid:ep-2", of: feed.id) {
-                $0.state = .downloading(BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: written, totalBytes: 100))
-            }
+            progress.receive(BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: written, totalBytes: 100))
         }
         XCTAssertEqual(runs["LibraryView.list"], 0, "a download's progress drew the whole list again")
-        XCTAssertGreaterThan(runs["FeedFolderSections", default: 0], 0, "the feed's rows never followed the progress")
+        XCTAssertEqual(runs["FeedFolderSections"], 0, "a download's progress drew the feed's rows again")
+        progress.clear()
+
+        let stateRuns = bodyRuns(of: ["LibraryView.list", "FeedFolderSections"], in: inside.hostingView, publishing: 10) { index in
+            world.center.store.updateItem("guid:ep-2", of: feed.id) {
+                $0.state = index.isMultiple(of: 2) ? .notDownloaded : .downloading
+            }
+        }
+        XCTAssertEqual(stateRuns["LibraryView.list"], 0, "an item's state drew the whole list again")
+        XCTAssertGreaterThan(stateRuns["FeedFolderSections", default: 0], 0, "the feed's rows never followed an item's state")
     }
 
     // MARK: - Helpers

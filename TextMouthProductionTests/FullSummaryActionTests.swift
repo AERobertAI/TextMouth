@@ -42,7 +42,7 @@ final class FullSummaryActionTests: XCTestCase {
     func testEachFullSummaryIsListedAfterItsBriefOne() {
         let information = ShortcutAction.allCases.filter { $0.category == "Information" }
 
-        XCTAssertEqual(information, [.whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress])
+        XCTAssertEqual(information, [.whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress, .speakDownloadProgress])
     }
 
     /// Their keys are W twice and I twice, said, shown, and written in

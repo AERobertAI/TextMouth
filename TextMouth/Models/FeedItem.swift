@@ -132,15 +132,18 @@ struct FeedItem: Codable, Equatable, Identifiable, Sendable {
 
 /// Where an item's download stands (FR03).
 ///
-/// A download in progress is published while it runs, with its progress, so
-/// the library can show "Downloading 40%" (`visibleNote`), and so is one the
+/// A download asked for is published while it waits and runs, so the
+/// library can show "Downloading" (`visibleNote`), and so is one the
 /// newest-N rule put off (FR11, `waiting`); the item's record file never
-/// holds either (`FeedRecord.durable`), since both end with the app.
+/// holds either (`FeedRecord.durable`), since both end with the app. How
+/// far a download has got is the feed downloads section's alone (FR10,
+/// `FeedDownloadProgress`): each report of its bytes written here would
+/// compare the feed's whole record and redraw the Library's feed rows.
 enum FeedItemState: Equatable, Sendable {
     /// The item has no book.
     case notDownloaded
-    /// The item is waiting to download, or downloading, with how far it has got.
-    case downloading(BookDownloadProgress)
+    /// The item is waiting to download, or downloading.
+    case downloading
     /// The newest-N rule's download of the item waits, put off by itself for
     /// the reason given (`FeedDownloadWait.reason`), which a listener reads:
     /// for a network without data limits, or for room on this Mac (FR11).
@@ -194,24 +197,22 @@ enum FeedItemState: Equatable, Sendable {
     }
 
     /// The note a list shows for the state, which a braille display shows
-    /// too: "Downloading 40%" is worded once, for books in the cloud and
-    /// feed items alike (`BookCloudState`).
+    /// too, in the words of a book in the cloud (`BookCloudState`), but for
+    /// a download, which says only "Downloading": its percent is the feed
+    /// downloads section's (FR10).
     var visibleNote: String {
         switch self {
         case .notDownloaded: return "Not Downloaded"
-        case .downloading(let progress): return BookCloudState.downloading(progress).visibleNote ?? "Downloading"
+        case .downloading: return "Downloading"
         case .waiting: return "Waiting to Download"
         case .failed: return "Download Failed"
         case .downloaded: return "Downloaded"
         }
     }
 
-    /// The same note as VoiceOver speaks it: "Downloading, 40 percent".
+    /// The same note as VoiceOver speaks it, which is the note as shown.
     var spokenNote: String {
-        switch self {
-        case .downloading(let progress): return BookCloudState.downloading(progress).spokenNote ?? visibleNote
-        default: return visibleNote
-        }
+        visibleNote
     }
 }
 
