@@ -977,19 +977,21 @@ struct BookVoicePickerView: View {
                         Button("Save to Global Settings") {
                             viewModel.saveSettingsToGlobal()
                         }
-                        .accessibilityLabel("Save this book's voice and speed as the global defaults")
-                        .accessibilityHint("Updates the default voice and speed for all books that don't have their own settings")
+                        // The playback bar's button says the same: both
+                        // copy the voice, speed, and pitch (TODO A10).
+                        .accessibilityLabel(BookVoiceSettingsWording.saveAsDefaultsLabel)
+                        .accessibilityHint(BookVoiceSettingsWording.saveAsDefaultsHint)
                     }
 
                     if viewModel.hasLocalSettings {
                         Button(viewModel.isAudioBook ? "Reset to Normal Speed" : "Reset to Global Settings") {
                             viewModel.resetToGlobalSettings()
                         }
-                        .accessibilityLabel(viewModel.isAudioBook ? "Reset to normal audio speed" : "Reset to global voice and speed settings")
+                        .accessibilityLabel(viewModel.isAudioBook ? "Reset to normal audio speed" : BookVoiceSettingsWording.resetToDefaultsLabel)
                         .accessibilityHint(
                             viewModel.isAudioBook
                                 ? "Resets this book to \(AudioSpeed.spokenLabel(for: AudioSpeed.normal))"
-                                : "Removes book-specific voice and speed, uses global defaults instead"
+                                : BookVoiceSettingsWording.resetToDefaultsHint
                         )
                     }
                 }

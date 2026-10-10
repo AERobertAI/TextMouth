@@ -377,6 +377,47 @@ final class HeadingFilterWordingTests: XCTestCase {
     }
 }
 
+// MARK: - Saving a Book's Settings
+
+/// The two buttons that make a book's voice settings the defaults, the
+/// playback bar's and the voice sheet's, share one label naming the voice,
+/// the speed, and the pitch, which is what they copy; they said "speed",
+/// and "voice and speed". The sheet's reset, which clears all three, says
+/// so too.
+@MainActor
+final class SaveAsDefaultsWordingTests: XCTestCase {
+    /// The shared words.
+    func testTheButtonsNameTheVoiceTheSpeedAndThePitch() {
+        XCTAssertEqual(BookVoiceSettingsWording.saveAsDefaultsLabel, "Save this book's voice, speed, and pitch as the global defaults")
+        XCTAssertEqual(
+            BookVoiceSettingsWording.saveAsDefaultsHint,
+            "Updates the default voice, speed, and pitch for every book without settings of its own."
+        )
+        XCTAssertEqual(BookVoiceSettingsWording.resetToDefaultsLabel, "Reset this book's voice, speed, and pitch to the global defaults")
+        XCTAssertEqual(
+            BookVoiceSettingsWording.resetToDefaultsHint,
+            "Removes this book's own voice, speed, and pitch, so it uses the global defaults."
+        )
+    }
+
+    /// What the label says is what saving does: a book's own speed, pitch,
+    /// and voice all become the defaults.
+    func testSavingCopiesTheSpeedThePitchAndTheVoice() throws {
+        guard let voiceID = AVSpeechSynthesisVoice.speechVoices().first?.identifier else {
+            throw XCTSkip("This Mac has no speech voice to choose")
+        }
+        let settings = try makeA10Settings()
+        let reader = makeA10TextReader(settings: settings, voiceID: voiceID, wordsPerMinute: 310, pitch: 1.3)
+        defer { reader.close() }
+
+        recordingAnnouncements { reader.saveSettingsToGlobal() }
+
+        XCTAssertEqual(settings.wordsPerMinute, 310)
+        XCTAssertEqual(settings.pitchMultiplier, 1.3, accuracy: 0.001)
+        XCTAssertEqual(settings.selectedVoiceID, voiceID)
+    }
+}
+
 // MARK: - Shared Fixtures
 
 extension XCTestCase {
