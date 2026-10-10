@@ -332,11 +332,14 @@ extension ReaderViewModel {
         // announcement that ended plays, before the book resumes, it pauses
         // the book that was about to play, as it would a moment later.
         if stopWhereAmIWithoutResuming() {
-            // A play waiting to start, for its chapter's speech (ready or
-            // still being prepared) or for a chapter held for the
-            // announcement's end, shows Playing, so the press pauses it, as
-            // Play/Pause pauses one without the announcement.
-            if isWaitingForChapterSpeech || isChapterHeldByWhereAmI {
+            // A play waiting to start shows Playing, so the press pauses it,
+            // as Play/Pause pauses one without the announcement: a play
+            // waiting for its chapter's speech (ready or still being
+            // prepared) or files, for a chapter held for the announcement's
+            // end, or for the end of a move of the book's package. A
+            // chapter still downloading was once left waiting, the press
+            // ending only the announcement.
+            if isPlaybackUnderWay {
                 pause(playingPauseSound: false)
             }
             return
@@ -398,10 +401,11 @@ extension ReaderViewModel {
     /// a Play held for its end (`isPlayHeldByWhereAmI`) is let go, the book
     /// left as it was before the Play.
     ///
-    /// A play waiting to start, for its chapter's speech or files, or for
-    /// the announcement's end (`isChapterHeldByWhereAmI`), is left to the
-    /// caller, which pauses it: `pause(playingPauseSound:)` with the rest of
-    /// what it pauses, and `togglePlayPause()` in turn.
+    /// A play waiting to start, for its chapter's speech or files, for the
+    /// announcement's end (`isChapterHeldByWhereAmI`), or for a package
+    /// move's end, is left to the caller, which pauses it:
+    /// `pause(playingPauseSound:)` with the rest of what it pauses, and
+    /// `togglePlayPause()` in turn.
     ///
     /// - Returns: Whether Where Am I had anything to end.
     @discardableResult

@@ -549,6 +549,36 @@ final class ReaderRefreshTests: XCTestCase {
         }
     }
 
+    /// Play/Pause while Where Am I? speaks, both pressed while the library
+    /// moves the package of the audiobook playing, ends the announcement and
+    /// pauses the audio set aside for the move, as it pauses any play
+    /// waiting to start, in silence, as it pauses the book an announcement
+    /// paused: the move's end leaves the book paused, and Play/Pause then
+    /// plays it on from the moved package. Before, the press ended only the
+    /// announcement, and the move's end played the audio on.
+    func testPlayPauseDuringWhereAmIDuringAMovePausesTheAudioSetAside() throws {
+        let playing = try openPlayingAudiobook("Reader Refresh Where Am I Play Pause During Move")
+        let reader = playing.reader
+        reader._whereAmIUtteranceRecorderForTesting = { _ in }
+
+        _ = try moveToShelf(playing) {
+            reader.whereAmI()
+            reader.togglePlayPause()
+        }
+
+        XCTAssertFalse(reader.isWhereAmISpeaking, "Play/Pause did not end the announcement")
+        XCTAssertNil(reader.audioPausedForMove, "The audio is still set aside")
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The move's end played the audio on")
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader shows the book stopped")
+        XCTAssertTrue(reader.isCurrentlyPaused, "The reader does not show the book paused")
+        XCTAssertEqual(playing.sounds.played, [.whereAmIStart])
+
+        reader.togglePlayPause()
+
+        try assertPlaysOnFromTheMovedPackage(playing, "Play/Pause after the move")
+        reader.stop()
+    }
+
     // MARK: - Applying Updates
 
     /// Two readers have the same book open when the library renames it:

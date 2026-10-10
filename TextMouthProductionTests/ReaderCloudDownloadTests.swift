@@ -929,6 +929,34 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.stop()
     }
 
+    /// Play/Pause while Where Am I? speaks over a reader waiting for its
+    /// chapter's files to download ends the announcement and pauses the
+    /// reader, as it pauses one waiting without the announcement: the
+    /// download is stopped, nothing plays once the sync service finishes it
+    /// anyway, and Play plays the chapter. Before, the press ended only the
+    /// announcement and left the reader waiting, so the chapter played once
+    /// its files were here (open after the where-am-i-followups merge).
+    func testPlayPauseDuringWhereAmIPausesAChapterStillDownloading() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I Play Pause Downloading", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        let second = try chapterFile(number: 2, of: reader)
+        _ = try speakWhereAmI(in: reader)
+
+        reader.togglePlayPause()
+
+        XCTAssertFalse(reader.isWhereAmISpeaking, "Play/Pause did not end the announcement")
+        XCTAssertFalse(reader.isWaitingForChapterDownload, "The reader still waits for the chapter")
+        XCTAssertEqual(cloud.storage.downloadsCancelled, [book.id], "The chapter's download goes on")
+        XCTAssertTrue(reader.isCurrentlyPaused, "The reader is not paused")
+        assertNothingPlaysOnceTheDownloadEnds(for: book, in: cloud, reader: reader)
+
+        reader.togglePlayPause()
+
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Play did not play the chapter")
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        reader.stop()
+    }
+
     /// The system cancelling Where Am I? on its own, as the speech engine
     /// does with a text it refuses, plays a chapter whose files came during
     /// the announcement at once, as the announcement's end would have
