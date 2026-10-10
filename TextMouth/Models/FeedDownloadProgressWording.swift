@@ -19,82 +19,6 @@ struct FeedDownloadWaits: Equatable, Sendable {
     }
 }
 
-// MARK: - What the Finished Downloads Took (FR10)
-
-/// What the downloads finished so far in one run of feed downloads took,
-/// from each one's start to its book in the library, which the time the
-/// run has left is estimated from (`FeedDownloadTimeEstimate`). A failed
-/// download is not timed: it can fail at once, or after a long wait, and
-/// says nothing of how long the next one takes.
-struct FeedDownloadTiming: Equatable, Sendable {
-    /// The downloads finished.
-    private(set) var downloads = 0
-    /// The seconds they took in all.
-    private(set) var seconds: TimeInterval = 0
-    /// The bytes of those whose files were counted as they came: episodes,
-    /// and not articles, whose pages come with no count of their bytes.
-    private(set) var sizedBytes: Int64 = 0
-    /// The seconds those took in all.
-    private(set) var sizedSeconds: TimeInterval = 0
-
-    /// Notes a download that finished in `seconds`, its file `bytes` long:
-    /// 0 for an article.
-    mutating func add(seconds: TimeInterval, bytes: Int64) {
-        // A clock moved back, or a time that is no number, counts as none.
-        let seconds = seconds.isFinite ? max(0, seconds) : 0
-        downloads += 1
-        self.seconds += seconds
-        if bytes > 0 {
-            sizedBytes += bytes
-            sizedSeconds += seconds
-        }
-    }
-}
-
-// MARK: - The Time Left (FR10)
-
-/// How long the feed downloads not yet finished should take, estimated
-/// from those finished so far (FR10), as the ZIP imports' time left is
-/// estimated from the books imported (`ImportTimeEstimate`), but by size
-/// where sizes are known: episodes of one feed can be 5 MB or 120 MB, and
-/// an article's page takes a second.
-enum FeedDownloadTimeEstimate {
-    /// One download still to come: the bytes it has yet to bring, when
-    /// known (the rest of the download under way, or a waiting download's
-    /// size as its feed gives it), and, for the download under way, the
-    /// seconds it has run so far.
-    struct Remaining: Equatable, Sendable {
-        /// The bytes still to come; nil when unknown, as for an article, or
-        /// an episode whose feed and server give no size.
-        var bytes: Int64?
-        /// The seconds the download has run; 0 for one waiting to start.
-        var elapsed: TimeInterval = 0
-    }
-
-    /// The seconds the downloads `remaining` should take after the
-    /// downloads `timing` counts, or nil before any download finished, and
-    /// with none left.
-    ///
-    /// A download of known size takes its bytes at the rate the finished
-    /// downloads of known size came at, their imports included; any other
-    /// takes the average time of a finished download, less the time it has
-    /// run already. So a run of a podcast's large episodes and a blog's
-    /// articles counts each at its own pace.
-    static func secondsLeft(after timing: FeedDownloadTiming, for remaining: [Remaining]) -> TimeInterval? {
-        guard timing.downloads > 0, !remaining.isEmpty, timing.seconds.isFinite else { return nil }
-        let averageSeconds = timing.seconds / Double(timing.downloads)
-        let bytesPerSecond: Double? = timing.sizedBytes > 0 && timing.sizedSeconds > 0
-            ? Double(timing.sizedBytes) / timing.sizedSeconds
-            : nil
-        return remaining.reduce(0) { total, download in
-            if let bytes = download.bytes, let bytesPerSecond {
-                return total + Double(max(0, bytes)) / bytesPerSecond
-            }
-            return total + max(0, averageSeconds - max(0, download.elapsed))
-        }
-    }
-}
-
 // MARK: - The Words (FR10)
 
 /// The words of the feed downloads under way (FR10), kept in one place so
@@ -154,8 +78,8 @@ enum FeedDownloadProgressWording {
 
     /// What the section says once Cancel is pressed, in place of the time
     /// left, while the download under way, already being added to the
-    /// library, finishes.
-    static let cancelling = "Cancelling..."
+    /// library, finishes: the import overlay's words for the same moment.
+    static let cancelling = ImportProgressWording.cancellingLine
 
     /// The downloads waiting apart, a line for each reason with any: "2
     /// waiting for a network without data limits", "1 waiting for room on

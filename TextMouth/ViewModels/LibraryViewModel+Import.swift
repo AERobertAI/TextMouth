@@ -49,12 +49,12 @@ final class SerialImportQueue: @unchecked Sendable {
         self.boundary = boundary
     }
 
-    /// Told as each step of a queued single-file or text import, or of an
-    /// audio or DAISY ZIP, each one book, begins on its staged package (see
-    /// `ImportStepObserver`), on the import queue, after the import overlay
-    /// is told (FR10); nil in the app. Tests set it before enqueueing to
-    /// hold an import at a step of their choosing. A ZIP batch of books and
-    /// package imports do not report their steps here.
+    /// Told as each step of a queued single-file, text, or package import,
+    /// or of an audio or DAISY ZIP, each one book, begins on its staged
+    /// package (see `ImportStepObserver`), on the import queue, after the
+    /// import overlay is told (FR10); nil in the app. Tests set it before
+    /// enqueueing to hold an import at a step of their choosing. A ZIP batch
+    /// of books does not report its steps here.
     var stepObserver: (@Sendable (ImportStep, URL) throws -> Void)? {
         get {
             stateLock.lock()
@@ -256,11 +256,16 @@ extension LibraryViewModel {
     /// A package the library does not list is imported: a package Remove
     /// from Library Only retained is taken back where it is, and any other
     /// is copied into the library (`FileImportService.importTMBPackage`).
+    /// The import overlay names the package and the step it is at, from
+    /// checking it on, as it names a file imported (FR10).
     func openTMBPackage(from url: URL) {
+        let queue = importOperationQueue
+        let progress = importProgress
         enqueueImport { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
+            let observer = progress.observeBook(url.lastPathComponent, startingAt: .checkingPackage, then: queue.stepObserver)
             do {
                 let source = try FileImportService.identifyTMBPackage(at: url)
                 var isListed = false
@@ -269,11 +274,13 @@ extension LibraryViewModel {
                 DispatchQueue.main.sync {
                     if let listedBookID = self.listedBookID(for: source) {
                         isListed = true
+                        // Nothing is imported: the book opens instead.
+                        progress.clear()
                         self.readerOpener(listedBookID)
                     }
                 }
                 guard !isListed else { return }
-                let imported = try FileImportService.importTMBPackage(source)
+                let imported = try FileImportService.importTMBPackage(source, observer: observer)
                 DispatchQueue.main.sync { self.completePackageImport(imported, openAfterImport: true) }
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
@@ -325,9 +332,10 @@ extension LibraryViewModel {
     /// `openAfterImport` open it. A book that is missing chapters is
     /// announced through the library's alert instead of opened, so its
     /// reader window does not take focus from the warning. The package the
-    /// user chose is never deleted.
+    /// user chose is never deleted. VoiceOver hears the end of an import
+    /// that ran long, as for a file imported (FR10).
     func completePackageImport(_ imported: ImportedBook, openAfterImport: Bool) {
-        importProgress.clear()
+        importProgress.end(.book)
         library.addBook(imported.book)
         save()
         if let warning = imported.warning {
@@ -384,6 +392,28 @@ extension LibraryViewModel {
         importOperationQueue.cancelEnqueued()
         importProgress.cancel()
         withdrawCancelledImportDecisions()
+    }
+
+    // MARK: - The Import Queue's Activity (FR10)
+
+    /// Starts following the import queue's count of imports queued or
+    /// running (`importActivityChanged(to:)`). The library starts it once,
+    /// with its other observers.
+    func observeImportActivity() {
+        importOperationQueue.onActivityChanged = { [weak self] activeCount in
+            self?.importActivityChanged(to: activeCount)
+        }
+    }
+
+    /// Takes the import queue's new count of imports queued or running:
+    /// the import overlay shows while any is, says how many wait behind the
+    /// one it shows (FR10), and is cleared once none is.
+    func importActivityChanged(to activeCount: Int) {
+        isImporting = activeCount > 0
+        importProgress.noteImportsQueued(activeCount)
+        if activeCount == 0 {
+            importProgress.clear()
+        }
     }
 
     // MARK: - Speak Import Progress (FR10)
@@ -455,10 +485,13 @@ extension LibraryViewModel {
                     return
                 }
                 if Self.isAudioZip(url: url) {
+                    // Its extraction's items and bytes show on its line
+                    // while it is extracted (FR10).
                     let imported = try FileImportService.importAudioZipWithReport(
                         from: url,
                         toFolder: folderPath,
-                        observer: progress.observeBook(url.lastPathComponent, then: queue.stepObserver)
+                        observer: progress.observeBook(url.lastPathComponent, then: queue.stepObserver),
+                        extraction: progress.observeExtraction()
                     )
                     DispatchQueue.main.sync {
                         self.completeSingleImportedBook(imported, originalURL: url, request: request)
@@ -640,7 +673,8 @@ extension LibraryViewModel {
     /// in the library and is told through the same alert. The Library window
     /// `origin` asks the duplicate question, if one arises (TODO I01). With
     /// `addingToReadingList`, as at the Reading List, the book joins the
-    /// end of the reading list (FR09).
+    /// end of the reading list (FR09). The import overlay names the book by
+    /// its title and the step it is at, as it names a file imported (FR10).
     func createBookFromText(
         title: String,
         author: String,
@@ -653,20 +687,25 @@ extension LibraryViewModel {
         let fileName = TextImportPolicy.textFilename(for: bookTitle)
         let request = importRequest(from: origin, addingToReadingList: addingToReadingList)
         let queue = importOperationQueue
+        let progress = importProgress
         enqueueImport { [weak self] in
             guard let self else { return }
             do {
+                // The overlay names the book by the title typed, and the
+                // step it is at, from creating its package on (FR10).
                 let imported = try FileImportService.importText(
                     text,
                     title: bookTitle,
                     author: author,
                     fileName: fileName,
                     toFolder: folderPath,
-                    observer: queue.stepObserver
+                    observer: progress.observeBook(bookTitle, startingAt: .preparingPackage, then: queue.stepObserver)
                 )
                 // Synchronously, as every import adds its book: before the
                 // import's storage work ends (TODO S04).
                 DispatchQueue.main.sync {
+                    // VoiceOver hears the end of an import that ran long.
+                    self.importProgress.end(.book)
                     if self.addBookCheckingDuplicate(imported.book, request: request) {
                         self.save()
                         self.addImportedBooksToReadingList([imported.book], request: request)

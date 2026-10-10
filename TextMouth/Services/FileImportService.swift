@@ -209,6 +209,19 @@ struct ZipImportResult {
     /// Where the batch stopped when the reader cancelled it (TODO I05); nil
     /// when it ran to its end. A cancelled batch keeps the ZIP.
     var cancellation: ZipImportCancellation?
+    /// How many of the books found were skipped as duplicates, already in
+    /// the library or found earlier in the archive: none of them is
+    /// imported, and none is a failure.
+    var skippedDuplicates = 0
+
+    /// Whether the batch ran to its end without bringing a book into the
+    /// library and without anything in it failing: every book it found was
+    /// already in the library, or it found none. No alert follows such a
+    /// batch (`failureSummary` is nil) and no question, so only VoiceOver's
+    /// announcement says what it found (FR10).
+    var foundNoNewBook: Bool {
+        books.isEmpty && failures.isEmpty && cancellation == nil
+    }
 
     /// Whether the original ZIP must be kept whatever the "After Importing
     /// a Book" preference says: a file in it failed, a book from it is
@@ -271,6 +284,10 @@ enum ZipImportProgress: Equatable, Sendable {
     /// inside it) has extracted as much as `progress` says: its entries,
     /// and the bytes they declare (FR10).
     case extracting(archive: String, progress: ArchiveExtractionProgress)
+    /// The batch found its books, `sizes.count` of them, each by the size
+    /// the estimate of the time left times it by (`timedSize(of:)`), in the
+    /// order they import; told once, before the first book begins (FR10).
+    case foundBooks(sizes: [Int64?])
     /// The book numbered `number` of the `total` found in the archive, the
     /// item named `book` there (its file, or a DAISY book's folder), began
     /// `step`, one of the steps a failure names (FR10). Each book begins by
@@ -685,6 +702,20 @@ enum FileImportService {
         toFolder folderPath: String = "",
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
+        try importFileWithReport(from: sourceURL, checksum: nil, toFolder: folderPath, observer: observer)
+    }
+
+    /// Imports the file at `sourceURL` as `importFileWithReport(from:toFolder:observer:)`
+    /// does, knowing it by `checksum` when the caller has already read it,
+    /// as a ZIP batch has for its duplicate check (`importHash(of:)`), so
+    /// the file's bytes are read once for it rather than twice; nil reads
+    /// it here.
+    static func importFileWithReport(
+        from sourceURL: URL,
+        checksum: String?,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil
+    ) throws -> ImportedBook {
         try ImportRun.perform(importing: sourceURL.lastPathComponent, observer: observer) { run in
             guard let format = BookFormat.detect(from: sourceURL) else {
                 throw unsupportedSourceError(for: sourceURL)
@@ -692,7 +723,7 @@ enum FileImportService {
 
             try run.begin(.readingSource)
             let package = try daisyPackage(of: sourceURL, format: format)
-            let hash = try importHash(of: sourceURL, package: package)
+            let hash = try checksum ?? importHash(of: sourceURL, package: package)
             let metadata = ImportedFileMetadata.read(
                 from: package?.entryURL ?? sourceURL,
                 format: format,
@@ -1133,7 +1164,8 @@ enum FileImportService {
                 books: imported.books,
                 failures: candidates.failures + imported.failures,
                 incompleteBooks: imported.incompleteBooks,
-                cancellation: imported.cancellation
+                cancellation: imported.cancellation,
+                skippedDuplicates: imported.skippedDuplicates
             )
         }
         if let cancellation = result.cancellation {
@@ -1206,38 +1238,75 @@ enum FileImportService {
         return found
     }
 
+    /// The bytes a ZIP batch's book is timed by, which the estimate of the
+    /// time left weighs it by (`TimeLeftEstimate`, FR10): the size of a text
+    /// book's file (EPUB, PDF, Word, plain text, Markdown, or HTML), whose
+    /// text is read whole as it imports. Nil for an audiobook's file, whose
+    /// import reads its chapters rather than its every byte, so its size says
+    /// little of its time; for a DAISY book's package file, folder, or ZIP,
+    /// which may hold its audio; and for a file whose size can't be read. A
+    /// book without a size is counted at the average time of the books
+    /// timed without one.
+    static func timedSize(of book: URL) -> Int64? {
+        // The file's own attributes first: a folder, or a ZIP, which in a
+        // batch is a DAISY book's, is never opened to be sized.
+        guard let values = try? book.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
+              values.isRegularFile == true,
+              let size = values.fileSize, size > 0,
+              book.pathExtension.lowercased() != "zip",
+              let format = BookFormat.detect(from: book), format != .audio, format != .daisy else { return nil }
+        return Int64(size)
+    }
+
     /// Import files discovered inside a ZIP while retaining individual errors
     /// and the books imported without some of their chapters.
     /// This is separate from archive discovery so partial-import behavior is
     /// deterministic and independently testable.
     /// - Parameters:
-    ///   - progress: told, for each file, that it begins by reading the file
-    ///     (`ZipImportProgress.importingBook`), each step its import then
-    ///     begins on its package, and the files done of the total once it is
-    ///     imported, fails, or is skipped as a duplicate (FR10).
+    ///   - progress: told first the size each file is timed by
+    ///     (`ZipImportProgress.foundBooks`), then, for each file, that it
+    ///     begins by reading the file (`ZipImportProgress.importingBook`),
+    ///     each step its import then begins on its package, and the files
+    ///     done of the total once it is imported, fails, or is skipped as a
+    ///     duplicate (FR10).
     ///   - isCancelled: asked before each file. Once it says to stop, the
     ///     files not yet imported are left alone, the books already imported
     ///     are kept, and the result says after how many of how many files
     ///     the batch stopped (TODO I05).
-    ///   - importer: imports one file into a library folder, telling the
-    ///     observer it is given as each step on the book's package begins.
+    ///   - checksum: reads the checksum a file is known by, which the
+    ///     duplicate check compares (`importHash(of:)`); tests count its
+    ///     reads.
+    ///   - importer: imports one file into a library folder, given the
+    ///     checksum the duplicate check read, nil when it could not, so the
+    ///     file's bytes are read once for it, and telling the observer it is
+    ///     given as each step on the book's package begins.
     static func importSupportedFiles(
         _ supportedFiles: [URL],
         toFolder folderPath: String,
         existingHashes: Set<String> = [],
         progress: ((ZipImportProgress) -> Void)? = nil,
         isCancelled: ImportCancellationCheck = { false },
-        importer: (URL, String, ImportStepObserver?) throws -> ImportedBook = { url, folder, observer in
-            try importFileWithReport(from: url, toFolder: folder, observer: observer)
+        checksum: (URL) throws -> String = { try importHash(of: $0) },
+        importer: (URL, String, String?, ImportStepObserver?) throws -> ImportedBook = { url, folder, known, observer in
+            try importFileWithReport(from: url, checksum: known, toFolder: folder, observer: observer)
         }
     ) -> ZipImportResult {
         let total = supportedFiles.count
         var books: [Book] = []
         var failures: [ZipImportFailure] = []
         var incompleteBooks: [ZipImportFailure] = []
+        // The books skipped as duplicates, which the batch's end says when
+        // it brings no new book (FR10).
+        var skippedDuplicates = 0
         // Track hashes from this batch to avoid creating duplicate .tmbs
         // when the same file appears multiple times in a single zip
         var seenHashes = existingHashes
+
+        // The size each book is timed by, which the estimate of the time
+        // left weighs it by, read once for those who listen (FR10).
+        if let progress {
+            progress(.foundBooks(sizes: supportedFiles.map(timedSize(of:))))
+        }
 
         // Second pass: import each file, skipping duplicates
         for (index, fileURL) in supportedFiles.enumerated() {
@@ -1248,7 +1317,8 @@ enum FileImportService {
                     books: books,
                     failures: failures,
                     incompleteBooks: incompleteBooks,
-                    cancellation: .afterBooks(completed: index, total: total)
+                    cancellation: .afterBooks(completed: index, total: total),
+                    skippedDuplicates: skippedDuplicates
                 )
             }
 
@@ -1260,9 +1330,12 @@ enum FileImportService {
             }
 
             // Compute hash before creating .tmb to avoid orphaning on
-            // duplicate; a DAISY book in a folder has its package's.
+            // duplicate; a DAISY book in a folder has its package's. The
+            // import is given it, so the book's bytes are read once for it.
             beganStep(.readingSource)
-            if let hash = try? importHash(of: fileURL), seenHashes.contains(hash) {
+            let hash = try? checksum(fileURL)
+            if let hash, seenHashes.contains(hash) {
+                skippedDuplicates += 1
                 progress?(.importing(done: number, total: total, skippedDuplicate: true))
                 continue
             }
@@ -1270,7 +1343,7 @@ enum FileImportService {
             do {
                 // Each step the import begins on the book's package is told
                 // as it begins.
-                let imported = try importer(fileURL, folderPath) { step, _ in beganStep(step) }
+                let imported = try importer(fileURL, folderPath, hash) { step, _ in beganStep(step) }
                 seenHashes.insert(imported.book.md5Hash)
                 books.append(imported.book)
                 if !imported.report.isComplete {
@@ -1297,7 +1370,12 @@ enum FileImportService {
             progress?(.importing(done: number, total: total))
         }
 
-        return ZipImportResult(books: books, failures: failures, incompleteBooks: incompleteBooks)
+        return ZipImportResult(
+            books: books,
+            failures: failures,
+            incompleteBooks: incompleteBooks,
+            skippedDuplicates: skippedDuplicates
+        )
     }
 
     /// Delete a book's entire .tmb package.
@@ -1541,6 +1619,21 @@ enum FileImportService {
         toFolder folderPath: String = "",
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
+        try importAudioZipWithReport(from: zipURL, toFolder: folderPath, observer: observer, extraction: nil)
+    }
+
+    /// Imports the ZIP of audio files at `zipURL` as one audio book, as
+    /// `importAudioZipWithReport(from:toFolder:observer:)` does, telling
+    /// `extraction` how far the archive's extraction has got, its entries
+    /// and bytes, as the extractor counts them (FR10): the import overlay
+    /// shows them on the book's line, so a large audiobook's archive is
+    /// seen to move while it is extracted.
+    static func importAudioZipWithReport(
+        from zipURL: URL,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil,
+        extraction: ((ArchiveExtractionProgress) -> Void)?
+    ) throws -> ImportedBook {
         try ImportRun.perform(importing: zipURL.lastPathComponent, observer: observer) { run in
             try run.begin(.readingSource)
             let hash = try md5Hash(of: zipURL)
@@ -1560,7 +1653,12 @@ enum FileImportService {
 
             try run.begin(.extractingArchive, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
-            try ArchiveExtractor.extract(archiveAt: zipURL, into: audioDirectory, budget: ArchiveBudget())
+            try ArchiveExtractor.extract(
+                archiveAt: zipURL,
+                into: audioDirectory,
+                budget: ArchiveBudget(),
+                progress: extraction
+            )
 
             // A manifest beside the audio can name the book and its author.
             var title = zipName

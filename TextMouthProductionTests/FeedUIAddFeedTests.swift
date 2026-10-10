@@ -586,6 +586,106 @@ final class FeedUIAddFeedTests: XCTestCase {
         XCTAssertEqual(heard, [FeedWording.checkingAddress, FeedWording.choosePrompt(count: 2), FeedWording.checkingAddress])
     }
 
+    /// With the new folder's fields shown and a name typed in them, Return
+    /// in the Search field never makes the folder: Create stands down while
+    /// the Search field has the keyboard, so one button at a time is the
+    /// default. With no words typed, Return does nothing there, Search
+    /// being unavailable; with words, it searches; back in the name field,
+    /// it makes the folder. Until October 10, 2026, Return in an empty
+    /// Search field made the folder.
+    func testReturnInTheSearchFieldNeverMakesTheNewFolder() throws {
+        let world = try FeedTestWorld(self, label: "FeedUIReturnSearch")
+        world.server.serve("/search", try .directoryAnswer("itunes-search-empty.json", feedsOn: world.server))
+        guard startTurningTheRunLoop(world) else { return }
+        var heard: [String] = []
+        let model = AddFeedModel(center: world.center, parentPath: "", announce: { heard.append($0) })
+        let creates = CallLog<String>()
+        let sheet = AddFeedSheet(
+            model: model,
+            library: world.library.library,
+            feedFolders: LibraryFeedFolders(center: world.center),
+            // Refused, so the fields stay shown with their name.
+            onCreateFolder: { name, _ in
+                creates.record(name)
+                return .failure("Could not create folder: refused for the test")
+            },
+            onSubscribed: { _ in },
+            onCancel: {},
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 520, height: 720), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
+            try typeNewFolderName("Shows", in: hosting)
+            let search = try XCTUnwrap(
+                feedEditableFields(in: hosting).first { $0.placeholderString == FeedWording.searchLabel },
+                "the Search field was not drawn"
+            )
+
+            // The Search field empty: nothing takes Return.
+            try typeReplacingText("", in: search, of: hosting)
+            XCTAssertFalse(pressReturnKey(in: hosting), "a button took Return in the empty Search field")
+            settleHostedView(hosting)
+            XCTAssertEqual(creates.calls, [], "Return in the Search field made the new folder")
+
+            // Words typed: Return searches, and makes no folder.
+            try typeReplacingText("tactile", in: search, of: hosting)
+            guard pressReturnKey(in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertEqual(heard.first, FeedWording.searching, "Return did not press Search")
+            XCTAssertTrue(waitUntil(timeout: 10) { !model.isSearching }, "the search did not end")
+            XCTAssertEqual(creates.calls, [], "Return in the Search field made the new folder")
+
+            // Back in the name field, Return makes the folder.
+            try typeNewFolderName("Shows", in: hosting)
+            XCTAssertTrue(pressReturnKey(in: hosting), "nothing took Return in the name field")
+            XCTAssertEqual(creates.calls, ["Shows"], "Return in the name field did not press Create")
+        }
+    }
+
+    // MARK: - The Escape Key
+
+    /// While the new folder's fields are shown, Escape closes them, says
+    /// so, and keeps the place chosen, rather than closing Add Feed; once
+    /// they are closed, a second Escape presses the sheet's Cancel.
+    func testEscapeClosesTheNewFolderFieldsBeforeTheSheet() throws {
+        let world = try FeedTestWorld(self, label: "FeedUIEscape")
+        guard startTurningTheRunLoop(world) else { return }
+        let model = AddFeedModel(center: world.center, parentPath: "", announce: { _ in })
+        let cancels = CallLog<String>()
+        let sheet = AddFeedSheet(
+            model: model,
+            library: world.library.library,
+            feedFolders: LibraryFeedFolders(center: world.center),
+            onCreateFolder: { _, _ in .success(nil) },
+            onSubscribed: { _ in },
+            onCancel: { cancels.record("Cancel") },
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 520, height: 720), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
+            try typeNewFolderName("Shows", in: hosting)
+            let recorder = try recordingAnnouncements {
+                guard pressKey(.escape, in: hosting) else {
+                    throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+                }
+                XCTAssertTrue(waitUntil {
+                    hosting.layoutSubtreeIfNeeded()
+                    return self.newFolderNameFields(in: hosting).isEmpty
+                }, "Escape left the fields open")
+            }
+            XCTAssertEqual(cancels.calls, [], "Escape closed Add Feed with the fields open")
+            XCTAssertEqual(
+                recorder.announcements.map(\.message),
+                ["New Folder cancelled. Folder to hold the feed's own folder: Library Root."]
+            )
+
+            settleHostedView(hosting)
+            XCTAssertTrue(pressKey(.escape, in: hosting), "nothing took the second Escape")
+            XCTAssertEqual(cancels.calls, ["Cancel"], "the second Escape did not close Add Feed")
+        }
+    }
+
     // MARK: - The Command
 
     /// Library > Add Feed… takes Shift-Command-F, the Add Feed action's
@@ -654,88 +754,6 @@ final class FeedUIAddFeedTests: XCTestCase {
         return feed
     }
 
-}
-
-// MARK: - The Return Key and the New Folder's Fields
-
-// What the feed sheets' tests of the Return key share with each other; the
-// Move sheet's test (`LibraryFolderPickerTests`) keeps its own. These tests
-// are synchronous: they turn the run loop while a hosted view is alive, and
-// under an async test that turning cannot run the main actor's work, so a
-// button's Task would never finish.
-extension XCTestCase {
-    /// Starts `world`'s engine and turns the run loop until what it starts
-    /// has finished, as `world.start()` awaits it; fails the test, and
-    /// returns false, when that takes too long.
-    @MainActor
-    func startTurningTheRunLoop(_ world: FeedTestWorld, file: StaticString = #filePath, line: UInt = #line) -> Bool {
-        let finished = CallLog<Bool>()
-        Task {
-            await world.start()
-            finished.record(true)
-        }
-        let started = waitUntil(timeout: 10) { !finished.calls.isEmpty }
-        XCTAssertTrue(started, "the engine's start did not finish", file: file, line: line)
-        return started
-    }
-
-    /// Presses Return in `hostingView`'s window as the app receives a key:
-    /// offered as a key equivalent first, which a button with that shortcut
-    /// takes, and otherwise sent on to the control with keyboard focus.
-    /// Returns whether a key equivalent took it; some macOS releases hand
-    /// an offscreen window none.
-    @MainActor
-    func pressReturnKey(in hostingView: NSView) -> Bool {
-        guard let window = hostingView.window, let event = keyDown(.return, in: window) else { return false }
-        if window.performKeyEquivalent(with: event) { return true }
-        window.sendEvent(event)
-        return false
-    }
-
-    /// Gives the new folder's name field keyboard focus and makes `name`
-    /// its text, through the window's field editor as the keyboard does,
-    /// so the picker's binding follows; an empty `name` clears the field.
-    /// Skips where an offscreen window gives the field no focus.
-    @MainActor
-    func typeNewFolderName(_ name: String, in hostingView: NSView) throws {
-        let field = try XCTUnwrap(newFolderNameFields(in: hostingView).first, "the name field was not drawn")
-        try typeReplacingText(name, in: field, of: hostingView)
-    }
-
-    /// Gives `field` keyboard focus and makes `text` its whole text,
-    /// through the window's field editor as the keyboard does, so the
-    /// field's binding follows; empty `text` clears the field. Skips where
-    /// an offscreen window gives the field no focus.
-    @MainActor
-    func typeReplacingText(_ text: String, in field: NSTextField, of hostingView: NSView) throws {
-        guard let window = hostingView.window, window.makeFirstResponder(field),
-              let editor = window.firstResponder as? NSTextView else {
-            throw XCTSkip("This macOS gives an offscreen window's field no keyboard focus")
-        }
-        editor.selectAll(nil)
-        if text.isEmpty {
-            editor.delete(nil)
-        } else {
-            editor.insertText(text, replacementRange: editor.selectedRange())
-        }
-        settleHostedView(hostingView)
-    }
-
-    /// Lets SwiftUI apply its pending updates, as after typing or a press.
-    @MainActor
-    func settleHostedView(_ hostingView: NSView) {
-        _ = waitUntil(timeout: 0.25) {
-            hostingView.layoutSubtreeIfNeeded()
-            return false
-        }
-    }
-
-    /// The new folder's name field, drawn while the picker's fields are
-    /// shown.
-    @MainActor
-    func newFolderNameFields(in root: NSView) -> [NSTextField] {
-        feedEditableFields(in: root).filter { $0.placeholderString == "Folder name" }
-    }
 }
 
 // MARK: - The Feed Test World's Teardown

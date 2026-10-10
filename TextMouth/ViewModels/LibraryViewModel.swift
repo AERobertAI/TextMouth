@@ -331,13 +331,8 @@ final class LibraryViewModel: ObservableObject {
         // Clear what the audio editor left in this Mac's caches when
         // TextMouth last ended with editors open, off the main thread.
         removeStaleAudioEditCachesInBackground()
-        importOperationQueue.onActivityChanged = { [weak self] activeCount in
-            guard let self else { return }
-            self.isImporting = activeCount > 0
-            if activeCount == 0 {
-                self.importProgress.clear()
-            }
-        }
+        // The import overlay follows the import queue (FR10).
+        observeImportActivity()
         // Speak Import Progress, from any window (FR10).
         observeImportProgressRequests()
         // Speak Download Progress, from any window (FR10's feed half).

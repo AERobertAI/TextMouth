@@ -232,9 +232,10 @@ final class ArchiveImportBoundsTests: XCTestCase {
 
     /// The batch tells its extraction, the entries done of the total, before
     /// its first book, an archive inside under that archive's own name; then
-    /// each book by its name as it begins by reading its file, each step its
-    /// import takes on its package, and the books done of the total found
-    /// as each finishes (FR10).
+    /// the size each book is timed by, the bytes of its text; then each book
+    /// by its name as it begins by reading its file, each step its import
+    /// takes on its package, and the books done of the total found as each
+    /// finishes (FR10).
     func testExtractionProgressComesBeforeTheFirstBook() throws {
         let inner = try makeArchive("Inner", [TestZIPEntry("Tides.txt", Self.notes("tides"))])
         let archive = try makeArchive("Library Export", [
@@ -270,9 +271,10 @@ final class ArchiveImportBoundsTests: XCTestCase {
         let steps: [ImportStep] = [.readingSource, .copying, .readingText, .savingRecord, .publishing]
         let firstBook = steps.map { ZipImportProgress.importingBook(number: 1, total: 2, book: "Rope Splicing.txt", step: $0) }
         let secondBook = steps.map { ZipImportProgress.importingBook(number: 2, total: 2, book: "Tides.txt", step: $0) }
+        let sizes: [Int64?] = [Int64(Self.notes("rope").count), Int64(Self.notes("tides").count)]
         XCTAssertEqual(
             Array(reports.dropFirst(extractions.count)),
-            firstBook + [.importing(done: 1, total: 2)] + secondBook + [.importing(done: 2, total: 2)]
+            [.foundBooks(sizes: sizes)] + firstBook + [.importing(done: 1, total: 2)] + secondBook + [.importing(done: 2, total: 2)]
         )
     }
 

@@ -47,12 +47,21 @@ final class ImportProgressWordingTests: XCTestCase {
     }
 
     /// The one book an import brings in, a file or an archive holding one
-    /// book, is named with the step it is at.
+    /// book, is named with the step it is at, and an audiobook's archive
+    /// with how far it has been extracted, while it is.
     func testTheOneBookLineNamesTheBookAndItsStep() {
         XCTAssertEqual(ImportProgressWording.book("Moby Dick.epub", step: .readingText), "“Moby Dick.epub”, reading its text")
         XCTAssertEqual(
             ImportProgressWording.book("Harbor Talks.zip", step: .extractingArchive),
             "“Harbor Talks.zip”, extracting the archive"
+        )
+        XCTAssertEqual(
+            ImportProgressWording.book(
+                "Harbor Talks.zip",
+                step: .extractingArchive,
+                extraction: ArchiveExtractionProgress(entriesDone: 12, entries: 30, bytesDone: 120_000_000, bytes: 340_000_000)
+            ),
+            "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB"
         )
     }
 
@@ -100,18 +109,13 @@ final class ImportProgressWordingTests: XCTestCase {
         for (seconds, words) in expected {
             XCTAssertEqual(ImportProgressWording.timeLeft(seconds), words, "\(seconds) seconds")
         }
-        XCTAssertEqual(ImportTimeEstimate.rounded(.infinity), 0)
-        XCTAssertEqual(ImportTimeEstimate.rounded(.nan), 0)
     }
 
-    /// The estimate is the average time of the books timed so far times the
-    /// books left, and there is none before a book is timed or once no book
-    /// is left.
-    func testTheEstimateIsTheAverageOfTheBooksTimedTimesTheBooksLeft() {
-        XCTAssertEqual(ImportTimeEstimate.secondsLeft(timedSeconds: 90, timedBooks: 3, remaining: 7), 210)
-        XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: 0, timedBooks: 0, remaining: 7), "no book timed yet")
-        XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: 90, timedBooks: 3, remaining: 0), "no book left")
-        XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: .infinity, timedBooks: 3, remaining: 2))
+    /// The imports waiting behind the one shown are counted, in agreement
+    /// with their number (FR10).
+    func testTheImportsWaitingAreCounted() {
+        XCTAssertEqual(ImportProgressWording.waiting(1), "1 more import waiting")
+        XCTAssertEqual(ImportProgressWording.waiting(2), "2 more imports waiting")
     }
 
     /// Once Cancel is pressed the overlay says the import stops after the
@@ -119,6 +123,8 @@ final class ImportProgressWordingTests: XCTestCase {
     func testCancellingIsSaidInPlaceOfTheTimeLeft() {
         XCTAssertEqual(ImportProgressWording.cancelling(afterBook: true), "Cancelling after this book...")
         XCTAssertEqual(ImportProgressWording.cancelling(afterBook: false), "Cancelling...")
+        XCTAssertEqual(ImportProgressWording.cancellingLine, "Cancelling...")
+        XCTAssertEqual(FeedDownloadProgressWording.cancelling, ImportProgressWording.cancellingLine, "the feed section's words are not the overlay's")
     }
 
     // MARK: - Counts and Extraction
@@ -160,6 +166,12 @@ final class ImportProgressWordingTests: XCTestCase {
             ),
             "Extracting “Folders.zip”: 2 of 3 items..."
         )
+        XCTAssertEqual(
+            ImportProgressWording.extracted(ArchiveExtractionProgress(entriesDone: 120, entries: 300, bytesDone: 1_200_000_000, bytes: 3_400_000_000)),
+            "120 of 300 items, 1.2 GB of 3.4 GB",
+            "the counts a batch's line and a one-book archive's line share"
+        )
+        XCTAssertEqual(ImportProgressWording.extracted(ArchiveExtractionProgress(entriesDone: 2, entries: 3, bytesDone: 0, bytes: 0)), "2 of 3 items")
         XCTAssertEqual(ImportProgressWording.size(999), ArchiveFigures.size(999), "sizes read as the archive messages write them")
         XCTAssertEqual(ImportProgressWording.size(1_200_000_000), ArchiveFigures.size(1_200_000_000))
     }
@@ -189,8 +201,9 @@ final class ImportProgressWordingTests: XCTestCase {
 
     /// A quarter is announced with the archive's name, the books processed,
     /// and the time left when there is an estimate. A batch's end says what
-    /// came of it, with only the counts that are not 0, or that no book was
-    /// found; one book's end, and a failure, name it.
+    /// came of it, with only the counts that are not 0, or, when it brought
+    /// no new book and lost none, what it found; one book's end, and a
+    /// failure, name it.
     func testAnnouncementsSayWhatCameOfTheImport() {
         XCTAssertEqual(
             ImportProgressWording.quarter(of: "Library Export.zip", done: 25, total: 100, secondsLeft: 250),
@@ -213,14 +226,45 @@ final class ImportProgressWordingTests: XCTestCase {
             "Finished importing “Shelf.zip”: 1 book imported, 1 skipped as a duplicate."
         )
         XCTAssertEqual(
+            ImportProgressWording.finished(batch: "Shelf.zip", imported: 0, skippedDuplicates: 2, failed: 1),
+            "Finished importing “Shelf.zip”: 0 books imported, 2 skipped as duplicates, 1 failed."
+        )
+        // A batch that brought no new book and lost none says what it found.
+        XCTAssertEqual(
             ImportProgressWording.finished(batch: "Shelf.zip", imported: 0, skippedDuplicates: 3, failed: 0),
-            "Finished importing “Shelf.zip”: 0 books imported, 3 skipped as duplicates."
+            ImportProgressWording.noNewBooks(in: "Shelf.zip", alreadyInLibrary: 3)
         )
         XCTAssertEqual(
             ImportProgressWording.finished(batch: "Empty.zip", imported: 0, skippedDuplicates: 0, failed: 0),
-            "Finished importing “Empty.zip”: no books were found in it."
+            ImportProgressWording.noNewBooks(in: "Empty.zip", alreadyInLibrary: 0)
         )
         XCTAssertEqual(ImportProgressWording.finished(book: "Moby Dick.epub"), "Finished importing “Moby Dick.epub”.")
         XCTAssertEqual(ImportProgressWording.failed("Moby Dick.epub"), "Could not import “Moby Dick.epub”.")
+    }
+
+    /// A batch that found no new book says what it found: every book was
+    /// already in the library, counted, both of them, or its one book, or
+    /// the archive held no book TextMouth reads (FR10).
+    func testABatchWithNoNewBookSaysWhatItFound() {
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Library Export.zip", alreadyInLibrary: 24),
+            "No new books in “Library Export.zip”: all 24 were already in your library."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Library Export.zip", alreadyInLibrary: 3),
+            "No new books in “Library Export.zip”: all 3 were already in your library."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Pair.zip", alreadyInLibrary: 2),
+            "No new books in “Pair.zip”: both were already in your library."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Shelf.zip", alreadyInLibrary: 1),
+            "No new books in “Shelf.zip”: its one book was already in your library."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.noNewBooks(in: "Empty.zip", alreadyInLibrary: 0),
+            "No books were found in “Empty.zip”."
+        )
     }
 }

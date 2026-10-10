@@ -3,8 +3,9 @@ import SwiftUI
 /// What the import overlay shows at one moment (FR10): the bar's books done
 /// of the total, which is 0 of 0 while the bar only spins, the line beneath
 /// it, which says what the import is doing, and the lines under that: how
-/// long the book under way has taken, once that is long enough to say, and
-/// the time a ZIP batch has left, or that the imports are cancelling.
+/// long the book under way has taken, once that is long enough to say, the
+/// time a ZIP batch has left, or that the imports are cancelling, and how
+/// many imports wait behind the one shown.
 struct ImportProgressState: Equatable {
     /// A book being imported, the step it is at, and when it began.
     struct BookUnderWay: Equatable {
@@ -20,6 +21,14 @@ struct ImportProgressState: Equatable {
         /// Whether it is done: its line stays until the next book begins,
         /// but the time on it is no longer said.
         var isDone = false
+        /// How far the extraction of an archive holding one audiobook has
+        /// got, which its line says while that is its step (FR10).
+        var extraction: ArchiveExtractionProgress?
+
+        /// The extraction its line says: only while it is extracted.
+        var extractionShown: ArchiveExtractionProgress? {
+            step == .extractingArchive ? extraction : nil
+        }
     }
 
     /// The books done, which the bar and its count show.
@@ -32,17 +41,25 @@ struct ImportProgressState: Equatable {
     private(set) var notice = ""
     /// The book under way, while one is.
     private(set) var book: BookUnderWay?
-    /// The batch's books timed so far, those imported or failed, and the
-    /// seconds they took in all, which the time left is estimated from.
-    private(set) var timedBooks = 0
-    private(set) var timedSeconds: TimeInterval = 0
-    /// The batch's books skipped as duplicates, which its end says.
-    private(set) var skippedDuplicates = 0
+    /// What the batch's books timed so far took, those imported or failed,
+    /// each by its size where that tells its time, which the time left is
+    /// estimated from (`TimeLeftEstimate`).
+    private(set) var timing = WorkTiming()
+    /// The sizes the batch's books are timed by, in the batch's order, as
+    /// `ZipImportProgress.foundBooks` tells them: a text book's bytes, or
+    /// nil for a book whose size says little of its time
+    /// (`FileImportService.timedSize(of:)`); empty until told.
+    private(set) var bookSizes: [Int64?] = []
     /// The seconds the batch has left, estimated as its last book finished;
-    /// nil while no estimate applies (`ImportTimeEstimate`).
+    /// nil while no estimate applies (`TimeLeftEstimate`).
     private(set) var secondsLeft: TimeInterval?
     /// Whether Cancel was pressed while this import runs (TODO I05).
     private(set) var isCancelling = false
+    /// The imports queued behind the one shown, waiting their turn on the
+    /// import queue, which the overlay counts (FR10). They outlast the
+    /// import shown, so a new import's state keeps them
+    /// (`ImportProgress.begin(_:subject:at:)`).
+    var waitingImports = 0
 
     /// The state that shows `message` alone, under a bar that only spins:
     /// an import starting or waiting.
@@ -50,18 +67,21 @@ struct ImportProgressState: Equatable {
         notice = message
     }
 
-    /// The state of an import of one book, named `name`, begun at `date`: a
-    /// file, or an archive holding one book. It begins by reading the file.
-    init(book name: String, at date: Date) {
-        book = BookUnderWay(name: name, number: nil, step: .readingSource, startedAt: date)
+    /// The state of an import of one book, named `name`, begun at `date` at
+    /// `step`: a file or an archive holding one book, which begins by
+    /// reading the file, a TextMouth package, which begins by checking it,
+    /// or text typed in New from Text, which begins by creating its package.
+    init(book name: String, at date: Date, step: ImportStep = .readingSource) {
+        book = BookUnderWay(name: name, number: nil, step: step, startedAt: date)
     }
 
     /// The line under the bar: the book under way and the step it is at,
-    /// or, with none, the notice.
+    /// with how far an archive holding one audiobook has been extracted
+    /// while it is, or, with none, the notice.
     var message: String {
         guard let book else { return notice }
         guard let number = book.number else {
-            return ImportProgressWording.book(book.name, step: book.step)
+            return ImportProgressWording.book(book.name, step: book.step, extraction: book.extractionShown)
         }
         return ImportProgressWording.book(book.name, number: number, of: total, step: book.step)
     }
@@ -82,6 +102,8 @@ struct ImportProgressState: Equatable {
             total = 0
             book = nil
             notice = ImportProgressWording.extracting(archive: archive, progress: extraction)
+        case let .foundBooks(sizes):
+            bookSizes = sizes
         case let .importingBook(number, total, name, step):
             // A book's first report begins it; the later ones move its step.
             if book?.number == number {
@@ -95,27 +117,47 @@ struct ImportProgressState: Equatable {
         case let .importing(done, total, skippedDuplicate):
             current = done
             self.total = total
-            // The book done is the one under way, timed from its start.
+            // The book done is the one under way, timed from its start by
+            // its size, unless it was skipped as a duplicate: that takes
+            // next to no time, and counting it would make an archive whose
+            // first books are already in the library promise far too little.
             if let finished = book, finished.number == done, !finished.isDone {
                 book?.isDone = true
-                if skippedDuplicate {
-                    skippedDuplicates += 1
-                } else {
-                    timedBooks += 1
-                    timedSeconds += max(0, date.timeIntervalSince(finished.startedAt))
+                if !skippedDuplicate {
+                    timing.add(seconds: date.timeIntervalSince(finished.startedAt), bytes: sizeOfBook(numbered: done) ?? 0)
                 }
             }
-            secondsLeft = ImportTimeEstimate.secondsLeft(
-                timedSeconds: timedSeconds,
-                timedBooks: timedBooks,
-                remaining: total - done
-            )
+            // The books left are all counted, duplicates among them or not,
+            // so the estimate errs long rather than short.
+            secondsLeft = TimeLeftEstimate.secondsLeft(after: timing, for: booksLeft(after: done, of: total))
         }
+    }
+
+    /// The size the batch's book numbered `number`, from 1, is timed by;
+    /// nil when it has none or none was told.
+    private func sizeOfBook(numbered number: Int) -> Int64? {
+        let index = number - 1
+        return bookSizes.indices.contains(index) ? bookSizes[index] : nil
+    }
+
+    /// The books of a batch of `total` still to come once `done` are, each
+    /// by the size it is timed by; none once every book is done.
+    private func booksLeft(after done: Int, of total: Int) -> [TimeLeftEstimate.Remaining] {
+        // A range from the first book left to the last, never empty: the
+        // guard leaves its lower bound no higher than its upper.
+        guard total > 0, done < total else { return [] }
+        return (max(done, 0) + 1...total).map { TimeLeftEstimate.Remaining(bytes: sizeOfBook(numbered: $0)) }
     }
 
     /// The import of one book began `step`.
     mutating func reach(_ step: ImportStep) {
         book?.step = step
+    }
+
+    /// The archive holding the one book under way, an audiobook's tracks,
+    /// has been extracted as far as `extraction` says (FR10).
+    mutating func receive(extraction: ArchiveExtractionProgress) {
+        book?.extraction = extraction
     }
 
     /// Notes that Cancel was pressed: the overlay says the import is
@@ -131,7 +173,9 @@ struct ImportProgressState: Equatable {
     /// (`ImportProgressWording.timeOnBook(_:)`);
     /// then that the import is cancelling, once Cancel is pressed, or else
     /// the time left, once a book of a batch of several is done and while
-    /// books are left.
+    /// books are left, and how many imports wait behind this one. Once
+    /// Cancel is pressed the waiting imports are not counted: the ZIP
+    /// archives among them never start.
     func details(at now: Date) -> [String] {
         var details: [String] = []
         if let book, !book.isDone,
@@ -140,8 +184,13 @@ struct ImportProgressState: Equatable {
         }
         if isCancelling {
             details.append(ImportProgressWording.cancelling(afterBook: book != nil))
-        } else if let secondsLeft {
+            return details
+        }
+        if let secondsLeft {
             details.append(ImportProgressWording.timeLeft(secondsLeft))
+        }
+        if waitingImports > 0 {
+            details.append(ImportProgressWording.waiting(waitingImports))
         }
         return details
     }
@@ -177,7 +226,8 @@ struct ImportProgressState: Equatable {
 /// overlay (FR10): each quarter of a ZIP batch's books, once, and how the
 /// import ended; and, at once, that Cancel was pressed. An import that ends
 /// within `announcedAfter` stays quiet, as before: its questions and alerts
-/// speak for it.
+/// speak for it. A ZIP batch that found no new book, and in which nothing
+/// failed, has neither, so what it found is said however short it was.
 @MainActor
 final class ImportProgress: ObservableObject {
     /// How an import shown in the overlay ended, which its announcement says.
@@ -228,20 +278,35 @@ final class ImportProgress: ObservableObject {
         begin(ImportProgressState(message: ImportProgressWording.startingArchive), subject: name, at: now())
     }
 
-    /// Shows the import of one book, named `name`, beginning now: a file,
-    /// or an archive holding one book (FR10).
-    func showBook(_ name: String) {
+    /// Shows the import of one book, named `name`, beginning now at `step`
+    /// (FR10): a file, or an archive holding one book, at reading the file;
+    /// a TextMouth package at checking it; New from Text's text at creating
+    /// its package.
+    func showBook(_ name: String, at step: ImportStep = .readingSource) {
         let date = now()
-        begin(ImportProgressState(book: name, at: date), subject: name, at: date)
+        begin(ImportProgressState(book: name, at: date, step: step), subject: name, at: date)
     }
 
     /// Shows `newState`, the start of an import known as `subject`, begun
-    /// at `date`, with none of its quarters reached.
+    /// at `date`, with none of its quarters reached, and the imports still
+    /// waiting behind it.
     private func begin(_ newState: ImportProgressState, subject: String?, at date: Date) {
-        state = newState
+        var started = newState
+        started.waitingImports = state.waitingImports
+        state = started
         self.subject = subject
         startedAt = date
         quarterReached = 0
+    }
+
+    /// Takes the import queue's count of the imports queued or running
+    /// (`SerialImportQueue.onActivityChanged`): those behind the one shown
+    /// are waiting, and the overlay counts them (FR10). Publishes only a
+    /// change, since the overlay redraws for each.
+    func noteImportsQueued(_ count: Int) {
+        let waiting = max(0, count - 1)
+        guard state.waitingImports != waiting else { return }
+        state.waitingImports = waiting
     }
 
     /// Shows that the import of one book began `step`.
@@ -301,22 +366,26 @@ final class ImportProgress: ObservableObject {
 
     /// What VoiceOver hears as the import shown ends as `ending`, or nil
     /// when it hears nothing: the import was short, cancelled, or named
-    /// neither an archive nor a book.
+    /// neither an archive nor a book. A ZIP batch that found no new book,
+    /// and in which nothing failed, is said however short it was: no alert
+    /// and no question follow it, so nothing else would say what it found
+    /// (`ZipImportResult.foundNoNewBook`).
     private func endAnnouncement(for ending: Ending) -> String? {
-        guard let subject, !state.isCancelling, hasRunLong(at: now()) else { return nil }
+        guard let subject, !state.isCancelling else { return nil }
+        let ranLong = hasRunLong(at: now())
         switch ending {
         case .batch(let result):
-            guard result.cancellation == nil else { return nil }
+            guard result.cancellation == nil, ranLong || result.foundNoNewBook else { return nil }
             return ImportProgressWording.finished(
                 batch: subject,
                 imported: result.books.count,
-                skippedDuplicates: state.skippedDuplicates,
+                skippedDuplicates: result.skippedDuplicates,
                 failed: result.failures.count
             )
         case .book:
-            return ImportProgressWording.finished(book: subject)
+            return ranLong ? ImportProgressWording.finished(book: subject) : nil
         case .failure:
-            return ImportProgressWording.failed(subject)
+            return ranLong ? ImportProgressWording.failed(subject) : nil
         }
     }
 
@@ -336,24 +405,49 @@ final class ImportProgress: ObservableObject {
         return date.timeIntervalSince(startedAt) >= Self.announcedAfter
     }
 
-    /// Shows nothing more: an import ended, or none is under way.
+    /// Shows nothing more of the import shown: it ended, or none is under
+    /// way. The imports waiting behind it are still counted until the queue
+    /// says how many are left (`noteImportsQueued(_:)`).
     func clear() {
-        state = ImportProgressState()
+        var cleared = ImportProgressState()
+        cleared.waitingImports = state.waitingImports
+        state = cleared
         subject = nil
         startedAt = nil
         quarterReached = 0
     }
 
     /// For an import of one book that runs on the import queue: shows, on
-    /// the main queue, that the book named `name` begins, and returns the
-    /// observer that shows each step its import then begins on the book's
-    /// package, before it tells `next`, the queue's test hook, when there is
-    /// one (FR10).
-    nonisolated func observeBook(_ name: String, then next: ImportStepObserver? = nil) -> ImportStepObserver {
-        DispatchQueue.main.async { self.showBook(name) }
+    /// the main queue, that the book named `name` begins at `firstStep`,
+    /// and returns the observer that shows each step its import then begins
+    /// on the book's package, before it tells `next`, the queue's test hook,
+    /// when there is one (FR10).
+    nonisolated func observeBook(
+        _ name: String,
+        startingAt firstStep: ImportStep = .readingSource,
+        then next: ImportStepObserver? = nil
+    ) -> ImportStepObserver {
+        DispatchQueue.main.async { self.showBook(name, at: firstStep) }
         return { step, package in
             DispatchQueue.main.async { self.reach(step) }
             try next?(step, package)
         }
+    }
+
+    /// For an archive holding one audiobook, imported on the import queue:
+    /// the extractor's progress callback, which shows on the main queue how
+    /// far the archive has been extracted, its items and bytes, on the
+    /// book's line (FR10). The extractor tells it at most about two hundred
+    /// times an archive (`ArchiveExtractor`).
+    nonisolated func observeExtraction() -> (ArchiveExtractionProgress) -> Void {
+        { extraction in
+            DispatchQueue.main.async { self.receive(extraction: extraction) }
+        }
+    }
+
+    /// Shows how far the archive holding the one book under way has been
+    /// extracted.
+    func receive(extraction: ArchiveExtractionProgress) {
+        state.receive(extraction: extraction)
     }
 }

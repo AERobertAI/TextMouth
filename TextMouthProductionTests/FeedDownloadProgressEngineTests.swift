@@ -44,7 +44,7 @@ final class FeedDownloadProgressEngineTests: XCTestCase {
         XCTAssertEqual(atCommit.last?.done, 1)
         XCTAssertEqual(atCommit.last?.download?.title, "Episode Two")
         XCTAssertEqual(atCommit.last?.download?.transfer?.completedBytes, Int64(second.count))
-        XCTAssertEqual(atCommit.last?.timing.downloads, 1)
+        XCTAssertEqual(atCommit.last?.timing.items, 1)
         XCTAssertEqual(atCommit.last?.timing.sizedBytes, Int64(first.count))
         XCTAssertFalse(progress.state.isRunning)
         XCTAssertEqual(progress.state, FeedDownloadProgressState(), "the ended run was not forgotten")
@@ -92,7 +92,7 @@ final class FeedDownloadProgressEngineTests: XCTestCase {
         XCTAssertEqual(atCommit?.done, 1)
         XCTAssertEqual(atCommit?.failed, 1)
         XCTAssertEqual(atCommit?.lines(at: Date()).first, "1 of 2 done, 1 failed")
-        XCTAssertEqual(atCommit?.timing.downloads, 0, "a failed download was timed")
+        XCTAssertEqual(atCommit?.timing.items, 0, "a failed download was timed")
     }
 
     // MARK: - Waiting Apart

@@ -61,12 +61,19 @@ struct LibraryWindowView: View {
                 // Import progress overlay, whose Cancel button stops ZIP
                 // imports, redrawn alone as the imports report (FR10)
                 if libraryViewModel.isImporting {
-                    ImportProgressObserver(library: libraryViewModel, progress: libraryViewModel.importProgress)
+                    ProgressObserver(progress: libraryViewModel.importProgress) { progress in
+                        // Ticks in the steps the time on a book moves in,
+                        // counted from when the book under way began, so
+                        // that time keeps up between the import's reports.
+                        TimelineView(.periodic(from: progress.state.book?.startedAt ?? Date(), by: ImportProgressWording.timeOnBookStep)) { context in
+                            LibraryWindowView.importProgressOverlay(for: libraryViewModel, at: context.date)
+                        }
+                    }
                 }
 
                 // Text extraction progress overlay (shown on startup or
                 // re-extraction), redrawn alone as each book finishes (TODO PERF12)
-                TextExtractionObserver(progress: libraryViewModel.textExtraction) { extraction in
+                ProgressObserver(progress: libraryViewModel.textExtraction) { extraction in
                     if extraction.isExtracting {
                         ProgressOverlay(
                             title: "Extracting Text",
@@ -506,24 +513,19 @@ extension LibraryWindowView {
     }
 }
 
-/// The import overlay of a Library window, redrawn alone as the imports
-/// report their progress (FR10): it observes the imports' progress, never
-/// the library model, so the many reports of a ZIP batch redraw no Library
-/// window's list, as `TextExtractionObserver` does for the text extraction
-/// (TODO PERF12).
-struct ImportProgressObserver: View {
-    /// The library whose imports the overlay shows and cancels; not
-    /// observed here.
-    let library: LibraryViewModel
-    /// The imports' progress, observed here alone: the library's own.
-    @ObservedObject var progress: ImportProgress
+/// Shows `content`, drawn from `progress`, and redraws only that content as
+/// `progress` publishes (TODO PERF12): the Library window or the Storage
+/// settings tab around it, which observe the library model, are not redrawn
+/// for each report of the work `progress` follows, and the library model is
+/// never republished for it. The text extraction's overlay and Storage rows
+/// and the import overlay (FR10) each observe their progress this way.
+struct ProgressObserver<Progress: ObservableObject, Content: View>: View {
+    /// The progress shown, observed here alone.
+    @ObservedObject var progress: Progress
+    /// What to show for the progress as it is now.
+    @ViewBuilder let content: (Progress) -> Content
 
     var body: some View {
-        // Ticks in the steps the time on a book moves in, counted from when
-        // the book under way began, so that time keeps up between the
-        // import's reports (FR10).
-        TimelineView(.periodic(from: progress.state.book?.startedAt ?? Date(), by: ImportProgressWording.timeOnBookStep)) { context in
-            LibraryWindowView.importProgressOverlay(for: library, at: context.date)
-        }
+        content(progress)
     }
 }

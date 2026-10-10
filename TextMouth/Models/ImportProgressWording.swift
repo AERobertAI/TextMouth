@@ -25,12 +25,19 @@ enum ImportProgressWording {
     /// How far the extraction of the archive named `archive`, the archive
     /// imported or one found inside it, has got, by its items and by the
     /// bytes they declare: "Extracting “Library Export.zip”: 120 of 300
-    /// items, 1.2 GB of 3.4 GB...". An archive declaring no bytes, folders
-    /// and empty files alone, is counted by its items alone.
+    /// items, 1.2 GB of 3.4 GB...".
     static func extracting(archive: String, progress: ArchiveExtractionProgress) -> String {
+        "Extracting “\(archive)”: \(extracted(progress))..."
+    }
+
+    /// How far an extraction has got, by its items and by the bytes they
+    /// declare: "120 of 300 items, 1.2 GB of 3.4 GB". An archive declaring
+    /// no bytes, folders and empty files alone, is counted by its items
+    /// alone.
+    static func extracted(_ progress: ArchiveExtractionProgress) -> String {
         let items = "\(progress.entriesDone) of \(progress.entries) items"
-        guard progress.bytes > 0 else { return "Extracting “\(archive)”: \(items)..." }
-        return "Extracting “\(archive)”: \(items), \(size(progress.bytesDone)) of \(size(progress.bytes))..."
+        guard progress.bytes > 0 else { return items }
+        return "\(items), \(size(progress.bytesDone)) of \(size(progress.bytes))"
     }
 
     /// `bytes` as a size, as the archive messages write sizes, in decimal
@@ -54,9 +61,14 @@ enum ImportProgressWording {
     }
 
     /// The one book an import is bringing in, a file or an archive holding
-    /// one book, and the step it is at: "“Moby Dick.epub”, reading its text".
-    static func book(_ name: String, step: ImportStep) -> String {
-        "“\(name)”, \(self.step(step))"
+    /// one book, and the step it is at: "“Moby Dick.epub”, reading its text";
+    /// with how far the extraction of an archive holding one audiobook has
+    /// got, while it is extracted: "“Harbor Talks.zip”, extracting the
+    /// archive: 12 of 30 items, 120 MB of 340 MB" (FR10).
+    static func book(_ name: String, step: ImportStep, extraction: ArchiveExtractionProgress? = nil) -> String {
+        let line = "“\(name)”, \(self.step(step))"
+        guard let extraction else { return line }
+        return "\(line): \(extracted(extraction))"
     }
 
     /// How long a book must have been under way before the overlay says how
@@ -92,19 +104,34 @@ enum ImportProgressWording {
     }
 
     /// The time a batch has left, as the overlay says it once a book is
-    /// done: "About 4 minutes left", or "Less than a minute left". The
-    /// estimate is rounded first (`ImportTimeEstimate.rounded(_:)`).
+    /// done, and the feed downloads section once a download is: "About 4
+    /// minutes left", or "Less than a minute left". The estimate is rounded
+    /// first (`TimeLeftEstimate.rounded(_:)`).
     static func timeLeft(_ seconds: TimeInterval) -> String {
-        let rounded = ImportTimeEstimate.rounded(seconds)
+        let rounded = TimeLeftEstimate.rounded(seconds)
         guard rounded > 0 else { return "Less than a minute left" }
         return "About \(TimeFormatting.spoken(rounded)) left"
     }
 
     /// What the overlay says once Cancel is pressed, in place of the time
     /// left: the import stops after the book under way, or, before any book,
-    /// at its next step.
+    /// at its next step (`cancellingLine`).
     static func cancelling(afterBook: Bool) -> String {
-        afterBook ? "Cancelling after this book..." : "Cancelling..."
+        afterBook ? "Cancelling after this book..." : cancellingLine
+    }
+
+    /// What a progress display says once Cancel is pressed while what it
+    /// shows stops at its next step: the import overlay before any book,
+    /// and the feed downloads section while a download already being added
+    /// to the library finishes (`FeedDownloadProgressWording.cancelling`).
+    static let cancellingLine = "Cancelling..."
+
+    /// How many imports wait their turn behind the one the overlay shows:
+    /// "1 more import waiting", "2 more imports waiting". Each file chosen
+    /// or opened, each archive, each text made with New from Text, and each
+    /// recording saved is an import of its own on the import queue.
+    static func waiting(_ count: Int) -> String {
+        CountWording.phrase(count, singular: "more import waiting", plural: "more imports waiting")
     }
 
     // MARK: - What VoiceOver Reads
@@ -148,12 +175,13 @@ enum ImportProgressWording {
 
     /// Announced as a ZIP batch that ran long ends: "Finished importing
     /// “Library Export.zip”: 97 books imported, 2 skipped as duplicates,
-    /// 1 failed." Only the counts that are not 0 follow the books imported,
-    /// and an archive with no book in it says so. The library's alert names
-    /// each file that failed.
+    /// 1 failed." Only the counts that are not 0 follow the books imported.
+    /// A batch that imported no book and in which nothing failed says what
+    /// it found instead (`noNewBooks(in:alreadyInLibrary:)`). The library's
+    /// alert names each file that failed.
     static func finished(batch subject: String, imported: Int, skippedDuplicates: Int, failed: Int) -> String {
-        guard imported + skippedDuplicates + failed > 0 else {
-            return "Finished importing “\(subject)”: no books were found in it."
+        guard imported + failed > 0 else {
+            return noNewBooks(in: subject, alreadyInLibrary: skippedDuplicates)
         }
         var counts = ["\(CountWording.books(imported)) imported"]
         if skippedDuplicates > 0 {
@@ -163,6 +191,27 @@ enum ImportProgressWording {
             counts.append("\(failed) failed")
         }
         return "Finished importing “\(subject)”: \(counts.joined(separator: ", "))."
+    }
+
+    /// Announced as a ZIP batch that brought no new book into the library,
+    /// and in which nothing failed, ends, however short it was, since no
+    /// alert and no question follow it to say so: "No new books in “Library
+    /// Export.zip”: all 24 were already in your library.", "…: both were
+    /// already in your library.", "…: its one book was already in your
+    /// library.", or, for an archive holding no book TextMouth reads, "No
+    /// books were found in “Empty.zip”." `duplicates` counts the books it
+    /// found, each skipped as already in the library.
+    static func noNewBooks(in subject: String, alreadyInLibrary duplicates: Int) -> String {
+        switch duplicates {
+        case ...0:
+            return "No books were found in “\(subject)”."
+        case 1:
+            return "No new books in “\(subject)”: its one book was already in your library."
+        case 2:
+            return "No new books in “\(subject)”: both were already in your library."
+        default:
+            return "No new books in “\(subject)”: all \(duplicates) were already in your library."
+        }
     }
 
     /// Announced as the import of one book that ran long ends: "Finished
@@ -182,39 +231,4 @@ enum ImportProgressWording {
     /// What Speak Import Progress says with no import under way; with one,
     /// it says what VoiceOver reads for the overlay.
     static let noImportUnderWay = "No import is under way."
-}
-
-// MARK: - The Time Left
-
-/// How long the books of a ZIP batch not yet done should take, estimated
-/// from the books done so far, and how the overlay rounds it (FR10).
-enum ImportTimeEstimate {
-    /// The seconds the `remaining` books should take at the average of the
-    /// `timedBooks` books imported or failed so far, which took
-    /// `timedSeconds` in all; nil before any book was timed, and with no
-    /// book left.
-    ///
-    /// A book skipped as a duplicate is not timed: it takes next to no time,
-    /// and counting it would shorten the average of the books that do take
-    /// time, so an archive whose first books are already in the library
-    /// would promise far too little. The books left are all counted at the
-    /// average, duplicates among them or not, so the estimate errs long
-    /// rather than short.
-    static func secondsLeft(timedSeconds: TimeInterval, timedBooks: Int, remaining: Int) -> TimeInterval? {
-        guard timedBooks > 0, remaining > 0, timedSeconds.isFinite else { return nil }
-        return max(0, timedSeconds) / Double(timedBooks) * Double(remaining)
-    }
-
-    /// `seconds` as the overlay says it: 0 under a minute, which it says as
-    /// "less than a minute"; otherwise rounded to the nearest whole minute
-    /// under 10 minutes, the nearest 5 minutes under an hour, and the
-    /// nearest 15 minutes from an hour on. An estimate recomputed as each
-    /// book finishes so changes its words only when it moves by a step that
-    /// matters at its size, and does not flicker between neighbors.
-    static func rounded(_ seconds: TimeInterval) -> TimeInterval {
-        guard seconds.isFinite, seconds >= 60 else { return 0 }
-        let minutes = seconds / 60
-        let step: Double = minutes < 10 ? 1 : (minutes < 60 ? 5 : 15)
-        return (minutes / step).rounded() * step * 60
-    }
 }

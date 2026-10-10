@@ -360,7 +360,7 @@ struct StorageSettingsView: View {
 
                 // The batch's own progress object: only this part redraws as
                 // each book finishes (TODO PERF12).
-                TextExtractionObserver(progress: libraryViewModel.textExtraction) { extraction in
+                ProgressObserver(progress: libraryViewModel.textExtraction) { extraction in
                     Button("Redo Text Extraction...") {
                         showRedoExtractionConfirmation = true
                     }

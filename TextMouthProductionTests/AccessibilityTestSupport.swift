@@ -157,6 +157,89 @@ extension XCTestCase {
         )
     }
 
+    /// Presses `key` in `hostingView`'s window as the app receives a key:
+    /// offered to the window as a key equivalent first, which a button with
+    /// that shortcut takes, as `NSApplication` offers every key to the key
+    /// window before its first responder sees it, and otherwise sent on to
+    /// the control with keyboard focus. Returns whether a key equivalent
+    /// took it; some macOS releases hand an offscreen window none.
+    @MainActor
+    func pressKey(_ key: KeyEquivalent, in hostingView: NSView) -> Bool {
+        guard let window = hostingView.window, let event = keyDown(key, in: window) else { return false }
+        if window.performKeyEquivalent(with: event) { return true }
+        window.sendEvent(event)
+        return false
+    }
+
+    /// Presses Return in `hostingView`'s window as the app receives a key
+    /// (`pressKey(_:in:)`). Returns whether a key equivalent took it.
+    @MainActor
+    func pressReturnKey(in hostingView: NSView) -> Bool {
+        pressKey(.return, in: hostingView)
+    }
+
+    /// Gives `field` keyboard focus and makes `text` its whole text,
+    /// through the window's field editor as the keyboard does, so the
+    /// field's binding follows; empty `text` clears the field. Skips where
+    /// an offscreen window gives the field no focus.
+    @MainActor
+    func typeReplacingText(_ text: String, in field: NSTextField, of hostingView: NSView) throws {
+        guard let window = hostingView.window, window.makeFirstResponder(field),
+              let editor = window.firstResponder as? NSTextView else {
+            throw XCTSkip("This macOS gives an offscreen window's field no keyboard focus")
+        }
+        editor.selectAll(nil)
+        if text.isEmpty {
+            editor.delete(nil)
+        } else {
+            editor.insertText(text, replacementRange: editor.selectedRange())
+        }
+        settleHostedView(hostingView)
+    }
+
+    /// Lets SwiftUI apply its pending updates, as after typing or a press.
+    @MainActor
+    func settleHostedView(_ hostingView: NSView) {
+        _ = waitUntil(timeout: 0.25) {
+            hostingView.layoutSubtreeIfNeeded()
+            return false
+        }
+    }
+
+    /// The text fields AppKit drew below `root` that take typing.
+    @MainActor
+    func editableTextFields(in root: NSView) -> [NSTextField] {
+        descendants(of: root, as: NSTextField.self).filter(\.isEditable)
+    }
+
+    /// Whether `field` has the keyboard in `window`: the window's first
+    /// responder is the field editor editing it, as after a click in it.
+    @MainActor
+    func isEditing(_ field: NSTextField, in window: NSWindow) -> Bool {
+        guard let editor = window.firstResponder as? NSTextView else { return false }
+        return (editor.delegate as AnyObject?) === field
+    }
+
+    // MARK: The Folder Picker's New Folder Fields
+
+    /// The new folder's name field, drawn while the folder picker's New
+    /// Folder fields are shown (`LibraryFolderPicker`), in the Move sheet
+    /// and the feed sheets alike.
+    @MainActor
+    func newFolderNameFields(in root: NSView) -> [NSTextField] {
+        editableTextFields(in: root).filter { $0.placeholderString == "Folder name" }
+    }
+
+    /// Gives the new folder's name field keyboard focus and makes `name`
+    /// its text, through the window's field editor as the keyboard does,
+    /// so the picker's binding follows; an empty `name` clears the field.
+    /// Skips where an offscreen window gives the field no focus.
+    @MainActor
+    func typeNewFolderName(_ name: String, in hostingView: NSView) throws {
+        let field = try XCTUnwrap(newFolderNameFields(in: hostingView).first, "the name field was not drawn")
+        try typeReplacingText(name, in: field, of: hostingView)
+    }
+
     /// Depth-first collection of every accessibility element below `root`
     /// that is not a plain group, i.e. the controls VoiceOver can land on.
     @MainActor

@@ -381,20 +381,65 @@ final class FeedUIOPMLTests: XCTestCase {
         )
 
         try withHostedView(sheet, size: NSSize(width: 520, height: 480), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
-            // Escape presses Cancel before the import, which closes the sheet.
             try typeNewFolderName("Shows", in: hosting)
-            guard pressKeyEquivalent(.escape, in: hosting) else {
-                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
-            }
-            XCTAssertEqual(closes, 1, "Escape did not press Cancel")
 
             // Import pressed as a click presses it, with the fields shown.
             model.start()
             XCTAssertTrue(waitUntil(timeout: 10) { model.summary != nil }, "the import did not end")
             settleHostedView(hosting)
-            XCTAssertTrue(pressReturnKey(in: hosting), "nothing took Return once the import ended")
-            XCTAssertEqual(closes, 2, "Return did not press Done")
+            guard pressReturnKey(in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertEqual(closes, 1, "Return did not press Done")
         }
+    }
+
+    /// While the new folder's fields are shown, Escape closes them, says
+    /// so, and keeps the place chosen, rather than closing the sheet; once
+    /// they are closed, a second Escape presses Cancel. Until October 10,
+    /// 2026 the first Escape pressed Cancel.
+    func testEscapeClosesTheNewFolderFieldsBeforeTheSheet() throws {
+        let world = try FeedTestWorld(self, label: "FeedUIOPMLEscape")
+        guard startTurningTheRunLoop(world) else { return }
+        let model = OPMLImportModel(
+            fileName: "subscriptions.opml",
+            subscriptions: [OPMLSubscription(title: "The Tactile Atlas", feedURL: world.server.url("/atlas.xml"), siteURL: nil)],
+            center: world.center,
+            parentPath: world.folder.path,
+            announce: { _ in }
+        )
+        var closes = 0
+        let sheet = OPMLImportSheet(
+            model: model,
+            library: world.library.library,
+            feedFolders: LibraryFeedFolders(center: world.center),
+            onCreateFolder: { _, _ in .success(nil) },
+            onClose: { closes += 1 },
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 520, height: 480), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
+            try typeNewFolderName("Shows", in: hosting)
+            let recorder = try recordingAnnouncements {
+                guard pressKey(.escape, in: hosting) else {
+                    throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+                }
+                XCTAssertTrue(waitUntil {
+                    hosting.layoutSubtreeIfNeeded()
+                    return self.newFolderNameFields(in: hosting).isEmpty
+                }, "Escape left the fields open")
+            }
+            XCTAssertEqual(closes, 0, "Escape pressed Cancel with the fields open")
+            XCTAssertEqual(recorder.announcements.map(\.message), [
+                LibraryFolderPicker.newFolderCancelledAnnouncement(pickerLabel: FeedWording.importFolderLabel, chosen: world.folder.path)
+            ])
+
+            settleHostedView(hosting)
+            XCTAssertTrue(pressKey(.escape, in: hosting), "nothing took the second Escape")
+            XCTAssertEqual(closes, 1, "the second Escape did not press Cancel")
+        }
+        XCTAssertFalse(model.isRunning, "an import started")
+        XCTAssertNil(model.summary)
     }
 
     // MARK: - Helpers

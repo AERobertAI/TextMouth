@@ -177,7 +177,8 @@ final class OPMLImportModel: ObservableObject, Identifiable {
 /// folders go, with New Folder; Import, which Return presses, except while
 /// the picker's New Folder fields are shown, when Return presses their
 /// Create and Import stands down, so one press does one thing; and Cancel,
-/// which Escape presses and which stops an import under way. While it
+/// which Escape presses and which stops an import under way, except while
+/// those fields are shown, when Escape closes them first. While it
 /// runs, the sheet says which feed it is subscribing to; once it ends, it
 /// says how it went, which VoiceOver also hears, and Done, which Return
 /// presses, closes it.
@@ -196,7 +197,8 @@ struct OPMLImportSheet: View {
     /// Why the last folder could not be made.
     @State private var folderFailure: String?
     /// Whether the picker's new-folder fields are showing, while Return
-    /// presses their Create rather than Import.
+    /// presses their Create rather than Import, and Escape closes them
+    /// rather than the sheet.
     @State private var isMakingFolder: Bool
 
     /// A sheet doing `model`'s work in `library`, whose folder picker keeps
@@ -256,7 +258,10 @@ struct OPMLImportSheet: View {
                         model.stop()
                         onClose()
                     }
-                    .keyboardShortcut(.cancelAction)
+                    // Escape cancels, except while the new folder's fields
+                    // are shown, when it closes them first (their Cancel
+                    // New Folder) and a second Escape cancels.
+                    .keyboardShortcut(isMakingFolder ? nil : KeyboardShortcut.cancelAction)
                     Spacer()
                     Button(FeedWording.importButton) {
                         model.start()

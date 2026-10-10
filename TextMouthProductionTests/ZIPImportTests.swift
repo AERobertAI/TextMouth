@@ -98,7 +98,7 @@ final class ZIPImportTests: XCTestCase {
         let result = FileImportService.importSupportedFiles(
             [good, bad],
             toFolder: "",
-            importer: { url, _, _ in
+            importer: { url, _, _, _ in
                 if url.lastPathComponent == "bad.txt" {
                     throw FileImportError.importFailed("simulated parse failure")
                 }
@@ -137,7 +137,7 @@ final class ZIPImportTests: XCTestCase {
             toFolder: "",
             existingHashes: [try FileImportService.md5Hash(of: duplicate)],
             progress: { reports.append($0) },
-            importer: { url, _, observer in
+            importer: { url, _, _, observer in
                 try observer?(.copying, url)
                 if url == failing {
                     throw FileImportError.importFailed("simulated parse failure")
@@ -154,7 +154,12 @@ final class ZIPImportTests: XCTestCase {
 
         XCTAssertEqual(result.books.map(\.title), ["Rope Splicing"])
         XCTAssertEqual(result.failures.map(\.fileName), ["Tides.txt"])
+        XCTAssertEqual(result.skippedDuplicates, 1)
+        XCTAssertFalse(result.foundNoNewBook)
         XCTAssertEqual(reports, [
+            // Each book's size first, as the estimate of the time left
+            // weighs them: the bytes of "rope", "knots", and "tides".
+            .foundBooks(sizes: [4, 5, 5]),
             .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .readingSource),
             .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .copying),
             .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .readingText),
@@ -222,6 +227,9 @@ final class ZIPImportTests: XCTestCase {
         )
     }
 
+    /// A file already in the library is skipped, counted among the batch's
+    /// duplicates, and is no failure; a batch of nothing else found no new
+    /// book, which VoiceOver is told however short it was (FR10).
     func testDuplicateFilesAreSkippedWithoutBeingReportedAsFailures() throws {
         let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: file) }
@@ -232,7 +240,7 @@ final class ZIPImportTests: XCTestCase {
             [file],
             toFolder: "",
             existingHashes: [hash],
-            importer: { _, _, _ in
+            importer: { _, _, _, _ in
                 XCTFail("Duplicate should not reach importer")
                 throw FileImportError.importFailed("unexpected")
             }
@@ -240,5 +248,95 @@ final class ZIPImportTests: XCTestCase {
 
         XCTAssertTrue(result.books.isEmpty)
         XCTAssertTrue(result.failures.isEmpty)
+        XCTAssertEqual(result.skippedDuplicates, 1)
+        XCTAssertTrue(result.foundNoNewBook)
+        XCTAssertNil(result.failureSummary, "an alert would follow the batch")
+    }
+
+    /// A batch found no new book only when it imported none, nothing in it
+    /// failed, and it ran to its end; a cancelled batch, or one with a
+    /// failure, has an alert that speaks for it.
+    func testABatchFoundNoNewBookOnlyWithNothingImportedFailedOrCancelled() {
+        let book = Book(title: "Kept", format: .txt, filePath: "/tmp/kept.txt", md5Hash: "kept")
+        let failure = ZipImportFailure(fileName: "bad.epub", message: "unreadable")
+        XCTAssertTrue(ZipImportResult(books: [], failures: []).foundNoNewBook)
+        XCTAssertTrue(ZipImportResult(books: [], failures: [], skippedDuplicates: 3).foundNoNewBook)
+        XCTAssertFalse(ZipImportResult(books: [book], failures: []).foundNoNewBook)
+        XCTAssertFalse(ZipImportResult(books: [], failures: [failure]).foundNoNewBook)
+        XCTAssertFalse(ZipImportResult(books: [], failures: [], cancellation: .whileExtracting).foundNoNewBook)
+    }
+
+    /// A batch reads each book's bytes once for its checksum: the duplicate
+    /// check reads it, and the book's own import, given it, knows the book
+    /// by it rather than reading the file again, so each book published
+    /// carries the checksum the batch read. Until October 10, 2026 each
+    /// book of a batch was read twice for it.
+    @MainActor
+    func testABatchReadsEachBooksChecksumOnce() throws {
+        let folder = makeIntegrationLibraryFolder("ZIP Checksum Once")
+        let directory = try makeSandboxDirectory("zip-loop-checksum")
+        let names = ["Rope Splicing.txt", "Knots.txt"]
+        for name in names {
+            try Data("\(name)\n\nHow sailors make fast and let go.\n".utf8).write(to: directory.appendingPathComponent(name))
+        }
+        let reads = CallLog<String>()
+
+        let result = FileImportService.importSupportedFiles(
+            names.map { directory.appendingPathComponent($0) },
+            toFolder: folder.path,
+            checksum: { url in
+                reads.record(url.lastPathComponent)
+                return "batch checksum of \(url.lastPathComponent)"
+            }
+        )
+
+        XCTAssertEqual(reads.calls, names, "a book's checksum was not read exactly once")
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(
+            result.books.map(\.md5Hash),
+            names.map { "batch checksum of \($0)" },
+            "a book's import read the file again for its checksum"
+        )
+    }
+
+    /// A batch's book is timed by its file's size when its text is read
+    /// whole as it imports, as an EPUB's, a PDF's, or a plain text's is;
+    /// an audiobook's file, whose chapters are read rather than its every
+    /// byte, a DAISY book's folder or ZIP, an empty file, and a file that
+    /// is not there have no size it is timed by (FR10).
+    func testABooksTimedSizeIsItsFilesWhenItsTextIsReadWhole() throws {
+        let directory = try makeSandboxDirectory("zip-timed-size")
+        let notes = directory.appendingPathComponent("Notes.txt")
+        try Data("Ten bytes.".utf8).write(to: notes)
+        let guide = directory.appendingPathComponent("Guide.pdf")
+        try Data(repeating: 0x25, count: 2_048).write(to: guide)
+        let track = directory.appendingPathComponent("Chapter 1.mp3")
+        try Data(repeating: 0xFF, count: 4_096).write(to: track)
+        let empty = directory.appendingPathComponent("Empty.txt")
+        try Data().write(to: empty)
+        let folder = directory.appendingPathComponent("Talking Book", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let archive = directory.appendingPathComponent("Talking Book.zip")
+        try Data(repeating: 0x50, count: 512).write(to: archive)
+
+        XCTAssertEqual(FileImportService.timedSize(of: notes), 10)
+        XCTAssertEqual(FileImportService.timedSize(of: guide), 2_048)
+        XCTAssertNil(FileImportService.timedSize(of: track))
+        XCTAssertNil(FileImportService.timedSize(of: empty))
+        XCTAssertNil(FileImportService.timedSize(of: folder))
+        XCTAssertNil(FileImportService.timedSize(of: archive))
+        XCTAssertNil(FileImportService.timedSize(of: directory.appendingPathComponent("Missing.epub")))
+    }
+
+    /// A book imported alone, and one of a batch whose checksum could not
+    /// be read, is read for its checksum by its own import.
+    func testAnImportGivenNoChecksumReadsTheFilesOwn() throws {
+        let file = try makeSandboxDirectory("zip-loop-no-checksum").appendingPathComponent("Tides.txt")
+        try Data("Tides\n\nThe flood runs for six hours.\n".utf8).write(to: file)
+        let folder = makeIntegrationLibraryFolder("ZIP Own Checksum")
+
+        let imported = try FileImportService.importFileWithReport(from: file, checksum: nil, toFolder: folder.path)
+
+        XCTAssertEqual(imported.book.md5Hash, try FileImportService.md5Hash(of: file))
     }
 }
