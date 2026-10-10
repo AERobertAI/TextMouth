@@ -576,6 +576,53 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
     }
 
+    /// A recording saved through the library's own queue is named in the
+    /// overlay by its title, with the step its import is held at, and the
+    /// overlay's line goes once the book is in the library, while the
+    /// Recording window says how the save ended. Until October 10, 2026 a
+    /// recording's save showed "Importing Books" with no book and no step,
+    /// and kept it until the queue had nothing left (REV13).
+    func testARecordingsSaveShowsItsTitleAndStep() async throws {
+        let folder = makeIntegrationLibraryFolder("Import Progress Recording")
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        model.observeImportActivity()
+        let takes = try makeSandboxDirectory("ImportProgressRecording")
+        let takeFile = takes.appendingPathComponent("Take.caf")
+        try RecordingAudioFixtures.writeTake(to: takeFile, duration: 2)
+        let encoded = takes.appendingPathComponent("Take.m4a")
+        try await RecordingEncoder.encode(take: takeFile, to: encoded, title: "Garden Plans")
+        let take = RecordedTake(
+            url: takeFile,
+            startedAt: Date(timeIntervalSince1970: 1_791_000_000),
+            duration: 2,
+            deviceName: "MacBook Air Microphone"
+        )
+        let gate = holdImport(of: model, at: .copying)
+
+        let save = Task {
+            try await model.saveRecording(take, encodedAudio: encoded, title: "Garden Plans", toFolder: folder.path, policy: .delete)
+        }
+
+        let shown = await eventually(timeout: 10) {
+            model.importProgress.state.message == "“Garden Plans”, copying it into the library"
+        }
+        XCTAssertTrue(shown, model.importProgress.state.message)
+        XCTAssertTrue(model.isImporting)
+        XCTAssertEqual(
+            model.importProgress.state.spokenStatus(at: Date()),
+            "Importing Books: “Garden Plans”, copying it into the library."
+        )
+        gate.signal()
+        let book = try await save.value
+        XCTAssertEqual(model.library.books.map(\.id), [book.id])
+        XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the recording")
+        let ended = await eventually(timeout: 5) { !model.isImporting }
+        XCTAssertTrue(ended, "the overlay never went")
+    }
+
     /// A TextMouth package opened from the Finder that the library does not
     /// list is named in the overlay with the step its import is held at,
     /// then opens once it is in the library, the overlay cleared; opened
