@@ -152,6 +152,30 @@ final class FeedDownloadProgressEngineTests: XCTestCase {
         XCTAssertEqual(downloads.progress.state, FeedDownloadProgressState())
     }
 
+    /// A download under way as TextMouth quits, with another queued behind
+    /// it, shows nothing more once the quit has cleared the progress: its
+    /// end republishes neither itself nor the queue, so the section never
+    /// shows again while the quit waits (feed review item 21).
+    func testQuittingWithDownloadsQueuedShowsNothingAgain() async throws {
+        let world = try FeedTestWorld(self, label: "FeedProgressQuitQueued")
+        let audio = try FeedMediaFixtures.silentAAC()
+        let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio), ("ep-2", "Episode Two", audio)])
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.05
+        world.server.serve("/audio/ep-1.m4a", slow)
+        let downloads = world.center.downloads
+        downloads.download("guid:ep-1", of: feed.id, origin: .listener)
+        downloads.download("guid:ep-2", of: feed.id, origin: .listener)
+        await waitFor("the first download is under way") { !world.server.requests(to: "/audio/ep-1.m4a").isEmpty }
+
+        await downloads.stopForQuit()
+        await waitFor("the download under way stops") { downloads.current == nil }
+
+        XCTAssertEqual(downloads.progress.state, FeedDownloadProgressState(), "the section came back while the quit waited")
+        XCTAssertEqual(downloads.queue.map(\.itemID), ["guid:ep-2"], "quitting forgot the download queued")
+    }
+
     // MARK: - Cancel
 
     /// Cancel stops the download under way and those waiting to start,

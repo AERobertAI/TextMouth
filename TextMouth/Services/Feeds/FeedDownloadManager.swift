@@ -442,7 +442,12 @@ final class FeedDownloadManager {
             let ending = await run(request)
             current = nil
             currentTask = nil
-            progress.end(ending, queued: queuedSizes, waits: waitingApart())
+            // Once TextMouth quits, the progress it cleared stays clear, so
+            // the section never shows again while the quit waits (feed
+            // review item 21).
+            if !isStoppedForQuit {
+                progress.end(ending, queued: queuedSizes, waits: waitingApart())
+            }
             startNext()
         }
     }
@@ -755,8 +760,10 @@ final class FeedDownloadManager {
     }
 
     /// Tells the downloads' progress the downloads waiting to start and
-    /// those waiting apart, as they stand now.
+    /// those waiting apart, as they stand now; nothing once TextMouth quits,
+    /// whose progress stays clear (feed review item 21).
     private func publishQueue() {
+        guard !isStoppedForQuit else { return }
         progress.update(queued: queuedSizes, waits: waitingApart())
     }
 
