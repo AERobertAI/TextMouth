@@ -17,9 +17,10 @@ struct FeedItemPolicyPassReport: Equatable, Sendable {
     /// Those of `removedBookIDs` whose packages stayed, holding the
     /// listener's place, bookmarks, settings, or transcript.
     var keptPackageBookIDs: [UUID] = []
-    /// The downloads due to go but open in a reader, which covers one
-    /// playing: looked at again at the next pass.
-    var openBookIDs: [UUID] = []
+    /// The downloads due to go but in use (`FeedLibraryHost.feedBooksInUse`):
+    /// open in a reader, which covers one playing, being transcribed, or
+    /// being exported (REV11 F1); looked at again at the next pass.
+    var inUseBookIDs: [UUID] = []
     /// The downloads due to go but on the reading list, which the rule never
     /// removes.
     var onReadingListBookIDs: [UUID] = []
@@ -69,12 +70,13 @@ extension FeedCenter {
     ///    it holds the number, keeping each package that holds something of
     ///    the listener's, as Delete Download does (`removeDue`). It never
     ///    removes a download the listener asked for, one on the reading
-    ///    list, one open in a reader (which covers one playing), or, in a
-    ///    cloud library, one this Mac does not hold whole; those are passed
-    ///    over and looked at again at the next pass (the listener's answer
-    ///    5). A download that fails or waits removes nothing, so the
-    ///    episodes ready to play never drop for a new one that could not
-    ///    arrive.
+    ///    list, one in use (`FeedLibraryHost.feedBooksInUse`: open in a
+    ///    reader, which covers one playing, being transcribed, or being
+    ///    exported, REV11 F1), or, in a cloud library, one this Mac does not
+    ///    hold whole; those are passed over and looked at again at the next
+    ///    pass (the listener's answer 5). A download that fails or waits
+    ///    removes nothing, so the episodes ready to play never drop for a
+    ///    new one that could not arrive.
     ///
     /// For a feed whose choice downloads by hand, it takes back the rule's
     /// downloads not yet under way and removes nothing. Nothing runs while
@@ -90,6 +92,7 @@ extension FeedCenter {
         var report = FeedItemPolicyPassReport()
         guard let library, library.feedLibraryIsComplete else { return report }
         let global = FeedSettings.itemPolicy(in: environment.preferences)
+        let inUse = library.feedBooksInUse
         var due: [FeedDueRemoval] = []
         for feed in store.feeds where feedIDs?.contains(feed.id) ?? true {
             guard let record = store.record(of: feed.id) else { continue }
@@ -116,12 +119,20 @@ extension FeedCenter {
                 report.withdrawnItemIDs += downloads.withdrawRuleDownloads(of: feed.id) { _ in true }
             }
 
-            due += dueRemovals(in: record, keeping: count, newest: Set(newest.map(\.id)), library: library, report: &report)
+            due += dueRemovals(
+                in: record,
+                keeping: count,
+                newest: Set(newest.map(\.id)),
+                inUse: inUse,
+                library: library,
+                report: &report
+            )
         }
         guard !due.isEmpty else { return report }
 
         let outcome = await removeDue(due, from: library, by: "the newest-N rule", at: environment.now(), putOffEvent: "FEED_RULE_PUT_OFF")
         report.leftInCloudBookIDs = outcome.leftInCloud
+        report.inUseBookIDs += outcome.inUse
         report.removedBookIDs = outcome.removed.map(\.row.id)
         report.keptPackageBookIDs = outcome.removed.filter(\.keepsPackage).map(\.row.id)
         if !outcome.leftInCloud.isEmpty {
@@ -174,12 +185,14 @@ extension FeedCenter {
     /// The rule's downloads of `record`'s feed to remove (FR11): when the
     /// rule holds more of them than `count`, its oldest outside the newest
     /// (`newest`), until it would hold `count`, less those it leaves alone,
-    /// each noted in `report`: one open in a reader, or on the reading list.
-    /// A download made before FR11, never the rule's, is not among them.
+    /// each noted in `report`: one in use (`inUse`, REV11 F1), or on the
+    /// reading list. A download made before FR11, never the rule's, is not
+    /// among them.
     private func dueRemovals(
         in record: FeedRecord,
         keeping count: Int,
         newest: Set<FeedItem.ID>,
+        inUse: Set<UUID>,
         library: FeedLibraryHost,
         report: inout FeedItemPolicyPassReport
     ) -> [FeedDueRemoval] {
@@ -192,8 +205,8 @@ extension FeedCenter {
         var due: [FeedDueRemoval] = []
         // Oldest first.
         for (item, book) in held.reversed() where excess > 0 && !newest.contains(item.id) {
-            if library.feedBooksOpenInReaders.contains(book.id) {
-                report.openBookIDs.append(book.id)
+            if inUse.contains(book.id) {
+                report.inUseBookIDs.append(book.id)
                 continue
             }
             if library.feedBookIsOnReadingList(book.id) {

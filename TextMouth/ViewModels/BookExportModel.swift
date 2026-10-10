@@ -254,6 +254,11 @@ final class BookExportModel: ObservableObject, Identifiable {
         Self.lastDestination = folder
 
         let books = currentBooks(self.books)
+        // The books are in use until the export ends, so no rule of the
+        // feed engine removes a download it is reading (REV11 F1).
+        let reading = books.map(\.id)
+        Self.noteExportStarted(reading)
+        defer { Self.noteExportEnded(reading) }
         // Each file done is shown on the main actor, as it is reported.
         let report: @Sendable (Int, Int) -> Void = { [weak self] done, total in
             Task { @MainActor in
@@ -289,6 +294,39 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// Stops the export under way before its next file.
     func stop() {
         cancellation?.cancel()
+    }
+
+    // MARK: Books Being Exported
+
+    /// How many exports under way read each book, by ID: every dialog's
+    /// export counts apart, so two exports of one book both end before the
+    /// book is no longer read (REV11 F1).
+    private static var exportsReading: [UUID: Int] = [:]
+
+    /// The books the exports under way are reading now, by ID. The feed
+    /// engine's rules never remove a download one of them reads, leaving it
+    /// for their next pass (`LibraryViewModel.feedBooksInUse`), so no
+    /// export loses its file partway (REV11 F1).
+    static var booksBeingExported: Set<UUID> {
+        Set(exportsReading.keys)
+    }
+
+    /// Notes that an export reads the books `bookIDs` from now until
+    /// `noteExportEnded(_:)` says it ended.
+    static func noteExportStarted(_ bookIDs: [UUID]) {
+        for bookID in Set(bookIDs) {
+            exportsReading[bookID, default: 0] += 1
+        }
+    }
+
+    /// Notes that an export of the books `bookIDs`, begun with
+    /// `noteExportStarted(_:)`, has ended; a book another export still reads
+    /// stays in use.
+    static func noteExportEnded(_ bookIDs: [UUID]) {
+        for bookID in Set(bookIDs) {
+            guard let count = exportsReading[bookID] else { continue }
+            exportsReading[bookID] = count > 1 ? count - 1 : nil
+        }
     }
 
     /// Whether `folder` is TextMouth's data directory or inside it, where

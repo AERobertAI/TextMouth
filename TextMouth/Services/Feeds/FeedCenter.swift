@@ -117,6 +117,12 @@ protocol FeedLibraryHost: AnyObject {
     func settleFeedFileRemovals(_ removals: [FeedFileRemoval], failures: [UUID: any Error]) -> FeedFileRemovalOutcome
     /// The books open in readers now, which nothing may delete.
     var feedBooksOpenInReaders: Set<UUID> { get }
+    /// The books in use now, which no rule of the engine's removes, leaving
+    /// each for the rule's next pass (REV11 F1): those open in readers,
+    /// which covers one playing; the book being transcribed, whose
+    /// transcript is saved into its package only once its audio has been
+    /// heard; and those an export is reading.
+    var feedBooksInUse: Set<UUID> { get }
     /// Whether the book `bookID` is on the reading list, whose downloads the
     /// newest-N rule never removes (FR11).
     func feedBookIsOnReadingList(_ bookID: UUID) -> Bool

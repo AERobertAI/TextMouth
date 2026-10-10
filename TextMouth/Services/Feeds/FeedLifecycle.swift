@@ -10,8 +10,10 @@ struct FeedSweepReport: Equatable, Sendable {
     /// holding the listener's place, bookmarks, settings, or transcript
     /// (FR11, branch A2).
     var keptPackageBookIDs: [UUID] = []
-    /// The downloads due but open in a reader, left until it closes.
-    var openBookIDs: [UUID] = []
+    /// The downloads due but in use (`FeedLibraryHost.feedBooksInUse`):
+    /// open in a reader, being transcribed, or being exported, each left
+    /// for a later sweep (REV11 F1).
+    var inUseBookIDs: [UUID] = []
     /// The downloads due in a cloud library whose packages are not wholly on
     /// this Mac, left to a Mac that has them.
     var leftInCloudBookIDs: [UUID] = []
@@ -44,6 +46,9 @@ struct FeedDueRemovalOutcome {
     /// The books whose packages this Mac does not hold whole, in a cloud
     /// library, left to a Mac that has them.
     var leftInCloud: [UUID] = []
+    /// The books put in use while the cloud state was read, as when a reader
+    /// opened one, left for the next pass (REV11 F1).
+    var inUse: [UUID] = []
     /// Whether the records and indexes could not be written first, so every
     /// file stayed.
     var wasPutOff = false
@@ -347,7 +352,10 @@ extension FeedCenter {
     ///
     /// Files are deleted for good, rather than moved to the Trash, so played
     /// episodes never fill the Trash, with dataless files left in the cloud.
-    /// A book open in a reader waits until its reader closes. In a cloud
+    /// A book in use waits for a later sweep (`FeedLibraryHost.feedBooksInUse`,
+    /// REV11 F1): one open in a reader, until its reader closes, which asks
+    /// for a sweep; one being transcribed, whose transcript would otherwise
+    /// be thrown away with its file; and one being exported. In a cloud
     /// library, a download is deleted only when this Mac holds its package
     /// whole, as its cloud state says, read off the main thread without
     /// downloading anything (`BookCloudStorage.state(of:in:)`): one only in
@@ -363,6 +371,7 @@ extension FeedCenter {
         guard let library, library.feedLibraryIsComplete else { return report }
         let now = environment.now()
         let settings = self.settings
+        let inUse = library.feedBooksInUse
         var due: [FeedDueRemoval] = []
         for record in store.records.values {
             // An item moved into the library whose book has left it is not
@@ -384,8 +393,8 @@ extension FeedCenter {
                 }
                 guard days >= 0, let played = item.playedDate,
                       now >= played.addingTimeInterval(TimeInterval(days) * 86_400) else { continue }
-                guard !library.feedBooksOpenInReaders.contains(book.id) else {
-                    report.openBookIDs.append(book.id)
+                guard !inUse.contains(book.id) else {
+                    report.inUseBookIDs.append(book.id)
                     continue
                 }
                 // A download made before FR11 waits until it moves into its
@@ -398,6 +407,7 @@ extension FeedCenter {
 
         let outcome = await removeDue(due, from: library, by: "the delete-after rule", at: now, putOffEvent: "FEED_SWEEP_PUT_OFF")
         report.leftInCloudBookIDs = outcome.leftInCloud
+        report.inUseBookIDs += outcome.inUse
         guard !outcome.wasPutOff else { return report }
         report.deletedBookIDs = outcome.removed.map(\.row.id)
         report.keptPackageBookIDs = outcome.removed.filter(\.keepsPackage).map(\.row.id)
@@ -416,7 +426,9 @@ extension FeedCenter {
     /// rules do: the after-playing sweep, and the newest-N rule (FR11). In a
     /// cloud library, only those whose packages this Mac holds whole, as
     /// their cloud state says, read first off the main thread without
-    /// downloading anything; never one a reader opened meanwhile. Each keeps
+    /// downloading anything; never one put in use meanwhile, as when a reader
+    /// opened it or a transcription or an export began
+    /// (`FeedLibraryHost.feedBooksInUse`, REV11 F1). Each keeps
     /// its package while it holds something of the listener's, in the order
     /// that never loses the listener's place: the records and the feeds'
     /// indexes written and waited for on the main actor first
@@ -450,8 +462,12 @@ extension FeedCenter {
             Self.packagesHeldWhole(packages, storage: storage)
         }
         outcome.leftInCloud = due.map(\.book.id).filter { !heldWhole.contains($0) }
-        // A reader may have opened one meanwhile.
-        let removable = due.filter { heldWhole.contains($0.book.id) && !library.feedBooksOpenInReaders.contains($0.book.id) }
+        // One may have been put in use meanwhile: opened in a reader, or
+        // being transcribed or exported (REV11 F1).
+        let inUse = library.feedBooksInUse
+        let held = due.filter { heldWhole.contains($0.book.id) }
+        outcome.inUse = held.map(\.book.id).filter(inUse.contains)
+        let removable = held.filter { !inUse.contains($0.book.id) }
         guard !removable.isEmpty else { return outcome }
 
         // 1 and 2: the records and the indexes, on the main actor.

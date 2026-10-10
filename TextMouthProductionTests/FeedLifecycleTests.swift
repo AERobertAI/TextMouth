@@ -143,12 +143,43 @@ final class FeedLifecycleTests: XCTestCase {
         world.center.markPlayed("guid:ep-1", of: feed.id)
 
         let report = await world.center.sweepPlayedDownloads()
-        XCTAssertEqual(report.openBookIDs, [book.id])
+        XCTAssertEqual(report.inUseBookIDs, [book.id])
         XCTAssertNotNil(world.library.bookByID(book.id))
 
         world.library.openBookIDs = []
         await waitFor("the download is deleted once its reader closes") { world.library.bookByID(book.id) == nil }
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
+    }
+
+    /// A due download in use waits for a later sweep, as one open in a
+    /// reader does (REV11 F1): one being transcribed, whose transcript would
+    /// be thrown away with its file, and one being exported. Once neither
+    /// work is under way, the sweep deletes it.
+    func testADownloadBeingTranscribedOrExportedWaitsForALaterSweep() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeleteInUse")
+        let (feed, book) = try await downloadedEpisode(in: world)
+        FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+
+        transcriptions.setTranscribing(book.id)
+        var report = await world.center.sweepPlayedDownloads()
+        transcriptions.setTranscribing(nil)
+        XCTAssertEqual(report.inUseBookIDs, [book.id])
+        XCTAssertEqual(report.deletedBookIDs, [])
+        XCTAssertNotNil(world.library.bookByID(book.id), "a download being transcribed was deleted")
+
+        BookExportModel.noteExportStarted([book.id])
+        report = await world.center.sweepPlayedDownloads()
+        BookExportModel.noteExportEnded([book.id])
+        XCTAssertEqual(report.inUseBookIDs, [book.id])
+        XCTAssertNotNil(world.library.bookByID(book.id), "a download being exported was deleted")
+
+        report = await world.center.sweepPlayedDownloads()
+        XCTAssertEqual(report.inUseBookIDs, [])
+        XCTAssertEqual(report.deletedBookIDs, [book.id])
     }
 
     /// In a cloud library, a due download is deleted only when this Mac

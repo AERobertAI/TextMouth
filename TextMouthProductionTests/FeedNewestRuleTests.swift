@@ -311,7 +311,7 @@ final class FeedNewestRuleTests: XCTestCase {
         FeedSettings.newestCountPreference.write(1, to: world.preferences)
         let report = await world.center.applyItemPolicy(to: [feed.id])
 
-        XCTAssertEqual(report.openBookIDs, [books[3].id])
+        XCTAssertEqual(report.inUseBookIDs, [books[3].id])
         XCTAssertEqual(report.onReadingListBookIDs, [books[2].id])
         XCTAssertEqual(report.removedBookIDs, [books[1].id])
         XCTAssertEqual(report.keptPackageBookIDs, [books[1].id], "the started episode's place was not kept")
@@ -326,6 +326,39 @@ final class FeedNewestRuleTests: XCTestCase {
         XCTAssertEqual(next.removedBookIDs, [books[3].id])
         XCTAssertEqual(next.onReadingListBookIDs, [books[2].id])
         XCTAssertNotNil(world.library.bookByID(books[2].id), "a download on the reading list went")
+    }
+
+    /// The rule never removes a download in use (REV11 F1): one being
+    /// transcribed, whose transcript would be thrown away with its file, and
+    /// one being exported, are passed over and looked at again at the next
+    /// pass, which removes them once neither work is under way.
+    func testAPassLeavesADownloadBeingTranscribedOrExported() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleInUse")
+        FeedSettings.newestCountPreference.write(3, to: world.preferences)
+        let feed = try await subscribeServed(world, episodes: 3)
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        let books = try await downloadedBooks(world, feed: feed, items: (1...3).map { "guid:ep-\($0)" })
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+
+        // Episode 3, the oldest, is being transcribed, and episode 2 exported.
+        transcriptions.setTranscribing(books[2].id)
+        BookExportModel.noteExportStarted([books[1].id])
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        let report = await world.center.applyItemPolicy(to: [feed.id])
+        BookExportModel.noteExportEnded([books[1].id])
+        transcriptions.setTranscribing(nil)
+
+        XCTAssertEqual(report.inUseBookIDs, [books[2].id, books[1].id])
+        XCTAssertEqual(report.removedBookIDs, [])
+        for book in books {
+            XCTAssertNotNil(world.library.bookByID(book.id), "a download in use went: \(book.title)")
+        }
+
+        let next = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(next.inUseBookIDs, [])
+        XCTAssertEqual(next.removedBookIDs, [books[2].id, books[1].id])
     }
 
     /// Under the choices that download by hand, a pass takes back the rule's
