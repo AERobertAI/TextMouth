@@ -207,6 +207,11 @@ final class FeedDownloadManager {
     var beforeCommit: (@MainActor (Request) -> Void)?
     /// Runs imports in order, off the main thread.
     private let importQueue = DispatchQueue(label: "com.textmouth.feed-imports", qos: .userInitiated)
+    /// How far the downloads have got, as the Library windows' feed
+    /// downloads section shows it and VoiceOver hears it (FR10): told every
+    /// change of the queue, each download's start, bytes, and end, and
+    /// observed by that section alone.
+    let progress: FeedDownloadProgress
 
     /// A manager downloading `store`'s items into `library`, telling
     /// `announce` what happens.
@@ -220,6 +225,8 @@ final class FeedDownloadManager {
         self.environment = environment
         self.library = library
         self.announce = announce
+        let now = environment.now
+        progress = FeedDownloadProgress(now: { now() })
     }
 
     // MARK: Asking
@@ -233,6 +240,8 @@ final class FeedDownloadManager {
     /// request. Nothing is asked for while TextMouth quits.
     func download(_ itemID: FeedItem.ID, of feedID: UUID, origin: Origin, opening: Bool = false) {
         guard !isStoppedForQuit, let item = store.record(of: feedID)?.item(itemID), item.deletedDate == nil else { return }
+        // However it goes, the downloads' progress hears the queue (FR10).
+        defer { publishQueue() }
         putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
         if let bookID = item.state.bookID, library()?.feedBook(withID: bookID) != nil {
             if opening {
@@ -267,6 +276,7 @@ final class FeedDownloadManager {
     /// queue, or out of the downloads put off, forgetting any part
     /// downloaded; the item is not downloaded, nor waiting (FR11).
     func cancel(_ itemID: FeedItem.ID, of feedID: UUID) {
+        defer { publishQueue() }
         putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
         if let waiting = queue.firstIndex(where: { $0.feedID == feedID && $0.itemID == itemID }) {
             queue.remove(at: waiting)
@@ -299,6 +309,7 @@ final class FeedDownloadManager {
     /// Takes every waiting, running, and put-off download of the feed
     /// `feedID` away, as when it is no longer subscribed.
     func cancelAll(of feedID: UUID) {
+        defer { publishQueue() }
         queue.removeAll { $0.feedID == feedID }
         putOff.removeAll { $0.feedID == feedID }
         if current?.feedID == feedID {
@@ -333,6 +344,7 @@ final class FeedDownloadManager {
                 record.items[index].state = .notDownloaded
             }
         }
+        publishQueue()
         DiagnosticLog.trace(.feeds, "the newest-N rule took back \(withdrawn.count) download(s) no longer wanted")
         return withdrawn
     }
@@ -348,29 +360,35 @@ final class FeedDownloadManager {
         for request in waiting {
             download(request.itemID, of: request.feedID, origin: .window)
         }
+        // An item gone meanwhile was asked for nothing: it waits no more.
+        publishQueue()
     }
 
     // MARK: Running
 
     /// Starts the next download when none is under way, unless TextMouth
-    /// quits.
+    /// quits; the downloads' progress hears it begin, and how it ended
+    /// before the one after it begins (FR10).
     private func startNext() {
         guard !isStoppedForQuit, current == nil, !queue.isEmpty else { return }
         let request = queue.removeFirst()
         current = request
         publishedPercent = -1
+        beginProgress(of: request)
         currentTask = Task {
-            await run(request)
+            let ending = await run(request)
             current = nil
             currentTask = nil
+            progress.end(ending, queued: queuedSizes, waits: waitingApart())
             startNext()
         }
     }
 
-    /// Runs the download `request`, to its book or its failure.
-    private func run(_ request: Request) async {
+    /// Runs the download `request`, to its book or its failure, and returns
+    /// how it ended, for the downloads' progress (FR10).
+    private func run(_ request: Request) async -> FeedDownloadEnding {
         guard let record = store.record(of: request.feedID), let item = record.item(request.itemID),
-              item.deletedDate == nil else { return }
+              item.deletedDate == nil else { return .stopped }
         let feed = record.feed
         DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_STARTED: \(item.title) (\(feed.title))")
         announce(.downloadStarted(feedID: request.feedID, itemID: request.itemID))
@@ -396,18 +414,19 @@ final class FeedDownloadManager {
             if current?.opensWhenDone == true {
                 library()?.openFeedBook(book.id)
             }
+            return .downloaded
         } catch {
             if isStoppedForQuit {
                 // Quitting stopped it: it keeps its place, which
                 // `stopForQuit()` saves, and its item stays as it was.
                 DiagnosticLog.trace(.feeds, "a download under way stopped for quitting, keeping its place")
-                return
+                return .stopped
             }
             let failure = Self.downloadError(error)
             if failure == .transfer(.cancelled) {
                 store.updateItem(request.itemID, of: request.feedID) { $0.state = .notDownloaded }
                 DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_CANCELLED: \(item.title) (\(feed.title))")
-                return
+                return .stopped
             }
             // As it stands now: the listener may have asked for it meanwhile.
             let asked = latest(request)
@@ -421,7 +440,7 @@ final class FeedDownloadManager {
                 }
                 store.updateItem(request.itemID, of: request.feedID) { $0.state = .waiting(wait.reason) }
                 DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_WAITING: \(item.title) (\(feed.title)): \(wait.reason)")
-                return
+                return .waiting
             }
             let message = failure.message(about: item.title)
             store.updateItem(request.itemID, of: request.feedID) { item in
@@ -434,6 +453,7 @@ final class FeedDownloadManager {
             }
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FAILED: \(item.title) (\(feed.title)): \(message)")
             announce(.downloadFailed(feedID: request.feedID, itemID: request.itemID, reason: message))
+            return .failed
         }
     }
 
@@ -533,8 +553,10 @@ final class FeedDownloadManager {
 
     /// Runs `importBook` on the import queue as storage work and, before that
     /// work ends, adds its book to the library and marks the item downloaded
-    /// on the main actor, as every import adds its book.
+    /// on the main actor, as every import adds its book. The downloads'
+    /// progress says the book is being added (FR10).
     private func importAndCommit(_ request: Request, _ importBook: @escaping @Sendable () throws -> ImportedBook) async throws -> Book {
+        progress.beginAddingToLibrary()
         let boundary = environment.boundary
         let queue = importQueue
         do {
@@ -615,16 +637,19 @@ final class FeedDownloadManager {
         return current
     }
 
-    /// Publishes how far the download `request` has got, when its whole
-    /// percent grew, while its item is still downloading.
+    /// Publishes how far the download `request` has got: every report to
+    /// the downloads' progress, which keeps it without publishing (FR10),
+    /// and, when its whole percent grew, to its item, while it is still
+    /// downloading.
     private func downloaded(_ written: Int64, of expected: Int64, estimate: Int64?, for request: Request) {
         guard current == request || current?.itemID == request.itemID else { return }
-        let progress = Self.progress(written: written, expected: expected, estimate: estimate)
-        guard progress.percent > publishedPercent else { return }
-        publishedPercent = progress.percent
+        let transfer = Self.progress(written: written, expected: expected, estimate: estimate)
+        progress.receive(transfer)
+        guard transfer.percent > publishedPercent else { return }
+        publishedPercent = transfer.percent
         store.updateItem(request.itemID, of: request.feedID) { item in
             guard item.state.isDownloading else { return }
-            item.state = .downloading(progress)
+            item.state = .downloading(transfer)
         }
     }
 
@@ -634,6 +659,58 @@ final class FeedDownloadManager {
     static func progress(written: Int64, expected: Int64, estimate: Int64?) -> BookDownloadProgress {
         let total = expected > 0 ? expected : max(estimate ?? 0, 0)
         return BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: max(0, written), totalBytes: total)
+    }
+
+    // MARK: The Downloads' Progress (FR10)
+
+    /// Tells the downloads' progress that the download `request` began, by
+    /// its item's and its feed's titles, an episode's file at none of the
+    /// bytes its feed gives; an article's page comes uncounted. A request
+    /// whose item went begins nothing, and ends at once.
+    private func beginProgress(of request: Request) {
+        guard let record = store.record(of: request.feedID), let item = record.item(request.itemID) else {
+            publishQueue()
+            return
+        }
+        let transfer = Self.isEpisode(item) ? Self.progress(written: 0, expected: 0, estimate: item.enclosure?.length) : nil
+        progress.begin(title: item.title, feedTitle: record.feed.title, transfer: transfer, queued: queuedSizes, waits: waitingApart())
+    }
+
+    /// Tells the downloads' progress the downloads waiting to start and
+    /// those waiting apart, as they stand now.
+    private func publishQueue() {
+        progress.update(queued: queuedSizes, waits: waitingApart())
+    }
+
+    /// The downloads waiting to start, in order, each by the bytes its feed
+    /// gives for its file: nil for an article, and for an episode whose feed
+    /// gives none.
+    private var queuedSizes: [Int64?] {
+        queue.map { request in
+            store.record(of: request.feedID)?.item(request.itemID).flatMap { item in
+                Self.isEpisode(item) ? item.enclosure?.length : nil
+            }
+        }
+    }
+
+    /// Whether `item` downloads as an episode, its file through the network,
+    /// rather than as an article, whose page is its book: as `run(_:)` tells
+    /// them apart.
+    private static func isEpisode(_ item: FeedItem) -> Bool {
+        item.enclosure?.isPlayable == true
+    }
+
+    /// The newest-N rule's downloads waiting apart (FR11), by their reason:
+    /// those a network with data limits put off, held as requests, and
+    /// those waiting for room, which only their items' states say.
+    private func waitingApart() -> FeedDownloadWaits {
+        var room = 0
+        for record in store.records.values {
+            for item in record.items where item.state.waitingReason != nil && !isPutOff(item.id, of: record.feed.id) {
+                room += 1
+            }
+        }
+        return FeedDownloadWaits(network: putOff.count, room: room)
     }
 
     // MARK: Quitting
@@ -670,6 +747,8 @@ final class FeedDownloadManager {
     func stopForQuit() async {
         guard !isStoppedForQuit else { return }
         isStoppedForQuit = true
+        // The section shows nothing more, and VoiceOver hears no end (FR10).
+        progress.clear()
         let pending = (current.map { [$0] } ?? []) + queue + putOff
         guard !pending.isEmpty else { return }
         let saved = pending.map { SavedDownload(feedID: $0.feedID, itemID: $0.itemID, origin: $0.origin) }
