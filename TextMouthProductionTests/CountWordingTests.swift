@@ -65,6 +65,27 @@ final class CountWordingTests: XCTestCase {
         XCTAssertEqual(CountWording.progress(3, of: 9, "done"), "3 of 9 done")
     }
 
+    /// Seconds kept in tenths are said to the nearest tenth, the same on
+    /// the Shortcuts tab (the double press time) and the Miscellaneous tab
+    /// (the gesture's time window), which each worded them with a function
+    /// of their own (board #1552): whole seconds counted, tenths as a
+    /// decimal, and a value just off a tenth, as arithmetic leaves one,
+    /// rounded to it.
+    func testSecondsKeptInTenthsAreSaidToTheTenth() {
+        let said: [(Double, String)] = [
+            (0.5, "0.5 seconds"), (0.2, "0.2 seconds"), (1, "1 second"), (2, "2 seconds"), (1.5, "1.5 seconds"),
+            (10, "10 seconds"), (0.30000000000000004, "0.3 seconds"), (0.7999999999999999, "0.8 seconds"),
+            (2.96, "3 seconds"), (0.04, "0 seconds"),
+        ]
+        for (seconds, words) in said {
+            XCTAssertEqual(CountWording.secondsToTheTenth(seconds), words, "\(seconds)")
+        }
+        // A value no setting holds is written, never trapped on.
+        XCTAssertEqual(CountWording.secondsToTheTenth(.nan), "nan seconds")
+        XCTAssertFalse(CountWording.secondsToTheTenth(.infinity).isEmpty)
+        XCTAssertFalse(CountWording.secondsToTheTenth(1e300).isEmpty)
+    }
+
     // MARK: - Shown and Spoken Alike
 
     /// The Bluetooth disconnect delay reads the same on screen and to

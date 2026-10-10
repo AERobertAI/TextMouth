@@ -60,6 +60,23 @@ enum CountWording {
         phrase(count, singular: "second", plural: "seconds")
     }
 
+    /// `value` seconds to the nearest tenth, as a setting kept in tenths of
+    /// a second says it on screen and to VoiceOver alike: whole seconds
+    /// counted as `seconds(_:)` counts them, "1 second" and "2 seconds",
+    /// and tenths as a decimal, "0.5 seconds" and "1.5 seconds". The
+    /// Miscellaneous tab's gesture time window and the Shortcuts tab's
+    /// double press time both say their times this way (board #1552).
+    static func secondsToTheTenth(_ value: Double) -> String {
+        let tenths = (value * 10).rounded()
+        // Whole seconds that a whole number can hold are counted; any other
+        // value, one no setting holds included, is written as a decimal,
+        // which never traps.
+        if tenths.truncatingRemainder(dividingBy: 10) == 0, let whole = Int(exactly: tenths / 10) {
+            return seconds(whole)
+        }
+        return String(format: "%.1f seconds", tenths / 10)
+    }
+
     /// `part` of `whole` things, the noun agreeing with the whole, which it
     /// counts: "0 of 1 book", "1 of 1 book", "2 of 5 books", as the
     /// Library's edit bar counts the books selected (TODO A10; it said "0 of
