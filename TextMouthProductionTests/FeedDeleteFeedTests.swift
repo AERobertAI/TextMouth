@@ -196,13 +196,51 @@ final class FeedDeleteFeedTests: XCTestCase {
             try await world.center.deleteFeed(feed.id)
             XCTFail("a feed whose download is open was deleted")
         } catch {
-            XCTAssertEqual(error, .downloadIsOpen(title: "Episode 1"))
+            XCTAssertEqual(error, .downloadInUse(title: "Episode 1", use: .openInReader))
         }
 
         XCTAssertNotNil(world.center.store.record(of: feed.id))
         XCTAssertNotNil(world.library.bookByID(book.id))
         XCTAssertEqual(world.removedItems.value, [])
         XCTAssertFalse(world.center.downloads.isClosed(feed.id))
+    }
+
+    /// Delete Feed… is refused while a download of the feed is transcribed,
+    /// whose transcript would be lost with it (feed follow-ups item 1), or
+    /// exported, naming it and how it is in use, and nothing is deleted;
+    /// once the work ends, the feed goes.
+    func testDeleteFeedIsRefusedWhileADownloadIsTranscribedOrExported() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeleteInUse")
+        let (feed, books) = try await feedWithDownloads(episodes: 2, downloading: 1, in: world, into: .newFolder(inParentPath: world.folder.path))
+        let book = try XCTUnwrap(books.first)
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+        addTeardownBlock { @MainActor in BookExportModel.noteExportEnded([book.id]) }
+
+        for use in [FeedBookUse.transcribing, .exporting] {
+            if use == .transcribing {
+                transcriptions.setTranscribing(book.id)
+            } else {
+                BookExportModel.noteExportStarted([book.id])
+            }
+            do {
+                try await world.center.deleteFeed(feed.id)
+                XCTFail("a feed whose download is \(use) was deleted")
+            } catch {
+                XCTAssertEqual(error, .downloadInUse(title: "Episode 1", use: use))
+            }
+            XCTAssertNotNil(world.center.store.record(of: feed.id))
+            XCTAssertNotNil(world.library.bookByID(book.id))
+            XCTAssertEqual(world.removedItems.value, [], "something went while a download was \(use)")
+            XCTAssertFalse(world.center.downloads.isClosed(feed.id))
+            transcriptions.setTranscribing(nil)
+            BookExportModel.noteExportEnded([book.id])
+        }
+
+        let outcome = try await world.center.deleteFeed(feed.id)
+        XCTAssertEqual(outcome?.deletedDownloads, 1)
+        XCTAssertNil(world.center.store.record(of: feed.id))
     }
 
     /// A feed TextMouth has no record of is deleted by nothing.

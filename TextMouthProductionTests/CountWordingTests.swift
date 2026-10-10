@@ -61,8 +61,11 @@ final class CountWordingTests: XCTestCase {
         XCTAssertEqual(CountWording.part(1, of: 1, noun), "1 of 1 book processed")
         XCTAssertEqual(CountWording.part(3, of: 10, noun), "3 of 10 books processed")
         XCTAssertEqual(CountWording.part(0, of: 0, noun), "0 of 0 books processed")
-        // A noun that needs no agreement, as the feed downloads' "done".
-        XCTAssertEqual(CountWording.progress(3, of: 9, "done"), "3 of 9 done")
+        // A noun that needs no agreement, as the feed downloads' "done",
+        // is its own plural (`FeedDownloadProgressWording.count`).
+        XCTAssertEqual(CountWording.part(3, of: 9, singular: "done", plural: "done"), "3 of 9 done")
+        XCTAssertEqual(CountWording.part(1, of: 1, singular: "done", plural: "done"), "1 of 1 done")
+        XCTAssertEqual(FeedDownloadProgressWording.count(done: 3, of: 9, failed: 1), "3 of 9 done, 1 failed")
     }
 
     /// Seconds kept in tenths are said to the nearest tenth, the same on

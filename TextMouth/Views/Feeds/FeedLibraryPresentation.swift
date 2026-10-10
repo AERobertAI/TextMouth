@@ -280,8 +280,10 @@ struct FeedKeptProgress: Equatable, Sendable {
     /// the download has got, as a book row says it beside a cloud
     /// download's percentage.
     let spokenProgress: String?
-    /// The time left after the place; nil with no progress to say, since
-    /// the row's own duration then says how long the item is.
+    /// The time left after the place, as a book's row gives it
+    /// (`BookRow.timeRemaining(for:wpm:)`); nil with no progress to say,
+    /// since the row's own duration then says how long the item is, and at
+    /// the end, where "Finished" says it all (TODO P07).
     let remaining: TimeInterval?
     /// How many bookmarks the package kept.
     let bookmarkCount: Int
@@ -295,7 +297,7 @@ struct FeedKeptProgress: Equatable, Sendable {
         let shown = isPlayed ? nil : BookRow.progressText(for: row)?.visible
         shownProgress = shown
         spokenProgress = shown == nil ? nil : BookRow.spokenProgress(for: row, besideDownloadPercentage: besideDownloadPercentage)
-        remaining = shown == nil ? nil : row.estimatedTimeRemaining(wpm: wordsPerMinute)
+        remaining = shown == nil ? nil : BookRow.timeRemaining(for: row, wpm: wordsPerMinute)
         bookmarkCount = row.bookmarks.count
     }
 
@@ -333,10 +335,11 @@ struct FeedKeptProgress: Equatable, Sendable {
 /// One row of a feed's folder (FR03): an item's book, or an item not
 /// downloaded.
 enum FeedFolderEntry: Equatable, Identifiable {
-    /// A downloaded item, as its book's row, with the commands of the item
-    /// it came from, which its row offers beside the book's own.
+    /// A downloaded item, or one Move to Library… moved into this folder,
+    /// as its book's row, with the commands of the item it came from, which
+    /// its row offers beside the book's own.
     case book(Book, actions: [FeedItemAction])
-    /// An item not downloaded, or downloaded into another folder.
+    /// An item not downloaded, or whose book is in another folder.
     case item(FeedItemRowContent)
 
     /// The row's identity, unique in the folder: a book's ID, or an item's.
@@ -349,8 +352,9 @@ enum FeedFolderEntry: Equatable, Identifiable {
 }
 
 /// What a feed's folder lists (FR03): the feed's items newest first, each
-/// downloaded one as its book, then the folder's other books, which came
-/// from no item of the feed.
+/// whose book the folder holds as that book, a downloaded one or one moved
+/// into the library there, then the folder's other books, which came from
+/// no item of the feed; no book is listed twice.
 struct FeedFolderListing: Equatable {
     /// The feed's items, newest first.
     var entries: [FeedFolderEntry] = []
@@ -396,7 +400,11 @@ struct FeedFolderListing: Equatable {
         var itemBookIDs = Set<UUID>()
         for item in items {
             let state = center.state(of: item, in: feedID)
-            if let bookID = state.bookID {
+            // The book the item is linked to wherever it is: its download in
+            // the feed's folder, or the book Move to Library… made of it,
+            // which the listener may have moved into this very folder, where
+            // it is listed once, as its book's row (REV13 feeds 1).
+            if let bookID = state.linkedBookID {
                 itemBookIDs.insert(bookID)
                 if let book = shownByID[bookID] {
                     let actions = FeedItemAction.actions(

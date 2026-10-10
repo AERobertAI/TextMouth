@@ -21,7 +21,7 @@ struct MoveToLibraryRequest: Identifiable, Equatable {
         FeedWording.moveToLibraryHeading(titles: books.map(\.title), noun: noun)
     }
 
-    /// What moving does, under the heading and as the Move button's hint.
+    /// What moving does, under the heading.
     var hint: String {
         FeedWording.moveToLibraryHint(count: books.count, noun: noun)
     }
@@ -87,13 +87,14 @@ struct MoveToLibrarySheetPresentation: ViewModifier {
 
 /// Move to Library…'s sheet (FR11, branch D): the folder picker Move to
 /// Folder… uses (`MoveFolderSheet`), with New Folder… below it, headed with
-/// what moves, and saying what moving does under its heading and as its
-/// Move button's hint: "Moves this episode into a folder of your library,
-/// where it becomes a book you can edit; it leaves the feed". Move moves the
-/// books and closes the sheet, handing its owner what moving did, which
-/// the owner says once the sheet has closed (REV11 F6); a failure keeps it
-/// open, saying why. A Library window shows it for an item's row or its
-/// selection, and a reader for its book.
+/// what moves, and saying what moving does under its heading, once, its
+/// Move button giving no hint that says it again (REV13 feeds 8): "Moves
+/// this episode into a folder of your library, where it becomes a book you
+/// can edit; it leaves the feed". Move moves the books and closes the
+/// sheet, handing its owner what moving did, which the owner says once the
+/// sheet has closed (REV11 F6); a failure keeps it open, saying why. A
+/// Library window shows it for an item's row or its selection, and a
+/// reader for its book.
 struct MoveToLibrarySheet: View {
     /// What moves.
     let request: MoveToLibraryRequest

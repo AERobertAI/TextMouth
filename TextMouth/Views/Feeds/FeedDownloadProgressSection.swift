@@ -118,8 +118,9 @@ extension LibraryWindowView {
 
 /// The feed downloads section of a Library window, shown only while feed
 /// downloads run, and redrawn alone (FR10): it observes the downloads'
-/// progress, never the library model or the feed engine, so neither the
-/// list nor its feed rows redraw for it (PERF12). It also shows itself
+/// progress through `ProgressObserver`, as the import and text overlays
+/// observe theirs, never the library model or the feed engine, so neither
+/// the list nor its feed rows redraw for it (PERF12). It also shows itself
 /// anew every `FeedDownloadProgressWording.refreshInterval` seconds,
 /// counted from the run's start, which brings the bytes of the download
 /// under way, kept by the progress without publishing, and the time left.
@@ -127,14 +128,16 @@ struct FeedDownloadProgressObserver: View {
     /// The library whose feed downloads the section shows and cancels; not
     /// observed here.
     let library: LibraryViewModel
-    /// The feed downloads' progress, observed here alone: the library's
-    /// feed engine's own.
-    @ObservedObject var progress: FeedDownloadProgress
+    /// The feed downloads' progress, the library's feed engine's own,
+    /// observed by the `ProgressObserver` below alone.
+    let progress: FeedDownloadProgress
 
     var body: some View {
-        if progress.state.isRunning {
-            TimelineView(.periodic(from: progress.state.runStartedAt ?? Date(), by: FeedDownloadProgressWording.refreshInterval)) { context in
-                LibraryWindowView.feedDownloadSection(for: library, at: context.date)
+        ProgressObserver(progress: progress) { progress in
+            if progress.state.isRunning {
+                TimelineView(.periodic(from: progress.state.runStartedAt ?? Date(), by: FeedDownloadProgressWording.refreshInterval)) { context in
+                    LibraryWindowView.feedDownloadSection(for: library, at: context.date)
+                }
             }
         }
     }

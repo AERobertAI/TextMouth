@@ -531,9 +531,10 @@ struct MoveFolderSheet: View {
     /// The sheet's heading in place of "Move …", as Move to Library… heads
     /// it (FR11, branch D); nil for Move to Folder's own.
     let heading: String?
-    /// What moving does, shown under the heading and spoken as the Move
-    /// button's hint, as Move to Library… says it (FR11, branch D); nil for
-    /// none.
+    /// What moving does, shown under the heading, where VoiceOver reads it
+    /// in order after the heading, as Move to Library… says it (FR11,
+    /// branch D); nil for none. The Move button gives no hint repeating it
+    /// (REV13 feeds 8).
     let explanation: String?
 
     /// The folder path currently selected in the picker
@@ -634,6 +635,9 @@ struct MoveFolderSheet: View {
 
                 Spacer()
 
+                // No hint: the explanation, read in order after the
+                // heading, already says what moving does, and a hint would
+                // say it a second time (REV13 feeds 8).
                 Button("Move") {
                     OperationFailureNotice.run(
                         { await onMove(selectedPath) },
@@ -641,7 +645,6 @@ struct MoveFolderSheet: View {
                         failureMessage: $failureMessage
                     )
                 }
-                .accessibilityHint(explanation ?? "")
                 // Return moves, except while the new folder's fields are
                 // shown, when it presses their Create.
                 .keyboardShortcut(isMakingFolder ? nil : KeyboardShortcut.defaultAction)

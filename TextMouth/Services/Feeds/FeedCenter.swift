@@ -115,14 +115,16 @@ protocol FeedLibraryHost: AnyObject {
     /// the files of `removals` have gone, but for those `failures` names
     /// with why, whose rows go back where they were.
     func settleFeedFileRemovals(_ removals: [FeedFileRemoval], failures: [UUID: any Error]) -> FeedFileRemovalOutcome
-    /// The books open in readers now, which nothing may delete.
-    var feedBooksOpenInReaders: Set<UUID> { get }
     /// The books in use now, which no rule of the engine's removes, leaving
     /// each for the rule's next pass (REV11 F1): those open in readers,
     /// which covers one playing; the book being transcribed, whose
     /// transcript is saved into its package only once its audio has been
     /// heard; and those an export is reading.
     var feedBooksInUse: Set<UUID> { get }
+    /// How the book `bookID` is in use now, as `feedBooksInUse` counts it,
+    /// or nil when it is not: what the listener's own deletions refuse,
+    /// saying why (`FeedDownloadInUseError`), where the rules wait.
+    func feedBookUse(of bookID: UUID) -> FeedBookUse?
     /// Whether the book `bookID` is on the reading list, whose downloads the
     /// newest-N rule never removes (FR11).
     func feedBookIsOnReadingList(_ bookID: UUID) -> Bool
@@ -433,6 +435,9 @@ final class FeedCenter: ObservableObject {
             await fetchStates.load()
             await downloads.sweepLeftovers()
             guard environment.worksOnItsOwn else { return }
+            // What a Delete Download cut short left hidden in a feed's
+            // folder goes, as that deletion would have sent it.
+            await sweepRemovalHolders()
             // The downloads under way when TextMouth last quit go on, the
             // one that ran from where it stopped.
             await downloads.resumeDownloadsSavedAtQuit()
@@ -462,6 +467,37 @@ final class FeedCenter: ObservableObject {
             startSchedule()
             if settings.refreshAtLaunch {
                 await refreshAll(origin: .launch)
+            }
+        }
+    }
+
+    /// Sweeps the hidden holders a Delete Download cut short left in the
+    /// feeds' own folders (`FeedItemPackage.removalHolders(in:)`), as a crash
+    /// between moving an article's file and text into one and the Trash
+    /// taking it leaves one, which nothing else ever removes. That deletion
+    /// was committed, the feed's index written without the file first, so
+    /// each holder goes as the listener's deletion would have sent it, to
+    /// the Trash or for good as Removal Behavior says
+    /// (`FeedEnvironment.removeItem`). The folders are listed off the main
+    /// thread; a holder that cannot go stays, logged, for the next launch.
+    func sweepRemovalHolders() async {
+        let root = TextMouthPaths.root
+        let holders = await OffMainWork.run(on: .global(qos: .utility)) {
+            FeedItemPackage.removalHolders(in: root)
+        }
+        for holder in holders {
+            do {
+                try environment.removeItem(holder)
+                DiagnosticLog.event(
+                    .feeds,
+                    "FEED_HELD_ASIDE_SWEPT: \(holder.lastPathComponent), left in a feed's folder by a Delete Download cut short, "
+                        + "removed as Removal Behavior says"
+                )
+            } catch {
+                DiagnosticLog.event(
+                    .feeds,
+                    "FEED_HELD_ASIDE_LEFT: \(holder.lastPathComponent): \(error.localizedDescription); the next launch tries again"
+                )
             }
         }
     }

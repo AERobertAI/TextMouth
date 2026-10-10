@@ -140,8 +140,14 @@ struct FeedInfoSheet: View {
     @State private var confirmation: FeedConfirmation?
     /// Why the last folder could not be made.
     @State private var folderFailure: String?
+    /// Whether the folder picker's New Folder fields are shown, while
+    /// Escape closes them, through their Cancel New Folder, rather than
+    /// pressing Done (REV13 app 5).
+    @State private var isMakingFolder: Bool
 
-    /// A sheet for `model`, following `model.center`.
+    /// A sheet for `model`, following `model.center`; `makingFolder` opens
+    /// it with the folder picker's New Folder fields already shown, as the
+    /// tests of the Escape key need.
     init(
         model: FeedInfoModel,
         feedFolders: LibraryFeedFolders,
@@ -150,7 +156,8 @@ struct FeedInfoSheet: View {
         onResubscribe: @escaping () -> Void = {},
         deleteFeedConfirmation: @escaping () -> FeedConfirmation? = { nil },
         onDeleteFeed: @escaping () -> Void = {},
-        onDone: @escaping () -> Void
+        onDone: @escaping () -> Void,
+        makingFolder: Bool = false
     ) {
         _model = ObservedObject(wrappedValue: model)
         _center = ObservedObject(wrappedValue: model.center)
@@ -161,6 +168,7 @@ struct FeedInfoSheet: View {
         self.deleteFeedConfirmation = deleteFeedConfirmation
         self.onDeleteFeed = onDeleteFeed
         self.onDone = onDone
+        _isMakingFolder = State(initialValue: makingFolder)
     }
 
     var body: some View {
@@ -212,8 +220,11 @@ struct FeedInfoSheet: View {
                 // Escape presses Done: every change is kept as it is made,
                 // and Return stays with the number fields, which it enters,
                 // or with the picker's Create while its fields are shown.
+                // While they are shown, Done gives Escape up, so only their
+                // Cancel New Folder takes it, as the Move sheet's Cancel
+                // does, and a second Escape presses Done (REV13 app 5).
                 Button("Done", action: onDone)
-                    .keyboardShortcut(.cancelAction)
+                    .keyboardShortcut(isMakingFolder ? nil : KeyboardShortcut.cancelAction)
             }
         }
         .padding()
@@ -269,8 +280,8 @@ struct FeedInfoSheet: View {
 
         // The picker's Create takes Return while its New Folder fields are
         // shown, from a number field too, whose number is entered as focus
-        // leaves it; no isMakingFolder binding, since the sheet has no
-        // Return-key button of its own to stand down meanwhile.
+        // leaves it; the sheet has no Return-key button of its own, and
+        // its Done gives Escape up meanwhile (`isMakingFolder`).
         LibraryFolderPicker(
             options: model.folderOptions(feedFolders: feedFolders),
             newFolderParents: LibraryFolderOption.options(in: model.library.library) { folder in
@@ -282,7 +293,8 @@ struct FeedInfoSheet: View {
             onCreateFolder: { name, parentPath in
                 model.library.createFolderReturningOutcome(name: name, parentPath: parentPath)
             },
-            failureMessage: $folderFailure
+            failureMessage: $folderFailure,
+            isMakingFolder: $isMakingFolder
         )
         Text(FeedWording.folderInfoHelp)
             .font(.caption)

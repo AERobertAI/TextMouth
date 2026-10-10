@@ -115,33 +115,74 @@ final class LibraryFeedRemoveTests: XCTestCase {
         XCTAssertTrue(LibraryRemoveCommandWording.isOfferedOnRow(for: [book], feedActions: []))
     }
 
+    /// The Library menu's Remove names the key Library window's selection:
+    /// for feed items alone, their Delete Download, as the edit bar names it,
+    /// with the ellipsis only when it asks first; for books, or books and
+    /// feed items together, or nothing selected, the library's own words
+    /// (the feed-policy-review follow-up of REV11 F2).
+    func testTheLibraryMenusRemoveNamesFeedItemsAsTheirDeleteDownload() {
+        let episode = Self.feedItem("Ep. 368")
+        let other = Self.feedItem("Ep. 367")
+        let book = Book(title: "Field Notes", format: .txt, filePath: "/Library/Notes.tmb/notes.txt", md5Hash: "notes", tmbDirectoryName: "Notes.tmb")
+        let asks = RemovalPreferences(confirmsFirst: true, movesToTrash: true)
+        let atOnce = RemovalPreferences(confirmsFirst: false, movesToTrash: false)
+        func title(_ preferences: RemovalPreferences, _ books: [Book]?) -> String {
+            LibraryRemoveCommandWording.menuBarTitle(preferences: preferences, selection: books.map(LibraryRemovalSelection.init))
+        }
+
+        XCTAssertEqual(title(asks, [episode]), "Delete Download…")
+        XCTAssertEqual(title(asks, [episode, other]), "Delete Downloads…")
+        XCTAssertEqual(title(atOnce, [episode, other]), "Delete Downloads")
+        XCTAssertEqual(title(asks, [episode, book]), "Remove from Library...")
+        XCTAssertEqual(title(atOnce, [book]), "Delete Permanently")
+        XCTAssertEqual(title(asks, []), "Remove from Library...")
+        XCTAssertEqual(title(asks, nil), "Remove from Library...", "with no Library window in front")
+        XCTAssertEqual(LibraryRemovalSelection([episode, other]), LibraryRemovalSelection([other, episode]))
+        XCTAssertFalse(LibraryRemovalSelection([]).feedItemsOnly)
+    }
+
     // MARK: - The Report
 
     /// The report names the books that went and the downloads deleted, and
-    /// says which downloads kept their place, bookmarks, and transcript.
+    /// says what the kept packages hold, naming only the parts they hold,
+    /// never "place, bookmarks, and transcript" whatever each kept: a
+    /// package kept for none of those parts says nothing kept.
     func testTheReportSaysWhatTheDownloadsKept() {
         let episode = Self.feedItem("Ep. 368")
         let others = [Self.feedItem("Ep. 367"), Self.feedItem("Ep. 366")]
         let book = Book(title: "Field Notes", format: .txt, filePath: "/Library/Notes.tmb/notes.txt", md5Hash: "notes", tmbDirectoryName: "Notes.tmb")
 
         XCTAssertEqual(
-            LibraryViewModel.removalCompletion([book, episode], mode: .moveToTrash, keptIDs: [episode.id]),
+            LibraryViewModel.removalCompletion([book, episode], mode: .moveToTrash, kept: [episode.id: [.place, .bookmarks]]),
             "Moved “Field Notes” to the Trash. Moved the download of “Ep. 368” to the Trash. "
-                + "Its place, bookmarks, and transcript are kept."
+                + "Its place and bookmarks are kept."
         )
         XCTAssertEqual(
-            LibraryViewModel.removalCompletion([episode], mode: .moveToTrash, keptIDs: []),
+            LibraryViewModel.removalCompletion([episode], mode: .moveToTrash, kept: [episode.id: [.transcript]]),
+            "Moved the download of “Ep. 368” to the Trash. Its transcript is kept."
+        )
+        XCTAssertEqual(
+            LibraryViewModel.removalCompletion([episode], mode: .moveToTrash, kept: [:]),
             "Moved the download of “Ep. 368” to the Trash."
         )
         XCTAssertEqual(
-            LibraryViewModel.removalCompletion([episode] + others, mode: .deletePermanently, keptIDs: [episode.id, others[0].id]),
-            "Deleted 3 downloads permanently. The places, bookmarks, and transcripts of 2 of them are kept."
+            LibraryViewModel.removalCompletion([episode], mode: .moveToTrash, kept: [episode.id: []]),
+            "Moved the download of “Ep. 368” to the Trash.",
+            "a package kept for none of the parts named was said to keep them"
         )
         XCTAssertEqual(
-            LibraryViewModel.removalCompletion(others, mode: .moveToTrash, keptIDs: Set(others.map(\.id))),
-            "Moved 2 downloads to the Trash. Their places, bookmarks, and transcripts are kept."
+            LibraryViewModel.removalCompletion(
+                [episode] + others,
+                mode: .deletePermanently,
+                kept: [episode.id: [.place], others[0].id: [.place, .transcript]]
+            ),
+            "Deleted 3 downloads permanently. The places and transcripts of 2 of them are kept."
         )
-        XCTAssertNil(LibraryViewModel.removalCompletion([], mode: .moveToTrash, keptIDs: []))
+        XCTAssertEqual(
+            LibraryViewModel.removalCompletion(others, mode: .moveToTrash, kept: [others[0].id: [.bookmarks], others[1].id: [.settings]]),
+            "Moved 2 downloads to the Trash. Their bookmarks and own settings are kept."
+        )
+        XCTAssertNil(LibraryViewModel.removalCompletion([], mode: .moveToTrash, kept: [:]))
     }
 
     /// Removing an episode the listener opened, as the library's Remove does
@@ -172,8 +213,8 @@ final class LibraryFeedRemoveTests: XCTestCase {
         XCTAssertNil(world.library.bookByID(book.id))
         XCTAssertEqual(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"]?.id, book.id)
         XCTAssertEqual(heard.announcements, [], "the report was said while the question closed")
-        XCTAssertEqual(report, FeedDownloadRemovalWording(mode, items: [book]).completionMessage(keptCount: 1))
-        XCTAssertTrue(report?.hasSuffix("Its place, bookmarks, and transcript are kept.") == true)
+        XCTAssertEqual(report, FeedDownloadRemovalWording(mode, items: [book]).completionMessage(kept: [[.place]]))
+        XCTAssertTrue(report?.hasSuffix("Its place is kept.") == true, report ?? "")
 
         // The question's button says it a moment after the question closes.
         let words = try XCTUnwrap(report)
@@ -182,6 +223,44 @@ final class LibraryFeedRemoveTests: XCTestCase {
         VoiceOverAnnouncer.announceAfterSheetCloses(words, from: nil)
         XCTAssertEqual(capture.messages, [], "the report was said before the question had closed")
         await waitFor("the report is said once the question has closed") { capture.messages == [words] }
+    }
+
+    /// The library's Remove leaves an episode being transcribed, whose
+    /// transcript would be lost with its file (feed follow-ups item 1): the
+    /// library's error alert names it and says why and what to do, and the
+    /// episode, its file, and its item stay; nothing is said as done.
+    @MainActor
+    func testRemovingAnEpisodeBeingTranscribedLeavesItAndSaysWhy() async throws {
+        let world = try FeedTestWorld(self, label: "LibraryFeedRemoveTranscribing")
+        await world.start()
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        let item = FeedXML.Item(guid: "ep-1", title: "Episode One", published: world.day(-1),
+                                enclosure: world.server.url("/audio/1.m4a").absoluteString, enclosureType: "audio/mp4")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [item])))
+        let feed = try await world.subscribe("/feed.xml")
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+        transcriptions.setTranscribing(book.id)
+        let mode = world.library.removalPreferences.deletionMode
+
+        let report = world.library.removeBooksAndDelete([book])
+        transcriptions.setTranscribing(nil)
+
+        XCTAssertNil(report, "a removal that deleted nothing was reported as done")
+        XCTAssertTrue(world.library.showError)
+        XCTAssertEqual(
+            world.library.errorMessage,
+            mode.failureMessage([
+                "Episode One: It is being transcribed, and deleting its download now would lose the transcript. "
+                    + "Wait until the transcription ends, or cancel it, then try again.",
+            ])
+        )
+        XCTAssertNotNil(world.library.bookByID(book.id), "the episode being transcribed left the library")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.bookFileURL.path))
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .downloaded(bookID: book.id))
     }
 
     // MARK: - Fixtures

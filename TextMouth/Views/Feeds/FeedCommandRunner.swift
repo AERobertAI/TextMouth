@@ -211,7 +211,8 @@ extension LibraryFeedsPresenter {
     /// `FeedCenter.deleteFeed(_:)`). Feed Info, should it show the feed,
     /// closes first. VoiceOver hears what went once the question's alert
     /// has closed (REV13 item 1); a feed that stays, as when one of its
-    /// downloads is open in a reader, says why in an alert.
+    /// downloads is open in a reader or being transcribed, says why in an
+    /// alert.
     /// - Returns: The deletion, which tests await; nil once the feed's
     ///   record is gone.
     @discardableResult
@@ -237,8 +238,9 @@ extension LibraryFeedsPresenter {
 
     /// Runs `action` for one of a feed's items, from its row or its book's
     /// row, saying what it did from the window it was chosen in. A refusal,
-    /// such as Delete Download while the book is open, shows in an alert in
-    /// the engine's words, which VoiceOver also hears.
+    /// such as Delete Download while the book is open, transcribed, or
+    /// exported, shows in an alert in the engine's words, which VoiceOver
+    /// also hears.
     func perform(_ action: FeedItemAction, in context: FeedCommandContext) {
         let center = context.center
         guard let record = center.store.record(of: action.feedID), let item = record.item(action.itemID) else { return }
@@ -389,10 +391,23 @@ extension LibraryFeedsPresenter {
         }
     }
 
-    /// Shows why a deletion was refused, in the engine's words for a book
-    /// open in a reader and in the file system's otherwise, and says it.
+    /// Shows why a deletion was refused, in the engine's words for a
+    /// download in use (`FeedDownloadInUseError`, naming it), in the cloud
+    /// storage's for a book it refused, and in the file system's otherwise,
+    /// and says it.
     private func refuse(_ error: Error, in context: FeedCommandContext) {
-        refuse(message: (error as? BookCloudError)?.explanation(in: nil) ?? error.localizedDescription, in: context)
+        refuse(message: Self.refusal(for: error), in: context)
+    }
+
+    /// The words of a refused deletion's alert for `error`: a download in
+    /// use named by its title, as "“Ep. 368” is being transcribed, and
+    /// deleting its download now would lose the transcript. Wait until the
+    /// transcription ends, or cancel it, then try again."
+    nonisolated static func refusal(for error: Error) -> String {
+        if let inUse = error as? FeedDownloadInUseError {
+            return inUse.sentence
+        }
+        return (error as? BookCloudError)?.explanation(in: nil) ?? error.localizedDescription
     }
 
     /// Shows `message`, why a deletion was refused, in an alert, and says it.

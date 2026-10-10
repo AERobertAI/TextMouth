@@ -77,11 +77,22 @@ final class FeedUIDeleteFeedTests: XCTestCase {
     }
 
     /// Why Delete Feed… left a feed is said in the removal setting's words,
-    /// naming what stayed.
+    /// naming what stayed: a download in use, open in a reader, transcribed,
+    /// or exported (feed follow-ups item 1), saying what to do first.
     func testWhyAFeedStays() {
         XCTAssertEqual(
-            FeedWording.deleteFeedRefused(.downloadIsOpen(title: "Ep. 368"), title: "Finish It!", mode: .moveToTrash),
+            FeedWording.deleteFeedRefused(.downloadInUse(title: "Ep. 368", use: .openInReader), title: "Finish It!", mode: .moveToTrash),
             "“Ep. 368” is open in a reader. Close it, then choose Delete Feed… again."
+        )
+        XCTAssertEqual(
+            FeedWording.deleteFeedRefused(.downloadInUse(title: "Ep. 368", use: .transcribing), title: "Finish It!", mode: .moveToTrash),
+            "“Ep. 368” is being transcribed, and deleting its download now would lose the transcript. "
+                + "Wait until the transcription ends, or cancel it, then choose Delete Feed… again."
+        )
+        XCTAssertEqual(
+            FeedWording.deleteFeedRefused(.downloadInUse(title: "Ep. 368", use: .exporting), title: "Finish It!", mode: .moveToTrash),
+            "“Ep. 368” is being exported, and deleting its download now would stop the export. "
+                + "Wait until the export ends, then choose Delete Feed… again."
         )
         XCTAssertEqual(
             FeedWording.deleteFeedRefused(.indexNotWritten, title: "Finish It!", mode: .moveToTrash),
@@ -218,6 +229,33 @@ final class FeedUIDeleteFeedTests: XCTestCase {
         XCTAssertEqual(harness.presenter.notice?.message, refusal)
         XCTAssertEqual(harness.heard.last, refusal)
         XCTAssertNotNil(harness.world.center.store.record(of: harness.feed.id))
+    }
+
+    /// The words of a deletion refused while its download is in use (feed
+    /// follow-ups item 1): the alert of Delete Download names the download;
+    /// the library's list of what a Remove left names it first, so the
+    /// reason says "It".
+    func testTheRefusalOfADownloadInUse() {
+        let transcribing = FeedDownloadInUseError(title: "Ep. 368", use: .transcribing)
+        XCTAssertEqual(
+            transcribing.sentence,
+            "“Ep. 368” is being transcribed, and deleting its download now would lose the transcript. "
+                + "Wait until the transcription ends, or cancel it, then try again."
+        )
+        XCTAssertEqual(
+            transcribing.localizedDescription,
+            "It is being transcribed, and deleting its download now would lose the transcript. "
+                + "Wait until the transcription ends, or cancel it, then try again."
+        )
+        XCTAssertEqual(LibraryFeedsPresenter.refusal(for: transcribing), transcribing.sentence)
+        XCTAssertEqual(
+            FeedDownloadInUseError(title: "Ep. 368", use: .openInReader).sentence,
+            "“Ep. 368” is open in a reader. Close it, then try again."
+        )
+        XCTAssertEqual(
+            FeedDownloadInUseError(title: "Ep. 368", use: .exporting).localizedDescription,
+            "It is being exported, and deleting its download now would stop the export. Wait until the export ends, then try again."
+        )
     }
 
     // MARK: - Harness

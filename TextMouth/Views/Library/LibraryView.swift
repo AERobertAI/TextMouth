@@ -135,6 +135,63 @@ enum FolderSheetNavigation {
         }
         return currentPath
     }
+
+    /// The folder path a window showing `currentPath` shows once the
+    /// library's folders are `library`'s, as after another window deleted or
+    /// moved the folder it shows (Delete Feed…, Delete Folder…, a rename or
+    /// a move there; the feed follow-ups after FR14): the same path while a
+    /// folder is there; the new path of the folder it showed, `folderID`,
+    /// when that folder is there under another; and otherwise the nearest
+    /// folder above it still in the library, or the library's top level, so
+    /// no window is left showing a path that names no folder.
+    static func folderPath(showing currentPath: String, folderID: UUID?, in library: Library) -> String {
+        guard !currentPath.isEmpty, library.existingFolder(equivalentTo: currentPath) == nil else { return currentPath }
+        if let folderID, let moved = library.folders.first(where: { $0.id == folderID }) {
+            return moved.fullPath
+        }
+        var parts = currentPath.components(separatedBy: "/").dropLast()
+        while !parts.isEmpty {
+            if let parent = library.existingFolder(equivalentTo: parts.joined(separator: "/")) {
+                return parent.fullPath
+            }
+            parts = parts.dropLast()
+        }
+        return ""
+    }
+}
+
+/// Keeps a Library window on a folder that is in the library
+/// (`FolderSheetNavigation.folderPath(showing:folderID:in:)`): it notes the
+/// folder the window shows each time it shows another, and when the
+/// library's folders change, as another window deletes or moves that
+/// folder, it follows the folder to its new path, or goes to the nearest
+/// folder above it still there.
+struct ShownFolderFollowing: ViewModifier {
+    /// The folder path the window shows.
+    @Binding var currentFolderPath: String
+    /// The library as the window shows it now.
+    let library: Library
+    /// Whether the library lists every folder it holds: not while its index
+    /// is recovered, when the list is provisional and a folder missing from
+    /// it may still be there, so no window moves for it.
+    let isComplete: Bool
+    /// The folder the window last showed, by ID, so a move is followed.
+    @State private var shownFolderID: UUID?
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: currentFolderPath, initial: true) { _, path in
+                shownFolderID = library.existingFolder(equivalentTo: path)?.id
+            }
+            .onChange(of: library.folders) { _, _ in
+                guard isComplete else { return }
+                let path = FolderSheetNavigation.folderPath(showing: currentFolderPath, folderID: shownFolderID, in: library)
+                // Compared by exact spelling, as the folder sheets' edits are.
+                if !BookFolder.spellingsMatch(path, currentFolderPath) {
+                    currentFolderPath = path
+                }
+            }
+    }
 }
 
 struct LibraryView: View {
@@ -542,6 +599,21 @@ struct LibraryView: View {
             }
         }
         .trackingRemovalPreferences($removalPreferences)
+        // A folder deleted or moved from another window, as by Delete
+        // Feed… or Delete Folder…, leaves this window on the folder's new
+        // path or the nearest folder above it, never on a path that names
+        // no folder.
+        .modifier(ShownFolderFollowing(
+            currentFolderPath: $currentFolderPath,
+            library: libraryViewModel.library,
+            isComplete: libraryViewModel.indexRecovery == nil
+        ))
+        // The selection as the Library menu's Remove names it: Delete
+        // Download for feed items alone (REV11 F2).
+        .focusedSceneValue(
+            \.libraryRemovalSelection,
+            LibraryRemovalSelection(LibrarySelectionPolicy.selected(in: books, native: selectedBookIDs, edit: editSelection))
+        )
         // Keeps the books' cloud states refreshed while the window is
         // visible, shows Remove Download's refusals (FR02), and takes the
         // Library menu's Keep on This Mac and Stop Keeping on This Mac.

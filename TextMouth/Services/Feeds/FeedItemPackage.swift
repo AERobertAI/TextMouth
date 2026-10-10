@@ -43,11 +43,7 @@ enum FeedItemPackage {
             || !row.bookmarks.isEmpty
             || row.lastPlaybackStarted != nil
             || row.lastPlaybackStopped != nil
-            || row.hasLocalVoiceSettings
-            || !(row.skippedHeadingIDs ?? []).isEmpty
-            || row.localEndOfBookBehavior != nil
-            || row.localSkipForwardUnit != nil
-            || row.localSkipBackwardUnit != nil
+            || row.hasOwnSettings
             || !(row.handEdits?.fields.isEmpty ?? true)
             || holdsListenersFiles(package)
     }
@@ -181,11 +177,14 @@ enum FeedItemPackage {
     /// listener's own Delete Download does, to the Trash or for good as the
     /// removal setting says: for a text book, an article, with its
     /// content.md, which may hold an edit, as one item, so the Trash holds
-    /// one, which puts both back (REV11). Both first move, by rename, into a
+    /// one folder with both (REV11). Both first move, by rename, into a
     /// folder named after the file, inside a hidden holder beside the
-    /// package in its feed's folder; a refusal puts both back in the
-    /// package. Should something keep them from going back, they stay in
-    /// the holder, which is then left, with one log line, rather than lost.
+    /// package in its feed's folder, which is then deleted, so the Trash's
+    /// Put Back cannot return them into the package (#1935). A refusal puts both
+    /// back in the package. Should something keep them from going back, they
+    /// stay in the holder, which is then left, with one log line, rather
+    /// than lost; the next launch sweeps a holder left so, or by a crash
+    /// before the Trash took it (`FeedCenter.sweepRemovalHolders()`).
     /// - Throws: why the file, or the file and its text, could not be
     ///   removed; nothing was removed then.
     @MainActor
@@ -217,6 +216,28 @@ enum FeedItemPackage {
             throw error
         }
         removeHolderIfEmpty(holder, of: row)
+    }
+
+    /// The holders of `removeFileAndText(of:in:remove:)` left in the feeds'
+    /// own folders of the data directory at `root`: each folder directly in
+    /// a feed's folder whose name begins with `removalHolderPrefix`, as a
+    /// crash between moving an article's file and text into one and the
+    /// Trash taking it leaves one, or a refusal whose files could not go
+    /// back (FEED_DOWNLOAD_HELD_ASIDE). Listed without downloading
+    /// anything; a folder that cannot be listed is passed over.
+    static func removalHolders(in root: URL) -> [URL] {
+        let feeds = FeedPaths.recordsFolder(in: root)
+        let fileManager = FileManager.default
+        let names = (try? DatalessFiles.withoutDownloading { try fileManager.contentsOfDirectory(atPath: feeds.path) }) ?? []
+        return names.sorted().flatMap { name -> [URL] in
+            // A feed's own folder is named by its ID alone (FR11).
+            guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name) else { return [] }
+            let folder = FeedPaths.itemsFolder(of: feedID, in: root)
+            let entries = (try? DatalessFiles.withoutDownloading { try fileManager.contentsOfDirectory(atPath: folder.path) }) ?? []
+            return entries.filter { $0.hasPrefix(removalHolderPrefix) }.sorted().map {
+                folder.appendingPathComponent($0, isDirectory: true)
+            }
+        }
     }
 
     /// Removes the holder `holder` of `removeFileAndText(of:in:remove:)`

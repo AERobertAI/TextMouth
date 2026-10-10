@@ -379,10 +379,7 @@ extension FeedWording {
             var parts: KeptParts = []
             if row.readingPosition != nil { parts.insert(.place) }
             if !row.bookmarks.isEmpty { parts.insert(.bookmarks) }
-            if row.hasLocalVoiceSettings || !(row.skippedHeadingIDs ?? []).isEmpty || row.localEndOfBookBehavior != nil
-                || row.localSkipForwardUnit != nil || row.localSkipBackwardUnit != nil {
-                parts.insert(.settings)
-            }
+            if row.hasOwnSettings { parts.insert(.settings) }
             if FeedItemPackage.entryNames(of: package).contains(where: TextMouthPaths.isTranscriptFile) {
                 parts.insert(.transcript)
             }
@@ -449,11 +446,12 @@ extension FeedWording {
         return "Move \(titles.count) \(noun.plural.capitalized) to Library"
     }
 
-    /// What Move to Library… does, which its sheet says under its heading
-    /// and VoiceOver hears as its Move button's hint, as the listener's
-    /// design asked: "Moves this episode into a folder of your library,
-    /// where it becomes a book you can edit; it leaves the feed", in an
-    /// article's words for an article, and a plural's for several.
+    /// What Move to Library… does, which its sheet says under its heading,
+    /// where VoiceOver reads it once, as the listener's design asked (its
+    /// Move button no longer repeats it as a hint, REV13 feeds 8): "Moves
+    /// this episode into a folder of your library, where it becomes a book
+    /// you can edit; it leaves the feed", in an article's words for an
+    /// article, and a plural's for several.
     static func moveToLibraryHint(count: Int, noun: ItemNoun) -> String {
         guard count != 1 else {
             return "Moves this \(noun.singular) into a folder of your library, where it becomes a book you can edit; it leaves the feed"
@@ -471,6 +469,37 @@ extension FeedWording {
             return "Moved “\(titles.first ?? "")” into \(place). It's a book of your library now, and its feed lists it In Library."
         }
         return "Moved \(count(titles.count, noun)) into \(place). They're books of your library now, and their feeds list them In Library."
+    }
+
+    /// What Move to Library… says when it moved some of the items asked for
+    /// and others stayed in their feeds (REV13 feeds 5), as its sheet, left
+    /// open, shows it and VoiceOver hears it: what moved, called `noun`, into
+    /// the folder at `folderPath`, as `movedToLibrary(titles:noun:folderPath:)`
+    /// says it, then what stayed and why, the items one reason kept named
+    /// together: "Moved “Ep. 1” into Podcasts/Keepers. It's a book of your
+    /// library now, and its feed lists it In Library. “Ep. 2” stays in its
+    /// feed: The file couldn't be moved."
+    static func partlyMovedToLibrary(
+        moved: [String],
+        noun: ItemNoun,
+        folderPath: String,
+        stayed: [(title: String, reason: String)]
+    ) -> String {
+        // Each reason once, in the order met, with the titles it kept.
+        var reasons: [String] = []
+        var titlesByReason: [String: [String]] = [:]
+        for (title, reason) in stayed {
+            if titlesByReason[reason] == nil {
+                reasons.append(reason)
+            }
+            titlesByReason[reason, default: []].append("“\(title)”")
+        }
+        let stays = reasons.map { reason in
+            let titles = titlesByReason[reason] ?? []
+            let stay = titles.count == 1 ? "stays in its feed" : "stay in their feeds"
+            return "\(LibraryCloudWording.list(titles)) \(stay): \(reason)"
+        }
+        return ([movedToLibrary(titles: moved, noun: noun, folderPath: folderPath)] + stays).joined(separator: " ")
     }
 
     /// What VoiceOver hears when Move to Library… is chosen with nothing it
@@ -681,14 +710,15 @@ extension FeedWording {
     }
 
     /// Why Delete Feed… left the feed titled `title` as it is (FR14), as the
-    /// alert after it says and VoiceOver hears: a download open in a reader,
-    /// an index that could not be saved, or the downloads or kept packages
-    /// that could not go, each named with why, in the words of the removal
-    /// setting `mode`.
+    /// alert after it says and VoiceOver hears: a download in use, open in a
+    /// reader, being transcribed, or being exported (feed follow-ups item
+    /// 1), an index that could not be saved, or the downloads or kept
+    /// packages that could not go, each named with why, in the words of the
+    /// removal setting `mode`.
     static func deleteFeedRefused(_ error: FeedDeleteError, title: String, mode: RemovalMode) -> String {
         switch error {
-        case .downloadIsOpen(let download):
-            return "“\(download)” is open in a reader. Close it, then choose \(deleteFeedTitle) again."
+        case let .downloadInUse(download, use):
+            return use.refusal(of: "“\(download)”", retry: "choose \(deleteFeedTitle) again")
         case .indexNotWritten:
             return "TextMouth couldn't save the library before deleting the feed “\(title)”, so nothing was deleted."
         case .filesStayed(let stayed):

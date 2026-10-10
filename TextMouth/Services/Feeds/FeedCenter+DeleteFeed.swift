@@ -34,9 +34,11 @@ struct FeedDeleteOutcome: Equatable, Sendable {
 /// Why Delete Feed… stopped short of deleting a feed (FR14). The feed
 /// stays, with its record, its folder, and whatever was not deleted.
 enum FeedDeleteError: Error, Equatable, Sendable {
-    /// A download of the feed, titled as given, is open in a reader, which
-    /// nothing may delete; nothing was deleted.
-    case downloadIsOpen(title: String)
+    /// A download of the feed, titled as given, is in use as `use` says:
+    /// open in a reader, which nothing may delete, or being transcribed or
+    /// exported, whose transcript or export would be lost with it (feed
+    /// follow-ups item 1); nothing was deleted.
+    case downloadInUse(title: String, use: FeedBookUse)
     /// The library's indexes could not be written before any file went, so
     /// nothing was deleted.
     case indexNotWritten
@@ -95,8 +97,8 @@ extension FeedCenter {
     @discardableResult
     func deleteFeed(_ feedID: UUID) async throws(FeedDeleteError) -> FeedDeleteOutcome? {
         guard store.record(of: feedID) != nil, let library, !downloads.isClosed(feedID) else { return nil }
-        if let open = openDownloadTitle(of: feedID, in: library) {
-            throw .downloadIsOpen(title: open)
+        if let inUse = downloadInUse(of: feedID, in: library) {
+            throw inUse
         }
 
         // 1. The feed downloads nothing more, and nothing already in flight
@@ -108,9 +110,9 @@ extension FeedCenter {
             downloads.reopenFeed(feedID)
             return nil
         }
-        if let open = openDownloadTitle(of: feedID, in: library) {
+        if let inUse = downloadInUse(of: feedID, in: library) {
             downloads.reopenFeed(feedID)
-            throw .downloadIsOpen(title: open)
+            throw inUse
         }
 
         // 2. Its downloads and kept packages, the index written first.
@@ -163,13 +165,20 @@ extension FeedCenter {
         return outcome
     }
 
-    /// The title of a download of the feed `feedID` open in a reader of
-    /// `library`, which nothing may delete, as Delete Download and Delete
-    /// Episode refuse such a book; nil when none is open.
-    private func openDownloadTitle(of feedID: UUID, in library: FeedLibraryHost) -> String? {
-        let open = library.feedBooksOpenInReaders
-        guard !open.isEmpty else { return nil }
-        return library.everyRow(ofFeed: feedID).first { open.contains($0.id) }?.title
+    /// The refusal for the first download of the feed `feedID` in use in
+    /// `library` (`FeedBookUse`): open in a reader, which nothing may
+    /// delete, or being transcribed or exported, whose work would be lost
+    /// with it, as Delete Download and Delete Episode refuse such a book;
+    /// nil when none is in use. The debug log says which, and why.
+    private func downloadInUse(of feedID: UUID, in library: FeedLibraryHost) -> FeedDeleteError? {
+        let inUse = library.feedBooksInUse
+        guard !inUse.isEmpty else { return nil }
+        for row in library.everyRow(ofFeed: feedID) where inUse.contains(row.id) {
+            guard let use = library.feedBookUse(of: row.id) else { continue }
+            DiagnosticLog.event(.feeds, "FEED_DELETE_REFUSED: \(row.title): it \(use.clause); nothing was deleted")
+            return .downloadInUse(title: row.title, use: use)
+        }
+        return nil
     }
 
     /// Removes the feed `feedID`'s own folder in the data directory at

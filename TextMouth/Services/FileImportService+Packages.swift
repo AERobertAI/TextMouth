@@ -454,7 +454,7 @@ extension FileImportService {
             && name != BookOrigin.fileName
             && name != BookOrigin.originalTakeFileName
             && name != AudioEditPackage.folderName
-            && name != "cachedAudio"
+            && name != TextMouthPaths.cachedAudioFolderName
             && name != TextMouthPaths.removedFromLibraryMarkerName
             && !TextMouthPaths.isKeptTextCopy(name)
             && !TextMouthPaths.isTranscriptFile(name)

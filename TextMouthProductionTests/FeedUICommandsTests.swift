@@ -100,7 +100,8 @@ final class FeedUICommandsTests: XCTestCase {
     }
 
     /// Delete Download is refused while the book is open in a reader, in
-    /// the engine's words, shown and spoken, and the book stays.
+    /// the engine's words, naming the episode, shown and spoken, and the
+    /// book stays.
     func testDeleteDownloadIsRefusedWhileTheBookIsOpen() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsOpenBook")
         harness.presenter.perform(harness.action(.download), in: harness.context)
@@ -109,12 +110,45 @@ final class FeedUICommandsTests: XCTestCase {
 
         harness.presenter.perform(harness.action(.deleteDownload), in: harness.context)
 
-        let refusal = BookCloudError.bookIsOpen.explanation(in: nil)
+        let refusal = "“A map you can touch” is open in a reader. Close it, then try again."
         XCTAssertEqual(harness.presenter.notice?.title, FeedWording.deleteRefusedTitle)
         XCTAssertEqual(harness.presenter.notice?.message, refusal)
         XCTAssertEqual(harness.heard.last, refusal)
         XCTAssertNotNil(harness.world.library.bookByID(book.id), "an open book's download was deleted")
         harness.world.library.openBookIDs.remove(book.id)
+    }
+
+    /// Delete Download and Delete Episode… are refused while the episode is
+    /// transcribed, whose transcript would be lost with its file (feed
+    /// follow-ups item 1): the alert names it and says what to do, VoiceOver
+    /// hears the same, and the episode, its file, and its row stay.
+    func testDeleteDownloadAndDeleteEpisodeAreRefusedWhileTheEpisodeIsTranscribed() async throws {
+        let harness = try await Harness(self, label: "FeedUICommandsTranscribing")
+        harness.presenter.perform(harness.action(.download), in: harness.context)
+        let book = try await downloadedBook(harness.world, feed: harness.feed, item: Harness.episodeID)
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+        transcriptions.setTranscribing(book.id)
+        let refusal = "“A map you can touch” is being transcribed, and deleting its download now would lose the transcript. "
+            + "Wait until the transcription ends, or cancel it, then try again."
+
+        harness.presenter.perform(harness.action(.deleteDownload), in: harness.context)
+
+        XCTAssertEqual(harness.presenter.notice?.title, FeedWording.deleteRefusedTitle)
+        XCTAssertEqual(harness.presenter.notice?.message, refusal)
+        XCTAssertEqual(harness.heard.last, refusal)
+
+        harness.presenter.notice = nil
+        harness.presenter.perform(harness.action(.deleteItem), in: harness.context)
+        harness.presenter.confirm(try XCTUnwrap(harness.presenter.confirmation), in: harness.context)
+
+        XCTAssertEqual(harness.presenter.notice?.message, refusal)
+        XCTAssertNotNil(harness.world.library.bookByID(book.id), "a download being transcribed was deleted")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.bookFileURL.path))
+        XCTAssertEqual(harness.item?.state, .downloaded(bookID: book.id))
+        XCTAssertNil(harness.item?.deletedDate, "Delete Episode hid an episode being transcribed")
+        transcriptions.setTranscribing(nil)
     }
 
     /// Open on an item not downloaded says it downloads first, then opens
@@ -498,6 +532,43 @@ final class FeedUICommandsTests: XCTestCase {
         }
     }
 
+    /// Feed Info itself, with its folder picker's New Folder fields shown:
+    /// Escape closes the fields and never Feed Info, its Done giving Escape
+    /// up meanwhile, so the fields' Cancel New Folder alone takes it, as in
+    /// the Move sheet; once they are closed, a second Escape presses Done
+    /// (REV13 app 5, until then tested only through a stand-in sheet).
+    func testEscapeClosesFeedInfosNewFolderFieldsBeforeFeedInfo() async throws {
+        let harness = try await Harness(self, label: "FeedUICommandsInfoEscape")
+        let model = FeedInfoModel(feedID: harness.feed.id, center: harness.world.center, library: harness.world.library)
+        var dones = 0
+        let sheet = FeedInfoSheet(
+            model: model,
+            feedFolders: LibraryFeedFolders(center: harness.world.center),
+            requestUnsubscribe: { nil },
+            onUnsubscribe: {},
+            onDone: { dones += 1 },
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 560, height: 680), until: {
+            !self.newFolderNameFields(in: $0).isEmpty
+        }) { hosting in
+            try typeNewFolderName("Charts", in: hosting)
+            guard pressKey(.escape, in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                return self.newFolderNameFields(in: hosting).isEmpty
+            }, "Escape left the New Folder fields open")
+            XCTAssertEqual(dones, 0, "Done took Escape while the New Folder fields were shown")
+
+            settleHostedView(hosting)
+            XCTAssertTrue(pressKey(.escape, in: hosting), "nothing took the second Escape")
+            XCTAssertEqual(dones, 1, "the second Escape did not press Done")
+        }
+    }
+
     /// Feed Info has no Return-key button of its own: Escape presses Done,
     /// and Return stays with the number fields, entering the number typed,
     /// so while the folder picker's New Folder fields are shown their
@@ -518,14 +589,14 @@ final class FeedUICommandsTests: XCTestCase {
         )
 
         try withHostedView(sheet, size: NSSize(width: 560, height: 680), until: {
-            self.feedEditableFields(in: $0).contains(where: \.isEnabled)
+            self.editableTextFields(in: $0).contains(where: \.isEnabled)
         }) { hosting in
             guard pressKeyEquivalent(.escape, in: hosting) else {
                 throw XCTSkip("This macOS hands an offscreen window no key equivalents")
             }
             XCTAssertEqual(dones, 1, "Escape did not press Done")
 
-            let fields = feedEditableFields(in: hosting).filter(\.isEnabled)
+            let fields = editableTextFields(in: hosting).filter(\.isEnabled)
             XCTAssertEqual(fields.count, 1, "fields taking typing: \(fields.map { $0.accessibilityLabel() ?? "" })")
             let field = try XCTUnwrap(fields.first)
             try typeReplacingText("25", in: field, of: hosting)

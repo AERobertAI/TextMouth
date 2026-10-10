@@ -45,7 +45,18 @@ final class LibraryFeedItemEditTests: XCTestCase {
     func testAPackagesOwnFilesAreNeverItsContent() {
         XCTAssertEqual(TextMouthPaths.bookInfoFileName, "bookInfo.json")
         XCTAssertEqual(TextMouthPaths.contentMarkdownFileName, "content.md")
-        for name in [TextMouthPaths.bookInfoFileName, TextMouthPaths.contentMarkdownFileName, TextMouthPaths.contentIndexFileName] {
+        // The speech prepared for the book, in a folder named once
+        // (`TextMouthPaths.cachedAudioFolderName`), whose name packages on
+        // disk use.
+        XCTAssertEqual(TextMouthPaths.cachedAudioFolderName, "cachedAudio")
+        XCTAssertEqual(
+            TextMouthPaths.cachedAudioDir(in: URL(fileURLWithPath: "/nowhere/Ep. 368.tmb", isDirectory: true)).lastPathComponent,
+            TextMouthPaths.cachedAudioFolderName
+        )
+        for name in [
+            TextMouthPaths.bookInfoFileName, TextMouthPaths.contentMarkdownFileName, TextMouthPaths.contentIndexFileName,
+            TextMouthPaths.cachedAudioFolderName,
+        ] {
             XCTAssertFalse(FileImportService.isPackageContentName(name), name)
         }
         XCTAssertTrue(FileImportService.isPackageContentName("Post 1.html"))

@@ -199,7 +199,17 @@ extension LibraryViewModel {
         guard deletingPackages else { return .success(nil) }
 
         let mode = removalPreferences.deletionMode
-        let completion = Self.removalCompletion(removed, mode: mode, keptIDs: Set(library.feedShelf.rows.map(\.id)))
+        // What each removed download whose package stayed still holds, read
+        // from its row on its feed's shelf and its package, so the report
+        // names only that.
+        let removedIDs = Set(removed.map(\.id))
+        let kept = Dictionary(
+            library.feedShelf.rows.filter { removedIDs.contains($0.id) }.map { row in
+                (row.id, FeedWording.KeptParts.of(row, package: row.tmbDirectory))
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let completion = Self.removalCompletion(removed, mode: mode, kept: kept)
         guard !failures.isEmpty else { return .success(completion) }
         let report = [completion, mode.failureMessage(failures)].compactMap { $0 }
         return .failure(report.joined(separator: "\n\n"))
@@ -208,17 +218,17 @@ extension LibraryViewModel {
     /// The report of a removal that deleted `removed` in `mode`, or nil when
     /// it removed nothing: the books of the library's own as having gone,
     /// and the feed items, whose Remove is Delete Download (FR11), as having
-    /// lost only their downloads, saying of those in `keptIDs`, the rows kept
-    /// on their feeds' shelves, that their place, bookmarks, and transcript
-    /// are kept: "Moved “Notes” to the Trash. Moved the download of
-    /// “Ep. 368” to the Trash. Its place, bookmarks, and transcript are kept."
-    nonisolated static func removalCompletion(_ removed: [Book], mode: RemovalMode, keptIDs: Set<UUID>) -> String? {
+    /// lost only their downloads, saying of those in `kept`, the rows kept
+    /// on their feeds' shelves, what each package still holds and nothing
+    /// more: "Moved “Notes” to the Trash. Moved the download of “Ep. 368” to
+    /// the Trash. Its place and bookmarks are kept."
+    nonisolated static func removalCompletion(_ removed: [Book], mode: RemovalMode, kept: [UUID: FeedWording.KeptParts]) -> String? {
         let books = removed.filter { !$0.isFeedItem }
         let downloads = removed.filter(\.isFeedItem)
         let sentences = [
             books.isEmpty ? nil : RemovalWording(mode, books: books).completionMessage,
             downloads.isEmpty ? nil : FeedDownloadRemovalWording(mode, items: downloads)
-                .completionMessage(keptCount: downloads.filter { keptIDs.contains($0.id) }.count),
+                .completionMessage(kept: downloads.compactMap { kept[$0.id] }),
         ].compactMap { $0 }
         return sentences.isEmpty ? nil : sentences.joined(separator: " ")
     }

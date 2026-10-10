@@ -369,21 +369,28 @@ struct FeedDownloadRemovalWording: Equatable {
         (asksFirst ? "Asks before deleting." : mode.filesSentence(plural: isPlural)) + " " + keptSentence
     }
 
-    /// The report once the downloads are deleted, of which `keptCount` kept
-    /// their packages with the listener's place, bookmarks, or transcript:
-    /// "Moved the download of “Ep. 368” to the Trash. Its place, bookmarks,
-    /// and transcript are kept.", or "Deleted 3 downloads permanently. The
-    /// places, bookmarks, and transcripts of 2 of them are kept."
-    func completionMessage(keptCount: Int) -> String {
+    /// The report once the downloads are deleted, `kept` holding, for each
+    /// download whose package stayed, what that package holds of the
+    /// listener's (`FeedWording.KeptParts`), so the report names only that,
+    /// as Delete Download does (feed review item 18), never a part no package
+    /// holds: "Moved the download of “Ep. 368” to the Trash. Its place and
+    /// bookmarks are kept.", or "Deleted 3 downloads permanently. The places
+    /// and transcripts of 2 of them are kept." A package kept for none of
+    /// the parts named, as one kept because the item was opened, says
+    /// nothing kept.
+    func completionMessage(kept: [FeedWording.KeptParts]) -> String {
         let deleted = mode.completionSentence(subject, plural: isPlural)
-        guard keptCount > 0 else { return deleted }
-        if !isPlural {
-            return deleted + " Its place, bookmarks, and transcript are kept."
+        let holding = kept.filter { !$0.isEmpty }
+        let parts = holding.reduce(into: FeedWording.KeptParts()) { $0.formUnion($1) }
+        guard !holding.isEmpty else { return deleted }
+        if !isPlural, let itsParts = parts.sentenceSubject {
+            return "\(deleted) \(itsParts) kept."
         }
-        if keptCount >= count {
-            return deleted + " Their places, bookmarks, and transcripts are kept."
+        let nouns = LibraryCloudWording.list(parts.nouns(several: true))
+        if holding.count >= count {
+            return "\(deleted) Their \(nouns) are kept."
         }
-        return deleted + " The places, bookmarks, and transcripts of \(keptCount) of them are kept."
+        return "\(deleted) The \(nouns) of \(holding.count) of them are kept."
     }
 }
 
@@ -456,12 +463,18 @@ struct LibraryRemoveCommandWording: Equatable {
     }
 
     /// The menu bar's Remove command, which acts on whatever is selected in
-    /// the library window and so names no count: "Remove from Library..."
-    /// when it asks first, otherwise "Move to Trash" or "Delete
-    /// Permanently". With confirmation off it never promises less than it
-    /// does.
-    static func menuBarTitle(preferences: RemovalPreferences) -> String {
-        preferences.confirmsFirst ? askFirstTitle : preferences.deletionMode.buttonTitle()
+    /// the key Library window, `selection`, and so names no count: "Remove
+    /// from Library..." when it asks first, otherwise "Move to Trash" or
+    /// "Delete Permanently"; with feed items alone selected, their Delete
+    /// Download, as the edit bar names it: "Delete Download…" or "Delete
+    /// Downloads…", without the ellipsis when it deletes at once (REV11 F2,
+    /// the feed-policy-review follow-up). With confirmation off it never
+    /// promises less than it does.
+    static func menuBarTitle(preferences: RemovalPreferences, selection: LibraryRemovalSelection? = nil) -> String {
+        if let selection, selection.feedItemsOnly {
+            return LibraryRemoveCommandWording(preferences: preferences, count: selection.count, feedItemsOnly: true).shortTitle
+        }
+        return preferences.confirmsFirst ? askFirstTitle : preferences.deletionMode.buttonTitle()
     }
 
     /// The edit bar's short button: "Remove..." when it asks first,
@@ -496,6 +509,24 @@ struct LibraryRemoveCommandWording: Equatable {
             return removal.mode.filesSentence(plural: removal.count != 1)
         }
         return "Asks whether to \(preferences.deletingTheFiles) or keep them in the TextMouth library folder."
+    }
+}
+
+/// The books the library's Remove acts on in a Library window, as the
+/// Library menu's Remove names them (`LibraryRemoveCommandWording.menuBarTitle`):
+/// how many are selected, and whether every one is a feed item, whose
+/// Remove is its Delete Download (REV11 F2). Each Library window publishes
+/// its own as a scene value (`FocusedValues.libraryRemovalSelection`).
+struct LibraryRemovalSelection: Equatable {
+    /// How many books are selected.
+    let count: Int
+    /// Whether at least one book is selected and every one is a feed item.
+    let feedItemsOnly: Bool
+
+    /// The selection of `books`.
+    init(_ books: [Book]) {
+        count = books.count
+        feedItemsOnly = !books.isEmpty && books.allSatisfy(\.isFeedItem)
     }
 }
 

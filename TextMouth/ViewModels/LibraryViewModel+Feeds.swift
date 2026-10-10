@@ -226,23 +226,33 @@ extension LibraryViewModel: FeedLibraryHost {
         return outcome
     }
 
-    /// The books open in readers now.
-    var feedBooksOpenInReaders: Set<UUID> {
-        openBookIDs
-    }
-
     /// The books in use now, which the feed engine's rules leave for their
-    /// next pass (REV11 F1): those open in readers; the book being
+    /// next pass (REV11 F1) and the listener's own deletions refuse
+    /// (`feedBookUse(of:)`): those open in readers; the book being
     /// transcribed, as `TranscribedBooks` records it from the moment the
     /// transcription starts until its transcript is saved
     /// (`TranscriptionJobCenter`); and those an export is reading
     /// (`BookExportModel.booksBeingExported`).
     var feedBooksInUse: Set<UUID> {
-        var inUse = openBookIDs.union(BookExportModel.booksBeingExported)
-        if let transcribing = TranscribedBooks.shared.transcribingBookID {
-            inUse.insert(transcribing)
-        }
-        return inUse
+        feedBookUses.reduce(into: Set<UUID>()) { inUse, use in inUse.formUnion(use.bookIDs) }
+    }
+
+    /// How the book `bookID` is in use now, the first that holds of open in
+    /// a reader, being transcribed, and being exported, or nil when none
+    /// does.
+    func feedBookUse(of bookID: UUID) -> FeedBookUse? {
+        feedBookUses.first { $0.bookIDs.contains(bookID) }?.use
+    }
+
+    /// Each way a book can be in use, with the books in use that way now:
+    /// the one list `feedBooksInUse` and `feedBookUse(of:)` both read, so
+    /// they never disagree.
+    private var feedBookUses: [(use: FeedBookUse, bookIDs: Set<UUID>)] {
+        [
+            (.openInReader, openBookIDs),
+            (.transcribing, TranscribedBooks.shared.transcribingBookID.map { [$0] } ?? []),
+            (.exporting, BookExportModel.booksBeingExported),
+        ]
     }
 
     /// Whether the book `bookID` is on the reading list, whose downloads the

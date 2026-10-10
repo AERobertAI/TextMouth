@@ -47,6 +47,22 @@ extension FocusedValues {
     }
 }
 
+/// The key Library window's selection as the Library menu's Remove names
+/// it: Delete Download for feed items alone (REV11 F2). Each Library window
+/// publishes its own as a scene value (`LibraryView`), so the title follows
+/// the selection while VoiceOver reads the list, which holds no keyboard
+/// focus.
+struct LibraryRemovalSelectionKey: FocusedValueKey {
+    typealias Value = LibraryRemovalSelection
+}
+
+extension FocusedValues {
+    var libraryRemovalSelection: LibraryRemovalSelection? {
+        get { self[LibraryRemovalSelectionKey.self] }
+        set { self[LibraryRemovalSelectionKey.self] = newValue }
+    }
+}
+
 // MARK: - Menu Commands
 
 /// The File menu's commands beside New Window (Command-N): Open Book…, New
@@ -251,6 +267,9 @@ struct LibraryCommands: Commands {
     /// The removal preferences, observed so the Remove command's title
     /// always says what choosing it will do (TODO A08).
     @ObservedObject private var removal = RemovalPreferencesModel.shared
+    /// The key Library window's selection, which the Remove command's title
+    /// names as Delete Download for feed items alone (REV11 F2).
+    @FocusedValue(\.libraryRemovalSelection) private var removalSelection
     /// The shortcuts, observed so Import DAISY Folder's and Add Feed's key
     /// equivalents follow a change at once (FR12's branch D).
     @ObservedObject var shortcuts: KeyboardShortcutManager
@@ -404,8 +423,9 @@ struct LibraryCommands: Commands {
 
             // "Remove from Library..." when it asks first; with confirmation
             // off it deletes at once, so it says "Move to Trash" or
-            // "Delete Permanently".
-            Button(LibraryRemoveCommandWording.menuBarTitle(preferences: removal.preferences)) {
+            // "Delete Permanently"; with feed items alone selected, it is
+            // their Delete Download, and says so (REV11 F2).
+            Button(LibraryRemoveCommandWording.menuBarTitle(preferences: removal.preferences, selection: removalSelection)) {
                 NotificationCenter.default.post(name: .removeFromLibrary, object: nil)
             }
             // Cmd+Delete handled by KeyboardShortcutManager for window targeting

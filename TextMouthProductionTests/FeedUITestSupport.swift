@@ -10,13 +10,6 @@ import XCTest
 // focus requests look for.
 
 extension XCTestCase {
-    /// The text fields in `view` that take typing
-    /// (`editableTextFields(in:)`, which every hosted test shares).
-    @MainActor
-    func feedEditableFields(in view: NSView) -> [NSTextField] {
-        editableTextFields(in: view)
-    }
-
     /// Starts `world`'s engine and turns the run loop until what it starts
     /// has finished, as `world.start()` awaits it; fails the test, and
     /// returns false, when that takes too long. The feed sheets' tests of

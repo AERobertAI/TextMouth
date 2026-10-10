@@ -99,6 +99,69 @@ final class FeedMoveToLibraryOperationTests: XCTestCase {
         try assertStaysInItsFeed(fixture, in: world, model: world.library)
     }
 
+    /// A move of two episodes of which one cannot move says both (REV13
+    /// feeds 5): its sheet, left open, says what moved, as a whole move says
+    /// it, then which episode stayed in its feed and why; the one that moved
+    /// is a book of the library's own, keeping everything, and the other is
+    /// still its feed's download.
+    func testAPartlyFailedMoveNamesWhatMovedAndWhatStayed() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMoveToLibraryPartly")
+        let fixture = try await downloadedEpisode(world)
+        world.center.download("guid:ep-2", of: fixture.feed.id)
+        let second = try await downloadedBook(world, feed: fixture.feed, item: "guid:ep-2")
+        // A package of the second episode's name is in the folder chosen
+        // already, so it cannot move there.
+        var blocked = second
+        blocked.feedLink = nil
+        blocked.folderPath = fixture.keepers
+        try FileManager.default.createDirectory(at: blocked.packageDirectory(inDataDirectory: TextMouthPaths.root), withIntermediateDirectories: true)
+
+        let outcome = await world.library.moveToLibraryReturningOutcome([fixture.book, second], toFolder: fixture.keepers)
+
+        let message = try XCTUnwrap(outcome.failureMessage, "a move that left an episode in its feed closed its sheet")
+        let moved = FeedWording.movedToLibrary(titles: ["Episode 1"], noun: .episode, folderPath: fixture.keepers)
+        XCTAssertTrue(message.hasPrefix("\(moved) “Episode 2” stays in its feed: "), message)
+        XCTAssertGreaterThan(message.count, "\(moved) “Episode 2” stays in its feed: ".count, "no reason was given")
+        try await assertMoved(fixture, in: world, model: world.library)
+        XCTAssertEqual(world.library.bookByID(second.id)?.feedLink, second.feedLink, "the episode that could not move left its feed")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: second.filePath))
+        XCTAssertEqual(world.center.store.record(of: fixture.feed.id)?.item("guid:ep-2")?.state, .downloaded(bookID: second.id))
+    }
+
+    /// An episode another Move to Library… has marked "In Library", its
+    /// package still to move, cannot be moved by a second one (REV13 feeds
+    /// 9): the second moves nothing, says why, and leaves the first's mark
+    /// alone, so no move can put back another's mark; once the first has
+    /// put its mark back, as when its package could not move, the episode
+    /// can move again.
+    func testAnEpisodeAnotherMoveMarkedIsNotMovedTwice() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMoveToLibraryTwice")
+        let fixture = try await downloadedEpisode(world)
+        // The first move's mark, made before its package moved.
+        world.center.store.updateItem(fixture.link.itemID, of: fixture.feed.id) { item in
+            item.state = .inLibrary(bookID: fixture.book.id)
+            item.downloadOrigin = .listener
+        }
+
+        XCTAssertEqual(world.library.booksMovableToLibrary([fixture.book]), [], "an item marked In Library was movable")
+        let second = await world.library.moveToLibraryReturningOutcome([fixture.book], toFolder: fixture.keepers)
+
+        XCTAssertEqual(
+            second.failureMessage,
+            "Could not move to the library: Only an episode or article downloaded in its feed can move into the library."
+        )
+        XCTAssertEqual(
+            world.center.store.record(of: fixture.feed.id)?.item(fixture.link.itemID)?.state,
+            .inLibrary(bookID: fixture.book.id),
+            "the second move changed the first move's mark"
+        )
+        XCTAssertEqual(world.library.bookByID(fixture.book.id)?.feedLink, fixture.link, "the second move moved the package")
+
+        // The first move put its mark back.
+        world.center.store.updateItem(fixture.link.itemID, of: fixture.feed.id) { $0.state = .downloaded(bookID: fixture.book.id) }
+        XCTAssertEqual(world.library.booksMovableToLibrary([fixture.book]).map(\.id), [fixture.book.id])
+    }
+
     /// Only an episode or article downloaded in its feed moves, into a folder
     /// still in the library: a book of the library's own, or a folder gone,
     /// moves nothing, and says why.
@@ -392,11 +455,65 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
             FeedWording.nothingToMoveToLibrary,
             "Move to Library… moves an episode or article downloaded in its feed. Select one in its feed's folder."
         )
+        // A move that moved only some says what moved, then what stayed and
+        // why, the items one reason kept named together (REV13 feeds 5).
+        XCTAssertEqual(
+            FeedWording.partlyMovedToLibrary(
+                moved: ["Ep. 1"],
+                noun: .episode,
+                folderPath: "Podcasts/Keepers",
+                stayed: [(title: "Ep. 2", reason: "The file couldn't be moved.")]
+            ),
+            "Moved “Ep. 1” into Podcasts/Keepers. It's a book of your library now, and its feed lists it In Library. "
+                + "“Ep. 2” stays in its feed: The file couldn't be moved."
+        )
+        XCTAssertEqual(
+            FeedWording.partlyMovedToLibrary(
+                moved: ["Ep. 1", "Ep. 2"],
+                noun: .episode,
+                folderPath: "",
+                stayed: [
+                    (title: "Ep. 3", reason: "No room."),
+                    (title: "Ep. 4", reason: "No permission."),
+                    (title: "Ep. 5", reason: "No room."),
+                ]
+            ),
+            "Moved 2 episodes into the top of your library. They're books of your library now, and their feeds list them In Library. "
+                + "“Ep. 3” and “Ep. 5” stay in their feeds: No room. “Ep. 4” stays in its feed: No permission."
+        )
         let episode = Book(title: "E", format: .audio, filePath: "/e.m4a", md5Hash: "e")
         let article = Book(title: "A", format: .html, filePath: "/a.html", md5Hash: "a")
         XCTAssertEqual(FeedWording.noun(of: [episode]), .episode)
         XCTAssertEqual(FeedWording.noun(of: [article]), .article)
         XCTAssertEqual(FeedWording.noun(of: [episode, article]), .item)
+    }
+
+    /// Move to Library…'s sheet says what moving does once, as text under
+    /// its heading, read in order after it: its Move button gives no hint
+    /// that says it again (REV13 feeds 8). SwiftUI exposes no buttons to a
+    /// test on some Macs, where this skips.
+    func testTheSheetSaysWhatMovingDoesOnce() throws {
+        let book = Book(
+            title: "Ep. 368",
+            format: .audio,
+            filePath: "/nowhere/Ep. 368.tmb/Ep. 368.m4a",
+            md5Hash: "ep-368",
+            tmbDirectoryName: "Ep. 368.tmb",
+            feedLink: FeedBookLink(feedID: UUID(), itemID: "guid:ep-368")
+        )
+        let request = MoveToLibraryRequest(books: [book])
+        let sheet = MoveToLibrarySheet(request: request, library: LibraryViewModel(initializeServices: false), onClose: { _ in })
+
+        try skipUnlessHostedWindowsExposeAccessibility()
+        try withHostedView(sheet, until: { !self.accessibleControls(in: $0).isEmpty }) { hosting in
+            let buttons = accessibleControls(in: hosting).filter { $0.role == .button }
+            guard !buttons.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no buttons to accessibility in this run")
+            }
+            let move = try XCTUnwrap(buttons.first { $0.label == "Move" }, "No Move button: \(buttons.map(\.label))")
+            XCTAssertEqual(move.hint, "", "the Move button says again what the sheet's text says")
+            XCTAssertFalse(buttons.contains { $0.hint == request.hint }, "a button repeats the explanation")
+        }
     }
 
     // MARK: - Through the Commands
@@ -547,6 +664,31 @@ final class FeedInLibraryStateTests: XCTestCase {
         XCTAssertNotNil(world.library.bookByID(book.id), "Delete Episode took the book from the library")
         XCTAssertFalse(world.center.listedItems(of: feed.id).contains { $0.id == "guid:ep-1" })
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .inLibrary(bookID: book.id))
+    }
+
+    /// A book moved into its own feed's folder is listed there once, as its
+    /// book's row offering its item's commands, never also under the
+    /// folder's other books (REV13 feeds 1): the listing pairs a book with
+    /// its item wherever the item's book is, "In Library" too. A search that
+    /// narrows the book out narrows its item out with it.
+    func testABookMovedIntoItsFeedsOwnFolderIsListedOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedInLibraryOwnFolder")
+        let (feed, book) = try await feedWithAnEpisodeInTheLibrary(world)
+        XCTAssertEqual(world.library.feedFolderPath(forFolderID: feed.folderID), book.folderPath, "the book is not in its feed's folder")
+
+        let listing = FeedFolderListing.make(
+            feedID: feed.id, center: world.center, shownBooks: [book], folderBooks: [book], search: "", wordsPerMinute: 200
+        )
+
+        XCTAssertEqual(listing.otherBooks, [], "the moved book was listed again among the folder's other books")
+        XCTAssertEqual(listing.entries.map(\.id), ["book:\(book.id.uuidString)", "item:guid:ep-2", "item:guid:ep-3"])
+        guard case .book(_, let actions)? = listing.entries.first else { return XCTFail("\(listing.entries)") }
+        XCTAssertEqual(actions.map(\.title), ["Mark Played", "Show Description…", "Delete Episode…"])
+
+        let searched = FeedFolderListing.make(
+            feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [book], search: "Episode", wordsPerMinute: 200
+        )
+        XCTAssertEqual(searched.entries.map(\.id), ["item:guid:ep-2", "item:guid:ep-3"], "a book narrowed out came back as its item's row")
     }
 
     // MARK: - The Rules

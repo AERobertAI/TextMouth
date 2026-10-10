@@ -51,8 +51,13 @@ extension LibraryViewModel {
     /// The books of `books` Move to Library… can move, each once, in their
     /// order, as the library holds them now: feed items whose files are here,
     /// among the library's books (`Book.isFeedItem`), whose package the
-    /// library manages, and whose feed's record still names their item. An
-    /// item moved already, or a book of the library's own, is none.
+    /// library manages, and whose item their feed's record says is
+    /// downloaded as that very book. A book of the library's own is none,
+    /// and so is an item another Move to Library… has marked "In Library"
+    /// while its package is still to move: two moves never mark one item, so
+    /// each puts back only its own mark (`unmarkInLibrary(_:)`, REV13 feeds
+    /// 9), as the check and the marking happen in one step on the main
+    /// actor.
     func booksMovableToLibrary(_ books: [Book]) -> [Book] {
         var seen = Set<UUID>()
         return books.compactMap { requested in
@@ -60,7 +65,7 @@ extension LibraryViewModel {
                   let row = feedBook(withID: requested.id),
                   let link = row.feedLink,
                   FileImportService.namesManagedPackage(row),
-                  feeds.store.record(of: link.feedID)?.item(link.itemID) != nil else { return nil }
+                  feeds.store.record(of: link.feedID)?.item(link.itemID)?.state == .downloaded(bookID: row.id) else { return nil }
             return row
         }
     }
@@ -71,7 +76,10 @@ extension LibraryViewModel {
     /// what happened, presenting nothing, so the sheet can stay open with
     /// the reason after a failure. Each item's feed then lists it "In
     /// Library" (`FeedItemState.inLibrary`), the listener's from then on, and
-    /// never downloads it again.
+    /// never downloads it again. A move whose packages moved only in part
+    /// is a failure that says what moved and what stayed in its feed, and
+    /// why (`FeedWording.partlyMovedToLibrary`, REV13 feeds 5), so the sheet,
+    /// left open for the rest, never hides the move that happened.
     ///
     /// The order never loses a book or a place, and a crash at any point is
     /// settled at the next launch:
@@ -148,12 +156,16 @@ extension LibraryViewModel {
 
         let root = TextMouthPaths.root
         var moved: [Book] = []
+        // Each row whose package stayed, with why, for the words of a move
+        // that moved only some (REV13 feeds 5).
+        var stayed: [(title: String, reason: String)] = []
         var failure: (any Error)?
         for row in rows {
             do {
                 moved.append(try Self.moveIntoTheLibrary(row, folderPath: path, root: root))
             } catch {
                 failure = failure ?? error
+                stayed.append((title: row.title, reason: error.localizedDescription))
                 DiagnosticLog.event(
                     .storage,
                     "FEED_MOVE_TO_LIBRARY_FAILED: \"\(row.title)\": \(error.localizedDescription); it stays in its feed"
@@ -187,7 +199,15 @@ extension LibraryViewModel {
                     + (path.isEmpty ? "at the library's top level" : "in the folder chosen")
             )
         }
-        return failure.map { .failure(context, $0) } ?? .success(nil)
+        guard !stayed.isEmpty else { return .success(nil) }
+        // Some moved and some stayed: the sheet, left open, says both, so
+        // the move that happened is never hidden behind what failed.
+        return .failure(FeedWording.partlyMovedToLibrary(
+            moved: moved.map(\.title),
+            noun: FeedWording.noun(of: moved),
+            folderPath: path,
+            stayed: stayed
+        ))
     }
 
     /// `row`, a feed item's download, moved into the library folder
@@ -243,7 +263,9 @@ extension LibraryViewModel {
     }
 
     /// Puts back what `mark` changed, unless the item has changed again
-    /// since, as when Delete Episode deleted it meanwhile.
+    /// since, as when Delete Episode deleted it meanwhile. A mark found is
+    /// this move's own: no other move marks an item already marked
+    /// (`booksMovableToLibrary(_:)`).
     private func unmarkInLibrary(_ mark: InLibraryMark) {
         feeds.store.updateItem(mark.link.itemID, of: mark.link.feedID) { item in
             guard item.state == .inLibrary(bookID: mark.bookID) else { return }

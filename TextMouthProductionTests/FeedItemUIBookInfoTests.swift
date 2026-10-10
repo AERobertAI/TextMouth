@@ -97,14 +97,14 @@ final class FeedItemUIBookInfoTests: XCTestCase {
     /// the same way.
     func testTheReadOnlySheetHasNoFieldToType() {
         let editor = LibraryBookInfoSheet(book: Self.book, libraryViewModel: LibraryViewModel(initializeServices: false))
-        withHostedView(editor, until: { self.feedEditableFields(in: $0).count >= 2 }) { hosting in
-            XCTAssertEqual(feedEditableFields(in: hosting).count, 2, "the editor's title and author fields were not drawn")
+        withHostedView(editor, until: { self.editableTextFields(in: $0).count >= 2 }) { hosting in
+            XCTAssertEqual(editableTextFields(in: hosting).count, 2, "the editor's title and author fields were not drawn")
         }
 
         let sheet = FeedItemBookInfoSheet(book: Self.episode, info: .audio(AudioMetadata(title: "Ep. 368"), isCloudOnly: false), feedTitle: "Finish It!")
         withHostedView(sheet, until: { !self.descendants(of: $0, as: NSScrollView.self).isEmpty }) { hosting in
             XCTAssertFalse(descendants(of: hosting, as: NSScrollView.self).isEmpty, "the read-only sheet was not drawn")
-            XCTAssertEqual(feedEditableFields(in: hosting).count, 0, "a field of a feed item's Book Info takes typing")
+            XCTAssertEqual(editableTextFields(in: hosting).count, 0, "a field of a feed item's Book Info takes typing")
         }
     }
 
@@ -130,7 +130,7 @@ final class FeedItemUIBookInfoTests: XCTestCase {
         XCTAssertNil(reader.errorMessage)
         withHostedView(ReaderBookInfoSheet(viewModel: reader), until: { !self.descendants(of: $0, as: NSScrollView.self).isEmpty }) { hosting in
             XCTAssertFalse(descendants(of: hosting, as: NSScrollView.self).isEmpty, "the reader's Book Info was not drawn")
-            XCTAssertEqual(feedEditableFields(in: hosting).count, 0, "the reader's Book Info of a feed item takes typing")
+            XCTAssertEqual(editableTextFields(in: hosting).count, 0, "the reader's Book Info of a feed item takes typing")
         }
     }
 

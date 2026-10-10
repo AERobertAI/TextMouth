@@ -121,14 +121,14 @@ final class FeedUISettingsTests: XCTestCase {
             // The refresh interval, how many of the newest, and the days
             // before deleting played downloads.
             XCTAssertEqual(descendants(of: hosting, as: NSStepper.self).count, 3)
-            XCTAssertEqual(feedEditableFields(in: hosting).count, 3, "a number field for each number")
+            XCTAssertEqual(editableTextFields(in: hosting).count, 3, "a number field for each number")
             XCTAssertEqual(descendants(of: hosting, as: NSPopUpButton.self).count, 1, "no List and download pop-up menu")
             XCTAssertTrue(
                 waitUntil {
                     hosting.layoutSubtreeIfNeeded()
-                    return feedEditableFields(in: hosting).allSatisfy { $0.frame.width >= 40 }
+                    return editableTextFields(in: hosting).allSatisfy { $0.frame.width >= 40 }
                 },
-                "a number field too narrow for its number: \(feedEditableFields(in: hosting).map(\.frame.width))"
+                "a number field too narrow for its number: \(editableTextFields(in: hosting).map(\.frame.width))"
             )
             // In reading order: refresh at launch; only at launch and when I
             // ask; never delete played downloads; the alert; notifications.
