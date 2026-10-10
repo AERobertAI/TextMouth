@@ -2061,7 +2061,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 self.transitionLog(.trace, "DIRECT_START_IGNORED: stale utterance or direct mode inactive")
                 return
             }
-            // Read before logging: the message is built lazily.
+            // Read before logging, so the line says what the synthesizer reports now.
             let synthesizerIsSpeaking = self.directSynth.isSpeaking
             self.transitionLog(.trace, "DIRECT_START_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) synthSpeaking=\(synthesizerIsSpeaking)")
             self.isSpeaking = true
@@ -2127,7 +2127,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             guard self.liveDirectUtterance.map(ObjectIdentifier.init) == finishedUtteranceID else {
                 let liveDescription = self.liveDirectUtterance
                     .map { String(describing: ObjectIdentifier($0)) } ?? "nil"
-                // Read before logging: the message is built lazily.
+                // Read before logging, so the line says what the synthesizer reports now.
                 let synthesizerIsSpeaking = self.directSynth.isSpeaking
                 let synthesizerIsPaused = self.directSynth.isPaused
                 self.transitionLog(.trace, "DIRECT_FINISH_IGNORED: utterance mismatch finished=\(finishedUtteranceID) live=\(liveDescription) directMode=\(self.usingDirectMode) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
@@ -2200,7 +2200,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 // this: its start arms it, and an utterance the engine
                 // refuses never starts. Speech goes on from a fresh
                 // synthesizer instead, now, or at Play when paused.
-                // Read before logging: the message is built lazily.
+                // Read before logging, so the line says what the synthesizer reports now.
                 let synthesizerIsSpeaking = self.directSynth.isSpeaking
                 let synthesizerIsPaused = self.directSynth.isPaused
                 let appState = self.isPaused ? "was paused" : "expected playback"
