@@ -173,10 +173,12 @@ struct TimeRemainingBar: View {
     }
 
     /// What the bar counts, shown and spoken alike: in a feed's folder, the
-    /// feed's items in place of the books; elsewhere the books, and the
-    /// feeds beside them where there are any (FR11).
+    /// feed's items in place of the books; elsewhere the books, the episodes
+    /// and articles listed beside them, as Recently Opened and the Reading
+    /// List list them, each by its own noun, and the feeds beside them where
+    /// there are any (FR11): "2 books, 5 episodes".
     var countText: String {
-        feedSummary?.counts ?? CountWording.booksAndFeeds(books: books.count, feeds: feedCount)
+        feedSummary?.counts ?? CountWording.listItems(of: books, feeds: feedCount)
     }
 
     private func accessibilityLabel(time: TimeInterval, known: Int, unknown: Int) -> String {

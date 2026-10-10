@@ -35,9 +35,85 @@ enum CountWording {
     /// "0 books" where there is neither. The screen and VoiceOver say the
     /// same words.
     static func booksAndFeeds(books bookCount: Int, feeds feedCount: Int) -> String {
-        guard feedCount > 0 else { return books(bookCount) }
-        guard bookCount > 0 else { return feeds(feedCount) }
-        return "\(books(bookCount)), \(feeds(feedCount))"
+        listItems(books: bookCount, feeds: feedCount)
+    }
+
+    /// The books of a list and the episodes and articles it shows beside
+    /// them, each by its own noun, then the feeds, as Recently Opened and
+    /// the Reading List count them, which list feed items beside books
+    /// (FR11): "2 books, 5 episodes", "1 book, 2 episodes, 1 article", "3
+    /// episodes". Each count of nothing is left out, and "0 books" is said
+    /// where there is nothing at all, as `booksAndFeeds(books:feeds:)`, which
+    /// is this without feed items, says it. The screen and VoiceOver say the
+    /// same words.
+    static func listItems(books bookCount: Int, episodes: Int = 0, articles: Int = 0, feeds feedCount: Int = 0) -> String {
+        var parts: [String] = []
+        if bookCount > 0 || episodes + articles + feedCount == 0 {
+            parts.append(books(bookCount))
+        }
+        if episodes > 0 {
+            parts.append(phrase(episodes, singular: "episode", plural: "episodes"))
+        }
+        if articles > 0 {
+            parts.append(phrase(articles, singular: "article", plural: "articles"))
+        }
+        if feedCount > 0 {
+            parts.append(feeds(feedCount))
+        }
+        return parts.joined(separator: ", ")
+    }
+
+    /// The books, episodes, and articles among `rows`, with `feeds` feeds,
+    /// as `listItems(books:episodes:articles:feeds:)` says them: a feed
+    /// item is an episode when it is audio and an article otherwise, and
+    /// every other row is a book.
+    static func listItems(of rows: [Book], feeds feedCount: Int = 0) -> String {
+        let counts = ListCounts(rows)
+        return listItems(books: counts.books, episodes: counts.episodes, articles: counts.articles, feeds: feedCount)
+    }
+
+    /// The header of the section listing `rows`: "Books (743)", or, where
+    /// episodes and articles are listed beside the books, as in Recently
+    /// Opened and the Reading List (FR11), each kind under its own name, so
+    /// no episode is counted as a book: "Books (2), Episodes (5)",
+    /// "Episodes (3), Articles (1)". A list of nothing is "Books (0)".
+    static func booksHeader(of rows: [Book]) -> String {
+        let counts = ListCounts(rows)
+        var parts: [String] = []
+        if counts.books > 0 || counts.episodes + counts.articles == 0 {
+            parts.append("Books (\(counts.books))")
+        }
+        if counts.episodes > 0 {
+            parts.append("Episodes (\(counts.episodes))")
+        }
+        if counts.articles > 0 {
+            parts.append("Articles (\(counts.articles))")
+        }
+        return parts.joined(separator: ", ")
+    }
+
+    /// How many of a list's rows are books of the library's own, episodes,
+    /// and articles (FR11).
+    private struct ListCounts {
+        /// Rows of the library's own books.
+        var books = 0
+        /// Feed items whose format is audio.
+        var episodes = 0
+        /// Every other feed item.
+        var articles = 0
+
+        /// The counts of `rows`.
+        init(_ rows: [Book]) {
+            for row in rows {
+                if !row.isFeedItem {
+                    books += 1
+                } else if row.format.isAudio {
+                    episodes += 1
+                } else {
+                    articles += 1
+                }
+            }
+        }
     }
 
     /// How far a batch has got: `done` of `total`, then `noun`, as in "3 of

@@ -1139,7 +1139,9 @@ struct LibraryView: View {
                 }
                 bookRows(books, orderedBy: allBooks)
             } header: {
-                Text("Books (\(books.count))")
+                // Episodes and articles listed beside books, as in Recently
+                // Opened and the Reading List, are counted apart (FR11).
+                Text(CountWording.booksHeader(of: books))
                     .accessibilityAddTraits(.isHeader)
             }
         }
