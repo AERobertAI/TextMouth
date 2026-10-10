@@ -290,17 +290,23 @@ extension ReaderViewModel {
 
     /// Whether Where Am I? still has the book in hand: an announcement
     /// speaking, or one that ended by itself and resumes the book it paused
-    /// once its end sound has played (`isWhereAmIResumePending`), or starts
-    /// the book for a Play pressed during it (`isPlayHeldByWhereAmI`).
-    /// Nothing but Where Am I plays the book meanwhile, and whatever pauses
-    /// or stops the book ends what it holds without resuming it
-    /// (`stopWhereAmIWithoutResuming()`, `endWhereAmIAsTheBookStops()`). A
-    /// chapter whose files came during an announcement
-    /// (`isChapterHeldByWhereAmI`) is left out: it is a reader waiting for
-    /// its chapter (`isWaitingForChapterDownload`), which a pause itself lets
-    /// go, so the pause that ends Where Am I can pause it in turn.
+    /// once its end sound has played (`isWhereAmIResumePending`), starts the
+    /// book for a Play pressed during it (`isPlayHeldByWhereAmI`), or plays
+    /// an audiobook's chapter held for its end (`isChapterHeldByWhereAmI`),
+    /// whose files came, or whose package's move ended, while it spoke.
+    ///
+    /// Nothing but Where Am I plays the book meanwhile: a Play waits for it
+    /// (`holdPlayForWhereAmI()`), so a Play in the moment after an
+    /// announcement ends, before its end sound has played, starts nothing
+    /// then, and the book or the chapter starts once, as the end sound
+    /// passes, with no play sound over it. Whatever pauses or stops the book
+    /// ends what it holds without resuming it (`stopWhereAmIWithoutResuming()`,
+    /// `endWhereAmIAsTheBookStops()`), and pauses a held chapter as it
+    /// pauses any play waiting to start. A held chapter was once left out,
+    /// and a Play in that moment started it at once, under the end sound,
+    /// with the play sound (open after the where-am-i-followups merge).
     var isWhereAmIUnderWay: Bool {
-        isWhereAmISpeaking || isWhereAmIResumePending || isPlayHeldByWhereAmI
+        isWhereAmISpeaking || isWhereAmIResumePending || isPlayHeldByWhereAmI || isChapterHeldByWhereAmI
     }
 
     /// Whether Where Am I? will play the book once it is over: the

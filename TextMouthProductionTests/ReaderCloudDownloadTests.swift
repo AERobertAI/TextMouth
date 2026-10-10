@@ -957,6 +957,39 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.stop()
     }
 
+    /// A Play in the moment after Where Am I? ends by itself, while the
+    /// chapter whose files came during it waits for the end sound, changes
+    /// nothing then, as a Play then does for a book the announcement paused:
+    /// neither the AirPods' Play nor the menu's starts the chapter, which
+    /// plays once the end sound has played, started once, and the end
+    /// sound is the only sound made. Before, the Play started the chapter
+    /// at once, under the end sound, with the play sound over it, and the
+    /// end sound's moment then found nothing left to start (open after the
+    /// where-am-i-followups merge).
+    func testAPlayAsWhereAmIEndsLetsAHeldChapterStartOnceAsTheEndSoundPasses() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I Ends Play", clone: Self.failingClone)
+        let held = try chapterHeldForWhereAmI(in: cloud)
+        let reader = held.reader
+        let sounds = RecordedSoundEffects(preferences: makeSandboxedPreferences("Cloud Chapter Where Am I Ends Play"))
+        reader.soundEffectService = sounds
+        let generationBefore = reader.chapterPlaybackGeneration
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: held.announcement)
+        waitFor("the announcement's end") { !reader.isWhereAmISpeaking }
+
+        reader.playOrResume()
+        reader.play()
+
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "A Play started the chapter before the end sound")
+        XCTAssertTrue(reader.isChapterHeldByWhereAmI, "A Play took the chapter from Where Am I?")
+        held.endSound.passEndSound()
+
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(held.secondChapterFile))
+        XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore + 1, "The chapter was not started exactly once")
+        XCTAssertEqual(sounds.played, [.whereAmIEnd], "A sound beside the end sound was made")
+        reader.stop()
+    }
+
     /// The system cancelling Where Am I? on its own, as the speech engine
     /// does with a text it refuses, plays a chapter whose files came during
     /// the announcement at once, as the announcement's end would have

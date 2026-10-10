@@ -1613,22 +1613,29 @@ extension ReaderViewModel {
     /// moving (`audioPausedForMove`) is left to the move's end, which plays
     /// it from the new place, so nothing reads the package's files as they
     /// move.
+    ///
+    /// A held chapter goes first, and answers a Play held beside it: a held
+    /// chapter counts as Where Am I? having the book in hand
+    /// (`isWhereAmIUnderWay`), so the Play's `playOrResume()`, made while it
+    /// is still held, would wait for it rather than start anything, and
+    /// leave it held, with every later Play waiting for it in turn.
     func startPlayHeldByWhereAmI() {
         guard !hasClosed, !isWhereAmISpeaking else { return }
-        if isPlayHeldByWhereAmI {
-            isPlayHeldByWhereAmI = false
-            DiagnosticLog.trace(.playback, "play: Where Am I ended; starting the book for the Play pressed during it")
-            playOrResume()
-            return
-        }
         if isChapterHeldByWhereAmI {
             isChapterHeldByWhereAmI = false
+            isPlayHeldByWhereAmI = false
             guard audioPausedForMove == nil else {
                 DiagnosticLog.trace(.playback, "play: Where Am I ended while the book's package moves; the chapter plays once the move is over")
                 return
             }
-            DiagnosticLog.trace(.playback, "play: Where Am I ended; playing the chapter downloaded during it")
+            DiagnosticLog.trace(.playback, "play: Where Am I ended; playing the chapter held for its end")
             playAudioChapter()
+            return
+        }
+        if isPlayHeldByWhereAmI {
+            isPlayHeldByWhereAmI = false
+            DiagnosticLog.trace(.playback, "play: Where Am I ended; starting the book for the Play pressed during it")
+            playOrResume()
             return
         }
         guard let awaited = chapterSpeechCache.awaitedByPlay,
