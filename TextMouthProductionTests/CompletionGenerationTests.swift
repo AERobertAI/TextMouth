@@ -47,6 +47,47 @@ final class CompletionGenerationTests: XCTestCase {
         XCTAssertFalse(positions.contains { $0 >= 0.3 }, "A time past the clip's end was reported: \(positions)")
     }
 
+    /// A file played to its end, with no clip end, reports no position once
+    /// it has finished (TODO P07): its player's clock still ticks after the
+    /// finish, as the stop at the end makes it, and here as a jump of the
+    /// player's own makes it, and the service ignores each such tick, so a
+    /// finished book's place stays at the exact end the reader saved it at.
+    /// A new play from there reports positions again.
+    func testAFinishedPlayReportsNoPositionUntilItPlaysAgain() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        var positions: [TimeInterval] = []
+        playback.onPositionUpdate = { positions.append($0) }
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+        XCTAssertTrue(eventually { events.finishedCount == 1 }, "The file never finished")
+        let reportsAtFinish = reports.reports.count
+        let positionsAtFinish = positions.count
+
+        // The player's clock jumps, behind the service's back, as the stop
+        // at the end makes it tick.
+        let player = try XCTUnwrap(playback._playerForTesting)
+        player.seek(to: CMTime(seconds: 0.1, preferredTimescale: 600))
+        let ticksAfterTheFinish = { () -> [AudioPositionObserverPolicy.Action] in
+            reports.reports.dropFirst(reportsAtFinish).compactMap { report in
+                guard case .tick(_, let action) = report else { return nil }
+                return action
+            }
+        }
+        XCTAssertTrue(eventually { !ticksAfterTheFinish().isEmpty }, "The player's clock never ticked after the finish")
+        XCTAssertTrue(
+            ticksAfterTheFinish().allSatisfy { $0 == .ignore },
+            "A tick after the finish was acted on: \(ticksAfterTheFinish())"
+        )
+        XCTAssertEqual(positions.count, positionsAtFinish, "The finished play reported a position: \(positions)")
+
+        XCTAssertTrue(playback.play(fromTime: 0))
+        XCTAssertTrue(eventually { positions.count > positionsAtFinish }, "A new play reported no position")
+    }
+
     /// A chapter reload replaces the player. The released player, played
     /// on to its end, neither ticks into its successor nor finishes it: its
     /// observers went with it.
