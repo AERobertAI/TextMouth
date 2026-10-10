@@ -370,6 +370,26 @@ enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
         !windowKinds.isDisjoint(with: other.windowKinds)
     }
 
+    /// The scope as the Shortcuts tab's Works in pop-up names it, and as
+    /// config.json writes it: "Every window", "Library windows", "Reader
+    /// windows", "The audio editor", or "The recording window".
+    var title: String {
+        switch self {
+        case .app: return "Every window"
+        case .library: return "Library windows"
+        case .reader: return "Reader windows"
+        case .audioEditor: return "The audio editor"
+        case .recording: return "The recording window"
+        }
+    }
+
+    /// The scope named within a sentence: "every window", "Library
+    /// windows", "reader windows", "the audio editor", or "the recording
+    /// window", the Library keeping its capital as the window's name.
+    var inSentence: String {
+        self == .library ? title : title.prefix(1).lowercased() + title.dropFirst()
+    }
+
     /// Whether a menu command working here acts while a window of `kind` is
     /// in front, nil meaning no window at all (FR12's branch E): one working
     /// in every window acts in any, an audio editor's included, as menus

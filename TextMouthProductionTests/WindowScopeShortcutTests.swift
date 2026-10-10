@@ -1,12 +1,14 @@
 import AppKit
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
 /// Shortcuts that work in a kind of window the user chooses (FR12's branch
 /// E): which scopes each action may be given, the record keeping a chosen
 /// scope beside the action's keys, a change of scope taking keys only where
-/// scopes then overlap, and Reset to Default giving the default scope back.
-/// Every store is the test's own.
+/// scopes then overlap, Reset to Default giving the default scope back, and
+/// the Shortcuts tab's Works in pop-up and what it says. Every store is the
+/// test's own, and every announcement is recorded rather than spoken.
 @MainActor
 final class WindowScopeShortcutTests: XCTestCase {
 
@@ -155,5 +157,133 @@ final class WindowScopeShortcutTests: XCTestCase {
         XCTAssertEqual(reading.edits, ShortcutEdits([.addFeed: [], .showSleepTimer: []]))
         XCTAssertEqual(reading.skipped.map(\.name), ["Add Feed…", "Show Sleep Timer"])
         XCTAssertEqual(reading.skipped.first?.reason, #"works in "reader", which it cannot; working where it does by default"#)
+    }
+
+    // MARK: - The Shortcuts Tab
+
+    /// The Works in pop-up names each scope as the user reads it; a row's
+    /// label says where its action works when that is one kind of window or
+    /// a scope the user chose, and a change of scope, and Reset to Default,
+    /// say where it works now, in words that fit a sentence.
+    func testTheTabSaysWhereAnActionWorks() {
+        XCTAssertEqual(
+            ShortcutScope.allCases.map(\.title),
+            ["Every window", "Library windows", "Reader windows", "The audio editor", "The recording window"]
+        )
+        XCTAssertEqual(
+            ShortcutScope.allCases.map(\.inSentence),
+            ["every window", "Library windows", "reader windows", "the audio editor", "the recording window"]
+        )
+        XCTAssertEqual(ShortcutsSettingsWording.worksInLabel, "Works in")
+        XCTAssertFalse(ShortcutsSettingsWording.worksInHint.isEmpty)
+
+        let commandS = KeyBinding(key: "s", command: true)
+        let said: [(label: String, words: String)] = [
+            (ShortcutsSettingsWording.rowLabel(for: .showSleepTimer, keys: [shiftCommandT], isEdited: false, worksIn: .reader),
+             "Show Sleep Timer: Shift + Command + T. Works in reader windows."),
+            (ShortcutsSettingsWording.rowLabel(for: .newFromText, keys: [shiftCommandT], isEdited: true, worksIn: .app),
+             "New from Text…: Shift + Command + T. Works in every window. Edited."),
+            (ShortcutsSettingsWording.rowLabel(
+                for: .showSleepTimer,
+                keys: [],
+                isEdited: false,
+                defaultsHeldElsewhere: [DefaultKeyHeldElsewhere(key: shiftCommandT, holder: .newFromText)],
+                worksIn: .reader
+            ), "Show Sleep Timer: No shortcut. Works in reader windows. New from Text… has its default, Shift + Command + T."),
+            (ShortcutsSettingsWording.rowLabel(for: .whereAmI, keys: [KeyBinding(key: "w")], isEdited: true, worksIn: .library),
+             "Where Am I?: W. Works in Library windows. Edited."),
+            // Every window, the audio editor, and the Record window go
+            // unsaid where they are the action's default.
+            (ShortcutsSettingsWording.rowLabel(for: .whereAmI, keys: [KeyBinding(key: "w")], isEdited: false, worksIn: .app),
+             "Where Am I?: W"),
+            (ShortcutsSettingsWording.rowLabel(for: .editorPlayPause, keys: [KeyBinding(key: "k")], isEdited: false, worksIn: .audioEditor),
+             "Audio Editor: Play / Pause: K"),
+            (ShortcutsSettingsWording.rowLabel(for: .recordingStop, keys: [commandS], isEdited: true, worksIn: .recording),
+             "Recording Window: Stop: Command + S. Edited."),
+            (ShortcutsSettingsWording.scopeChanged(.newFromText, to: .app, takenFrom: [.showSleepTimer]),
+             "New from Text… works in every window. Taken from Show Sleep Timer."),
+            (ShortcutsSettingsWording.scopeChanged(.whereAmI, to: .reader, takenFrom: []),
+             "Where Am I? works in reader windows."),
+            (ShortcutsSettingsWording.resetAnnouncement(for: .newFromText, keys: [shiftCommandT], worksIn: .library),
+             "New from Text… reset to default: Shift + Command + T. Works in Library windows."),
+        ]
+        for (label, words) in said {
+            XCTAssertEqual(label, words)
+        }
+    }
+
+    /// The row of an action that may work in more than one kind of window
+    /// shows the Works in pop-up of its choices, the scope in force chosen;
+    /// choosing another makes the action the user's at once, taking its key
+    /// from the action whose scope it now overlaps, and says so. A row whose
+    /// action works only where it does by nature shows none.
+    func testTheWorksInPopUpChangesWhereAnActionWorks() throws {
+        let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("window-scope-pop-up"), installsEventMonitor: false)
+        let view = VStack {
+            ShortcutBindingRow(action: .addFeed)
+            ShortcutBindingRow(action: .newFromText)
+            ShortcutBindingRow(action: .recordingStop)
+        }
+        .environmentObject(manager)
+
+        let heard = try recordingAnnouncements {
+            try withHostedView(view, size: NSSize(width: 600, height: 300), until: { !self.worksInPopUps(in: $0).isEmpty }) { hosting in
+                let popUps = worksInPopUps(in: hosting)
+                XCTAssertEqual(popUps.count, 1, "only New from Text's row has a choice")
+                let popUp = try XCTUnwrap(popUps.first)
+                XCTAssertEqual(popUp.itemTitles, ["Every window", "Library windows", "Reader windows"])
+                XCTAssertEqual(popUp.titleOfSelectedItem, "Library windows")
+
+                popUp.menu?.performActionForItem(at: 0)
+
+                XCTAssertTrue(waitUntil { manager.scope(of: .newFromText) == .app }, "choosing Every window changed nothing")
+                XCTAssertTrue(manager.isEdited(.newFromText))
+                XCTAssertEqual(manager.bindingsFor(.showSleepTimer), [], "Show Sleep Timer lost Shift-Command-T in reader windows")
+                XCTAssertTrue(waitUntil {
+                    hosting.layoutSubtreeIfNeeded()
+                    return self.worksInPopUps(in: hosting).first?.titleOfSelectedItem == "Every window"
+                }, "the pop-up shows \(self.worksInPopUps(in: hosting).first?.titleOfSelectedItem ?? "nothing")")
+            }
+        }
+        XCTAssertEqual(heard.announcements.map(\.message), ["New from Text… works in every window. Taken from Show Sleep Timer."])
+    }
+
+    /// VoiceOver reads the pop-up as "Works in", with the scope in force as
+    /// its value and its hint: "Works in, Library windows, pop-up button".
+    /// The pop-up AppKit drew carries the label always; the element
+    /// VoiceOver lands on lives in the row's accessibility container, which
+    /// SwiftUI builds only for a connected assistive app, so without one the
+    /// rest is skipped, and the words above hold either way.
+    func testVoiceOverReadsTheWorksInPopUp() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("window-scope-pop-up-voiceover"), installsEventMonitor: false)
+        let view = ShortcutBindingRow(action: .newFromText).environmentObject(manager)
+
+        try withHostedView(view, size: NSSize(width: 600, height: 200), until: { !self.worksInPopUps(in: $0).isEmpty }) { hosting in
+            // SwiftUI labels the pop-up it drew as it builds the window's
+            // accessibility elements, which asking for them makes it do.
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                return !self.worksInControls(in: hosting).isEmpty
+                    || self.worksInPopUps(in: hosting).first?.accessibilityLabel() == ShortcutsSettingsWording.worksInLabel
+            }, "the pop-up is labelled \(worksInPopUps(in: hosting).first?.accessibilityLabel() ?? "nothing")")
+            _ = waitUntil { !self.worksInControls(in: hosting).isEmpty }
+            guard let popUp = worksInControls(in: hosting).first else {
+                throw XCTSkip("SwiftUI exposed no accessibility elements without an assistive app")
+            }
+            XCTAssertEqual(popUp.element.accessibilityValue() as? String, "Library windows")
+            XCTAssertEqual(popUp.hint, ShortcutsSettingsWording.worksInHint)
+        }
+    }
+
+    /// The pop-up buttons AppKit drew in `view`, which in a row are the
+    /// Works in pop-up's.
+    private func worksInPopUps(in view: NSView) -> [NSPopUpButton] {
+        descendants(of: view, as: NSPopUpButton.self)
+    }
+
+    /// The pop-up buttons VoiceOver finds in `view` labelled "Works in".
+    private func worksInControls(in view: NSView) -> [AccessibleControl] {
+        accessibleControls(in: view).filter { $0.role == .popUpButton && $0.label == ShortcutsSettingsWording.worksInLabel }
     }
 }

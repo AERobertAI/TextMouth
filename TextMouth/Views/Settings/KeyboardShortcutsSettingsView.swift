@@ -3,8 +3,10 @@ import SwiftUI
 /// The Shortcuts settings tab: the double-press time, then every action's
 /// shortcuts, by group, each changeable; the audio editor's actions are a
 /// group of their own, matched only in its windows (`ShortcutScope`), so
-/// their keys may be the reader's. An action the user edited says so, and
-/// can be given back to its defaults on its own (FR12).
+/// their keys may be the reader's, and an action that may work in more than
+/// one kind of window says where it does, which the user may change (FR12's
+/// branch E). An action the user edited says so, and can be given back to
+/// its defaults, and where it works by default, on its own (FR12).
 struct KeyboardShortcutsSettingsView: View {
     @EnvironmentObject var shortcutManager: KeyboardShortcutManager
     @State private var showResetConfirmation = false
@@ -125,11 +127,13 @@ struct DoublePressTimeStepper: View {
 
 /// One action's row: its name; a button for each of its keys, which records
 /// a key in that one's place, offers Make Double Press or Make Single Press,
-/// and has one removing it beside it; a button adding a key; and, for an
-/// action the user edited, "Edited" and Reset to Default. VoiceOver reads
-/// the row as one label in words (`ShortcutsSettingsWording.rowLabel`) and
-/// offers Reset to Default as an action of the row as well, and every key
-/// recorded is announced.
+/// and has one removing it beside it; a button adding a key; a Works in
+/// pop-up, for an action that may work in more than one kind of window
+/// (FR12's branch E); and, for an action the user edited, "Edited" and Reset
+/// to Default. VoiceOver reads the row as one label in words
+/// (`ShortcutsSettingsWording.rowLabel`) and offers Reset to Default as an
+/// action of the row as well, and every key recorded, and every change of
+/// where it works, is announced.
 struct ShortcutBindingRow: View {
     let action: ShortcutAction
     @EnvironmentObject var shortcutManager: KeyboardShortcutManager
@@ -186,6 +190,24 @@ struct ShortcutBindingRow: View {
                 }
             }
 
+            // Where the action works, for one that may work in more than
+            // one kind of window (FR12's branch E): VoiceOver reads it as
+            // "Works in, Library windows, pop-up button".
+            if action.availableScopes.count > 1 {
+                HStack {
+                    Spacer()
+                    Picker(ShortcutsSettingsWording.worksInLabel, selection: scopeSelection) {
+                        ForEach(action.availableScopes, id: \.self) { scope in
+                            Text(scope.title).tag(scope)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .fixedSize()
+                    .accessibilityLabel(ShortcutsSettingsWording.worksInLabel)
+                    .accessibilityHint(ShortcutsSettingsWording.worksInHint)
+                }
+            }
+
             // An action following its defaults says which of them another
             // action has (FR12's branch D), as New from Text's
             // Shift-Command-T is Show Sleep Timer's.
@@ -214,7 +236,8 @@ struct ShortcutBindingRow: View {
             for: action,
             keys: currentBindings,
             isEdited: isEdited,
-            defaultsHeldElsewhere: defaultsHeldElsewhere
+            defaultsHeldElsewhere: defaultsHeldElsewhere,
+            worksIn: shortcutManager.scope(of: action)
         ))
         .accessibilityActions {
             if isEdited {
@@ -268,6 +291,29 @@ struct ShortcutBindingRow: View {
     /// has it, while it follows its defaults.
     private var defaultsHeldElsewhere: [DefaultKeyHeldElsewhere] {
         shortcutManager.defaultKeysHeldElsewhere(for: action)
+    }
+
+    /// The Works in pop-up's choice: the action's scope in force, changed
+    /// through the manager, which makes the action the user's.
+    private var scopeSelection: Binding<ShortcutScope> {
+        Binding(
+            get: { shortcutManager.scope(of: action) },
+            set: { changeScope(to: $0) }
+        )
+    }
+
+    /// Makes the action work in `scope`, as the user's (FR12's branch E),
+    /// and tells VoiceOver where it works now and which actions lost a key
+    /// to it where their scopes now overlap its own.
+    private func changeScope(to scope: ShortcutScope) {
+        guard scope != shortcutManager.scope(of: action) else { return }
+        let keysBefore = shortcutManager.bindings
+        shortcutManager.setScope(scope, for: action)
+        VoiceOverAnnouncer.announce(ShortcutsSettingsWording.scopeChanged(
+            action,
+            to: shortcutManager.scope(of: action),
+            takenFrom: shortcutManager.actions(thatLostKeysSince: keysBefore, besides: action)
+        ))
     }
 
     /// Puts `newBinding` in place of the key at `index`, as the user's,
@@ -332,10 +378,17 @@ struct ShortcutBindingRow: View {
     }
 
     /// Gives the action back to its defaults and says what they are, since
-    /// the button that did it goes away with the row's edit.
+    /// the button that did it goes away with the row's edit, with where it
+    /// works again when that changed too (FR12's branch E).
     private func resetToDefault() {
+        let scopeBefore = shortcutManager.scope(of: action)
         shortcutManager.resetToDefault(action)
-        VoiceOverAnnouncer.announce(ShortcutsSettingsWording.resetAnnouncement(for: action, keys: currentBindings))
+        let scopeNow = shortcutManager.scope(of: action)
+        VoiceOverAnnouncer.announce(ShortcutsSettingsWording.resetAnnouncement(
+            for: action,
+            keys: currentBindings,
+            worksIn: scopeNow == scopeBefore ? nil : scopeNow
+        ))
     }
 }
 
@@ -466,23 +519,60 @@ enum ShortcutsSettingsWording {
     // MARK: Rows and Announcements
 
     /// A row's VoiceOver label: the action's name as config.json names it,
-    /// an audio editor action's with its group's, then its keys in words,
-    /// and, for an action the user edited, "Edited.": "Release Media
-    /// Controls: Shift + R. Edited.", "Where Am I?: W"; or, for an action
-    /// following its defaults that goes without one, which action has it:
-    /// "New from Text…: No shortcut. Show Sleep Timer has its default,
-    /// Shift + Command + T." (FR12's branch D).
+    /// an audio editor action's with its group's, then its keys in words;
+    /// where it works, when that is one kind of window or a scope the user
+    /// chose (FR12's branch E): "Show Sleep Timer: Shift + Command + T.
+    /// Works in reader windows."; and, for an action the user edited,
+    /// "Edited.": "Release Media Controls: Shift + R. Edited.", "Where Am
+    /// I?: W"; or, for an action following its defaults that goes without
+    /// one, which action has it (FR12's branch D), as Show Sleep Timer does
+    /// once the user gives New from Text every window: "Show Sleep Timer: No
+    /// shortcut. Works in reader windows. New from Text… has its default,
+    /// Shift + Command + T."
     static func rowLabel(
         for action: ShortcutAction,
         keys: [KeyBinding],
         isEdited: Bool,
-        defaultsHeldElsewhere held: [DefaultKeyHeldElsewhere] = []
+        defaultsHeldElsewhere held: [DefaultKeyHeldElsewhere] = [],
+        worksIn scope: ShortcutScope? = nil
     ) -> String {
         let label = "\(action.rawValue): \(KeyBinding.accessibleDisplayString(for: keys))"
-        if isEdited {
-            return "\(sentence(label)) \(edited)."
+        var more: [String] = []
+        if let scope, saysScope(scope, of: action) {
+            more.append(sentence("Works in \(scope.inSentence)"))
         }
-        return held.isEmpty ? label : "\(sentence(label)) \(defaultsHeldElsewhere(held))"
+        if isEdited {
+            more.append("\(edited).")
+        } else if !held.isEmpty {
+            more.append(defaultsHeldElsewhere(held))
+        }
+        return more.isEmpty ? label : ([sentence(label)] + more).joined(separator: " ")
+    }
+
+    /// Whether a row says where `action` works, in `scope`: always for
+    /// Library or reader windows, and otherwise only when the user chose it.
+    /// Every window, an action's default, goes unsaid, and so do the audio
+    /// editor and the Record window, which their groups' headings name.
+    private static func saysScope(_ scope: ShortcutScope, of action: ShortcutAction) -> Bool {
+        scope != action.defaultScope || scope == .library || scope == .reader
+    }
+
+    /// The Works in pop-up's label (FR12's branch E).
+    static let worksInLabel = "Works in"
+    /// The Works in pop-up's hint.
+    static let worksInHint =
+        "Where this shortcut works. Choosing makes it yours; Reset to Default gives back where it works by default."
+
+    /// What VoiceOver says once a row's Works in choice is made (FR12's
+    /// branch E): "New from Text… works in every window.", followed, when
+    /// actions lost a key to it where their scopes now overlap its own, by
+    /// "Taken from Show Sleep Timer."
+    static func scopeChanged(_ action: ShortcutAction, to scope: ShortcutScope, takenFrom previousOwners: [ShortcutAction]) -> String {
+        var sentences = ["\(action.rawValue) works in \(scope.inSentence)."]
+        if !previousOwners.isEmpty {
+            sentences.append(sentence("Taken from \(LibraryCloudWording.list(previousOwners.map(\.rawValue)))"))
+        }
+        return sentences.joined(separator: " ")
     }
 
     /// What a row says, on screen and to VoiceOver, of the default keys its
@@ -542,9 +632,12 @@ enum ShortcutsSettingsWording {
     }
 
     /// What VoiceOver says once an action is reset to its default: "Next
-    /// Bookmark reset to default: Option + Shift + Command + B."
-    static func resetAnnouncement(for action: ShortcutAction, keys: [KeyBinding]) -> String {
-        sentence("\(action.rawValue) reset to default: \(KeyBinding.accessibleDisplayString(for: keys))")
+    /// Bookmark reset to default: Option + Shift + Command + B.", and, when
+    /// the reset gave back where it works too (FR12's branch E), "Works in
+    /// Library windows."
+    static func resetAnnouncement(for action: ShortcutAction, keys: [KeyBinding], worksIn scope: ShortcutScope? = nil) -> String {
+        let reset = sentence("\(action.rawValue) reset to default: \(KeyBinding.accessibleDisplayString(for: keys))")
+        return scope.map { "\(reset) Works in \($0.inSentence)." } ?? reset
     }
 
     /// `text` ended as a sentence: with a period, unless it ends in a
