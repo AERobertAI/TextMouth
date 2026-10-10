@@ -186,6 +186,10 @@ final class ShortcutConfigFileTests: XCTestCase {
         XCTAssertEqual(saved.keyboardShortcuts["Speak Full Info"], "default: i twice")
         XCTAssertEqual(saved.keyboardShortcuts["Where Am I? Full Summary"], "default: w twice")
         XCTAssertEqual(saved.keyboardShortcuts["Add to Reading List"], "default: none")
+        // The menu commands' keys, newer than the map (FR12's branch D).
+        XCTAssertEqual(saved.keyboardShortcuts["Open Book…"], "default: command+o")
+        XCTAssertEqual(saved.keyboardShortcuts["New from Text…"], "default: none", "Show Sleep Timer keeps Shift-Command-T")
+        XCTAssertEqual(saved.keyboardShortcuts["Show Sleep Timer"], "default: shift+command+t")
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
         XCTAssertEqual(manager.bindingsFor(.nextBookmark), [optionShiftCommandB])
         XCTAssertEqual(manager.bindingsFor(.showBookmarkList), [shiftCommandB])
@@ -292,6 +296,55 @@ final class ShortcutConfigFileTests: XCTestCase {
         XCTAssertEqual(manager.bindingsFor(.whereAmIFull), [KeyBinding(key: "w", isDoublePress: true)])
         XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [shiftR])
         withExtendedLifetime(launched) {}
+    }
+
+    /// This user's record and config.json with the menu commands' keys
+    /// (FR12's branch D, item 5): a file written before them gains each as
+    /// "default: " and its key, New from Text "default: none" while Show
+    /// Sleep Timer keeps Shift-Command-T; Release Media Controls keeps
+    /// Shift-R as the user's own, every other action follows the defaults,
+    /// and the record is left as it was. A second launch changes nothing.
+    func testAFileWrittenBeforeTheMenuKeysGainsThemAsDefaults() throws {
+        let url = try makeConfigFileURL()
+        let store = try isolatedDefaults()
+        let record = ShortcutEdits([.releaseMediaControls: [shiftR]])
+        KeyboardShortcutManager.editsPreference.write(record, to: store)
+        var file = launchConsistentConfig(edits: record)
+        for action in ShortcutAction.keyEquivalentActions {
+            file.keyboardShortcuts[action.rawValue] = nil
+        }
+        try ConfigService.fileData(for: file).write(to: url)
+
+        let first = launch(url, store: store)
+
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        let menuKeys: [String: ShortcutListing] = [
+            "Open Book…": "default: command+o",
+            "New from Text…": "default: none",
+            "New Recording…": "default: option+command+n",
+            "Import DAISY Folder…": "default: shift+command+o",
+            "Add Feed…": "default: shift+command+f",
+            "Copy Reading Position": "default: shift+command+p",
+            "Search in Book": "default: command+f",
+            "Recording Window: Record": "default: command+r",
+            "Recording Window: Pause or Resume": "default: command+p",
+            "Recording Window: Stop": "default: command+.",
+        ]
+        for (name, entry) in menuKeys {
+            XCTAssertEqual(saved.keyboardShortcuts[name], entry, name)
+        }
+        XCTAssertEqual(saved.keyboardShortcuts["Release Media Controls"], ["shift+r"])
+        XCTAssertEqual(saved.keyboardShortcuts["Show Sleep Timer"], "default: shift+command+t")
+        XCTAssertEqual(saved.keyboardShortcuts.count, ShortcutAction.allCases.count)
+        let lists = saved.keyboardShortcuts.filter { !$0.value.followsDefaults }
+        XCTAssertEqual(Array(lists.keys), ["Release Media Controls"], "nothing else is the user's")
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+
+        let bytes = try Data(contentsOf: url)
+        let second = launch(url, store: store)
+        XCTAssertEqual(try Data(contentsOf: url), bytes)
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+        withExtendedLifetime((first, second)) {}
     }
 
     // MARK: - The Whole Map's Key
