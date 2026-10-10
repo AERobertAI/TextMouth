@@ -126,22 +126,38 @@ extension ReaderViewModel {
     /// nothing and is left alone. Speech reads no files as it plays, and
     /// audio playing from the book's working copy (FR02) reads none of the
     /// package's files, so it plays on through the move.
+    ///
+    /// A chapter whose files came while a Where Am I? announcement spoke,
+    /// held for its end (`isChapterHeldByWhereAmI`), reads nothing until it
+    /// plays, so it stays held through the move: the announcement's end
+    /// plays it from the package's new place, or, should the announcement
+    /// end before the move does, the move's end plays it
+    /// (`startPlayHeldByWhereAmI()` leaves it to the move). The move once
+    /// let it go here and played it as it ended, under the announcement.
     private func pauseAudioForPackageMove() {
         guard isAudioBook, audioPausedForMove == nil, !playsFromWorkingCopy else { return }
         let isPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
         guard isPlaying || isWaitingForChapterDownload else { return }
         audioPausedForMove = AudioPausedForMove(volume: audioPlaybackService.intendedVolume)
-        stopWaitingForChapterDownload(because: "the book's package is moving")
+        if !isChapterHeldByWhereAmI {
+            stopWaitingForChapterDownload(because: "the book's package is moving")
+        }
         audioPlaybackService.stop()
     }
 
     /// The move announced before is over. Audio set aside for it plays on
     /// from the cursor, from wherever the book's files now are: the new
     /// place, which the library's update has already given the reader, or
-    /// the old one when the move was put back.
+    /// the old one when the move was put back. A chapter Where Am I? still
+    /// holds waits for the announcement's end, which plays it
+    /// (`startPlayHeldByWhereAmI()`), rather than play under it.
     private func resumeAudioAfterPackageMove() {
         guard let paused = audioPausedForMove else { return }
         audioPausedForMove = nil
+        guard !isChapterHeldByWhereAmI else {
+            DiagnosticLog.trace(.playback, "the book's package moved; the chapter held for Where Am I's end waits for it still")
+            return
+        }
         restartAudioAtCursor(volume: paused.volume)
     }
 

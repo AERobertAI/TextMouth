@@ -852,27 +852,21 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// announcement (REV11).
     func testAChapterDownloadedDuringWhereAmIPlaysAsTheAnnouncementEnds() throws {
         let cloud = try makeCloudReaders("Cloud Chapter Where Am I", clone: Self.failingClone)
-        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
-        let second = try chapterFile(number: 2, of: reader)
-        let announcement = try speakWhereAmI(in: reader)
-        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
-
-        cloud.cloudOnly.clear()
-        cloud.storage.finishHeldDownload(of: book.id)
-        waitFor("the download's end") { reader.cloudPhase == nil }
+        let held = try chapterHeldForWhereAmI(in: cloud)
+        let reader = held.reader
 
         XCTAssertNil(reader.audioPlaybackService.loadedURL, "The chapter played under the announcement")
         XCTAssertTrue(reader.isChapterHeldByWhereAmI)
         XCTAssertTrue(reader.isCurrentlyPlaying, "The reader stopped showing Playing")
         XCTAssertFalse(reader.isCurrentlyPaused)
 
-        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: held.announcement)
         waitFor("the announcement's end") { !reader.isWhereAmISpeaking }
         XCTAssertNil(reader.audioPlaybackService.loadedURL, "The chapter played before the end sound")
-        endSound.passEndSound()
+        held.endSound.passEndSound()
 
         waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
-        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(held.secondChapterFile))
         XCTAssertFalse(reader.isChapterHeldByWhereAmI)
         reader.stop()
     }
@@ -882,11 +876,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// played it.
     func testAChapterDownloadedDuringWhereAmIPlaysAtOnceWhenAPressEndsIt() throws {
         let cloud = try makeCloudReaders("Cloud Chapter Where Am I Pressed", clone: Self.failingClone)
-        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
-        _ = try speakWhereAmI(in: reader)
-        cloud.cloudOnly.clear()
-        cloud.storage.finishHeldDownload(of: book.id)
-        waitFor("the download's end") { reader.cloudPhase == nil }
+        let reader = try chapterHeldForWhereAmI(in: cloud).reader
 
         reader.whereAmI()
 
@@ -901,26 +891,21 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// nothing plays then, and Play plays the chapter.
     func testPlayPauseDuringWhereAmILetsAHeldChapterGo() throws {
         let cloud = try makeCloudReaders("Cloud Chapter Where Am I Play Pause", clone: Self.failingClone)
-        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
-        let second = try chapterFile(number: 2, of: reader)
-        _ = try speakWhereAmI(in: reader)
-        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
-        cloud.cloudOnly.clear()
-        cloud.storage.finishHeldDownload(of: book.id)
-        waitFor("the download's end") { reader.cloudPhase == nil }
+        let held = try chapterHeldForWhereAmI(in: cloud)
+        let reader = held.reader
 
         reader.togglePlayPause()
 
         XCTAssertFalse(reader.isWhereAmISpeaking, "Play/Pause did not end the announcement")
         XCTAssertTrue(reader.isCurrentlyPaused, "The reader is not paused")
         XCTAssertFalse(reader.isChapterHeldByWhereAmI)
-        XCTAssertFalse(endSound.hasWorkWaiting, "Work waits for an end sound")
+        XCTAssertFalse(held.endSound.hasWorkWaiting, "Work waits for an end sound")
         XCTAssertNil(reader.audioPlaybackService.loadedURL, "The chapter played")
 
         reader.togglePlayPause()
 
         XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Play did not play the chapter")
-        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(held.secondChapterFile))
         reader.stop()
     }
 
@@ -972,12 +957,78 @@ final class ReaderCloudDownloadTests: XCTestCase {
 
         cloud.cloudOnly.clear()
         cloud.storage.finishHeldDownload(of: book.id)
-        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
 
-        let moved = try XCTUnwrap(cloud.world.library.bookByID(book.id))
-        let playing = try XCTUnwrap(reader.audioPlaybackService.loadedURL)
-        XCTAssertTrue(Self.path(playing).hasPrefix(Self.path(moved.filePath) + "/"), "\(playing.path)")
-        XCTAssertEqual(reader.currentChapterIndex, 1)
+        try assertPlaysTheSecondChapterFromItsMovedPackage(book, reader: reader, in: cloud)
+        reader.stop()
+    }
+
+    /// The library moves the package of a book whose chapter, downloaded
+    /// while Where Am I? speaks, waits for the announcement: the chapter
+    /// stays held through the move, nothing plays under the announcement,
+    /// and the chapter plays from the package's new place once the
+    /// announcement's end sound has played. Before, the move let the chapter
+    /// go and its end played it at once, under the announcement.
+    func testAPackageMoveKeepsAChapterHeldForWhereAmIUntilTheAnnouncementEnds() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I Move", clone: Self.failingClone)
+        let held = try chapterHeldForWhereAmI(in: cloud)
+        let reader = held.reader
+
+        try cloud.world.library.commitLibraryTransition(
+            Self.library(cloud.world.library.library, moving: held.book.id, to: "\(cloud.world.folder.path)/Shelf"),
+            affectedBookIDs: [held.book.id]
+        )
+
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The chapter played under the announcement")
+        XCTAssertTrue(reader.isChapterHeldByWhereAmI, "The move let go of the chapter Where Am I? holds")
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader stopped showing Playing")
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: held.announcement)
+        waitFor("the announcement's end") { !reader.isWhereAmISpeaking }
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The chapter played before the end sound")
+
+        held.endSound.passEndSound()
+
+        try assertPlaysTheSecondChapterFromItsMovedPackage(held.book, reader: reader, in: cloud)
+        reader.stop()
+    }
+
+    /// Where Am I? ending by itself, and its end sound passing, while the
+    /// package of a book holding a chapter for it moves, as a move made off
+    /// the main thread allows, leaves the chapter to the move's end: nothing
+    /// reads the package's files as they move, and the chapter plays from
+    /// the new place once the move is over.
+    func testAChapterHeldForWhereAmIThatEndsDuringAPackageMovePlaysOnceTheMoveIsOver() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I Ends During Move", clone: Self.failingClone)
+        let held = try chapterHeldForWhereAmI(in: cloud)
+        let reader = held.reader
+        let endSound = held.endSound
+        let duringMove = PlayerDuringMove()
+        let disk = LibraryTransitionDisk(
+            moveItem: { source, destination in
+                // `commitLibraryTransition` runs its disk work on the main
+                // actor, where the reader lives.
+                try MainActor.assumeIsolated {
+                    reader.whereAmIAnnouncementFinished()
+                    endSound.passEndSound()
+                    duringMove.moves += 1
+                    duringMove.loadedURL = reader.audioPlaybackService.loadedURL
+                    try FileManager.default.moveItem(at: source, to: destination)
+                }
+            },
+            writeRecord: { book in
+                try book.saveBookInfoThrowing()
+            }
+        )
+
+        try cloud.world.library.commitLibraryTransition(
+            Self.library(cloud.world.library.library, moving: held.book.id, to: "\(cloud.world.folder.path)/Shelf"),
+            affectedBookIDs: [held.book.id],
+            disk: disk
+        )
+
+        XCTAssertEqual(duringMove.moves, 1)
+        XCTAssertNil(duringMove.loadedURL, "The chapter played while its package moved")
+        XCTAssertFalse(reader.isChapterHeldByWhereAmI, "Where Am I? still holds the chapter it left to the move")
+        try assertPlaysTheSecondChapterFromItsMovedPackage(held.book, reader: reader, in: cloud)
         reader.stop()
     }
 
@@ -1119,6 +1170,66 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.navigateTo(chapterIndex: 1, characterOffset: 0)
         waitFor("the chapter's download") { reader.shownDownload?.progress == Self.halfway }
         return (reader, book)
+    }
+
+    /// A reader holding the second chapter of its book for a Where Am I?
+    /// announcement, and what a test needs of it.
+    private struct ChapterHeldForWhereAmI {
+        let reader: ReaderViewModel
+        let book: Book
+        /// The file the held chapter plays from where the book was opened.
+        let secondChapterFile: String
+        /// The announcement speaking, handed over in place of the synthesizer.
+        let announcement: AVSpeechUtterance
+        /// Holds what the announcement leaves for once its end sound has
+        /// played, until the test lets the sound pass.
+        let endSound: WhereAmIEndSoundClock
+    }
+
+    /// A reader of a two-chapter audiobook in `cloud`'s library, waiting for
+    /// the download of its second chapter (`readerWaitingForSecondChapter`),
+    /// whose files come while Where Am I? speaks, so that the chapter waits
+    /// for the announcement's end to play.
+    private func chapterHeldForWhereAmI(
+        in cloud: CloudReaders,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> ChapterHeldForWhereAmI {
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        let second = try chapterFile(number: 2, of: reader, file: file, line: line)
+        let announcement = try speakWhereAmI(in: reader, file: file, line: line)
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the download's end", file: file, line: line) { reader.cloudPhase == nil }
+        return ChapterHeldForWhereAmI(
+            reader: reader,
+            book: book,
+            secondChapterFile: second,
+            announcement: announcement,
+            endSound: endSound
+        )
+    }
+
+    /// Waits for `reader` to play, and checks that it plays `book`'s second
+    /// chapter from the book's package where the library has moved it.
+    private func assertPlaysTheSecondChapterFromItsMovedPackage(
+        _ book: Book,
+        reader: ReaderViewModel,
+        in cloud: CloudReaders,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        waitFor("the chapter to play", file: file, line: line) { reader.audioPlaybackService.isPlaying }
+        let moved = try XCTUnwrap(cloud.world.library.bookByID(book.id), "The book left the library", file: file, line: line)
+        let playing = try XCTUnwrap(reader.audioPlaybackService.loadedURL, "Nothing plays", file: file, line: line)
+        XCTAssertTrue(
+            Self.path(playing).hasPrefix(Self.path(moved.filePath) + "/"),
+            "\(playing.path) is not in the moved package",
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(reader.currentChapterIndex, 1, "Another chapter plays", file: file, line: line)
     }
 
     /// Presses Where Am I? in `reader`, which hands its announcement to a

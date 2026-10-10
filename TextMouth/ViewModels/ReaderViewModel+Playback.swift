@@ -1491,7 +1491,10 @@ extension ReaderViewModel {
     /// (`continueWaitingPlay()`), starts from the cursor as it is now.
     /// Nothing starts while an announcement speaks, when no play waits, or
     /// while the speech the play waits for is still being prepared, whose
-    /// end starts the play itself.
+    /// end starts the play itself. A held chapter whose book's package is
+    /// moving (`audioPausedForMove`) is left to the move's end, which plays
+    /// it from the new place, so nothing reads the package's files as they
+    /// move.
     func startPlayHeldByWhereAmI() {
         guard !hasClosed, !isWhereAmISpeaking else { return }
         if isPlayHeldByWhereAmI {
@@ -1501,6 +1504,11 @@ extension ReaderViewModel {
             return
         }
         if isChapterHeldByWhereAmI {
+            isChapterHeldByWhereAmI = false
+            guard audioPausedForMove == nil else {
+                DiagnosticLog.trace(.playback, "play: Where Am I ended while the book's package moves; the chapter plays once the move is over")
+                return
+            }
             DiagnosticLog.trace(.playback, "play: Where Am I ended; playing the chapter downloaded during it")
             playAudioChapter()
             return
