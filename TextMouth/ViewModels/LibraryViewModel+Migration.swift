@@ -1544,13 +1544,18 @@ extension LibraryViewModel {
     ///
     /// Runs once the launch's maintenance has ended
     /// (`updateContentCachesAndStatistics`), and only while this Mac has not
-    /// made the move (`finishedBooksAtEndKey`) and the statistics file has
-    /// been read: statistics that stand in for a file still in the cloud or
-    /// in a data directory not there yet list no finished book, and would
-    /// move nothing. The move is made once every book it is for was here to
-    /// be moved: a book whose record or index is only in the cloud, or that
-    /// a reader window has open, keeps its place and waits for a later
-    /// launch, which makes the move then.
+    /// made the move (`finishedBooksAtEndKey`) and the statistics were read
+    /// from their file (`ReadingStatsService.statsReadFromFile`). Statistics
+    /// that stand in for the file, one still in the cloud, in a data
+    /// directory not there yet, not written yet, or that could not be read
+    /// or decoded, list no finished book: a move made over them would move
+    /// nothing and be recorded as made, so it would never run once the file
+    /// could be read again (REV14). Until then nothing is moved, recorded, or
+    /// logged, and a later launch that reads the file makes the move. The
+    /// move is made once every book it is for was here to be moved: a book
+    /// whose record or index is only in the cloud, or that a reader window
+    /// has open, keeps its place and waits for a later launch, which makes
+    /// the move then.
     ///
     /// - Parameters:
     ///   - statistics: The statistics whose Books Finished names the books.
@@ -1566,7 +1571,7 @@ extension LibraryViewModel {
         then completion: (@MainActor @Sendable () -> Void)? = nil
     ) {
         guard preferences.integer(forKey: Self.finishedBooksAtEndKey) < Self.finishedBooksAtEndVersion,
-              !statistics.statsAwaitDataDirectory, !statistics.statsAwaitFileInCloud else {
+              statistics.statsReadFromFile else {
             completion?()
             return
         }

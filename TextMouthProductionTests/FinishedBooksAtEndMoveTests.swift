@@ -105,16 +105,13 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
     /// The move is made once on this Mac: it is recorded as made only once
     /// no book waits for it, and from then on it moves nothing, not even a
     /// counted book read again to 100 percent since. Books Finished is read
-    /// from the statistics given, as the launch reads the app's.
+    /// from statistics read from their file, as the launch reads the app's.
     func testTheMoveIsMadeOnceEveryBookWasHere() throws {
         let world = try makeIntegrationWorld("Finished Books At End Once")
         let preferences = makeSandboxedPreferences("Finished Books At End Once")
-        let statistics = makeStatistics()
         let lastWord = try makeBook("Last Word", at: 1_993, in: world)
         let inCloud = try makeBook("In the Cloud", at: 1_995, in: world)
-        for book in [lastWord, inCloud] {
-            statistics.markBookFinished(bookID: book.id, title: book.title)
-        }
+        let statistics = try makeStatistics(finishing: [lastWord, inCloud])
         let cloudIndex = TextMouthPaths.contentIndexPath(in: inCloud.tmbDirectory)
         let cloud = MaintenanceFileAccess(isDataless: { _ in false }, refusesRead: { $0 == cloudIndex })
 
@@ -136,6 +133,50 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
         world.library.persistReadingPosition(bookID: lastWord.id, position: readAgain)
         try moveOnce(in: world, statistics: statistics, preferences: preferences, access: .live)
         XCTAssertEqual(row(of: lastWord, in: world)?.readingPosition, readAgain, "The move was made again")
+    }
+
+    /// The move waits for statistics read from their file (REV14). With no
+    /// file yet, or with one cut short, the statistics only stand in for it
+    /// and Books Finished counts no book, so a move made then would be
+    /// recorded as made with nothing moved, and would never run once the
+    /// file was repaired. Nothing is moved or recorded until a launch reads
+    /// the repaired file, and that launch makes the move.
+    func testTheMoveWaitsForStatisticsReadFromTheirFile() throws {
+        let world = try makeIntegrationWorld("Finished Books At End Unread")
+        let preferences = makeSandboxedPreferences("Finished Books At End Unread")
+        let lastWord = try makeBook("Last Word", at: 1_993, in: world)
+        let file = makeStatisticsFile()
+        // What the repaired file holds: Books Finished counting the book.
+        _ = try makeStatistics(finishing: [lastWord], in: file)
+        let whole = try Data(contentsOf: file)
+        try FileManager.default.removeItem(at: file)
+
+        /// Makes the move as a launch does over `statistics`, which stand in
+        /// for their file because of `why`, and checks that it neither
+        /// moved the book nor was recorded as made.
+        func assertTheMoveWaits(over statistics: ReadingStatsService, _ why: String) throws {
+            XCTAssertFalse(statistics.statsReadFromFile, "\(why): the statistics said they were read from it")
+            try moveOnce(in: world, statistics: statistics, preferences: preferences, access: .live)
+            XCTAssertEqual(row(of: lastWord, in: world)?.readingPosition, lastWord.readingPosition, "\(why): the book moved")
+            XCTAssertEqual(
+                preferences.integer(forKey: LibraryViewModel.finishedBooksAtEndKey),
+                0,
+                "\(why): the move was recorded as made"
+            )
+        }
+
+        try assertTheMoveWaits(over: makeStatistics(at: file), "No file yet")
+        try whole.prefix(whole.count / 2).write(to: file)
+        try assertTheMoveWaits(over: makeStatistics(at: file), "A file cut short")
+
+        try whole.write(to: file)
+        try moveOnce(in: world, statistics: makeStatistics(at: file), preferences: preferences, access: .live)
+        try assertAtItsEnd(lastWord, in: world)
+        XCTAssertEqual(
+            preferences.integer(forKey: LibraryViewModel.finishedBooksAtEndKey),
+            LibraryViewModel.finishedBooksAtEndVersion,
+            "Not recorded as made once the repaired file was read"
+        )
     }
 
     // MARK: - The Last-Opened Date
@@ -221,19 +262,42 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
         return book
     }
 
-    /// Statistics of the test's own, over a file in a folder of its own,
-    /// removed when the test ends.
-    private func makeStatistics() -> ReadingStatsService {
+    /// Where a statistics file of the test's own goes, in a folder of its
+    /// own, removed with whatever is in it when the test ends.
+    private func makeStatisticsFile() -> URL {
         let folder = TextMouthPaths.root.appendingPathComponent(
             "FinishedBooksAtEndMoveTests-\(UUID().uuidString)", isDirectory: true
         )
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let statistics = ReadingStatsService(fileURL: folder.appendingPathComponent("reading_stats.json"))
+        // Registered first, so it runs after every service is stopped.
         addTeardownBlock { @MainActor in
-            statistics.shutdown()
             ReadingStatsService.waitForQueuedSaves()
             try? FileManager.default.removeItem(at: folder)
         }
+        return folder.appendingPathComponent("reading_stats.json")
+    }
+
+    /// Statistics of the test's own over `file`, read from it as the launch
+    /// reads the app's, stopped when the test ends.
+    private func makeStatistics(at file: URL) -> ReadingStatsService {
+        let statistics = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in statistics.shutdown() }
+        return statistics
+    }
+
+    /// Statistics of the test's own whose Books Finished counts `books`,
+    /// read from their file, `file` or one of the test's own, as the launch
+    /// reads the app's: the file is written first, as the books' ends wrote
+    /// it.
+    private func makeStatistics(finishing books: [Book], in file: URL? = nil) throws -> ReadingStatsService {
+        let file = file ?? makeStatisticsFile()
+        let writer = makeStatistics(at: file)
+        for book in books {
+            writer.markBookFinished(bookID: book.id, title: book.title)
+        }
+        ReadingStatsService.waitForQueuedSaves()
+        let statistics = makeStatistics(at: file)
+        XCTAssertTrue(statistics.statsReadFromFile, "The statistics were not read from their file")
         return statistics
     }
 

@@ -59,6 +59,53 @@ final class ReadingStatsServiceTests: XCTestCase {
         XCTAssertFalse(relaunched.hasActiveSession)
     }
 
+    /// Only statistics read from their file say so (REV14), which the
+    /// one-time move of finished books waits for: statistics standing in
+    /// for no file yet, for a file cut short, or for a file only in the
+    /// cloud say they were not read, and saving them does not change that;
+    /// statistics read from the file say they were, and so do stand-ins
+    /// once their file is on this Mac and they were added to what it holds.
+    @MainActor
+    func testOnlyStatisticsReadFromTheirFileSaySo() throws {
+        let fresh = makeService()
+        XCTAssertFalse(fresh.statsReadFromFile, "Statistics with no file yet said they were read from it")
+        fresh.markBookFinished(bookID: UUID(), title: "Read Before")
+        ReadingStatsService.waitForQueuedSaves()
+        XCTAssertFalse(fresh.statsReadFromFile, "Saving statistics that stood in made them read")
+
+        let relaunched = relaunchedService()
+        XCTAssertTrue(relaunched.statsReadFromFile, "Statistics read from their file said they were not")
+        XCTAssertEqual(relaunched.stats.finishedBooks.map(\.title), ["Read Before"])
+
+        // Cut short, as a write interrupted on another Mac leaves it.
+        let whole = try Data(contentsOf: fileURL)
+        try whole.prefix(whole.count / 2).write(to: fileURL)
+        let cut = relaunchedService()
+        XCTAssertFalse(cut.statsReadFromFile, "Statistics standing in for a file cut short said they were read")
+        XCTAssertEqual(cut.stats.finishedBooks.map(\.title), [])
+
+        // Only in the cloud, then on this Mac by the next save.
+        try whole.write(to: fileURL)
+        let previousItemStatus = CloudServices.itemStatus
+        CloudServices.itemStatus = FakeCloudItemStatusProvider()
+        addTeardownBlock { @MainActor in CloudServices.itemStatus = previousItemStatus }
+        var isInCloud = true
+        let waiting = ReadingStatsService(fileURL: fileURL, readFile: { url in
+            // A dataless file refuses a read that would download it.
+            guard !isInCloud else { throw POSIXError(.EDEADLK) }
+            return try Data(contentsOf: url)
+        })
+        addTeardownBlock { @MainActor in waiting.shutdown() }
+        XCTAssertTrue(waiting.statsAwaitFileInCloud)
+        XCTAssertFalse(waiting.statsReadFromFile, "Statistics standing in for a file in the cloud said they were read")
+
+        isInCloud = false
+        waiting.markBookFinished(bookID: UUID(), title: "Read Meanwhile")
+        XCTAssertFalse(waiting.statsAwaitFileInCloud)
+        XCTAssertTrue(waiting.statsReadFromFile, "Statistics added to their file's did not say they were read")
+        XCTAssertEqual(waiting.stats.finishedBooks.map(\.title).sorted(), ["Read Before", "Read Meanwhile"])
+    }
+
     /// The app's service follows the data directory in use, which the user
     /// can move, instead of a file fixed when the service was created.
     @MainActor
