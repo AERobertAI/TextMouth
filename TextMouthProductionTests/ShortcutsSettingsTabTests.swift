@@ -28,14 +28,112 @@ final class ShortcutsSettingsTabTests: XCTestCase {
             (KeyBinding(key: "return"), "Return"),
             (KeyBinding(key: "space"), "Space"),
             (KeyBinding(key: "b", command: true, option: true, shift: true), "Option + Shift + Command + B"),
-            (KeyBinding(key: "[", command: true), "Command + ["),
+            (KeyBinding(key: "[", command: true), "Command + Left Bracket"),
+            (KeyBinding(key: "+", command: true), "Command + Plus"),
+            (KeyBinding(key: "-", command: true), "Command + Minus"),
+            (KeyBinding(key: ",", option: true), "Option + Comma"),
         ]
         for (binding, words) in said {
             XCTAssertEqual(binding.accessibleDisplayString, words)
         }
         XCTAssertEqual(KeyBinding(key: "rightArrow", command: true).displayString, "\u{2318}\u{2192}")
+        XCTAssertEqual(KeyBinding(key: "[", command: true).displayString, "\u{2318}[", "the screen keeps a punctuation mark itself")
         XCTAssertEqual(KeyBinding.accessibleDisplayString(for: [KeyBinding(key: "space"), KeyBinding(key: "k")]), "Space or K")
         XCTAssertEqual(KeyBinding.accessibleDisplayString(for: []), "No shortcut")
+    }
+
+    /// A shortcut on Forward Delete, Home, End, Page Up, Page Down, Help,
+    /// Clear, an F key, or the keypad's Enter is held as the character
+    /// AppKit gives the key, as the Shortcuts tab records it, but shown,
+    /// spoken, and written in config.json in words, never as that
+    /// character (#1452), and read back from either.
+    func testKeysWithoutNamesOfTheirOwnAreSaidAndWrittenInWords() throws {
+        let keys: [(appKit: Int, keyCode: UInt16, words: String, configName: String)] = [
+            (NSDeleteFunctionKey, 117, "Forward Delete", "forwardDelete"),
+            (NSHomeFunctionKey, 115, "Home", "home"),
+            (NSEndFunctionKey, 119, "End", "end"),
+            (NSPageUpFunctionKey, 116, "Page Up", "pageUp"),
+            (NSPageDownFunctionKey, 121, "Page Down", "pageDown"),
+            (NSHelpFunctionKey, 114, "Help", "help"),
+            (NSClearLineFunctionKey, 71, "Clear", "clear"),
+            (NSF1FunctionKey, 122, "F1", "f1"),
+            (NSF5FunctionKey, 96, "F5", "f5"),
+            (NSF13FunctionKey, 105, "F13", "f13"),
+            (NSF19FunctionKey, 80, "F19", "f19"),
+            (NSF35FunctionKey, 0, "F35", "f35"),
+            (0x03, 76, "Enter", "enter"),
+        ]
+        for key in keys {
+            let scalar = try XCTUnwrap(UnicodeScalar(UInt32(key.appKit)), key.words)
+            let character = String(Character(scalar))
+            let event = try XCTUnwrap(NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: [.command, .function], timestamp: 10, windowNumber: 0,
+                context: nil, characters: character, charactersIgnoringModifiers: character, isARepeat: false, keyCode: key.keyCode
+            ))
+            let recorded = try XCTUnwrap(KeyBinding.from(event: event), key.words)
+
+            XCTAssertEqual(recorded.key, character, "\(key.words) is held as AppKit's character")
+            XCTAssertTrue(recorded.matches(event), key.words)
+            XCTAssertEqual(recorded.accessibleDisplayString, "Command + \(key.words)")
+            XCTAssertEqual(recorded.displayString, "\u{2318}\(key.words)")
+            XCTAssertEqual(recorded.configText, "command+\(key.configName)")
+            XCTAssertEqual(recorded.asDoublePress(true).configText, "command+\(key.configName) twice")
+            XCTAssertEqual(KeyBinding(configText: "command+\(key.configName)"), recorded)
+            XCTAssertEqual(KeyBinding(configText: "Command+\(key.configName.uppercased())"), recorded)
+            XCTAssertEqual(KeyBinding(configText: "command+\(character)"), recorded, "\(key.words)'s character reads back too")
+            XCTAssertEqual(KeyBinding(configText: "double command+\(key.configName)"), recorded.asDoublePress(true))
+        }
+    }
+
+    /// Every name in the one table of key names says its key in words with
+    /// no character a screen or a braille display cannot show; no two names
+    /// share a key, a key code, or config.json's name; and every named key,
+    /// with every set of modifiers, reads back from the text config.json
+    /// writes for it.
+    func testTheTableOfKeyNamesIsWholeAndReadsBack() {
+        let names = KeyBinding.keyNames
+        func isShowable(_ text: String) -> Bool {
+            !text.isEmpty && text.unicodeScalars.allSatisfy { !(0xE000...0xF8FF).contains($0.value) && $0.value >= 0x20 }
+        }
+        for name in names {
+            XCTAssertTrue(isShowable(name.words), name.configName)
+            XCTAssertTrue(isShowable(name.shown), name.configName)
+            XCTAssertTrue(isShowable(name.configName), name.words)
+            for modifiers in 0..<16 {
+                let binding = KeyBinding(
+                    key: name.key,
+                    command: modifiers & 1 != 0,
+                    option: modifiers & 2 != 0,
+                    shift: modifiers & 4 != 0,
+                    control: modifiers & 8 != 0
+                )
+                XCTAssertEqual(KeyBinding(configText: binding.configText), binding, binding.configText)
+                XCTAssertTrue(isShowable(binding.accessibleDisplayString), binding.configText)
+            }
+        }
+        XCTAssertEqual(Set(names.map(\.key)).count, names.count, "a key named twice")
+        XCTAssertEqual(Set(names.map { $0.configName.lowercased() }).count, names.count, "a name config.json reads twice")
+        let keyCodes = names.compactMap(\.keyCode)
+        XCTAssertEqual(Set(keyCodes).count, keyCodes.count, "a key code named twice")
+        XCTAssertEqual(KeyBinding.namedKeys, ["space", "tab", "return", "delete", "escape", "leftArrow", "rightArrow", "upArrow", "downArrow"])
+    }
+
+    /// A key of the private-use area that no name says is no shortcut: the
+    /// Shortcuts tab cannot record it, and config.json cannot name it, so
+    /// nothing ever shows or speaks it as a character.
+    func testAPrivateUseKeyNoNameSaysIsNoShortcut() throws {
+        let character = "\u{F8FF}"
+        let event = try XCTUnwrap(NSEvent.keyEvent(
+            with: .keyDown, location: .zero, modifierFlags: [], timestamp: 10, windowNumber: 0,
+            context: nil, characters: character, charactersIgnoringModifiers: character, isARepeat: false, keyCode: 0
+        ))
+
+        XCTAssertNil(KeyBinding.from(event: event))
+        XCTAssertNil(KeyBinding(configText: character))
+        XCTAssertNil(KeyBinding(configText: "command+\(character)"))
+        XCTAssertTrue(KeyBinding.isUnnamedPrivateUseCharacter(character))
+        XCTAssertFalse(KeyBinding.isUnnamedPrivateUseCharacter("\u{F72D}"), "Page Down has a name")
+        XCTAssertFalse(KeyBinding.isUnnamedPrivateUseCharacter("k"))
     }
 
     /// The manager says an action's keys in force in words.

@@ -933,58 +933,16 @@ enum AudioEditorWording {
         "\(explanation(of: action)) \(shortcutSentence(bindings))"
     }
 
-    /// The shortcuts of a command in words: "Shortcut: J.", "Shortcuts: J
+    /// The shortcuts of a command in words, each as the Shortcuts tab says
+    /// it (`KeyBinding.accessibleDisplayString`, from the one table of key
+    /// names, `KeyBinding.keyNames`): "Shortcut: Shift + J.", "Shortcuts: J
     /// or Comma.", "No shortcut."
     static func shortcutSentence(_ bindings: [KeyBinding]) -> String {
         guard !bindings.isEmpty else { return "No shortcut." }
-        let names = bindings.map(spokenShortcut)
+        let names = bindings.map(\.accessibleDisplayString)
         let joined = names.count < 3
             ? names.joined(separator: " or ")
             : names.dropLast().joined(separator: ", ") + ", or " + (names.last ?? "")
         return "\(bindings.count == 1 ? "Shortcut" : "Shortcuts"): \(joined)."
-    }
-
-    /// One shortcut as it is said: its modifiers in the order Settings shows
-    /// them, then its key, joined by hyphens: "Shift-J", "Option-Comma",
-    /// "Command-Up Arrow", "Space".
-    static func spokenShortcut(_ binding: KeyBinding) -> String {
-        var parts: [String] = []
-        if binding.control { parts.append("Control") }
-        if binding.option { parts.append("Option") }
-        if binding.shift { parts.append("Shift") }
-        if binding.command { parts.append("Command") }
-        parts.append(keyName(binding.key))
-        return parts.joined(separator: "-")
-    }
-
-    /// A key's name in words: a special key's or a punctuation mark's name,
-    /// or a letter in capitals.
-    static func keyName(_ key: String) -> String {
-        switch key {
-        case "space": return "Space"
-        case "delete": return "Delete"
-        case "escape": return "Escape"
-        case "return": return "Return"
-        case "tab": return "Tab"
-        case "upArrow": return "Up Arrow"
-        case "downArrow": return "Down Arrow"
-        case "leftArrow": return "Left Arrow"
-        case "rightArrow": return "Right Arrow"
-        case ",": return "Comma"
-        case ".": return "Period"
-        case "<": return "Less Than"
-        case ">": return "Greater Than"
-        case "/": return "Slash"
-        case "\\": return "Backslash"
-        case ";": return "Semicolon"
-        case "'": return "Apostrophe"
-        case "`": return "Grave Accent"
-        case "[": return "Left Bracket"
-        case "]": return "Right Bracket"
-        case "-": return "Minus"
-        case "=": return "Equals"
-        case "+": return "Plus"
-        default: return key.uppercased()
-        }
     }
 }
