@@ -1,0 +1,21 @@
+# Task brief: reviewfeeds and reviewkeys — read-only review of the October 9 and 10 merges
+
+Two reviewers share this brief; each takes its own merges. You are read-only: **edit no file, make no commit, run no build or test, post nothing on the board.** Your report goes to the orchestrator, who verifies each finding and briefs the fixes. Read `common.md` beside this file for the user's rules and the usage rule (the user overrode it tonight: work until the API refuses you).
+
+## Why
+On the night of October 9 to 10 the orchestrator merged five code branches on their agents' reports and green suites, reading the riskiest parts but not every line. The user has not installed them yet; a review now catches what the suites missed before they do. The format of the October 7 review (`../2026-10-07/review.md`) found a real regression last time.
+
+## Your merges
+Read each merge's diff against its first parent (`git diff <merge>^1 <merge>`), the branch's commits (`git log --reverse <merge>^1..<merge>^2`), then the code the diff relies on. Each agent's report is in `AGENT-NOTES-2026-10-04.md` under "Agent notes, October 9, 2026"; their briefs are beside this file.
+- **reviewfeeds**: `de0839c5` feature/feed-item-index (FR11's branch A1). This is the branch that could lose the user's feed data or put a feed row into library.json. Check every write path of library.json and of a feed's index (`Library.encode(to:)`, `LibraryPersistenceService.writeIndexFile`, `writeFeedIndexes(of:)`, `saveAndWait(_:)`, the data-directory move, Rebuild Library Index, the provisional index), the first launch's move (`moveDownloadsIntoTheirFeeds`, `moveIntoItsFeed`) at every crash point, the join after the startup repair (`joinFeedItems`) and its interplay with `removeRetiredBooks`, `repairStaleFilePaths`, and the orphan walk, the reading list across a launch, `markFeedItemsDownloadedAgain`, the filters and counts, and the concurrency of `feedIndexesOnDisk`. The user's library: 744 rows, one downloaded article of "The Digital Antiquarian", and "Finish It!" with nothing downloaded; say what a launch of this build does to it, step by step, and where it could go wrong.
+- **reviewkeys**: `ed23f19c` feature/double-press-shortcuts (FR12 B), `3cf2c820` feature/full-summary-actions (FR12 C), `6c5b4d9d` feature/speech-refusal-alert (B05), and `2f74c130` fix/now-playing-followups. Check the dispatcher's timing rules and every key it could take from a text field, a menu, or VoiceOver; the Shift fallback in every scope (which keys with Shift it now claims that it did not before, and what they did before); the record and config.json reading of the user's saved shortcuts (Release Media Controls on Shift-R, everything else default) after each branch; `SummaryPress` in both windows; the refusal report's threading (`recentTransitionLines`) and its one-message rule; and the media focus rule (`playingOwnerPaused`, `prepareForPlayback(ownerID:)`, `unregister(ownerID:)`, the hand-over's Play).
+
+## What to look for, in this order
+1. **Correctness**: a concrete input or state that gives a wrong result, a crash, a hang, lost or corrupted user data, a race (main actor versus a queue, a stale callback), a state flag that can stick, an announcement that can repeat or never come.
+2. **Accessibility**: a value VoiceOver cannot reach, a wording that reads wrong or twice, a key that fires while typing in a field, focus lost.
+3. **Tests**: a test that can trap, play sound, read `~/.TextMouth`, or pass for the wrong reason, and behavior added with no test.
+4. **Design and cleanliness**: duplication of an existing helper (DRY is a hard rule here), a comment that says what the code does not do, dead code, a misleading name.
+5. **The agents' claims**: check each claim in its AGENT-NOTES section against the code, and say which are false or inexact (a documentation agent, `docs8`, is writing from that wording now).
+
+## How to report
+For each finding: a one-line title; the file and line on main; the severity (`bug`, `risk`, `test-gap`, `cleanup`, `doc-mismatch`); the concrete scenario; your confidence (`confirmed` by reading the code paths end to end, or `plausible`); and the smallest fix. Most severe first. Then list what you checked and found sound, briefly. No finding is too small if it is real; no style preferences.
