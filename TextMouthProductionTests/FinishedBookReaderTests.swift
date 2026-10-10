@@ -78,6 +78,33 @@ final class FinishedBookReaderTests: XCTestCase {
         }
     }
 
+    // MARK: - What a Finished Book Says
+
+    /// In a real reader, Where Am I? says "Finished" for the book resting at
+    /// its end, in place of its percent and time left (TODO P07, question
+    /// 12), while the reader's own status row keeps its percent and time,
+    /// as the user asked: "yes except the reader, those controls with the
+    /// info should still be there".
+    func testWhereAmISaysFinishedWhileTheStatusRowKeepsItsPercentAndTime() throws {
+        let world = try makeIntegrationWorld("Finished Where Am I")
+        let book = try makeAudioBook(.filePerChapter, titled: "Harbour Soundings", in: world, savedAt: Self.lastChapterEnd)
+        let reader = world.openReader(for: book, nowPlaying: privateMediaSession())
+        waitForReaderToLoad(reader)
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The book did not open at its end")
+
+        XCTAssertTrue(reader.buildBriefWhereAmI().hasSuffix(". Finished."), reader.buildBriefWhereAmI())
+        let content = try XCTUnwrap(reader.content)
+        let full = reader.buildFullWhereAmI(content: content)
+        XCTAssertTrue(full.contains(". Finished. Total book time: "), full)
+        XCTAssertFalse(full.contains("remaining"), full)
+
+        XCTAssertTrue(
+            eventually { reader.displayFormattedPercentComplete == "100.0%" },
+            "The status row's percent is \(reader.displayFormattedPercentComplete)"
+        )
+        XCTAssertEqual(reader.displayFormattedTimeRemaining, TimeFormatting.format(0), "The status row's time left changed")
+    }
+
     // MARK: - Opening a Finished Book
 
     /// A finished book opened again, as after a relaunch, rests finished,

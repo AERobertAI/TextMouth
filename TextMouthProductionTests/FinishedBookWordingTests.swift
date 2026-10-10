@@ -63,7 +63,69 @@ final class FinishedBookWordingTests: XCTestCase {
         XCTAssertEqual(LibraryInfoWording.brief(.book(facts)), "Dune. By Frank Herbert. EPUB. In Classics. Finished.")
     }
 
+    // MARK: - Where Am I? and Copy Reading Position
+
+    /// Where Am I? says "Finished" for a book resting at its end, where it
+    /// said "100 percent. 0 seconds remaining.": the brief summary is
+    /// "Dune. Appendix. Heading 40 of 40. Finished."; the full one gives the
+    /// book's whole time too, and no time left in the heading. A book short
+    /// of its end says its percent and time left, as before.
+    func testWhereAmISaysFinishedForABookAtItsEnd() {
+        let place = Self.lastHeading
+        let wholeTime: TimeInterval = 9 * 3_600 + 41 * 60 + 7
+        XCTAssertEqual(
+            ReaderViewModel.briefWhereAmISummary(
+                bookTitle: "Dune", locationTitle: "Appendix", headingPosition: place,
+                percentComplete: 100, timeRemaining: 0, isFinished: true
+            ),
+            "Dune. Appendix. Heading 40 of 40. Finished."
+        )
+        XCTAssertEqual(
+            ReaderViewModel.fullWhereAmISummary(
+                bookTitle: "Dune", locationTitle: "Appendix", headingPosition: place,
+                percentComplete: 100, timeRemaining: 0, timeRemainingInHeading: 0, totalTime: wholeTime, isFinished: true
+            ),
+            "Dune. Appendix. Heading 40 of 40. Finished. Total book time: \(TimeFormatting.spoken(wholeTime))."
+        )
+        XCTAssertEqual(
+            ReaderViewModel.briefWhereAmISummary(
+                bookTitle: "Dune", locationTitle: "Appendix", headingPosition: place,
+                percentComplete: 99.96, timeRemaining: 2
+            ),
+            "Dune. Appendix. Heading 40 of 40. 100 percent. \(TimeFormatting.spoken(2)) remaining."
+        )
+    }
+
+    /// Copy Reading Position copies "Finished" for a book resting at its
+    /// end, where it copied "100.0% through | 0:00 remaining"; a book short
+    /// of its end copies its percent and time left, as before.
+    func testCopyReadingPositionSaysFinishedForABookAtItsEnd() {
+        XCTAssertEqual(
+            ReaderViewModel.readingPositionSummary(
+                bookTitle: "Dune", author: "Frank Herbert", locationTitle: "Appendix", headingPosition: Self.lastHeading,
+                percentComplete: 100, formattedTimeRemaining: "0:00", isFinished: true
+            ),
+            "Dune | by Frank Herbert | Appendix | Heading 40 of 40 | Finished"
+        )
+        XCTAssertEqual(
+            ReaderViewModel.readingPositionSummary(
+                bookTitle: "Dune", author: "Frank Herbert", locationTitle: "Appendix", headingPosition: Self.lastHeading,
+                percentComplete: 99.96, formattedTimeRemaining: "0:02"
+            ),
+            "Dune | by Frank Herbert | Appendix | Heading 40 of 40 | 100.0% through | 0:02 remaining"
+        )
+    }
+
     // MARK: - Fixtures
+
+    /// A place in the last of forty headings, each a chapter of its own,
+    /// the last named Appendix.
+    private static var lastHeading: HeadingPosition {
+        let headings = (0..<40).map { number in
+            Heading(level: 1, text: number == 39 ? "Appendix" : "Part \(number + 1)", chapterIndex: number, characterOffset: 0)
+        }
+        return HeadingPosition(in: headings, chapterIndex: 39, characterOffset: 500)
+    }
 
     /// The fixture book's measured text: 10,000 UTF-16 units, 2,000 words,
     /// so its last word, seven units short of its end, reads 100 percent,
