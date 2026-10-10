@@ -1576,6 +1576,10 @@ struct LibraryView: View {
         return target == .continueListening ? nil : target
     }
 
+    /// The Import Book button's hint. It named four formats, which left out
+    /// most of those TextMouth reads, its audiobooks among them (TODO A10).
+    nonisolated static let importBookHint = "Opens a file picker to import books in any format TextMouth reads."
+
     /// The Import Book button: the initial VoiceOver target when
     /// `focusTarget` says so.
     private func importBookButton(focusTarget: LibraryFocusTarget?) -> some View {
@@ -1585,7 +1589,7 @@ struct LibraryView: View {
             Label("Import Book", systemImage: "plus")
         }
         .accessibilityLabel("Import a book file")
-        .accessibilityHint("Opens a file picker to import EPUB, text, markdown, or HTML files")
+        .accessibilityHint(Self.importBookHint)
         .modifier(LibraryFocusTargetModifier(
             isEnabled: focusTarget == .importButton
         ))

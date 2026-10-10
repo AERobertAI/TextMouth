@@ -479,6 +479,25 @@ final class TextRulesResetTests: XCTestCase {
     }
 }
 
+// MARK: - Smaller Wording
+
+/// The audit's smaller wording: the Import Book hint promises every format
+/// TextMouth reads, and the duplicate finder names its scan button as the
+/// button is titled.
+@MainActor
+final class SmallerWordingTests: XCTestCase {
+    /// The Import Book hint names no formats, so it leaves none out.
+    func testTheImportHintPromisesEveryFormat() {
+        XCTAssertEqual(LibraryView.importBookHint, "Opens a file picker to import books in any format TextMouth reads.")
+    }
+
+    /// The duplicate finder's note names its scan button by its title.
+    func testTheDuplicateFinderNamesItsScanButton() {
+        XCTAssertEqual(DuplicateFinderWording.scanTitle, "Scan for Duplicates")
+        XCTAssertEqual(DuplicateFinderWording.notScannedYet, "Check the criteria above, then Scan for Duplicates.")
+    }
+}
+
 // MARK: - Shared Fixtures
 
 extension XCTestCase {
