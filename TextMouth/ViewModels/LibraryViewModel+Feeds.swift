@@ -49,9 +49,18 @@ extension LibraryViewModel: FeedLibraryHost {
         library.folders.first { $0.id == folderID }?.fullPath
     }
 
-    /// The book `bookID`, when the library lists it.
+    /// The book `bookID`, when the library lists it: found through the
+    /// library's books by ID, worked out once for each change of the
+    /// library, rather than by a scan of every book (FR11, branch A2).
     func feedBook(withID bookID: UUID) -> Book? {
-        bookByID(bookID)
+        feedItemRowLookup.book(withID: bookID, in: library, revision: listCache.contentRevision)
+    }
+
+    /// The feed `feedID`'s rows, found by the identity of the item each came
+    /// from: those whose files are here and those kept after their files
+    /// went (FR11, branch A2).
+    func feedItemRows(of feedID: UUID) -> FeedItemRows {
+        feedItemRowLookup.rows(of: feedID, in: library, revision: listCache.contentRevision)
     }
 
     /// Lists a book a feed download published, and saves the library. An
@@ -133,6 +142,61 @@ extension LibraryViewModel: FeedLibraryHost {
             }
         }
         throw FeedFolderError(message: FeedFolderNaming.notMadeMessage)
+    }
+}
+
+// MARK: - Rows by Item and Books by ID (FR11)
+
+/// The library's feed rows by feed and item, and its books by ID, worked out
+/// in one pass the first time either is asked for after a change of the
+/// library, and kept until the next (FR11, branch A2).
+///
+/// A feed's counts look up each of its items, and a list of a feed's folder
+/// asks for each item's state, so each lookup must cost one step: a scan of
+/// the library's books for each item cost a millisecond for a 381-item feed
+/// (FEED-ITEMS-ADDENDUM-2026-10-07.md, section 1). The library model passes
+/// its list cache's content revision, which every change of its library
+/// moves on, so nothing found here is ever older than the library.
+///
+/// Main-actor isolated, like the library model that owns it; it publishes
+/// nothing, so a list drawing may fill it.
+@MainActor
+final class FeedItemRowLookup {
+    /// The content revision of the library the lookups were worked out
+    /// from; nil before the first.
+    private var revision: Int?
+    /// Each feed's rows by item.
+    private var rowsByFeed: [UUID: FeedItemRows] = [:]
+    /// Each book's index in the library's books, by ID; the first of an ID
+    /// wins, as `bookByID` finds it.
+    private var bookIndexByID: [UUID: Int] = [:]
+
+    /// The feed `feedID`'s rows in `library`, whose content revision is
+    /// `revision`; none for a feed it holds no row of.
+    func rows(of feedID: UUID, in library: Library, revision: Int) -> FeedItemRows {
+        refresh(from: library, revision: revision)
+        return rowsByFeed[feedID] ?? FeedItemRows()
+    }
+
+    /// The book `id` among `library`'s books, whose content revision is
+    /// `revision`, or nil when it holds none.
+    func book(withID id: UUID, in library: Library, revision: Int) -> Book? {
+        refresh(from: library, revision: revision)
+        guard let index = bookIndexByID[id], library.books.indices.contains(index),
+              library.books[index].id == id else { return nil }
+        return library.books[index]
+    }
+
+    /// Works the lookups out again from `library` when they were worked out
+    /// from another revision of it.
+    private func refresh(from library: Library, revision: Int) {
+        guard self.revision != revision else { return }
+        self.revision = revision
+        rowsByFeed = FeedItemRows.byFeed(in: library)
+        bookIndexByID = Dictionary(
+            library.books.enumerated().map { ($0.element.id, $0.offset) },
+            uniquingKeysWith: { first, _ in first }
+        )
     }
 }
 

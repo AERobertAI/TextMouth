@@ -179,7 +179,7 @@ final class FeedLifecycleTests: XCTestCase {
         let world = try FeedTestWorld(self, label: "FeedBookGone")
         let (feed, book) = try await downloadedEpisode(in: world)
         world.library.removeFeedBook(book)
-        XCTAssertEqual(world.center.state(of: try XCTUnwrap(world.center.listedItems(of: feed.id).first)), .notDownloaded)
+        XCTAssertEqual(world.center.state(of: try XCTUnwrap(world.center.listedItems(of: feed.id).first), in: feed.id), .notDownloaded)
 
         let report = await world.center.sweepPlayedDownloads()
 

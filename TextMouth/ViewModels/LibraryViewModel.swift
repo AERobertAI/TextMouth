@@ -256,6 +256,11 @@ final class LibraryViewModel: ObservableObject {
     /// folders (FR11): the app's (`FeedCenter.shared`) while nil, or the one
     /// a test starts in this library, as `FeedTestWorld` does (`feeds`).
     var feedEngine: FeedCenter?
+    /// Each feed's rows by item, and the library's books by ID, worked out
+    /// once for each change of the library (FR11, branch A2): what the feed
+    /// engine's counts and states find rows through
+    /// (`feedItemRows(of:)`, `feedBook(withID:)`).
+    let feedItemRowLookup = FeedItemRowLookup()
 
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()

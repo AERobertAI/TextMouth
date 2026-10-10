@@ -84,6 +84,10 @@ protocol FeedLibraryHost: AnyObject {
     func feedFolderPath(forFolderID folderID: UUID) -> String?
     /// The book `bookID`, when the library lists it.
     func feedBook(withID bookID: UUID) -> Book?
+    /// The feed `feedID`'s rows, by the identity of the item each came from:
+    /// those whose files are here, and those kept after their files went
+    /// (FR11).
+    func feedItemRows(of feedID: UUID) -> FeedItemRows
     /// Lists a book a feed download published, and saves the library.
     func addFeedBook(_ book: Book)
     /// Takes out of the library a book whose package was deleted, and saves
@@ -602,14 +606,27 @@ final class FeedCenter: ObservableObject {
         downloads.cancel(itemID, of: feedID)
     }
 
-    /// The state the library shows for `item`: its own, except that an item
-    /// whose book the library no longer lists, as after the book was deleted
-    /// from the library, is not downloaded.
-    func state(of item: FeedItem) -> FeedItemState {
-        if let bookID = item.state.bookID, library?.feedBook(withID: bookID) == nil {
+    /// The state the library shows for `item` of the feed `feedID`: its own,
+    /// except that an item whose book the library no longer lists, as after
+    /// the book was deleted from the library, is not downloaded.
+    func state(of item: FeedItem, in feedID: UUID) -> FeedItemState {
+        if item.state.bookID != nil, downloadedRow(of: item, in: feedID) == nil {
             return .notDownloaded
         }
         return item.state
+    }
+
+    /// The row of `item` of the feed `feedID` whose file is here, if the
+    /// library lists one: found by the item's identity among the feed's rows
+    /// (FR11), and otherwise by the book the item names, as a download made
+    /// before FR11 is a book of the library's own until it moves into its
+    /// feed's folder. Either lookup takes one step.
+    func downloadedRow(of item: FeedItem, in feedID: UUID) -> Book? {
+        guard let bookID = item.state.bookID, let library else { return nil }
+        if let row = library.feedItemRows(of: feedID).downloaded[item.id], row.id == bookID {
+            return row
+        }
+        return library.feedBook(withID: bookID)
     }
 
     // MARK: A Feed's Own Settings

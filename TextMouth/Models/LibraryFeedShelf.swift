@@ -80,3 +80,43 @@ struct FeedShelf: Equatable {
         }
     }
 }
+
+// MARK: - A Feed's Rows by Item (FR11)
+
+/// One feed's rows, found by the identity of the item each came from
+/// (FR11, branch A2): those whose files are here, among the library model's
+/// books, and those kept on the feed shelf after their files went, with the
+/// listener's place, bookmarks, settings, and transcript.
+///
+/// A feed's counts, an item's state, and a download that restores a kept
+/// record find an item's row here in one step, by the item's identity, as
+/// the feed's own index lists it, rather than by scanning every row of the
+/// library for the book the item names.
+struct FeedItemRows: Equatable {
+    /// The rows of items whose files are here, by item identity.
+    var downloaded: [FeedItem.ID: Book] = [:]
+    /// The rows kept after their files went, by item identity.
+    var kept: [FeedItem.ID: Book] = [:]
+
+    /// Every feed's rows in `library`, by feed ID: each feed item among its
+    /// books as downloaded, and each row on its feed shelf as kept, found by
+    /// the item its feed link names. Should two rows name one item, as no
+    /// write makes them, the first stays, as a list of the library shows
+    /// the first row of an ID.
+    static func byFeed(in library: Library) -> [UUID: FeedItemRows] {
+        var rows: [UUID: FeedItemRows] = [:]
+        for book in library.books {
+            guard let link = book.feedLink else { continue }
+            if rows[link.feedID, default: FeedItemRows()].downloaded[link.itemID] == nil {
+                rows[link.feedID, default: FeedItemRows()].downloaded[link.itemID] = book
+            }
+        }
+        for row in library.feedShelf.rows {
+            guard let link = row.feedLink else { continue }
+            if rows[link.feedID, default: FeedItemRows()].kept[link.itemID] == nil {
+                rows[link.feedID, default: FeedItemRows()].kept[link.itemID] = row
+            }
+        }
+        return rows
+    }
+}
