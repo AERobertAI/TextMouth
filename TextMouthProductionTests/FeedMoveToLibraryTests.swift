@@ -488,6 +488,34 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
         XCTAssertEqual(FeedWording.noun(of: [episode, article]), .item)
     }
 
+    /// Move to Library…'s sheet says what moving does once, as text under
+    /// its heading, read in order after it: its Move button gives no hint
+    /// that says it again (REV13 feeds 8). SwiftUI exposes no buttons to a
+    /// test on some Macs, where this skips.
+    func testTheSheetSaysWhatMovingDoesOnce() throws {
+        let book = Book(
+            title: "Ep. 368",
+            format: .audio,
+            filePath: "/nowhere/Ep. 368.tmb/Ep. 368.m4a",
+            md5Hash: "ep-368",
+            tmbDirectoryName: "Ep. 368.tmb",
+            feedLink: FeedBookLink(feedID: UUID(), itemID: "guid:ep-368")
+        )
+        let request = MoveToLibraryRequest(books: [book])
+        let sheet = MoveToLibrarySheet(request: request, library: LibraryViewModel(initializeServices: false), onClose: { _ in })
+
+        try skipUnlessHostedWindowsExposeAccessibility()
+        try withHostedView(sheet, until: { !self.accessibleControls(in: $0).isEmpty }) { hosting in
+            let buttons = accessibleControls(in: hosting).filter { $0.role == .button }
+            guard !buttons.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no buttons to accessibility in this run")
+            }
+            let move = try XCTUnwrap(buttons.first { $0.label == "Move" }, "No Move button: \(buttons.map(\.label))")
+            XCTAssertEqual(move.hint, "", "the Move button says again what the sheet's text says")
+            XCTAssertFalse(buttons.contains { $0.hint == request.hint }, "a button repeats the explanation")
+        }
+    }
+
     // MARK: - Through the Commands
 
     /// Move to Library… on a downloaded episode's book row opens its sheet

@@ -449,11 +449,12 @@ extension FeedWording {
         return "Move \(titles.count) \(noun.plural.capitalized) to Library"
     }
 
-    /// What Move to Library… does, which its sheet says under its heading
-    /// and VoiceOver hears as its Move button's hint, as the listener's
-    /// design asked: "Moves this episode into a folder of your library,
-    /// where it becomes a book you can edit; it leaves the feed", in an
-    /// article's words for an article, and a plural's for several.
+    /// What Move to Library… does, which its sheet says under its heading,
+    /// where VoiceOver reads it once, as the listener's design asked (its
+    /// Move button no longer repeats it as a hint, REV13 feeds 8): "Moves
+    /// this episode into a folder of your library, where it becomes a book
+    /// you can edit; it leaves the feed", in an article's words for an
+    /// article, and a plural's for several.
     static func moveToLibraryHint(count: Int, noun: ItemNoun) -> String {
         guard count != 1 else {
             return "Moves this \(noun.singular) into a folder of your library, where it becomes a book you can edit; it leaves the feed"
