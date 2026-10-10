@@ -192,6 +192,95 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
     }
 
+    // MARK: - The Order of a Removal, and One That Fails
+
+    /// The listener's latest place reaches the record, and the row the
+    /// feed's index, before the file's removal begins: when it begins, the
+    /// record on disk already holds a place saved a moment before, which was
+    /// still waiting in the record's debounce, and the index on disk lists
+    /// the row with that place.
+    func testTheRecordAndTheIndexAreWrittenBeforeTheFileGoes() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordRemovalOrder")
+        let (feed, books) = try await downloadedEpisodes(1, in: world)
+        let book = try listen(to: try XCTUnwrap(books.first), in: world)
+        var position = ReadingPosition(chapterIndex: 0, characterOffset: 77)
+        position.lastUpdated = Self.whole(200)
+        world.library.persistReadingPosition(bookID: book.id, position: position)
+        let latest = try XCTUnwrap(world.library.bookByID(book.id))
+        var recordedAtRemoval: Int?
+        var indexedAtRemoval: Int?
+
+        let outcome = try world.library.removeFeedFiles(of: [latest], keepingPackages: true) { removal in
+            recordedAtRemoval = try recordedBook(in: removal.row.tmbDirectory).readingPosition?.characterOffset
+            indexedAtRemoval = try indexedRows(of: feed.id).first { $0.id == book.id }?.readingPosition?.characterOffset
+            try FileManager.default.removeItem(at: removal.row.bookFileURL)
+        }
+
+        XCTAssertEqual(outcome.removed.map(\.row.id), [book.id])
+        XCTAssertEqual(recordedAtRemoval, 77, "the file's removal began before the record held the latest place")
+        XCTAssertEqual(indexedAtRemoval, 77, "the file's removal began before the feed's index listed the row")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.filePath))
+    }
+
+    /// When files cannot be removed, each row goes back where it was, with
+    /// its place, still on the reading list: an opened download's row, which
+    /// had moved to its feed's shelf, and an unopened one's, which had left
+    /// the feed's index, are among the books again, and the index, written
+    /// without the unopened one before the removal began, lists it again.
+    func testRowsWhoseFilesCannotBeRemovedGoBackAmongTheBooks() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordRemovalFails")
+        let (feed, books) = try await downloadedEpisodes(2, in: world)
+        let opened = try listen(to: books[0], in: world)
+        let unopened = books[1]
+        world.library.addToReadingList([opened.id, unopened.id])
+        var indexedAtRemoval: [UUID: Bool] = [:]
+
+        let outcome = try world.library.removeFeedFiles(of: [opened, unopened], keepingPackages: true) { removal in
+            indexedAtRemoval[removal.row.id] = try indexedRows(of: feed.id).contains { $0.id == removal.row.id }
+            throw CocoaError(.fileWriteNoPermission)
+        }
+
+        XCTAssertEqual(outcome.removed, [])
+        XCTAssertEqual(outcome.failures.map(\.row.id), [opened.id, unopened.id])
+        XCTAssertEqual(indexedAtRemoval, [opened.id: true, unopened.id: false])
+        XCTAssertEqual(world.library.bookByID(opened.id)?.readingPosition?.characterOffset, 42)
+        XCTAssertNotNil(world.library.bookByID(unopened.id))
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        XCTAssertEqual(world.library.readingList.bookIDs, [opened.id, unopened.id])
+        for book in books {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath), book.title)
+        }
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(Set(try indexedRows(of: feed.id).map(\.id)), [opened.id, unopened.id], "the index was not written again")
+    }
+
+    /// When Delete Episode cannot remove the package kept on its feed's
+    /// shelf, the row goes back to the shelf, not among the books, and the
+    /// feed's index, written without it before the removal began, lists it
+    /// again.
+    func testAShelfRowWhosePackageCannotBeRemovedGoesBackToTheShelf() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordShelfRemovalFails")
+        let (feed, books) = try await downloadedEpisodes(1, in: world)
+        let book = try listen(to: try XCTUnwrap(books.first), in: world)
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        let kept = try XCTUnwrap(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"])
+        var indexedAtRemoval: Bool?
+
+        let outcome = try world.library.removeFeedFiles(of: [kept], keepingPackages: false) { removal in
+            XCTAssertTrue(removal.wasOnShelf)
+            indexedAtRemoval = try indexedRows(of: feed.id).contains { $0.id == book.id }
+            throw CocoaError(.fileWriteNoPermission)
+        }
+
+        XCTAssertEqual(outcome.failures.map(\.row.id), [book.id])
+        XCTAssertEqual(indexedAtRemoval, false)
+        XCTAssertEqual(world.library.library.feedShelf.rows.map(\.id), [book.id])
+        XCTAssertNil(world.library.bookByID(book.id), "a kept row went among the books")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path))
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(try indexedRows(of: feed.id).map(\.id), [book.id], "the index was not written again")
+    }
+
     // MARK: - An Article's Text
 
     /// The after-playing rule never deletes an article's text: it removes an
@@ -301,6 +390,65 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(restored.id, book.id)
         XCTAssertEqual(try Data(contentsOf: TextMouthPaths.transcriptPath(in: restored.tmbDirectory)), transcript)
         XCTAssertEqual(debugLogLines(containing: stale).count, staleBefore + 1)
+    }
+
+    /// A download restoring a kept item that fails once its package is
+    /// staged, its transcript copied in, as when the new file is no audio at
+    /// all, leaves everything as it was: the kept package with its record and
+    /// transcript, the row on its feed's shelf, and the item not downloaded,
+    /// saying why.
+    func testARestoreThatFailsAfterStagingLeavesTheKeptPackageAsItWas() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordRestoreFails")
+        let (feed, book, transcript) = try await transcribedEpisodeWhoseDownloadWasDeleted(in: world)
+        let record = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: book.tmbDirectory))
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(Data("This is no audio at all.".utf8), mimeType: "audio/mp4"))
+
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("the download fails") {
+            world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state.failureReason != nil
+                && !world.center.downloads.isDownloading("guid:ep-1", of: feed.id)
+        }
+
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.transcriptPath(in: book.tmbDirectory)), transcript)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.bookInfoPath(in: book.tmbDirectory)), record, "the kept record changed")
+        XCTAssertEqual(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"]?.id, book.id)
+        XCTAssertNil(world.library.bookByID(book.id))
+        let folder = FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root)
+        let packages = try FileManager.default.contentsOfDirectory(atPath: folder.path).filter { $0.hasSuffix(".tmb") }
+        XCTAssertEqual(packages, [book.tmbDirectoryName], "the failed download left a package")
+    }
+
+    /// The listener's only download is an article. Delete Download of it,
+    /// opened, keeps its package with its place and record, its HTML file
+    /// and text gone; downloading it again restores the same book, its place
+    /// and settings kept, its text read again from the new file.
+    func testAnArticleKeepsItsPlaceThroughDeleteDownloadAndDownloadingAgain() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordArticleAgain")
+        let feed = try await subscribeToArticles(1, in: world)
+        world.center.download("guid:post-1", of: feed.id)
+        let article = try listen(to: try await downloadedBook(world, feed: feed, item: "guid:post-1"), in: world)
+        let package = article.tmbDirectory
+        let text = TextMouthPaths.contentMarkdownPath(in: package)
+        XCTAssertEqual(article.format, .html)
+
+        try world.center.deleteDownload("guid:post-1", of: feed.id)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: article.filePath), "the article's file stayed")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: text.path), "Delete Download kept the article's text")
+        try assertKeepsTheListenersState(try recordedBook(in: package), of: article, "the kept record")
+        XCTAssertEqual(world.library.feedItemRows(of: feed.id).kept["guid:post-1"]?.id, article.id)
+
+        world.center.download("guid:post-1", of: feed.id)
+        let restored = try await downloadedBook(world, feed: feed, item: "guid:post-1")
+
+        XCTAssertEqual(restored.id, article.id)
+        XCTAssertEqual(restored.tmbDirectory, package)
+        XCTAssertEqual(restored.format, .html)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: restored.filePath))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: text.path), "the article's text was not read again")
+        try assertKeepsTheListenersState(restored, of: article, "the restored row")
+        try assertKeepsTheListenersState(try recordedBook(in: package), of: article, "the restored record")
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
     }
 
     // MARK: - A Kept Package That Cannot Be Listed
@@ -673,9 +821,9 @@ final class FeedItemRecordTests: XCTestCase {
     }
 
     /// Plays `book` as a reader does, through the library model's functions
-    /// a reader calls: a place, playback times, a bookmark, a playback speed
-    /// of its own, and a skipped heading. Returns the row as the library holds it
-    /// then.
+    /// a reader calls: a place, playback times, a bookmark, a speed of its
+    /// own (`ownSpeed(of:)`), and a skipped heading. Returns the row as the
+    /// library holds it then.
     private func listen(to book: Book, in world: FeedTestWorld) throws -> Book {
         let library = world.library
         var position = ReadingPosition(chapterIndex: 0, characterOffset: 42)
@@ -683,9 +831,16 @@ final class FeedItemRecordTests: XCTestCase {
         library.persistReadingPosition(bookID: book.id, position: position)
         library.updatePlaybackTimestamps(bookID: book.id, started: Self.whole(40), stopped: Self.whole(100))
         library.addBookmark(bookID: book.id, chapterIndex: 0, characterOffset: 21, label: "The good part")
-        library.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: nil, wpm: 1.5)
+        library.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: nil, wpm: Self.ownSpeed(of: book))
         library.updateSkippedHeadings(bookID: book.id, skippedIDs: ["credits"])
         return try XCTUnwrap(library.bookByID(book.id))
+    }
+
+    /// The speed of its own `listen(to:in:)` gives `book`: for an episode a
+    /// playback rate, 1.5 times; for an article words per minute, 220, as a
+    /// record keeps a text book's speed within its range (50 to 650).
+    private static func ownSpeed(of book: Book) -> Double {
+        book.format.isAudio ? 1.5 : 220
     }
 
     /// Downloads episode 1 into `world`, listens to it, gives it a transcript
@@ -725,7 +880,7 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(kept.bookmarks.map(\.id), listened.bookmarks.map(\.id), what, file: file, line: line)
         XCTAssertEqual(kept.bookmarks.map(\.label), ["The good part"], what, file: file, line: line)
         XCTAssertEqual(kept.bookmarks.map(\.characterOffset), [21], what, file: file, line: line)
-        XCTAssertEqual(kept.localWPM, 1.5, what, file: file, line: line)
+        XCTAssertEqual(kept.localWPM, Self.ownSpeed(of: listened), what, file: file, line: line)
         XCTAssertEqual(kept.skippedHeadingIDs, ["credits"], what, file: file, line: line)
     }
 
