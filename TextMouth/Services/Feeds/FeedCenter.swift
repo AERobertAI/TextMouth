@@ -473,28 +473,43 @@ final class FeedCenter: ObservableObject {
         }
     }
 
-    /// Sweeps the hidden holders a Delete Download cut short left in the
-    /// feeds' own folders (`FeedItemPackage.removalHolders(in:)`), as a crash
-    /// between moving an article's file and text into one and the Trash
-    /// taking it leaves one, which nothing else ever removes. That deletion
-    /// was committed, the feed's index written without the file first, so
-    /// each holder goes as the listener's deletion would have sent it, to
-    /// the Trash or for good as Removal Behavior says
-    /// (`FeedEnvironment.removeItem`). The folders are listed off the main
-    /// thread; a holder that cannot go stays, logged, for the next launch.
+    /// Sweeps the hidden holders a Delete Download left in the feeds' own
+    /// folders (`FeedItemPackage.removalHolders(in:)`), which nothing else
+    /// ever removes, each as its row says (REV14 feeds 3,
+    /// `FeedItemPackage.sweepHolder(_:puttingBackInto:remove:)`):
+    ///
+    /// - A holder named for a download the library still lists as
+    ///   downloaded, in the same feed's folder, kept the files of a Delete
+    ///   Download that was refused and could not put them back
+    ///   (FEED_DOWNLOAD_HELD_ASIDE): they go back into its package, so the
+    ///   row says "Downloaded" of a file that is there, whatever Removal
+    ///   Behavior says.
+    /// - Any other, as a crash between moving an article's file and text
+    ///   into one and the Trash taking it leaves, was a deletion that went
+    ///   ahead, the feed's index written without the file first: what it
+    ///   holds goes as that deletion would have sent it, to the Trash or for
+    ///   good as Removal Behavior says (`FeedEnvironment.removeItem`), under
+    ///   the file's own name rather than the holder's hidden one, so the
+    ///   Trash shows it.
+    ///
+    /// Nothing is swept while the library's index is recovered: its list of
+    /// books is provisional, and a refused deletion's row could be missing
+    /// from it. The folders are listed off the main thread; a holder that
+    /// cannot be emptied stays, logged, for the next launch.
     func sweepRemovalHolders() async {
+        guard let library, library.feedLibraryIsComplete else { return }
         let root = TextMouthPaths.root
         let holders = await OffMainWork.run(on: .global(qos: .utility)) {
             FeedItemPackage.removalHolders(in: root)
         }
         for holder in holders {
             do {
-                try environment.removeItem(holder)
-                DiagnosticLog.event(
-                    .feeds,
-                    "FEED_HELD_ASIDE_SWEPT: \(holder.lastPathComponent), left in a feed's folder by a Delete Download cut short, "
-                        + "removed as Removal Behavior says"
+                let sweep = try FeedItemPackage.sweepHolder(
+                    holder,
+                    puttingBackInto: packageWaitingForItsFiles(in: holder, library: library, root: root),
+                    remove: environment.removeItem
                 )
+                DiagnosticLog.event(.feeds, "FEED_HELD_ASIDE_SWEPT: \(holder.lastPathComponent): \(Self.sweepNote(sweep))")
             } catch {
                 DiagnosticLog.event(
                     .feeds,
@@ -502,6 +517,33 @@ final class FeedCenter: ObservableObject {
                 )
             }
         }
+    }
+
+    /// The package whose files wait in the holder `holder`, as a Delete
+    /// Download that was refused, and could not put them back, left them:
+    /// that of the download the holder is named after, which `library`
+    /// still lists as downloaded, in the holder's own feed's folder; nil
+    /// when no download is so listed, as when the deletion went ahead, or
+    /// for a holder named before REV14.
+    private func packageWaitingForItsFiles(in holder: URL, library: FeedLibraryHost, root: URL) -> URL? {
+        guard let bookID = FeedItemPackage.bookID(ofRemovalHolderNamed: holder.lastPathComponent),
+              let row = library.feedBook(withID: bookID), row.isFeedItem,
+              let package = try? FeedItemPackage.packageForRemoval(of: row, in: root),
+              package.deletingLastPathComponent().standardizedFileURL.path == holder.deletingLastPathComponent().standardizedFileURL.path
+        else { return nil }
+        return package
+    }
+
+    /// What the launch's sweep did with one holder, as its log line says it.
+    private static func sweepNote(_ sweep: FeedItemPackage.HolderSweep) -> String {
+        var notes: [String] = []
+        if !sweep.putBack.isEmpty {
+            notes.append("put back \(sweep.putBack.joined(separator: " and ")) into the package of the download whose deletion was refused")
+        }
+        if !sweep.removed.isEmpty {
+            notes.append("removed \(sweep.removed.joined(separator: " and ")) as Removal Behavior says, left by a Delete Download cut short")
+        }
+        return notes.isEmpty ? "nothing was left in it" : notes.joined(separator: "; ")
     }
 
     /// Stops the scheduled refreshes, as when a test ends.

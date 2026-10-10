@@ -575,6 +575,49 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: article.tmbDirectory).path))
     }
 
+    /// A Delete Download refused whose article and text could not go back
+    /// into their package, as a permission changed meanwhile can keep them,
+    /// leaves both in the hidden holder named for the download, whose row
+    /// still says Downloaded; the next launch puts both back, so the row's
+    /// file is there again, and sends nothing to the Trash, whatever Removal
+    /// Behavior says (REV14 feeds 3).
+    func testAnArticleARefusedDeleteDownloadCouldNotPutBackIsPutBackAtTheNextLaunch() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordArticleHeldAside")
+        let feed = try await subscribeToArticles(1, in: world)
+        world.center.download("guid:post-1", of: feed.id)
+        let article = try listen(to: try await downloadedBook(world, feed: feed, item: "guid:post-1"), in: world)
+        let package = article.tmbDirectory
+        let text = TextMouthPaths.contentMarkdownPath(in: package)
+        let fileName = article.bookFileURL.lastPathComponent
+        addTeardownBlock { _ = chmod(package.path, 0o755) }
+        let heldAside = debugLogLines(containing: "FEED_DOWNLOAD_HELD_ASIDE: \(article.title)").count
+        var holder: URL?
+
+        // The Trash refuses the article, and its package then refuses both
+        // back.
+        XCTAssertThrowsError(try FeedItemPackage.removeFileAndText(of: article, in: package) { together in
+            holder = together.deletingLastPathComponent()
+            XCTAssertEqual(chmod(package.path, 0o555), 0)
+            throw CocoaError(.fileWriteNoPermission)
+        })
+        XCTAssertEqual(chmod(package.path, 0o755), 0)
+
+        let left = try XCTUnwrap(holder)
+        XCTAssertEqual(FeedItemPackage.bookID(ofRemovalHolderNamed: left.lastPathComponent), article.id, "the holder is not named for its download")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: article.filePath), "the files went back after all")
+        XCTAssertEqual(debugLogLines(containing: "FEED_DOWNLOAD_HELD_ASIDE: \(article.title)").count, heldAside + 1)
+        XCTAssertEqual(world.library.bookByID(article.id)?.feedLink, article.feedLink, "the refused download left its row")
+
+        _ = await world.relaunch(self)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: package.appendingPathComponent(fileName).path), "the article was not put back")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: text.path), "the article's text was not put back")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: left.path), "the holder stayed")
+        XCTAssertEqual(world.removedItems.value, [], "something of a refused deletion went through the listener's removal")
+        XCTAssertNotNil(world.library.bookByID(article.id), "the download left the library")
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:post-1")?.state, .downloaded(bookID: article.id))
+    }
+
     /// A book's own speed is kept within its format's range in its row, as
     /// its record reads it back (REV11): an article given a playback rate of
     /// 1.5 keeps the slowest words per minute, 50, in its row as in its
