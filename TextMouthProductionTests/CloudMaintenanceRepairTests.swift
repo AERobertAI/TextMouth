@@ -204,6 +204,69 @@ final class CloudMaintenanceRepairTests: CloudMaintenanceTestCase {
         XCTAssertNil(model.bookByID(markerHere.id))
     }
 
+    /// A retired book leaves the reading list as it leaves the library
+    /// (FR09), also while another book's marker is in the cloud, which once
+    /// left the retired book's ID on the list until its next change: the
+    /// list keeps the books still in the library, in their order, the book
+    /// whose marker is in the cloud among them, and the list saved in the
+    /// index names no retired book.
+    @MainActor
+    func testARetiredBookLeavesTheReadingList() throws {
+        let markerInCloud = try commitCache(of: makePackagedBook(title: "Marker In Cloud"))
+        let markerHere = try commitCache(of: makePackagedBook(title: "Marker Here"))
+        let listed = try commitCache(of: makePackagedBook(title: "Listed"))
+        for book in [markerInCloud, markerHere] {
+            try RemovedFromLibraryMarker(book: book).write(into: book.tmbDirectory)
+        }
+        cloud.markDataless(TextMouthPaths.removedFromLibraryMarkerPath(in: markerInCloud.tmbDirectory))
+        let model = makeModel(with: [markerInCloud, markerHere, listed])
+        model.library.readingList = ReadingList(bookIDs: [markerHere.id, listed.id, markerInCloud.id])
+
+        model.migrateOldBooksIfNeeded(access: cloud.access)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertNil(model.bookByID(markerHere.id))
+        XCTAssertEqual(model.library.readingList.bookIDs, [listed.id, markerInCloud.id])
+        let saved = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(saved.readingList.bookIDs, [listed.id, markerInCloud.id])
+    }
+
+    /// With every marker on this Mac, a retired book leaves the reading
+    /// list too, and the others keep their order.
+    @MainActor
+    func testARetiredBookLeavesTheReadingListWithNoMarkerInTheCloud() throws {
+        let retired = try commitCache(of: makePackagedBook(title: "Retired"))
+        let first = try commitCache(of: makePackagedBook(title: "First"))
+        let last = try commitCache(of: makePackagedBook(title: "Last"))
+        try RemovedFromLibraryMarker(book: retired).write(into: retired.tmbDirectory)
+        let model = makeModel(with: [first, retired, last])
+        model.library.readingList = ReadingList(bookIDs: [first.id, retired.id, last.id])
+
+        model.migrateOldBooksIfNeeded(access: cloud.access)
+
+        XCTAssertNil(model.bookByID(retired.id))
+        XCTAssertEqual(model.library.readingList.bookIDs, [first.id, last.id])
+    }
+
+    /// The marker of a book spared from the check is never read: the book
+    /// keeps its row and its place on the reading list, whatever its
+    /// package says.
+    @MainActor
+    func testABookSparedFromTheCheckKeepsItsRowAndItsPlace() throws {
+        let spared = try commitCache(of: makePackagedBook(title: "Spared"))
+        let retired = try commitCache(of: makePackagedBook(title: "Retired"))
+        for book in [spared, retired] {
+            try RemovedFromLibraryMarker(book: book).write(into: book.tmbDirectory)
+        }
+        var library = Library(books: [spared, retired], readingList: ReadingList(bookIDs: [retired.id, spared.id]))
+
+        let removed = RemovedFromLibraryMarker.removeRetiredBooks(from: &library, sparing: [spared.id])
+
+        XCTAssertEqual(removed.map(\.id), [retired.id])
+        XCTAssertEqual(library.books.map(\.id), [spared.id])
+        XCTAssertEqual(library.readingList.bookIDs, [spared.id])
+    }
+
     /// A book recorded without a package, whose original is dataless, waits
     /// as it is: no package is made, no alert is shown, and it is counted.
     @MainActor
