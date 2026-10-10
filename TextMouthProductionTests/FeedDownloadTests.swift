@@ -562,6 +562,53 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertTrue(relaunched.downloads.queue.isEmpty)
     }
 
+    /// A download the newest-N rule asked for that was under way at quit
+    /// goes on at the next launch as the rule's (FR11): listed so, asked for
+    /// again as discretionary work, as it began, from where it stopped, and
+    /// recorded as the rule's once it finishes.
+    func testARuleDownloadUnderWayAtQuitGoesOnAsTheRules() async throws {
+        let world = try FeedTestWorld(self, label: "FeedQuitRule")
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        let audio = try FeedMediaFixtures.silentAAC(duration: 4)
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.1
+        world.server.serve("/audio/1.m4a", slow, FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        await world.start()
+        let episode = FeedXML.Item(guid: "ep-1", title: "Episode 1", published: world.day(-1),
+                                   enclosure: world.server.url("/audio/1.m4a").absoluteString, enclosureType: "audio/mp4")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [episode])))
+        let feed = try await world.subscribe("/feed.xml")
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        await waitFor("some of the episode arrives") {
+            guard case .downloading(let progress)? = world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state else {
+                return false
+            }
+            return progress.completedBytes > 0
+        }
+
+        var replies: [Bool] = []
+        XCTAssertTrue(FeedQuitHold.hold(world.center.downloads) { replies.append($0) })
+        await waitFor("the quit is answered") { !replies.isEmpty }
+        let listed = try JSONDecoder().decode(
+            [FeedDownloadManager.SavedDownload].self,
+            from: Data(contentsOf: world.center.downloads.savedAtQuitFile)
+        )
+        XCTAssertEqual(listed, [FeedDownloadManager.SavedDownload(feedID: feed.id, itemID: "guid:ep-1", origin: .window)])
+        await world.center.store.flush()
+
+        let relaunched = await world.relaunch(self)
+        _ = try await downloadedBook(world, center: relaunched, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(relaunched.store.record(of: feed.id)?.item("guid:ep-1")?.downloadOrigin, .window)
+        let requests = world.server.requests(to: "/audio/1.m4a")
+        XCTAssertEqual(requests.map(\.allowsExpensiveNetworkAccess), [false, false])
+        XCTAssertNotNil(requests.last?.value(forHTTPHeaderField: "Range"), "the download started over")
+        await waitFor("the engine's own work ends") { !relaunched.isSweeping }
+    }
+
     /// A download listed at quit is not asked for again at the next launch
     /// when its item was deleted meanwhile, or its feed is no longer
     /// subscribed; the list goes either way.
