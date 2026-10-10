@@ -153,19 +153,25 @@ struct FeedSettings: Equatable, Sendable {
     /// first launch of the version that brought it, writes the choice and
     /// its number the retired settings ask for
     /// (`FeedItemPolicy.migrated(keepEntries:autoDownload:)`), the default
-    /// for the listener's settings of October 4. Both are written even when
-    /// they are the defaults, so the choice's key says from then on that the
-    /// move was made, and a value chosen later is never moved over. The
-    /// retired settings stay in the store as they were, unused, as a copy
-    /// to go back to.
-    /// - Returns: The choice written, or nil when the store held one.
+    /// for the listener's settings of October 4. The choice is written even
+    /// when it is the default, so its key says from then on that the move
+    /// was made, and a choice made later is never moved over; a number the
+    /// store holds already, as config.json may give one, stays. The retired
+    /// settings stay in the store as they were, unused, as a copy to go back
+    /// to.
+    /// - Returns: The choice and number in force after the move, or nil when
+    ///   the store held a choice.
     @discardableResult
     static func moveToItemPolicyIfNeeded(in store: UserDefaults) -> FeedItemPolicy? {
         guard store.object(forKey: itemsPreference.key) == nil else { return nil }
         let retired = read(from: store)
-        let policy = FeedItemPolicy.migrated(keepEntries: retired.keepEntries, autoDownload: retired.autoDownload)
+        var policy = FeedItemPolicy.migrated(keepEntries: retired.keepEntries, autoDownload: retired.autoDownload)
+        if store.object(forKey: newestCountPreference.key) != nil {
+            policy.newestCount = newestCountPreference.read(from: store)
+        } else {
+            store.set(policy.newestCount, forKey: newestCountPreference.key)
+        }
         store.set(policy.choice.rawValue, forKey: itemsPreference.key)
-        store.set(policy.newestCount, forKey: newestCountPreference.key)
         let kept = retired.keepEntries < 0
             ? "every entry"
             : CountWording.phrase(retired.keepEntries, singular: "entry", plural: "entries")

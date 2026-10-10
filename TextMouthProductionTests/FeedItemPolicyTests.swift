@@ -274,6 +274,13 @@ final class FeedItemPolicyTests: XCTestCase {
         FeedSettings.itemsPreference.write(.everyListedNewestDownloaded, to: everyEntry)
         XCTAssertNil(FeedSettings.moveToItemPolicyIfNeeded(in: everyEntry))
         XCTAssertEqual(FeedSettings.read(from: everyEntry).itemPolicy.choice, .everyListedNewestDownloaded)
+
+        // A number the store holds already stays, the choice moved beside it.
+        let numbered = makeSandboxedPreferences("FeedPolicyMoveNumbered")
+        FeedSettings.newestCountPreference.write(8, to: numbered)
+        XCTAssertEqual(FeedSettings.moveToItemPolicyIfNeeded(in: numbered), FeedItemPolicy(choice: .everyListedNewestDownloaded, newestCount: 8))
+        XCTAssertEqual(numbered.object(forKey: "feedNewestCount") as? Int, 8)
+        XCTAssertEqual(numbered.object(forKey: "feedItems") as? String, "everyListedNewestDownloaded")
     }
 
     /// The user's settings and two feeds, as they were on October 7, at the
