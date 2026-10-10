@@ -34,6 +34,39 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(libraryPublishes, 0, "the library model published, which redraws every Library window's list")
     }
 
+    /// Over a queue of several imports the library model publishes twice,
+    /// as the first starts and as the last ends; each change between, as
+    /// one more is queued or one is done, publishes only the overlay's own
+    /// progress, which counts those waiting. Until October 10, 2026 every
+    /// change of the queue's count published the model, which every
+    /// Library window's list observes (REV13).
+    func testTheLibraryPublishesAsImportsStartAndEndAlone() {
+        let library = LibraryViewModel(initializeServices: false)
+        library.observeImportActivity()
+        var libraryPublishes = 0
+        let watcher = library.objectWillChange.sink { libraryPublishes += 1 }
+        defer { watcher.cancel() }
+        let imports = 3
+        let gate = DispatchSemaphore(value: 0)
+        // Whatever the test does, no import is left waiting at its end.
+        addTeardownBlock { for _ in 0..<imports { gate.signal() } }
+
+        for _ in 0..<imports {
+            library.importOperationQueue.enqueue { gate.wait() }
+        }
+        XCTAssertTrue(
+            waitUntil(timeout: 5) { library.importProgress.state.waitingImports == imports - 1 },
+            "the overlay counts \(library.importProgress.state.waitingImports) imports waiting"
+        )
+        XCTAssertTrue(library.isImporting)
+        for _ in 0..<imports {
+            gate.signal()
+        }
+        XCTAssertTrue(waitUntil(timeout: 5) { !library.isImporting }, "the imports never ended")
+
+        XCTAssertEqual(libraryPublishes, 2, "the library model published for a change of the queue's count")
+    }
+
     /// One view observes every progress shown apart from the library model
     /// (`ProgressObserver`, #1461): hosted over the text extraction's
     /// progress or the imports', it draws its content anew each time that
@@ -201,7 +234,8 @@ final class ImportProgressTests: XCTestCase {
         clock.advance(by: 30)
         progress.receive(.importing(done: 3, total: 4))
         // The large book came quicker than its size foretold, and the
-        // audiobook left takes the average of the three: 34 seconds.
+        // audiobook left, which has no size, takes the average time of the
+        // three books timed: 34 seconds in all, about 11 seconds each.
         XCTAssertEqual(progress.state.details(at: clock.now), ["Less than a minute left"])
 
         progress.receive(.importingBook(number: 4, total: 4, book: "Harbor Talks.m4b", step: .readingSource))
@@ -542,6 +576,53 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
     }
 
+    /// A recording saved through the library's own queue is named in the
+    /// overlay by its title, with the step its import is held at, and the
+    /// overlay's line goes once the book is in the library, while the
+    /// Recording window says how the save ended. Until October 10, 2026 a
+    /// recording's save showed "Importing Books" with no book and no step,
+    /// and kept it until the queue had nothing left (REV13).
+    func testARecordingsSaveShowsItsTitleAndStep() async throws {
+        let folder = makeIntegrationLibraryFolder("Import Progress Recording")
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        model.observeImportActivity()
+        let takes = try makeSandboxDirectory("ImportProgressRecording")
+        let takeFile = takes.appendingPathComponent("Take.caf")
+        try RecordingAudioFixtures.writeTake(to: takeFile, duration: 2)
+        let encoded = takes.appendingPathComponent("Take.m4a")
+        try await RecordingEncoder.encode(take: takeFile, to: encoded, title: "Garden Plans")
+        let take = RecordedTake(
+            url: takeFile,
+            startedAt: Date(timeIntervalSince1970: 1_791_000_000),
+            duration: 2,
+            deviceName: "MacBook Air Microphone"
+        )
+        let gate = holdImport(of: model, at: .copying)
+
+        let save = Task {
+            try await model.saveRecording(take, encodedAudio: encoded, title: "Garden Plans", toFolder: folder.path, policy: .delete)
+        }
+
+        let shown = await eventually(timeout: 10) {
+            model.importProgress.state.message == "“Garden Plans”, copying it into the library"
+        }
+        XCTAssertTrue(shown, model.importProgress.state.message)
+        XCTAssertTrue(model.isImporting)
+        XCTAssertEqual(
+            model.importProgress.state.spokenStatus(at: Date()),
+            "Importing Books: “Garden Plans”, copying it into the library."
+        )
+        gate.signal()
+        let book = try await save.value
+        XCTAssertEqual(model.library.books.map(\.id), [book.id])
+        XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the recording")
+        let ended = await eventually(timeout: 5) { !model.isImporting }
+        XCTAssertTrue(ended, "the overlay never went")
+    }
+
     /// A TextMouth package opened from the Finder that the library does not
     /// list is named in the overlay with the step its import is held at,
     /// then opens once it is in the library, the overlay cleared; opened
@@ -578,6 +659,57 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(opened.calls, [book.id, book.id])
         XCTAssertEqual(model.library.books.count, 1, "the listed package was imported again")
         XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the open")
+    }
+
+    /// A TextMouth package copied into the library is shown copying while
+    /// it copies: held at its copy, the overlay says so. Until October 10,
+    /// 2026 a package's copy reached no step observer, and the overlay
+    /// said "checking the package" throughout it (REV13).
+    func testAPackagesCopyIsShownWhileItCopies() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let opened = CallLog<UUID>()
+        model.readerOpener = { opened.record($0) }
+        let package = try makeExternalPackage(named: "Tube Patching")
+        let gate = holdImport(of: model, at: .copying)
+
+        model.openTMBPackage(from: package)
+
+        XCTAssertTrue(
+            waitUntil(timeout: 10) {
+                model.importProgress.state.message == "“Tube Patching.tmb”, copying it into the library"
+            },
+            model.importProgress.state.message
+        )
+        gate.signal()
+        XCTAssertTrue(waitUntil(timeout: 10) { !opened.calls.isEmpty || model.showError }, "the package never opened")
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        let book = try XCTUnwrap(model.library.books.first)
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
+    }
+
+    /// A package's copy reports each of its steps on the package it stages,
+    /// the copy first, as every import's copy is reported: then checking
+    /// the copy, reading its text, saving its record, and publishing it,
+    /// all on the one staged package, under its hidden staging name.
+    func testAPackagesCopyReportsEachStepOnItsStagedPackage() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let package = try makeExternalPackage(named: "Spoke Tension")
+        var heard: [(step: ImportStep, package: URL)] = []
+
+        let imported = try FileImportService.importTMBPackage(
+            FileImportService.identifyTMBPackage(at: package),
+            observer: { step, staged in heard.append((step, staged)) }
+        )
+        addTeardownBlock { try? FileManager.default.removeItem(at: imported.book.tmbDirectory) }
+
+        XCTAssertEqual(heard.map(\.step), [.copying, .checkingPackage, .readingText, .savingRecord, .publishing])
+        XCTAssertEqual(Set(heard.map { $0.package.standardizedFileURL.path }).count, 1, "the steps named other packages")
+        XCTAssertTrue(heard.first?.package.lastPathComponent.hasPrefix(ImportStaging.namePrefix) == true, "\(heard)")
     }
 
     /// An archive holding one audiobook, imported through the library's own

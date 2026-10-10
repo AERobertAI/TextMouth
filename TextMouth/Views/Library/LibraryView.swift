@@ -79,6 +79,18 @@ enum LibrarySelectionPolicy {
         native.union(edit)
     }
 
+    /// The books among `books`, those a Library window lists, that its two
+    /// selections, `native` (the list's own) and `edit` (edit mode's
+    /// checks), select together, in the list's order: the books Move,
+    /// Remove, and the reading list's commands act on, which the edit bar
+    /// and the Edit button's hint both count (REV13; the hint counted edit
+    /// mode's checks alone). A folder's or a feed's row selected in the
+    /// list is no book, and a book no longer listed is not counted.
+    static func selected(in books: [Book], native: Set<UUID>, edit: Set<UUID>) -> [Book] {
+        let ids = effective(native: native, edit: edit)
+        return books.filter { ids.contains($0.id) }
+    }
+
     static func contextTargets(clickedID: UUID, effectiveSelection: Set<UUID>) -> Set<UUID> {
         if effectiveSelection.contains(clickedID), effectiveSelection.count > 1 {
             return effectiveSelection
@@ -309,12 +321,15 @@ struct LibraryView: View {
 
             // Edit mode toolbar: shown when edit mode is active
             if isEditMode {
+                // The listed books selected, which the Edit button's hint
+                // counts too (REV13), and which Move and Remove act on.
+                let selected = LibrarySelectionPolicy.selected(in: books, native: selectedBookIDs, edit: editSelection)
                 EditModeBar(
-                    selectedCount: effectiveSelection.count,
+                    selectedCount: selected.count,
                     totalCount: books.count,
                     removalPreferences: removalPreferences,
                     // Feed items alone: Remove is their Delete Download (REV11 F2).
-                    selectedAreFeedItems: selectedBooks.allSatisfy(\.isFeedItem),
+                    selectedAreFeedItems: selected.allSatisfy(\.isFeedItem),
                     onSelectAll: {
                         editSelection = Set(books.map(\.id))
                     },
@@ -461,7 +476,7 @@ struct LibraryView: View {
                     Label(isEditMode ? "Done" : "Edit", systemImage: isEditMode ? "checkmark.circle.fill" : "checkmark.circle")
                 }
                 .accessibilityLabel(isEditMode ? "Exit edit mode" : "Enter edit mode")
-                .accessibilityHint(Self.editModeButtonHint(isEditMode: isEditMode, selectedCount: editSelection.count))
+                .accessibilityHint(Self.editModeButtonHint(isEditMode: isEditMode, selectedCount: selectedBooks.count))
 
                 if category == .folders {
                     Button {
@@ -1456,10 +1471,10 @@ struct LibraryView: View {
         LibrarySelectionPolicy.effective(native: selectedBookIDs, edit: editSelection)
     }
 
-    /// Books currently selected via either mechanism
+    /// The listed books currently selected, by either selection
+    /// (`LibrarySelectionPolicy.selected(in:native:edit:)`).
     private var selectedBooks: [Book] {
-        let ids = effectiveSelection
-        return filteredBooks.filter { ids.contains($0.id) }
+        LibrarySelectionPolicy.selected(in: filteredBooks, native: selectedBookIDs, edit: editSelection)
     }
 
     /// Whether this Library window takes the menu command or keyboard

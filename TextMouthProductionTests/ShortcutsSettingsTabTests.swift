@@ -278,18 +278,6 @@ final class ShortcutsSettingsTabTests: XCTestCase {
         )
     }
 
-    /// The double-press time is said in seconds: tenths as a decimal, and
-    /// whole seconds counted as the Miscellaneous tab counts its seconds.
-    func testTheDoublePressTimeIsSaidInSeconds() {
-        let said: [(Double, String)] = [
-            (0.5, "0.5 seconds"), (0.2, "0.2 seconds"), (1, "1 second"), (2, "2 seconds"), (1.5, "1.5 seconds"),
-            (0.30000000000000004, "0.3 seconds"), (0.7999999999999999, "0.8 seconds"),
-        ]
-        for (seconds, words) in said {
-            XCTAssertEqual(ShortcutsSettingsWording.seconds(seconds), words, "\(seconds)")
-        }
-    }
-
     /// A double press recorded is announced with "twice"; a key whose single
     /// press now waits is announced with its cost, after the action it was
     /// taken from.

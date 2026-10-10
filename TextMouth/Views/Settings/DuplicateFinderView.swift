@@ -188,6 +188,79 @@ struct DuplicateRemovalButton: View {
     }
 }
 
+/// The pages the Duplicate Finder shows a scan's groups in (REV13): runs of
+/// whole groups, in the scan's order, each listing at most `rowsPerPage`
+/// books in all, unless one group alone lists more, which then has a page
+/// of its own. Every book is a native checkbox, by far the costliest row
+/// the sheet draws (see `DuplicateGroupList`), so a page is measured in
+/// books, not groups: a page of identical files, two books a group, holds
+/// about twenty groups, and a page of authors' books five or six.
+struct DuplicateGroupPages: Equatable {
+    /// The most books a page lists, unless one group alone lists more:
+    /// about a quarter of a second of drawing (see `DuplicateGroupList`).
+    static let rowsPerPage = 40
+
+    /// The groups on each page, as ranges of their indices in the scan's
+    /// order, none of them empty; no page for a scan that found no group.
+    let ranges: [Range<Int>]
+
+    /// The pages of groups listing `rowCounts` books each, in that order,
+    /// each page listing at most `rowsPerPage` books unless its one group
+    /// lists more.
+    init(rowCounts: [Int], rowsPerPage: Int = Self.rowsPerPage) {
+        var ranges: [Range<Int>] = []
+        var start = 0
+        var rows = 0
+        for (index, count) in rowCounts.enumerated() {
+            // A group that would take the page past its books begins the
+            // next page, unless it would be the page's first.
+            if index > start, rows + count > rowsPerPage {
+                ranges.append(start..<index)
+                start = index
+                rows = 0
+            }
+            rows += count
+        }
+        if start < rowCounts.count {
+            ranges.append(start..<rowCounts.count)
+        }
+        self.ranges = ranges
+    }
+
+    /// The pages of `groups`, as the sheet shows them.
+    init(groups: [DuplicateGroup], rowsPerPage: Int = Self.rowsPerPage) {
+        self.init(rowCounts: groups.map(\.books.count), rowsPerPage: rowsPerPage)
+    }
+
+    /// How many pages there are.
+    var count: Int { ranges.count }
+
+    /// `page` within the pages there are: the first for one before them,
+    /// the last for one past them.
+    func clamped(_ page: Int) -> Int {
+        min(max(page, 0), max(ranges.count - 1, 0))
+    }
+
+    /// The indices of the groups on `page`, which is clamped first; none
+    /// when there is no page.
+    func groupIndices(onPage page: Int) -> Range<Int> {
+        ranges.isEmpty ? 0..<0 : ranges[clamped(page)]
+    }
+
+    /// The page to show once the scan is made again, as after a removal,
+    /// these being the pages of its `groups`: the page now holding the
+    /// group with `groupID`, the one that headed the page shown before,
+    /// when the scan still finds it, so the list stays where it was;
+    /// otherwise `previousPage`, or the last page when there are fewer.
+    func page(keeping groupID: String?, of groups: [DuplicateGroup], orElse previousPage: Int) -> Int {
+        if let groupID, let index = groups.firstIndex(where: { $0.id == groupID }),
+           let page = ranges.firstIndex(where: { $0.contains(index) }) {
+            return page
+        }
+        return clamped(previousPage)
+    }
+}
+
 /// The words of Find Duplicate Books that VoiceOver hears for what the
 /// sheet shows as one row or line.
 enum DuplicateFinderWording {
@@ -235,6 +308,59 @@ enum DuplicateFinderWording {
     static func announceScanResult(groupCount: Int) {
         VoiceOverAnnouncer.announce(scanResult(groupCount: groupCount))
     }
+
+    // MARK: Pages (REV13)
+
+    /// The line over the page of groups shown while a scan's groups take
+    /// more than one page (`DuplicateGroupPages`), shown and spoken alike,
+    /// and announced as Previous Groups or Next Groups turns to its page:
+    /// "Showing groups 1 to 7 of 116", or, for a page holding one group,
+    /// "Showing group 12 of 116". `range` is a page's group indices.
+    static func pageLine(groups range: Range<Int>, of total: Int) -> String {
+        range.count == 1
+            ? "Showing group \(range.upperBound) of \(total)"
+            : "Showing groups \(range.lowerBound + 1) to \(range.upperBound) of \(total)"
+    }
+
+    /// The title of the button turning to the page of groups before.
+    static let previousPageTitle = "Previous Groups"
+    /// What that button does.
+    static let previousPageHint = "Shows the groups before these."
+    /// The title of the button turning to the page of groups after.
+    static let nextPageTitle = "Next Groups"
+    /// What that button does.
+    static let nextPageHint = "Shows the groups after these."
+}
+
+/// The line saying which of a scan's groups the sheet shows, with the
+/// buttons turning to the groups before and after, while the groups take
+/// more than one page (`DuplicateGroupPages`). A button with no page to
+/// turn to is dimmed, so each stays where it is.
+struct DuplicateGroupPager: View {
+    /// Which groups are shown (`DuplicateFinderWording.pageLine`).
+    let line: String
+    /// Whether a page comes before the one shown.
+    let hasPrevious: Bool
+    /// Whether a page comes after the one shown.
+    let hasNext: Bool
+    /// Turns to the page before.
+    let onPrevious: () -> Void
+    /// Turns to the page after.
+    let onNext: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(line)
+                .font(.callout)
+            Spacer()
+            Button(DuplicateFinderWording.previousPageTitle, action: onPrevious)
+                .disabled(!hasPrevious)
+                .accessibilityHint(DuplicateFinderWording.previousPageHint)
+            Button(DuplicateFinderWording.nextPageTitle, action: onNext)
+                .disabled(!hasNext)
+                .accessibilityHint(DuplicateFinderWording.nextPageHint)
+        }
+    }
 }
 
 /// Sheet for finding and removing duplicate books across the library
@@ -248,6 +374,8 @@ struct DuplicateFinderView: View {
     @State private var selectedForRemoval: Set<UUID> = []
     /// Cached scan results — only recomputed on explicit scan, not on selection changes
     @State private var scanResults: [DuplicateGroup] = []
+    /// The page of `scanResults` shown (`DuplicateGroupPages`), from 0.
+    @State private var pageIndex = 0
     /// Whether the scan has been performed
     @State private var hasScanned = false
     /// ISBN cache: loaded on demand from bookInfo.json for EPUB books
@@ -349,47 +477,22 @@ struct DuplicateFinderView: View {
                     .accessibilityLabel(DuplicateFinderWording.scanResult(groupCount: 0))
                 Spacer()
             } else {
-                ScrollView {
-                    // Keep every group and book row alive while the sheet is
-                    // open, as the headings and bookmarks panels do:
-                    // LazyVStack recycles rows out of view, which can
-                    // invalidate VoiceOver's current element and send its
-                    // cursor back toward the top (TODO A10). A library's
-                    // duplicates are a few rows each, so this costs little.
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(scanResults) { group in
-                            // Group header
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(group.matchDescription)
-                                    .font(.caption2)
-                                    .foregroundColor(.accentColor)
-                                Text(group.matchKey)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                            }
-                            .padding(.horizontal)
-                            .padding(.top, 12)
-                            .padding(.bottom, 4)
-                            .accessibilityElement(children: .combine)
-                            .accessibilityAddTraits(.isHeader)
-
-                            // Books in this group — each is a native checkbox Toggle
-                            ForEach(group.books) { book in
-                                Toggle(isOn: selectionBinding(for: book.id)) {
-                                    DuplicateBookLabel(book: book)
-                                }
-                                .toggleStyle(.checkbox)
-                                .padding(.horizontal)
-                                .padding(.vertical, 6)
-                                .background(selectedForRemoval.contains(book.id)
-                                    ? Color.red.opacity(0.08) : Color.clear)
-                                .accessibilityLabel(DuplicateFinderWording.bookLabel(book))
-                                Divider().padding(.leading)
-                            }
-                        }
-                    }
+                if pages.count > 1 {
+                    DuplicateGroupPager(
+                        line: pageLine,
+                        hasPrevious: pageIndex > 0,
+                        hasNext: pageIndex < pages.count - 1,
+                        onPrevious: { turnPage(by: -1) },
+                        onNext: { turnPage(by: 1) }
+                    )
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    Divider()
                 }
-                .accessibilityLabel(DuplicateFinderWording.scanResult(groupCount: scanResults.count))
+                DuplicateGroupList(groups: shownGroups, selection: $selectedForRemoval)
+                    // Made anew for each page, so a page opens at its top.
+                    .id(shownRange.lowerBound)
+                    .accessibilityLabel(DuplicateFinderWording.scanResult(groupCount: scanResults.count))
             }
         }
         .frame(width: 600, height: 550)
@@ -422,27 +525,60 @@ struct DuplicateFinderView: View {
                 await MainActor.run {
                     isbnCache = cache
                     isLoadingISBNs = false
-                    runScan(announcing: true)
+                    runScan()
                 }
             }
         } else {
-            runScan(announcing: true)
+            runScan()
         }
     }
 
-    /// Run the duplicate scan and cache results; `announcing`, say what it
-    /// found. The scan after a removal stays quiet: the removal's outcome
-    /// is announced instead.
-    private func runScan(announcing: Bool) {
+    /// Run the duplicate scan and cache results. A scan the user asked for
+    /// shows its first page of groups and says what it found. The scan made
+    /// again `afterRemoval` stays quiet, since the removal's outcome is
+    /// announced instead, and keeps the list where it was: on the page now
+    /// holding the group that headed the page shown.
+    private func runScan(afterRemoval: Bool = false) {
+        let headingGroupID = afterRemoval ? shownGroups.first?.id : nil
         scanResults = DuplicateFinderEngine.findDuplicates(
             books: libraryViewModel.booksForDuplicateScan,
             filters: activeFilters,
             isbnCache: isbnCache
         )
+        pageIndex = afterRemoval ? pages.page(keeping: headingGroupID, of: scanResults, orElse: pageIndex) : 0
         hasScanned = true
-        if announcing {
+        if !afterRemoval {
             DuplicateFinderWording.announceScanResult(groupCount: scanResults.count)
         }
+    }
+
+    // MARK: - Pages
+
+    /// The pages the scan's groups are shown in.
+    private var pages: DuplicateGroupPages {
+        DuplicateGroupPages(groups: scanResults)
+    }
+
+    /// The indices of the groups on the page shown.
+    private var shownRange: Range<Int> {
+        pages.groupIndices(onPage: pageIndex)
+    }
+
+    /// The groups on the page shown.
+    private var shownGroups: [DuplicateGroup] {
+        Array(scanResults[shownRange])
+    }
+
+    /// The line saying which groups are shown, while there are pages.
+    private var pageLine: String {
+        DuplicateFinderWording.pageLine(groups: shownRange, of: scanResults.count)
+    }
+
+    /// Turns `offset` pages on, back for a negative one, and says which
+    /// groups are shown now, since VoiceOver stays on the button pressed.
+    private func turnPage(by offset: Int) {
+        pageIndex = pages.clamped(pageIndex + offset)
+        VoiceOverAnnouncer.announce(pageLine)
     }
 
     // MARK: - Removal
@@ -488,24 +624,10 @@ struct DuplicateFinderView: View {
         }
         let remaining = Set(libraryViewModel.library.books.map(\.id))
         selectedForRemoval.formIntersection(remaining)
-        runScan(announcing: false)
+        runScan(afterRemoval: true)
     }
 
     // MARK: - Helpers
-
-    /// Stable binding for a book's selection state
-    private func selectionBinding(for bookID: UUID) -> Binding<Bool> {
-        Binding(
-            get: { selectedForRemoval.contains(bookID) },
-            set: { isOn in
-                if isOn {
-                    selectedForRemoval.insert(bookID)
-                } else {
-                    selectedForRemoval.remove(bookID)
-                }
-            }
-        )
-    }
 
     private func binding(for filter: DuplicateFilter) -> Binding<Bool> {
         Binding(
@@ -519,6 +641,7 @@ struct DuplicateFinderView: View {
                 }
                 hasScanned = false
                 scanResults = []
+                pageIndex = 0
                 selectedForRemoval = []
             }
         )
@@ -545,6 +668,81 @@ struct DuplicateFinderView: View {
             }
             return result
         }
+    }
+}
+
+/// The Duplicate Finder's results, one page of them: each group's heading,
+/// then a native checkbox for each of its books, which checks it for
+/// removal. The sheet labels the list with what the scan found.
+struct DuplicateGroupList: View {
+    /// The groups on the page shown, in the order the engine sorted them.
+    let groups: [DuplicateGroup]
+    /// The books checked for removal.
+    @Binding var selection: Set<UUID>
+
+    var body: some View {
+        ScrollView {
+            // Keep every group and book row alive while the sheet is
+            // open, as the headings and bookmarks panels do:
+            // LazyVStack recycles rows out of view, which can
+            // invalidate VoiceOver's current element and send its
+            // cursor back toward the top (TODO A10). That is costly:
+            // measured on October 10, 2026, hosted at the sheet's size
+            // in a Debug build, each book's native checkbox took 4 to 8
+            // ms of the main thread and a quarter of a megabyte (a row
+            // of text alone, 0.2 ms), so an author scan of a 700-book
+            // library, 116 groups of 688 books, took 4 to 5.4 seconds
+            // and 184 MB to show at once, and each check redrew it in
+            // 0.14 to 0.24 seconds. So the sheet shows a page of at most
+            // 40 books (`DuplicateGroupPages`): that scan's first page,
+            // 36 books, took 0.23 seconds and 10 MB, and a check 21 ms.
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(groups) { group in
+                    // Group header
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(group.matchDescription)
+                            .font(.caption2)
+                            .foregroundColor(.accentColor)
+                        Text(group.matchKey)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 12)
+                    .padding(.bottom, 4)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isHeader)
+
+                    // Books in this group — each is a native checkbox Toggle
+                    ForEach(group.books) { book in
+                        Toggle(isOn: selectionBinding(for: book.id)) {
+                            DuplicateBookLabel(book: book)
+                        }
+                        .toggleStyle(.checkbox)
+                        .padding(.horizontal)
+                        .padding(.vertical, 6)
+                        .background(selection.contains(book.id)
+                            ? Color.red.opacity(0.08) : Color.clear)
+                        .accessibilityLabel(DuplicateFinderWording.bookLabel(book))
+                        Divider().padding(.leading)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Stable binding for a book's selection state
+    private func selectionBinding(for bookID: UUID) -> Binding<Bool> {
+        Binding(
+            get: { selection.contains(bookID) },
+            set: { isOn in
+                if isOn {
+                    selection.insert(bookID)
+                } else {
+                    selection.remove(bookID)
+                }
+            }
+        )
     }
 }
 

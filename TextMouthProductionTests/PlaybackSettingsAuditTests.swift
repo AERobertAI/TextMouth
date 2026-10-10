@@ -200,10 +200,15 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         ConfigService.shared.flushScheduledSave()
 
         let recorder = recordingAnnouncements { reader.saveSettingsToGlobal() }
-        waitPastConfigSaveDelay()
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Settings applied as global defaults"])
-        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.configuration])
+        // Waited for, not a fixed window: the save follows the change by the
+        // save delay, and when this test is the first of its run to start
+        // speech it can come later than twice that (#741).
+        XCTAssertTrue(
+            waitUntil(timeout: 5) { center.outstandingFailures().map(\.subject) == [.configuration] },
+            "the failed save never reached the banner: \(center.outstandingFailures().map(\.subject))"
+        )
     }
 
     // MARK: - Audio speed snapping and clamping
@@ -615,29 +620,6 @@ final class PlaybackSettingsAuditTests: XCTestCase {
                 notificationCenter: NotificationCenter(),
                 initializeServices: false
             )
-        )
-    }
-
-    /// A settings model of the test's own, so changing the global settings
-    /// touches neither this process's preferences nor its config.json: the
-    /// preferences are a sandboxed store, and config.json is a file in a
-    /// folder of the test's, written with `configWrite`.
-    private func makeIsolatedSettings(
-        configWrite: @escaping @MainActor (Data, URL) throws -> Void = { data, url in
-            try data.write(to: url, options: .atomic)
-        }
-    ) throws -> SettingsViewModel {
-        let configFile = try makeTestDirectory("GlobalSettings").appendingPathComponent("config.json")
-        let configService = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
-            write: configWrite,
-            openForEvents: { _ in -1 },
-            close: { _ in }
-        ))
-        return SettingsViewModel(
-            notificationCenter: NotificationCenter(),
-            initializeServices: false,
-            userDefaults: makeSandboxedPreferences("global-settings"),
-            configService: configService
         )
     }
 }

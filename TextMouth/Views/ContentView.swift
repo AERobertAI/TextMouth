@@ -80,7 +80,7 @@ struct LibraryWindowView: View {
                             current: extraction.current,
                             total: extraction.total,
                             message: extraction.message,
-                            itemNoun: "books extracted"
+                            itemNoun: TextExtractionProgress.itemNoun
                         )
                     }
                 }
@@ -404,8 +404,9 @@ struct ProgressOverlay: View {
     let current: Int
     let total: Int
     let message: String
-    /// Noun for the items being processed (e.g. "books extracted", "books processed")
-    let itemNoun: String
+    /// The noun the count names the items by, agreeing with the total:
+    /// "0 of 1 book extracted", "3 of 10 books processed".
+    let itemNoun: CountWording.Noun
     /// Lines shown under the message, each on its own: the import overlay's
     /// time on the book under way and its time left, or that the imports
     /// are cancelling (FR10). A caller that shows any words `spokenSummary`
@@ -440,7 +441,7 @@ struct ProgressOverlay: View {
                     .progressViewStyle(.linear)
                     .frame(width: 300)
 
-                Text(CountWording.progress(current, of: total, itemNoun))
+                Text(CountWording.part(current, of: total, itemNoun))
                     .font(.body)
             } else {
                 ProgressView()
@@ -489,7 +490,7 @@ struct ProgressOverlay: View {
             return spokenSummary
         }
         if total > 0 {
-            return "\(title): \(CountWording.progress(current, of: total, itemNoun))"
+            return "\(title): \(CountWording.part(current, of: total, itemNoun))"
         }
         return message.isEmpty ? title : "\(title): \(message)"
     }

@@ -222,18 +222,7 @@ final class SettingsTabFitTests: XCTestCase {
     /// tabs' optional controls showing: the smart rewind's pause, the
     /// Bluetooth delay, and the restart gesture's pattern editor.
     private func makeEnvironment() throws -> Environment {
-        let configFile = try makeTestDirectory("SettingsTabFit").appendingPathComponent("config.json")
-        let configService = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
-            write: { data, url in try data.write(to: url, options: .atomic) },
-            openForEvents: { _ in -1 },
-            close: { _ in }
-        ))
-        let settings = SettingsViewModel(
-            notificationCenter: NotificationCenter(),
-            initializeServices: false,
-            userDefaults: makeSandboxedPreferences("settings-tab-fit"),
-            configService: configService
-        )
+        let settings = try makeIsolatedSettings("settings-tab-fit")
         settings.rewindOnResumeUnit = .sentence
         settings.rewindSmartMode = true
         settings.bluetoothMonitoringEnabled = true

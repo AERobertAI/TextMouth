@@ -42,6 +42,50 @@ final class CountWordingTests: XCTestCase {
         XCTAssertEqual(TimeFormatting.spoken(120), "2 minutes")
     }
 
+    /// Hours have a shorthand of their own, which spoken durations and the
+    /// audio editor's lengths count by, as minutes and seconds have.
+    func testHours() {
+        XCTAssertEqual(CountWording.hours(0), "0 hours")
+        XCTAssertEqual(CountWording.hours(1), "1 hour")
+        XCTAssertEqual(CountWording.hours(2), "2 hours")
+        XCTAssertEqual(AudioEditWording.duration(3_725), "1 hour, 2 minutes, 5 seconds")
+        XCTAssertEqual(AudioEditWording.duration(7_260, titleCase: true), "2 Hours, 1 Minute")
+    }
+
+    /// A part of a whole counts its noun by the whole: "0 of 1 book
+    /// processed", as the import overlay and the text cache's overlay
+    /// count their books, where they said "0 of 1 books processed".
+    func testAPartsNounAgreesWithTheWhole() {
+        let noun = CountWording.Noun(singular: "book processed", plural: "books processed")
+        XCTAssertEqual(CountWording.part(0, of: 1, noun), "0 of 1 book processed")
+        XCTAssertEqual(CountWording.part(1, of: 1, noun), "1 of 1 book processed")
+        XCTAssertEqual(CountWording.part(3, of: 10, noun), "3 of 10 books processed")
+        XCTAssertEqual(CountWording.part(0, of: 0, noun), "0 of 0 books processed")
+        // A noun that needs no agreement, as the feed downloads' "done".
+        XCTAssertEqual(CountWording.progress(3, of: 9, "done"), "3 of 9 done")
+    }
+
+    /// Seconds kept in tenths are said to the nearest tenth, the same on
+    /// the Shortcuts tab (the double press time) and the Miscellaneous tab
+    /// (the gesture's time window), which each worded them with a function
+    /// of their own (board #1552): whole seconds counted, tenths as a
+    /// decimal, and a value just off a tenth, as arithmetic leaves one,
+    /// rounded to it.
+    func testSecondsKeptInTenthsAreSaidToTheTenth() {
+        let said: [(Double, String)] = [
+            (0.5, "0.5 seconds"), (0.2, "0.2 seconds"), (1, "1 second"), (2, "2 seconds"), (1.5, "1.5 seconds"),
+            (10, "10 seconds"), (0.30000000000000004, "0.3 seconds"), (0.7999999999999999, "0.8 seconds"),
+            (2.96, "3 seconds"), (0.04, "0 seconds"),
+        ]
+        for (seconds, words) in said {
+            XCTAssertEqual(CountWording.secondsToTheTenth(seconds), words, "\(seconds)")
+        }
+        // A value no setting holds is written, never trapped on.
+        XCTAssertEqual(CountWording.secondsToTheTenth(.nan), "nan seconds")
+        XCTAssertFalse(CountWording.secondsToTheTenth(.infinity).isEmpty)
+        XCTAssertFalse(CountWording.secondsToTheTenth(1e300).isEmpty)
+    }
+
     // MARK: - Shown and Spoken Alike
 
     /// The Bluetooth disconnect delay reads the same on screen and to

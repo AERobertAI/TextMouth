@@ -119,9 +119,10 @@ struct DoublePressTimeStepper: View {
         }
     }
 
-    /// The double-press time in force, as it is spoken and shown.
+    /// The double-press time in force, as it is spoken and shown, to the
+    /// tenth of a second (`CountWording.secondsToTheTenth`).
     private var spokenTime: String {
-        ShortcutsSettingsWording.seconds(shortcutManager.doublePressTime)
+        CountWording.secondsToTheTenth(shortcutManager.doublePressTime)
     }
 }
 
@@ -463,18 +464,6 @@ enum ShortcutsSettingsWording {
         "How soon a second press must follow the first to make a double press. "
             + "A key with a different action for each waits this long before its single press acts."
 
-    /// `value` seconds as the stepper says them, to the nearest tenth:
-    /// whole seconds counted as the Miscellaneous tab counts its seconds
-    /// (`CountWording`), "1 second" and "2 seconds", and tenths as a
-    /// decimal, "0.5 seconds".
-    static func seconds(_ value: Double) -> String {
-        let tenths = (value * SettingsPolicy.shortcutDoublePressTenthsPerSecond).rounded()
-        guard tenths.truncatingRemainder(dividingBy: SettingsPolicy.shortcutDoublePressTenthsPerSecond) != 0 else {
-            return CountWording.seconds(Int(tenths / SettingsPolicy.shortcutDoublePressTenthsPerSecond))
-        }
-        return String(format: "%.1f seconds", tenths / SettingsPolicy.shortcutDoublePressTenthsPerSecond)
-    }
-
     // MARK: Trying a Double Press (FR12, Section 6.2 of the Design)
 
     /// The title of the button that tries a double press.
@@ -494,10 +483,10 @@ enum ShortcutsSettingsWording {
         case .doublePress:
             return "Double press."
         case .tooFarApart(let apart):
-            let gap = seconds(apart)
+            let gap = CountWording.secondsToTheTenth(apart)
             let longest = SettingsPolicy.shortcutDoublePressSeconds.range.upperBound
             guard (apart * SettingsPolicy.shortcutDoublePressTenthsPerSecond).rounded() < longest * SettingsPolicy.shortcutDoublePressTenthsPerSecond else {
-                return "Two presses, \(gap) apart. The double press time goes up to \(seconds(longest))."
+                return "Two presses, \(gap) apart. The double press time goes up to \(CountWording.secondsToTheTenth(longest))."
             }
             return "Two presses, \(gap) apart. Set the time above \(gap) to count them as one."
         case .differentKeys:

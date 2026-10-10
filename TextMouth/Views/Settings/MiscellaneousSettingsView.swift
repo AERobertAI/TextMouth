@@ -153,14 +153,12 @@ struct MiscellaneousSettingsView: View {
         CountWording.seconds(Int(seconds))
     }
 
-    /// Display string for the time window slider that handles both
-    /// "0.5 seconds" and "5 seconds" cleanly.
+    /// The gesture's time window as the screen shows it and the slider's
+    /// value speaks it, to the tenth: "0.5 seconds", "5 seconds", worded as
+    /// the Shortcuts tab words its double press time
+    /// (`CountWording.secondsToTheTenth`).
     private var formattedWindow: String {
-        let value = settingsViewModel.restartTimerGestureWindow
-        if value == floor(value) {
-            return CountWording.seconds(Int(value))
-        }
-        return String(format: "%.1f seconds", value)
+        CountWording.secondsToTheTenth(settingsViewModel.restartTimerGestureWindow)
     }
 }
 

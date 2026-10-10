@@ -206,20 +206,10 @@ final class PersistenceCostTests: XCTestCase {
     func testSettingsSaveCost() async throws {
         let writes = CallCounter()
         let configFile = try makeConfigFileURL()
-        let service = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
-            write: { data, url in
-                writes.increment()
-                try data.write(to: url, options: .atomic)
-            },
-            openForEvents: { _ in -1 },
-            close: { _ in }
-        ))
-        let settings = SettingsViewModel(
-            notificationCenter: NotificationCenter(),
-            initializeServices: false,
-            userDefaults: makeSandboxedPreferences("settings-save-cost"),
-            configService: service
-        )
+        let settings = try makeIsolatedSettings("settings-save-cost", configFile: configFile) { data, url in
+            writes.increment()
+            try data.write(to: url, options: .atomic)
+        }
         let clock = ContinuousClock()
 
         let started = clock.now

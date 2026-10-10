@@ -129,16 +129,23 @@ final class ImportProgressWordingTests: XCTestCase {
 
     // MARK: - Counts and Extraction
 
-    /// The count says the books done of the total, with the overlay's noun,
-    /// as the overlay's count line shows it, under the overlay's title; a
-    /// ZIP import starts by saying it extracts the archive.
+    /// The count says the books done of the total, with the overlay's noun
+    /// agreeing with the total, as the overlay's count line shows it, under
+    /// the overlay's title; a ZIP import starts by saying it extracts the
+    /// archive. Until October 10, 2026 one book was "0 of 1 books
+    /// processed", and the text cache's "0 of 1 books extracted" (REV13).
     func testTheCountTheTitleAndTheStart() {
         XCTAssertEqual(ImportProgressWording.count(done: 2, of: 100), "2 of 100 books processed")
-        XCTAssertEqual(ImportProgressWording.count(done: 1, of: 1), "1 of 1 books processed")
-        XCTAssertEqual(CountWording.progress(3, of: 60, "books extracted"), "3 of 60 books extracted")
+        XCTAssertEqual(ImportProgressWording.count(done: 0, of: 1), "0 of 1 book processed")
+        XCTAssertEqual(ImportProgressWording.count(done: 1, of: 1), "1 of 1 book processed")
+        XCTAssertEqual(CountWording.part(3, of: 60, TextExtractionProgress.itemNoun), "3 of 60 books extracted")
+        XCTAssertEqual(CountWording.part(0, of: 1, TextExtractionProgress.itemNoun), "0 of 1 book extracted")
         XCTAssertEqual(ImportProgressWording.startingArchive, "Extracting archive...")
         XCTAssertEqual(ImportProgressWording.title, "Importing Books")
-        XCTAssertEqual(ImportProgressWording.itemNoun, "books processed")
+        XCTAssertEqual(
+            ImportProgressWording.itemNoun,
+            CountWording.Noun(singular: "book processed", plural: "books processed")
+        )
     }
 
     /// The extraction line counts the archive's items and the bytes they

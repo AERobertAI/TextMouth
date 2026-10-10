@@ -79,7 +79,7 @@ final class ReadOnceTests: XCTestCase {
     /// voice sheet's are labelled by their setting alone, with their values
     /// in words.
     func testSlidersAreLabelledByTheirSettingAlone() throws {
-        let settings = try makeA10Settings()
+        let settings = try makeIsolatedSettings("a10-settings")
         settings.bluetoothMonitoringEnabled = true
         settings.restartTimerGestureEnabled = true
 
@@ -406,7 +406,7 @@ final class SaveAsDefaultsWordingTests: XCTestCase {
         guard let voiceID = AVSpeechSynthesisVoice.speechVoices().first?.identifier else {
             throw XCTSkip("This Mac has no speech voice to choose")
         }
-        let settings = try makeA10Settings()
+        let settings = try makeIsolatedSettings("a10-settings")
         let reader = makeA10TextReader(settings: settings, voiceID: voiceID, wordsPerMinute: 310, pitch: 1.3)
         defer { reader.close() }
 
@@ -580,23 +580,5 @@ extension XCTestCase {
             reader.content = content
         }
         return reader
-    }
-
-    /// A settings model of the test's own, whose preferences and config.json
-    /// are the test's.
-    @MainActor
-    fileprivate func makeA10Settings() throws -> SettingsViewModel {
-        let configFile = try makeTestDirectory("A10Settings").appendingPathComponent("config.json")
-        let configService = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
-            write: { data, url in try data.write(to: url, options: .atomic) },
-            openForEvents: { _ in -1 },
-            close: { _ in }
-        ))
-        return SettingsViewModel(
-            notificationCenter: NotificationCenter(),
-            initializeServices: false,
-            userDefaults: makeSandboxedPreferences("a10-settings"),
-            configService: configService
-        )
     }
 }

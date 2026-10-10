@@ -69,11 +69,17 @@ final class ImportStaging {
         }
     }
 
-    /// Stages a copy of the package at `source`, to be published at
-    /// `destination`. The folder `destination` is in must already exist.
-    static func copy(of source: URL, publishingTo destination: URL) throws -> ImportStaging {
-        try reserve(publishingTo: destination) { staged in
-            try FileManager.default.copyItem(at: source, to: staged)
+    /// Copies every item the package at `source` holds, hidden ones
+    /// included, into this staged package, as made by `makeEmpty`, so the
+    /// staged package holds what a copy of the whole package would. The
+    /// staged package exists before anything is copied, so the import
+    /// names it to the step that copies, as every other import's copy is
+    /// named (REV13). A copy that fails partway leaves what it copied for
+    /// `discard()`; the source is never changed.
+    func copyContents(of source: URL) throws {
+        let items = try FileManager.default.contentsOfDirectory(at: source, includingPropertiesForKeys: nil, options: [])
+        for item in items {
+            try FileManager.default.copyItem(at: item, to: directory.appendingPathComponent(item.lastPathComponent))
         }
     }
 

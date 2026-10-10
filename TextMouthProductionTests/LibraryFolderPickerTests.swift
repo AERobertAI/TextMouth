@@ -161,10 +161,12 @@ final class LibraryFolderPickerTests: XCTestCase {
     }
 
     /// An owner that keeps Escape for a button of its own while the fields
-    /// are shown, as Feed Info's Done and Import OPML's Cancel do, still
-    /// has Escape close the fields first: the picker's Cancel New Folder
-    /// comes before the owner's buttons, and the first button in view
-    /// order with a key takes it. Then the owner's button takes it.
+    /// are shown, as Feed Info's Done does, still has Escape close the
+    /// fields first: the picker's Cancel New Folder comes before the
+    /// owner's buttons, and the first button in view order with a key
+    /// takes it. Then the owner's button takes it. (Import OPML's Cancel,
+    /// like the Move sheet's and Add Feed's, gives Escape up while the
+    /// fields are shown.)
     func testEscapeClosesTheFieldsBeforeAnOwnersOwnEscapeButton() throws {
         let dones = CallLog<String>()
         let owner = PickerOwnerKeepingEscape(library: makeLibrary(withFolders: ["Reports"]), onDone: { dones.record("Done") })
@@ -272,7 +274,7 @@ final class LibraryFolderPickerTests: XCTestCase {
 
 /// A folder picker with its New Folder fields shown from the start, above a
 /// Done button that keeps Escape while they are shown, as Feed Info's Done
-/// and Import OPML's Cancel keep it.
+/// keeps it.
 private struct PickerOwnerKeepingEscape: View {
     /// The library whose folders the picker offers.
     let library: Library

@@ -422,7 +422,7 @@ enum TimeFormatting {
 
         var parts: [String] = []
         if hours > 0 {
-            parts.append(CountWording.phrase(hours, singular: "hour", plural: "hours"))
+            parts.append(CountWording.hours(hours))
         }
         if minutes > 0 {
             parts.append(CountWording.minutes(minutes))

@@ -129,9 +129,14 @@ extension FileImportService {
             throw TMBPackageImportError.destinationExists(destination.lastPathComponent)
         }
 
-        try run.begin(.copying)
-        let staging = try ImportStaging.copy(of: source.packageURL, publishingTo: destination)
+        let staging = try ImportStaging.makeEmpty(publishingTo: destination)
         defer { staging.discard() }
+
+        // A step on the staged package, as every import's copy is, so the
+        // import overlay says the package is being copied while it is; it
+        // said "checking the package" throughout the copy (REV13).
+        try run.begin(.copying, in: staging.directory)
+        try staging.copyContents(of: source.packageURL)
 
         try run.begin(.checkingPackage, in: staging.directory)
         let staged: Book

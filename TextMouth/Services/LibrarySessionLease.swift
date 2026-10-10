@@ -468,7 +468,7 @@ final class LibrarySessionLease {
     static func warningMessage(about other: OtherMac) -> String {
         let when = other.minutesAgo == 0
             ? "less than a minute ago"
-            : "\(CountWording.phrase(other.minutesAgo, singular: "minute", plural: "minutes")) ago"
+            : "\(CountWording.minutes(other.minutesAgo)) ago"
         return "TextMouth is also open on “\(other.computerName)” (active \(when)). "
             + "Using one library on two Macs at the same time can lose reading positions and changes."
     }

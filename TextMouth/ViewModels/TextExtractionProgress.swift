@@ -10,6 +10,11 @@ import SwiftUI
 /// each Library window and the Storage settings tab.
 @MainActor
 final class TextExtractionProgress: ObservableObject {
+    /// What the overlay's count counts, after the books done of the total,
+    /// agreeing with the total: "3 of 60 books extracted", "0 of 1 book
+    /// extracted" (REV13; it said "0 of 1 books extracted").
+    nonisolated static let itemNoun = CountWording.Noun(singular: "book extracted", plural: "books extracted")
+
     /// Whether a batch runs. A second batch is refused while one does.
     @Published private(set) var isExtracting = false
     /// How many of the batch's books are done.
