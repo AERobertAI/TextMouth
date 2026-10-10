@@ -23,6 +23,10 @@ enum AudioEditorWording {
     /// audiobook kept in a package of its own.
     static let notAnAudiobook = "Only an audiobook's audio can be edited."
 
+    /// Said when Edit Audio… reaches an episode in its feed's folder, which
+    /// is not editable (FR11): it is never offered for one.
+    static let feedEpisodeNotEditable = "An episode in its feed can't be edited."
+
     /// Said when the book's editor is open already: it comes forward.
     static func alreadyOpen(book: String) -> String {
         "The audio editor for \(book) is already open."

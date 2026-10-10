@@ -382,12 +382,7 @@ struct Book: Identifiable, Codable, Hashable {
     /// directory in use. A data-directory move places each package of the
     /// copy it stages this way (`DataDirectoryMigrator`).
     func packageDirectory(inDataDirectory root: URL) -> URL {
-        if let feedLink {
-            return FeedPaths.packageDirectory(named: tmbDirectoryName, of: feedLink.feedID, in: root)
-        }
-        let library = root.appendingPathComponent(TextMouthPaths.libraryFolderName, isDirectory: true)
-        let folder = folderPath.isEmpty ? library : library.appendingPathComponent(folderPath, isDirectory: true)
-        return folder.appendingPathComponent(tmbDirectoryName, isDirectory: true)
+        fileLocation.packageDirectory(inDataDirectory: root)
     }
 
     /// The actual book file URL inside the .tmb package
@@ -568,6 +563,21 @@ struct Book: Identifiable, Codable, Hashable {
         /// package in its feed's folder (`Book.tmbDirectory`); nil for every
         /// other book.
         var feedLink: FeedBookLink? = nil
+
+        /// Where the package this location names is in the data directory
+        /// at `root`: in its feed's folder for a feed item (FR11), and
+        /// otherwise in its library folder, exactly where
+        /// `TextMouthPaths.tmbPath(folderPath:tmbName:)` names it for the
+        /// data directory in use. The one rule `Book.tmbDirectory` and every
+        /// other user of a package's place follow.
+        func packageDirectory(inDataDirectory root: URL) -> URL {
+            if let feedLink {
+                return FeedPaths.packageDirectory(named: tmbDirectoryName, of: feedLink.feedID, in: root)
+            }
+            let library = root.appendingPathComponent(TextMouthPaths.libraryFolderName, isDirectory: true)
+            let folder = folderPath.isEmpty ? library : library.appendingPathComponent(folderPath, isDirectory: true)
+            return folder.appendingPathComponent(tmbDirectoryName, isDirectory: true)
+        }
     }
 
     /// This book's file location. Setting it changes exactly those fields,
