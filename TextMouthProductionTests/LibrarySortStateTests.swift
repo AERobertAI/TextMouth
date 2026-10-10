@@ -37,7 +37,7 @@ final class LibrarySortStateTests: XCTestCase {
         let expectedTitles: [(LibraryLocation, String)] = [
             (LibraryLocation(category: .allItems, folderPath: "Essays/Travel"), "Library: All Items (Date Added Descending)"),
             (LibraryLocation(category: .unopened, folderPath: "Essays/Travel"), "Library: Unopened (File Size Ascending)"),
-            (LibraryLocation(category: .recent, folderPath: "Essays/Travel"), "Library: Recent (Title Ascending)"),
+            (LibraryLocation(category: .recent, folderPath: "Essays/Travel"), "Library: Recently Opened (Title Ascending)"),
             (LibraryLocation(category: .folders, folderPath: "Essays/Travel"), "Library: Travel (Author Descending)")
         ]
 

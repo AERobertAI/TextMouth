@@ -138,7 +138,7 @@ struct LibraryView: View {
     let onOpenBook: (Book) -> Void
     /// What VoiceOver calls the category picker, whose segments read the
     /// categories' names (`LibraryCategory.rawValue`): Folders, All Items,
-    /// Unopened, Recent.
+    /// Unopened, Recently Opened, Reading List.
     static let categoryPickerLabel = "Library category"
     /// Which library folders hold feeds, and the feed engine they follow
     /// (FR03): the app's, unless a test shows its own. Observed, as it

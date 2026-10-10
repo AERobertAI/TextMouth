@@ -18,14 +18,17 @@ enum LibrarySortField: String, CaseIterable, Codable {
 /// the others list books from every folder: all of them, those never
 /// opened, those opened lately, and those in the reading list. Unopened
 /// replaced No Folder, which listed the root's books; Folders still lists
-/// those at the root.
+/// those at the root. Recently Opened was called Recent until FR13.
 enum LibraryCategory: String, CaseIterable, Codable {
     case folders = "Folders"
     case allItems = "All Items"
     /// Every book never opened, from every folder, and the feeds with items
     /// not yet played.
     case unopened = "Unopened"
-    case recent = "Recent"
+    /// The books opened last, newest first, and of each feed's episodes
+    /// and articles the one opened last (FR11): named for what it lists,
+    /// as the listener asked on October 9, 2026 (FR13).
+    case recent = "Recently Opened"
     /// The reading list (FR09): books from any folder, in the order the
     /// user arranges, which no sort changes.
     case readingList = "Reading List"
@@ -33,6 +36,10 @@ enum LibraryCategory: String, CaseIterable, Codable {
     /// What the category Unopened replaced was called. A category saved
     /// under that name reads as Unopened.
     static let formerNoFolderName = "No Folder"
+    /// What Recently Opened was called until FR13. A category saved under
+    /// that name reads as Recently Opened, and is saved under its new name
+    /// from then on; its sort is kept under the same key (`__recent__`).
+    static let formerRecentName = "Recent"
     /// The key that category's sort was saved under. It is read as the
     /// Unopened sort until one is chosen at Unopened (`Library.sortSetting(at:)`)
     /// and never written, and no folder can take it as a name.
@@ -68,14 +75,17 @@ enum LibraryCategory: String, CaseIterable, Codable {
     }
 
     /// Reads a saved category by its name, taking the former name "No
-    /// Folder" for Unopened, which replaced it, so nothing saved under the
-    /// old name fails to load. Saving still writes the name itself.
+    /// Folder" for Unopened, which replaced it, and "Recent" for Recently
+    /// Opened (FR13), so nothing saved under an old name fails to load.
+    /// Saving still writes the name itself.
     init(from decoder: Decoder) throws {
         let name = try decoder.singleValueContainer().decode(String.self)
         if let category = LibraryCategory(rawValue: name) {
             self = category
         } else if name == Self.formerNoFolderName {
             self = .unopened
+        } else if name == Self.formerRecentName {
+            self = .recent
         } else {
             throw DecodingError.dataCorrupted(DecodingError.Context(
                 codingPath: decoder.codingPath,
