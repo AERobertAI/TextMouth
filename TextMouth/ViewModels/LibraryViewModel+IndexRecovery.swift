@@ -279,7 +279,11 @@ extension LibraryViewModel {
     /// The feed shelf of a library merged from `session` into `loaded`
     /// (FR11): every feed item of `session`, among its books or on its
     /// shelf, and, of each feed `session` keeps no index of, the rows
-    /// `loaded` read, with every feed's index either keeps kept.
+    /// `loaded` read, with every feed's index either keeps kept. An index
+    /// file `session` leaves alone stays left alone; one only `loaded` left
+    /// alone (only in the cloud when it was read again) is left alone when
+    /// its rows come from `loaded`, which then stand in for it, and not when
+    /// the session's own rows of that feed, read before, are the ones kept.
     nonisolated static func feedItems(of session: Library, over loaded: Library) -> FeedShelf {
         var items = session
         items.shelveFeedItems()
@@ -291,6 +295,9 @@ extension LibraryViewModel {
         }
         for feedID in loaded.feedShelf.indexedFeedIDs {
             shelf.keepIndex(of: feedID)
+        }
+        for feedID in loaded.feedShelf.indexesLeftAlone where !sessionFeeds.contains(feedID) {
+            shelf.leaveIndexAlone(of: feedID)
         }
         return shelf
     }

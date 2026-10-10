@@ -96,20 +96,34 @@ enum FeedIndexFiles {
         /// the same bytes leaves in place; nil when no usable index was
         /// read.
         var indexBytes: Data?
+        /// Whether the index file is left as it is, neither read nor ever
+        /// written over (`FeedShelf.indexesLeftAlone`): it is only in the
+        /// cloud (FR02), so reading it would have downloaded it first. The
+        /// rows stand in for its own, read from the packages' records.
+        var isLeftAlone = false
     }
 
     /// Every feed's rows in the data directory at `root`: each folder of its
     /// Feeds folder named by a feed's ID (`FeedPaths.feedID(ofItemsFolderNamed:)`),
-    /// read as `read(feedID:in:fromPackages:)` reads one. A feed without a
-    /// folder has downloaded nothing, and has no rows.
-    static func readAll(in root: URL, fromPackages: Bool = false) -> [UUID: Contents] {
+    /// read as `read(feedID:in:fromPackages:reader:)` reads one. The Feeds
+    /// folder is listed with dataless files left in the cloud, so a listing
+    /// only in the cloud reads as no feed's folder rather than waiting on
+    /// the network. A feed without a folder has downloaded nothing, and has
+    /// no rows.
+    static func readAll(
+        in root: URL,
+        fromPackages: Bool = false,
+        reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> [UUID: Contents] {
         let feedsFolder = FeedPaths.recordsFolder(in: root)
-        let names = (try? FileManager.default.contentsOfDirectory(atPath: feedsFolder.path)) ?? []
+        let names = DatalessFiles.withoutDownloading {
+            (try? FileManager.default.contentsOfDirectory(atPath: feedsFolder.path)) ?? []
+        }
         var contents: [UUID: Contents] = [:]
         for name in names.sorted() {
             guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name),
                   isFolder(feedsFolder.appendingPathComponent(name, isDirectory: true)) else { continue }
-            contents[feedID] = read(feedID: feedID, in: root, fromPackages: fromPackages)
+            contents[feedID] = read(feedID: feedID, in: root, fromPackages: fromPackages, reader: reader)
         }
         return contents
     }
@@ -117,8 +131,9 @@ enum FeedIndexFiles {
     /// The rows of the feed `feedID` in the data directory at `root`, each
     /// placed where its package is (`placed(_:in:of:)`):
     ///
-    /// - the rows of its index, which is read as library.json is, waiting
-    ///   for a file only in the cloud; unless `fromPackages`, as while the
+    /// - the rows of its index, read through `reader`, which the app's
+    ///   leaves a file only in the cloud there (`SavedFile.readWithoutDownloading`,
+    ///   as a feed's record is read); unless `fromPackages`, as while the
     ///   library index is recovered, when the packages' records, which hold
     ///   the latest state, are read instead, as the provisional library's
     ///   books are;
@@ -130,12 +145,27 @@ enum FeedIndexFiles {
     /// (`SavedFile.preserveUnusable`), with one FEED_INDEX_UNREADABLE line,
     /// and the rows come from the packages, each of which names its feed and
     /// item in its record.
-    static func read(feedID: UUID, in root: URL, fromPackages: Bool = false) -> Contents {
+    ///
+    /// An index only in the cloud is no damage, and is not preserved: its
+    /// download is asked of the sync service, one FEED_INDEX_IN_CLOUD line
+    /// says so, the rows come from the packages whose records are here, and
+    /// the index is left alone (`Contents.isLeftAlone`), so no save writes
+    /// those rows over what the cloud holds until a launch reads it. A
+    /// launch in a cloud data directory waits for every feed's index to be
+    /// on this Mac (`DataDirectoryCheck`), so this happens only when one
+    /// leaves between that check and this read.
+    static func read(
+        feedID: UUID,
+        in root: URL,
+        fromPackages: Bool = false,
+        reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> Contents {
         let indexURL = FeedPaths.indexFile(of: feedID, in: root)
         var rows: [Book] = []
         var indexBytes: Data?
+        var isLeftAlone = false
         if !fromPackages {
-            switch SavedFile.read(indexURL, using: { try Data(contentsOf: $0) }) {
+            switch SavedFile.read(indexURL, using: reader) {
             case .missing:
                 break
             case .contents(let data):
@@ -146,7 +176,14 @@ enum FeedIndexFiles {
                     preserveUnusable(indexURL, of: feedID, bytes: data, because: error.localizedDescription)
                 }
             case .inCloud:
-                preserveUnusable(indexURL, of: feedID, bytes: nil, because: "it is only in the cloud")
+                isLeftAlone = true
+                Task { @MainActor in SavedFile.requestDownload(of: indexURL) }
+                DiagnosticLog.event(
+                    .feeds,
+                    "FEED_INDEX_IN_CLOUD: \(feedID.uuidString.prefix(8)): \(indexURL.lastPathComponent) is only in the cloud, "
+                        + "so it was not read; asked the sync service for it, and until a launch reads it the feed's rows "
+                        + "are read from its packages and its index is not written"
+                )
             case .unreadable(let reason):
                 preserveUnusable(indexURL, of: feedID, bytes: nil, because: reason)
             }
@@ -160,7 +197,11 @@ enum FeedIndexFiles {
                     + "its index did not list from their records"
             )
         }
-        return Contents(rows: (rows + unlisted).map { placed($0, in: root, of: feedID) }, indexBytes: indexBytes)
+        return Contents(
+            rows: (rows + unlisted).map { placed($0, in: root, of: feedID) },
+            indexBytes: indexBytes,
+            isLeftAlone: isLeftAlone
+        )
     }
 
     /// A row for every package in the feed `feedID`'s folder whose name is

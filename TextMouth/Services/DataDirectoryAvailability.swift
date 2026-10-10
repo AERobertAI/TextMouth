@@ -477,10 +477,17 @@ struct DataDirectoryCheck {
 
     /// Whether the readable folder at `folder` holds this library, and its
     /// identity when it does.
+    ///
+    /// The library index is read whole at launch, on the main thread, and
+    /// so is each feed's own index (FR11), so every one of them must be on
+    /// this Mac first: one only in the cloud, or a folder holding them whose
+    /// listing is (`feedIndexFiles(in:)`), is asked of the sync service, and
+    /// the library waits for it as it waits for library.json.
     private func assessLibrary(in folder: URL, itemStatus: any CloudItemStatusProviding) -> Outcome {
         let marker = LibraryIdentity.markerURL(in: folder)
         let index = Self.libraryIndex(in: folder)
-        let inCloud = [marker, index].filter { Self.isOnlyInCloud($0, itemStatus: itemStatus) }
+        let inCloud = ([marker, index] + Self.feedIndexFiles(in: folder))
+            .filter { Self.isOnlyInCloud($0, itemStatus: itemStatus) }
         guard inCloud.isEmpty else {
             return notDownloaded(inCloud, in: folder, itemStatus: itemStatus)
         }
@@ -546,6 +553,24 @@ struct DataDirectoryCheck {
     /// library.json in the data directory at `folder`.
     private static func libraryIndex(in folder: URL) -> URL {
         folder.appendingPathComponent("library.json", isDirectory: false)
+    }
+
+    /// What the library's launch reads of its feeds (FR11) in the data
+    /// directory at `folder`, which must be on this Mac before it opens:
+    /// the Feeds folder, and, for each feed's folder in it
+    /// (`FeedPaths.feedID(ofItemsFolderNamed:)`), that folder and its index
+    /// (`FeedPaths.indexFile(of:in:)`). The Feeds folder is listed as the
+    /// rest of the check runs, with dataless files left in the cloud: a
+    /// listing only in the cloud lists nothing, and the Feeds folder itself
+    /// then answers for what it holds. Items that are not there are no
+    /// concern of the caller's, which asks only which are in the cloud.
+    private static func feedIndexFiles(in folder: URL) -> [URL] {
+        let feeds = FeedPaths.recordsFolder(in: folder)
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: feeds.path)) ?? []
+        return [feeds] + names.sorted().flatMap { name -> [URL] in
+            guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name) else { return [] }
+            return [FeedPaths.itemsFolder(of: feedID, in: folder), FeedPaths.indexFile(of: feedID, in: folder)]
+        }
     }
 
     /// Whether the file at `file` exists with its content only in the

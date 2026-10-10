@@ -409,7 +409,10 @@ enum LibraryPersistenceService {
     /// A write that leaves no newer snapshot waiting holds every reading
     /// checkpoint made so far, so it clears the checkpoint journal (PERF15).
     /// The retry of an older failed snapshot, made while a newer one waits,
-    /// leaves the journal for that newer one to clear.
+    /// leaves the journal for that newer one to clear, and so does a write
+    /// while a feed's index is left alone (`FeedShelf.indexesLeftAlone`):
+    /// that index holds none of this session's checkpoints, which the next
+    /// launch then takes from the records the journal names.
     ///
     /// This is the one write path of library.json, and it splits the library
     /// (FR11): each feed's index takes that feed's rows first
@@ -432,7 +435,7 @@ enum LibraryPersistenceService {
         failureCenter.recordSuccess(.libraryIndex)
         // Writing again: a later hold is logged afresh.
         loggedIndexWriteHolds.remove(.dataDirectoryUnavailable)
-        if pendingLibrary == nil {
+        if pendingLibrary == nil, library.feedShelf.indexesLeftAlone.isEmpty {
             ReadingCheckpointJournal.clear()
         }
     }
@@ -505,19 +508,30 @@ enum LibraryPersistenceService {
     }
 
     /// Every feed's rows, read from each feed's folder in the data directory
-    /// in use (`FeedIndexFiles.readAll(in:fromPackages:)`), on the shelf,
-    /// each feed's index kept, for the library model to join the rows whose
-    /// files are here to its books once the startup repair is done (FR11).
-    /// With `fromPackages`, as while the library index is recovered, the
-    /// packages' records are read in place of the indexes. What was read of
-    /// each index is noted, so the first save writes only what changed.
-    static func loadFeedShelf(fromPackages: Bool = false) -> FeedShelf {
+    /// in use (`FeedIndexFiles.readAll(in:fromPackages:reader:)`), on the
+    /// shelf, each feed's index kept, for the library model to join the rows
+    /// whose files are here to its books once the startup repair is done
+    /// (FR11). With `fromPackages`, as while the library index is recovered,
+    /// the packages' records are read in place of the indexes. What was read
+    /// of each index is noted, so the first save writes only what changed,
+    /// and an index left alone, such as one only in the cloud, is left alone
+    /// by every save (`FeedShelf.indexesLeftAlone`).
+    /// - Parameter reader: How each index file is read: with dataless files
+    ///   left in the cloud, unless a test pretends one is.
+    static func loadFeedShelf(
+        fromPackages: Bool = false,
+        reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> FeedShelf {
         saveQueue.sync {
             let root = TextMouthPaths.root
-            let read = FeedIndexFiles.readAll(in: root, fromPackages: fromPackages)
+            let read = FeedIndexFiles.readAll(in: root, fromPackages: fromPackages, reader: reader)
             feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path, bytes: read.compactMapValues(\.indexBytes))
             let rows = read.keys.sorted { $0.uuidString < $1.uuidString }.flatMap { read[$0]?.rows ?? [] }
-            return FeedShelf(rows: rows, indexedFeedIDs: Set(read.keys))
+            return FeedShelf(
+                rows: rows,
+                indexedFeedIDs: Set(read.keys),
+                indexesLeftAlone: Set(read.filter(\.value.isLeftAlone).keys)
+            )
         }
     }
 
