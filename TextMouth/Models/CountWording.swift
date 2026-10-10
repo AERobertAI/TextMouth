@@ -43,6 +43,12 @@ enum CountWording {
         phrase(count, singular: "bookmark", plural: "bookmarks")
     }
 
+    /// `count` hours: "1 hour", "2 hours", as spoken durations and the
+    /// audio editor's lengths count them.
+    static func hours(_ count: Int) -> String {
+        phrase(count, singular: "hour", plural: "hours")
+    }
+
     /// `count` minutes: "1 minute", "30 minutes", as the sleep timer and
     /// spoken durations count them.
     static func minutes(_ count: Int) -> String {

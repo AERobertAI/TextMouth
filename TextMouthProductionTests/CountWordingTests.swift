@@ -42,6 +42,16 @@ final class CountWordingTests: XCTestCase {
         XCTAssertEqual(TimeFormatting.spoken(120), "2 minutes")
     }
 
+    /// Hours have a shorthand of their own, which spoken durations and the
+    /// audio editor's lengths count by, as minutes and seconds have.
+    func testHours() {
+        XCTAssertEqual(CountWording.hours(0), "0 hours")
+        XCTAssertEqual(CountWording.hours(1), "1 hour")
+        XCTAssertEqual(CountWording.hours(2), "2 hours")
+        XCTAssertEqual(AudioEditWording.duration(3_725), "1 hour, 2 minutes, 5 seconds")
+        XCTAssertEqual(AudioEditWording.duration(7_260, titleCase: true), "2 Hours, 1 Minute")
+    }
+
     /// A part of a whole counts its noun by the whole: "0 of 1 book
     /// processed", as the import overlay and the text cache's overlay
     /// count their books, where they said "0 of 1 books processed".

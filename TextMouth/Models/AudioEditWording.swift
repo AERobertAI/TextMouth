@@ -20,8 +20,8 @@ enum AudioEditWording {
         let rest = shown - Double(hours * 3_600 + minutes * 60)
 
         var parts: [String] = []
-        if hours > 0 { parts.append(CountWording.phrase(hours, singular: "hour", plural: "hours")) }
-        if minutes > 0 { parts.append(CountWording.phrase(minutes, singular: "minute", plural: "minutes")) }
+        if hours > 0 { parts.append(CountWording.hours(hours)) }
+        if minutes > 0 { parts.append(CountWording.minutes(minutes)) }
         // Subtracting whole minutes can leave a trace of rounding error, so
         // the seconds are compared to within half a thousandth.
         if rest > 0.000_5 || parts.isEmpty {
