@@ -286,6 +286,51 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         }
     }
 
+    // MARK: - The User's Feeds
+
+    /// What the user's Feeds settings and two feeds' Feed Info say after
+    /// this build's first launch, on records shaped like theirs
+    /// (`UsersFeeds`; their settings assumed as TextMouth shipped them): the
+    /// Feeds tab shows the new default, "Every item listed, newest 5
+    /// downloaded", with 5 for its number; each feed uses the global
+    /// setting, its pop-up menu worded with its own items, "Finish It!"'s
+    /// episodes and "The Digital Antiquarian"'s mix of articles and
+    /// episodes; and neither feed is in Unopened, since every item of each
+    /// was published before its subscription.
+    func testTheUsersFeedsAfterTheFirstLaunch() async throws {
+        let world = try FeedTestWorld(self, label: "FeedItemUIUsersFeeds")
+        let users = try UsersFeeds(world)
+        try users.write(to: world)
+        world.library.library.books.append(users.articleRow(in: world))
+
+        await world.start()
+
+        let global = FeedSettings.read(from: world.preferences).itemPolicy
+        XCTAssertEqual(FeedWording.itemPolicyTitle(global, noun: nil), "Every item listed, newest 5 downloaded")
+        XCTAssertEqual(FeedWording.newestCountCaption(global.newestCount, noun: nil), "How many of the newest: 5 items")
+        XCTAssertEqual(
+            FeedWording.useGlobal(FeedWording.itemPolicyTitle(global, noun: nil)),
+            "Use the global setting (Every item listed, newest 5 downloaded)"
+        )
+        let expected: [(FeedRecord, FeedWording.ItemNoun, String)] = [
+            (users.finishIt, .episode, "Every episode listed, newest 5 downloaded"),
+            (users.antiquarian, .item, "Every item listed, newest 5 downloaded"),
+        ]
+        for (record, noun, title) in expected {
+            let model = FeedInfoModel(feedID: record.feed.id, center: world.center, library: world.library)
+            XCTAssertTrue(model.usesGlobalItemPolicy, "\(record.feed.title) has a choice of its own")
+            XCTAssertEqual(world.center.counts(of: record.feed.id).noun, noun, record.feed.title)
+            XCTAssertEqual(FeedWording.itemPolicyTitle(model.itemPolicy, noun: noun), title)
+            XCTAssertEqual(FeedWording.newestCountValue(model.itemPolicy.newestCount, noun: noun), "5 \(noun.plural)")
+        }
+        XCTAssertEqual(world.center.counts(of: users.finishIt.feed.id).listed, 381)
+        XCTAssertEqual(
+            LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .unopened, folderPath: ""), center: world.center),
+            [],
+            "a feed whose items are all its back catalogue is in Unopened"
+        )
+    }
+
     // MARK: - Helpers
 
     /// A settings model on the sandboxed store `store`, never mirrored to
