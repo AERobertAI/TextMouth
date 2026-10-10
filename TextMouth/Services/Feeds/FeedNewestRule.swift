@@ -97,7 +97,8 @@ extension FeedCenter {
         let global = FeedSettings.itemPolicy(in: environment.preferences)
         let inUse = library.feedBooksInUse
         var due: [FeedDueRemoval] = []
-        for feed in store.feeds where feedIDs?.contains(feed.id) ?? true {
+        // A feed being deleted is left to Delete Feed… (FR14).
+        for feed in store.feeds where (feedIDs?.contains(feed.id) ?? true) && !downloads.isClosed(feed.id) {
             guard let record = store.record(of: feed.id) else { continue }
             let policy = feed.itemPolicyOverride ?? global
             // What the rule no longer counts goes back: all of it for a

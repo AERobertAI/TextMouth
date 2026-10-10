@@ -324,6 +324,11 @@ final class LogContentPolicyTests: XCTestCase {
         "FEED_ITEM_MOVED_TO_LIBRARY", "FEED_MOVE_TO_LIBRARY_FAILED", "FEED_MOVE_TO_LIBRARY_PUT_OFF", "FEED_LIBRARY_BOOK_GONE",
         "FEED_RESUBSCRIBED", "FEED_RECORD_ABSENT", "FEED_RECORD_BACK",
         "FEED_DOWNLOADS_RETURN", "FEED_DOWNLOADS_RETURNED", "FEED_DOWNLOAD_RETURN_FAILED",
+        // Delete Feed… (FR14): a feed deleted; one that stays, its index unwritten, so nothing went,
+        // or a file it could not delete; and a folder left behind: the feed's own in the data
+        // directory, or its emptied library folder.
+        "FEED_DELETED", "FEED_DELETE_PUT_OFF", "FEED_DELETE_STOPPED",
+        "FEED_DELETE_FOLDER_LEFT", "FEED_DELETE_FOLDER_KEPT",
         // The logs themselves (the user's decision of October 3): lines changing place between the
         // data directory's Logs folder and this Mac's, and a log started over because it could not
         // be renamed to its older generation.

@@ -11,13 +11,13 @@ import Foundation
 /// another feed's folder.
 ///
 /// It follows one feed engine and publishes only when a feed is subscribed,
-/// unsubscribed, resubscribed (FR11, branch D), or given another folder:
-/// never for a download's progress or a refresh, which change the engine
-/// many times a minute. So the Library window observes this rather than the
-/// engine, and only the views that show a feed's items and counts redraw as
-/// they change; the window redraws as a feed is unsubscribed or
-/// resubscribed, so its feed folders' rows offer Unsubscribe… or Resubscribe
-/// by the feed's state.
+/// unsubscribed, resubscribed (FR11, branch D), given another folder, or
+/// deleted (FR14): never for a download's progress or a refresh, which
+/// change the engine many times a minute. So the Library window observes
+/// this rather than the engine, and only the views that show a feed's items
+/// and counts redraw as they change; the window redraws as a feed is
+/// unsubscribed or resubscribed, so its feed folders' rows offer Unsubscribe…
+/// or Resubscribe by the feed's state.
 @MainActor
 final class LibraryFeedFolders: ObservableObject {
     /// The app's, following the app's feed engine.

@@ -410,7 +410,8 @@ extension FeedCenter {
         let settings = self.settings
         let inUse = library.feedBooksInUse
         var due: [FeedDueRemoval] = []
-        for record in store.records.values {
+        // A feed being deleted is left to Delete Feed… (FR14).
+        for record in store.records.values where !downloads.isClosed(record.feed.id) {
             // An item moved into the library whose book has left it is not
             // downloaded from now (FR11, branch D); one whose book is still
             // there is the library's, which no rule of the feed's touches.
@@ -504,7 +505,10 @@ extension FeedCenter {
         let inUse = library.feedBooksInUse
         let held = due.filter { heldWhole.contains($0.book.id) }
         outcome.inUse = held.map(\.book.id).filter(inUse.contains)
-        let removable = held.filter { !inUse.contains($0.book.id) }
+        // Nor is a download of a feed being deleted meanwhile removed here:
+        // Delete Feed… removes it, once every removal readied before it
+        // began has ended (FR14).
+        let removable = held.filter { !inUse.contains($0.book.id) && !downloads.isClosed($0.feedID) }
         guard !removable.isEmpty else { return outcome }
 
         // 1 and 2: the records and the indexes, on the main actor.

@@ -203,6 +203,10 @@ final class FeedDownloadManager {
     /// the order they were, waiting for a refresh TextMouth makes by itself
     /// to reach a network without them (`retryPutOffDownloads()`).
     private(set) var putOff: [Request] = []
+    /// The feeds being deleted (FR14, Delete Feed…, `closeFeed(_:)`): none
+    /// of their items is asked for, and an import of one that ends meanwhile
+    /// is discarded, so nothing of a feed comes back while its files go.
+    private(set) var closedFeedIDs: Set<UUID> = []
     /// Called on the main actor as an import has finished, just before its
     /// book is listed, for a test to act at that moment, as Delete Episode
     /// can while an import runs; nil in the app.
@@ -243,9 +247,11 @@ final class FeedDownloadManager {
     /// library, opens at once when asked. Asking again for an item that
     /// waits or downloads only adds what the new request adds, and asking
     /// for one a network with data limits put off takes the place of that
-    /// request. Nothing is asked for while TextMouth quits.
+    /// request. Nothing is asked for while TextMouth quits, nor of a feed
+    /// being deleted (FR14).
     func download(_ itemID: FeedItem.ID, of feedID: UUID, origin: Origin, opening: Bool = false) {
-        guard !isStoppedForQuit, let item = store.record(of: feedID)?.item(itemID), item.deletedDate == nil else { return }
+        guard !isStoppedForQuit, !closedFeedIDs.contains(feedID),
+              let item = store.record(of: feedID)?.item(itemID), item.deletedDate == nil else { return }
         // However it goes, the downloads' progress hears the queue (FR10).
         defer { publishQueue() }
         putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
@@ -360,19 +366,38 @@ final class FeedDownloadManager {
         putOff.contains { $0.feedID == feedID && $0.itemID == itemID }
     }
 
-    /// Takes every waiting, running, and put-off download of the feed
-    /// `feedID` away, as a feed leaving the library would need. No command
-    /// calls it since Unsubscribe keeps the feed and only withdraws the
-    /// rule's downloads (FR11, branch D, `withdrawRuleDownloads`); it stays
-    /// for a Delete Feed…, which is still the listener's to decide, with
-    /// `FeedStore.remove(_:)` and `FeedFetchStates.remove(_:)`.
-    func cancelAll(of feedID: UUID) {
+    /// Stops every download of the feed `feedID` for good, as Delete Feed…
+    /// does before the feed's files go (FR14, `FeedCenter.deleteFeed(_:)`):
+    /// the one under way stops, those waiting to start and those a network
+    /// with data limits put off go, and every part of the feed's downloads
+    /// on this Mac goes with them (`FeedPartialDownloads`). None of its items
+    /// is asked for again until `reopenFeed(_:)`, and a download whose book
+    /// is already being added finishes its import, whose package is then
+    /// discarded rather than listed (`commit(_:for:)`). The items' states are
+    /// left as they are: the feed's record goes with them.
+    func closeFeed(_ feedID: UUID) {
+        closedFeedIDs.insert(feedID)
         defer { publishQueue() }
         queue.removeAll { $0.feedID == feedID }
         putOff.removeAll { $0.feedID == feedID }
         if current?.feedID == feedID {
             currentTask?.cancel()
         }
+        // Each resume data file's name begins with its feed's ID.
+        FeedPartialDownloads.discardAll(in: environment.resumeFolder, prefix: feedID.uuidString + "-")
+    }
+
+    /// Lets the items of the feed `feedID` be asked for again, once Delete
+    /// Feed… has deleted the feed, or stopped short of it, leaving the feed
+    /// as it was (FR14).
+    func reopenFeed(_ feedID: UUID) {
+        closedFeedIDs.remove(feedID)
+    }
+
+    /// Whether the feed `feedID` is being deleted (FR14), so none of its
+    /// items is asked for, and the engine's own rules leave it alone.
+    func isClosed(_ feedID: UUID) -> Bool {
+        closedFeedIDs.contains(feedID)
     }
 
     /// Takes back the newest-N rule's downloads of the feed `feedID` not yet
@@ -685,10 +710,11 @@ final class FeedDownloadManager {
     /// may be restoring the item's kept package meanwhile) gets no row: the
     /// package the import just published, in the kept package's place when
     /// it restored one, is deleted for good, so nothing of a deleted item
-    /// comes back.
+    /// comes back. So does an item of a feed being deleted (FR14).
     private func commit(_ book: Book, for request: Request) -> Bool {
         beforeCommit?(request)
-        guard let item = store.record(of: request.feedID)?.item(request.itemID), item.deletedDate == nil else {
+        guard !closedFeedIDs.contains(request.feedID),
+              let item = store.record(of: request.feedID)?.item(request.itemID), item.deletedDate == nil else {
             discardPackage(of: book)
             return false
         }

@@ -140,6 +140,21 @@ protocol FeedLibraryHost: AnyObject {
     /// there, and returns its ID.
     /// - Throws: `FeedFolderError`, saying why no folder could be made.
     func makeFeedFolder(named title: String, inParentPath parentPath: String) throws(FeedFolderError) -> UUID
+    /// Every row of the feed `feedID` the library holds, each once (FR14):
+    /// its downloads among the books, then the rows kept on its shelf after
+    /// their downloads went.
+    func everyRow(ofFeed feedID: UUID) -> [Book]
+    /// Forgets the index of the feed `feedID` for good, once every row of
+    /// the feed has left the library, as Delete Feed… does before the feed's
+    /// folder goes (FR14): no save writes the index again, which would make
+    /// that folder anew, and no snapshot waiting to be written still holds
+    /// it.
+    func forgetFeedIndex(of feedID: UUID)
+    /// Deletes the library folder `folderID`, the folder of a feed just
+    /// deleted, when nothing else is in it: no book of the library's own, no
+    /// folder, and no other feed's items (FR14).
+    /// - Returns: What became of the folder.
+    func removeFolderOfDeletedFeed(_ folderID: UUID) async -> FeedFolderFate
 }
 
 /// Why no folder could be made for a new subscription (FR03), in a sentence
