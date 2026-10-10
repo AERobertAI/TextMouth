@@ -659,16 +659,20 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
-    /// Edit Text taken while Where Am I? speaks stops the book to show the
-    /// edited text, and the announcement ends with it: its finish resumes
-    /// nothing of the old text's speech and tells the system nothing, the
-    /// stop having taken the book out of Now Playing. Before, the
-    /// announcement's end told the system the stopped book played, taking
-    /// the AirPods.
-    func testEditTextDuringWhereAmIEndsItWithTheBook() throws {
+    /// Edit Text taken while Where Am I? speaks over a playing book stops
+    /// the book to show the edited text, and the announcement ends with it;
+    /// the book, which the announcement would have played again as it ended,
+    /// plays on in the edited text from its place, with the play sound, as
+    /// Edit Text plays on a book that plays. The announcement's finish, as
+    /// the synthesizer then reports it, changes nothing more: no end sound,
+    /// and nothing left for one. Before, the book stayed stopped (REV12's
+    /// leftovers), and before that, the announcement's end told the system
+    /// the stopped book played, taking the AirPods.
+    func testEditTextDuringWhereAmIEndsItAndTheBookPlaysOn() throws {
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Where Am I Edit Text")
         let book = try openPlayingBook(.text, in: world, joining: system)
+        let text = try XCTUnwrap(book.text, "the text book's speech is not recorded")
         let sounds = recordSounds(of: book, "Where Am I Edit Text")
         let announcement = try pressWhereAmI(in: book)
         // The reader shows the pause before the edit arrives, as it has long
@@ -680,7 +684,18 @@ final class MediaCommandPlaybackTests: XCTestCase {
         book.reader.showEditedText(DocumentContent(title: book.reader.book.title, author: book.reader.book.author, chapters: [edited]))
 
         XCTAssertEqual(book.reader.content?.chapters.first?.text, edited.text, "the edited text is not shown")
-        assertWhereAmIEndedWithTheStop(book, announcement, system: system, sounds: sounds, "Edit Text")
+        XCTAssertFalse(book.reader.isWhereAmIUnderWay, "Where Am I? still has the book")
+        assertSpeaks(text, from: Self.openingOffset, "Edit Text during Where Am I?")
+
+        book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+        handleQueuedCallbacks()
+
+        XCTAssertEqual(sounds.played, [.whereAmIStart, .play], "the announcement's finish made a sound")
+        XCTAssertFalse(book.endSound.hasWorkWaiting, "work waits for the announcement's end sound")
+        XCTAssertTrue(book.isPlaying, "the announcement's finish stopped the book")
+        let playing = NowPlayingItem(title: book.reader.book.title, author: book.reader.book.author, isPlaying: true)
+        XCTAssertEqual(system.told.last, .some(playing), "the system was not told the book plays")
+        XCTAssertEqual(system.coordinator.playingOwnerID, book.reader.nowPlayingService.ownerID)
     }
 
     /// Any stop while Where Am I? speaks, as when the files of the chapter

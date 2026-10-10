@@ -47,7 +47,11 @@ extension ReaderViewModel {
         }
         guard !Self.showsSameText(current, as: edited) else { return }
 
-        let wasPlaying = isCurrentlyPlaying && !isCurrentlyPaused
+        // A book Where Am I? holds plays on too: one the announcement paused
+        // as it played, or one it would start for a Play pressed during it
+        // (`whereAmIWillPlayBook`). The stop below ends the announcement with
+        // the book, which once left such a book stopped (REV12).
+        let wasPlaying = (isCurrentlyPlaying && !isCurrentlyPaused) || whereAmIWillPlayBook
         let position = EditedTextCursor.position(
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset,
