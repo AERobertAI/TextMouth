@@ -375,10 +375,15 @@ final class MenuKeyShortcutTests: XCTestCase {
             ("Playback", .copyReadingPosition, "p", [.shift, .command]),
             ("Playback", .searchInBook, "f", .command),
         ]
+        // Each item acts, with its key, only where its action works, as the
+        // window in front of this run tells (FR12's branch E).
+        let front = FrontWindowKind.shared.kind
         for (menuTitle, action, key, modifiers) in shown {
             let item = try XCTUnwrap(Self.menu(titled: menuTitle).flatMap { Self.item(action.title, in: $0) }, action.rawValue)
-            XCTAssertEqual(Self.keyEquivalent(of: item).key, key, action.rawValue)
-            XCTAssertEqual(Self.keyEquivalent(of: item).modifiers, modifiers, action.rawValue)
+            let acts = action.defaultScope.admitsMenuCommand(in: front)
+            XCTAssertEqual(item.isEnabled, acts, "\(action.rawValue) with \(String(describing: front)) in front")
+            XCTAssertEqual(Self.keyEquivalent(of: item).key, acts ? key : "", action.rawValue)
+            XCTAssertEqual(Self.keyEquivalent(of: item).modifiers, acts ? modifiers : [], action.rawValue)
         }
 
         let store = TextMouthRuntime.current.preferences
@@ -414,6 +419,36 @@ final class MenuKeyShortcutTests: XCTestCase {
             waitUntil(timeout: 5) { openBookKey()?.key == "o" && openBookKey()?.modifiers == .command },
             "Open Book… shows \(String(describing: openBookKey()))"
         )
+    }
+
+    // MARK: - A Menu Command Acts Where Its Action Works (FR12's Branch E)
+
+    /// A menu command working in every window acts in any, an audio
+    /// editor's included, as menus always have; one working in a kind of
+    /// window acts only in that kind; and any acts with no window open.
+    func testAMenuCommandActsWhereItsActionWorks() {
+        for kind in ShortcutWindowKind.allCases {
+            XCTAssertTrue(ShortcutScope.app.admitsMenuCommand(in: kind), "\(kind)")
+        }
+        XCTAssertTrue(ShortcutScope.library.admitsMenuCommand(in: .library))
+        XCTAssertFalse(ShortcutScope.library.admitsMenuCommand(in: .reader))
+        XCTAssertFalse(ShortcutScope.library.admitsMenuCommand(in: .other))
+        XCTAssertFalse(ShortcutScope.library.admitsMenuCommand(in: .audioEditor))
+        XCTAssertTrue(ShortcutScope.reader.admitsMenuCommand(in: .reader))
+        XCTAssertFalse(ShortcutScope.reader.admitsMenuCommand(in: .recording))
+        for scope in ShortcutScope.allCases {
+            XCTAssertTrue(scope.admitsMenuCommand(in: nil), "\(scope) with no window")
+        }
+    }
+
+    /// The menus take the kind of the window in front as the shortcut
+    /// manager tells kinds apart: a reader's, a Library window, an audio
+    /// editor's, the Record window, any other window, or none.
+    func testTheMenusTellTheWindowInFrontApart() {
+        XCTAssertNil(FrontWindowKind.kind(of: nil))
+        for kind in ShortcutWindowKind.allCases {
+            XCTAssertEqual(FrontWindowKind.kind(of: makeShortcutWindow(kind)), kind, "\(kind)")
+        }
     }
 
     // MARK: - Keys a Menu Command Cannot Take

@@ -357,6 +357,16 @@ enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
     func overlaps(_ other: ShortcutScope) -> Bool {
         !windowKinds.isDisjoint(with: other.windowKinds)
     }
+
+    /// Whether a menu command working here acts while a window of `kind` is
+    /// in front, nil meaning no window at all (FR12's branch E): one working
+    /// in every window acts in any, an audio editor's included, as menus
+    /// always have; one working in a kind of window acts in that kind; and
+    /// any acts with no window open, as a menu's key must.
+    func admitsMenuCommand(in kind: ShortcutWindowKind?) -> Bool {
+        guard let kind else { return true }
+        return self == .app || reaches(kind)
+    }
 }
 
 /// The kind of window a key is pressed in, whose shortcuts in force there
