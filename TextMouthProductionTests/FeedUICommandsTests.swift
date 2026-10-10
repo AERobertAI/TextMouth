@@ -32,11 +32,10 @@ final class FeedUICommandsTests: XCTestCase {
                 onBookRow: onBookRow
             ).map(\.title)
         }
-        let progress = BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 1, totalBytes: 2)
         let book = UUID()
 
         XCTAssertEqual(titles(.notDownloaded), ["Open", "Download", "Mark Played", "Show Description…", "Delete Episode…"])
-        XCTAssertEqual(titles(.downloading(progress)), ["Open", "Cancel Download", "Mark Played", "Show Description…", "Delete Episode…"])
+        XCTAssertEqual(titles(.downloading), ["Open", "Cancel Download", "Mark Played", "Show Description…", "Delete Episode…"])
         XCTAssertEqual(titles(.failed("gone"), played: true), ["Open", "Download", "Mark Unplayed", "Show Description…", "Delete Episode…"])
         XCTAssertEqual(
             titles(.downloaded(bookID: book)),

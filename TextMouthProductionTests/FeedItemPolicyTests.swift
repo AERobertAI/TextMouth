@@ -152,7 +152,7 @@ final class FeedItemPolicyTests: XCTestCase {
         items[1].deletedDate = played
         items[2].playedDate = played
         items[3].playedDate = played
-        items[6].state = .downloading(FeedDownloadManager.progress(written: 0, expected: 0, estimate: nil))
+        items[6].state = .downloading
         let record = FeedRecord(feed: try Self.record().feed, items: items)
         let withFiles: Set<FeedItem.ID> = ["guid:4", "guid:6"]
 

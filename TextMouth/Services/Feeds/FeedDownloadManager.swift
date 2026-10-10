@@ -118,12 +118,14 @@ extension FeedFetchError {
 /// each as a book in its feed's folder (FR03).
 ///
 /// An episode's file comes through a `URLSessionDownloadTask`, its progress
-/// published in its item's state as a cloud download's is, so the library
-/// shows "Downloading 40%" (counted in bytes, against the length the server
-/// gives, or the feed's estimate until it does), whole percents only. A
-/// download that stops partway keeps the resume data the server allows in
-/// this Mac's Feeds folder in Caches, and the next download of the item
-/// goes on from there. The finished file waits in this Mac's Feed Downloads
+/// counted in bytes, as a cloud download's is, against the length the
+/// server gives, or the feed's estimate until it does, and told to the
+/// downloads' progress alone (`progress`, FR10), which the Library windows'
+/// feed downloads section observes; the item's state says only that it
+/// downloads, from the moment it is asked for. A download that stops
+/// partway keeps the resume data the server allows in this Mac's Feeds
+/// folder in Caches, and the next download of the item goes on from
+/// there. The finished file waits in this Mac's Feed Downloads
 /// folder, then is imported (`FeedEpisodeImporter`) on a queue of its own,
 /// as storage work, adding its book to the library on the main actor before
 /// that work ends, as every import does, so a data-directory move never
@@ -199,8 +201,6 @@ final class FeedDownloadManager {
     /// the order they were, waiting for a refresh TextMouth makes by itself
     /// to reach a network without them (`retryPutOffDownloads()`).
     private(set) var putOff: [Request] = []
-    /// The whole percent last published for the download under way.
-    private var publishedPercent = -1
     /// Called on the main actor as an import has finished, just before its
     /// book is listed, for a test to act at that moment, as Delete Episode
     /// can while an import runs; nil in the app.
@@ -268,7 +268,7 @@ final class FeedDownloadManager {
         } else {
             queue.append(request)
         }
-        store.updateItem(itemID, of: feedID) { $0.state = .downloading(Self.progress(written: 0, expected: 0, estimate: $0.enclosure?.length)) }
+        store.updateItem(itemID, of: feedID) { $0.state = .downloading }
         startNext()
     }
 
@@ -373,7 +373,6 @@ final class FeedDownloadManager {
         guard !isStoppedForQuit, current == nil, !queue.isEmpty else { return }
         let request = queue.removeFirst()
         current = request
-        publishedPercent = -1
         beginProgress(of: request)
         currentTask = Task {
             let ending = await run(request)
@@ -637,20 +636,14 @@ final class FeedDownloadManager {
         return current
     }
 
-    /// Publishes how far the download `request` has got: every report to
-    /// the downloads' progress, which keeps it without publishing (FR10),
-    /// and, when its whole percent grew, to its item, while it is still
-    /// downloading.
+    /// Tells the downloads' progress how far the download `request` has
+    /// got, at every report, which it keeps without publishing (FR10).
+    /// Nothing of it goes into the item, whose state says only that it
+    /// downloads: no report compares the feed's record (board #1410) or
+    /// redraws a Library list (PERF12).
     private func downloaded(_ written: Int64, of expected: Int64, estimate: Int64?, for request: Request) {
         guard current == request || current?.itemID == request.itemID else { return }
-        let transfer = Self.progress(written: written, expected: expected, estimate: estimate)
-        progress.receive(transfer)
-        guard transfer.percent > publishedPercent else { return }
-        publishedPercent = transfer.percent
-        store.updateItem(request.itemID, of: request.feedID) { item in
-            guard item.state.isDownloading else { return }
-            item.state = .downloading(transfer)
-        }
+        progress.receive(Self.progress(written: written, expected: expected, estimate: estimate))
     }
 
     /// A download's progress, as a cloud download's is counted: in bytes,

@@ -56,13 +56,13 @@ final class FeedItemUIRowsTests: XCTestCase {
             "Ep. 368, Waiting to Download, it downloads on a network without data limits, 50 percent, 16 minutes remaining, 2 bookmarks, \(date), 32 minutes"
         )
 
-        world.center.store.updateItem(itemID, of: feed.id) {
-            $0.state = .downloading(BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 40, totalBytes: 100))
-        }
+        // The download's own percent is the feed downloads section's
+        // (FR10); the kept place says "read", so it is never taken for it.
+        world.center.store.updateItem(itemID, of: feed.id) { $0.state = .downloading }
         XCTAssertEqual(
             try row().label,
-            "Ep. 368, Downloading, 40 percent, 50 percent read, 16 minutes remaining, 2 bookmarks, \(date), 32 minutes",
-            "two bare percentages in one label"
+            "Ep. 368, Downloading, 50 percent read, 16 minutes remaining, 2 bookmarks, \(date), 32 minutes",
+            "a kept place beside Downloading was not said as read"
         )
 
         world.center.store.updateItem(itemID, of: feed.id) { $0.state = .notDownloaded }

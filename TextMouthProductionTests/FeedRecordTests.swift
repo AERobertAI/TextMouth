@@ -78,13 +78,12 @@ final class FeedRecordTests: XCTestCase {
 
     // MARK: - Download State
 
-    /// A download's notes are the cloud downloads' own: "Downloading 40%" to
-    /// see and "Downloading, 40 percent" to hear; the others say what they
-    /// are, the same both ways.
-    func testStateNotesShareTheCloudWording() {
-        let progress = BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 40, totalBytes: 100)
-        XCTAssertEqual(FeedItemState.downloading(progress).visibleNote, "Downloading 40%")
-        XCTAssertEqual(FeedItemState.downloading(progress).spokenNote, "Downloading, 40 percent")
+    /// A download's note says only that it downloads, to see and to hear:
+    /// how far it has got is the feed downloads section's (FR10). The others
+    /// say what they are, the same both ways.
+    func testStateNotesSayWhatTheStateIs() {
+        XCTAssertEqual(FeedItemState.downloading.visibleNote, "Downloading")
+        XCTAssertEqual(FeedItemState.downloading.spokenNote, "Downloading")
         XCTAssertEqual(FeedItemState.notDownloaded.spokenNote, "Not Downloaded")
         XCTAssertEqual(FeedItemState.failed("The server says the file is gone.").visibleNote, "Download Failed")
         XCTAssertEqual(FeedItemState.downloaded(bookID: UUID()).spokenNote, "Downloaded")
@@ -96,10 +95,9 @@ final class FeedRecordTests: XCTestCase {
     /// of reads as not downloaded instead of failing the record.
     func testStatesRoundTripExceptADownloadInProgress() throws {
         let bookID = UUID()
-        let progress = BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 1, totalBytes: 2)
         for (state, expected) in [
             (FeedItemState.notDownloaded, FeedItemState.notDownloaded),
-            (.downloading(progress), .notDownloaded),
+            (.downloading, .notDownloaded),
             (.failed("The server didn't answer."), .failed("The server didn't answer.")),
             (.downloaded(bookID: bookID), .downloaded(bookID: bookID)),
         ] {
@@ -115,9 +113,8 @@ final class FeedRecordTests: XCTestCase {
     /// its durable form, which is what the file holds, has no download in
     /// progress.
     func testARecordRoundTripsAndItsDurableFormHasNoDownloadInProgress() throws {
-        let progress = BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 1, totalBytes: 2)
         var record = Self.record(itemCount: 2)
-        record.items[0].state = .downloading(progress)
+        record.items[0].state = .downloading
         record.items[1].playedDate = Date(timeIntervalSince1970: 1_800_000_000)
 
         let data = try FeedRecordCoding.encoder().encode(record)
@@ -202,8 +199,8 @@ final class FeedRecordTests: XCTestCase {
     // MARK: - The Record Store
 
     /// A new subscription's record is written to Feeds/<feed ID>.json, a
-    /// change of a download's progress alone writes nothing, a durable
-    /// change writes the file again, and removing the feed deletes it.
+    /// download under way alone writes nothing, a durable change writes the
+    /// file again, and removing the feed deletes it.
     func testRecordsAreWrittenOnlyWhenTheirDurableFormChanges() async throws {
         let folder = try makeSandboxDirectory("FeedStore").appendingPathComponent("Feeds", isDirectory: true)
         let store = FeedStore(location: .folder(folder))
@@ -216,11 +213,10 @@ final class FeedRecordTests: XCTestCase {
         let written = try Data(contentsOf: file)
 
         try FileManager.default.removeItem(at: file)
-        let progress = BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 5, totalBytes: 10)
-        store.updateItem(record.items[0].id, of: record.feed.id) { $0.state = .downloading(progress) }
+        store.updateItem(record.items[0].id, of: record.feed.id) { $0.state = .downloading }
         await store.flush()
-        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "progress alone was written")
-        XCTAssertEqual(store.record(of: record.feed.id)?.items[0].state, .downloading(progress))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "a download under way alone was written")
+        XCTAssertEqual(store.record(of: record.feed.id)?.items[0].state, .downloading)
 
         store.updateItem(record.items[0].id, of: record.feed.id) { $0.playedDate = Date() }
         await store.flush()

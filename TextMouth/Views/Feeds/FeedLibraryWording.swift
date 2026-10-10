@@ -179,7 +179,8 @@ extension FeedWording {
     /// the state with why it failed or waits, the place and bookmarks kept
     /// after its file went (FR11), New, the date, and the duration. "How the
     /// Fed sets rates, Not Downloaded, New, October 1, 2026, 28 minutes";
-    /// "…, Played, Downloading, 40 percent, …"; "…, Download Failed, the
+    /// "…, Played, Downloading, …" (how far it has got is the feed downloads
+    /// section's, FR10); "…, Download Failed, the
     /// server says the file is gone, …"; "…, Waiting to Download, it
     /// downloads on a network without data limits, …"; "Ep. 368, Not
     /// Downloaded, 42 percent, 16 minutes remaining, 2 bookmarks, July 17,

@@ -125,33 +125,39 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertFalse(FeedMediaKind.audioExtensions.contains("mp4"))
     }
 
-    /// Progress is published in the item's state as the bytes arrive, in
-    /// whole percents that only grow, worded as a cloud download's is.
-    func testProgressIsPublishedAsTheBytesArrive() async throws {
+    /// A download's bytes reach the downloads' progress alone, never its
+    /// item (FR10): the item says it downloads from the moment it is asked
+    /// for until its book is in, so its record changes at those two moments
+    /// only, however many reports its bytes make, and the progress, which
+    /// counts them, publishes only as the download begins, as its book is
+    /// being added, and as it ends.
+    func testABytesProgressReachesTheProgressAloneAndNeverItsItem() async throws {
         let world = try FeedTestWorld(self, label: "FeedProgress")
-        var file = FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(duration: 2), mimeType: "audio/mp4")
-        file.chunkSize = max(1, file.body.count / 4 + 1)
-        file.pause = 0.05
+        let audio = try FeedMediaFixtures.silentAAC(duration: 2)
+        var file = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        file.chunkSize = max(1, audio.count / 20 + 1)
         world.server.serve("/audio/1.m4a", file)
         let feed = try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
-        var percents: [Int] = []
-        var notes: [String] = []
-        let subscription = world.center.store.$records.sink { records in
-            if case .downloading(let progress)? = records[feed.id]?.item("guid:ep-1")?.state {
-                percents.append(progress.percent)
-                notes.append(FeedItemState.downloading(progress).spokenNote)
-            }
-        }
-        defer { subscription.cancel() }
+        let progress = world.center.downloads.progress
+        var states: [FeedItemState] = []
+        var progressPublishes = 0
+        var bytesAtCommit: Int64?
+        let watchers = [
+            world.center.store.$records.sink { records in
+                guard let state = records[feed.id]?.item("guid:ep-1")?.state, states.last != state else { return }
+                states.append(state)
+            },
+            progress.objectWillChange.sink { progressPublishes += 1 },
+        ]
+        defer { watchers.forEach { $0.cancel() } }
+        world.center.downloads.beforeCommit = { _ in bytesAtCommit = progress.state.download?.transfer?.completedBytes }
 
         world.center.download("guid:ep-1", of: feed.id)
-        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
 
-        XCTAssertEqual(percents.first, 0, "a waiting download did not say 0 percent")
-        XCTAssertGreaterThan(Set(percents).count, 2, "too few steps of progress: \(percents)")
-        XCTAssertEqual(percents, percents.sorted(), "progress went back: \(percents)")
-        XCTAssertTrue(percents.allSatisfy { $0 < 100 }, "100 percent was said before the book was in")
-        XCTAssertTrue(notes.contains("Downloading, 0 percent"))
+        XCTAssertEqual(states, [.notDownloaded, .downloading, .downloaded(bookID: book.id)], "the item's state followed the bytes")
+        XCTAssertEqual(bytesAtCommit, Int64(audio.count), "the bytes never reached the downloads' progress")
+        XCTAssertEqual(progressPublishes, 3, "the downloads' progress published as the bytes arrived")
     }
 
     /// A download that stops partway keeps its resume data in this Mac's
@@ -305,8 +311,9 @@ final class FeedDownloadTests: XCTestCase {
     // MARK: - The Queue
 
     /// Downloads run one at a time, in the order asked: every one waiting
-    /// says Downloading 0%, and each request starts once the one before it
-    /// has finished.
+    /// says Downloading, how far each has got being the feed downloads
+    /// section's (FR10), and each request starts once the one before it has
+    /// finished.
     func testDownloadsRunOneAtATime() async throws {
         let world = try FeedTestWorld(self, label: "FeedQueue")
         let audio = try FeedMediaFixtures.silentAAC()
@@ -326,7 +333,7 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(world.center.downloads.queue.map(\.itemID), ["guid:ep-2", "guid:ep-3"])
         XCTAssertEqual(world.center.downloads.current?.itemID, "guid:ep-1")
         for item in world.center.listedItems(of: feed.id) {
-            XCTAssertEqual(item.state.visibleNote, "Downloading 0%")
+            XCTAssertEqual(item.state.visibleNote, "Downloading")
         }
         for number in 1...3 {
             _ = try await downloadedBook(world, feed: feed, item: "guid:ep-\(number)")
@@ -505,11 +512,9 @@ final class FeedDownloadTests: XCTestCase {
         let feed = try await world.subscribe("/feed.xml")
         world.center.download("guid:ep-1", of: feed.id)
         world.center.download("guid:ep-2", of: feed.id)
+        // Its bytes are the downloads' progress's alone (FR10).
         await waitFor("some of the first episode arrives") {
-            guard case .downloading(let progress)? = world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state else {
-                return false
-            }
-            return progress.completedBytes > 0
+            (world.center.downloads.progress.state.download?.transfer?.completedBytes ?? 0) > 0
         }
 
         var replies: [Bool] = []
@@ -582,11 +587,9 @@ final class FeedDownloadTests: XCTestCase {
         world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [episode])))
         let feed = try await world.subscribe("/feed.xml")
         _ = await world.center.applyItemPolicy(to: [feed.id])
+        // Its bytes are the downloads' progress's alone (FR10).
         await waitFor("some of the episode arrives") {
-            guard case .downloading(let progress)? = world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state else {
-                return false
-            }
-            return progress.completedBytes > 0
+            (world.center.downloads.progress.state.download?.transfer?.completedBytes ?? 0) > 0
         }
 
         var replies: [Bool] = []
