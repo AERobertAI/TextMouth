@@ -191,27 +191,52 @@ struct RemovalWording: Equatable {
 /// when "Confirm before removing a book" is on: delete their files, in the
 /// mode the Trash preference chooses, or Remove from Library Only, which
 /// keeps them.
+///
+/// When every book it removes is a feed item, an episode or an article in
+/// its feed's folder (FR11), the library's Remove is their Delete Download,
+/// and the confirmation speaks of that alone (`feedDownloads`): no Remove
+/// from Library Only, which a feed item refuses, and no book leaving the
+/// library.
 struct RemovalChoiceWording: Equatable {
     /// Deleting the books' files, to the Trash or permanently.
     let deletion: RemovalWording
     /// Remove from Library Only.
     let keeping: RemovalWording
+    /// The words of Delete Download, which the confirmation speaks instead
+    /// when every book is a feed item; nil otherwise.
+    let feedDownloads: FeedDownloadRemovalWording?
 
     /// The choice for `books` under the Trash preference.
     init(books: [Book], movesToTrash: Bool) {
-        deletion = RemovalWording(.deleting(movesToTrash: movesToTrash), books: books)
+        let mode = RemovalMode.deleting(movesToTrash: movesToTrash)
+        deletion = RemovalWording(mode, books: books)
         keeping = RemovalWording(.keepFiles, books: books)
+        feedDownloads = !books.isEmpty && books.allSatisfy(\.isFeedItem) ? FeedDownloadRemovalWording(mode, items: books) : nil
     }
 
-    /// "Remove Book?" or "Remove 3 Books?"
+    /// Whether the confirmation offers Remove from Library Only: not when
+    /// every book is a feed item, which it would refuse.
+    var offersLibraryOnly: Bool {
+        feedDownloads == nil
+    }
+
+    /// "Remove Book?" or "Remove 3 Books?"; for feed items alone, "Delete
+    /// Download?" or "Delete 3 Downloads?".
     var title: String {
-        deletion.count == 1 ? "Remove Book?" : "Remove \(deletion.count) Books?"
+        if let feedDownloads {
+            return feedDownloads.confirmationTitle
+        }
+        return deletion.count == 1 ? "Remove Book?" : "Remove \(deletion.count) Books?"
     }
 
-    /// The deleting button, "Move to Trash" or "Delete Permanently"; the
-    /// title already says how many books.
+    /// The deleting button, "Move to Trash" or "Delete Permanently", or, for
+    /// feed items alone, "Delete Download" or "Delete Downloads"; the title
+    /// already says how many.
     var deleteButtonTitle: String {
-        deletion.mode.buttonTitle()
+        if let feedDownloads {
+            return feedDownloads.buttonTitle
+        }
+        return deletion.mode.buttonTitle()
     }
 
     /// The keeping button: "Remove from Library Only".
@@ -222,12 +247,92 @@ struct RemovalChoiceWording: Equatable {
     /// Explains both choices: "Choose how to remove “Notes” from the
     /// library. With Move to Trash, its files go to the Trash, where you can
     /// recover them until the Trash is emptied. With Remove from Library
-    /// Only, its files stay in the TextMouth library folder."
+    /// Only, its files stay in the TextMouth library folder." For feed items
+    /// alone, what Delete Download does and keeps
+    /// (`FeedDownloadRemovalWording.confirmationMessage`).
     var message: String {
+        if let feedDownloads {
+            return feedDownloads.confirmationMessage
+        }
         let plural = deletion.count != 1
         return "Choose how to remove \(deletion.subject) from the library. "
             + "With \(deleteButtonTitle), \(deletion.mode.filesClause(plural: plural)). "
             + "With \(keepButtonTitle), \(keeping.mode.filesClause(plural: plural))."
+    }
+}
+
+// MARK: - Removing Feed Items' Downloads
+
+/// The words for the library's Remove when it acts on feed items, episodes
+/// and articles in their feeds' folders (FR11): for them it is Delete
+/// Download (branch A2), which deletes the downloaded files, in the mode the
+/// Trash preference chooses, and keeps each item's package with what the
+/// listener left in it, its place, bookmarks, and transcript, so it can be
+/// downloaded again where they left off. A package holding nothing of the
+/// listener's goes whole.
+struct FeedDownloadRemovalWording: Equatable {
+    /// How the downloaded files go: to the Trash or permanently.
+    let mode: RemovalMode
+    /// How many downloads are deleted.
+    let count: Int
+    /// The title of the only item, so the words can name it; nil for
+    /// several.
+    let title: String?
+
+    /// The words for deleting the downloads of `items` in `mode`.
+    init(_ mode: RemovalMode, items: [Book]) {
+        self.mode = mode
+        count = items.count
+        title = items.count == 1 ? items.first?.title : nil
+    }
+
+    /// Whether the words speak of several downloads (or none).
+    private var isPlural: Bool { count != 1 }
+
+    /// The downloads as a sentence names them: "the download of “Ep. 368”",
+    /// or "3 downloads".
+    private var subject: String {
+        if let title { return "the download of “\(title)”" }
+        return "\(count) downloads"
+    }
+
+    /// "Delete Download?" or "Delete 3 Downloads?"
+    var confirmationTitle: String {
+        (isPlural ? "Delete \(count) Downloads" : "Delete Download") + "?"
+    }
+
+    /// The deleting button, "Delete Download" or "Delete Downloads"; the
+    /// title says how many.
+    var buttonTitle: String {
+        isPlural ? "Delete Downloads" : "Delete Download"
+    }
+
+    /// What the confirmation explains: "The download of “Ep. 368” will be
+    /// deleted. Its files go to the Trash, where you can recover them until
+    /// the Trash is emptied. Its place, bookmarks, and transcript, if it has
+    /// any, are kept, and it can be downloaded again."
+    var confirmationMessage: String {
+        let kept = isPlural
+            ? "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again."
+            : "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again."
+        return "\(subject.capitalizingFirstLetter) will be deleted. " + mode.filesSentence(plural: isPlural) + " " + kept
+    }
+
+    /// The report once the downloads are deleted, of which `keptCount` kept
+    /// their packages with the listener's place, bookmarks, or transcript:
+    /// "Moved the download of “Ep. 368” to the Trash. Its place, bookmarks,
+    /// and transcript are kept.", or "Deleted 3 downloads permanently. The
+    /// places, bookmarks, and transcripts of 2 of them are kept."
+    func completionMessage(keptCount: Int) -> String {
+        let deleted = mode.completionSentence(subject, plural: isPlural)
+        guard keptCount > 0 else { return deleted }
+        if !isPlural {
+            return deleted + " Its place, bookmarks, and transcript are kept."
+        }
+        if keptCount >= count {
+            return deleted + " Their places, bookmarks, and transcripts are kept."
+        }
+        return deleted + " The places, bookmarks, and transcripts of \(keptCount) of them are kept."
     }
 }
 

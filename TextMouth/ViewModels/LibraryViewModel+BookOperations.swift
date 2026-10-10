@@ -118,17 +118,25 @@ extension LibraryViewModel {
     }
 
     /// Internal helper to remove books with optional .tmb deletion. Books
-    /// that stay are named through the library's error alert.
+    /// that stay are named through the library's error alert. A removal of
+    /// feed items alone, their Delete Download (FR11), says through
+    /// VoiceOver what it did and what it kept, as the feed's own Delete
+    /// Download says what it did, since the row that leaves becomes an
+    /// item's row saying "Not Downloaded".
     func performRemoveBooks(
         _ books: [Book],
         deleteTMB: Bool,
         deletePackage: ((Book) throws -> Void)? = nil
     ) {
-        presentFailure(of: removeBooksReturningOutcome(
+        let outcome = removeBooksReturningOutcome(
             books,
             deletingPackages: deleteTMB,
             deletePackage: deletePackage
-        ))
+        )
+        presentFailure(of: outcome)
+        if outcome.succeeded, deleteTMB, !books.isEmpty, books.allSatisfy(\.isFeedItem), let report = outcome.message {
+            VoiceOverAnnouncer.announce(report)
+        }
     }
 
     /// Removes `books` from the library. With `deletingPackages`, each
@@ -182,10 +190,28 @@ extension LibraryViewModel {
         guard deletingPackages else { return .success(nil) }
 
         let mode = removalPreferences.deletionMode
-        let completion = removed.isEmpty ? nil : RemovalWording(mode, books: removed).completionMessage
+        let completion = Self.removalCompletion(removed, mode: mode, keptIDs: Set(library.feedShelf.rows.map(\.id)))
         guard !failures.isEmpty else { return .success(completion) }
         let report = [completion, mode.failureMessage(failures)].compactMap { $0 }
         return .failure(report.joined(separator: "\n\n"))
+    }
+
+    /// The report of a removal that deleted `removed` in `mode`, or nil when
+    /// it removed nothing: the books of the library's own as having gone,
+    /// and the feed items, whose Remove is Delete Download (FR11), as having
+    /// lost only their downloads, saying of those in `keptIDs`, the rows kept
+    /// on their feeds' shelves, that their place, bookmarks, and transcript
+    /// are kept: "Moved “Notes” to the Trash. Moved the download of
+    /// “Ep. 368” to the Trash. Its place, bookmarks, and transcript are kept."
+    nonisolated static func removalCompletion(_ removed: [Book], mode: RemovalMode, keptIDs: Set<UUID>) -> String? {
+        let books = removed.filter { !$0.isFeedItem }
+        let downloads = removed.filter(\.isFeedItem)
+        let sentences = [
+            books.isEmpty ? nil : RemovalWording(mode, books: books).completionMessage,
+            downloads.isEmpty ? nil : FeedDownloadRemovalWording(mode, items: downloads)
+                .completionMessage(keptCount: downloads.filter { keptIDs.contains($0.id) }.count),
+        ].compactMap { $0 }
+        return sentences.isEmpty ? nil : sentences.joined(separator: " ")
     }
 
     /// Takes `book`, whose package was just deleted, out of the library

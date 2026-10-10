@@ -136,10 +136,14 @@ struct LibraryWindowView: View {
                 libraryViewModel.removeBooksAndDelete(books)
                 libraryViewModel.pendingRemoveBooks = []
             }
-            Button(removalChoice.keepButtonTitle) {
-                let books = libraryViewModel.pendingRemoveBooks
-                libraryViewModel.removeBooksFromLibraryOnly(books)
-                libraryViewModel.pendingRemoveBooks = []
+            // Not for feed items alone, which Remove from Library Only refuses:
+            // their Remove is Delete Download (FR11).
+            if removalChoice.offersLibraryOnly {
+                Button(removalChoice.keepButtonTitle) {
+                    let books = libraryViewModel.pendingRemoveBooks
+                    libraryViewModel.removeBooksFromLibraryOnly(books)
+                    libraryViewModel.pendingRemoveBooks = []
+                }
             }
             Button("Cancel", role: .cancel) {
                 libraryViewModel.pendingRemoveBooks = []
