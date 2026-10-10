@@ -512,6 +512,34 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         XCTAssertEqual(draft.bookmarkCount, 0)
     }
 
+    /// A book's facts give its place in the reading list as the Reading
+    /// List counts it, passing over an ID that names no book, and none for
+    /// a book not in the list (FR09).
+    func testABooksFactsGiveItsPlaceInTheReadingList() {
+        let first = Book(title: "First", format: .txt, filePath: "/nonexistent/first.txt", md5Hash: "first")
+        let unlisted = Book(title: "Unlisted", format: .txt, filePath: "/nonexistent/unlisted.txt", md5Hash: "unlisted")
+        let last = Book(title: "Last", format: .txt, filePath: "/nonexistent/last.txt", md5Hash: "last")
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library(
+            books: [first, unlisted, last],
+            readingList: ReadingList(bookIDs: [last.id, UUID(), first.id])
+        )
+        func place(of book: Book) -> ReadingListPlace? {
+            BookInfoFacts(
+                book,
+                library: library,
+                wordsPerMinute: 200,
+                cloudStates: BookCloudStates(),
+                keptBooks: KeptBooks(file: nil),
+                measuresFileSize: false
+            ).readingListPlace
+        }
+
+        XCTAssertEqual(place(of: last), ReadingListPlace(position: 1, count: 2))
+        XCTAssertEqual(place(of: first), ReadingListPlace(position: 2, count: 2))
+        XCTAssertNil(place(of: unlisted))
+    }
+
     // MARK: - A Folder's and a Feed's Facts
 
     /// A folder's facts count the books in it and below it with the

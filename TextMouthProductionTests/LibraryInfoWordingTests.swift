@@ -238,5 +238,25 @@ final class LibraryInfoWordingTests: XCTestCase {
         XCTAssertEqual(LibraryInfoWording.unopenedNote, "Unopened")
         XCTAssertEqual(LibraryInfoWording.noFolderNote, "Not in a folder")
         XCTAssertEqual(LibraryInfoWording.openInWindowNote, "Open in a reader window")
+        XCTAssertEqual(LibraryInfoWording.readingListNote(ReadingListPlace(position: 3, count: 12)), "In reading list, 3 of 12")
+    }
+
+    // MARK: - The Reading List (FR09)
+
+    /// A book in the reading list says its place there in its brief
+    /// summary, after where it is, and so in its full one too; a book not
+    /// in the list says nothing of it.
+    func testABookInTheReadingListSaysItsPlaceInItsSummaries() {
+        var listed = middlemarch
+        listed.readingListPlace = ReadingListPlace(position: 3, count: 12)
+
+        XCTAssertEqual(
+            LibraryInfoWording.brief(.book(listed)),
+            "Middlemarch. By George Eliot. EPUB. In Classics. In reading list, 3 of 12. 42 percent. 2 hours, 5 minutes remaining."
+        )
+        let full = LibraryInfoWording.full(.book(listed), now: now, calendar: calendar, locale: locale)
+        XCTAssertTrue(full.hasPrefix(LibraryInfoWording.brief(.book(listed))), full)
+        XCTAssertFalse(LibraryInfoWording.brief(.book(middlemarch)).contains("reading list"))
+        XCTAssertFalse(LibraryInfoWording.full(.book(middlemarch), now: now, calendar: calendar, locale: locale).contains("reading list"))
     }
 }
