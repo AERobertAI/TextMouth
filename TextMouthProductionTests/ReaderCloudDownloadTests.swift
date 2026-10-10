@@ -503,12 +503,12 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
         XCTAssertEqual(
             Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)),
-            Self.path(copy.location(of: URL(fileURLWithPath: reader.audioChapterFiles[0])))
+            Self.path(copy.location(of: URL(fileURLWithPath: try chapterFile(number: 1, of: reader))))
         )
         reader.navigateTo(chapterIndex: 1, characterOffset: 0)
         XCTAssertEqual(
             Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)),
-            Self.path(copy.location(of: URL(fileURLWithPath: reader.audioChapterFiles[1])))
+            Self.path(copy.location(of: URL(fileURLWithPath: try chapterFile(number: 2, of: reader))))
         )
         reader.stop()
 
@@ -582,7 +582,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
         XCTAssertEqual(
             Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)),
-            Self.path(reader.audioChapterFiles[0])
+            Self.path(try chapterFile(number: 1, of: reader))
         )
         reader.stop()
     }
@@ -619,7 +619,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
 
         let moved = try XCTUnwrap(cloud.world.library.bookByID(book.id))
         XCTAssertEqual(Self.path(try XCTUnwrap(reader.cloudSession.workingCopy).source), Self.path(moved.tmbDirectory))
-        XCTAssertTrue(Self.path(reader.audioChapterFiles[1]).hasPrefix(Self.path(moved.filePath) + "/"))
+        XCTAssertTrue(Self.path(try chapterFile(number: 2, of: reader)).hasPrefix(Self.path(moved.filePath) + "/"))
 
         reader.navigateTo(chapterIndex: 1, characterOffset: 0)
         XCTAssertEqual(
@@ -641,7 +641,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
         XCTAssertNil(reader.cloudSession.workingCopy)
-        let second = reader.audioChapterFiles[1]
+        let second = try chapterFile(number: 2, of: reader)
         let step = Self.progress(1, of: 2, bytes: 100, of: 200)
         cloud.cloudOnly.mark(second)
         cloud.storage.scriptDownload(of: book.id, steps: [step], holdsOpen: true)
@@ -680,7 +680,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
-        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        cloud.cloudOnly.mark(try chapterFile(number: 2, of: reader))
         cloud.storage.scriptDownload(of: book.id, steps: [], failingWith: .offline)
         reader.play()
         let mark = announcementMark()
@@ -716,7 +716,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
-        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        cloud.cloudOnly.mark(try chapterFile(number: 2, of: reader))
         reader.play()
 
         reader.navigateTo(chapterIndex: 1, characterOffset: 0)
@@ -735,7 +735,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
         let step = Self.progress(1, of: 2, bytes: 100, of: 200)
-        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        cloud.cloudOnly.mark(try chapterFile(number: 2, of: reader))
         cloud.storage.scriptDownload(of: book.id, steps: [step], holdsOpen: true)
         reader.play()
         reader.navigateTo(chapterIndex: 1, characterOffset: 0)
@@ -758,7 +758,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     func testPausingDuringAChaptersDownloadStopsWaitingForIt() throws {
         let cloud = try makeCloudReaders("Cloud Chapter Pause", clone: Self.failingClone)
         let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
-        let second = reader.audioChapterFiles[1]
+        let second = try chapterFile(number: 2, of: reader)
         let mark = announcementMark()
 
         reader.pause()
@@ -853,7 +853,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     func testAChapterDownloadedDuringWhereAmIPlaysAsTheAnnouncementEnds() throws {
         let cloud = try makeCloudReaders("Cloud Chapter Where Am I", clone: Self.failingClone)
         let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
-        let second = reader.audioChapterFiles[1]
+        let second = try chapterFile(number: 2, of: reader)
         let announcement = try speakWhereAmI(in: reader)
         let endSound = WhereAmIEndSoundClock(holdingFor: reader)
 
@@ -902,7 +902,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     func testPlayPauseDuringWhereAmILetsAHeldChapterGo() throws {
         let cloud = try makeCloudReaders("Cloud Chapter Where Am I Play Pause", clone: Self.failingClone)
         let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
-        let second = reader.audioChapterFiles[1]
+        let second = try chapterFile(number: 2, of: reader)
         _ = try speakWhereAmI(in: reader)
         let endSound = WhereAmIEndSoundClock(holdingFor: reader)
         cloud.cloudOnly.clear()
@@ -1013,12 +1013,12 @@ final class ReaderCloudDownloadTests: XCTestCase {
         waitForReaderToLoad(reader)
         XCTAssertNil(reader.cloudSession.workingCopy)
         let files = reader.audioChapterFiles.map { Self.path($0) }
-        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        cloud.cloudOnly.mark(try chapterFile(number: 2, of: reader))
 
         reader.play()
 
         XCTAssertTrue(reader.audioPlaybackService.isPlaying, "The first chapter did not play")
-        XCTAssertEqual(reader.audioPlaybackService.queuedFilePaths, [files[0]], "A file only in the cloud was queued")
+        XCTAssertEqual(reader.audioPlaybackService.queuedFilePaths, Array(files.prefix(1)), "A file only in the cloud was queued")
 
         reader.stop()
         cloud.cloudOnly.clear()
@@ -1041,7 +1041,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
         let copy = try XCTUnwrap(reader.cloudSession.workingCopy, "No working copy was made")
-        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        cloud.cloudOnly.mark(try chapterFile(number: 2, of: reader))
 
         reader.play()
 
@@ -1065,7 +1065,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [0.6, 2])
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
-        let second = reader.audioChapterFiles[1]
+        let second = try chapterFile(number: 2, of: reader)
         cloud.storage.scriptDownload(of: book.id, steps: [Self.halfway], holdsOpen: true)
         reader.play()
         XCTAssertEqual(
@@ -1113,7 +1113,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
-        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        cloud.cloudOnly.mark(try chapterFile(number: 2, of: reader))
         cloud.storage.scriptDownload(of: book.id, steps: [Self.halfway], holdsOpen: true)
         reader.play()
         reader.navigateTo(chapterIndex: 1, characterOffset: 0)
@@ -1260,6 +1260,26 @@ final class ReaderCloudDownloadTests: XCTestCase {
         _ condition: () -> Bool
     ) {
         XCTAssertTrue(waitUntil(timeout: timeout, condition), "Timed out waiting for \(what)", file: file, line: line)
+    }
+
+    /// The file `reader` plays chapter `number` from, counted from one, as
+    /// the reader found the book's chapter files. A book without that
+    /// chapter fails the test rather than trapping, since every test host
+    /// that traps shows the user a crash dialog.
+    private func chapterFile(
+        number: Int,
+        of reader: ReaderViewModel,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> String {
+        let files = reader.audioChapterFiles
+        let index = number - 1
+        return try XCTUnwrap(
+            files.indices.contains(index) ? files[index] : nil,
+            "\(reader.book.title) has no chapter \(number) among \(files.count) chapter files",
+            file: file,
+            line: line
+        )
     }
 
     /// The names in `folder`, or none when it does not exist.
