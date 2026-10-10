@@ -586,6 +586,49 @@ final class FeedUIAddFeedTests: XCTestCase {
         XCTAssertEqual(heard, [FeedWording.checkingAddress, FeedWording.choosePrompt(count: 2), FeedWording.checkingAddress])
     }
 
+    // MARK: - The Escape Key
+
+    /// While the new folder's fields are shown, Escape closes them, says
+    /// so, and keeps the place chosen, rather than closing Add Feed; once
+    /// they are closed, a second Escape presses the sheet's Cancel.
+    func testEscapeClosesTheNewFolderFieldsBeforeTheSheet() throws {
+        let world = try FeedTestWorld(self, label: "FeedUIEscape")
+        guard startTurningTheRunLoop(world) else { return }
+        let model = AddFeedModel(center: world.center, parentPath: "", announce: { _ in })
+        let cancels = CallLog<String>()
+        let sheet = AddFeedSheet(
+            model: model,
+            library: world.library.library,
+            feedFolders: LibraryFeedFolders(center: world.center),
+            onCreateFolder: { _, _ in .success(nil) },
+            onSubscribed: { _ in },
+            onCancel: { cancels.record("Cancel") },
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 520, height: 720), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
+            try typeNewFolderName("Shows", in: hosting)
+            let recorder = try recordingAnnouncements {
+                guard pressKey(.escape, in: hosting) else {
+                    throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+                }
+                XCTAssertTrue(waitUntil {
+                    hosting.layoutSubtreeIfNeeded()
+                    return self.newFolderNameFields(in: hosting).isEmpty
+                }, "Escape left the fields open")
+            }
+            XCTAssertEqual(cancels.calls, [], "Escape closed Add Feed with the fields open")
+            XCTAssertEqual(
+                recorder.announcements.map(\.message),
+                ["New Folder cancelled. Folder to hold the feed's own folder: Library Root."]
+            )
+
+            settleHostedView(hosting)
+            XCTAssertTrue(pressKey(.escape, in: hosting), "nothing took the second Escape")
+            XCTAssertEqual(cancels.calls, ["Cancel"], "the second Escape did not close Add Feed")
+        }
+    }
+
     // MARK: - The Command
 
     /// Library > Add Feed… takes Shift-Command-F, the Add Feed action's

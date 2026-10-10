@@ -104,6 +104,107 @@ final class LibraryFolderPickerTests: XCTestCase {
         }
     }
 
+    // MARK: - Escape
+
+    /// While the new folder's fields are shown, Escape closes them, says
+    /// so, and keeps the folder chosen, rather than closing the Move sheet;
+    /// once they are closed, a second Escape presses the sheet's Cancel. So
+    /// it goes with the keyboard in the name field, where the fields put
+    /// it, or out of it, as after a Tab to the buttons, each Escape offered
+    /// to the window as the app offers a key (`pressKey(_:in:)`). Until
+    /// October 10, 2026 the first Escape closed the whole sheet.
+    func testEscapeClosesTheNewFolderFieldsBeforeTheSheet() throws {
+        for keyboardInField in [true, false] {
+            let cancels = CallLog<String>()
+            let sheet = MoveFolderSheet(
+                books: [makeBook()],
+                library: makeLibrary(withFolders: ["Reports"]),
+                lastMovedFolderPath: "Reports",
+                onMove: { _ in .success(nil) },
+                onCreateFolder: { _, _ in .success(nil) },
+                onCancel: { cancels.record("Cancel") },
+                makingFolder: true
+            )
+            let place = keyboardInField ? "in the name field" : "out of the fields"
+
+            try withHostedView(sheet, until: { !self.newFolderNameFields(in: $0).isEmpty }) { hostingView in
+                try typeNewFolderName("Charts", in: hostingView)
+                if !keyboardInField {
+                    hostingView.window?.makeFirstResponder(nil)
+                }
+                var tookEscape = false
+                let recorder = try recordingAnnouncements {
+                    tookEscape = pressKey(.escape, in: hostingView)
+                    guard tookEscape else {
+                        throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+                    }
+                    XCTAssertTrue(waitUntil {
+                        hostingView.layoutSubtreeIfNeeded()
+                        return self.newFolderNameFields(in: hostingView).isEmpty
+                    }, "Escape left the fields open, the keyboard \(place)")
+                }
+                XCTAssertEqual(cancels.calls, [], "Escape closed the sheet with the fields open, the keyboard \(place)")
+                XCTAssertEqual(
+                    recorder.announcements.map(\.message),
+                    ["New Folder cancelled. Destination folder: Reports."],
+                    "the keyboard \(place)"
+                )
+                let popUp = descendants(of: hostingView, as: NSPopUpButton.self).first
+                XCTAssertEqual(popUp?.titleOfSelectedItem, "Reports", "the folder chosen changed")
+
+                // The fields closed, the sheet's Cancel takes Escape back.
+                settleHostedView(hostingView)
+                XCTAssertTrue(pressKey(.escape, in: hostingView), "nothing took the second Escape, the keyboard \(place)")
+                XCTAssertEqual(cancels.calls, ["Cancel"], "the second Escape did not close the sheet, the keyboard \(place)")
+            }
+        }
+    }
+
+    /// An owner that keeps Escape for a button of its own while the fields
+    /// are shown, as Feed Info's Done and Import OPML's Cancel do, still
+    /// has Escape close the fields first: the picker's Cancel New Folder
+    /// comes before the owner's buttons, and the first button in view
+    /// order with a key takes it. Then the owner's button takes it.
+    func testEscapeClosesTheFieldsBeforeAnOwnersOwnEscapeButton() throws {
+        let dones = CallLog<String>()
+        let owner = PickerOwnerKeepingEscape(library: makeLibrary(withFolders: ["Reports"]), onDone: { dones.record("Done") })
+
+        try withHostedView(owner, until: { !self.newFolderNameFields(in: $0).isEmpty }) { hostingView in
+            try typeNewFolderName("Charts", in: hostingView)
+            guard pressKey(.escape, in: hostingView) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertTrue(waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.newFolderNameFields(in: hostingView).isEmpty
+            }, "Escape left the fields open")
+            XCTAssertEqual(dones.calls, [], "the owner's button took Escape while the fields were shown")
+
+            settleHostedView(hostingView)
+            XCTAssertTrue(pressKey(.escape, in: hostingView), "nothing took the second Escape")
+            XCTAssertEqual(dones.calls, ["Done"])
+        }
+    }
+
+    /// What VoiceOver hears as the fields close without a folder made: that
+    /// New Folder was cancelled, then the pop-up by its spoken label with
+    /// the folder still chosen in it, or the cancel alone when no folder
+    /// offered is chosen.
+    func testClosingTheFieldsIsAnnouncedWithTheFolderStillChosen() {
+        XCTAssertEqual(
+            LibraryFolderPicker.newFolderCancelledAnnouncement(pickerLabel: "Destination folder", chosen: "Reports"),
+            "New Folder cancelled. Destination folder: Reports."
+        )
+        XCTAssertEqual(
+            LibraryFolderPicker.newFolderCancelledAnnouncement(pickerLabel: FeedWording.folderLabel, chosen: LibraryFolderOption.rootLabel),
+            "New Folder cancelled. Folder to hold the feed's own folder: Library Root."
+        )
+        XCTAssertEqual(
+            LibraryFolderPicker.newFolderCancelledAnnouncement(pickerLabel: "Destination folder", chosen: nil),
+            "New Folder cancelled."
+        )
+    }
+
     // MARK: - Cancel New Folder
 
     /// The button that closes the new folder's fields says which Cancel it
@@ -166,5 +267,40 @@ final class LibraryFolderPickerTests: XCTestCase {
         var library = Library()
         library.folders = names.map { BookFolder(name: $0) }
         return library
+    }
+}
+
+/// A folder picker with its New Folder fields shown from the start, above a
+/// Done button that keeps Escape while they are shown, as Feed Info's Done
+/// and Import OPML's Cancel keep it.
+private struct PickerOwnerKeepingEscape: View {
+    /// The library whose folders the picker offers.
+    let library: Library
+    /// Done's action.
+    let onDone: () -> Void
+
+    /// The place chosen, the top level at first.
+    @State private var selection = ""
+    /// Why a folder could not be made; none here.
+    @State private var failure: String?
+    /// Whether the picker's fields are shown, which they are at first.
+    @State private var isMakingFolder = true
+
+    var body: some View {
+        VStack {
+            LibraryFolderPicker(
+                options: LibraryFolderOption.options(in: library),
+                newFolderParents: LibraryFolderOption.options(in: library),
+                selection: $selection,
+                caption: "Folder",
+                accessibilityLabel: "Folder",
+                onCreateFolder: { _, _ in .success(nil) },
+                failureMessage: $failure,
+                isMakingFolder: $isMakingFolder
+            )
+            Button("Done", action: onDone)
+                .keyboardShortcut(.cancelAction)
+        }
+        .padding()
     }
 }

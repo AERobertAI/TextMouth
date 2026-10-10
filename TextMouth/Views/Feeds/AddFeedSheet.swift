@@ -205,7 +205,8 @@ final class AddFeedModel: ObservableObject, Identifiable {
 /// goes, with New Folder; and Subscribe, which Return presses, and Cancel,
 /// which Escape presses. In the Search field, Return presses Search instead,
 /// and while the picker's New Folder fields are shown it presses their
-/// Create, Subscribe standing down meanwhile, so one press does one thing.
+/// Create, Subscribe standing down meanwhile, so one press does one thing;
+/// Escape then closes the fields, Cancel standing down until they close.
 /// While the address is read the sheet says so; a web page naming several
 /// feeds turns the sheet to a radio group of them; a failure stays in the
 /// sheet, beside the address, and is announced.
@@ -233,7 +234,8 @@ struct AddFeedSheet: View {
     /// Why the last folder could not be made in the picker.
     @State private var folderFailure: String?
     /// Whether the picker's new-folder fields are showing, while Return
-    /// presses their Create rather than Subscribe.
+    /// presses their Create rather than Subscribe, and Escape closes them
+    /// rather than the sheet.
     @State private var isMakingFolder: Bool
 
     /// A sheet doing `model`'s work in `library`, whose folder picker keeps
@@ -447,7 +449,10 @@ struct AddFeedSheet: View {
                 model.cancel()
                 onCancel()
             }
-            .keyboardShortcut(.cancelAction)
+            // Escape cancels, except while the new folder's fields are
+            // shown, when it closes them first (their Cancel New Folder)
+            // and a second Escape cancels.
+            .keyboardShortcut(isMakingFolder ? nil : KeyboardShortcut.cancelAction)
             Spacer()
             if model.isChoosing {
                 Button(FeedWording.backTitle) {

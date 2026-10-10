@@ -303,9 +303,11 @@ struct LibraryFolderOption: Hashable {
 /// chosen; the name field takes the keyboard as the fields open, so a
 /// VoiceOver user lands where they type. A folder that can't be made keeps
 /// the fields open with the name, and the owner's failure notice says why.
-/// While the fields are shown, Return presses their Create; an owner with a
-/// Return-key button of its own withdraws that shortcut meanwhile,
-/// following `isMakingFolder`, so one press does one thing.
+/// While the fields are shown, Return presses their Create and Escape their
+/// Cancel New Folder, which closes them, saying so, before a second Escape
+/// closes the sheet; an owner with a Return-key or Escape button of its own
+/// withdraws that shortcut meanwhile, following `isMakingFolder`, so one
+/// press does one thing.
 struct LibraryFolderPicker: View {
     /// The places the pop-up offers.
     let options: [LibraryFolderOption]
@@ -348,6 +350,16 @@ struct LibraryFolderPicker: View {
     /// What that button does, for VoiceOver: the fields close, and the
     /// folder chosen in the pop-up stays chosen.
     nonisolated static let cancelNewFolderHint = "Closes the new folder's fields and keeps the folder chosen."
+
+    /// What VoiceOver hears as the new folder's fields close without a
+    /// folder made, by Escape or Cancel New Folder: that New Folder was
+    /// cancelled, then the pop-up by its spoken label with the place still
+    /// chosen in it, as in "New Folder cancelled. Destination folder:
+    /// Reports."; the cancel alone when no place offered is chosen.
+    nonisolated static func newFolderCancelledAnnouncement(pickerLabel: String, chosen: String?) -> String {
+        guard let chosen else { return "New Folder cancelled." }
+        return "New Folder cancelled. \(pickerLabel): \(chosen)."
+    }
 
     /// The picker with its pop-up's `options`, the `newFolderParents` a new
     /// folder may go in, and the `selection` it keeps; `isDisabled` and
@@ -424,12 +436,15 @@ struct LibraryFolderPicker: View {
                 HStack {
                     // Named apart from the sheet's own Cancel, which closes
                     // the whole sheet, so VoiceOver never meets two Cancels
-                    // with different jobs.
-                    Button(Self.cancelNewFolderTitle) {
-                        newFolderName = ""
-                        showNewFolder = false
-                    }
-                    .accessibilityHint(Self.cancelNewFolderHint)
+                    // with different jobs. Escape presses it while the
+                    // fields are shown, closing them before the sheet: an
+                    // owner's own Escape button stands down meanwhile
+                    // (`isMakingFolder`), and one that doesn't comes after
+                    // the picker, and the first button in view order with
+                    // a key takes it.
+                    Button(Self.cancelNewFolderTitle, action: cancelNewFolder)
+                        .keyboardShortcut(.cancelAction)
+                        .accessibilityHint(Self.cancelNewFolderHint)
                     Spacer()
                     // Return presses Create while the fields are shown; the
                     // owner's Return-key button stands down meanwhile
@@ -455,6 +470,19 @@ struct LibraryFolderPicker: View {
         DispatchQueue.main.async {
             isNameFieldFocused = true
         }
+    }
+
+    /// Closes the new folder's fields without making a folder, by Escape or
+    /// Cancel New Folder: the name typed goes, the place chosen stays, and
+    /// VoiceOver hears both (`newFolderCancelledAnnouncement`), since the
+    /// field it was on goes away with the fields.
+    private func cancelNewFolder() {
+        newFolderName = ""
+        showNewFolder = false
+        VoiceOverAnnouncer.announce(Self.newFolderCancelledAnnouncement(
+            pickerLabel: accessibilityLabel,
+            chosen: options.first { $0.path == selection }?.label
+        ))
     }
 
     /// Makes the folder named in the fields, and chooses it once it is made.
@@ -502,7 +530,8 @@ struct MoveFolderSheet: View {
     /// Whether the books are moving now.
     @State private var isWorking = false
     /// Whether the picker's new-folder fields are showing, while Return
-    /// presses their Create rather than Move.
+    /// presses their Create rather than Move, and Escape closes them rather
+    /// than the sheet.
     @State private var isMakingFolder: Bool
 
     /// The sheet that moves `books` within `library`, offering
@@ -584,7 +613,11 @@ struct MoveFolderSheet: View {
 
             HStack {
                 Button("Cancel", action: onCancel)
-                    .keyboardShortcut(.escape, modifiers: [])
+                    // Escape closes the sheet, except while the new
+                    // folder's fields are shown, when it closes them first
+                    // (their Cancel New Folder) and a second Escape closes
+                    // the sheet.
+                    .keyboardShortcut(isMakingFolder ? nil : KeyboardShortcut(.escape, modifiers: []))
 
                 Spacer()
 
