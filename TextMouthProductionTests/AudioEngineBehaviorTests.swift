@@ -888,11 +888,12 @@ final class AudioEngineBehaviorTests: XCTestCase {
     /// on the app's render queue: nothing is heard.
     ///
     /// The same engine first renders the raw chunk, handed to the
-    /// synthesizer unguarded through the test hook, and the test skips
-    /// unless the engine refuses it: where the engine accepts the raw chunk,
-    /// a render through the guard could not be told from one without it,
-    /// and the test would pin nothing. Skips too when the voice the refusal
-    /// was measured in is not installed.
+    /// synthesizer unguarded through the test hook, at the first write and
+    /// at the strictly guarded retry alike, and the test skips unless the
+    /// engine refuses it: where the engine accepts the raw chunk, a render
+    /// through the guard could not be told from one without it, and the test
+    /// would pin nothing. Skips too when the voice the refusal was measured
+    /// in is not installed.
     @MainActor
     func testARenderHandsTheSynthesizerTheTextGuarded() throws {
         let voice = try SpeechMarkupGuardTests.probeVoice()
@@ -901,7 +902,7 @@ final class AudioEngineBehaviorTests: XCTestCase {
         defer { engine.discardRenderedAudio() }
         let request = SpeechRenderRequest(text: SpeechMarkupGuardTests.chunkAfterOpeningTag, voice: voice)
 
-        engine._spokenTextForTesting = { $0 }
+        engine._spokenTextForTesting = { text, _ in text }
         switch renderThroughTheQueue(request, into: engine, timeout: 20) {
         case .some(true):
             throw XCTSkip("The engine on this Mac rendered the raw chunk; a guarded render could not be told from an unguarded one")
@@ -923,11 +924,13 @@ final class AudioEngineBehaviorTests: XCTestCase {
     }
 
     /// A render the engine refuses, handed the raw chunk through the test
-    /// hook in place of the guard, is reported at once as failed and logged
-    /// `RENDER_REFUSED`, with nothing installed and the engine no longer
-    /// rendering, instead of holding the render queue for two minutes.
-    /// Rendered offline: nothing is heard. Skips when the voice is not
-    /// installed, or when the engine on this Mac does not refuse the chunk.
+    /// hook in place of the guard at the first write and at the strictly
+    /// guarded retry alike, is reported at once as failed and logged
+    /// `RENDER_REFUSED` for each, with nothing installed and the engine no
+    /// longer rendering, instead of holding the render queue for two
+    /// minutes. Rendered offline: nothing is heard. Skips when the voice is
+    /// not installed, or when the engine on this Mac does not refuse the
+    /// chunk.
     @MainActor
     func testARefusedRenderIsReportedAtOnce() throws {
         let voice = try SpeechMarkupGuardTests.probeVoice()
@@ -935,7 +938,7 @@ final class AudioEngineBehaviorTests: XCTestCase {
         let engine = AudioEngineService()
         defer { engine.discardRenderedAudio() }
         // The raw text, as the synthesizer saw it before the guard.
-        engine._spokenTextForTesting = { $0 }
+        engine._spokenTextForTesting = { text, _ in text }
         let request = SpeechRenderRequest(text: SpeechMarkupGuardTests.chunkAfterOpeningTag, voice: voice)
 
         let began = Date()
@@ -952,7 +955,58 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertLessThan(seconds, 15, "the refusal took \(seconds) s to report")
         XCTAssertFalse(engine.hasRenderedAudio)
         XCTAssertFalse(engine.isRendering)
-        XCTAssertTrue(lines.contains { $0.contains("RENDER_REFUSED:") && $0.contains("after 0 frames") }, "\(lines)")
+        let refusals = lines.filter { $0.contains("RENDER_REFUSED:") && $0.contains("after 0 frames") }
+        XCTAssertEqual(refusals.count, 2, "\(lines)")
+        XCTAssertTrue(refusals.first?.contains("rendering it again strictly guarded") == true, "\(lines)")
+        XCTAssertTrue(refusals.last?.contains("the strictly guarded render") == true, "\(lines)")
+        XCTAssertTrue(refusals.last?.contains("nothing installed, direct speech goes on") == true, "\(lines)")
+    }
+
+    /// A render the engine refuses as the markup guard leaves it, here the
+    /// raw chunk handed over through the test hook, is rendered once more
+    /// with every bracket silent, as direct speech retries a refused
+    /// passage, and that audio is installed with the request's signature,
+    /// so that speech has rendered audio of the chapter to go on from after
+    /// a refusal. Before, a refused render was never retried, and the
+    /// chapter had none. Rendered offline: nothing is heard. Skips when the
+    /// voice is not installed, or when the engine on this Mac does not
+    /// refuse the raw chunk.
+    @MainActor
+    func testARefusedRenderIsRenderedAgainStrictlyGuarded() throws {
+        let voice = try SpeechMarkupGuardTests.probeVoice()
+        try TextMouthPaths.ensureDirectoryStructure()
+        let engine = AudioEngineService()
+        defer { engine.discardRenderedAudio() }
+        let handedOver = OSAllocatedUnfairLock<[AudioEngineService.RenderGuard]>(initialState: [])
+        // The raw text at the first write, which the engine refuses, and the
+        // strict guard's own text at the retry.
+        engine._spokenTextForTesting = { text, guarding in
+            handedOver.withLock { $0.append(guarding) }
+            return guarding == .markup ? text : guarding.apply(to: text)
+        }
+        let request = SpeechRenderRequest(text: SpeechMarkupGuardTests.chunkAfterOpeningTag, voice: voice)
+
+        var installed: Bool?
+        let lines = logLines(in: .speechTransitions) {
+            installed = renderThroughTheQueue(request, into: engine, timeout: 30)
+        }
+
+        let guards = handedOver.withLock { $0 }
+        if guards == [.markup], installed == true {
+            throw XCTSkip("The engine on this Mac rendered the raw chunk; there is no refusal to retry")
+        }
+        XCTAssertEqual(guards, [.markup, .everyBracket], "the refused render was not tried again strictly guarded")
+        XCTAssertEqual(installed, true, "the strictly guarded render did not install audio")
+        XCTAssertTrue(engine.hasRenderedAudio)
+        XCTAssertEqual(engine.renderedSignature, request.signature)
+        XCTAssertFalse(engine.isRendering)
+        XCTAssertTrue(lines.contains { $0.contains("RENDER_REFUSED:") && $0.contains("rendering it again strictly guarded") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.contains("RENDER_RETRY_RENDERED: the strictly guarded render delivered") }, "\(lines)")
+        XCTAssertEqual(
+            AudioEngineService.RenderGuard.everyBracket.apply(to: request.text),
+            SpeechMarkupGuard.neutralizedStrictly(request.text)
+        )
+        XCTAssertEqual(AudioEngineService.RenderGuard.markup.apply(to: request.text), SpeechMarkupGuard.neutralized(request.text))
     }
 
     /// A render cancelled by the engine wakes the render queue's wait
