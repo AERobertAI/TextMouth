@@ -929,6 +929,57 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.stop()
     }
 
+    /// The system cancelling Where Am I? on its own, as the speech engine
+    /// does with a text it refuses, plays a chapter whose files came during
+    /// the announcement at once, as the announcement's end would have
+    /// played it: no end sound is owed, and the reader shows Playing.
+    /// Before, the cancel paused the reader at the chapter, as Play/Pause
+    /// does, and the play the listener had asked for was lost (REV13).
+    func testAChapterHeldForWhereAmIPlaysAtOnceWhenTheSystemCancelsIt() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I Cancelled", clone: Self.failingClone)
+        let held = try chapterHeldForWhereAmI(in: cloud)
+        let reader = held.reader
+
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didCancel: held.announcement)
+
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+        XCTAssertFalse(reader.isWhereAmISpeaking, "The cancel did not end the announcement")
+        XCTAssertFalse(reader.isChapterHeldByWhereAmI)
+        XCTAssertFalse(held.endSound.hasWorkWaiting, "Work waits for an end sound")
+        XCTAssertTrue(reader.isCurrentlyPlaying)
+        XCTAssertFalse(reader.isCurrentlyPaused, "The reader shows paused")
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(held.secondChapterFile))
+        reader.stop()
+    }
+
+    /// The system cancelling Where Am I? while the files of the chapter
+    /// about to play still download leaves the reader waiting for them, as
+    /// the announcement's end would have: the download goes on, the reader
+    /// shows Playing, and the chapter plays once its files are here.
+    func testAChapterStillDownloadingWhenTheSystemCancelsWhereAmIPlaysOnceItIsHere() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I Cancelled Downloading", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        let second = try chapterFile(number: 2, of: reader)
+        let announcement = try speakWhereAmI(in: reader)
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didCancel: announcement)
+        waitFor("the cancel to end the announcement") { !reader.isWhereAmISpeaking }
+
+        XCTAssertEqual(cloud.storage.downloadsCancelled, [], "The cancel stopped the chapter's download")
+        XCTAssertTrue(reader.isWaitingForChapterDownload, "The reader no longer waits for the chapter")
+        XCTAssertTrue(reader.isCurrentlyPlaying)
+        XCTAssertFalse(reader.isCurrentlyPaused, "The cancel paused the reader")
+        XCTAssertFalse(endSound.hasWorkWaiting, "Work waits for an end sound")
+
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        reader.stop()
+    }
+
     /// The library moves the package of a book whose chapter's files are
     /// downloading: the reader stops waiting before anything moves, since
     /// the download reads the package's files and plays them once they are

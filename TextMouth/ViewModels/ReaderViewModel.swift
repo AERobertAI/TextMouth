@@ -347,9 +347,10 @@ final class ReaderViewModel: ObservableObject {
     /// book the announcement had not paused (one paused or stopped before
     /// it), waits for the announcement to end to start the book
     /// (`startPlayHeldByWhereAmI()`): set by the Play, and cleared as the
-    /// book starts, or by a pause, a stop, Play/Pause, or a cancel nobody
-    /// asked for, which leave the book as it was (REV11). Accessed from the
-    /// WhereAmI and Playback extensions.
+    /// book starts, as the announcement ends by itself, is pressed away, or
+    /// is cancelled by the system, or by a pause, a stop, or Play/Pause,
+    /// which leave the book as it was (REV11). Accessed from the WhereAmI
+    /// and Playback extensions.
     var isPlayHeldByWhereAmI = false
     /// Whether the chapter about to play, whose files finished downloading
     /// while a Where Am I announcement spoke (FR02), waits for the

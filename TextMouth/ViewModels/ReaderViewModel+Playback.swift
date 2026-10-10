@@ -331,6 +331,13 @@ extension ReaderViewModel {
         // announcement that ended plays, before the book resumes, it pauses
         // the book that was about to play, as it would a moment later.
         if stopWhereAmIWithoutResuming() {
+            // A play waiting to start, for its chapter's speech (ready or
+            // still being prepared) or for a chapter held for the
+            // announcement's end, shows Playing, so the press pauses it, as
+            // Play/Pause pauses one without the announcement.
+            if isWaitingForChapterSpeech || isChapterHeldByWhereAmI {
+                pause(playingPauseSound: false)
+            }
             return
         }
 
@@ -361,29 +368,21 @@ extension ReaderViewModel {
 
     /// Ends the Where Am I announcement, whose synthesizer is silent now,
     /// without resuming the book it paused, which stays paused, its pause
-    /// settled as a pause is (`settlePauseLeftByWhereAmI()`); a play it
-    /// held, waiting for its chapter's speech and showing Playing, pauses
-    /// too, whether its speech is ready or still being prepared. Play/Pause
-    /// pressed during an announcement ends it so, and so does a cancel of
-    /// the announcement the reader did not ask for
-    /// (`whereAmISynthesizerCancelled(_:)`). The resume an announcement
-    /// that ended by itself still owes (`isWhereAmIResumePending`) ends the
-    /// same way: the book stays paused, its pause settled. A Play held for
-    /// the announcement's end (`isPlayHeldByWhereAmI`) is let go, the book
-    /// left as it was before the Play. An audiobook holding the chapter
-    /// whose files came during the announcement (`isChapterHeldByWhereAmI`)
-    /// pauses at the chapter, as a play waiting for its chapter's speech
-    /// does.
+    /// settled as a pause is (`settlePauseLeftByWhereAmI()`). The resume an
+    /// announcement that ended by itself still owes (`isWhereAmIResumePending`)
+    /// ends the same way: the book stays paused, its pause settled.
+    ///
+    /// What else the announcement held is the caller's to settle. Play/Pause
+    /// and every pause let go of a Play held for its end and pause a play
+    /// waiting to start (`stopWhereAmIWithoutResuming()`); a cancel of the
+    /// announcement the reader did not ask for starts them, as its end would
+    /// have (`whereAmISynthesizerCancelled(_:)`).
     func endWhereAmIWithoutResuming() {
         isWhereAmISpeaking = false
-        isPlayHeldByWhereAmI = false
         if wasPlayingBeforeWhereAmI || isWhereAmIResumePending {
             wasPlayingBeforeWhereAmI = false
             isWhereAmIResumePending = false
             settlePauseLeftByWhereAmI()
-        }
-        if isWaitingForChapterSpeech || isChapterHeldByWhereAmI {
-            pause(playingPauseSound: false)
         }
     }
 
@@ -391,14 +390,21 @@ extension ReaderViewModel {
     /// without resuming it, as Play/Pause, and anything that pauses the
     /// book, ends it: an announcement speaking is silenced first, the book
     /// it paused, or the one whose resume an announcement that ended by
-    /// itself still owes, stays paused, and a Play held for its end is let
-    /// go (`endWhereAmIWithoutResuming()`).
+    /// itself still owes, stays paused (`endWhereAmIWithoutResuming()`), and
+    /// a Play held for its end (`isPlayHeldByWhereAmI`) is let go, the book
+    /// left as it was before the Play.
+    ///
+    /// A play waiting to start, for its chapter's speech or files, or for
+    /// the announcement's end (`isChapterHeldByWhereAmI`), is left to the
+    /// caller, which pauses it: `pause(playingPauseSound:)` with the rest of
+    /// what it pauses, and `togglePlayPause()` in turn.
     ///
     /// - Returns: Whether Where Am I had anything to end.
     @discardableResult
     func stopWhereAmIWithoutResuming() -> Bool {
         guard isWhereAmIUnderWay else { return false }
         silenceWhereAmI()
+        isPlayHeldByWhereAmI = false
         endWhereAmIWithoutResuming()
         return true
     }

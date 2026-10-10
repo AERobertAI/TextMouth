@@ -443,32 +443,36 @@ extension ReaderViewModel {
     /// A cancel of the announcement speaking, which the reader did not ask
     /// for, as when the speech engine refuses its text, ends it without the
     /// end sound or the resume a finished announcement makes: the book it
-    /// paused stays paused, and a play waiting for its chapter's speech or
-    /// files pauses, as when Play/Pause ends an announcement
-    /// (`endWhereAmIWithoutResuming()`), so Play/Pause works at once instead
-    /// of only ending an announcement nobody hears. Its synthesizer is
-    /// replaced, since one the engine refused never speaks again, as the
-    /// speech service replaces its own.
+    /// paused stays paused, its pause settled (`endWhereAmIWithoutResuming()`),
+    /// so Play/Pause works at once instead of only ending an announcement
+    /// nobody hears. Its synthesizer is replaced, since one the engine
+    /// refused never speaks again, as the speech service replaces its own.
     ///
-    /// A Play pressed during the announcement, for a book it had not paused
-    /// (`isPlayHeldByWhereAmI`), was the listener's own and waited only for
-    /// the announcement: it starts the book now that the announcement has
-    /// ended, as Play does (`playOrResume()`). The cancel once let it go
-    /// with the rest, so the Play was dropped without a word (REV12).
+    /// Every play that waited for the announcement starts as its end would
+    /// have started it, now that it has ended (`startPlayHeldByWhereAmI()`):
+    /// a Play pressed during it, for a book it had not paused
+    /// (`isPlayHeldByWhereAmI`), starts the book as Play does; an
+    /// audiobook's chapter whose files came during it
+    /// (`isChapterHeldByWhereAmI`) plays; and a play waiting for its
+    /// chapter's speech starts from the cursor, at once when the speech is
+    /// ready, or as soon as it is. A play still waiting for its chapter's
+    /// files goes on waiting, and plays once they are here. Each was the
+    /// listener's own and waited only for the announcement. The cancel once
+    /// let the held Play go with the rest, dropping it without a word
+    /// (REV12), and then paused a play that was waiting, as Play/Pause
+    /// does, so a Play pressed just before the announcement was lost (REV13).
     func whereAmISynthesizerCancelled(_ cancelled: ReportedUtterance) {
         guard isLiveWhereAmIUtterance(cancelled) else { return }
-        let playWasHeld = isPlayHeldByWhereAmI
+        let playWaits = isPlayHeldByWhereAmI || isChapterHeldByWhereAmI || isPlaybackUnderWay
         DiagnosticLog.event(
             .playback,
             "WHERE_AM_I_CANCEL_UNEXPECTED: the announcement was cancelled before it ended; synthesizer replaced, "
-                + (playWasHeld ? "the Play held for it starts the book" : "book left paused")
+                + (playWaits ? "the play that waited for it goes on as at its end" : "book left paused")
         )
         liveWhereAmIUtterance = nil
         replaceWhereAmISynthesizer()
         endWhereAmIWithoutResuming()
-        if playWasHeld {
-            playOrResume()
-        }
+        startPlayHeldByWhereAmI()
     }
 
     /// Whether `reported` is the announcement speaking now
