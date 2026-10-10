@@ -306,8 +306,9 @@ extension ReaderViewModel {
     /// Whether Where Am I? will play the book once it is over: the
     /// announcement speaking paused the book as it played, or one that
     /// ended by itself resumes it once its end sound has played, or a Play
-    /// pressed during it, or a chapter whose files were downloaded during it
-    /// (`isChapterHeldByWhereAmI`), waits for its end. The book counts as
+    /// pressed during it, or a chapter whose files were downloaded, or whose
+    /// package's move ended, during it (`isChapterHeldByWhereAmI`), waits
+    /// for its end. The book counts as
     /// playing meanwhile, for the system's media commands (the Now Playing
     /// session's `isCurrentlyPlaying`) and for Next in Reading List, so that
     /// whatever pauses a playing book pauses this one too, for good (REV11).

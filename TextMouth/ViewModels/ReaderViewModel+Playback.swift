@@ -1571,8 +1571,9 @@ extension ReaderViewModel {
     /// one it paused that has not resumed (after a cancel nobody asked for,
     /// or a resume the backend refused), starts the book as Play does
     /// (`playOrResume()`); an audiobook's chapter whose files were
-    /// downloaded during it (`isChapterHeldByWhereAmI`) plays, as the
-    /// download's end would have played it; a play that waited for its
+    /// downloaded during it, or whose package's move ended during it
+    /// (`isChapterHeldByWhereAmI`), plays, as the download's or the move's
+    /// end would have played it; a play that waited for its
     /// chapter's speech, which was ready while the announcement spoke
     /// (`continueWaitingPlay()`), starts from the cursor as it is now.
     /// Nothing starts while an announcement speaks, when no play waits, or

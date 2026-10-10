@@ -1,3 +1,4 @@
+import AVFoundation
 import Combine
 import XCTest
 @testable import TextMouth
@@ -460,6 +461,45 @@ final class ReaderRefreshTests: XCTestCase {
         try assertPlaysOnFromTheMovedPackage(playing)
         XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore + 1, "The chapter did not start exactly once")
         reader.cancelSleepTimer()
+        reader.stop()
+    }
+
+    /// Where Am I? pressed while the library moves the package of the
+    /// audiobook playing finds its audio set aside, waiting rather than
+    /// playing, and pauses nothing. The move's end, while the announcement
+    /// still speaks, holds the audio for the announcement's end rather than
+    /// play it under the announcement, the reader showing Playing; and once
+    /// the announcement's end sound has played, the audio plays on, started
+    /// once and with no play sound, from the same place in the moved
+    /// package. Before, the move's end restarted the audio at once, under
+    /// the announcement (REV13 2).
+    func testWhereAmIPressedDuringAMoveHoldsTheAudioUntilTheAnnouncementEnds() throws {
+        let playing = try openPlayingAudiobook("Reader Refresh Where Am I During Move")
+        let reader = playing.reader
+        var announcements: [AVSpeechUtterance] = []
+        reader._whereAmIUtteranceRecorderForTesting = { announcements.append($0) }
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+        let generationBefore = reader.chapterPlaybackGeneration
+
+        _ = try moveToShelf(playing) {
+            reader.whereAmI()
+        }
+
+        XCTAssertTrue(reader.isWhereAmISpeaking, "Where Am I? does not speak")
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The audio played under the announcement")
+        XCTAssertTrue(reader.isChapterHeldByWhereAmI, "The move's end did not hold the audio for the announcement")
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader does not show Playing")
+        XCTAssertFalse(reader.isCurrentlyPaused, "The reader shows paused")
+        let announcement = try XCTUnwrap(announcements.last, "No announcement was handed over")
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+        XCTAssertTrue(waitUntil(timeout: 5) { !reader.isWhereAmISpeaking }, "The announcement did not end")
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The audio played before the end sound")
+
+        endSound.passEndSound()
+
+        try assertPlaysOnFromTheMovedPackage(playing)
+        XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore + 1, "The chapter did not start exactly once")
+        XCTAssertEqual(playing.sounds.played, [.whereAmIStart, .whereAmIEnd])
         reader.stop()
     }
 

@@ -151,11 +151,26 @@ extension ReaderViewModel {
     /// the old one when the move was put back. A chapter Where Am I? still
     /// holds waits for the announcement's end, which plays it
     /// (`startPlayHeldByWhereAmI()`), rather than play under it.
+    ///
+    /// So does the audio set aside when an announcement speaks as the move
+    /// ends, one pressed while the package moved, which found the audio
+    /// waiting rather than playing and paused nothing: it is held for the
+    /// announcement's end (`isChapterHeldByWhereAmI`), as a chapter whose
+    /// files came during the announcement is, at the volume it played at.
+    /// The move's end once played it at once, under the announcement (REV13).
     private func resumeAudioAfterPackageMove() {
         guard let paused = audioPausedForMove else { return }
         audioPausedForMove = nil
         guard !isChapterHeldByWhereAmI else {
             DiagnosticLog.trace(.playback, "the book's package moved; the chapter held for Where Am I's end waits for it still")
+            return
+        }
+        guard !isWhereAmISpeaking else {
+            // The player was stopped for the move; the chapter it plays as
+            // the announcement ends starts at the volume the move found.
+            audioPlaybackService.setVolume(paused.volume)
+            isChapterHeldByWhereAmI = true
+            DiagnosticLog.trace(.playback, "the book's package moved while Where Am I speaks; its audio plays on as the announcement ends")
             return
         }
         restartAudioAtCursor(volume: paused.volume)
