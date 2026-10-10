@@ -331,6 +331,74 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
+    /// A Play held for the end of Where Am I?, for a book paused or stopped
+    /// before the announcement, survives the system cancelling the
+    /// announcement, as the speech engine does with a text it refuses: the
+    /// announcement ends without its end sound, and the book starts at once,
+    /// as the Play asked, with the play sound, and is shown playing. Before,
+    /// the cancel let the held Play go with the announcement, and the book
+    /// stayed as it was, the Play dropped without a word (REV12).
+    func testAPlayHeldByWhereAmIStartsTheBookWhenTheSystemCancelsTheAnnouncement() throws {
+        for kind in BookKind.allCases {
+            for (name, leaveNotPlaying) in Self.waysToLeaveABookNotPlaying {
+                let context = "\(kind), \(name)"
+                let system = MediaSystem()
+                let world = try makeIntegrationWorld("Where Am I Held Play Cancelled \(kind) \(name)")
+                let book = try openPlayingBook(kind, in: world, joining: system)
+                leaveNotPlaying(book, system)
+                let sounds = recordSounds(of: book, "Where Am I Held Play Cancelled \(kind) \(name)")
+                book.reader.whereAmI()
+                let announcement = try XCTUnwrap(book.announcements.utterances.last, "\(context): no announcement was handed over")
+                XCTAssertEqual(system.press(.play), .success, context)
+                XCTAssertTrue(book.reader.isPlayHeldByWhereAmI, "\(context): the Play was not held for the announcement")
+
+                book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didCancel: announcement)
+                handleQueuedCallbacks()
+
+                XCTAssertFalse(book.reader.isWhereAmIUnderWay, "\(context): Where Am I? still has the book")
+                XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(context): the held Play did not start the book")
+                XCTAssertEqual(sounds.played, [.whereAmIStart, .play], context)
+                XCTAssertFalse(book.endSound.hasWorkWaiting, "\(context): work waits for an end sound")
+                let playing = NowPlayingItem(title: book.reader.book.title, author: book.reader.book.author, isPlaying: true)
+                XCTAssertEqual(system.told.last, .some(playing), "\(context): the system was not told the book plays")
+                XCTAssertEqual(system.coordinator.playingOwnerID, book.reader.nowPlayingService.ownerID, context)
+            }
+        }
+    }
+
+    // MARK: - Where Am I? Over a Book That Was Not Playing
+
+    /// Where Am I? over a book paused or stopped before it, ending by
+    /// itself, leaves the book as it was: nothing plays once its end sound
+    /// has played, and the system is told nothing more. Only a book the
+    /// announcement paused as it played, or one a Play during it asked for,
+    /// plays as it ends.
+    func testWhereAmIOverABookThatWasNotPlayingLeavesItAsItWas() throws {
+        for kind in BookKind.allCases {
+            for (name, leaveNotPlaying) in Self.waysToLeaveABookNotPlaying {
+                let context = "\(kind), \(name)"
+                let system = MediaSystem()
+                let world = try makeIntegrationWorld("Where Am I Over A Book Not Playing \(kind) \(name)")
+                let book = try openPlayingBook(kind, in: world, joining: system)
+                leaveNotPlaying(book, system)
+                let wasPaused = book.isPaused
+                let toldBefore = system.told
+                book.reader.whereAmI()
+                let announcement = try XCTUnwrap(book.announcements.utterances.last, "\(context): no announcement was handed over")
+
+                book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+                handleQueuedCallbacks()
+                XCTAssertTrue(book.endSound.hasWorkWaiting, "\(context): nothing waits for the end sound")
+                book.endSound.passEndSound()
+
+                XCTAssertFalse(book.reader.isWhereAmIUnderWay, "\(context): Where Am I? still has the book")
+                XCTAssertFalse(book.isPlaying, "\(context): the announcement's end played the book")
+                XCTAssertEqual(book.isPaused, wasPaused, "\(context): the announcement's end changed the book")
+                XCTAssertEqual(system.told, toldBefore, "\(context): the system was told more")
+            }
+        }
+    }
+
     // MARK: - Another Book Started During Where Am I?
 
     /// Another book started while Where Am I? speaks pauses the book the
@@ -616,16 +684,20 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
-    /// Edit Text taken while Where Am I? speaks stops the book to show the
-    /// edited text, and the announcement ends with it: its finish resumes
-    /// nothing of the old text's speech and tells the system nothing, the
-    /// stop having taken the book out of Now Playing. Before, the
-    /// announcement's end told the system the stopped book played, taking
-    /// the AirPods.
-    func testEditTextDuringWhereAmIEndsItWithTheBook() throws {
+    /// Edit Text taken while Where Am I? speaks over a playing book stops
+    /// the book to show the edited text, and the announcement ends with it;
+    /// the book, which the announcement would have played again as it ended,
+    /// plays on in the edited text from its place, with the play sound, as
+    /// Edit Text plays on a book that plays. The announcement's finish, as
+    /// the synthesizer then reports it, changes nothing more: no end sound,
+    /// and nothing left for one. Before, the book stayed stopped (REV12's
+    /// leftovers), and before that, the announcement's end told the system
+    /// the stopped book played, taking the AirPods.
+    func testEditTextDuringWhereAmIEndsItAndTheBookPlaysOn() throws {
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Where Am I Edit Text")
         let book = try openPlayingBook(.text, in: world, joining: system)
+        let text = try XCTUnwrap(book.text, "the text book's speech is not recorded")
         let sounds = recordSounds(of: book, "Where Am I Edit Text")
         let announcement = try pressWhereAmI(in: book)
         // The reader shows the pause before the edit arrives, as it has long
@@ -637,7 +709,18 @@ final class MediaCommandPlaybackTests: XCTestCase {
         book.reader.showEditedText(DocumentContent(title: book.reader.book.title, author: book.reader.book.author, chapters: [edited]))
 
         XCTAssertEqual(book.reader.content?.chapters.first?.text, edited.text, "the edited text is not shown")
-        assertWhereAmIEndedWithTheStop(book, announcement, system: system, sounds: sounds, "Edit Text")
+        XCTAssertFalse(book.reader.isWhereAmIUnderWay, "Where Am I? still has the book")
+        assertSpeaks(text, from: Self.openingOffset, "Edit Text during Where Am I?")
+
+        book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+        handleQueuedCallbacks()
+
+        XCTAssertEqual(sounds.played, [.whereAmIStart, .play], "the announcement's finish made a sound")
+        XCTAssertFalse(book.endSound.hasWorkWaiting, "work waits for the announcement's end sound")
+        XCTAssertTrue(book.isPlaying, "the announcement's finish stopped the book")
+        let playing = NowPlayingItem(title: book.reader.book.title, author: book.reader.book.author, isPlaying: true)
+        XCTAssertEqual(system.told.last, .some(playing), "the system was not told the book plays")
+        XCTAssertEqual(system.coordinator.playingOwnerID, book.reader.nowPlayingService.ownerID)
     }
 
     /// Any stop while Where Am I? speaks, as when the files of the chapter
@@ -724,6 +807,102 @@ final class MediaCommandPlaybackTests: XCTestCase {
                 XCTAssertFalse(book.isPlaying, context)
                 assertToldSystem(system, that: book.reader, plays: false, "\(context): a resume refused")
                 XCTAssertFalse(statistics.hasActiveSession, "\(context): the listening session stayed open")
+            }
+        }
+    }
+
+    // MARK: - A Jump During Where Am I?
+
+    /// Next Heading while Where Am I? speaks over a playing book ends the
+    /// announcement, and the book plays on from the heading: the text book
+    /// from its Tides heading, later in the same chapter, and the audiobook
+    /// from its second track's heading, in the next chapter. Before, the
+    /// jump found the book paused and stopped its speech, or the
+    /// audiobook's player, so the announcement's end had nothing to resume
+    /// and the book fell silent (REV12).
+    func testNextHeadingDuringWhereAmIPlaysOnFromTheHeading() throws {
+        for kind in BookKind.allCases {
+            try assertAJumpDuringWhereAmIPlaysOn(kind, from: Self.nextHeadingPlace(kind), "Next Heading") { reader in
+                reader.nextHeading()
+            }
+        }
+    }
+
+    /// A bookmark picked from the Bookmarks panel while Where Am I? speaks
+    /// over a playing book ends the announcement, and the book plays on
+    /// from the bookmark, as after Next Heading.
+    func testABookmarkPickedDuringWhereAmIPlaysOnFromIt() throws {
+        for kind in BookKind.allCases {
+            let place = Self.bookmarkPlace(kind)
+            try assertAJumpDuringWhereAmIPlaysOn(kind, from: place, "a bookmark") { reader in
+                reader.navigateToBookmark(Bookmark(number: 1, chapterIndex: place.chapter, characterOffset: place.offset))
+            }
+        }
+    }
+
+    /// With Auto-play on navigate, a bookmark picked while Where Am I?
+    /// speaks over a book paused before it ends the announcement, and the
+    /// play that follows the jump plays the book from the bookmark, with the
+    /// play sound, as when nothing is announced. Before, that play only
+    /// ended the announcement, and the book stayed paused (REV12).
+    func testABookmarkPickedDuringWhereAmIWithAutoPlayPlaysTheBookFromIt() throws {
+        for kind in BookKind.allCases {
+            let context = "\(kind): Auto-play after a bookmark during Where Am I?"
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Where Am I Bookmark Auto-play \(kind)")
+            world.settings.autoPlayOnNavigate = true
+            let book = try openPlayingBook(kind, in: world, joining: system, audioTracks: Self.twoTracks)
+            XCTAssertEqual(system.press(.pause), .success, context)
+            let sounds = recordSounds(of: book, "Where Am I Bookmark Auto-play \(kind)")
+            _ = try pressWhereAmI(in: book)
+            let place = Self.bookmarkPlace(kind)
+
+            book.reader.navigateToBookmark(Bookmark(number: 1, chapterIndex: place.chapter, characterOffset: place.offset))
+
+            XCTAssertFalse(book.reader.isWhereAmIUnderWay, "\(context): Where Am I? still has the book")
+            assertPlays(book, from: place, context)
+            XCTAssertEqual(sounds.played, [.whereAmIStart, .play], context)
+            assertToldSystem(system, that: book.reader, plays: true, context)
+        }
+    }
+
+    // MARK: - A Sleep Timer Set During Where Am I?
+
+    /// A sleep timer set to start playback while Where Am I? speaks, as the
+    /// sleep timer's sheet, Restart Sleep Timer, and the AirPods' gesture
+    /// all set one, starts its countdown and lets the announcement finish,
+    /// and the book plays as the announcement ends, as a Play during it
+    /// does: the book the announcement paused plays again, and one paused
+    /// before it starts. Before, the timer's start went through Play/Pause,
+    /// which ended the announcement and left the book paused (REV12's
+    /// leftovers).
+    func testASleepTimerSetDuringWhereAmIPlaysTheBookAsItEnds() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        for kind in BookKind.allCases {
+            for pausedBefore in [false, true] {
+                let context = "\(kind), \(pausedBefore ? "paused before" : "playing")"
+                let system = MediaSystem()
+                let world = try makeIntegrationWorld("Where Am I Sleep Timer \(kind) \(pausedBefore)")
+                let book = try openPlayingBook(kind, in: world, joining: system)
+                if pausedBefore {
+                    XCTAssertEqual(system.press(.pause), .success, context)
+                }
+                let announcement = try pressWhereAmI(in: book)
+                // The reader shows the pause before the timer is set, as it
+                // has long since when a listener sets one.
+                handleQueuedCallbacks()
+
+                book.reader.startSleepTimer(duration: .minutes(15), startPlaybackIfNeeded: true)
+
+                XCTAssertTrue(timer.isActive, "\(context): the timer did not start")
+                XCTAssertEqual(timer.ownerID, book.reader.readerID, "\(context): the timer is not the reader's")
+                XCTAssertTrue(book.reader.isWhereAmISpeaking, "\(context): setting the timer ended the announcement")
+                XCTAssertFalse(book.isPlaying, "\(context): the book plays under the announcement")
+                finishWhereAmIByItself(book, announcement)
+                book.endSound.passEndSound()
+                XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(context): the book did not play as the announcement ended")
+                assertToldSystem(system, that: book.reader, plays: true, context)
             }
         }
     }
@@ -860,6 +1039,49 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertEqual(system.press(.play), .success)
         assertSpeaks(quay, from: Self.openingOffset, "Play once the speech was ready")
         assertToldSystem(system, that: quay.reader, plays: true, "Play once the speech was ready")
+    }
+
+    /// A play waiting for its chapter's speech counts as playing for the
+    /// system's media commands, as it shows Playing: a recording starting
+    /// pauses it, as it pauses every book playing, and so do the AirPods
+    /// leaving, so it stops waiting and says nothing once its speech is
+    /// ready, and the system is told it paused. Before, it counted as not
+    /// playing, nothing paused it, and it began to speak once its speech was
+    /// ready, under the recording or through the Mac's speakers (REV12's
+    /// leftovers).
+    func testAPlayWaitingForItsChaptersSpeechIsPausedAsAPlayingBookIs() throws {
+        let pauses: [(name: String, pause: (MediaSystem) -> Void)] = [
+            ("a recording starting", { system in
+                XCTAssertEqual(system.coordinator.pauseEveryPlayingReader(), 1, "the waiting play was not paused")
+            }),
+            ("the AirPods leaving", { system in
+                system.takeAirPodsOut()
+            }),
+        ]
+        for (name, pause) in pauses {
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Waiting Play Paused \(name)")
+            world.settings.bluetoothMonitoringEnabled = true
+            world.settings.bluetoothDisconnectDelay = 2
+            let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+            let inputs = try XCTUnwrap(quay.reader.speechInputs(forChapterAt: 0), name)
+            // The chapter's speech is "prepared off the main thread" by the
+            // test, which hands it over when it chooses, so nothing can
+            // start while the run loop turns.
+            XCTAssertTrue(quay.reader.chapterSpeechCache.beginPreparingInBackground(inputs), name)
+            quay.reader.play()
+            XCTAssertTrue(quay.reader.isWaitingForChapterSpeech, "\(name): Play did not wait for the chapter's speech")
+            system.coordinator.refreshPreviousDeviceInfo()
+            XCTAssertTrue(system.coordinator.previousDeviceWasBluetooth, "\(name): the AirPods are not the output")
+
+            pause(system)
+
+            XCTAssertFalse(quay.reader.isWaitingForChapterSpeech, "\(name): the play still waits")
+            quay.reader.finishPreparingInBackground(inputs.prepare())
+            XCTAssertTrue(quay.handedOver.utterances.isEmpty, "\(name): the paused play spoke once its speech was ready")
+            XCTAssertFalse(quay.reader.speechService.isSpeaking, "\(name): the paused play started once its speech was ready")
+            assertToldSystem(system, that: quay.reader, plays: false, name)
+        }
     }
 
     // MARK: - Continue to Next Book
@@ -2540,6 +2762,10 @@ final class MediaCommandPlaybackTests: XCTestCase {
     private struct PlayingBook {
         let kind: BookKind
         let reader: ReaderViewModel
+        /// The text book, with what its speech handed over in place of the
+        /// synthesizer, so a test can check where it speaks from; nil for an
+        /// audiobook.
+        let text: TextBookReader?
         /// The announcements handed over, oldest first.
         let announcements: HandedOverUtterances
         /// Holds what an announcement that ended by itself leaves for once
@@ -2569,23 +2795,27 @@ final class MediaCommandPlaybackTests: XCTestCase {
 
     /// Opens a book of `kind` in `world`, joined to `system`, and plays it:
     /// the text book at `openingOffset`, its first word reported, or a
-    /// silent audiobook of one 30-second track from its start.
+    /// silent audiobook from its start, one chapter for each of
+    /// `audioTracks` (seconds), one 30-second track unless given.
     private func openPlayingBook(
         _ kind: BookKind,
         in world: IntegrationWorld,
         joining system: MediaSystem,
+        audioTracks: [TimeInterval] = [30],
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws -> PlayingBook {
         let reader: ReaderViewModel
+        var text: TextBookReader?
         switch kind {
         case .text:
             let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
             quay.reader.play()
             reportWordSpoken(by: quay, file: file, line: line)
             reader = quay.reader
+            text = quay
         case .audio:
-            let soundings = try world.makeSilentAudioBook(title: "Harbour Soundings", trackDurations: [30])
+            let soundings = try world.makeSilentAudioBook(title: "Harbour Soundings", trackDurations: audioTracks)
             reader = world.openReader(for: soundings, nowPlaying: system.coordinator)
             waitForReaderToLoad(reader, file: file, line: line)
             reader.play()
@@ -2595,11 +2825,25 @@ final class MediaCommandPlaybackTests: XCTestCase {
         let book = PlayingBook(
             kind: kind,
             reader: reader,
+            text: text,
             announcements: announcements,
             endSound: WhereAmIEndSoundClock(holdingFor: reader)
         )
         XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(kind): the book did not play", file: file, line: line)
         return book
+    }
+
+    /// The ways a test leaves a playing book not playing before it presses
+    /// Where Am I? over it: paused, by a Pause from the AirPods, or stopped.
+    private static var waysToLeaveABookNotPlaying: [(name: String, leave: (PlayingBook, MediaSystem) -> Void)] {
+        [
+            ("paused before", { _, system in
+                XCTAssertEqual(system.press(.pause), .success)
+            }),
+            ("stopped before", { book, _ in
+                book.reader.stop()
+            }),
+        ]
     }
 
     /// Presses Where Am I? in `book`'s window, which pauses the book and
@@ -2672,6 +2916,90 @@ final class MediaCommandPlaybackTests: XCTestCase {
         book.endSound.passEndSound()
         XCTAssertFalse(book.isPlaying, "\(context): the book resumed as the end sound passed", file: file, line: line)
         XCTAssertTrue(book.isPaused, "\(context): the book is not paused where it was", file: file, line: line)
+    }
+
+    // MARK: - A Jump During Where Am I?, Its Places
+
+    /// The audiobook a jump test plays: two 30-second tracks, each a chapter
+    /// of its own with its heading at its start.
+    private static let twoTracks: [TimeInterval] = [30, 30]
+
+    /// A place in a book: a chapter, and an offset in it.
+    private typealias Place = (chapter: Int, offset: Int)
+
+    /// Where Next Heading lands from where a playing book of `kind` is: the
+    /// text book's Tides heading, later in its one chapter, or the second
+    /// track's heading, at the start of the audiobook's next chapter.
+    private static func nextHeadingPlace(_ kind: BookKind) -> Place {
+        switch kind {
+        case .text: return (0, ledgerText.utf16OffsetOfFirst("Tides\n"))
+        case .audio: return (1, 0)
+        }
+    }
+
+    /// The bookmark a jump test picks in a book of `kind`: the 300th tide in
+    /// the text book's Tides heading, or five seconds into the audiobook's
+    /// second track.
+    private static func bookmarkPlace(_ kind: BookKind) -> Place {
+        switch kind {
+        case .text: return (0, ledgerText.utf16OffsetOfFirst("Tide 300 "))
+        case .audio: return (1, Int(5 * ReaderViewModel.audioCharsPerSecond))
+        }
+    }
+
+    /// Plays a book of `kind` in a world of its own, two tracks for an
+    /// audiobook, presses Where Am I? over it, and makes `jump` while the
+    /// announcement speaks; then checks that the jump ended the announcement
+    /// and that the book plays on from `place`, the system told it plays,
+    /// and that the announcement's finish, as the synthesizer then reports
+    /// it, changes nothing more: no end sound, nothing left for one, and the
+    /// book still playing.
+    private func assertAJumpDuringWhereAmIPlaysOn(
+        _ kind: BookKind,
+        from place: Place,
+        _ name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        jump: (ReaderViewModel) -> Void
+    ) throws {
+        let context = "\(kind): \(name) during Where Am I?"
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Where Am I Jump \(name) \(kind)")
+        let book = try openPlayingBook(kind, in: world, joining: system, audioTracks: Self.twoTracks, file: file, line: line)
+        let sounds = recordSounds(of: book, "Where Am I Jump \(name) \(kind)")
+        let announcement = try pressWhereAmI(in: book, file: file, line: line)
+
+        jump(book.reader)
+
+        XCTAssertFalse(book.reader.isWhereAmIUnderWay, "\(context): Where Am I? still has the book", file: file, line: line)
+        assertPlays(book, from: place, context, file: file, line: line)
+        assertToldSystem(system, that: book.reader, plays: true, context, file: file, line: line)
+
+        book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+        handleQueuedCallbacks(file: file, line: line)
+
+        XCTAssertFalse(book.endSound.hasWorkWaiting, "\(context): the announcement's finish left work for its end sound", file: file, line: line)
+        XCTAssertEqual(sounds.played, [.whereAmIStart], "\(context): the announcement's finish made a sound", file: file, line: line)
+        XCTAssertTrue(book.isPlaying, "\(context): the announcement's finish stopped the book", file: file, line: line)
+    }
+
+    /// Check that `book` plays from `place`: the text book's speech from
+    /// that offset, the cursor there (`assertSpeaks`), or the audiobook's
+    /// audio from that place in that chapter (`assertPlaysAudio`).
+    private func assertPlays(
+        _ book: PlayingBook,
+        from place: Place,
+        _ context: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard let text = book.text else {
+            assertPlaysAudio(book.reader, inChapter: place.chapter, from: place.offset, context, file: file, line: line)
+            return
+        }
+        XCTAssertEqual(book.reader.currentChapterIndex, place.chapter, "\(context): the cursor is in another chapter", file: file, line: line)
+        XCTAssertEqual(book.reader.currentCharacterOffset, place.offset, "\(context): the cursor is not at the place", file: file, line: line)
+        assertSpeaks(text, from: place.offset, context, file: file, line: line)
     }
 
     /// Records the sound effects `book`'s reader asks for from now on, in

@@ -216,15 +216,15 @@ extension ReaderViewModel {
         autoPlayIfEnabled()
     }
 
-    /// If the auto-play-on-navigate setting is enabled and playback is not active, start playing.
+    /// With Auto-play on navigate, plays the book after a jump from a panel
+    /// as Play does, unless it plays or waits to play already
+    /// (`playUnlessUnderWay()`). The play once went through Play/Pause,
+    /// which paused a play waiting for its chapter, so a heading picked
+    /// while an audiobook's chapter downloaded stopped the download, and the
+    /// book stayed silent.
     func autoPlayIfEnabled() {
         guard settingsViewModel.autoPlayOnNavigate else { return }
-        let isActive = isAudioBook
-            ? (audioPlaybackService.isPlaying && !audioPlaybackService.isPaused)
-            : (speechService.isSpeaking && !speechService.isPaused)
-        if !isActive {
-            togglePlayPause()
-        }
+        playUnlessUnderWay()
     }
 
     /// Save current position so the user can return to it after browsing headings/bookmarks

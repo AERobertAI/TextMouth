@@ -813,8 +813,18 @@ extension ReaderViewModel {
     /// jump to or past where the heading this reader's End of heading sleep
     /// timer waits for ends, ends the timer there once the jump is made
     /// (`endSleepTimerIfMoveReachedHeadingEnd()`, finding #787).
+    ///
+    /// A jump while Where Am I? has the book in hand ends the announcement
+    /// first, as a skip does (`cancelWhereAmIIfActive()`): the book it paused
+    /// plays again, or the Play it held starts, so the jump moves a book that
+    /// plays, and it plays on from where the jump lands. Before, the jump
+    /// found the book paused, stopped its speech, or an audiobook's player
+    /// for another chapter, and the announcement's end then had nothing to
+    /// resume, leaving the book silent; with Auto-play on navigate, the
+    /// play that follows the jump only ended the announcement (REV12).
     func navigateTo(chapterIndex: Int, characterOffset: Int) {
         guard let content = content, !content.chapters.isEmpty else { return }
+        cancelWhereAmIIfActive()
         defer { endSleepTimerIfMoveReachedHeadingEnd() }
         // A jump leaves a finished book's end behind: the reader then rests
         // where the jump lands, as any stopped reader does, and its skips

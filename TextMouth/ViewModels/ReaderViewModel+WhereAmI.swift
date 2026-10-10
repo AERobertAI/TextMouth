@@ -311,19 +311,16 @@ extension ReaderViewModel {
     /// announcement that ended by itself paused, whose resume waits for the
     /// end sound (`isWhereAmIResumePending`), resumes at once, so that the
     /// command acts on the book playing, as it would a moment later.
-    /// Used by skips and moves to cleanly interrupt an announcement, and by
-    /// a press of Where Am I? that stops one (`whereAmI(_:)`).
+    /// Used by skips and every jump (`navigateTo(chapterIndex:characterOffset:)`)
+    /// to cleanly interrupt an announcement, by a book continuing to this
+    /// one (`claimAutoplayRequest()`), and by a press of Where Am I? that
+    /// stops one (`whereAmI(_:)`).
     func cancelWhereAmIIfActive() {
         guard isWhereAmIUnderWay else { return }
-        if isWhereAmISpeaking {
-            stopWhereAmISynthesizer()
-            isWhereAmISpeaking = false
-        }
-        // Resume book if it was playing before Where Am I interrupted it
-        if WhereAmIInterruptionPolicy.shouldResume(
-            wasPlayingBeforeAnnouncement: wasPlayingBeforeWhereAmI || isWhereAmIResumePending,
-            reason: .navigationOrRepeatedCommand
-        ) {
+        silenceWhereAmI()
+        // The book the announcement paused as it played resumes, as does one
+        // whose resume an announcement that ended by itself still owes.
+        if wasPlayingBeforeWhereAmI || isWhereAmIResumePending {
             wasPlayingBeforeWhereAmI = false
             isWhereAmIResumePending = false
             resumeBookPausedForWhereAmI()
@@ -384,6 +381,21 @@ extension ReaderViewModel {
         whereAmISynth.stopSpeaking(at: .immediate)
     }
 
+    /// Silences an announcement speaking, as the reader asks
+    /// (`stopWhereAmISynthesizer()`), and records that none speaks: what
+    /// the announcement holds of the book, the book it paused, the resume
+    /// it owes, or a Play or a chapter it held, is the caller's to settle.
+    /// Nothing happens while none speaks. Every end of an announcement the
+    /// reader makes goes through here: a command that interrupts it
+    /// (`cancelWhereAmIIfActive()`), anything that pauses the book
+    /// (`stopWhereAmIWithoutResuming()`), and the book stopping
+    /// (`endWhereAmIAsTheBookStops()`).
+    func silenceWhereAmI() {
+        guard isWhereAmISpeaking else { return }
+        stopWhereAmISynthesizer()
+        isWhereAmISpeaking = false
+    }
+
     /// The synthesizer says `finished` ended by itself, on the main queue.
     /// When it is the announcement speaking, the announcement ends as one
     /// that finished does (`whereAmIAnnouncementFinished()`); the end of
@@ -403,21 +415,32 @@ extension ReaderViewModel {
     /// A cancel of the announcement speaking, which the reader did not ask
     /// for, as when the speech engine refuses its text, ends it without the
     /// end sound or the resume a finished announcement makes: the book it
-    /// paused stays paused, and a play it held pauses, as when Play/Pause
-    /// ends an announcement (`endWhereAmIWithoutResuming()`), so Play/Pause
-    /// works at once instead of only ending an announcement nobody hears.
-    /// Its synthesizer is replaced, since one the engine refused never
-    /// speaks again, as the speech service replaces its own.
+    /// paused stays paused, and a play waiting for its chapter's speech or
+    /// files pauses, as when Play/Pause ends an announcement
+    /// (`endWhereAmIWithoutResuming()`), so Play/Pause works at once instead
+    /// of only ending an announcement nobody hears. Its synthesizer is
+    /// replaced, since one the engine refused never speaks again, as the
+    /// speech service replaces its own.
+    ///
+    /// A Play pressed during the announcement, for a book it had not paused
+    /// (`isPlayHeldByWhereAmI`), was the listener's own and waited only for
+    /// the announcement: it starts the book now that the announcement has
+    /// ended, as Play does (`playOrResume()`). The cancel once let it go
+    /// with the rest, so the Play was dropped without a word (REV12).
     func whereAmISynthesizerCancelled(_ cancelled: ReportedUtterance) {
         guard isLiveWhereAmIUtterance(cancelled) else { return }
+        let playWasHeld = isPlayHeldByWhereAmI
         DiagnosticLog.event(
             .playback,
-            "WHERE_AM_I_CANCEL_UNEXPECTED: the announcement was cancelled before it ended; "
-                + "synthesizer replaced, book left paused"
+            "WHERE_AM_I_CANCEL_UNEXPECTED: the announcement was cancelled before it ended; synthesizer replaced, "
+                + (playWasHeld ? "the Play held for it starts the book" : "book left paused")
         )
         liveWhereAmIUtterance = nil
         replaceWhereAmISynthesizer()
         endWhereAmIWithoutResuming()
+        if playWasHeld {
+            playOrResume()
+        }
     }
 
     /// Whether `reported` is the announcement speaking now
@@ -454,10 +477,10 @@ extension ReaderViewModel {
     func whereAmIAnnouncementFinished() {
         isWhereAmISpeaking = false
         soundEffectService?.play(for: .whereAmIEnd)
-        if WhereAmIInterruptionPolicy.shouldResume(
-            wasPlayingBeforeAnnouncement: wasPlayingBeforeWhereAmI,
-            reason: .naturalCompletion
-        ) {
+        // The book the announcement paused as it played resumes once the
+        // end sound has played; a book paused or stopped before it stays as
+        // it was, unless a Play was held for it.
+        if wasPlayingBeforeWhereAmI {
             wasPlayingBeforeWhereAmI = false
             isWhereAmIResumePending = true
         }
@@ -535,10 +558,7 @@ extension ReaderViewModel {
     /// had just let go of the media controls (Shift-R) took the AirPods back,
     /// and Shift-R then said it did not hold them (REV11).
     func endWhereAmIAsTheBookStops() {
-        if isWhereAmISpeaking {
-            stopWhereAmISynthesizer()
-        }
-        isWhereAmISpeaking = false
+        silenceWhereAmI()
         wasPlayingBeforeWhereAmI = false
         isWhereAmIResumePending = false
         isPlayHeldByWhereAmI = false
@@ -680,27 +700,5 @@ extension ReaderViewModel {
     private func postAnnouncement(_ message: String, priority: NSAccessibilityPriorityLevel) {
         lastAnnouncement = message
         VoiceOverAnnouncer.announce(message, priority: priority)
-    }
-}
-
-/// Central decision table for interactions between the separate Where Am I
-/// synthesizer and book playback.
-enum WhereAmIInterruptionPolicy {
-    enum Reason: Equatable {
-        case playbackToggle
-        case navigationOrRepeatedCommand
-        case naturalCompletion
-    }
-
-    static func blocksBookPlayback(isAnnouncementSpeaking: Bool) -> Bool {
-        isAnnouncementSpeaking
-    }
-
-    static func shouldResume(
-        wasPlayingBeforeAnnouncement: Bool,
-        reason: Reason
-    ) -> Bool {
-        guard wasPlayingBeforeAnnouncement else { return false }
-        return reason != .playbackToggle
     }
 }

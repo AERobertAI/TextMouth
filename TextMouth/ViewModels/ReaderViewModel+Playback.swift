@@ -119,6 +119,23 @@ extension ReaderViewModel {
         }
     }
 
+    /// Plays the book as Play does (`playOrResume()`) unless playback is
+    /// under way (`isPlaybackUnderWay`): a paused book resumes and a stopped
+    /// one starts, while a book playing, or waiting to play for its
+    /// chapter's speech or files, is left as it is. While Where Am I? has the
+    /// book in hand, the play waits for it, as Play does
+    /// (`holdPlayForWhereAmI()`). For the plays a command makes for the
+    /// listener: Auto-play on navigate (`autoPlayIfEnabled()`), and a sleep
+    /// timer set to start playback (`startSleepTimer(duration:startPlaybackIfNeeded:)`).
+    ///
+    /// Both once went through Play/Pause (`togglePlayPause()`), which paused
+    /// a play waiting for its chapter, taken for one playing, and ended an
+    /// announcement speaking in place of playing, leaving the book paused.
+    func playUnlessUnderWay() {
+        guard !isPlaybackUnderWay else { return }
+        playOrResume()
+    }
+
     private func resumeAudioPlayback() {
         mediaControlsReleased = false
         nowPlayingService.activateRemoteCommandsIfNeeded()
@@ -322,9 +339,7 @@ extension ReaderViewModel {
     @discardableResult
     func stopWhereAmIWithoutResuming() -> Bool {
         guard isWhereAmIUnderWay else { return false }
-        if isWhereAmISpeaking {
-            stopWhereAmISynthesizer()
-        }
+        silenceWhereAmI()
         endWhereAmIWithoutResuming()
         return true
     }
@@ -1466,7 +1481,7 @@ extension ReaderViewModel {
     /// Where Am I announcement: the play goes on waiting, showing Playing,
     /// and starts once the announcement ends (`startPlayHeldByWhereAmI()`).
     private func continueWaitingPlay() {
-        guard !WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: isWhereAmISpeaking) else {
+        guard !isWhereAmISpeaking else {
             DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks; starting it once the announcement ends")
             return
         }
@@ -1491,7 +1506,10 @@ extension ReaderViewModel {
     /// (`continueWaitingPlay()`), starts from the cursor as it is now.
     /// Nothing starts while an announcement speaks, when no play waits, or
     /// while the speech the play waits for is still being prepared, whose
-    /// end starts the play itself.
+    /// end starts the play itself. A held chapter whose book's package is
+    /// moving (`audioPausedForMove`) is left to the move's end, which plays
+    /// it from the new place, so nothing reads the package's files as they
+    /// move.
     func startPlayHeldByWhereAmI() {
         guard !hasClosed, !isWhereAmISpeaking else { return }
         if isPlayHeldByWhereAmI {
@@ -1501,6 +1519,11 @@ extension ReaderViewModel {
             return
         }
         if isChapterHeldByWhereAmI {
+            isChapterHeldByWhereAmI = false
+            guard audioPausedForMove == nil else {
+                DiagnosticLog.trace(.playback, "play: Where Am I ended while the book's package moves; the chapter plays once the move is over")
+                return
+            }
             DiagnosticLog.trace(.playback, "play: Where Am I ended; playing the chapter downloaded during it")
             playAudioChapter()
             return
@@ -2518,7 +2541,9 @@ extension ReaderViewModel {
     /// Calling this with a timer already running just replaces it
     /// (the singleton's start() implicitly stops any previous timer).
     /// When `startPlaybackIfNeeded` is true, paused/stopped playback is
-    /// resumed or started so the armed timer has audio to count against.
+    /// resumed or started, as Play does (`playUnlessUnderWay()`), so the
+    /// armed timer has audio to count against; while Where Am I? speaks,
+    /// the book plays as the announcement ends.
     /// A timer for the end of the heading waits for the heading the cursor
     /// is in now to end, where the next heading begins, or the book ends
     /// after the last heading, for which nothing is kept (finding #787).
@@ -2597,7 +2622,7 @@ extension ReaderViewModel {
         nameFileAfterCurrentChapter()
         fadeOutBeforeSleepTimerStop()
         if startPlaybackIfNeeded {
-            startSleepTimerPlaybackIfNeeded()
+            playUnlessUnderWay()
         }
     }
 
@@ -2660,16 +2685,6 @@ extension ReaderViewModel {
             )
             announceToVoiceOver("No previous sleep timer to restart.")
         }
-    }
-
-    /// Start playback if the reader is currently paused or stopped.
-    /// The sleep timer uses this after arming a new or reset timer so
-    /// the timer's countdown matches the user's "read until it ends"
-    /// intent, regardless of whether the timer was replaced or newly
-    /// created.
-    private func startSleepTimerPlaybackIfNeeded() {
-        guard !isCurrentlyPlaying || isCurrentlyPaused else { return }
-        togglePlayPause()
     }
 
     /// Pause playback as `pause()` does, making the pause sound only when
