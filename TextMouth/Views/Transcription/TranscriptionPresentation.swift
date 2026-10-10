@@ -40,6 +40,13 @@ final class TranscriptionPresenter: ObservableObject {
     /// The notice showing, or nil.
     @Published var notice: TranscriptionNotice?
 
+    /// Whether any of the dialogs shows: a sheet, the confirmation, or the
+    /// notice. A book's window waits for none to show before it shows the
+    /// report of a speech refusal (`SpeechRefusalReportPresenter`).
+    var isShowingAny: Bool {
+        sheet != nil || cleanup != nil || deletion != nil || notice != nil
+    }
+
     /// What the dialogs reach: the app's own, unless a test passes its own.
     private let services: @MainActor () -> TranscriptionSheetServices
     /// What the Clean Up sheet reaches: the app's own, unless a test passes

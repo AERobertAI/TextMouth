@@ -267,7 +267,7 @@ final class BookExportSheetTests: XCTestCase {
         waitForReaderToLoad(reader)
         let content = Text("Reader")
             .toolbar { ToolbarItem { Button("Where Am I?") {} } }
-            .modifier(ReaderBookCommandsSupport(viewModel: reader))
+            .modifier(ReaderBookCommandsSupport(viewModel: reader, exportModel: .constant(nil), transcription: TranscriptionPresenter()))
 
         let host = ToolbarHost(content)
         defer { host.close() }

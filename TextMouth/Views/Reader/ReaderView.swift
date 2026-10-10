@@ -16,6 +16,9 @@ struct ReaderView: View {
     @EnvironmentObject var soundEffectService: SoundEffectService
     /// Which of the reader's panels are showing.
     @State private var panels = ReaderPanels()
+    /// The reader's transcription dialogs (FR05), kept here so that the
+    /// report of a speech refusal can wait while one shows.
+    @StateObject private var transcription = TranscriptionPresenter()
     /// Closes this reader's window, for Close in the cloud download view.
     @Environment(\.dismissWindow) private var dismissWindow
 
@@ -26,12 +29,17 @@ struct ReaderView: View {
                 viewModel.soundEffectService = soundEffectService
             }
             // Export and the other commands on the book as a whole (FR05).
-            .modifier(ReaderBookCommandsSupport(viewModel: viewModel))
+            .modifier(ReaderBookCommandsSupport(
+                viewModel: viewModel,
+                exportModel: $panels.export,
+                transcription: transcription
+            ))
             .modifier(ReaderErrorAlert(viewModel: viewModel))
             .modifier(ReaderPanelSheets(viewModel: viewModel, panels: $panels))
             .modifier(ReaderPanelCommands(viewModel: viewModel, panels: $panels))
-            // The report of a speech refusal, once no panel shows (B05).
-            .modifier(SpeechRefusalReportPresenter(viewModel: viewModel, panels: panels))
+            // The report of a speech refusal, once nothing else shows over
+            // the reader (B05).
+            .modifier(SpeechRefusalReportPresenter(viewModel: viewModel, panels: panels, transcription: transcription))
     }
 
     // MARK: - Content
@@ -202,7 +210,8 @@ struct ReaderView: View {
 
 /// Which of a reader's panels are showing, each as a sheet over the reader.
 /// The toolbar's buttons and the menu commands (`ReaderPanelCommands`) open
-/// and close them, and `ReaderPanelSheets` presents them.
+/// and close them, and `ReaderPanelSheets` presents them; the Export dialog
+/// is opened and presented by `ReaderBookCommandsSupport`.
 struct ReaderPanels {
     /// The headings (`HeadingNavigatorView`).
     var headings = false
@@ -217,6 +226,10 @@ struct ReaderPanels {
     var voice = false
     /// Search in the book (`BookSearchView`), for a text book only.
     var search = false
+    /// The Export dialog (`BookExportSheet`) for the book as a whole
+    /// (FR05), which File > Export… and the toolbar's Export button open
+    /// (`ReaderBookCommandsSupport`): the export it shows, or nil.
+    var export: BookExportModel?
 }
 
 /// Why the book could not be loaded, shown in place of the book, and read

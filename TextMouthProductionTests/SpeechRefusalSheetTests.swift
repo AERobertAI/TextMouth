@@ -139,8 +139,9 @@ final class SpeechRefusalSheetTests: XCTestCase {
     }
 
     /// The report waits while one of the reader's panels shows, since a
-    /// window shows one sheet at a time, and every panel counts: one added
-    /// to `ReaderPanels` without being added to `isShowingAny` fails here.
+    /// window shows one sheet at a time, and every panel counts, the Export
+    /// dialog among them: one added to `ReaderPanels` without being added
+    /// to `isShowingAny` fails here.
     func testTheReportWaitsWhileAnyPanelShows() {
         XCTAssertFalse(ReaderPanels().isShowingAny)
         let eachPanel: [WritableKeyPath<ReaderPanels, Bool>] = [\.headings, \.bookmarks, \.sleepTimer, \.bookInfo, \.voice, \.search]
@@ -149,7 +150,55 @@ final class SpeechRefusalSheetTests: XCTestCase {
             panels[keyPath: panel] = true
             XCTAssertTrue(panels.isShowingAny, "\(panel) does not count")
         }
-        XCTAssertEqual(Mirror(reflecting: ReaderPanels()).children.count, eachPanel.count, "a panel is missing from isShowingAny")
+        var exporting = ReaderPanels()
+        exporting.export = BookExportModel(books: [])
+        XCTAssertTrue(exporting.isShowingAny, "the Export dialog does not count")
+        XCTAssertEqual(
+            Mirror(reflecting: ReaderPanels()).children.count,
+            eachPanel.count + 1,
+            "a panel is missing from isShowingAny"
+        )
+    }
+
+    /// The report waits, too, while one of the reader's transcription
+    /// dialogs shows, each of them counting, and while its error alert
+    /// shows, so that a refusal never asks for a second sheet or alert over
+    /// one showing; it shows once the reader keeps one and nothing else is
+    /// over the reader.
+    func testTheReportWaitsForTheTranscriptionDialogsAndTheErrorAlert() {
+        let quiet = ReaderPanels()
+        func shows(keepingOne: Bool = true, panels: ReaderPanels = ReaderPanels(), dialog: Bool = false, alert: Bool = false) -> Bool {
+            SpeechRefusalReportPresenter.showsReport(
+                keepingOne: keepingOne,
+                panels: panels,
+                transcriptionDialogShows: dialog,
+                errorAlertShows: alert
+            )
+        }
+        XCTAssertTrue(shows(panels: quiet), "the report does not show with nothing over the reader")
+        XCTAssertFalse(shows(keepingOne: false), "a report shows with none kept")
+        XCTAssertFalse(shows(dialog: true), "the report does not wait for a transcription dialog")
+        XCTAssertFalse(shows(alert: true), "the report does not wait for the error alert")
+        var exporting = ReaderPanels()
+        exporting.export = BookExportModel(books: [])
+        XCTAssertFalse(shows(panels: exporting), "the report does not wait for the Export dialog")
+
+        let presenter = TranscriptionPresenter()
+        XCTAssertFalse(presenter.isShowingAny)
+        let book = Book(title: "Tide Tables", format: .audio, filePath: "/nonexistent/tide.mp3", md5Hash: "tide-tables")
+        presenter.sheet = TranscriptionSheetModel(request: .refused(TranscriptionWording.oneBookAtATime), library: nil)
+        XCTAssertTrue(presenter.isShowingAny, "the Transcribe Audio sheet does not count")
+        presenter.sheet = nil
+        presenter.cleanup = TranscriptCleanupSheetModel(book: book, library: nil)
+        XCTAssertTrue(presenter.isShowingAny, "the Clean Up sheet does not count")
+        presenter.cleanup = nil
+        presenter.deletion = TranscriptDeletionRequest(book: book, isEdited: false)
+        XCTAssertTrue(presenter.isShowingAny, "the confirmation before Delete Transcript does not count")
+        presenter.deletion = nil
+        presenter.notice = TranscriptionNotice(title: "Transcribe Audio", message: TranscriptionWording.oneBookAtATime)
+        XCTAssertTrue(presenter.isShowingAny, "the notice does not count")
+        presenter.notice = nil
+        XCTAssertFalse(presenter.isShowingAny)
     }
 
     // MARK: - Where the Book's Window Stands

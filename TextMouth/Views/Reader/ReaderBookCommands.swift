@@ -24,17 +24,24 @@ struct ReaderBookCommandsSupport: ViewModifier {
     let viewModel: ReaderViewModel
     /// The settings, observed for the toolbar's Export button.
     @ObservedObject private var settings: SettingsViewModel
-    /// The Export dialog showing, or nil.
-    @State private var exportModel: BookExportModel?
-    /// The reader's transcription dialogs (FR05).
-    @StateObject private var transcription = TranscriptionPresenter()
+    /// The Export dialog showing, or nil: one of the reader's panels
+    /// (`ReaderPanels.export`), so that the report of a speech refusal waits
+    /// while it shows.
+    @Binding var exportModel: BookExportModel?
+    /// The reader's transcription dialogs (FR05), which the reader view
+    /// keeps, so that the report of a speech refusal waits while one shows.
+    @ObservedObject var transcription: TranscriptionPresenter
     /// Which audiobooks are transcribed (FR05), observed so Edit Text and
     /// Delete Transcript… follow the reader's book.
     @ObservedObject private var transcribedBooks = TranscribedBooks.shared
 
-    init(viewModel: ReaderViewModel) {
+    /// The commands of `viewModel`'s book, opening the Export dialog through
+    /// `exportModel` and the transcription dialogs through `transcription`.
+    init(viewModel: ReaderViewModel, exportModel: Binding<BookExportModel?>, transcription: TranscriptionPresenter) {
         self.viewModel = viewModel
         _settings = ObservedObject(wrappedValue: viewModel.settingsViewModel)
+        _exportModel = exportModel
+        _transcription = ObservedObject(wrappedValue: transcription)
     }
 
     func body(content: Content) -> some View {

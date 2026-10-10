@@ -147,16 +147,22 @@ struct SpeechRefusalReportSheet: SheetOverOneReader {
 }
 
 /// Presents the report of a speech refusal over the reader while the reader
-/// keeps one (B05). A window shows one sheet at a time, so the report waits
-/// while one of the reader's panels shows, and opens as the panel closes;
-/// it closes only through its own Close, Return, or Escape, so a panel
-/// opened over it puts it aside rather than losing it.
+/// keeps one (B05). A window shows one sheet or alert at a time, so the
+/// report waits while one of the reader's panels shows (the Export dialog
+/// among them), one of its transcription dialogs, or its error alert, and
+/// opens as the last of them closes; it closes only through its own Close,
+/// Return, or Escape, so a panel opened over it puts it aside rather than
+/// losing it.
 struct SpeechRefusalReportPresenter: ViewModifier {
     /// The reader whose report is shown, observed so the sheet comes with
-    /// the report.
+    /// the report, and goes and comes back with its error alert.
     @ObservedObject var viewModel: ReaderViewModel
-    /// The reader's panels, each a sheet of its own.
+    /// The reader's panels, each a sheet of its own, the Export dialog
+    /// among them.
     let panels: ReaderPanels
+    /// The reader's transcription dialogs (FR05), observed so the report
+    /// waits while one shows and opens as the last one closes.
+    @ObservedObject var transcription: TranscriptionPresenter
 
     func body(content: Content) -> some View {
         content.sheet(isPresented: isPresented) {
@@ -164,21 +170,45 @@ struct SpeechRefusalReportPresenter: ViewModifier {
         }
     }
 
-    /// Whether the sheet shows: while the reader keeps a report and none of
-    /// its panels shows. Nothing is done when SwiftUI puts the sheet away:
-    /// the report is closed only by its own buttons and keys.
+    /// Whether the sheet shows (`showsReport`). Nothing is done when
+    /// SwiftUI puts the sheet away: the report is closed only by its own
+    /// buttons and keys.
     private var isPresented: Binding<Bool> {
         Binding(
-            get: { viewModel.speechRefusalAlert.report != nil && !panels.isShowingAny },
+            get: {
+                Self.showsReport(
+                    keepingOne: viewModel.speechRefusalAlert.report != nil,
+                    panels: panels,
+                    transcriptionDialogShows: transcription.isShowingAny,
+                    errorAlertShows: viewModel.errorAlert != nil
+                )
+            },
             set: { _ in }
         )
+    }
+
+    /// Whether the report shows: while the reader keeps one and nothing else
+    /// is over the reader, since a window shows one sheet or alert at a
+    /// time: none of its panels (`ReaderPanels.isShowingAny`, the Export
+    /// dialog included), none of its transcription dialogs, and not its
+    /// error alert. The Export dialog, the transcription dialogs, and the
+    /// error alert were once left out, so a refusal while one showed asked
+    /// for a second sheet over it.
+    static func showsReport(
+        keepingOne: Bool,
+        panels: ReaderPanels,
+        transcriptionDialogShows: Bool,
+        errorAlertShows: Bool
+    ) -> Bool {
+        keepingOne && !panels.isShowingAny && !transcriptionDialogShows && !errorAlertShows
     }
 }
 
 extension ReaderPanels {
-    /// Whether any of the reader's panels shows. A panel added to
-    /// `ReaderPanels` must be added here too; a test counts the panels.
+    /// Whether any of the reader's panels shows, the Export dialog among
+    /// them. A panel added to `ReaderPanels` must be added here too; a test
+    /// counts the panels.
     var isShowingAny: Bool {
-        headings || bookmarks || sleepTimer || bookInfo || voice || search
+        headings || bookmarks || sleepTimer || bookInfo || voice || search || export != nil
     }
 }
