@@ -198,6 +198,35 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
+    // MARK: - A Play During Where Am I?
+
+    /// A Play from the AirPods or a media key while Where Am I? speaks does
+    /// nothing, as Play in the book's window does: the announcement goes on
+    /// with the book paused, and the book plays again as the announcement
+    /// ends. Before, the Play resumed the book over the announcement, since
+    /// only a book that was stopped was held back during it.
+    func testAPlayFromTheAirPodsDuringWhereAmILetsTheAnnouncementFinish() throws {
+        for kind in BookKind.allCases {
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Where Am I Play \(kind)")
+            let book = try openPlayingBook(kind, in: world, joining: system)
+            let announcement = try pressWhereAmI(in: book)
+
+            XCTAssertEqual(system.press(.play), .success, "\(kind)")
+
+            XCTAssertTrue(book.reader.isWhereAmISpeaking, "\(kind): the Play ended the announcement")
+            XCTAssertFalse(book.isPlaying, "\(kind): the Play resumed the book over the announcement")
+            XCTAssertTrue(book.isPaused, "\(kind): the book is not paused where it was")
+            book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+            handleQueuedCallbacks()
+            XCTAssertTrue(
+                waitUntil(timeout: ReaderViewModel.whereAmIEndSoundDelay + 5) { book.isPlaying },
+                "\(kind): the book did not play again as the announcement ended"
+            )
+            assertToldSystem(system, that: book.reader, plays: true, "\(kind): the announcement's end")
+        }
+    }
+
     // MARK: - After the Sleep Timer
 
     /// A 15-minute sleep timer with a two-second fade runs out and pauses

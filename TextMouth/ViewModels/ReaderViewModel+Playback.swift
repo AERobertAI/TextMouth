@@ -87,7 +87,17 @@ extension ReaderViewModel {
 
     /// Resume playback if the book is already paused, otherwise fall
     /// back to a cold start when nothing is active.
+    ///
+    /// While Where Am I? speaks it does nothing, as `play()` does
+    /// (`WhereAmIInterruptionPolicy.blocksBookPlayback`): the announcement
+    /// goes on, and the book it paused plays again as it ends. A Play from
+    /// the AirPods or a media key once resumed the book over the
+    /// announcement, since only a cold start went through that guard.
     func playOrResume() {
+        guard !WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: isWhereAmISpeaking) else {
+            DiagnosticLog.trace(.playback, "play: Where Am I speaks; the book plays again as it ends")
+            return
+        }
         if isAudioBook {
             if audioPlaybackService.isPaused {
                 resumeAudioPlayback()
