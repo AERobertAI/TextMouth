@@ -350,6 +350,42 @@ final class KeyboardShortcutManager: ObservableObject {
         ShortcutAction.allCases.first { $0.scope == scope && bindingsFor($0).contains(binding) }
     }
 
+    /// The action whose single press waits on the key `binding` is a press
+    /// of, single or double, in `scope` (FR12): the key's single action, when
+    /// the key also has a double action that does not escalate it, so each
+    /// single press waits out the double-press time before it acts. Nil
+    /// when the key's presses act at once.
+    func waitingAction(for binding: KeyBinding, in scope: ShortcutScope) -> ShortcutAction? {
+        guard let actions = dispatcher.index.actions(for: binding, in: scope), actions.singleWaits else { return nil }
+        return actions.single
+    }
+
+    // MARK: - Recording a Shortcut
+
+    /// The Shortcuts tab's recorders that are recording, held weakly: while
+    /// one records, every key press is left to it and no shortcut acts, so
+    /// the key it records never runs the action that has it, whichever key
+    /// monitor AppKit asks first. A recorder that goes away without saying
+    /// so stops counting.
+    private var recorders: [WeakRecorder] = []
+
+    /// Whether a recorder of the Shortcuts tab is recording.
+    var isRecordingShortcut: Bool {
+        recorders.contains { $0.recorder != nil }
+    }
+
+    /// Says that `recorder` is recording: key presses are left to it.
+    func recordingStarted(by recorder: AnyObject) {
+        recorders.removeAll { $0.recorder == nil || $0.recorder === recorder }
+        recorders.append(WeakRecorder(recorder: recorder))
+    }
+
+    /// Says that `recorder` has stopped: shortcuts act again once no
+    /// recorder records.
+    func recordingStopped(by recorder: AnyObject) {
+        recorders.removeAll { $0.recorder == nil || $0.recorder === recorder }
+    }
+
     // MARK: - Event Monitoring
 
     private func startMonitoring() {
@@ -388,7 +424,8 @@ final class KeyboardShortcutManager: ObservableObject {
     func handleKeyEvent(_ event: NSEvent, keyWindow: NSWindow?, firstResponder: NSResponder?) -> Bool {
         // A key press alone has the characters and the repeat flag read
         // below; AppKit raises an exception for them on any other event.
-        guard event.type == .keyDown else { return false }
+        // While the Shortcuts tab records a key, every press is its.
+        guard event.type == .keyDown, !isRecordingShortcut else { return false }
         return dispatcher.handle(ShortcutPressDispatcher.Press(
             stroke: KeyBinding.from(event: event),
             time: event.timestamp,
@@ -488,6 +525,12 @@ final class KeyboardShortcutManager: ObservableObject {
     static func isTextInput(_ responder: NSResponder?) -> Bool {
         responder is NSTextView || responder is NSTextField
     }
+}
+
+/// A recorder of the Shortcuts tab, held weakly by the shortcut manager.
+private struct WeakRecorder {
+    /// The recorder, while it lives.
+    weak var recorder: AnyObject?
 }
 
 /// Every action's keys in force as a preferences store's record of the

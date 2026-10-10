@@ -116,6 +116,235 @@ final class ShortcutsSettingsTabTests: XCTestCase {
         XCTAssertEqual(manager.action(holding: KeyBinding(key: "k"), in: .app), .whereAmI)
     }
 
+    // MARK: - Double Presses (FR12, Section 6 of the Design)
+
+    /// The recorder, the actions that change a key's presses, and the
+    /// double-press time's stepper say what the design words.
+    func testTheDoublePressWordingIsPinned() {
+        XCTAssertEqual(ShortcutsSettingsWording.recordingLabel, "Recording shortcut. Press a key, or press it twice for a double press.")
+        XCTAssertEqual(ShortcutsSettingsWording.recordingHint, "Press any key to set, or click to cancel")
+        XCTAssertEqual(ShortcutsSettingsWording.recordHint, "Click to record a new shortcut")
+        XCTAssertEqual(ShortcutsSettingsWording.addShortcutLabel, "Add shortcut")
+        XCTAssertEqual(ShortcutsSettingsWording.makeDoublePress, "Make Double Press")
+        XCTAssertEqual(ShortcutsSettingsWording.makeSinglePress, "Make Single Press")
+        XCTAssertEqual(ShortcutsSettingsWording.pressChange(for: KeyBinding(key: "w")), "Make Double Press")
+        XCTAssertEqual(ShortcutsSettingsWording.pressChange(for: KeyBinding(key: "w", isDoublePress: true)), "Make Single Press")
+        XCTAssertEqual(ShortcutsSettingsWording.doublePressTimeLabel, "Double press time")
+        XCTAssertEqual(
+            ShortcutsSettingsWording.doublePressTimeHint,
+            "How soon a second press must follow the first to make a double press. "
+                + "A key with a different action for each waits this long before its single press acts."
+        )
+    }
+
+    /// The double-press time is said in seconds: tenths as a decimal, and
+    /// whole seconds counted as the Miscellaneous tab counts its seconds.
+    func testTheDoublePressTimeIsSaidInSeconds() {
+        let said: [(Double, String)] = [
+            (0.5, "0.5 seconds"), (0.2, "0.2 seconds"), (1, "1 second"), (2, "2 seconds"), (1.5, "1.5 seconds"),
+            (0.30000000000000004, "0.3 seconds"), (0.7999999999999999, "0.8 seconds"),
+        ]
+        for (seconds, words) in said {
+            XCTAssertEqual(ShortcutsSettingsWording.seconds(seconds), words, "\(seconds)")
+        }
+    }
+
+    /// A double press recorded is announced with "twice"; a key whose single
+    /// press now waits is announced with its cost, after the action it was
+    /// taken from.
+    func testADoublePressAndAKeyThatNowWaitsAreAnnounced() {
+        let jTwice = KeyBinding(key: "j", isDoublePress: true)
+        XCTAssertEqual(
+            ShortcutsSettingsWording.recorded(KeyBinding(key: "w", isDoublePress: true), for: .goToLibrary, takenFrom: nil),
+            "W twice, recorded for Go to Library."
+        )
+        XCTAssertEqual(
+            ShortcutsSettingsWording.recorded(jTwice, for: .goToLibrary, takenFrom: .whereAmI, nowWaitsBefore: .skipBackward),
+            "J twice, recorded for Go to Library. Taken from Where Am I? J now waits before Skip Backward, in case it is pressed twice."
+        )
+        XCTAssertEqual(
+            ShortcutsSettingsWording.nowWaits(KeyBinding(key: "j", command: true), before: .showBookInfo),
+            "Command + J now waits before Book Info, in case it is pressed twice."
+        )
+    }
+
+    /// The manager says which action a key's single press now waits before:
+    /// the key's single action, once the key's double press has an
+    /// unrelated action, and none for a key whose presses act at once or
+    /// whose double press is its single action's own.
+    func testTheManagerSaysWhichActionAKeyWaitsBefore() {
+        let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("shortcut-tab-waits"), installsEventMonitor: false)
+        let plainJ = KeyBinding(key: "j")
+        let jTwice = plainJ.asDoublePress(true)
+        XCTAssertNil(manager.waitingAction(for: plainJ, in: .app))
+
+        manager.addBinding(jTwice, to: .goToLibrary)
+
+        XCTAssertEqual(manager.waitingAction(for: plainJ, in: .app), .skipBackward)
+        XCTAssertEqual(manager.waitingAction(for: jTwice, in: .app), .skipBackward)
+        XCTAssertNil(manager.waitingAction(for: plainJ, in: .audioEditor), "the editor's J has no double press")
+        manager.addBinding(KeyBinding(key: "w", isDoublePress: true), to: .whereAmI)
+        XCTAssertNil(manager.waitingAction(for: KeyBinding(key: "w"), in: .app), "an action on both presses is its own escalation")
+    }
+
+    /// Make Double Press and Make Single Press change a key's presses and
+    /// nothing else; the change makes the action the user's, and the single
+    /// press it leaves goes back to no action.
+    func testMakeDoublePressChangesOnlyTheKeysPresses() {
+        let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("shortcut-tab-make-double"), installsEventMonitor: false)
+        let commandI = KeyBinding(key: "i", command: true)
+        XCTAssertEqual(commandI.asDoublePress(true), KeyBinding(key: "i", command: true, isDoublePress: true))
+        XCTAssertEqual(commandI.asDoublePress(true).asDoublePress(false), commandI)
+
+        manager.updateBindings(for: .showBookInfo, to: [commandI.asDoublePress(true)])
+
+        XCTAssertTrue(manager.isEdited(.showBookInfo))
+        XCTAssertEqual(manager.bindingsFor(.showBookInfo), [KeyBinding(key: "i", command: true, isDoublePress: true)])
+        XCTAssertNil(manager.action(holding: commandI, in: .app))
+        XCTAssertEqual(manager.allDisplayStrings(for: .showBookInfo), "Command + I twice")
+    }
+
+    /// While a recorder records, the shortcut manager leaves every key press
+    /// to it and posts nothing, whichever key monitor AppKit asks first;
+    /// once it stops, or goes away without saying so, shortcuts act again.
+    func testShortcutsWaitWhileARecorderRecords() throws {
+        let center = NotificationCenter()
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("shortcut-tab-recording"),
+            installsEventMonitor: false,
+            notificationCenter: center
+        )
+        var posted = 0
+        let subscription = center.publisher(for: ShortcutAction.whereAmI.notificationName).sink { _ in posted += 1 }
+        defer { subscription.cancel() }
+        let pressW = try XCTUnwrap(NSEvent.keyEvent(
+            with: .keyDown, location: .zero, modifierFlags: [], timestamp: 10, windowNumber: 0, context: nil,
+            characters: "w", charactersIgnoringModifiers: "w", isARepeat: false, keyCode: 13
+        ))
+        let recorder = NSObject()
+
+        manager.recordingStarted(by: recorder)
+        XCTAssertTrue(manager.isRecordingShortcut)
+        XCTAssertFalse(manager.handleKeyEvent(pressW, keyWindow: nil, firstResponder: nil))
+        XCTAssertEqual(posted, 0)
+
+        manager.recordingStopped(by: recorder)
+        XCTAssertFalse(manager.isRecordingShortcut)
+        XCTAssertTrue(manager.handleKeyEvent(pressW, keyWindow: nil, firstResponder: nil))
+        XCTAssertEqual(posted, 1)
+
+        autoreleasepool {
+            manager.recordingStarted(by: NSObject())
+        }
+        XCTAssertFalse(manager.isRecordingShortcut, "a recorder that went away records nothing")
+    }
+
+    // MARK: - The Recorder (FR12, Section 6.1 of the Design)
+
+    /// One press of a key, and none after it within the time, records a
+    /// single press once the time is up, counted from the press.
+    func testOnePressRecordsASinglePressWhenTheTimeIsUp() throws {
+        let recorder = RecorderHarness(clock: 10.1)
+
+        XCTAssertTrue(recorder.take(KeyBinding(key: "w"), at: 10))
+        XCTAssertEqual(recorder.outcomes, [])
+        XCTAssertEqual(try XCTUnwrap(recorder.timers.last).delay, 0.4, accuracy: 1e-9)
+        recorder.fireTimers()
+
+        XCTAssertEqual(recorder.outcomes, [.recorded(KeyBinding(key: "w"))])
+    }
+
+    /// The same key pressed again within the time records a double press,
+    /// its modifiers kept; at exactly the time, the first is a single press
+    /// and the second goes no further.
+    func testTheSameKeyAgainWithinTheTimeRecordsADoublePress() {
+        let commandI = KeyBinding(key: "i", command: true)
+        let twice = RecorderHarness()
+        twice.take(commandI, at: 10)
+        XCTAssertTrue(twice.take(commandI, at: 10.3))
+        twice.fireTimers()
+        XCTAssertEqual(twice.outcomes, [.recorded(commandI.asDoublePress(true))])
+
+        let tooLate = RecorderHarness()
+        tooLate.take(commandI, at: 10)
+        XCTAssertTrue(tooLate.take(commandI, at: 10.5))
+        XCTAssertEqual(tooLate.outcomes, [.recorded(commandI)])
+    }
+
+    /// Another key pressed while the first waits records the first as a
+    /// single press, and is not recorded itself; a key no binding names
+    /// does the same but goes on, as such a key always has.
+    func testAnotherKeyRecordsTheFirstAsASinglePress() {
+        let recorder = RecorderHarness()
+        recorder.take(KeyBinding(key: "w"), at: 10)
+        XCTAssertTrue(recorder.take(KeyBinding(key: "k"), at: 10.1))
+        XCTAssertFalse(recorder.take(KeyBinding(key: "w"), at: 10.2), "an ended recording takes nothing")
+        XCTAssertEqual(recorder.outcomes, [.recorded(KeyBinding(key: "w"))])
+
+        let nameless = RecorderHarness()
+        XCTAssertFalse(nameless.take(nil, at: 10), "a key no binding names goes on and starts nothing")
+        nameless.take(KeyBinding(key: "w"), at: 10.1)
+        XCTAssertFalse(nameless.take(nil, at: 10.2))
+        XCTAssertEqual(nameless.outcomes, [.recorded(KeyBinding(key: "w"))])
+    }
+
+    /// Escape cancels, before a first press or after one, so it is never
+    /// recorded; a held key's repeats are ignored, so holding a key never
+    /// records a double press.
+    func testEscapeCancelsAndRepeatsAreIgnored() {
+        let before = RecorderHarness()
+        XCTAssertTrue(before.take(KeyBinding(key: "escape"), at: 10, isEscape: true))
+        XCTAssertEqual(before.outcomes, [.cancelled])
+
+        let after = RecorderHarness()
+        after.take(KeyBinding(key: "w"), at: 10)
+        after.take(KeyBinding(key: "escape"), at: 10.2, isEscape: true)
+        after.fireTimers()
+        XCTAssertEqual(after.outcomes, [.cancelled])
+
+        let held = RecorderHarness()
+        held.take(KeyBinding(key: "w"), at: 10)
+        XCTAssertTrue(held.take(KeyBinding(key: "w"), at: 10.3, isRepeat: true))
+        XCTAssertTrue(held.take(KeyBinding(key: "w"), at: 10.4, isRepeat: true))
+        held.fireTimers()
+        XCTAssertEqual(held.outcomes, [.recorded(KeyBinding(key: "w"))])
+    }
+
+    /// Cancelled from outside, as the recorder going away does, a recording
+    /// ends without an outcome, and its timer does nothing.
+    func testARecordingCancelledFromOutsideEndsWithoutAKey() {
+        let recorder = RecorderHarness()
+        recorder.take(KeyBinding(key: "w"), at: 10)
+
+        recorder.recording.cancel()
+        recorder.fireTimers()
+
+        XCTAssertTrue(recorder.recording.hasEnded)
+        XCTAssertEqual(recorder.outcomes, [])
+    }
+
+    // MARK: - The Double-Press Time's Stepper
+
+    /// The stepper says its label, the time in seconds, and its hint, as
+    /// VoiceOver reads them; stepping it up saves a tenth of a second more,
+    /// said at once. Without an assistive app's view of hosted windows the
+    /// test is skipped, and the wording above holds either way.
+    func testTheDoublePressStepperSaysTheTime() throws {
+        let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("shortcut-tab-stepper"), installsEventMonitor: false)
+
+        try withHostedControls(DoublePressTimeStepper().environmentObject(manager)) { controls in
+            let stepper = try XCTUnwrap(controls.first { $0.role == .incrementor }, "\(controls.map(\.label))")
+            XCTAssertEqual(stepper.label, ShortcutsSettingsWording.doublePressTimeLabel)
+            XCTAssertEqual(stepper.valueDescription, "0.5 seconds")
+            XCTAssertEqual(stepper.hint, ShortcutsSettingsWording.doublePressTimeHint)
+
+            _ = stepper.element.accessibilityPerformIncrement()
+
+            XCTAssertEqual(manager.doublePressTime, 0.6)
+            XCTAssertTrue(waitUntil { stepper.element.accessibilityValueDescription() == "0.6 seconds" })
+        }
+    }
+
     // MARK: - The Row on Screen
 
     /// An edited row is one element whose label ends "Edited." and whose
@@ -140,5 +369,67 @@ final class ShortcutsSettingsTabTests: XCTestCase {
             let unedited = accessibilityElements(labelled: "Where Am I?: W", in: hosting).first
             XCTAssertEqual((unedited?.accessibilityCustomActions() ?? []).map(\.name), [])
         }
+    }
+}
+
+/// A recording of the Shortcuts tab's recorder with a clock the test sets
+/// and timers it fires by hand, keeping every outcome. The recording's
+/// closures capture a record of their own rather than the harness.
+@MainActor
+final class RecorderHarness {
+    /// What the recording's closures read and write.
+    private final class Record {
+        /// The time the clock reads.
+        var now: TimeInterval = 0
+        /// Every timer started, oldest first.
+        var timers: [HandFiredTimer] = []
+        /// Every outcome, oldest first.
+        var outcomes: [ShortcutRecording.Outcome] = []
+    }
+
+    /// The recording under test, with a double-press time of half a second.
+    let recording: ShortcutRecording
+    /// What its closures read and write.
+    private let record: Record
+
+    /// Every timer started, oldest first.
+    var timers: [HandFiredTimer] {
+        record.timers
+    }
+
+    /// Every outcome, oldest first.
+    var outcomes: [ShortcutRecording.Outcome] {
+        record.outcomes
+    }
+
+    /// A recording whose clock reads `clock`, or the time of each press
+    /// taken when nil.
+    init(clock: TimeInterval? = nil) {
+        let record = Record()
+        self.record = record
+        let fixedClock = clock
+        recording = ShortcutRecording(
+            doublePressTime: 0.5,
+            clock: { fixedClock ?? record.now },
+            startTimer: { delay, fire in
+                let timer = HandFiredTimer(delay: delay, fire: fire)
+                record.timers.append(timer)
+                return timer
+            },
+            finish: { record.outcomes.append($0) }
+        )
+    }
+
+    /// Hands the recording a press of `stroke` at `time`, and returns
+    /// whether it took it.
+    @discardableResult
+    func take(_ stroke: KeyBinding?, at time: TimeInterval, isRepeat: Bool = false, isEscape: Bool = false) -> Bool {
+        record.now = time
+        return recording.take(stroke, at: time, isRepeat: isRepeat, isEscape: isEscape)
+    }
+
+    /// Fires every timer started and not cancelled.
+    func fireTimers() {
+        timers.forEach { $0.fire() }
     }
 }

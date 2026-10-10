@@ -442,9 +442,7 @@ extension ShortcutPressDispatcher {
 
         /// The double press's binding, as the sleep timer's log names it.
         var doubleBinding: KeyBinding {
-            var binding = matchedStroke
-            binding.isDoublePress = true
-            return binding
+            matchedStroke.asDoublePress(true)
         }
 
         /// Whether `press` is of the same key, with the same modifiers, in

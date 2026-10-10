@@ -284,6 +284,15 @@ struct KeyBinding: Codable, Equatable, Hashable {
         )
     }
 
+    /// The binding pressed twice when `isDouble`, or once: the same key and
+    /// modifiers, as the Shortcuts tab's Make Double Press and Make Single
+    /// Press change them.
+    func asDoublePress(_ isDouble: Bool) -> KeyBinding {
+        var binding = self
+        binding.isDoublePress = isDouble
+        return binding
+    }
+
     /// Human-readable display string, such as "⌘I", or "⌘I twice" for a
     /// double press.
     var displayString: String {
