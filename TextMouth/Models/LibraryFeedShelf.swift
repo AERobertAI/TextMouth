@@ -35,6 +35,9 @@ struct FeedShelf: Equatable {
     ///   records (`FeedIndexFiles.Contents.isLeftAlone`). Writing those rows
     ///   would replace what the cloud holds with what this Mac could read;
     ///   the next launch, which waits for the index, reads it;
+    /// - a feed whose index a newer TextMouth wrote, in a layout this one
+    ///   does not read (`FeedIndexNewerLayout`), its rows standing in the
+    ///   same way, so it is never rewritten in this one's layout;
     /// - and a feed no longer subscribed whose downloads returned to the
     ///   library (`LibraryViewModel.returnDownloads(ofFeed:toFolderID:removingWith:)`):
     ///   its index keeps listing them until library.json holds them and the

@@ -487,28 +487,24 @@ enum LibraryPersistenceService {
         if feedIndexesOnDisk.rootPath != root.path {
             feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path)
         }
-        let byFeed = library.feedIndexRows.sorted { $0.key.uuidString < $1.key.uuidString }
-        for (feedID, rows) in byFeed {
-            let placed = rows.map { FeedIndexFiles.placed($0, in: root, of: feedID) }
-            let data = try FeedIndexFiles.encoded(FeedIndex(feedID: feedID, books: placed))
-            let file = FeedPaths.indexFile(of: feedID, in: root)
+        for index in try FeedIndexFiles.encodedIndexes(of: library, placedIn: root) {
+            let file = FeedPaths.indexFile(of: index.feedID, in: root)
             // The same bytes are written again when the file is gone, as when
             // it was deleted outside TextMouth since this process wrote it.
-            if feedIndexesOnDisk.bytes[feedID] == data, FileManager.default.fileExists(atPath: file.path) {
+            if feedIndexesOnDisk.bytes[index.feedID] == index.data, FileManager.default.fileExists(atPath: file.path) {
                 continue
             }
-            let folder = FeedPaths.itemsFolder(of: feedID, in: root)
-            if placed.isEmpty, !FileManager.default.fileExists(atPath: folder.path) {
-                feedIndexesOnDisk.bytes[feedID] = data
+            let folder = FeedPaths.itemsFolder(of: index.feedID, in: root)
+            if index.rowCount == 0, !FileManager.default.fileExists(atPath: folder.path) {
+                feedIndexesOnDisk.bytes[index.feedID] = index.data
                 continue
             }
             do {
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                try data.write(to: file, options: .atomic)
+                try FeedIndexFiles.write(index, in: root)
             } catch {
                 throw FeedIndexWriteError(file: file, underlying: error)
             }
-            feedIndexesOnDisk.bytes[feedID] = data
+            feedIndexesOnDisk.bytes[index.feedID] = index.data
         }
     }
 

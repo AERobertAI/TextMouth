@@ -27,18 +27,34 @@ struct FeedIndex: Equatable {
     var books: [Book]
 }
 
+/// Why an index was not read: a newer TextMouth wrote it, in a layout of a
+/// later version than this one writes (`FeedIndex.currentFormatVersion`),
+/// whose rows may be laid out otherwise. Such a file is left as it is,
+/// never read as this layout nor written over (`FeedIndexFiles.read`).
+struct FeedIndexNewerLayout: Error, Equatable {
+    /// The layout's version the file names.
+    let formatVersion: Int
+}
+
 extension FeedIndex: Codable {
     /// The index's keys: its layout's version, its feed, and its rows.
     private enum CodingKeys: String, CodingKey {
         case formatVersion, feedID, books
     }
 
-    /// Reads an index. The feed ID it names is read for completeness; the
-    /// folder it is found in decides which feed it lists, as a record's
-    /// file name does (`FeedIndexFiles.read(feedID:in:fromPackages:)`). Each
-    /// row reads as a library.json row does, leniently.
+    /// Reads an index: its layout's version first, so one a newer TextMouth
+    /// wrote is never read as this layout (`FeedIndexNewerLayout`); an index
+    /// naming no version is of the first. The feed ID it names is read for
+    /// completeness; the folder it is found in decides which feed it lists,
+    /// as a record's file name does
+    /// (`FeedIndexFiles.read(feedID:in:fromPackages:reader:)`). Each row
+    /// reads as a library.json row does, leniently.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let version = try container.decodeIfPresent(Int.self, forKey: .formatVersion) ?? 1
+        guard version <= Self.currentFormatVersion else {
+            throw FeedIndexNewerLayout(formatVersion: version)
+        }
         feedID = try container.decode(UUID.self, forKey: .feedID)
         books = try container.decode([Book].self, forKey: .books)
     }
@@ -79,11 +95,47 @@ enum FeedIndexFiles {
         return first.id.uuidString < second.id.uuidString
     }
 
-    /// The index `data` holds. Throws when it holds none.
+    /// The index `data` holds. Throws when it holds none, or
+    /// `FeedIndexNewerLayout` for one a newer TextMouth wrote.
     static func decoded(_ data: Data) throws -> FeedIndex {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(FeedIndex.self, from: data)
+    }
+
+    // MARK: Writing
+
+    /// One feed's index as it is written: the feed, how many rows it holds,
+    /// and its file's bytes.
+    struct EncodedIndex: Equatable {
+        /// The feed whose index this is.
+        let feedID: UUID
+        /// How many rows the index holds.
+        let rowCount: Int
+        /// The file's bytes (`encoded(_:)`).
+        let data: Data
+    }
+
+    /// Each feed's index `library` keeps (`Library.feedIndexRows`), in the
+    /// order of the feeds' IDs, its rows placed where their packages are in
+    /// the data directory at `root` (`placed(_:in:of:)`), as its file holds
+    /// it: what every writer of the feeds' indexes writes, a save in the
+    /// data directory in use (`LibraryPersistenceService`) and a
+    /// data-directory move's staged copy, whose rows are placed in the new
+    /// location (`DataDirectoryMigrator`).
+    static func encodedIndexes(of library: Library, placedIn root: URL) throws -> [EncodedIndex] {
+        try library.feedIndexRows.sorted { $0.key.uuidString < $1.key.uuidString }.map { feedID, rows in
+            let placedRows = rows.map { placed($0, in: root, of: feedID) }
+            return EncodedIndex(feedID: feedID, rowCount: rows.count, data: try encoded(FeedIndex(feedID: feedID, books: placedRows)))
+        }
+    }
+
+    /// Writes `index` as its feed's index in the data directory at `root`,
+    /// making the feed's folder when missing and replacing the file
+    /// atomically, so no reader ever finds half an index.
+    static func write(_ index: EncodedIndex, in root: URL, fileManager: FileManager = .default) throws {
+        try fileManager.createDirectory(at: FeedPaths.itemsFolder(of: index.feedID, in: root), withIntermediateDirectories: true)
+        try index.data.write(to: FeedPaths.indexFile(of: index.feedID, in: root), options: .atomic)
     }
 
     // MARK: Reading
@@ -98,8 +150,10 @@ enum FeedIndexFiles {
         var indexBytes: Data?
         /// Whether the index file is left as it is, neither read nor ever
         /// written over (`FeedShelf.indexesLeftAlone`): it is only in the
-        /// cloud (FR02), so reading it would have downloaded it first. The
-        /// rows stand in for its own, read from the packages' records.
+        /// cloud (FR02), so reading it would have downloaded it first, or a
+        /// newer TextMouth wrote it, in a layout this one does not read
+        /// (`FeedIndexNewerLayout`). The rows stand in for its own, read from
+        /// the packages' records.
         var isLeftAlone = false
     }
 
@@ -153,7 +207,10 @@ enum FeedIndexFiles {
     /// those rows over what the cloud holds until a launch reads it. A
     /// launch in a cloud data directory waits for every feed's index to be
     /// on this Mac (`DataDirectoryCheck`), so this happens only when one
-    /// leaves between that check and this read.
+    /// leaves between that check and this read. An index a newer TextMouth
+    /// wrote, in a later layout (`FeedIndexNewerLayout`), is left alone the
+    /// same way, with one FEED_INDEX_NEWER line, rather than taken for
+    /// damage and written over in this one's layout.
     static func read(
         feedID: UUID,
         in root: URL,
@@ -172,6 +229,14 @@ enum FeedIndexFiles {
                 do {
                     rows = try decoded(data).books
                     indexBytes = data
+                } catch let newer as FeedIndexNewerLayout {
+                    isLeftAlone = true
+                    DiagnosticLog.event(
+                        .feeds,
+                        "FEED_INDEX_NEWER: \(feedID.uuidString.prefix(8)): \(indexURL.lastPathComponent) is of layout "
+                            + "\(newer.formatVersion), which a newer TextMouth wrote; it is left as it is, and the feed's rows "
+                            + "are read from its packages"
+                    )
                 } catch {
                     preserveUnusable(indexURL, of: feedID, bytes: data, because: error.localizedDescription)
                 }
