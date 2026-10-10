@@ -159,6 +159,26 @@ enum ShortcutKeyOwners {
         }
         return clashes
     }
+
+    /// The actions among whose keys `bindings` puts `binding` that act in a
+    /// kind of window `action` acts in, each working where `scopes` says,
+    /// its default scope unless given, by the clash rule's overlap
+    /// (`ShortcutAction.sharesAWindow(in:with:in:)`, a menu command's key
+    /// counting wherever its menu item acts), in the order Settings lists
+    /// them: who answers the key where `action` would, `action` itself
+    /// included. An action working only in other windows, as the audio
+    /// editor's keep their own keys, is left out.
+    static func actions(
+        holding binding: KeyBinding,
+        in bindings: [ShortcutAction: [KeyBinding]],
+        sharingAWindowWith action: ShortcutAction,
+        scopes: (ShortcutAction) -> ShortcutScope = { $0.defaultScope }
+    ) -> [ShortcutAction] {
+        ShortcutAction.allCases.filter { holder in
+            bindings[holder]?.contains(binding) == true
+                && holder.sharesAWindow(in: scopes(holder), with: action, in: scopes(action))
+        }
+    }
 }
 
 /// Every shortcut action posted on a notification center, in the order

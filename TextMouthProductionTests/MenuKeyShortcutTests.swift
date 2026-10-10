@@ -316,7 +316,11 @@ final class MenuKeyShortcutTests: XCTestCase {
             "Command + S, recorded for Open Book… Taken from Audio Editor: Save."
         )
         XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .editorSave), [DefaultKeyHeldElsewhere(key: commandS, holder: .openBook)])
-        XCTAssertEqual(manager.action(holding: commandS, in: .audioEditor), .openBook)
+        XCTAssertEqual(
+            ShortcutKeyOwners.actions(holding: commandS, in: manager.bindings, sharingAWindowWith: .editorSave, scopes: manager.scope(of:)),
+            [.openBook],
+            "Command-S is not Open Book…'s alone in the audio editor"
+        )
         let editor = makeShortcutWindow(.audioEditor)
         XCTAssertFalse(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: commandS), keyWindow: editor, firstResponder: nil))
         XCTAssertEqual(posted.names, [], "the editor took Open Book…'s key in its window")

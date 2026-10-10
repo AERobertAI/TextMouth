@@ -225,16 +225,35 @@ final class ShortcutsSettingsTabTests: XCTestCase {
     }
 
     /// The action a recorded key is taken from is the one of the same scope
-    /// whose keys in force hold it, never one of the other scope.
+    /// whose keys in force held it, never one of another scope, as the tab
+    /// finds it once the key is recorded (`actions(thatLostKeysSince:besides:)`):
+    /// K recorded for Where Am I? is taken from Play / Pause, while the
+    /// audio editor's Play/Pause keeps it in its own windows, and Shift-R,
+    /// which no action holds where Release Media Controls acts, is taken
+    /// from none.
     func testTheActionAKeyIsTakenFromIsTheOneHoldingItInTheScope() {
         let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("shortcut-tab-owner"), installsEventMonitor: false)
+        let k = KeyBinding(key: "k")
+        let shiftR = KeyBinding(key: "r", shift: true)
+        // Who answers `key` where `action` acts, with the keys in force now.
+        let holders = { (key: KeyBinding, action: ShortcutAction) in
+            ShortcutKeyOwners.actions(holding: key, in: manager.bindings, sharingAWindowWith: action, scopes: manager.scope(of:))
+        }
+        XCTAssertEqual(holders(k, .whereAmI), [.togglePlayback])
+        XCTAssertEqual(holders(k, .editorPlayPause), [.editorPlayPause])
+        XCTAssertEqual(holders(shiftR, .releaseMediaControls), [])
 
-        XCTAssertEqual(manager.action(holding: KeyBinding(key: "k"), in: .app), .togglePlayback)
-        XCTAssertEqual(manager.action(holding: KeyBinding(key: "k"), in: .audioEditor), .editorPlayPause)
-        XCTAssertNil(manager.action(holding: KeyBinding(key: "r", shift: true), in: .app))
+        let keysBeforeK = manager.bindings
+        manager.addBinding(k, to: .whereAmI)
 
-        manager.addBinding(KeyBinding(key: "k"), to: .whereAmI)
-        XCTAssertEqual(manager.action(holding: KeyBinding(key: "k"), in: .app), .whereAmI)
+        XCTAssertEqual(manager.actions(thatLostKeysSince: keysBeforeK, besides: .whereAmI), [.togglePlayback])
+        XCTAssertEqual(holders(k, .whereAmI), [.whereAmI])
+        XCTAssertEqual(holders(k, .editorPlayPause), [.editorPlayPause])
+
+        let keysBeforeShiftR = manager.bindings
+        manager.addBinding(shiftR, to: .releaseMediaControls)
+
+        XCTAssertEqual(manager.actions(thatLostKeysSince: keysBeforeShiftR, besides: .releaseMediaControls), [])
     }
 
     // MARK: - Double Presses (FR12, Section 6 of the Design)
@@ -321,7 +340,11 @@ final class ShortcutsSettingsTabTests: XCTestCase {
 
         XCTAssertTrue(manager.isEdited(.showBookInfo))
         XCTAssertEqual(manager.bindingsFor(.showBookInfo), [KeyBinding(key: "i", command: true, isDoublePress: true)])
-        XCTAssertNil(manager.action(holding: commandI, in: .app))
+        XCTAssertEqual(
+            ShortcutKeyOwners.actions(holding: commandI, in: manager.bindings, sharingAWindowWith: .showBookInfo, scopes: manager.scope(of:)),
+            [],
+            "an action holds the single press where Show Book Info acts"
+        )
         XCTAssertEqual(manager.allDisplayStrings(for: .showBookInfo), "Command + I twice")
     }
 

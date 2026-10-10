@@ -394,17 +394,6 @@ final class KeyboardShortcutManager: ObservableObject {
         edits.scope(of: action)
     }
 
-    /// The action whose keys in force hold `binding` where `scope` reaches,
-    /// if any: the first Settings lists whose keys act there
-    /// (`ShortcutScope.windowKinds(of:)`), a menu command's wherever its
-    /// menu item acts.
-    func action(holding binding: KeyBinding, in scope: ShortcutScope) -> ShortcutAction? {
-        ShortcutAction.allCases.first { holder in
-            !self.scope(of: holder).windowKinds(of: holder).isDisjoint(with: scope.windowKinds)
-                && bindingsFor(holder).contains(binding)
-        }
-    }
-
     /// The actions other than `action` that hold fewer keys in force than
     /// `earlier` gave them, in the order Settings lists them: the ones a
     /// change of `action`'s keys took a key from, whether the very key or one
