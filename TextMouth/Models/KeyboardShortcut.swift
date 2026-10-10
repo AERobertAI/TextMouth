@@ -1378,8 +1378,12 @@ extension ShortcutAction {
 
 /// All default keyboard shortcut bindings
 extension ShortcutAction {
-    /// Default bindings for each action (primary + optional secondary)
-    static var defaultBindings: [ShortcutAction: [KeyBinding]] {
+    /// Default bindings for each action (primary + optional secondary),
+    /// built once: every Shortcuts row and Record window button reads them,
+    /// through the keys in force, as it is drawn, and so does each key's
+    /// refusal check (`refusal(of:)`), which once rebuilt the whole table
+    /// each time (REV11).
+    static let defaultBindings: [ShortcutAction: [KeyBinding]] = {
         let everywhereElse: [ShortcutAction: [KeyBinding]] = [
             .togglePlayback: [
                 KeyBinding(key: "space"),
@@ -1535,7 +1539,7 @@ extension ShortcutAction {
             .recordingStop: [KeyBinding(key: ".", command: true)],
         ]
         return everywhereElse.merging(audioEditorDefaultBindings) { existing, _ in existing }
-    }
+    }()
 
     /// The defaults actions had before today's, for the move to the record
     /// of the user's edits alone (FR12, `ShortcutEdits.migrating`): a saved
@@ -1560,59 +1564,58 @@ extension ShortcutAction {
     /// move there as they do in a reader. None of them is any other editor
     /// action's, and the Command ones are no menu command's but the Edit
     /// menu's own Undo, Redo, Cut, Copy, Paste, and Select All, which the
-    /// editor answers itself (the shortcut tests check both).
-    static var audioEditorDefaultBindings: [ShortcutAction: [KeyBinding]] {
-        [
-            .editorPlayPause: [KeyBinding(key: "space"), KeyBinding(key: "k")],
-            .editorStop: [KeyBinding(key: "s")],
-            // J and Comma go back, L and Period forward: a second; Shift-J
-            // and Shift-L ten; with Option, a tenth.
-            .editorSkipBack: [KeyBinding(key: "j"), KeyBinding(key: ",")],
-            .editorSkipForward: [KeyBinding(key: "l"), KeyBinding(key: ".")],
-            .editorSkipBackLong: [KeyBinding(key: "j", shift: true)],
-            .editorSkipForwardLong: [KeyBinding(key: "l", shift: true)],
-            .editorSkipBackShort: [KeyBinding(key: "j", option: true), KeyBinding(key: ",", option: true)],
-            .editorSkipForwardShort: [KeyBinding(key: "l", option: true), KeyBinding(key: ".", option: true)],
-            // The start and the end of the audio, as of a document.
-            .editorGoToStart: [KeyBinding(key: "upArrow", command: true)],
-            .editorGoToEnd: [KeyBinding(key: "downArrow", command: true)],
-            .editorGoToTime: [KeyBinding(key: "g")],
-            // Chapter markers by the reader's keys for headings.
-            .editorPreviousChapter: [KeyBinding(key: "upArrow", command: true, option: true)],
-            .editorNextChapter: [KeyBinding(key: "downArrow", command: true, option: true)],
-            .editorPreviousPause: [KeyBinding(key: "n", shift: true)],
-            .editorNextPause: [KeyBinding(key: "n")],
-            .editorWhereAmI: [KeyBinding(key: "w")],
-            // In and Out, as in video editors; the selection said in full
-            // with Shift-W, beside Where Am I.
-            .editorMarkIn: [KeyBinding(key: "i")],
-            .editorMarkOut: [KeyBinding(key: "o")],
-            .editorSelectToPreviousPause: [KeyBinding(key: "n", option: true, shift: true)],
-            .editorSelectToNextPause: [KeyBinding(key: "n", option: true)],
-            .editorSelectChapter: [KeyBinding(key: "c")],
-            .editorSelectAll: [KeyBinding(key: "a", command: true)],
-            .editorClearSelection: [KeyBinding(key: "escape")],
-            .editorSpeakSelection: [KeyBinding(key: "w", shift: true)],
-            .editorPlaySelection: [KeyBinding(key: "p")],
-            .editorAddMarker: [KeyBinding(key: "m")],
-            .editorShowMarkers: [KeyBinding(key: "m", shift: true)],
-            // The Edit menu's keys, which the editor answers itself, and
-            // Delete for Cut, as the user asked.
-            .editorUndo: [KeyBinding(key: "z", command: true)],
-            .editorRedo: [KeyBinding(key: "z", command: true, shift: true)],
-            .editorCut: [KeyBinding(key: "delete"), KeyBinding(key: "x", command: true)],
-            .editorCopy: [KeyBinding(key: "c", command: true)],
-            .editorPaste: [KeyBinding(key: "v", command: true)],
-            .editorTrimToSelection: [KeyBinding(key: "t")],
-            .editorInsertSilence: [KeyBinding(key: "s", shift: true)],
-            .editorInsertChapter: [KeyBinding(key: "c", shift: true)],
-            .editorApplyFilter: [KeyBinding(key: "f")],
-            .editorPunchIn: [KeyBinding(key: "r")],
-            // Saving, as documents save; Revert beside Undo, asking first.
-            .editorSave: [KeyBinding(key: "s", command: true)],
-            .editorExport: [KeyBinding(key: "e", command: true, shift: true)],
-            .editorRevert: [KeyBinding(key: "z", command: true, option: true)],
-            .editorInfo: [KeyBinding(key: "i", command: true)],
-        ]
-    }
+    /// editor answers itself (the shortcut tests check both). Built once, as
+    /// `defaultBindings` is.
+    static let audioEditorDefaultBindings: [ShortcutAction: [KeyBinding]] = [
+        .editorPlayPause: [KeyBinding(key: "space"), KeyBinding(key: "k")],
+        .editorStop: [KeyBinding(key: "s")],
+        // J and Comma go back, L and Period forward: a second; Shift-J
+        // and Shift-L ten; with Option, a tenth.
+        .editorSkipBack: [KeyBinding(key: "j"), KeyBinding(key: ",")],
+        .editorSkipForward: [KeyBinding(key: "l"), KeyBinding(key: ".")],
+        .editorSkipBackLong: [KeyBinding(key: "j", shift: true)],
+        .editorSkipForwardLong: [KeyBinding(key: "l", shift: true)],
+        .editorSkipBackShort: [KeyBinding(key: "j", option: true), KeyBinding(key: ",", option: true)],
+        .editorSkipForwardShort: [KeyBinding(key: "l", option: true), KeyBinding(key: ".", option: true)],
+        // The start and the end of the audio, as of a document.
+        .editorGoToStart: [KeyBinding(key: "upArrow", command: true)],
+        .editorGoToEnd: [KeyBinding(key: "downArrow", command: true)],
+        .editorGoToTime: [KeyBinding(key: "g")],
+        // Chapter markers by the reader's keys for headings.
+        .editorPreviousChapter: [KeyBinding(key: "upArrow", command: true, option: true)],
+        .editorNextChapter: [KeyBinding(key: "downArrow", command: true, option: true)],
+        .editorPreviousPause: [KeyBinding(key: "n", shift: true)],
+        .editorNextPause: [KeyBinding(key: "n")],
+        .editorWhereAmI: [KeyBinding(key: "w")],
+        // In and Out, as in video editors; the selection said in full
+        // with Shift-W, beside Where Am I.
+        .editorMarkIn: [KeyBinding(key: "i")],
+        .editorMarkOut: [KeyBinding(key: "o")],
+        .editorSelectToPreviousPause: [KeyBinding(key: "n", option: true, shift: true)],
+        .editorSelectToNextPause: [KeyBinding(key: "n", option: true)],
+        .editorSelectChapter: [KeyBinding(key: "c")],
+        .editorSelectAll: [KeyBinding(key: "a", command: true)],
+        .editorClearSelection: [KeyBinding(key: "escape")],
+        .editorSpeakSelection: [KeyBinding(key: "w", shift: true)],
+        .editorPlaySelection: [KeyBinding(key: "p")],
+        .editorAddMarker: [KeyBinding(key: "m")],
+        .editorShowMarkers: [KeyBinding(key: "m", shift: true)],
+        // The Edit menu's keys, which the editor answers itself, and
+        // Delete for Cut, as the user asked.
+        .editorUndo: [KeyBinding(key: "z", command: true)],
+        .editorRedo: [KeyBinding(key: "z", command: true, shift: true)],
+        .editorCut: [KeyBinding(key: "delete"), KeyBinding(key: "x", command: true)],
+        .editorCopy: [KeyBinding(key: "c", command: true)],
+        .editorPaste: [KeyBinding(key: "v", command: true)],
+        .editorTrimToSelection: [KeyBinding(key: "t")],
+        .editorInsertSilence: [KeyBinding(key: "s", shift: true)],
+        .editorInsertChapter: [KeyBinding(key: "c", shift: true)],
+        .editorApplyFilter: [KeyBinding(key: "f")],
+        .editorPunchIn: [KeyBinding(key: "r")],
+        // Saving, as documents save; Revert beside Undo, asking first.
+        .editorSave: [KeyBinding(key: "s", command: true)],
+        .editorExport: [KeyBinding(key: "e", command: true, shift: true)],
+        .editorRevert: [KeyBinding(key: "z", command: true, option: true)],
+        .editorInfo: [KeyBinding(key: "i", command: true)],
+    ]
 }
