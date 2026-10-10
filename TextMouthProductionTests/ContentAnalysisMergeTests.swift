@@ -840,7 +840,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
             handEdits: Book.HandEdits(
                 fields: [Book.MetadataField.allCases[seed % Book.MetadataField.allCases.count]],
                 sinceImport: seed.isMultiple(of: 2)
-            )
+            ),
+            feedLink: FeedBookLink(feedID: UUID(), itemID: "item-\(seed)")
         )
     }
 

@@ -118,9 +118,11 @@ struct BookMetadata: Codable {
     var handEdits: Book.HandEdits?
 
     /// The feed item the book was downloaded from (FR03), for a podcast
-    /// episode or an article; nil for every other book. Recorded here alone,
-    /// never in library.json, and carried from record to record by each save
-    /// of the book's state (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`).
+    /// episode or an article; nil for every other book. Never in
+    /// library.json: a row carries it only while its book belongs to its
+    /// feed, in the feed's own index (`Book.feedLink`, FR11). Each save of
+    /// the book's state writes the row's link, or carries this one forward
+    /// when the row has none (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`).
     var feedLink: FeedBookLink? = nil
 
     init(

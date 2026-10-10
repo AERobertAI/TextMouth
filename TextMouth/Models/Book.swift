@@ -175,6 +175,23 @@ struct Book: Identifiable, Codable, Hashable {
     /// in the book's record; a reader's copy takes the row's
     /// (`EditableMetadata`).
     var handEdits: HandEdits?
+    /// The feed item this row's book was downloaded from (FR03): set for a
+    /// podcast episode or an article while it belongs to its feed (FR11),
+    /// nil for every other book. A row with a link is a feed item's: its
+    /// package lives in its feed's own folder (`Feeds/<feed ID>/`, see
+    /// `tmbDirectory`), its row is kept in that feed's index rather than in
+    /// library.json (`FeedIndex`), and the library's lists and counts leave
+    /// it out (`isFeedItem`). Read when present and written only when set,
+    /// so library.json's rows are exactly as they were. The package's record
+    /// keeps the link too (`BookMetadata.feedLink`), and keeps it when a
+    /// row's link is cleared.
+    var feedLink: FeedBookLink?
+
+    /// Whether this row is a feed item's download (FR11): its feed lists it,
+    /// and the library's own lists, counts, and maintenance leave it out.
+    var isFeedItem: Bool {
+        feedLink != nil
+    }
 
     /// The author a book is listed under when nothing names one: what every
     /// import, parser, and recording writes for it, which a reader leaves
@@ -228,7 +245,8 @@ struct Book: Identifiable, Codable, Hashable {
         contentIndexVersion: String? = nil,
         textCacheFingerprint: TextCacheFingerprint? = nil,
         metadataReaderVersion: String? = nil,
-        handEdits: HandEdits? = nil
+        handEdits: HandEdits? = nil,
+        feedLink: FeedBookLink? = nil
     ) {
         self.id = id
         self.title = title
@@ -270,6 +288,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.textCacheFingerprint = textCacheFingerprint
         self.metadataReaderVersion = metadataReaderVersion
         self.handEdits = handEdits
+        self.feedLink = feedLink
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -334,6 +353,10 @@ struct Book: Identifiable, Codable, Hashable {
         // fingerprint does: the row is then one nothing was recorded for,
         // which the metadata refresh treats with the most care.
         handEdits = fields.optionalValue(.handEdits) { $0 }
+        // A feed link that cannot be read counts as none (FR11): the row is
+        // then a book of the library's own rather than the whole library
+        // failing over it.
+        feedLink = fields.optionalValue(.feedLink) { $0 }
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -713,8 +736,9 @@ struct Book: Identifiable, Codable, Hashable {
     /// note the stored record holds, as it keeps the stored index.
     ///
     /// The feed item a downloaded episode or article came from
-    /// (`BookMetadata.feedLink`, FR03) belongs to the package alone as well,
-    /// and every write keeps the one the stored record holds.
+    /// (`BookMetadata.feedLink`, FR03) is the row's when the row names one
+    /// (FR11), and otherwise the one the stored record holds, so a row that
+    /// never carried a link, or whose link was cleared, never erases it.
     ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
@@ -735,16 +759,17 @@ struct Book: Identifiable, Codable, Hashable {
             info.state.transcript = stored?.info.state.transcript
         }
         info.state.revision = BookState.revision(after: max(stored?.info.state.revision ?? 0, revisionFloor))
-        // The feed item, which a library row never carries (FR03).
-        info.metadata.feedLink = stored?.info.metadata.feedLink
+        // The feed item: the row's, or else the stored record's (FR03, FR11).
+        info.metadata.feedLink = feedLink ?? stored?.info.metadata.feedLink
         return info
     }
 
     /// This book's metadata, state, and bookmarks as bookInfo.json records
-    /// them, without a content index or revision: those depend on the record
-    /// being replaced (`bookInfo(replacing:contentIndex:revisionFloor:)`).
+    /// them, its feed link included, without a content index or revision:
+    /// those depend on the record being replaced
+    /// (`bookInfo(replacing:contentIndex:revisionFloor:)`).
     func makeBookInfo() -> BookInfo {
-        BookInfo(
+        var info = BookInfo(
             metadata: BookMetadata(
                 title: title,
                 author: author,
@@ -791,12 +816,17 @@ struct Book: Identifiable, Codable, Hashable {
             ),
             bookmarks: bookmarks
         )
+        info.metadata.feedLink = feedLink
+        return info
     }
 
     /// The book a package record describes, the inverse of `makeBookInfo()`.
-    /// Every field bookInfo.json keeps comes from `record`. The file path,
-    /// folder, and package name come from where the caller found the
-    /// package, because a record cannot vouch for where its package is now.
+    /// Every field bookInfo.json keeps comes from `record`, the feed link
+    /// included. The file path, folder, and package name come from where
+    /// the caller found the package, because a record cannot vouch for
+    /// where its package is now; a caller that found the package in the
+    /// Library folder clears the link, since a package there is a book of
+    /// the library's own (`placedInLibraryFolder()`, FR11).
     init(record: BookInfo, filePath: String, folderPath: String, tmbDirectoryName: String) {
         let metadata = record.metadata
         let state = record.state
@@ -840,8 +870,20 @@ struct Book: Identifiable, Codable, Hashable {
             contentIndexVersion: state.contentIndexVersion,
             textCacheFingerprint: state.textCacheFingerprint,
             metadataReaderVersion: metadata.metadataReaderVersion,
-            handEdits: metadata.handEdits
+            handEdits: metadata.handEdits,
+            feedLink: metadata.feedLink
         )
+    }
+
+    /// This book as a row of the library's own, for a package found in the
+    /// Library folder (FR11): the same book without a feed link, whatever
+    /// its record says, since only a package in its feed's folder is a feed
+    /// item's. Its record keeps the link (`bookInfo(replacing:...)`), which
+    /// says the book came from a feed.
+    func placedInLibraryFolder() -> Book {
+        var book = self
+        book.feedLink = nil
+        return book
     }
 }
 

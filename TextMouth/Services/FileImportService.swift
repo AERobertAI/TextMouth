@@ -538,6 +538,8 @@ enum FileImportService {
     /// fingerprints included, as `Book(record:filePath:folderPath:tmbDirectoryName:)`
     /// builds it, with the book's file where the record names it in the
     /// package. Callers must validate the package before using this helper.
+    /// Every caller places the book in the Library folder, so the book is a
+    /// library book, without the feed link its record may hold (FR11).
     static func bookFromPackageInfo(
         _ info: BookInfo,
         packageURL: URL,
@@ -549,7 +551,7 @@ enum FileImportService {
             filePath: packageURL.appendingPathComponent(info.metadata.originalFileName).path,
             folderPath: folderPath,
             tmbDirectoryName: tmbName
-        )
+        ).placedInLibraryFolder()
     }
 
     /// Reconstructs a Book for a package that already resides under the
@@ -2154,13 +2156,15 @@ enum FileImportService {
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 
         // Build the Book from bookInfo.json metadata and state, every field
-        // the record holds included, its text cache's fingerprints too.
+        // the record holds included, its text cache's fingerprints too. A
+        // package in the Library folder is a library book, whatever feed its
+        // record names (FR11).
         let book = Book(
             record: info,
             filePath: bookFile.path,
             folderPath: folderPath,
             tmbDirectoryName: url.lastPathComponent
-        )
+        ).placedInLibraryFolder()
         return (book, info.metadata.folderPath)
     }
 

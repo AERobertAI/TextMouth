@@ -489,14 +489,17 @@ enum LibraryPersistenceService {
                 stored = nil
             }
             // The record was read from the analyzed book's package, so that
-            // is where the book it describes lives.
-            let latest = pending ?? stored.map {
-                Book(
-                    record: $0.info,
+            // is where the book it describes lives: in the library's folder
+            // or its feed's, as the analyzed book's location says (FR11).
+            let latest = pending ?? stored.map { stored -> Book in
+                var book = Book(
+                    record: stored.info,
                     filePath: analyzed.filePath,
                     folderPath: analyzed.folderPath,
                     tmbDirectoryName: analyzed.tmbDirectoryName
                 )
+                book.feedLink = analyzed.feedLink
+                return book
             } ?? analyzed
             if let change = contentChange(from: analyzed, to: latest) {
                 logDroppedAnalysis(of: analyzed, because: change)
