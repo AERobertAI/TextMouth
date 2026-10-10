@@ -207,12 +207,21 @@ extension ReaderViewModel {
     /// (`canReleaseMediaControls`). A finished book whose controls the next
     /// book has taken once stopped and said so while it released nothing,
     /// the playing book keeping them (REV07, speech finding 5).
+    ///
+    /// The Playback menu offers the command only while the window's book
+    /// holds the controls, but a key mapped to it reaches any book's window.
+    /// One that holds nothing changes nothing and says so
+    /// (`MediaControlsWording.notHeld`), where it once said nothing at all,
+    /// so the listener could not tell that the key had been heard.
     func releaseMediaControls() {
-        guard canReleaseMediaControls else { return }
+        guard canReleaseMediaControls else {
+            announceToVoiceOver(MediaControlsWording.notHeld)
+            return
+        }
         stop()
         mediaControlsReleased = true
         nowPlayingService.releaseMediaControls()
-        announceToVoiceOver("Media controls released")
+        announceToVoiceOver(MediaControlsWording.released)
     }
 
     /// Toggle between play and pause states. Handles Where Am I interruption,

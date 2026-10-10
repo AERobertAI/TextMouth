@@ -574,6 +574,41 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertNil(system.coordinator.playingOwnerID)
     }
 
+    /// Release Media Controls chosen by a key in a window whose book holds
+    /// nothing, here one that never played while another book plays,
+    /// releases nothing and changes nothing, and says so: the book playing
+    /// plays on with the controls, the system is never told that TextMouth
+    /// stopped, and the window's book is not marked as having released them.
+    /// Before, it said nothing, so the listener could not tell the key had
+    /// been heard.
+    func testReleaseMediaControlsWhereTheBookHoldsNothingSaysSoAndChangesNothing() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Release Nothing Held")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let slipway = openTextBook(titled: "Slipway Ledger", in: world, joining: system)
+
+        quay.reader.play()
+        reportWordSpoken(by: quay)
+        slipway.reader.windowBecameKey()
+        XCTAssertFalse(slipway.reader.canReleaseMediaControls, "A window that never played offers Release Media Controls")
+
+        let refused = recordingAnnouncements {
+            slipway.reader.releaseMediaControls()
+        }
+        XCTAssertEqual(refused.announcements.map(\.message), [MediaControlsWording.notHeld])
+        XCTAssertFalse(slipway.reader.mediaControlsReleased, "The window that held nothing is marked as having released them")
+        assertSpeaks(quay, from: Self.openingOffset, "Release Media Controls in another window")
+        assertToldSystem(system, that: quay.reader, plays: true, "Release Media Controls in another window")
+    }
+
+    /// The words VoiceOver hears for Release Media Controls, pinned: the
+    /// release, and the refusal of a window whose book holds nothing, which
+    /// begins as the release does.
+    func testTheWordsOfReleaseMediaControls() {
+        XCTAssertEqual(MediaControlsWording.released, "Media controls released")
+        XCTAssertEqual(MediaControlsWording.notHeld, "Media controls not released: this book does not hold them.")
+    }
+
     // MARK: - After the Speech Engine Refuses the Text
 
     /// The Mac's speech engine refuses the text where speech goes on, on
@@ -854,12 +889,12 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// them, its book the one the system shows (REV07, speech finding 5).
     /// Once another book plays, the finished book's window, which asks
     /// again as it becomes key, offers nothing, and Release Media Controls
-    /// chosen anyway, as a key can choose it, releases nothing and says
-    /// nothing: the playing book plays on with the controls, and the system
-    /// is never told that TextMouth stopped. Before, the finished book
-    /// stopped and said "Media controls released" while the other book kept
-    /// them. Nor is it offered while the system shows that book paused;
-    /// that book's own window releases them.
+    /// chosen anyway, as a key can choose it, releases nothing and says so:
+    /// the playing book plays on with the controls, and the system is never
+    /// told that TextMouth stopped. Before, the finished book stopped and
+    /// said "Media controls released" while the other book kept them, and
+    /// then said nothing at all. Nor is it offered while the system shows
+    /// that book paused; that book's own window releases them.
     func testAFinishedBookOffersReleaseMediaControlsOnlyWhileItHoldsThem() throws {
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Finished Release Owner")
@@ -888,7 +923,11 @@ final class MediaCommandPlaybackTests: XCTestCase {
         let refused = recordingAnnouncements {
             finished.releaseMediaControls()
         }
-        XCTAssertEqual(refused.announcements, [], "Release Media Controls announced releasing what another book holds")
+        XCTAssertEqual(
+            refused.announcements.map(\.message),
+            [MediaControlsWording.notHeld],
+            "Release Media Controls did not say the finished book holds nothing"
+        )
         XCTAssertTrue(otherAudio.isPlaying && !otherAudio.isPaused, "Release Media Controls paused the book playing")
         assertToldSystem(system, that: other, plays: true, "Release Media Controls in the finished book's window")
 

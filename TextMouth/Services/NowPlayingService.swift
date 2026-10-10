@@ -71,6 +71,23 @@ struct NowPlayingItem: Equatable, Sendable {
     let isPlaying: Bool
 }
 
+/// What VoiceOver hears as Release Media Controls is chosen in a book's
+/// window (`ReaderViewModel.releaseMediaControls()`).
+enum MediaControlsWording {
+    /// Said as the window's book, which held TextMouth's media controls,
+    /// hands them back to the system, and so the AirPods and the media keys
+    /// to other apps.
+    static let released = "Media controls released"
+
+    /// Said when Release Media Controls is chosen, by a key mapped to it, in
+    /// a window whose book does not hold the media controls: one that never
+    /// played, stopped, or released them already, or whose book another
+    /// book has replaced in Now Playing. Nothing is released and nothing
+    /// changes; the sentence begins as `released` does, so the two are told
+    /// apart from their first words, on a braille display too.
+    static let notHeld = "Media controls not released: this book does not hold them."
+}
+
 /// Reader-scoped facade over the one process-wide Now Playing coordinator.
 /// Keeping the existing call-site API local to a reader prevents an inactive
 /// window from clearing or replacing another window's media session.
