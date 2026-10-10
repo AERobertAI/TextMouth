@@ -193,10 +193,22 @@ extension FeedCenter {
     /// downloaded, and it is the listener's, so the newest-N rule never
     /// downloads it again by itself (FR11).
     private func noteDownloadRemoved(_ itemID: FeedItem.ID, of feedID: UUID) {
+        noteDownloadGone(itemID, of: feedID, at: environment.now(), byListener: true)
+    }
+
+    /// Notes in the record that the download of the item `itemID` of the
+    /// feed `feedID` went at `date`: the item is not downloaded, with the
+    /// date its download went. With `byListener`, the item is the
+    /// listener's from then on (`noteDownloadRemoved(_:of:)`); a rule's
+    /// removal, and a book the library no longer lists, leave who asked for
+    /// the download as it was.
+    private func noteDownloadGone(_ itemID: FeedItem.ID, of feedID: UUID, at date: Date, byListener: Bool) {
         store.updateItem(itemID, of: feedID) { item in
             item.state = .notDownloaded
-            item.downloadDeletedDate = environment.now()
-            item.downloadOrigin = .listener
+            item.downloadDeletedDate = date
+            if byListener {
+                item.downloadOrigin = .listener
+            }
         }
     }
 
@@ -308,10 +320,7 @@ extension FeedCenter {
             let days = record.feed.deleteDownloadsDaysAfterPlayed(under: settings)
             for item in record.items where item.state.bookID != nil {
                 guard let book = downloadedRow(of: item, in: record.feed.id) else {
-                    store.updateItem(item.id, of: record.feed.id) { item in
-                        item.state = .notDownloaded
-                        item.downloadDeletedDate = now
-                    }
+                    noteDownloadGone(item.id, of: record.feed.id, at: now, byListener: false)
                     report.forgottenItemIDs.append(item.id)
                     DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FORGOTTEN: \(item.title): the library no longer lists its book")
                     continue
@@ -413,10 +422,7 @@ extension FeedCenter {
         let removal = library.settleFeedFileRemovals(readied, failures: failed.mapValues { FeedFileRemovalFailure(errorDescription: $0) })
         for removed in removal.removed {
             guard let entry = removable.first(where: { $0.book.id == removed.row.id }) else { continue }
-            store.updateItem(entry.itemID, of: entry.feedID) { item in
-                item.state = .notDownloaded
-                item.downloadDeletedDate = now
-            }
+            noteDownloadGone(entry.itemID, of: entry.feedID, at: now, byListener: false)
             outcome.removed.append(removed)
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETED: \(removed.row.title): \(entry.reason), \(Self.removalNote(removed)) by \(rule)")
         }
