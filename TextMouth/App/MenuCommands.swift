@@ -49,8 +49,44 @@ extension FocusedValues {
 
 // MARK: - Menu Commands
 
+/// The File menu's commands beside New Window (Command-N): Open Book…, New
+/// from Text…, and New Recording…, each showing and answering its key in
+/// force, which the Shortcuts tab and config.json can change (FR12's branch
+/// D), or none while another action has its key.
+struct FileCommands: Commands {
+    /// The shortcuts, observed so each item's key equivalent follows a
+    /// change at once.
+    @ObservedObject var shortcuts: KeyboardShortcutManager
+    /// The library recordings are saved into.
+    let library: LibraryViewModel
+
+    var body: some Commands {
+        CommandGroup(after: .newItem) {
+            Button(ShortcutAction.openBook.title) {
+                NotificationCenter.default.post(name: .openBookFile, object: nil)
+            }
+            .keyboardShortcut(shortcuts.keyboardShortcut(for: .openBook))
+
+            Button(ShortcutAction.newFromText.title) {
+                NotificationCenter.default.post(name: .newFromText, object: nil)
+            }
+            .keyboardShortcut(shortcuts.keyboardShortcut(for: .newFromText))
+
+            // Records from a microphone into a new audiobook (FR04).
+            Button(ShortcutAction.newRecording.title) {
+                RecordingWindowController.shared.show(library: library)
+            }
+            .keyboardShortcut(shortcuts.keyboardShortcut(for: .newRecording))
+        }
+    }
+}
+
 struct PlaybackCommands: Commands {
     @FocusedValue(\.canReleaseMediaControls) var canReleaseMediaControls
+    /// The shortcuts, observed so Copy Reading Position's and Search in
+    /// Book's key equivalents follow a change at once (FR12's branch D).
+    @ObservedObject var shortcuts: KeyboardShortcutManager
+
     var body: some Commands {
         CommandMenu("Playback") {
             Button("Play / Pause") {
@@ -112,15 +148,15 @@ struct PlaybackCommands: Commands {
 
             Divider()
 
-            Button("Copy Reading Position") {
+            Button(ShortcutAction.copyReadingPosition.title) {
                 NotificationCenter.default.post(name: .copyReadingPosition, object: nil)
             }
-            .keyboardShortcut("p", modifiers: [.command, .shift])
+            .keyboardShortcut(shortcuts.keyboardShortcut(for: .copyReadingPosition))
 
-            Button("Search in Book") {
+            Button(ShortcutAction.searchInBook.title) {
                 NotificationCenter.default.post(name: .searchInBook, object: nil)
             }
-            .keyboardShortcut("f", modifiers: .command)
+            .keyboardShortcut(shortcuts.keyboardShortcut(for: .searchInBook))
         }
     }
 }
@@ -195,17 +231,25 @@ struct LibraryCommands: Commands {
     /// The removal preferences, observed so the Remove command's title
     /// always says what choosing it will do (TODO A08).
     @ObservedObject private var removal = RemovalPreferencesModel.shared
+    /// The shortcuts, observed so Import DAISY Folder's and Add Feed's key
+    /// equivalents follow a change at once (FR12's branch D).
+    @ObservedObject var shortcuts: KeyboardShortcutManager
+
+    /// The Library menu, its keys in force those of `shortcuts`.
+    init(shortcuts: KeyboardShortcutManager) {
+        _shortcuts = ObservedObject(wrappedValue: shortcuts)
+    }
 
     var body: some Commands {
         CommandMenu("Library") {
             // Chooses DAISY books kept as loose files by their folders, in a
             // folder-only panel the Library window presents (TODO I02). The
-            // Open Book... panel stays file-only, so Return on a folder there
+            // Open Book… panel stays file-only, so Return on a folder there
             // keeps opening it.
-            Button("Import DAISY Folder…") {
+            Button(ShortcutAction.importDAISYFolder.title) {
                 NotificationCenter.default.post(name: .importDAISYFolder, object: nil)
             }
-            .keyboardShortcut("o", modifiers: [.command, .shift])
+            .keyboardShortcut(shortcuts.keyboardShortcut(for: .importDAISYFolder))
 
             // VoiceOver speaks how the imports under way have got (FR10).
             // It has no key until the user gives it one in Settings, which
@@ -223,12 +267,12 @@ struct LibraryCommands: Commands {
             Divider()
 
             // Subscribes to a podcast or article feed (FR03): the key
-            // Library window opens the Add Feed sheet. Shift-Command-F is
-            // used by no other command or default shortcut.
-            Button(FeedWording.addFeedCommand) {
+            // Library window opens the Add Feed sheet. Its key,
+            // Shift-Command-F unless changed, is no other default's.
+            Button(ShortcutAction.addFeed.title) {
                 NotificationCenter.default.post(name: .addFeed, object: nil)
             }
-            .keyboardShortcut(FeedShortcuts.addFeed)
+            .keyboardShortcut(shortcuts.keyboardShortcut(for: .addFeed))
 
             // Checks every feed now; the key Library window says what came.
             Button(FeedWording.refreshAllCommand) {
@@ -464,6 +508,47 @@ struct BookCommands: Commands {
                 NotificationCenter.default.post(name: .editBookAudio, object: nil)
             }
             .disabled(canEditBookAudio != true)
+        }
+    }
+}
+
+// MARK: - Key Equivalents in Force (FR12's Branch D)
+
+extension KeyboardShortcutManager {
+    /// `action`'s key in force as its menu item or button takes it: its key
+    /// equivalent (`keyEquivalent(for:)`), or nil for none, so the item
+    /// shows no key rather than one that does something else.
+    func keyboardShortcut(for action: ShortcutAction) -> KeyboardShortcut? {
+        keyEquivalent(for: action)?.keyboardShortcut
+    }
+}
+
+extension KeyBinding {
+    /// The binding as SwiftUI's key equivalent, for a menu item or a button:
+    /// its key with its modifiers; nil for a binding that cannot be a key
+    /// equivalent (`canBeKeyEquivalent`), a double press among them.
+    var keyboardShortcut: KeyboardShortcut? {
+        guard canBeKeyEquivalent, let key = keyEquivalent else { return nil }
+        var modifiers: EventModifiers = []
+        if command { modifiers.insert(.command) }
+        if option { modifiers.insert(.option) }
+        if shift { modifiers.insert(.shift) }
+        if control { modifiers.insert(.control) }
+        return KeyboardShortcut(key, modifiers: modifiers)
+    }
+
+    /// The key as SwiftUI names it: Space, Tab, Return, and Escape by name,
+    /// and any other key by the one character a binding holds for it, the
+    /// character AppKit gives a function key included, which a menu item
+    /// takes as that key. The arrows and Delete never come here: a text field
+    /// edits with them, so no key equivalent may have them.
+    private var keyEquivalent: KeyEquivalent? {
+        switch key {
+        case "space": return .space
+        case "tab": return .tab
+        case "return": return .return
+        case "escape": return .escape
+        default: return key.count == 1 ? KeyEquivalent(Character(key)) : nil
         }
     }
 }

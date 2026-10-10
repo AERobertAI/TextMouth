@@ -624,6 +624,33 @@ private struct WeakRecorder {
     weak var recorder: AnyObject?
 }
 
+/// The key equivalents in force as a preferences store's record gives them,
+/// followed as it changes, for a window with no shortcut manager of its own:
+/// the Record window's buttons show and answer their keys in force (FR12's
+/// branch D), as the menus show theirs from the app's manager.
+@MainActor
+final class StoredKeyEquivalents: ObservableObject {
+    /// The store holding the record.
+    private let store: UserDefaults
+    /// Reports a change of the record, which may change a key.
+    private var recordObserver: PreferenceObserver?
+
+    /// Follows the record in `store`: the app's preferences unless a test
+    /// passes a store of its own.
+    init(store: UserDefaults = TextMouthRuntime.current.preferences) {
+        self.store = store
+        recordObserver = PreferenceObserver(keys: [KeyboardShortcutManager.editsPreference.key], in: store) { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+    }
+
+    /// `action`'s key equivalent in force
+    /// (`KeyboardShortcutManager.keyEquivalent(for:in:)`), or nil for none.
+    func keyEquivalent(for action: ShortcutAction) -> KeyBinding? {
+        KeyboardShortcutManager.keyEquivalent(for: action, in: KeyboardShortcutManager.bindingsPreference.read(from: store))
+    }
+}
+
 /// Every action's keys in force as a preferences store's record of the
 /// user's edits gives them (`KeyboardShortcutManager.bindingsPreference`),
 /// read only: every change goes through the record

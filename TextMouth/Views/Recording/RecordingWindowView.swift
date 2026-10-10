@@ -10,8 +10,9 @@ import SwiftUI
 /// words the screen shows, in a plain form whose sections VoiceOver reads in
 /// order, and Tab reaches every control. VoiceOver starts on the Microphone
 /// pop-up, or, in a window launch opened on recordings left behind, on the
-/// first of them. Record, Pause or Resume, and Stop answer Command-R,
-/// Command-P, and Command-Period, which nothing else in TextMouth uses. The elapsed time
+/// first of them. Record, Pause or Resume, and Stop answer their keys in
+/// force, Command-R, Command-P, and Command-Period unless changed in the
+/// Shortcuts tab or config.json (FR12's branch D). The elapsed time
 /// and the level are text that changes once a second and is read when the
 /// user moves to it, never spoken on its own; the drawn meter beside the
 /// level is for sighted helpers and hidden from VoiceOver.
@@ -20,6 +21,8 @@ struct RecordingWindowView: View {
     @ObservedObject var model: RecordingWindowModel
     /// The recorder, observed too, so the buttons follow its state at once.
     @ObservedObject private var service: RecordingService
+    /// The buttons' keys in force, followed as the user changes them.
+    @StateObject private var keys = StoredKeyEquivalents()
 
     /// The window's view for `model`.
     init(model: RecordingWindowModel) {
@@ -161,13 +164,13 @@ struct RecordingWindowView: View {
         .help(RecordingWording.folderHint)
     }
 
-    /// Record, Pause or Resume, and Stop, each with its shortcut.
+    /// Record, Pause or Resume, and Stop, each with its key in force.
     private var controlButtons: some View {
         HStack {
             Button(RecordingWording.recordTitle) {
                 Task { await model.record() }
             }
-            .keyboardShortcut(RecordingShortcuts.record)
+            .keyboardShortcut(keys.keyEquivalent(for: .recordingRecord)?.keyboardShortcut)
             .disabled(!model.canRecord)
             .accessibilityHint(RecordingWording.recordHint(device: model.selectedDevice?.name))
             .help(RecordingWording.recordHint(device: model.selectedDevice?.name))
@@ -175,7 +178,7 @@ struct RecordingWindowView: View {
             Button(isPaused ? RecordingWording.resumeTitle : RecordingWording.pauseTitle) {
                 Task { await model.togglePause() }
             }
-            .keyboardShortcut(RecordingShortcuts.pauseOrResume)
+            .keyboardShortcut(keys.keyEquivalent(for: .recordingPauseOrResume)?.keyboardShortcut)
             .disabled(!model.canPause)
             .accessibilityHint(isPaused ? RecordingWording.resumeHint : RecordingWording.pauseHint)
             .help(isPaused ? RecordingWording.resumeHint : RecordingWording.pauseHint)
@@ -183,7 +186,7 @@ struct RecordingWindowView: View {
             Button(RecordingWording.stopTitle) {
                 Task { await model.stop() }
             }
-            .keyboardShortcut(RecordingShortcuts.stop)
+            .keyboardShortcut(keys.keyEquivalent(for: .recordingStop)?.keyboardShortcut)
             .disabled(!model.canStop)
             .accessibilityHint(RecordingWording.stopHint)
             .help(RecordingWording.stopHint)
@@ -227,20 +230,6 @@ struct RecordingWindowView: View {
     private var isPaused: Bool {
         service.state == .paused
     }
-}
-
-// MARK: - Shortcuts
-
-/// The Record window's keyboard shortcuts: Command with R, P, and Period,
-/// which no menu command and no default shortcut of the reader or the
-/// library uses (the tests check both).
-enum RecordingShortcuts {
-    static let record = KeyboardShortcut("r", modifiers: .command)
-    static let pauseOrResume = KeyboardShortcut("p", modifiers: .command)
-    static let stop = KeyboardShortcut(".", modifiers: .command)
-    /// File > New Recording…: Option-Command-N, beside Command-N for a new
-    /// Library window.
-    static let newRecording = KeyboardShortcut("n", modifiers: [.option, .command])
 }
 
 // MARK: - The Drawn Meter

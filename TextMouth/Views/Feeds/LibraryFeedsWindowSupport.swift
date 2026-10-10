@@ -321,10 +321,3 @@ extension Notification.Name {
     /// command asks where to save the subscriptions as OPML (FR03).
     static let exportOPML = Notification.Name("exportOPML")
 }
-
-/// The feed reader's keyboard shortcuts (FR03).
-enum FeedShortcuts {
-    /// Library > Add Feed…: Shift-Command-F, which no other menu command and
-    /// no default shortcut uses (Command-F alone searches a book).
-    static let addFeed = KeyboardShortcut("f", modifiers: [.command, .shift])
-}

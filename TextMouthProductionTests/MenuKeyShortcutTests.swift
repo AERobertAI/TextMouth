@@ -1,4 +1,6 @@
 import AppKit
+import Combine
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -256,6 +258,118 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertEqual(raw.actions(for: commandO, in: .app)?.double, .showBookInfo)
     }
 
+    // MARK: - The Menus and the Record Window Show the Keys in Force
+
+    /// A binding becomes the key equivalent a menu item or a button takes:
+    /// its key with its modifiers, a named key by SwiftUI's name, a function
+    /// key by its character; a binding that can be no key equivalent becomes
+    /// none.
+    func testABindingBecomesTheKeyEquivalentAnItemTakes() throws {
+        let expected: [(binding: KeyBinding, key: KeyEquivalent, modifiers: EventModifiers)] = [
+            (commandO, "o", .command),
+            (KeyBinding(key: "n", command: true, option: true), "n", [.command, .option]),
+            (shiftCommandT, "t", [.command, .shift]),
+            (KeyBinding(key: ".", command: true), ".", .command),
+            (KeyBinding(key: "g", control: true), "g", .control),
+            (KeyBinding(key: "space", command: true, control: true), .space, [.command, .control]),
+            (KeyBinding(key: "return", command: true), .return, .command),
+            (KeyBinding(key: "\u{F708}", command: true), KeyEquivalent("\u{F708}"), .command),
+        ]
+        for (binding, key, modifiers) in expected {
+            let shortcut = try XCTUnwrap(binding.keyboardShortcut, binding.configText)
+            XCTAssertEqual(shortcut.key, key, binding.configText)
+            XCTAssertEqual(shortcut.modifiers, modifiers, binding.configText)
+        }
+        for binding in [KeyBinding(key: "w"), commandO.asDoublePress(true), KeyBinding(key: "leftArrow", command: true)] {
+            XCTAssertNil(binding.keyboardShortcut, binding.configText)
+        }
+        let manager = makeManager("keyboard-shortcuts")
+        XCTAssertEqual(manager.keyboardShortcut(for: .openBook)?.key, "o")
+        XCTAssertNil(manager.keyboardShortcut(for: .newFromText), "Show Sleep Timer has its key")
+        XCTAssertNil(manager.keyboardShortcut(for: .whereAmI), "no key equivalent's action")
+    }
+
+    /// The Record window's buttons read their keys from the record in the
+    /// store, and follow a change of it, published once.
+    func testTheRecordWindowsKeysFollowTheRecord() {
+        let store = makeSandboxedPreferences("menu-keys-record-window")
+        let keys = StoredKeyEquivalents(store: store)
+        var changes = 0
+        let subscription = keys.objectWillChange.sink { changes += 1 }
+        defer { subscription.cancel() }
+        XCTAssertEqual(keys.keyEquivalent(for: .recordingRecord), KeyBinding(key: "r", command: true))
+        XCTAssertEqual(keys.keyEquivalent(for: .recordingStop), KeyBinding(key: ".", command: true))
+
+        let optionCommandR = KeyBinding(key: "r", command: true, option: true)
+        KeyboardShortcutManager.editsPreference.write(ShortcutEdits([.recordingRecord: [optionCommandR]]), to: store)
+
+        XCTAssertEqual(keys.keyEquivalent(for: .recordingRecord), optionCommandR)
+        XCTAssertEqual(changes, 1)
+        XCTAssertNil(keys.keyEquivalent(for: .togglePlayback), "no key equivalent's action")
+    }
+
+    /// The running app's menus show each menu command's key in force:
+    /// Command-O for Open Book…, none for New from Text… while Show Sleep
+    /// Timer has Shift-Command-T, Option-Command-N for New Recording…,
+    /// Shift-Command-O and Shift-Command-F in the Library menu, and
+    /// Shift-Command-P and Command-F in the Playback menu. Given another key
+    /// in the app's own store, a test sandbox's, Open Book… shows it, and
+    /// shows Command-O again once the store is as it was. Skipped when this
+    /// run's menu bar has no File menu.
+    func testTheMenusShowTheKeysInForceAndFollowAChange() throws {
+        guard Self.menu(titled: "File") != nil else {
+            throw XCTSkip("This run's menu bar has no File menu")
+        }
+        let shown: [(menu: String, action: ShortcutAction, key: String, modifiers: NSEvent.ModifierFlags)] = [
+            ("File", .openBook, "o", .command),
+            ("File", .newFromText, "", []),
+            ("File", .newRecording, "n", [.option, .command]),
+            ("Library", .importDAISYFolder, "o", [.shift, .command]),
+            ("Library", .addFeed, "f", [.shift, .command]),
+            ("Playback", .copyReadingPosition, "p", [.shift, .command]),
+            ("Playback", .searchInBook, "f", .command),
+        ]
+        for (menuTitle, action, key, modifiers) in shown {
+            let item = try XCTUnwrap(Self.menu(titled: menuTitle).flatMap { Self.item(action.title, in: $0) }, action.rawValue)
+            XCTAssertEqual(Self.keyEquivalent(of: item).key, key, action.rawValue)
+            XCTAssertEqual(Self.keyEquivalent(of: item).modifiers, modifiers, action.rawValue)
+        }
+
+        let store = TextMouthRuntime.current.preferences
+        let recordKey = KeyboardShortcutManager.editsPreference.key
+        let before = store.data(forKey: recordKey)
+        // Puts the app's store back however the test ends.
+        addTeardownBlock { @MainActor in
+            if let before {
+                store.set(before, forKey: recordKey)
+            } else {
+                store.removeObject(forKey: recordKey)
+            }
+        }
+        var edits = KeyboardShortcutManager.editsPreference.read(from: store)
+        edits.setKeys([KeyBinding(key: "o", command: true, control: true)], for: .openBook)
+        KeyboardShortcutManager.editsPreference.write(edits, to: store)
+
+        // Read afresh each time, as SwiftUI may build the menu again.
+        func openBookKey() -> (key: String, modifiers: NSEvent.ModifierFlags)? {
+            Self.menu(titled: "File").flatMap { Self.item(ShortcutAction.openBook.title, in: $0) }.map(Self.keyEquivalent(of:))
+        }
+        XCTAssertTrue(
+            waitUntil(timeout: 5) { openBookKey()?.key == "o" && openBookKey()?.modifiers == [.control, .command] },
+            "Open Book… shows \(String(describing: openBookKey()))"
+        )
+
+        if let before {
+            store.set(before, forKey: recordKey)
+        } else {
+            store.removeObject(forKey: recordKey)
+        }
+        XCTAssertTrue(
+            waitUntil(timeout: 5) { openBookKey()?.key == "o" && openBookKey()?.modifiers == .command },
+            "Open Book… shows \(String(describing: openBookKey()))"
+        )
+    }
+
     // MARK: - Names in config.json
 
     /// A name ending in an ellipsis is read with three periods or none in
@@ -275,6 +389,31 @@ final class MenuKeyShortcutTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// The running app's top-level menu titled `title`, brought up to date
+    /// as it is before it opens, or nil when the menu bar has none.
+    private static func menu(titled title: String) -> NSMenu? {
+        guard let menu = NSApp.mainMenu?.items.first(where: { $0.title == title })?.submenu else { return nil }
+        menu.delegate?.menuNeedsUpdate?(menu)
+        return menu
+    }
+
+    /// The item titled `title` in `menu`, brought up to date first.
+    private static func item(_ title: String, in menu: NSMenu) -> NSMenuItem? {
+        menu.delegate?.menuNeedsUpdate?(menu)
+        return menu.items.first { $0.title == title }
+    }
+
+    /// The key equivalent `item` shows: its key in lower case, and its
+    /// modifiers, Shift included when the key is a capital, as AppKit reads
+    /// a capital.
+    private static func keyEquivalent(of item: NSMenuItem) -> (key: String, modifiers: NSEvent.ModifierFlags) {
+        var modifiers = item.keyEquivalentModifierMask.intersection([.command, .shift, .option, .control])
+        if item.keyEquivalent != item.keyEquivalent.lowercased() {
+            modifiers.insert(.shift)
+        }
+        return (item.keyEquivalent.lowercased(), item.keyEquivalent.isEmpty ? [] : modifiers)
+    }
 
     /// A shortcut manager with the default keys, from a preferences store
     /// of the test's own, watching no key presses and posting on `center`.
