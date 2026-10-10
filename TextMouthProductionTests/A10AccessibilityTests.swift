@@ -300,6 +300,83 @@ final class CountedWordTests: XCTestCase {
     }
 }
 
+// MARK: - The Heading Filter
+
+/// The headings list's level filter names its choices in words, "Level 1",
+/// "Levels 1 to 2", "All levels", where it said "H1–H1" with an en dash;
+/// and it is one control with one name, "Show levels", where VoiceOver met
+/// a caption, then the picker under another name, and the screen showed
+/// the picker's own title too.
+@MainActor
+final class HeadingFilterWordingTests: XCTestCase {
+    /// Each choice's name, and the choices books with headings at some
+    /// levels are offered.
+    func testTheFiltersChoicesAreNamedInWords() {
+        XCTAssertEqual(HeadingNavigatorView.filterChoiceTitle(maximumLevel: 1), "Level 1")
+        XCTAssertEqual(HeadingNavigatorView.filterChoiceTitle(maximumLevel: 2), "Levels 1 to 2")
+        XCTAssertEqual(HeadingNavigatorView.filterChoiceTitle(maximumLevel: 5), "Levels 1 to 5")
+        XCTAssertEqual(HeadingNavigatorView.filterChoiceTitle(maximumLevel: HeadingNavigatorView.deepestFilterLevel), "All levels")
+        XCTAssertEqual(offeredTitles(forLevels: [1, 2, 3]), ["Level 1", "Levels 1 to 2", "All levels"])
+        XCTAssertEqual(offeredTitles(forLevels: [2, 4]), ["Levels 1 to 2", "All levels"])
+        XCTAssertEqual(HeadingNavigatorView.levelFilterLabel, "Show levels")
+        XCTAssertEqual(HeadingNavigatorView.levelFilterHint, "Shows only the headings up to the level chosen.")
+        XCTAssertEqual(HeadingNavigatorView.listLabel(headingCount: 1), "Headings, 1 heading")
+        XCTAssertEqual(HeadingNavigatorView.listLabel(headingCount: 3), "Headings, 3 headings")
+    }
+
+    /// Drawn, the filter is one radio group VoiceOver calls "Show levels",
+    /// holding the choices by their names; nothing is called "Heading level
+    /// filter" or "Max level" any more. The sheet's other controls keep
+    /// their own names too: the list's name, "Headings, 3 headings", was on
+    /// the whole sheet, and every control in it took it, the filter and the
+    /// display picker among them.
+    func testTheDrawnFilterHasOneNameAndItsChoicesWords() throws {
+        let reader = makeA10TextReader(content: DocumentContent(
+            title: "Filter",
+            author: "Tester",
+            chapters: [
+                Chapter(
+                    title: "One",
+                    text: "Part. Chapter. Scene.",
+                    headings: [
+                        Heading(level: 1, text: "Part", characterOffset: 0),
+                        Heading(level: 2, text: "Chapter", characterOffset: 6),
+                        Heading(level: 3, text: "Scene", characterOffset: 15),
+                    ]
+                ),
+            ]
+        ))
+        defer { reader.close() }
+        try withA10HostedControls(HeadingNavigatorView(viewModel: reader)) { controls in
+            let filter = try XCTUnwrap(
+                controls.first { $0.role == .radioGroup && $0.label == HeadingNavigatorView.levelFilterLabel },
+                "\(controls.map { "\($0.role.rawValue) \($0.label)" })"
+            )
+            let choices = (filter.element.accessibilityChildren() ?? []).compactMap {
+                ($0 as? NSAccessibilityProtocol)?.accessibilityLabel()
+            }
+            XCTAssertEqual(choices, ["Level 1", "Levels 1 to 2", "All levels"])
+            let labels = controls.map(\.label)
+            XCTAssertFalse(labels.contains("Heading level filter"), "\(labels)")
+            XCTAssertFalse(labels.contains("Max level"), "\(labels)")
+            XCTAssertEqual(
+                controls.filter { $0.role == .radioGroup }.map(\.label),
+                ["Heading info display mode", HeadingNavigatorView.levelFilterLabel]
+            )
+            XCTAssertEqual(
+                controls.filter { $0.role == .scrollArea }.map(\.label),
+                [HeadingNavigatorView.listLabel(headingCount: 3)]
+            )
+        }
+    }
+
+    /// The titles the filter offers a book whose headings are at `levels`.
+    private func offeredTitles(forLevels levels: [Int]) -> [String] {
+        HeadingNavigatorView.filterLevels(for: levels).map { HeadingNavigatorView.filterChoiceTitle(maximumLevel: $0) }
+            + [HeadingNavigatorView.filterChoiceTitle(maximumLevel: HeadingNavigatorView.deepestFilterLevel)]
+    }
+}
+
 // MARK: - Shared Fixtures
 
 extension XCTestCase {

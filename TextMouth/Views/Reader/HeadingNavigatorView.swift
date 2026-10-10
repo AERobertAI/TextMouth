@@ -60,8 +60,8 @@ struct HeadingNavigatorView: View {
         }
     }
 
-    /// The deepest heading level the level filter offers; its "All" choice
-    /// shows every heading up to this level.
+    /// The deepest heading level the level filter offers; its "All levels"
+    /// choice shows every heading up to this level.
     nonisolated static let deepestFilterLevel = 6
 
     /// The heading the reading position at `chapterIndex` and
@@ -116,13 +116,36 @@ struct HeadingNavigatorView: View {
         Array(Set(headings.map(\.level))).sorted()
     }
 
-    /// The levels the filter offers a "H1–Hn" choice for, given the levels
-    /// present in the book, sorted: every one but the deepest. A choice of
-    /// the deepest level shows every heading, as the filter's "All" choice
-    /// does, so offering both put the same filter twice before VoiceOver
-    /// (and gave two choices one tag in a book with level-6 headings).
+    /// The levels the filter offers a choice of its own for, given the
+    /// levels present in the book, sorted: every one but the deepest. A
+    /// choice of the deepest level shows every heading, as the filter's
+    /// "All levels" choice does, so offering both put the same filter twice
+    /// before VoiceOver (and gave two choices one tag in a book with level-6
+    /// headings).
     static func filterLevels(for levelsPresent: [Int]) -> [Int] {
         Array(levelsPresent.dropLast())
+    }
+
+    /// What VoiceOver calls the list of headings: "Headings, 1 heading",
+    /// "Headings, 12 headings", counting those the level filter shows.
+    nonisolated static func listLabel(headingCount: Int) -> String {
+        "Headings, \(CountWording.phrase(headingCount, singular: "heading", plural: "headings"))"
+    }
+
+    /// The level filter's label, which the screen shows beside it and
+    /// VoiceOver speaks as its name.
+    nonisolated static let levelFilterLabel = "Show levels"
+    /// The level filter's hint: what choosing does.
+    nonisolated static let levelFilterHint = "Shows only the headings up to the level chosen."
+
+    /// The level filter's name for the choice showing levels 1 to
+    /// `maximumLevel`, in words a braille display and VoiceOver read alike:
+    /// "Level 1", "Levels 1 to 3", and "All levels" for the deepest level
+    /// the filter offers (TODO A10; the choices said "H1–H1", "H1–H3", and
+    /// "All", with an en dash).
+    nonisolated static func filterChoiceTitle(maximumLevel: Int) -> String {
+        if maximumLevel >= deepestFilterLevel { return "All levels" }
+        return maximumLevel <= 1 ? "Level 1" : "Levels 1 to \(maximumLevel)"
     }
 
     /// Return the end offset for every heading currently displayed in the
@@ -218,22 +241,32 @@ struct HeadingNavigatorView: View {
             }
             .padding()
 
-            // Heading level filter
+            // Heading level filter: one control with one name, which the
+            // screen shows beside it and VoiceOver speaks once, as the
+            // filter's own. A caption naming it again used to be a second
+            // stop, and the picker's own title, "Max level", showed as a
+            // second label beside the caption (TODO A10). A segmented
+            // picker's label view never reaches VoiceOver, so the name is
+            // its accessibility label, and the caption is for the eye.
             if headingLevelsPresent.count > 1 {
                 HStack(spacing: 8) {
-                    Text("Show levels:")
+                    Text("\(Self.levelFilterLabel):")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .accessibilityHidden(true)
 
-                    Picker("Max level", selection: $maxHeadingLevel) {
+                    Picker(selection: $maxHeadingLevel) {
                         ForEach(Self.filterLevels(for: headingLevelsPresent), id: \.self) { level in
-                            Text("H1–H\(level)").tag(level)
+                            Text(Self.filterChoiceTitle(maximumLevel: level)).tag(level)
                         }
-                        Text("All").tag(Self.deepestFilterLevel)
+                        Text(Self.filterChoiceTitle(maximumLevel: Self.deepestFilterLevel)).tag(Self.deepestFilterLevel)
+                    } label: {
+                        EmptyView()
                     }
                     .pickerStyle(.segmented)
-                    .accessibilityLabel("Heading level filter")
-                    .accessibilityHint("Show only headings up to this level")
+                    .labelsHidden()
+                    .accessibilityLabel(Self.levelFilterLabel)
+                    .accessibilityHint(Self.levelFilterHint)
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 4)
@@ -283,11 +316,16 @@ struct HeadingNavigatorView: View {
                         )
                     }
                 }
+                // The list's name, with how many headings it shows. It was
+                // on the whole sheet, whose controls are no one element, so
+                // every control in it took the name: the display and level
+                // pickers and Back to Book were each "Headings, 3 headings"
+                // to VoiceOver (TODO A10).
+                .accessibilityLabel(Self.listLabel(headingCount: headingItems.count))
             }
         }
         .frame(width: 550, height: 500)
         .navigationTitle("Headings: \(shown.value.title)")
-        .accessibilityLabel("Headings, \(CountWording.phrase(headingItems.count, singular: "heading", plural: "headings"))")
         .onAppear {
             rebuildHeadingItems()
             initialFocusHeadingID = Self.initialFocusHeadingID(
