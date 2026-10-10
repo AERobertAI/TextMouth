@@ -703,20 +703,15 @@ final class ShortcutRecording {
         case cancelled
     }
 
-    /// How soon a second press must follow the first to make a double press.
-    private let doublePressTime: TimeInterval
     /// The time on the key presses' time line.
     private let clock: ShortcutPressDispatcher.Clock
-    /// Starts the timer the first press waits on.
-    private let startTimer: ShortcutPressDispatcher.StartTimer
-    /// Called once, when the recording ends with an outcome.
-    private let finish: @MainActor (Outcome) -> Void
-    /// The first press of the key being recorded, waiting for a second.
-    private var first: (stroke: KeyBinding, time: TimeInterval)?
-    /// The timer the first press waits on.
-    private var timer: (any PressTimer)?
+    /// The two presses the recording measures, and its outcome.
+    private let presses: TwoPresses<Outcome>
+
     /// Whether the recording has ended.
-    private(set) var hasEnded = false
+    var hasEnded: Bool {
+        presses.hasEnded
+    }
 
     /// A recording waiting `doublePressTime` for a second press, ending
     /// through `finish`.
@@ -726,10 +721,8 @@ final class ShortcutRecording {
         startTimer: @escaping ShortcutPressDispatcher.StartTimer = { delay, fire in MainQueuePressTimer(delay: delay, fire: fire) },
         finish: @escaping @MainActor (Outcome) -> Void
     ) {
-        self.doublePressTime = doublePressTime
         self.clock = clock
-        self.startTimer = startTimer
-        self.finish = finish
+        presses = TwoPresses(doublePressTime: doublePressTime, startTimer: startTimer, finish: finish)
     }
 
     /// Takes one key press: the key with its modifiers (`stroke`, nil for a
@@ -738,50 +731,42 @@ final class ShortcutRecording {
     /// the recording's, which goes no further.
     @discardableResult
     func take(_ stroke: KeyBinding?, at time: TimeInterval, isRepeat: Bool, isEscape: Bool) -> Bool {
-        guard !hasEnded else { return false }
+        guard !presses.hasEnded else { return false }
         if isEscape {
-            end(.cancelled)
+            presses.end(.cancelled)
             return true
         }
         if isRepeat {
             return true
         }
-        guard let first else {
+        // The recording keeps a first press only of a key a binding names.
+        guard let firstKey = presses.first?.stroke else {
             guard let stroke else { return false }
-            self.first = (stroke, time)
-            let delay = max(0, time + doublePressTime - clock())
-            timer = startTimer(delay) { [weak self] in
+            presses.keepFirst(stroke, at: time)
+            presses.startTimer(after: max(0, time + presses.doublePressTime - clock())) { [weak self] in
                 self?.timeIsUp()
             }
             return true
         }
-        if let stroke, stroke == first.stroke, time - first.time < doublePressTime {
-            end(.recorded(stroke.asDoublePress(true)))
+        if presses.second(stroke, at: time) == .doublePress {
+            presses.end(.recorded(firstKey.asDoublePress(true)))
             return true
         }
         // Another key, or the same one too late: the first was pressed once.
         // A key no binding names goes on; any other is the recording's.
-        end(.recorded(first.stroke))
+        presses.end(.recorded(firstKey))
         return stroke != nil
     }
 
     /// Ends the recording without a key, as the recorder going away does.
     func cancel() {
-        timer?.cancel()
-        timer = nil
-        hasEnded = true
+        presses.cancel()
     }
 
     /// Records the first press as a single press once no second press has
     /// come within the time.
     private func timeIsUp() {
-        guard !hasEnded, let first else { return }
-        end(.recorded(first.stroke))
-    }
-
-    /// Ends the recording with `outcome`.
-    private func end(_ outcome: Outcome) {
-        cancel()
-        finish(outcome)
+        guard let firstKey = presses.first?.stroke else { return }
+        presses.end(.recorded(firstKey))
     }
 }

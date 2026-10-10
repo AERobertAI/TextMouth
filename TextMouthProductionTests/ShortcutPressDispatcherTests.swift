@@ -903,6 +903,40 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(posted, [ShortcutAction.whereAmI.rawValue])
     }
 
+    /// The two presses Try a Double Press and the Shortcuts tab's recorder
+    /// both measure (review item D): the first press's key again within the
+    /// double-press time is a double press, at the time or later too late,
+    /// and another key or a nameless one another key's; the outcome is
+    /// reported once, and its timer, once it has ended, reports nothing.
+    func testTwoPressesMeasureTheSecondAgainstTheFirst() {
+        var outcomes: [String] = []
+        var timers: [HandFiredTimer] = []
+        let presses = TwoPresses<String>(
+            doublePressTime: 0.5,
+            startTimer: { delay, fire in
+                let timer = HandFiredTimer(delay: delay, fire: fire)
+                timers.append(timer)
+                return timer
+            },
+            finish: { outcomes.append($0) }
+        )
+        XCTAssertEqual(presses.second(plainW, at: 10), .otherKey, "no first press yet")
+
+        presses.keepFirst(plainW, at: 10)
+
+        XCTAssertEqual(presses.second(plainW, at: 10.4), .doublePress)
+        XCTAssertEqual(presses.second(plainW, at: 10.5), .sameKeyTooLate(0.5))
+        XCTAssertEqual(presses.second(plainK, at: 10.1), .otherKey)
+        XCTAssertEqual(presses.second(nil, at: 10.1), .otherKey)
+        presses.startTimer(after: 1) { presses.end("time is up") }
+        XCTAssertEqual(timers.map(\.delay), [1])
+        presses.end("second press")
+        presses.end("another")
+        timers.forEach { $0.fire() }
+        XCTAssertEqual(outcomes, ["second press"])
+        XCTAssertTrue(presses.hasEnded)
+    }
+
     /// The last trial's outcome stays, published, for the Shortcuts tab to
     /// show as text a braille display can read again after VoiceOver has
     /// said it (review item C): nothing before any trial, the prompt while
