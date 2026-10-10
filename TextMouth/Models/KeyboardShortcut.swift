@@ -23,11 +23,16 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// from the list (FR09). It has no key until the user gives it one in
     /// Settings.
     case previousInReadingList = "Previous in Reading List"
+    // Up One Level last of the Navigation group, and Show Bookmarks last of
+    // the Bookmarks group, as the Shortcuts tab lists them: `allCases` is
+    // Settings order, which the record of edits, the press index, and the
+    // settling of a key two edited actions share all follow (#1528).
+    case navigateUpLevel = "Up One Level"
     case addBookmark = "Add Bookmark"
     case nextBookmark = "Next Bookmark"
     case previousBookmark = "Previous Bookmark"
-    case showHeadingList = "Show Headings"
     case showBookmarkList = "Show Bookmarks"
+    case showHeadingList = "Show Headings"
     case showSleepTimer = "Show Sleep Timer"
     case restartSleepTimer = "Restart Sleep Timer"
     case whereAmI = "Where Am I?"
@@ -39,7 +44,6 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// import overlay says it, from any window (FR10). It has no key until
     /// the user gives it one in Settings.
     case speakImportProgress = "Speak Import Progress"
-    case navigateUpLevel = "Up One Level"
     case openSelectedBook = "Open Selected Book"
     case showBookInfo = "Book Info"
     case removeFromLibrary = "Remove from Library"

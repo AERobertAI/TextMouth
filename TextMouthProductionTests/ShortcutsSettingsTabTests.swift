@@ -144,6 +144,26 @@ final class ShortcutsSettingsTabTests: XCTestCase {
         XCTAssertEqual(manager.allDisplayStrings(for: .releaseMediaControls), "No shortcut")
     }
 
+    // MARK: - The Order of the Actions
+
+    /// `ShortcutAction.allCases`, the order the record of edits, the press
+    /// index, and the settling of a key two edited actions share all call
+    /// Settings order, is the order the Shortcuts tab lists the actions in:
+    /// each group whole, the groups as the tab heads them (#1528: Up One
+    /// Level came after the Information group, and Show Bookmarks among the
+    /// Panels).
+    func testEveryActionIsListedWithItsGroup() {
+        var groups: [String] = []
+        for action in ShortcutAction.allCases where groups.last != action.category {
+            XCTAssertFalse(groups.contains(action.category), "\(action.rawValue) is listed apart from \(action.category)")
+            groups.append(action.category)
+        }
+
+        XCTAssertEqual(groups, ["Playback", "Navigation", "Bookmarks", "Panels", "Information", "Library", "Audio Editor"])
+        let navigation = ShortcutAction.allCases.filter { $0.category == "Navigation" }
+        XCTAssertEqual(navigation.last, .navigateUpLevel, "the tab lists Up One Level last of its group, as before")
+    }
+
     // MARK: - A Row
 
     /// A row's VoiceOver label names the action, its keys in words, and,
