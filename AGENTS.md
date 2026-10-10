@@ -49,6 +49,7 @@ The orchestrator launches each agent in its own git worktree under `.claude/work
 ## Lessons that cost time
 
 - `git merge -F -` does not read standard input; write merge messages to files. Two heredocs on one command line swallow the second; write helper scripts to files first.
+- Every agent of one session shares the session's scratchpad folder: on October 9, 2026 one agent's commit-message files were overwritten by another's after use. Each agent prefixes its scratch files with its slug (or keeps a subfolder named for it), and the orchestrator's own start with `orchestrator-`.
 - Agents can stall with "no progress for 600s"; a message to the agent's id resumes it with its context intact, and its branch keeps its commits. A background suite stopped at its time limit must be rerun.
 - An agent that follows the usage rule stops itself at a "critical" reading; say in the launch message when the user has overridden it.
 - Keep two gigabytes free before a merge suite: the archive-import tests refuse to run under the app's one-gigabyte reserve.
