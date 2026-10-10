@@ -61,9 +61,11 @@ extension LibraryViewModel {
     /// is not downloaded (FR11). An older TextMouth, which reads no feed
     /// index, never finds such a download among its books and marks its
     /// item not downloaded; once this build is run again, the package with
-    /// its file and its index row make it downloaded again. An item deleted
-    /// from its feed, or downloading or downloaded as another book, is left
-    /// as it is.
+    /// its file and its index row make it downloaded again. So, too, an item
+    /// a Move to Library… marked "in library" before it stopped short of
+    /// moving its package (FR11, branch D): its book is still its feed's,
+    /// and stays so. An item deleted from its feed, or downloading or
+    /// downloaded as another book, is left as it is.
     ///
     /// Only a file found here heals its item (FR02's rule: nothing is
     /// decided from a check the cloud answers). A row joins the books while
@@ -98,7 +100,7 @@ extension LibraryViewModel {
             DiagnosticLog.event(
                 .feeds,
                 "FEED_ITEMS_DOWNLOADED_AGAIN: marked \(CountWording.phrase(marked, singular: "item", plural: "items")) "
-                    + "downloaded again whose packages and index rows an older TextMouth did not read"
+                    + "downloaded again, their files and index rows here while their records said otherwise"
             )
         }
         if !shelved.isEmpty {
@@ -298,9 +300,10 @@ extension LibraryViewModel {
     /// `relocated` with its file at its place in the moved package. The two
     /// moves between a library folder and a feed's folder both take this
     /// step: a download made before FR11 moving into its feed's folder
-    /// (`moveIntoItsFeed(_:link:root:)`), and the download of a feed whose
-    /// record is gone returning to the library
-    /// (`returnIntoTheLibrary(_:folderPath:root:)`).
+    /// (`moveIntoItsFeed(_:link:root:)`), and a feed item's download moving
+    /// into the library (`moveIntoTheLibrary(_:folderPath:root:)`), by Move
+    /// to Library… (FR11, branch D) or as the download of a feed whose
+    /// record is gone returns.
     ///
     /// A package already where `relocated` puts it, and not where `book`
     /// does, was moved by an earlier launch that stopped before it was done,

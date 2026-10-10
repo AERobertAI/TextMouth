@@ -241,7 +241,7 @@ extension LibraryViewModel {
         var outcome = FeedDownloadReturn()
         for row in downloads {
             do {
-                outcome.returned.append(try Self.returnIntoTheLibrary(row, folderPath: folderPath, root: root))
+                outcome.returned.append(try Self.moveIntoTheLibrary(row, folderPath: folderPath, root: root))
             } catch {
                 outcome.stayed.append(row)
                 DiagnosticLog.event(
@@ -298,25 +298,6 @@ extension LibraryViewModel {
             || library.feedShelf.rows.contains { $0.feedLink?.feedID == feedID }
             || library.feedShelf.indexedFeedIDs.contains(feedID)
             || FileManager.default.fileExists(atPath: FeedPaths.itemsFolder(of: feedID, in: TextMouthPaths.root).path)
-    }
-
-    /// `row`, a download of a feed whose record is gone, moved back into the
-    /// library folder `folderPath` of the data directory at `root` as a book
-    /// of the library's own, and its row as it is there: step 1 of
-    /// `returnDownloads(ofFeed:toFolderID:removingWith:)`, the inverse of
-    /// `moveIntoItsFeed(_:link:root:)`. A package an earlier launch moved
-    /// before it stopped is found in the library folder and not moved again.
-    /// - Throws: `FeedItemMoveError.packageNotManaged` for a row that is no
-    ///   feed item's or names no package the library manages, before anything
-    ///   on disk is touched, or the errors of `relocatePackage(of:as:root:)`.
-    nonisolated static func returnIntoTheLibrary(_ row: Book, folderPath: String, root: URL) throws -> Book {
-        var book = row
-        book.feedLink = nil
-        book.folderPath = folderPath
-        guard row.isFeedItem, FileImportService.namesManagedPackage(book) else {
-            throw FeedItemMoveError.packageNotManaged
-        }
-        return try relocatePackage(of: row, as: book, root: root)
     }
 
     /// Deletes, through `remove`, the package of each of `rows`, the feed

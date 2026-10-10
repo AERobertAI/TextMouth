@@ -106,11 +106,11 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         ownBook.feedLink = nil
 
         for row in [unnamed, ownBook] {
-            XCTAssertThrowsError(try LibraryViewModel.returnIntoTheLibrary(row, folderPath: folderPath, root: TextMouthPaths.root)) { error in
+            XCTAssertThrowsError(try LibraryViewModel.moveIntoTheLibrary(row, folderPath: folderPath, root: TextMouthPaths.root)) { error in
                 XCTAssertEqual(error as? FeedItemMoveError, .packageNotManaged)
             }
         }
-        XCTAssertThrowsError(try LibraryViewModel.returnIntoTheLibrary(fixture.download, folderPath: "../Outside", root: TextMouthPaths.root))
+        XCTAssertThrowsError(try LibraryViewModel.moveIntoTheLibrary(fixture.download, folderPath: "../Outside", root: TextMouthPaths.root))
         XCTAssertTrue(FileManager.default.fileExists(atPath: fixture.download.filePath), "the download moved")
     }
 
@@ -353,7 +353,7 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
             moved.folderPath = folderPath
             try FileManager.default.moveItem(at: fixture.download.tmbDirectory, to: moved.packageDirectory(inDataDirectory: root))
         } else {
-            let returned = try LibraryViewModel.returnIntoTheLibrary(fixture.download, folderPath: folderPath, root: root)
+            let returned = try LibraryViewModel.moveIntoTheLibrary(fixture.download, folderPath: folderPath, root: root)
             if step != .recordWritten {
                 var list = ReadingList()
                 _ = list.append([returned.id, fixture.book.id])
