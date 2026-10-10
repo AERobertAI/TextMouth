@@ -453,6 +453,140 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(harness.performed, [.skipBackward, .skipBackward])
     }
 
+    // MARK: - Shift Beyond a Binding's Own (Finding 4)
+
+    /// Shift held with a key that has no Shift binding of its own matches
+    /// its binding without Shift and says Shift was held, so both skip
+    /// directions reach the Playback tab's Shift units, by letter and by
+    /// arrow; without Shift the same keys skip by the usual units.
+    func testShiftWithASkipKeySkipsByTheShiftUnit() {
+        let harness = Harness(ShortcutAction.defaultBindings)
+        let presses: [(key: KeyBinding, action: ShortcutAction)] = [
+            (KeyBinding(key: "l", shift: true), .skipForward),
+            (KeyBinding(key: "j", shift: true), .skipBackward),
+            (KeyBinding(key: "rightArrow", command: true, shift: true), .skipForward),
+            (KeyBinding(key: "leftArrow", command: true, shift: true), .skipBackward),
+        ]
+
+        for (offset, press) in presses.enumerated() {
+            XCTAssertTrue(harness.press(press.key, at: Double(10 + offset)), press.key.configText)
+        }
+        harness.press(KeyBinding(key: "l"), at: 20)
+
+        XCTAssertEqual(harness.performed, presses.map(\.action) + [.skipForward])
+        XCTAssertEqual(harness.triggers.map(\.shiftHeld), [true, true, true, true, false])
+        XCTAssertEqual(harness.triggers.first?.binding, KeyBinding(key: "l"), "it matched L's binding")
+    }
+
+    /// In a focused text field Shift is the field's: with an arrow it
+    /// selects text, and with a letter it types a capital, so no press falls
+    /// back to its binding without Shift there. A Command binding with Shift
+    /// of its own still acts from a field, as Show Sleep Timer's does.
+    func testShiftNeverFallsBackInATextField() {
+        let harness = Harness(ShortcutAction.defaultBindings)
+
+        XCTAssertFalse(harness.press(KeyBinding(key: "j", shift: true), at: 10, inTextField: true))
+        XCTAssertFalse(harness.press(KeyBinding(key: "rightArrow", command: true, shift: true), at: 11, inTextField: true))
+        XCTAssertFalse(harness.press(KeyBinding(key: "i", command: true, shift: true), at: 12, inTextField: true), "Book Info is Command-I alone")
+        XCTAssertEqual(harness.performed, [])
+
+        XCTAssertTrue(harness.press(KeyBinding(key: "t", command: true, shift: true), at: 13, inTextField: true))
+        XCTAssertEqual(harness.performed, [.showSleepTimer])
+        XCTAssertEqual(harness.triggers.last?.shiftHeld, false)
+    }
+
+    /// A Shift binding of its own always wins: this user's Shift-R is
+    /// Release Media Controls', and Shift-Command-Up Arrow is Move Book Up's,
+    /// never Up One Level's with Shift held; neither says Shift was held.
+    func testAShiftBindingOfItsOwnWins() {
+        var bindings = ShortcutAction.defaultBindings
+        bindings[.releaseMediaControls] = [KeyBinding(key: "r", shift: true)]
+        let harness = Harness(bindings)
+
+        harness.press(KeyBinding(key: "r", shift: true), at: 10)
+        harness.press(KeyBinding(key: "upArrow", command: true, shift: true), at: 11)
+
+        XCTAssertEqual(harness.performed, [.releaseMediaControls, .moveBookUp])
+        XCTAssertEqual(harness.triggers.map(\.shiftHeld), [false, false])
+    }
+
+    /// In an audio editor's window a press with Shift matches only a binding
+    /// with Shift, as it always has: the editor's Shift keys are actions of
+    /// their own, and Shift-R and Shift-T there never fall back to Punch In
+    /// and Trim to Selection.
+    func testAnAudioEditorMatchesShiftExactly() {
+        let harness = Harness(ShortcutAction.defaultBindings)
+
+        XCTAssertTrue(harness.press(KeyBinding(key: "j", shift: true), at: 10, scope: .audioEditor))
+        XCTAssertFalse(harness.press(KeyBinding(key: "r", shift: true), at: 11, scope: .audioEditor))
+        XCTAssertFalse(harness.press(KeyBinding(key: "t", shift: true), at: 12, scope: .audioEditor))
+
+        XCTAssertEqual(harness.performed, [.editorSkipBackLong])
+        XCTAssertFalse(ShortcutScope.audioEditor.matchesShiftBeyondItsBindings)
+        XCTAssertTrue(ShortcutScope.app.matchesShiftBeyondItsBindings)
+    }
+
+    /// A waiting single press keeps whether Shift was held: Shift-J, with
+    /// J's double press another action's, waits, then skips back by the
+    /// Shift unit in its window when the time is up; Shift held for both
+    /// presses makes the double press, with Shift.
+    func testAWaitingPressKeepsItsShift() {
+        let harness = Harness([.skipBackward: [plainJ], .goToLibrary: [jTwice]])
+        let window = makeWindow()
+        let shiftJ = KeyBinding(key: "j", shift: true)
+
+        harness.press(shiftJ, at: 10, in: window)
+        XCTAssertEqual(harness.performed, [])
+        harness.fireTimers()
+        XCTAssertEqual(harness.performed, [.skipBackward])
+        XCTAssertEqual(harness.triggers.last?.shiftHeld, true)
+        XCTAssertTrue(harness.triggers.last?.window === window)
+
+        harness.press(shiftJ, at: 20, in: window)
+        harness.press(shiftJ, at: 20.2, in: window)
+        XCTAssertEqual(harness.performed, [.skipBackward, .goToLibrary])
+        XCTAssertEqual(harness.triggers.last?.shiftHeld, true)
+
+        harness.press(plainJ, at: 30, in: window)
+        harness.press(shiftJ, at: 30.2, in: window)
+        XCTAssertEqual(harness.performed, [.skipBackward, .goToLibrary, .skipBackward], "J then Shift-J is no double press")
+    }
+
+    /// Through the manager, real key presses with Shift post the skips with
+    /// `shiftHeld`, which the reader reads to choose the Shift unit; and
+    /// Shift-Command-Equals, Command-+ as a US keyboard types it, reaches
+    /// Increase Speed, whose default, Command with "+", had no Shift and so
+    /// never matched it (finding 5).
+    func testTheManagerPostsShiftHeldAndIncreaseSpeedMatches() throws {
+        let center = NotificationCenter()
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("press-dispatcher-shift"),
+            installsEventMonitor: false,
+            notificationCenter: center
+        )
+        var posted: [(action: String, shiftHeld: Bool)] = []
+        let names = Set(ShortcutAction.allCases.map(\.notificationName))
+        let subscription = Publishers.MergeMany(names.map { center.publisher(for: $0) }).sink { notification in
+            posted.append((notification.userInfo?["action"] as? String ?? "", notification.userInfo?["shiftHeld"] as? Bool ?? false))
+        }
+        defer { subscription.cancel() }
+        let presses: [(characters: String, keyCode: UInt16, modifiers: NSEvent.ModifierFlags)] = [
+            ("L", 37, [.shift]),
+            ("\u{F702}", 123, [.shift, .command, .numericPad, .function]),
+            ("+", 24, [.shift, .command]),
+            ("-", 27, [.command]),
+        ]
+
+        for (offset, press) in presses.enumerated() {
+            let event = try keyDown(press.characters, keyCode: press.keyCode, at: Double(10 + offset), modifiers: press.modifiers)
+            XCTAssertTrue(manager.handleKeyEvent(event, keyWindow: nil, firstResponder: nil), press.characters)
+        }
+
+        let actions: [ShortcutAction] = [.skipForward, .skipBackward, .increaseSpeed, .decreaseSpeed]
+        XCTAssertEqual(posted.map(\.action), actions.map(\.rawValue))
+        XCTAssertEqual(posted.map(\.shiftHeld), [true, true, true, false])
+    }
+
     // MARK: - Helpers
 
     /// A window the test owns, never shown.
@@ -466,10 +600,17 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         return window
     }
 
-    /// A key-down event for `characters`, made up for the test, at `time`.
-    private func keyDown(_ characters: String, keyCode: UInt16, at time: TimeInterval, isRepeat: Bool = false) throws -> NSEvent {
+    /// A key-down event for `characters`, made up for the test, at `time`,
+    /// with `modifiers` held.
+    private func keyDown(
+        _ characters: String,
+        keyCode: UInt16,
+        at time: TimeInterval,
+        modifiers: NSEvent.ModifierFlags = [],
+        isRepeat: Bool = false
+    ) throws -> NSEvent {
         try XCTUnwrap(NSEvent.keyEvent(
-            with: .keyDown, location: .zero, modifierFlags: [], timestamp: time, windowNumber: 0, context: nil,
+            with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: time, windowNumber: 0, context: nil,
             characters: characters, charactersIgnoringModifiers: characters, isARepeat: isRepeat, keyCode: keyCode
         ))
     }

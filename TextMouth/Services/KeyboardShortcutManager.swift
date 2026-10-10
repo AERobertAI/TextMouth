@@ -465,6 +465,12 @@ final class KeyboardShortcutManager: ObservableObject {
         return (binding.command || binding.control) && !TextEditingKeys.contains(binding)
     }
 
+    /// Whether Shift was held beyond the modifiers of the binding a press
+    /// matched: the press had Shift and the binding has none. The action is
+    /// told so (`shiftHeld`), and Skip Forward and Skip Backward then go by
+    /// the Playback tab's Shift units; the dispatcher matches such a press
+    /// to its binding without Shift where none with Shift is its own
+    /// (finding 4 of FR12's design).
     nonisolated static func hasExtraShift(
         eventHasShift: Bool,
         bindingRequiresShift: Bool

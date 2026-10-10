@@ -36,8 +36,13 @@ import AppKit
 /// - Once a double press has acted, each further press of its key that comes
 ///   within the time of the one before is taken and ignored, so a third
 ///   quick press never starts the key over.
-/// - A waiting single press acts in the window it was pressed in, even after
-///   the time; when that window has gone meanwhile, it acts nowhere.
+/// - A waiting single press acts in the window it was pressed in, with
+///   whether Shift was held then, even after the time; when that window has
+///   gone meanwhile, it acts nowhere.
+/// - In the app's windows, a press with Shift that matches no binding of
+///   its own matches its binding without Shift, and says Shift was held, so
+///   Shift-J and Shift-L skip by the Playback tab's Shift units; never in a
+///   text field (`match(_:)`).
 ///
 /// The clock and the timer a waiting single press waits on are passed in,
 /// so tests decide when time passes and never wait themselves.
@@ -287,11 +292,30 @@ final class ShortcutPressDispatcher {
     /// The shortcut `press` matches, or nil: none for a key no binding
     /// names, where no shortcuts match, or for a key a focused text field
     /// keeps, which never counts as a press.
+    ///
+    /// A press with Shift that matches no binding of its own, single or
+    /// double, matches its binding without Shift, saying that Shift was
+    /// held (finding 4 of the design): Shift-J skips back by the Shift unit.
+    /// Never in a focused text field, where Shift with an arrow selects text
+    /// and Shift with a letter types a capital, and only in a scope that
+    /// allows it (`ShortcutScope.matchesShiftBeyondItsBindings`).
     private func match(_ press: Press) -> Match? {
         guard let stroke = press.stroke, let scope = press.scope,
-              KeyboardShortcutManager.shouldHandle(binding: stroke, whenTextInputIsFocused: press.textInputIsFocused),
-              let actions = index.actions(for: stroke, in: scope) else { return nil }
-        return Match(stroke: stroke, actions: actions, shiftHeld: false)
+              KeyboardShortcutManager.shouldHandle(binding: stroke, whenTextInputIsFocused: press.textInputIsFocused) else {
+            return nil
+        }
+        if let actions = index.actions(for: stroke, in: scope) {
+            return Match(stroke: stroke, actions: actions, shiftHeld: false)
+        }
+        guard stroke.shift, !press.textInputIsFocused, scope.matchesShiftBeyondItsBindings else { return nil }
+        var unshifted = stroke
+        unshifted.shift = false
+        guard let actions = index.actions(for: unshifted, in: scope) else { return nil }
+        return Match(
+            stroke: unshifted,
+            actions: actions,
+            shiftHeld: KeyboardShortcutManager.hasExtraShift(eventHasShift: stroke.shift, bindingRequiresShift: unshifted.shift)
+        )
     }
 
     /// Posts `action`, triggered by `binding` in `window`.
