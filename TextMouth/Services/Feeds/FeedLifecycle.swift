@@ -181,14 +181,10 @@ extension FeedCenter {
                 // Text, so it stays in a kept package whenever one of the
                 // engine's rules removes the file
                 // (`FeedItemPackage.staysWithoutTheFile(_:)`); the listener's
-                // own Delete Download takes it with the file, following the
-                // Trash setting as the file does. It goes first, so a
-                // refusal leaves both.
-                let text = TextMouthPaths.contentMarkdownPath(in: package)
-                if !removal.row.format.isAudio, FileManager.default.fileExists(atPath: text.path) {
-                    try environment.removeItem(text)
-                }
-                try environment.removeItem(FeedItemPackage.fileEntry(of: removal.row, in: package))
+                // own Delete Download takes it with the file, as one item
+                // that follows the Trash setting as the file does, and a
+                // refusal leaves both (REV11).
+                try FeedItemPackage.removeFileAndText(of: removal.row, in: package, remove: environment.removeItem)
                 FeedItemPackage.removeWhatTheFileMade(of: removal.row, from: package)
             } else {
                 try environment.removeItem(package)

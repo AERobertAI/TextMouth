@@ -452,6 +452,19 @@ final class FeedTestWorld {
     /// The book storage, which says the library is on this Mac until a test
     /// moves it to the cloud.
     let cloud = FakeBookCloudStorage(location: .local)
+    /// What the listener's own deletions removed, in order, each by its
+    /// name with the names it held, as the Trash would hold them (REV11).
+    let removedItems = LockedValue<[RemovedItem]>([])
+    /// Whether the listener's own deletions are refused, as a Trash that
+    /// cannot take an item refuses it.
+    let refusesRemovals = LockedValue(false)
+
+    /// One item a listener's deletion removed: its name, and the names
+    /// inside it, sorted, when it is a folder.
+    struct RemovedItem: Equatable, Sendable {
+        let name: String
+        let contents: [String]
+    }
     /// The statistics service whose finished books mark items played.
     let stats: ReadingStatsService
     /// The folder holding resume data.
@@ -519,6 +532,8 @@ final class FeedTestWorld {
         let lowPowerMode = lowPowerMode
         let freeSpace = freeSpace
         let cloud = cloud
+        let removedItems = removedItems
+        let refusesRemovals = refusesRemovals
         stats = statistics ?? ReadingStatsService(fileURL: sandbox.appendingPathComponent("reading_stats.json"))
         let stats = stats
         resumeFolder = sandbox.appendingPathComponent("Resume Data", isDirectory: true)
@@ -544,8 +559,14 @@ final class FeedTestWorld {
             boundary: .shared,
             bookStorage: { cloud },
             finishedBooksSource: stats,
-            // Never the Trash in a test: a file or package goes for good.
-            removeItem: { try FileManager.default.removeItem(at: $0) }
+            // Never the Trash in a test: a file or package goes for good,
+            // noted as the Trash would hold it, unless the test refuses it.
+            removeItem: { item in
+                guard !refusesRemovals.value else { throw CocoaError(.fileWriteNoPermission) }
+                let contents = ((try? FileManager.default.contentsOfDirectory(atPath: item.path)) ?? []).sorted()
+                removedItems.value.append(RemovedItem(name: item.lastPathComponent, contents: contents))
+                try FileManager.default.removeItem(at: item)
+            }
         )
         center = FeedCenter(environment: environment)
         // The library lists this engine's feeds' items (FR11).

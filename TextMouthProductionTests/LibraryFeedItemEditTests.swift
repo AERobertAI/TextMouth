@@ -75,9 +75,9 @@ final class LibraryFeedItemEditTests: XCTestCase {
     // MARK: - Delete Download of an Edited Article
 
     /// Delete Download of an opened article whose text was edited sends its
-    /// content.md, then its file, through the feed engine's removal, which
-    /// in the app follows the Trash setting, and keeps its record and the
-    /// copy Edit Text kept.
+    /// content.md with its file, as one item named after the file (REV11),
+    /// through the feed engine's removal, which in the app follows the Trash
+    /// setting, and keeps its record and the copy Edit Text kept.
     @MainActor
     func testDeleteDownloadSendsAnEditedArticlesTextThroughTheListenersRemoval() async throws {
         let world = try FeedTestWorld(self, label: "LibraryFeedEditedArticle")
@@ -111,7 +111,7 @@ final class LibraryFeedItemEditTests: XCTestCase {
 
         try center.deleteDownload("guid:post-1", of: feed.id)
 
-        XCTAssertEqual(removed.urls.map(\.lastPathComponent), [text.lastPathComponent, article.bookFileURL.lastPathComponent])
+        XCTAssertEqual(removed.urls.map(\.lastPathComponent), [article.bookFileURL.deletingPathExtension().lastPathComponent])
         XCTAssertEqual(try String(contentsOf: copy, encoding: .utf8), "# An earlier edit")
         XCTAssertFalse(FileManager.default.fileExists(atPath: text.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: package).path))
