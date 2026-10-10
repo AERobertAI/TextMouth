@@ -74,6 +74,33 @@ final class FeedItemIndexFileTests: FeedItemIndexTestCase {
         try assertLibraryJSONHoldsNoFeedItem([item])
     }
 
+    /// A reader's checkpoint and bookmark of a feed item, through the paths
+    /// every book's take, reach the item's record in its package within
+    /// half a second and its feed's index by the time the snapshot is
+    /// written, never library.json: "make sure playback position is also
+    /// saved".
+    @MainActor
+    func testAReadersCheckpointOfAFeedItemReachesItsRecordAndItsIndex() throws {
+        let item = try makeFeedItem(title: "Played Episode")
+        let model = makeModel(with: [item])
+        model.save()
+        LibraryPersistenceService.flushPendingSave()
+        let position = Self.position(321, at: 100)
+
+        model.persistReadingPosition(bookID: item.id, position: position)
+        model.addBookmark(bookID: item.id, chapterIndex: 0, characterOffset: 300, label: "Kept here")
+        waitPastLibrarySaveDebounce()
+
+        let record = try BookInfo.load(from: item.tmbDirectory)
+        XCTAssertEqual(record.state.readingPosition, position)
+        XCTAssertEqual(record.bookmarks.map(\.label), ["Kept here"])
+        LibraryPersistenceService.flushPendingSave()
+        let row = try XCTUnwrap(indexedRows().first)
+        XCTAssertEqual(row.readingPosition, position)
+        XCTAssertEqual(row.bookmarks.map(\.label), ["Kept here"])
+        try assertLibraryJSONHoldsNoFeedItem([item])
+    }
+
     /// Quitting writes the waiting snapshot's feed rows to their index.
     @MainActor
     func testTheQuitFlushWritesTheFeedsIndex() throws {
