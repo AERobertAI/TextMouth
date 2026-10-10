@@ -407,9 +407,20 @@ final class FeedCenter: ObservableObject {
         store.feed(inFolder: folderID)
     }
 
-    /// The items of the feed `feedID` the library lists, newest first.
+    /// What the feed `feedID` lists and downloads by itself now (FR11): its
+    /// own "List and download" choice, or the global one, which a feed no
+    /// longer subscribed follows too.
+    func itemPolicy(of feedID: UUID) -> FeedItemPolicy {
+        store.record(of: feedID)?.feed.itemPolicyOverride ?? FeedSettings.itemPolicy(in: environment.preferences)
+    }
+
+    /// The items of the feed `feedID` the library lists, newest first: every
+    /// item not deleted, or, under "Only the newest 5 listed", the short
+    /// list (FR11, `FeedRecord.listedItems(under:hasFile:)`), an item's file
+    /// being here while the library lists its book.
     func listedItems(of feedID: UUID) -> [FeedItem] {
-        store.record(of: feedID)?.listedItems ?? []
+        guard let record = store.record(of: feedID) else { return [] }
+        return record.listedItems(under: itemPolicy(of: feedID).listing) { downloadedRow(of: $0, in: feedID) != nil }
     }
 
     /// How this Mac last checked the feed `feedID`.
@@ -471,7 +482,8 @@ final class FeedCenter: ObservableObject {
         }
         let address = body.permanentURL ?? url
         let now = environment.now()
-        let keepEntries = settings.keepEntries
+        // A new subscription follows the global choice's listing (FR11).
+        let keepEntries = settings.itemPolicy.listing.keptEntries
         // A new folder is made only once the feed has been read, so until
         // then the record names a stand-in, replaced below.
         let provisionalFolderID: UUID
@@ -665,7 +677,9 @@ final class FeedCenter: ObservableObject {
     }
 
     /// Gives the feed `feedID` its own "List and download" choice and number
-    /// (FR11), or nil to use the global setting.
+    /// (FR11), or nil to use the global setting. The list changes at once;
+    /// when what it lists changes, the next check reads the feed whole, so a
+    /// widened list brings back the entries a short one let go.
     func setItemPolicy(_ policy: FeedItemPolicy?, of feedID: UUID) {
         store.update(feedID) { $0.feed.itemPolicyOverride = policy }
     }
@@ -700,9 +714,13 @@ final class FeedCenter: ObservableObject {
         return moved
     }
 
-    /// Gives the feed `feedID` its own number of entries kept, or nil to
-    /// follow the setting; the next refresh applies it, reading the feed
-    /// whole again even when it has not changed.
+    /// Gives the feed `feedID` its own retired number of entries kept, or
+    /// nil to follow the retired setting, as Feed Info's old control does
+    /// until the interface of the "List and download" choice takes its
+    /// place. The engine lists by the choice, so the number counts only once
+    /// the move to the choice turns it into a choice of the feed's own, at
+    /// the next refresh of every feed or the next launch
+    /// (`moveKeptEntriesOverrides()`).
     func setKeepEntries(_ entries: Int?, of feedID: UUID) {
         store.update(feedID) { $0.feed.keepEntriesOverride = entries.map(SettingsPolicy.feedKeepEntries.validated) }
     }

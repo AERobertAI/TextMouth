@@ -204,9 +204,37 @@ struct FeedRecord: Codable, Equatable, Sendable {
         items.first { $0.state.bookID == bookID }
     }
 
-    /// The items the library lists: every item the listener has not deleted.
+    /// Every item the listener has not deleted, newest first: what the
+    /// library lists while the feed lists every item, and what the "List
+    /// and download" choice's newest are counted among
+    /// (`listedItems(under:hasFile:)`).
     var listedItems: [FeedItem] {
         items.filter { $0.deletedDate == nil }
+    }
+
+    /// The newest `count` items the listener has not deleted, newest first,
+    /// played ones among them (FR11): the items the "List and download"
+    /// choice's number counts, in the order the feed's folder lists them,
+    /// which is the order the record keeps them in. A played item keeps its
+    /// place, so playing one never brings an older one in (the listener's
+    /// answer to question 4).
+    func newestItems(_ count: Int) -> ArraySlice<FeedItem> {
+        listedItems.prefix(max(0, count))
+    }
+
+    /// The items the library lists under `listing` (FR11): every item not
+    /// deleted, or, under "Only the newest 5 listed", the short list: the
+    /// newest of them (`newestItems(_:)`), less those played whose files are
+    /// not here, so a played episode drops off the list, and every item
+    /// whose file is here (`hasFile`) or that downloads, wherever it falls.
+    /// The items left out stay in the record, hidden, and come back when the
+    /// list widens.
+    func listedItems(under listing: FeedItemPolicy.Listing, hasFile: (FeedItem) -> Bool) -> [FeedItem] {
+        guard case .newest(let count) = listing else { return listedItems }
+        let newest = Set(newestItems(count).map(\.id))
+        return listedItems.filter { item in
+            hasFile(item) || item.state.isDownloading || (newest.contains(item.id) && item.playedDate == nil)
+        }
     }
 
     /// The record as its file holds it: each download in progress written as

@@ -121,8 +121,10 @@ struct FeedRefreshSummary: Equatable, Sendable {
 /// the others sent every byte again, so a body whose SHA-256 digest matches
 /// the last one is neither read again nor saved either. Both hold only
 /// while the feed keeps as many entries as when its last body was read: a
-/// changed kept-entries setting reads the feed whole again, so it applies
-/// at once. A record that does not know its feed's size (`Feed.entryTotal`),
+/// changed listing (the "List and download" choice or its number, FR11)
+/// reads the feed whole again, so it applies at the next check, a widened
+/// list bringing back the entries a short one let go. A record that does
+/// not know its feed's size (`Feed.entryTotal`),
 /// written before TextMouth recorded it, reads its feed whole once too, so
 /// the size is known from that check on. A feed that moved for good, by a
 /// permanent redirect or its own `itunes:new-feed-url`, is fetched from its
@@ -259,7 +261,9 @@ final class FeedRefresher {
         }
 
         let started = now()
-        let keepEntries = record.feed.keepEntries(under: settings())
+        // The entries the feed's listing keeps (FR11): every one, or the
+        // newest of the short list.
+        let keepEntries = record.feed.itemPolicy(under: settings()).listing.keptEntries
         let work = await Self.fetchAndRead(
             record,
             fetchState: fetchState,
@@ -307,9 +311,9 @@ final class FeedRefresher {
                     )
                     current.feed.feedURL = moved
                 }
-                // The number in force now, which the setting may have
+                // The listing in force now, which the choice may have
                 // changed while the feed was fetched.
-                keptEntries = current.feed.keepEntries(under: settings())
+                keptEntries = current.feed.itemPolicy(under: settings()).listing.keptEntries
                 merged = FeedReconciler.merge(
                     feed,
                     into: &current,
@@ -388,10 +392,11 @@ final class FeedRefresher {
     }
 
     /// Fetches `record`'s feed through `network` with the validators of
-    /// `fetchState`, and, when it changed, `keepEntries` differs from the
-    /// number its last body was merged with, or the record does not know the
-    /// feed's size, reads it and merges it into a copy of `record`, off the
-    /// main actor, keeping the texts that merge read.
+    /// `fetchState`, and, when it changed, `keepEntries` (the number of
+    /// newest entries the feed's listing keeps, -1 for every one) differs
+    /// from the number its last body was merged with, or the record does not
+    /// know the feed's size, reads it and merges it into a copy of `record`,
+    /// off the main actor, keeping the texts that merge read.
     nonisolated static func fetchAndRead(
         _ record: FeedRecord,
         fetchState: FeedFetchState,

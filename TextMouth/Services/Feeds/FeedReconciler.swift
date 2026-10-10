@@ -14,7 +14,9 @@ import Foundation
 /// An item no match finds is added.
 ///
 /// Then the kept-entries rule decides what the record keeps (the listener's
-/// decision of October 4): every item downloaded, or downloading, always;
+/// decision of October 4, whose number is now the feed's listing under the
+/// "List and download" choice, FR11: every entry, or the newest of the short
+/// list): every item downloaded, or downloading, always;
 /// every item played, whose played date would otherwise be lost (board
 /// #1412), and every item whose package was kept with the listener's place
 /// after its file went (FR11, branch A2), always too; and the newest

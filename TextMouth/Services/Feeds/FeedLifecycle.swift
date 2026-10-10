@@ -60,10 +60,11 @@ extension FeedCenter {
         store.updateItem(itemID, of: feedID) { $0.playedDate = nil }
     }
 
-    /// Marks every item the library lists of the feed `feedID` that is not
-    /// played yet played now, as Mark All Played does, in one change of its
-    /// record, so the record is written once; the delete-after-played rule
-    /// counts from now.
+    /// Marks every item of the feed `feedID` the listener has not deleted
+    /// and that is not played yet played now, as Mark All Played does, those
+    /// the short list hides among them (FR11), in one change of its record,
+    /// so the record is written once; the delete-after-played rule counts
+    /// from now.
     /// - Returns: How many items were marked.
     @discardableResult
     func markAllPlayed(of feedID: UUID) -> Int {

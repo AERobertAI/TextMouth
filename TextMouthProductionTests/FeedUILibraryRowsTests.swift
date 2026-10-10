@@ -150,6 +150,10 @@ final class FeedUILibraryRowsTests: XCTestCase {
     /// count as they should.
     func testEveryCountOfAFeedSaysItsSize() async throws {
         let world = try FeedTestWorld(self, label: "FeedUISize")
+        // A short list of the newest 10 (FR11's "Only the newest 5 listed",
+        // with 10 for its number), which every feed below keeps but one.
+        FeedSettings.itemsPreference.write(.onlyNewestListed, to: world.preferences)
+        FeedSettings.newestCountPreference.write(10, to: world.preferences)
         let episodes = (1...12).map { number in
             FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)))
         }
@@ -175,9 +179,9 @@ final class FeedUILibraryRowsTests: XCTestCase {
         world.center.store.update(feed.id) { $0.feed.entryTotal = nil }
         XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: feed.id)), "10 episodes")
 
-        // Keeping every entry: the next check reads the feed whole, and
+        // Listing every item: the next check reads the feed whole, and
         // every entry is kept.
-        world.center.setKeepEntries(-1, of: feed.id)
+        world.center.setItemPolicy(FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 10), of: feed.id)
         _ = await world.center.refresh(feed.id)
         XCTAssertEqual(world.center.counts(of: feed.id).total, FeedEntryTotal(count: 12))
         XCTAssertEqual(FeedWording.sizePhrase(world.center.counts(of: feed.id)), "12 episodes")
@@ -501,12 +505,17 @@ final class FeedUILibraryRowsTests: XCTestCase {
     /// entry kept, and its rows alone while a search narrows them.
     func testTheOpenFeedsSummaryAndHeadingSayWhatItsRowSays() async throws {
         let world = try FeedTestWorld(self, label: "FeedUIOpenFeed")
+        // A short list of the newest 10 (FR11's "Only the newest 5 listed",
+        // with 10 for its number).
+        FeedSettings.itemsPreference.write(.onlyNewestListed, to: world.preferences)
+        FeedSettings.newestCountPreference.write(10, to: world.preferences)
         let episodes = (1...12).map { number in
             FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)))
         }
         let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: world.folder.path, items: episodes)
         let book = addBook(titled: "Episode 2", to: world, feed: feed, item: "guid:ep-2")
-        world.center.markPlayed("guid:ep-3", of: feed.id)
+        // Played, and still downloaded, so it stays on the short list.
+        world.center.markPlayed("guid:ep-2", of: feed.id)
         let now = Date()
         let row = try XCTUnwrap(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center, now: now).first)
         XCTAssertEqual(row.countsText, "10 of 12 episodes kept, 1 downloaded, 9 unplayed")

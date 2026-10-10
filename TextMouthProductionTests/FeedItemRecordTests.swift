@@ -302,7 +302,8 @@ final class FeedItemRecordTests: XCTestCase {
 
     /// A refresh keeps the item of a row the library kept after its file
     /// went, found through the library model, and a played item, when the
-    /// feed's own number of entries leaves both outside the newest.
+    /// feed's own short list leaves both outside the newest (FR11); both
+    /// stay in the record, hidden from the list, which lists the newest.
     func testARefreshKeepsTheItemsOfKeptRowsAndPlayedItems() async throws {
         let world = try FeedTestWorld(self, label: "FeedRecordRefreshKeeps")
         await world.start()
@@ -313,11 +314,13 @@ final class FeedItemRecordTests: XCTestCase {
         let feed = try await world.subscribe("/feed.xml")
         world.library.library.feedShelf.put(Self.row("Two", feedID: feed.id, itemID: "guid:ep-2"))
         world.center.markPlayed("guid:ep-1", of: feed.id)
-        world.center.setKeepEntries(1, of: feed.id)
+        world.center.setItemPolicy(FeedItemPolicy(choice: .onlyNewestListed, newestCount: 1), of: feed.id)
 
         await world.center.refresh(feed.id)
 
-        XCTAssertEqual(Set(world.center.listedItems(of: feed.id).map(\.id)), ["guid:ep-3", "guid:ep-2", "guid:ep-1"])
+        let record = try XCTUnwrap(world.center.store.record(of: feed.id))
+        XCTAssertEqual(Set(record.items.map(\.id)), ["guid:ep-3", "guid:ep-2", "guid:ep-1"])
+        XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.id), ["guid:ep-3"])
         XCTAssertEqual(world.center.keptRecordItemIDs(of: feed.id), ["guid:ep-2"])
     }
 

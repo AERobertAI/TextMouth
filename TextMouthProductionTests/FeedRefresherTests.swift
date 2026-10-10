@@ -13,9 +13,11 @@ final class FeedRefresherTests: XCTestCase {
 
     // MARK: - Subscribing
 
-    /// Subscribing reads the feed, keeps its 10 newest entries, newest
-    /// first, in the folder chosen, records how it was fetched, announces
-    /// the subscription, and marks none of the back catalog new.
+    /// Subscribing reads the feed, keeps every entry, newest first, as the
+    /// "List and download" choice lists every item by default (FR11), in the
+    /// folder chosen, records how it was fetched and the listing it was
+    /// merged with, announces the subscription, and marks none of the back
+    /// catalog new.
     func testSubscribingReadsTheFeedAndKeepsItsNewestEntries() async throws {
         let world = try FeedTestWorld(self, label: "FeedSubscribe")
         let items = (1...12).map { number in
@@ -35,9 +37,10 @@ final class FeedRefresherTests: XCTestCase {
         XCTAssertEqual(feed.folderID, world.bookFolder.id)
         XCTAssertEqual(feed.subscribedDate, world.clock.value)
         let record = try XCTUnwrap(world.center.store.record(of: feed.id))
-        XCTAssertEqual(record.items.map(\.title), (1...10).map { "Episode \($0)" })
+        XCTAssertEqual(record.items.map(\.title), (1...12).map { "Episode \($0)" })
         XCTAssertEqual(events, [.subscribed(feedID: feed.id)])
         let state = world.center.fetchState(of: feed.id)
+        XCTAssertEqual(state.keptEntriesOfLastBody, -1)
         XCTAssertEqual(state.etag, "\"v1\"")
         XCTAssertEqual(state.lastModified, "Wed, 01 Oct 2026 10:00:00 GMT")
         XCTAssertNotNil(state.bodyDigest)
@@ -193,14 +196,16 @@ final class FeedRefresherTests: XCTestCase {
         XCTAssertEqual(record.feed.newestItemDate, world.day(0.5))
     }
 
-    /// The kept-entries rule: the newest entries are kept, the feed's own
-    /// override first; an item the feed no longer lists counts among them
-    /// like any other; a downloaded item is always kept; and a changed
-    /// number applies at the next refresh, even of a feed that has not
-    /// changed.
-    func testTheKeptEntriesRuleKeepsTheNewestAndEveryDownload() async throws {
+    /// The short list of "Only the newest 5 listed" (FR11): the newest
+    /// entries are kept and listed, the feed's own choice first; an item
+    /// the feed no longer lists counts among them like any other; a
+    /// downloaded item is always kept, and listed; and a changed choice
+    /// applies at the next refresh, reading the feed whole even when it has
+    /// not changed, which brings back the entries the short list let go.
+    func testTheShortListKeepsTheNewestAndEveryDownload() async throws {
         let world = try FeedTestWorld(self, label: "FeedKeptEntries")
-        FeedSettings.keepEntriesPreference.write(2, to: world.preferences)
+        FeedSettings.itemsPreference.write(.onlyNewestListed, to: world.preferences)
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
         let items = ["a", "b", "c"].enumerated().map { index, guid in
             FeedXML.Item(guid: guid, title: guid.uppercased(), published: world.day(-Double(index + 1)))
         }
@@ -211,14 +216,15 @@ final class FeedRefresherTests: XCTestCase {
         world.server.serve("/feed.xml", .feed(FeedXML.rss(items: items)), .feed(FeedXML.rss(items: later)))
         let feed = try await world.subscribe("/feed.xml")
         XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.title), ["A", "B"])
-        let bookID = UUID()
-        world.center.store.updateItem("guid:b", of: feed.id) { $0.state = .downloaded(bookID: bookID) }
+        let row = FeedItemRecordTests.row("B", feedID: feed.id, itemID: "guid:b")
+        world.library.library.books.append(row)
+        world.center.store.updateItem("guid:b", of: feed.id) { $0.state = .downloaded(bookID: row.id) }
 
         _ = await world.center.refresh(feed.id)
 
         XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.title), ["D", "A", "B"])
 
-        world.center.setKeepEntries(-1, of: feed.id)
+        world.center.setItemPolicy(FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 2), of: feed.id)
         let report = try await unwrap(world.center.refresh(feed.id))
         XCTAssertEqual(report.outcome, .updated(newItemIDs: []), "the unchanged feed was not read again")
         XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.title), ["D", "A", "B", "C"])
@@ -381,7 +387,7 @@ final class FeedRefresherTests: XCTestCase {
             world.center.store.record(of: feed.id)?.feed.entryTotal
         }
         XCTAssertEqual(total(), FeedEntryTotal(count: 12))
-        XCTAssertEqual(world.center.listedItems(of: feed.id).count, 10)
+        XCTAssertEqual(world.center.listedItems(of: feed.id).count, 12)
 
         let notModified = try await unwrap(world.center.refresh(feed.id))
         XCTAssertEqual(notModified.outcome, .unchanged)

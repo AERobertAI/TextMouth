@@ -36,12 +36,12 @@ struct FeedSettings: Equatable, Sendable {
 
     // MARK: Retired by the "List and download" choice (FR11)
 
-    /// How many of each feed's newest entries are kept besides its
-    /// downloads, which are always kept: 0 to 2,000, or -1 for every entry.
-    /// 10 by default. Retired by `itemPolicy`, which config.json carries in
-    /// its place. It stays readable for the Feeds tab's and Feed Info's old
-    /// controls, until the interface of the choice (FR11's branch C) takes
-    /// their place.
+    /// How many of each feed's newest entries were kept besides its
+    /// downloads, which were always kept: 0 to 2,000, or -1 for every entry.
+    /// 10 by default. Retired by `itemPolicy`, which config.json carries and
+    /// the feed engine reads in its place. It stays readable for the Feeds
+    /// tab's and Feed Info's old controls, until the interface of the choice
+    /// (FR11's branch C) takes their place.
     var keepEntries: Int
     /// Whether a new episode downloads by itself when a refresh finds it.
     /// Off by default: an episode downloads when the listener opens it or
@@ -133,16 +133,19 @@ struct FeedSettings: Equatable, Sendable {
         FeedSettings(
             refreshAtLaunch: refreshAtLaunchPreference.read(from: store),
             refreshIntervalHours: refreshIntervalHoursPreference.read(from: store),
-            itemPolicy: FeedItemPolicy(
-                choice: itemsPreference.read(from: store),
-                newestCount: newestCountPreference.read(from: store)
-            ),
+            itemPolicy: itemPolicy(in: store),
             deleteDownloadsDaysAfterPlayed: deleteDownloadsDaysAfterPlayedPreference.read(from: store),
             refreshAlert: refreshAlertPreference.read(from: store),
             notifications: notificationsPreference.read(from: store),
             keepEntries: keepEntriesPreference.read(from: store),
             autoDownload: autoDownloadPreference.read(from: store)
         )
+    }
+
+    /// The "List and download" choice and its number `store` holds (FR11),
+    /// read alone, for the lists that ask for it as they draw.
+    static func itemPolicy(in store: UserDefaults) -> FeedItemPolicy {
+        FeedItemPolicy(choice: itemsPreference.read(from: store), newestCount: newestCountPreference.read(from: store))
     }
 
     /// Moves the settings before the "List and download" choice to the
@@ -206,8 +209,10 @@ extension Feed {
         itemPolicyOverride ?? settings.itemPolicy
     }
 
-    /// How many of this feed's newest entries are kept under `settings`: its
-    /// own override, validated, or the setting. -1 keeps every entry.
+    /// How many of this feed's newest entries were kept under `settings`:
+    /// its own retired override, validated, or the retired setting; -1 kept
+    /// every entry. Read only by Feed Info's old control, until the
+    /// interface of the "List and download" choice takes its place.
     func keepEntries(under settings: FeedSettings) -> Int {
         keepEntriesOverride.map(SettingsPolicy.feedKeepEntries.validated) ?? settings.keepEntries
     }

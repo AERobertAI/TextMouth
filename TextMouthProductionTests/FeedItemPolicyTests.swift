@@ -137,6 +137,73 @@ final class FeedItemPolicyTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.feed.itemPolicy(under: world.center.settings), .standard)
     }
 
+    // MARK: - The Short List
+
+    /// "Only the newest 5 listed" lists the newest, counting played items
+    /// and never deleted ones, less those played whose files are not here,
+    /// whose places no older item takes; and every item whose file is here,
+    /// or that downloads, wherever it falls. Listing every item lists every
+    /// one not deleted.
+    func testTheShortListListsTheNewestLessThePlayedWithoutTheirFiles() throws {
+        let played = Date(timeIntervalSince1970: 1_791_000_000)
+        var items = (1...8).map { number in
+            FeedItem(id: "guid:\(number)", title: "Item \(number)", firstSeen: played)
+        }
+        items[1].deletedDate = played
+        items[2].playedDate = played
+        items[3].playedDate = played
+        items[6].state = .downloading(FeedDownloadManager.progress(written: 0, expected: 0, estimate: nil))
+        let record = FeedRecord(feed: try Self.record().feed, items: items)
+        let withFiles: Set<FeedItem.ID> = ["guid:4", "guid:6"]
+
+        // The newest 4: items 1, 3, 4, and 5, item 2 deleted. Item 3 played
+        // without its file drops off; item 4, played, keeps its file; item 5
+        // is listed; and items 6 and 7, outside, have a file or download.
+        let short = record.listedItems(under: .newest(4)) { withFiles.contains($0.id) }
+        XCTAssertEqual(short.map(\.id), ["guid:1", "guid:4", "guid:5", "guid:6", "guid:7"])
+        XCTAssertEqual(record.newestItems(4).map(\.id), ["guid:1", "guid:3", "guid:4", "guid:5"])
+
+        let every = record.listedItems(under: .every) { _ in false }
+        XCTAssertEqual(every.map(\.id), ["guid:1", "guid:3", "guid:4", "guid:5", "guid:6", "guid:7", "guid:8"])
+    }
+
+    /// Under the short list, a played episode drops off the list and the
+    /// counts, its record kept, and no older one takes its place; a larger
+    /// number lists more once the next check reads the feed whole, the
+    /// played one still left off; and listing every item brings every
+    /// entry back, the played one among them.
+    func testTheShortListDropsPlayedItemsAndWidens() async throws {
+        let world = try FeedTestWorld(self, label: "FeedPolicyShortList")
+        FeedSettings.itemsPreference.write(.onlyNewestListed, to: world.preferences)
+        FeedSettings.newestCountPreference.write(3, to: world.preferences)
+        let items = (1...6).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)))
+        }
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: items)))
+        let feed = try await world.subscribe("/feed.xml")
+        /// The titles the library lists.
+        func listed() -> [String] {
+            world.center.listedItems(of: feed.id).map(\.title)
+        }
+        XCTAssertEqual(listed(), ["Episode 1", "Episode 2", "Episode 3"])
+
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        XCTAssertEqual(listed(), ["Episode 2", "Episode 3"], "an older episode took the played one's place")
+        XCTAssertEqual(world.center.counts(of: feed.id).listed, 2)
+        XCTAssertEqual(world.center.counts(of: feed.id).unplayed, 2)
+        XCTAssertNotNil(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.playedDate, "the played episode's record went")
+
+        FeedSettings.newestCountPreference.write(5, to: world.preferences)
+        XCTAssertEqual(listed(), ["Episode 2", "Episode 3"], "items the record let go came back before the feed was read")
+        let wider = try await unwrap(world.center.refresh(feed.id))
+        XCTAssertEqual(wider.outcome, .updated(newItemIDs: []), "the unchanged feed was not read again")
+        XCTAssertEqual(listed(), ["Episode 2", "Episode 3", "Episode 4", "Episode 5"])
+
+        FeedSettings.itemsPreference.write(.everyListedNewestDownloaded, to: world.preferences)
+        _ = await world.center.refresh(feed.id)
+        XCTAssertEqual(listed(), (1...6).map { "Episode \($0)" })
+    }
+
     // MARK: - The Move From the Settings Before the Choice
 
     /// The settings before the choice become it: left as TextMouth shipped
