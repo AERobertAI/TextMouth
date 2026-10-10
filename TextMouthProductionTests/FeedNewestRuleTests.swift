@@ -86,6 +86,40 @@ final class FeedNewestRuleTests: XCTestCase {
         XCTAssertEqual(world.server.requests(to: "/audio/3.m4a"), [], "a stopped download was fetched")
     }
 
+    /// Cancel Download pressed as the rule's episode's file arrives stops it
+    /// before its import, so no book is listed and the item is the
+    /// listener's; and an item the listener makes theirs while the rule's
+    /// download of it is being listed stays theirs, never the rule's again
+    /// (feed review item 15).
+    func testCancelAsTheFileArrivesStopsItAndAnImportKeepsTheListenersItem() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleCancelArriving")
+        let feed = try await subscribeServed(world, episodes: 2)
+        let downloads = world.center.downloads
+        addTeardownBlock { @MainActor in
+            downloads.afterTransfer = nil
+            downloads.beforeCommit = nil
+        }
+
+        downloads.afterTransfer = { [weak world] request in
+            world?.center.cancelDownload(request.itemID, of: request.feedID)
+        }
+        downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        await waitFor("the download stops as its file arrives") {
+            !world.server.requests(to: "/audio/1.m4a").isEmpty && downloads.current == nil
+        }
+        downloads.afterTransfer = nil
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
+        XCTAssertEqual(origin(of: "guid:ep-1", in: feed, world), .listener)
+        XCTAssertEqual(world.library.feedItemRows(of: feed.id).downloaded, [:], "a download stopped as its file arrived was imported")
+
+        downloads.beforeCommit = { [weak world] request in
+            world?.center.store.updateItem(request.itemID, of: request.feedID) { $0.downloadOrigin = .listener }
+        }
+        downloads.download("guid:ep-2", of: feed.id, origin: .window)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-2")
+        XCTAssertEqual(origin(of: "guid:ep-2", in: feed, world), .listener, "the import gave the listener's item back to the rule")
+    }
+
     /// A download the listener asked for that fails is the listener's, to
     /// try again by hand; one the rule asked for that fails is the rule's
     /// (REV11 F4), which a pass takes back once the item no longer counts.
@@ -219,8 +253,9 @@ final class FeedNewestRuleTests: XCTestCase {
     /// Without room for a file beside the space TextMouth keeps free, the
     /// rule's download waits, saying it needs room, fetching nothing and
     /// never put off for a network; the listener's fails, saying there
-    /// isn't room. Cancel Download ends the wait, and with room again the
-    /// rule's download goes ahead.
+    /// isn't room. Cancel Download ends the wait and makes the item the
+    /// listener's; with room again a download asked for as the rule's goes
+    /// ahead, and the item stays the listener's (feed review item 15).
     func testADownloadWithoutRoomWaitsWhileTheListenersFails() async throws {
         let world = try FeedTestWorld(self, label: "FeedRuleRoom")
         let audio = try FeedMediaFixtures.silentAAC()
@@ -255,7 +290,7 @@ final class FeedNewestRuleTests: XCTestCase {
         world.freeSpace.value = 100_000_000_000
         world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
         _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
-        XCTAssertEqual(origin(of: "guid:ep-1", in: feed, world), .window)
+        XCTAssertEqual(origin(of: "guid:ep-1", in: feed, world), .listener, "a download took the item from the listener")
     }
 
     /// A wait, like a download under way, ends with the app: the record's

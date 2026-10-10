@@ -207,6 +207,10 @@ final class FeedDownloadManager {
     /// book is listed, for a test to act at that moment, as Delete Episode
     /// can while an import runs; nil in the app.
     var beforeCommit: (@MainActor (Request) -> Void)?
+    /// Called on the main actor as an episode's file has arrived, before
+    /// its import begins, for a test to act at that moment, as a Cancel
+    /// pressed then does; nil in the app.
+    var afterTransfer: (@MainActor (Request) -> Void)?
     /// Runs imports in order, off the main thread.
     private let importQueue = DispatchQueue(label: "com.textmouth.feed-imports", qos: .userInitiated)
     /// How far the downloads have got, as the Library windows' feed
@@ -569,6 +573,11 @@ final class FeedDownloadManager {
         }
         try? FileManager.default.removeItem(at: resumeFile)
         defer { try? FileManager.default.removeItem(at: holding) }
+        afterTransfer?(request)
+        // Stopped as its file arrived, by Cancel Download or the downloads
+        // section's Cancel: it stops here, before its book is imported, as
+        // an article stops before its book is written (feed review item 15).
+        try Task.checkCancellation()
         guard let fileExtension = FeedEpisodeImporter.fileExtension(responseMIMEType: downloaded.mimeType, enclosure: enclosure) else {
             throw FeedDownloadError.unsupportedFile(downloaded.mimeType ?? enclosure.mimeType ?? enclosure.url.pathExtension)
         }
@@ -662,8 +671,9 @@ final class FeedDownloadManager {
 
     /// Adds `book` to the library and marks the item of `request` downloaded
     /// as it, by whoever asked for it (FR11): the listener when the listener
-    /// asked at any point, otherwise the newest-N rule. Returns whether it
-    /// did.
+    /// asked at any point, or made the item theirs meanwhile, as Cancel does
+    /// (feed review item 15), otherwise the newest-N rule. Returns whether
+    /// it did.
     ///
     /// An item gone from its record, or deleted, while its download imported
     /// (Delete Episode stops a transfer, but not an import once begun, which
@@ -682,7 +692,7 @@ final class FeedDownloadManager {
         store.updateItem(request.itemID, of: request.feedID) { item in
             item.state = .downloaded(bookID: book.id)
             item.downloadDeletedDate = nil
-            item.downloadOrigin = origin
+            item.downloadOrigin = FeedDownloadOrigin.after(origin, given: item.downloadOrigin)
         }
         return true
     }
