@@ -189,6 +189,61 @@ struct ThresholdSettingRule: Sendable {
     }
 }
 
+// MARK: - Whole numbers without an off value
+
+/// Validation rule for a whole number that is always a setting, with no
+/// value that switches anything off: how many of each feed's newest items
+/// the "List and download" choice lists or downloads is one (FR11), from 1
+/// up. Any value outside `range` is moved to its nearest bound.
+///
+/// It reads and validates as a `ThresholdSettingRule` whose off value lies
+/// just below the range would, with that off value read as the range's
+/// lowest value, so both kinds of whole number read the preferences store
+/// one way.
+struct WholeNumberSettingRule: Sendable {
+    /// Key shared by the preferences store and `config.json`.
+    let key: String
+    /// The values the setting takes.
+    let range: ClosedRange<Int>
+    /// The value used when nothing usable is stored; inside `range`.
+    let defaultValue: Int
+    /// The same number read as a threshold whose off value is the whole
+    /// number just below `range`, which `validated` lifts to the bottom.
+    private let threshold: ThresholdSettingRule
+
+    /// Creates a rule; `defaultValue` must lie inside `range`.
+    init(key: String, range: ClosedRange<Int>, defaultValue: Int) {
+        self.key = key
+        self.range = range
+        self.defaultValue = defaultValue
+        threshold = ThresholdSettingRule(key: key, range: range, offValue: range.lowerBound - 1, defaultValue: defaultValue)
+    }
+
+    /// The supported values, for log lines.
+    var supportedDescription: String {
+        "\(range.lowerBound)...\(range.upperBound)"
+    }
+
+    /// Validates a whole number: clamped into `range`.
+    func validated(_ value: Int) -> Int {
+        max(threshold.validated(value), range.lowerBound)
+    }
+
+    /// Validates a number of any size, such as one `defaults write` stored:
+    /// NaN and infinities become `defaultValue`, and any other number is
+    /// rounded and clamped into `range`.
+    func validated(_ value: Double) -> Int {
+        max(threshold.validated(value), range.lowerBound)
+    }
+
+    /// Reads this preference from `store`, validated: `defaultValue` when
+    /// nothing is stored or the stored value is not a number; numeric text
+    /// counts as its number, as `@AppStorage` reads it.
+    func storedValue(in store: UserDefaults) -> Int {
+        max(threshold.storedValue(in: store), range.lowerBound)
+    }
+}
+
 // MARK: - Sets of characters
 
 /// Validation rule for a preference holding a set of characters written as
@@ -418,10 +473,13 @@ enum SettingsPolicy {
     static let feedRefreshIntervalHours = ThresholdSettingRule(
         key: "feedRefreshIntervalHours", range: 1...168, offValue: 0, defaultValue: 1
     )
-    /// How many of each feed's newest entries are kept besides its
-    /// downloads, which are always kept: 0 to 2,000, the most a feed's
+    /// How many of each feed's newest entries were kept beside its
+    /// downloads, which were always kept: 0 to 2,000, the most a feed's
     /// document is read for (`FeedParser.maximumItems`), or -1 to keep every
-    /// entry. 10 until the listener picks another.
+    /// entry; 10 until the listener picked another. Retired by the "List and
+    /// download" choice (FR11, `feedItems` and `feedNewestCount`), which the
+    /// move to the choice reads it for, once
+    /// (`FeedSettings.moveToItemPolicyIfNeeded(in:)`).
     static let feedKeepEntries = ThresholdSettingRule(
         key: "feedKeepEntries", range: 0...2_000, offValue: -1, defaultValue: 10
     )
@@ -431,6 +489,17 @@ enum SettingsPolicy {
     static let feedDeleteDownloadsDaysAfterPlayed = ThresholdSettingRule(
         key: "feedDeleteDownloadsDaysAfterPlayed", range: 0...365, offValue: -1, defaultValue: 1
     )
+    /// The "List and download" choice (FR11): what every feed lists, and
+    /// what downloads by itself, unless a feed has a choice of its own
+    /// (`Feed.itemPolicyOverride`). Every item listed with the newest
+    /// downloaded until the listener picks another (the listener's answer
+    /// of October 7).
+    static let feedItems = EnumSettingRule(key: "feedItems", defaultValue: FeedItemPolicy.Choice.everyListedNewestDownloaded)
+    /// How many of each feed's newest items the "List and download" choice
+    /// keeps downloaded, or lists under "Only the newest 5 listed" (FR11):
+    /// 1 to 2,000, the most a feed's document is read for
+    /// (`FeedParser.maximumItems`). 5 until the listener picks another.
+    static let feedNewestCount = WholeNumberSettingRule(key: "feedNewestCount", range: 1...2_000, defaultValue: 5)
 
     // MARK: Logs
 

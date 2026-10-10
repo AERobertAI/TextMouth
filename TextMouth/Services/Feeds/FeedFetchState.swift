@@ -23,10 +23,12 @@ struct FeedFetchState: Codable, Equatable, Sendable {
     /// that answer every request in full.
     var bodyDigest: String?
     /// How many of the feed's newest entries the record kept when the body
-    /// last read was merged (`Feed.keepEntries(under:)`). Under another
-    /// number, the next refresh reads the feed whole again, sending no
-    /// validators, so a changed setting applies at once even to a feed that
-    /// has not changed.
+    /// last read was merged: the number of the feed's listing under the
+    /// "List and download" choice (FR11, `FeedItemPolicy.Listing.keptEntries`),
+    /// -1 for every entry, as the retired kept-entries setting wrote it too.
+    /// Under another listing, the next refresh reads the feed whole again,
+    /// sending no validators, so a changed choice or number applies even to
+    /// a feed that has not changed.
     var keptEntriesOfLastBody: Int?
     /// When this Mac last checked the feed, however the check ended.
     var lastCheck: Date?

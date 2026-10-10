@@ -40,6 +40,8 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "feedRefreshIntervalHours",
         "feedKeepEntries",
         "feedAutoDownload",
+        "feedItems",
+        "feedNewestCount",
         "feedDeleteDownloadsDaysAfterPlayed",
         "feedRefreshAlert",
         "feedNotifications",

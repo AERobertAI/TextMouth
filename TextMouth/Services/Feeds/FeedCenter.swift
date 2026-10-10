@@ -103,8 +103,23 @@ protocol FeedLibraryHost: AnyObject {
         keepingPackages: Bool,
         remove: (FeedFileRemoval) throws -> Void
     ) throws -> FeedFileRemovalOutcome
+    /// The first part of `removeFeedFiles(of:keepingPackages:remove:)`, for
+    /// a removal whose files go off the main thread (FR11): the records and
+    /// the feeds' indexes on disk, the rows out of the books, nothing
+    /// removed yet.
+    /// - Returns: The removals to make.
+    /// - Throws: `FeedItemPackageError.indexNotWritten`, with nothing
+    ///   changed.
+    func readyFeedFilesForRemoval(of books: [Book], keepingPackages: Bool) throws -> [FeedFileRemoval]
+    /// The last part of `removeFeedFiles(of:keepingPackages:remove:)`, once
+    /// the files of `removals` have gone, but for those `failures` names
+    /// with why, whose rows go back where they were.
+    func settleFeedFileRemovals(_ removals: [FeedFileRemoval], failures: [UUID: any Error]) -> FeedFileRemovalOutcome
     /// The books open in readers now, which nothing may delete.
     var feedBooksOpenInReaders: Set<UUID> { get }
+    /// Whether the book `bookID` is on the reading list, whose downloads the
+    /// newest-N rule never removes (FR11).
+    func feedBookIsOnReadingList(_ bookID: UUID) -> Bool
     /// Publishes the books open in readers whenever they change.
     var feedBooksOpenInReadersChanges: AnyPublisher<Set<UUID>, Never> { get }
     /// Whether the library lists every book it holds: not while its index
@@ -259,7 +274,7 @@ final class FeedCenter: ObservableObject {
             now: environment.now
         ),
         library: { [weak self] in self?.library },
-        announce: { [weak self] event in self?.events.send(event) }
+        announce: { [weak self] event in self?.downloadEventHappened(event) }
     )
     /// What the engine announces, delivered on the main actor.
     let events = PassthroughSubject<FeedEvent, Never>()
@@ -274,14 +289,27 @@ final class FeedCenter: ObservableObject {
     private var schedule: Task<Void, Never>?
     /// Hears the interval setting change, to reschedule.
     private var intervalObserver: PreferenceObserver?
+    /// Hears the "List and download" choice and its number change (FR11).
+    private var itemPolicyObserver: PreferenceObserver?
+    /// The wait for the choice and its number to stay unchanged before the
+    /// newest-N rule acts on a change, while it runs (FR11).
+    private var itemPolicyWait: Task<Void, Never>?
+    /// The feeds whose choice or number changed since the rule last acted on
+    /// a change, every feed when nil (FR11).
+    private var feedsWithChangedItemPolicy: Set<UUID>? = []
     /// Passes the stores' changes on to this engine's observers.
     private var forwarding: [AnyCancellable] = []
     /// Hears finished books, and the readers that open and close.
     private var lifecycleObservers: [AnyCancellable] = []
-    /// Whether a sweep of played downloads runs (`requestSweep()`).
+    /// Whether the engine's own work runs: a sweep of played downloads, or a
+    /// pass of the newest-N rule (FR11), one at a time (`requestSweep()`,
+    /// `requestItemPolicyPass(for:retryingFailures:)`).
     var isSweeping = false
-    /// Whether a sweep was asked for while one ran, so it runs again.
-    var sweepRequestedAgain = false
+    /// Whether a sweep was asked for and has not run yet.
+    var sweepRequested = false
+    /// The pass of the newest-N rule asked for and not run yet, with every
+    /// pass asked for meanwhile (FR11).
+    var pendingItemPolicyPass: FeedItemPolicyPassRequest?
 
     /// An engine working with `environment`, started by `start(library:)`.
     init(environment: FeedEnvironment) {
@@ -314,35 +342,53 @@ final class FeedCenter: ObservableObject {
 
     // MARK: Starting
 
-    /// Starts the engine in `library`, once: reads the records and this
-    /// Mac's fetch details off the main thread, then, when the engine works
-    /// on its own, asks again for the downloads TextMouth quit during,
-    /// refreshes every feed if the settings say to, and starts the scheduled
-    /// refreshes. Returns at once.
+    /// Starts the engine in `library`, once: moves the settings before the
+    /// "List and download" choice to it (FR11), reads the records and this
+    /// Mac's fetch details off the main thread, moving each feed's retired
+    /// override to a choice of its own, then, when the engine works on its
+    /// own, asks again for the downloads TextMouth quit during, asks for a
+    /// sweep of played downloads and a pass of the newest-N rule over every
+    /// feed, refreshes every feed if the settings say to, and starts the
+    /// scheduled refreshes. Returns at once.
     /// - Returns: The work started, which tests may await.
     @discardableResult
     func start(library: FeedLibraryHost) -> Task<Void, Never>? {
         guard !hasStarted else { return nil }
         hasStarted = true
         self.library = library
+        // Before anything reads the choice, so all read the same one.
+        FeedSettings.moveToItemPolicyIfNeeded(in: environment.preferences)
         return Task {
             await store.load()
+            moveKeptEntriesOverrides()
             await fetchStates.load()
             await downloads.sweepLeftovers()
             guard environment.worksOnItsOwn else { return }
             // The downloads under way when TextMouth last quit go on, the
             // one that ran from where it stopped.
             await downloads.resumeDownloadsSavedAtQuit()
-            // A reader closing lets a played download it held be deleted.
+            // A reader closing lets a played download it held be deleted; the
+            // newest-N rule waits for its own passes (FR11).
             lifecycleObservers.append(
                 library.feedBooksOpenInReadersChanges.sink { [weak self] _ in self?.requestSweep() }
             )
             requestSweep()
+            // Each feed's newest downloaded at once, as at the first launch
+            // of the version that brought the rule (FR11).
+            requestItemPolicyPass(for: nil)
             intervalObserver = PreferenceObserver(
                 keys: [FeedSettings.refreshIntervalHoursPreference.key],
                 in: environment.preferences
             ) { [weak self] _ in
                 self?.startSchedule()
+            }
+            // The global choice or number changed, wherever it was changed:
+            // the rule acts on it once it has stayed unchanged (FR11).
+            itemPolicyObserver = PreferenceObserver(
+                keys: [FeedSettings.itemsPreference.key, FeedSettings.newestCountPreference.key],
+                in: environment.preferences
+            ) { [weak self] _ in
+                self?.itemPolicyChanged(for: nil)
             }
             startSchedule()
             if settings.refreshAtLaunch {
@@ -356,6 +402,9 @@ final class FeedCenter: ObservableObject {
         schedule?.cancel()
         schedule = nil
         intervalObserver = nil
+        itemPolicyWait?.cancel()
+        itemPolicyWait = nil
+        itemPolicyObserver = nil
     }
 
     /// Whether refreshes run on the interval setting: not before the engine
@@ -402,9 +451,20 @@ final class FeedCenter: ObservableObject {
         store.feed(inFolder: folderID)
     }
 
-    /// The items of the feed `feedID` the library lists, newest first.
+    /// What the feed `feedID` lists and downloads by itself now (FR11): its
+    /// own "List and download" choice, or the global one, which a feed no
+    /// longer subscribed follows too.
+    func itemPolicy(of feedID: UUID) -> FeedItemPolicy {
+        store.record(of: feedID)?.feed.itemPolicyOverride ?? FeedSettings.itemPolicy(in: environment.preferences)
+    }
+
+    /// The items of the feed `feedID` the library lists, newest first: every
+    /// item not deleted, or, under "Only the newest 5 listed", the short
+    /// list (FR11, `FeedRecord.listedItems(under:hasFile:)`), an item's file
+    /// being here while the library lists its book.
     func listedItems(of feedID: UUID) -> [FeedItem] {
-        store.record(of: feedID)?.listedItems ?? []
+        guard let record = store.record(of: feedID) else { return [] }
+        return record.listedItems(under: itemPolicy(of: feedID).listing) { downloadedRow(of: $0, in: feedID) != nil }
     }
 
     /// How this Mac last checked the feed `feedID`.
@@ -466,7 +526,8 @@ final class FeedCenter: ObservableObject {
         }
         let address = body.permanentURL ?? url
         let now = environment.now()
-        let keepEntries = settings.keepEntries
+        // A new subscription follows the global choice's listing (FR11).
+        let keepEntries = settings.itemPolicy.listing.keptEntries
         // A new folder is made only once the feed has been read, so until
         // then the record names a stand-in, replaced below.
         let provisionalFolderID: UUID
@@ -507,6 +568,8 @@ final class FeedCenter: ObservableObject {
                 "FEED_SUBSCRIBED: \(record.feed.title) (\(FeedHost.of(record.feed.feedURL))): \(record.items.count) item(s) kept"
             )
             events.send(.subscribed(feedID: record.feed.id))
+            // The feed's newest downloaded at once (FR11).
+            requestItemPolicyPass(for: [record.feed.id])
             return .subscribed(record.feed)
         case .failure(.notAFeed) where followingPage:
             let links = await OffMainWork.run(on: .global(qos: .userInitiated)) {
@@ -571,28 +634,43 @@ final class FeedCenter: ObservableObject {
         await refresher.refresh(feedID, origin: .listener)
     }
 
-    /// Refreshes every feed, and announces one summary.
+    /// Refreshes every feed, and announces one summary. A record that was
+    /// only in the cloud until now is read first, and moves its retired
+    /// override to a choice of its own before it is refreshed (FR11).
     @discardableResult
     func refreshAll(origin: FeedRefreshOrigin = .listener) async -> FeedRefreshSummary {
+        await store.loadRecordsInCloud()
+        moveKeptEntriesOverrides()
         let summary = await refresher.refreshAll(origin: origin)
         events.send(.refreshedAll(summary))
         return summary
     }
 
-    /// Announces the end of one feed's refresh, and, with automatic downloads
-    /// on, downloads the items it found new. A refresh TextMouth made by
-    /// itself that was not put off reached a network without data limits,
-    /// which such a refresh needs, so the automatic downloads one put off
-    /// are tried again first.
+    /// Announces the end of one feed's refresh, and asks for the newest-N
+    /// rule's pass over the feed (FR11), which downloads its newest and
+    /// removes its oldest downloads beyond them, trying its failed downloads
+    /// again when the refresh reached the network. A refresh TextMouth made
+    /// by itself that was not put off reached a network without data limits,
+    /// which such a refresh needs, so the downloads one put off are tried
+    /// again first.
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
         requestSweep()
-        guard settings.autoDownload else { return }
         if report.origin.isDiscretionary, report.outcome != .skipped {
             downloads.retryPutOffDownloads()
         }
-        for itemID in report.newItemIDs {
-            downloads.download(itemID, of: report.feedID, origin: .automatic)
+        requestItemPolicyPass(for: [report.feedID], retryingFailures: report.outcome != .skipped)
+    }
+
+    /// Passes a download's event on to the engine's listeners, and, when a
+    /// download the newest-N rule made finishes, asks for the rule's pass
+    /// over its feed, which removes the files of its oldest downloads beyond
+    /// the newest should it now hold more than the number (FR11).
+    private func downloadEventHappened(_ event: FeedEvent) {
+        events.send(event)
+        if case .downloadFinished(let feedID, let itemID, _) = event,
+           store.record(of: feedID)?.item(itemID)?.downloadOrigin == .window {
+            requestItemPolicyPass(for: [feedID])
         }
     }
 
@@ -612,9 +690,12 @@ final class FeedCenter: ObservableObject {
     }
 
     /// Stops the download of the item `itemID` of the feed `feedID`, or takes
-    /// it out of the queue.
+    /// it out of the queue, as Cancel Download does: the item is the
+    /// listener's from then on, so the newest-N rule never downloads it again
+    /// by itself (FR11).
     func cancelDownload(_ itemID: FeedItem.ID, of feedID: UUID) {
         downloads.cancel(itemID, of: feedID)
+        store.updateItem(itemID, of: feedID) { $0.downloadOrigin = .listener }
     }
 
     /// The items of the feed `feedID` whose packages were kept with the
@@ -655,9 +736,95 @@ final class FeedCenter: ObservableObject {
         store.update(feedID) { $0.feed.folderID = folderID }
     }
 
-    /// Gives the feed `feedID` its own number of entries kept, or nil to
-    /// follow the setting; the next refresh applies it, reading the feed
-    /// whole again even when it has not changed.
+    /// Gives the feed `feedID` its own "List and download" choice and number
+    /// (FR11), or nil to use the global setting. The list changes at once;
+    /// when what it lists changes, the next check reads the feed whole, so a
+    /// widened list brings back the entries a short one let go. The
+    /// newest-N rule acts on the change once it has stayed unchanged for ten
+    /// seconds (`itemPolicyChanged(for:)`).
+    func setItemPolicy(_ policy: FeedItemPolicy?, of feedID: UUID) {
+        guard let feed = store.record(of: feedID)?.feed, feed.itemPolicyOverride != policy else { return }
+        store.update(feedID) { $0.feed.itemPolicyOverride = policy }
+        itemPolicyChanged(for: [feedID])
+    }
+
+    /// How long the "List and download" choice and its number must stay
+    /// unchanged before the newest-N rule acts on a change (FR11): ten
+    /// seconds, so typing 15 in the number never passes through 1, removing
+    /// what 1 would remove.
+    static let itemPolicyQuietTime: Duration = .seconds(10)
+
+    /// Whether a change of the choice or its number waits to be acted on
+    /// (FR11).
+    var isWaitingOnItemPolicyChange: Bool {
+        itemPolicyWait != nil
+    }
+
+    /// Notes that the choice or its number changed for the feeds `feedIDs`,
+    /// every feed when nil (FR11), and asks for the newest-N rule's pass
+    /// over them once neither has changed for `itemPolicyQuietTime`, each
+    /// change starting the wait over. The pass then downloads what a larger
+    /// number newly counts, removes the rule's downloads beyond a smaller
+    /// one, and, for a choice that downloads by hand, takes back the rule's
+    /// downloads not yet under way and removes nothing. Only an engine
+    /// working on its own waits; a test runs the pass itself.
+    func itemPolicyChanged(for feedIDs: Set<UUID>?) {
+        guard environment.worksOnItsOwn else { return }
+        // Every feed when either change covers every feed.
+        feedsWithChangedItemPolicy = feedsWithChangedItemPolicy.flatMap { changed in feedIDs.map { changed.union($0) } }
+        itemPolicyWait?.cancel()
+        let sleep = environment.sleep
+        itemPolicyWait = Task { [weak self] in
+            do {
+                try await sleep(Self.itemPolicyQuietTime)
+            } catch {
+                return
+            }
+            guard let self, !Task.isCancelled else { return }
+            let feeds = self.feedsWithChangedItemPolicy
+            self.feedsWithChangedItemPolicy = []
+            self.itemPolicyWait = nil
+            self.requestItemPolicyPass(for: feeds)
+        }
+    }
+
+    /// Moves each feed's retired number of entries kept
+    /// (`Feed.keepEntriesOverride`) to a "List and download" choice of its
+    /// own (FR11), once: a feed whose record still holds one gets the choice
+    /// it asks for under the global choice
+    /// (`FeedItemPolicy.migrated(keepEntriesOverride:under:)`), unless it
+    /// has a choice of its own already, and loses the override, which marks
+    /// the move as made; its record is written then. "Finish It!", which
+    /// keeps every entry, uses the global setting from then on. Runs once
+    /// the records have loaded, and again as records that were only in the
+    /// cloud arrive.
+    /// - Returns: The feeds whose overrides moved, by title.
+    @discardableResult
+    func moveKeptEntriesOverrides() -> [UUID] {
+        let global = settings.itemPolicy
+        var moved: [UUID] = []
+        for feed in store.feeds {
+            guard let entries = feed.keepEntriesOverride else { continue }
+            let own = feed.itemPolicyOverride ?? FeedItemPolicy.migrated(keepEntriesOverride: entries, under: global)
+            store.update(feed.id) { record in
+                record.feed.itemPolicyOverride = own
+                record.feed.keepEntriesOverride = nil
+            }
+            moved.append(feed.id)
+            let kept = entries < 0 ? "every entry" : CountWording.phrase(entries, singular: "entry", plural: "entries")
+            let choice = own.map { "\($0.choice.rawValue) counting \($0.newestCount)" } ?? "the global setting"
+            DiagnosticLog.event(.feeds, "FEED_ITEM_POLICY_MOVED: \(feed.title): keeping \(kept) became \(choice)")
+        }
+        return moved
+    }
+
+    /// Gives the feed `feedID` its own retired number of entries kept, or
+    /// nil to follow the retired setting, as Feed Info's old control does
+    /// until the interface of the "List and download" choice takes its
+    /// place. The engine lists by the choice, so the number counts only once
+    /// the move to the choice turns it into a choice of the feed's own, at
+    /// the next refresh of every feed or the next launch
+    /// (`moveKeptEntriesOverrides()`).
     func setKeepEntries(_ entries: Int?, of feedID: UUID) {
         store.update(feedID) { $0.feed.keepEntriesOverride = entries.map(SettingsPolicy.feedKeepEntries.validated) }
     }

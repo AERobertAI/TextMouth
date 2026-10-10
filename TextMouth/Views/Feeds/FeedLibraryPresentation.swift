@@ -41,9 +41,11 @@ extension FeedCenter {
     /// with the feed's size; none for a feed no longer subscribed. Each
     /// item's row is found by its identity in the feed's rows (FR11), so a
     /// count takes one step per item, however many books the library holds.
+    /// The items are those the library lists, the short list's under "Only
+    /// the newest 5 listed" (`listedItems(of:)`).
     func counts(of feedID: UUID) -> FeedItemCounts {
         guard let record = store.record(of: feedID) else { return FeedItemCounts() }
-        let items = record.listedItems
+        let items = listedItems(of: feedID)
         var counts = FeedItemCounts(listed: items.count, total: record.feed.entryTotal, noun: .of(items))
         for item in items {
             switch state(of: item, in: feedID) {
@@ -51,7 +53,7 @@ extension FeedCenter {
                 counts.downloaded += 1
             case .downloading:
                 counts.downloading += 1
-            case .notDownloaded, .failed:
+            case .notDownloaded, .waiting, .failed:
                 break
             }
             if isNew(item, of: record.feed) {
@@ -271,7 +273,9 @@ struct FeedFolderListing: Equatable {
         guard let record = center.store.record(of: feedID) else {
             return FeedFolderListing(otherBooks: shownBooks)
         }
-        let items = record.listedItems
+        // Every item the library lists: the short list's under "Only the
+        // newest 5 listed" (FR11).
+        let items = center.listedItems(of: feedID)
         // With no search, every item listed has its row, as its book's or
         // its own, so the rows are the entries kept, of the feed's size.
         var listing = FeedFolderListing(noun: .of(items), total: search.isEmpty ? record.feed.entryTotal : nil)

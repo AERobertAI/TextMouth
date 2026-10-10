@@ -134,6 +134,9 @@ final class FeedLifecycleTests: XCTestCase {
         let world = try FeedTestWorld(self, label: "FeedDeleteOpen", worksOnItsOwn: true)
         FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
         FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        // Downloads by hand keep the newest-N rule (FR11) out of this test of
+        // the after-playing sweep.
+        FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
         let (feed, book) = try await downloadedEpisode(in: world)
         FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
         world.library.openBookIDs = [book.id]

@@ -49,8 +49,8 @@ extension ConfigService.AppConfig {
         // Feeds (FR03), each unlike its default.
         config.feedRefreshAtLaunch = false
         config.feedRefreshIntervalHours = 6
-        config.feedKeepEntries = -1
-        config.feedAutoDownload = true
+        config.feedItems = FeedItemPolicy.Choice.onlyNewestListed.rawValue
+        config.feedNewestCount = 12
         config.feedDeleteDownloadsDaysAfterPlayed = 0
         config.feedRefreshAlert = true
         config.feedNotifications = true

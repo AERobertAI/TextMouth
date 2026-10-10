@@ -267,6 +267,54 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state, .notDownloaded)
     }
 
+    /// Delete Episode while a download of the item imports, which it cannot
+    /// stop once begun, leaves nothing of the item: the import lists no row
+    /// for it and deletes the package it published, whether the download
+    /// was new or restoring the item's kept package; the item stays deleted,
+    /// and no download is announced as finished.
+    func testDeleteEpisodeWhileADownloadImportsLeavesNothing() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordDeleteDuringImport")
+        let (feed, books) = try await downloadedEpisodes(2, in: world)
+        // Episode 1's package kept with its place; episode 2's, never
+        // opened, gone whole.
+        let kept = try listen(to: books[0], in: world)
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        try world.center.deleteDownload("guid:ep-2", of: feed.id)
+        XCTAssertEqual(world.library.library.feedShelf.rows.map(\.id), [kept.id])
+        var finished: [FeedItem.ID] = []
+        let subscription = world.center.events.sink { event in
+            if case .downloadFinished(_, let itemID, _) = event {
+                finished.append(itemID)
+            }
+        }
+        defer { subscription.cancel() }
+        // Delete Episode as each import ends, just before its book is listed.
+        world.center.downloads.beforeCommit = { request in
+            try? world.center.deleteItem(request.itemID, of: request.feedID)
+        }
+
+        for itemID in ["guid:ep-1", "guid:ep-2"] {
+            world.center.download(itemID, of: feed.id)
+            await waitFor("\(itemID)'s download ends") {
+                world.center.downloads.current == nil
+                    && world.center.store.record(of: feed.id)?.item(itemID)?.deletedDate != nil
+            }
+        }
+
+        XCTAssertEqual(finished, [], "a download of a deleted item was announced as finished")
+        XCTAssertFalse(world.library.library.books.contains { $0.feedLink?.feedID == feed.id }, "a deleted item's book was listed")
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.tmbDirectory.path), "the restored package stayed")
+        let folder = FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root)
+        let packages = ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).filter { $0.hasSuffix(".tmb") }
+        XCTAssertEqual(packages, [], "a deleted item's package stayed")
+        for itemID in ["guid:ep-1", "guid:ep-2"] {
+            let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item(itemID))
+            XCTAssertNotNil(item.deletedDate, itemID)
+            XCTAssertNil(item.state.bookID, itemID)
+        }
+    }
+
     // MARK: - What a Refresh Keeps
 
     /// A merge keeps in the record, however far outside the newest it
@@ -302,7 +350,8 @@ final class FeedItemRecordTests: XCTestCase {
 
     /// A refresh keeps the item of a row the library kept after its file
     /// went, found through the library model, and a played item, when the
-    /// feed's own number of entries leaves both outside the newest.
+    /// feed's own short list leaves both outside the newest (FR11); both
+    /// stay in the record, hidden from the list, which lists the newest.
     func testARefreshKeepsTheItemsOfKeptRowsAndPlayedItems() async throws {
         let world = try FeedTestWorld(self, label: "FeedRecordRefreshKeeps")
         await world.start()
@@ -313,11 +362,13 @@ final class FeedItemRecordTests: XCTestCase {
         let feed = try await world.subscribe("/feed.xml")
         world.library.library.feedShelf.put(Self.row("Two", feedID: feed.id, itemID: "guid:ep-2"))
         world.center.markPlayed("guid:ep-1", of: feed.id)
-        world.center.setKeepEntries(1, of: feed.id)
+        world.center.setItemPolicy(FeedItemPolicy(choice: .onlyNewestListed, newestCount: 1), of: feed.id)
 
         await world.center.refresh(feed.id)
 
-        XCTAssertEqual(Set(world.center.listedItems(of: feed.id).map(\.id)), ["guid:ep-3", "guid:ep-2", "guid:ep-1"])
+        let record = try XCTUnwrap(world.center.store.record(of: feed.id))
+        XCTAssertEqual(Set(record.items.map(\.id)), ["guid:ep-3", "guid:ep-2", "guid:ep-1"])
+        XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.id), ["guid:ep-3"])
         XCTAssertEqual(world.center.keptRecordItemIDs(of: feed.id), ["guid:ep-2"])
     }
 

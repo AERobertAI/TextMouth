@@ -112,6 +112,11 @@ extension LibraryViewModel: FeedLibraryHost {
     /// feed's shelf after its file went is removed too, its package whole,
     /// and goes back to the shelf when the package cannot be removed. A book
     /// the library no longer lists, or one of its own, is passed over.
+    ///
+    /// All three steps run here, on the main actor, as the listener's own
+    /// deletions ask; the engine's rules run step 3 off the main thread
+    /// between `readyFeedFilesForRemoval(of:keepingPackages:)` and
+    /// `settleFeedFileRemovals(_:failures:)`, which make up this one.
     /// - Returns: The removals whose files went, and why each other's stayed.
     /// - Throws: `FeedItemPackageError.indexNotWritten` when the indexes
     ///   could not be written: the library is as it was, and no file was
@@ -121,6 +126,27 @@ extension LibraryViewModel: FeedLibraryHost {
         keepingPackages: Bool,
         remove: (FeedFileRemoval) throws -> Void
     ) throws -> FeedFileRemovalOutcome {
+        let removals = try readyFeedFilesForRemoval(of: books, keepingPackages: keepingPackages)
+        var failures: [UUID: any Error] = [:]
+        for removal in removals {
+            do {
+                try remove(removal)
+            } catch {
+                failures[removal.row.id] = error
+            }
+        }
+        return settleFeedFileRemovals(removals, failures: failures)
+    }
+
+    /// Steps 1 and 2 of `removeFeedFiles(of:keepingPackages:remove:)`: the
+    /// records that keep the listener's state written and waited for, the
+    /// rows out of the books (to their feeds' shelves when their packages
+    /// stay), and the indexes on disk, all on the main actor, so the library
+    /// changes and is saved as one. Nothing is removed yet.
+    /// - Returns: The removals to make, in the order asked.
+    /// - Throws: `FeedItemPackageError.indexNotWritten` when the indexes
+    ///   could not be written: the library is as it was.
+    func readyFeedFilesForRemoval(of books: [Book], keepingPackages: Bool) throws -> [FeedFileRemoval] {
         var updated = library
         var removals: [FeedFileRemoval] = []
         for requested in books {
@@ -148,8 +174,7 @@ extension LibraryViewModel: FeedLibraryHost {
             updated.books.removeAll { $0.id == row.id }
             removals.append(FeedFileRemoval(row: row, keepsPackage: keeps))
         }
-        var outcome = FeedFileRemovalOutcome()
-        guard !removals.isEmpty else { return outcome }
+        guard !removals.isEmpty else { return [] }
 
         // 2. The rows leave the books, and the indexes are on disk before any
         // file goes; a failed write keeps every file and every row as it was.
@@ -160,21 +185,23 @@ extension LibraryViewModel: FeedLibraryHost {
             save()
             throw FeedItemPackageError.indexNotWritten
         }
+        return removals
+    }
 
-        // 3. The files.
+    /// The end of `removeFeedFiles(of:keepingPackages:remove:)`, once step 3
+    /// has removed what it could of `removals`, on the main actor: each
+    /// removal whose file went leaves the reading list, a package gone whole
+    /// has its pending record writes forgotten, and the reading text this
+    /// Mac kept goes; each row whose file stayed, named in `failures` with
+    /// why, goes back where it was, among the books or on its feed's shelf.
+    /// - Returns: The removals whose files went, and why each other's stayed.
+    func settleFeedFileRemovals(_ removals: [FeedFileRemoval], failures: [UUID: any Error]) -> FeedFileRemovalOutcome {
+        var outcome = FeedFileRemovalOutcome()
         var afterwards = library
         var changed = false
         for removal in removals {
             let id = removal.row.id
-            do {
-                try remove(removal)
-                outcome.removed.append(removal)
-                changed = !afterwards.readingList.remove([id]).isEmpty || changed
-                if !removal.keepsPackage {
-                    LibraryPersistenceService.forgetDeletedBook(removal.row)
-                }
-                ReadingTextCache.shared.remove(bookID: id)
-            } catch {
+            if let error = failures[id] {
                 outcome.failures.append((row: removal.row, error: error))
                 _ = afterwards.feedShelf.takeRows { $0.id == id }
                 if removal.wasOnShelf {
@@ -183,7 +210,14 @@ extension LibraryViewModel: FeedLibraryHost {
                     afterwards.books.append(removal.row)
                 }
                 changed = true
+                continue
             }
+            outcome.removed.append(removal)
+            changed = !afterwards.readingList.remove([id]).isEmpty || changed
+            if !removal.keepsPackage {
+                LibraryPersistenceService.forgetDeletedBook(removal.row)
+            }
+            ReadingTextCache.shared.remove(bookID: id)
         }
         if changed {
             library = afterwards
@@ -195,6 +229,12 @@ extension LibraryViewModel: FeedLibraryHost {
     /// The books open in readers now.
     var feedBooksOpenInReaders: Set<UUID> {
         openBookIDs
+    }
+
+    /// Whether the book `bookID` is on the reading list, whose downloads the
+    /// feeds' newest-N rule never removes (FR11).
+    func feedBookIsOnReadingList(_ bookID: UUID) -> Bool {
+        library.readingList.contains(bookID)
     }
 
     /// Publishes the books open in readers whenever they change.

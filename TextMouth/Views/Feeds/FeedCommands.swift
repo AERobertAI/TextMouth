@@ -100,8 +100,10 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
     /// The commands an item offers, in menu order, by where its download
     /// stands:
     /// - Open, on an item row (a book's row has its own);
-    /// - Download for an item not downloaded or whose download failed, and
-    ///   Cancel Download for one waiting or downloading;
+    /// - Download for an item not downloaded, whose download failed, or
+    ///   whose download the newest-N rule put off (FR11), which downloads it
+    ///   now, and Cancel Download for one waiting in the queue or
+    ///   downloading;
     /// - Mark Played for an unplayed item, or Mark Unplayed;
     /// - Show Description…;
     /// - for a downloaded item, Show in Finder on an item row (a book's row
@@ -124,7 +126,7 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
             commands.append(.open)
         }
         switch state {
-        case .notDownloaded, .failed:
+        case .notDownloaded, .waiting, .failed:
             commands.append(.download)
         case .downloading:
             commands.append(.cancelDownload)

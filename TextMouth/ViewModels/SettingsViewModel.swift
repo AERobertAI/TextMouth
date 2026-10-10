@@ -922,8 +922,8 @@ final class SettingsViewModel: ObservableObject {
         let feeds = FeedSettings.read(from: preferences)
         config.feedRefreshAtLaunch = feeds.refreshAtLaunch
         config.feedRefreshIntervalHours = feeds.refreshIntervalHours
-        config.feedKeepEntries = feeds.keepEntries
-        config.feedAutoDownload = feeds.autoDownload
+        config.feedItems = feeds.itemPolicy.choice.rawValue
+        config.feedNewestCount = feeds.itemPolicy.newestCount
         config.feedDeleteDownloadsDaysAfterPlayed = feeds.deleteDownloadsDaysAfterPlayed
         config.feedRefreshAlert = feeds.refreshAlert
         config.feedNotifications = feeds.notifications
@@ -968,8 +968,8 @@ final class SettingsViewModel: ObservableObject {
             config.feedRefreshIntervalHours.map { SettingsPolicy.feedRefreshIntervalHours.validated($0) },
             into: FeedSettings.refreshIntervalHoursPreference
         )
-        adopt(config.feedKeepEntries.map { SettingsPolicy.feedKeepEntries.validated($0) }, into: FeedSettings.keepEntriesPreference)
-        adopt(config.feedAutoDownload, into: FeedSettings.autoDownloadPreference)
+        adopt(SettingsPolicy.feedItems.requestedValue(fromConfig: config.feedItems), into: FeedSettings.itemsPreference)
+        adopt(config.feedNewestCount.map { SettingsPolicy.feedNewestCount.validated($0) }, into: FeedSettings.newestCountPreference)
         adopt(
             config.feedDeleteDownloadsDaysAfterPlayed.map { SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed.validated($0) },
             into: FeedSettings.deleteDownloadsDaysAfterPlayedPreference

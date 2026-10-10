@@ -60,8 +60,18 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
     /// next refresh of such a record reads its feed whole
     /// (`FeedRefresher.fetchAndRead`), so the size is known from then on.
     var entryTotal: FeedEntryTotal?
+    /// What this feed lists and downloads by itself, in place of the "List
+    /// and download" setting (`FeedSettings.itemPolicy`, FR11); nil follows
+    /// the setting ("Use the global setting"). Read through
+    /// `decodeIfPresent`, so a record written before the choice existed
+    /// loads, and written only when set, so such a record's file changes
+    /// only once a feed has a choice of its own.
+    var itemPolicyOverride: FeedItemPolicy?
     /// How many entries this feed keeps, in place of the setting
-    /// (`FeedSettings.keepEntries`); nil follows the setting.
+    /// (`FeedSettings.keepEntries`); nil follows the setting. Retired by
+    /// `itemPolicyOverride`, as the setting is by the "List and download"
+    /// choice: the move to the choice gives the feed the choice it asks for
+    /// and clears it (`FeedCenter.moveKeptEntriesOverrides()`).
     var keepEntriesOverride: Int?
     /// How many days after an episode plays to the end its download is
     /// deleted, in place of the setting
@@ -85,6 +95,7 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
         usesInsecureTransport = FeedTransport.isInsecure(feedURL)
         isSerial = false
         entryTotal = nil
+        itemPolicyOverride = nil
         keepEntriesOverride = nil
         deleteDownloadsDaysAfterPlayedOverride = nil
     }
@@ -136,9 +147,10 @@ enum FeedTransport {
 /// keeps its own format.
 ///
 /// The items are kept newest first, the order the library lists them in. A
-/// download in progress is never written as such: its item is written as
-/// not downloaded, so neither a later launch nor another Mac sharing the
-/// library finds a download that is no longer running (`FeedItemState`).
+/// download in progress, or one waiting (FR11), is never written as such:
+/// its item is written as not downloaded, so neither a later launch nor
+/// another Mac sharing the library finds a download that is no longer
+/// running (`FeedItemState`).
 struct FeedRecord: Codable, Equatable, Sendable {
     /// The layout this version of TextMouth writes. A later version may add
     /// fields, which this version ignores and leaves out of its next write.
@@ -193,17 +205,46 @@ struct FeedRecord: Codable, Equatable, Sendable {
         items.first { $0.state.bookID == bookID }
     }
 
-    /// The items the library lists: every item the listener has not deleted.
+    /// Every item the listener has not deleted, newest first: what the
+    /// library lists while the feed lists every item, and what the "List
+    /// and download" choice's newest are counted among
+    /// (`listedItems(under:hasFile:)`).
     var listedItems: [FeedItem] {
         items.filter { $0.deletedDate == nil }
     }
 
-    /// The record as its file holds it: each download in progress written as
-    /// not downloaded. Two records with the same durable form write the same
-    /// file, so a change of progress alone writes nothing.
+    /// The newest `count` items the listener has not deleted, newest first,
+    /// played ones among them (FR11): the items the "List and download"
+    /// choice's number counts, in the order the feed's folder lists them,
+    /// which is the order the record keeps them in. A played item keeps its
+    /// place, so playing one never brings an older one in (the listener's
+    /// answer to question 4).
+    func newestItems(_ count: Int) -> ArraySlice<FeedItem> {
+        listedItems.prefix(max(0, count))
+    }
+
+    /// The items the library lists under `listing` (FR11): every item not
+    /// deleted, or, under "Only the newest 5 listed", the short list: the
+    /// newest of them (`newestItems(_:)`), less those played whose files are
+    /// not here, so a played episode drops off the list, and every item
+    /// whose file is here (`hasFile`) or that downloads, or waits to,
+    /// wherever it falls. The items left out stay in the record, hidden, and
+    /// come back when the list widens.
+    func listedItems(under listing: FeedItemPolicy.Listing, hasFile: (FeedItem) -> Bool) -> [FeedItem] {
+        guard case .newest(let count) = listing else { return listedItems }
+        let newest = Set(newestItems(count).map(\.id))
+        return listedItems.filter { item in
+            hasFile(item) || item.state.isTransient || (newest.contains(item.id) && item.playedDate == nil)
+        }
+    }
+
+    /// The record as its file holds it: each download in progress, or
+    /// waiting (FR11), written as not downloaded. Two records with the same
+    /// durable form write the same file, so a change of progress alone, or a
+    /// download put off, writes nothing.
     var durable: FeedRecord {
         var durable = self
-        for index in durable.items.indices where durable.items[index].state.isDownloading {
+        for index in durable.items.indices where durable.items[index].state.isTransient {
             durable.items[index].state = .notDownloaded
         }
         return durable

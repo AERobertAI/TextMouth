@@ -1186,8 +1186,8 @@ final class ConfigSyncTests: XCTestCase {
             // Feeds (FR03), kept by the feed engine.
             "feedRefreshAtLaunch": false,
             "feedRefreshIntervalHours": 6,
-            "feedKeepEntries": -1,
-            "feedAutoDownload": true,
+            "feedItems": FeedItemPolicy.Choice.onlyNewestListed.rawValue,
+            "feedNewestCount": 12,
             "feedDeleteDownloadsDaysAfterPlayed": 0,
             "feedRefreshAlert": true,
             "feedNotifications": true,
