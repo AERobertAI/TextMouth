@@ -414,6 +414,9 @@ struct FolderRemovalWording: Equatable {
     let folderName: String
     /// How many books the folder and its subfolders hold.
     let bookCount: Int
+    /// The title of the feed whose folder this is (FR03), whose downloads
+    /// the folder lists, or nil when it is no feed's.
+    var feedTitle: String? = nil
 
     /// The folder's name in quotes, as sentences name it.
     private var quotedName: String { "“\(folderName)”" }
@@ -430,12 +433,22 @@ struct FolderRemovalWording: Equatable {
     /// only the folder is deleted. With Move Everything to Trash, the folder
     /// and everything in it leave the library, and their files go to the
     /// Trash, where you can recover them until the Trash is emptied."
+    ///
+    /// A feed's folder says, last, that the feed's downloads stay, which no
+    /// folder edit touches (FR11), and where they are listed then: "It is
+    /// also the folder of the feed “Finish It!”: either way, its downloads
+    /// stay, but no folder lists them until Feed Info gives the feed
+    /// another folder."
     var choiceMessage: String {
         let books = CountWording.books(bookCount)
+        let feed = feedTitle.map {
+            " It is also the folder of the feed “\($0)”: either way, its downloads stay, "
+                + "but no folder lists them until Feed Info gives the feed another folder."
+        } ?? ""
         return "\(quotedName) contains \(books) and may have subfolders. "
             + "With Move Contents Out, they stay in the library and only the folder is deleted. "
             + "With \(buttonTitle), the folder and everything in it leave the library, "
-            + "and \(mode.filesClause(plural: true))."
+            + "and \(mode.filesClause(plural: true))." + feed
     }
 
     /// The second confirmation's title: "Move Everything in “Fiction” to

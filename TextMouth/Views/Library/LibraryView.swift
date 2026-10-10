@@ -904,7 +904,8 @@ struct LibraryView: View {
         return FolderRemovalWording(
             mode: removalPreferences.deletionMode,
             folderName: folder?.name ?? "",
-            bookCount: folder.map { libraryViewModel.bookCount(inFolderTree: $0.fullPath) } ?? 0
+            bookCount: folder.map { libraryViewModel.bookCount(inFolderTree: $0.fullPath) } ?? 0,
+            feedTitle: folder.flatMap { libraryViewModel.feedTitle(ofFolder: $0) }
         )
     }
 
