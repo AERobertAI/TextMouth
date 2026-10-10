@@ -430,6 +430,34 @@ final class MediaCommandPlaybackTests: XCTestCase {
         assertToldSystem(system, that: quay.reader, plays: true, "Play")
     }
 
+    /// The listener pauses their book and moves to another book's window,
+    /// which never played, while the system still shows the paused book;
+    /// then the paused book's window closes. The system is told, once, that
+    /// TextMouth stopped, so the AirPods go back to other apps, rather than
+    /// going on showing a book whose window is closed.
+    func testClosingThePausedBooksWindowWhileAnotherIsInFrontTakesItsItemDown() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Closed Behind")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let slipway = openTextBook(titled: "Slipway Ledger", in: world, joining: system)
+
+        quay.reader.play()
+        reportWordSpoken(by: quay)
+        quay.reader.pause()
+        slipway.reader.windowBecameKey()
+        XCTAssertEqual(
+            system.told.last,
+            .some(NowPlayingItem(title: quay.reader.book.title, author: quay.reader.book.author, isPlaying: false)),
+            "The paused book is not shown paused"
+        )
+        quay.reader.close()
+
+        XCTAssertEqual(system.told.last, .some(nil), "The closed window's book is still shown")
+        XCTAssertEqual(system.told.filter { $0 == nil }.count, 1, "The system was told more than once that TextMouth stopped")
+        XCTAssertEqual(system.coordinator.activeOwnerID, slipway.reader.nowPlayingService.ownerID)
+        XCTAssertFalse(slipway.reader.canReleaseMediaControls, "The window in front offers to release what it never held")
+    }
+
     // MARK: - A Book That Pauses Behind Another Window
 
     /// The listener's book plays while another book's window, which never

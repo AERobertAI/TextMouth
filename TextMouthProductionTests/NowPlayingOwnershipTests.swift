@@ -745,6 +745,64 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertEqual(told.filter { $0 == nil }.count, 1, "The system was told more than once that TextMouth stopped")
     }
 
+    /// Closing a reader whose book the system shows takes its item down
+    /// even while another reader's window is focused, so that the system
+    /// never goes on showing a book whose window is closed and sends the
+    /// AirPods to TextMouth for it; the system is told once that TextMouth
+    /// stopped, and the focused reader, which showed nothing, shows nothing.
+    /// Before, the item stayed shown once its reader was not the active one.
+    func testClosingTheReaderShownTakesItsItemDownThoughAnotherIsFocused() {
+        var told: [NowPlayingItem?] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            systemNowPlaying: { told.append($0) }
+        )
+        let shown = makeSession(coordinator: coordinator)
+        let focused = makeSession(coordinator: coordinator)
+        shown.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        shown.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        focused.focus()
+        XCTAssertFalse(shown.holdsMediaControls, "The reader shown is still the active one")
+
+        // The shown reader closes as a reader does: it stops, which clears
+        // its Now Playing, twice, and leaves.
+        shown.clearNowPlaying()
+        shown.clearNowPlaying()
+        shown.close()
+
+        XCTAssertEqual(told.last, .some(nil), "The closed reader's book is still shown")
+        XCTAssertEqual(told.filter { $0 == nil }.count, 1, "The system was told more than once that TextMouth stopped")
+        XCTAssertEqual(coordinator.activeOwnerID, focused.ownerID)
+        XCTAssertFalse(focused.holdsMediaControls, "The focused reader, which showed nothing, holds the controls")
+    }
+
+    /// The same when the focused reader has an item of its own, its book
+    /// played and paused before the closed reader's book was shown: once the
+    /// closed reader's item is taken down, the focused reader's paused book
+    /// is shown in its place, as when an active reader closes.
+    func testClosingTheReaderShownShowsTheFocusedReadersOwnItemInItsPlace() {
+        var told: [NowPlayingItem?] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            systemNowPlaying: { told.append($0) }
+        )
+        let shown = makeSession(coordinator: coordinator)
+        let focused = makeSession(coordinator: coordinator)
+        focused.updateNowPlayingInfo(title: "Ferry Log", author: "Purser", isPlaying: true)
+        focused.updateNowPlayingInfo(title: "Ferry Log", author: "Purser", isPlaying: false)
+        shown.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        shown.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        focused.focus()
+
+        shown.clearNowPlaying()
+        shown.close()
+
+        XCTAssertEqual(told.suffix(2), [nil, NowPlayingItem(title: "Ferry Log", author: "Purser", isPlaying: false)])
+        XCTAssertTrue(focused.holdsMediaControls, "The focused reader's own book is shown, yet it holds nothing")
+    }
+
     /// A reader holds TextMouth's media controls, the ones Release Media
     /// Controls hands back, while it is the active reader and the system
     /// shows its item: not before it shows one; not once another reader's

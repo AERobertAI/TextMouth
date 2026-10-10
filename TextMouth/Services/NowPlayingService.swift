@@ -543,8 +543,21 @@ final class NowPlayingService {
         prepareForPlayback(ownerID: ownerID)
     }
 
+    /// The reader `ownerID` closes: it takes no more commands, and the item
+    /// it shows, if the system shows its item, goes with it, whether or not
+    /// it is the active reader, so the system never goes on showing a book
+    /// whose window is closed, nor sends the AirPods to TextMouth for it.
+    /// The active reader's own item, if it has one, is then shown in its
+    /// place. A reader whose item is not shown takes nothing down: a window
+    /// that never played closes without telling the system that TextMouth
+    /// stopped while another book waits paused.
+    ///
+    /// Before, only the active reader's item was taken down, so a book shown
+    /// paused while another reader's window was focused stayed shown after
+    /// its own window closed.
     func unregister(ownerID: UUID) {
         let wasActive = activeOwnerID == ownerID
+        let wasShown = shownOwnerID == ownerID
         let affectedRouting = focusedOwnerID == ownerID || playingOwnerID == ownerID
         if affectedRouting {
             noteExternalRoutingChange()
@@ -560,17 +573,15 @@ final class NowPlayingService {
         }
         diagnostic(
             "owner unregistered owner=\(shortOwnerID(ownerID)) wasActive=\(wasActive) "
-                + "fallback=\(shortOptionalOwnerID(activeOwnerID))"
+                + "wasShown=\(wasShown) fallback=\(shortOptionalOwnerID(activeOwnerID))"
         )
-        if wasActive {
-            // As in `clearNowPlaying(ownerID:)`, only this reader's own item
-            // is taken down; the reader now active is shown unless it is.
-            if shownOwnerID == ownerID {
-                clearSystemNowPlaying()
-            }
-            if shownOwnerID != activeOwnerID {
-                publishCachedNowPlayingInfoForActiveOwner()
-            }
+        // As in `clearNowPlaying(ownerID:)`, only this reader's own item is
+        // taken down; the reader now active is shown unless it is.
+        if wasShown {
+            clearSystemNowPlaying()
+        }
+        if wasActive || wasShown, shownOwnerID != activeOwnerID {
+            publishCachedNowPlayingInfoForActiveOwner()
         }
     }
 
