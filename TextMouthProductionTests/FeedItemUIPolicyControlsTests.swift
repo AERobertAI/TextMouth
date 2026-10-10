@@ -42,6 +42,8 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
     /// Each choice's hint is one sentence saying what it lists, what
     /// downloads, and what becomes of the rest, with the number in force,
     /// for every feed's episodes and articles or for the feed's own items.
+    /// "Only the newest" lists those of the newest not played, fewer once
+    /// some are played, never the newest 5 unplayed (REV13 feeds 6).
     func testEachChoicesHintSaysWhatItDoes() {
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.everyListedNewestDownloaded, count: 5, noun: nil),
@@ -55,7 +57,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         )
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.onlyNewestListed, count: 5, noun: nil),
-            "Lists the newest 5 you haven't played, and every download, and downloads only what you ask for; "
+            "Lists those of the newest 5 you haven't played, and every download, and downloads only what you ask for; "
                 + "the others keep their records and come back when you list more."
         )
         // A feed's own words: its items, and "read" for articles.
@@ -66,7 +68,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         )
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.onlyNewestListed, count: 2, noun: .article),
-            "Lists the newest 2 you haven't read, and every download, and downloads only what you ask for; "
+            "Lists those of the newest 2 you haven't read, and every download, and downloads only what you ask for; "
                 + "the others keep their records and come back when you list more."
         )
         XCTAssertTrue(FeedWording.itemPolicyHint(.everyListedDownloadsByHand, count: 5, noun: .item).hasPrefix("Lists every episode and article;"))

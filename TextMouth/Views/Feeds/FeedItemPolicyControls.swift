@@ -136,10 +136,13 @@ extension FeedWording {
             return "Lists every \(items); nothing downloads by itself, and a download stays until you delete it "
                 + "or its days after playing pass."
         case .onlyNewestListed:
-            // A played item still downloaded stays listed, as every
-            // download does (`FeedRecord.listedItems(under:hasFile:)`).
+            // Those of the newest `count` not yet played, so fewer than
+            // `count` once some are played, never the newest `count`
+            // unplayed (REV13 feeds 6); a played item still downloaded
+            // stays listed, as every download does
+            // (`FeedRecord.listedItems(under:hasFile:)`).
             let played = noun == .article ? "read" : "played"
-            return "Lists the newest \(count) you haven't \(played), and every download, and downloads only what you ask for; "
+            return "Lists those of the newest \(count) you haven't \(played), and every download, and downloads only what you ask for; "
                 + "the others keep their records and come back when you list more."
         }
     }
