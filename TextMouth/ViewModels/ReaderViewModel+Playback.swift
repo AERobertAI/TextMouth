@@ -305,7 +305,12 @@ extension ReaderViewModel {
     /// actually playing or paused. A redundant stop on a stopped/empty
     /// reader (cleanup paths, deinit, lifecycle handlers) shouldn't
     /// clobber the timestamp that drives smart rewind.
+    ///
+    /// A Where Am I announcement ends with the book
+    /// (`endWhereAmIAsTheBookStops()`), as a pause ends it, so that its end
+    /// neither resumes the stopped book nor tells Now Playing that it plays.
     func stop() {
+        endWhereAmIAsTheBookStops()
         let wasActive: Bool
         if isAudioBook {
             wasActive = audioPlaybackService.isPlaying || audioPlaybackService.isPaused
@@ -2003,8 +2008,9 @@ extension ReaderViewModel {
         // so playback was active and its stop is recorded.
         finishStopping(wasActive: true, wasSleepTimerFading: isOwnSleepTimerFading)
         sleepTimerService.pauseCountdown(by: readerID)
-        // A Where Am I announcement that ends now has nothing to resume.
-        wasPlayingBeforeWhereAmI = false
+        // A Where Am I announcement ends with the book, as `stop()` ends it:
+        // it has nothing left to resume.
+        endWhereAmIAsTheBookStops()
 
         let message = Self.audioPlaybackFailureMessage(
             for: failure,

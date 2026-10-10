@@ -314,10 +314,10 @@ extension ReaderViewModel {
 
     /// Silences the Where Am I synthesizer because the reader asked: a
     /// press while an announcement speaks, a command that interrupts it, a
-    /// new announcement, or the reader closing. The announcement speaking is
-    /// forgotten first, so that the cancel the synthesizer then reports for
-    /// it is known for one the reader asked for, handled where it was asked,
-    /// once (`whereAmISynthesizerCancelled(_:)`).
+    /// new announcement, the book stopping, or the reader closing. The
+    /// announcement speaking is forgotten first, so that the cancel the
+    /// synthesizer then reports for it is known for one the reader asked
+    /// for, handled where it was asked, once (`whereAmISynthesizerCancelled(_:)`).
     func stopWhereAmISynthesizer() {
         liveWhereAmIUtterance = nil
         whereAmISynth.stopSpeaking(at: .immediate)
@@ -428,14 +428,47 @@ extension ReaderViewModel {
         }
     }
 
+    /// Ends a Where Am I announcement as the book stops: by `stop()`, which
+    /// Release Media Controls, Edit Text, a chapter that cannot be
+    /// downloaded, and closing the window all go through, or by a playback
+    /// failure, which stops the book as `stop()` does. An announcement
+    /// speaking is silenced, and the book it paused is forgotten, so that
+    /// nothing resumes the stopped book, nor tells Now Playing that it plays,
+    /// when the announcement would have ended. The stop does the rest
+    /// itself: it closes the listening session, takes the book out of Now
+    /// Playing, and records the stop.
+    ///
+    /// Left speaking, the announcement resumed nothing as it ended, the book
+    /// being stopped, but told Now Playing that the book played: a book that
+    /// had just let go of the media controls (Shift-R) took the AirPods back,
+    /// and Shift-R then said it did not hold them (REV11).
+    func endWhereAmIAsTheBookStops() {
+        if isWhereAmISpeaking {
+            stopWhereAmISynthesizer()
+        }
+        isWhereAmISpeaking = false
+        wasPlayingBeforeWhereAmI = false
+    }
+
     /// Resume the book a Where Am I announcement paused, as it was paused:
     /// directly, without the play sound or a new listening session, and
-    /// tell Now Playing it plays again.
+    /// tell Now Playing it plays again once it does.
+    ///
+    /// A book whose playback would not resume, its speech or its player
+    /// gone since the announcement paused it, plays nothing, so the system
+    /// is told nothing: told the book played, it would send the AirPods to
+    /// a book that plays nothing. The book is left paused, its pause settled
+    /// as one left by an announcement that ends without resuming
+    /// (`settlePauseLeftByWhereAmI()`), and the next Play starts it afresh.
     private func resumeBookPausedForWhereAmI() {
-        if isAudioBook {
-            audioPlaybackService.resume()
-        } else {
-            speechService.resume()
+        let resumed = isAudioBook ? audioPlaybackService.resume() : speechService.resume()
+        guard resumed else {
+            DiagnosticLog.event(
+                .playback,
+                "WHERE_AM_I_RESUME_REJECTED: the book the announcement paused would not resume; left paused"
+            )
+            settlePauseLeftByWhereAmI()
+            return
         }
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: true
