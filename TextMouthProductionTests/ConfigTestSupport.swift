@@ -2,7 +2,8 @@ import XCTest
 @testable import TextMouth
 
 // Fixtures shared by the config.json test classes (`ConfigSyncTests` and
-// `ConfigWatcherTests`), so each exists once.
+// `ConfigWatcherTests`), and the settings model of a test's own that the
+// settings tests share (`makeIsolatedSettings`), so each exists once.
 
 extension ConfigService.AppConfig {
     /// A config in which every field holds a supported, non-default value,
@@ -90,6 +91,38 @@ extension XCTestCase {
     /// settings (see `makeSandboxedPreferences`).
     func isolatedDefaults() throws -> UserDefaults {
         makeSandboxedPreferences("config")
+    }
+
+    /// A settings model of the test's own, so changing the global settings
+    /// touches neither this process's preferences nor its config.json: its
+    /// preferences are a sandboxed store, discarded when the test ends, and
+    /// its config.json is `configFile`, or a file in a folder of the test's
+    /// own, written with `configWrite` (an atomic write unless the test
+    /// counts or refuses writes) and never watched for changes. It posts to
+    /// a notification center of its own and starts no services. `label`
+    /// names the store and the folder for anyone reading the sandbox.
+    /// (REV13: the playback settings, A10, Settings-fit, and save-cost tests
+    /// each built this model themselves.)
+    @MainActor
+    func makeIsolatedSettings(
+        _ label: String = "isolated-settings",
+        configFile: URL? = nil,
+        configWrite: @escaping @MainActor (Data, URL) throws -> Void = { data, url in
+            try data.write(to: url, options: .atomic)
+        }
+    ) throws -> SettingsViewModel {
+        let file = try configFile ?? makeTestDirectory(label).appendingPathComponent("config.json")
+        let configService = ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+            write: configWrite,
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ))
+        return SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: makeSandboxedPreferences(label),
+            configService: configService
+        )
     }
 
     /// A config.json location in a directory of this test's own inside the

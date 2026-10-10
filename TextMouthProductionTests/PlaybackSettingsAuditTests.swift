@@ -617,27 +617,4 @@ final class PlaybackSettingsAuditTests: XCTestCase {
             )
         )
     }
-
-    /// A settings model of the test's own, so changing the global settings
-    /// touches neither this process's preferences nor its config.json: the
-    /// preferences are a sandboxed store, and config.json is a file in a
-    /// folder of the test's, written with `configWrite`.
-    private func makeIsolatedSettings(
-        configWrite: @escaping @MainActor (Data, URL) throws -> Void = { data, url in
-            try data.write(to: url, options: .atomic)
-        }
-    ) throws -> SettingsViewModel {
-        let configFile = try makeTestDirectory("GlobalSettings").appendingPathComponent("config.json")
-        let configService = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
-            write: configWrite,
-            openForEvents: { _ in -1 },
-            close: { _ in }
-        ))
-        return SettingsViewModel(
-            notificationCenter: NotificationCenter(),
-            initializeServices: false,
-            userDefaults: makeSandboxedPreferences("global-settings"),
-            configService: configService
-        )
-    }
 }
