@@ -45,18 +45,18 @@ final class LibraryFolderPickerTests: XCTestCase {
             makingFolder: true
         )
 
-        try withHostedView(sheet, until: { !self.nameFields(in: $0).isEmpty }) { hostingView in
-            try type("Reports", into: hostingView)
-            guard pressReturn(in: hostingView) else {
+        try withHostedView(sheet, until: { !self.newFolderNameFields(in: $0).isEmpty }) { hostingView in
+            try typeNewFolderName("Reports", in: hostingView)
+            guard pressReturnKey(in: hostingView) else {
                 throw XCTSkip("This macOS hands an offscreen window no key equivalents")
             }
             XCTAssertEqual(creates.calls, ["Reports"], "Return did not press Create")
             XCTAssertTrue(moves.calls.isEmpty, "Return pressed Move as well: \(moves.calls)")
 
             // Refused, the fields stay with the name, and Return tries again.
-            letViewSettle(hostingView)
-            XCTAssertEqual(nameFields(in: hostingView).count, 1, "the refused folder's fields closed")
-            XCTAssertTrue(pressReturn(in: hostingView))
+            settleHostedView(hostingView)
+            XCTAssertEqual(newFolderNameFields(in: hostingView).count, 1, "the refused folder's fields closed")
+            XCTAssertTrue(pressReturnKey(in: hostingView))
             XCTAssertEqual(creates.calls, ["Reports", "Reports"], "Return did not press Create again")
             XCTAssertTrue(moves.calls.isEmpty, "Return pressed Move as well: \(moves.calls)")
 
@@ -64,12 +64,12 @@ final class LibraryFolderPickerTests: XCTestCase {
             // so Return moves the books there.
             XCTAssertTrue(waitUntil {
                 hostingView.layoutSubtreeIfNeeded()
-                return self.nameFields(in: hostingView).isEmpty
+                return self.newFolderNameFields(in: hostingView).isEmpty
             }, "the made folder's fields stayed open")
             let popUp = descendants(of: hostingView, as: NSPopUpButton.self).first
             XCTAssertTrue(waitUntil { popUp?.titleOfSelectedItem == "Reports" }, "the destination is \(popUp?.titleOfSelectedItem ?? "none")")
-            letViewSettle(hostingView)
-            XCTAssertTrue(pressReturn(in: hostingView))
+            settleHostedView(hostingView)
+            XCTAssertTrue(pressReturnKey(in: hostingView))
             XCTAssertTrue(waitUntil { moves.calls == ["Reports"] }, "Return did not press Move once the fields closed: \(moves.calls)")
             XCTAssertEqual(creates.calls.count, 2, "Return pressed Create once the fields closed")
         }
@@ -102,7 +102,7 @@ final class LibraryFolderPickerTests: XCTestCase {
         )
 
         try skipUnlessHostedWindowsExposeAccessibility()
-        try withHostedView(sheet, until: { !self.nameFields(in: $0).isEmpty }) { hostingView in
+        try withHostedView(sheet, until: { !self.newFolderNameFields(in: $0).isEmpty }) { hostingView in
             let buttons = accessibleControls(in: hostingView).filter { $0.role == .button }
             guard !buttons.isEmpty else {
                 throw XCTSkip("SwiftUI exposed no buttons to accessibility in this run")
@@ -116,52 +116,6 @@ final class LibraryFolderPickerTests: XCTestCase {
             XCTAssertEqual(fieldsCancel.hint, LibraryFolderPicker.cancelNewFolderHint)
             XCTAssertTrue(labels.contains("Create") && labels.contains("Move"), "\(labels)")
         }
-    }
-
-    // MARK: - Keys and Fields
-
-    /// Presses Return in `hostingView`'s window as the app receives a key:
-    /// offered as a key equivalent first, which a button with that shortcut
-    /// takes, and otherwise sent on to the control with keyboard focus.
-    /// Returns whether a key equivalent took it; some macOS releases hand
-    /// an offscreen window none.
-    private func pressReturn(in hostingView: NSView) -> Bool {
-        guard let window = hostingView.window, let event = keyDown(.return, in: window) else { return false }
-        if window.performKeyEquivalent(with: event) { return true }
-        window.sendEvent(event)
-        return false
-    }
-
-    /// Gives the new folder's name field keyboard focus and types `text`
-    /// into it through the window's field editor, as the keyboard does, so
-    /// the picker's binding follows; skips where an offscreen window gives
-    /// the field no focus.
-    private func type(_ text: String, into hostingView: NSView) throws {
-        let field = try XCTUnwrap(nameFields(in: hostingView).first, "the name field was not drawn")
-        guard let window = hostingView.window, window.makeFirstResponder(field),
-              let editor = window.firstResponder as? NSTextView else {
-            throw XCTSkip("This macOS gives an offscreen window's field no keyboard focus")
-        }
-        editor.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
-        letViewSettle(hostingView)
-    }
-
-    /// Lets SwiftUI apply its pending updates, as after typing or a press.
-    private func letViewSettle(_ hostingView: NSView) {
-        _ = waitUntil(timeout: 0.25) {
-            hostingView.layoutSubtreeIfNeeded()
-            return false
-        }
-    }
-
-    /// The editable text fields AppKit drew below `root`.
-    private func editableFields(in root: NSView) -> [NSTextField] {
-        descendants(of: root, as: NSTextField.self).filter(\.isEditable)
-    }
-
-    /// The new folder's name field, drawn while the fields are shown.
-    private func nameFields(in root: NSView) -> [NSTextField] {
-        editableFields(in: root).filter { $0.placeholderString == "Folder name" }
     }
 
     // MARK: - Fixtures

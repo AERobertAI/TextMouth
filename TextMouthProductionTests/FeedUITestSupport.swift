@@ -10,10 +10,29 @@ import XCTest
 // focus requests look for.
 
 extension XCTestCase {
-    /// The text fields in `view` that take typing.
+    /// The text fields in `view` that take typing
+    /// (`editableTextFields(in:)`, which every hosted test shares).
     @MainActor
     func feedEditableFields(in view: NSView) -> [NSTextField] {
-        descendants(of: view, as: NSTextField.self).filter(\.isEditable)
+        editableTextFields(in: view)
+    }
+
+    /// Starts `world`'s engine and turns the run loop until what it starts
+    /// has finished, as `world.start()` awaits it; fails the test, and
+    /// returns false, when that takes too long. The feed sheets' tests of
+    /// the keyboard are synchronous: they turn the run loop while a hosted
+    /// view is alive, and under an async test that turning cannot run the
+    /// main actor's work, so a button's Task would never finish.
+    @MainActor
+    func startTurningTheRunLoop(_ world: FeedTestWorld, file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        let finished = CallLog<Bool>()
+        Task {
+            await world.start()
+            finished.record(true)
+        }
+        let started = waitUntil(timeout: 10) { !finished.calls.isEmpty }
+        XCTAssertTrue(started, "the engine's start did not finish", file: file, line: line)
+        return started
     }
 
     /// The radio buttons SwiftUI drew in `view` for a radio-group picker:
