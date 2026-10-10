@@ -60,8 +60,8 @@ struct HeadingNavigatorView: View {
         }
     }
 
-    /// The deepest heading level the level filter offers; its "All" choice
-    /// shows every heading up to this level.
+    /// The deepest heading level the level filter offers; its "All levels"
+    /// choice shows every heading up to this level.
     nonisolated static let deepestFilterLevel = 6
 
     /// The heading the reading position at `chapterIndex` and
@@ -116,13 +116,36 @@ struct HeadingNavigatorView: View {
         Array(Set(headings.map(\.level))).sorted()
     }
 
-    /// The levels the filter offers a "H1–Hn" choice for, given the levels
-    /// present in the book, sorted: every one but the deepest. A choice of
-    /// the deepest level shows every heading, as the filter's "All" choice
-    /// does, so offering both put the same filter twice before VoiceOver
-    /// (and gave two choices one tag in a book with level-6 headings).
+    /// The levels the filter offers a choice of its own for, given the
+    /// levels present in the book, sorted: every one but the deepest. A
+    /// choice of the deepest level shows every heading, as the filter's
+    /// "All levels" choice does, so offering both put the same filter twice
+    /// before VoiceOver (and gave two choices one tag in a book with level-6
+    /// headings).
     static func filterLevels(for levelsPresent: [Int]) -> [Int] {
         Array(levelsPresent.dropLast())
+    }
+
+    /// What VoiceOver calls the list of headings: "Headings, 1 heading",
+    /// "Headings, 12 headings", counting those the level filter shows.
+    nonisolated static func listLabel(headingCount: Int) -> String {
+        "Headings, \(CountWording.phrase(headingCount, singular: "heading", plural: "headings"))"
+    }
+
+    /// The level filter's label, which the screen shows beside it and
+    /// VoiceOver speaks as its name.
+    nonisolated static let levelFilterLabel = "Show levels"
+    /// The level filter's hint: what choosing does.
+    nonisolated static let levelFilterHint = "Shows only the headings up to the level chosen."
+
+    /// The level filter's name for the choice showing levels 1 to
+    /// `maximumLevel`, in words a braille display and VoiceOver read alike:
+    /// "Level 1", "Levels 1 to 3", and "All levels" for the deepest level
+    /// the filter offers (TODO A10; the choices said "H1–H1", "H1–H3", and
+    /// "All", with an en dash).
+    nonisolated static func filterChoiceTitle(maximumLevel: Int) -> String {
+        if maximumLevel >= deepestFilterLevel { return "All levels" }
+        return maximumLevel <= 1 ? "Level 1" : "Levels 1 to \(maximumLevel)"
     }
 
     /// Return the end offset for every heading currently displayed in the
@@ -165,18 +188,12 @@ struct HeadingNavigatorView: View {
     /// new section while the sheet is open, but it must not steal VoiceOver
     /// focus from whichever control the user is currently exploring.
     @State private var initialFocusHeadingID: String?
+    /// What each heading's row shows after its name, as the display
+    /// picker's segments name it.
     enum HeadingDisplayMode: String, CaseIterable {
         case timeEstimate = "Duration"
         case timeIntoBook = "Time In"
         case percentage = "Percentage"
-
-        var accessibilityLabel: String {
-            switch self {
-            case .timeEstimate: return "Show estimated duration for each heading"
-            case .timeIntoBook: return "Show time into book where each heading starts"
-            case .percentage: return "Show percentage through book for each heading"
-            }
-        }
     }
 
     /// A sheet listing `viewModel`'s headings.
@@ -218,22 +235,32 @@ struct HeadingNavigatorView: View {
             }
             .padding()
 
-            // Heading level filter
+            // Heading level filter: one control with one name, which the
+            // screen shows beside it and VoiceOver speaks once, as the
+            // filter's own. A caption naming it again used to be a second
+            // stop, and the picker's own title, "Max level", showed as a
+            // second label beside the caption (TODO A10). A segmented
+            // picker's label view never reaches VoiceOver, so the name is
+            // its accessibility label, and the caption is for the eye.
             if headingLevelsPresent.count > 1 {
                 HStack(spacing: 8) {
-                    Text("Show levels:")
+                    Text("\(Self.levelFilterLabel):")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .accessibilityHidden(true)
 
-                    Picker("Max level", selection: $maxHeadingLevel) {
+                    Picker(selection: $maxHeadingLevel) {
                         ForEach(Self.filterLevels(for: headingLevelsPresent), id: \.self) { level in
-                            Text("H1–H\(level)").tag(level)
+                            Text(Self.filterChoiceTitle(maximumLevel: level)).tag(level)
                         }
-                        Text("All").tag(Self.deepestFilterLevel)
+                        Text(Self.filterChoiceTitle(maximumLevel: Self.deepestFilterLevel)).tag(Self.deepestFilterLevel)
+                    } label: {
+                        EmptyView()
                     }
                     .pickerStyle(.segmented)
-                    .accessibilityLabel("Heading level filter")
-                    .accessibilityHint("Show only headings up to this level")
+                    .labelsHidden()
+                    .accessibilityLabel(Self.levelFilterLabel)
+                    .accessibilityHint(Self.levelFilterHint)
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 4)
@@ -283,11 +310,16 @@ struct HeadingNavigatorView: View {
                         )
                     }
                 }
+                // The list's name, with how many headings it shows. It was
+                // on the whole sheet, whose controls are no one element, so
+                // the controls in it took the name: the display and level
+                // pickers were each "Headings, 3 headings" to VoiceOver
+                // (TODO A10).
+                .accessibilityLabel(Self.listLabel(headingCount: headingItems.count))
             }
         }
         .frame(width: 550, height: 500)
         .navigationTitle("Headings: \(shown.value.title)")
-        .accessibilityLabel("Headings, \(CountWording.phrase(headingItems.count, singular: "heading", plural: "headings"))")
         .onAppear {
             rebuildHeadingItems()
             initialFocusHeadingID = Self.initialFocusHeadingID(
@@ -442,8 +474,10 @@ struct HeadingNavigatorView: View {
 
 /// One row of the headings sheet: a button that goes to its heading, whose
 /// VoiceOver label speaks the heading, its level, whether it is skipped or
-/// being read, and its time or percentage; its context menu goes to the
-/// heading or skips its section.
+/// being read, and its time or percentage. Its VoiceOver actions and its
+/// context menu offer the same commands under the same names: Go To, and
+/// Skip Section or Include Section, as a bookmark's row offers its own
+/// (TODO A10; until then skipping was in the context menu alone).
 ///
 /// Equatable on what it shows, never on its actions (PERF30): when the
 /// playback cursor crosses into another heading the sheet draws again, and
@@ -489,6 +523,7 @@ private struct HeadingNavigatorRow: View, Equatable {
         // exactly where VoiceOver speaks the human-readable "current heading"
         // status.
         .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
+        .accessibilityActions { commands }
         // This is the sole initial VoiceOver focus mechanism. It targets the
         // current heading when possible, while remaining fixed if playback
         // later advances into another heading.
@@ -496,10 +531,17 @@ private struct HeadingNavigatorRow: View, Equatable {
             isTarget: isInitialFocusTarget,
             delay: 0.2
         ))
-        .contextMenu {
-            Button("Go To", action: goTo)
-            Button(item.isSkipped ? "Include Section" : "Skip Section", action: toggleSkip)
-        }
+        .contextMenu { commands }
+    }
+
+    /// The row's commands, its VoiceOver actions and its context menu
+    /// alike: Go To, then Skip Section, or Include Section for a section
+    /// already skipped (`HeadingRow.commandTitles(isSkipped:)`).
+    @ViewBuilder
+    private var commands: some View {
+        let titles = HeadingRow.commandTitles(isSkipped: item.isSkipped)
+        Button(titles.goTo, action: goTo)
+        Button(titles.toggleSkip, action: toggleSkip)
     }
 }
 
@@ -544,8 +586,20 @@ struct HeadingRow: View {
         .opacity(isSkipped ? 0.5 : 1.0)
     }
 
+    /// What VoiceOver says the row's button does: its result, never a
+    /// gesture or a menu to open, since VoiceOver, a braille display, and
+    /// the keyboard each do it their own way; skipping is among the row's
+    /// VoiceOver actions (TODO A10; it said "Double-tap to navigate. Use
+    /// context menu to skip or include this section.").
     var accessibilityHintText: String {
-        "Double-tap to navigate. Use context menu to skip or include this section."
+        "Goes to this heading and closes the list."
+    }
+
+    /// The names of a heading row's commands, its VoiceOver actions and its
+    /// context menu items: Go To, and Skip Section, or Include Section for
+    /// a section that `isSkipped`.
+    nonisolated static func commandTitles(isSkipped: Bool) -> (goTo: String, toggleSkip: String) {
+        ("Go To", isSkipped ? "Include Section" : "Skip Section")
     }
 
     private func fontForLevel(_ level: Int) -> Font {

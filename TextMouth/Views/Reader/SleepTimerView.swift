@@ -192,10 +192,10 @@ struct SleepTimerView: View {
 
             // Preset minute durations
             ForEach(Self.presetMinutes, id: \.self) { minutes in
-                Button("\(minutes) minutes") {
+                Button(SleepTimerDuration.minutes(minutes).displayName) {
                     setNewTimer(.minutes(minutes))
                 }
-                .accessibilityLabel("Set timer for \(minutes) minutes and start playing")
+                .accessibilityLabel(Self.setTimerLabel(minutes: minutes))
                 // The top Close control remains immediately available, but
                 // opening the sheet places VoiceOver on the first primary
                 // timer action instead of the dismiss action.
@@ -210,7 +210,11 @@ struct SleepTimerView: View {
 
             // Custom duration
             HStack(spacing: 8) {
+                // "Custom:" and "min" are for the eye: the field's label,
+                // "Custom timer minutes", says both, so VoiceOver skips
+                // them as stops of their own (TODO A10).
                 Text("Custom:")
+                    .accessibilityHidden(true)
                 TextField("Minutes", value: $customMinutes, format: .number)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 60)
@@ -220,20 +224,23 @@ struct SleepTimerView: View {
                         setNewTimer(.minutes(customMinutes))
                     }
                     .accessibilityLabel("Custom timer minutes")
-                    .accessibilityValue("\(customMinutes) minutes")
-                    .accessibilityHint("Type a number or use the stepper arrows. Press Return to start the timer.")
-                Stepper("", value: $customMinutes, in: 1...480, step: 5)
+                    .accessibilityValue(customMinutesSpoken)
+                    .accessibilityHint(Self.customMinutesHint)
+                // Its value is the field's, unit and all: it was the bare
+                // number, "Adjust minutes, 30" (TODO A10).
+                Stepper("", value: $customMinutes, in: 1...480, step: Self.customMinutesStep)
                     .labelsHidden()
-                    .accessibilityLabel("Adjust minutes")
-                    .accessibilityValue("\(customMinutes)")
+                    .accessibilityLabel(Self.adjustMinutesLabel)
+                    .accessibilityValue(customMinutesSpoken)
                 Text("min")
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
 
                 Button("Set") {
                     customMinutes = max(1, min(customMinutes, 480))
                     setNewTimer(.minutes(customMinutes))
                 }
-                .accessibilityLabel("Set timer for \(customMinutes) minutes and start playing")
+                .accessibilityLabel(Self.setTimerLabel(minutes: customMinutes))
             }
         }
     }
@@ -274,6 +281,12 @@ struct SleepTimerView: View {
         }
     }
 
+    /// The custom minutes as the field and its stepper both speak them,
+    /// unit and all: "1 minute", "30 minutes".
+    private var customMinutesSpoken: String {
+        CountWording.minutes(customMinutes)
+    }
+
     /// Start (or restart) the timer and optionally dismiss the sheet.
     /// Plays the book if it isn't already playing — the user clearly
     /// intends to read until the timer fires.
@@ -292,6 +305,24 @@ struct SleepTimerView: View {
     }
 
     // MARK: - Wording
+
+    /// How many minutes the Adjust minutes stepper changes the custom timer
+    /// by.
+    nonisolated static let customMinutesStep = 5
+    /// The custom timer's stepper's label, which the field's hint names.
+    nonisolated static let adjustMinutesLabel = "Adjust minutes"
+
+    /// What VoiceOver calls a button that sets a timer for `minutes`, a
+    /// preset's or the custom timer's Set: "Set timer for 1 minute and start
+    /// playing", by the timer's own name (TODO A10; it said "1 minutes").
+    nonisolated static func setTimerLabel(minutes: Int) -> String {
+        "Set timer for \(SleepTimerDuration.minutes(minutes).displayName) and start playing"
+    }
+    /// The custom minutes field's hint: what typing does, the stepper beside
+    /// it by name and step, and what Return does there (TODO A10; it said
+    /// "use the stepper arrows", which name no control VoiceOver lands on).
+    nonisolated static let customMinutesHint =
+        "Type the minutes, or change them \(customMinutesStep) at a time with \(adjustMinutesLabel). Return sets the timer and starts playing."
 
     /// The heading of the section of timers that stop at a place.
     nonisolated static let stopAtHeading = "Stop At"

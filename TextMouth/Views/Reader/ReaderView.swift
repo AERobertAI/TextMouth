@@ -891,8 +891,10 @@ struct BookVoicePickerView: View {
 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
+                        // The speed for the eye; VoiceOver hears it once, as
+                        // the slider's value (TODO A10).
                         Text("Speed: \(Int(viewModel.speechService.wordsPerMinute)) WPM")
-                            .accessibilityLabel("Speed: \(Int(viewModel.speechService.wordsPerMinute)) words per minute")
+                            .accessibilityHidden(true)
 
                         Slider(
                             value: Binding(
@@ -910,7 +912,9 @@ struct BookVoicePickerView: View {
                         ) {
                             Text("Words per minute")
                         }
-                        .accessibilityLabel("Speed slider")
+                        // VoiceOver says the control's kind itself, so the
+                        // label names the setting alone (TODO A10).
+                        .accessibilityLabel("Speed")
                         .accessibilityValue("\(Int(viewModel.speechService.wordsPerMinute)) words per minute")
                     }
                 } header: {
@@ -919,8 +923,10 @@ struct BookVoicePickerView: View {
 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
+                        // The pitch for the eye; VoiceOver hears it once, as
+                        // the slider's value (TODO A10).
                         Text("Pitch: \(SpeechService.pitchLabel(viewModel.speechService.pitchMultiplier))")
-                            .accessibilityLabel("Pitch: \(SpeechService.pitchLabel(viewModel.speechService.pitchMultiplier))")
+                            .accessibilityHidden(true)
 
                         Slider(
                             value: Binding(
@@ -937,7 +943,7 @@ struct BookVoicePickerView: View {
                         ) {
                             Text("Pitch")
                         }
-                        .accessibilityLabel("Pitch slider")
+                        .accessibilityLabel("Pitch")
                         .accessibilityValue(SpeechService.pitchLabel(viewModel.speechService.pitchMultiplier))
                     }
                 } header: {
@@ -971,19 +977,21 @@ struct BookVoicePickerView: View {
                         Button("Save to Global Settings") {
                             viewModel.saveSettingsToGlobal()
                         }
-                        .accessibilityLabel("Save this book's voice and speed as the global defaults")
-                        .accessibilityHint("Updates the default voice and speed for all books that don't have their own settings")
+                        // The playback bar's button says the same: both
+                        // copy the voice, speed, and pitch (TODO A10).
+                        .accessibilityLabel(BookVoiceSettingsWording.saveAsDefaultsLabel)
+                        .accessibilityHint(BookVoiceSettingsWording.saveAsDefaultsHint)
                     }
 
                     if viewModel.hasLocalSettings {
                         Button(viewModel.isAudioBook ? "Reset to Normal Speed" : "Reset to Global Settings") {
                             viewModel.resetToGlobalSettings()
                         }
-                        .accessibilityLabel(viewModel.isAudioBook ? "Reset to normal audio speed" : "Reset to global voice and speed settings")
+                        .accessibilityLabel(viewModel.isAudioBook ? "Reset to normal audio speed" : BookVoiceSettingsWording.resetToDefaultsLabel)
                         .accessibilityHint(
                             viewModel.isAudioBook
                                 ? "Resets this book to \(AudioSpeed.spokenLabel(for: AudioSpeed.normal))"
-                                : "Removes book-specific voice and speed, uses global defaults instead"
+                                : BookVoiceSettingsWording.resetToDefaultsHint
                         )
                     }
                 }
@@ -1191,9 +1199,9 @@ struct BookInfoBar: View {
                 .foregroundColor(.orange)
                 .accessibilityElement(children: .combine)
                 // "Sleep timer: 4:59 remaining", or where a timer set for
-                // a place in the book stops playback.
+                // a place in the book stops playback. The label holds the
+                // time, so there is no value to read it again (TODO A10).
                 .accessibilityLabel(viewModel.sleepTimerService.spokenLabel)
-                .accessibilityValue(viewModel.sleepTimerService.formattedRemaining)
             }
         }
         .padding(.horizontal)
@@ -1343,7 +1351,11 @@ private struct JumpToPercentPanel: View {
                     .onChange(of: percentInput) { _, _ in
                         if !errorMessage.isEmpty { errorMessage = "" }
                     }
-                Text("%")
+                // The unit in a word, which VoiceOver reads after the
+                // field: the field is left plain, as the note above says,
+                // so its placeholder, "Percent", names it only while it is
+                // empty, and it opens filled in. It said "%" (TODO A10).
+                Text("percent")
                     .foregroundColor(.secondary)
                 Button("Jump", action: performJump)
                     .keyboardShortcut(.defaultAction)
@@ -1454,26 +1466,30 @@ private struct JumpToTimePanel: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
 
+                // Each unit in a word, which VoiceOver reads after its
+                // field: the fields are left plain, as the note above says,
+                // so their placeholders name them only while empty, and they
+                // open filled in. They said "h", "m", and "s" (TODO A10).
                 TextField("Hours", text: $hoursText)
                     .frame(width: 50)
                     .focused($hoursFocused)
                     .onSubmit(performJump)
                     .onChange(of: hoursText) { _, _ in clearError() }
-                Text("h")
+                Text("hours")
                     .foregroundColor(.secondary)
 
                 TextField("Minutes", text: $minutesText)
                     .frame(width: 50)
                     .onSubmit(performJump)
                     .onChange(of: minutesText) { _, _ in clearError() }
-                Text("m")
+                Text("minutes")
                     .foregroundColor(.secondary)
 
                 TextField("Seconds", text: $secondsText)
                     .frame(width: 50)
                     .onSubmit(performJump)
                     .onChange(of: secondsText) { _, _ in clearError() }
-                Text("s")
+                Text("seconds")
                     .foregroundColor(.secondary)
 
                 Button("Jump", action: performJump)

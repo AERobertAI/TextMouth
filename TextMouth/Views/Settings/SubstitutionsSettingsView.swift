@@ -16,6 +16,8 @@ struct SubstitutionsSettingsView: View {
     @State private var editingRule: SubstitutionRule?
     /// Whether the sheet for adding a new rule is open.
     @State private var showAddRule = false
+    /// Whether Reset to Defaults is asking before it replaces the rules.
+    @State private var showResetConfirmation = false
 
     /// - Parameter service: The rules to show and change: the app's shared
     ///   rules, unless a test supplies its own.
@@ -35,8 +37,11 @@ struct SubstitutionsSettingsView: View {
                 Button("Add Rule") { showAddRule = true }
                     .accessibilityLabel("Add a new substitution rule")
 
-                Button("Reset to Defaults") { service.resetToDefaults() }
+                // Asks first, naming what it replaces: it used to replace
+                // every rule at once (TODO A10).
+                Button("Reset to Defaults") { showResetConfirmation = true }
                     .accessibilityLabel("Reset all rules to factory defaults")
+                    .accessibilityHint(Self.resetHint)
             }
             .padding()
 
@@ -57,7 +62,7 @@ struct SubstitutionsSettingsView: View {
             }
 
             HStack {
-                Text("\(service.rules.count) rules (\(service.rules.filter { $0.isEnabled }.count) enabled)")
+                Text(Self.ruleCountText(rules: service.rules.count, enabled: service.rules.filter { $0.isEnabled }.count))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
@@ -73,6 +78,17 @@ struct SubstitutionsSettingsView: View {
             RepeatedSymbolsSettingsView(service: service)
                 .padding(.horizontal)
                 .padding(.vertical, 8)
+        }
+        .alert(Self.resetConfirmationTitle, isPresented: $showResetConfirmation) {
+            Button("Reset", role: .destructive) {
+                service.resetToDefaults()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(Self.resetConfirmationMessage(
+                ruleCount: service.rules.count,
+                defaultCount: TextSubstitutionService.defaultRules.count
+            ))
         }
         .sheet(isPresented: $showAddRule) {
             SubstitutionRuleEditorView(
@@ -213,6 +229,27 @@ extension SubstitutionsSettingsView {
     /// What VoiceOver says after a delete, such as "Mr. deleted".
     nonisolated static func deletedAnnouncement(ruleName: String) -> String {
         "\(ruleName) deleted"
+    }
+
+    /// Reset to Defaults' hint: what it does, and that it asks first.
+    nonisolated static let resetHint = "Asks first, then replaces every rule with TextMouth's default rules."
+    /// The title of the alert Reset to Defaults asks with.
+    nonisolated static let resetConfirmationTitle = "Reset Text Rules to Defaults?"
+
+    /// What the alert asks about: how many rules the list holds and how
+    /// many it will hold, as in "The 15 rules in the list will be replaced
+    /// by TextMouth's 16 default rules. Rules you added or changed will be
+    /// lost."
+    nonisolated static func resetConfirmationMessage(ruleCount: Int, defaultCount: Int) -> String {
+        let rules = CountWording.phrase(ruleCount, singular: "rule", plural: "rules")
+        let defaults = CountWording.phrase(defaultCount, singular: "default rule", plural: "default rules")
+        return "The \(rules) in the list will be replaced by TextMouth's \(defaults). Rules you added or changed will be lost."
+    }
+
+    /// The footer's count of the rules: "1 rule (1 enabled)", "15 rules (12
+    /// enabled)" (TODO A10; it said "1 rules").
+    nonisolated static func ruleCountText(rules: Int, enabled: Int) -> String {
+        "\(CountWording.phrase(rules, singular: "rule", plural: "rules")) (\(enabled) enabled)"
     }
 
     /// The footer's help on reordering, naming both ways to do it and the
@@ -494,7 +531,7 @@ struct SubstitutionRuleEditorView: View {
                 TextField("Replacement (empty to skip)", text: $rule.replacement)
                     .font(.system(.body, design: .monospaced))
                     .accessibilityLabel("Replacement text. Leave empty to skip matched text.")
-                    .accessibilityHint("For regex, use backslash 1, backslash 2, etc. for capture groups")
+                    .accessibilityHint(Self.replacementHint)
 
                 if let error = patternError {
                     Text(error)
@@ -575,6 +612,16 @@ struct SubstitutionRuleEditorView: View {
         guard !rule.pattern.isEmpty, !testInput.isEmpty else { return }
         testOutput = Self.testResult(of: rule, on: testInput)
     }
+
+    /// The replacement field's hint: how a regular expression's replacement
+    /// puts back what a group of its pattern matched. The replacement is an
+    /// `NSRegularExpression` template, which reads a dollar sign and a
+    /// group's number; a backslash there escapes the next character, so
+    /// "\1", which the hint said until TODO A10, gives a plain "1". The
+    /// dollar sign is named in words as well, since VoiceOver speaks "$1" as
+    /// "one dollar".
+    nonisolated static let replacementHint =
+        "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched."
 
     /// What `rule` alone makes of `text`, as the Test button shows it.
     ///

@@ -211,6 +211,14 @@ enum DuplicateFinderWording {
     /// What the sheet shows when a scan finds nothing.
     static let noDuplicates = "No duplicates found."
 
+    /// The scan button's title.
+    static let scanTitle = "Scan for Duplicates"
+
+    /// What the sheet shows before its first scan, naming the scan button
+    /// by its title, which reads as what to do; it said "press Scan", a
+    /// button with another name (TODO A10).
+    static let notScannedYet = "Check the criteria above, then \(scanTitle)."
+
     /// What a scan found, read from its results and spoken when the scan
     /// ends: "No duplicates found with the selected criteria", "1 duplicate
     /// group found", "3 duplicate groups found".
@@ -297,7 +305,7 @@ struct DuplicateFinderView: View {
                 }
 
                 HStack {
-                    Button(isLoadingISBNs ? "Loading ISBNs..." : "Scan for Duplicates") {
+                    Button(isLoadingISBNs ? "Loading ISBNs..." : DuplicateFinderWording.scanTitle) {
                         performScan()
                     }
                     .disabled(activeFilters.isEmpty || isLoadingISBNs)
@@ -329,7 +337,7 @@ struct DuplicateFinderView: View {
             // Results
             if !hasScanned {
                 Spacer()
-                Text("Select match criteria above and press Scan.")
+                Text(DuplicateFinderWording.notScannedYet)
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity)
                 Spacer()
@@ -342,7 +350,13 @@ struct DuplicateFinderView: View {
                 Spacer()
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
+                    // Keep every group and book row alive while the sheet is
+                    // open, as the headings and bookmarks panels do:
+                    // LazyVStack recycles rows out of view, which can
+                    // invalidate VoiceOver's current element and send its
+                    // cursor back toward the top (TODO A10). A library's
+                    // duplicates are a few rows each, so this costs little.
+                    VStack(alignment: .leading, spacing: 0) {
                         ForEach(scanResults) { group in
                             // Group header
                             VStack(alignment: .leading, spacing: 2) {

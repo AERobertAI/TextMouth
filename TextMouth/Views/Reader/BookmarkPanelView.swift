@@ -195,7 +195,7 @@ struct BookmarkPanelView: View {
                 VStack(spacing: 8) {
                     Text("No bookmarks yet.")
                         .foregroundColor(.secondary)
-                    Text("Press Cmd+B to add a bookmark at the current position.")
+                    Text(Self.emptyListHelp(keys: Self.addBookmarkKeysInForce()))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -441,6 +441,29 @@ extension BookmarkPanelView {
     /// Rebuild the list's rows from the reader's bookmarks, in list order.
     private func rebuildRows() {
         rows = Self.listOrder(of: viewModel.bookmarks).map(bookmarkRow(for:))
+    }
+}
+
+// MARK: - The Empty List
+
+extension BookmarkPanelView {
+    /// The help under "No bookmarks yet.": what adds one, by the keys in
+    /// force for adding a bookmark, in words, which a braille display shows
+    /// as words rather than as signs, as in "Command + B adds a bookmark at
+    /// the current position."; or, while that command has no key, by the
+    /// Add Bookmark button above. It used to say "Press Cmd+B", whatever the
+    /// key was (TODO A10).
+    nonisolated static func emptyListHelp(keys: [KeyBinding]) -> String {
+        guard !keys.isEmpty else { return "Add Bookmark adds one at the current position." }
+        return "\(KeyBinding.accessibleDisplayString(for: keys)) adds a bookmark at the current position."
+    }
+
+    /// The keys in force for adding a bookmark (the Bookmarks menu's Toggle
+    /// Bookmark), as the app's preferences give them, which the shortcut
+    /// manager keeps: read when the empty list draws, so a key changed in
+    /// Settings is the one named.
+    static func addBookmarkKeysInForce() -> [KeyBinding] {
+        KeyboardShortcutManager.bindingsPreference.read(from: TextMouthRuntime.current.preferences)[.addBookmark] ?? []
     }
 }
 
@@ -695,14 +718,19 @@ struct BookmarkRow: View {
 
             Spacer()
 
-            Text(bookmark.dateCreated, style: .date)
+            // The same words the row's label ends with (TODO A10).
+            Text(bookmark.dateText)
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
     }
 
+    /// What VoiceOver says the row's button does: its result, never a
+    /// gesture or a key, since VoiceOver, a braille display, and the
+    /// keyboard each do it their own way (TODO A10; it said "Double-tap to
+    /// navigate to this bookmark").
     var accessibilityHintText: String {
-        "Double-tap to navigate to this bookmark"
+        "Goes to this bookmark and closes the list."
     }
 
     /// Spoken label shared with the Bookmarks rotor.

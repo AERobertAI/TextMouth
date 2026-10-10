@@ -5,6 +5,11 @@ import SwiftUI
 
 /// Toolbar shown at the top of the library when edit mode is active.
 /// Provides batch actions and selection controls that work reliably with VoiceOver.
+///
+/// It has no way out of edit mode of its own: the window's toolbar button
+/// ("Exit edit mode") and the Library menu's Edit Mode, Command-E, are the
+/// ways out. A Done here did the same as the toolbar's button, a second
+/// control for one command (TODO A10).
 struct EditModeBar: View {
     let selectedCount: Int
     let totalCount: Int
@@ -15,7 +20,6 @@ struct EditModeBar: View {
     let onDeselectAll: () -> Void
     let onMove: () -> Void
     let onRemove: () -> Void
-    let onDone: () -> Void
     /// Add to Reading List and Remove from Reading List for the selected
     /// books, beside Move (FR09), by membership as a selection's row offers
     /// them, or the one the view suggests, dimmed, while none is selected
@@ -46,7 +50,7 @@ struct EditModeBar: View {
                     onSelectAll()
                 }
             }
-            .accessibilityLabel(selectedCount == totalCount ? "Deselect all books" : "Select all \(totalCount) books")
+            .accessibilityLabel(Self.selectAllLabel(selectedCount: selectedCount, totalCount: totalCount))
 
             Button("Move") { onMove() }
                 .disabled(selectedCount == 0)
@@ -65,16 +69,26 @@ struct EditModeBar: View {
                 .disabled(selectedCount == 0)
                 .accessibilityLabel(removal.accessibilityLabel)
                 .accessibilityHint(removal.accessibilityHint)
-
-            Button("Done") { onDone() }
-                .fontWeight(.semibold)
-                .accessibilityLabel("Exit edit mode")
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(Color.accentColor.opacity(0.1))
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Edit mode, \(selectedCount) of \(totalCount) books selected")
+        .accessibilityLabel(Self.accessibilityLabel(selectedCount: selectedCount, totalCount: totalCount))
+    }
+
+    /// What VoiceOver calls the bar: "Edit mode, 0 of 1 book selected",
+    /// "Edit mode, 2 of 5 books selected", the noun agreeing with the books
+    /// listed (TODO A10; it said "0 of 1 books").
+    nonisolated static func accessibilityLabel(selectedCount: Int, totalCount: Int) -> String {
+        "Edit mode, \(CountWording.part(selectedCount, of: totalCount, singular: "book", plural: "books")) selected"
+    }
+
+    /// What VoiceOver calls Select All, or Deselect All once every book is
+    /// selected: "Select all 1 book", "Select all 12 books", "Deselect all
+    /// books" (TODO A10; it said "Select all 1 books").
+    nonisolated static func selectAllLabel(selectedCount: Int, totalCount: Int) -> String {
+        selectedCount == totalCount ? "Deselect all books" : "Select all \(CountWording.books(totalCount))"
     }
 }
 
@@ -319,8 +333,13 @@ struct FolderRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Self.accessibilityLabel(name: folder.name, bookCount: bookCount, feedCounts: feedCounts, feedsBelow: feedsBelow))
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint("Double-tap to open folder")
+        .accessibilityHint(Self.accessibilityHint)
     }
+
+    /// What VoiceOver says the row does: its result, never a gesture or a
+    /// key, since VoiceOver, a braille display, and the keyboard each do it
+    /// their own way (TODO A10; it said "Double-tap to open folder").
+    nonisolated static let accessibilityHint = "Opens the folder."
 
     /// What the row shows after the folder's name: its books counted, "12
     /// books", with the feeds below it beside them, "3 books, 2 feeds", or
@@ -499,9 +518,7 @@ struct BookRow: View {
         // the row keeps its identity, and VoiceOver its place on the row,
         // when its own command adds the book or takes it off.
         .accessibilityValue(rowAccessibilityValue ?? "")
-        .accessibilityHint(isEditMode
-            ? "Double-tap to \(isEditSelected ? "deselect" : "select")"
-            : "Press Enter to open, Command I for info")
+        .accessibilityHint(Self.accessibilityHint(isEditMode: isEditMode, isEditSelected: isEditSelected))
         .accessibilityAddTraits(isEditSelected ? [.isSelected] : [])
         .accessibilityActions {
             // First, so reordering a list takes the fewest keys (FR09).
@@ -521,6 +538,17 @@ struct BookRow: View {
                 Button(command.title) { performReadingListCommand(command) }
             }
         }
+    }
+
+    /// What VoiceOver says the row's default action does: in edit mode it
+    /// selects the book, or deselects it, and otherwise it opens the book
+    /// (`LibraryBookListRow`). The hint says the result, never a gesture or
+    /// a key, since VoiceOver, a braille display, and the keyboard each do
+    /// it their own way (TODO A10; it said "Double-tap to select" and "Press
+    /// Enter to open, Command I for info").
+    nonisolated static func accessibilityHint(isEditMode: Bool, isEditSelected: Bool) -> String {
+        guard isEditMode else { return "Opens the book." }
+        return isEditSelected ? "Deselects this book." : "Selects this book."
     }
 
     /// The names of the row's own VoiceOver actions, in the order VoiceOver

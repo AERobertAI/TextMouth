@@ -327,9 +327,6 @@ struct LibraryView: View {
                             clearAllSelections()
                         }
                     },
-                    onDone: {
-                        clearAllSelections()
-                    },
                     // Add to and Remove from Reading List beside Move (FR09).
                     readingListCommands: editBarReadingListCommands,
                     onReadingListCommand: performReadingListCommand
@@ -459,9 +456,7 @@ struct LibraryView: View {
                     Label(isEditMode ? "Done" : "Edit", systemImage: isEditMode ? "checkmark.circle.fill" : "checkmark.circle")
                 }
                 .accessibilityLabel(isEditMode ? "Exit edit mode" : "Enter edit mode")
-                .accessibilityHint(isEditMode
-                    ? "Exits edit mode. \(editSelection.count) books selected."
-                    : "Enter edit mode to select multiple books for moving or deleting")
+                .accessibilityHint(Self.editModeButtonHint(isEditMode: isEditMode, selectedCount: editSelection.count))
 
                 if category == .folders {
                     Button {
@@ -1419,6 +1414,17 @@ struct LibraryView: View {
         return closingOnSuccess(outcome, close: close)
     }
 
+    /// The hint of the toolbar's Edit button, which enters edit mode and
+    /// leaves it: what pressing it does, and, while in edit mode, how many
+    /// books are selected, "1 book selected" or "3 books selected". A hint
+    /// says the result, not what to do (TODO A10; it said "Enter edit mode
+    /// to select multiple books for moving or deleting", and "1 books").
+    nonisolated static func editModeButtonHint(isEditMode: Bool, selectedCount: Int) -> String {
+        isEditMode
+            ? "Exits edit mode. \(CountWording.books(selectedCount)) selected."
+            : "Enters edit mode, for selecting several books to move or remove."
+    }
+
     /// Clear all selections (both native and edit mode) and exit edit mode
     private func clearAllSelections() {
         LibrarySelectionPolicy.clear(
@@ -1570,6 +1576,10 @@ struct LibraryView: View {
         return target == .continueListening ? nil : target
     }
 
+    /// The Import Book button's hint. It named four formats, which left out
+    /// most of those TextMouth reads, its audiobooks among them (TODO A10).
+    nonisolated static let importBookHint = "Opens a file picker to import books in any format TextMouth reads."
+
     /// The Import Book button: the initial VoiceOver target when
     /// `focusTarget` says so.
     private func importBookButton(focusTarget: LibraryFocusTarget?) -> some View {
@@ -1579,7 +1589,7 @@ struct LibraryView: View {
             Label("Import Book", systemImage: "plus")
         }
         .accessibilityLabel("Import a book file")
-        .accessibilityHint("Opens a file picker to import EPUB, text, markdown, or HTML files")
+        .accessibilityHint(Self.importBookHint)
         .modifier(LibraryFocusTargetModifier(
             isEnabled: focusTarget == .importButton
         ))

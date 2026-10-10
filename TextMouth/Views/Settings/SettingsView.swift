@@ -1,60 +1,143 @@
 import SwiftUI
 import AVFoundation
 
+/// The Settings window: one tab for each of `SettingsTab`'s cases, in their
+/// order, each shown as `SettingsTabPage` shows it.
 struct SettingsView: View {
-    @EnvironmentObject var settingsViewModel: SettingsViewModel
+    /// The window's size, which every tab shares and none can change. Wide
+    /// enough for the nine tabs' toolbar to show every one, so none hides in
+    /// the toolbar's overflow menu. A tab taller than this scrolls
+    /// (`SettingsTab.scrollsAsAWhole`, TODO A10).
+    nonisolated static let windowSize = CGSize(width: 700, height: 540)
 
     var body: some View {
         TabView {
-            VoiceSettingsView()
-                .tabItem {
-                    Label("Voice", systemImage: "speaker.wave.2")
-                }
-
-            PlaybackSettingsView()
-                .tabItem {
-                    Label("Playback", systemImage: "play.circle")
-                }
-
-            KeyboardShortcutsSettingsView()
-                .tabItem {
-                    Label("Shortcuts", systemImage: "keyboard")
-                }
-
-            SubstitutionsSettingsView()
-                .tabItem {
-                    Label("Text", systemImage: "textformat.abc")
-                }
-
-            SoundEffectsSettingsView()
-                .tabItem {
-                    Label("Sounds", systemImage: "speaker.badge.exclamationmark")
-                }
-
-            ReadingStatsView()
-                .tabItem {
-                    Label("Stats", systemImage: "chart.bar")
-                }
-
-            // The podcast and article feeds' settings (FR03).
-            FeedSettingsView()
-                .tabItem {
-                    Label(FeedSettingsWording.tabTitle, systemImage: "dot.radiowaves.up.forward")
-                }
-
-            StorageSettingsView()
-                .tabItem {
-                    Label("Storage", systemImage: "folder.badge.gearshape")
-                }
-
-            MiscellaneousSettingsView()
-                .tabItem {
-                    Label("Miscellaneous", systemImage: "gearshape.2")
-                }
+            ForEach(SettingsTab.allCases) { tab in
+                SettingsTabPage(tab: tab)
+                    .tabItem {
+                        Label(tab.title, systemImage: tab.systemImage)
+                    }
+            }
         }
-        // Wide enough for the nine tabs' toolbar to show every one, so none
-        // hides in the toolbar's overflow menu.
-        .frame(width: 700, height: 540)
+        .frame(width: Self.windowSize.width, height: Self.windowSize.height)
+    }
+}
+
+/// The tabs of the Settings window, in the order its toolbar shows them.
+///
+/// The window is a fixed size (`SettingsView.windowSize`), and a macOS form
+/// in its default, columns style does not scroll, so until TODO A10 a tab
+/// taller than the window clipped the controls below its bottom edge, where
+/// neither the keyboard nor VoiceOver could reach them: the Shortcuts tab
+/// was nearly eight times the window's height, and Playback, Storage, and
+/// Miscellaneous (with its gesture on) were taller than it too. Every tab
+/// drawn as a form now scrolls as a whole (`SettingsTabPage`);
+/// `SettingsTabFitTests` measures each tab against the window, so a tab
+/// that outgrows it unseen fails a test.
+enum SettingsTab: CaseIterable, Identifiable {
+    case voice
+    case playback
+    case shortcuts
+    case text
+    case sounds
+    case stats
+    /// The podcast and article feeds' settings (FR03).
+    case feeds
+    case storage
+    case miscellaneous
+
+    var id: Self { self }
+
+    /// The tab's name in the window's toolbar, which VoiceOver reads.
+    var title: String {
+        switch self {
+        case .voice: return "Voice"
+        case .playback: return "Playback"
+        case .shortcuts: return "Shortcuts"
+        case .text: return "Text"
+        case .sounds: return "Sounds"
+        case .stats: return "Stats"
+        case .feeds: return FeedSettingsWording.tabTitle
+        case .storage: return "Storage"
+        case .miscellaneous: return "Miscellaneous"
+        }
+    }
+
+    /// The SF Symbol drawn above the tab's name.
+    var systemImage: String {
+        switch self {
+        case .voice: return "speaker.wave.2"
+        case .playback: return "play.circle"
+        case .shortcuts: return "keyboard"
+        case .text: return "textformat.abc"
+        case .sounds: return "speaker.badge.exclamationmark"
+        case .stats: return "chart.bar"
+        case .feeds: return "dot.radiowaves.up.forward"
+        case .storage: return "folder.badge.gearshape"
+        case .miscellaneous: return "gearshape.2"
+        }
+    }
+
+    /// Whether the tab scrolls as a whole when it is taller than the
+    /// window: every tab drawn as a form, which is every tab but Text. The
+    /// Text tab's rule list fills the room its other controls leave and
+    /// scrolls by itself, and a list inside a scrolling form would collapse
+    /// to nothing.
+    var scrollsAsAWhole: Bool {
+        self != .text
+    }
+}
+
+/// One tab's controls, as the window and the tests that measure it draw
+/// them: the one place a tab is matched with its view.
+struct SettingsTabContent: View {
+    /// The tab whose controls to draw.
+    let tab: SettingsTab
+
+    var body: some View {
+        switch tab {
+        case .voice: VoiceSettingsView()
+        case .playback: PlaybackSettingsView()
+        case .shortcuts: KeyboardShortcutsSettingsView()
+        case .text: SubstitutionsSettingsView()
+        case .sounds: SoundEffectsSettingsView()
+        case .stats: ReadingStatsView()
+        case .feeds: FeedSettingsView()
+        case .storage: StorageSettingsView()
+        case .miscellaneous: MiscellaneousSettingsView()
+        }
+    }
+}
+
+/// One tab as the Settings window shows it.
+///
+/// A tab that scrolls as a whole is drawn in the grouped form style, which
+/// on macOS puts the form in a scroll view exactly the width of the window,
+/// with each section in a box: every control can be scrolled to, and Tab and
+/// VoiceOver scroll it into view, in the order and under the labels it had.
+/// A tab that fits shows no scroll bar. The grouped style also lays each
+/// row out on its own: the columns style lines every row's controls up on
+/// one label column, which made the Shortcuts tab 223 points wider than any
+/// width it was given, so it was clipped at both sides as well as below.
+///
+/// Toggles stay checkboxes, as TextMouth's settings have always drawn and
+/// spoken them, and text fields keep their borders; the grouped style alone
+/// would make the toggles switches and draw the number fields as bare
+/// numbers. The style reaches any form in a sheet such a tab presents; none
+/// presents one.
+struct SettingsTabPage: View {
+    /// The tab to show.
+    let tab: SettingsTab
+
+    var body: some View {
+        if tab.scrollsAsAWhole {
+            SettingsTabContent(tab: tab)
+                .formStyle(.grouped)
+                .toggleStyle(.checkbox)
+                .textFieldStyle(.roundedBorder)
+        } else {
+            SettingsTabContent(tab: tab)
+        }
     }
 }
 
@@ -107,8 +190,10 @@ struct VoiceSettingsView: View {
 
             Section {
                 VStack(alignment: .leading, spacing: 8) {
+                    // The speed for the eye; VoiceOver hears it once, as
+                    // the slider's value (TODO A10).
                     Text("Default Speed: \(Int(settingsViewModel.wordsPerMinute)) WPM")
-                        .accessibilityLabel("Default speed: \(Int(settingsViewModel.wordsPerMinute)) words per minute")
+                        .accessibilityHidden(true)
 
                     Slider(
                         value: $settingsViewModel.wordsPerMinute,
@@ -117,7 +202,9 @@ struct VoiceSettingsView: View {
                     ) {
                         Text("Words per minute")
                     }
-                    .accessibilityLabel("Speed slider")
+                    // VoiceOver says the control's kind itself, so the label
+                    // names the setting alone (TODO A10).
+                    .accessibilityLabel("Default speed")
                     .accessibilityValue("\(Int(settingsViewModel.wordsPerMinute)) words per minute")
 
                     Text("Default speed for new books. Each book can override this with its own speed.")
@@ -130,8 +217,10 @@ struct VoiceSettingsView: View {
 
             Section {
                 VStack(alignment: .leading, spacing: 8) {
+                    // The pitch for the eye; VoiceOver hears it once, as the
+                    // slider's value (TODO A10).
                     Text("Default Pitch: \(SpeechService.pitchLabel(settingsViewModel.pitchMultiplier))")
-                        .accessibilityLabel("Default pitch: \(SpeechService.pitchLabel(settingsViewModel.pitchMultiplier))")
+                        .accessibilityHidden(true)
 
                     Slider(
                         value: $settingsViewModel.pitchMultiplier,
@@ -140,7 +229,7 @@ struct VoiceSettingsView: View {
                     ) {
                         Text("Pitch")
                     }
-                    .accessibilityLabel("Pitch slider")
+                    .accessibilityLabel("Default pitch")
                     .accessibilityValue(SpeechService.pitchLabel(settingsViewModel.pitchMultiplier))
 
                     Text("Default pitch for new books. 1.0 is normal. Each book can override this.")
@@ -247,8 +336,10 @@ struct PlaybackSettingsView: View {
 
                     if settingsViewModel.rewindSmartMode {
                         VStack(alignment: .leading, spacing: 4) {
+                            // The pause for the eye; VoiceOver hears it
+                            // once, as the stepper's value (TODO A10).
                             Text("Minimum pause: \(Int(settingsViewModel.rewindSmartThreshold)) seconds")
-                                .accessibilityLabel("Minimum pause before rewinding: \(Int(settingsViewModel.rewindSmartThreshold)) seconds")
+                                .accessibilityHidden(true)
                             // The stepper's own label is empty: a hidden
                             // title would be spoken before the accessibility
                             // label ("Seconds, Minimum pause threshold").
@@ -276,8 +367,10 @@ struct PlaybackSettingsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     let level = Int(settingsViewModel.punctuationPauseLevel)
                     let levelName = ["Off", "Subtle", "Moderate", "Heavy"][min(level, 3)]
+                    // The level for the eye; VoiceOver hears it once, as the
+                    // slider's value (TODO A10).
                     Text("Punctuation pauses: \(levelName)")
-                        .accessibilityLabel("Punctuation pause level: \(levelName)")
+                        .accessibilityHidden(true)
 
                     Slider(
                         value: $settingsViewModel.punctuationPauseLevel,
@@ -302,9 +395,12 @@ struct PlaybackSettingsView: View {
                     .accessibilityLabel("Auto-play after navigation")
                     .accessibilityHint("When enabled, playback starts automatically after jumping to a heading, bookmark, or search result")
 
+                // The hint for the eye; VoiceOver hears it once, as the
+                // checkbox's hint (TODO A10).
                 Text("Automatically start playing when you navigate to a heading, bookmark, or search result.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
             } header: {
                 Text("Navigation")
             }
@@ -330,13 +426,11 @@ struct PlaybackSettingsView: View {
 
             Section {
                 VStack(alignment: .leading, spacing: 4) {
-                    if settingsViewModel.sleepFadeOutDuration > 0 {
-                        Text("Fade out: \(Int(settingsViewModel.sleepFadeOutDuration)) seconds")
-                            .accessibilityLabel("Sleep timer fade out: \(Int(settingsViewModel.sleepFadeOutDuration)) seconds")
-                    } else {
-                        Text("Fade out: Off")
-                            .accessibilityLabel("Sleep timer fade out: off, playback stops instantly")
-                    }
+                    // The fade for the eye; VoiceOver hears it once, as the
+                    // stepper's value, and the caption below says what off
+                    // does (TODO A10).
+                    Text("Fade out: \(Self.fadeOutText(settingsViewModel.sleepFadeOutDuration))")
+                        .accessibilityHidden(true)
                     // The stepper's own label is empty: a hidden title
                     // would be spoken before the accessibility label
                     // ("Seconds, Fade out duration").
@@ -348,7 +442,7 @@ struct PlaybackSettingsView: View {
                         EmptyView()
                     }
                     .accessibilityLabel("Fade out duration")
-                    .accessibilityValue(settingsViewModel.sleepFadeOutDuration > 0 ? "\(Int(settingsViewModel.sleepFadeOutDuration)) seconds" : "Off")
+                    .accessibilityValue(Self.fadeOutText(settingsViewModel.sleepFadeOutDuration))
 
                     Text("Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.")
                         .font(.caption)
@@ -418,6 +512,13 @@ struct PlaybackSettingsView: View {
             TranscriptionSettingsSection()
         }
         .padding()
+    }
+
+    /// The sleep timer's fade as the Playback tab shows it and its stepper
+    /// speaks it: "Off" for none, else its whole seconds counted, "1
+    /// second", "3 seconds" (TODO A10; it said "1 seconds").
+    nonisolated static func fadeOutText(_ seconds: Double) -> String {
+        seconds > 0 ? CountWording.seconds(Int(seconds)) : "Off"
     }
 }
 

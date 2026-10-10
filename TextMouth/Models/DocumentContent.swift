@@ -342,9 +342,12 @@ enum SleepTimerDuration: Hashable {
     /// behavior.
     case endOfBook
 
+    /// The timer's name, as its preset button, its announcements ("Timer
+    /// set for 1 minute."), and the reader's status show it: its minutes
+    /// counted (TODO A10; it said "1 minutes"), or the place it stops at.
     var displayName: String {
         switch self {
-        case .minutes(let m): return "\(m) minutes"
+        case .minutes(let m): return CountWording.minutes(m)
         case .endOfHeading: return "End of heading"
         case .endOfBook: return "End of book"
         }
@@ -422,10 +425,10 @@ enum TimeFormatting {
             parts.append(CountWording.phrase(hours, singular: "hour", plural: "hours"))
         }
         if minutes > 0 {
-            parts.append(CountWording.phrase(minutes, singular: "minute", plural: "minutes"))
+            parts.append(CountWording.minutes(minutes))
         }
         if secs > 0 || parts.isEmpty {
-            parts.append(CountWording.phrase(secs, singular: "second", plural: "seconds"))
+            parts.append(CountWording.seconds(secs))
         }
         return parts.joined(separator: ", ")
     }

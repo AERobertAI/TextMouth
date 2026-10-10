@@ -71,21 +71,21 @@ final class FeatureModelProductionTests: XCTestCase {
         let bookmark = Bookmark(number: 3, chapterIndex: 1, characterOffset: 0, label: "Important")
         XCTAssertEqual(
             bookmark.accessibilityLabel(headingText: "The Battle"),
-            "Bookmark 3, The Battle, Note: Important"
+            "Bookmark 3, The Battle, Note: Important, added \(bookmark.dateText)"
         )
     }
 
     func testBookmarkAccessibilityOmitsEmptyNote() {
         let bookmark = Bookmark(number: 3, chapterIndex: 1, characterOffset: 0)
-        XCTAssertEqual(bookmark.accessibilityLabel(headingText: "The Battle"), "Bookmark 3, The Battle")
+        XCTAssertEqual(bookmark.accessibilityLabel(headingText: "The Battle"), "Bookmark 3, The Battle, added \(bookmark.dateText)")
     }
 
     /// Without a known heading the location is omitted; the model never
     /// substitutes a content-unit number.
     func testBookmarkAccessibilityOmitsUnknownHeading() {
         let bookmark = Bookmark(number: 3, chapterIndex: 1, characterOffset: 0, label: "Important")
-        XCTAssertEqual(bookmark.accessibilityLabel(headingText: nil), "Bookmark 3, Note: Important")
-        XCTAssertEqual(bookmark.accessibilityLabel(headingText: "   "), "Bookmark 3, Note: Important")
+        XCTAssertEqual(bookmark.accessibilityLabel(headingText: nil), "Bookmark 3, Note: Important, added \(bookmark.dateText)")
+        XCTAssertEqual(bookmark.accessibilityLabel(headingText: "   "), "Bookmark 3, Note: Important, added \(bookmark.dateText)")
     }
 
     func testLastOpenedBookIDRoundTripsAsUUIDString() {
@@ -126,10 +126,10 @@ final class FeatureModelProductionTests: XCTestCase {
         XCTAssertEqual(HeadingNavigatorView.levelsPresent(in: sameLevel).count, 1)
     }
 
-    /// The filter offers "H1–Hn" for every level present but the deepest,
-    /// whose choice would show every heading as "All" does: the same filter
-    /// twice before VoiceOver, and two choices with one tag for a book with
-    /// level-6 headings.
+    /// The filter offers "Level 1" or "Levels 1 to n" for every level
+    /// present but the deepest, whose choice would show every heading as
+    /// "All levels" does: the same filter twice before VoiceOver, and two
+    /// choices with one tag for a book with level-6 headings.
     func testHeadingFilterOffersNoChoiceThatDuplicatesAll() {
         XCTAssertEqual(HeadingNavigatorView.filterLevels(for: [1, 2, 3, 4]), [1, 2, 3])
         XCTAssertEqual(HeadingNavigatorView.filterLevels(for: [1, 3]), [1])
