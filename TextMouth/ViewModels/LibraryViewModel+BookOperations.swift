@@ -250,15 +250,26 @@ extension LibraryViewModel {
     /// after a failure (TODO A07). A failed move puts back any package that
     /// already moved and leaves the library as it was. The packages move off
     /// the main actor (`performLibraryTransition`, PERF14).
+    ///
+    /// A feed item among `books` stays where it is, in its feed's folder
+    /// (FR11), and once the others have moved VoiceOver hears which items
+    /// were left (`LibraryTransitionWording.feedItemsLeft(titles:)`), so a
+    /// mixed selection's move never closes as if every item had moved.
     func moveBooksReturningOutcome(_ books: [Book], toFolder path: String) async -> OperationOutcome {
+        let left = books.filter(\.isFeedItem)
         var proposed = library
-        let ids = Set(books.map(\.id))
+        let ids = Set(books.filter { !$0.isFeedItem }.map(\.id))
         for index in proposed.books.indices where ids.contains(proposed.books[index].id) {
             proposed.books[index].folderPath = path
         }
         do {
-            try await performLibraryTransition(proposed, affectedBookIDs: ids)
-            lastMovedFolderPath = path
+            if !ids.isEmpty {
+                try await performLibraryTransition(proposed, affectedBookIDs: ids)
+                lastMovedFolderPath = path
+            }
+            if let note = LibraryTransitionWording.feedItemsLeft(titles: left.map(\.title)) {
+                VoiceOverAnnouncer.announce(note)
+            }
             return .success(nil)
         } catch {
             return .failure("Could not move books", error)
@@ -1064,5 +1075,31 @@ enum LibraryTransitionWording {
     static func completion(movingPackagesOf count: Int) -> String? {
         guard count >= announcedPackageCount else { return nil }
         return "Done. Moved \(CountWording.books(count))."
+    }
+
+    /// The Move to Folder… command for `targets`, the books a row's commands
+    /// act on: "Move to Folder..." for one book to move, "Move 3 Books to
+    /// Folder..." for several, counting only books of the library's own,
+    /// since a feed item stays in its feed's folder (FR11); nil, so the
+    /// command is not offered, when every target is a feed item.
+    static func moveToFolderTitle(for targets: [Book]) -> String? {
+        let movable = targets.reduce(0) { $1.isFeedItem ? $0 : $0 + 1 }
+        guard movable > 0 else { return nil }
+        return movable > 1 ? "Move \(movable) Books to Folder..." : "Move to Folder..."
+    }
+
+    /// What VoiceOver hears when Move to Folder… leaves feed items titled
+    /// `titles` where they are, as it leaves every episode and article in its
+    /// feed's folder (FR11), naming the first three: "Left “Ep. 368” where it
+    /// is: episodes and articles stay in their feeds."; nil for none.
+    static func feedItemsLeft(titles: [String]) -> String? {
+        guard !titles.isEmpty else { return nil }
+        let shown = titles.prefix(3).map { "“\($0)”" }
+        let rest = titles.count - shown.count
+        let names = rest > 0
+            ? shown.joined(separator: ", ") + ", and \(rest) more"
+            : LibraryCloudWording.list(Array(shown))
+        let place = titles.count == 1 ? "where it is" : "where they are"
+        return "Left \(names) \(place): episodes and articles stay in their feeds."
     }
 }

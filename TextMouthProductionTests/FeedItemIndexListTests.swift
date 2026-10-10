@@ -194,16 +194,28 @@ final class FeedItemIndexListTests: FeedItemIndexTestCase {
     }
 
     /// Moving a selection to a folder moves no feed's item: its package stays
-    /// in its feed's folder and its row keeps its place.
+    /// in its feed's folder, its row keeps its place, and VoiceOver hears
+    /// that it was left where it is (REV10, item 6), rather than nothing.
     @MainActor
     func testAFolderEditMovesNoFeedItem() async throws {
+        /// What VoiceOver was asked to say, in order.
+        @MainActor
+        final class Heard {
+            var messages: [String] = []
+        }
         let item = try makeFeedItem(title: "Stays In Its Feed")
         let model = makeModel(with: [item])
+        let heard = Heard()
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in heard.messages.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
 
-        _ = await model.moveBooksReturningOutcome([item], toFolder: folderPath)
+        let outcome = await model.moveBooksReturningOutcome([item], toFolder: folderPath)
 
+        XCTAssertEqual(outcome, .success(nil))
         XCTAssertEqual(model.bookByID(item.id), item)
         XCTAssertTrue(FileManager.default.fileExists(atPath: item.bookFileURL.path))
+        XCTAssertEqual(heard.messages, ["Left “Stays In Its Feed” where it is: episodes and articles stay in their feeds."])
     }
 
     /// A changed feed link changes the lists, as a book moving between

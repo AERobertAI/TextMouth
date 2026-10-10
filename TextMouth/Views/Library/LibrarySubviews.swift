@@ -765,8 +765,12 @@ struct LibraryBookListRow: View, Equatable {
                 actions.select(book)
             }
         }
-        Button(isMulti ? "Move \(targets.count) Books to Folder..." : "Move to Folder...") {
-            actions.moveToFolder(targets)
+        // Not for feed items alone, which stay in their feeds' folders
+        // (FR11); a mixed selection's move says which items it left.
+        if let moveTitle = LibraryTransitionWording.moveToFolderTitle(for: targets) {
+            Button(moveTitle) {
+                actions.moveToFolder(targets)
+            }
         }
         // Add to Reading List or Remove from Reading List, by membership,
         // also VoiceOver actions (FR09).
