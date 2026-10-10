@@ -160,12 +160,14 @@ enum FeedSettingsWording {
 
     /// Refreshing at launch.
     static let refreshAtLaunch = "Refresh every feed when TextMouth opens"
-    /// Its hint.
-    static let refreshAtLaunchHint = "Checks every feed for new episodes and articles once the library has opened"
+    /// Its hint: a feed the listener unsubscribed from is never checked
+    /// (FR11, branch D).
+    static let refreshAtLaunchHint = "Checks every feed you're subscribed to for new episodes and articles once the library has opened"
     /// Refresh All Feeds Now.
     static let refreshAllNow = "Refresh All Feeds Now"
-    /// Its hint.
-    static let refreshAllNowHint = "Checks every feed now and says what came"
+    /// Its hint, which leaves out the feeds unsubscribed from, as Refresh
+    /// All does (board #1816).
+    static let refreshAllNowHint = "Checks every feed you're subscribed to now and says what came"
     /// What shows, and VoiceOver hears, while every feed is refreshed.
     static let refreshing = "Refreshing all feeds…"
     /// The note under the group's settings, naming the two a feed may have
@@ -185,10 +187,14 @@ enum FeedSettingsWording {
 extension FeedWording {
     /// What VoiceOver hears once every feed has been refreshed because the
     /// listener asked: how many feeds, how many new items, and which feeds
-    /// could not be refreshed. `center` names the new items' kind.
+    /// could not be refreshed. `center` names the new items' kind. With no
+    /// feed checked it says why: there is none, or every feed is one the
+    /// listener unsubscribed from, which is never checked (board #1816).
     @MainActor
     static func refreshedAll(_ summary: FeedRefreshSummary, in center: FeedCenter) -> String {
-        guard !summary.reports.isEmpty else { return "There are no feeds to refresh." }
+        guard !summary.reports.isEmpty else {
+            return center.feeds.isEmpty ? noFeedsToRefresh : everyFeedUnsubscribed
+        }
         let newItems = summary.reports.flatMap { report in
             report.newItemIDs.compactMap { center.store.record(of: report.feedID)?.item($0) }
         }
@@ -202,4 +208,12 @@ extension FeedWording {
         }
         return sentence
     }
+
+    /// What Refresh All Feeds says with no feed in the library.
+    static let noFeedsToRefresh = "There are no feeds to refresh."
+    /// What Refresh All Feeds says when every feed in the library is one
+    /// the listener unsubscribed from, which no refresh checks (FR11,
+    /// branch D; board #1816).
+    static let everyFeedUnsubscribed = "Every feed in your library is unsubscribed, so none was checked. "
+        + "Choose Resubscribe on a feed's row, or in its Feed Info, to check it again."
 }

@@ -136,8 +136,10 @@ extension FeedWording {
             return "Lists every \(items); nothing downloads by itself, and a download stays until you delete it "
                 + "or its days after playing pass."
         case .onlyNewestListed:
+            // A played item still downloaded stays listed, as every
+            // download does (`FeedRecord.listedItems(under:hasFile:)`).
             let played = noun == .article ? "read" : "played"
-            return "Lists the newest \(count), leaving out those you have \(played), and downloads only what you ask for; "
+            return "Lists the newest \(count) you haven't \(played), and every download, and downloads only what you ask for; "
                 + "the others keep their records and come back when you list more."
         }
     }
@@ -176,11 +178,12 @@ extension FeedWording {
     }
 
     /// The line saying when a change of the choice or its number takes
-    /// effect: once it has stayed unchanged for
+    /// effect: the list changes at once, while what downloads or goes
+    /// waits until the change has stayed for
     /// `FeedCenter.itemPolicyQuietTime`, so typing 15 never passes through
     /// 1, and VoiceOver hears it then.
-    static let itemPolicyQuietNote = "A change of List and download takes effect once it has stayed unchanged for "
-        + "ten seconds, and VoiceOver announces it then."
+    static let itemPolicyQuietNote = "The list follows a change of List and download at once; what downloads or goes "
+        + "waits until the change has stayed for ten seconds, and VoiceOver announces it then."
 
     // MARK: Taking Effect
 

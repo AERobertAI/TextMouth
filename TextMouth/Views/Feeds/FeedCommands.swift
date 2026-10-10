@@ -460,9 +460,10 @@ extension FeedWording {
     /// What VoiceOver hears once the feed titled `title`, whose items are
     /// called `noun`, is unsubscribed from (FR11, branch D): checking
     /// stopped, its downloads stay, and what it kept of removed downloads
-    /// was deleted, as `outcome` counts them. "Unsubscribed from Finish It!:
-    /// TextMouth no longer checks it for new episodes; its 2 downloaded
-    /// episodes stay. The places and bookmarks kept for 3 removed downloads
+    /// was deleted, as `outcome` counts them, named as the question named
+    /// it (`unsubscribeMessage`). "Unsubscribed from Finish It!: TextMouth
+    /// no longer checks it for new episodes; its 2 downloaded episodes stay.
+    /// The places, bookmarks, and transcripts kept for 3 removed downloads
     /// were deleted."
     static func unsubscribed(title: String, outcome: FeedUnsubscribeOutcome, noun: ItemNoun) -> String {
         let stays = outcome.downloadCount == 1 ? "stays" : "stay"
@@ -472,9 +473,9 @@ extension FeedWording {
         case 0:
             return stopped
         case 1:
-            return "\(stopped) The place and bookmarks kept for 1 removed download were deleted."
+            return "\(stopped) The place, bookmarks, and transcript kept for 1 removed download were deleted."
         case let count:
-            return "\(stopped) The places and bookmarks kept for \(count) removed downloads were deleted."
+            return "\(stopped) The places, bookmarks, and transcripts kept for \(count) removed downloads were deleted."
         }
     }
 }

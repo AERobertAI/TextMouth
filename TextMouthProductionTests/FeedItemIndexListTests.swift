@@ -215,7 +215,7 @@ final class FeedItemIndexListTests: FeedItemIndexTestCase {
         VoiceOverAnnouncer.poster = { announcement, _ in heard.messages.append(announcement.message) }
         defer { VoiceOverAnnouncer.poster = previousPoster }
 
-        let note = "Left “Stays In Its Feed” where it is: episodes and articles stay in their feeds."
+        let note = "Left “Stays In Its Feed” where it is: episodes and articles stay in their feeds; Move to Library… makes one a book of your library."
         let outcome = await model.moveBooksReturningOutcome([item], toFolder: folderPath)
 
         XCTAssertEqual(outcome, .success(note))

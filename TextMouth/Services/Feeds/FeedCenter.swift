@@ -844,8 +844,11 @@ final class FeedCenter: ObservableObject {
 
     // MARK: A Feed's Own Settings
 
-    /// Sends the feed `feedID`'s downloads to the library folder `folderID`
-    /// from now on; the books it downloaded stay where they are.
+    /// Lists the feed `feedID`'s items in the library folder `folderID` from
+    /// now on, those already downloaded among them: a feed's downloads stay
+    /// in the feed's own folder in the data directory, and the library
+    /// folder only lists them, by the feed's ID (FR11), so all of them
+    /// follow at once, and nothing moves on disk.
     func setFolder(_ folderID: UUID, of feedID: UUID) {
         store.update(feedID) { $0.feed.folderID = folderID }
     }

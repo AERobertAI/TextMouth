@@ -1103,8 +1103,10 @@ enum LibraryTransitionWording {
 
     /// What VoiceOver hears when Move to Folder… leaves feed items titled
     /// `titles` where they are, as it leaves every episode and article in its
-    /// feed's folder (FR11), naming the first three: "Left “Ep. 368” where it
-    /// is: episodes and articles stay in their feeds."; nil for none.
+    /// feed's folder (FR11), naming the first three and the command that
+    /// does move one (FR11, branch D): "Left “Ep. 368” where it is: episodes
+    /// and articles stay in their feeds; Move to Library… makes one a book of
+    /// your library."; nil for none.
     static func feedItemsLeft(titles: [String]) -> String? {
         guard !titles.isEmpty else { return nil }
         let shown = titles.prefix(3).map { "“\($0)”" }
@@ -1113,6 +1115,7 @@ enum LibraryTransitionWording {
             ? shown.joined(separator: ", ") + ", and \(rest) more"
             : LibraryCloudWording.list(Array(shown))
         let place = titles.count == 1 ? "where it is" : "where they are"
-        return "Left \(names) \(place): episodes and articles stay in their feeds."
+        return "Left \(names) \(place): episodes and articles stay in their feeds; "
+            + "\(ShortcutAction.moveToLibrary.title) makes one a book of your library."
     }
 }

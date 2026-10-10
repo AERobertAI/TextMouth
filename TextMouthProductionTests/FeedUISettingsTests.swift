@@ -250,6 +250,35 @@ final class FeedUISettingsTests: XCTestCase {
         ])
     }
 
+    /// With every feed in the library unsubscribed from (FR11, branch D),
+    /// which no refresh checks, Refresh All Feeds says so and how to check
+    /// one again, rather than that there are no feeds; its hints, and
+    /// refreshing at launch's, say they check the feeds subscribed to
+    /// (board #1816).
+    func testRefreshAllWithEveryFeedUnsubscribedSaysSo() async throws {
+        let world = try FeedTestWorld(self, label: "FeedUIRefreshAllUnsubscribed")
+        let item = FeedXML.Item(guid: "ep-1", title: "The first visit", published: world.day(-3), enclosure: "https://atlas.example/1.mp3")
+        world.server.serve("/atlas.xml", .feed(FeedXML.rss(title: "The Tactile Atlas", items: [item])))
+        let feed = try await world.subscribe("/atlas.xml")
+        world.center.unsubscribe(feed.id)
+        var heard: [String] = []
+
+        await world.center.refreshAllSaying { heard.append($0) }
+
+        XCTAssertEqual(heard, [
+            FeedSettingsWording.refreshing,
+            "Every feed in your library is unsubscribed, so none was checked. "
+                + "Choose Resubscribe on a feed's row, or in its Feed Info, to check it again.",
+        ])
+        XCTAssertEqual(world.server.requests(to: "/atlas.xml").count, 1, "an unsubscribed feed was checked")
+        XCTAssertEqual(FeedWording.noFeedsToRefresh, "There are no feeds to refresh.")
+        XCTAssertEqual(FeedSettingsWording.refreshAllNowHint, "Checks every feed you're subscribed to now and says what came")
+        XCTAssertEqual(
+            FeedSettingsWording.refreshAtLaunchHint,
+            "Checks every feed you're subscribed to for new episodes and articles once the library has opened"
+        )
+    }
+
     // MARK: - Helpers
 
     /// A settings model on the sandboxed store `store`, never mirrored to

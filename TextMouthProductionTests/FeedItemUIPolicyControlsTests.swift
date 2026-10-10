@@ -55,7 +55,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         )
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.onlyNewestListed, count: 5, noun: nil),
-            "Lists the newest 5, leaving out those you have played, and downloads only what you ask for; "
+            "Lists the newest 5 you haven't played, and every download, and downloads only what you ask for; "
                 + "the others keep their records and come back when you list more."
         )
         // A feed's own words: its items, and "read" for articles.
@@ -66,7 +66,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         )
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.onlyNewestListed, count: 2, noun: .article),
-            "Lists the newest 2, leaving out those you have read, and downloads only what you ask for; "
+            "Lists the newest 2 you haven't read, and every download, and downloads only what you ask for; "
                 + "the others keep their records and come back when you list more."
         )
         XCTAssertTrue(FeedWording.itemPolicyHint(.everyListedDownloadsByHand, count: 5, noun: .item).hasPrefix("Lists every episode and article;"))
@@ -101,8 +101,8 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         XCTAssertEqual(FeedCenter.itemPolicyQuietTime, .seconds(10))
         XCTAssertEqual(
             FeedWording.itemPolicyQuietNote,
-            "A change of List and download takes effect once it has stayed unchanged for ten seconds, "
-                + "and VoiceOver announces it then."
+            "The list follows a change of List and download at once; what downloads or goes "
+                + "waits until the change has stayed for ten seconds, and VoiceOver announces it then."
         )
         XCTAssertEqual(
             FeedSettingsWording.perFeedNote,
