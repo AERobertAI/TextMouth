@@ -1057,3 +1057,49 @@ ARCHITECTURE wording:
 - **Saves and pause sound:** "The reader's two metadata saves publish through showSavedMetadataInNowPlaying(), only while holdsMediaControls. pause(playingPauseSound:) makes the pause sound only when isPlaybackUnderWay was true before it paused."
 - **SpeechMarkupGuard entry:** "neutralized(_:) also turns each NUL (U+0000), which ends the text for the speech engine and drops the rest of an utterance without a cancel (#1542), into a space, after guarding brackets; every other control character passes, since the offline probe (Scripts/agents/probes/speech-control-character-probe.swift) found none that loses words."
 - **Test support:** "RecordedSoundEffects (IntegrationTestSupport.swift) records the sounds a reader asks for and plays none."
+
+## From the fullsummary agent (feature/full-summary-actions), Oct 10
+
+Not verified (the user should try these by hand):
+The user should try by hand:
+- I twice in the Library.
+- W twice while a book plays.
+- A single I or W after the double-press time stopping a summary.
+- I on another row while a summary speaks.
+- Command-I on a plain folder.
+- Play/Pause during Where Am I? on an audiobook: the button should then say Play, and Stats should count no time.
+- The new menu items with VoiceOver.
+
+Feed Info actually opening from Command-I could not be checked in a test: SwiftUI never presents a sheet on the offscreen test window (my attempt failed), so that choice is pinned by a unit test of a small decision function instead.
+
+Decisions and assumptions:
+- **One press rule for both windows:** `SummaryPress.outcome(pressing:while:sameSubject:)` follows section 3 of the design exactly. A press from another Library row speaks that row's summary (REV07 item 2), and pressing with nothing selected while a row speaks says "Nothing is selected."
+- **Switching to the full summary:** the speech restarts with the full summary, the book stays paused, and no second start sound plays.
+- **Command-I on a plain folder now speaks its full summary**, the closest thing to a sheet's contents. Before, it followed the I rule. The choice is pinned through `LibraryInfoRow.infoCommand(feedInFolder:)` (REV07 item 8).
+- **REV07 item 4:** the speaker now hears cancels as well as finishes. A cancel nobody asked for ends the summary, replaces the synthesizer, and logs `SPEAK_INFO_CANCEL_UNEXPECTED`.
+- **A pause left by Where Am I is settled** (`settlePauseLeftByWhereAmI()`): the listening session ends, a minutes sleep timer's countdown is held, the stop is recorded for rewind-on-resume, and an audiobook shows paused. The session ends when the announcement ends, so its few seconds count as listening, as they do when the book resumes.
+- **Settings order** within Information: Where Am I?, Where Am I? Full Summary, Speak Info, Speak Full Info, Speak Import Progress.
+- **Three older tests needed the new actions,** so their updates went into the first commit to keep every commit green:
+  - The text-field test now presses a double-press binding twice.
+  - Two record tests used "Speak Full Info" as their example of a name no build knows; they now use "Spell Current Word".
+
+**Board finding #1593:** the reader toolbar's Where Am I? button can no longer reach the full summary by quick clicks.
+
+README wording:
+- **Line 55,** last clause of the Command-I sentence: "…and, for a folder, which has no Info sheet, speaks the folder's full summary, as Speak Full Info does (below)."
+- **Line 57,** opening: "Speak Info, the I key or Library menu, Speak Info, speaks the selected row's brief summary in TextMouth's own voice…"
+- **Line 58,** replacing its first four sentences (the "three quick presses" passage): "Speak Full Info, I pressed twice quickly or Library menu, Speak Full Info, speaks the selected row's full summary: the first I starts the brief summary at once, and a second I within the double-press time switches to the full one. A press of I while a summary speaks stops it, as Speak Full Info does while the full one speaks, and I on another row while a summary speaks speaks that row's summary instead. However soon after the last summary, I speaks the brief one: the three-second rule of earlier versions is gone. Where Am I? works the same way in a reader, with W and W twice (Where Am I? Full Summary), the book staying paused until the full summary ends." Keep the rest of that bullet, but change its last sentence to: "The Shortcuts tab lists Speak Info and Speak Full Info under Information, after Where Am I? and Where Am I? Full Summary, and leaves either without a key while you have given its key to another action."
+- **Line 67:** "…speed, Where Am I?, Where Am I? Full Summary, Copy Reading Position…"
+- **Line 104:** "information (Where Am I?, Where Am I? Full Summary, Speak Info, Speak Full Info, and Speak Import Progress)". New bullet: "Where Am I? Full Summary is W twice and Speak Full Info I twice: the first press acts at once as Where Am I? or Speak Info, and the second, within the double-press time, switches to the full summary, so neither key waits, whatever keys you give the pair."
+- **Line 229,** after "…leaves the book paused.": "That pause is a pause like any other: no time after it counts as listening, a sleep timer's countdown waits for Play, and an audiobook's Play/Pause button says Play."
+- **Line 75,** after "…the book stays paused": "as a pause leaves it". Add: "Should it stop a Speak Info summary, the next press speaks, with a fresh start of the voice."
+
+ARCHITECTURE wording:
+- **Where Am I? entry, Owner:** add "which summary it says (whereAmIDetail, brief or full, FR12)".
+- **Where Am I? entry, Who may write it:** "whereAmI(_:) takes Where Am I? (.brief, W) and Where Am I? Full Summary (.full, W twice), both heard by one handler in ReaderViewModel, and does what SummaryPress.outcome (Models/SummaryPress.swift) decides: speak, stop (through cancelWhereAmIIfActive()), or replace the brief summary with the full one, the book still paused and without a second start sound."
+- **Where Am I? entry, How others observe it:** after endWhereAmIWithoutResuming(), add "which settles the pause it leaves (settlePauseLeftByWhereAmI(): session ended, minutes countdown held, stop recorded, an audiobook's isCurrentlyPaused set)".
+- **Where Am I? entry, Files:** add `Models/SummaryPress.swift` and `FullSummaryReaderTests.swift`.
+- **Speak Info entry, Owner:** replace the three-second-rule sentence with: "the announcement speaking (its summary, its row by LibraryInfoRow.id, and its utterance) and a synthesizer made by the factory passed to init(makingSynthesizersWith:), replaced after a cancel nobody asked for (SPEAK_INFO_CANCEL_UNEXPECTED); it follows SummaryPress, as Where Am I? does: a brief press stops a summary, a full press switches the same row's brief summary to the full one and stops the full one, and a press on another row speaks that row's. LibraryInfoSpeechDelegate hands each finish and each cancel over with its utterance (ReportedUtterance)."
+- **Speak Info entry, Who may write it:** "ShortcutAction.speakInfo (I) and speakFullInfo (I twice), and Library > Speak Info and Speak Full Info". Command-I routes by `LibraryInfoRow.infoCommand(feedInFolder:)`, a plain folder getting its full summary.
+- **Keyboard shortcuts entry:** replace "(ShortcutAction.escalates, empty until branch C)" with "(ShortcutAction.escalations: Where Am I? Full Summary escalates Where Am I?, and Speak Full Info escalates Speak Info)".
+- **Duplication note (line 733):** "LibraryInfoSpeaker repeats Where Am I?'s utterance and its handling of the end of one: finishes and cancels by ReportedUtterance, a live check, and a refused synthesizer replaced (isLive/replaceSynthesizer beside isLiveWhereAmIUtterance/replaceWhereAmISynthesizer). One speaker of short announcements could serve both."
