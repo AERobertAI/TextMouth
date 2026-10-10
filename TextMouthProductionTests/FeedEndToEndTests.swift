@@ -12,7 +12,8 @@ import XCTest
 final class FeedEndToEndTests: XCTestCase {
 
     /// An episode, from the refresh that finds it to the deletion of its
-    /// download: it downloads by itself into the feed's folder, opens in a
+    /// download: it downloads by itself into the feed's folder, as the
+    /// default choice's newest-N rule downloads the newest (FR11), opens in a
     /// real reader, is played when the reader reaches its end, which Books
     /// Finished counts, waits while the reader has it open, and has its file
     /// deleted once the reader closes: its item stays, and its package stays
@@ -22,7 +23,6 @@ final class FeedEndToEndTests: XCTestCase {
         let world = try FeedTestWorld(self, label: "FeedEndToEnd", worksOnItsOwn: true, statistics: statistics)
         FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
         FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
-        FeedSettings.autoDownloadPreference.write(true, to: world.preferences)
         FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
         world.server.serve("/audio/2.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(duration: 2), mimeType: "audio/mp4"))
         let old = FeedXML.Item(guid: "ep-1", title: "The first visit", published: world.day(-3))
@@ -32,6 +32,9 @@ final class FeedEndToEndTests: XCTestCase {
 
         await world.start()
         let feed = try await world.subscribe("/feed.xml")
+        // Played before the pass subscribing asked for runs, so the rule
+        // downloads only the episode the refresh brings.
+        world.center.markPlayed("guid:ep-1", of: feed.id)
         world.advance(by: 86_400)
         let summary = await world.center.refreshAll()
         XCTAssertEqual(summary.newItemCount, 1)

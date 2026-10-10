@@ -714,6 +714,9 @@ final class FeedRefresherTests: XCTestCase {
     /// never held back, and the refresh follows.
     func testALaunchRefreshesWithoutHoldingTheLibraryBack() async throws {
         let world = try FeedTestWorld(self, label: "FeedLaunch", worksOnItsOwn: true)
+        // Downloads by hand keep the newest-N rule (FR11) out of this test
+        // of refreshing.
+        FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
         let feed = try savedSubscription(in: world, at: "/feed.xml")
         var slow = StubResponse.feed(FeedXML.rss(items: [FeedXML.Item(guid: "ep-1", title: "Episode 1")]))
         slow.pause = 0.3
@@ -737,6 +740,9 @@ final class FeedRefresherTests: XCTestCase {
     func testTheLaunchRefreshCanBeTurnedOff() async throws {
         let world = try FeedTestWorld(self, label: "FeedNoLaunch", worksOnItsOwn: true)
         FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        // Downloads by hand keep the newest-N rule (FR11) out of this test
+        // of refreshing.
+        FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
         let feed = try savedSubscription(in: world, at: "/feed.xml")
         world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [FeedXML.Item(guid: "a", title: "A")])))
 
@@ -752,6 +758,9 @@ final class FeedRefresherTests: XCTestCase {
     func testScheduledRefreshesFollowTheIntervalSetting() async throws {
         let world = try FeedTestWorld(self, label: "FeedSchedule", worksOnItsOwn: true)
         FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        // Downloads by hand keep the newest-N rule (FR11) out of this test
+        // of refreshing.
+        FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
         world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [FeedXML.Item(guid: "a", title: "A")])))
         await world.start()
         _ = try await world.subscribe("/feed.xml")

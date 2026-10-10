@@ -302,6 +302,37 @@ final class FeedDownloadManager {
         }
     }
 
+    /// Takes back the newest-N rule's downloads of the feed `feedID` not yet
+    /// under way whose items `shouldWithdraw` names (FR11): those waiting in
+    /// the queue, those a network with data limits put off, and those
+    /// waiting for room. Each item is not downloaded, and stays the rule's,
+    /// to be asked for again should it count again; the download under way
+    /// runs on, and the listener's downloads are never taken back.
+    /// - Returns: The items taken back.
+    @discardableResult
+    func withdrawRuleDownloads(of feedID: UUID, where shouldWithdraw: (FeedItem.ID) -> Bool) -> [FeedItem.ID] {
+        /// Whether `request` is one of the rule's for the feed that goes.
+        func goes(_ request: Request) -> Bool {
+            request.feedID == feedID && request.origin == .window && shouldWithdraw(request.itemID)
+        }
+        var withdrawn = (queue + putOff).filter(goes).map(\.itemID)
+        queue.removeAll(where: goes)
+        putOff.removeAll(where: goes)
+        // A wait for room holds no request: its item alone says it waits.
+        let waitingForRoom = store.record(of: feedID)?.items.filter { item in
+            item.state.waitingReason != nil && !withdrawn.contains(item.id) && shouldWithdraw(item.id)
+        }.map(\.id) ?? []
+        withdrawn += waitingForRoom
+        guard !withdrawn.isEmpty else { return [] }
+        store.update(feedID) { record in
+            for index in record.items.indices where withdrawn.contains(record.items[index].id) {
+                record.items[index].state = .notDownloaded
+            }
+        }
+        DiagnosticLog.trace(.feeds, "the newest-N rule took back \(withdrawn.count) download(s) no longer wanted")
+        return withdrawn
+    }
+
     /// Asks again for the newest-N rule's downloads a network with data
     /// limits put off, in their order, as a refresh TextMouth made by
     /// itself, which such a network refuses too, has just reached the

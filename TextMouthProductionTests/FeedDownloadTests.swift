@@ -380,14 +380,17 @@ final class FeedDownloadTests: XCTestCase {
         ))
     }
 
-    // MARK: - Automatic Downloads
+    // MARK: - Downloads by Themselves (FR11)
 
-    /// With automatic downloads on, a refresh downloads the items it finds
-    /// new, on a network without data limits; with them off, or for the
-    /// back catalog a subscription finds, nothing downloads by itself.
-    func testNewItemsDownloadByThemselvesWhenAsked() async throws {
+    /// Under the default choice, "Every item listed, newest 5 downloaded",
+    /// the newest-N rule downloads a feed's newest by itself, as
+    /// discretionary work, on a network without data limits: here the
+    /// newest 1. A refresh that brings a newer one downloads it, and once it
+    /// has, the older one, no longer the newest, goes. The world does not
+    /// work on its own, so the test runs each pass the engine would.
+    func testTheNewestDownloadByThemselves() async throws {
         let world = try FeedTestWorld(self, label: "FeedAutoDownload")
-        FeedSettings.autoDownloadPreference.write(true, to: world.preferences)
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
         let audio = try FeedMediaFixtures.silentAAC()
         world.server.serve("/audio/old.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
         world.server.serve("/audio/new.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
@@ -397,27 +400,35 @@ final class FeedDownloadTests: XCTestCase {
                                enclosure: world.server.url("/audio/new.m4a").absoluteString, enclosureType: "audio/mp4")
         world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [old])), .feed(FeedXML.rss(items: [new, old])))
         let feed = try await world.subscribe("/feed.xml")
-        XCTAssertNil(world.center.downloads.current, "the back catalog downloaded by itself")
+        // The pass subscribing asks for.
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        let oldBook = try await downloadedBook(world, feed: feed, item: "guid:old")
         world.advance(by: 86_400)
 
         _ = await world.center.refreshAll(origin: .scheduled)
+        // The pass that follows the refresh, and the one the finished
+        // download asks for.
+        _ = await world.center.applyItemPolicy(to: [feed.id], retrying: [feed.id])
         _ = try await downloadedBook(world, feed: feed, item: "guid:new")
+        let finished = await world.center.applyItemPolicy(to: [feed.id])
 
-        XCTAssertEqual(world.server.requests(to: "/audio/old.m4a"), [])
+        XCTAssertEqual(finished.removedBookIDs, [oldBook.id])
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:old")?.state, .notDownloaded)
+        XCTAssertEqual(world.server.requests(to: "/audio/old.m4a").map(\.allowsExpensiveNetworkAccess), [false])
         XCTAssertEqual(world.server.requests(to: "/audio/new.m4a").map(\.allowsExpensiveNetworkAccess), [false])
     }
 
-    /// An automatic download a network with data limits refuses waits
-    /// (FR11), saying it downloads on a network without them, never written
-    /// so, and is tried again at the next refresh TextMouth makes by itself
-    /// that reaches the network, since such a refresh is refused on that
-    /// network too. A refresh the listener asks for says nothing of the
-    /// network's limits, and one put off by them shows they are still
-    /// there: neither tries it again.
-    func testAnAutomaticDownloadPutOffByAMeteredNetworkIsTriedAgainLater() async throws {
+    /// The rule's download a network with data limits refuses waits (FR11),
+    /// saying it downloads on a network without them, never written so,
+    /// and is tried again at the next refresh TextMouth makes by itself that
+    /// reaches the network, since such a refresh is refused on that network
+    /// too. A refresh the listener asks for says nothing of the network's
+    /// limits, and one put off by them shows they are still there: neither
+    /// tries it again, and the rule's passes leave it to them.
+    func testARuleDownloadPutOffByAMeteredNetworkIsTriedAgainLater() async throws {
         let world = try FeedTestWorld(self, label: "FeedMetered")
-        FeedSettings.autoDownloadPreference.write(true, to: world.preferences)
         let audio = try FeedMediaFixtures.silentAAC()
+        world.server.serve("/audio/old.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
         world.server.serve("/audio/new.m4a", .refusedOnAMeteredNetwork(), FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
         let old = FeedXML.Item(guid: "old", title: "Old", published: world.day(-1),
                                enclosure: world.server.url("/audio/old.m4a").absoluteString, enclosureType: "audio/mp4")
@@ -429,9 +440,12 @@ final class FeedDownloadTests: XCTestCase {
             .feed(FeedXML.rss(items: [old])), withNew, withNew, .refusedOnAMeteredNetwork(), withNew
         )
         let feed = try await world.subscribe("/feed.xml")
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        _ = try await downloadedBook(world, feed: feed, item: "guid:old")
         world.advance(by: 86_400)
 
         _ = await world.center.refreshAll(origin: .scheduled)
+        _ = await world.center.applyItemPolicy(to: [feed.id], retrying: [feed.id])
         await waitFor("the new episode's download is put off") {
             world.center.store.record(of: feed.id)?.item("guid:new")?.state.waitingReason != nil
                 && world.center.downloads.current == nil
@@ -448,6 +462,8 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(onDisk.item("guid:new")?.state, .notDownloaded, "a wait was written to disk")
 
         _ = await world.center.refresh(feed.id)
+        let afterTheListenersRefresh = await world.center.applyItemPolicy(to: [feed.id], retrying: [feed.id])
+        XCTAssertEqual(afterTheListenersRefresh.requestedItemIDs, [], "a pass asked for a download put off by the network")
         let skipped = await world.center.refreshAll(origin: .scheduled)
         XCTAssertEqual(skipped.reports.map(\.outcome), [.skipped])
         XCTAssertEqual(world.server.requests(to: "/audio/new.m4a").count, 1, "the download was tried again too soon")
@@ -458,7 +474,7 @@ final class FeedDownloadTests: XCTestCase {
 
         XCTAssertEqual(world.server.requests(to: "/audio/new.m4a").map(\.allowsExpensiveNetworkAccess), [false, false])
         XCTAssertTrue(world.center.downloads.putOff.isEmpty)
-        XCTAssertEqual(world.server.requests(to: "/audio/old.m4a"), [])
+        XCTAssertEqual(world.server.requests(to: "/audio/old.m4a").count, 1)
     }
 
     // MARK: - Quitting
@@ -471,6 +487,9 @@ final class FeedDownloadTests: XCTestCase {
     /// rest, and the list is gone.
     func testDownloadsUnderWayAtQuitGoOnAtTheNextLaunch() async throws {
         let world = try FeedTestWorld(self, label: "FeedQuitResume")
+        // The relaunched engine works on its own: downloads by hand keep the
+        // newest-N rule (FR11) out of this test of the list kept at quit.
+        FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
         let audio = try FeedMediaFixtures.silentAAC(duration: 4)
         var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
         slow.chunkSize = max(1, audio.count / 20)
@@ -548,6 +567,9 @@ final class FeedDownloadTests: XCTestCase {
     /// subscribed; the list goes either way.
     func testTheNextLaunchSkipsItemsNoLongerWanted() async throws {
         let world = try FeedTestWorld(self, label: "FeedQuitSkipped")
+        // The relaunched engine works on its own: downloads by hand keep the
+        // newest-N rule (FR11) out of this test of the list kept at quit.
+        FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
         let items = (1...2).map { number in
             FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)),
                          enclosure: world.server.url("/audio/\(number).m4a").absoluteString, enclosureType: "audio/mp4")

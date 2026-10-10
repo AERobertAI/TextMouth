@@ -20,6 +20,29 @@ struct FeedSweepReport: Equatable, Sendable {
     var forgottenItemIDs: [FeedItem.ID] = []
 }
 
+/// A download one of the engine's own rules found due to go (FR11): its
+/// feed and item, its row, and why, as the debug log says it ("played",
+/// "outside the newest 5").
+struct FeedDueRemoval: Sendable {
+    let feedID: UUID
+    let itemID: FeedItem.ID
+    let book: Book
+    let reason: String
+}
+
+/// What removing the downloads a rule found due did
+/// (`FeedCenter.removeDue(_:from:by:at:putOffEvent:)`).
+struct FeedDueRemovalOutcome {
+    /// The removals whose files went, in the order asked.
+    var removed: [FeedFileRemoval] = []
+    /// The books whose packages this Mac does not hold whole, in a cloud
+    /// library, left to a Mac that has them.
+    var leftInCloud: [UUID] = []
+    /// Whether the records and indexes could not be written first, so every
+    /// file stayed.
+    var wasPutOff = false
+}
+
 extension FeedCenter {
     // MARK: Played
 
@@ -184,25 +207,54 @@ extension FeedCenter {
         store.updateItem(itemID, of: feedID) { $0.deletedDate = environment.now() }
     }
 
-    // MARK: The Sweep
+    // MARK: The Engine's Own Work
 
     /// Asks for a sweep of played downloads: one starts at once, or after the
-    /// one under way, which a request made meanwhile makes run again.
+    /// engine's own work under way, a sweep or a pass of the newest-N rule,
+    /// and a request made meanwhile makes it run again. Only an engine
+    /// working on its own sweeps by itself.
     func requestSweep() {
         guard environment.worksOnItsOwn else { return }
-        guard !isSweeping else {
-            sweepRequestedAgain = true
-            return
-        }
+        sweepRequested = true
+        runOwnWork()
+    }
+
+    /// Asks for a pass of the newest-N rule (FR11) over the feeds `feedIDs`,
+    /// every feed when nil, trying their failed downloads again when
+    /// `retryingFailures`, as a pass that follows a refresh does: one starts
+    /// at once, or after the engine's own work under way, every pass asked
+    /// for meanwhile running as one. Only an engine working on its own runs
+    /// passes by itself; a test runs `applyItemPolicy(to:retrying:)`.
+    func requestItemPolicyPass(for feedIDs: Set<UUID>?, retryingFailures: Bool = false) {
+        guard environment.worksOnItsOwn else { return }
+        let request = FeedItemPolicyPassRequest(feedIDs: feedIDs, retryingFeedIDs: retryingFailures ? feedIDs ?? [] : [])
+        pendingItemPolicyPass = pendingItemPolicyPass?.adding(request) ?? request
+        runOwnWork()
+    }
+
+    /// Runs the engine's own work asked for, one piece at a time, until none
+    /// is left: a sweep of played downloads, then a pass of the newest-N
+    /// rule. One at a time, so the two never remove files from under each
+    /// other while one waits for a cloud library's state.
+    private func runOwnWork() {
+        guard !isSweeping else { return }
         isSweeping = true
         Task {
-            repeat {
-                sweepRequestedAgain = false
-                await sweepPlayedDownloads()
-            } while sweepRequestedAgain
+            while sweepRequested || pendingItemPolicyPass != nil {
+                if sweepRequested {
+                    sweepRequested = false
+                    await sweepPlayedDownloads()
+                }
+                if let pass = pendingItemPolicyPass {
+                    pendingItemPolicyPass = nil
+                    await applyItemPolicy(to: pass.feedIDs, retrying: pass.retryingFeedIDs)
+                }
+            }
             isSweeping = false
         }
     }
+
+    // MARK: The Sweep
 
     /// Deletes the downloads the delete-after-played rule says are due: an
     /// item played at least its feed's number of days ago (0 at once, -1
@@ -231,7 +283,7 @@ extension FeedCenter {
         guard let library, library.feedLibraryIsComplete else { return report }
         let now = environment.now()
         let settings = self.settings
-        var due: [(feedID: UUID, itemID: FeedItem.ID, book: Book)] = []
+        var due: [FeedDueRemoval] = []
         for record in store.records.values {
             let days = record.feed.deleteDownloadsDaysAfterPlayed(under: settings)
             for item in record.items where item.state.bookID != nil {
@@ -253,51 +305,16 @@ extension FeedCenter {
                 // A download made before FR11 waits until it moves into its
                 // feed's folder, where a package can be kept.
                 guard book.isFeedItem else { continue }
-                due.append((record.feed.id, item.id, book))
+                due.append(FeedDueRemoval(feedID: record.feed.id, itemID: item.id, book: book, reason: "played"))
             }
         }
         guard !due.isEmpty else { return report }
 
-        // In a cloud library, only packages this Mac holds whole are
-        // touched, as their cloud state says, read first, off the main
-        // thread.
-        let storage = environment.bookStorage()
-        let packages = due.map { BookPackage($0.book) }
-        let heldWhole = await OffMainWork.run(on: .global(qos: .utility)) {
-            Self.packagesHeldWhole(packages, storage: storage)
-        }
-        report.leftInCloudBookIDs = due.map(\.book.id).filter { !heldWhole.contains($0) }
-        // A reader may have opened one meanwhile.
-        let removable = due.filter { heldWhole.contains($0.book.id) && !library.feedBooksOpenInReaders.contains($0.book.id) }
-
-        let root = TextMouthPaths.root
-        let outcome: FeedFileRemovalOutcome
-        do {
-            outcome = try library.removeFeedFiles(of: removable.map(\.book), keepingPackages: true) { removal in
-                try FeedItemPackage.removeForGood(removal, in: root)
-            }
-        } catch {
-            DiagnosticLog.event(.feeds, "FEED_SWEEP_PUT_OFF: \(error.localizedDescription)")
-            return report
-        }
-        for removal in outcome.removed {
-            guard let entry = removable.first(where: { $0.book.id == removal.row.id }) else { continue }
-            store.updateItem(entry.itemID, of: entry.feedID) { item in
-                item.state = .notDownloaded
-                item.downloadDeletedDate = now
-            }
-            report.deletedBookIDs.append(removal.row.id)
-            if removal.keepsPackage {
-                report.keptPackageBookIDs.append(removal.row.id)
-            }
-            DiagnosticLog.event(
-                .feeds,
-                "FEED_DOWNLOAD_DELETED: \(removal.row.title): played, \(Self.removalNote(removal)) by the delete-after rule"
-            )
-        }
-        for failure in outcome.failures {
-            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETE_FAILED: \(failure.row.title): \(failure.error.localizedDescription)")
-        }
+        let outcome = await removeDue(due, from: library, by: "the delete-after rule", at: now, putOffEvent: "FEED_SWEEP_PUT_OFF")
+        report.leftInCloudBookIDs = outcome.leftInCloud
+        guard !outcome.wasPutOff else { return report }
+        report.deletedBookIDs = outcome.removed.map(\.row.id)
+        report.keptPackageBookIDs = outcome.removed.filter(\.keepsPackage).map(\.row.id)
         if !report.leftInCloudBookIDs.isEmpty {
             DiagnosticLog.event(
                 .feeds,
@@ -305,6 +322,65 @@ extension FeedCenter {
             )
         }
         return report
+    }
+
+    // MARK: Removing What a Rule Found Due
+
+    /// Removes for good the files of the downloads `due`, as the engine's own
+    /// rules do: the after-playing sweep, and the newest-N rule (FR11). In a
+    /// cloud library, only those whose packages this Mac holds whole, as
+    /// their cloud state says, read first off the main thread without
+    /// downloading anything; never one a reader opened meanwhile. Each keeps
+    /// its package while it holds something of the listener's, the records
+    /// and the feeds' indexes written first
+    /// (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`), and a
+    /// failed write keeps every file, logged as `putOffEvent`. Each item
+    /// whose file went is not downloaded from `now`, and keeps who asked for
+    /// it; each removal is logged with its reason and `rule`.
+    /// - Returns: The removals whose files went, the books left in the
+    ///   cloud, and whether the removal was put off.
+    func removeDue(
+        _ due: [FeedDueRemoval],
+        from library: FeedLibraryHost,
+        by rule: String,
+        at now: Date,
+        putOffEvent: String
+    ) async -> FeedDueRemovalOutcome {
+        var outcome = FeedDueRemovalOutcome()
+        let storage = environment.bookStorage()
+        let packages = due.map { BookPackage($0.book) }
+        let heldWhole = await OffMainWork.run(on: .global(qos: .utility)) {
+            Self.packagesHeldWhole(packages, storage: storage)
+        }
+        outcome.leftInCloud = due.map(\.book.id).filter { !heldWhole.contains($0) }
+        // A reader may have opened one meanwhile.
+        let removable = due.filter { heldWhole.contains($0.book.id) && !library.feedBooksOpenInReaders.contains($0.book.id) }
+        guard !removable.isEmpty else { return outcome }
+
+        let root = TextMouthPaths.root
+        let removal: FeedFileRemovalOutcome
+        do {
+            removal = try library.removeFeedFiles(of: removable.map(\.book), keepingPackages: true) { removal in
+                try FeedItemPackage.removeForGood(removal, in: root)
+            }
+        } catch {
+            DiagnosticLog.event(.feeds, "\(putOffEvent): \(error.localizedDescription)")
+            outcome.wasPutOff = true
+            return outcome
+        }
+        for removed in removal.removed {
+            guard let entry = removable.first(where: { $0.book.id == removed.row.id }) else { continue }
+            store.updateItem(entry.itemID, of: entry.feedID) { item in
+                item.state = .notDownloaded
+                item.downloadDeletedDate = now
+            }
+            outcome.removed.append(removed)
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETED: \(removed.row.title): \(entry.reason), \(Self.removalNote(removed)) by \(rule)")
+        }
+        for failure in removal.failures {
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETE_FAILED: \(failure.row.title): \(failure.error.localizedDescription)")
+        }
+        return outcome
     }
 
     /// The books of `packages` whose packages this Mac holds whole, read off

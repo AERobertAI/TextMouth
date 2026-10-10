@@ -197,6 +197,12 @@ extension LibraryViewModel: FeedLibraryHost {
         openBookIDs
     }
 
+    /// Whether the book `bookID` is on the reading list, whose downloads the
+    /// feeds' newest-N rule never removes (FR11).
+    func feedBookIsOnReadingList(_ bookID: UUID) -> Bool {
+        library.readingList.contains(bookID)
+    }
+
     /// Publishes the books open in readers whenever they change.
     var feedBooksOpenInReadersChanges: AnyPublisher<Set<UUID>, Never> {
         $openBookIDs.eraseToAnyPublisher()

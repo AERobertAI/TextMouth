@@ -43,9 +43,9 @@ struct FeedSettings: Equatable, Sendable {
     /// tab's and Feed Info's old controls, until the interface of the choice
     /// (FR11's branch C) takes their place.
     var keepEntries: Int
-    /// Whether a new episode downloads by itself when a refresh finds it.
-    /// Off by default: an episode downloads when the listener opens it or
-    /// chooses Download. Retired by `itemPolicy`, as `keepEntries` is.
+    /// Whether a new episode downloaded by itself when a refresh found it;
+    /// off by default. Retired by `itemPolicy`, whose newest-N rule the feed
+    /// engine follows in its place, as `keepEntries` is.
     var autoDownload: Bool
 
     /// The settings until the listener changes any.

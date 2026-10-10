@@ -108,6 +108,31 @@ struct UsersFeeds {
         antiquarian = FeedRecord(feed: antiquarianFeed, items: items)
     }
 
+    /// The downloaded article's row, as each feed's own index holds it since
+    /// FR11's branch A1 moved it into its feed's folder: opened a day before
+    /// the world's clock, with a reading position, no bookmarks, and no voice
+    /// or speed of its own. A test adds it to its library's books, where a
+    /// row whose file is here lives while TextMouth runs; nothing reads its
+    /// file.
+    func articleRow(in world: FeedTestWorld) -> Book {
+        let title = "The Lamentable Later Life of Lemmings"
+        let name = "\(title).tmb"
+        let package = FeedPaths.packageDirectory(named: name, of: antiquarian.feed.id, in: TextMouthPaths.root)
+        return Book(
+            id: articleBookID,
+            title: title,
+            author: "The Digital Antiquarian",
+            format: .html,
+            filePath: package.appendingPathComponent("\(title).html").path,
+            md5Hash: "lemmings",
+            dateAdded: world.day(-9),
+            lastOpened: world.day(-1),
+            readingPosition: ReadingPosition(chapterIndex: 0, characterOffset: 4_200),
+            tmbDirectoryName: name,
+            feedLink: FeedBookLink(feedID: antiquarian.feed.id, itemID: "guid:antiquarian-1")
+        )
+    }
+
     /// Writes both records into `world`'s Feeds folder, as the records the
     /// engine reads when it starts.
     func write(to world: FeedTestWorld) throws {

@@ -105,6 +105,9 @@ protocol FeedLibraryHost: AnyObject {
     ) throws -> FeedFileRemovalOutcome
     /// The books open in readers now, which nothing may delete.
     var feedBooksOpenInReaders: Set<UUID> { get }
+    /// Whether the book `bookID` is on the reading list, whose downloads the
+    /// newest-N rule never removes (FR11).
+    func feedBookIsOnReadingList(_ bookID: UUID) -> Bool
     /// Publishes the books open in readers whenever they change.
     var feedBooksOpenInReadersChanges: AnyPublisher<Set<UUID>, Never> { get }
     /// Whether the library lists every book it holds: not while its index
@@ -259,7 +262,7 @@ final class FeedCenter: ObservableObject {
             now: environment.now
         ),
         library: { [weak self] in self?.library },
-        announce: { [weak self] event in self?.events.send(event) }
+        announce: { [weak self] event in self?.downloadEventHappened(event) }
     )
     /// What the engine announces, delivered on the main actor.
     let events = PassthroughSubject<FeedEvent, Never>()
@@ -278,10 +281,15 @@ final class FeedCenter: ObservableObject {
     private var forwarding: [AnyCancellable] = []
     /// Hears finished books, and the readers that open and close.
     private var lifecycleObservers: [AnyCancellable] = []
-    /// Whether a sweep of played downloads runs (`requestSweep()`).
+    /// Whether the engine's own work runs: a sweep of played downloads, or a
+    /// pass of the newest-N rule (FR11), one at a time (`requestSweep()`,
+    /// `requestItemPolicyPass(for:retryingFailures:)`).
     var isSweeping = false
-    /// Whether a sweep was asked for while one ran, so it runs again.
-    var sweepRequestedAgain = false
+    /// Whether a sweep was asked for and has not run yet.
+    var sweepRequested = false
+    /// The pass of the newest-N rule asked for and not run yet, with every
+    /// pass asked for meanwhile (FR11).
+    var pendingItemPolicyPass: FeedItemPolicyPassRequest?
 
     /// An engine working with `environment`, started by `start(library:)`.
     init(environment: FeedEnvironment) {
@@ -318,9 +326,10 @@ final class FeedCenter: ObservableObject {
     /// "List and download" choice to it (FR11), reads the records and this
     /// Mac's fetch details off the main thread, moving each feed's retired
     /// override to a choice of its own, then, when the engine works on its
-    /// own, asks again for the downloads TextMouth quit during, refreshes
-    /// every feed if the settings say to, and starts the scheduled
-    /// refreshes. Returns at once.
+    /// own, asks again for the downloads TextMouth quit during, asks for a
+    /// sweep of played downloads and a pass of the newest-N rule over every
+    /// feed, refreshes every feed if the settings say to, and starts the
+    /// scheduled refreshes. Returns at once.
     /// - Returns: The work started, which tests may await.
     @discardableResult
     func start(library: FeedLibraryHost) -> Task<Void, Never>? {
@@ -338,11 +347,15 @@ final class FeedCenter: ObservableObject {
             // The downloads under way when TextMouth last quit go on, the
             // one that ran from where it stopped.
             await downloads.resumeDownloadsSavedAtQuit()
-            // A reader closing lets a played download it held be deleted.
+            // A reader closing lets a played download it held be deleted; the
+            // newest-N rule waits for its own passes (FR11).
             lifecycleObservers.append(
                 library.feedBooksOpenInReadersChanges.sink { [weak self] _ in self?.requestSweep() }
             )
             requestSweep()
+            // Each feed's newest downloaded at once, as at the first launch
+            // of the version that brought the rule (FR11).
+            requestItemPolicyPass(for: nil)
             intervalObserver = PreferenceObserver(
                 keys: [FeedSettings.refreshIntervalHoursPreference.key],
                 in: environment.preferences
@@ -524,6 +537,8 @@ final class FeedCenter: ObservableObject {
                 "FEED_SUBSCRIBED: \(record.feed.title) (\(FeedHost.of(record.feed.feedURL))): \(record.items.count) item(s) kept"
             )
             events.send(.subscribed(feedID: record.feed.id))
+            // The feed's newest downloaded at once (FR11).
+            requestItemPolicyPass(for: [record.feed.id])
             return .subscribed(record.feed)
         case .failure(.notAFeed) where followingPage:
             let links = await OffMainWork.run(on: .global(qos: .userInitiated)) {
@@ -600,20 +615,31 @@ final class FeedCenter: ObservableObject {
         return summary
     }
 
-    /// Announces the end of one feed's refresh, and, with automatic downloads
-    /// on, downloads the items it found new, as the newest-N rule's. A
-    /// refresh TextMouth made by itself that was not put off reached a
-    /// network without data limits, which such a refresh needs, so the
-    /// downloads one put off are tried again first.
+    /// Announces the end of one feed's refresh, and asks for the newest-N
+    /// rule's pass over the feed (FR11), which downloads its newest and
+    /// removes its oldest downloads beyond them, trying its failed downloads
+    /// again when the refresh reached the network. A refresh TextMouth made
+    /// by itself that was not put off reached a network without data limits,
+    /// which such a refresh needs, so the downloads one put off are tried
+    /// again first.
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
         requestSweep()
-        guard settings.autoDownload else { return }
         if report.origin.isDiscretionary, report.outcome != .skipped {
             downloads.retryPutOffDownloads()
         }
-        for itemID in report.newItemIDs {
-            downloads.download(itemID, of: report.feedID, origin: .window)
+        requestItemPolicyPass(for: [report.feedID], retryingFailures: report.outcome != .skipped)
+    }
+
+    /// Passes a download's event on to the engine's listeners, and, when a
+    /// download the newest-N rule made finishes, asks for the rule's pass
+    /// over its feed, which removes the files of its oldest downloads beyond
+    /// the newest should it now hold more than the number (FR11).
+    private func downloadEventHappened(_ event: FeedEvent) {
+        events.send(event)
+        if case .downloadFinished(let feedID, let itemID, _) = event,
+           store.record(of: feedID)?.item(itemID)?.downloadOrigin == .window {
+            requestItemPolicyPass(for: [feedID])
         }
     }
 
