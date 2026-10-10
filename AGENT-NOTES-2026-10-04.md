@@ -1346,3 +1346,103 @@ Suite and what was not verified:
 - The Remove alert without Remove from Library Only, and the edit bar's Move or Command-Shift-M with only feed items selected. That is view code; the wording it uses is tested.
 - Moving to the Trash (tests delete for good).
 - The launch step running inside a real app launch (it is tested through the model).
+
+## From the menukeys agent (feature/menu-and-window-shortcuts), Oct 10
+
+The user's shortcuts after the first launch of this build:
+- **Yours:** Release Media Controls stays on Shift-R, marked Edited, in every window. Nothing else becomes edited.
+- **Everything else follows the defaults:**
+  - File menu: Open Book… Command-O, New Recording… Option-Command-N.
+  - New from Text… Shift-Command-T, in Library windows only.
+  - Show Sleep Timer keeps Shift-Command-T, in reader windows only.
+  - Library windows: Import DAISY Folder… Shift-Command-O, Add Feed… Shift-Command-F.
+  - Reader windows: Copy Reading Position Shift-Command-P, Search in Book Command-F.
+  - Record window: Record Command-R, Pause or Resume Command-P, Stop Command-Period.
+  - Next Bookmark Option-Shift-Command-B and Show Bookmarks Shift-Command-B, as before.
+- **Two behaviour changes (review A):**
+  - Shift-W no longer says Where Am I?, and Shift-Command-Delete no longer removes books. Only Skip Forward, Skip Backward and Increase Speed still answer their keys with Shift added.
+  - Return, Enter, Escape and Command-Period always reach a sheet's or an alert's own buttons.
+- **config.json:**
+  - It gains the ten new entries, for example `"Open Book…": "default: command+o"`.
+  - New from Text… becomes `"default in Library windows: shift+command+t"` and Show Sleep Timer becomes `"default in reader windows: shift+command+t"`; Import DAISY Folder…, Add Feed…, Copy Reading Position and Search in Book get the same wording.
+  - `"Release Media Controls": ["shift+r"]` is unchanged.
+
+What the user should try by hand:
+1. **Shift-Command-T in each kind of window:**
+   - Library window: New from Text… opens.
+   - Reader: the Sleep Timer sheet opens or closes, and File > New from Text… is dimmed with no key.
+   - Settings, the Record window, an audio editor: nothing happens.
+2. **Change a menu key in the tab:**
+   - Settings > Shortcuts > File > Open Book…: record Control-Command-O, then open the File menu. VoiceOver should read the new key, and pressing it should open the panel.
+   - Record a plain letter instead and you should hear "… not recorded for Open Book…: a menu command's shortcut is one press of a key with Command or Control."
+3. **Works in pop-up with VoiceOver:**
+   - On New from Text…'s row you should hear "Works in, Library windows, pop-up button".
+   - Choose Every window: "New from Text… works in every window. Taken from Show Sleep Timer."
+   - Shift-Command-T in a reader now opens New from Text….
+   - Reset to Default: "New from Text… reset to default: Shift + Command + T. Works in Library windows."
+
+Decisions and assumptions:
+- **Menu commands outside their scope:** the menu item has no key and is dimmed, so the key reaches the window's own shortcut. My probe showed a disabled item that matches a key still swallows it, and a hidden item still answers its key.
+- **Who gets a choice:** the app's actions and the File menu's commands can work in Every window, Library windows or Reader windows. The Library and Playback menus' commands are fixed to where those menus show; the audio editor's and Record window's actions are fixed. The pop-up appears only on rows with a choice; the other rows say their scope in their label or under their group heading.
+- **"Every window"** means every window except an audio editor for shortcuts. A File menu command set to Every window also works in the editor and with no window open.
+- **Sheets** count as their parent window's kind. Other panels and modal windows count as "other".
+- **Storing a scope:** it is stored only when it differs from the default. Choosing one makes the action edited with its current keys, which are taken only from actions whose scopes overlap.
+- **config.json scope names:** written in the pop-up's words; `"app"` would read like the app's own window. TextMouth also reads short names (`library`, `reader`, `app`, `every`) and field names in any letter case. `"keys"` may be a single text.
+- **config.json semantics:**
+  - A list means the default scope, and "default" restores both keys and scope.
+  - An unknown scope name makes the entry unreadable.
+  - A scope the action can't have is left out, logged, and the file is saved again.
+- **"default in … windows" wording** only differs from the brief's `"default: command+o"` pattern for actions whose default is Library or reader windows. Words after "default" are still never read.
+- **Menu-command keys:**
+  - The recorder records a menu command's key on the first press.
+  - Refusals don't apply to keys the record already holds.
+  - The macOS-commands rule doesn't apply to an action's own default (Select All's Command-A, the editor's Undo and Copy).
+- **Names with an ellipsis** may be written with three periods or none in config.json.
+- **Board:** feeditemui (#1680, #1689) changed only the retiredStoreKeys line of ShortcutConfigFileTests; my additions there are separate hunks. The rebase was clean.
+
+Adding an action (for FR11's commands):
+It remains a one-file change, in `Models/KeyboardShortcut.swift`:
+1. Add a `ShortcutAction` case, in Settings order. Its raw value is its name in Settings and config.json.
+2. Add its notification in `notificationName` and its group in `category`. The compiler points to both switches.
+3. Add its keys in `defaultBindings`, or leave it without any.
+4. Only if needed:
+   - an entry in `defaultScopesOfTheirOwn`, for a kind of window other than its group's;
+   - membership in `keyEquivalentActions`, for a menu command whose key is its item's key. That item then uses `.menuCommandKey(action, shortcuts:frontKind:)`.
+
+The dispatcher, conflict rule, tab row, pop-up, config.json entry and refusals all follow. The test list `ShortcutMigrationTests.actionsAddedSinceOctober5` must also get the new action.
+
+README wording:
+- **Adding books, the New from Text bullet (line 36), replace with:**
+  > File menu, New from Text… makes a book from text you type or paste. Its key, Shift-Command-T, works in Library windows; in a reader window the same key opens or closes the Sleep Timer sheet (Show Sleep Timer). Either can have another key, or work in another kind of window, from the Shortcuts tab of Settings.
+- **Shortcuts tab, opening bullet (line 104), replace the sentences from "A key set there acts…" through "…takes New from Text…'s (see Adding books, above)." with:**
+  > A key set there acts before the menus see it, except a menu command's. Open Book…, New from Text…, New Recording…, Import DAISY Folder…, Add Feed…, Copy Reading Position, Search in Book, and the Record window's Record, Pause or Resume, and Stop keep their keys in their menu items and buttons, which show the key in force, and VoiceOver reads it. Each is one press of a key with Command or Control: the recorder takes it at the first press and refuses any other key, saying why, as in "W not recorded for Open Book…: a menu command's shortcut is one press of a key with Command or Control." No shortcut may take a key macOS's own commands have in the menus (Quit, Close, Close All, Settings, Hide, Hide Others, Minimize, Minimize All, and the Edit menu's Undo, Redo, Cut, Copy, Paste, Paste and Match Style, and Select All), as in "Command + Q not recorded for Where Am I?: Quit TextMouth has it in the menus, and no shortcut may take it." Escape still cancels a recording.
+- **New bullet after "Every shortcut you haven't changed…":**
+  > Works in, a pop-up button on the row of each action that can work in more than one kind of window, sets where its shortcuts work: Every window, Library windows, or Reader windows. VoiceOver reads it as "Works in, Library windows, pop-up button". By default New from Text… works in Library windows and Show Sleep Timer in reader windows, so Shift-Command-T is each one's in its own kind of window. Import DAISY Folder… and Add Feed… work in Library windows, and Copy Reading Position and Search in Book in reader windows, where their menus are. The audio editor's actions work in its windows, and the Record window's buttons in it; every other action works in every window but an audio editor's. A row says where its action works when that is Library or reader windows, or a place you chose, as in "Show Sleep Timer: Shift + Command + T. Works in reader windows." Choosing makes the action yours and takes its keys from every action that works where it now does too, as in "New from Text… works in every window. Taken from Show Sleep Timer." Reset to Default gives back where it works too, as in "New from Text… reset to default: Shift + Command + T. Works in Library windows." A menu command set to work elsewhere is dimmed and shows no key, so its key reaches the window's own shortcut.
+- **Try a Double Press bullet (line 112), add:**
+  > The text under the button keeps the last result, as in "Last try: Double press.", for a braille display to read again.
+- **Shift bullet (line 113), replace with:**
+  > In every window but an audio editor's, Shift with the keys of Skip Forward, Skip Backward, and Increase Speed still triggers them, telling them Shift was held: Shift-J and Shift-L, and Shift with Command-Left Arrow or Command-Right Arrow, skip by the Playback tab's Shift units, and Increase Speed's Command-Plus works as a US keyboard types it, with Shift. No other shortcut answers its key with Shift added, so Shift-W and Shift-Command-Delete do nothing unless you give them to an action. A Shift shortcut of its own, such as a Shift-R you gave Release Media Controls, always wins; Shift never reaches a shortcut this way from a text field; and an audio editor's window matches only its own Shift keys. While a sheet or an alert is in front, no shortcut takes Return, Enter, Escape, or Command-Period, which press its buttons.
+- **config.json section (line 535):**
+  - After "…an empty list leaves it without a shortcut", add:
+    > An action you also set to work in a kind of window is an object, as in "New from Text…": {"keys": ["shift+command+t"], "worksIn": "Every window"}. TextMouth writes the Works in pop-up's words, and reads them, or "every", "app", "library", or "reader", in any letter case, as it reads "keys" and "worksIn". "keys" may be one shortcut written as text, an object without "worksIn" counts as a list, and a list works where its action does by default. An object naming no kind of window TextMouth knows isn't read. One naming a kind its action can't work in, such as Add Feed… in reader windows, is left out, noted in the debug log, and the file is saved again. A menu command's entry holds one shortcut with Command or Control, and one it can't take is left out the same way. An action name ending in "…" may end in three periods or none.
+  - After the "default" sentence, add:
+    > An action that works in Library or reader windows by default names that kind of window after "default", as in "Show Sleep Timer": "default in reader windows: shift+command+t". Editing those words changes nothing.
+  - Replace "the audio editor's actions work only in its windows, and the rest everywhere else" with:
+    > each action works where its Works in says, so one key can do one thing in an editor window or a Library window and another elsewhere
+
+ARCHITECTURE wording:
+- **Preferences > Keyboard shortcuts (FR12), Owner, add:**
+  > Each action works in a scope (ShortcutScope: .app, every window but an audio editor's; .library; .reader; .audioEditor; .recording). Its defaultScope comes from its group or ShortcutAction.defaultScopesOfTheirOwn, and the user may change it among availableScopes. The record keeps a chosen scope beside the action's keys only when it is not the default (scopesByEditedAction, setScope(_:for:keys:), cleared by reset), stored as {"keys": [...], "worksIn": "<raw value>"}. Keys are claimed in each kind of window a scope reaches (KeyClaims, ShortcutWindowKind), so a key has one owner in each kind of window. The menu commands' keys are actions too (ShortcutAction.keyEquivalentActions): each is one press with Command or Control (KeyBinding.canBeKeyEquivalent), and claims its double press as well. ShortcutAction.refusal(ofKeys:) refuses any other key, and any key in KeyBinding.systemCommands that is not the action's own default, with a ShortcutRefusal.
+- **Same entry, config.json part, add:**
+  > ShortcutListing has a third case, .object(keys:worksIn:), written with ShortcutScope.title and read by ShortcutScope.named(_:), its field names in any letter case (ShortcutJSONKey). A list keeps the default scope, and "default" text names a Library or reader default (ShortcutScope.isSaidAsADefault). adopt(_:in:) leaves out and logs each entry ShortcutEdits.entriesLeftOut(of:) names, then saves the file again.
+- **Same entry, the tab part, add:**
+  > ShortcutBindingRow adds a Works in Picker, bound to scope(of:)/setScope(_:for:) and announced by scopeChanged(_:to:takenFrom:). rowLabel takes worksIn: and defaultsHeldElsewhere:. A key equivalent's row has one key, records its first press, and has no Make Double Press. Try a Double Press keeps its last outcome as text (trialStatus). DoublePressTrial and ShortcutRecording share TwoPresses.
+- **Windows > Menus, add:**
+  > FileCommands, PlaybackCommands, and LibraryCommands give each such item View.menuCommandKey(_:shortcuts:frontKind:). The item shows the key in force while its scope admits the window in front (FrontWindowKind, ShortcutScope.admitsMenuCommand(in:)), and otherwise shows no key and is dimmed. The Record window's buttons read StoredKeyEquivalents. RecordingShortcuts and FeedShortcuts are gone.
+- **Windows > Key presses:**
+  - Replace "scope(ofKeyWindow:)" with:
+    > the kind of window (windowKind(ofKeyWindow:): an audio editor or the Record window by identifier, a reader or Library window as MenuVisibilityManager tells them apart, a sheet as its parent, any other panel as .other) and whether it is a sheet or an alert (isDialog(_:))
+  - Replace the Shift sentence with:
+    > A Shift press falls back to its unshifted binding only for ShortcutAction.actionsTakingShiftAlong (Skip Forward, Skip Backward, Increase Speed). No press matches a key equivalent's stroke, nor, in a sheet or an alert, KeyBinding.dialogKeys.
+  - Replace the #1451 sentence with:
+    > A menu command's key is never the manager's, so Shift-Command-T is New from Text…'s in a Library window and Show Sleep Timer's in a reader (#1451 ended).
