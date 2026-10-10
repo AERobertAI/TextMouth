@@ -111,12 +111,16 @@ extension ReaderViewModel {
             headingPosition: position,
             percentComplete: percentComplete,
             timeRemaining: timeRemaining,
+            isFinished: cursorRestsAtEnd,
             heardSentence: heardTranscriptSentence
         )
     }
 
     /// Pure formatter for the brief announcement, shared with regression tests.
     /// Example: "My Book. The Battle. Heading 26 of 412. 30 percent. 3 hours remaining."
+    /// A book resting at its end, finished (`isFinished`), says "Finished" in
+    /// place of its percent and time left (TODO P07): "Dune. Appendix.
+    /// Heading 40 of 40. Finished."
     /// A transcribed audiobook's `heardSentence` follows, quoted as it is:
     /// "… 3 hours remaining. The salt road bends east."
     nonisolated static func briefWhereAmISummary(
@@ -125,16 +129,17 @@ extension ReaderViewModel {
         headingPosition: HeadingPosition,
         percentComplete: Double,
         timeRemaining: TimeInterval,
+        isFinished: Bool = false,
         heardSentence: String? = nil
     ) -> String {
+        let progress = isFinished
+            ? [EndOfBookWording.finishedProgress]
+            : [String(format: "%.0f percent", percentComplete), "\(TimeFormatting.spoken(timeRemaining)) remaining"]
         let parts = whereAmILocationParts(
             bookTitle: bookTitle,
             locationTitle: locationTitle,
             headingPosition: headingPosition
-        ) + [
-            String(format: "%.0f percent", percentComplete),
-            "\(TimeFormatting.spoken(timeRemaining)) remaining",
-        ]
+        ) + progress
         return whereAmISummary(parts: parts, quoting: heardSentence)
     }
 
@@ -152,6 +157,7 @@ extension ReaderViewModel {
             timeRemaining: timeRemaining,
             timeRemainingInHeading: position.heading.flatMap { remainingTime(inHeading: $0, content: content) },
             totalTime: totalEstimatedTime,
+            isFinished: cursorRestsAtEnd,
             readingListPlace: readingListPlace,
             heardSentence: heardTranscriptSentence
         )
@@ -165,7 +171,10 @@ extension ReaderViewModel {
     /// this second announcement gives: the brief one is the quick check of
     /// a place in the book, pressed often while listening, and the window's
     /// title and header say the book is read from the list. A transcribed
-    /// audiobook's `heardSentence` follows last.
+    /// audiobook's `heardSentence` follows last. A book resting at its end,
+    /// finished (`isFinished`), says "Finished" in place of its percent and
+    /// the times left in the book and the heading, and still gives its
+    /// whole time (TODO P07).
     nonisolated static func fullWhereAmISummary(
         bookTitle: String,
         locationTitle: String?,
@@ -174,6 +183,7 @@ extension ReaderViewModel {
         timeRemaining: TimeInterval,
         timeRemainingInHeading: TimeInterval?,
         totalTime: TimeInterval,
+        isFinished: Bool = false,
         readingListPlace: ReadingListPlace? = nil,
         heardSentence: String? = nil
     ) -> String {
@@ -182,10 +192,14 @@ extension ReaderViewModel {
             locationTitle: locationTitle,
             headingPosition: headingPosition
         )
-        parts.append(String(format: "%.0f percent through the book", percentComplete))
-        parts.append("\(TimeFormatting.spoken(timeRemaining)) remaining")
-        if let timeRemainingInHeading {
-            parts.append("\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading")
+        if isFinished {
+            parts.append(EndOfBookWording.finishedProgress)
+        } else {
+            parts.append(String(format: "%.0f percent through the book", percentComplete))
+            parts.append("\(TimeFormatting.spoken(timeRemaining)) remaining")
+            if let timeRemainingInHeading {
+                parts.append("\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading")
+            }
         }
         parts.append("Total book time: \(TimeFormatting.spoken(totalTime))")
         if let readingListPlace {
@@ -646,7 +660,8 @@ extension ReaderViewModel {
             locationTitle: locationTitle(for: position, chapterIndex: currentChapterIndex),
             headingPosition: position,
             percentComplete: percentComplete,
-            formattedTimeRemaining: formattedTimeRemaining
+            formattedTimeRemaining: formattedTimeRemaining,
+            isFinished: cursorRestsAtEnd
         )
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(positionText, forType: .string)
@@ -656,22 +671,27 @@ extension ReaderViewModel {
     /// Pure formatter for the copied reading position, using the same heading
     /// vocabulary as Where Am I. Example:
     /// "My Book | by An Author | The Battle | Heading 26 of 412 | 30.0% through | 3:00:00 remaining"
+    /// A book resting at its end, finished (`isFinished`), says "Finished" in
+    /// place of its percent and time left (TODO P07): "Dune | by Frank
+    /// Herbert | Appendix | Heading 40 of 40 | Finished".
     nonisolated static func readingPositionSummary(
         bookTitle: String,
         author: String,
         locationTitle: String?,
         headingPosition: HeadingPosition,
         percentComplete: Double,
-        formattedTimeRemaining: String
+        formattedTimeRemaining: String,
+        isFinished: Bool = false
     ) -> String {
-        readingPositionSummary(parts: [
+        let progress = isFinished
+            ? [EndOfBookWording.finishedProgress]
+            : [String(format: "%.1f%% through", percentComplete), "\(formattedTimeRemaining) remaining"]
+        return readingPositionSummary(parts: [
             bookTitle,
             author.isEmpty ? "" : "by \(author)",
             locationTitle ?? "",
             headingPosition.label,
-            String(format: "%.1f%% through", percentComplete),
-            "\(formattedTimeRemaining) remaining",
-        ])
+        ] + progress)
     }
 
     /// Joins copied-position fields with " | ", dropping empty fields and the

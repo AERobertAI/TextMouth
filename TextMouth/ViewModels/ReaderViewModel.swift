@@ -384,6 +384,8 @@ final class ReaderViewModel: ObservableObject {
     /// book again from where the skip lands (`performSkip(unit:forward:)`);
     /// Release Media Controls is offered meanwhile, while the book holds
     /// the controls (`canReleaseMediaControls`).
+    /// Set too as a book saved exactly at its end opens (`showLoadedContent`,
+    /// TODO P07), so a finished book stays finished after TextMouth quits.
     /// Cleared when playback starts (`play()`), when a jump moves the cursor
     /// away from the end (`navigateTo(chapterIndex:characterOffset:)`), when
     /// a backward skip moves it while another book plays
@@ -395,6 +397,15 @@ final class ReaderViewModel: ObservableObject {
     /// again, or waits at its start. Accessed from the Playback and
     /// Navigation extensions.
     var hasFinishedBook = false
+    /// Whether the play under way replays a finished book's end, as a
+    /// backward skip after the end starts it (`performSkip(unit:forward:)`):
+    /// the end it plays on to is no new finish (TODO P07; the user,
+    /// October 10, 2026, question 14: yes), so `handleEndOfBook()` neither
+    /// counts it nor tells it (`.bookDidFinish`), and does all else the end
+    /// does. Set by that skip; cleared by the end it reaches, by a jump
+    /// (`navigateTo(chapterIndex:characterOffset:)`), and by a stop.
+    /// Accessed from the Playback and Navigation extensions.
+    var replaysFinishedEnd = false
     /// The latest hand-over of listening from this finished book to the
     /// next one, in its folder or in the reading list
     /// (`handOverToNextBook(to:titled:askingWith:)`). While it is under way,
@@ -1320,6 +1331,11 @@ final class ReaderViewModel: ObservableObject {
                 currentCharacterOffset = 0
             }
         }
+        // A book that played to its end was saved exactly there, and opens
+        // finished, as it rested before TextMouth quit (TODO P07): its next
+        // backward skip plays its end again, and Play does what Play does at
+        // the end. Any other place opens a book that is not finished.
+        hasFinishedBook = cursorRestsAtEnd
         // This reader's sleep timer for the end of the heading waits for the
         // end of the heading the cursor is in, as the headings are now: one
         // set while the book loaded found no headings yet (finding #787).

@@ -18,9 +18,10 @@ struct ReadingStatsFigures: Equatable {
     /// Consecutive days with more than a minute of listening, through that
     /// day or, while it has none yet, through the day before.
     var currentStreakDays: Int
-    /// Books finished in the year containing the instant.
+    /// Books finished in the year containing the instant, each once (TODO
+    /// P07).
     var booksFinishedThisYear: Int
-    /// Books finished ever.
+    /// Books finished ever, each once (TODO P07).
     var booksFinishedAllTime: Int
     /// Books finished in the year containing the instant, by kind (FR03).
     var booksFinishedThisYearByKind = FinishedBookCounts()
@@ -40,7 +41,7 @@ extension ReadingStatsFigures {
             allTime: service.allTimeListeningTime(at: now),
             currentStreakDays: service.currentStreak(at: now),
             booksFinishedThisYear: service.booksFinishedThisYear(at: now),
-            booksFinishedAllTime: service.stats.finishedBooks.count,
+            booksFinishedAllTime: service.booksFinishedAllTime,
             booksFinishedThisYearByKind: service.booksFinishedThisYearByKind(at: now),
             booksFinishedAllTimeByKind: service.booksFinishedAllTimeByKind
         )

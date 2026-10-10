@@ -22,6 +22,14 @@ enum EndOfBookWording {
         "Restarting: \(title)"
     }
 
+    /// What VoiceOver hears as Play starts a finished book over from its
+    /// beginning, its end-of-book choice "Stop, and Play Starts Over" (TODO
+    /// P07): "Starting again: <title>", before the book plays, so the
+    /// listener knows the place moved.
+    static func startingAgain(_ title: String) -> String {
+        "Starting again: \(title)"
+    }
+
     /// What VoiceOver hears when Play reaches a finished book whose next
     /// book has been asked for, and is opening, but does not play yet:
     /// "Still starting: <title>", as "Starting: <title>" said it, so that
@@ -64,4 +72,26 @@ enum EndOfBookWording {
 
     /// No book follows the finished one in its folder.
     static let noMoreBooksInFolderNote = "No more books in folder"
+
+    // MARK: - A Book Resting at Its End
+
+    /// What a surface that says how far a book has got says of a book
+    /// resting at its end, finished (`Book.restsAtEnd`, TODO P07), in place
+    /// of "100 percent" and its time left: the library row, shown and
+    /// spoken, Speak Info, Where Am I?, and Copy Reading Position. The user
+    /// decided on October 10, 2026 (question 12): "yes except the reader,
+    /// those controls with the info should still be there", so the reader's
+    /// own controls and status row keep their percent and time. A word,
+    /// never a sign or a colour, read alike on screen, by VoiceOver, and on
+    /// a braille display.
+    static let finishedProgress = "Finished"
+
+    // MARK: - The Choices
+
+    /// What the Playback tab says, under its "When book ends" picker, of
+    /// what Play does on a finished book with each choice that stops there
+    /// (TODO P07), shown and read alike.
+    static let playOnAFinishedBookCaption =
+        "With \"Stop\", Play on a finished book says it is finished; "
+        + "with \"Stop, and Play Starts Over\", Play starts it again from the beginning."
 }

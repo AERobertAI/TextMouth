@@ -131,7 +131,8 @@ extension LibraryInfoSubject {
 extension BookInfoFacts {
     /// The facts of `book` as its row shows them: its reader's live
     /// position in place of its own while that is newer, so the progress
-    /// and time left are the row's; its cloud note and whether it is kept,
+    /// and time left are the row's, "Finished" and no time left for a book
+    /// resting at its end (TODO P07); its cloud note and whether it is kept,
     /// as the row says them; whether a reader has it open; its place in the
     /// reading list, as the Reading List counts it (FR09); and its file
     /// size when `measuresFileSize`.
@@ -152,7 +153,7 @@ extension BookInfoFacts {
             format: book.format.displayName,
             folderPath: book.folderPath,
             progress: BookRow.spokenProgress(for: shown, besideDownloadPercentage: false),
-            timeRemaining: shown.estimatedTimeRemaining(wpm: wordsPerMinute),
+            timeRemaining: BookRow.timeRemaining(for: shown, wpm: wordsPerMinute),
             isUnopened: book.lastOpened == nil,
             dateAdded: book.dateAdded,
             lastOpened: book.lastOpened,

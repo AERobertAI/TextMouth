@@ -306,8 +306,9 @@ final class LibraryViewModel: ObservableObject {
     /// went unused for a day, the index with its repair, the sweep of the
     /// recordings' original takes whose time is up and of the audio
     /// editor's caches a crash left, the observers, and the background
-    /// maintenance. It runs once: at launch, or on the
-    /// Try Again that first finds the library.
+    /// maintenance, after which the finished books are put at their ends
+    /// once (`moveFinishedBooksToTheirEndsOnce`, TODO P07). It runs once: at
+    /// launch, or on the Try Again that first finds the library.
     func startLibrary() {
         guard !hasStartedLibrary else { return }
         hasStartedLibrary = true
@@ -337,7 +338,11 @@ final class LibraryViewModel: ObservableObject {
         observeImportProgressRequests()
         // Speak Download Progress, from any window (FR10's feed half).
         observeDownloadProgressRequests()
-        updateContentCachesAndStatistics()
+        // Once the rows are measured, the books Books Finished counts at
+        // 100 percent are put at their ends, once (TODO P07).
+        updateContentCachesAndStatistics { [weak self] in
+            self?.moveFinishedBooksToTheirEndsOnce()
+        }
         // The podcast and article feeds start in the background (FR03).
         startFeeds()
         // In a library another Mac can open, say this Mac has it open.

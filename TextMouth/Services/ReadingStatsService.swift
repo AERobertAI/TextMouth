@@ -377,22 +377,43 @@ final class ReadingStatsService: ObservableObject {
         activeSession != nil
     }
 
-    /// Counts the book `bookID`, titled `title`, among Books Finished now,
-    /// with what kind of book it is (`finishedBookKind`), told while the
-    /// library still holds it: a podcast episode's download is deleted soon
-    /// after it plays, and nothing could tell its kind later.
-    func markBookFinished(bookID: UUID, title: String) {
-        let entry = FinishedBookEntry(
-            bookID: bookID.uuidString,
-            title: title,
-            dateFinished: Date(),
-            kind: finishedBookKind?(bookID)
-        )
-        stats.finishedBooks.append(entry)
-        save()
+    /// Records that the book `bookID`, titled `title`, played or was read to
+    /// its end now: Books Finished counts it, once (TODO P07), and whoever
+    /// follows finished books hears of it (`.bookDidFinish`).
+    ///
+    /// The user decided on October 10, 2026: "yes, only one finish per book
+    /// for now". A book Books Finished counts already is not counted again,
+    /// whatever ends it how many times, so nothing is written for it. A book
+    /// counted for the first time is written with what kind of book it is
+    /// (`finishedBookKind`), told while the library still holds it: a podcast
+    /// episode's download is deleted soon after it plays, and nothing could
+    /// tell its kind later.
+    ///
+    /// Either way the end is told (`.bookDidFinish`), as the feed engine marks
+    /// a downloaded episode or article played then (FR03): an item marked
+    /// unplayed and heard to its end again is played again. A reader whose
+    /// rewind after the end replays a finished book's end does not call
+    /// this at all (`ReaderViewModel.finishAtTheEnd(replayingAFinishedEnd:)`).
+    ///
+    /// - Returns: Whether Books Finished counted the book now, for the first
+    ///   time.
+    @discardableResult
+    func markBookFinished(bookID: UUID, title: String) -> Bool {
+        let isCountedAlready = stats.finishedBooks.contains { $0.bookID == bookID.uuidString }
+        if !isCountedAlready {
+            let entry = FinishedBookEntry(
+                bookID: bookID.uuidString,
+                title: title,
+                dateFinished: Date(),
+                kind: finishedBookKind?(bookID)
+            )
+            stats.finishedBooks.append(entry)
+            save()
+        }
         // Whoever follows finished books hears of this one, as the feed
         // engine marks a downloaded episode or article played (FR03).
         NotificationCenter.default.post(name: .bookDidFinish, object: self, userInfo: [Self.finishedBookIDKey: bookID])
+        return !isCountedAlready
     }
 
     /// The key of the finished book's ID in a `.bookDidFinish` notification.
@@ -450,16 +471,17 @@ final class ReadingStatsService: ObservableObject {
 
     /// Books finished in the year containing `now`, in the system's
     /// calendar, so a display can read this at the same instant as the
-    /// listening times.
+    /// listening times. Each book counts once, in the year of the finish
+    /// Books Finished counts (`ReadingStats.countedFinishes`, TODO P07).
     func booksFinishedThisYear(at now: Date) -> Int {
         finishedBooks(inYearOf: now).count
     }
 
     /// The books finished in the year containing `now`, in the system's
-    /// calendar: the year each finish counts in, whatever its kind.
+    /// calendar: the year each counted finish falls in, whatever its kind.
     private func finishedBooks(inYearOf now: Date) -> [FinishedBookEntry] {
         let year = Calendar.current.component(.year, from: now)
-        return stats.finishedBooks.filter {
+        return stats.countedFinishes.filter {
             Calendar.current.component(.year, from: $0.dateFinished) == year
         }
     }
@@ -469,9 +491,15 @@ final class ReadingStatsService: ObservableObject {
         FinishedBookCounts(kinds: finishedBooks(inYearOf: now).map(kind(of:)))
     }
 
-    /// The books finished ever, counted by kind.
+    /// The books finished ever, each counted once (TODO P07): how many
+    /// books Books Finished All Time says.
+    var booksFinishedAllTime: Int {
+        stats.countedFinishes.count
+    }
+
+    /// The books finished ever, each counted once, by kind.
     var booksFinishedAllTimeByKind: FinishedBookCounts {
-        FinishedBookCounts(kinds: stats.finishedBooks.map(kind(of:)))
+        FinishedBookCounts(kinds: stats.countedFinishes.map(kind(of:)))
     }
 
     /// The kind of the book `entry` counts: the one recorded as it finished,
@@ -663,7 +691,11 @@ struct ReadingStats: Codable {
     var totalListeningSeconds: TimeInterval = 0
     /// Per-book listening time in seconds, keyed by book UUID string
     var bookListeningSeconds: [String: TimeInterval] = [:]
-    /// Books that have been finished
+    /// Books that have been finished, oldest first, as each finish was
+    /// written: one entry for each book since TextMouth counts each book
+    /// once (TODO P07), and more for a book an earlier version counted at
+    /// each of its ends, which are kept as they were and counted once
+    /// (`countedFinishes`).
     var finishedBooks: [FinishedBookEntry] = []
     /// The version of the rules the keys of `dailyListeningSeconds`
     /// follow: `ListeningDays.keyVersion` once they are Gregorian keys, as
@@ -697,10 +729,35 @@ struct ReadingStats: Codable {
         }
         return sum
     }
+
+    // MARK: Books Finished, Each Once (TODO P07)
+
+    /// How many books Recently Finished lists.
+    static let recentlyFinishedLimit = 10
+
+    /// The finishes Books Finished counts: each book once, by the first
+    /// entry naming it, in the order the entries were written. The user
+    /// decided on October 10, 2026: "yes, only one finish per book for now".
+    /// An earlier version wrote an entry at each end of a book, a finish
+    /// heard again or replayed by Play at the end, and those entries are
+    /// kept in the file as they were, and counted once: the user's
+    /// statistics held 67 entries for 28 books, and Books Finished counts 28.
+    var countedFinishes: [FinishedBookEntry] {
+        var counted = Set<String>()
+        return finishedBooks.filter { counted.insert($0.bookID).inserted }
+    }
+
+    /// The books Recently Finished lists, newest first: the last `limit`
+    /// finishes Books Finished counts (`countedFinishes`), so each book is
+    /// listed once, by the finish it counts. Its rows were once the last
+    /// entries, one book nine times among the user's ten.
+    func recentlyFinished(limit: Int = recentlyFinishedLimit) -> [FinishedBookEntry] {
+        Array(countedFinishes.suffix(limit).reversed())
+    }
 }
 
 /// One book counted among Books Finished.
-struct FinishedBookEntry: Codable {
+struct FinishedBookEntry: Codable, Identifiable {
     var bookID: String
     var title: String
     var dateFinished: Date
@@ -709,6 +766,14 @@ struct FinishedBookEntry: Codable {
     /// could not tell, which Books Finished counts by the library's answer
     /// while the library holds it.
     var kind: FinishedBookKind?
+
+    /// The entry's own identity, its book and the moment it finished, by
+    /// which Recently Finished keys its rows: no two entries share it,
+    /// while two entries an earlier version wrote for one book share their
+    /// book's ID (TODO P07).
+    var id: String {
+        "\(bookID) \(dateFinished.timeIntervalSinceReferenceDate)"
+    }
 
     /// The keys of an entry in reading_stats.json.
     private enum CodingKeys: String, CodingKey {
@@ -754,9 +819,12 @@ enum FinishedBookKind: String, Codable, CaseIterable, Sendable {
 }
 
 extension Notification.Name {
-    /// A book played or was read to its end, as Books Finished counts it
+    /// A book played or was read to its end
     /// (`ReadingStatsService.markBookFinished(bookID:title:)`): posted by the
-    /// statistics service that counted it, naming the book under
-    /// `ReadingStatsService.finishedBookIDKey`.
+    /// statistics service told of it, naming the book under
+    /// `ReadingStatsService.finishedBookIDKey`, at each such end, whether
+    /// Books Finished counted the book then or had counted it already, since
+    /// it counts each book once (TODO P07). A rewind's replay of a finished
+    /// book's end posts nothing: the book had ended already.
     static let bookDidFinish = Notification.Name("bookDidFinish")
 }

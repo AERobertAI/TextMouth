@@ -66,8 +66,10 @@ extension ReaderViewModel {
     /// should override it". `handleEndOfBook()` calls it once the book's
     /// listening session has closed and the book rests finished at its end.
     ///
-    /// The book is counted finished, as a book that stops or continues is,
-    /// before the list is asked what follows, so it is never its own answer.
+    /// The book is counted finished, and rests exactly at its end, saved
+    /// (`finishAtTheEnd(replayingAFinishedEnd:)`, TODO P07), as a book that stops or continues
+    /// does, before the list is asked what follows, so it is never its own
+    /// answer.
     /// The book below or above it, passing over finished books while the
     /// list says so, then opens to be read from the list and plays, as
     /// Continue to Next Book starts the next book in a folder: "Starting:
@@ -85,22 +87,53 @@ extension ReaderViewModel {
     ///     effect as the book ended (`sleepTimerEndsListeningHere`).
     ///   - sleepTimerStoppedHere: Whether that timer stopped playback here,
     ///     at the end of the heading or of the book.
-    func finishBookReadFromReadingList(sleepTimerEndsListening: Bool, sleepTimerStoppedHere: Bool) {
-        readingStatsService.markBookFinished(bookID: book.id, title: book.title)
-        savePosition()
+    ///   - replayingAFinishedEnd: Whether this end replayed the book's end,
+    ///     finished already, as a rewind after the end does, which counts
+    ///     nothing anew (`replaysFinishedEnd`, TODO P07).
+    func finishBookReadFromReadingList(
+        sleepTimerEndsListening: Bool,
+        sleepTimerStoppedHere: Bool,
+        replayingAFinishedEnd: Bool
+    ) {
+        finishAtTheEnd(replayingAFinishedEnd: replayingAFinishedEnd)
+        followReadingListPastThisBook(
+            sleepTimerEndsListening: sleepTimerEndsListening,
+            sleepTimerStoppedHere: sleepTimerStoppedHere,
+            sayingNothingFollows: finishListening(announcing:)
+        )
+    }
+
+    /// Goes on through the reading list from this finished book, as the
+    /// list's "When a book ends" says (`finishBookReadFromReadingList`, and
+    /// Play on a book resting at its end, `playFromTheEnd()`): the book
+    /// below or above it, passing over finished books while the list says
+    /// so, takes listening over (`handOverToNextBook(to:titled:askingWith:)`),
+    /// unless this reader's sleep timer is in effect, which could never
+    /// pause it, or nothing follows: Stop, that end of the list, or only
+    /// finished books beyond. Then `say` says that the book finished and
+    /// why nothing follows.
+    ///
+    /// - Parameters:
+    ///   - sleepTimerEndsListening: Whether this reader's sleep timer is in
+    ///     effect (`sleepTimerEndsListeningHere`).
+    ///   - sleepTimerStoppedHere: Whether that timer stopped playback where
+    ///     the book ended.
+    ///   - say: Says what the listener hears when nothing follows: at the
+    ///     end, it ends listening with it (`finishListening(announcing:)`).
+    func followReadingListPastThisBook(
+        sleepTimerEndsListening: Bool,
+        sleepTimerStoppedHere: Bool,
+        sayingNothingFollows say: (String) -> Void
+    ) {
         guard let next = libraryViewModel.readingListContinuation(after: book.id) else {
             let note = readingListEndNote()
             DiagnosticLog.trace(.playback, "end of book: nothing follows in the reading list (\(note))")
-            finishListening(
-                announcing: EndOfBookWording.finished(book.title, notes: [note], sleepTimerExpired: sleepTimerStoppedHere)
-            )
+            say(EndOfBookWording.finished(book.title, notes: [note], sleepTimerExpired: sleepTimerStoppedHere))
             return
         }
         guard !sleepTimerEndsListening else {
             DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book in the reading list")
-            finishListening(
-                announcing: EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote])
-            )
+            say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote]))
             return
         }
         // The next book takes over, as Continue to Next Book's does, so

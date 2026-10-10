@@ -197,15 +197,23 @@ enum AudioPositionObserverPolicy {
     ///     past the clip's end reports nothing, since that time belongs to
     ///     whatever follows the clip; paused playback finishes the clip on
     ///     its first tick once resumed.
+    ///   - hasFinished: Whether the play has finished, having played to its
+    ///     end, with nothing played, sought, or loaded since. Such a play
+    ///     reports nothing, with a clip end or without: the observer ticks
+    ///     once more as the player stops at the end, and the reader has by
+    ///     then put a finished book at its exact end (TODO P07,
+    ///     `ReaderViewModel.restAtEnd()`), where a late tick, a moment off
+    ///     the end, would move it, and closing the window would save that.
     ///   - clipEndTime: Where the clip being played ends, in seconds into
     ///     its file, or nil when it plays to the file's end.
     static func action(
         seconds: TimeInterval,
         isSeeking: Bool,
         isPlaying: Bool,
+        hasFinished: Bool,
         clipEndTime: TimeInterval?
     ) -> Action {
-        guard seconds.isFinite, !isSeeking else { return .ignore }
+        guard seconds.isFinite, !isSeeking, !hasFinished else { return .ignore }
         if let clipEndTime, seconds >= clipEndTime {
             return isPlaying ? .finishClip : .ignore
         }
@@ -662,6 +670,20 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// was paused, or nil. Resuming finishes that play, unless a seek, a
     /// load, or a stop has begun another since.
     private var endHeldUntilResume: Int?
+
+    /// The generation that began as the last play finished, having played
+    /// to its end with nothing following it (`finishPlayback()`), or nil.
+    /// While no seek, load, or stop has begun another generation since, the
+    /// play has finished (`hasFinishedPlay`), and the position observer
+    /// reports nothing of it (TODO P07).
+    private var finishedPlayGeneration: Int?
+
+    /// Whether the last play has finished, having played to its end, and
+    /// nothing has been played, sought, or loaded since: each of those
+    /// begins a new generation of play.
+    private var hasFinishedPlay: Bool {
+        finishedPlayGeneration == playGeneration.current
+    }
 
     /// Tracks the intended output volume independently of the AVPlayer
     /// instance. When load() creates a new AVPlayer for a chapter
@@ -1544,14 +1566,16 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 seconds: seconds,
                 isSeeking: seekGate.isSeeking,
                 isPlaying: isPlaying && !isPaused,
+                hasFinished: hasFinishedPlay,
                 clipEndTime: clipEndTime
             )
         switch action {
         case .ignore:
             // Nothing to act on: a seek still on its way, during which the
             // player may report where it was before; a time that is not a
-            // number; paused or finished playback at or past its clip's end;
-            // or the clock of the file rolled on into.
+            // number; a play that has finished; paused or finished playback
+            // at or past its clip's end; or the clock of the file rolled on
+            // into.
             break
         case .finishClip:
             reachedEnd()
@@ -1702,6 +1726,13 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// has stopped report no time beyond the clip. Loading a file, or a
     /// chain's clip, sets the end afresh.
     ///
+    /// A play that finishes with nothing following it reports no position
+    /// at all until another play, seek, or load begins (`hasFinishedPlay`,
+    /// TODO P07): the player's stop at the end ticks the position observer
+    /// once more, and a file without a clip end would otherwise report that
+    /// tick, moving a finished book off the exact end the reader saved it
+    /// at.
+    ///
     /// Paused playback never finishes here: its end is held until it
     /// resumes, so the listener's pause is never overridden by moving on.
     ///
@@ -1722,6 +1753,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             player?.pause()
             isPlaying = false
             isPaused = false
+            finishedPlayGeneration = playGeneration.current
             DiagnosticLog.trace(.playback, "audio play finished (generation \(playGeneration.current))")
         }
         onPlaybackFinished?()

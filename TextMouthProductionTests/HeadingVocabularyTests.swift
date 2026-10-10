@@ -575,6 +575,10 @@ final class LibraryProgressTextTests: XCTestCase {
         XCTAssertEqual(BookRow.progressText(for: book)?.spoken, "42 percent")
     }
 
+    /// A place past the book's end, as one saved before its text was
+    /// extracted again can be, reads 100 percent, the end, so the row says
+    /// the book is finished (TODO P07); one before its start reads 0
+    /// percent.
     func testProgressIsClampedToTheBook() {
         let pastEnd = book(
             position: ReadingPosition(chapterIndex: 3, characterOffset: 0, globalCharacterOffset: 5_000),
@@ -585,7 +589,8 @@ final class LibraryProgressTextTests: XCTestCase {
             totalCharacters: 1_000
         )
 
-        XCTAssertEqual(BookRow.progressText(for: pastEnd)?.visible, "100%")
+        XCTAssertEqual(pastEnd.percentComplete, 100)
+        XCTAssertEqual(BookRow.progressText(for: pastEnd)?.visible, "Finished")
         XCTAssertEqual(BookRow.progressText(for: beforeStart)?.visible, "0%")
     }
 

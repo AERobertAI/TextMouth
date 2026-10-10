@@ -420,6 +420,12 @@ struct PlaybackSettingsView: View {
                 Text("\"Continue to Next Book\" plays the next book in the same folder by sort order.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+
+                // What Play does on a finished book with each choice that
+                // stops there (TODO P07).
+                Text(EndOfBookWording.playOnAFinishedBookCaption)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             } header: {
                 Text("End of Book")
             }
