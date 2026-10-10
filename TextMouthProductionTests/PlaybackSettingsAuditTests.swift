@@ -200,10 +200,15 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         ConfigService.shared.flushScheduledSave()
 
         let recorder = recordingAnnouncements { reader.saveSettingsToGlobal() }
-        waitPastConfigSaveDelay()
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Settings applied as global defaults"])
-        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.configuration])
+        // Waited for, not a fixed window: the save follows the change by the
+        // save delay, and when this test is the first of its run to start
+        // speech it can come later than twice that (#741).
+        XCTAssertTrue(
+            waitUntil(timeout: 5) { center.outstandingFailures().map(\.subject) == [.configuration] },
+            "the failed save never reached the banner: \(center.outstandingFailures().map(\.subject))"
+        )
     }
 
     // MARK: - Audio speed snapping and clamping
