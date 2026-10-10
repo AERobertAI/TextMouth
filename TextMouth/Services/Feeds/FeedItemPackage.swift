@@ -27,11 +27,6 @@ import Foundation
 /// (`LibraryViewModel.removeFeedFiles(of:keepingPackages:remove:)`); this
 /// type says what stays, and removes what goes.
 enum FeedItemPackage {
-    /// The name of a package's record, bookInfo.json.
-    private static let recordName = TextMouthPaths.bookInfoPath(in: URL(fileURLWithPath: "/", isDirectory: true)).lastPathComponent
-    /// The name of a package's text, content.md.
-    private static let textName = TextMouthPaths.contentMarkdownPath(in: URL(fileURLWithPath: "/", isDirectory: true)).lastPathComponent
-
     // MARK: What Stays
 
     /// Whether the package at `package` of the feed item `row` holds
@@ -76,7 +71,8 @@ enum FeedItemPackage {
     /// Download takes an article's content.md, with its file
     /// (`FeedCenter`'s Delete Download, through `FeedEnvironment.removeItem`).
     static func staysWithoutTheFile(_ name: String) -> Bool {
-        name == recordName || name == TextMouthPaths.contentIndexFileName || name == textName
+        name == TextMouthPaths.bookInfoFileName || name == TextMouthPaths.contentIndexFileName
+            || name == TextMouthPaths.contentMarkdownFileName
             || TextMouthPaths.isTranscriptFile(name) || TextMouthPaths.isKeptTextCopy(name)
     }
 
