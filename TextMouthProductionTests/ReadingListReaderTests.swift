@@ -659,10 +659,11 @@ final class ReadingListReaderTests: XCTestCase {
             }
             XCTAssertTrue(reader.hasFinishedBook, testCase.announcement)
             XCTAssertTrue(reader.cursorRestsAtEnd, "\(testCase.announcement): not at the end")
-            XCTAssertEqual(
-                ReadingStatsService.shared.stats.finishedBooks.last?.bookID,
-                testCase.reading.id.uuidString,
-                testCase.announcement
+            // Counted once, though a book ends here in two of the cases
+            // (TODO P07: one finish per book).
+            XCTAssertTrue(
+                ReadingStatsService.shared.stats.finishedBookIDs.contains(testCase.reading.id),
+                "\(testCase.announcement): not counted"
             )
             // Its window closes, so the next case opens its book afresh.
             reader.close()

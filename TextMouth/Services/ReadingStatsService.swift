@@ -377,22 +377,41 @@ final class ReadingStatsService: ObservableObject {
         activeSession != nil
     }
 
-    /// Counts the book `bookID`, titled `title`, among Books Finished now,
-    /// with what kind of book it is (`finishedBookKind`), told while the
-    /// library still holds it: a podcast episode's download is deleted soon
-    /// after it plays, and nothing could tell its kind later.
-    func markBookFinished(bookID: UUID, title: String) {
-        let entry = FinishedBookEntry(
-            bookID: bookID.uuidString,
-            title: title,
-            dateFinished: Date(),
-            kind: finishedBookKind?(bookID)
-        )
-        stats.finishedBooks.append(entry)
-        save()
+    /// Records that the book `bookID`, titled `title`, played or was read to
+    /// its end now: Books Finished counts it, once (TODO P07), and whoever
+    /// follows finished books hears of it (`.bookDidFinish`).
+    ///
+    /// The user decided on October 10, 2026: "yes, only one finish per book
+    /// for now". A book Books Finished counts already is not counted again,
+    /// whatever ends it how many times, so nothing is written for it. A book
+    /// counted for the first time is written with what kind of book it is
+    /// (`finishedBookKind`), told while the library still holds it: a podcast
+    /// episode's download is deleted soon after it plays, and nothing could
+    /// tell its kind later.
+    ///
+    /// Either way the end is told (`.bookDidFinish`), as the feed engine marks
+    /// a downloaded episode or article played then (FR03): an item marked
+    /// unplayed and heard to its end again is played again.
+    ///
+    /// - Returns: Whether Books Finished counted the book now, for the first
+    ///   time.
+    @discardableResult
+    func markBookFinished(bookID: UUID, title: String) -> Bool {
+        let isCountedAlready = stats.finishedBooks.contains { $0.bookID == bookID.uuidString }
+        if !isCountedAlready {
+            let entry = FinishedBookEntry(
+                bookID: bookID.uuidString,
+                title: title,
+                dateFinished: Date(),
+                kind: finishedBookKind?(bookID)
+            )
+            stats.finishedBooks.append(entry)
+            save()
+        }
         // Whoever follows finished books hears of this one, as the feed
         // engine marks a downloaded episode or article played (FR03).
         NotificationCenter.default.post(name: .bookDidFinish, object: self, userInfo: [Self.finishedBookIDKey: bookID])
+        return !isCountedAlready
     }
 
     /// The key of the finished book's ID in a `.bookDidFinish` notification.
@@ -754,9 +773,11 @@ enum FinishedBookKind: String, Codable, CaseIterable, Sendable {
 }
 
 extension Notification.Name {
-    /// A book played or was read to its end, as Books Finished counts it
+    /// A book played or was read to its end
     /// (`ReadingStatsService.markBookFinished(bookID:title:)`): posted by the
-    /// statistics service that counted it, naming the book under
-    /// `ReadingStatsService.finishedBookIDKey`.
+    /// statistics service told of it, naming the book under
+    /// `ReadingStatsService.finishedBookIDKey`, at each such end, whether
+    /// Books Finished counted the book then or had counted it already, since
+    /// it counts each book once (TODO P07).
     static let bookDidFinish = Notification.Name("bookDidFinish")
 }
