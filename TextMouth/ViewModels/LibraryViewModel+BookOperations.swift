@@ -45,6 +45,13 @@ extension LibraryViewModel {
             // the current row, so a book moved meanwhile is marked where its
             // package is now; a book no longer listed needs nothing.
             guard let book = bookByID(requested.id) else { continue }
+            // A feed item stays in its feed while its file is here, and
+            // retiring its package would delete its record, with its place
+            // and bookmarks (FR11, branch A2): Delete Download removes it.
+            guard !book.isFeedItem else {
+                refused.append("\(book.title): \(FeedItemPackageError.staysInItsFeed.localizedDescription)")
+                continue
+            }
             do {
                 let retirement = try LibraryPersistenceService.retirePackage(of: book)
                 if let error = retirement.recordDeletionError {
@@ -146,6 +153,18 @@ extension LibraryViewModel {
         var removed: [Book] = []
         var failures: [String] = []
         for book in books.compactMap({ bookByID($0.id) }) {
+            // A feed item's Remove is its Delete Download (FR11, branch A2):
+            // its file goes, and its package stays while it holds the
+            // listener's place, bookmarks, settings, or transcript.
+            if book.isFeedItem {
+                do {
+                    try feeds.deleteDownload(ofBook: book, in: self)
+                    removed.append(book)
+                } catch {
+                    failures.append("\(book.title): \(error.localizedDescription)")
+                }
+                continue
+            }
             if deletingPackages {
                 do {
                     try deletePackage(book)

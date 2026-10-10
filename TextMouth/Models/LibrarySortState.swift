@@ -86,8 +86,8 @@ struct LibraryLocation: Equatable {
     }
 
     /// The library window's title, naming the location and its sort:
-    /// "Library: Fiction (Author Descending)", or "Library: Recent (Manual
-    /// Order)" for manual order, which has no direction. The Reading List,
+    /// "Library: Fiction (Author Descending)", or "Library: Recently Opened
+    /// (Manual Order)" for manual order, which has no direction. The Reading List,
     /// whose one order is its own, is named alone: "Library: Reading List".
     func windowTitle(sortedBy sort: LibrarySortState) -> String {
         keepsItsOwnOrder ? "Library: \(name)" : "Library: \(name) (\(sort.titleFragment))"

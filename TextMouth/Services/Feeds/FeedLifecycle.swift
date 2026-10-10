@@ -6,6 +6,10 @@ import Foundation
 struct FeedSweepReport: Equatable, Sendable {
     /// The downloads deleted, by book ID.
     var deletedBookIDs: [UUID] = []
+    /// Those of `deletedBookIDs` whose packages stayed without their files,
+    /// holding the listener's place, bookmarks, settings, or transcript
+    /// (FR11, branch A2).
+    var keptPackageBookIDs: [UUID] = []
     /// The downloads due but open in a reader, left until it closes.
     var openBookIDs: [UUID] = []
     /// The downloads due in a cloud library whose packages are not wholly on
@@ -14,19 +18,6 @@ struct FeedSweepReport: Equatable, Sendable {
     /// The items whose books the library no longer lists, now not
     /// downloaded.
     var forgottenItemIDs: [FeedItem.ID] = []
-}
-
-/// How deleting one due download went, off the main thread.
-enum FeedSweepOutcome: Equatable, Sendable {
-    /// The package is gone.
-    case deleted
-    /// In a cloud library, the package is not wholly on this Mac.
-    case leftInCloud
-    /// The package was not where the book's row said, as when the book moved
-    /// meanwhile: the next sweep tries again.
-    case moved
-    /// The package could not be deleted, for the reason given.
-    case failed(String)
 }
 
 extension FeedCenter {
@@ -94,31 +85,98 @@ extension FeedCenter {
     // MARK: Deleting
 
     /// Deletes the download of the item `itemID` of the feed `feedID`, as
-    /// Delete Download does: its book leaves the library, its package going
-    /// to the Trash or deleted as the removal setting says, and the item
-    /// stays, not downloaded. Refused for a book open in a reader.
-    /// - Throws: the error that kept the package from being deleted, or
-    ///   `BookCloudError.bookIsOpen`.
+    /// Delete Download does: its file goes, to the Trash or for good as the
+    /// removal setting says, with what was made from it, and the item stays,
+    /// not downloaded. The item's package stays without the file while it
+    /// holds something of the listener's, keeping the place, the playback
+    /// times, the bookmarks, the item's own settings, and its transcript for
+    /// a later download; otherwise it goes whole (FR11, branch A2). Refused
+    /// for a book open in a reader.
+    /// - Throws: `BookCloudError.bookIsOpen`, `FeedItemPackageError`, or why
+    ///   the file could not be removed; the download then stays.
     func deleteDownload(_ itemID: FeedItem.ID, of feedID: UUID) throws {
-        guard let item = store.record(of: feedID)?.item(itemID), let bookID = item.state.bookID else { return }
-        if let library, let book = library.feedBook(withID: bookID) {
-            guard !library.feedBooksOpenInReaders.contains(bookID) else { throw BookCloudError.bookIsOpen }
-            try environment.deleteBookPackage(book)
-            library.removeFeedBook(book)
+        guard let item = store.record(of: feedID)?.item(itemID), item.state.bookID != nil else { return }
+        if let library, let book = downloadedRow(of: item, in: feedID) {
+            try removeDownload(book, in: library, keepingPackage: true, by: "Delete Download")
         }
+        noteDownloadRemoved(itemID, of: feedID)
+    }
+
+    /// Deletes the download whose book is `book`, a feed item `library`
+    /// lists, as the library's Remove does for one: as Delete Download does
+    /// (FR11, branch A2), whether or not a feed's record still names it, and
+    /// the item a record names becomes not downloaded.
+    /// - Throws: what `deleteDownload(_:of:)` throws.
+    func deleteDownload(ofBook book: Book, in library: FeedLibraryHost) throws {
+        try removeDownload(book, in: library, keepingPackage: true, by: "the library's Remove")
+        if let (feed, item) = store.item(downloadedAs: book.id) {
+            noteDownloadRemoved(item.id, of: feed.id)
+        }
+    }
+
+    /// Removes the file of `book`, a feed item `library` lists, as the
+    /// listener's own deletion does (`FeedEnvironment.removeItem`): with
+    /// `keepingPackage`, keeping its package while it holds something of the
+    /// listener's, and otherwise deleting the package whole, even one kept
+    /// on the shelf after its file went. Its record and its feed's index are
+    /// written first, then the file goes
+    /// (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`);
+    /// `command` names what asked, for the debug log.
+    /// - Throws: `BookCloudError.bookIsOpen` for a book open in a reader,
+    ///   `FeedItemPackageError.notAFeedPackage` for a download not in its
+    ///   feed's folder, as one made before FR11 until it moves there, or
+    ///   whatever kept the file; nothing was removed then.
+    private func removeDownload(_ book: Book, in library: FeedLibraryHost, keepingPackage: Bool, by command: String) throws {
+        guard !library.feedBooksOpenInReaders.contains(book.id) else { throw BookCloudError.bookIsOpen }
+        guard book.isFeedItem else { throw FeedItemPackageError.notAFeedPackage }
+        let root = TextMouthPaths.root
+        let outcome = try library.removeFeedFiles(of: [book], keepingPackages: keepingPackage) { removal in
+            let package = try FeedItemPackage.packageForRemoval(of: removal.row, in: root)
+            if removal.keepsPackage {
+                try environment.removeItem(FeedItemPackage.fileEntry(of: removal.row, in: package))
+                FeedItemPackage.removeWhatTheFileMade(of: removal.row, from: package)
+            } else {
+                try environment.removeItem(package)
+            }
+        }
+        if let failure = outcome.failures.first {
+            throw failure.error
+        }
+        for removal in outcome.removed {
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETED: \(removal.row.title): \(Self.removalNote(removal)), by \(command)")
+        }
+    }
+
+    /// Notes in the record that the item `itemID` of the feed `feedID` is no
+    /// longer downloaded, from now.
+    private func noteDownloadRemoved(_ itemID: FeedItem.ID, of feedID: UUID) {
         store.updateItem(itemID, of: feedID) { item in
             item.state = .notDownloaded
             item.downloadDeletedDate = environment.now()
         }
     }
 
+    /// What became of a removed download's package, as its log line says.
+    private static func removalNote(_ removal: FeedFileRemoval) -> String {
+        removal.keepsPackage ? "its file deleted, its place and bookmarks kept" : "its package deleted whole"
+    }
+
     /// Deletes the item `itemID` of the feed `feedID`, as Delete Episode does:
-    /// its download stops or is deleted, and the item leaves every list,
-    /// while its record keeps it so no refresh brings it back.
+    /// its download stops; its package goes whole, to the Trash or for good
+    /// as the removal setting says, whether its file is here or the package
+    /// was kept with the listener's place after its file went (FR11, branch
+    /// A2); and the item leaves every list, while its record keeps it so no
+    /// refresh brings it back. Refused for a book open in a reader.
     /// - Throws: what `deleteDownload(_:of:)` throws; the item then stays.
     func deleteItem(_ itemID: FeedItem.ID, of feedID: UUID) throws {
         downloads.cancel(itemID, of: feedID)
-        try deleteDownload(itemID, of: feedID)
+        guard let item = store.record(of: feedID)?.item(itemID) else { return }
+        if let library, let row = downloadedRow(of: item, in: feedID) ?? library.feedItemRows(of: feedID).kept[itemID] {
+            try removeDownload(row, in: library, keepingPackage: false, by: "Delete Episode")
+        }
+        if item.state.bookID != nil {
+            noteDownloadRemoved(itemID, of: feedID)
+        }
         store.updateItem(itemID, of: feedID) { $0.deletedDate = environment.now() }
     }
 
@@ -145,15 +203,17 @@ extension FeedCenter {
     /// Deletes the downloads the delete-after-played rule says are due: an
     /// item played at least its feed's number of days ago (0 at once, -1
     /// never; `FeedSettings.deleteDownloadsDaysAfterPlayed` unless the feed
-    /// overrides it). The book leaves the library through the removal every
-    /// deleted package ends in (`LibraryViewModel.removeDeletedBook(_:)`),
-    /// and its item stays, not downloaded, with the date its download went.
+    /// overrides it). Each file goes as Delete Download's does, keeping its
+    /// package while it holds something of the listener's (FR11, branch
+    /// A2): the records and the feeds' indexes are written first, and a
+    /// failed write keeps every file. Its item stays, not downloaded, with
+    /// the date its download went.
     ///
-    /// The package is deleted for good, rather than moved to the Trash, so
-    /// played episodes never fill the Trash, and off the main thread, with
-    /// dataless files left in the cloud. A book open in a reader waits until
-    /// its reader closes. In a cloud library, a package is deleted only when
-    /// this Mac holds it whole, as its cloud state says, read without
+    /// Files are deleted for good, rather than moved to the Trash, so played
+    /// episodes never fill the Trash, with dataless files left in the cloud.
+    /// A book open in a reader waits until its reader closes. In a cloud
+    /// library, a download is deleted only when this Mac holds its package
+    /// whole, as its cloud state says, read off the main thread without
     /// downloading anything (`BookCloudStorage.state(of:in:)`): one only in
     /// the cloud, or still syncing, is left to a Mac that has it, which also
     /// knows whether a reader there has it open. An item whose book the
@@ -170,54 +230,69 @@ extension FeedCenter {
         var due: [(feedID: UUID, itemID: FeedItem.ID, book: Book)] = []
         for record in store.records.values {
             let days = record.feed.deleteDownloadsDaysAfterPlayed(under: settings)
-            for item in record.items {
-                guard let bookID = item.state.bookID else { continue }
-                guard let book = library.feedBook(withID: bookID) else {
+            for item in record.items where item.state.bookID != nil {
+                guard let book = downloadedRow(of: item, in: record.feed.id) else {
                     store.updateItem(item.id, of: record.feed.id) { item in
                         item.state = .notDownloaded
                         item.downloadDeletedDate = now
                     }
                     report.forgottenItemIDs.append(item.id)
+                    DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FORGOTTEN: \(item.title): the library no longer lists its book")
                     continue
                 }
                 guard days >= 0, let played = item.playedDate,
                       now >= played.addingTimeInterval(TimeInterval(days) * 86_400) else { continue }
-                guard !library.feedBooksOpenInReaders.contains(bookID) else {
-                    report.openBookIDs.append(bookID)
+                guard !library.feedBooksOpenInReaders.contains(book.id) else {
+                    report.openBookIDs.append(book.id)
                     continue
                 }
+                // A download made before FR11 waits until it moves into its
+                // feed's folder, where a package can be kept.
+                guard book.isFeedItem else { continue }
                 due.append((record.feed.id, item.id, book))
             }
         }
         guard !due.isEmpty else { return report }
 
+        // In a cloud library, only packages this Mac holds whole are
+        // touched, as their cloud state says, read first, off the main
+        // thread.
         let storage = environment.bookStorage()
         let packages = due.map { BookPackage($0.book) }
-        let outcomes = await OffMainWork.run(on: .global(qos: .utility)) {
-            Self.deletePackages(packages, storage: storage)
+        let heldWhole = await OffMainWork.run(on: .global(qos: .utility)) {
+            Self.packagesHeldWhole(packages, storage: storage)
         }
+        report.leftInCloudBookIDs = due.map(\.book.id).filter { !heldWhole.contains($0) }
+        // A reader may have opened one meanwhile.
+        let removable = due.filter { heldWhole.contains($0.book.id) && !library.feedBooksOpenInReaders.contains($0.book.id) }
 
-        for entry in due {
-            switch outcomes[entry.book.id] {
-            case .deleted?:
-                // The row is taken out only when it still names the package
-                // deleted.
-                if let current = library.feedBook(withID: entry.book.id), current.tmbDirectory == entry.book.tmbDirectory {
-                    library.removeFeedBook(current)
-                }
-                store.updateItem(entry.itemID, of: entry.feedID) { item in
-                    item.state = .notDownloaded
-                    item.downloadDeletedDate = now
-                }
-                report.deletedBookIDs.append(entry.book.id)
-                DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETED: \(entry.book.title): played, deleted by the delete-after rule")
-            case .leftInCloud?:
-                report.leftInCloudBookIDs.append(entry.book.id)
-            case .failed(let reason)?:
-                DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETE_FAILED: \(entry.book.title): \(reason)")
-            case .moved?, nil:
-                continue
+        let root = TextMouthPaths.root
+        let outcome: FeedFileRemovalOutcome
+        do {
+            outcome = try library.removeFeedFiles(of: removable.map(\.book), keepingPackages: true) { removal in
+                try FeedItemPackage.removeForGood(removal, in: root)
             }
+        } catch {
+            DiagnosticLog.event(.feeds, "FEED_SWEEP_PUT_OFF: \(error.localizedDescription)")
+            return report
+        }
+        for removal in outcome.removed {
+            guard let entry = removable.first(where: { $0.book.id == removal.row.id }) else { continue }
+            store.updateItem(entry.itemID, of: entry.feedID) { item in
+                item.state = .notDownloaded
+                item.downloadDeletedDate = now
+            }
+            report.deletedBookIDs.append(removal.row.id)
+            if removal.keepsPackage {
+                report.keptPackageBookIDs.append(removal.row.id)
+            }
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_DOWNLOAD_DELETED: \(removal.row.title): played, \(Self.removalNote(removal)) by the delete-after rule"
+            )
+        }
+        for failure in outcome.failures {
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETE_FAILED: \(failure.row.title): \(failure.error.localizedDescription)")
         }
         if !report.leftInCloudBookIDs.isEmpty {
             DiagnosticLog.event(
@@ -228,33 +303,22 @@ extension FeedCenter {
         return report
     }
 
-    /// Deletes each of `packages` for good, off the main thread, with
-    /// dataless files left in the cloud. In a cloud library, as `storage`
-    /// says, a package not wholly on this Mac is left as it is.
-    nonisolated static func deletePackages(_ packages: [BookPackage], storage: any BookCloudStorage) -> [UUID: FeedSweepOutcome] {
+    /// The books of `packages` whose packages this Mac holds whole, read off
+    /// the main thread without downloading anything: every one in a library
+    /// on this Mac, and, in a cloud library, as `storage` says, those
+    /// downloaded or local.
+    nonisolated static func packagesHeldWhole(_ packages: [BookPackage], storage: any BookCloudStorage) -> Set<UUID> {
         let location = storage.libraryLocation()
-        var outcomes: [UUID: FeedSweepOutcome] = [:]
+        guard location.isCloud else { return Set(packages.map(\.bookID)) }
+        var held = Set<UUID>()
         for package in packages {
-            if location.isCloud {
-                switch storage.state(of: package, in: location) {
-                case .downloaded, .local:
-                    break
-                default:
-                    outcomes[package.bookID] = .leftInCloud
-                    continue
-                }
-            }
-            do {
-                try DatalessFiles.withoutDownloading {
-                    try FileManager.default.removeItem(at: package.url)
-                }
-                outcomes[package.bookID] = .deleted
-            } catch CocoaError.fileNoSuchFile {
-                outcomes[package.bookID] = .moved
-            } catch {
-                outcomes[package.bookID] = .failed(error.localizedDescription)
+            switch storage.state(of: package, in: location) {
+            case .downloaded, .local:
+                held.insert(package.bookID)
+            default:
+                continue
             }
         }
-        return outcomes
+        return held
     }
 }

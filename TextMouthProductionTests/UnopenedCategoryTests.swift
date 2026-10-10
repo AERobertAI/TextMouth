@@ -31,7 +31,10 @@ final class UnopenedCategoryTests: XCTestCase {
     /// any more.
     @MainActor
     func testTheCategoriesAreNamedInOrder() {
-        XCTAssertEqual(LibraryCategory.allCases.map(\.rawValue), ["Folders", "All Items", "Unopened", "Recent", "Reading List"])
+        XCTAssertEqual(
+            LibraryCategory.allCases.map(\.rawValue),
+            ["Folders", "All Items", "Unopened", "Recently Opened", "Reading List"]
+        )
         XCTAssertEqual(LibraryCategory.unopened.rawValue, "Unopened")
         XCTAssertEqual(LibraryCategory.formerNoFolderName, "No Folder")
         XCTAssertNil(LibraryCategory(rawValue: "No Folder"))
@@ -53,6 +56,23 @@ final class UnopenedCategoryTests: XCTestCase {
         XCTAssertEqual(try decoder.decode([LibraryCategory].self, from: formerly), [.unopened])
         let unknown = Data("[\"Shelf\"]".utf8)
         XCTAssertThrowsError(try decoder.decode([LibraryCategory].self, from: unknown))
+    }
+
+    /// Recent is called Recently Opened (FR13): the View picker's segment,
+    /// which VoiceOver reads, and the window's title say so; a category
+    /// saved as "Recent" reads as it and is saved under its new name; and
+    /// its sort stays under the same key, so no saved sort is lost.
+    @MainActor
+    func testRecentIsCalledRecentlyOpened() throws {
+        XCTAssertEqual(LibraryCategory.recent.rawValue, "Recently Opened")
+        XCTAssertEqual(LibraryCategory.formerRecentName, "Recent")
+        XCTAssertNil(LibraryCategory(rawValue: "Recent"))
+        let formerly = Data("[\"Recent\"]".utf8)
+        let read = try JSONDecoder().decode([LibraryCategory].self, from: formerly)
+        XCTAssertEqual(read, [.recent])
+        XCTAssertEqual(String(decoding: try JSONEncoder().encode(read), as: UTF8.self), "[\"Recently Opened\"]")
+        XCTAssertEqual(LibraryCategory.recent.sortSettingsKey, "__recent__")
+        XCTAssertEqual(LibraryLocation(category: .recent, folderPath: "").name, "Recently Opened")
     }
 
     // MARK: - The Sort Key and the Sort Carried Over

@@ -49,9 +49,18 @@ extension LibraryViewModel: FeedLibraryHost {
         library.folders.first { $0.id == folderID }?.fullPath
     }
 
-    /// The book `bookID`, when the library lists it.
+    /// The book `bookID`, when the library lists it: found through the
+    /// library's books by ID, worked out once for each change of the
+    /// library, rather than by a scan of every book (FR11, branch A2).
     func feedBook(withID bookID: UUID) -> Book? {
-        bookByID(bookID)
+        feedItemRowLookup.book(withID: bookID, in: library, revision: listCache.contentRevision)
+    }
+
+    /// The feed `feedID`'s rows, found by the identity of the item each came
+    /// from: those whose files are here and those kept after their files
+    /// went (FR11, branch A2).
+    func feedItemRows(of feedID: UUID) -> FeedItemRows {
+        feedItemRowLookup.rows(of: feedID, in: library, revision: listCache.contentRevision)
     }
 
     /// Lists a book a feed download published, and saves the library. An
@@ -61,7 +70,9 @@ extension LibraryViewModel: FeedLibraryHost {
     /// The book is a feed item's (FR11): its row carries the feed link the
     /// import gave it and no library folder, its package is in its feed's
     /// folder, and the save writes it to its feed's index, which the library
-    /// keeps from now on, never to library.json.
+    /// keeps from now on, never to library.json. A download that restored a
+    /// row kept after an earlier download's file went takes that row's place
+    /// on the shelf (branch A2), so no book is ever both.
     func addFeedBook(_ book: Book) {
         guard bookByID(book.id) == nil else { return }
         var row = book
@@ -69,18 +80,116 @@ extension LibraryViewModel: FeedLibraryHost {
         if let feedID = row.feedLink?.feedID {
             row.folderPath = ""
             updated.feedShelf.keepIndex(of: feedID)
+            _ = updated.feedShelf.takeRows { $0.id == row.id }
         }
         updated.books.append(row)
         library = updated
         save()
     }
 
-    /// Takes a feed book whose package was deleted out of the library,
-    /// through the same bookkeeping as every removal that deletes a package
-    /// (`removeDeletedBook(_:)`), and saves the library.
-    func removeFeedBook(_ book: Book) {
-        removeDeletedBook(book)
-        save()
+    /// Removes the files of the feed items `books` the library lists, in the
+    /// order that never loses the listener's place (FR11, branch A2;
+    /// FEED-ITEMS-ADDENDUM-2026-10-07.md, section 6):
+    ///
+    /// 1. With `keepingPackages`, each book whose package holds something
+    ///    of the listener's (`FeedItemPackage.holdsListenerState`) has its
+    ///    record written at once, from its row as the library holds it now,
+    ///    and waited for (`LibraryPersistenceService.writePendingBookInfoNow`).
+    /// 2. Each row leaves the books, to its feed's shelf when its package
+    ///    stays, and the library's indexes, its feed's among them, are
+    ///    written at once and waited for (`LibraryPersistenceService.saveAndWait`).
+    /// 3. Only then does `remove` remove each file and what it made, or each
+    ///    whole package.
+    ///
+    /// A row whose file `remove` could not remove goes back among the books
+    /// as it was, still on the reading list. The others leave the reading
+    /// list; a package gone whole has its pending record writes forgotten,
+    /// as every removal that deletes a package does; and the reading text
+    /// this Mac kept for each goes. `removeDeletedBook(_:)` itself is not
+    /// used: a kept package's record must still take its pending writes.
+    ///
+    /// Without `keepingPackages`, as Delete Episode asks, a row kept on its
+    /// feed's shelf after its file went is removed too, its package whole,
+    /// and goes back to the shelf when the package cannot be removed. A book
+    /// the library no longer lists, or one of its own, is passed over.
+    /// - Returns: The removals whose files went, and why each other's stayed.
+    /// - Throws: `FeedItemPackageError.indexNotWritten` when the indexes
+    ///   could not be written: the library is as it was, and no file was
+    ///   touched.
+    func removeFeedFiles(
+        of books: [Book],
+        keepingPackages: Bool,
+        remove: (FeedFileRemoval) throws -> Void
+    ) throws -> FeedFileRemovalOutcome {
+        var updated = library
+        var removals: [FeedFileRemoval] = []
+        for requested in books {
+            let listed = feedBook(withID: requested.id)
+            // A row kept on the shelf has no file left; only a removal of
+            // its whole package takes it.
+            let shelved = listed == nil && !keepingPackages ? library.feedShelf.rows.first { $0.id == requested.id } : nil
+            guard let row = listed ?? shelved, let feedID = row.feedLink?.feedID,
+                  !removals.contains(where: { $0.row.id == row.id }) else { continue }
+            if shelved != nil {
+                _ = updated.feedShelf.takeRows { $0.id == row.id }
+                updated.feedShelf.keepIndex(of: feedID)
+                removals.append(FeedFileRemoval(row: row, keepsPackage: false, wasOnShelf: true))
+                continue
+            }
+            let keeps = keepingPackages && FeedItemPackage.holdsListenerState(row, package: row.tmbDirectory)
+            if keeps {
+                // 1. The record takes the row's state before anything else changes.
+                LibraryPersistenceService.saveBookInfo(for: row)
+                LibraryPersistenceService.writePendingBookInfoNow(bookID: row.id)
+                updated.feedShelf.put(row)
+            } else {
+                updated.feedShelf.keepIndex(of: feedID)
+            }
+            updated.books.removeAll { $0.id == row.id }
+            removals.append(FeedFileRemoval(row: row, keepsPackage: keeps))
+        }
+        var outcome = FeedFileRemovalOutcome()
+        guard !removals.isEmpty else { return outcome }
+
+        // 2. The rows leave the books, and the indexes are on disk before any
+        // file goes; a failed write keeps every file and every row as it was.
+        let before = library
+        library = updated
+        guard LibraryPersistenceService.saveAndWait(library) else {
+            library = before
+            save()
+            throw FeedItemPackageError.indexNotWritten
+        }
+
+        // 3. The files.
+        var afterwards = library
+        var changed = false
+        for removal in removals {
+            let id = removal.row.id
+            do {
+                try remove(removal)
+                outcome.removed.append(removal)
+                changed = !afterwards.readingList.remove([id]).isEmpty || changed
+                if !removal.keepsPackage {
+                    LibraryPersistenceService.forgetDeletedBook(removal.row)
+                }
+                ReadingTextCache.shared.remove(bookID: id)
+            } catch {
+                outcome.failures.append((row: removal.row, error: error))
+                _ = afterwards.feedShelf.takeRows { $0.id == id }
+                if removal.wasOnShelf {
+                    afterwards.feedShelf.put(removal.row)
+                } else if !afterwards.books.contains(where: { $0.id == id }) {
+                    afterwards.books.append(removal.row)
+                }
+                changed = true
+            }
+        }
+        if changed {
+            library = afterwards
+            save()
+        }
+        return outcome
     }
 
     /// The books open in readers now.
@@ -133,6 +242,61 @@ extension LibraryViewModel: FeedLibraryHost {
             }
         }
         throw FeedFolderError(message: FeedFolderNaming.notMadeMessage)
+    }
+}
+
+// MARK: - Rows by Item and Books by ID (FR11)
+
+/// The library's feed rows by feed and item, and its books by ID, worked out
+/// in one pass the first time either is asked for after a change of the
+/// library, and kept until the next (FR11, branch A2).
+///
+/// A feed's counts look up each of its items, and a list of a feed's folder
+/// asks for each item's state, so each lookup must cost one step: a scan of
+/// the library's books for each item cost a millisecond for a 381-item feed
+/// (FEED-ITEMS-ADDENDUM-2026-10-07.md, section 1). The library model passes
+/// its list cache's content revision, which every change of its library
+/// moves on, so nothing found here is ever older than the library.
+///
+/// Main-actor isolated, like the library model that owns it; it publishes
+/// nothing, so a list drawing may fill it.
+@MainActor
+final class FeedItemRowLookup {
+    /// The content revision of the library the lookups were worked out
+    /// from; nil before the first.
+    private var revision: Int?
+    /// Each feed's rows by item.
+    private var rowsByFeed: [UUID: FeedItemRows] = [:]
+    /// Each book's index in the library's books, by ID; the first of an ID
+    /// wins, as `bookByID` finds it.
+    private var bookIndexByID: [UUID: Int] = [:]
+
+    /// The feed `feedID`'s rows in `library`, whose content revision is
+    /// `revision`; none for a feed it holds no row of.
+    func rows(of feedID: UUID, in library: Library, revision: Int) -> FeedItemRows {
+        refresh(from: library, revision: revision)
+        return rowsByFeed[feedID] ?? FeedItemRows()
+    }
+
+    /// The book `id` among `library`'s books, whose content revision is
+    /// `revision`, or nil when it holds none.
+    func book(withID id: UUID, in library: Library, revision: Int) -> Book? {
+        refresh(from: library, revision: revision)
+        guard let index = bookIndexByID[id], library.books.indices.contains(index),
+              library.books[index].id == id else { return nil }
+        return library.books[index]
+    }
+
+    /// Works the lookups out again from `library` when they were worked out
+    /// from another revision of it.
+    private func refresh(from library: Library, revision: Int) {
+        guard self.revision != revision else { return }
+        self.revision = revision
+        rowsByFeed = FeedItemRows.byFeed(in: library)
+        bookIndexByID = Dictionary(
+            library.books.enumerated().map { ($0.element.id, $0.offset) },
+            uniquingKeysWith: { first, _ in first }
+        )
     }
 }
 

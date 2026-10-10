@@ -192,8 +192,8 @@ final class FeedItemIndexFileTests: FeedItemIndexTestCase {
     }
 
     /// A download added to the library is a feed item's row, with no
-    /// library folder, written to its feed's index; deleting it writes the
-    /// index without it.
+    /// library folder, written to its feed's index; deleting it, never
+    /// opened, writes the index without it before its package goes.
     @MainActor
     func testADownloadAddedThenDeletedIsWrittenToItsIndexThenOutOfIt() throws {
         var download = try makeFeedItem(title: "Added And Deleted")
@@ -206,8 +206,12 @@ final class FeedItemIndexFileTests: FeedItemIndexTestCase {
         XCTAssertEqual(added.folderPath, "")
         XCTAssertEqual(try indexedRows().map(\.id), [download.id])
 
-        try FileManager.default.removeItem(at: added.tmbDirectory)
-        model.removeFeedBook(added)
+        let outcome = try model.removeFeedFiles(of: [added], keepingPackages: true) { removal in
+            XCTAssertFalse(removal.keepsPackage, "a download never opened kept its package")
+            XCTAssertEqual(try self.indexedRows(), [], "the package went before the index was written without it")
+            try FileManager.default.removeItem(at: added.tmbDirectory)
+        }
+        XCTAssertEqual(outcome.removed.map(\.row.id), [download.id])
         LibraryPersistenceService.flushPendingSave()
 
         XCTAssertEqual(try indexedRows(), [])

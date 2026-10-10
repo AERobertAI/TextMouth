@@ -294,11 +294,15 @@ final class FeedDownloadManager {
             guard library()?.feedFolderPath(forFolderID: feed.folderID) != nil else {
                 throw FeedDownloadError.folderMissing
             }
+            // An item whose earlier download's file went while its package
+            // was kept, with the listener's place, is downloaded again as the
+            // same book, in the same package (FR11, branch A2).
+            let kept = library()?.feedItemRows(of: feed.id).kept[item.id]
             let book: Book
             if let enclosure = item.enclosure, enclosure.isPlayable {
-                book = try await downloadEpisode(item, enclosure: enclosure, of: feed, request: request)
+                book = try await downloadEpisode(item, enclosure: enclosure, of: feed, request: request, restoring: kept)
             } else {
-                book = try await downloadArticle(item, of: feed, request: request)
+                book = try await downloadArticle(item, of: feed, request: request, restoring: kept)
             }
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FINISHED: \(item.title) (\(feed.title))")
             announce(.downloadFinished(feedID: request.feedID, itemID: request.itemID, bookID: book.id))
@@ -332,12 +336,15 @@ final class FeedDownloadManager {
         }
     }
 
-    /// Downloads an episode's file and imports it as an audiobook.
+    /// Downloads an episode's file and imports it as an audiobook: as the
+    /// book `kept` was, when the item's package was kept after an earlier
+    /// download's file went.
     private func downloadEpisode(
         _ item: FeedItem,
         enclosure: FeedEnclosure,
         of feed: Feed,
-        request: Request
+        request: Request,
+        restoring kept: Book?
     ) async throws -> Book {
         // A file no type or extension names as one TextMouth plays is never
         // fetched; the server's own type may still decide once it answers.
@@ -388,12 +395,14 @@ final class FeedDownloadManager {
         let fileName = FeedEpisodeImporter.fileName(title: item.title, fileExtension: fileExtension)
         let now = environment.now()
         return try await importAndCommit(request) {
-            try FeedEpisodeImporter.importEpisode(holding, named: fileName, item: item, of: feed, dateAdded: now)
+            try FeedEpisodeImporter.importEpisode(holding, named: fileName, item: item, of: feed, dateAdded: now, restoring: kept)
         }
     }
 
-    /// Writes an article's book and imports it as an HTML book.
-    private func downloadArticle(_ item: FeedItem, of feed: Feed, request: Request) async throws -> Book {
+    /// Writes an article's book and imports it as an HTML book: as the book
+    /// `kept` was, when the item's package was kept after an earlier
+    /// download's file went.
+    private func downloadArticle(_ item: FeedItem, of feed: Feed, request: Request, restoring kept: Book?) async throws -> Book {
         let network = environment.network
         let discretionary = request.origin == .automatic
         let body = await FeedEpisodeImporter.articleBody(for: item) { link in
@@ -403,7 +412,7 @@ final class FeedDownloadManager {
         let html = FeedEpisodeImporter.articleHTML(for: item, of: feed, body: body)
         let now = environment.now()
         return try await importAndCommit(request) {
-            try FeedEpisodeImporter.importArticle(html: html, item: item, of: feed, dateAdded: now)
+            try FeedEpisodeImporter.importArticle(html: html, item: item, of: feed, dateAdded: now, restoring: kept)
         }
     }
 

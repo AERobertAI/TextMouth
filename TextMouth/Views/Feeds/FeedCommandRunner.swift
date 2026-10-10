@@ -115,7 +115,7 @@ extension LibraryFeedsPresenter {
     /// newest item first.
     private func downloadedBooks(of feedID: UUID, in context: FeedCommandContext) -> [Book] {
         context.center.listedItems(of: feedID).compactMap { item in
-            context.center.state(of: item).bookID.flatMap { context.library.bookByID($0) }
+            context.center.downloadedRow(of: item, in: feedID)
         }
     }
 
@@ -128,7 +128,7 @@ extension LibraryFeedsPresenter {
     func perform(_ action: FeedItemAction, in context: FeedCommandContext) {
         let center = context.center
         guard let record = center.store.record(of: action.feedID), let item = record.item(action.itemID) else { return }
-        let state = center.state(of: item)
+        let state = center.state(of: item, in: action.feedID)
         switch action.command {
         case .open:
             if state.bookID == nil {

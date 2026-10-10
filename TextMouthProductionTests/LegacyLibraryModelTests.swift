@@ -43,7 +43,7 @@ final class LegacyLibraryModelTests: XCTestCase {
     func testLibraryCategoryCasesAndRecentDefaults() {
         XCTAssertEqual(LibraryCategory.allCases.count, 5)
         XCTAssertTrue(LibraryCategory.allCases.contains(.recent))
-        XCTAssertEqual(LibraryCategory.recent.rawValue, "Recent")
+        XCTAssertEqual(LibraryCategory.recent.rawValue, "Recently Opened")
         XCTAssertEqual(LibraryCategory.recent.sortSettingsKey, "__recent__")
         XCTAssertEqual(LibraryCategory.recent.defaultSortSetting, .recentDefault)
     }

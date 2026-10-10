@@ -26,23 +26,27 @@ struct FeedItemCounts: Equatable, Sendable {
 extension FeedCenter {
     /// Whether `item` of `feed` is new: published (or, undated, first seen)
     /// after the subscription began, so subscribing marks none of a feed's
-    /// back catalog new, never played, and, when downloaded, never opened.
+    /// back catalog new, never played, and never opened, whether its file is
+    /// here or its row was kept after its file went (FR11). Its row is found
+    /// by the item's identity, in one step.
     func isNew(_ item: FeedItem, of feed: Feed) -> Bool {
         guard item.playedDate == nil, item.sortDate > feed.subscribedDate else { return false }
-        if let bookID = state(of: item).bookID, let book = library?.feedBook(withID: bookID) {
+        if let book = downloadedRow(of: item, in: feed.id) ?? library?.feedItemRows(of: feed.id).kept[item.id] {
             return book.lastOpened == nil
         }
         return true
     }
 
     /// The items of the feed `feedID` counted as the library shows them,
-    /// with the feed's size; none for a feed no longer subscribed.
+    /// with the feed's size; none for a feed no longer subscribed. Each
+    /// item's row is found by its identity in the feed's rows (FR11), so a
+    /// count takes one step per item, however many books the library holds.
     func counts(of feedID: UUID) -> FeedItemCounts {
         guard let record = store.record(of: feedID) else { return FeedItemCounts() }
         let items = record.listedItems
         var counts = FeedItemCounts(listed: items.count, total: record.feed.entryTotal, noun: .of(items))
         for item in items {
-            switch state(of: item) {
+            switch state(of: item, in: feedID) {
             case .downloaded:
                 counts.downloaded += 1
             case .downloading:
@@ -207,7 +211,7 @@ struct FeedItemRowContent: Equatable, Identifiable {
         feedID = feed.id
         id = item.id
         title = item.title
-        state = center.state(of: item)
+        state = center.state(of: item, in: feed.id)
         isNew = center.isNew(item, of: feed)
         isPlayed = item.playedDate != nil
         isArticle = item.isArticle
@@ -276,7 +280,7 @@ struct FeedFolderListing: Equatable {
         let query = search.lowercased()
         var itemBookIDs = Set<UUID>()
         for item in items {
-            let state = center.state(of: item)
+            let state = center.state(of: item, in: feedID)
             if let bookID = state.bookID {
                 itemBookIDs.insert(bookID)
                 if let book = shownByID[bookID] {

@@ -43,9 +43,11 @@ struct FeedEnvironment {
     /// The statistics service whose finished books (`.bookDidFinish`) mark
     /// feed items played, or nil for none.
     var finishedBooksSource: AnyObject?
-    /// Deletes a book's package as the listener's own deletions do, to the
-    /// Trash or for good as the removal setting says (Delete Download).
-    var deleteBookPackage: @MainActor (Book) throws -> Void
+    /// Removes an item as the listener's own deletions do, to the Trash or
+    /// for good as the removal setting says: a download's file, or its whole
+    /// package (Delete Download, FR11). A test removes it for good, never
+    /// to the Trash.
+    var removeItem: @MainActor (URL) throws -> Void
 
     /// The app's: the data directory's Feeds folder, this Mac's Caches, the
     /// network, and the app's preferences. A process hosting tests never
@@ -68,7 +70,7 @@ struct FeedEnvironment {
             boundary: .shared,
             bookStorage: { CloudServices.bookStorage },
             finishedBooksSource: ReadingStatsService.shared,
-            deleteBookPackage: { try FileImportService.deleteBookPackage($0) }
+            removeItem: { try FileImportService.removeItemRespectingTrashSetting(at: $0) }
         )
     }
 }
@@ -84,11 +86,23 @@ protocol FeedLibraryHost: AnyObject {
     func feedFolderPath(forFolderID folderID: UUID) -> String?
     /// The book `bookID`, when the library lists it.
     func feedBook(withID bookID: UUID) -> Book?
+    /// The feed `feedID`'s rows, by the identity of the item each came from:
+    /// those whose files are here, and those kept after their files went
+    /// (FR11).
+    func feedItemRows(of feedID: UUID) -> FeedItemRows
     /// Lists a book a feed download published, and saves the library.
     func addFeedBook(_ book: Book)
-    /// Takes out of the library a book whose package was deleted, and saves
-    /// the library.
-    func removeFeedBook(_ book: Book)
+    /// Removes the files of the feed items `books` through `remove`, once
+    /// each record that keeps the listener's state and the feeds' indexes
+    /// are on disk, keeping each package that holds something of the
+    /// listener's when `keepingPackages` (FR11, branch A2).
+    /// - Throws: `FeedItemPackageError.indexNotWritten`, with no file
+    ///   touched.
+    func removeFeedFiles(
+        of books: [Book],
+        keepingPackages: Bool,
+        remove: (FeedFileRemoval) throws -> Void
+    ) throws -> FeedFileRemovalOutcome
     /// The books open in readers now, which nothing may delete.
     var feedBooksOpenInReaders: Set<UUID> { get }
     /// Publishes the books open in readers whenever they change.
@@ -228,6 +242,7 @@ final class FeedCenter: ObservableObject {
         network: environment.network,
         settings: { [weak self] in self?.settings ?? .standard },
         now: environment.now,
+        keptRecords: { [weak self] feedID in self?.keptRecordItemIDs(of: feedID) ?? [] },
         refreshingChanged: { [weak self] feedIDs in self?.refreshingFeedIDs = feedIDs },
         reportRefresh: { [weak self] report in self?.refreshEnded(report) }
     )
@@ -602,14 +617,34 @@ final class FeedCenter: ObservableObject {
         downloads.cancel(itemID, of: feedID)
     }
 
-    /// The state the library shows for `item`: its own, except that an item
-    /// whose book the library no longer lists, as after the book was deleted
-    /// from the library, is not downloaded.
-    func state(of item: FeedItem) -> FeedItemState {
-        if let bookID = item.state.bookID, library?.feedBook(withID: bookID) == nil {
+    /// The items of the feed `feedID` whose packages were kept with the
+    /// listener's place after their files went (FR11, branch A2), which
+    /// every refresh keeps in the feed's record.
+    func keptRecordItemIDs(of feedID: UUID) -> Set<FeedItem.ID> {
+        Set((library?.feedItemRows(of: feedID).kept ?? [:]).keys)
+    }
+
+    /// The state the library shows for `item` of the feed `feedID`: its own,
+    /// except that an item whose book the library no longer lists, as after
+    /// the book was deleted from the library, is not downloaded.
+    func state(of item: FeedItem, in feedID: UUID) -> FeedItemState {
+        if item.state.bookID != nil, downloadedRow(of: item, in: feedID) == nil {
             return .notDownloaded
         }
         return item.state
+    }
+
+    /// The row of `item` of the feed `feedID` whose file is here, if the
+    /// library lists one: found by the item's identity among the feed's rows
+    /// (FR11), and otherwise by the book the item names, as a download made
+    /// before FR11 is a book of the library's own until it moves into its
+    /// feed's folder. Either lookup takes one step.
+    func downloadedRow(of item: FeedItem, in feedID: UUID) -> Book? {
+        guard let bookID = item.state.bookID, let library else { return nil }
+        if let row = library.feedItemRows(of: feedID).downloaded[item.id], row.id == bookID {
+            return row
+        }
+        return library.feedBook(withID: bookID)
     }
 
     // MARK: A Feed's Own Settings

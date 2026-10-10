@@ -14,8 +14,9 @@ final class FeedEndToEndTests: XCTestCase {
     /// An episode, from the refresh that finds it to the deletion of its
     /// download: it downloads by itself into the feed's folder, opens in a
     /// real reader, is played when the reader reaches its end, which Books
-    /// Finished counts, waits while the reader has it open, and is deleted,
-    /// its item kept, once the reader closes.
+    /// Finished counts, waits while the reader has it open, and has its file
+    /// deleted once the reader closes: its item stays, and its package stays
+    /// without the file, holding the place the reader left (FR11, branch A2).
     func testAnEpisodeFromItsFeedToTheDeletionOfItsDownload() async throws {
         let statistics = preserveSharedStatistics()
         let world = try FeedTestWorld(self, label: "FeedEndToEnd", worksOnItsOwn: true, statistics: statistics)
@@ -58,7 +59,9 @@ final class FeedEndToEndTests: XCTestCase {
 
         reader.close()
         await waitFor("the played download is deleted once its reader closes") { world.library.bookByID(book.id) == nil }
-        XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.filePath))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path))
+        XCTAssertEqual(world.library.library.feedShelf.rows.map(\.id), [book.id], "the opened episode's row was not kept")
         let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-2"))
         XCTAssertEqual(item.state, .notDownloaded)
         XCTAssertEqual(item.playedDate, played)
