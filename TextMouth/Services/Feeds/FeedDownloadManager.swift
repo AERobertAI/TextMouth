@@ -185,6 +185,12 @@ final class FeedDownloadManager {
         var boundary: StorageBoundary
         /// The time now.
         var now: @Sendable () -> Date
+        /// Removes an item as the listener's own deletions do, to the Trash
+        /// or for good as Removal Behavior says (`FeedEnvironment.removeItem`):
+        /// how a package an import published is discarded when it holds what
+        /// was kept for the listener, or its feed is being deleted
+        /// (`commit(_:for:restoredKeptPackage:)`, REV14 feeds 2).
+        var removeItem: @MainActor (URL) throws -> Void
     }
 
     /// The records.
@@ -432,7 +438,8 @@ final class FeedDownloadManager {
     /// on this Mac goes with them (`FeedPartialDownloads`). None of its items
     /// is asked for again until `reopenFeed(_:)`, and a download whose book
     /// is already being added finishes its import, whose package is then
-    /// discarded rather than listed (`commit(_:for:)`). The items' states are
+    /// discarded rather than listed (`commit(_:for:restoredKeptPackage:)`), as the
+    /// listener's own deletions go (REV14 feeds 2). The items' states are
     /// left as they are: the feed's record goes with them.
     func closeFeed(_ feedID: UUID) {
         closedFeedIDs.insert(feedID)
@@ -678,7 +685,7 @@ final class FeedDownloadManager {
         }
         let fileName = FeedEpisodeImporter.fileName(title: item.title, fileExtension: fileExtension)
         let now = environment.now()
-        return try await importAndCommit(request) {
+        return try await importAndCommit(request, restoringKeptPackage: FeedEpisodeImporter.restoresKeptPackage(kept)) {
             try FeedEpisodeImporter.importEpisode(holding, named: fileName, item: item, of: feed, dateAdded: now, restoring: kept)
         }
     }
@@ -710,7 +717,7 @@ final class FeedDownloadManager {
         try Task.checkCancellation()
         let html = FeedEpisodeImporter.articleHTML(for: item, of: feed, body: body)
         let now = environment.now()
-        return try await importAndCommit(request) {
+        return try await importAndCommit(request, restoringKeptPackage: FeedEpisodeImporter.restoresKeptPackage(kept)) {
             try FeedEpisodeImporter.importArticle(html: html, item: item, of: feed, dateAdded: now, restoring: kept)
         }
     }
@@ -732,8 +739,14 @@ final class FeedDownloadManager {
     /// Runs `importBook` on the import queue as storage work and, before that
     /// work ends, adds its book to the library and marks the item downloaded
     /// on the main actor, as every import adds its book. The downloads'
-    /// progress says the book is being added (FR10).
-    private func importAndCommit(_ request: Request, _ importBook: @escaping @Sendable () throws -> ImportedBook) async throws -> Book {
+    /// progress says the book is being added (FR10). `restoringKeptPackage`
+    /// says whether the import restores the item's kept package, holding
+    /// what was kept for the listener (`FeedEpisodeImporter.restoresKeptPackage(_:)`).
+    private func importAndCommit(
+        _ request: Request,
+        restoringKeptPackage: Bool,
+        _ importBook: @escaping @Sendable () throws -> ImportedBook
+    ) async throws -> Book {
         progress.beginAddingToLibrary()
         let boundary = environment.boundary
         let queue = importQueue
@@ -744,7 +757,7 @@ final class FeedDownloadManager {
                         let book = try boundary.perform(.importing) { _ -> Book in
                             let imported = try importBook()
                             let listed = DispatchQueue.main.sync {
-                                self.commit(imported.book, for: request)
+                                self.commit(imported.book, for: request, restoredKeptPackage: restoringKeptPackage)
                             }
                             // Its item was deleted while it imported: the
                             // download ends as if stopped.
@@ -774,13 +787,18 @@ final class FeedDownloadManager {
     /// (Delete Episode stops a transfer, but not an import once begun, which
     /// may be restoring the item's kept package meanwhile) gets no row: the
     /// package the import just published, in the kept package's place when
-    /// it restored one, is deleted for good, so nothing of a deleted item
-    /// comes back. So does an item of a feed being deleted (FR14).
-    private func commit(_ book: Book, for request: Request) -> Bool {
+    /// it restored one (`restoredKeptPackage`), is discarded, so nothing of a
+    /// deleted item comes back. So does an item of a feed being deleted
+    /// (FR14). How it goes is `discardPackage(of:asTheListenersDeletion:because:)`'s.
+    private func commit(_ book: Book, for request: Request, restoredKeptPackage: Bool) -> Bool {
         beforeCommit?(request)
-        guard !closedFeedIDs.contains(request.feedID),
-              let item = store.record(of: request.feedID)?.item(request.itemID), item.deletedDate == nil else {
-            discardPackage(of: book)
+        let feedIsClosed = closedFeedIDs.contains(request.feedID)
+        guard !feedIsClosed, let item = store.record(of: request.feedID)?.item(request.itemID), item.deletedDate == nil else {
+            discardPackage(
+                of: book,
+                asTheListenersDeletion: restoredKeptPackage || feedIsClosed,
+                because: feedIsClosed ? "its feed is being deleted" : "its item was deleted while it imported"
+            )
             return false
         }
         library()?.addFeedBook(book)
@@ -793,20 +811,36 @@ final class FeedDownloadManager {
         return true
     }
 
-    /// Deletes for good the package an import published for an item deleted
-    /// while it imported: only a package in its feed's own folder, as every
-    /// download publishes one, and never anything else.
-    private func discardPackage(of book: Book) {
+    /// Discards the package an import published for an item that gets no
+    /// row, because `reason`: only a package in its feed's own folder, as
+    /// every download publishes one, and never anything else. One already
+    /// gone, as with its item, counts as discarded.
+    ///
+    /// With `asTheListenersDeletion` it goes as the listener's own deletions
+    /// go, to the Trash or for good as Removal Behavior says
+    /// (`Environment.removeItem`, REV14 feeds 2): a restore's package, which
+    /// holds the place, bookmarks, and transcript kept for the item, moved
+    /// in from its kept package, and every package of a feed Delete Feed…
+    /// is deleting, whose question said where its deletions go. Otherwise,
+    /// a new download of an item deleted while it imported, which holds
+    /// nothing of the listener's, it goes for good.
+    private func discardPackage(of book: Book, asTheListenersDeletion: Bool, because reason: String) {
         guard book.feedLink != nil, FeedItemPackage.isPackageName(book.tmbDirectoryName) else { return }
+        let package = book.tmbDirectory
         do {
-            try FileManager.default.removeItem(at: book.tmbDirectory)
-        } catch CocoaError.fileNoSuchFile {
-            // Deleted with its item already.
+            if MaintenanceFileAccess.hasItem(at: package) {
+                if asTheListenersDeletion {
+                    try environment.removeItem(package)
+                } else {
+                    try FileManager.default.removeItem(at: package)
+                }
+            }
         } catch {
-            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_LEFT: \(book.title): its item was deleted, and its package could not be: \(error.localizedDescription)")
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_LEFT: \(book.title): \(reason), and its package could not be removed: \(error.localizedDescription)")
             return
         }
-        DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DISCARDED: \(book.title): its item was deleted while it imported")
+        let how = asTheListenersDeletion ? "as Removal Behavior says" : "for good"
+        DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DISCARDED: \(book.title): \(reason); its package removed \(how)")
     }
 
     /// `request` as it stands now: the download under way when it is the

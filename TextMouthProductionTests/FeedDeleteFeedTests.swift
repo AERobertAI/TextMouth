@@ -306,12 +306,48 @@ final class FeedDeleteFeedTests: XCTestCase {
         await waitFor("the download ends") { world.center.downloads.current == nil }
 
         XCTAssertNil(outcome, "a feed being deleted was deleted a second time")
+        // Discarded as Delete Feed… deletes, through the listener's own
+        // removal, never for good behind its back (REV14 feeds 2).
+        let discarded = world.removedItems.value.filter { $0.name.hasSuffix(".tmb") }
+        XCTAssertEqual(discarded.count, 1, "\(world.removedItems.value)")
+        XCTAssertTrue(discarded.first?.contents.contains("Episode 1.m4a") == true, "\(discarded)")
         downloads.reopenFeed(feed.id)
         let ended = try await world.center.deleteFeed(feed.id)
         XCTAssertEqual(ended?.deletedDownloads, 0, "the import that ended was listed")
         XCTAssertEqual(world.library.everyRow(ofFeed: feed.id), [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root).path))
         XCTAssertEqual(debugLogLines(containing: discardedLine).count, linesBefore + 1, "the import was not discarded")
+    }
+
+    /// Delete Feed… confirmed while a kept episode downloads again, its book
+    /// being added, the restore having moved the place kept for it into the
+    /// new package: that package goes as its question said, through the
+    /// listener's own removal (to the Trash, or for good, as Removal
+    /// Behavior says), never for good behind its back, and is counted among
+    /// the places kept for removed downloads that went (REV14 feeds 2).
+    func testDeleteFeedDuringARestoreRemovesItsPackageAsTheListenersDeletion() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeleteRestoring")
+        let fixture = try await feedWithAKeptPlaceAndADownload(in: world)
+        let feedID = fixture.feed.id
+        let imports = await world.holdImports(self)
+        world.center.download("guid:ep-1", of: feedID)
+        await waitFor("the kept episode's book is being added") {
+            world.center.downloads.progress.state.download?.isAddingToLibrary == true
+        }
+
+        let deletion = Task { try await world.center.deleteFeed(feedID) }
+        await waitFor("Delete Feed… closes the feed") { world.center.downloads.isClosed(feedID) }
+        imports.release()
+        let outcome = try await deletion.value
+
+        XCTAssertEqual(outcome?.deletedKeptPlaces, 1)
+        XCTAssertEqual(outcome?.deletedDownloads, 1)
+        let restored = world.removedItems.value.filter { $0.name == fixture.kept.tmbDirectoryName }
+        XCTAssertEqual(restored.count, 1, "the restored package went other than through the listener's own removal")
+        XCTAssertTrue(restored.first?.contents.contains(TextMouthPaths.bookInfoFileName) == true, "\(restored)")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fixture.kept.tmbDirectory.path))
+        XCTAssertNil(world.center.store.record(of: feedID))
+        XCTAssertEqual(world.library.everyRow(ofFeed: feedID), [])
     }
 
     /// The engine's own rules leave a feed being deleted alone: the

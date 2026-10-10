@@ -329,7 +329,8 @@ final class FeedCenter: ObservableObject {
             freeSpace: environment.freeSpace,
             reserve: ArchiveLimits.standard.freeSpaceReserve,
             boundary: environment.boundary,
-            now: environment.now
+            now: environment.now,
+            removeItem: environment.removeItem
         ),
         library: { [weak self] in self?.library },
         announce: { [weak self] event in self?.downloadEventHappened(event) }
