@@ -719,6 +719,25 @@ struct Book: Identifiable, Codable, Hashable {
         return Double(clampedOffset) / Double(totalChars) * 100
     }
 
+    /// Whether the book rests at its end, finished (TODO P07): its saved
+    /// place is at or past the end of its text, where a book that played or
+    /// was read to its end is saved (`ReaderViewModel.restAtEnd()`), its
+    /// last chapter at its full length. The user decided on October 10,
+    /// 2026 that such a book is saved exactly at its end and stays finished
+    /// after TextMouth quits, which needs no field of its own: the place
+    /// says it, so older files and older TextMouth builds read it as an
+    /// ordinary place. A place short of the end, however near, is not the
+    /// end: speech or a player saved there stopped before the book did.
+    ///
+    /// The cursor and the total are the ones `percentComplete` reads, so a
+    /// book resting at its end reads 100 percent there too. False for a
+    /// book with no saved place, or not measured yet.
+    var restsAtEnd: Bool {
+        guard let position = readingPosition,
+              let totalChars = totalCharacterCount, totalChars > 0 else { return false }
+        return (position.globalCharacterOffset ?? position.characterOffset) >= totalChars
+    }
+
     /// Save this book's data to its bookInfo.json
     func saveBookInfo() {
         try? saveBookInfoThrowing()
