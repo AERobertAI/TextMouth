@@ -1146,10 +1146,10 @@ enum BookSettingsSheetWording {
 /// The strip above the reader text showing progress, time-remaining,
 /// total time, and (when active) the sleep timer. The percent and the
 /// time-remaining labels are now buttons — clicking either one
-/// expands a collapsible jump panel below the bar with input fields
-/// for jumping to a specific point. The "Total" label and the sleep
-/// timer indicator are non-interactive (no jump UI; that would just
-/// duplicate the percent / time-remaining flows).
+/// expands a collapsible jump panel below the bar with a field for
+/// jumping to a specific point (`ReaderJumpPanels.swift`). The "Total"
+/// label and the sleep timer indicator are non-interactive (no jump UI;
+/// that would just duplicate the percent / time-remaining flows).
 struct BookInfoBar: View {
     @ObservedObject var viewModel: ReaderViewModel
     /// The settings, observed so the time left and the total follow the
