@@ -590,7 +590,10 @@ final class FeedUIAddFeedTests: XCTestCase {
 
     /// Library > Add Feed… takes Shift-Command-F, the Add Feed action's
     /// default since it became editable (FR12's branch D), which no other
-    /// default shortcut and no other menu command uses.
+    /// default shortcut and no other menu command uses. The item has its key,
+    /// and acts, only while a Library window is in front (FR12's branch E),
+    /// so what it shows is checked against the window in front of this run,
+    /// as the menus' own test checks it (REV11).
     func testAddFeedsShortcutClashesWithNothing() throws {
         let binding = KeyBinding(key: "f", command: true, shift: true)
         XCTAssertEqual(ShortcutAction.defaultBindings[.addFeed], [binding])
@@ -601,11 +604,18 @@ final class FeedUIAddFeedTests: XCTestCase {
         // The app's menus, which hold every other menu command's key.
         guard let menu = NSApp.mainMenu else { throw XCTSkip("the test host has no main menu") }
         let items = feedMenuItems(of: menu)
-        guard let addFeed = items.first(where: { $0.title == FeedWording.addFeedCommand }) else {
+        guard let addFeed = items.first(where: { $0.title == ShortcutAction.addFeed.title }) else {
             throw XCTSkip("the test host's menus are not built")
         }
-        XCTAssertTrue(Self.isShiftCommandF(addFeed), "Add Feed… has \(addFeed.keyEquivalentModifierMask) \(addFeed.keyEquivalent)")
-        XCTAssertEqual(items.filter(Self.isShiftCommandF).map(\.title), [FeedWording.addFeedCommand])
+        let front = FrontWindowKind.shared.kind
+        let acts = ShortcutAction.addFeed.defaultScope.admitsMenuCommand(in: front)
+        XCTAssertEqual(addFeed.isEnabled, acts, "Add Feed… with \(String(describing: front)) in front")
+        XCTAssertEqual(
+            Self.isShiftCommandF(addFeed),
+            acts,
+            "Add Feed… with \(String(describing: front)) in front has \(addFeed.keyEquivalentModifierMask) \(addFeed.keyEquivalent)"
+        )
+        XCTAssertEqual(items.filter { $0 !== addFeed && Self.isShiftCommandF($0) }.map(\.title), [], "another item has Shift-Command-F")
     }
 
     /// Whether `item`'s key is Shift-Command-F, written either as "f" with

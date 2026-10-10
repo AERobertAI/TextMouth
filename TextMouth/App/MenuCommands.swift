@@ -291,8 +291,9 @@ struct LibraryCommands: Commands {
             }
 
             // Records from a microphone into a new audiobook (FR04); File >
-            // New Recording… carries the shortcut.
-            Button(RecordingWording.menuTitle) {
+            // New Recording… carries the shortcut. Named by its action, as
+            // the File menu's item is.
+            Button(ShortcutAction.newRecording.title) {
                 RecordingWindowController.shared.show()
             }
 

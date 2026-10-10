@@ -94,11 +94,13 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
 
     // The Record window's buttons (FR12's branch D): a group of their own,
     // each a key equivalent of its button, whose raw values begin with the
-    // group's name, as the audio editor's do, so config.json never takes the
-    // window's Stop for another.
-    case recordingRecord = "Recording Window: Record"
-    case recordingPauseOrResume = "Recording Window: Pause or Resume"
-    case recordingStop = "Recording Window: Stop"
+    // group's name, the window's own as VoiceOver reads it, as the audio
+    // editor's do, so config.json never takes the window's Stop for another.
+    // Their former names, under "Recording Window", are still read
+    // (`formerNames`).
+    case recordingRecord = "New Recording: Record"
+    case recordingPauseOrResume = "New Recording: Pause or Resume"
+    case recordingStop = "New Recording: Stop"
 
     // The audio editor's (FR04): a group of their own, matched only while an
     // editor window is key (`ShortcutScope`), so they may share keys with
@@ -156,8 +158,11 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// D), named as their menu is.
     static let fileCategory = "File"
     /// The heading of the Record window's buttons in Settings (FR12's
-    /// branch D), and the start of each of their raw values.
-    static let recordingWindowCategory = "Recording Window"
+    /// branch D), and the start of each of their raw values: the window's
+    /// title, New Recording, as VoiceOver names the window
+    /// (`RecordingWording.windowTitle`, a test checks), where the group was
+    /// once named "Recording Window", a name the window never shows (REV11).
+    static let recordingWindowCategory = "New Recording"
     /// The groups whose actions' raw values begin with the group's name and
     /// a colon, so config.json tells them apart from actions of the same name
     /// elsewhere: the audio editor's Play / Pause from the reader's, the
@@ -334,9 +339,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
 /// Where an action's shortcuts work: in every window but an audio editor's,
 /// or in one kind of window (FR12's branch E, as the user asked on October
 /// 7: "new from text should only work in Library view and sleep timer only
-/// in reader view"). One key belongs to at most one action wherever their
-/// scopes overlap (`overlaps(_:)`), so a key may mean one thing in a Library
-/// window and another in a reader, as Shift-Command-T does.
+/// in reader view"). One key belongs to at most one action wherever both
+/// act (`windowKinds(of:)`, a menu command's key acting wherever its menu
+/// item does), so a key may mean one thing in a Library window and another
+/// in a reader, as Shift-Command-T does.
 enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
     /// Every window but an audio editor's: the Library, the readers, the
     /// Record window, Settings, and the rest, as the app's shortcuts always
@@ -374,6 +380,20 @@ enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
     /// held in both would mean two things.
     func overlaps(_ other: ShortcutScope) -> Bool {
         !windowKinds.isDisjoint(with: other.windowKinds)
+    }
+
+    /// The kinds of window where `action`'s keys act while it works in this
+    /// scope: those whose key presses the scope's shortcuts match
+    /// (`windowKinds`), and, for an action whose key is a key equivalent
+    /// (`ShortcutAction.isKeyEquivalent`), every kind its menu item acts in
+    /// (`admitsMenuCommand(in:)`), which for a File menu command working in
+    /// every window takes in an audio editor's (REV11). A key is claimed
+    /// (`KeyClaims`), and noted in the press index, in each of these, so no
+    /// editor action can hold a key a menu command answers in an editor
+    /// window, where the editor took the key while the menu showed it.
+    func windowKinds(of action: ShortcutAction) -> Set<ShortcutWindowKind> {
+        guard action.isKeyEquivalent else { return windowKinds }
+        return Set(ShortcutWindowKind.allCases.filter { admitsMenuCommand(in: $0) })
     }
 
     /// The scope as the Shortcuts tab's Works in pop-up names it, and as
@@ -494,6 +514,14 @@ extension ShortcutAction {
     var isKeyEquivalent: Bool {
         Self.keyEquivalentActions.contains(self)
     }
+
+    /// Whether this action, working in `scope`, and `other`, working in
+    /// `otherScope`, act in a kind of window in common
+    /// (`ShortcutScope.windowKinds(of:)`), where one key cannot be both's: a
+    /// menu command's key counts wherever its menu item acts.
+    func sharesAWindow(in scope: ShortcutScope, with other: ShortcutAction, in otherScope: ShortcutScope) -> Bool {
+        !scope.windowKinds(of: self).isDisjoint(with: otherScope.windowKinds(of: other))
+    }
 }
 
 extension KeyBinding {
@@ -610,14 +638,24 @@ extension ShortcutAction {
         return isKeyEquivalent ? key.keyEquivalentRefusal : nil
     }
 
-    /// Why `keys` cannot be this action's keys, or nil when they can: the
-    /// first key refused, or, for a key equivalent's action, a second key.
-    func refusal(ofKeys keys: [KeyBinding]) -> ShortcutRefusal? {
-        if let refused = keys.lazy.compactMap(refusal(of:)).first {
+    /// Why `keys` cannot become this action's keys, or nil when they can:
+    /// the first key they add to `held`, the keys it has now, that it cannot
+    /// take (`refusal(of:)`), or, for a key equivalent's action, whose item
+    /// has one key, a key past the number it may have, which is one, or as
+    /// many as it holds. A key it holds already is never refused, so keys a
+    /// store edited by hand gave it never stop the user changing it. The one
+    /// rule the Shortcuts tab (`KeyboardShortcutManager`), with the keys in
+    /// force, and config.json (`ShortcutListing.refusal(for:)`), with none,
+    /// both follow (REV11).
+    func refusal(ofKeys keys: [KeyBinding], holding held: [KeyBinding] = []) -> ShortcutRefusal? {
+        let added = keys.filter { !held.contains($0) }
+        if let refused = added.lazy.compactMap(refusal(of:)).first {
             return refused
         }
-        if isKeyEquivalent, keys.count > 1 {
-            return .secondKeyEquivalent(keys[1])
+        let allowed = max(1, held.count)
+        if isKeyEquivalent, keys.count > allowed,
+           let extra = keys.dropFirst(allowed).first(where: { !held.contains($0) }) ?? added.first {
+            return .secondKeyEquivalent(extra)
         }
         return nil
     }
@@ -1251,10 +1289,12 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
     }
 
     /// Why the keys this entry gives `action` cannot be its keys
-    /// (`ShortcutAction.refusal(ofKeys:)`, FR12's branch D), or nil when
-    /// they can or the entry gives none.
+    /// (`ShortcutAction.refusal(ofKeys:holding:)`, FR12's branch D, holding
+    /// none: an entry the record holds already is let through before this
+    /// is asked, `ShortcutEdits.entriesLeftOut(of:)`), or nil when they can
+    /// or the entry gives none.
     func refusal(for action: ShortcutAction) -> ShortcutRefusal? {
-        bindings.flatMap(action.refusal(ofKeys:))
+        bindings.flatMap { action.refusal(ofKeys: $0) }
     }
 
     /// A list of shortcuts, written as an array literal.
@@ -1331,19 +1371,40 @@ extension ShortcutAction {
     /// Where Am I?; and a name ending in an ellipsis may end in three periods
     /// or none instead (FR12's branch D), so "open book..." and "Open Book"
     /// are Open Book…, as a name typed on a braille display is likely to
-    /// read. Nil for a name that names none. A renamed action would keep its
-    /// former name readable here.
+    /// read. A renamed action's former name (`formerNames`) names it the same
+    /// ways. Nil for a name that names none.
     static func named(_ name: String) -> ShortcutAction? {
-        if let exact = ShortcutAction(rawValue: name) {
+        if let exact = exactlyNamed(name) {
             return exact
         }
         let wanted = comparableName(name)
         return allCases.first { comparableName($0.rawValue) == wanted }
+            ?? formerNames.first { comparableName($0.key) == wanted }?.value
     }
+
+    /// The action `name` is, letter for letter: the name TextMouth writes for
+    /// it now (its raw value), or one it wrote before (`formerNames`), as the
+    /// record of the user's edits names actions (`ShortcutEdits.reading(_:)`).
+    static func exactlyNamed(_ name: String) -> ShortcutAction? {
+        ShortcutAction(rawValue: name) ?? formerNames[name]
+    }
+
+    /// The names actions had before they were renamed, each with its
+    /// action, still read in config.json and in the record of the user's
+    /// edits (`named(_:)`, `exactlyNamed(_:)`), so an edit made under a
+    /// former name is never lost; TextMouth writes only the names in force.
+    /// The Record window's buttons were named under "Recording Window" until
+    /// their group took the window's own name, New Recording (REV11).
+    static let formerNames: [String: ShortcutAction] = [
+        "Recording Window: Record": .recordingRecord,
+        "Recording Window: Pause or Resume": .recordingPauseOrResume,
+        "Recording Window: Stop": .recordingStop,
+    ]
 
     /// `name` as `named(_:)` compares names: in lower case, without an
     /// ellipsis at its end, written as one character or as three periods.
-    /// No two actions' names compare alike (a test checks).
+    /// No two actions' names, nor former names, compare alike (a test
+    /// checks).
     static func comparableName(_ name: String) -> String {
         var compared = name.lowercased()
         for ellipsis in ["…", "..."] where compared.hasSuffix(ellipsis) {
@@ -1355,8 +1416,12 @@ extension ShortcutAction {
 
 /// All default keyboard shortcut bindings
 extension ShortcutAction {
-    /// Default bindings for each action (primary + optional secondary)
-    static var defaultBindings: [ShortcutAction: [KeyBinding]] {
+    /// Default bindings for each action (primary + optional secondary),
+    /// built once: every Shortcuts row and Record window button reads them,
+    /// through the keys in force, as it is drawn, and so does each key's
+    /// refusal check (`refusal(of:)`), which once rebuilt the whole table
+    /// each time (REV11).
+    static let defaultBindings: [ShortcutAction: [KeyBinding]] = {
         let everywhereElse: [ShortcutAction: [KeyBinding]] = [
             .togglePlayback: [
                 KeyBinding(key: "space"),
@@ -1512,7 +1577,7 @@ extension ShortcutAction {
             .recordingStop: [KeyBinding(key: ".", command: true)],
         ]
         return everywhereElse.merging(audioEditorDefaultBindings) { existing, _ in existing }
-    }
+    }()
 
     /// The defaults actions had before today's, for the move to the record
     /// of the user's edits alone (FR12, `ShortcutEdits.migrating`): a saved
@@ -1537,59 +1602,58 @@ extension ShortcutAction {
     /// move there as they do in a reader. None of them is any other editor
     /// action's, and the Command ones are no menu command's but the Edit
     /// menu's own Undo, Redo, Cut, Copy, Paste, and Select All, which the
-    /// editor answers itself (the shortcut tests check both).
-    static var audioEditorDefaultBindings: [ShortcutAction: [KeyBinding]] {
-        [
-            .editorPlayPause: [KeyBinding(key: "space"), KeyBinding(key: "k")],
-            .editorStop: [KeyBinding(key: "s")],
-            // J and Comma go back, L and Period forward: a second; Shift-J
-            // and Shift-L ten; with Option, a tenth.
-            .editorSkipBack: [KeyBinding(key: "j"), KeyBinding(key: ",")],
-            .editorSkipForward: [KeyBinding(key: "l"), KeyBinding(key: ".")],
-            .editorSkipBackLong: [KeyBinding(key: "j", shift: true)],
-            .editorSkipForwardLong: [KeyBinding(key: "l", shift: true)],
-            .editorSkipBackShort: [KeyBinding(key: "j", option: true), KeyBinding(key: ",", option: true)],
-            .editorSkipForwardShort: [KeyBinding(key: "l", option: true), KeyBinding(key: ".", option: true)],
-            // The start and the end of the audio, as of a document.
-            .editorGoToStart: [KeyBinding(key: "upArrow", command: true)],
-            .editorGoToEnd: [KeyBinding(key: "downArrow", command: true)],
-            .editorGoToTime: [KeyBinding(key: "g")],
-            // Chapter markers by the reader's keys for headings.
-            .editorPreviousChapter: [KeyBinding(key: "upArrow", command: true, option: true)],
-            .editorNextChapter: [KeyBinding(key: "downArrow", command: true, option: true)],
-            .editorPreviousPause: [KeyBinding(key: "n", shift: true)],
-            .editorNextPause: [KeyBinding(key: "n")],
-            .editorWhereAmI: [KeyBinding(key: "w")],
-            // In and Out, as in video editors; the selection said in full
-            // with Shift-W, beside Where Am I.
-            .editorMarkIn: [KeyBinding(key: "i")],
-            .editorMarkOut: [KeyBinding(key: "o")],
-            .editorSelectToPreviousPause: [KeyBinding(key: "n", option: true, shift: true)],
-            .editorSelectToNextPause: [KeyBinding(key: "n", option: true)],
-            .editorSelectChapter: [KeyBinding(key: "c")],
-            .editorSelectAll: [KeyBinding(key: "a", command: true)],
-            .editorClearSelection: [KeyBinding(key: "escape")],
-            .editorSpeakSelection: [KeyBinding(key: "w", shift: true)],
-            .editorPlaySelection: [KeyBinding(key: "p")],
-            .editorAddMarker: [KeyBinding(key: "m")],
-            .editorShowMarkers: [KeyBinding(key: "m", shift: true)],
-            // The Edit menu's keys, which the editor answers itself, and
-            // Delete for Cut, as the user asked.
-            .editorUndo: [KeyBinding(key: "z", command: true)],
-            .editorRedo: [KeyBinding(key: "z", command: true, shift: true)],
-            .editorCut: [KeyBinding(key: "delete"), KeyBinding(key: "x", command: true)],
-            .editorCopy: [KeyBinding(key: "c", command: true)],
-            .editorPaste: [KeyBinding(key: "v", command: true)],
-            .editorTrimToSelection: [KeyBinding(key: "t")],
-            .editorInsertSilence: [KeyBinding(key: "s", shift: true)],
-            .editorInsertChapter: [KeyBinding(key: "c", shift: true)],
-            .editorApplyFilter: [KeyBinding(key: "f")],
-            .editorPunchIn: [KeyBinding(key: "r")],
-            // Saving, as documents save; Revert beside Undo, asking first.
-            .editorSave: [KeyBinding(key: "s", command: true)],
-            .editorExport: [KeyBinding(key: "e", command: true, shift: true)],
-            .editorRevert: [KeyBinding(key: "z", command: true, option: true)],
-            .editorInfo: [KeyBinding(key: "i", command: true)],
-        ]
-    }
+    /// editor answers itself (the shortcut tests check both). Built once, as
+    /// `defaultBindings` is.
+    static let audioEditorDefaultBindings: [ShortcutAction: [KeyBinding]] = [
+        .editorPlayPause: [KeyBinding(key: "space"), KeyBinding(key: "k")],
+        .editorStop: [KeyBinding(key: "s")],
+        // J and Comma go back, L and Period forward: a second; Shift-J
+        // and Shift-L ten; with Option, a tenth.
+        .editorSkipBack: [KeyBinding(key: "j"), KeyBinding(key: ",")],
+        .editorSkipForward: [KeyBinding(key: "l"), KeyBinding(key: ".")],
+        .editorSkipBackLong: [KeyBinding(key: "j", shift: true)],
+        .editorSkipForwardLong: [KeyBinding(key: "l", shift: true)],
+        .editorSkipBackShort: [KeyBinding(key: "j", option: true), KeyBinding(key: ",", option: true)],
+        .editorSkipForwardShort: [KeyBinding(key: "l", option: true), KeyBinding(key: ".", option: true)],
+        // The start and the end of the audio, as of a document.
+        .editorGoToStart: [KeyBinding(key: "upArrow", command: true)],
+        .editorGoToEnd: [KeyBinding(key: "downArrow", command: true)],
+        .editorGoToTime: [KeyBinding(key: "g")],
+        // Chapter markers by the reader's keys for headings.
+        .editorPreviousChapter: [KeyBinding(key: "upArrow", command: true, option: true)],
+        .editorNextChapter: [KeyBinding(key: "downArrow", command: true, option: true)],
+        .editorPreviousPause: [KeyBinding(key: "n", shift: true)],
+        .editorNextPause: [KeyBinding(key: "n")],
+        .editorWhereAmI: [KeyBinding(key: "w")],
+        // In and Out, as in video editors; the selection said in full
+        // with Shift-W, beside Where Am I.
+        .editorMarkIn: [KeyBinding(key: "i")],
+        .editorMarkOut: [KeyBinding(key: "o")],
+        .editorSelectToPreviousPause: [KeyBinding(key: "n", option: true, shift: true)],
+        .editorSelectToNextPause: [KeyBinding(key: "n", option: true)],
+        .editorSelectChapter: [KeyBinding(key: "c")],
+        .editorSelectAll: [KeyBinding(key: "a", command: true)],
+        .editorClearSelection: [KeyBinding(key: "escape")],
+        .editorSpeakSelection: [KeyBinding(key: "w", shift: true)],
+        .editorPlaySelection: [KeyBinding(key: "p")],
+        .editorAddMarker: [KeyBinding(key: "m")],
+        .editorShowMarkers: [KeyBinding(key: "m", shift: true)],
+        // The Edit menu's keys, which the editor answers itself, and
+        // Delete for Cut, as the user asked.
+        .editorUndo: [KeyBinding(key: "z", command: true)],
+        .editorRedo: [KeyBinding(key: "z", command: true, shift: true)],
+        .editorCut: [KeyBinding(key: "delete"), KeyBinding(key: "x", command: true)],
+        .editorCopy: [KeyBinding(key: "c", command: true)],
+        .editorPaste: [KeyBinding(key: "v", command: true)],
+        .editorTrimToSelection: [KeyBinding(key: "t")],
+        .editorInsertSilence: [KeyBinding(key: "s", shift: true)],
+        .editorInsertChapter: [KeyBinding(key: "c", shift: true)],
+        .editorApplyFilter: [KeyBinding(key: "f")],
+        .editorPunchIn: [KeyBinding(key: "r")],
+        // Saving, as documents save; Revert beside Undo, asking first.
+        .editorSave: [KeyBinding(key: "s", command: true)],
+        .editorExport: [KeyBinding(key: "e", command: true, shift: true)],
+        .editorRevert: [KeyBinding(key: "z", command: true, option: true)],
+        .editorInfo: [KeyBinding(key: "i", command: true)],
+    ]
 }

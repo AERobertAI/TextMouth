@@ -1328,8 +1328,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// What the listener hears when the voice did not start a passage, on
     /// fresh synthesizers too, and speech paused there
-    /// (`pauseAfterStartStalls(at:)`).
-    nonisolated static let voiceDidNotStartAnnouncement = "Speech stopped: the voice did not start. Press Play to try again."
+    /// (`pauseAfterStartStalls(at:)`): "Speech paused", as the reader shows
+    /// it, Paused, with Play to go on from there (REV11; it once said
+    /// "Speech stopped").
+    nonisolated static let voiceDidNotStartAnnouncement = "Speech paused: the voice did not start. Press Play to try again."
 
     /// Stop speech at `offset` as a pause, the cursor kept there, once the
     /// start watchdog's recoveries at the place have all ended in an

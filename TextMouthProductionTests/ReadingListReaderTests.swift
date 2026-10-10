@@ -1124,6 +1124,37 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertTrue(world.autoplayRequests.hasRequest(for: second.id))
     }
 
+    /// Next in Reading List during a Where Am I announcement over a book
+    /// that was not playing ends the announcement too, so that it never
+    /// speaks over the next book's, and opens the next book without starting
+    /// it, this one left as it was.
+    func testNextInReadingListDuringWhereAmIOverABookNotPlayingOpensTheNextBook() throws {
+        let world = try makeIntegrationWorld("ReadingListNextWhereAmINotPlaying")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        list([first, second], in: world)
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        // The announcement is handed to this, in place of its synthesizer,
+        // so nothing is heard.
+        reader._whereAmIUtteranceRecorderForTesting = { _ in }
+        reader.whereAmI()
+        XCTAssertTrue(reader.isWhereAmISpeaking)
+        let asked = record(.continueToNextBook, in: world)
+        let opened = record(.openBookWindow, in: world)
+
+        let recorder = recordingAnnouncements {
+            reader.goThroughReadingList(.down)
+            XCTAssertTrue(eventually { !opened().isEmpty }, "Never opened the next book")
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Opening: Second Crossing"])
+        XCTAssertFalse(reader.isWhereAmISpeaking, "The announcement speaks over the next book's")
+        XCTAssertEqual(opened().map { $0.object as? UUID }, [second.id])
+        XCTAssertTrue(asked().isEmpty, "Asked for the next book to start")
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying, "This book started")
+    }
+
     // MARK: - Fixtures
 
     /// The title `reader`'s window shows now.

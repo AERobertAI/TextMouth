@@ -1389,7 +1389,7 @@ final class SpeechDirectChunkingTests: XCTestCase {
 
         XCTAssertTrue(speech.isPaused, "speech did not pause where the voice would not start")
         XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.voiceDidNotStartAnnouncement])
-        XCTAssertEqual(SpeechService.voiceDidNotStartAnnouncement, "Speech stopped: the voice did not start. Press Play to try again.")
+        XCTAssertEqual(SpeechService.voiceDidNotStartAnnouncement, "Speech paused: the voice did not start. Press Play to try again.")
     }
 
     /// The app's watchdog timer ticks on the main run loop until it is

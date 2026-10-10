@@ -36,9 +36,9 @@ final class MenuKeyShortcutTests: XCTestCase {
             (.openBook, "Open Book…", "File", commandO),
             (.newFromText, "New from Text…", "File", shiftCommandT),
             (.newRecording, "New Recording…", "File", KeyBinding(key: "n", command: true, option: true)),
-            (.recordingRecord, "Record", "Recording Window", KeyBinding(key: "r", command: true)),
-            (.recordingPauseOrResume, "Pause or Resume", "Recording Window", commandP),
-            (.recordingStop, "Stop", "Recording Window", KeyBinding(key: ".", command: true)),
+            (.recordingRecord, "Record", "New Recording", KeyBinding(key: "r", command: true)),
+            (.recordingPauseOrResume, "Pause or Resume", "New Recording", commandP),
+            (.recordingStop, "Stop", "New Recording", KeyBinding(key: ".", command: true)),
         ]
 
         XCTAssertEqual(ShortcutAction.allCases.filter(\.isKeyEquivalent), expected.map(\.action), "in Settings order")
@@ -48,9 +48,8 @@ final class MenuKeyShortcutTests: XCTestCase {
             XCTAssertEqual(ShortcutAction.defaultBindings[action], [key], title)
             XCTAssertTrue(key.canBeKeyEquivalent, title)
         }
-        XCTAssertEqual(ShortcutAction.recordingStop.rawValue, "Recording Window: Stop", "config.json tells it from the editor's Stop")
-        XCTAssertEqual(ShortcutAction.addFeed.title, FeedWording.addFeedCommand)
-        XCTAssertEqual(ShortcutAction.newRecording.title, RecordingWording.menuTitle)
+        XCTAssertEqual(ShortcutAction.recordingStop.rawValue, "New Recording: Stop", "config.json tells it from the editor's Stop")
+        XCTAssertEqual(ShortcutAction.recordingWindowCategory, RecordingWording.windowTitle, "the group is named as VoiceOver names the window")
         XCTAssertEqual(ShortcutAction.recordingRecord.title, RecordingWording.recordTitle)
         XCTAssertEqual(ShortcutAction.recordingStop.title, RecordingWording.stopTitle)
         XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Playback" }.suffix(2), [.copyReadingPosition, .searchInBook])
@@ -239,7 +238,8 @@ final class MenuKeyShortcutTests: XCTestCase {
 
     /// Two actions' single and double presses of one key share it, as
     /// before, unless one of them is a key equivalent's; the audio editor's
-    /// keys stay apart from the rest.
+    /// keys stay apart from the rest, but for a menu command's, whose menu
+    /// item acts in an editor window too (REV11).
     func testOnlyAKeyEquivalentClashesWithItsKeysDoublePress() {
         let edits = ShortcutEdits()
         let plainJ = KeyBinding(key: "j")
@@ -249,7 +249,17 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertTrue(edits.key(commandJ.asDoublePress(true), of: .goToLibrary, clashesWith: commandJ, of: .openBook))
         XCTAssertTrue(edits.key(commandJ, of: .openBook, clashesWith: commandJ, of: .searchInBook))
         XCTAssertFalse(edits.key(commandJ, of: .openBook, clashesWith: commandO, of: .searchInBook))
-        XCTAssertFalse(edits.key(commandJ, of: .openBook, clashesWith: commandJ, of: .editorSave), "the audio editor's keys are apart")
+        XCTAssertFalse(edits.key(commandJ, of: .goToLibrary, clashesWith: commandJ, of: .editorSave), "the audio editor's keys are apart")
+        XCTAssertTrue(edits.key(commandJ, of: .openBook, clashesWith: commandJ, of: .editorSave), "Open Book… acts in an editor window too")
+        XCTAssertTrue(edits.key(commandJ, of: .editorSave, clashesWith: commandJ.asDoublePress(true), of: .newRecording))
+        XCTAssertFalse(
+            edits.key(commandJ, of: .importDAISYFolder, clashesWith: commandJ, of: .editorSave),
+            "the Library menu's command acts in Library windows alone"
+        )
+        XCTAssertFalse(
+            edits.key(commandJ, of: .newFromText, clashesWith: commandJ, of: .editorSave),
+            "New from Text… acts in Library windows alone by default"
+        )
     }
 
     /// A key equivalent's key and its double press, held by two edited
@@ -278,6 +288,111 @@ final class MenuKeyShortcutTests: XCTestCase {
         ])
     }
 
+    // MARK: - A Menu Command's Key in an Audio Editor's Window (REV11)
+
+    /// A File menu command working in every window acts in an audio
+    /// editor's window too, so its key is claimed there: Command-S given to
+    /// Open Book… is taken from the editor's Save, the Shortcuts tab says so
+    /// ("Taken from Audio Editor: Save"), Save's row names the action that
+    /// has its default, and a press of Command-S in an editor window goes on
+    /// to Open Book…'s menu item, which shows it. Reset to Default gives Save
+    /// its key back. Before, no clash was found: the editor took the key in
+    /// its window while the menu showed it, enabled.
+    func testAMenuCommandsKeyIsTakenFromTheAudioEditorToo() throws {
+        let center = NotificationCenter()
+        let manager = makeManager("menu-key-in-editor", center: center)
+        let posted = PostedShortcutActions(on: center)
+        let commandS = KeyBinding(key: "s", command: true)
+        let before = manager.bindings
+
+        XCTAssertNil(manager.updateBindings(for: .openBook, to: [commandS]))
+
+        XCTAssertEqual(manager.keyEquivalent(for: .openBook), commandS)
+        XCTAssertEqual(manager.bindingsFor(.editorSave), [], "the editor's Save kept Command-S")
+        XCTAssertFalse(manager.isEdited(.editorSave), "losing its key made Save the user's")
+        XCTAssertEqual(manager.actions(thatLostKeysSince: before, besides: .openBook), [.editorSave])
+        XCTAssertEqual(
+            ShortcutsSettingsWording.recorded(commandS, for: .openBook, takenFrom: [.editorSave]),
+            "Command + S, recorded for Open Book… Taken from Audio Editor: Save."
+        )
+        XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .editorSave), [DefaultKeyHeldElsewhere(key: commandS, holder: .openBook)])
+        XCTAssertEqual(manager.action(holding: commandS, in: .audioEditor), .openBook)
+        let editor = makeShortcutWindow(.audioEditor)
+        XCTAssertFalse(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: commandS), keyWindow: editor, firstResponder: nil))
+        XCTAssertEqual(posted.names, [], "the editor took Open Book…'s key in its window")
+
+        manager.resetToDefault(.openBook)
+
+        XCTAssertEqual(manager.bindingsFor(.editorSave), [commandS])
+        XCTAssertEqual(manager.keyEquivalent(for: .openBook), commandO)
+        XCTAssertTrue(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: commandS), keyWindow: editor, firstResponder: nil))
+        XCTAssertEqual(posted.names, [ShortcutAction.editorSave.rawValue])
+    }
+
+    /// An audio editor action given a File menu command's key takes it from
+    /// the command, whose menu item would answer it in the editor's window:
+    /// Command-O given to the editor's Stop leaves Open Book… with no key,
+    /// still TextMouth's, and its row says which action has its default.
+    func testAnEditorActionGivenAMenuCommandsKeyTakesIt() {
+        let manager = makeManager("editor-takes-menu-key")
+        let before = manager.bindings
+
+        XCTAssertNil(manager.updateBindings(for: .editorStop, to: [commandO]))
+
+        XCTAssertNil(manager.keyEquivalent(for: .openBook))
+        XCTAssertFalse(manager.isEdited(.openBook))
+        XCTAssertEqual(manager.actions(thatLostKeysSince: before, besides: .editorStop), [.openBook])
+        XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .openBook), [DefaultKeyHeldElsewhere(key: commandO, holder: .editorStop)])
+        XCTAssertEqual(ShortcutPressDispatcher.Index(manager.bindings).actions(for: commandO, in: .audioEditor)?.single, .editorStop)
+    }
+
+    /// Only a menu command whose menu item acts in an editor window claims
+    /// its key there: New from Text…, working in Library windows by default,
+    /// and the Library menu's Import DAISY Folder… leave an editor action
+    /// their keys; New from Text… given every window takes its key from the
+    /// editor's Stop, which stays the user's with its other key, as it takes
+    /// it from Show Sleep Timer, and VoiceOver names both.
+    func testOnlyAMenuCommandActingInAnEditorTakesAnEditorsKey() {
+        let manager = makeManager("menu-key-scope-editor")
+        let shiftCommandO = KeyBinding(key: "o", command: true, shift: true)
+
+        manager.updateBindings(for: .editorStop, to: [shiftCommandT, shiftCommandO])
+
+        XCTAssertEqual(manager.bindingsFor(.editorStop), [shiftCommandT, shiftCommandO])
+        XCTAssertEqual(manager.keyEquivalent(for: .newFromText), shiftCommandT)
+        XCTAssertEqual(manager.keyEquivalent(for: .importDAISYFolder), shiftCommandO)
+
+        let before = manager.bindings
+        manager.setScope(.app, for: .newFromText)
+
+        XCTAssertEqual(manager.bindingsFor(.editorStop), [shiftCommandO])
+        XCTAssertTrue(manager.isEdited(.editorStop))
+        XCTAssertEqual(manager.keyEquivalent(for: .newFromText), shiftCommandT)
+        XCTAssertEqual(manager.actions(thatLostKeysSince: before, besides: .newFromText), [.showSleepTimer, .editorStop])
+        XCTAssertEqual(
+            ShortcutsSettingsWording.scopeChanged(.newFromText, to: .app, takenFrom: [.showSleepTimer, .editorStop]),
+            "New from Text… works in every window. Taken from Show Sleep Timer and Audio Editor: Stop."
+        )
+    }
+
+    /// A menu command's key and an audio editor action's, both the user's
+    /// after an edit of config.json, are settled as any key two actions hold
+    /// where both act: the changed one keeps it, else the one Settings lists
+    /// first, Open Book….
+    func testAMenuCommandAndAnEditorActionHoldingOneKeyAreSettled() {
+        let commandS = KeyBinding(key: "s", command: true)
+        let edits = ShortcutEdits([.openBook: [commandS], .editorSave: [commandS]])
+
+        let neither = edits.resolvingSharedKeys(favoring: [])
+        XCTAssertEqual(neither.edits.keys(of: .openBook), [commandS])
+        XCTAssertEqual(neither.edits.keys(of: .editorSave), [])
+        XCTAssertEqual(neither.sharedKeys, [ShortcutEdits.SharedKey(key: commandS, keeper: .openBook, loser: .editorSave)])
+
+        let saveChanged = edits.resolvingSharedKeys(favoring: [.editorSave])
+        XCTAssertEqual(saveChanged.edits.keys(of: .editorSave), [commandS])
+        XCTAssertEqual(saveChanged.edits.keys(of: .openBook), [])
+    }
+
     // MARK: - The Index
 
     /// The index notes each key equivalent's key as one, gives it to no
@@ -285,11 +400,12 @@ final class MenuKeyShortcutTests: XCTestCase {
     /// key, once or twice, leaves it to the one Settings lists first.
     func testTheIndexNotesKeyEquivalentsAndTheFirstListedHasAKey() {
         let defaults = ShortcutPressDispatcher.Index(ShortcutAction.defaultBindings)
-        for kind in [ShortcutWindowKind.library, .reader, .recording, .other] {
+        // Open Book… works in every window, its menu item in an audio
+        // editor's too (REV11).
+        for kind in ShortcutWindowKind.allCases {
             XCTAssertTrue(defaults.isKeyEquivalent(commandO, in: kind), "\(kind)")
             XCTAssertNil(defaults.actions(for: commandO, in: kind), "\(kind)")
         }
-        XCTAssertFalse(defaults.isKeyEquivalent(commandO, in: .audioEditor))
         // Shift-Command-T is New from Text's key equivalent in a Library
         // window, Show Sleep Timer's in a reader, and neither's elsewhere.
         XCTAssertTrue(defaults.isKeyEquivalent(shiftCommandT, in: .library))
@@ -469,6 +585,18 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertNil(ShortcutAction.whereAmI.refusal(of: plainW))
         XCTAssertEqual(ShortcutAction.openBook.refusal(ofKeys: [commandO, controlG]), .secondKeyEquivalent(controlG))
         XCTAssertNil(ShortcutAction.togglePlayback.refusal(ofKeys: [KeyBinding(key: "space"), KeyBinding(key: "k"), plainW]))
+        // One rule, holding keys as the Shortcuts tab holds those in force:
+        // a key held already is never refused, and the key past the number
+        // held is the one named, whichever place it is given in.
+        XCTAssertNil(ShortcutAction.openBook.refusal(ofKeys: [plainW], holding: [plainW]))
+        XCTAssertEqual(ShortcutAction.openBook.refusal(ofKeys: [plainW, controlG], holding: [plainW]), .secondKeyEquivalent(controlG))
+        XCTAssertEqual(ShortcutAction.openBook.refusal(ofKeys: [controlG, commandO], holding: [commandO]), .secondKeyEquivalent(controlG))
+        XCTAssertNil(ShortcutAction.openBook.refusal(ofKeys: [commandO, controlG], holding: [commandO, controlG]))
+        XCTAssertEqual(
+            ShortcutAction.openBook.refusal(ofKeys: [commandO, plainW], holding: [commandO]),
+            .notOnePressWithCommandOrControl(plainW),
+            "a key it cannot take is named before a second key"
+        )
 
         XCTAssertEqual(
             ShortcutsSettingsWording.refused(.notOnePressWithCommandOrControl(plainW), for: .openBook),
@@ -476,7 +604,7 @@ final class MenuKeyShortcutTests: XCTestCase {
         )
         XCTAssertEqual(
             ShortcutsSettingsWording.refused(.editsText(commandLeft), for: .recordingStop),
-            "Command + Left Arrow not recorded for Recording Window: Stop: a text field edits with it, "
+            "Command + Left Arrow not recorded for New Recording: Stop: a text field edits with it, "
                 + "and a menu command's shortcut would take it from the field."
         )
         XCTAssertEqual(
@@ -619,12 +747,18 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.named("open book..."), .openBook)
         XCTAssertEqual(ShortcutAction.named("OPEN BOOK"), .openBook)
         XCTAssertEqual(ShortcutAction.named("Import DAISY Folder"), .importDAISYFolder)
-        XCTAssertEqual(ShortcutAction.named("recording window: stop"), .recordingStop)
+        XCTAssertEqual(ShortcutAction.named("new recording: stop"), .recordingStop)
         XCTAssertEqual(ShortcutAction.named("Audio Editor: Go to Time"), .editorGoToTime)
         XCTAssertEqual(ShortcutAction.named("where am i?"), .whereAmI)
         XCTAssertNil(ShortcutAction.named("Stop"), "Stop alone names neither the editor's nor the Record window's")
         XCTAssertNil(ShortcutAction.named("Open Book…?"))
-        let compared = ShortcutAction.allCases.map { ShortcutAction.comparableName($0.rawValue) }
+        // The Record window's buttons' former names, under "Recording
+        // Window", still name them (REV11), exactly and in any letter case.
+        XCTAssertEqual(ShortcutAction.named("Recording Window: Record"), .recordingRecord)
+        XCTAssertEqual(ShortcutAction.named("recording window: pause or resume"), .recordingPauseOrResume)
+        XCTAssertEqual(ShortcutAction.exactlyNamed("Recording Window: Stop"), .recordingStop)
+        XCTAssertNil(ShortcutAction.exactlyNamed("recording window: stop"), "the record names actions letter for letter")
+        let compared = (ShortcutAction.allCases.map(\.rawValue) + ShortcutAction.formerNames.keys).map(ShortcutAction.comparableName)
         XCTAssertEqual(Set(compared).count, compared.count)
     }
 

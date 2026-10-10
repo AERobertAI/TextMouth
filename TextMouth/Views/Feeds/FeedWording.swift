@@ -12,8 +12,10 @@ import Foundation
 enum FeedWording {
     // MARK: Add Feed
 
-    /// The Library menu's command.
-    static let addFeedCommand = "Add Feed…"
+    // The Library menu's command is named by its action
+    // (`ShortcutAction.addFeed.title`), one name for the menu, the Shortcuts
+    // tab, and config.json.
+
     /// The Library window's toolbar button's title.
     static let addFeedToolbarTitle = "Add Feed"
     /// The Library menu's command that refreshes every feed now.

@@ -214,7 +214,7 @@ final class KeyboardShortcutManager: ObservableObject {
     /// the one rule a key's owner follows). Replacing a key in Settings comes
     /// through here, so it can no longer leave one key on two actions.
     /// Returns why nothing changed when `action` cannot take one of the keys
-    /// (`refusal(ofKeys:for:)`), or nil.
+    /// (`ShortcutAction.refusal(ofKeys:holding:)`), or nil.
     @discardableResult
     func updateBindings(for action: ShortcutAction, to newBindings: [KeyBinding]) -> ShortcutRefusal? {
         change(action, to: newBindings)
@@ -235,24 +235,6 @@ final class KeyboardShortcutManager: ObservableObject {
     func removeBinding(_ binding: KeyBinding, from action: ShortcutAction) {
         // A removal adds no key, so nothing refuses it.
         _ = change(action, to: bindingsFor(action).filter { $0 != binding })
-    }
-
-    /// Why `keys` cannot become `action`'s, or nil when they can (FR12's
-    /// branch D): a key they add that `action` cannot take
-    /// (`ShortcutAction.refusal(of:)`), or a second key for a key
-    /// equivalent's action, whose item has one. A key the action has in
-    /// force already is never refused, so a store edited by hand never stops
-    /// the user changing the action.
-    func refusal(ofKeys keys: [KeyBinding], for action: ShortcutAction) -> ShortcutRefusal? {
-        let held = bindingsFor(action)
-        let added = keys.filter { !held.contains($0) }
-        if let refused = added.lazy.compactMap(action.refusal(of:)).first {
-            return refused
-        }
-        if action.isKeyEquivalent, keys.count > max(1, held.count), let second = added.first {
-            return .secondKeyEquivalent(second)
-        }
-        return nil
     }
 
     /// Gives `action` back to this build's defaults (Reset to Default),
@@ -290,10 +272,14 @@ final class KeyboardShortcutManager: ObservableObject {
     }
 
     /// Makes `keys` `action`'s, as the user's, unless `action` cannot take
-    /// them, whose refusal it returns. Keys that leave an unedited action as
-    /// it is change nothing: it stays TextMouth's.
+    /// them (FR12's branch D), whose refusal it returns: a key they add to
+    /// its keys in force that it cannot take, or a second key for a key
+    /// equivalent's action (`ShortcutAction.refusal(ofKeys:holding:)`), a
+    /// key it has in force already never being refused, so a store edited
+    /// by hand never stops the user changing the action. Keys that leave an
+    /// unedited action as it is change nothing: it stays TextMouth's.
     private func change(_ action: ShortcutAction, to keys: [KeyBinding]) -> ShortcutRefusal? {
-        if let refusal = refusal(ofKeys: keys, for: action) {
+        if let refusal = action.refusal(ofKeys: keys, holding: bindingsFor(action)) {
             return refusal
         }
         guard edits.isEdited(action) || keys != bindingsFor(action) else { return nil }
@@ -409,9 +395,14 @@ final class KeyboardShortcutManager: ObservableObject {
     }
 
     /// The action whose keys in force hold `binding` where `scope` reaches,
-    /// if any: the first Settings lists whose scope overlaps it.
+    /// if any: the first Settings lists whose keys act there
+    /// (`ShortcutScope.windowKinds(of:)`), a menu command's wherever its
+    /// menu item acts.
     func action(holding binding: KeyBinding, in scope: ShortcutScope) -> ShortcutAction? {
-        ShortcutAction.allCases.first { self.scope(of: $0).overlaps(scope) && bindingsFor($0).contains(binding) }
+        ShortcutAction.allCases.first { holder in
+            !self.scope(of: holder).windowKinds(of: holder).isDisjoint(with: scope.windowKinds)
+                && bindingsFor(holder).contains(binding)
+        }
     }
 
     /// The actions other than `action` that hold fewer keys in force than
@@ -638,9 +629,20 @@ final class KeyboardShortcutManager: ObservableObject {
     /// in, whose scopes' shortcuts match it (FR12's branch E): a sheet's
     /// window's kind (`pressKind(window:sheetParent:)`), and `.other` with no
     /// key window.
+    ///
+    /// A sheet over a sheet counts as the window under them both, which
+    /// commands are routed to too (`WindowCommandRouting.rootWindow(for:)`).
+    /// It once counted as a sheet over the sheet beneath it, a titled window,
+    /// which counts as a Library window (REV11): a reader's shortcuts did not
+    /// work there, the Library's did, and over an audio editor they matched
+    /// where none should.
     static func windowKind(ofKeyWindow keyWindow: NSWindow?) -> ShortcutWindowKind? {
         guard let keyWindow else { return .other }
-        return pressKind(window: windowKind(of: keyWindow), sheetParent: keyWindow.sheetParent.map(windowKind(of:)))
+        let underneath = WindowCommandRouting.rootWindow(for: keyWindow)
+        return pressKind(
+            window: windowKind(of: keyWindow),
+            sheetParent: underneath === keyWindow ? nil : windowKind(of: underneath)
+        )
     }
 
     /// The kind of window `window` is, apart from any sheet it is: an audio

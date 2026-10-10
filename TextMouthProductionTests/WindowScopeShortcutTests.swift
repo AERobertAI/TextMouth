@@ -257,7 +257,7 @@ final class WindowScopeShortcutTests: XCTestCase {
             (ShortcutsSettingsWording.rowLabel(for: .editorPlayPause, keys: [KeyBinding(key: "k")], isEdited: false, worksIn: .audioEditor),
              "Audio Editor: Play / Pause: K"),
             (ShortcutsSettingsWording.rowLabel(for: .recordingStop, keys: [commandS], isEdited: true, worksIn: .recording),
-             "Recording Window: Stop: Command + S. Edited."),
+             "New Recording: Stop: Command + S. Edited."),
             (ShortcutsSettingsWording.scopeChanged(.newFromText, to: .app, takenFrom: [.showSleepTimer]),
              "New from Text… works in every window. Taken from Show Sleep Timer."),
             (ShortcutsSettingsWording.scopeChanged(.whereAmI, to: .reader, takenFrom: []),

@@ -1,3 +1,4 @@
+import AVFoundation
 import Combine
 import SwiftUI
 import XCTest
@@ -815,6 +816,86 @@ final class ReaderCloudDownloadTests: XCTestCase {
         assertNothingPlaysOnceTheDownloadEnds(for: book, in: cloud, reader: reader)
     }
 
+    /// A chapter whose files finish downloading while Where Am I? speaks
+    /// waits for the announcement, as a Play pressed during it does: nothing
+    /// plays under the announcement, the reader goes on showing Playing, and
+    /// the chapter plays once the announcement's end sound has played.
+    /// Before, the download's end started the chapter under the
+    /// announcement (REV11).
+    func testAChapterDownloadedDuringWhereAmIPlaysAsTheAnnouncementEnds() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        let second = reader.audioChapterFiles[1]
+        let announcement = try speakWhereAmI(in: reader)
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the download's end") { reader.cloudPhase == nil }
+
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The chapter played under the announcement")
+        XCTAssertTrue(reader.isChapterHeldByWhereAmI)
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader stopped showing Playing")
+        XCTAssertFalse(reader.isCurrentlyPaused)
+
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+        waitFor("the announcement's end") { !reader.isWhereAmISpeaking }
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The chapter played before the end sound")
+        endSound.passEndSound()
+
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        XCTAssertFalse(reader.isChapterHeldByWhereAmI)
+        reader.stop()
+    }
+
+    /// Where Am I? pressed again while it speaks stops it, and a chapter
+    /// whose files came during it plays at once, as its end would have
+    /// played it.
+    func testAChapterDownloadedDuringWhereAmIPlaysAtOnceWhenAPressEndsIt() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I Pressed", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        _ = try speakWhereAmI(in: reader)
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the download's end") { reader.cloudPhase == nil }
+
+        reader.whereAmI()
+
+        XCTAssertFalse(reader.isWhereAmISpeaking, "The press did not stop the announcement")
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+        reader.stop()
+    }
+
+    /// Play/Pause while Where Am I? speaks over a chapter whose files came
+    /// during it ends the announcement and pauses the reader at the chapter,
+    /// as it pauses a reader waiting for its chapter without Where Am I:
+    /// nothing plays then, and Play plays the chapter.
+    func testPlayPauseDuringWhereAmILetsAHeldChapterGo() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I Play Pause", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        let second = reader.audioChapterFiles[1]
+        _ = try speakWhereAmI(in: reader)
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the download's end") { reader.cloudPhase == nil }
+
+        reader.togglePlayPause()
+
+        XCTAssertFalse(reader.isWhereAmISpeaking, "Play/Pause did not end the announcement")
+        XCTAssertTrue(reader.isCurrentlyPaused, "The reader is not paused")
+        XCTAssertFalse(reader.isChapterHeldByWhereAmI)
+        XCTAssertFalse(endSound.hasWorkWaiting, "Work waits for an end sound")
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The chapter played")
+
+        reader.togglePlayPause()
+
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Play did not play the chapter")
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        reader.stop()
+    }
+
     /// The library moves the package of a book whose chapter's files are
     /// downloading: the reader stops waiting before anything moves, since
     /// the download reads the package's files and plays them once they are
@@ -1010,6 +1091,21 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.navigateTo(chapterIndex: 1, characterOffset: 0)
         waitFor("the chapter's download") { reader.shownDownload?.progress == Self.halfway }
         return (reader, book)
+    }
+
+    /// Presses Where Am I? in `reader`, which hands its announcement to a
+    /// recorder in place of its synthesizer, so that nothing is heard, and
+    /// returns the announcement handed over.
+    private func speakWhereAmI(
+        in reader: ReaderViewModel,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> AVSpeechUtterance {
+        let handedOver = HandedOverWhereAmI()
+        reader._whereAmIUtteranceRecorderForTesting = { handedOver.utterances.append($0) }
+        reader.whereAmI()
+        XCTAssertTrue(reader.isWhereAmISpeaking, "Where Am I does not speak", file: file, line: line)
+        return try XCTUnwrap(handedOver.utterances.last, "No announcement was handed over", file: file, line: line)
     }
 
     /// Checks that `reader`, which stopped waiting for its chapter's
@@ -1241,6 +1337,12 @@ extension XCTestCase {
         addTeardownBlock { cloud.closeReaders() }
         return cloud
     }
+}
+
+/// The utterances a reader's Where Am I? handed over in place of its
+/// synthesizer, oldest first.
+private final class HandedOverWhereAmI {
+    var utterances: [AVSpeechUtterance] = []
 }
 
 /// The files a test says are only in the cloud, as a reader's dataless

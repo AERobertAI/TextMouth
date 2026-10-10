@@ -42,6 +42,29 @@ final class AudioEditorShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.editorPlayPause.notificationName, .audioEditorShortcut)
     }
 
+    /// A sheet over a sheet counts as the window under them both, as a sheet
+    /// counts as its window: a reader's, a Library window's, the Record
+    /// window's, or another window's shortcuts work in it, and the menus
+    /// take it for that window too; over an audio editor none match.
+    /// Before, it counted as a sheet over the sheet beneath it, a titled
+    /// window taken for a Library window (REV11).
+    func testASheetOverASheetCountsAsTheWindowUnderneath() {
+        for kind in [ShortcutWindowKind.library, .reader, .recording, .other] {
+            let window = makeShortcutWindow(kind)
+            let sheet = makeShortcutSheet(on: window)
+            let sheetOverSheet = makeShortcutSheet(on: sheet)
+            XCTAssertTrue(WindowCommandRouting.rootWindow(for: sheetOverSheet) === window, "\(kind)")
+            XCTAssertEqual(KeyboardShortcutManager.windowKind(ofKeyWindow: sheet), kind, "a sheet over \(kind)")
+            XCTAssertEqual(KeyboardShortcutManager.windowKind(ofKeyWindow: sheetOverSheet), kind, "a sheet over a sheet over \(kind)")
+            XCTAssertEqual(FrontWindowKind.kind(of: sheetOverSheet), kind, "the menus, a sheet over a sheet over \(kind)")
+            XCTAssertTrue(KeyboardShortcutManager.isDialog(sheetOverSheet), "a sheet over a sheet over \(kind) is no dialog")
+        }
+        let editor = makeShortcutWindow(.audioEditor)
+        let editorSheet = makeShortcutSheet(on: editor)
+        XCTAssertNil(KeyboardShortcutManager.windowKind(ofKeyWindow: editorSheet))
+        XCTAssertNil(KeyboardShortcutManager.windowKind(ofKeyWindow: makeShortcutSheet(on: editorSheet)))
+    }
+
     // MARK: - The Defaults
 
     /// Within the editor's group no two actions share a key, every action
