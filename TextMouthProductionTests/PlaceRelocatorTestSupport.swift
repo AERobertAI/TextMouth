@@ -35,6 +35,37 @@ enum MillBook {
 
     /// Chapters I to IV.
     static var chapters: [String] { [millrace, wheel, stones, flour] }
+
+    /// The headings of a book whose chapters are `texts`: each chapter that
+    /// begins "CHAPTER" has a heading of `level` at its start, labelled with
+    /// its first line, as the app's readers make them.
+    static func headings(of texts: [String], level: Int = 1) -> [Heading] {
+        texts.enumerated().compactMap { index, text in
+            guard text.hasPrefix("CHAPTER"), let label = text.components(separatedBy: "\n").first else { return nil }
+            return Heading(level: level, text: label, chapterIndex: index, characterOffset: 0)
+        }
+    }
+
+    /// The heading `headings(of:)` gives chapter `chapter` of `texts`.
+    static func heading(ofChapter chapter: Int, in texts: [String], file: StaticString = #filePath, line: UInt = #line) throws -> Heading {
+        try XCTUnwrap(headings(of: texts).first { $0.chapterIndex == chapter }, "no heading in chapter \(chapter)", file: file, line: line)
+    }
+}
+
+/// Saved places for the relocator tests, with their words captured as this
+/// build captures them.
+enum SavedPlace {
+    /// The anchor of `place` in the book whose chapters are `texts`.
+    static func anchor(at place: TextPlace, in texts: [String], file: StaticString = #filePath, line: UInt = #line) throws -> TextAnchor {
+        try XCTUnwrap(TextAnchor(capturingAt: place, in: BookWords(texts: texts)), "no chapter \(place.chapter)", file: file, line: line)
+    }
+
+    /// The skip of `heading`, with its anchor captured at its start in the
+    /// book whose chapters are `texts`.
+    static func skip(of heading: Heading, in texts: [String], file: StaticString = #filePath, line: UInt = #line) throws -> SkippedHeading {
+        let start = TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
+        return SkippedHeading(heading, anchor: try anchor(at: start, in: texts, file: file, line: line))
+    }
 }
 
 /// Where phrases stand in the relocator tests' texts, found without a
