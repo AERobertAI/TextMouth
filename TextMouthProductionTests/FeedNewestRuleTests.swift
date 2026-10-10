@@ -872,6 +872,85 @@ final class FeedNewestRuleTests: XCTestCase {
         return try await subscribe(world, episodes: episodes)
     }
 
+    // MARK: - The First Launch of FR11's Build (REV11 F7)
+
+    /// On one launch, the move of a download made before FR11 into its
+    /// feed's folder (branch A1) and the newest-N rule's first pass (branch
+    /// B) run together, as at the first launch of FR11's build, each begun
+    /// once the feeds' records have loaded: the moved download counts among
+    /// the rule's newest 2 whichever runs first, so it is neither downloaded
+    /// again nor removed; it ends in its feed's own folder as the same book,
+    /// with its place, its item downloaded as that book; and the rule asks
+    /// for the other newest episode alone.
+    func testAMoveIntoItsFeedAndTheRulesFirstPassShareOneLaunch() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleFirstLaunchMove")
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        let audio = try FeedMediaFixtures.silentAAC()
+        for number in 1...3 {
+            world.server.serve("/audio/\(number).m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        }
+        let feed = try await subscribe(world, episodes: 3)
+        let link = FeedBookLink(feedID: feed.id, itemID: "guid:ep-1")
+
+        // The newest episode as a download made before FR11 left it: a book
+        // of the library's own in its feed's library folder, opened with a
+        // place, its record naming its feed and item, and its item
+        // downloaded as that book.
+        let folderPath = try XCTUnwrap(world.library.feedFolderPath(forFolderID: feed.folderID))
+        let bookID = UUID()
+        let name = TextMouthPaths.tmbName(title: "Episode 1", author: Book.unknownAuthor, dateAdded: world.clock.value, bookID: bookID)
+        let package = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: name)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let file = package.appendingPathComponent("Episode 1.m4a")
+        try audio.write(to: file)
+        let place = ReadingPosition(chapterIndex: 0, characterOffset: 42)
+        let download = Book(
+            id: bookID,
+            title: "Episode 1",
+            format: .audio,
+            filePath: file.path,
+            md5Hash: UUID().uuidString,
+            folderPath: folderPath,
+            dateAdded: world.clock.value,
+            lastOpened: world.clock.value,
+            readingPosition: place,
+            tmbDirectoryName: name
+        )
+        var record = download.makeBookInfo()
+        record.metadata.feedLink = link
+        try record.save(to: package)
+        world.library.library.books.append(download)
+        world.library.save()
+        LibraryPersistenceService.flushPendingSave()
+        world.center.store.updateItem(link.itemID, of: feed.id) { $0.state = .downloaded(bookID: bookID) }
+        await world.center.store.flush()
+
+        // The next launch: the library moves downloads once the records have
+        // loaded, while the engine's start asks for the rule's first pass.
+        let next = await world.relaunch(self) { next in
+            world.library.feedEngine = next
+            world.library.moveFeedDownloadsOnceRecordsLoad()
+        }
+        await waitFor("the download moves into its feed's folder", timeout: 20) {
+            world.library.bookByID(bookID)?.isFeedItem == true
+        }
+        _ = try await downloadedBook(world, center: next, feed: feed, item: "guid:ep-2")
+        await waitFor("the engine's own work ends") { !next.isSweeping }
+
+        let moved = try XCTUnwrap(world.library.bookByID(bookID), "the download left the library")
+        XCTAssertEqual(moved.feedLink, link)
+        XCTAssertEqual(moved.readingPosition, place, "the move lost the place")
+        XCTAssertTrue(
+            moved.tmbDirectory.path.hasPrefix(FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root).path + "/"),
+            moved.tmbDirectory.path
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: moved.filePath))
+        XCTAssertEqual(next.store.record(of: feed.id)?.item(link.itemID)?.state, .downloaded(bookID: bookID))
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [], "the moved download was downloaded again")
+        XCTAssertEqual(world.server.requests(to: "/audio/3.m4a"), [], "the rule asked for more than the newest 2")
+        XCTAssertEqual(world.removedItems.value, [], "the rule removed a download on the first launch")
+    }
+
     /// The books the items `itemIDs` of `feed` download as, each waited for.
     private func downloadedBooks(_ world: FeedTestWorld, feed: Feed, items itemIDs: [FeedItem.ID]) async throws -> [Book] {
         var books: [Book] = []
