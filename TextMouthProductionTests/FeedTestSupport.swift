@@ -482,12 +482,15 @@ final class FeedTestWorld {
     /// A world whose engine works on its own when `worksOnItsOwn`, made in
     /// folders `test` removes when it ends. Finished books mark items played
     /// as `statistics` counts them, or, without it, as a statistics service
-    /// of the world's own does.
+    /// of the world's own does. Its records are written as storage work of
+    /// `recordsBoundary`, the process's unless a test holds a boundary of
+    /// its own to keep a write waiting.
     init(
         _ test: XCTestCase,
         label: String,
         worksOnItsOwn: Bool = false,
-        statistics: ReadingStatsService? = nil
+        statistics: ReadingStatsService? = nil,
+        recordsBoundary: StorageBoundary = .shared
     ) throws {
         // Registered first of all, so it runs last, once the library index
         // has been put back, which writes any save still waiting: a feed's
@@ -521,7 +524,7 @@ final class FeedTestWorld {
         resumeFolder = sandbox.appendingPathComponent("Resume Data", isDirectory: true)
         downloadsFolder = sandbox.appendingPathComponent("Feed Downloads", isDirectory: true)
         environment = FeedEnvironment(
-            records: .folder(recordsFolder),
+            records: .folder(recordsFolder, boundary: recordsBoundary),
             failureCenter: failures,
             fetchStateFolder: fetchStateFolder,
             network: .stubbed(
@@ -547,12 +550,37 @@ final class FeedTestWorld {
         center = FeedCenter(environment: environment)
         // The library lists this engine's feeds' items (FR11).
         library.feedEngine = center
-        let server = server
-        let center = center
-        test.addTeardownBlock {
-            server.stop()
-            await MainActor.run { center.stop() }
+        // Registered last, so it runs first, while every folder of the world
+        // is still there.
+        test.addTeardownBlock { [self] in
+            await finishFeedWork()
         }
+    }
+
+    /// Ends the world's feed work, as its teardown does before any of its
+    /// folders goes: the stub server stops answering, the engine stops, and
+    /// every write asked for so far lands (`finish(_:)`).
+    ///
+    /// A write landing once the sandbox is gone would fail, and a record's
+    /// failure, reported to the world's failure center, is announced to
+    /// VoiceOver like any other (`PersistenceFailureCenter.publish()`): into
+    /// whichever later test captures announcements, as a stray save did to
+    /// `FeedUIAddFeedTests` under load.
+    func finishFeedWork() async {
+        server.stop()
+        await Self.finish(center)
+    }
+
+    /// Stops `center` and waits for every write it asked for so far: its
+    /// records, and the store's hearing of how each went
+    /// (`FeedStore.flush()`); its fetch details, whose writes make their
+    /// folder again when it is gone; and every statistics save, whose
+    /// failure the app's failure center announces.
+    static func finish(_ center: FeedCenter) async {
+        center.stop()
+        await center.store.flush()
+        await center.fetchStates.flush()
+        ReadingStatsService.waitForQueuedSaves()
     }
 
     /// The feeds' own folders in the data directory's Feeds folder now, each
@@ -574,13 +602,13 @@ final class FeedTestWorld {
     /// The engine the next launch makes: a new one on the world's folders,
     /// network, clock, and library, working on its own as the app's does,
     /// started, with what its start begins finished. `test` stops it when
-    /// it ends.
+    /// it ends, and waits for its writes, before the world's folders go.
     func relaunch(_ test: XCTestCase) async -> FeedCenter {
         var next = environment
         next.worksOnItsOwn = true
         let relaunched = FeedCenter(environment: next)
         test.addTeardownBlock {
-            await MainActor.run { relaunched.stop() }
+            await Self.finish(relaunched)
         }
         await relaunched.start(library: library)?.value
         return relaunched
