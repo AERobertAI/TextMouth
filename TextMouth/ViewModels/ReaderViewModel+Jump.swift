@@ -81,3 +81,23 @@ extension ReaderViewModel {
         )
     }
 }
+
+// MARK: - The Clock Places Are Named By (P08)
+
+extension ReaderViewModel {
+    /// The clock this book's places are named by (P08): an audiobook's
+    /// recording, whatever speed it plays at, or a text book's words at the
+    /// reader's words per minute. Nil until the book's content has loaded.
+    /// Built afresh from the content's index on each use, which costs one
+    /// pass over the chapters; a caller naming many places keeps one.
+    var placeClock: PlaceClock? {
+        guard let content else { return nil }
+        if isAudioBook {
+            return .recording(of: content.contentIndex)
+        }
+        return .reading(
+            of: content.contentIndex,
+            readingTime: content.estimatedReadingTime(wpm: speechService.wordsPerMinute)
+        )
+    }
+}
