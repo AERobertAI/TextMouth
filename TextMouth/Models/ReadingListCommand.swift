@@ -49,4 +49,25 @@ struct ReadingListCommand: Identifiable, Equatable {
         }
         return commands
     }
+
+    /// The reading list commands of the Library window's edit-mode bar,
+    /// beside Move, for `selection`, the books selected, in list order
+    /// (FR09): as a selection's row offers them, Add to Reading List for
+    /// the books not in the list and Remove from Reading List for those in
+    /// it, each acting on its own books. With nothing selected, the one the
+    /// view suggests, acting on no book, which the bar shows dimmed, so the
+    /// command is found before a book is chosen: Remove from Reading List
+    /// at the Reading List, where every book is in the list, and Add to
+    /// Reading List everywhere else.
+    /// - Parameters:
+    ///   - selection: The selected books the list shows, in its order.
+    ///   - inList: The IDs of the books in the reading list.
+    ///   - atReadingList: Whether the window shows the Reading List.
+    static func editBarCommands(for selection: [Book], inList: Set<UUID>, atReadingList: Bool) -> [ReadingListCommand] {
+        guard selection.isEmpty else {
+            return commands(for: selection, isSelection: true, inList: inList)
+        }
+        let kind: Kind = atReadingList ? .remove : .add
+        return [ReadingListCommand(kind: kind, books: [], title: ReadingListWording.editBarTitle(kind))]
+    }
 }

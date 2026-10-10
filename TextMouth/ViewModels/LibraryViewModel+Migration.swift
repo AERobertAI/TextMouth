@@ -113,27 +113,19 @@ extension LibraryViewModel {
     }
 
     /// Takes the books Remove from Library Only retired out of the library,
-    /// as `RemovedFromLibraryMarker.removeRetiredBooks(from:)` does, and
-    /// returns them. A book whose removal marker is in the cloud keeps its
-    /// row (FR02): the marker cannot be read without downloading it, and a
-    /// marker that cannot be read counts as retiring its book. The book is
+    /// and off the reading list (FR09), as
+    /// `RemovedFromLibraryMarker.removeRetiredBooks(from:sparing:)` does,
+    /// and returns them. A book whose removal marker is in the cloud keeps
+    /// its row (FR02): the marker cannot be read without downloading it, and
+    /// a marker that cannot be read counts as retiring its book. The book is
     /// counted in `skips`, and taken out once its marker is on this Mac.
     private func removeRetiredBooks(access: MaintenanceFileAccess, skips: CloudSkips) -> [Book] {
         let held = library.books.filter { book in
             !book.tmbDirectoryName.isEmpty
                 && access.isInCloud(TextMouthPaths.removedFromLibraryMarkerPath(in: book.tmbDirectory))
         }
-        guard !held.isEmpty else {
-            return RemovedFromLibraryMarker.removeRetiredBooks(from: &library)
-        }
         held.forEach(skips.record)
-        let heldIDs = Set(held.map(\.id))
-        var checkable = library
-        checkable.books.removeAll { heldIDs.contains($0.id) }
-        let retired = RemovedFromLibraryMarker.removeRetiredBooks(from: &checkable)
-        let retiredIDs = Set(retired.map(\.id))
-        library.books.removeAll { retiredIDs.contains($0.id) }
-        return retired
+        return RemovedFromLibraryMarker.removeRetiredBooks(from: &library, sparing: Set(held.map(\.id)))
     }
 
     /// Gives each book that the checkpoint journal (`journaled`) names the

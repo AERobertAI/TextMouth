@@ -349,6 +349,88 @@ final class ReaderCloudDownloadTests: XCTestCase {
         waitFor("the list's refresh to record the book again") { cloud.states.state(of: book.id) == .downloaded }
     }
 
+    // MARK: - A Book Another Book Continued To
+
+    /// A book only in the cloud that another book continued to, from its
+    /// folder or through the reading list, keeps the request to start it
+    /// for as long as its download takes, past the request's own 30
+    /// seconds, and starts once it has downloaded and loaded; the request
+    /// is claimed then, and held no longer.
+    func testABookContinuedToKeepsItsRequestUntilItHasDownloadedAndPlays() throws {
+        let cloud = try makeCloudReaders("Cloud Continued To")
+        let book = try makeSingleFileAudioBook("Lantern Hours", in: cloud)
+        let clock = RequestClock()
+        let requests = ReaderAutoplayRequests(now: { clock.now })
+        cloud.storage.setState(.inCloud, of: book.id)
+        cloud.storage.scriptDownload(of: book.id, steps: [Self.halfway], holdsOpen: true)
+        requests.request(for: book.id, from: UUID())
+
+        let reader = cloud.open(book, autoplayRequests: requests)
+        waitFor("the download's first step") { reader.shownDownload?.progress == Self.halfway }
+        clock.now += ReaderAutoplayRequests.lifetime + 60
+
+        XCTAssertTrue(requests.isHolding(book.id))
+        XCTAssertTrue(requests.hasRequest(for: book.id), "the request lapsed while the book downloaded")
+
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitForReaderToLoad(reader)
+        waitFor("the book to start playing") { reader.audioPlaybackService.isPlaying }
+
+        XCTAssertFalse(requests.hasRequest(for: book.id), "the request was left to claim again")
+        XCTAssertFalse(requests.isHolding(book.id))
+        reader.stop()
+    }
+
+    /// A download that is cancelled, or fails, drops the request to start
+    /// the book at once, whatever its age, so the book never starts by
+    /// itself later, and its requests are held no longer.
+    func testACancelledOrFailedDownloadDropsTheRequest() throws {
+        let cloud = try makeCloudReaders("Cloud Continued To Ends")
+        let clock = RequestClock()
+        let requests = ReaderAutoplayRequests(now: { clock.now })
+
+        let cancelled = try makeTextBook("Quay Notes", in: cloud)
+        cloud.storage.setState(.inCloud, of: cancelled.id)
+        cloud.storage.scriptDownload(of: cancelled.id, steps: [Self.halfway], holdsOpen: true)
+        requests.request(for: cancelled.id, from: UUID())
+        let first = cloud.open(cancelled, autoplayRequests: requests)
+        waitFor("the download's first step") { first.shownDownload?.progress == Self.halfway }
+        first.cancelDownload()
+        XCTAssertFalse(requests.hasRequest(for: cancelled.id), "the cancelled book's request waited on")
+        XCTAssertFalse(requests.isHolding(cancelled.id))
+
+        let failed = try makeTextBook("Tide Tables", in: cloud)
+        cloud.storage.setState(.inCloud, of: failed.id)
+        cloud.storage.scriptDownload(of: failed.id, steps: [], failingWith: .offline)
+        requests.request(for: failed.id, from: UUID())
+        let second = cloud.open(failed, autoplayRequests: requests)
+        waitFor("the offline failure") { second.cloudPhase == .failed(.download(.offline)) }
+        XCTAssertFalse(requests.hasRequest(for: failed.id), "the failed book's request waited on")
+        XCTAssertFalse(requests.isHolding(failed.id))
+    }
+
+    /// Closing the window during the download lets go of the request, which
+    /// ages again from when it was made and lapses at its lifetime's end.
+    func testClosingDuringTheDownloadLetsTheRequestAgeAgain() throws {
+        let cloud = try makeCloudReaders("Cloud Continued To Closed")
+        let book = try makeTextBook("Quay Notes", in: cloud)
+        let clock = RequestClock()
+        let requests = ReaderAutoplayRequests(now: { clock.now })
+        cloud.storage.setState(.inCloud, of: book.id)
+        cloud.storage.scriptDownload(of: book.id, steps: [Self.halfway], holdsOpen: true)
+        requests.request(for: book.id, from: UUID())
+
+        let reader = cloud.open(book, autoplayRequests: requests)
+        waitFor("the download's first step") { reader.shownDownload?.progress == Self.halfway }
+        XCTAssertTrue(requests.isHolding(book.id))
+        reader.close()
+
+        XCTAssertFalse(requests.isHolding(book.id))
+        XCTAssertTrue(requests.hasRequest(for: book.id))
+        clock.now += ReaderAutoplayRequests.lifetime + 1
+        XCTAssertFalse(requests.hasRequest(for: book.id))
+    }
+
     // MARK: - Reads Never Wait on the Network
 
     /// A file found only in the cloud again when the book is read sends the
@@ -1111,14 +1193,16 @@ private final class CloudReaders {
         storage.libraryLocation().provider
     }
 
-    /// Opens a reader for `book`, which starts getting it ready at once.
-    func open(_ book: Book) -> ReaderViewModel {
+    /// Opens a reader for `book`, which starts getting it ready at once,
+    /// claiming its autoplay requests from `autoplayRequests`, or from the
+    /// world's when nil.
+    func open(_ book: Book, autoplayRequests: ReaderAutoplayRequests? = nil) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: world.library,
             settingsViewModel: world.settings,
             substitutionService: TextSubstitutionService(rules: []),
-            autoplayRequests: world.autoplayRequests,
+            autoplayRequests: autoplayRequests ?? world.autoplayRequests,
             notificationCenter: world.notifications,
             cloud: ReaderCloudServices(
                 storage: storage,
@@ -1220,6 +1304,13 @@ private final class CloudOnlyFiles: @unchecked Sendable {
     private static func key(_ url: URL) -> String {
         url.resolvingSymlinksInPath().standardizedFileURL.path
     }
+}
+
+/// A clock a test moves by hand, which dates and ages autoplay requests.
+/// Read and moved only on the main actor, by the test and the store.
+private final class RequestClock {
+    /// The time the clock reads now.
+    var now = Date(timeIntervalSinceReferenceDate: 812_000_000)
 }
 
 extension ReaderViewModel {

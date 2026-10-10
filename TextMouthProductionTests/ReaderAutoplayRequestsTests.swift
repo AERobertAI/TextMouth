@@ -136,6 +136,136 @@ final class ReaderAutoplayRequestsTests: XCTestCase {
         XCTAssertNil(store.consume(for: nextBook))
     }
 
+    // MARK: - Held While a Book Downloads (FR02)
+
+    /// A request whose book's reader holds it, while the book downloads to
+    /// open, stays usable however old it grows, and is claimed once.
+    func testAHeldRequestWaitsHoweverOldItGrows() throws {
+        let (store, clock) = makeStore()
+        store.request(for: nextBook, from: finishedBook)
+        store.hold(for: nextBook)
+
+        clock.advance(by: ReaderAutoplayRequests.lifetime * 20)
+
+        XCTAssertTrue(store.isHolding(nextBook))
+        XCTAssertTrue(store.hasRequest(for: nextBook))
+        XCTAssertEqual(try XCTUnwrap(store.consume(for: nextBook)).previousBookID, finishedBook)
+        XCTAssertNil(store.consume(for: nextBook))
+    }
+
+    /// A request made for a book whose reader already holds its requests,
+    /// as when a finished book continues to a book downloading in a window
+    /// of its own, is held too.
+    func testARequestMadeWhileHeldIsHeldToo() {
+        let (store, clock) = makeStore()
+        store.hold(for: nextBook)
+        clock.advance(by: 5)
+
+        store.request(for: nextBook, from: finishedBook)
+        clock.advance(by: ReaderAutoplayRequests.lifetime * 4)
+
+        XCTAssertTrue(store.hasRequest(for: nextBook))
+    }
+
+    /// Letting go of a hold makes the request age again from when it was
+    /// made: one older than the lifetime lapses.
+    func testReleasingLetsAHeldRequestAgeAgain() {
+        let (store, clock) = makeStore()
+        store.request(for: nextBook, from: finishedBook)
+        store.hold(for: nextBook)
+        clock.advance(by: ReaderAutoplayRequests.lifetime + 1)
+
+        store.release(for: nextBook)
+
+        XCTAssertFalse(store.isHolding(nextBook))
+        XCTAssertFalse(store.hasRequest(for: nextBook))
+        XCTAssertNil(store.consume(for: nextBook))
+    }
+
+    /// A hold keeps its own book's requests alone: another book's request
+    /// ages as before, and is thrown away when the store is next used.
+    func testAHoldKeepsOnlyItsOwnBooksRequests() {
+        let (store, clock) = makeStore()
+        store.request(for: nextBook, from: finishedBook)
+        store.request(for: otherBook, from: finishedBook)
+        store.hold(for: nextBook)
+
+        clock.advance(by: ReaderAutoplayRequests.lifetime + 1)
+
+        XCTAssertFalse(store.hasRequest(for: otherBook))
+        XCTAssertNil(store.consume(for: otherBook))
+        XCTAssertNotNil(store.consume(for: nextBook))
+    }
+
+    // MARK: - An Open Refused (FR02)
+
+    /// An open a Library window refuses, while the library moves or is
+    /// unavailable, drops the requests waiting for its book at once, of
+    /// both kinds, however young; another book's requests stay, and an
+    /// action that opens no book drops nothing.
+    func testARefusedOpenDropsItsBooksRequestsAtOnce() {
+        let (autoplay, _) = makeStore()
+        let readingList = ReadingListOpenRequests()
+        for book in [nextBook, otherBook] {
+            autoplay.request(for: book, from: finishedBook)
+            readingList.request(for: book)
+        }
+
+        ReaderOpenRefusal.dropRequests(for: .continueToNextBook(nextBook), autoplay: autoplay, readingList: readingList)
+
+        XCTAssertFalse(autoplay.hasRequest(for: nextBook))
+        XCTAssertFalse(readingList.hasRequest(for: nextBook))
+        XCTAssertTrue(autoplay.hasRequest(for: otherBook))
+        XCTAssertTrue(readingList.hasRequest(for: otherBook))
+
+        ReaderOpenRefusal.dropRequests(for: .openBookWindow(otherBook), autoplay: autoplay, readingList: readingList)
+        XCTAssertFalse(autoplay.hasRequest(for: otherBook))
+        XCTAssertFalse(readingList.hasRequest(for: otherBook))
+
+        autoplay.request(for: nextBook, from: finishedBook)
+        for action in [GlobalAction.goToLibrary, .openBookFile, .newFromText, .importDAISYFolder, .openFiles([])] {
+            ReaderOpenRefusal.dropRequests(for: action, autoplay: autoplay, readingList: readingList)
+        }
+        XCTAssertTrue(autoplay.hasRequest(for: nextBook), "an action that opens no book dropped a request")
+    }
+
+    /// Dropping a request leaves the hold of its book's reader as it was:
+    /// the reader lets go of its own hold.
+    func testDroppingARequestLeavesItsReadersHold() {
+        let (store, _) = makeStore()
+        store.request(for: nextBook, from: finishedBook)
+        store.hold(for: nextBook)
+
+        store.discard(for: nextBook)
+
+        XCTAssertNil(store.consume(for: nextBook))
+        XCTAssertTrue(store.isHolding(nextBook))
+    }
+
+    // MARK: - One Store for Both Kinds
+
+    /// The autoplay requests and the reading list's are kept by one store
+    /// shape (`ReaderRequestStore`), each kind in a store of its own: a
+    /// request of one kind is never found as the other, both last as long,
+    /// and each store tells of each request as it is made.
+    func testOneStoreShapeServesBothKindsOfRequest() {
+        let (autoplay, _) = makeStore()
+        let readingList = ReadingListOpenRequests()
+        XCTAssertEqual(ReaderAutoplayRequests.lifetime, ReadingListOpenRequests.lifetime)
+
+        var told: [UUID] = []
+        let subscription = autoplay.requestsMade.sink { told.append($0) }
+        defer { subscription.cancel() }
+        autoplay.request(for: nextBook, from: finishedBook)
+        readingList.request(for: otherBook)
+
+        XCTAssertEqual(told, [nextBook])
+        XCTAssertTrue(autoplay.hasRequest(for: nextBook))
+        XCTAssertFalse(readingList.hasRequest(for: nextBook))
+        XCTAssertFalse(autoplay.hasRequest(for: otherBook))
+        XCTAssertEqual(readingList.consume(for: otherBook)?.bookID, otherBook)
+    }
+
     // MARK: - Notification
 
     /// The notification announcing a request names the next book where

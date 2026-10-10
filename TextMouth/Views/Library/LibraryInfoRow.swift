@@ -132,7 +132,8 @@ extension BookInfoFacts {
     /// The facts of `book` as its row shows them: its reader's live
     /// position in place of its own while that is newer, so the progress
     /// and time left are the row's; its cloud note and whether it is kept,
-    /// as the row says them; whether a reader has it open; and its file
+    /// as the row says them; whether a reader has it open; its place in the
+    /// reading list, as the Reading List counts it (FR09); and its file
     /// size when `measuresFileSize`.
     @MainActor
     init(
@@ -160,7 +161,8 @@ extension BookInfoFacts {
             cloudNote: cloudState?.spokenNote,
             isKeptOnThisMac: cloudStates.listsAsKept(book.id, in: keptBooks),
             isOpenInWindow: library.openBookIDs.contains(book.id),
-            feedTitle: library.feedTitle(of: book)
+            feedTitle: library.feedTitle(of: book),
+            readingListPlace: ReadingListPlace(of: book.id, in: library.library)
         )
     }
 

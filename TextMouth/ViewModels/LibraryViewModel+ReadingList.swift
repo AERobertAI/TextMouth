@@ -96,6 +96,23 @@ extension LibraryViewModel {
         return message
     }
 
+    /// Adds `books`, which an import made with `request` has just put in the
+    /// library, to the end of the reading list, in that order, when the
+    /// import was made at the Reading List (`ImportRequest.addsToReadingList`,
+    /// FR09): Import Book, Open Book..., Import DAISY Folder…, or New from
+    /// Text there. Since the list is no folder, VoiceOver then hears that
+    /// they joined it and where the books themselves went
+    /// (`ReadingListWording.importedAnnouncement`). Books already in the
+    /// list, as a replaced book's copy that took the old one's place, stay
+    /// where they are, and nothing is said when none joins it. An import
+    /// made anywhere else changes nothing here.
+    func addImportedBooksToReadingList(_ books: [Book], request: ImportRequest) {
+        guard request.addsToReadingList else { return }
+        let added = addToReadingList(books.map(\.id))
+        guard let folderPath = added.first?.folderPath else { return }
+        VoiceOverAnnouncer.announce(ReadingListWording.importedAnnouncement(added: added.map(\.title), folderPath: folderPath))
+    }
+
     /// `books` as the library holds them now, in their order and each once,
     /// leaving out any no longer in it: what a command acts on, whatever
     /// the list showed when it was chosen.
@@ -113,9 +130,9 @@ extension LibraryViewModel {
     /// Moves the book `bookID` one place up or down the reading list, past
     /// the book beside it, as Move Book Up and Move Book Down do there, and
     /// saves the new order at once. Returns what VoiceOver says of the move
-    /// (the moved book, the book it passed, and where it went), or nil,
-    /// changing nothing, when the book is not in the list or is already at
-    /// that end of it.
+    /// (the moved book, the book it passed, and where it went, counted in
+    /// the list as shown), or nil, changing nothing, when the book is not in
+    /// the list or is already at that end of it.
     @discardableResult
     func moveInReadingList(bookID: UUID, direction: ReadingList.Direction) -> MoveResult? {
         editReadingList { list, books in
@@ -128,7 +145,10 @@ extension LibraryViewModel {
                 movedTitle: moved.title,
                 adjacentTitle: passed?.title ?? "",
                 direction: direction.step,
-                newIndex: newIndex
+                newIndex: newIndex,
+                // The list as shown: `editReadingList` left out every ID
+                // naming no book.
+                count: list.bookIDs.count
             )
         }
     }
@@ -164,37 +184,43 @@ extension LibraryViewModel {
 
     // MARK: - The Questions a Reader Asks
     //
-    // FR09's second branch, the reader's part, builds on the two questions
-    // below; this branch leaves the reader alone. A reader opened from the
-    // Reading List is marked as reading from it, titles its window "Reading
+    // A reader opened from the Reading List reads its book from the list
+    // (ReaderViewModel+ReadingList.swift): it titles its window "Reading
     // List: <title> by <author>", and continues down or up the list when its
-    // book ends. What it needs, as this branch leaves things:
+    // book ends, asking the two questions below. How it comes to read from
+    // the list, and what it asks:
     //
-    // 1. A claim that the book was opened from the list:
-    //    `ReadingListOpenRequests`, a main-actor store shaped like
-    //    `ReaderAutoplayRequests` (Services/ReaderAutoplayRequests.swift).
-    //    A Library window showing the Reading List makes a request for a
-    //    book just before it opens it from the list: the row's default
-    //    action and its Open command (`LibraryBookRowActions.open`) and
-    //    Return on the selection (the `.openSelectedBook` handler), each
-    //    ahead of `onOpenBook`, while `category == .readingList`; Continue
-    //    Listening opens the last book, not the list's, and makes none. The
-    //    book's reader claims the request once, as it finishes loading, or
-    //    at once when its window was already open (`consume(for:)`); a
-    //    request older than its lifetime is thrown away, so the same book
-    //    opened later from elsewhere reads as before. A reader that
-    //    continues through the list makes a request for the next book too,
-    //    beside its autoplay request and before it posts
-    //    `.continueToNextBook`, so the next reader is marked as well.
-    // 2. At its book's end (`ReaderViewModel.handleEndOfBook`), a reader
-    //    marked as reading from the list counts the book finished, as it
-    //    does now, then asks `readingListContinuation(after:)` in place of
-    //    its own end-of-book behavior. A book continues there through
-    //    `continueToNextBook(_:)` and its autoplay request, which open or
-    //    bring forward the next book's window and play it; nil stops the
-    //    reader there and says why: Stop was chosen, the list ends, only
-    //    finished books lie beyond, or the book has left the list.
-    // 3. Next in Reading List and Previous in Reading List:
+    // 1. The mark. A reader window's value is its book's ID alone, so a
+    //    Library window showing the Reading List makes a request
+    //    (`ReadingListOpenRequests`, one kind of `ReaderRequestStore`) just
+    //    before it opens a book from the list
+    //    (`ReadingListOpenRequests.open(_:shownIn:libraryIsMoving:with:)`):
+    //    by the row's default action and its Open command
+    //    (`LibraryBookRowActions.open`) and by Return on the selection (the
+    //    `.openSelectedBook` handler). Continue Listening opens the last
+    //    book, not the list's, and makes none. The book's reader claims the
+    //    request once, as the reader is made
+    //    (`ReaderViewModel.claimReadingListRequest()`), so neither a long
+    //    load nor a download from the cloud can outlive it, or at once when
+    //    its window is already open and the open brings it forward
+    //    (`requestsMade`). A request older than its lifetime is thrown away,
+    //    so the same book opened later from elsewhere reads as before, and
+    //    an open the window refuses drops it (`ReaderOpenRefusal`). A reader
+    //    that continues through the list, or goes to the next or previous
+    //    book in it, makes the request for that book itself
+    //    (`continueThroughReadingList(to:)`, `openFromReadingList(_:)`), so
+    //    its reader is marked as well.
+    // 2. At its book's end (`ReaderViewModel.handleEndOfBook()`), a reader
+    //    reading from the list counts the book finished, then asks
+    //    `readingListContinuation(after:)` in place of its own end-of-book
+    //    behavior (`finishBookReadFromReadingList`). The book below or above
+    //    it continues there through `continueThroughReadingList(to:)`, with
+    //    an autoplay request that opens or brings forward its window and
+    //    plays it; nil stops the reader there, which says why: Stop was
+    //    chosen, the list ends, only finished books lie beyond, or the book
+    //    has left the list.
+    // 3. Next in Reading List and Previous in Reading List
+    //    (`goThroughReadingList(_:)`) ask
     //    `readingListNeighbor(of:direction:skippingFinished:)`, down for
     //    Next and up for Previous, with the list's `skipsFinished`.
     //

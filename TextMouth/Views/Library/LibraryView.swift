@@ -329,7 +329,10 @@ struct LibraryView: View {
                     },
                     onDone: {
                         clearAllSelections()
-                    }
+                    },
+                    // Add to and Remove from Reading List beside Move (FR09).
+                    readingListCommands: editBarReadingListCommands,
+                    onReadingListCommand: performReadingListCommand
                 )
             }
 
@@ -653,12 +656,15 @@ struct LibraryView: View {
         .sheet(isPresented: $showTextInput) {
             TextInputView(
                 onAdd: { title, author, text in
+                    // Made at the Reading List, the book joins it, and goes
+                    // to the folder this window showed last (FR09).
                     libraryViewModel.createBookFromText(
                         title: title,
                         author: author,
                         text: text,
                         toFolder: currentFolderPath,
-                        from: ImportOrigin(window: hostWindow)
+                        from: ImportOrigin(window: hostWindow),
+                        addingToReadingList: category == .readingList
                     )
                     showTextInput = false
                 },
@@ -1263,6 +1269,7 @@ struct LibraryView: View {
                     moveBook(book.id, direction: direction, in: target)
                 }
             },
+            moveSayingPlace: moveSayingPlace,
             performCloudCommand: performCloudCommand,
             remove: { books in
                 libraryViewModel.removeBooks(books)
@@ -1287,21 +1294,41 @@ struct LibraryView: View {
         )
     }
 
-    /// Runs a row's reading list command (FR09), from its context menu or
-    /// its VoiceOver actions, announcing from this window what it did.
+    /// Runs a reading list command (FR09), from a row's context menu or its
+    /// VoiceOver actions, or from the edit-mode bar, announcing from this
+    /// window what it did.
     private func performReadingListCommand(_ command: ReadingListCommand) {
         changeReadingList(command.kind, with: command.books)
     }
 
+    /// The edit-mode bar's Add to Reading List and Remove from Reading List
+    /// for the books selected here (FR09), by membership, or the one this
+    /// view suggests, dimmed, while none is selected.
+    private var editBarReadingListCommands: [ReadingListCommand] {
+        ReadingListCommand.editBarCommands(
+            for: selectedBooks,
+            inList: Set(libraryViewModel.readingList.bookIDs),
+            atReadingList: category == .readingList
+        )
+    }
+
     /// Adds `books` to the reading list or takes them off it (FR09), as a
-    /// row's command or the Library menu asks, and says what it did, or why
-    /// nothing changed, from this window.
+    /// row's command, the edit-mode bar, or the Library menu asks, and says
+    /// what it did, or why nothing changed, from this window. At the
+    /// Reading List, the books taken off leave the view, so they leave the
+    /// selection too: the edit-mode bar's count and commands then speak of
+    /// the books still shown.
     private func changeReadingList(_ kind: ReadingListCommand.Kind, with books: [Book]) {
         switch kind {
         case .add:
             libraryViewModel.addToReadingList(books, announcingFrom: hostWindow)
         case .remove:
             libraryViewModel.removeFromReadingList(books, announcingFrom: hostWindow)
+            if category == .readingList {
+                let gone = Set(books.map(\.id)).subtracting(libraryViewModel.readingList.bookIDs)
+                editSelection.subtract(gone)
+                selectedBookIDs.subtract(gone)
+            }
         }
     }
 
@@ -1588,6 +1615,22 @@ struct LibraryView: View {
         if let result = libraryViewModel.moveBook(bookID, direction: direction, in: target) {
             announceToVoiceOver(result.announcement)
         }
+    }
+
+    /// A row's Move Up (-1) or Move Down (+1) VoiceOver action (FR09):
+    /// moves `book` one place in the order the list shows, a folder's
+    /// manual order or the reading list, which saves at once, and tells
+    /// VoiceOver the book's new place, "Dune, 3 of 12", so many moves in a
+    /// row each say where the book stands. Should the list have changed
+    /// since the row offered the action, so the book cannot move that way,
+    /// it says so rather than nothing.
+    private func moveSayingPlace(_ book: Book, direction: Int) {
+        guard let target = reorderTarget,
+              let result = libraryViewModel.moveBook(book.id, direction: direction, in: target) else {
+            announceToVoiceOver(ManualBookOrder.cannotMoveAnnouncement(book.title, direction: direction))
+            return
+        }
+        announceToVoiceOver(result.placeAnnouncement)
     }
 
     /// Announce what a library index recovery action did. When the action

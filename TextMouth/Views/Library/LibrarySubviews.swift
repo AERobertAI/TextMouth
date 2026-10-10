@@ -16,6 +16,15 @@ struct EditModeBar: View {
     let onMove: () -> Void
     let onRemove: () -> Void
     let onDone: () -> Void
+    /// Add to Reading List and Remove from Reading List for the selected
+    /// books, beside Move (FR09), by membership as a selection's row offers
+    /// them, or the one the view suggests, dimmed, while none is selected
+    /// (`ReadingListCommand.editBarCommands`). None unless the list
+    /// supplies them.
+    var readingListCommands: [ReadingListCommand] = []
+    /// Runs one of `readingListCommands`, saying what it did as the row's
+    /// context menu does.
+    var onReadingListCommand: (ReadingListCommand) -> Void = { _ in }
 
     /// The words for removing the selected books.
     private var removal: LibraryRemoveCommandWording {
@@ -42,6 +51,15 @@ struct EditModeBar: View {
             Button("Move") { onMove() }
                 .disabled(selectedCount == 0)
                 .accessibilityLabel("Move \(CountWording.books(selectedCount)) to folder")
+
+            // Add to Reading List and Remove from Reading List (FR09),
+            // dimmed while they would act on no book.
+            ForEach(readingListCommands) { command in
+                Button(ReadingListWording.editBarTitle(command.kind)) { onReadingListCommand(command) }
+                    .disabled(command.books.isEmpty)
+                    .accessibilityLabel(ReadingListWording.editBarLabel(command.kind, count: command.books.count))
+                    .accessibilityHint(ReadingListWording.editBarHint(command.kind))
+            }
 
             Button(removal.shortTitle, role: .destructive) { onRemove() }
                 .disabled(selectedCount == 0)
@@ -346,6 +364,13 @@ struct BookRow: View {
     /// stays as it was. The list passes true only outside the Reading List,
     /// where every row's book is in the list.
     var isInReadingList: Bool = false
+    /// Move Up and Move Down, offered while the list shows an order the
+    /// user arranges, a folder's manual order or the reading list (FR09):
+    /// the row's first VoiceOver actions, under the names its context menu
+    /// gives them. Nil, offering neither, anywhere else.
+    var manualMoves: LibraryManualMoves? = nil
+    /// Runs one of `manualMoves`' moves.
+    var performManualMove: (LibraryManualMove) -> Void = { _ in }
     /// The cloud commands of the row's context menu, which are also the
     /// row's VoiceOver actions (VO-Command-Space), under the same names
     /// (FR02).
@@ -474,6 +499,10 @@ struct BookRow: View {
             : "Press Enter to open, Command I for info")
         .accessibilityAddTraits(isEditSelected ? [.isSelected] : [])
         .accessibilityActions {
+            // First, so reordering a list takes the fewest keys (FR09).
+            ForEach(manualMoves?.offered ?? []) { move in
+                Button(move.title) { performManualMove(move) }
+            }
             ForEach(cloudCommands) { command in
                 Button(command.title) { performCloudCommand(command) }
             }
@@ -492,8 +521,16 @@ struct BookRow: View {
     /// The names of the row's own VoiceOver actions, in the order VoiceOver
     /// lists them.
     var accessibilityActionNames: [String] {
-        cloudCommands.map(\.title) + audioCommands.map(\.title) + feedActions.map(\.title)
-            + readingListCommands.map(\.title)
+        // One list of each kind's names, joined: a chain of `+` is more
+        // than the type checker can take in reasonable time.
+        let names: [[String]] = [
+            (manualMoves?.offered ?? []).map(\.title),
+            cloudCommands.map(\.title),
+            audioCommands.map(\.title),
+            feedActions.map(\.title),
+            readingListCommands.map(\.title),
+        ]
+        return names.flatMap { $0 }
     }
 
     /// Spoken label for the whole row, replacing its combined children.
@@ -569,6 +606,25 @@ struct BookRow: View {
 
 // MARK: - Library List Row
 
+/// One of a book row's two moves through an order the user arranges, a
+/// folder's manual order or the reading list: Move Up or Move Down, under
+/// the one name its context menu item and its VoiceOver action both give
+/// it.
+struct LibraryManualMove: Identifiable, Equatable {
+    /// Move Up: one place toward the top of the order.
+    static let up = LibraryManualMove(title: "Move Up", direction: -1)
+    /// Move Down: one place toward the bottom of the order.
+    static let down = LibraryManualMove(title: "Move Down", direction: 1)
+
+    /// The move's name in the row's context menu and its VoiceOver actions.
+    let title: String
+    /// The move's step through the order: -1 up, +1 down.
+    let direction: Int
+
+    /// A row offers each move at most once, so its step identifies it.
+    var id: Int { direction }
+}
+
 /// Whether a book can move up, and whether it can move down, in the manual
 /// order the list shows (TODO A06), read from the list's own order rather
 /// than by sorting the folder again for every row (PERF28).
@@ -581,6 +637,13 @@ struct LibraryManualMoves: Equatable {
     /// Whether either move is offered, so the menu shows them apart.
     var canMove: Bool {
         canMoveUp || canMoveDown
+    }
+
+    /// The moves offered, Move Up before Move Down: the row's context menu
+    /// items and its first VoiceOver actions alike (FR09), so a VoiceOver
+    /// user reorders from the row without the menu or a drag.
+    var offered: [LibraryManualMove] {
+        (canMoveUp ? [.up] : []) + (canMoveDown ? [.down] : [])
     }
 
     /// Each book's moves in `ordered`, a folder's books in their manual
@@ -615,9 +678,15 @@ struct LibraryBookRowActions {
     let toggleSelection: (Book) -> Void
     /// Asks where to move books, and moves them there.
     let moveToFolder: ([Book]) -> Void
-    /// Moves a book one place up (-1) or down (+1) in the folder's manual
-    /// order.
+    /// Moves a book one place up (-1) or down (+1) in the order the list
+    /// shows, a folder's manual order or the reading list, from the row's
+    /// context menu, saying which book it passed.
     let moveInManualOrder: (Book, Int) -> Void
+    /// Moves a book one place up (-1) or down (+1) in that order from the
+    /// row's Move Up or Move Down VoiceOver action, saying the book's new
+    /// place, "Dune, 3 of 12" (FR09). Doing nothing unless the list
+    /// supplies it.
+    var moveSayingPlace: (Book, Int) -> Void = { _, _ in }
     /// Runs a cloud command (FR02).
     let performCloudCommand: (LibraryCloudCommand) -> Void
     /// Removes books, as the removal preferences say.
@@ -675,7 +744,9 @@ struct LibraryBookListRow: View, Equatable {
     /// The cloud commands for `targets` (FR02).
     let cloudCommands: [LibraryCloudCommand]
     /// Move Up and Move Down, offered for the row's own book while the list
-    /// shows its folder's manual order; nil otherwise.
+    /// shows an order the user arranges, its folder's manual order or the
+    /// reading list: context menu items and VoiceOver actions alike (FR09);
+    /// nil otherwise.
     let manualMoves: LibraryManualMoves?
     /// Whether removing asks first and where deleted files go, so Remove
     /// says what it will do.
@@ -736,6 +807,8 @@ struct LibraryBookListRow: View, Equatable {
             isKeptOnThisMac: isKeptOnThisMac,
             transcriptionNote: transcriptionNote,
             isInReadingList: isInReadingList,
+            manualMoves: manualMoves,
+            performManualMove: { move in actions.moveSayingPlace(book, move.direction) },
             cloudCommands: cloudCommands,
             performCloudCommand: actions.performCloudCommand,
             audioCommands: audioCommands,
@@ -815,18 +888,14 @@ struct LibraryBookListRow: View, Equatable {
                 actions.performAudioCommand(command)
             }
         }
-        // Manual order move commands: single book only, where
-        // the list shows one folder's manual order (TODO A06)
+        // Move Up and Move Down: single book only, where the list shows an
+        // order the user arranges, a folder's manual order (TODO A06) or
+        // the reading list (FR09); also the row's first VoiceOver actions.
         if let manualMoves, manualMoves.canMove {
             Divider()
-            if manualMoves.canMoveUp {
-                Button("Move Up") {
-                    actions.moveInManualOrder(book, -1)
-                }
-            }
-            if manualMoves.canMoveDown {
-                Button("Move Down") {
-                    actions.moveInManualOrder(book, 1)
+            ForEach(manualMoves.offered) { move in
+                Button(move.title) {
+                    actions.moveInManualOrder(book, move.direction)
                 }
             }
         }

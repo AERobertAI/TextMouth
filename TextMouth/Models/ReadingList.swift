@@ -126,6 +126,23 @@ struct ReadingList: Codable, Equatable, Sendable {
         return removed
     }
 
+    /// Puts the book `replacement` in the place of the book `id`, as a book
+    /// replaced by a new copy of itself keeps its place (FR09). Should the
+    /// list hold `replacement` elsewhere already, that place gives way, so
+    /// each book is held once. Returns whether the list held `id`; when it
+    /// did not, nothing changes.
+    @discardableResult
+    mutating func replace(_ id: UUID, with replacement: UUID) -> Bool {
+        guard let position = bookIDs.firstIndex(of: id) else { return false }
+        bookIDs = bookIDs.enumerated().compactMap { index, held in
+            if index == position {
+                return replacement
+            }
+            return held == replacement ? nil : held
+        }
+        return true
+    }
+
     /// Keeps only the books `existing` holds, in their order, as the list
     /// is shown: an ID naming no book in the library is left out. Returns
     /// whether any was.

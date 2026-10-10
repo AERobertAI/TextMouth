@@ -17,11 +17,17 @@ enum LibraryIndexRecoveryText {
     static let tryAgain = "Reads the file again. Use this after restoring the file from a backup, "
         + "fixing its permissions, or updating TextMouth to the version that saved it."
 
-    /// What Rebuild Library Index loses and where the old data stays.
-    static func rebuild(savedCopy: URL?) -> String {
-        let consequence = "Saves the temporary library as the new index. Folder placement, sort "
-            + "settings, and manual order that were stored only in the unreadable index are lost "
-            + "from the library."
+    /// What Rebuild Library Index keeps and loses, and where the old data
+    /// stays: it keeps the reading list and the sort settings the temporary
+    /// library began with (FR09), and names those of them, `notKept`, that
+    /// could not be read in the unreadable index.
+    static func rebuild(savedCopy: URL?, notKept: LibraryIndexArrangement = []) -> String {
+        var consequence = "Saves the temporary library as the new index, with the reading list and the sort "
+            + "settings TextMouth could read. Folder placement and manual order that were stored only in the "
+            + "unreadable index are lost from the library."
+        if let notRead = notKept.notReadSentence(in: "the unreadable index") {
+            consequence += " " + notRead
+        }
         guard let savedCopy else {
             return consequence + " TextMouth first saves a copy of the old file, and does not "
                 + "rebuild if it cannot."
@@ -97,7 +103,10 @@ struct LibraryIndexRecoverySheet: View {
             )
             option(
                 "Rebuild Library Index",
-                description: LibraryIndexRecoveryText.rebuild(savedCopy: recovery.failure.quarantineURL),
+                description: LibraryIndexRecoveryText.rebuild(
+                    savedCopy: recovery.failure.quarantineURL,
+                    notKept: recovery.arrangementNotKept
+                ),
                 action: onRebuild
             )
             option(

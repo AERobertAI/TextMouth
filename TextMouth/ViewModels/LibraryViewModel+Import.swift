@@ -154,15 +154,23 @@ extension LibraryViewModel {
 
     /// Imports `item`, one item chosen or opened in the Library window
     /// `origin`, as the book or books it holds (`importSources(for:)`), each
-    /// on the import queue.
+    /// on the import queue; with `addingToReadingList`, each joins the end
+    /// of the reading list once it is in the library (FR09).
     private func importBooks(
         in item: URL,
         toFolder folderPath: String,
         origin: ImportOrigin?,
-        openAfterImport: Bool = false
+        openAfterImport: Bool = false,
+        addingToReadingList: Bool = false
     ) {
         for source in Self.importSources(for: item) {
-            importSingleFileAsync(from: source, toFolder: folderPath, openAfterImport: openAfterImport, origin: origin)
+            importSingleFileAsync(
+                from: source,
+                toFolder: folderPath,
+                openAfterImport: openAfterImport,
+                origin: origin,
+                addingToReadingList: addingToReadingList
+            )
         }
     }
 
@@ -187,11 +195,17 @@ extension LibraryViewModel {
     /// The request for an import queued now from the Library window
     /// `origin`: it joins the batch of every import queued so far, which the
     /// overlay's Cancel stops along with the batch's questions (TODO I05,
-    /// I01).
-    private func importRequest(from origin: ImportOrigin?, opensAfterImport: Bool = false) -> ImportRequest {
+    /// I01). With `addingToReadingList`, made at the Reading List, the books
+    /// it adds join the reading list (FR09).
+    private func importRequest(
+        from origin: ImportOrigin?,
+        opensAfterImport: Bool = false,
+        addingToReadingList: Bool = false
+    ) -> ImportRequest {
         ImportRequest(
             origin: origin,
             opensAfterImport: opensAfterImport,
+            addsToReadingList: addingToReadingList,
             batch: importOperationQueue.currentCancellation
         )
     }
@@ -222,10 +236,17 @@ extension LibraryViewModel {
     /// folder holding several books' package files as each of them, and a
     /// folder holding none is refused through the library's alert, which
     /// says why (TODO I02). The Library window `origin` that presented the
-    /// panel asks the imports' questions (TODO I01).
-    func importDAISYFolders(_ folders: [URL], toFolder folderPath: String, from origin: ImportOrigin? = nil) {
+    /// panel asks the imports' questions (TODO I01). With
+    /// `addingToReadingList`, as at the Reading List, the books join the
+    /// end of the reading list (FR09).
+    func importDAISYFolders(
+        _ folders: [URL],
+        toFolder folderPath: String,
+        from origin: ImportOrigin? = nil,
+        addingToReadingList: Bool = false
+    ) {
         for folder in folders {
-            importBooks(in: folder, toFolder: folderPath, origin: origin)
+            importBooks(in: folder, toFolder: folderPath, origin: origin, addingToReadingList: addingToReadingList)
         }
     }
 
@@ -388,8 +409,15 @@ extension LibraryViewModel {
     /// takes the queue's cancellation as it is enqueued, so `cancelImports()`
     /// stops it while it waits as well as while it runs (TODO I05). The
     /// Library window `origin` that started it asks its questions (TODO I01).
-    func importZipAsync(from url: URL, toFolder folderPath: String, origin: ImportOrigin? = nil) {
-        let request = importRequest(from: origin)
+    /// With `addingToReadingList`, as at the Reading List, the books it adds
+    /// join the end of the reading list (FR09).
+    func importZipAsync(
+        from url: URL,
+        toFolder folderPath: String,
+        origin: ImportOrigin? = nil,
+        addingToReadingList: Bool = false
+    ) {
+        let request = importRequest(from: origin, addingToReadingList: addingToReadingList)
         let cancellation = request.batch
         let progress = importProgress
         let queue = importOperationQueue
@@ -465,14 +493,21 @@ extension LibraryViewModel {
     /// Imports one file on the import queue, as the Library window `origin`
     /// asked, and with `openAfterImport` opens its book once the book is in
     /// the library and its questions are answered (TODO I01). Other files
-    /// import meanwhile; their questions wait their turn.
+    /// import meanwhile; their questions wait their turn. With
+    /// `addingToReadingList`, as at the Reading List, the book joins the
+    /// end of the reading list (FR09).
     func importSingleFileAsync(
         from url: URL,
         toFolder folderPath: String,
         openAfterImport: Bool = false,
-        origin: ImportOrigin? = nil
+        origin: ImportOrigin? = nil,
+        addingToReadingList: Bool = false
     ) {
-        let request = importRequest(from: origin, opensAfterImport: openAfterImport)
+        let request = importRequest(
+            from: origin,
+            opensAfterImport: openAfterImport,
+            addingToReadingList: addingToReadingList
+        )
         let queue = importOperationQueue
         let progress = importProgress
         enqueueImport { [weak self] in
@@ -535,6 +570,7 @@ extension LibraryViewModel {
         if let warning = imported.warning {
             presentImportMessage(warning)
         }
+        addImportedBooksToReadingList([book], request: request)
         finishAddedBook(book, originalURL: deletableOriginal, request: request)
     }
 
@@ -566,6 +602,7 @@ extension LibraryViewModel {
         if let failureSummary = result.failureSummary {
             presentImportMessage(failureSummary)
         }
+        addImportedBooksToReadingList(acceptedBooks, request: request)
         if !result.keepsOriginal, !acceptedBooks.isEmpty, acceptedBooks.count == result.books.count,
            let question = originalFileQuestion(for: originalURL, of: nil, request: request) {
             ask(question)
@@ -601,17 +638,20 @@ extension LibraryViewModel {
     /// Create a new book from user-entered text (paste/type). The package is
     /// staged and published like every import's, so a failure leaves nothing
     /// in the library and is told through the same alert. The Library window
-    /// `origin` asks the duplicate question, if one arises (TODO I01).
+    /// `origin` asks the duplicate question, if one arises (TODO I01). With
+    /// `addingToReadingList`, as at the Reading List, the book joins the
+    /// end of the reading list (FR09).
     func createBookFromText(
         title: String,
         author: String,
         text: String,
         toFolder folderPath: String = "",
-        from origin: ImportOrigin? = nil
+        from origin: ImportOrigin? = nil,
+        addingToReadingList: Bool = false
     ) {
         let bookTitle = TextImportPolicy.resolvedTitle(title)
         let fileName = TextImportPolicy.textFilename(for: bookTitle)
-        let request = importRequest(from: origin)
+        let request = importRequest(from: origin, addingToReadingList: addingToReadingList)
         let queue = importOperationQueue
         enqueueImport { [weak self] in
             guard let self else { return }
@@ -629,6 +669,7 @@ extension LibraryViewModel {
                 DispatchQueue.main.sync {
                     if self.addBookCheckingDuplicate(imported.book, request: request) {
                         self.save()
+                        self.addImportedBooksToReadingList([imported.book], request: request)
                     }
                 }
             } catch {
@@ -640,14 +681,21 @@ extension LibraryViewModel {
     /// Import one or more files from URLs into the specified folder. A
     /// DAISY book's folder is imported as that book (`importSources(for:)`).
     /// The Library window `origin` that chose them asks their questions
-    /// (TODO I01).
-    func importFiles(urls: [URL], toFolder folderPath: String = "", from origin: ImportOrigin? = nil) {
+    /// (TODO I01). With `addingToReadingList`, as for files chosen at the
+    /// Reading List, the books join the end of the reading list in the order
+    /// they reach the library (FR09).
+    func importFiles(
+        urls: [URL],
+        toFolder folderPath: String = "",
+        from origin: ImportOrigin? = nil,
+        addingToReadingList: Bool = false
+    ) {
         for url in urls {
             let ext = url.pathExtension.lowercased()
             if ext == "zip" {
-                importZipAsync(from: url, toFolder: folderPath, origin: origin)
+                importZipAsync(from: url, toFolder: folderPath, origin: origin, addingToReadingList: addingToReadingList)
             } else {
-                importBooks(in: url, toFolder: folderPath, origin: origin)
+                importBooks(in: url, toFolder: folderPath, origin: origin, addingToReadingList: addingToReadingList)
             }
         }
     }

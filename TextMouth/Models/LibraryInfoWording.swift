@@ -42,6 +42,9 @@ struct BookInfoFacts: Equatable {
     /// belongs to (FR11), which Speak Info names where it names a book's
     /// folder; nil for a book of the library's own.
     var feedTitle: String? = nil
+    /// The book's place in the reading list, counted as the Reading List
+    /// shows it (FR09), or nil for a book not in it.
+    var readingListPlace: ReadingListPlace? = nil
 }
 
 /// What Speak Info knows of a folder.
@@ -136,9 +139,11 @@ enum LibraryInfoWording {
 
     /// A book's brief summary, in parts: its title; "By" its author, unless
     /// nothing named one; its format; where it is (`placeNote(of:)`); its
-    /// progress and time left as its row speaks them; and "Unopened" for a
-    /// book never opened. Example: "Middlemarch. By George Eliot. EPUB. In
-    /// Classics. 42 percent. 2 hours, 5 minutes remaining."
+    /// place in the reading list, for a book in it (`readingListNote(_:)`,
+    /// FR09); its progress and time left as its row speaks them; and
+    /// "Unopened" for a book never opened. Example: "Middlemarch. By George
+    /// Eliot. EPUB. In Classics. In reading list, 3 of 12. 42 percent. 2
+    /// hours, 5 minutes remaining."
     static func briefParts(of book: BookInfoFacts) -> [String] {
         var parts = [book.title]
         if !Book.isUnknownAuthor(book.author) {
@@ -146,6 +151,9 @@ enum LibraryInfoWording {
         }
         parts.append(book.format)
         parts.append(placeNote(of: book))
+        if let place = book.readingListPlace {
+            parts.append(readingListNote(place))
+        }
         if let progress = book.progress {
             parts.append(progress)
         }
@@ -167,6 +175,14 @@ enum LibraryInfoWording {
             return "In \(feedTitle), a feed"
         }
         return book.folderPath.isEmpty ? noFolderNote : "In \(book.folderPath)"
+    }
+
+    /// Where a book in the reading list stands in it, as its brief summary
+    /// says it, counted as the Reading List shows the list (FR09): "In
+    /// reading list, 3 of 12". Said in every view, the Reading List's own
+    /// included, where its rows say no more than the list's order does.
+    static func readingListNote(_ place: ReadingListPlace) -> String {
+        "In reading list, \(place.position) of \(place.count)"
     }
 
     /// What a book's full summary adds: when it was added and last opened,

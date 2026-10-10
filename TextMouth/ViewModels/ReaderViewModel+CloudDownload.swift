@@ -459,8 +459,18 @@ extension ReaderViewModel {
     /// view and in the library list, VoiceOver hears its start, its
     /// milestones, and its end, and a download without a percentage is
     /// announced every so often.
+    ///
+    /// A finished book that continued to this one, from its folder or
+    /// through the reading list, asked that it play once it has loaded; the
+    /// download that opens the book can take longer than that request lasts
+    /// on its own, so the request is held for as long as the opening takes,
+    /// and claimed once the book has loaded, or dropped when the download
+    /// fails or is cancelled (`ReaderAutoplayRequests.hold(for:)`).
     func startDownload(_ purpose: ReaderDownloadPurpose) {
         endDownloadWork(cancelling: true)
+        if purpose == .opening {
+            autoplayRequests.hold(for: book.id)
+        }
         cloudSession.downloadGeneration += 1
         cloudSession.downloadPurpose = purpose
         cloudSession.announcements = ReaderDownloadAnnouncements()
@@ -800,8 +810,12 @@ extension ReaderViewModel {
     // MARK: Closing
 
     /// Stops waiting for a download as the reader closes, recording the
-    /// book's state as found afterwards.
+    /// book's state as found afterwards, and lets go of the requests held
+    /// while the book downloaded.
     func endCloudWorkForClose() {
+        // A request to start this book, held while it downloaded, ages again
+        // from when it was made, so one older than its lifetime lapses.
+        autoplayRequests.release(for: book.id)
         guard let purpose = cloudSession.downloadPurpose else {
             endDownloadWork(cancelling: true)
             return

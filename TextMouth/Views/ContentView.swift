@@ -116,10 +116,13 @@ struct LibraryWindowView: View {
         ) { result in
             switch result {
             case .success(let urls):
+                // Chosen at the Reading List, the books join it, and go to
+                // the folder this window showed last (FR09).
                 libraryViewModel.importFiles(
                     urls: urls,
                     toFolder: currentFolderPath,
-                    from: ImportOrigin(window: hostWindow)
+                    from: ImportOrigin(window: hostWindow),
+                    addingToReadingList: category == .readingList
                 )
             case .failure(let error):
                 libraryViewModel.errorMessage = error.localizedDescription
@@ -276,11 +279,13 @@ struct LibraryWindowView: View {
     /// must appear where the user and VoiceOver are.
     private func takeGlobalAction(_ action: GlobalAction, openingReadersWith openReaderWindow: OpenWindowAction) {
         // Nothing is added to the library or opened from it while it can't
-        // be used (FR02): the window comes forward and says so instead.
+        // be used (FR02): the window comes forward and says so instead, and
+        // a refused open's requests are dropped with it.
         if libraryViewModel.dataDirectoryUnavailability != nil,
            let refusal = DataDirectoryUnavailableText.refusal(of: action) {
             bringToFront()
             libraryViewModel.refuseWhileDataDirectoryUnavailable(refusal, from: hostWindow)
+            ReaderOpenRefusal.dropRequests(for: action)
             return
         }
         // Nor while it moves (FR02).
@@ -333,28 +338,38 @@ struct LibraryWindowView: View {
 
     /// Refuses `action` while the library moves, when it opens or adds a
     /// book: the move's sheet shows why and VoiceOver hears it, from the key
-    /// window, which is the sheet itself while it is in front. Returns
-    /// whether it was refused.
+    /// window, which is the sheet itself while it is in front. A refused
+    /// open's requests to start the book or read it from the reading list
+    /// are dropped at once, rather than left to wait out their lifetime
+    /// (`ReaderOpenRefusal`). Returns whether it was refused.
     private func refuseWhileTheLibraryMoves(_ action: GlobalAction) -> Bool {
         guard let move = libraryViewModel.dataDirectoryMove,
               let refusal = DataDirectoryMoveWording.refusal(of: action) else { return false }
         move.notice = refusal
         VoiceOverAnnouncer.announce(refusal)
+        ReaderOpenRefusal.dropRequests(for: action)
         return true
     }
 
     /// Presents the folder-only panel of Library > Import DAISY Folder… as a
     /// sheet on this Library window (on its own while the window is not yet
     /// known), and imports the folders chosen into the folder being viewed
-    /// (TODO I02).
+    /// (TODO I02), or, at the Reading List, into the folder viewed last, the
+    /// books then joining the list (FR09).
     private func presentDAISYFolderPanel() {
         let panel = LibraryViewModel.makeDAISYFolderPanel()
         let destination = currentFolderPath
         let origin = ImportOrigin(window: hostWindow)
+        let addsToReadingList = category == .readingList
         let viewModel = libraryViewModel
         let importChosenFolders: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK else { return }
-            viewModel.importDAISYFolders(panel.urls, toFolder: destination, from: origin)
+            viewModel.importDAISYFolders(
+                panel.urls,
+                toFolder: destination,
+                from: origin,
+                addingToReadingList: addsToReadingList
+            )
         }
         if let hostWindow {
             panel.beginSheetModal(for: hostWindow, completionHandler: importChosenFolders)
