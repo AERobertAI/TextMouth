@@ -37,6 +37,62 @@ final class LibraryFeedFolderDeleteTests: XCTestCase {
         XCTAssertFalse(world.library.folderHasContents(empty))
     }
 
+    /// A feed's folder that holds more than the feed's items, a book of the
+    /// library's own or a folder, as when Feed Info pointed the feed at a
+    /// folder in use, offers Delete Folder… too (REV14 feeds 7), beside its
+    /// feed's Delete Feed…; its questions name the feed, as the feed whose
+    /// own folder it is, not one inside it.
+    @MainActor
+    func testAFeedsFolderHoldingMoreOffersDeleteFolderNamingTheFeed() async throws {
+        let world = try FeedTestWorld(self, label: "LibraryFeedFolderDeleteMore")
+        let (feed, _) = try await feedWithDownloads(episodes: 1, downloading: 1, in: world, into: .newFolder(inParentPath: world.folder.path))
+        let feedFolder = try XCTUnwrap(world.library.library.folders.first { $0.id == feed.folderID })
+        XCTAssertFalse(world.library.offersDeleteFolder(feedFolder))
+        XCTAssertEqual(world.library.feedTitles(of: feedFolder), [feed.title])
+        XCTAssertEqual(world.library.feedTitles(of: world.bookFolder), [], "a feed was named as the parent folder's own")
+
+        let ownBook = Book(
+            title: "Middlemarch",
+            author: "Eliot",
+            format: .txt,
+            filePath: "/nonexistent/Middlemarch.txt",
+            md5Hash: UUID().uuidString,
+            folderPath: feedFolder.fullPath
+        )
+        world.library.library.books.append(ownBook)
+        XCTAssertTrue(world.library.offersDeleteFolder(feedFolder), "a feed's folder holding a book of the library's own lost Delete Folder…")
+        world.library.library.books.removeAll { $0.id == ownBook.id }
+        XCTAssertTrue(world.library.createFolderReturningOutcome(name: "Extras", parentPath: feedFolder.fullPath).succeeded)
+        XCTAssertTrue(world.library.offersDeleteFolder(feedFolder), "a feed's folder holding a folder lost Delete Folder…")
+
+        XCTAssertTrue(world.library.folderHasContents(feedFolder), "Delete Folder… would delete the folder without asking")
+        XCTAssertTrue(FeedAction.actions(for: feed.id, in: world.center).contains { $0.command == .deleteFeed })
+        XCTAssertEqual(world.library.feedTitles(of: feedFolder), [feed.title])
+        XCTAssertEqual(world.library.feedTitles(inside: feedFolder), [])
+    }
+
+    /// Move Contents Out of a feed's own folder does what its question says
+    /// (REV14 feeds 7): the folder's contents move to the folder chosen and
+    /// the folder goes, while the feed stays, with its record and its
+    /// downloads, listed by no folder until Feed Info gives it another.
+    @MainActor
+    func testMovingAFeedsFolderContentsOutLeavesTheFeedWithoutAFolder() async throws {
+        let world = try FeedTestWorld(self, label: "LibraryFeedFolderDeleteOwn")
+        let (feed, books) = try await feedWithDownloads(episodes: 1, downloading: 1, in: world, into: .newFolder(inParentPath: world.folder.path))
+        let download = try XCTUnwrap(books.first)
+        let feedFolder = try XCTUnwrap(world.library.library.folders.first { $0.id == feed.folderID })
+        XCTAssertTrue(world.library.createFolderReturningOutcome(name: "Extras", parentPath: feedFolder.fullPath).succeeded)
+
+        let outcome = await world.library.removeFolderMovingContentsReturningOutcome(feedFolder, toPath: world.folder.path)
+
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        XCTAssertNil(world.library.feedFolderPath(forFolderID: feed.folderID), "the feed's folder stayed")
+        XCTAssertTrue(world.library.library.folders.contains { $0.fullPath == "\(world.folder.path)/Extras" }, "the folder inside did not move out")
+        XCTAssertNotNil(world.center.store.record(of: feed.id), "the feed went with its folder")
+        XCTAssertEqual(world.library.bookByID(download.id)?.feedLink, download.feedLink, "the feed's download left it")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: download.filePath), "the feed's download's file went")
+    }
+
     /// The feeds whose folders are inside a folder, at any depth, are the
     /// ones its question names, by title; a feed's own folder names none.
     @MainActor
@@ -123,5 +179,50 @@ final class LibraryFeedFolderDeleteTests: XCTestCase {
         let plain = FolderRemovalWording(mode: .moveToTrash, folderName: "Atlas", bookCount: 2)
         XCTAssertFalse(plain.choiceMessage.contains("feed"), plain.choiceMessage)
         XCTAssertFalse(plain.confirmationMessage.contains("feed"), plain.confirmationMessage)
+    }
+
+    /// The questions about a feed's own folder holding more than its items
+    /// name the feed and say it stays, with its downloads, without a
+    /// folder, whichever way the folder goes (REV14 feeds 7); with feeds
+    /// inside it too, the confirmation names them all.
+    func testTheQuestionAboutAFeedsOwnFolderSaysTheFeedStaysWithoutAFolder() {
+        let own = FolderRemovalWording(mode: .moveToTrash, folderName: "Finish It!", bookCount: 2, ownFeedTitles: ["Finish It!"])
+        XCTAssertEqual(
+            own.choiceMessage,
+            "“Finish It!” contains 2 books and may have subfolders. "
+                + "With Move Contents Out, they stay in the library and only the folder is deleted. "
+                + "With Move Everything to Trash, the folder and everything in it leave the library, "
+                + "and their files go to the Trash, where you can recover them until the Trash is emptied. "
+                + "It is the folder of the feed “Finish It!”: whichever you choose, the feed stays, with its downloads, "
+                + "but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed."
+        )
+        XCTAssertEqual(
+            own.confirmationMessage,
+            "“Finish It!”, any subfolders, and the 2 books inside will be removed from the library. "
+                + "Their files go to the Trash, where you can recover them until the Trash is emptied. "
+                + "The feed “Finish It!” stays, with its downloads, without a folder until Feed Info gives it another."
+        )
+        let both = FolderRemovalWording(
+            mode: .deletePermanently,
+            folderName: "Shows",
+            bookCount: 1,
+            feedTitles: ["The Harbour Log"],
+            ownFeedTitles: ["Finish It!", "The Tactile Atlas"]
+        )
+        XCTAssertTrue(
+            both.choiceMessage.contains(
+                "It is the folder of the feeds “Finish It!” and “The Tactile Atlas”: whichever you choose, each feed stays, "
+                    + "with its downloads, but no folder lists them until Feed Info gives the feed another folder; "
+                    + "Delete Feed… on a feed's row deletes a feed. It holds the folder of the feed “The Harbour Log”."
+            ),
+            both.choiceMessage
+        )
+        XCTAssertTrue(
+            both.confirmationMessage.hasSuffix(
+                "The feeds “Finish It!”, “The Tactile Atlas”, and “The Harbour Log” stay, with their downloads, "
+                    + "without folders until Feed Info gives each another."
+            ),
+            both.confirmationMessage
+        )
     }
 }
