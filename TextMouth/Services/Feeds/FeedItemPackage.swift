@@ -219,6 +219,28 @@ enum FeedItemPackage {
         removeHolderIfEmpty(holder, of: row)
     }
 
+    /// The holders of `removeFileAndText(of:in:remove:)` left in the feeds'
+    /// own folders of the data directory at `root`: each folder directly in
+    /// a feed's folder whose name begins with `removalHolderPrefix`, as a
+    /// crash between moving an article's file and text into one and the
+    /// Trash taking it leaves one, or a refusal whose files could not go
+    /// back (FEED_DOWNLOAD_HELD_ASIDE). Listed without downloading
+    /// anything; a folder that cannot be listed is passed over.
+    static func removalHolders(in root: URL) -> [URL] {
+        let feeds = FeedPaths.recordsFolder(in: root)
+        let fileManager = FileManager.default
+        let names = (try? DatalessFiles.withoutDownloading { try fileManager.contentsOfDirectory(atPath: feeds.path) }) ?? []
+        return names.sorted().flatMap { name -> [URL] in
+            // A feed's own folder is named by its ID alone (FR11).
+            guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name) else { return [] }
+            let folder = FeedPaths.itemsFolder(of: feedID, in: root)
+            let entries = (try? DatalessFiles.withoutDownloading { try fileManager.contentsOfDirectory(atPath: folder.path) }) ?? []
+            return entries.filter { $0.hasPrefix(removalHolderPrefix) }.sorted().map {
+                folder.appendingPathComponent($0, isDirectory: true)
+            }
+        }
+    }
+
     /// Removes the holder `holder` of `removeFileAndText(of:in:remove:)`
     /// once nothing is left in it but an empty folder; anything still in it
     /// stays, with one FEED_DOWNLOAD_HELD_ASIDE line naming `row`.

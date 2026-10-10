@@ -392,6 +392,34 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertNil(world.library.bookByID(book.id))
     }
 
+    /// A crash between the hidden holder an article's file and text wait in
+    /// and the Trash leaves the holder in its feed's folder, where nothing
+    /// else ever removes it; the next launch sweeps it as the Delete
+    /// Download it belonged to would have sent it, through the listener's
+    /// own removal (to the Trash, or for good, as Removal Behavior says),
+    /// and leaves the feed's packages and anything not a holder alone.
+    func testTheNextLaunchSweepsAHolderACrashLeft() async throws {
+        let world = try FeedTestWorld(self, label: "FeedHolderSweep")
+        let (feed, book) = try await downloadedEpisode(in: world)
+        let folder = FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root)
+        let holder = folder.appendingPathComponent(FeedItemPackage.removalHolderPrefix + UUID().uuidString, isDirectory: true)
+        let together = holder.appendingPathComponent("A Newer Article", isDirectory: true)
+        try FileManager.default.createDirectory(at: together, withIntermediateDirectories: true)
+        try Data("<p>Words.</p>".utf8).write(to: together.appendingPathComponent("A Newer Article.html"))
+        try Data("Words.".utf8).write(to: together.appendingPathComponent(TextMouthPaths.contentMarkdownFileName))
+        let other = folder.appendingPathComponent(".staging-left-alone", isDirectory: true)
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: true)
+        XCTAssertEqual(FeedItemPackage.removalHolders(in: TextMouthPaths.root).filter { $0.path.hasPrefix(folder.path) }, [holder])
+
+        _ = await world.relaunch(self)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: holder.path), "the holder a crash left stayed")
+        XCTAssertEqual(world.removedItems.value.map(\.name), [holder.lastPathComponent])
+        XCTAssertEqual(world.removedItems.value.first?.contents, ["A Newer Article"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.tmbDirectory.path), "a package went with the holder")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: other.path), "a folder that is no holder went")
+    }
+
     /// How a book is in use, which the listener's deletions refuse, is the
     /// first of open in a reader, being transcribed, and being exported, and
     /// the rules' set of books in use holds exactly the books in some use.
