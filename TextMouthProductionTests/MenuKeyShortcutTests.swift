@@ -117,6 +117,40 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertFalse(manager.isEdited(.newFromText), "having its default again leaves it TextMouth's")
     }
 
+    /// The Shortcuts tab says, for an action following its defaults, which
+    /// action has a default key it goes without: New from Text's row says
+    /// Show Sleep Timer has its Shift-Command-T, and Book Info's says Where
+    /// Am I? has Command-I once given it, as Open Book's names the action
+    /// whose double press keeps Command-O from its menu item; an edited
+    /// action says nothing of the kind.
+    func testTheTabSaysWhoHasADefaultKey() {
+        let manager = makeManager("defaults-held")
+        let commandI = KeyBinding(key: "i", command: true)
+
+        XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .newFromText), [DefaultKeyHeldElsewhere(key: shiftCommandT, holder: .showSleepTimer)])
+        XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .openBook), [])
+        XCTAssertEqual(
+            ShortcutsSettingsWording.rowLabel(
+                for: .newFromText,
+                keys: [],
+                isEdited: false,
+                defaultsHeldElsewhere: manager.defaultKeysHeldElsewhere(for: .newFromText)
+            ),
+            "New from Text…: No shortcut. Show Sleep Timer has its default, Shift + Command + T."
+        )
+
+        manager.addBinding(commandI, to: .whereAmI)
+        manager.updateBindings(for: .goToLibrary, to: [commandO.asDoublePress(true)])
+
+        XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .showBookInfo), [DefaultKeyHeldElsewhere(key: commandI, holder: .whereAmI)])
+        XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .openBook), [DefaultKeyHeldElsewhere(key: commandO, holder: .goToLibrary)])
+        XCTAssertEqual(manager.defaultKeysHeldElsewhere(for: .whereAmI), [], "an edited action's keys are the user's")
+        XCTAssertEqual(
+            ShortcutsSettingsWording.defaultsHeldElsewhere(manager.defaultKeysHeldElsewhere(for: .showBookInfo)),
+            "Where Am I? has its default, Command + I."
+        )
+    }
+
     // MARK: - The Manager Never Takes Them
 
     /// Every key equivalent's key in force goes on to its menu item or

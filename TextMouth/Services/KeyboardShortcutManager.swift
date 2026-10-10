@@ -403,6 +403,23 @@ final class KeyboardShortcutManager: ObservableObject {
         }
     }
 
+    /// The default keys `action` goes without while it follows its defaults,
+    /// each with the action that has it in force (FR12's branch D), in the
+    /// order its defaults list them: New from Text's Shift-Command-T, Show
+    /// Sleep Timer's too, or a default the user gave another action. Empty
+    /// for an action the user edited, whose keys are the user's, and for one
+    /// with all its defaults.
+    func defaultKeysHeldElsewhere(for action: ShortcutAction) -> [DefaultKeyHeldElsewhere] {
+        guard !isEdited(action) else { return [] }
+        let inForce = bindingsFor(action)
+        return (ShortcutAction.defaultBindings[action] ?? []).filter { !inForce.contains($0) }.compactMap { key in
+            let holder = ShortcutAction.allCases.first { other in
+                other != action && bindingsFor(other).contains { edits.key(key, of: action, clashesWith: $0, of: other) }
+            }
+            return holder.map { DefaultKeyHeldElsewhere(key: key, holder: $0) }
+        }
+    }
+
     // MARK: - Key Equivalents (FR12's Branch D)
 
     /// The key `action`'s menu item or button shows and acts on, for an
@@ -656,6 +673,16 @@ final class KeyboardShortcutManager: ObservableObject {
     static func isTextInput(_ responder: NSResponder?) -> Bool {
         responder is NSTextView || responder is NSTextField
     }
+}
+
+/// A default key an action following its defaults goes without, and the
+/// action that has it in force (FR12's branch D), which the Shortcuts tab
+/// names on the action's row.
+struct DefaultKeyHeldElsewhere: Equatable, Sendable {
+    /// The default key.
+    let key: KeyBinding
+    /// The action holding it, or a key clashing with it.
+    let holder: ShortcutAction
 }
 
 /// A recorder of the Shortcuts tab, held weakly by the shortcut manager.

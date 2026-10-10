@@ -186,6 +186,15 @@ struct ShortcutBindingRow: View {
                 }
             }
 
+            // An action following its defaults says which of them another
+            // action has (FR12's branch D), as New from Text's
+            // Shift-Command-T is Show Sleep Timer's.
+            if !defaultsHeldElsewhere.isEmpty {
+                Text(ShortcutsSettingsWording.defaultsHeldElsewhere(defaultsHeldElsewhere))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
             // An action the user edited says so, after its keys, and can go
             // back to its defaults on its own.
             if isEdited {
@@ -201,7 +210,12 @@ struct ShortcutBindingRow: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(ShortcutsSettingsWording.rowLabel(for: action, keys: currentBindings, isEdited: isEdited))
+        .accessibilityLabel(ShortcutsSettingsWording.rowLabel(
+            for: action,
+            keys: currentBindings,
+            isEdited: isEdited,
+            defaultsHeldElsewhere: defaultsHeldElsewhere
+        ))
         .accessibilityActions {
             if isEdited {
                 Button(ShortcutsSettingsWording.resetToDefaultTitle, action: resetToDefault)
@@ -248,6 +262,12 @@ struct ShortcutBindingRow: View {
     /// until Reset to Default.
     private var isEdited: Bool {
         shortcutManager.isEdited(action)
+    }
+
+    /// The default keys the action goes without, each with the action that
+    /// has it, while it follows its defaults.
+    private var defaultsHeldElsewhere: [DefaultKeyHeldElsewhere] {
+        shortcutManager.defaultKeysHeldElsewhere(for: action)
     }
 
     /// Puts `newBinding` in place of the key at `index`, as the user's,
@@ -448,10 +468,29 @@ enum ShortcutsSettingsWording {
     /// A row's VoiceOver label: the action's name as config.json names it,
     /// an audio editor action's with its group's, then its keys in words,
     /// and, for an action the user edited, "Edited.": "Release Media
-    /// Controls: Shift + R. Edited.", "Where Am I?: W".
-    static func rowLabel(for action: ShortcutAction, keys: [KeyBinding], isEdited: Bool) -> String {
+    /// Controls: Shift + R. Edited.", "Where Am I?: W"; or, for an action
+    /// following its defaults that goes without one, which action has it:
+    /// "New from Text…: No shortcut. Show Sleep Timer has its default,
+    /// Shift + Command + T." (FR12's branch D).
+    static func rowLabel(
+        for action: ShortcutAction,
+        keys: [KeyBinding],
+        isEdited: Bool,
+        defaultsHeldElsewhere held: [DefaultKeyHeldElsewhere] = []
+    ) -> String {
         let label = "\(action.rawValue): \(KeyBinding.accessibleDisplayString(for: keys))"
-        return isEdited ? "\(sentence(label)) \(edited)." : label
+        if isEdited {
+            return "\(sentence(label)) \(edited)."
+        }
+        return held.isEmpty ? label : "\(sentence(label)) \(defaultsHeldElsewhere(held))"
+    }
+
+    /// What a row says, on screen and to VoiceOver, of the default keys its
+    /// action goes without (FR12's branch D): "Show Sleep Timer has its
+    /// default, Shift + Command + T.", a sentence for each.
+    static func defaultsHeldElsewhere(_ held: [DefaultKeyHeldElsewhere]) -> String {
+        held.map { sentence("\($0.holder.rawValue) has its default, \($0.key.accessibleDisplayString)") }
+            .joined(separator: " ")
     }
 
     /// The reset button's VoiceOver label: "Reset Release Media Controls to
