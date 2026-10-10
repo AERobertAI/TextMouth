@@ -518,7 +518,7 @@ struct BookRow: View {
                             .foregroundColor(.secondary)
                     }
 
-                    if let remaining = shownBook.estimatedTimeRemaining(wpm: wpm) {
+                    if let remaining = Self.timeRemaining(for: shownBook, wpm: wpm) {
                         Text(Self.remainingText(remaining).visible)
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -615,7 +615,7 @@ struct BookRow: View {
         if let progress = Self.spokenProgress(for: shownBook, besideDownloadPercentage: besideDownloadPercentage) {
             parts.append(progress)
         }
-        if let remaining = shownBook.estimatedTimeRemaining(wpm: wpm) {
+        if let remaining = Self.timeRemaining(for: shownBook, wpm: wpm) {
             parts.append(Self.remainingText(remaining).spoken)
         }
         parts.append(book.format.displayName)
@@ -635,8 +635,14 @@ struct BookRow: View {
 
     /// Progress shown in a library row — visible "42%", spoken "42 percent" —
     /// or nil to hide it when it cannot be known without parsing the book.
-    /// Whole percents are rounded the same way Where Am I speaks them.
+    /// Whole percents are rounded the same way Where Am I speaks them. A
+    /// book resting at its end, finished, says so in a word, shown and
+    /// spoken alike: "Finished" (`EndOfBookWording.finishedProgress`, TODO
+    /// P07), in place of "100%".
     nonisolated static func progressText(for book: Book) -> (visible: String, spoken: String)? {
+        if book.restsAtEnd {
+            return (visible: EndOfBookWording.finishedProgress, spoken: EndOfBookWording.finishedProgress)
+        }
         guard let percent = book.percentComplete else { return nil }
         let wholePercent = String(format: "%.0f", percent)
         return (visible: "\(wholePercent)%", spoken: "\(wholePercent) percent")
@@ -644,11 +650,21 @@ struct BookRow: View {
 
     /// The reading progress as the row's label speaks it: "42 percent", or
     /// "42 percent read" when the label also speaks a download's percentage
-    /// (FR02), so it never holds two bare percentages. Nil when the row
-    /// shows no progress.
+    /// (FR02), so it never holds two bare percentages. "Finished" is no
+    /// percentage, and is spoken as it is beside one. Nil when the row shows
+    /// no progress.
     nonisolated static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
         guard let progress = progressText(for: book) else { return nil }
-        return besideDownloadPercentage ? "\(progress.spoken) read" : progress.spoken
+        return besideDownloadPercentage && !book.restsAtEnd ? "\(progress.spoken) read" : progress.spoken
+    }
+
+    /// The time left after the reading position that the row shows and
+    /// speaks: the book's estimate at `wpm` (`Book.estimatedTimeRemaining(wpm:)`),
+    /// or nil when it is unknown, and for a book resting at its end, whose
+    /// "Finished" says it all where "0:00 left" once stood (TODO P07). Speak
+    /// Info says what the row says.
+    nonisolated static func timeRemaining(for book: Book, wpm: Double) -> TimeInterval? {
+        book.restsAtEnd ? nil : book.estimatedTimeRemaining(wpm: wpm)
     }
 
     /// The time left after the reading position as a library row shows

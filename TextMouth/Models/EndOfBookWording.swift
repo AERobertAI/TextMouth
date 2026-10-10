@@ -73,6 +73,19 @@ enum EndOfBookWording {
     /// No book follows the finished one in its folder.
     static let noMoreBooksInFolderNote = "No more books in folder"
 
+    // MARK: - A Book Resting at Its End
+
+    /// What a surface that says how far a book has got says of a book
+    /// resting at its end, finished (`Book.restsAtEnd`, TODO P07), in place
+    /// of "100 percent" and its time left: the library row, shown and
+    /// spoken, Speak Info, Where Am I?, and Copy Reading Position. The user
+    /// decided on October 10, 2026 (question 12): "yes except the reader,
+    /// those controls with the info should still be there", so the reader's
+    /// own controls and status row keep their percent and time. A word,
+    /// never a sign or a colour, read alike on screen, by VoiceOver, and on
+    /// a braille display.
+    static let finishedProgress = "Finished"
+
     // MARK: - The Choices
 
     /// What the Playback tab says, under its "When book ends" picker, of
