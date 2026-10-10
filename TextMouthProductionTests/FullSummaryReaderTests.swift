@@ -15,7 +15,8 @@ import XCTest
 /// Each reader plays a silent audiobook, joins a Now Playing coordinator of
 /// its own, and hands its announcements to a list in place of the
 /// synthesizer; its sound effects are recorded, not played. Nothing is
-/// heard. The test delivers the synthesizer's callbacks itself.
+/// heard. The test delivers the synthesizer's callbacks itself, and lets an
+/// end sound's moment pass itself (`WhereAmIEndSoundClock`), never waiting.
 @MainActor
 final class FullSummaryReaderTests: XCTestCase {
 
@@ -53,10 +54,9 @@ final class FullSummaryReaderTests: XCTestCase {
         deliver(finishOf: full, to: reader)
         XCTAssertFalse(reader.isWhereAmISpeaking)
         XCTAssertEqual(book.sounds.played, [.whereAmIStart, .whereAmIEnd])
-        XCTAssertTrue(
-            waitUntil(timeout: ReaderViewModel.whereAmIEndSoundDelay + 5) { isPlaying(reader) },
-            "the book did not resume after the full summary"
-        )
+        XCTAssertFalse(isPlaying(reader), "the book resumed before the end sound had played")
+        book.endSound.passEndSound()
+        XCTAssertTrue(isPlaying(reader), "the book did not resume after the full summary")
     }
 
     /// Where Am I? Full Summary with nothing announced pauses the book and
@@ -107,7 +107,8 @@ final class FullSummaryReaderTests: XCTestCase {
         let reader = book.reader
         reader.whereAmI()
         deliver(finishOf: try XCTUnwrap(book.announcements.utterances.last), to: reader)
-        XCTAssertTrue(waitUntil(timeout: ReaderViewModel.whereAmIEndSoundDelay + 5) { isPlaying(reader) }, "the book did not resume")
+        book.endSound.passEndSound()
+        XCTAssertTrue(isPlaying(reader), "the book did not resume")
 
         reader.whereAmI()
 
@@ -242,6 +243,9 @@ final class FullSummaryReaderTests: XCTestCase {
         /// The announcements the reader handed over in place of its
         /// Where Am I synthesizer.
         let announcements: HandedOverSummaries
+        /// Holds what an announcement that ended by itself leaves for once
+        /// its end sound has played, until the test lets the sound pass.
+        let endSound: WhereAmIEndSoundClock
     }
 
     /// The utterances a reader's Where Am I handed over, oldest first.
@@ -251,9 +255,9 @@ final class FullSummaryReaderTests: XCTestCase {
 
     /// Opens a reader of a silent audiobook in a world of its own, named
     /// after `label`, joined to a Now Playing coordinator of its own, its
-    /// sound effects and announcements recorded, and plays it. The play
-    /// sound is forgotten, so the sounds recorded are the ones Where Am I
-    /// asked for.
+    /// sound effects and announcements recorded and its announcements' end
+    /// sound passed by the test, and plays it. The play sound is forgotten,
+    /// so the sounds recorded are the ones Where Am I asked for.
     private func openPlayingAudiobook(
         _ label: String,
         file: StaticString = #filePath,
@@ -273,7 +277,12 @@ final class FullSummaryReaderTests: XCTestCase {
 
         XCTAssertTrue(waitUntil(timeout: 5) { isPlaying(reader) }, "The book did not play", file: file, line: line)
         sounds.played.removeAll()
-        return PlayingBook(reader: reader, sounds: sounds, announcements: announcements)
+        return PlayingBook(
+            reader: reader,
+            sounds: sounds,
+            announcements: announcements,
+            endSound: WhereAmIEndSoundClock(holdingFor: reader)
+        )
     }
 
     /// Asserts that `reader`'s pause, left by an announcement that ended

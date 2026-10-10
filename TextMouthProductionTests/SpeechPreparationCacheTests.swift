@@ -600,15 +600,14 @@ final class SpeechPreparationCacheTests: XCTestCase {
             XCTAssertTrue(reader.isWaitingForChapterSpeech, "the play stopped waiting while Where Am I spoke")
             XCTAssertTrue(reader.isCurrentlyPlaying, "Playing no longer shows while Where Am I speaks")
             XCTAssertFalse(reader.isCurrentlyPaused)
+            let endSound = WhereAmIEndSoundClock(holdingFor: reader)
 
             reader.whereAmIAnnouncementFinished()
 
             XCTAssertFalse(reader.isWhereAmISpeaking)
             XCTAssertFalse(reader.speechService.isSpeaking, "the speech started before the end sound")
-            XCTAssertTrue(
-                waitUntil(timeout: ReaderViewModel.whereAmIEndSoundDelay + 5) { reader.speechService.isSpeaking },
-                "the speech never started after the announcement"
-            )
+            endSound.passEndSound()
+            XCTAssertTrue(reader.speechService.isSpeaking, "the speech never started after the announcement")
             XCTAssertFalse(reader.isWaitingForChapterSpeech)
             assertSpeaks(reader, (prepared.text, prepared.offsetMap))
             XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "the chapter was prepared on the main thread")
@@ -723,11 +722,12 @@ final class SpeechPreparationCacheTests: XCTestCase {
     func testAnAnnouncementEndingBeforeTheSpeechIsReadyLeavesThePlayWaiting() throws {
         try withReader(chapters: Self.chaptersEndingInALongOne(seed: 103)) { reader, _ in
             let inputs = try waitingPlay(of: reader, whileWhereAmISpeaks: true)
+            let endSound = WhereAmIEndSoundClock(holdingFor: reader)
 
             reader.whereAmIAnnouncementFinished()
             // The end sound's moment passes with the speech still being
             // prepared: nothing starts.
-            spinMainRunLoop(for: ReaderViewModel.whereAmIEndSoundDelay + 0.2)
+            endSound.passEndSound()
 
             XCTAssertFalse(reader.speechService.isSpeaking, "speech started before it was ready")
             XCTAssertTrue(reader.isWaitingForChapterSpeech, "the play stopped waiting")
