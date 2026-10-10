@@ -339,21 +339,13 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// the cancel let the held Play go with the announcement, and the book
     /// stayed as it was, the Play dropped without a word (REV12).
     func testAPlayHeldByWhereAmIStartsTheBookWhenTheSystemCancelsTheAnnouncement() throws {
-        let befores: [(name: String, settle: (PlayingBook, MediaSystem) -> Void)] = [
-            ("paused before", { _, system in
-                XCTAssertEqual(system.press(.pause), .success)
-            }),
-            ("stopped before", { book, _ in
-                book.reader.stop()
-            }),
-        ]
         for kind in BookKind.allCases {
-            for (name, settle) in befores {
+            for (name, leaveNotPlaying) in Self.waysToLeaveABookNotPlaying {
                 let context = "\(kind), \(name)"
                 let system = MediaSystem()
                 let world = try makeIntegrationWorld("Where Am I Held Play Cancelled \(kind) \(name)")
                 let book = try openPlayingBook(kind, in: world, joining: system)
-                settle(book, system)
+                leaveNotPlaying(book, system)
                 let sounds = recordSounds(of: book, "Where Am I Held Play Cancelled \(kind) \(name)")
                 book.reader.whereAmI()
                 let announcement = try XCTUnwrap(book.announcements.utterances.last, "\(context): no announcement was handed over")
@@ -370,6 +362,39 @@ final class MediaCommandPlaybackTests: XCTestCase {
                 let playing = NowPlayingItem(title: book.reader.book.title, author: book.reader.book.author, isPlaying: true)
                 XCTAssertEqual(system.told.last, .some(playing), "\(context): the system was not told the book plays")
                 XCTAssertEqual(system.coordinator.playingOwnerID, book.reader.nowPlayingService.ownerID, context)
+            }
+        }
+    }
+
+    // MARK: - Where Am I? Over a Book That Was Not Playing
+
+    /// Where Am I? over a book paused or stopped before it, ending by
+    /// itself, leaves the book as it was: nothing plays once its end sound
+    /// has played, and the system is told nothing more. Only a book the
+    /// announcement paused as it played, or one a Play during it asked for,
+    /// plays as it ends.
+    func testWhereAmIOverABookThatWasNotPlayingLeavesItAsItWas() throws {
+        for kind in BookKind.allCases {
+            for (name, leaveNotPlaying) in Self.waysToLeaveABookNotPlaying {
+                let context = "\(kind), \(name)"
+                let system = MediaSystem()
+                let world = try makeIntegrationWorld("Where Am I Over A Book Not Playing \(kind) \(name)")
+                let book = try openPlayingBook(kind, in: world, joining: system)
+                leaveNotPlaying(book, system)
+                let wasPaused = book.isPaused
+                let toldBefore = system.told
+                book.reader.whereAmI()
+                let announcement = try XCTUnwrap(book.announcements.utterances.last, "\(context): no announcement was handed over")
+
+                book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+                handleQueuedCallbacks()
+                XCTAssertTrue(book.endSound.hasWorkWaiting, "\(context): nothing waits for the end sound")
+                book.endSound.passEndSound()
+
+                XCTAssertFalse(book.reader.isWhereAmIUnderWay, "\(context): Where Am I? still has the book")
+                XCTAssertFalse(book.isPlaying, "\(context): the announcement's end played the book")
+                XCTAssertEqual(book.isPaused, wasPaused, "\(context): the announcement's end changed the book")
+                XCTAssertEqual(system.told, toldBefore, "\(context): the system was told more")
             }
         }
     }
@@ -2806,6 +2831,19 @@ final class MediaCommandPlaybackTests: XCTestCase {
         )
         XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(kind): the book did not play", file: file, line: line)
         return book
+    }
+
+    /// The ways a test leaves a playing book not playing before it presses
+    /// Where Am I? over it: paused, by a Pause from the AirPods, or stopped.
+    private static var waysToLeaveABookNotPlaying: [(name: String, leave: (PlayingBook, MediaSystem) -> Void)] {
+        [
+            ("paused before", { _, system in
+                XCTAssertEqual(system.press(.pause), .success)
+            }),
+            ("stopped before", { book, _ in
+                book.reader.stop()
+            }),
+        ]
     }
 
     /// Presses Where Am I? in `book`'s window, which pauses the book and

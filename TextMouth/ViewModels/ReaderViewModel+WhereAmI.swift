@@ -317,15 +317,10 @@ extension ReaderViewModel {
     /// stops one (`whereAmI(_:)`).
     func cancelWhereAmIIfActive() {
         guard isWhereAmIUnderWay else { return }
-        if isWhereAmISpeaking {
-            stopWhereAmISynthesizer()
-            isWhereAmISpeaking = false
-        }
-        // Resume book if it was playing before Where Am I interrupted it
-        if WhereAmIInterruptionPolicy.shouldResume(
-            wasPlayingBeforeAnnouncement: wasPlayingBeforeWhereAmI || isWhereAmIResumePending,
-            reason: .navigationOrRepeatedCommand
-        ) {
+        silenceWhereAmI()
+        // The book the announcement paused as it played resumes, as does one
+        // whose resume an announcement that ended by itself still owes.
+        if wasPlayingBeforeWhereAmI || isWhereAmIResumePending {
             wasPlayingBeforeWhereAmI = false
             isWhereAmIResumePending = false
             resumeBookPausedForWhereAmI()
@@ -384,6 +379,21 @@ extension ReaderViewModel {
     func stopWhereAmISynthesizer() {
         liveWhereAmIUtterance = nil
         whereAmISynth.stopSpeaking(at: .immediate)
+    }
+
+    /// Silences an announcement speaking, as the reader asks
+    /// (`stopWhereAmISynthesizer()`), and records that none speaks: what
+    /// the announcement holds of the book, the book it paused, the resume
+    /// it owes, or a Play or a chapter it held, is the caller's to settle.
+    /// Nothing happens while none speaks. Every end of an announcement the
+    /// reader makes goes through here: a command that interrupts it
+    /// (`cancelWhereAmIIfActive()`), anything that pauses the book
+    /// (`stopWhereAmIWithoutResuming()`), and the book stopping
+    /// (`endWhereAmIAsTheBookStops()`).
+    func silenceWhereAmI() {
+        guard isWhereAmISpeaking else { return }
+        stopWhereAmISynthesizer()
+        isWhereAmISpeaking = false
     }
 
     /// The synthesizer says `finished` ended by itself, on the main queue.
@@ -467,10 +477,10 @@ extension ReaderViewModel {
     func whereAmIAnnouncementFinished() {
         isWhereAmISpeaking = false
         soundEffectService?.play(for: .whereAmIEnd)
-        if WhereAmIInterruptionPolicy.shouldResume(
-            wasPlayingBeforeAnnouncement: wasPlayingBeforeWhereAmI,
-            reason: .naturalCompletion
-        ) {
+        // The book the announcement paused as it played resumes once the
+        // end sound has played; a book paused or stopped before it stays as
+        // it was, unless a Play was held for it.
+        if wasPlayingBeforeWhereAmI {
             wasPlayingBeforeWhereAmI = false
             isWhereAmIResumePending = true
         }
@@ -548,10 +558,7 @@ extension ReaderViewModel {
     /// had just let go of the media controls (Shift-R) took the AirPods back,
     /// and Shift-R then said it did not hold them (REV11).
     func endWhereAmIAsTheBookStops() {
-        if isWhereAmISpeaking {
-            stopWhereAmISynthesizer()
-        }
-        isWhereAmISpeaking = false
+        silenceWhereAmI()
         wasPlayingBeforeWhereAmI = false
         isWhereAmIResumePending = false
         isPlayHeldByWhereAmI = false
@@ -693,27 +700,5 @@ extension ReaderViewModel {
     private func postAnnouncement(_ message: String, priority: NSAccessibilityPriorityLevel) {
         lastAnnouncement = message
         VoiceOverAnnouncer.announce(message, priority: priority)
-    }
-}
-
-/// Central decision table for interactions between the separate Where Am I
-/// synthesizer and book playback.
-enum WhereAmIInterruptionPolicy {
-    enum Reason: Equatable {
-        case playbackToggle
-        case navigationOrRepeatedCommand
-        case naturalCompletion
-    }
-
-    static func blocksBookPlayback(isAnnouncementSpeaking: Bool) -> Bool {
-        isAnnouncementSpeaking
-    }
-
-    static func shouldResume(
-        wasPlayingBeforeAnnouncement: Bool,
-        reason: Reason
-    ) -> Bool {
-        guard wasPlayingBeforeAnnouncement else { return false }
-        return reason != .playbackToggle
     }
 }

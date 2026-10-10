@@ -339,9 +339,7 @@ extension ReaderViewModel {
     @discardableResult
     func stopWhereAmIWithoutResuming() -> Bool {
         guard isWhereAmIUnderWay else { return false }
-        if isWhereAmISpeaking {
-            stopWhereAmISynthesizer()
-        }
+        silenceWhereAmI()
         endWhereAmIWithoutResuming()
         return true
     }
@@ -1483,7 +1481,7 @@ extension ReaderViewModel {
     /// Where Am I announcement: the play goes on waiting, showing Playing,
     /// and starts once the announcement ends (`startPlayHeldByWhereAmI()`).
     private func continueWaitingPlay() {
-        guard !WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: isWhereAmISpeaking) else {
+        guard !isWhereAmISpeaking else {
             DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks; starting it once the announcement ends")
             return
         }

@@ -159,37 +159,17 @@ final class WhereAmIPolicyTests: XCTestCase {
         XCTAssertTrue(summary.contains("Total book time"))
     }
 
-    func testPlaybackToggleCancelsWithoutResumingBook() {
-        XCTAssertTrue(WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: true))
-        XCTAssertFalse(WhereAmIInterruptionPolicy.shouldResume(
-            wasPlayingBeforeAnnouncement: true,
-            reason: .playbackToggle
-        ))
-    }
-
-    func testNavigationCancellationResumesPreviouslyPlayingBook() {
-        XCTAssertTrue(WhereAmIInterruptionPolicy.shouldResume(
-            wasPlayingBeforeAnnouncement: true,
-            reason: .navigationOrRepeatedCommand
-        ))
-    }
-
-    func testBookPlayIsBlockedWhileAnnouncementIsActive() {
-        XCTAssertTrue(WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: true))
-        XCTAssertFalse(WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: false))
-    }
-
-    func testNaturalCompletionResumesPreviouslyPlayingBook() {
-        XCTAssertTrue(WhereAmIInterruptionPolicy.shouldResume(
-            wasPlayingBeforeAnnouncement: true,
-            reason: .naturalCompletion
-        ))
-    }
-
-    func testNaturalCompletionDoesNotStartPreviouslyStoppedBook() {
-        XCTAssertFalse(WhereAmIInterruptionPolicy.shouldResume(
-            wasPlayingBeforeAnnouncement: false,
-            reason: .naturalCompletion
-        ))
-    }
+    // How an announcement ends for the book, once pinned here through a
+    // decision table the reader had stopped consulting, is pinned through
+    // real readers: Play/Pause during it leaves the book paused
+    // (FullSummaryReaderTests.testPlayPauseDuringAnAnnouncementSettlesThePause);
+    // a skip, a jump, or W pressed again resumes a book it paused
+    // (MediaCommandPlaybackTests' jump tests,
+    // WhereAmIAnnouncementEndTests.testAnAnnouncementStoppedByAPressIsHandledOnce);
+    // a Play during it waits for it
+    // (MediaCommandPlaybackTests.testAPlayFromTheAirPodsDuringWhereAmILetsTheAnnouncementFinish);
+    // its own end resumes a book it paused
+    // (WhereAmIAnnouncementEndTests.testAFinishEndsOnlyTheAnnouncementSpeaking)
+    // and leaves one paused or stopped before it as it was
+    // (MediaCommandPlaybackTests.testWhereAmIOverABookThatWasNotPlayingLeavesItAsItWas).
 }
