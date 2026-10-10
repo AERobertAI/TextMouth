@@ -629,8 +629,9 @@ final class TextSubstitutionService: ObservableObject {
     /// matches nothing.
     private func compiled(_ rule: SubstitutionRule) -> SubstitutionPass.CompiledRule {
         if rule.isRegex {
-            // Group references ($1, \1, and so on) in the replacement are
-            // filled in from each match.
+            // Group references ($1, $2, and so on) in the replacement are
+            // filled in from each match. A backslash in a template escapes
+            // the next character, so "\1" is a plain "1", not a group.
             let matcher = compiledRegex(for: rule).map { SubstitutionPass.Matcher.expression($0, template: rule.replacement) }
             return SubstitutionPass.CompiledRule(rule: rule, matcher: matcher ?? .nothing)
         }

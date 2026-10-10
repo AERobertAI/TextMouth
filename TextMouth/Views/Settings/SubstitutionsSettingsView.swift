@@ -494,7 +494,7 @@ struct SubstitutionRuleEditorView: View {
                 TextField("Replacement (empty to skip)", text: $rule.replacement)
                     .font(.system(.body, design: .monospaced))
                     .accessibilityLabel("Replacement text. Leave empty to skip matched text.")
-                    .accessibilityHint("For regex, use backslash 1, backslash 2, etc. for capture groups")
+                    .accessibilityHint(Self.replacementHint)
 
                 if let error = patternError {
                     Text(error)
@@ -575,6 +575,16 @@ struct SubstitutionRuleEditorView: View {
         guard !rule.pattern.isEmpty, !testInput.isEmpty else { return }
         testOutput = Self.testResult(of: rule, on: testInput)
     }
+
+    /// The replacement field's hint: how a regular expression's replacement
+    /// puts back what a group of its pattern matched. The replacement is an
+    /// `NSRegularExpression` template, which reads a dollar sign and a
+    /// group's number; a backslash there escapes the next character, so
+    /// "\1", which the hint said until TODO A10, gives a plain "1". The
+    /// dollar sign is named in words as well, since VoiceOver speaks "$1" as
+    /// "one dollar".
+    nonisolated static let replacementHint =
+        "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched."
 
     /// What `rule` alone makes of `text`, as the Test button shows it.
     ///
