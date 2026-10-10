@@ -68,26 +68,13 @@ struct FeedThresholdControl: View {
             Text(wording.caption(value, rule: rule))
                 .accessibilityHidden(true)
             HStack(spacing: 6) {
-                Group {
-                    // In a Form, macOS draws a text field's title as a label
-                    // beside it, inside the field's own width, leaving the
-                    // number no room; the caption above already says it, and
-                    // VoiceOver hears the accessibility label.
-                    TextField(wording.label, value: numberBinding, format: .number)
-                        .labelsHidden()
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 60)
-                        .accessibilityLabel(wording.label)
-                        .accessibilityHint(wording.hint)
-                    // The stepper's own label is empty: a hidden label would
-                    // be spoken before the accessibility label.
-                    Stepper(value: numberBinding, in: rule.range) {
-                        EmptyView()
-                    }
-                    .accessibilityLabel(wording.label)
-                    .accessibilityValue(wording.valuePhrase(shownNumber))
-                    .accessibilityHint(wording.hint)
-                }
+                FeedNumberField(
+                    label: wording.label,
+                    hint: wording.hint,
+                    spokenValue: wording.valuePhrase(shownNumber),
+                    range: rule.range,
+                    number: numberBinding
+                )
                 .disabled(isDisabled || isOff)
 
                 Spacer(minLength: 12)
@@ -174,6 +161,51 @@ struct FeedThresholdControl: View {
     }
 }
 
+// MARK: - A Number Field and Its Stepper (FR03, FR11)
+
+/// The number of one of the feed reader's settings, as every one of them is
+/// drawn: a number field wide enough for the number, then a stepper over
+/// the setting's range, each labelled with the setting's name and hinted,
+/// the stepper speaking the number with its unit ("10 entries"), so
+/// VoiceOver and a braille display meet the field and the stepper each on
+/// its own. The threshold controls (`FeedThresholdControl`) and the "List
+/// and download" number (`FeedItemPolicyControls`) draw their numbers with
+/// it, and dim it with `.disabled(_:)`, which reaches both.
+///
+/// The caption naming the setting and its value is the caller's: the
+/// field's own title is hidden, since in a Form macOS draws a text field's
+/// title as a label inside the field's own width, leaving the number no
+/// room.
+struct FeedNumberField: View {
+    /// The setting's name: the field's and the stepper's spoken label.
+    let label: String
+    /// The field's and the stepper's spoken hint.
+    let hint: String
+    /// The number as the stepper speaks it, with its unit.
+    let spokenValue: String
+    /// The numbers the stepper steps through.
+    let range: ClosedRange<Int>
+    /// The number, which the caller validates as it is set.
+    let number: Binding<Int>
+
+    var body: some View {
+        TextField(label, value: number, format: .number)
+            .labelsHidden()
+            .multilineTextAlignment(.trailing)
+            .frame(width: 60)
+            .accessibilityLabel(label)
+            .accessibilityHint(hint)
+        // The stepper's own label is empty: a hidden label would be spoken
+        // before the accessibility label.
+        Stepper(value: number, in: range) {
+            EmptyView()
+        }
+        .accessibilityLabel(label)
+        .accessibilityValue(spokenValue)
+        .accessibilityHint(hint)
+    }
+}
+
 // MARK: - The Feed Reader's Number Settings
 
 extension FeedThresholdWording {
@@ -185,16 +217,6 @@ extension FeedThresholdWording {
         offTitle: "Only at launch and when I ask",
         hint: "Hours between refreshes of every feed while TextMouth runs, from 1 to 168",
         offHint: "When checked, feeds refresh only when TextMouth opens, if that is on, and when you choose Check Feed or Refresh All Feeds"
-    )
-
-    /// How many of each feed's newest entries are kept besides its downloads.
-    static let keepEntries = FeedThresholdWording(
-        label: "Keep the newest",
-        valuePhrase: { CountWording.phrase($0, singular: "entry", plural: "entries") },
-        offPhrase: "every entry",
-        offTitle: "Keep every entry",
-        hint: "How many of each feed's newest episodes and articles are listed, from 0 to 2,000; downloaded ones are always kept",
-        offHint: "When checked, every entry the feed has listed since you subscribed is kept"
     )
 
     /// How long after playing a download is deleted.

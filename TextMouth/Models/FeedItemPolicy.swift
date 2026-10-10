@@ -102,6 +102,14 @@ struct FeedItemPolicy: Equatable, Sendable {
     var downloading: Downloading {
         choice == .everyListedNewestDownloaded ? .newest(newestCount) : .byHand
     }
+
+    /// Whether the number counts for anything under the choice: it does
+    /// when the policy lists or downloads the newest, and not under "Every
+    /// item listed, downloads by hand", where the controls dim it (FR11,
+    /// branch C) and keep it for the next choice that counts.
+    var usesNewestCount: Bool {
+        listing != .every || downloading != .byHand
+    }
 }
 
 // MARK: - From the Settings Before the Choice (FR11)

@@ -177,6 +177,15 @@ enum FeedItemState: Equatable, Sendable {
         return nil
     }
 
+    /// Why the item's last download failed, or why it waits (FR11), as its
+    /// row says it after the state's note: "the server says the file is
+    /// gone", "it downloads on a network without data limits"; nil for any
+    /// other state, or a reason left empty.
+    var reason: String? {
+        guard let reason = failureReason ?? waitingReason, !reason.isEmpty else { return nil }
+        return reason
+    }
+
     /// Whether the state lasts only while TextMouth runs: a download under
     /// way, or one waiting, each of which a record file holds as not
     /// downloaded (`FeedRecord.durable`).

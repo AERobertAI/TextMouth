@@ -1125,6 +1125,7 @@ struct LibraryView: View {
                 shownBooks: books,
                 folderBooks: allBooks,
                 search: searchText,
+                wordsPerMinute: settingsViewModel.wordsPerMinute,
                 bookRow: { book, actions in bookRow(book, context: context, feedActions: actions) },
                 perform: performFeedItemAction
             )
@@ -1642,9 +1643,24 @@ struct LibraryView: View {
         }
     }
 
-    /// The Book Info sheet for `book`, as `showBookInfo(for:)` read it.
+    /// The Book Info sheet for `book`, as `showBookInfo(for:)` read it:
+    /// read-only, with no editor, for an episode or article in its feed
+    /// (FR11, `Book.hasReadOnlyBookInfo`), and otherwise the editor its
+    /// format has.
     @ViewBuilder
     private func bookInfoSheet(for book: Book) -> some View {
+        if book.hasReadOnlyBookInfo {
+            FeedItemBookInfoSheet(book: book, info: bookInfo, feedTitle: libraryViewModel.feedTitle(of: book))
+        } else {
+            bookInfoEditor(for: book)
+        }
+    }
+
+    /// The Book Info editor for `book`, a book the listener can edit, as
+    /// `showBookInfo(for:)` read it: an EPUB's or an audiobook's metadata
+    /// editor, or the simple title and author sheet.
+    @ViewBuilder
+    private func bookInfoEditor(for book: Book) -> some View {
         switch bookInfo {
         case .epub(let metadata, let isCloudOnly):
             VStack(spacing: 0) {

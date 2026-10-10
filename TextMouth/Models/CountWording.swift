@@ -26,6 +26,12 @@ enum CountWording {
         phrase(count, singular: "feed", plural: "feeds")
     }
 
+    /// `count` bookmarks: "1 bookmark", "2 bookmarks", as Speak Info and a
+    /// feed's item row say them.
+    static func bookmarks(_ count: Int) -> String {
+        phrase(count, singular: "bookmark", plural: "bookmarks")
+    }
+
     /// The library's books and the feeds beside them, as the library counts
     /// them wherever it counts its books (FR11): "743 books, 2 feeds", "1
     /// book, 1 feed". A feed's episodes and articles are never counted as

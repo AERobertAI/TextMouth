@@ -150,11 +150,11 @@ struct FeedFolderRow: View {
 
 /// What a feed's folder lists instead of its Books section (FR03): the
 /// feed's items, newest first, under a heading counting them ("Episodes
-/// (12)", or, of a feed that lists more entries than are kept, "Episodes
-/// (10 of 381 kept)"), each downloaded one as its book's own row,
-/// unchanged but for the item's commands beside the book's, and each other
-/// one as an item row with its commands in its context menu and as its
-/// VoiceOver actions; then, under "Books", the folder's books that came
+/// (12)", or, of a feed that lists more entries than the library does,
+/// "Episodes (10 of 381 listed)"), each downloaded one as its book's own
+/// row, unchanged but for the item's commands beside the book's, and each
+/// other one as an item row with its commands in its context menu and as
+/// its VoiceOver actions; then, under "Books", the folder's books that came
 /// from no item of the feed.
 ///
 /// It observes the feed engine itself, so a download's progress redraws
@@ -170,6 +170,10 @@ struct FeedFolderSections<BookRowView: View>: View {
     let folderBooks: [Book]
     /// The search narrowing the list.
     let search: String
+    /// The library's reading speed, at which an item row estimates an
+    /// article's time left after the place kept for it (FR11), as a book
+    /// row does.
+    let wordsPerMinute: Double
     /// A book's row, as the library draws every book, with the commands of
     /// the item it came from, if any.
     let bookRow: (Book, [FeedItemAction]) -> BookRowView
@@ -183,7 +187,8 @@ struct FeedFolderSections<BookRowView: View>: View {
             center: center,
             shownBooks: shownBooks,
             folderBooks: folderBooks,
-            search: search
+            search: search,
+            wordsPerMinute: wordsPerMinute
         )
         Section {
             ForEach(listing.entries) { entry in
@@ -241,8 +246,10 @@ struct FeedFolderSections<BookRowView: View>: View {
 
 /// One row of a feed's item that is not downloaded, or is downloaded into
 /// another folder (FR03): its title with its notes (Played, its download's
-/// state, New), then its date and its duration, all spoken as one sentence
-/// with the most telling words first. Equatable on what it shows.
+/// state, New), then why its download failed or waits, the place and
+/// bookmarks kept for it after its file went (FR11), its date, and its
+/// duration, all spoken as one sentence with the most telling words first,
+/// and shown in the same words. Equatable on what it shows.
 struct FeedItemRow: View, Equatable {
     /// What the row shows.
     let content: FeedItemRowContent
@@ -264,11 +271,19 @@ struct FeedItemRow: View, Equatable {
                 }
             }
             HStack(spacing: 8) {
-                if let reason = content.state.failureReason, !reason.isEmpty {
+                // Why a download failed, in red, or why it waits.
+                if let reason = content.state.reason {
                     Text(reason)
                         .font(.caption)
-                        .foregroundColor(.red)
+                        .foregroundColor(content.state.failureReason == nil ? .secondary : .red)
                         .lineLimit(2)
+                }
+                // The place and bookmarks kept: "42%", "16:00 left", "2
+                // bookmarks".
+                ForEach(content.kept?.shownParts ?? [], id: \.self) { part in
+                    Text(part)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 if let date = content.dateText {
                     Text(date)
@@ -287,7 +302,7 @@ struct FeedItemRow: View, Equatable {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(content.label)
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint(FeedWording.itemRowHint(content.state))
+        .accessibilityHint(FeedWording.itemRowHint(content.state, keptPlace: content.kept?.hasPlace ?? false))
     }
 }
 
@@ -296,7 +311,7 @@ struct FeedItemRow: View, Equatable {
 /// The library's summary bar, which in a feed's folder (FR03) says what the
 /// feed's row in the Feeds section says, its items counted as the row
 /// counts them and its last check, beside the time left in its downloads:
-/// "10 of 381 episodes kept, 3 downloaded, 5 unplayed. Checked today at
+/// "10 of 381 episodes listed, 3 downloaded, 5 unplayed. Checked today at
 /// 3:05 PM". It observes the feed engine, so the counts follow each
 /// download while the list around it stays as it was. It holds the bar in
 /// every folder, feed's or not, so moving between folders never makes the

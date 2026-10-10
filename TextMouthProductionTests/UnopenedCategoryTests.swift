@@ -2,10 +2,11 @@ import XCTest
 @testable import TextMouth
 
 /// The Unopened category of the Library window, which replaced No Folder:
-/// every book never opened, from every folder, and the feeds with items not
-/// yet played. These tests pin its name, its sort key and the sort carried
-/// over from No Folder, its default sort, and what it lists: the books,
-/// which leave it when opened, and the feeds, which leave it when played.
+/// every book never opened, from every folder, and the feeds with new
+/// items (FR11, question 8). These tests pin its name, its sort key and the
+/// sort carried over from No Folder, its default sort, and what it lists:
+/// the books, which leave it when opened, and the feeds, which leave it
+/// when none of their items is new any more.
 ///
 /// Each test runs on the main actor, not the class as a whole: the set-up
 /// and tear-down overrides are nonisolated, and on a main-actor class their
@@ -219,12 +220,15 @@ final class UnopenedCategoryTests: XCTestCase {
         XCTAssertEqual(Set(model.displayedBooks(at: allItems).map(\.title)), ["First", "Second"])
     }
 
-    /// The Feeds section at Unopened lists every feed with an item not yet
-    /// played, each row as it reads in All Items, and no feed whose items
-    /// are all played or that has none; a feed leaves the section when its
-    /// last unplayed item is played, and returns when one is unplayed again.
+    /// The Feeds section at Unopened lists a feed only while it has a new
+    /// item (FR11, the user's answer to question 8), each row as it reads in
+    /// All Items: never a feed whose unplayed items are all its back
+    /// catalogue, published before the subscription, nor one whose new items
+    /// were played or opened, nor one with none. A feed leaves the section
+    /// when its last new item is played, and returns when one is unplayed
+    /// again.
     @MainActor
-    func testTheFeedsSectionAtUnopenedListsTheFeedsWithUnplayedItems() async throws {
+    func testTheFeedsSectionAtUnopenedListsTheFeedsWithNewItems() async throws {
         let world = try FeedTestWorld(self, label: "UnopenedFeeds")
         let atlas = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", items: [
             FeedXML.Item(guid: "ep-2", title: "Second", published: world.day(1)),
@@ -234,7 +238,26 @@ final class UnopenedCategoryTests: XCTestCase {
             FeedXML.Item(guid: "note-1", title: "Tides", published: world.day(0.5)),
         ])
         let silent = try await subscribe(world, title: "Silent Signal", path: "/silent.xml", items: [])
+        // A back catalogue: every item listed and unplayed, none new.
+        let archive = try await subscribe(world, title: "Canal Locks Explained", path: "/archive.xml", items: [
+            FeedXML.Item(guid: "old-2", title: "Older", published: world.day(-30)),
+            FeedXML.Item(guid: "old-1", title: "Oldest", published: world.day(-60)),
+        ])
+        // A new item opened, though not played: its kept row was opened.
+        let opened = try await subscribe(world, title: "Night Ferries", path: "/ferries.xml", items: [
+            FeedXML.Item(guid: "ferry-1", title: "Crossing", published: world.day(0.5)),
+        ])
+        var openedRow = Book(
+            title: "Crossing", format: .audio, filePath: "/Crossing.m4a", md5Hash: "", tmbDirectoryName: "Crossing.tmb",
+            feedLink: FeedBookLink(feedID: opened.id, itemID: "guid:ferry-1")
+        )
+        openedRow.lastOpened = world.day(0.75)
+        world.library.library.feedShelf.put(openedRow)
         world.center.markPlayed("guid:note-1", of: notes.id)
+        XCTAssertEqual(world.center.counts(of: archive.id).unplayed, 2)
+        XCTAssertEqual(world.center.counts(of: archive.id).new, 0)
+        XCTAssertEqual(world.center.counts(of: opened.id).unplayed, 1)
+        XCTAssertEqual(world.center.counts(of: opened.id).new, 0)
         let now = Date()
         let unopened = LibraryLocation(category: .unopened, folderPath: "")
         let allItems = LibraryLocation(category: .allItems, folderPath: "")
@@ -247,7 +270,10 @@ final class UnopenedCategoryTests: XCTestCase {
         let readingList = LibraryLocation(category: .readingList, folderPath: "")
         XCTAssertEqual(LibraryFeedsSectionRows.rows(at: readingList, center: world.center, now: now), [])
         let everywhere = LibraryFeedsSectionRows.rows(at: allItems, center: world.center, now: now)
-        XCTAssertEqual(everywhere.map(\.title), ["Harbour Notes", "Silent Signal", "The Tactile Atlas"])
+        XCTAssertEqual(
+            everywhere.map(\.title),
+            ["Canal Locks Explained", "Harbour Notes", "Night Ferries", "Silent Signal", "The Tactile Atlas"]
+        )
         XCTAssertEqual(world.center.counts(of: silent.id).unplayed, 0)
         XCTAssertEqual(world.center.counts(of: notes.id).unplayed, 0)
         // The feed's row reads exactly as it does in All Items.
@@ -257,14 +283,18 @@ final class UnopenedCategoryTests: XCTestCase {
         XCTAssertEqual(atlasRow.countsText, "2 episodes, 2 new, 2 unplayed")
         XCTAssertTrue(atlasRow.label.hasPrefix("The Tactile Atlas, Feed, 2 episodes, 2 new, 2 unplayed, "), atlasRow.label)
 
-        // Playing one of the two episodes keeps the feed listed; playing the
-        // other takes it off, and marking an item unplayed brings its feed back.
+        // Playing one of the two new episodes keeps the feed listed; playing
+        // the other takes it off, though its back catalogue would have kept
+        // it there before; and marking a new item unplayed brings its feed
+        // back.
         world.center.markPlayed("guid:ep-2", of: atlas.id)
         XCTAssertEqual(titlesAtUnopened(), ["The Tactile Atlas"])
         world.center.markPlayed("guid:ep-1", of: atlas.id)
         XCTAssertEqual(titlesAtUnopened(), [])
         world.center.markUnplayed("guid:note-1", of: notes.id)
         XCTAssertEqual(titlesAtUnopened(), ["Harbour Notes"])
+        // The summary bar there names the one feed beside the books.
+        XCTAssertEqual(LibraryFeedsSectionRows.feeds(at: unopened, center: world.center).count, 1)
     }
 
     // MARK: - VoiceOver

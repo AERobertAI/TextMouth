@@ -2,16 +2,17 @@ import SwiftUI
 
 // MARK: - Preferences, Feeds (FR03)
 
-/// The Feeds tab of Preferences (FR03): the seven feed settings the
-/// listener decided on October 4, each a labelled control, with the unit in
-/// the words of every number (`FeedSettings`, kept through
-/// `SettingsViewModel.feedSettings`, which config.json mirrors), and Refresh
-/// All Feeds Now.
+/// The Feeds tab of Preferences (FR03): the feed settings the listener
+/// decided on October 4 and changed on October 7 (FR11), each a labelled
+/// control, with the unit in the words of every number (`FeedSettings`,
+/// kept through `SettingsViewModel.feedSettings`, which config.json
+/// mirrors), and Refresh All Feeds Now.
 ///
-/// The three numbers are drawn as the Repeated Symbols threshold is, each
+/// What every feed lists and downloads is the "List and download" pop-up
+/// menu and its number (`FeedItemPolicyControls`, FR11). The two numbers
+/// with an off value are drawn as the Repeated Symbols threshold is, each
 /// with its off value as a checkbox (`FeedThresholdControl`): refreshing
-/// only at launch and when asked, keeping every entry, and never deleting a
-/// played download.
+/// only at launch and when asked, and never deleting a played download.
 struct FeedSettingsView: View {
     @EnvironmentObject var settingsViewModel: SettingsViewModel
     /// The feed engine Refresh All Feeds Now refreshes: the app's, unless a
@@ -54,13 +55,7 @@ struct FeedSettingsView: View {
             }
 
             Section {
-                FeedThresholdControl(
-                    rule: SettingsPolicy.feedKeepEntries,
-                    wording: .keepEntries,
-                    value: binding(\.keepEntries)
-                )
-                Toggle(FeedSettingsWording.autoDownload, isOn: binding(\.autoDownload))
-                    .accessibilityHint(FeedSettingsWording.autoDownloadHint)
+                FeedItemPolicyControls(policy: binding(\.itemPolicy), noun: nil)
                 FeedThresholdControl(
                     rule: SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed,
                     wording: .deleteDownloadsAfterPlaying,
@@ -173,12 +168,10 @@ enum FeedSettingsWording {
     static let refreshAllNowHint = "Checks every feed now and says what came"
     /// What shows, and VoiceOver hears, while every feed is refreshed.
     static let refreshing = "Refreshing all feeds…"
-    /// Downloading by themselves.
-    static let autoDownload = "Download new episodes and articles by themselves"
-    /// Its hint.
-    static let autoDownloadHint = "When off, an episode downloads when you open it or choose Download"
-    /// The note under the numbers.
-    static let perFeedNote = "A feed can keep its own number of entries and its own days before deleting played downloads, in its Feed Info."
+    /// The note under the group's settings, naming the two a feed may have
+    /// of its own.
+    static let perFeedNote = "A feed can have its own List and download choice and its own days before deleting "
+        + "played downloads, in its Feed Info."
     /// The refresh alert.
     static let refreshAlert = "Show an alert when a refresh brings new episodes"
     /// Its hint.

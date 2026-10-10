@@ -617,7 +617,12 @@ final class ConfigService: ObservableObject {
             ///   before the record of the user's edits (FR12). The move to
             ///   the record reads it at the first launch without one
             ///   (`KeyboardShortcutManager.moveSavedShortcutsIfNeeded`).
-            static let retiredStoreKeys = [KeyboardShortcutManager.savedMapKey]
+            /// - `feedKeepEntries` and `feedAutoDownload`: how many entries
+            ///   each feed kept, and whether new episodes downloaded by
+            ///   themselves, before the "List and download" choice (FR11).
+            ///   The move to the choice reads them at the first launch
+            ///   without one (`FeedSettings.moveToItemPolicyIfNeeded(in:)`).
+            static let retiredStoreKeys = [KeyboardShortcutManager.savedMapKey] + FeedSettings.retiredPreferenceKeys
 
             /// Machine-local values config.json holds without mirroring them.
             /// - `dataDirectoryPath`: where this Mac keeps its library. The

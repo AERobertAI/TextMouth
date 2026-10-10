@@ -72,7 +72,9 @@ final class FeedItemIndexListTests: FeedItemIndexTestCase {
         XCTAssertEqual(listed.map(\.id), [item.id])
         XCTAssertEqual(world.library.displayedBooks(at: location, matching: "touch").map(\.id), [item.id])
         XCTAssertEqual(world.library.displayedBooks(at: LibraryLocation(category: .folders, folderPath: world.folder.path)).map(\.id), [])
-        let listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: listed, folderBooks: listed, search: "")
+        let listing = FeedFolderListing.make(
+            feedID: feed.id, center: world.center, shownBooks: listed, folderBooks: listed, search: "", wordsPerMinute: 200
+        )
         XCTAssertEqual(listing.entries.map(\.id), ["book:" + item.id.uuidString])
     }
 

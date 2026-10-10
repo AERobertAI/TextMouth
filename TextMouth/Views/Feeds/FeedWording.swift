@@ -173,33 +173,36 @@ enum FeedWording {
 
     // MARK: A Feed's Size (October 7, 2026)
 
-    /// The word that ends a feed's size when the library keeps fewer of its
-    /// entries than the feed lists: "10 of 381 episodes kept". It is the
-    /// Feeds setting's own verb ("Keep the newest"), which decides how many
-    /// are kept, so the words point at what changes the number.
-    static let keptNote = "kept"
+    /// The word that ends a feed's size when the library lists fewer of its
+    /// entries than the feed does: "10 of 381 episodes listed". It is the
+    /// "List and download" choice's own word, which decides how many are
+    /// listed (FR11), so the words point at what changes the number; the
+    /// user chose it over "kept" (question 10), since every record is kept
+    /// now.
+    static let listedNote = "listed"
     /// The words before the size of a feed longer than TextMouth reads
-    /// (`FeedEntryTotal.listsMore`): "10 of more than 2000 episodes kept".
+    /// (`FeedEntryTotal.listsMore`): "10 of more than 2000 episodes listed".
     static let moreThanNote = "more than"
 
-    /// A feed's size as the library keeps it, which every count of a feed
+    /// A feed's size as the library lists it, which every count of a feed
     /// starts with (`countsPhrase(_:)`): when the feed lists more entries
-    /// than the library keeps (`FeedEntryTotal.exceeds(_:)`), the number
-    /// kept of the feed's size, "10 of 381 episodes kept", "0 of 1 episode
-    /// kept", "10 of more than 2000 episodes kept", so the number kept is
-    /// never taken for the feed's size; otherwise, or while the size is not
-    /// known, the number kept alone, as it always read: "12 episodes", "1
-    /// article". The number comes first, as in every other count of a
-    /// feed, and the noun agrees with the number before it.
-    static func sizePhrase(kept: Int, total: FeedEntryTotal?, noun: ItemNoun) -> String {
-        guard let total, total.exceeds(kept) else { return count(kept, noun) }
-        return "\(kept) of \(entriesPhrase(total, noun: noun)) \(keptNote)"
+    /// than the library does (`FeedEntryTotal.exceeds(_:)`), the number
+    /// listed of the feed's size, "10 of 381 episodes listed", "0 of 1
+    /// episode listed", "10 of more than 2000 episodes listed", so the
+    /// number listed is never taken for the feed's size; otherwise, or
+    /// while the size is not known, the number listed alone, as it always
+    /// read: "12 episodes", "1 article". The number comes first, as in
+    /// every other count of a feed, and the noun agrees with the number
+    /// before it. The screen and VoiceOver say the same words.
+    static func sizePhrase(listed: Int, total: FeedEntryTotal?, noun: ItemNoun) -> String {
+        guard let total, total.exceeds(listed) else { return count(listed, noun) }
+        return "\(listed) of \(entriesPhrase(total, noun: noun)) \(listedNote)"
     }
 
     /// The size of the feed `counts` counts: its items listed of the
-    /// entries it lists (`sizePhrase(kept:total:noun:)`).
+    /// entries it lists (`sizePhrase(listed:total:noun:)`).
     static func sizePhrase(_ counts: FeedItemCounts) -> String {
-        sizePhrase(kept: counts.listed, total: counts.total, noun: counts.noun)
+        sizePhrase(listed: counts.listed, total: counts.total, noun: counts.noun)
     }
 
     /// A feed's size as the words after "of" say it: its entries counted
@@ -215,7 +218,7 @@ enum FeedWording {
 
     /// What VoiceOver hears once a subscription is made: the feed's size as
     /// its row says it, "Subscribed to Planet Money: 10 of 381 episodes
-    /// kept.", or, keeping every entry, "Subscribed to Planet Money: 12
+    /// listed.", or, listing every entry, "Subscribed to Planet Money: 12
     /// episodes."
     static func subscribed(title: String, counts: FeedItemCounts) -> String {
         "Subscribed to \(title): \(sizePhrase(counts))."

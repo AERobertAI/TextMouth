@@ -303,7 +303,7 @@ struct FolderRow: View {
     /// books", with the feeds below it beside them, "3 books, 2 feeds", or
     /// those feeds alone where it holds no book, "2 feeds" (FR11); or, for a
     /// feed's folder, the feed's items as the feed's row counts them, "10 of
-    /// 381 episodes kept, 3 downloaded" (FR03).
+    /// 381 episodes listed, 3 downloaded" (FR03).
     static func countText(bookCount: Int, feedCounts: FeedItemCounts?, feedsBelow: Int = 0) -> String {
         feedCounts.map(FeedWording.countsPhrase) ?? CountWording.booksAndFeeds(books: bookCount, feeds: feedsBelow)
     }
@@ -312,7 +312,7 @@ struct FolderRow: View {
     /// Folders rotor, which share it: "Fiction, 12 books", "Poems, 1 book",
     /// "Podcasts, 3 books, 2 feeds", "Shows, 2 feeds" (FR11), and, for a
     /// feed's folder, its name, "Feed", and the feed's items as the feed's
-    /// row counts them, "Planet Money, Feed, 10 of 381 episodes kept, 3
+    /// row counts them, "Planet Money, Feed, 10 of 381 episodes listed, 3
     /// downloaded", never its downloads as books (FR03).
     static func accessibilityLabel(name: String, bookCount: Int, feedCounts: FeedItemCounts?, feedsBelow: Int = 0) -> String {
         guard let feedCounts else { return "\(name), \(countText(bookCount: bookCount, feedCounts: nil, feedsBelow: feedsBelow))" }
@@ -447,7 +447,7 @@ struct BookRow: View {
                     }
 
                     if let remaining = shownBook.estimatedTimeRemaining(wpm: wpm) {
-                        Text("\(TimeFormatting.format(remaining)) left")
+                        Text(Self.remainingText(remaining).visible)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -523,7 +523,7 @@ struct BookRow: View {
             parts.append(progress)
         }
         if let remaining = shownBook.estimatedTimeRemaining(wpm: wpm) {
-            parts.append("\(TimeFormatting.spoken(remaining)) remaining")
+            parts.append(Self.remainingText(remaining).spoken)
         }
         parts.append(book.format.displayName)
         return parts.joined(separator: ", ")
@@ -536,10 +536,14 @@ struct BookRow: View {
         isInReadingList ? ReadingListWording.inReadingListValue : nil
     }
 
+    // The row's words, apart from the view, so a feed item's row (FR11,
+    // `FeedKeptProgress`) and the tests say them as this row does, from any
+    // thread.
+
     /// Progress shown in a library row — visible "42%", spoken "42 percent" —
     /// or nil to hide it when it cannot be known without parsing the book.
     /// Whole percents are rounded the same way Where Am I speaks them.
-    static func progressText(for book: Book) -> (visible: String, spoken: String)? {
+    nonisolated static func progressText(for book: Book) -> (visible: String, spoken: String)? {
         guard let percent = book.percentComplete else { return nil }
         let wholePercent = String(format: "%.0f", percent)
         return (visible: "\(wholePercent)%", spoken: "\(wholePercent) percent")
@@ -549,9 +553,17 @@ struct BookRow: View {
     /// "42 percent read" when the label also speaks a download's percentage
     /// (FR02), so it never holds two bare percentages. Nil when the row
     /// shows no progress.
-    static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
+    nonisolated static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
         guard let progress = progressText(for: book) else { return nil }
         return besideDownloadPercentage ? "\(progress.spoken) read" : progress.spoken
+    }
+
+    /// The time left after the reading position as a library row shows
+    /// it, "16:00 left", and speaks it, "16 minutes remaining": a book's
+    /// row, and a feed item's row for the place kept after its file went
+    /// (FR11, `FeedKeptProgress`).
+    nonisolated static func remainingText(_ remaining: TimeInterval) -> (visible: String, spoken: String) {
+        (visible: "\(TimeFormatting.format(remaining)) left", spoken: LibraryInfoWording.remaining(remaining))
     }
 }
 

@@ -160,7 +160,7 @@ extension BookInfoFacts {
             cloudNote: cloudState?.spokenNote,
             isKeptOnThisMac: cloudStates.listsAsKept(book.id, in: keptBooks),
             isOpenInWindow: library.openBookIDs.contains(book.id),
-            feedTitle: book.feedLink.flatMap { library.feeds.store.record(of: $0.feedID)?.feed.title }
+            feedTitle: library.feedTitle(of: book)
         )
     }
 

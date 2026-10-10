@@ -86,7 +86,7 @@ final class LibraryFeedFolders: ObservableObject {
 struct FolderRotorEntry: Equatable, Identifiable {
     /// What the rotor says: a folder's row's label, "Fiction, 12 books", or,
     /// for a feed's folder, the feed counted as its row counts it, "Planet
-    /// Money, Feed, 10 of 381 episodes kept".
+    /// Money, Feed, 10 of 381 episodes listed".
     let label: String
     /// The ID of the row it moves to: the folder's own, or, for a feed's
     /// folder the Feeds section's row stands for, the feed's, which is that

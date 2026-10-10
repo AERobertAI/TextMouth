@@ -17,6 +17,15 @@ enum LibraryBookInfo {
     /// What the sheet says while some details wait for a download.
     static let cloudOnlyNote = "Some details appear once the book is downloaded."
 
+    /// Whether the book's file was only in the cloud, so the sheet shows the
+    /// details the library keeps and says `cloudOnlyNote`.
+    var isCloudOnly: Bool {
+        switch self {
+        case .epub(_, let isCloudOnly), .audio(_, let isCloudOnly): return isCloudOnly
+        case .simple: return false
+        }
+    }
+
     /// Why Save refuses to write the library's copy of an EPUB that was
     /// only in the cloud when the sheet opened: writing it would download
     /// it first, while the interface waited. Nil when the save can go ahead.

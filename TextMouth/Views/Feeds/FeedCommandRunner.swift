@@ -158,11 +158,19 @@ extension LibraryFeedsPresenter {
             announce(FeedWording.downloading(title: item.title), context.window)
         case .cancelDownload:
             center.cancelDownload(item.id, of: record.feed.id)
-            announce(FeedWording.downloadCancelled(title: item.title), context.window)
+            // A download the newest-N rule put off was waiting, not under
+            // way (FR11): say that it waits no more.
+            let cancelled = state.waitingReason == nil
+                ? FeedWording.downloadCancelled(title: item.title)
+                : FeedWording.waitingDownloadCancelled(title: item.title)
+            announce(cancelled, context.window)
         case .deleteDownload:
             do {
                 try center.deleteDownload(item.id, of: record.feed.id)
-                announce(FeedWording.downloadDeleted(title: item.title), context.window)
+                // A package that held the listener's place was kept, its
+                // row waiting on the feed's shelf (FR11, branch A2).
+                let keptPlace = context.library.feedItemRows(of: record.feed.id).kept[item.id] != nil
+                announce(FeedWording.downloadDeleted(title: item.title, keptPlace: keptPlace), context.window)
             } catch {
                 refuse(error, in: context)
             }

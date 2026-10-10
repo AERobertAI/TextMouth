@@ -57,7 +57,7 @@ final class FeedUIEndToEndTests: XCTestCase {
         let rows = LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .folders, folderPath: world.folder.path), center: world.center)
         XCTAssertEqual(rows.map(\.title), ["The Tactile Atlas"])
         XCTAssertEqual(rows.first?.countsText, "2 episodes, 1 new, 2 unplayed")
-        var listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [], search: "")
+        var listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [], search: "", wordsPerMinute: 200)
         XCTAssertEqual(listing.entries.map(\.id), ["item:guid:ep-1", "item:guid:ep-2"])
 
         // Download, from the episode's row.
@@ -70,7 +70,7 @@ final class FeedUIEndToEndTests: XCTestCase {
         XCTAssertEqual(world.library.displayedBooks(at: LibraryLocation(category: .folders, folderPath: folderPath)).map(\.id), [book.id])
 
         // Now the episode is its book's row, with the episode's commands.
-        listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [book], folderBooks: [book], search: "")
+        listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [book], folderBooks: [book], search: "", wordsPerMinute: 200)
         guard case .book(let listed, let actions)? = listing.entries.first else { return XCTFail("\(listing.entries)") }
         XCTAssertEqual(listed.id, book.id)
         XCTAssertEqual(actions.map(\.title), ["Mark Played", "Show Description…", "Delete Download", "Delete Episode…"])
@@ -84,7 +84,7 @@ final class FeedUIEndToEndTests: XCTestCase {
         // Delete Download: the book goes, the episode stays.
         presenter.perform(try XCTUnwrap(actions.first { $0.command == .deleteDownload }), in: context)
         XCTAssertNil(world.library.bookByID(book.id))
-        listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [], search: "")
+        listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [], search: "", wordsPerMinute: 200)
         guard case .item(let after)? = listing.entries.first else { return XCTFail("\(listing.entries)") }
         XCTAssertEqual(after.state, .notDownloaded)
         XCTAssertTrue(after.isPlayed)

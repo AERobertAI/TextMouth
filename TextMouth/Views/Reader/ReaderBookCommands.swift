@@ -95,7 +95,9 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 BookTextEditor.canEditText(of: viewModel.book, isTranscribed: transcribedBooks.contains(viewModel.book.id))
             )
             .focusedSceneValue(\.canTranscribeBookAudio, LibraryAudioCommand.isTranscribable(viewModel.book))
-            .focusedSceneValue(\.canCleanUpBookTranscript, hasTranscript)
+            // An episode's or article's transcript, in its feed, is not
+            // cleaned up (FR11): only made again or deleted.
+            .focusedSceneValue(\.canCleanUpBookTranscript, hasTranscript && LibraryAudioCommand.isTranscriptCleanable(viewModel.book))
             .focusedSceneValue(\.canDeleteBookTranscript, hasTranscript)
             .focusedSceneValue(\.canEditBookAudio, AudioEditorLauncher.canEdit(viewModel.book))
             .sheet(item: $exportModel) { model in

@@ -3,11 +3,13 @@ import SwiftUI
 import XCTest
 @testable import TextMouth
 
-/// The Feeds tab of Preferences (FR03): the seven feed settings, each a
-/// labelled control, the three numbers with their units in their words and
-/// their off values as checkboxes, saved to the preferences store within
-/// the settings' ranges; and Refresh All Feeds Now, from the tab and the
-/// Library menu, saying what came. The settings live in a sandboxed store.
+/// The Feeds tab of Preferences (FR03): the feed settings, each a labelled
+/// control, the three numbers with their units in their words and the two
+/// with an off value with it as a checkbox, saved to the preferences store
+/// within the settings' ranges; and Refresh All Feeds Now, from the tab and
+/// the Library menu, saying what came. The "List and download" pop-up menu
+/// (FR11) has tests of its own (`FeedItemUIPolicyControlsTests`). The
+/// settings live in a sandboxed store.
 @MainActor
 final class FeedUISettingsTests: XCTestCase {
 
@@ -23,11 +25,6 @@ final class FeedUISettingsTests: XCTestCase {
         XCTAssertEqual(delete.caption(0, rule: rule), "Delete downloads after playing: at once")
         XCTAssertEqual(delete.caption(-1, rule: rule), "Delete downloads after playing: never")
         XCTAssertEqual(delete.offTitle, "Never delete played downloads")
-
-        let keep = FeedThresholdWording.keepEntries
-        XCTAssertEqual(keep.caption(10, rule: SettingsPolicy.feedKeepEntries), "Keep the newest: 10 entries")
-        XCTAssertEqual(keep.caption(1, rule: SettingsPolicy.feedKeepEntries), "Keep the newest: 1 entry")
-        XCTAssertEqual(keep.caption(-1, rule: SettingsPolicy.feedKeepEntries), "Keep the newest: every entry")
 
         let interval = FeedThresholdWording.refreshInterval
         XCTAssertEqual(interval.caption(1, rule: SettingsPolicy.feedRefreshIntervalHours), "Refresh feeds every: 1 hour")
@@ -61,28 +58,28 @@ final class FeedUISettingsTests: XCTestCase {
     }
 
     /// Every setting saves through the settings model within its range: a
-    /// number below the off value is the off value, and one above the range
-    /// its top.
+    /// number below the off value is the off value, one above the range its
+    /// top, and the number of the newest (FR11), which has no off value,
+    /// within 1 to 2,000.
     func testTheSettingsSaveWithinTheirRanges() {
         let store = makeSandboxedPreferences("FeedUISettingsRanges")
         let settings = makeSettings(store)
         XCTAssertEqual(settings.feedSettings, .standard)
 
         var changed = settings.feedSettings
-        changed.keepEntries = 5_000
+        changed.itemPolicy.choice = .everyListedDownloadsByHand
+        changed.itemPolicy.newestCount = 5_000
         changed.deleteDownloadsDaysAfterPlayed = -5
         changed.refreshIntervalHours = 500
-        changed.autoDownload = true
         changed.refreshAlert = true
         changed.notifications = true
         changed.refreshAtLaunch = false
         settings.feedSettings = changed
 
         let saved = FeedSettings.read(from: store)
-        XCTAssertEqual(saved.keepEntries, SettingsPolicy.feedKeepEntries.range.upperBound)
+        XCTAssertEqual(saved.itemPolicy, FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: SettingsPolicy.feedNewestCount.range.upperBound))
         XCTAssertEqual(saved.deleteDownloadsDaysAfterPlayed, -1)
         XCTAssertEqual(saved.refreshIntervalHours, 168)
-        XCTAssertTrue(saved.autoDownload)
         XCTAssertTrue(saved.refreshAlert)
         XCTAssertTrue(saved.notifications)
         XCTAssertFalse(saved.refreshAtLaunch)
@@ -96,12 +93,14 @@ final class FeedUISettingsTests: XCTestCase {
     // MARK: - The Tab as Drawn
 
     /// The tab draws, for each number, a number field wide enough for it and
-    /// a stepper speaking it with its unit; and a checkbox for each switch
-    /// and each off value, showing the settings. Its steppers save what
-    /// VoiceOver's increment does with them, and while a number is off, its
-    /// stepper is dimmed and keeps saying the number unchecking restores. A
-    /// setting changed while the tab is open, as config.json changes it,
-    /// never asks permission for notifications.
+    /// a stepper speaking it with its unit; the "List and download" pop-up
+    /// menu (FR11; `FeedItemUIPolicyControlsTests` checks what it says and
+    /// saves); and a checkbox for each switch and each off value, showing
+    /// the settings. Its steppers save what VoiceOver's increment does with
+    /// them, and while a number is off, its stepper is dimmed and keeps
+    /// saying the number unchecking restores. A setting changed while the
+    /// tab is open, as config.json changes it, never asks permission for
+    /// notifications.
     ///
     /// SwiftUI's checkboxes take no press from a test: they have no action
     /// of their own, and join the accessibility tree only for a connected
@@ -116,11 +115,14 @@ final class FeedUISettingsTests: XCTestCase {
         let view = FeedSettingsView(center: world.center, announce: { _ in }, notifier: notifier)
             .environmentObject(settings)
 
-        withHostedView(view, size: NSSize(width: 700, height: 700), until: {
+        withHostedView(view, size: NSSize(width: 700, height: 800), until: {
             self.descendants(of: $0, as: NSStepper.self).count == 3
         }) { hosting in
+            // The refresh interval, how many of the newest, and the days
+            // before deleting played downloads.
             XCTAssertEqual(descendants(of: hosting, as: NSStepper.self).count, 3)
             XCTAssertEqual(feedEditableFields(in: hosting).count, 3, "a number field for each number")
+            XCTAssertEqual(descendants(of: hosting, as: NSPopUpButton.self).count, 1, "no List and download pop-up menu")
             XCTAssertTrue(
                 waitUntil {
                     hosting.layoutSubtreeIfNeeded()
@@ -129,9 +131,8 @@ final class FeedUISettingsTests: XCTestCase {
                 "a number field too narrow for its number: \(feedEditableFields(in: hosting).map(\.frame.width))"
             )
             // In reading order: refresh at launch; only at launch and when I
-            // ask; keep every entry; download by themselves; never delete
-            // played downloads; the alert; notifications.
-            XCTAssertEqual(feedCheckboxes(in: hosting).map { $0.state == .on }, [true, false, false, false, false, false, false])
+            // ask; never delete played downloads; the alert; notifications.
+            XCTAssertEqual(feedCheckboxes(in: hosting).map { $0.state == .on }, [true, false, false, false, false])
 
             // Each stepper, found by its spoken label, says its number with
             // its unit; raised by one as VoiceOver raises it, it saves its
@@ -142,15 +143,13 @@ final class FeedUISettingsTests: XCTestCase {
             }
             if !controls.isEmpty {
                 XCTAssertEqual(stepper(.refreshInterval)?.accessibilityValueDescription(), "1 hour", "\(controls.map(\.label))")
-                XCTAssertEqual(stepper(.keepEntries)?.accessibilityValueDescription(), "10 entries")
                 XCTAssertEqual(stepper(.deleteDownloadsAfterPlaying)?.accessibilityValueDescription(), "1 day")
-                for wording in [FeedThresholdWording.refreshInterval, .keepEntries, .deleteDownloadsAfterPlaying] {
+                for wording in [FeedThresholdWording.refreshInterval, .deleteDownloadsAfterPlaying] {
                     _ = stepper(wording)?.accessibilityPerformIncrement()
                 }
                 XCTAssertTrue(
                     waitUntil {
                         settings.feedSettings.refreshIntervalHours == 2
-                            && settings.feedSettings.keepEntries == 11
                             && settings.feedSettings.deleteDownloadsDaysAfterPlayed == 2
                     },
                     "the steppers saved \(settings.feedSettings)"
@@ -162,11 +161,9 @@ final class FeedUISettingsTests: XCTestCase {
             // over, and each number's off value stored.
             var pressed = numbers
             pressed.refreshAtLaunch.toggle()
-            pressed.autoDownload.toggle()
             pressed.refreshAlert.toggle()
             pressed.notifications.toggle()
             pressed.refreshIntervalHours = Self.stored(off: true, numbers, \.refreshIntervalHours, SettingsPolicy.feedRefreshIntervalHours)
-            pressed.keepEntries = Self.stored(off: true, numbers, \.keepEntries, SettingsPolicy.feedKeepEntries)
             pressed.deleteDownloadsDaysAfterPlayed = Self.stored(
                 off: true, numbers, \.deleteDownloadsDaysAfterPlayed, SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed
             )
@@ -174,15 +171,15 @@ final class FeedUISettingsTests: XCTestCase {
             XCTAssertTrue(
                 waitUntil {
                     hosting.layoutSubtreeIfNeeded()
-                    return feedCheckboxes(in: hosting).map { $0.state == .on } == [false, true, true, true, true, true, true]
+                    return feedCheckboxes(in: hosting).map { $0.state == .on } == [false, true, true, true, true]
                 },
                 "the checkboxes show \(feedCheckboxes(in: hosting).map { $0.state == .on })"
             )
             if !controls.isEmpty {
                 XCTAssertTrue(waitUntil { stepper(.deleteDownloadsAfterPlaying)?.isAccessibilityEnabled() == false }, "a stepper stayed available while off")
                 XCTAssertEqual(
-                    stepper(.keepEntries)?.accessibilityValueDescription(),
-                    FeedThresholdWording.keepEntries.valuePhrase(numbers.keepEntries),
+                    stepper(.refreshInterval)?.accessibilityValueDescription(),
+                    FeedThresholdWording.refreshInterval.valuePhrase(numbers.refreshIntervalHours),
                     "a stepper forgot the number unchecking restores"
                 )
             }
@@ -190,7 +187,6 @@ final class FeedUISettingsTests: XCTestCase {
             // The off boxes unchecked again: each number comes back.
             var unchecked = pressed
             unchecked.refreshIntervalHours = Self.stored(off: false, numbers, \.refreshIntervalHours, SettingsPolicy.feedRefreshIntervalHours)
-            unchecked.keepEntries = Self.stored(off: false, numbers, \.keepEntries, SettingsPolicy.feedKeepEntries)
             unchecked.deleteDownloadsDaysAfterPlayed = Self.stored(
                 off: false, numbers, \.deleteDownloadsDaysAfterPlayed, SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed
             )
@@ -198,7 +194,7 @@ final class FeedUISettingsTests: XCTestCase {
             XCTAssertTrue(
                 waitUntil {
                     hosting.layoutSubtreeIfNeeded()
-                    return feedCheckboxes(in: hosting).map { $0.state == .on } == [false, false, false, true, false, true, true]
+                    return feedCheckboxes(in: hosting).map { $0.state == .on } == [false, false, false, true, true]
                 },
                 "the checkboxes show \(feedCheckboxes(in: hosting).map { $0.state == .on })"
             )

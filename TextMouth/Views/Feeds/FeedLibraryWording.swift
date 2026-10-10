@@ -24,7 +24,7 @@ extension FeedWording {
     /// Feed Info, Speak Info, and entering its folder all say: its size
     /// (`sizePhrase(_:)`), then the downloads, the new items, and the items
     /// not yet played (of articles, not yet read), "10 of 381 episodes
-    /// kept, 3 downloaded, 1 downloading, 2 new, 5 unplayed", leaving out
+    /// listed, 3 downloaded, 1 downloading, 2 new, 5 unplayed", leaving out
     /// the counts that are 0, but never the size.
     static func countsPhrase(_ counts: FeedItemCounts) -> String {
         var parts = [sizePhrase(counts)]
@@ -43,14 +43,14 @@ extension FeedWording {
 
     /// The heading of a feed's folder's items, which counts the rows under
     /// it: "Episodes (12)". While those rows are every entry the library
-    /// keeps of a feed that lists more, it says the feed's size as the
-    /// feed's row does, "Episodes (10 of 381 kept)", "Articles (10 of more
-    /// than 2000 kept)"; while a search narrows them (`total` nil), the
+    /// lists of a feed that lists more, it says the feed's size as the
+    /// feed's row does, "Episodes (10 of 381 listed)", "Articles (10 of more
+    /// than 2000 listed)"; while a search narrows them (`total` nil), the
     /// rows alone. VoiceOver reads it in one stop, as it shows it.
     static func sectionTitle(_ noun: ItemNoun, count: Int, total: FeedEntryTotal? = nil) -> String {
         let name = noun.plural.capitalized
         guard let total, total.exceeds(count) else { return "\(name) (\(count))" }
-        return "\(name) (\(count) of \(entriesPhrase(total, noun: nil)) \(keptNote))"
+        return "\(name) (\(count) of \(entriesPhrase(total, noun: nil)) \(listedNote))"
     }
 
     /// The heading of a feed's folder's books that came from no item of the
@@ -129,8 +129,8 @@ extension FeedWording {
     // MARK: Feed Rows
 
     /// A feed's row as VoiceOver speaks it, in one sentence: "Planet Money,
-    /// Feed, 10 of 381 episodes kept, 3 downloaded, 2 new, checked today at
-    /// 3:05 PM", with "Folder missing" after the note when its folder is
+    /// Feed, 10 of 381 episodes listed, 3 downloaded, 2 new, checked today
+    /// at 3:05 PM", with "Folder missing" after the note when its folder is
     /// gone.
     static func feedRowLabel(title: String, counts: FeedItemCounts, check: Check, folderMissing: Bool) -> String {
         var parts = [title, feedNote]
@@ -156,7 +156,7 @@ extension FeedWording {
     }
 
     /// What entering a feed's folder says, and its folder's row and Folders
-    /// rotor entry: "Planet Money, Feed, 10 of 381 episodes kept, 3
+    /// rotor entry: "Planet Money, Feed, 10 of 381 episodes listed, 3
     /// downloaded, 2 new".
     static func folderAnnouncement(name: String, counts: FeedItemCounts) -> String {
         "\(name), \(feedNote), \(countsPhrase(counts))"
@@ -175,24 +175,35 @@ extension FeedWording {
     }
 
     /// An item's row as VoiceOver speaks it, in one sentence, putting first
-    /// what matters most on a braille display: "How the Fed sets rates,
-    /// Not Downloaded, New, October 1, 2026, 28 minutes", "…, Played,
-    /// Downloading, 40 percent, …", "…, Download Failed, the server says
-    /// the file is gone, …".
+    /// what matters most on a braille display: the title, Played (or Read),
+    /// the state with why it failed or waits, the place and bookmarks kept
+    /// after its file went (FR11), New, the date, and the duration. "How the
+    /// Fed sets rates, Not Downloaded, New, October 1, 2026, 28 minutes";
+    /// "…, Played, Downloading, 40 percent, …"; "…, Download Failed, the
+    /// server says the file is gone, …"; "…, Waiting to Download, it
+    /// downloads on a network without data limits, …"; "Ep. 368, Not
+    /// Downloaded, 42 percent, 16 minutes remaining, 2 bookmarks, July 17,
+    /// 2026, 64 minutes". A played item says no progress, only its
+    /// bookmarks.
     static func itemRowLabel(_ row: FeedItemRowContent) -> String {
         var parts = [row.title]
         if row.isPlayed { parts.append(playedNote(isArticle: row.isArticle)) }
         parts.append(row.state.spokenNote)
-        if let reason = row.state.failureReason, !reason.isEmpty { parts.append(reason) }
+        if let reason = row.state.reason { parts.append(reason) }
+        if let kept = row.kept { parts += kept.spokenParts }
         if row.isNew { parts.append(newNote) }
         if let date = row.dateText { parts.append(date) }
         if let duration = row.duration { parts.append(TimeFormatting.spoken(duration)) }
         return parts.joined(separator: ", ")
     }
 
-    /// An item row's spoken hint, which says what its default action does.
-    static func itemRowHint(_ state: FeedItemState) -> String {
-        state.bookID == nil ? "Downloads it, then opens it" : "Opens it"
+    /// An item row's spoken hint, which says what its default action does:
+    /// "Opens it" for a downloaded item; for one whose place was kept after
+    /// its file went (`keptPlace`, FR11), "Downloads it again, then opens it
+    /// where you left off"; for any other, "Downloads it, then opens it".
+    static func itemRowHint(_ state: FeedItemState, keptPlace: Bool = false) -> String {
+        if state.bookID != nil { return "Opens it" }
+        return keptPlace ? "Downloads it again, then opens it where you left off" : "Downloads it, then opens it"
     }
 
     // MARK: The Summary Bar
@@ -200,7 +211,7 @@ extension FeedWording {
     /// What a feed's folder's summary bar shows and says before the time
     /// left in its downloads: the feed's items counted, and its last check.
     struct FolderSummary: Equatable, Sendable {
-        /// The items counted: "10 of 381 episodes kept, 3 downloaded, 2
+        /// The items counted: "10 of 381 episodes listed, 3 downloaded, 2
         /// new".
         let counts: String
         /// The last check.

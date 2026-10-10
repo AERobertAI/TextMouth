@@ -12,9 +12,10 @@ enum LibraryAudioCommand: Hashable, Identifiable {
     /// audiobook opens the Transcribe Audio sheet, and several books are
     /// refused with a sentence, as transcription works on one at a time.
     case transcribe([Book])
-    /// Clean Up Transcript (Experimental)…, for one transcribed audiobook:
-    /// opens the Clean Up sheet, which shows what the rules would change
-    /// before anything does.
+    /// Clean Up Transcript (Experimental)…, for one transcribed audiobook
+    /// whose transcript may be cleaned up, never an episode in its feed
+    /// (`isTranscriptCleanable(_:)`): opens the Clean Up sheet, which shows
+    /// what the rules would change before anything does.
     case cleanUpTranscript(Book)
     /// Delete Transcript…, for one transcribed audiobook, after a
     /// confirmation naming it.
@@ -42,9 +43,11 @@ enum LibraryAudioCommand: Hashable, Identifiable {
     /// on, given which books `isTranscribed` says have a transcript: Edit
     /// Audio… when the row acts on one audiobook alone whose audio can be
     /// edited (`isAudioEditable(_:)`), then Transcribe Audio… whenever one of
-    /// them is an audiobook in a package of its own, then Clean Up Transcript
-    /// (Experimental)… and Delete Transcript… when the row acts on one such
-    /// audiobook alone and it is transcribed; nothing for text books alone.
+    /// them is an audiobook in a package of its own, then, when the row acts
+    /// on one such audiobook alone and it is transcribed, Clean Up Transcript
+    /// (Experimental)… when its transcript may be cleaned up
+    /// (`isTranscriptCleanable(_:)`) and Delete Transcript…; nothing for
+    /// text books alone.
     static func commands(for targets: [Book], isTranscribed: (UUID) -> Bool = { _ in false }) -> [LibraryAudioCommand] {
         guard targets.contains(where: isTranscribable) else { return [] }
         var commands: [LibraryAudioCommand] = []
@@ -54,7 +57,10 @@ enum LibraryAudioCommand: Hashable, Identifiable {
         }
         commands.append(.transcribe(targets))
         if let book = single, isTranscribable(book), isTranscribed(book.id) {
-            commands += [.cleanUpTranscript(book), .deleteTranscript(book)]
+            if isTranscriptCleanable(book) {
+                commands.append(.cleanUpTranscript(book))
+            }
+            commands.append(.deleteTranscript(book))
         }
         return commands
     }
@@ -72,5 +78,15 @@ enum LibraryAudioCommand: Hashable, Identifiable {
     /// transcribed.
     static func isAudioEditable(_ book: Book) -> Bool {
         isTranscribable(book) && !book.isFeedItem
+    }
+
+    /// Whether `book`'s transcript may be cleaned up, as Clean Up Transcript
+    /// (Experimental)… and the Undo Cleanup in its sheet do: by the rule its
+    /// audio's editing follows (`isAudioEditable(_:)`), since a cleanup
+    /// rewrites the transcript and the user decided feed items are not
+    /// editable (FR11, late question 4). A feed's episode can still be
+    /// transcribed, and its transcript deleted.
+    static func isTranscriptCleanable(_ book: Book) -> Bool {
+        isAudioEditable(book)
     }
 }

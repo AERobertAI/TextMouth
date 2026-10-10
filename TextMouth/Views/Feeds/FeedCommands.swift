@@ -102,8 +102,9 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
     /// - Open, on an item row (a book's row has its own);
     /// - Download for an item not downloaded, whose download failed, or
     ///   whose download the newest-N rule put off (FR11), which downloads it
-    ///   now, and Cancel Download for one waiting in the queue or
-    ///   downloading;
+    ///   now; Cancel Download for one waiting in the queue or downloading,
+    ///   and for one the rule put off, which then waits no more and is left
+    ///   to the listener (FR11, branch C);
     /// - Mark Played for an unplayed item, or Mark Unplayed;
     /// - Show Description…;
     /// - for a downloaded item, Show in Finder on an item row (a book's row
@@ -126,8 +127,10 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
             commands.append(.open)
         }
         switch state {
-        case .notDownloaded, .waiting, .failed:
+        case .notDownloaded, .failed:
             commands.append(.download)
+        case .waiting:
+            commands += [.download, .cancelDownload]
         case .downloading:
             commands.append(.cancelDownload)
         case .downloaded:
@@ -246,9 +249,20 @@ extension FeedWording {
         "Stopped downloading “\(title)”."
     }
 
-    /// What VoiceOver hears once Delete Download deleted a download.
-    static func downloadDeleted(title: String) -> String {
-        "Deleted the download of “\(title)”. It can be downloaded again."
+    /// What VoiceOver hears once Cancel Download took back a download the
+    /// newest-N rule had put off (FR11): it waits no more, and downloads
+    /// only when the listener asks.
+    static func waitingDownloadCancelled(title: String) -> String {
+        "“\(title)” no longer waits to download; it downloads when you choose Download."
+    }
+
+    /// What VoiceOver hears once Delete Download deleted a download: that it
+    /// can be downloaded again, or, when its package kept what the listener
+    /// had of it (`keptPlace`, FR11, branch A2), that this waits for then,
+    /// in the nouns the library's own Remove of an episode uses.
+    static func downloadDeleted(title: String, keptPlace: Bool = false) -> String {
+        guard keptPlace else { return "Deleted the download of “\(title)”. It can be downloaded again." }
+        return "Deleted the download of “\(title)”. Its place, bookmarks, and transcript are kept for when you download it again."
     }
 
     /// The title of the alert saying why a download, or an item, could not

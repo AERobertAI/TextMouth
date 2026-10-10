@@ -90,7 +90,7 @@ extension FolderNavigationHistory {
     /// its books counted, with the feeds the Feeds section lists there
     /// beside them ("Library, 743 books, 2 feeds", FR11), or, for a feed's
     /// folder, its name, the note "Feed", and the feed's items counted
-    /// ("Planet Money, Feed, 10 of 381 episodes kept, 3 downloaded, 2 new")
+    /// ("Planet Money, Feed, 10 of 381 episodes listed, 3 downloaded, 2 new")
     /// (FR03).
     @MainActor
     static func announcement(for path: String, library: Library, feedFolders: LibraryFeedFolders) -> String {
@@ -135,12 +135,15 @@ struct FeedRowContent: Equatable, Identifiable {
 ///
 /// The section shows where feeds are: at a folder holding feeds' folders,
 /// at any depth, which makes the top of the library list every feed, and
-/// in All Items, which lists every feed. Unopened lists the feeds with an
-/// item not yet played (an article: not read), each row counting its items
-/// as it does everywhere. A feed's own folder lists its items rather than
-/// itself, and Recent and the Reading List list no feeds. A feed whose folder is gone shows at
-/// the top of the library, in All Items, and, with an item unplayed, in
-/// Unopened, where it can still be found.
+/// in All Items, which lists every feed. Unopened lists a feed only while
+/// it has a new item (FR11, the user's answer to question 8): one published
+/// since the subscription began, neither played nor opened
+/// (`FeedCenter.isNew`), so a podcast's back catalogue, every item of which
+/// is listed and unplayed, never keeps its feed there. Each row counts its
+/// items as it does everywhere. A feed's own folder lists its items rather
+/// than itself, and Recently Opened and the Reading List list no feeds. A
+/// feed whose folder is gone shows at the top of the library, in All Items,
+/// and, with a new item, in Unopened, where it can still be found.
 enum LibraryFeedsSectionRows {
     /// The feeds the Feeds section lists at `location`, by title.
     @MainActor
@@ -155,8 +158,8 @@ enum LibraryFeedsSectionRows {
                 return base.isEmpty || path.hasPrefix(base + "/")
             }
         case .unopened:
-            // Every feed with an item not yet played, whatever its folder.
-            return center.feeds.filter { center.counts(of: $0.id).unplayed > 0 }
+            // Every feed with a new item, whatever its folder (FR11).
+            return center.feeds.filter { center.counts(of: $0.id).new > 0 }
         case .recent, .readingList:
             return []
         }
@@ -180,8 +183,10 @@ enum LibraryFeedsSectionRows {
 // MARK: - A Feed's Folder
 
 /// What one row of a feed's item not downloaded shows and says (FR03): its
-/// title, its state, its date, and its duration. A downloaded item is its
-/// book's row instead, unless its book lives in another folder.
+/// title, its state (with why it waits, FR11), the place and bookmarks kept
+/// for it after its file went (FR11), its date, and its duration. A
+/// downloaded item is its book's row instead, unless its book lives in
+/// another folder.
 struct FeedItemRowContent: Equatable, Identifiable {
     /// The feed the item belongs to.
     let feedID: UUID
@@ -197,6 +202,9 @@ struct FeedItemRowContent: Equatable, Identifiable {
     let isPlayed: Bool
     /// Whether it is an article rather than an episode.
     let isArticle: Bool
+    /// What the row says of the place and bookmarks the item's package kept
+    /// after its file went (FR11, branch A2), or nil when nothing was kept.
+    let kept: FeedKeptProgress?
     /// Its date, as its row shows and speaks it, when the feed gives one.
     let dateText: String?
     /// How long it plays, when the feed says.
@@ -207,18 +215,87 @@ struct FeedItemRowContent: Equatable, Identifiable {
         FeedWording.itemRowLabel(self)
     }
 
-    /// The row's content for `item` of `feed` in `center`.
+    /// The row's content for `item` of `feed` in `center`, an article's
+    /// time left estimated at `wordsPerMinute`, as a book row's is.
     @MainActor
-    init(_ item: FeedItem, of feed: Feed, in center: FeedCenter) {
+    init(_ item: FeedItem, of feed: Feed, in center: FeedCenter, wordsPerMinute: Double) {
+        let state = center.state(of: item, in: feed.id)
+        let isPlayed = item.playedDate != nil
         feedID = feed.id
         id = item.id
         title = item.title
-        state = center.state(of: item, in: feed.id)
+        self.state = state
         isNew = center.isNew(item, of: feed)
-        isPlayed = item.playedDate != nil
+        self.isPlayed = isPlayed
         isArticle = item.isArticle
+        // The kept row is found by the item's identity, in one step.
+        kept = center.library?.feedItemRows(of: feed.id).kept[item.id].map { row in
+            FeedKeptProgress(row, isPlayed: isPlayed, besideDownloadPercentage: state.isDownloading, wordsPerMinute: wordsPerMinute)
+        }
         dateText = item.published.map { FeedWording.itemDate($0) }
         duration = item.duration
+    }
+}
+
+/// What a feed item's row says of the listener's place kept in the item's
+/// package after its file went (FR11, branches A2 and C), in the book row's
+/// own words (`BookRow.progressText(for:)`, `BookRow.remainingText(_:)`),
+/// so an episode or article says the same before and after its file goes:
+/// how far it got and the time left, unless it was played, and its
+/// bookmarks.
+struct FeedKeptProgress: Equatable, Sendable {
+    /// The progress as the row shows it, "42%"; nil for a played item, or
+    /// one whose package kept no place.
+    let shownProgress: String?
+    /// The progress as the row speaks it: "42 percent", or "42 percent
+    /// read" beside a download's own percentage, as a book row says it.
+    let spokenProgress: String?
+    /// The time left after the place; nil with no progress to say, since
+    /// the row's own duration then says how long the item is.
+    let remaining: TimeInterval?
+    /// How many bookmarks the package kept.
+    let bookmarkCount: Int
+
+    /// What the row says of `row`, the item's kept row on its feed's shelf,
+    /// for an item that `isPlayed`, whose download's own percentage the row
+    /// speaks too when `besideDownloadPercentage`, an article's time left
+    /// estimated at `wordsPerMinute`.
+    init(_ row: Book, isPlayed: Bool, besideDownloadPercentage: Bool, wordsPerMinute: Double) {
+        let shown = isPlayed ? nil : BookRow.progressText(for: row)?.visible
+        shownProgress = shown
+        spokenProgress = shown == nil ? nil : BookRow.spokenProgress(for: row, besideDownloadPercentage: besideDownloadPercentage)
+        remaining = shown == nil ? nil : row.estimatedTimeRemaining(wpm: wordsPerMinute)
+        bookmarkCount = row.bookmarks.count
+    }
+
+    /// Whether the item opens at a place of its own once downloaded again,
+    /// which its row's hint then says.
+    var hasPlace: Bool {
+        spokenProgress != nil
+    }
+
+    /// The words the row speaks of it, in order, each left out when there
+    /// is nothing to say: "42 percent", "16 minutes remaining", "2
+    /// bookmarks".
+    var spokenParts: [String] {
+        parts(progress: spokenProgress) { BookRow.remainingText($0).spoken }
+    }
+
+    /// The words the row shows of it, which say what `spokenParts` says:
+    /// "42%", "16:00 left", "2 bookmarks".
+    var shownParts: [String] {
+        parts(progress: shownProgress) { BookRow.remainingText($0).visible }
+    }
+
+    /// The row's words of it in one form: `progress`, the time left as
+    /// `remainingWords` words it, and the bookmarks, each left out when
+    /// there is nothing to say.
+    private func parts(progress: String?, remainingWords: (TimeInterval) -> String) -> [String] {
+        var parts: [String] = []
+        if let progress { parts.append(progress) }
+        if let remaining { parts.append(remainingWords(remaining)) }
+        if bookmarkCount > 0 { parts.append(CountWording.bookmarks(bookmarkCount)) }
+        return parts
     }
 }
 
@@ -261,14 +338,17 @@ struct FeedFolderListing: Equatable {
     /// (`shownBooks`), and every book of the folder (`folderBooks`). An item
     /// shows when its title or author contains the search, ignoring case, as
     /// a book does; a downloaded item shows as its book when the folder holds
-    /// it, so the search narrows it as it narrows the book.
+    /// it, so the search narrows it as it narrows the book. An item row
+    /// estimates an article's time left at `wordsPerMinute`, the library's
+    /// reading speed, as a book row does.
     @MainActor
     static func make(
         feedID: UUID,
         center: FeedCenter,
         shownBooks: [Book],
         folderBooks: [Book],
-        search: String
+        search: String,
+        wordsPerMinute: Double
     ) -> FeedFolderListing {
         guard let record = center.store.record(of: feedID) else {
             return FeedFolderListing(otherBooks: shownBooks)
@@ -277,7 +357,7 @@ struct FeedFolderListing: Equatable {
         // newest 5 listed" (FR11).
         let items = center.listedItems(of: feedID)
         // With no search, every item listed has its row, as its book's or
-        // its own, so the rows are the entries kept, of the feed's size.
+        // its own, so the rows are the entries listed, of the feed's size.
         var listing = FeedFolderListing(noun: .of(items), total: search.isEmpty ? record.feed.entryTotal : nil)
         let shownByID = Dictionary(shownBooks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let folderBookIDs = Set(folderBooks.map(\.id))
@@ -306,7 +386,7 @@ struct FeedFolderListing: Equatable {
                 }
             }
             guard query.isEmpty || Self.matches(item, query: query) else { continue }
-            listing.entries.append(.item(FeedItemRowContent(item, of: record.feed, in: center)))
+            listing.entries.append(.item(FeedItemRowContent(item, of: record.feed, in: center, wordsPerMinute: wordsPerMinute)))
         }
         listing.otherBooks = shownBooks.filter { !itemBookIDs.contains($0.id) }
         return listing
