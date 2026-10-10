@@ -738,19 +738,7 @@ final class FeedNewestRuleTests: XCTestCase {
     /// discretionary work, which a network with data limits puts off; a
     /// second pass asks for nothing and removes nothing.
     func testTheFirstLaunchDownloadsTheUsersNewestFive() async throws {
-        let world = try FeedTestWorld(self, label: "FeedRuleFirstLaunch")
-        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
-        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
-        let users = try UsersFeeds(world)
-        try users.write(to: world)
-        let article = users.articleRow(in: world)
-        world.library.library.books.append(article)
-        let audio = try FeedMediaFixtures.silentAAC()
-        for number in 377...381 {
-            world.server.serve("/finish-it/\(number).m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
-        }
-        world.server.serve("/antiquarian/museum.mp4", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
-        world.server.serve("/antiquarian/reading.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        let (world, users, _) = try usersFirstLaunch("FeedRuleFirstLaunch")
 
         let relaunched = await world.relaunch(self)
 
@@ -781,7 +769,92 @@ final class FeedNewestRuleTests: XCTestCase {
         XCTAssertEqual(again, FeedItemPolicyPassReport())
     }
 
+    /// The run of downloads that first launch begins, as the feed downloads
+    /// section counts it and VoiceOver hears it (feed review item 22): the
+    /// rule's 9, "Finish It!"'s newest 5, newest first, then "The Digital
+    /// Antiquarian"'s 4 in their order, each counted "of 9" from the first;
+    /// the run, which TextMouth began by itself, heard once it has run 10
+    /// seconds, then at each quarter, and at its end; and each time left
+    /// counting the episodes still to come by the bytes their feed gives,
+    /// at the rate the finished episodes' files came, and an article left
+    /// at the time the article done took (feed review item 16). By the
+    /// world's clock, each episode's file, a second of silence, takes 5
+    /// seconds, and each article 1, so the user's 63 MB episodes come to
+    /// days.
+    func testTheFirstLaunchsRunIsCountedAndHeard() async throws {
+        let (world, users, audio) = try usersFirstLaunch("FeedRuleFirstLaunchRun")
+        // The run in the order the rule asks for it, each download by the
+        // bytes its feed gives for its file: nil for an article.
+        let episode = UsersFeeds.finishItEpisodeBytes
+        let run: [(title: String, bytes: Int64?)] = [
+            ("Ep. 381", episode), ("Ep. 380", episode), ("Ep. 379", episode), ("Ep. 378", episode), ("Ep. 377", episode),
+            ("The Story of Zork, Part 4", nil),
+            ("A Visit to the Computer Museum", 5_700_000),
+            ("Infocom's Last Days", nil),
+            ("Reading Aloud in 1984", 2_100_000),
+        ]
+        let articleIDs = Set(users.antiquarian.items.filter { $0.enclosure == nil }.map(\.id))
+        let heard = AnnouncementCapture()
+        defer { heard.stop() }
+        var atCommit: [FeedDownloadProgressState] = []
+
+        let relaunched = await world.relaunch(self) { center in
+            let progress = center.downloads.progress
+            center.downloads.beforeCommit = { request in
+                atCommit.append(progress.state)
+                world.advance(by: articleIDs.contains(request.itemID) ? 1 : 5)
+            }
+        }
+        let progress = relaunched.downloads.progress
+        await waitFor("the run of 9 ends", timeout: 60) { atCommit.count == run.count && !progress.state.isRunning }
+
+        XCTAssertEqual(atCommit.map { $0.download?.title ?? "none" }, run.map(\.title))
+        XCTAssertEqual(atCommit.map(\.total), Array(repeating: run.count, count: run.count), "a download was not counted of 9")
+        XCTAssertEqual(atCommit.map(\.done), Array(0..<run.count))
+        XCTAssertEqual(atCommit.first?.queued, run.dropFirst().map(\.bytes), "a download waited by other than its feed's size")
+
+        /// The time left once `done` of the run's downloads are done: those
+        /// done timed as the clock went, each episode's file of
+        /// `audio.count` bytes, and those left by their feed's sizes.
+        func secondsLeft(afterDone done: Int) -> TimeInterval? {
+            var timing = WorkTiming()
+            for download in run.prefix(done) {
+                timing.add(seconds: download.bytes == nil ? 1 : 5, bytes: download.bytes == nil ? 0 : Int64(audio.count))
+            }
+            return TimeLeftEstimate.secondsLeft(after: timing, for: run.dropFirst(done).map { TimeLeftEstimate.Remaining(bytes: $0.bytes) })
+        }
+        XCTAssertEqual(heard.messages.filter { $0.hasPrefix("Feed downloads") }, [
+            FeedDownloadProgressWording.underWay(7, secondsLeft: secondsLeft(afterDone: 2)),
+            FeedDownloadProgressWording.quarter(done: 3, of: 9, failed: 0, secondsLeft: secondsLeft(afterDone: 3)),
+            FeedDownloadProgressWording.quarter(done: 5, of: 9, failed: 0, secondsLeft: secondsLeft(afterDone: 5)),
+            FeedDownloadProgressWording.quarter(done: 7, of: 9, failed: 0, secondsLeft: secondsLeft(afterDone: 7)),
+            FeedDownloadProgressWording.finished(downloaded: 9, failed: 0, waits: FeedDownloadWaits()),
+        ])
+    }
+
     // MARK: - Helpers
+
+    /// A world whose next launch is the user's first with the newest-N
+    /// rule, on records and settings shaped like the user's (`UsersFeeds`):
+    /// no refresh at launch or by the hour, the article the user opened
+    /// listed among the books, and each of the 9 files the rule asks for
+    /// served as `audio`, a second of silence.
+    private func usersFirstLaunch(_ label: String) throws -> (world: FeedTestWorld, users: UsersFeeds, audio: Data) {
+        let world = try FeedTestWorld(self, label: label)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        let users = try UsersFeeds(world)
+        try users.write(to: world)
+        world.library.library.books.append(users.articleRow(in: world))
+        let audio = try FeedMediaFixtures.silentAAC()
+        let file = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        for number in 377...381 {
+            world.server.serve("/finish-it/\(number).m4a", file)
+        }
+        world.server.serve("/antiquarian/museum.mp4", file)
+        world.server.serve("/antiquarian/reading.m4a", file)
+        return (world, users, audio)
+    }
 
     /// Subscribes `world` to a feed of `episodes` audio episodes, each served
     /// as a second of silence, whose parts come `pausing` seconds apart when

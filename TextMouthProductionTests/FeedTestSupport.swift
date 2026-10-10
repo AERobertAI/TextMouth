@@ -597,8 +597,19 @@ final class FeedTestWorld {
     /// (`FeedStore.flush()`); its fetch details, whose writes make their
     /// folder again when it is gone; and every statistics save, whose
     /// failure the app's failure center announces.
+    ///
+    /// Its download work stops first, as quitting stops it, and its own
+    /// work, a sweep or a pass of the newest-N rule, is let end, so no write
+    /// either asks for lands once the flush is done, as a stray save once
+    /// did for a test ending with work in flight (feed review item 22). The
+    /// wait gives up after 15 seconds, so a teardown never hangs.
     static func finish(_ center: FeedCenter) async {
         center.stop()
+        await center.downloads.stopForQuit()
+        let deadline = Date().addingTimeInterval(15)
+        while center.isSweeping || center.downloads.current != nil, Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
         await center.store.flush()
         await center.fetchStates.flush()
         ReadingStatsService.waitForQueuedSaves()
@@ -622,15 +633,18 @@ final class FeedTestWorld {
 
     /// The engine the next launch makes: a new one on the world's folders,
     /// network, clock, and library, working on its own as the app's does,
-    /// started, with what its start begins finished. `test` stops it when
-    /// it ends, and waits for its writes, before the world's folders go.
-    func relaunch(_ test: XCTestCase) async -> FeedCenter {
+    /// started, with what its start begins finished. `configure` sees it
+    /// before it starts, as a test that hooks into its downloads needs.
+    /// `test` stops it when it ends, and waits for its writes, before the
+    /// world's folders go.
+    func relaunch(_ test: XCTestCase, configuring configure: (FeedCenter) -> Void = { _ in }) async -> FeedCenter {
         var next = environment
         next.worksOnItsOwn = true
         let relaunched = FeedCenter(environment: next)
         test.addTeardownBlock {
             await Self.finish(relaunched)
         }
+        configure(relaunched)
         await relaunched.start(library: library)?.value
         return relaunched
     }
