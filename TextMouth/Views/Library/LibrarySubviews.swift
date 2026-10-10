@@ -16,6 +16,15 @@ struct EditModeBar: View {
     let onMove: () -> Void
     let onRemove: () -> Void
     let onDone: () -> Void
+    /// Add to Reading List and Remove from Reading List for the selected
+    /// books, beside Move (FR09), by membership as a selection's row offers
+    /// them, or the one the view suggests, dimmed, while none is selected
+    /// (`ReadingListCommand.editBarCommands`). None unless the list
+    /// supplies them.
+    var readingListCommands: [ReadingListCommand] = []
+    /// Runs one of `readingListCommands`, saying what it did as the row's
+    /// context menu does.
+    var onReadingListCommand: (ReadingListCommand) -> Void = { _ in }
 
     /// The words for removing the selected books.
     private var removal: LibraryRemoveCommandWording {
@@ -42,6 +51,15 @@ struct EditModeBar: View {
             Button("Move") { onMove() }
                 .disabled(selectedCount == 0)
                 .accessibilityLabel("Move \(CountWording.books(selectedCount)) to folder")
+
+            // Add to Reading List and Remove from Reading List (FR09),
+            // dimmed while they would act on no book.
+            ForEach(readingListCommands) { command in
+                Button(ReadingListWording.editBarTitle(command.kind)) { onReadingListCommand(command) }
+                    .disabled(command.books.isEmpty)
+                    .accessibilityLabel(ReadingListWording.editBarLabel(command.kind, count: command.books.count))
+                    .accessibilityHint(ReadingListWording.editBarHint(command.kind))
+            }
 
             Button(removal.shortTitle, role: .destructive) { onRemove() }
                 .disabled(selectedCount == 0)

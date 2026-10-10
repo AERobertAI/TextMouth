@@ -81,6 +81,41 @@ enum ReadingListWording {
         CountWording.phrase(count, singular: "Book", plural: "Books")
     }
 
+    // MARK: - The Edit-Mode Bar
+
+    /// The title of the edit-mode bar's button for a command of `kind`: its
+    /// plain name, "Add to Reading List" or "Remove from Reading List", as
+    /// the Library menu names it; the bar's own "3 of 12 selected" says how
+    /// many books are chosen.
+    static func editBarTitle(_ kind: ReadingListCommand.Kind) -> String {
+        switch kind {
+        case .add: return addTitle(count: 1, forSelection: false)
+        case .remove: return removeTitle(count: 1, forSelection: false)
+        }
+    }
+
+    /// What VoiceOver calls the edit-mode bar's button for a command of
+    /// `kind` acting on `count` books, as the bar's Move button counts its
+    /// books: "Add 3 books to the reading list", "Remove 1 book from the
+    /// reading list"; with no book to act on, while the button is dimmed,
+    /// its plain name.
+    static func editBarLabel(_ kind: ReadingListCommand.Kind, count: Int) -> String {
+        guard count > 0 else { return editBarTitle(kind) }
+        switch kind {
+        case .add: return "Add \(CountWording.books(count)) to the reading list"
+        case .remove: return "Remove \(CountWording.books(count)) from the reading list"
+        }
+    }
+
+    /// The hint of the edit-mode bar's button for a command of `kind`: what
+    /// it does with the selected books.
+    static func editBarHint(_ kind: ReadingListCommand.Kind) -> String {
+        switch kind {
+        case .add: return "Adds the selected books to the end of the reading list."
+        case .remove: return "Takes the selected books off the reading list. They stay in the library."
+        }
+    }
+
     // MARK: - What the Commands Say
 
     /// What VoiceOver hears after Add to Reading List added `added`, the

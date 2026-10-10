@@ -329,7 +329,10 @@ struct LibraryView: View {
                     },
                     onDone: {
                         clearAllSelections()
-                    }
+                    },
+                    // Add to and Remove from Reading List beside Move (FR09).
+                    readingListCommands: editBarReadingListCommands,
+                    onReadingListCommand: performReadingListCommand
                 )
             }
 
@@ -1288,21 +1291,41 @@ struct LibraryView: View {
         )
     }
 
-    /// Runs a row's reading list command (FR09), from its context menu or
-    /// its VoiceOver actions, announcing from this window what it did.
+    /// Runs a reading list command (FR09), from a row's context menu or its
+    /// VoiceOver actions, or from the edit-mode bar, announcing from this
+    /// window what it did.
     private func performReadingListCommand(_ command: ReadingListCommand) {
         changeReadingList(command.kind, with: command.books)
     }
 
+    /// The edit-mode bar's Add to Reading List and Remove from Reading List
+    /// for the books selected here (FR09), by membership, or the one this
+    /// view suggests, dimmed, while none is selected.
+    private var editBarReadingListCommands: [ReadingListCommand] {
+        ReadingListCommand.editBarCommands(
+            for: selectedBooks,
+            inList: Set(libraryViewModel.readingList.bookIDs),
+            atReadingList: category == .readingList
+        )
+    }
+
     /// Adds `books` to the reading list or takes them off it (FR09), as a
-    /// row's command or the Library menu asks, and says what it did, or why
-    /// nothing changed, from this window.
+    /// row's command, the edit-mode bar, or the Library menu asks, and says
+    /// what it did, or why nothing changed, from this window. At the
+    /// Reading List, the books taken off leave the view, so they leave the
+    /// selection too: the edit-mode bar's count and commands then speak of
+    /// the books still shown.
     private func changeReadingList(_ kind: ReadingListCommand.Kind, with books: [Book]) {
         switch kind {
         case .add:
             libraryViewModel.addToReadingList(books, announcingFrom: hostWindow)
         case .remove:
             libraryViewModel.removeFromReadingList(books, announcingFrom: hostWindow)
+            if category == .readingList {
+                let gone = Set(books.map(\.id)).subtracting(libraryViewModel.readingList.bookIDs)
+                editSelection.subtract(gone)
+                selectedBookIDs.subtract(gone)
+            }
         }
     }
 

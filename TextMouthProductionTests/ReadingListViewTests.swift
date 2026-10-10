@@ -285,6 +285,118 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(ManualBookOrder.cannotMoveAnnouncement("Dune", direction: 1), "Dune can't move down.")
     }
 
+    // MARK: - The Edit-Mode Bar
+
+    /// The edit-mode bar offers the reading list's commands for the
+    /// selection beside Move, by membership as a selection's row does: Add
+    /// for the books not in the list, Remove for those in it, each with its
+    /// own books. With nothing selected it offers the one the view suggests,
+    /// with no books, which it shows dimmed: Remove at the Reading List and
+    /// Add elsewhere.
+    @MainActor
+    func testTheEditBarOffersTheListsCommandsForTheSelection() {
+        let shelf = Self.shelf()
+        let inList = Set(shelf.ids("Field Notes"))
+        func commands(_ titles: String..., atReadingList: Bool = false) -> [ReadingListCommand] {
+            let selection = titles.compactMap { title in shelf.books.first { $0.title == title } }
+            return ReadingListCommand.editBarCommands(for: selection, inList: inList, atReadingList: atReadingList)
+        }
+
+        let none = commands()
+        XCTAssertEqual(none.map(\.kind), [.add])
+        XCTAssertEqual(none.map(\.books), [[]])
+        let noneAtTheList = commands(atReadingList: true)
+        XCTAssertEqual(noneAtTheList.map(\.kind), [.remove])
+        XCTAssertEqual(noneAtTheList.map(\.books), [[]])
+
+        XCTAssertEqual(commands("Loose Pages").map(\.kind), [.add])
+        XCTAssertEqual(commands("Field Notes", atReadingList: true).map(\.kind), [.remove])
+        let mixed = commands("Loose Pages", "Field Notes", "Travel Notes")
+        XCTAssertEqual(mixed.map(\.kind), [.add, .remove])
+        XCTAssertEqual(mixed.first?.books.map(\.title), ["Loose Pages", "Travel Notes"])
+        XCTAssertEqual(mixed.last?.books.map(\.title), ["Field Notes"])
+    }
+
+    /// The bar's buttons are titled with the commands' plain names, as the
+    /// Library menu names them, and VoiceOver hears how many books each
+    /// acts on, as the bar's Move button counts them, with a hint saying
+    /// what it does; a dimmed button is called by its plain name.
+    func testTheEditBarsCommandsAreWordedAndCounted() {
+        XCTAssertEqual(ReadingListWording.editBarTitle(.add), "Add to Reading List")
+        XCTAssertEqual(ReadingListWording.editBarTitle(.remove), "Remove from Reading List")
+        XCTAssertEqual(ReadingListWording.editBarLabel(.add, count: 3), "Add 3 books to the reading list")
+        XCTAssertEqual(ReadingListWording.editBarLabel(.add, count: 1), "Add 1 book to the reading list")
+        XCTAssertEqual(ReadingListWording.editBarLabel(.remove, count: 2), "Remove 2 books from the reading list")
+        XCTAssertEqual(ReadingListWording.editBarLabel(.add, count: 0), "Add to Reading List")
+        XCTAssertEqual(ReadingListWording.editBarLabel(.remove, count: 0), "Remove from Reading List")
+        XCTAssertEqual(ReadingListWording.editBarHint(.add), "Adds the selected books to the end of the reading list.")
+        XCTAssertEqual(
+            ReadingListWording.editBarHint(.remove),
+            "Takes the selected books off the reading list. They stay in the library."
+        )
+    }
+
+    /// The bar's commands act on their own books and say what they did as
+    /// the context menu's do, through the same model commands.
+    @MainActor
+    func testTheEditBarsCommandsSayWhatTheyDidAsTheMenusDo() {
+        let shelf = Self.shelf()
+        shelf.model.addToReadingList(shelf.ids("Field Notes"))
+        let selection = shelf.books(titled: "Loose Pages", "Field Notes", "Travel Notes")
+        let commands = ReadingListCommand.editBarCommands(
+            for: selection,
+            inList: Set(shelf.model.readingList.bookIDs),
+            atReadingList: false
+        )
+
+        let recorder = recordingAnnouncements {
+            for command in commands {
+                switch command.kind {
+                case .add: shelf.model.addToReadingList(command.books, announcingFrom: nil)
+                case .remove: shelf.model.removeFromReadingList(command.books, announcingFrom: nil)
+                }
+            }
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Added 2 books to the reading list.",
+            "Removed from reading list: Field Notes",
+        ])
+        XCTAssertEqual(shelf.model.readingListBooks.map(\.title), ["Loose Pages", "Travel Notes"])
+    }
+
+    /// Hosted, the bar's reading list buttons reach accessibility under
+    /// their counted labels, the dimmed one by its plain name; skipped
+    /// where SwiftUI exposes no buttons to accessibility, as on this Mac,
+    /// where the wording tests above pin the labels.
+    @MainActor
+    func testTheEditBarsReadingListButtonsReachAccessibility() throws {
+        let shelf = Self.shelf()
+        let bar = EditModeBar(
+            selectedCount: 3,
+            totalCount: 4,
+            removalPreferences: RemovalPreferences(confirmsFirst: true, movesToTrash: true),
+            onSelectAll: {},
+            onDeselectAll: {},
+            onMove: {},
+            onRemove: {},
+            onDone: {},
+            readingListCommands: ReadingListCommand.editBarCommands(
+                for: shelf.books(titled: "Loose Pages", "Field Notes", "Travel Notes"),
+                inList: Set(shelf.ids("Field Notes")),
+                atReadingList: false
+            )
+        )
+        try withHostedControls(bar) { controls in
+            let labels = controls.filter { $0.role == .button }.map(\.label)
+            guard !labels.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no AppKit button to accessibility in this run")
+            }
+            XCTAssertTrue(labels.contains("Add 2 books to the reading list"), "\(labels)")
+            XCTAssertTrue(labels.contains("Remove 1 book from the reading list"), "\(labels)")
+        }
+    }
+
     // MARK: - The Rows Say "In reading list"
 
     /// A book's row says "In reading list" as its value, after its label,
