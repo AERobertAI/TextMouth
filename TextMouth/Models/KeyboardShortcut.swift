@@ -334,9 +334,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
 /// Where an action's shortcuts work: in every window but an audio editor's,
 /// or in one kind of window (FR12's branch E, as the user asked on October
 /// 7: "new from text should only work in Library view and sleep timer only
-/// in reader view"). One key belongs to at most one action wherever their
-/// scopes overlap (`overlaps(_:)`), so a key may mean one thing in a Library
-/// window and another in a reader, as Shift-Command-T does.
+/// in reader view"). One key belongs to at most one action wherever both
+/// act (`windowKinds(of:)`, a menu command's key acting wherever its menu
+/// item does), so a key may mean one thing in a Library window and another
+/// in a reader, as Shift-Command-T does.
 enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
     /// Every window but an audio editor's: the Library, the readers, the
     /// Record window, Settings, and the rest, as the app's shortcuts always
@@ -374,6 +375,20 @@ enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
     /// held in both would mean two things.
     func overlaps(_ other: ShortcutScope) -> Bool {
         !windowKinds.isDisjoint(with: other.windowKinds)
+    }
+
+    /// The kinds of window where `action`'s keys act while it works in this
+    /// scope: those whose key presses the scope's shortcuts match
+    /// (`windowKinds`), and, for an action whose key is a key equivalent
+    /// (`ShortcutAction.isKeyEquivalent`), every kind its menu item acts in
+    /// (`admitsMenuCommand(in:)`), which for a File menu command working in
+    /// every window takes in an audio editor's (REV11). A key is claimed
+    /// (`KeyClaims`), and noted in the press index, in each of these, so no
+    /// editor action can hold a key a menu command answers in an editor
+    /// window, where the editor took the key while the menu showed it.
+    func windowKinds(of action: ShortcutAction) -> Set<ShortcutWindowKind> {
+        guard action.isKeyEquivalent else { return windowKinds }
+        return Set(ShortcutWindowKind.allCases.filter { admitsMenuCommand(in: $0) })
     }
 
     /// The scope as the Shortcuts tab's Works in pop-up names it, and as
@@ -493,6 +508,14 @@ extension ShortcutAction {
     /// an item has one key equivalent.
     var isKeyEquivalent: Bool {
         Self.keyEquivalentActions.contains(self)
+    }
+
+    /// Whether this action, working in `scope`, and `other`, working in
+    /// `otherScope`, act in a kind of window in common
+    /// (`ShortcutScope.windowKinds(of:)`), where one key cannot be both's: a
+    /// menu command's key counts wherever its menu item acts.
+    func sharesAWindow(in scope: ShortcutScope, with other: ShortcutAction, in otherScope: ShortcutScope) -> Bool {
+        !scope.windowKinds(of: self).isDisjoint(with: otherScope.windowKinds(of: other))
     }
 }
 

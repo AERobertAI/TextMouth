@@ -355,9 +355,11 @@ final class ShortcutPressDispatcher {
 
 extension ShortcutPressDispatcher {
     /// Each key's single and double action in force, for each kind of
-    /// window, an action's keys entered in every kind its scope reaches
-    /// (FR12's branch E), built in the order Settings lists the actions, so
-    /// the same bindings always make the same index. The bindings in force
+    /// window, an action's keys entered in every kind where they act
+    /// (FR12's branch E, `ShortcutScope.windowKinds(of:)`), a menu
+    /// command's wherever its menu item acts, built in the order Settings
+    /// lists the actions, so the same bindings always make the same index.
+    /// The bindings in force
     /// give each key one owner in each kind of window
     /// (`ShortcutEdits.effectiveBindings(defaults:)`), its single and double
     /// presses counting as two keys; should two actions hold one anyway, the
@@ -423,10 +425,12 @@ extension ShortcutPressDispatcher {
         ) {
             var keyOrder: [(kind: ShortcutWindowKind, stroke: KeyBinding)] = []
             for action in ShortcutAction.allCases {
-                let scope = scopes[action] ?? action.defaultScope
+                // Where its keys act: a menu command's wherever its menu
+                // item acts, an audio editor's window included (REV11).
+                let actsIn = (scopes[action] ?? action.defaultScope).windowKinds(of: action)
                 for binding in bindings[action] ?? [] {
                     let stroke = binding.stroke
-                    for kind in ShortcutWindowKind.allCases where scope.reaches(kind) {
+                    for kind in ShortcutWindowKind.allCases where actsIn.contains(kind) {
                         if action.isKeyEquivalent {
                             if actionsByKind[kind]?[stroke] == nil {
                                 keyEquivalentsByKind[kind, default: []].insert(stroke)

@@ -93,8 +93,10 @@ extension XCTestCase {
 /// owner in each kind of window (FR12's branches D and E).
 enum ShortcutKeyOwners {
     /// Each key `bindings` gives two actions in one kind of window, each
-    /// action working where `scopes` says, its default scope unless given:
-    /// the same key, or a key equivalent's key and the same key pressed twice
+    /// action working where `scopes` says, its default scope unless given,
+    /// and its keys acting where they do there (`ShortcutScope.windowKinds(of:)`,
+    /// a menu command's wherever its menu item acts): the same key, or a key
+    /// equivalent's key and the same key pressed twice
     /// (`KeyClaims.forms(of:for:)`). Each is described once, as "⇧⌘T in
     /// library: Show Sleep Timer and New from Text…", in the order Settings
     /// lists the actions; none when every key has one owner wherever it
@@ -106,9 +108,10 @@ enum ShortcutKeyOwners {
         var owners: [ShortcutWindowKind: [KeyBinding: ShortcutAction]] = [:]
         var clashes: [String] = []
         for action in ShortcutAction.allCases {
+            let actsIn = scopes(action).windowKinds(of: action)
             for binding in bindings[action] ?? [] {
                 let forms = KeyClaims.forms(of: binding, for: action)
-                for kind in ShortcutWindowKind.allCases where scopes(action).reaches(kind) {
+                for kind in ShortcutWindowKind.allCases where actsIn.contains(kind) {
                     if let owner = forms.lazy.compactMap({ owners[kind]?[$0] }).first(where: { $0 != action }) {
                         let clash = "\(binding.displayString) in \(kind): \(owner.rawValue) and \(action.rawValue)"
                         if !clashes.contains(clash) {

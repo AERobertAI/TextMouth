@@ -91,15 +91,16 @@ struct ShortcutEdits: Equatable, Sendable {
     }
 
     /// Whether `key`, held by `action`, and `otherKey`, held by `other`,
-    /// cannot both be in force: where both actions work (their scopes
-    /// overlap, FR12's branch E), the same key, or, when either is a key
-    /// equivalent, one key's single and double press (FR12's branch D). A
-    /// menu or button takes a key's first press, so a double press of a key
-    /// equivalent's key would never reach the shortcut manager, and a double
-    /// press's first press, which the manager takes, would never reach the
-    /// menu (`KeyClaims.forms(of:for:)`).
+    /// cannot both be in force: where both actions act (in a kind of window
+    /// their scopes share, FR12's branch E, a menu command's key acting
+    /// wherever its menu item does, `ShortcutAction.sharesAWindow`), the
+    /// same key, or, when either is a key equivalent, one key's single and
+    /// double press (FR12's branch D). A menu or button takes a key's first
+    /// press, so a double press of a key equivalent's key would never reach
+    /// the shortcut manager, and a double press's first press, which the
+    /// manager takes, would never reach the menu (`KeyClaims.forms(of:for:)`).
     func key(_ key: KeyBinding, of action: ShortcutAction, clashesWith otherKey: KeyBinding, of other: ShortcutAction) -> Bool {
-        guard scope(of: action).overlaps(scope(of: other)) else { return false }
+        guard action.sharesAWindow(in: scope(of: action), with: other, in: scope(of: other)) else { return false }
         let forms = KeyClaims.forms(of: key, for: action)
         return KeyClaims.forms(of: otherKey, for: other).contains(where: forms.contains)
     }
@@ -172,10 +173,12 @@ struct ShortcutEdits: Equatable, Sendable {
 /// handed out and as a key two edited actions hold is settled (FR12): a key
 /// that clashes with one claimed where both actions work goes without.
 ///
-/// Keys are claimed in each kind of window an action's scope reaches (FR12's
-/// branch E), and a key claimed in any of them is lost to every later
-/// action whose scope reaches that kind: an action's key works wherever its
-/// scope reaches, or it goes without it.
+/// Keys are claimed in each kind of window where an action's keys act in its
+/// scope (FR12's branch E, `ShortcutScope.windowKinds(of:)`): those its
+/// scope reaches, and for a menu command every kind its menu item acts in,
+/// an audio editor's included for one working in every window (REV11). A
+/// key claimed in any of them is lost to every later action acting in that
+/// kind: an action's key works wherever its keys act, or it goes without it.
 ///
 /// A key equivalent's key stands for its stroke pressed once and pressed
 /// twice (`forms(of:for:)`, FR12's branch D), since a menu or button takes
@@ -200,13 +203,15 @@ struct KeyClaims {
         action.isKeyEquivalent ? [key.stroke, key.stroke.asDoublePress(true)] : [key]
     }
 
-    /// Claims `key` for `action` in every kind of window `scope` reaches,
-    /// unless a key clashing with it is claimed in one of them already.
-    /// Returns nil once claimed, or the holder of the clashing key, found in
-    /// the kinds in their fixed order, which keeps it.
+    /// Claims `key` for `action` in every kind of window where its keys act
+    /// in `scope` (`ShortcutScope.windowKinds(of:)`), unless a key clashing
+    /// with it is claimed in one of them already. Returns nil once claimed,
+    /// or the holder of the clashing key, found in the kinds in their fixed
+    /// order, which keeps it.
     mutating func claim(_ key: KeyBinding, for action: ShortcutAction, in scope: ShortcutScope) -> Holder? {
         let forms = Self.forms(of: key, for: action)
-        let kinds = ShortcutWindowKind.allCases.filter(scope.reaches)
+        let actsIn = scope.windowKinds(of: action)
+        let kinds = ShortcutWindowKind.allCases.filter(actsIn.contains)
         for kind in kinds {
             let claimedThere = holders[kind] ?? [:]
             if let holder = forms.compactMap({ claimedThere[$0] }).first {
@@ -358,7 +363,9 @@ extension ShortcutEdits {
         var edited: [ShortcutAction: [KeyBinding]] = [:]
         for action in ShortcutAction.allCases {
             guard let actionKeys = keys[action] else { continue }
-            let heldElsewhere = Set(keys.lazy.filter { $0.key != action && $0.key.defaultScope.overlaps(action.defaultScope) }.flatMap(\.value))
+            let heldElsewhere = Set(keys.lazy.filter { other, _ in
+                other != action && other.sharesAWindow(in: other.defaultScope, with: action, in: action.defaultScope)
+            }.flatMap(\.value))
             let given = Set(actionKeys)
             let isADefault = ([defaults[action] ?? []] + (formerDefaults[action] ?? [])).contains { aDefault in
                 given == Set(aDefault) || given == Set(aDefault.filter { !heldElsewhere.contains($0) })
