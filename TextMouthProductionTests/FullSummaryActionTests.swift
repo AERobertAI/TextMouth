@@ -76,4 +76,26 @@ final class FullSummaryActionTests: XCTestCase {
         XCTAssertEqual(editor.actions(for: KeyBinding(key: "w"), in: .audioEditor), .init(single: .editorWhereAmI, double: nil, singleWaits: false))
         XCTAssertEqual(editor.actions(for: KeyBinding(key: "i"), in: .audioEditor), .init(single: .editorMarkIn, double: nil, singleWaits: false))
     }
+
+    // MARK: - The Press Rule (Section 3 of the Design)
+
+    /// What a press does, for each summary pressed for and each summary
+    /// speaking: with nothing speaking it speaks the one pressed for; a
+    /// brief press stops either; a full press switches the brief summary to
+    /// the full one and stops the full one; and a press about another
+    /// subject speaks its own summary in place of the one speaking.
+    func testWhatEachPressDoes() {
+        XCTAssertEqual(SummaryPress.outcome(pressing: .brief, while: nil), .speak(.brief))
+        XCTAssertEqual(SummaryPress.outcome(pressing: .full, while: nil), .speak(.full))
+        XCTAssertEqual(SummaryPress.outcome(pressing: .brief, while: .brief), .stop)
+        XCTAssertEqual(SummaryPress.outcome(pressing: .brief, while: .full), .stop)
+        XCTAssertEqual(SummaryPress.outcome(pressing: .full, while: .brief), .replace(with: .full))
+        XCTAssertEqual(SummaryPress.outcome(pressing: .full, while: .full), .stop)
+        for pressed in [SummaryDetail.brief, .full] {
+            for speaking in [SummaryDetail.brief, .full] {
+                XCTAssertEqual(SummaryPress.outcome(pressing: pressed, while: speaking, sameSubject: false), .replace(with: pressed))
+            }
+            XCTAssertEqual(SummaryPress.outcome(pressing: pressed, while: nil, sameSubject: false), .speak(pressed))
+        }
+    }
 }

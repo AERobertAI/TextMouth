@@ -12,6 +12,18 @@ enum LibraryInfoRow: Equatable {
     /// A feed's row in the Feeds section.
     case feed(FeedRowContent)
 
+    /// The row's identity, as the List tags the row: its book's, folder's,
+    /// or feed's ID. Speak Info ties each summary to the row it describes by
+    /// it (REV07, Library finding 2), so a press on another row speaks that
+    /// row's summary rather than only stopping the one speaking.
+    var id: UUID {
+        switch self {
+        case .book(let book): return book.id
+        case .folder(let folder): return folder.id
+        case .feed(let row): return row.id
+        }
+    }
+
     /// The row a Library window's commands act on: the first selected row
     /// in the list's order, by the selection the List keeps, `selected`,
     /// which holds a folder's or a feed's row by its ID as it holds a
@@ -45,6 +57,33 @@ enum LibraryInfoRow: Equatable {
         }
         return nil
     }
+
+    /// What Book Info (Command-I) does for this row: the Book Info sheet
+    /// for a book; Feed Info for a feed's row, or for a feed's folder,
+    /// whose feed `feedInFolder` names by the folder's ID; and, for any
+    /// other folder, which has no sheet, its full summary spoken, as Speak
+    /// Full Info speaks it, the summary nearest to a sheet's whole.
+    func infoCommand(feedInFolder: (UUID) -> UUID?) -> LibraryInfoCommand {
+        switch self {
+        case .book(let book):
+            return .bookInfo(book)
+        case .feed(let row):
+            return .feedInfo(row.id)
+        case .folder(let folder):
+            return feedInFolder(folder.id).map(LibraryInfoCommand.feedInfo) ?? .speakFullInfo
+        }
+    }
+}
+
+/// What Book Info (Command-I) does for the selected row
+/// (`LibraryInfoRow.infoCommand(feedInFolder:)`).
+enum LibraryInfoCommand: Equatable {
+    /// Opens the Book Info sheet for the book.
+    case bookInfo(Book)
+    /// Opens Feed Info for the feed with this ID.
+    case feedInfo(UUID)
+    /// Speaks the row's full summary, as Speak Full Info does.
+    case speakFullInfo
 }
 
 // MARK: - The Facts of a Row

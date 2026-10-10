@@ -150,9 +150,10 @@ struct LibraryView: View {
     /// notices after its commands (FR03). Kept, not observed: its sheets'
     /// host observes it, so a sheet opening never redraws the list.
     @State private var feedPresenter = LibraryFeedsPresenter()
-    /// What speaks the selected row's information for Speak Info, the I
-    /// key, and for Book Info on a folder, which has no sheet (October 7,
-    /// 2026). Kept, not observed: it draws nothing.
+    /// What speaks the selected row's information for Speak Info and Speak
+    /// Full Info, I and I twice, and for Book Info on a folder, which has
+    /// no sheet (October 7, 2026; FR12). Kept, not observed: it draws
+    /// nothing.
     @State private var infoSpeaker = LibraryInfoSpeaker()
     @State private var showNewFolderSheet = false
     @State private var newFolderName = ""
@@ -574,27 +575,28 @@ struct LibraryView: View {
             guard takesCommand(notification) else { return }
             // Cmd+I: Book Info for the first selected book; Feed Info for a
             // feed's row, or a feed's folder's; a folder has no sheet, so
-            // its row speaks its information instead (Speak Info).
-            switch selectedInfoRow {
-            case .book(let book):
+            // its row speaks its full information instead, as Speak Full
+            // Info does (`LibraryInfoRow.infoCommand(feedInFolder:)`).
+            switch selectedInfoRow?.infoCommand(feedInFolder: { feedFolders.feedID(inFolder: $0) }) {
+            case .bookInfo(let book):
                 showBookInfo(for: book)
-            case .feed(let row):
-                showFeedInfo(row.id)
-            case .folder(let folder):
-                if let feedID = feedFolders.feedID(inFolder: folder.id) {
-                    showFeedInfo(feedID)
-                } else {
-                    speakSelectedInfo()
-                }
+            case .feedInfo(let feedID):
+                showFeedInfo(feedID)
+            case .speakFullInfo:
+                speakSelectedInfo(.full)
             case nil:
                 break
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .speakInfo)) { notification in
-            // The I key, and Library > Speak Info: the selected row's
-            // information, spoken with the app's own voice.
+        .onReceive(
+            NotificationCenter.default.publisher(for: .speakInfo)
+                .merge(with: NotificationCenter.default.publisher(for: .speakFullInfo))
+        ) { notification in
+            // The I key, and Library > Speak Info: the selected row's brief
+            // summary; I twice, and Library > Speak Full Info, its full one
+            // (FR12). Spoken with the app's own voice.
             guard takesCommand(notification) else { return }
-            speakSelectedInfo()
+            speakSelectedInfo(notification.name == .speakFullInfo ? .full : .brief)
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSelectedBook)) { notification in
             // Only respond in the focused library window
@@ -1428,13 +1430,19 @@ struct LibraryView: View {
 
     /// Speaks the selected row's information with the app's own voice, as
     /// Where Am I speaks a position in a reader (`LibraryInfoSpeaker`): the
-    /// brief summary, or the full one on a quick second press, in the
-    /// chosen voice at the chosen speed; with nothing selected, that
-    /// nothing is. The row's facts are gathered at the press, as the list
-    /// shows them then.
-    private func speakSelectedInfo() {
+    /// `detail` summary of the row, in the chosen voice at the chosen speed,
+    /// or, with nothing selected, that nothing is; or stops the summary
+    /// speaking, as the speaker decides (FR12). The row's facts are
+    /// gathered at the press, as the list shows them then, and the summary
+    /// is tied to the row, so a press on another row speaks that one's.
+    private func speakSelectedInfo(_ detail: SummaryDetail) {
         let row = selectedInfoRow
-        infoSpeaker.press(voice: settingsViewModel.selectedVoice, wordsPerMinute: settingsViewModel.wordsPerMinute) { full in
+        infoSpeaker.press(
+            detail,
+            about: row?.id,
+            voice: settingsViewModel.selectedVoice,
+            wordsPerMinute: settingsViewModel.wordsPerMinute
+        ) { spoken in
             row.map { row in
                 LibraryInfoSubject(
                     row,
@@ -1443,7 +1451,7 @@ struct LibraryView: View {
                     wordsPerMinute: settingsViewModel.wordsPerMinute,
                     cloudStates: cloudStates,
                     keptBooks: keptBooks,
-                    measuresFileSize: full
+                    measuresFileSize: spoken == .full
                 )
             }
         }
