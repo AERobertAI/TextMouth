@@ -384,6 +384,8 @@ final class ReaderViewModel: ObservableObject {
     /// book again from where the skip lands (`performSkip(unit:forward:)`);
     /// Release Media Controls is offered meanwhile, while the book holds
     /// the controls (`canReleaseMediaControls`).
+    /// Set too as a book saved exactly at its end opens (`showLoadedContent`,
+    /// TODO P07), so a finished book stays finished after TextMouth quits.
     /// Cleared when playback starts (`play()`), when a jump moves the cursor
     /// away from the end (`navigateTo(chapterIndex:characterOffset:)`), when
     /// a backward skip moves it while another book plays
@@ -1320,6 +1322,11 @@ final class ReaderViewModel: ObservableObject {
                 currentCharacterOffset = 0
             }
         }
+        // A book that played to its end was saved exactly there, and opens
+        // finished, as it rested before TextMouth quit (TODO P07): its next
+        // backward skip plays its end again, and Play does what Play does at
+        // the end. Any other place opens a book that is not finished.
+        hasFinishedBook = cursorRestsAtEnd
         // This reader's sleep timer for the end of the heading waits for the
         // end of the heading the cursor is in, as the headings are now: one
         // set while the book loaded found no headings yet (finding #787).

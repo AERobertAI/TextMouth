@@ -77,6 +77,43 @@ final class FinishedBookReaderTests: XCTestCase {
         }
     }
 
+    // MARK: - Opening a Finished Book
+
+    /// A finished book opened again, as after a relaunch, rests finished,
+    /// as it did before TextMouth quit (TODO P07, question 11): saved
+    /// exactly at its end, it opens there, finished, and the keyboard's Skip
+    /// Backward, once its window is the focused one, plays its end again
+    /// from where the skip lands, as a rewind did after the end (B02). A book
+    /// saved short of its end opens unfinished, and its Skip Backward moves
+    /// the cursor and plays nothing, as any stopped reader's does.
+    func testAFinishedBookOpenedAgainRestsFinished() throws {
+        let world = try makeIntegrationWorld("Finished Opened Again")
+        world.settings.skipBackwardUnit = .seconds15
+        let finished = try makeAudioBook(.filePerChapter, titled: "Harbour Soundings", in: world, savedAt: Self.lastChapterEnd)
+        let reader = world.openReader(for: finished, nowPlaying: privateMediaSession())
+        waitForReaderToLoad(reader)
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The finished book did not open at its end")
+        XCTAssertTrue(reader.hasFinishedBook, "The finished book opened unfinished")
+
+        reader.windowBecameKey()
+        let rewinding = recordingAnnouncements {
+            reader.skipBackward()
+        }
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Skip Backward did not play the finished book's end again")
+        XCTAssertFalse(reader.cursorRestsAtEnd, "Skip Backward did not move back from the end")
+        XCTAssertEqual(rewinding.announcements, [], "Skip Backward announced something")
+        reader.stop()
+
+        let unfinished = try makeAudioBook(.filePerChapter, titled: "Ferry Timetable", in: world)
+        let other = world.openReader(for: unfinished, nowPlaying: privateMediaSession())
+        waitForReaderToLoad(other)
+        XCTAssertFalse(other.hasFinishedBook, "A book saved short of its end opened finished")
+        other.windowBecameKey()
+        other.skipBackward()
+        XCTAssertFalse(other.audioPlaybackService.isPlaying, "Skip Backward played a book that was not finished")
+        XCTAssertLessThan(other.currentCharacterOffset, Self.lastHalfSecond, "Skip Backward did not move the cursor")
+    }
+
     // MARK: - Fixtures
 
     /// How many seconds of silence the last chapter of every audiobook
@@ -87,13 +124,18 @@ final class FinishedBookReaderTests: XCTestCase {
     /// its last chapter, ten characters standing for a second of audio.
     private static let lastHalfSecond = Int((lastChapterSeconds - 0.5) * ReaderViewModel.audioCharsPerSecond)
 
+    /// Where a finished book rests: the end of its last chapter.
+    private static let lastChapterEnd = Int(lastChapterSeconds * ReaderViewModel.audioCharsPerSecond)
+
     /// An audiobook titled `title` in `layout`, in `world`, whose last
-    /// chapter lasts `lastChapterSeconds`, saved half a second before its
-    /// end, ending with the Stop behavior unless `endOfBook` says otherwise.
+    /// chapter lasts `lastChapterSeconds`, saved `offset` into that chapter
+    /// (half a second before its end unless given), ending with the Stop
+    /// behavior unless `endOfBook` says otherwise.
     private func makeAudioBook(
         _ layout: Layout,
         titled title: String,
         in world: IntegrationWorld,
+        savedAt offset: Int = lastHalfSecond,
         endOfBook: EndOfBookBehavior = .stop
     ) throws -> Book {
         switch layout {
@@ -101,14 +143,14 @@ final class FinishedBookReaderTests: XCTestCase {
             return try world.makeSilentAudioBook(
                 title: title,
                 trackDurations: [1, Self.lastChapterSeconds],
-                savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: Self.lastHalfSecond),
+                savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: offset),
                 endOfBook: endOfBook
             )
         case .oneFile:
             return try world.makeSilentAudioFileBook(
                 title: title,
                 duration: Self.lastChapterSeconds,
-                savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: Self.lastHalfSecond),
+                savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: offset),
                 endOfBook: endOfBook
             )
         case .chapterMarks:
@@ -120,7 +162,7 @@ final class FinishedBookReaderTests: XCTestCase {
                     AudioTestFixtures.ChapterMarker(title: "Approach", start: 0, duration: 1),
                     AudioTestFixtures.ChapterMarker(title: "Breakwater", start: 1, duration: Self.lastChapterSeconds),
                 ],
-                savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: Self.lastHalfSecond),
+                savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: offset),
                 endOfBook: endOfBook
             )
         case .clips:
@@ -136,7 +178,7 @@ final class FinishedBookReaderTests: XCTestCase {
                         AudioClip(file: "b.wav", startTime: 0, endTime: 1.5),
                     ])),
                 ],
-                savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: Self.lastHalfSecond),
+                savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: offset),
                 endOfBook: endOfBook
             )
         }
