@@ -99,6 +99,40 @@ final class FeedMoveToLibraryOperationTests: XCTestCase {
         try assertStaysInItsFeed(fixture, in: world, model: world.library)
     }
 
+    /// An episode another Move to Library… has marked "In Library", its
+    /// package still to move, cannot be moved by a second one (REV13 feeds
+    /// 9): the second moves nothing, says why, and leaves the first's mark
+    /// alone, so no move can put back another's mark; once the first has
+    /// put its mark back, as when its package could not move, the episode
+    /// can move again.
+    func testAnEpisodeAnotherMoveMarkedIsNotMovedTwice() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMoveToLibraryTwice")
+        let fixture = try await downloadedEpisode(world)
+        // The first move's mark, made before its package moved.
+        world.center.store.updateItem(fixture.link.itemID, of: fixture.feed.id) { item in
+            item.state = .inLibrary(bookID: fixture.book.id)
+            item.downloadOrigin = .listener
+        }
+
+        XCTAssertEqual(world.library.booksMovableToLibrary([fixture.book]), [], "an item marked In Library was movable")
+        let second = await world.library.moveToLibraryReturningOutcome([fixture.book], toFolder: fixture.keepers)
+
+        XCTAssertEqual(
+            second.failureMessage,
+            "Could not move to the library: Only an episode or article downloaded in its feed can move into the library."
+        )
+        XCTAssertEqual(
+            world.center.store.record(of: fixture.feed.id)?.item(fixture.link.itemID)?.state,
+            .inLibrary(bookID: fixture.book.id),
+            "the second move changed the first move's mark"
+        )
+        XCTAssertEqual(world.library.bookByID(fixture.book.id)?.feedLink, fixture.link, "the second move moved the package")
+
+        // The first move put its mark back.
+        world.center.store.updateItem(fixture.link.itemID, of: fixture.feed.id) { $0.state = .downloaded(bookID: fixture.book.id) }
+        XCTAssertEqual(world.library.booksMovableToLibrary([fixture.book]).map(\.id), [fixture.book.id])
+    }
+
     /// Only an episode or article downloaded in its feed moves, into a folder
     /// still in the library: a book of the library's own, or a folder gone,
     /// moves nothing, and says why.
