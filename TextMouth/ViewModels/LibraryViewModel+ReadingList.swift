@@ -102,15 +102,22 @@ extension LibraryViewModel {
     /// FR09): Import Book, Open Book..., Import DAISY Folder…, or New from
     /// Text there. Since the list is no folder, VoiceOver then hears that
     /// they joined it and where the books themselves went
-    /// (`ReadingListWording.importedAnnouncement`). Books already in the
-    /// list, as a replaced book's copy that took the old one's place, stay
-    /// where they are, and nothing is said when none joins it. An import
-    /// made anywhere else changes nothing here.
+    /// (`ReadingListWording.importedAnnouncement`), at medium priority: it
+    /// comes right after the import's own end announcement, at high
+    /// priority, or a ZIP batch's alert, and waits for that speech rather
+    /// than cutting it off, as the import's quarter announcements wait
+    /// (FR10). Books already in the list, as a replaced book's copy that
+    /// took the old one's place, stay where they are, and nothing is said
+    /// when none joins it. An import made anywhere else changes nothing
+    /// here.
     func addImportedBooksToReadingList(_ books: [Book], request: ImportRequest) {
         guard request.addsToReadingList else { return }
         let added = addToReadingList(books.map(\.id))
         guard let folderPath = added.first?.folderPath else { return }
-        VoiceOverAnnouncer.announce(ReadingListWording.importedAnnouncement(added: added.map(\.title), folderPath: folderPath))
+        VoiceOverAnnouncer.announce(
+            ReadingListWording.importedAnnouncement(added: added.map(\.title), folderPath: folderPath),
+            priority: .medium
+        )
     }
 
     /// `books` as the library holds them now, in their order and each once,

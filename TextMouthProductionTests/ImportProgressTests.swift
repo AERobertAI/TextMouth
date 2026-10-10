@@ -808,6 +808,68 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(progress.state, ImportProgressState(), "the end clears the overlay")
     }
 
+    // MARK: - At the Reading List
+
+    /// After an import at the Reading List that ran long, VoiceOver hears
+    /// the import end first, at high priority, and the book joining the
+    /// list after it, at medium priority, which waits for the speech before
+    /// it rather than cutting it off, as the import's quarters wait; the
+    /// two are made in this order as an import ends
+    /// (`completeSingleImportedBook`). Until October 10, 2026 both were at
+    /// high priority, so the second was spoken over the first.
+    func testJoiningTheReadingListIsHeardAfterTheImportsEnd() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let clock = CommandClock()
+        let progress = ImportProgress(now: { clock.now })
+        let library = LibraryViewModel(initializeServices: false)
+        let book = Book(title: "Atlas of Tides", format: .txt, filePath: "/nowhere/Atlas of Tides.txt", md5Hash: "atlas", folderPath: "Charts")
+        library.library = Library(books: [book])
+
+        let recorder = recordingAnnouncements {
+            progress.showBook("Atlas of Tides.txt")
+            clock.advance(by: 12)
+            progress.end(.book)
+            library.addImportedBooksToReadingList([book], request: ImportRequest(addsToReadingList: true))
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Finished importing “Atlas of Tides.txt”.",
+            "Added to reading list: Atlas of Tides. The book is in Charts."
+        ])
+        XCTAssertEqual(recorder.announcements.map(\.priority), [.high, .medium])
+    }
+
+    /// Text made into a book with New from Text at the Reading List, through
+    /// the library's own queue: the book joining the list is said at medium
+    /// priority, so it never cuts off what VoiceOver is saying.
+    func testABookJoiningTheReadingListAfterAnImportIsSaidAtMediumPriority() throws {
+        let folder = makeIntegrationLibraryFolder("Import Progress Reading List")
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let heard = HeardAnnouncements()
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in heard.announcements.append(announcement) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+
+        model.createBookFromText(
+            title: "Deck Notes",
+            author: "",
+            text: "Coil the line and dry it before stowing.",
+            toFolder: folder.path,
+            addingToReadingList: true
+        )
+
+        let expected = "Added to reading list: Deck Notes. The book is in \(folder.path)."
+        XCTAssertTrue(
+            waitUntil(timeout: 10) { heard.announcements.contains { $0.message == expected } },
+            heard.announcements.map(\.message).joined(separator: " | ")
+        )
+        XCTAssertEqual(heard.announcements.first { $0.message == expected }?.priority, .medium)
+    }
+
     /// Cancel is announced at once, in the overlay's own words, and once
     /// however often it is pressed; before any book, it says only that the
     /// import is cancelling. The library's Cancel reaches it.
@@ -950,6 +1012,14 @@ final class ImportProgressTests: XCTestCase {
 private final class HeardMessages {
     /// Every message, oldest first.
     var messages: [String] = []
+}
+
+/// The announcements VoiceOver was asked to make, with their priorities,
+/// while a test listened.
+@MainActor
+private final class HeardAnnouncements {
+    /// Every announcement, oldest first.
+    var announcements: [VoiceOverAnnouncement] = []
 }
 
 extension ZipImportProgress {
