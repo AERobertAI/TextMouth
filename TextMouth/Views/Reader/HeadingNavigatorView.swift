@@ -188,18 +188,12 @@ struct HeadingNavigatorView: View {
     /// new section while the sheet is open, but it must not steal VoiceOver
     /// focus from whichever control the user is currently exploring.
     @State private var initialFocusHeadingID: String?
+    /// What each heading's row shows after its name, as the display
+    /// picker's segments name it.
     enum HeadingDisplayMode: String, CaseIterable {
         case timeEstimate = "Duration"
         case timeIntoBook = "Time In"
         case percentage = "Percentage"
-
-        var accessibilityLabel: String {
-            switch self {
-            case .timeEstimate: return "Show estimated duration for each heading"
-            case .timeIntoBook: return "Show time into book where each heading starts"
-            case .percentage: return "Show percentage through book for each heading"
-            }
-        }
     }
 
     /// A sheet listing `viewModel`'s headings.

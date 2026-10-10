@@ -315,16 +315,11 @@ struct BookSearchView: View {
         ))
     }
 
+    /// Where each result's row says its match is, as the display picker's
+    /// segments name it.
     enum DisplayMode: String, CaseIterable {
         case percentage = "Percentage"
         case time = "Time"
-
-        var accessibilityLabel: String {
-            switch self {
-            case .percentage: return "Show percentage through book"
-            case .time: return "Show estimated time into book"
-            }
-        }
     }
 
     /// Name each match's location by the heading containing it, using the
