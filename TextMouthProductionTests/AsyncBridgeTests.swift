@@ -5,7 +5,8 @@ import XCTest
 /// (TODO Q08). It replaced private copies in `BookParser` and
 /// `BookContentAnalysisService`, so these tests pin what every copy did: the
 /// work's own value or error comes back, only once the work has finished,
-/// from a task that does not run on the waiting thread.
+/// from a task that does not run on the waiting thread; and what the bridge
+/// adds: the task runs at no lower priority than the thread waiting on it.
 final class AsyncBridgeTests: XCTestCase {
     /// The folder of audio files one test writes, removed when it ends.
     private var folder: URL!
@@ -59,6 +60,27 @@ final class AsyncBridgeTests: XCTestCase {
         let ranOnMainThread = try AsyncBridge.waitForResult { pthread_main_np() != 0 }
 
         XCTAssertFalse(ranOnMainThread)
+    }
+
+    /// The work runs at the waiting thread's priority, never below the
+    /// default it ran at before, so the main thread, waiting, never waits on
+    /// lower-priority work, which the Thread Performance Checker reported
+    /// as a priority inversion for every silent audiobook a test made
+    /// (board #1581); work waited for from a background queue runs no
+    /// lower than it did.
+    func testTheWorkRunsNoLowerThanItsWaiter() throws {
+        XCTAssertTrue(Thread.isMainThread, "Synchronous tests wait on the main thread")
+        let waiting = Task.currentPriority
+
+        let ranAt = try AsyncBridge.waitForResult { Task.currentPriority }
+
+        XCTAssertGreaterThanOrEqual(ranAt, waiting, "the main thread waited on lower-priority work")
+        XCTAssertGreaterThanOrEqual(ranAt, .medium)
+        XCTAssertEqual(AsyncBridge.waitPriority(for: .high), .high)
+        XCTAssertEqual(AsyncBridge.waitPriority(for: TaskPriority(rawValue: 33)), TaskPriority(rawValue: 33))
+        XCTAssertEqual(AsyncBridge.waitPriority(for: .medium), .medium)
+        XCTAssertEqual(AsyncBridge.waitPriority(for: .low), .medium)
+        XCTAssertEqual(AsyncBridge.waitPriority(for: .background), .medium)
     }
 
     /// Threads that wait at the same time each get their own work's result,

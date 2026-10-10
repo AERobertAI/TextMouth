@@ -19,13 +19,20 @@ enum AsyncBridge {
     /// it finishes, and returns its value or throws its error unchanged.
     ///
     /// The task is detached, so it inherits neither the caller's actor nor
-    /// its priority, exactly as each copy of the bridge did before.
+    /// its task-local values, as each copy of the bridge did before. It runs
+    /// at the waiting thread's priority (`Task.currentPriority`, which
+    /// outside a task is the thread's own), and never below the default it
+    /// ran at before (`waitPriority(for:)`): a thread blocked on it, the
+    /// main thread included, then never waits on lower-priority work. The
+    /// main thread once waited on work at the default priority, a priority
+    /// inversion the Thread Performance Checker reported for every silent
+    /// audiobook a hosted test made (board #1581).
     static func waitForResult<Value>(
         of operation: @escaping @Sendable () async throws -> Value
     ) throws -> Value {
         let outcome = Outcome<Value>()
         let finished = DispatchSemaphore(value: 0)
-        Task.detached {
+        Task.detached(priority: waitPriority(for: Task.currentPriority)) {
             do {
                 outcome.store(.success(try await operation()))
             } catch {
@@ -38,6 +45,15 @@ enum AsyncBridge {
         // end without one; this guard only satisfies the type checker.
         guard let result = outcome.result else { throw CancellationError() }
         return try result.get()
+    }
+
+    /// The priority the work runs at for a waiter whose priority is
+    /// `waiting`: the waiter's, so that it never waits on lower-priority
+    /// work, but never below `.medium`, the default the work ran at before,
+    /// so that work waited for from a background queue runs no slower than
+    /// it did.
+    static func waitPriority(for waiting: TaskPriority) -> TaskPriority {
+        max(waiting, .medium)
     }
 
     /// The result the detached task hands to the waiting thread. The lock
