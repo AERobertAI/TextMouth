@@ -177,8 +177,9 @@ extension ReaderViewModel {
             return
         }
         // Playing: speech or audio under way, or paused only while a Where
-        // Am I announcement speaks.
-        let wasPlaying = isPlaybackUnderWay || (isWhereAmISpeaking && wasPlayingBeforeWhereAmI)
+        // Am I announcement speaks, or until the end sound of one that ended
+        // has played (`whereAmIWillPlayBook`).
+        let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook
         let sleepTimerKeepsItFromStarting = wasPlaying && sleepTimerEndsListeningHere
         if isWhereAmISpeaking {
             stopWhereAmISynthesizer()

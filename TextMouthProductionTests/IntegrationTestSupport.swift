@@ -299,6 +299,42 @@ extension XCTestCase {
     }
 }
 
+// MARK: - Where Am I's End Sound, Passed by the Test
+
+/// The work a reader's Where Am I announcement leaves for once its end
+/// sound has played (the book it paused resuming, a play it held starting),
+/// held for the test to run when it chooses
+/// (`ReaderViewModel._afterWhereAmIEndSoundForTesting`), so that no test
+/// waits out the sound, and a test can act in the moment before it passes.
+@MainActor
+final class WhereAmIEndSoundClock {
+    /// The work held, oldest first.
+    private var waiting: [@MainActor @Sendable () -> Void] = []
+
+    /// Holds `reader`'s end-sound work from now on, in place of the main
+    /// queue's delay.
+    init(holdingFor reader: ReaderViewModel) {
+        reader._afterWhereAmIEndSoundForTesting = { [self] work in
+            waiting.append(work)
+        }
+    }
+
+    /// Whether work waits for the end sound's moment to pass.
+    var hasWorkWaiting: Bool {
+        !waiting.isEmpty
+    }
+
+    /// Lets the end sound's moment pass: runs the work held, oldest first,
+    /// as the main queue would once the delay is up.
+    func passEndSound() {
+        let due = waiting
+        waiting.removeAll()
+        for work in due {
+            work()
+        }
+    }
+}
+
 // MARK: - Sound Effects Recorded, Never Heard
 
 /// Sound effects that record each event they are asked to play, and play

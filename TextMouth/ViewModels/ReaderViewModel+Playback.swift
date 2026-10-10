@@ -33,10 +33,9 @@ extension ReaderViewModel {
         guard !hasClosed, !isLoading, let content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
         guard !playGoesToTheHandOver() else { return }
-        // Don't start playback while Where Am I is speaking
-        if WhereAmIInterruptionPolicy.blocksBookPlayback(
-            isAnnouncementSpeaking: isWhereAmISpeaking
-        ) { return }
+        // Don't start playback while Where Am I has the book in hand: an
+        // announcement speaking, or the resume one that ended still owes.
+        guard !isWhereAmIUnderWay else { return }
         // A play waiting for its chapter's speech starts once it is ready.
         guard !isWaitingForChapterSpeech else { return }
         // Find what a text book will say before claiming playback, so a book
@@ -88,13 +87,14 @@ extension ReaderViewModel {
     /// Resume playback if the book is already paused, otherwise fall
     /// back to a cold start when nothing is active.
     ///
-    /// While Where Am I? speaks it does nothing, as `play()` does
-    /// (`WhereAmIInterruptionPolicy.blocksBookPlayback`): the announcement
-    /// goes on, and the book it paused plays again as it ends. A Play from
-    /// the AirPods or a media key once resumed the book over the
-    /// announcement, since only a cold start went through that guard.
+    /// While Where Am I? has the book in hand (`isWhereAmIUnderWay`) it does
+    /// nothing, as `play()` does: the announcement goes on, and the book it
+    /// paused plays again as it ends, or, once it has ended, as its end
+    /// sound has played. A Play from the AirPods or a media key once resumed
+    /// the book over the announcement, since only a cold start went through
+    /// that guard.
     func playOrResume() {
-        guard !WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: isWhereAmISpeaking) else {
+        guard !isWhereAmIUnderWay else {
             DiagnosticLog.trace(.playback, "play: Where Am I speaks; the book plays again as it ends")
             return
         }
@@ -246,12 +246,10 @@ extension ReaderViewModel {
         // If Where Am I is speaking, stop the announcement and don't resume
         // the book: the user pressed Play/Pause, not "dismiss Where Am I".
         // Toggling playback while Where Am I is active would have the book
-        // and the announcement speak at once.
-        if WhereAmIInterruptionPolicy.blocksBookPlayback(
-            isAnnouncementSpeaking: isWhereAmISpeaking
-        ) {
-            stopWhereAmISynthesizer()
-            endWhereAmIWithoutResuming()
+        // and the announcement speak at once. Pressed as the end sound of an
+        // announcement that ended plays, before the book resumes, it pauses
+        // the book that was about to play, as it would a moment later.
+        if stopWhereAmIWithoutResuming() {
             return
         }
 
@@ -287,16 +285,36 @@ extension ReaderViewModel {
     /// too, whether its speech is ready or still being prepared. Play/Pause
     /// pressed during an announcement ends it so, and so does a cancel of
     /// the announcement the reader did not ask for
-    /// (`whereAmISynthesizerCancelled(_:)`).
+    /// (`whereAmISynthesizerCancelled(_:)`). The resume an announcement
+    /// that ended by itself still owes (`isWhereAmIResumePending`) ends the
+    /// same way: the book stays paused, its pause settled.
     func endWhereAmIWithoutResuming() {
         isWhereAmISpeaking = false
-        if wasPlayingBeforeWhereAmI {
+        if wasPlayingBeforeWhereAmI || isWhereAmIResumePending {
             wasPlayingBeforeWhereAmI = false
+            isWhereAmIResumePending = false
             settlePauseLeftByWhereAmI()
         }
         if isWaitingForChapterSpeech {
             pause(playingPauseSound: false)
         }
+    }
+
+    /// Ends whatever Where Am I? has of the book (`isWhereAmIUnderWay`)
+    /// without resuming it, as Play/Pause, and anything that pauses the
+    /// book, ends it: an announcement speaking is silenced first, and the
+    /// book it paused, or the one whose resume an announcement that ended by
+    /// itself still owes, stays paused (`endWhereAmIWithoutResuming()`).
+    ///
+    /// - Returns: Whether Where Am I had anything to end.
+    @discardableResult
+    func stopWhereAmIWithoutResuming() -> Bool {
+        guard isWhereAmIUnderWay else { return false }
+        if isWhereAmISpeaking {
+            stopWhereAmISynthesizer()
+        }
+        endWhereAmIWithoutResuming()
+        return true
     }
 
     /// Stop all playback completely and clear Now Playing info.
@@ -2637,18 +2655,18 @@ extension ReaderViewModel {
     /// book was paused, which took the AirPods.
     ///
     /// A pause while Where Am I? speaks ends the announcement first, as
-    /// Play/Pause during it does (`endWhereAmIWithoutResuming()`): the book
+    /// Play/Pause during it does (`stopWhereAmIWithoutResuming()`): the book
     /// it paused stays paused, its pause settled. Left speaking, the
     /// announcement resumed the book as it ended, undoing the pause: a
     /// sleep timer that ran out during it, a Pause from the AirPods or a
     /// media key, and the AirPods leaving, which paused nothing then, all
     /// had the book play on, at full volume and with no timer, or through
-    /// the Mac's speakers.
+    /// the Mac's speakers. So does a pause in the moment after an
+    /// announcement ends by itself, before the book it paused resumes as
+    /// the end sound has played: the resume it owed is taken, and the pause
+    /// stands (REV11).
     func pause(playingPauseSound: Bool) {
-        if isWhereAmISpeaking {
-            stopWhereAmISynthesizer()
-            endWhereAmIWithoutResuming()
-        }
+        stopWhereAmIWithoutResuming()
         // Capture pre-pause playing state BEFORE we issue any pause calls.
         // The audio / speech services flip their flags synchronously, so
         // checking after would always return "not playing" and the guard

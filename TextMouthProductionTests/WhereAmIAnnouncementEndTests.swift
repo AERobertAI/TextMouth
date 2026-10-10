@@ -16,7 +16,8 @@ import XCTest
 /// Each reader plays a silent audiobook, joins a Now Playing coordinator of
 /// its own, and hands its announcements to a recorder in place of the
 /// synthesizer; its sound effects are recorded, not played. Nothing is ever
-/// heard. The test delivers the synthesizer's callbacks itself.
+/// heard. The test delivers the synthesizer's callbacks itself, and lets an
+/// end sound's moment pass itself (`WhereAmIEndSoundClock`), never waiting.
 @MainActor
 final class WhereAmIAnnouncementEndTests: XCTestCase {
 
@@ -37,7 +38,7 @@ final class WhereAmIAnnouncementEndTests: XCTestCase {
 
         XCTAssertFalse(reader.isWhereAmISpeaking, "Where Am I still speaks")
         XCTAssertFalse(reader.whereAmISynth === cancelledSynthesizer, "The cancelled synthesizer is still in use")
-        spinMainRunLoop(for: ReaderViewModel.whereAmIEndSoundDelay + 0.2)
+        XCTAssertFalse(harbour.endSound.hasWorkWaiting, "A resume waits for an end sound")
         XCTAssertEqual(harbour.sounds.played, [.whereAmIStart], "An end sound played")
         XCTAssertTrue(reader.audioPlaybackService.isPaused, "The book resumed after a cancel")
 
@@ -94,10 +95,9 @@ final class WhereAmIAnnouncementEndTests: XCTestCase {
 
         XCTAssertFalse(reader.isWhereAmISpeaking)
         XCTAssertEqual(harbour.sounds.played, [.whereAmIStart, .whereAmIStart, .whereAmIEnd])
-        XCTAssertTrue(
-            waitUntil(timeout: ReaderViewModel.whereAmIEndSoundDelay + 5) { isPlaying(reader) },
-            "The book did not resume after the announcement"
-        )
+        XCTAssertFalse(isPlaying(reader), "The book resumed before the end sound had played")
+        harbour.endSound.passEndSound()
+        XCTAssertTrue(isPlaying(reader), "The book did not resume after the announcement")
     }
 
     // MARK: - The Full Summary in the Brief One's Place
@@ -125,11 +125,9 @@ final class WhereAmIAnnouncementEndTests: XCTestCase {
         let full = try XCTUnwrap(harbour.announcements.utterances.last)
 
         deliver(finishOf: full, to: reader)
+        harbour.endSound.passEndSound()
 
-        XCTAssertTrue(
-            waitUntil(timeout: ReaderViewModel.whereAmIEndSoundDelay + 5) { isPlaying(reader) },
-            "the book did not resume after the full summary"
-        )
+        XCTAssertTrue(isPlaying(reader), "the book did not resume after the full summary")
         XCTAssertEqual(harbour.sounds.played, [.whereAmIStart, .whereAmIEnd])
     }
 
@@ -143,6 +141,9 @@ final class WhereAmIAnnouncementEndTests: XCTestCase {
         /// The announcements the reader handed over in place of its
         /// Where Am I synthesizer.
         let announcements: HandedOverAnnouncements
+        /// Holds what an announcement that ended by itself leaves for once
+        /// its end sound has played, until the test lets the sound pass.
+        let endSound: WhereAmIEndSoundClock
     }
 
     /// The utterances a reader's Where Am I handed over, oldest first.
@@ -152,9 +153,9 @@ final class WhereAmIAnnouncementEndTests: XCTestCase {
 
     /// Opens a reader of a silent audiobook in a world of its own, named
     /// after `label`, joined to a Now Playing coordinator of its own, its
-    /// sound effects and announcements recorded, and plays it. The play
-    /// sound is forgotten, so the sounds recorded are the ones Where Am I
-    /// asked for.
+    /// sound effects and announcements recorded and its announcements' end
+    /// sound passed by the test, and plays it. The play sound is forgotten,
+    /// so the sounds recorded are the ones Where Am I asked for.
     private func openPlayingAudiobook(
         _ label: String,
         file: StaticString = #filePath,
@@ -174,7 +175,12 @@ final class WhereAmIAnnouncementEndTests: XCTestCase {
 
         XCTAssertTrue(waitUntil(timeout: 5) { isPlaying(reader) }, "The book did not play", file: file, line: line)
         sounds.played.removeAll()
-        return PlayingBook(reader: reader, sounds: sounds, announcements: announcements)
+        return PlayingBook(
+            reader: reader,
+            sounds: sounds,
+            announcements: announcements,
+            endSound: WhereAmIEndSoundClock(holdingFor: reader)
+        )
     }
 
     /// Presses Where Am I in `book`'s reader while nothing is announced,

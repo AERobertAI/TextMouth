@@ -239,6 +239,20 @@ final class ReaderViewModel: ObservableObject {
     /// Whether playback was active before "Where Am I?" interrupted it.
     /// Accessed from WhereAmI and Playback extensions.
     var wasPlayingBeforeWhereAmI = false
+    /// Whether the book a Where Am I announcement paused resumes once the
+    /// end sound of that announcement, which ended by itself, has played
+    /// (`whereAmIEndSoundDelay`): set as it ends, and cleared as the book
+    /// resumes, or by whatever settles the book first: a pause, a stop,
+    /// Play/Pause, a command that interrupts Where Am I, or another
+    /// announcement, which takes the resume over (REV11). Accessed from the
+    /// WhereAmI and Playback extensions.
+    var isWhereAmIResumePending = false
+    /// Takes the work a Where Am I announcement that ended by itself leaves
+    /// for once its end sound has played, in place of the main queue's
+    /// delay (`whereAmIEndSoundDelay`), so that hosted tests run it when
+    /// they choose rather than wait for it. Nil, as in the app, runs it on
+    /// the main queue after the delay.
+    var _afterWhereAmIEndSoundForTesting: ((@escaping @MainActor @Sendable () -> Void) -> Void)?
     /// Set when playback was paused because the system audio route changed
     /// (for example AirPods disconnecting). The next resume must recreate
     /// the active playback backend so audio binds to the newly-current
@@ -712,16 +726,19 @@ final class ReaderViewModel: ObservableObject {
             // is converted into a pause if playing, or ignored if already
             // paused (blocking macOS's spurious auto-resume bug).
             //
-            // A book Where Am I? paused counts as playing: the announcement
-            // plays it again as it ends. So the AirPods leaving pause it,
-            // which ends the announcement and leaves the book paused, and so
-            // does a recording starting (`pauseEveryPlayingReader()`); with
+            // A book Where Am I? will play counts as playing
+            // (`whereAmIWillPlayBook`): one the announcement paused, which it
+            // plays again as it ends, or after its end sound once it has
+            // ended by itself. So the AirPods leaving pause it, which ends
+            // the announcement, or its resume still to come, and leaves the
+            // book paused, and so do a recording starting
+            // (`pauseEveryPlayingReader()`) and another book starting; with
             // the book counted as paused, nothing was paused, and the book
             // played on through the Mac's speakers once the announcement
             // ended.
             isCurrentlyPlaying: { [weak self] in
                 guard let self = self else { return false }
-                if self.isWhereAmISpeaking && self.wasPlayingBeforeWhereAmI {
+                if self.whereAmIWillPlayBook {
                     return true
                 }
                 if self.isAudioBook {
