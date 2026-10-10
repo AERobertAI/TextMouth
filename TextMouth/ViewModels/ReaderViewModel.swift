@@ -1326,21 +1326,17 @@ final class ReaderViewModel: ObservableObject {
         showEPUBMetadata()
         audioMetadata = loaded.audioTags.map { book.mergingEditableAudioMetadata($0) }
 
-        // Clamp saved reading position to valid range. The chapter
-        // count can change if the book was re-imported or the cache
-        // was regenerated with different parsing.
-        if currentChapterIndex < 0 {
-            currentChapterIndex = 0
-            currentCharacterOffset = 0
-        } else if currentChapterIndex >= parsed.chapters.count {
-            currentChapterIndex = max(0, parsed.chapters.count - 1)
-            currentCharacterOffset = 0
-        }
-        if currentChapterIndex < parsed.chapters.count {
-            let chapterLen = parsed.chapters[currentChapterIndex].text.utf16Length
-            if currentCharacterOffset < 0 || currentCharacterOffset > chapterLen {
-                currentCharacterOffset = 0
-            }
+        // Bring the saved place into the book as loaded: its chapters and
+        // their lengths can change when the book is imported again or its
+        // text is extracted or edited anew. A place past its chapter's end
+        // opens at that end, which in the last chapter is the book's end, so
+        // a finished book opens finished (T06, question 7; see
+        // `openingPlace(of:savedGlobalOffset:in:)`).
+        let saved = TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset)
+        let opening = Self.openingPlace(of: saved, savedGlobalOffset: savedGlobalOffset(of: saved), in: parsed)
+        if opening != saved {
+            currentChapterIndex = opening.chapter
+            currentCharacterOffset = opening.offset
         }
         // A book that played to its end was saved exactly there, and opens
         // finished, as it rested before TextMouth quit (TODO P07): its next
