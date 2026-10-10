@@ -281,6 +281,15 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .speakImportProgress, object: nil)
             }
 
+            // VoiceOver speaks how the feed downloads under way have got,
+            // as the Library window's feed downloads section says it, or that
+            // none is under way, with those waiting for a network or for room
+            // (FR10's feed half). No key until the user gives it one, as
+            // above.
+            Button(ShortcutAction.speakDownloadProgress.title) {
+                NotificationCenter.default.post(name: .speakDownloadProgress, object: nil)
+            }
+
             // Records from a microphone into a new audiobook (FR04); File >
             // New Recording… carries the shortcut.
             Button(RecordingWording.menuTitle) {
@@ -699,6 +708,10 @@ extension Notification.Name {
     /// gave it one: the library model has VoiceOver speak how the imports
     /// under way have got (FR10).
     static let speakImportProgress = Notification.Name("speakImportProgress")
+    /// Posted by Library > Speak Download Progress and its key, when the
+    /// user gave it one: the library model has VoiceOver speak how the feed
+    /// downloads under way have got (FR10's feed half).
+    static let speakDownloadProgress = Notification.Name("speakDownloadProgress")
     static let openSelectedBook = Notification.Name("openSelectedBook")
     static let copyReadingPosition = Notification.Name("copyReadingPosition")
     static let searchInBook = Notification.Name("searchInBook")

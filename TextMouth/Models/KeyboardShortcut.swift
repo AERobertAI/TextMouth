@@ -59,6 +59,11 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// import overlay says it, from any window (FR10). It has no key until
     /// the user gives it one in Settings.
     case speakImportProgress = "Speak Import Progress"
+    /// Has VoiceOver speak how the feed downloads under way have got, as
+    /// the Library window's feed downloads section says it, from any window
+    /// (FR10's feed half). It has no key until the user gives it one in
+    /// Settings.
+    case speakDownloadProgress = "Speak Download Progress"
     case openSelectedBook = "Open Selected Book"
     case showBookInfo = "Book Info"
     case removeFromLibrary = "Remove from Library"
@@ -252,6 +257,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .speakInfo: return .speakInfo
         case .speakFullInfo: return .speakFullInfo
         case .speakImportProgress: return .speakImportProgress
+        case .speakDownloadProgress: return .speakDownloadProgress
         case .openSelectedBook: return .openSelectedBook
         case .showBookInfo: return .showBookInfo
         case .removeFromLibrary: return .removeFromLibrary
@@ -301,7 +307,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Bookmarks"
         case .showHeadingList, .showSleepTimer, .restartSleepTimer:
             return "Panels"
-        case .whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress:
+        case .whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress, .speakDownloadProgress:
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown,
              .addToReadingList, .removeFromReadingList, .importDAISYFolder, .addFeed:
@@ -1457,6 +1463,8 @@ extension ShortcutAction {
             // No key by default (FR10): the user gives it a key of their
             // choosing in Settings, as Release Media Controls.
             .speakImportProgress: [],
+            // Likewise for the feed downloads (FR10's feed half).
+            .speakDownloadProgress: [],
             .openSelectedBook: [
                 KeyBinding(key: "return")
             ],

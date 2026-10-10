@@ -728,6 +728,15 @@ final class FeedDownloadManager {
         progress.update(queued: queuedSizes, waits: waitingApart())
     }
 
+    /// What Speak Download Progress says now (FR10): every line the feed
+    /// downloads section shows, or that no download is under way, with the
+    /// downloads waiting apart counted anew first, as a feed unsubscribed
+    /// since the queue last changed takes its items' waits with it.
+    func spokenProgress() -> String {
+        publishQueue()
+        return progress.spokenStatus()
+    }
+
     /// The downloads waiting to start, in order, each by the bytes its feed
     /// gives for its file: nil for an article, and for an episode whose feed
     /// gives none.
