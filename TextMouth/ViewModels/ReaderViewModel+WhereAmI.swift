@@ -673,10 +673,11 @@ extension ReaderViewModel {
     }
 
     /// The reading position as Copy Reading Position copies it
-    /// (`readingPositionSummary`): the book, its heading, its percent, and
-    /// its time left, naming the speed while the setting asks for it (P08);
-    /// "Finished" for a book resting at its end. Tests read it without the
-    /// pasteboard.
+    /// (`readingPositionSummary`): the book, its heading, its percent, the
+    /// place's time on the book's clock, which Go to Time takes back ("at
+    /// 2:13:05 of 9:41:07 in the recording", P08), and its time left, naming
+    /// the speed while the setting asks for it; "Finished" for a book
+    /// resting at its end. Tests read it without the pasteboard.
     var readingPositionText: String {
         let position = currentHeadingPosition
         return Self.readingPositionSummary(
@@ -687,19 +688,34 @@ extension ReaderViewModel {
             percentComplete: percentComplete,
             formattedTimeRemaining: formattedTimeRemaining,
             isFinished: cursorRestsAtEnd,
+            place: copiedPlace,
             speed: namedListeningSpeed
+        )
+    }
+
+    /// The reading position's place as Copy Reading Position names it (P08,
+    /// `ReaderTimeWording.copiedPlace`): its time on the book's clock and the
+    /// clock's whole length; nil before the book's content loads.
+    private var copiedPlace: String? {
+        guard let clock = placeClock else { return nil }
+        return ReaderTimeWording.copiedPlace(
+            clock.time(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset),
+            of: clock.length,
+            timeCount
         )
     }
 
     /// Pure formatter for the copied reading position, using the same heading
     /// vocabulary as Where Am I. Example:
     /// "My Book | by An Author | The Battle | Heading 26 of 412 | 30.0% through | 3:00:00 remaining"
-    /// With the setting that names the speed on (`speed`, P08), the time
-    /// left says it: "3:44:01 remaining at 2.0x"; nil, or an audiobook at
-    /// 1x, leaves it as before.
+    /// The place (`place`, P08) goes between the percent and the time left:
+    /// "… | 22.9% through | at 2:13:05 of 9:41:07 in the recording | 3:44:01
+    /// remaining". With the setting that names the speed on (`speed`), the
+    /// time left says it: "3:44:01 remaining at 2.0x"; nil, or an audiobook
+    /// at 1x, leaves it as before.
     /// A book resting at its end, finished (`isFinished`), says "Finished" in
-    /// place of its percent and time left (TODO P07): "Dune | by Frank
-    /// Herbert | Appendix | Heading 40 of 40 | Finished".
+    /// place of its percent, place, and time left (TODO P07): "Dune | by
+    /// Frank Herbert | Appendix | Heading 40 of 40 | Finished".
     nonisolated static func readingPositionSummary(
         bookTitle: String,
         author: String,
@@ -708,12 +724,14 @@ extension ReaderViewModel {
         percentComplete: Double,
         formattedTimeRemaining: String,
         isFinished: Bool = false,
+        place: String? = nil,
         speed: ReaderTimeWording.ListeningSpeed? = nil
     ) -> String {
         let progress = isFinished
             ? [EndOfBookWording.finishedProgress]
             : [
                 String(format: "%.1f%% through", percentComplete),
+                place ?? "",
                 "\(formattedTimeRemaining) remaining\(ReaderTimeWording.shownSpeed(speed))",
             ]
         return readingPositionSummary(parts: [

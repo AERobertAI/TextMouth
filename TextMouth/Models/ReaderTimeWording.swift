@@ -56,6 +56,23 @@ enum ReaderTimeWording {
         }
     }
 
+    // MARK: - Copy Reading Position's Place
+
+    /// The place Copy Reading Position adds (P08, the user's answer 20), as
+    /// Go to Time's field reads a time back: for an audiobook, its time in
+    /// the recording, "at 2:13:05 of 9:41:07 in the recording"; for a text
+    /// book, its time at its speed, "at 2:10:24 of 4:20:49 at 500 words a
+    /// minute".
+    static func copiedPlace(_ time: TimeInterval, of length: TimeInterval, _ count: Count) -> String {
+        let place = "at \(TimeFormatting.format(time)) of \(TimeFormatting.format(length))"
+        switch count {
+        case .recording:
+            return "\(place) in the recording"
+        case .words(let perMinute):
+            return "\(place) at \(wordsAMinute(perMinute))"
+        }
+    }
+
     // MARK: - Go to Percent
 
     /// Go to Percent's field, named as the status row's percent is spoken

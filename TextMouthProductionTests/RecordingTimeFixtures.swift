@@ -167,6 +167,22 @@ enum RecordingTimeFixtures {
         )
     }
 
+    /// Places through a book's clock: the start, and in about every seventh
+    /// chapter a third and two thirds of the way through, never at a
+    /// chapter's end, which is the next chapter's start, nor past a DAISY
+    /// section's clips, which all name the section's end.
+    static func samplePlaces(on clock: PlaceClock) -> [PlaceClock.Place] {
+        var places = [PlaceClock.Place(chapterIndex: 0, characterOffset: 0)]
+        for chapterIndex in Swift.stride(from: 0, to: clock.chapterLengths.count, by: 7) {
+            let clipUnits = Int(clock.chapterDurations[chapterIndex] * clock.unitsPerSecond)
+            let usable = min(clock.chapterLengths[chapterIndex], clipUnits)
+            for offset in [usable / 3, usable * 2 / 3] where offset > 0 {
+                places.append(PlaceClock.Place(chapterIndex: chapterIndex, characterOffset: offset))
+            }
+        }
+        return places
+    }
+
     /// A heading position, "Heading `number` of `count`", in a book of
     /// `count` headings at the starts of chapters, for the summaries'
     /// formatters.

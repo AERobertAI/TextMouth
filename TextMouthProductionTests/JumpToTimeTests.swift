@@ -131,7 +131,7 @@ final class JumpToTimeTests: XCTestCase {
             reader.content = content
             let clock = PlaceClock.recording(of: content.contentIndex)
 
-            for place in samplePlaces(on: clock) {
+            for place in Fixtures.samplePlaces(on: clock) {
                 let placeTime = clock.time(of: place)
                 for speed in [0.5, 1, 2] {
                     reader.audioSpeed = speed
@@ -184,7 +184,7 @@ final class JumpToTimeTests: XCTestCase {
             let clock = try XCTUnwrap(reader.placeClock)
             XCTAssertEqual(ReaderTimeWording.timeFieldLabel(reader.timeCount), "Time at \(Int(wordsPerMinute)) words a minute")
 
-            for place in samplePlaces(on: clock) {
+            for place in Fixtures.samplePlaces(on: clock) {
                 reader.currentChapterIndex = place.chapterIndex
                 reader.currentCharacterOffset = place.characterOffset
                 let global = content.globalOffset(chapterIndex: place.chapterIndex, localOffset: place.characterOffset)
@@ -313,22 +313,6 @@ final class JumpToTimeTests: XCTestCase {
     }
 
     // MARK: - Helpers
-
-    /// Places through a book's clock: the start, and in about every seventh
-    /// chapter a third and two thirds of the way through, never at a
-    /// chapter's end, which is the next chapter's start, nor past a DAISY
-    /// section's clips.
-    private func samplePlaces(on clock: PlaceClock) -> [PlaceClock.Place] {
-        var places = [PlaceClock.Place(chapterIndex: 0, characterOffset: 0)]
-        for chapterIndex in Swift.stride(from: 0, to: clock.chapterLengths.count, by: 7) {
-            let clipUnits = Int(clock.chapterDurations[chapterIndex] * clock.unitsPerSecond)
-            let usable = min(clock.chapterLengths[chapterIndex], clipUnits)
-            for offset in [usable / 3, usable * 2 / 3] where offset > 0 {
-                places.append(PlaceClock.Place(chapterIndex: chapterIndex, characterOffset: offset))
-            }
-        }
-        return places
-    }
 
     /// The Headings sheet's Time In rows for `reader`'s headings, each shown.
     private func timeInRows(of reader: ReaderViewModel) -> [HeadingNavigatorView.HeadingListItem] {
