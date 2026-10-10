@@ -237,9 +237,10 @@ enum FeedEpisodeImporter {
     /// kept package holds copied in (a kept package that cannot be listed
     /// fails the download, and stays as it is), then read as the reader
     /// will read it and recorded as every import's is
-    /// (`FileImportService.publishReadableBook`), the kept record's note of
-    /// its transcript kept and its revision passed; only then does it take
-    /// the kept package's place, in one step where the volume allows
+    /// (`FileImportService.publishReadableBook`), the kept record's revision
+    /// passed and the note of a transcript following the new index, which
+    /// has none until the episode opens; only then does it take the kept
+    /// package's place, in one step where the volume allows
     /// (`FeedItemPackage.putInPlace`), so the kept package stays whole until
     /// the new one is. A transcript whose audio differs from the new file's,
     /// as when a host inserts other advertisements into each download, is

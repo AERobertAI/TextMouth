@@ -1001,9 +1001,17 @@ enum FileImportService {
     /// that is on disk and names its book. `package` is where the record goes
     /// now, which for a staged package is not yet the book's own location.
     /// `feedLink` names the feed item a downloaded book comes from (FR03).
-    /// `replacing` is the state of the record a download of a kept feed item
-    /// replaces (FR11, branch A2): the new record keeps its note of the
-    /// transcript the package keeps, and a revision above its own.
+    ///
+    /// The record's note of a transcript follows `contentIndex`, as every
+    /// record write carrying an index makes it follow
+    /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`). An index
+    /// read from a new file holds no transcript layer, so a download of a
+    /// kept feed item notes no transcript, though its package keeps one,
+    /// until the episode opens and its text is laid over its index again
+    /// (`TranscriptTextLoader`), which the record then notes; a transcript
+    /// of other audio is found stale then, and stays unnoted. `replacing` is
+    /// the state of the record such a download replaces (FR11, branch A2):
+    /// the new record's revision rises above its own.
     static func writeVerifiedRecord(
         of book: Book,
         contentIndex: BookContentIndex,
@@ -1014,8 +1022,8 @@ enum FileImportService {
         var info = book.makeBookInfo()
         info.contentIndex = contentIndex
         info.metadata.feedLink = feedLink
+        info.state.transcript = contentIndex.transcript?.transcript
         if let replaced {
-            info.state.transcript = replaced.transcript
             info.state.revision = BookState.revision(after: replaced.revision ?? 0)
         }
         try info.save(to: package)

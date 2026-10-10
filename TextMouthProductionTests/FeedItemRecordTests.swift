@@ -386,6 +386,37 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertNotNil(TranscriptTextLoader.load(for: restored, audioIndex: index).text, "the transcript of the same audio shows no text")
     }
 
+    /// A restored record's note of its transcript follows its new index, as
+    /// every record's note does: the kept record noted the transcript its
+    /// index held, the new download's index holds no transcript layer, so
+    /// the restored record notes none, though its package keeps the
+    /// transcript; once the episode opens and its text is laid over the
+    /// index again, the record notes it again.
+    func testARestoredRecordsTranscriptNoteFollowsItsIndex() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordRestoreNote")
+        let (feed, books) = try await downloadedEpisodes(1, in: world)
+        let book = try listen(to: try XCTUnwrap(books.first), in: world)
+        _ = try transcribe(book)
+        try layTranscriptOverItsIndex(of: book, in: world)
+        let note = try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).state.transcript, "the opened episode's record noted no transcript")
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.transcript, note, "the kept record lost its note")
+
+        world.center.download("guid:ep-1", of: feed.id)
+        let restored = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        let record = try BookInfo.load(from: restored.tmbDirectory)
+        XCTAssertNil(record.contentIndex?.transcript)
+        XCTAssertNil(record.state.transcript, "the restored record notes a transcript its index does not hold")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: restored.tmbDirectory).path))
+
+        try layTranscriptOverItsIndex(of: restored, in: world)
+
+        let reopened = try BookInfo.load(from: restored.tmbDirectory)
+        XCTAssertEqual(reopened.state.transcript, note)
+        XCTAssertEqual(reopened.contentIndex?.transcript?.transcript, note)
+    }
+
     /// A transcript whose audio differs from the new download's, as when a
     /// host inserts other advertisements into each download, is kept in the
     /// restored package, and the episode finds it stale: one
@@ -912,15 +943,33 @@ final class FeedItemRecordTests: XCTestCase {
     private func transcribedEpisodeWhoseDownloadWasDeleted(in world: FeedTestWorld) async throws -> (Feed, Book, Data) {
         let (feed, books) = try await downloadedEpisodes(1, in: world)
         let book = try listen(to: try XCTUnwrap(books.first), in: world)
+        let bytes = try transcribe(book)
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        XCTAssertEqual(world.library.library.feedShelf.rows.map(\.id), [book.id], "the transcribed download's package was not kept")
+        return (feed, book, bytes)
+    }
+
+    /// Gives `book` a transcript of its audio as the transcription service
+    /// makes one, and returns transcript.json's bytes.
+    private func transcribe(_ book: Book) throws -> Data {
         let heard = try TranscriptionPlan.make(for: book).files.map { file in
             (file.path, [TranscriptFixtures.sentence("Quillwort grows by the ferry slip.", from: 0, to: 900)])
         }
         let transcript = try TranscriptFixtures.transcript(of: book, sentences: Dictionary(uniqueKeysWithValues: heard))
         _ = try TranscriptStore.write(transcript, into: book.tmbDirectory)
-        let bytes = try Data(contentsOf: TextMouthPaths.transcriptPath(in: book.tmbDirectory))
-        try world.center.deleteDownload("guid:ep-1", of: feed.id)
-        XCTAssertEqual(world.library.library.feedShelf.rows.map(\.id), [book.id], "the transcribed download's package was not kept")
-        return (feed, book, bytes)
+        return try Data(contentsOf: TextMouthPaths.transcriptPath(in: book.tmbDirectory))
+    }
+
+    /// Lays `book`'s transcript text over its index as the episode's reader
+    /// does when it opens (`TranscriptTextLoader`), and saves the index as
+    /// the reader then does (`LibraryViewModel.updateContentIndex`), waiting
+    /// until its record holds it.
+    private func layTranscriptOverItsIndex(of book: Book, in world: FeedTestWorld) throws {
+        let index = try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).contentIndex)
+        let load = TranscriptTextLoader.load(for: book, audioIndex: index)
+        XCTAssertNotNil(load.text, "the transcript of the episode's own audio shows no text")
+        world.library.updateContentIndex(bookID: book.id, index: load.index)
+        LibraryPersistenceService.flushPendingSave()
     }
 
     /// Fails unless `kept` holds what the listener left in `listened`: its
