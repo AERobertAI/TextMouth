@@ -698,6 +698,20 @@ enum FileImportService {
         toFolder folderPath: String = "",
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
+        try importFileWithReport(from: sourceURL, checksum: nil, toFolder: folderPath, observer: observer)
+    }
+
+    /// Imports the file at `sourceURL` as `importFileWithReport(from:toFolder:observer:)`
+    /// does, knowing it by `checksum` when the caller has already read it,
+    /// as a ZIP batch has for its duplicate check (`importHash(of:)`), so
+    /// the file's bytes are read once for it rather than twice; nil reads
+    /// it here.
+    static func importFileWithReport(
+        from sourceURL: URL,
+        checksum: String?,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil
+    ) throws -> ImportedBook {
         try ImportRun.perform(importing: sourceURL.lastPathComponent, observer: observer) { run in
             guard let format = BookFormat.detect(from: sourceURL) else {
                 throw unsupportedSourceError(for: sourceURL)
@@ -705,7 +719,7 @@ enum FileImportService {
 
             try run.begin(.readingSource)
             let package = try daisyPackage(of: sourceURL, format: format)
-            let hash = try importHash(of: sourceURL, package: package)
+            let hash = try checksum ?? importHash(of: sourceURL, package: package)
             let metadata = ImportedFileMetadata.read(
                 from: package?.entryURL ?? sourceURL,
                 format: format,
@@ -1233,16 +1247,22 @@ enum FileImportService {
     ///     files not yet imported are left alone, the books already imported
     ///     are kept, and the result says after how many of how many files
     ///     the batch stopped (TODO I05).
-    ///   - importer: imports one file into a library folder, telling the
-    ///     observer it is given as each step on the book's package begins.
+    ///   - checksum: reads the checksum a file is known by, which the
+    ///     duplicate check compares (`importHash(of:)`); tests count its
+    ///     reads.
+    ///   - importer: imports one file into a library folder, given the
+    ///     checksum the duplicate check read, nil when it could not, so the
+    ///     file's bytes are read once for it, and telling the observer it is
+    ///     given as each step on the book's package begins.
     static func importSupportedFiles(
         _ supportedFiles: [URL],
         toFolder folderPath: String,
         existingHashes: Set<String> = [],
         progress: ((ZipImportProgress) -> Void)? = nil,
         isCancelled: ImportCancellationCheck = { false },
-        importer: (URL, String, ImportStepObserver?) throws -> ImportedBook = { url, folder, observer in
-            try importFileWithReport(from: url, toFolder: folder, observer: observer)
+        checksum: (URL) throws -> String = { try importHash(of: $0) },
+        importer: (URL, String, String?, ImportStepObserver?) throws -> ImportedBook = { url, folder, known, observer in
+            try importFileWithReport(from: url, checksum: known, toFolder: folder, observer: observer)
         }
     ) -> ZipImportResult {
         let total = supportedFiles.count
@@ -1278,9 +1298,11 @@ enum FileImportService {
             }
 
             // Compute hash before creating .tmb to avoid orphaning on
-            // duplicate; a DAISY book in a folder has its package's.
+            // duplicate; a DAISY book in a folder has its package's. The
+            // import is given it, so the book's bytes are read once for it.
             beganStep(.readingSource)
-            if let hash = try? importHash(of: fileURL), seenHashes.contains(hash) {
+            let hash = try? checksum(fileURL)
+            if let hash, seenHashes.contains(hash) {
                 skippedDuplicates += 1
                 progress?(.importing(done: number, total: total, skippedDuplicate: true))
                 continue
@@ -1289,7 +1311,7 @@ enum FileImportService {
             do {
                 // Each step the import begins on the book's package is told
                 // as it begins.
-                let imported = try importer(fileURL, folderPath) { step, _ in beganStep(step) }
+                let imported = try importer(fileURL, folderPath, hash) { step, _ in beganStep(step) }
                 seenHashes.insert(imported.book.md5Hash)
                 books.append(imported.book)
                 if !imported.report.isComplete {
