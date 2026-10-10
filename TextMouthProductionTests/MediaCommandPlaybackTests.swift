@@ -1129,6 +1129,77 @@ final class MediaCommandPlaybackTests: XCTestCase {
         assertToldSystem(system, that: next, plays: true, "The next book's start")
     }
 
+    // MARK: - Saving Metadata
+
+    /// #1498: a metadata save shows the book's new title in Now Playing only
+    /// while its reader holds the media controls. Readers that never played,
+    /// an audiobook's and an EPUB's, save without telling the system
+    /// anything, so a save never takes the AirPods from the app they were
+    /// with, and neither window offers Release Media Controls. Before, each
+    /// save showed its book paused, which took them.
+    func testSavingMetadataInAReaderThatNeverPlayedTellsTheSystemNothing() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Metadata Stopped")
+        let soundings = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [1])
+        let audioReader = world.openReader(for: soundings, nowPlaying: system.coordinator)
+        waitForReaderToLoad(audioReader)
+        let openedAudio = try XCTUnwrap(audioReader.audioMetadata, "The reader read no audio metadata")
+        var editedAudio = openedAudio
+        editedAudio.title = "Breakwater Soundings, Second Survey"
+
+        let alice = try world.importBook(from: requireFile("alice.epub"))
+        let epubReader = world.openReader(for: alice, nowPlaying: system.coordinator)
+        waitForReaderToLoad(epubReader)
+        XCTAssertTrue(waitUntil(timeout: 10) { epubReader.epubMetadata != nil }, "The reader showed no EPUB metadata")
+        let openedEPUB = try XCTUnwrap(epubReader.epubMetadata)
+        var editedEPUB = openedEPUB
+        editedEPUB.title = "Alice's Adventures Under Ground"
+
+        recordingAnnouncements {
+            audioReader.saveAudioMetadata(editedAudio, openedAs: openedAudio)
+            let outcome = epubReader.saveEPUBMetadata(editedEPUB, openedAs: openedEPUB, writeToFile: false)
+            XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        }
+
+        XCTAssertEqual(audioReader.book.title, "Breakwater Soundings, Second Survey", "The audio save did not reach its reader")
+        XCTAssertEqual(epubReader.book.title, "Alice's Adventures Under Ground", "The EPUB save did not reach its reader")
+        XCTAssertEqual(system.told, [], "A save told the system about a book that never played")
+        XCTAssertFalse(audioReader.canReleaseMediaControls, "The audiobook's save took the media controls")
+        XCTAssertFalse(epubReader.canReleaseMediaControls, "The EPUB's save took the media controls")
+    }
+
+    /// While its reader holds the media controls, a save shows the book's
+    /// new title as the book is: playing while it plays, and paused once it
+    /// is paused.
+    func testSavingMetadataWhileTheReaderHoldsTheControlsShowsTheNewTitle() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Metadata Held")
+        let soundings = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [30])
+        let reader = world.openReader(for: soundings, nowPlaying: system.coordinator)
+        waitForReaderToLoad(reader)
+
+        reader.play()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "The book did not play")
+        let opened = try XCTUnwrap(reader.audioMetadata, "The reader read no audio metadata")
+        var whilePlaying = opened
+        whilePlaying.title = "Breakwater Soundings, Second Survey"
+        recordingAnnouncements {
+            reader.saveAudioMetadata(whilePlaying, openedAs: opened)
+        }
+        XCTAssertEqual(reader.book.title, "Breakwater Soundings, Second Survey", "The save did not reach the reader")
+        assertToldSystem(system, that: reader, plays: true, "A save while the book plays")
+
+        reader.pause()
+        let reopened = try XCTUnwrap(reader.audioMetadata, "The reader kept no audio metadata")
+        var whilePaused = reopened
+        whilePaused.title = "Breakwater Soundings, Third Survey"
+        recordingAnnouncements {
+            reader.saveAudioMetadata(whilePaused, openedAs: reopened)
+        }
+        XCTAssertEqual(reader.book.title, "Breakwater Soundings, Third Survey", "The second save did not reach the reader")
+        assertToldSystem(system, that: reader, plays: false, "A save while the book is paused")
+    }
+
     // MARK: - The System's Side
 
     /// The system's side of the media session as a test plays it: the
