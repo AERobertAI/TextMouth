@@ -157,6 +157,9 @@ final class ZIPImportTests: XCTestCase {
         XCTAssertEqual(result.skippedDuplicates, 1)
         XCTAssertFalse(result.foundNoNewBook)
         XCTAssertEqual(reports, [
+            // Each book's size first, as the estimate of the time left
+            // weighs them: the bytes of "rope", "knots", and "tides".
+            .foundBooks(sizes: [4, 5, 5]),
             .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .readingSource),
             .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .copying),
             .importingBook(number: 1, total: 3, book: "Rope Splicing.txt", step: .readingText),
@@ -294,6 +297,35 @@ final class ZIPImportTests: XCTestCase {
             names.map { "batch checksum of \($0)" },
             "a book's import read the file again for its checksum"
         )
+    }
+
+    /// A batch's book is timed by its file's size when its text is read
+    /// whole as it imports, as an EPUB's, a PDF's, or a plain text's is;
+    /// an audiobook's file, whose chapters are read rather than its every
+    /// byte, a DAISY book's folder or ZIP, an empty file, and a file that
+    /// is not there have no size it is timed by (FR10).
+    func testABooksTimedSizeIsItsFilesWhenItsTextIsReadWhole() throws {
+        let directory = try makeSandboxDirectory("zip-timed-size")
+        let notes = directory.appendingPathComponent("Notes.txt")
+        try Data("Ten bytes.".utf8).write(to: notes)
+        let guide = directory.appendingPathComponent("Guide.pdf")
+        try Data(repeating: 0x25, count: 2_048).write(to: guide)
+        let track = directory.appendingPathComponent("Chapter 1.mp3")
+        try Data(repeating: 0xFF, count: 4_096).write(to: track)
+        let empty = directory.appendingPathComponent("Empty.txt")
+        try Data().write(to: empty)
+        let folder = directory.appendingPathComponent("Talking Book", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let archive = directory.appendingPathComponent("Talking Book.zip")
+        try Data(repeating: 0x50, count: 512).write(to: archive)
+
+        XCTAssertEqual(FileImportService.timedSize(of: notes), 10)
+        XCTAssertEqual(FileImportService.timedSize(of: guide), 2_048)
+        XCTAssertNil(FileImportService.timedSize(of: track))
+        XCTAssertNil(FileImportService.timedSize(of: empty))
+        XCTAssertNil(FileImportService.timedSize(of: folder))
+        XCTAssertNil(FileImportService.timedSize(of: archive))
+        XCTAssertNil(FileImportService.timedSize(of: directory.appendingPathComponent("Missing.epub")))
     }
 
     /// A book imported alone, and one of a batch whose checksum could not

@@ -104,10 +104,11 @@ enum ImportProgressWording {
     }
 
     /// The time a batch has left, as the overlay says it once a book is
-    /// done: "About 4 minutes left", or "Less than a minute left". The
-    /// estimate is rounded first (`ImportTimeEstimate.rounded(_:)`).
+    /// done, and the feed downloads section once a download is: "About 4
+    /// minutes left", or "Less than a minute left". The estimate is rounded
+    /// first (`TimeLeftEstimate.rounded(_:)`).
     static func timeLeft(_ seconds: TimeInterval) -> String {
-        let rounded = ImportTimeEstimate.rounded(seconds)
+        let rounded = TimeLeftEstimate.rounded(seconds)
         guard rounded > 0 else { return "Less than a minute left" }
         return "About \(TimeFormatting.spoken(rounded)) left"
     }
@@ -224,39 +225,4 @@ enum ImportProgressWording {
     /// What Speak Import Progress says with no import under way; with one,
     /// it says what VoiceOver reads for the overlay.
     static let noImportUnderWay = "No import is under way."
-}
-
-// MARK: - The Time Left
-
-/// How long the books of a ZIP batch not yet done should take, estimated
-/// from the books done so far, and how the overlay rounds it (FR10).
-enum ImportTimeEstimate {
-    /// The seconds the `remaining` books should take at the average of the
-    /// `timedBooks` books imported or failed so far, which took
-    /// `timedSeconds` in all; nil before any book was timed, and with no
-    /// book left.
-    ///
-    /// A book skipped as a duplicate is not timed: it takes next to no time,
-    /// and counting it would shorten the average of the books that do take
-    /// time, so an archive whose first books are already in the library
-    /// would promise far too little. The books left are all counted at the
-    /// average, duplicates among them or not, so the estimate errs long
-    /// rather than short.
-    static func secondsLeft(timedSeconds: TimeInterval, timedBooks: Int, remaining: Int) -> TimeInterval? {
-        guard timedBooks > 0, remaining > 0, timedSeconds.isFinite else { return nil }
-        return max(0, timedSeconds) / Double(timedBooks) * Double(remaining)
-    }
-
-    /// `seconds` as the overlay says it: 0 under a minute, which it says as
-    /// "less than a minute"; otherwise rounded to the nearest whole minute
-    /// under 10 minutes, the nearest 5 minutes under an hour, and the
-    /// nearest 15 minutes from an hour on. An estimate recomputed as each
-    /// book finishes so changes its words only when it moves by a step that
-    /// matters at its size, and does not flicker between neighbors.
-    static func rounded(_ seconds: TimeInterval) -> TimeInterval {
-        guard seconds.isFinite, seconds >= 60 else { return 0 }
-        let minutes = seconds / 60
-        let step: Double = minutes < 10 ? 1 : (minutes < 60 ? 5 : 15)
-        return (minutes / step).rounded() * step * 60
-    }
 }

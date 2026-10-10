@@ -41,12 +41,17 @@ struct ImportProgressState: Equatable {
     private(set) var notice = ""
     /// The book under way, while one is.
     private(set) var book: BookUnderWay?
-    /// The batch's books timed so far, those imported or failed, and the
-    /// seconds they took in all, which the time left is estimated from.
-    private(set) var timedBooks = 0
-    private(set) var timedSeconds: TimeInterval = 0
+    /// What the batch's books timed so far took, those imported or failed,
+    /// each by its size where that tells its time, which the time left is
+    /// estimated from (`TimeLeftEstimate`).
+    private(set) var timing = WorkTiming()
+    /// The sizes the batch's books are timed by, in the batch's order, as
+    /// `ZipImportProgress.foundBooks` tells them: a text book's bytes, or
+    /// nil for a book whose size says little of its time
+    /// (`FileImportService.timedSize(of:)`); empty until told.
+    private(set) var bookSizes: [Int64?] = []
     /// The seconds the batch has left, estimated as its last book finished;
-    /// nil while no estimate applies (`ImportTimeEstimate`).
+    /// nil while no estimate applies (`TimeLeftEstimate`).
     private(set) var secondsLeft: TimeInterval?
     /// Whether Cancel was pressed while this import runs (TODO I05).
     private(set) var isCancelling = false
@@ -97,6 +102,8 @@ struct ImportProgressState: Equatable {
             total = 0
             book = nil
             notice = ImportProgressWording.extracting(archive: archive, progress: extraction)
+        case let .foundBooks(sizes):
+            bookSizes = sizes
         case let .importingBook(number, total, name, step):
             // A book's first report begins it; the later ones move its step.
             if book?.number == number {
@@ -110,22 +117,36 @@ struct ImportProgressState: Equatable {
         case let .importing(done, total, skippedDuplicate):
             current = done
             self.total = total
-            // The book done is the one under way, timed from its start,
-            // unless it was skipped as a duplicate, which takes next to no
-            // time (`ImportTimeEstimate`).
+            // The book done is the one under way, timed from its start by
+            // its size, unless it was skipped as a duplicate: that takes
+            // next to no time, and counting it would make an archive whose
+            // first books are already in the library promise far too little.
             if let finished = book, finished.number == done, !finished.isDone {
                 book?.isDone = true
                 if !skippedDuplicate {
-                    timedBooks += 1
-                    timedSeconds += max(0, date.timeIntervalSince(finished.startedAt))
+                    timing.add(seconds: date.timeIntervalSince(finished.startedAt), bytes: sizeOfBook(numbered: done) ?? 0)
                 }
             }
-            secondsLeft = ImportTimeEstimate.secondsLeft(
-                timedSeconds: timedSeconds,
-                timedBooks: timedBooks,
-                remaining: total - done
-            )
+            // The books left are all counted, duplicates among them or not,
+            // so the estimate errs long rather than short.
+            secondsLeft = TimeLeftEstimate.secondsLeft(after: timing, for: booksLeft(after: done, of: total))
         }
+    }
+
+    /// The size the batch's book numbered `number`, from 1, is timed by;
+    /// nil when it has none or none was told.
+    private func sizeOfBook(numbered number: Int) -> Int64? {
+        let index = number - 1
+        return bookSizes.indices.contains(index) ? bookSizes[index] : nil
+    }
+
+    /// The books of a batch of `total` still to come once `done` are, each
+    /// by the size it is timed by; none once every book is done.
+    private func booksLeft(after done: Int, of total: Int) -> [TimeLeftEstimate.Remaining] {
+        // A range from the first book left to the last, never empty: the
+        // guard leaves its lower bound no higher than its upper.
+        guard total > 0, done < total else { return [] }
+        return (max(done, 0) + 1...total).map { TimeLeftEstimate.Remaining(bytes: sizeOfBook(numbered: $0)) }
     }
 
     /// The import of one book began `step`.

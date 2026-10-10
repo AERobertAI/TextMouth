@@ -87,8 +87,9 @@ struct FeedDownloadProgressState: Equatable {
     private(set) var queued: [Int64?] = []
     /// The newest-N rule's downloads waiting apart, which outlast the run.
     private(set) var waits = FeedDownloadWaits()
-    /// What the run's finished downloads took.
-    private(set) var timing = FeedDownloadTiming()
+    /// What the run's finished downloads took, which the time left is
+    /// estimated from (`TimeLeftEstimate`).
+    private(set) var timing = WorkTiming()
     /// When the run began; nil while none runs.
     private(set) var runStartedAt: Date?
     /// Whether Cancel was pressed during the run.
@@ -176,7 +177,7 @@ struct FeedDownloadProgressState: Equatable {
         failed = 0
         download = nil
         queued = []
-        timing = FeedDownloadTiming()
+        timing = WorkTiming()
         runStartedAt = nil
         isCancelling = false
     }
@@ -184,16 +185,16 @@ struct FeedDownloadProgressState: Equatable {
     // MARK: What It Says
 
     /// The seconds the run has left at `now`, once a download has finished
-    /// (`FeedDownloadTimeEstimate`); nil before then, with nothing left, and
+    /// (`TimeLeftEstimate`); nil before then, with nothing left, and
     /// once Cancel is pressed.
     func secondsLeft(at now: Date) -> TimeInterval? {
         guard !isCancelling else { return nil }
-        var remaining: [FeedDownloadTimeEstimate.Remaining] = []
+        var remaining: [TimeLeftEstimate.Remaining] = []
         if let download {
             remaining.append(.init(bytes: download.bytesLeft, elapsed: now.timeIntervalSince(download.startedAt)))
         }
-        remaining += queued.map { FeedDownloadTimeEstimate.Remaining(bytes: $0) }
-        return FeedDownloadTimeEstimate.secondsLeft(after: timing, for: remaining)
+        remaining += queued.map { TimeLeftEstimate.Remaining(bytes: $0) }
+        return TimeLeftEstimate.secondsLeft(after: timing, for: remaining)
     }
 
     /// The lines the section shows at `now` under its title and bar, in

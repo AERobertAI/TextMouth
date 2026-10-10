@@ -284,6 +284,10 @@ enum ZipImportProgress: Equatable, Sendable {
     /// inside it) has extracted as much as `progress` says: its entries,
     /// and the bytes they declare (FR10).
     case extracting(archive: String, progress: ArchiveExtractionProgress)
+    /// The batch found its books, `sizes.count` of them, each by the size
+    /// the estimate of the time left times it by (`timedSize(of:)`), in the
+    /// order they import; told once, before the first book begins (FR10).
+    case foundBooks(sizes: [Int64?])
     /// The book numbered `number` of the `total` found in the archive, the
     /// item named `book` there (its file, or a DAISY book's folder), began
     /// `step`, one of the steps a failure names (FR10). Each book begins by
@@ -1234,15 +1238,37 @@ enum FileImportService {
         return found
     }
 
+    /// The bytes a ZIP batch's book is timed by, which the estimate of the
+    /// time left weighs it by (`TimeLeftEstimate`, FR10): the size of a text
+    /// book's file (EPUB, PDF, Word, plain text, Markdown, or HTML), whose
+    /// text is read whole as it imports. Nil for an audiobook's file, whose
+    /// import reads its chapters rather than its every byte, so its size says
+    /// little of its time; for a DAISY book's package file, folder, or ZIP,
+    /// which may hold its audio; and for a file whose size can't be read. A
+    /// book without a size is counted at the average time of the books
+    /// timed without one.
+    static func timedSize(of book: URL) -> Int64? {
+        // The file's own attributes first: a folder, or a ZIP, which in a
+        // batch is a DAISY book's, is never opened to be sized.
+        guard let values = try? book.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
+              values.isRegularFile == true,
+              let size = values.fileSize, size > 0,
+              book.pathExtension.lowercased() != "zip",
+              let format = BookFormat.detect(from: book), format != .audio, format != .daisy else { return nil }
+        return Int64(size)
+    }
+
     /// Import files discovered inside a ZIP while retaining individual errors
     /// and the books imported without some of their chapters.
     /// This is separate from archive discovery so partial-import behavior is
     /// deterministic and independently testable.
     /// - Parameters:
-    ///   - progress: told, for each file, that it begins by reading the file
-    ///     (`ZipImportProgress.importingBook`), each step its import then
-    ///     begins on its package, and the files done of the total once it is
-    ///     imported, fails, or is skipped as a duplicate (FR10).
+    ///   - progress: told first the size each file is timed by
+    ///     (`ZipImportProgress.foundBooks`), then, for each file, that it
+    ///     begins by reading the file (`ZipImportProgress.importingBook`),
+    ///     each step its import then begins on its package, and the files
+    ///     done of the total once it is imported, fails, or is skipped as a
+    ///     duplicate (FR10).
     ///   - isCancelled: asked before each file. Once it says to stop, the
     ///     files not yet imported are left alone, the books already imported
     ///     are kept, and the result says after how many of how many files
@@ -1275,6 +1301,12 @@ enum FileImportService {
         // Track hashes from this batch to avoid creating duplicate .tmbs
         // when the same file appears multiple times in a single zip
         var seenHashes = existingHashes
+
+        // The size each book is timed by, which the estimate of the time
+        // left weighs it by, read once for those who listen (FR10).
+        if let progress {
+            progress(.foundBooks(sizes: supportedFiles.map(timedSize(of:))))
+        }
 
         // Second pass: import each file, skipping duplicates
         for (index, fileURL) in supportedFiles.enumerated() {

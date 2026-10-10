@@ -129,6 +129,44 @@ final class ImportProgressTests: XCTestCase {
         )
     }
 
+    /// The time left weighs each book left by the size it is timed by: a
+    /// batch whose small books came first estimates its large one by the
+    /// rate those took, rather than at the average time of a book, so it no
+    /// longer runs short until the large one comes; a book without a size,
+    /// an audiobook's file, takes the average time of the books timed
+    /// without one, or of every book before any such was timed (FR10).
+    func testTimeLeftWeighsTheBooksLeftByTheirSizes() {
+        let clock = CommandClock()
+        let progress = ImportProgress(now: { clock.now })
+        progress.showArchive("Mixed Shelf.zip")
+        progress.receive(.foundBooks(sizes: [1_000_000, 1_000_000, 300_000_000, nil]))
+
+        progress.receive(.importingBook(number: 1, total: 4, book: "Notes.epub", step: .readingSource))
+        clock.advance(by: 2)
+        progress.receive(.importing(done: 1, total: 4))
+        // 1 MB in 2 seconds: the next 1 MB takes 2, the 300 MB book 600,
+        // and the audiobook the average, 2: 604 seconds. By books alone it
+        // was 6 seconds, less than a minute.
+        XCTAssertEqual(progress.state.details(at: clock.now), ["About 10 minutes left"])
+
+        progress.receive(.importingBook(number: 2, total: 4, book: "Charts.epub", step: .readingSource))
+        clock.advance(by: 2)
+        progress.receive(.importing(done: 2, total: 4))
+        progress.receive(.importingBook(number: 3, total: 4, book: "Atlas.pdf", step: .readingSource))
+        clock.advance(by: 30)
+        progress.receive(.importing(done: 3, total: 4))
+        // The large book came quicker than its size foretold, and the
+        // audiobook left takes the average of the three: 34 seconds.
+        XCTAssertEqual(progress.state.details(at: clock.now), ["Less than a minute left"])
+
+        progress.receive(.importingBook(number: 4, total: 4, book: "Harbor Talks.m4b", step: .readingSource))
+        clock.advance(by: 5)
+        progress.receive(.importing(done: 4, total: 4))
+        XCTAssertEqual(progress.state.details(at: clock.now), [], "nothing is left to estimate")
+        XCTAssertEqual(progress.state.timing.items, 4)
+        XCTAssertEqual(progress.state.timing.sizedItems, 3, "the audiobook was timed by a size")
+    }
+
     /// A book skipped as a duplicate is not timed, so an archive whose first
     /// books are already in the library does not promise far too little.
     func testDuplicatesSkippedAreNotTimed() {

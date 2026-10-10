@@ -109,18 +109,6 @@ final class ImportProgressWordingTests: XCTestCase {
         for (seconds, words) in expected {
             XCTAssertEqual(ImportProgressWording.timeLeft(seconds), words, "\(seconds) seconds")
         }
-        XCTAssertEqual(ImportTimeEstimate.rounded(.infinity), 0)
-        XCTAssertEqual(ImportTimeEstimate.rounded(.nan), 0)
-    }
-
-    /// The estimate is the average time of the books timed so far times the
-    /// books left, and there is none before a book is timed or once no book
-    /// is left.
-    func testTheEstimateIsTheAverageOfTheBooksTimedTimesTheBooksLeft() {
-        XCTAssertEqual(ImportTimeEstimate.secondsLeft(timedSeconds: 90, timedBooks: 3, remaining: 7), 210)
-        XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: 0, timedBooks: 0, remaining: 7), "no book timed yet")
-        XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: 90, timedBooks: 3, remaining: 0), "no book left")
-        XCTAssertNil(ImportTimeEstimate.secondsLeft(timedSeconds: .infinity, timedBooks: 3, remaining: 2))
     }
 
     /// The imports waiting behind the one shown are counted, in agreement
