@@ -60,8 +60,17 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
     /// next refresh of such a record reads its feed whole
     /// (`FeedRefresher.fetchAndRead`), so the size is known from then on.
     var entryTotal: FeedEntryTotal?
+    /// What this feed lists and downloads by itself, in place of the "List
+    /// and download" setting (`FeedSettings.itemPolicy`, FR11); nil follows
+    /// the setting ("Use the global setting"). Read through
+    /// `decodeIfPresent`, so a record written before the choice existed
+    /// loads, and written only when set, so such a record's file changes
+    /// only once a feed has a choice of its own.
+    var itemPolicyOverride: FeedItemPolicy?
     /// How many entries this feed keeps, in place of the setting
-    /// (`FeedSettings.keepEntries`); nil follows the setting.
+    /// (`FeedSettings.keepEntries`); nil follows the setting. Retired by
+    /// `itemPolicyOverride`, as the setting is by the "List and download"
+    /// choice.
     var keepEntriesOverride: Int?
     /// How many days after an episode plays to the end its download is
     /// deleted, in place of the setting
@@ -85,6 +94,7 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
         usesInsecureTransport = FeedTransport.isInsecure(feedURL)
         isSerial = false
         entryTotal = nil
+        itemPolicyOverride = nil
         keepEntriesOverride = nil
         deleteDownloadsDaysAfterPlayedOverride = nil
     }

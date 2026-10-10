@@ -367,11 +367,17 @@ final class ConfigService: ObservableObject {
         /// Hours between feed refreshes while TextMouth runs, 1 to 168, or 0
         /// to refresh only at launch and when asked.
         var feedRefreshIntervalHours: Int?
-        /// How many of each feed's newest entries are kept besides its
-        /// downloads, 0 to 2,000, or -1 for every entry.
-        var feedKeepEntries: Int?
-        /// Whether new episodes download by themselves.
-        var feedAutoDownload: Bool?
+        /// The "List and download" choice (FR11, `FeedItemPolicy.Choice`):
+        /// "everyListedNewestDownloaded" (every item listed, the newest
+        /// downloaded), "everyListedDownloadsByHand", or "onlyNewestListed".
+        /// Empty keeps the current choice, as does a name that is none of
+        /// these. It replaced feedKeepEntries and feedAutoDownload, which a
+        /// file written before it may still hold, and which are ignored.
+        var feedItems: String = ""
+        /// How many of each feed's newest items the choice downloads, or
+        /// lists, from 1 to 2,000; a number outside that is read as the
+        /// nearest of the two.
+        var feedNewestCount: Int?
         /// Days after an episode plays to the end that its download is
         /// deleted, 0 (at once) to 365, or -1 never.
         var feedDeleteDownloadsDaysAfterPlayed: Int?
@@ -493,8 +499,12 @@ final class ConfigService: ObservableObject {
                 .feedRefreshIntervalHours,
                 rule: SettingsPolicy.feedRefreshIntervalHours
             )
-            feedKeepEntries = fields.optionalThreshold(.feedKeepEntries, rule: SettingsPolicy.feedKeepEntries)
-            feedAutoDownload = fields.optionalFlag(.feedAutoDownload)
+            feedItems = fields.rawChoice(.feedItems, rule: SettingsPolicy.feedItems)
+            // Moved into range, which is logged as a repair; a number that is
+            // not whole is unreadable, and leaves the setting alone.
+            feedNewestCount = fields.optionalValue(.feedNewestCount) { (count: Int) in
+                SettingsPolicy.feedNewestCount.validated(count)
+            }
             feedDeleteDownloadsDaysAfterPlayed = fields.optionalThreshold(
                 .feedDeleteDownloadsDaysAfterPlayed,
                 rule: SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed
@@ -577,9 +587,10 @@ final class ConfigService: ObservableObject {
                     "bluetoothMonitoringEnabled", "bluetoothDisconnectDelay", "restartTimerGestureEnabled",
                     "restartTimerGesturePattern", "restartTimerGestureWindow",
                 ])
-                // Feeds (FR03), which the feed engine keeps.
+                // Feeds (FR03), which the feed engine keeps, with the "List and
+                // download" choice and its number (FR11).
                 mirrored += sameNames([
-                    "feedRefreshAtLaunch", "feedRefreshIntervalHours", "feedKeepEntries", "feedAutoDownload",
+                    "feedRefreshAtLaunch", "feedRefreshIntervalHours", "feedItems", "feedNewestCount",
                     "feedDeleteDownloadsDaysAfterPlayed", "feedRefreshAlert", "feedNotifications",
                 ])
                 // Storage: where the logs are written, which the log writer

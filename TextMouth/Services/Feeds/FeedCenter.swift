@@ -655,6 +655,12 @@ final class FeedCenter: ObservableObject {
         store.update(feedID) { $0.feed.folderID = folderID }
     }
 
+    /// Gives the feed `feedID` its own "List and download" choice and number
+    /// (FR11), or nil to use the global setting.
+    func setItemPolicy(_ policy: FeedItemPolicy?, of feedID: UUID) {
+        store.update(feedID) { $0.feed.itemPolicyOverride = policy }
+    }
+
     /// Gives the feed `feedID` its own number of entries kept, or nil to
     /// follow the setting; the next refresh applies it, reading the feed
     /// whole again even when it has not changed.
