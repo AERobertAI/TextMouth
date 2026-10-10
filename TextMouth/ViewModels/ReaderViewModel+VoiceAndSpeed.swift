@@ -191,16 +191,18 @@ extension ReaderViewModel {
     /// or which chapter comes next.
     ///
     /// The skips are saved as the headings themselves (`SkippedHeading`,
-    /// T06's branch B), in the reader's copy of the book and in the
-    /// library; their IDs, which the reader's filter matches, are written
-    /// from them.
+    /// T06's branch B), each with the words at its start as the text reads
+    /// now, by which a later text of the book can find it again, in the
+    /// reader's copy of the book and in the library; their IDs, which the
+    /// reader's filter matches, are written from them.
     func toggleHeadingSkip(_ heading: Heading) {
         var skipped = book.skippedHeadings ?? []
         if skipped.contains(where: { $0.id == heading.id }) {
             skipped.removeAll { $0.id == heading.id }
             announceToVoiceOver("Section included: \(heading.text)")
         } else {
-            skipped.append(SkippedHeading(heading))
+            let start = TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
+            skipped.append(SkippedHeading(heading, anchor: capturedAnchor(at: start)))
             announceToVoiceOver("Section skipped: \(heading.text)")
         }
         book.setSkippedHeadings(skipped)

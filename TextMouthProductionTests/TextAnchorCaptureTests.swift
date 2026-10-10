@@ -44,6 +44,41 @@ final class TextAnchorCaptureTests: XCTestCase {
         XCTAssertNil(world.library.bookByID(book.id)?.skippedHeadingIDs)
     }
 
+    /// Skipping a heading saves the heading itself, with the words at its
+    /// start as the text reads now, in the reader's copy, the book's row,
+    /// and its record, with its ID written from it, which the reader's
+    /// filter matches; skipping it again includes it, and saves no skip.
+    func testASkippedHeadingKeepsTheWordsAtItsStart() throws {
+        let world = try makeIntegrationWorld("Anchor Capture Skipped Heading")
+        let book = try world.importBook(from: writeOrchardEPUB())
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let content = try XCTUnwrap(reader.content)
+        let heading = try XCTUnwrap(reader.headings.first { $0.text == "Pruning in Frost" }, "the fixture lacks the heading")
+
+        reader.toggleHeadingSkip(heading)
+
+        let start = TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
+        let expected = SkippedHeading(heading, anchor: content.anchor(at: start, measuredIn: TextAnchor.currentMeasure))
+        XCTAssertNotNil(expected.anchor)
+        XCTAssertEqual(reader.book.skippedHeadings, [expected])
+        XCTAssertTrue(reader.isHeadingSkipped(heading))
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.skippedHeadings, [expected])
+        XCTAssertEqual(row.skippedHeadingIDs, [heading.id])
+        LibraryPersistenceService.flushPendingSave()
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(record.state.skippedHeadings, [expected])
+        XCTAssertEqual(record.state.skippedHeadingIDs, [heading.id])
+
+        reader.toggleHeadingSkip(heading)
+
+        XCTAssertFalse(reader.isHeadingSkipped(heading))
+        XCTAssertNil(reader.book.skippedHeadings)
+        XCTAssertNil(world.library.bookByID(book.id)?.skippedHeadings)
+        XCTAssertNil(world.library.bookByID(book.id)?.skippedHeadingIDs)
+    }
+
     // MARK: - The Reading Position
 
     /// Each save of a text book's position takes the words around it from
