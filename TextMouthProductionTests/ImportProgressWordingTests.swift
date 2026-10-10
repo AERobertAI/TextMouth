@@ -47,12 +47,21 @@ final class ImportProgressWordingTests: XCTestCase {
     }
 
     /// The one book an import brings in, a file or an archive holding one
-    /// book, is named with the step it is at.
+    /// book, is named with the step it is at, and an audiobook's archive
+    /// with how far it has been extracted, while it is.
     func testTheOneBookLineNamesTheBookAndItsStep() {
         XCTAssertEqual(ImportProgressWording.book("Moby Dick.epub", step: .readingText), "“Moby Dick.epub”, reading its text")
         XCTAssertEqual(
             ImportProgressWording.book("Harbor Talks.zip", step: .extractingArchive),
             "“Harbor Talks.zip”, extracting the archive"
+        )
+        XCTAssertEqual(
+            ImportProgressWording.book(
+                "Harbor Talks.zip",
+                step: .extractingArchive,
+                extraction: ArchiveExtractionProgress(entriesDone: 12, entries: 30, bytesDone: 120_000_000, bytes: 340_000_000)
+            ),
+            "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB"
         )
     }
 
@@ -167,6 +176,12 @@ final class ImportProgressWordingTests: XCTestCase {
             ),
             "Extracting “Folders.zip”: 2 of 3 items..."
         )
+        XCTAssertEqual(
+            ImportProgressWording.extracted(ArchiveExtractionProgress(entriesDone: 120, entries: 300, bytesDone: 1_200_000_000, bytes: 3_400_000_000)),
+            "120 of 300 items, 1.2 GB of 3.4 GB",
+            "the counts a batch's line and a one-book archive's line share"
+        )
+        XCTAssertEqual(ImportProgressWording.extracted(ArchiveExtractionProgress(entriesDone: 2, entries: 3, bytesDone: 0, bytes: 0)), "2 of 3 items")
         XCTAssertEqual(ImportProgressWording.size(999), ArchiveFigures.size(999), "sizes read as the archive messages write them")
         XCTAssertEqual(ImportProgressWording.size(1_200_000_000), ArchiveFigures.size(1_200_000_000))
     }

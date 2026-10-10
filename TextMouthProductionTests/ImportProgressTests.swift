@@ -342,6 +342,20 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(progress.state.total, 0, "one book has no count")
     }
 
+    /// An archive holding one audiobook shows how far it has been
+    /// extracted, its items and bytes, on its line while it is extracted,
+    /// and no longer once its import moves on (FR10).
+    func testAnAudiobookArchivesLineCountsWhatItHasExtracted() {
+        let progress = ImportProgress()
+        progress.showBook("Harbor Talks.zip")
+        progress.reach(.extractingArchive)
+        progress.receive(extraction: ArchiveExtractionProgress(entriesDone: 12, entries: 30, bytesDone: 120_000_000, bytes: 340_000_000))
+        XCTAssertEqual(progress.state.message, "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB")
+
+        progress.reach(.readingAudio)
+        XCTAssertEqual(progress.state.message, "“Harbor Talks.zip”, reading its audio")
+    }
+
     // MARK: - Through the Import Queue
 
     /// A file imported alone through the library's own import queue is named
@@ -400,6 +414,45 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 20) { !model.library.books.isEmpty || model.showError }, "the import never finished")
         XCTAssertFalse(model.showError, model.errorMessage ?? "")
         XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
+    }
+
+    /// An archive holding one audiobook, imported through the library's own
+    /// queue, tells the overlay what its extraction has done: held at the
+    /// step after it, the overlay has the whole archive counted, every item
+    /// and every byte its tracks declare, and its line has moved on to that
+    /// step. Until October 10, 2026 such an archive showed only its step.
+    func testAnAudiobookArchiveTellsTheOverlayWhatItExtracts() throws {
+        let folder = makeIntegrationLibraryFolder("Import Progress Audio Bytes")
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        useAfterImportingBehavior(.askEachTime)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let sources = try makeSandboxDirectory("ImportProgressAudioBytes")
+        let track = sources.appendingPathComponent("Chapter 1.wav")
+        try AudioTestFixtures.writeSilence(to: track)
+        let trackData = try Data(contentsOf: track)
+        let archive = sources.appendingPathComponent("Harbor Talks.zip")
+        try FileManager.default.moveItem(
+            at: try makeTemporaryZip(prefix: "ImportProgressBytes", entries: ["Chapter 1.wav": trackData]),
+            to: archive
+        )
+        let gate = holdImport(of: model, at: .readingAudio)
+
+        model.importZipAsync(from: archive, toFolder: folder.path)
+
+        XCTAssertTrue(
+            waitUntil(timeout: 10) { model.importProgress.state.message == "“Harbor Talks.zip”, reading its audio" },
+            model.importProgress.state.message
+        )
+        let extraction = try XCTUnwrap(model.importProgress.state.book?.extraction, "the overlay heard nothing of the extraction")
+        XCTAssertEqual(extraction.entriesDone, extraction.entries)
+        XCTAssertEqual(extraction.entries, 1)
+        XCTAssertEqual(extraction.bytes, Int64(trackData.count))
+        XCTAssertEqual(extraction.bytesDone, extraction.bytes)
+        gate.signal()
+        XCTAssertTrue(waitUntil(timeout: 20) { !model.library.books.isEmpty || model.showError }, "the import never finished")
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
     }
 
     /// Files imported one after another through the library's own queue:

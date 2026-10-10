@@ -477,10 +477,13 @@ extension LibraryViewModel {
                     return
                 }
                 if Self.isAudioZip(url: url) {
+                    // Its extraction's items and bytes show on its line
+                    // while it is extracted (FR10).
                     let imported = try FileImportService.importAudioZipWithReport(
                         from: url,
                         toFolder: folderPath,
-                        observer: progress.observeBook(url.lastPathComponent, then: queue.stepObserver)
+                        observer: progress.observeBook(url.lastPathComponent, then: queue.stepObserver),
+                        extraction: progress.observeExtraction()
                     )
                     DispatchQueue.main.sync {
                         self.completeSingleImportedBook(imported, originalURL: url, request: request)

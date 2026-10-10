@@ -1565,6 +1565,21 @@ enum FileImportService {
         toFolder folderPath: String = "",
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
+        try importAudioZipWithReport(from: zipURL, toFolder: folderPath, observer: observer, extraction: nil)
+    }
+
+    /// Imports the ZIP of audio files at `zipURL` as one audio book, as
+    /// `importAudioZipWithReport(from:toFolder:observer:)` does, telling
+    /// `extraction` how far the archive's extraction has got, its entries
+    /// and bytes, as the extractor counts them (FR10): the import overlay
+    /// shows them on the book's line, so a large audiobook's archive is
+    /// seen to move while it is extracted.
+    static func importAudioZipWithReport(
+        from zipURL: URL,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil,
+        extraction: ((ArchiveExtractionProgress) -> Void)?
+    ) throws -> ImportedBook {
         try ImportRun.perform(importing: zipURL.lastPathComponent, observer: observer) { run in
             try run.begin(.readingSource)
             let hash = try md5Hash(of: zipURL)
@@ -1584,7 +1599,12 @@ enum FileImportService {
 
             try run.begin(.extractingArchive, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
-            try ArchiveExtractor.extract(archiveAt: zipURL, into: audioDirectory, budget: ArchiveBudget())
+            try ArchiveExtractor.extract(
+                archiveAt: zipURL,
+                into: audioDirectory,
+                budget: ArchiveBudget(),
+                progress: extraction
+            )
 
             // A manifest beside the audio can name the book and its author.
             var title = zipName

@@ -21,6 +21,14 @@ struct ImportProgressState: Equatable {
         /// Whether it is done: its line stays until the next book begins,
         /// but the time on it is no longer said.
         var isDone = false
+        /// How far the extraction of an archive holding one audiobook has
+        /// got, which its line says while that is its step (FR10).
+        var extraction: ArchiveExtractionProgress?
+
+        /// The extraction its line says: only while it is extracted.
+        var extractionShown: ArchiveExtractionProgress? {
+            step == .extractingArchive ? extraction : nil
+        }
     }
 
     /// The books done, which the bar and its count show.
@@ -61,11 +69,12 @@ struct ImportProgressState: Equatable {
     }
 
     /// The line under the bar: the book under way and the step it is at,
-    /// or, with none, the notice.
+    /// with how far an archive holding one audiobook has been extracted
+    /// while it is, or, with none, the notice.
     var message: String {
         guard let book else { return notice }
         guard let number = book.number else {
-            return ImportProgressWording.book(book.name, step: book.step)
+            return ImportProgressWording.book(book.name, step: book.step, extraction: book.extractionShown)
         }
         return ImportProgressWording.book(book.name, number: number, of: total, step: book.step)
     }
@@ -120,6 +129,12 @@ struct ImportProgressState: Equatable {
     /// The import of one book began `step`.
     mutating func reach(_ step: ImportStep) {
         book?.step = step
+    }
+
+    /// The archive holding the one book under way, an audiobook's tracks,
+    /// has been extracted as far as `extraction` says (FR10).
+    mutating func receive(extraction: ArchiveExtractionProgress) {
+        book?.extraction = extraction
     }
 
     /// Notes that Cancel was pressed: the overlay says the import is
@@ -388,5 +403,22 @@ final class ImportProgress: ObservableObject {
             DispatchQueue.main.async { self.reach(step) }
             try next?(step, package)
         }
+    }
+
+    /// For an archive holding one audiobook, imported on the import queue:
+    /// the extractor's progress callback, which shows on the main queue how
+    /// far the archive has been extracted, its items and bytes, on the
+    /// book's line (FR10). The extractor tells it at most about two hundred
+    /// times an archive (`ArchiveExtractor`).
+    nonisolated func observeExtraction() -> (ArchiveExtractionProgress) -> Void {
+        { extraction in
+            DispatchQueue.main.async { self.receive(extraction: extraction) }
+        }
+    }
+
+    /// Shows how far the archive holding the one book under way has been
+    /// extracted.
+    func receive(extraction: ArchiveExtractionProgress) {
+        state.receive(extraction: extraction)
     }
 }

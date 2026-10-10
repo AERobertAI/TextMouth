@@ -25,12 +25,19 @@ enum ImportProgressWording {
     /// How far the extraction of the archive named `archive`, the archive
     /// imported or one found inside it, has got, by its items and by the
     /// bytes they declare: "Extracting “Library Export.zip”: 120 of 300
-    /// items, 1.2 GB of 3.4 GB...". An archive declaring no bytes, folders
-    /// and empty files alone, is counted by its items alone.
+    /// items, 1.2 GB of 3.4 GB...".
     static func extracting(archive: String, progress: ArchiveExtractionProgress) -> String {
+        "Extracting “\(archive)”: \(extracted(progress))..."
+    }
+
+    /// How far an extraction has got, by its items and by the bytes they
+    /// declare: "120 of 300 items, 1.2 GB of 3.4 GB". An archive declaring
+    /// no bytes, folders and empty files alone, is counted by its items
+    /// alone.
+    static func extracted(_ progress: ArchiveExtractionProgress) -> String {
         let items = "\(progress.entriesDone) of \(progress.entries) items"
-        guard progress.bytes > 0 else { return "Extracting “\(archive)”: \(items)..." }
-        return "Extracting “\(archive)”: \(items), \(size(progress.bytesDone)) of \(size(progress.bytes))..."
+        guard progress.bytes > 0 else { return items }
+        return "\(items), \(size(progress.bytesDone)) of \(size(progress.bytes))"
     }
 
     /// `bytes` as a size, as the archive messages write sizes, in decimal
@@ -54,9 +61,14 @@ enum ImportProgressWording {
     }
 
     /// The one book an import is bringing in, a file or an archive holding
-    /// one book, and the step it is at: "“Moby Dick.epub”, reading its text".
-    static func book(_ name: String, step: ImportStep) -> String {
-        "“\(name)”, \(self.step(step))"
+    /// one book, and the step it is at: "“Moby Dick.epub”, reading its text";
+    /// with how far the extraction of an archive holding one audiobook has
+    /// got, while it is extracted: "“Harbor Talks.zip”, extracting the
+    /// archive: 12 of 30 items, 120 MB of 340 MB" (FR10).
+    static func book(_ name: String, step: ImportStep, extraction: ArchiveExtractionProgress? = nil) -> String {
+        let line = "“\(name)”, \(self.step(step))"
+        guard let extraction else { return line }
+        return "\(line): \(extracted(extraction))"
     }
 
     /// How long a book must have been under way before the overlay says how
