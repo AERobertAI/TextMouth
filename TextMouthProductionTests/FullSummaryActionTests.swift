@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -7,7 +8,8 @@ import XCTest
 /// I twice, named as the user chose on October 7 (question 9), listed under
 /// Information after their brief summaries, each posting its own
 /// notification, with Where Am I?, Speak Info, and Book Info keeping their
-/// keys.
+/// keys; the rule every press of a summary follows; and their menu items
+/// (question 8) and Shortcuts tab rows.
 @MainActor
 final class FullSummaryActionTests: XCTestCase {
 
@@ -96,6 +98,77 @@ final class FullSummaryActionTests: XCTestCase {
                 XCTAssertEqual(SummaryPress.outcome(pressing: pressed, while: speaking, sameSubject: false), .replace(with: pressed))
             }
             XCTAssertEqual(SummaryPress.outcome(pressing: pressed, while: nil, sameSubject: false), .speak(pressed))
+        }
+    }
+
+    // MARK: - The Menus (Question 8)
+
+    /// The Playback menu offers Where Am I? Full Summary right after Where
+    /// Am I?, and the Library menu Speak Full Info right after Speak Info,
+    /// named as the actions are, with no key equivalent shown, as their
+    /// neighbors show none, and enabled as their neighbors are.
+    func testTheMenusOfferEachFullSummaryAfterItsBriefOne() throws {
+        let mainMenu = try XCTUnwrap(NSApp.mainMenu)
+        let pairs: [(menu: String, brief: String, full: String)] = [
+            ("Playback", "Where Am I?", ShortcutAction.whereAmIFull.title),
+            ("Library", ShortcutAction.speakInfo.title, ShortcutAction.speakFullInfo.title),
+        ]
+        for (menuTitle, briefTitle, fullTitle) in pairs {
+            let menu = try XCTUnwrap(mainMenu.items.first { $0.title == menuTitle }?.submenu, "no \(menuTitle) menu")
+            let titles = menu.items.map(\.title).joined(separator: ", ")
+            let briefIndex = try XCTUnwrap(menu.items.firstIndex { $0.title == briefTitle }, titles)
+            let fullIndex = briefIndex + 1
+            guard menu.items.indices.contains(fullIndex) else {
+                return XCTFail("nothing follows \(briefTitle) in \(menuTitle): \(titles)")
+            }
+            let brief = menu.items[briefIndex]
+            let full = menu.items[fullIndex]
+            XCTAssertEqual(full.title, fullTitle, titles)
+            XCTAssertEqual(full.keyEquivalent, "", "\(fullTitle) shows a key equivalent")
+            XCTAssertEqual(brief.keyEquivalent, "", "\(briefTitle) shows a key equivalent")
+            XCTAssertEqual(full.isEnabled, brief.isEnabled, "\(fullTitle) is not enabled as \(briefTitle) is")
+            XCTAssertEqual(full.isHidden, brief.isHidden)
+        }
+    }
+
+    // MARK: - The Shortcuts Tab
+
+    /// The Shortcuts tab says each one's keys in words, "W twice" and "I
+    /// twice", in its row's VoiceOver label as for every action.
+    func testTheShortcutsTabSaysTheirKeysInWords() {
+        let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("full-summary-tab"), installsEventMonitor: false)
+
+        XCTAssertEqual(manager.allDisplayStrings(for: .whereAmIFull), "W twice")
+        XCTAssertEqual(manager.allDisplayStrings(for: .speakFullInfo), "I twice")
+        XCTAssertEqual(
+            ShortcutsSettingsWording.rowLabel(for: .whereAmIFull, keys: manager.bindingsFor(.whereAmIFull), isEdited: manager.isEdited(.whereAmIFull)),
+            "Where Am I? Full Summary: W twice"
+        )
+        XCTAssertEqual(
+            ShortcutsSettingsWording.rowLabel(for: .speakFullInfo, keys: manager.bindingsFor(.speakFullInfo), isEdited: manager.isEdited(.speakFullInfo)),
+            "Speak Full Info: I twice"
+        )
+    }
+
+    /// The tab's rows for the two say so to VoiceOver. SwiftUI builds these
+    /// elements only for an assistive app, so without one the test is
+    /// skipped; the wording above holds either way.
+    func testTheirRowsSayTheirKeysToVoiceOver() throws {
+        let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("full-summary-tab-rows"), installsEventMonitor: false)
+        let labels = ["Where Am I? Full Summary: W twice", "Speak Full Info: I twice"]
+        let view = VStack {
+            ShortcutBindingRow(action: .whereAmIFull)
+            ShortcutBindingRow(action: .speakFullInfo)
+        }
+        .environmentObject(manager)
+
+        try withHostedView(view, until: { hosting in labels.allSatisfy { !self.accessibilityElements(labelled: $0, in: hosting).isEmpty } }) { hosting in
+            guard labels.contains(where: { !accessibilityElements(labelled: $0, in: hosting).isEmpty }) else {
+                throw XCTSkip("SwiftUI exposed no accessibility elements without an assistive app")
+            }
+            for label in labels {
+                XCTAssertFalse(accessibilityElements(labelled: label, in: hosting).isEmpty, "no row says \(label)")
+            }
         }
     }
 }

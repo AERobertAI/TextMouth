@@ -95,6 +95,13 @@ struct PlaybackCommands: Commands {
                 NotificationCenter.default.post(name: .whereAmI, object: nil)
             }
 
+            // The full announcement (FR12, question 8). Its key, W twice
+            // unless changed, is handled by KeyboardShortcutManager for
+            // window targeting, and no menu can show a double press.
+            Button(ShortcutAction.whereAmIFull.title) {
+                NotificationCenter.default.post(name: .whereAmIFull, object: nil)
+            }
+
             if canReleaseMediaControls == true {
                 Divider()
 
@@ -249,6 +256,12 @@ struct LibraryCommands: Commands {
             // menu's, and from a feed's row it opens Feed Info.
             Button(ShortcutAction.speakInfo.title) {
                 NotificationCenter.default.post(name: .speakInfo, object: nil)
+            }
+
+            // The selected row's full summary (FR12, question 8), I twice
+            // unless changed, likewise handled by KeyboardShortcutManager.
+            Button(ShortcutAction.speakFullInfo.title) {
+                NotificationCenter.default.post(name: .speakFullInfo, object: nil)
             }
 
             Divider()
