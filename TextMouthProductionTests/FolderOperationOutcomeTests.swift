@@ -332,6 +332,41 @@ final class FolderOperationOutcomeTests: XCTestCase {
         )
     }
 
+    /// A window whose folder another window deleted or moved, as Delete
+    /// Feed… or Delete Folder… there does (the feed follow-ups after FR14),
+    /// never keeps a path that names no folder: it stays while its folder is
+    /// there, follows the folder it showed to its new path, and otherwise
+    /// goes to the nearest folder above it still in the library, or to the
+    /// library's top level.
+    func testAWindowLeavesAFolderDeletedOrMovedElsewhere() {
+        let podcasts = BookFolder(name: "Podcasts")
+        let feed = BookFolder(name: "Finish It!", parentPath: "Podcasts")
+        let inner = BookFolder(name: "Inner", parentPath: "Podcasts/Finish It!")
+        var library = Library(folders: [podcasts, feed, inner])
+        func path(_ current: String, _ folderID: UUID?) -> String {
+            FolderSheetNavigation.folderPath(showing: current, folderID: folderID, in: library)
+        }
+
+        XCTAssertEqual(path("Podcasts/Finish It!", feed.id), "Podcasts/Finish It!", "a window left a folder that is there")
+        XCTAssertEqual(path("", nil), "", "the top level is always there")
+
+        // Delete Feed… deleted the feed's folder and the folder inside it.
+        library.folders = [podcasts]
+        XCTAssertEqual(path("Podcasts/Finish It!", feed.id), "Podcasts")
+        XCTAssertEqual(path("Podcasts/Finish It!/Inner", inner.id), "Podcasts")
+
+        // Delete Folder… deleted every folder.
+        library.folders = []
+        XCTAssertEqual(path("Podcasts/Finish It!", feed.id), "")
+
+        // Another window renamed the folder: the window follows it.
+        var renamed = feed
+        renamed.name = "Finished"
+        library.folders = [podcasts, renamed]
+        XCTAssertEqual(path("Podcasts/Finish It!", feed.id), "Podcasts/Finished")
+        XCTAssertEqual(path("Podcasts/Finish It!", nil), "Podcasts", "with no folder known, the nearest folder above")
+    }
+
     /// A sheet whose operation worked shows nothing and announces nothing
     /// as it closes.
     func testSuccessShowsAndAnnouncesNothing() {
