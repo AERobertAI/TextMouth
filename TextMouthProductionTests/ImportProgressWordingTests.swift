@@ -123,6 +123,8 @@ final class ImportProgressWordingTests: XCTestCase {
     func testCancellingIsSaidInPlaceOfTheTimeLeft() {
         XCTAssertEqual(ImportProgressWording.cancelling(afterBook: true), "Cancelling after this book...")
         XCTAssertEqual(ImportProgressWording.cancelling(afterBook: false), "Cancelling...")
+        XCTAssertEqual(ImportProgressWording.cancellingLine, "Cancelling...")
+        XCTAssertEqual(FeedDownloadProgressWording.cancelling, ImportProgressWording.cancellingLine, "the feed section's words are not the overlay's")
     }
 
     // MARK: - Counts and Extraction

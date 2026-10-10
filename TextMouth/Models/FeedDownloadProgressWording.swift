@@ -78,8 +78,8 @@ enum FeedDownloadProgressWording {
 
     /// What the section says once Cancel is pressed, in place of the time
     /// left, while the download under way, already being added to the
-    /// library, finishes.
-    static let cancelling = "Cancelling..."
+    /// library, finishes: the import overlay's words for the same moment.
+    static let cancelling = ImportProgressWording.cancellingLine
 
     /// The downloads waiting apart, a line for each reason with any: "2
     /// waiting for a network without data limits", "1 waiting for room on

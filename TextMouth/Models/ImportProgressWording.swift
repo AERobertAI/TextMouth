@@ -115,10 +115,16 @@ enum ImportProgressWording {
 
     /// What the overlay says once Cancel is pressed, in place of the time
     /// left: the import stops after the book under way, or, before any book,
-    /// at its next step.
+    /// at its next step (`cancellingLine`).
     static func cancelling(afterBook: Bool) -> String {
-        afterBook ? "Cancelling after this book..." : "Cancelling..."
+        afterBook ? "Cancelling after this book..." : cancellingLine
     }
+
+    /// What a progress display says once Cancel is pressed while what it
+    /// shows stops at its next step: the import overlay before any book,
+    /// and the feed downloads section while a download already being added
+    /// to the library finishes (`FeedDownloadProgressWording.cancelling`).
+    static let cancellingLine = "Cancelling..."
 
     /// How many imports wait their turn behind the one the overlay shows:
     /// "1 more import waiting", "2 more imports waiting". Each file chosen
