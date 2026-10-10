@@ -147,6 +147,82 @@ final class ReaderVisibleTextWindowTests: XCTestCase {
     }
 }
 
+// MARK: - What VoiceOver Reads There
+
+/// What VoiceOver and a braille display find in the reader's text area
+/// (TODO A11): a scroll area named "Book content", holding the text the
+/// reader shows, whole.
+///
+/// The label used to sit on the text itself, which made it the text's
+/// value in place of its words: while the book played, VoiceOver read
+/// "Book content" and no words; while it was paused, when the text can be
+/// selected, its value said "Book content" while its characters were the
+/// window's, and VoiceOver showed as many of those characters as the label
+/// has, twelve: "Where did th", in the user's Rainbow's End.
+///
+/// Only the paused reader's text is read here: SwiftUI exposes a
+/// selectable text to the test as AppKit does, but builds the elements of
+/// the text it draws while a book plays only for a connected assistive
+/// app. (Read from outside the test host, as VoiceOver reads it, that text
+/// gave its words whole too, under the same named scroll area.)
+@MainActor
+final class ReaderTextAreaAccessibilityTests: XCTestCase {
+    /// A long book reopened near its end, paused: the text's value is the
+    /// window the reader shows, whole, and as long as its characters, and
+    /// the scroll area holding it is the one element named "Book content".
+    func testVoiceOverReadsTheShownTextWholeInANamedScrollArea() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        var book = try makeMarkdownBook(chapters: 3, charactersPerChapter: 60_000, sectionsPerChapter: 4)
+        book.readingPosition = ReadingPosition(chapterIndex: 2, characterOffset: 50_000)
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library(books: [book])
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: library,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
+            notificationCenter: NotificationCenter()
+        )
+        defer { reader.close() }
+        XCTAssertTrue(waitUntil(timeout: 30) { !reader.isLoading }, "The book never loaded")
+        let shown = reader.displayVisibleTextWindow
+        XCTAssertGreaterThan(shown.utf16.count, ReaderViewModel.maxDisplayChars / 2, "the reader shows a window of the long chapter")
+
+        try withHostedView(
+            ReaderTextArea(viewModel: reader),
+            size: NSSize(width: 900, height: 600),
+            until: { !self.texts(in: $0).isEmpty }
+        ) { hostingView in
+            let text = try XCTUnwrap(texts(in: hostingView).first, "VoiceOver finds no text")
+            let value = text.accessibilityValue() as? String
+            // Compared whole, but described briefly: the window is
+            // thousands of characters long.
+            XCTAssertTrue(
+                value == shown,
+                "the text's value is \(Self.describe(value)), not the \(shown.utf16.count) characters shown"
+            )
+            XCTAssertEqual(text.accessibilityNumberOfCharacters(), shown.utf16.count)
+            XCTAssertNotEqual(text.accessibilityLabel(), ReaderTextArea.accessibilityLabel)
+
+            let named = accessibilityElements(labelled: ReaderTextArea.accessibilityLabel, in: hostingView)
+            XCTAssertEqual(named.map { $0.accessibilityRole() }, [.scrollArea])
+            let area = try XCTUnwrap(named.first)
+            XCTAssertEqual(texts(in: area).count, 1, "the named scroll area holds the text")
+        }
+    }
+
+    /// The static texts below `root`, as VoiceOver finds them.
+    private func texts(in root: Any) -> [NSAccessibilityProtocol] {
+        accessibleControls(in: root).filter { $0.role == .staticText }.map(\.element)
+    }
+
+    /// A text value in brief for a failure message: its first words and
+    /// its length, or "none".
+    private static func describe(_ value: String?) -> String {
+        guard let value else { return "none" }
+        return "\"\(value.prefix(40))\" (\(value.utf16.count) characters)"
+    }
+}
+
 // MARK: - Fixtures
 
 /// Texts and readers for the text area's tests.

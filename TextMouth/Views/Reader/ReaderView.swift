@@ -356,13 +356,24 @@ struct ReaderLocationHeader: View {
     }
 }
 
-/// The book's text, which VoiceOver calls "Book content".
+/// The book's text, in a scroll area VoiceOver calls "Book content", where
+/// VoiceOver and a braille display read its words whole.
+///
+/// The label names the scroll area, never the text (TODO A11). On the text
+/// it became the text's value in place of its words: while the book
+/// played, VoiceOver read "Book content" and nothing of the book; while it
+/// was paused, when the text can be selected, the value said "Book
+/// content" while the characters were the book's, and VoiceOver showed as
+/// many of them as the label has, twelve: "Where did th".
 ///
 /// Only a window of text around the current position is drawn. The full
 /// chapter text lives in the model for TTS; rendering hundreds of thousands
 /// of characters in a SwiftUI Text view freezes the main thread.
 struct ReaderTextArea: View {
     @ObservedObject var viewModel: ReaderViewModel
+
+    /// What VoiceOver calls the scroll area holding the book's text.
+    static let accessibilityLabel = "Book content"
 
     var body: some View {
         ScrollView {
@@ -376,15 +387,14 @@ struct ReaderTextArea: View {
                     // playback.
                     visibleText
                         .textSelection(.disabled)
-                        .accessibilityLabel("Book content")
                 } else {
                     visibleText
                         .textSelection(.enabled)
-                        .accessibilityLabel("Book content")
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityLabel(Self.accessibilityLabel)
     }
 
     /// The window of text around the current position, laid out across the
