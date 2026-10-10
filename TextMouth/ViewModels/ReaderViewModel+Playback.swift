@@ -2570,7 +2570,9 @@ extension ReaderViewModel {
     /// makes none: one that reaches a book stopped, finished, or paused
     /// already, such as a Pause from the AirPods or a media key sent to a
     /// window that was not playing. It once made the sound whatever it
-    /// paused.
+    /// paused. Such a pause tells Now Playing nothing either, unless the
+    /// book holds the media controls: it once told the system a stopped
+    /// book was paused, which took the AirPods.
     func pause(playingPauseSound: Bool) {
         // Capture pre-pause playing state BEFORE we issue any pause calls.
         // The audio / speech services flip their flags synchronously, so
@@ -2635,9 +2637,18 @@ extension ReaderViewModel {
             sleepTimerService.pauseCountdown(by: readerID)
         }
         readingStatsService.endSession(bookID: book.id)
-        nowPlayingService.updateNowPlayingInfo(
-            title: book.title, author: book.author, isPlaying: false
-        )
+        // Now Playing hears of the pause only when it paused something, or
+        // when the book holds the media controls already, which it shows
+        // paused again. A pause that paused nothing in a book holding
+        // nothing, as one reaching a stopped book's window, tells the system
+        // nothing: told the book is paused, the system would show that
+        // stopped book and send it the AirPods, taking them from the app or
+        // the book they were with.
+        if wasPlaying || nowPlayingService.holdsMediaControls {
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title, author: book.author, isPlaying: false
+            )
+        }
         // Only record the stopped timestamp / persist position if we
         // actually transitioned from playing to paused. A no-op pause
         // (e.g. spurious media-key event when already paused, or a

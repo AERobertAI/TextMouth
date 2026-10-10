@@ -80,6 +80,39 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertEqual(sounds.played, [.play, .pause], "The pause sound was not made exactly once, as the book paused")
     }
 
+    /// A Pause that pauses nothing tells the system nothing unless the book
+    /// holds the media controls: one reaching a book that never played, or
+    /// one that released the controls, leaves the system as it was, so the
+    /// AirPods stay with the app they are with, and the book does not take
+    /// the controls. Before, each told the system the stopped book was
+    /// paused, which took them. A Pause reaching the book that holds them,
+    /// paused already, shows it paused again, as before.
+    func testAPauseThatPausesNothingLeavesTheSystemAlone() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Pause Nothing")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let owner = quay.reader.nowPlayingService.ownerID
+
+        XCTAssertEqual(system.press(.pause), .success)
+        XCTAssertEqual(system.told, [], "A Pause before the book ever played told the system it was paused")
+        XCTAssertFalse(system.coordinator.holdsMediaControls(ownerID: owner), "A Pause that paused nothing took the controls")
+
+        quay.reader.play()
+        reportWordSpoken(by: quay)
+        XCTAssertEqual(system.press(.pause), .success)
+        XCTAssertEqual(system.press(.pause), .success)
+        assertToldSystem(system, that: quay.reader, plays: false, "A second Pause while the book holds the controls")
+
+        recordingAnnouncements {
+            quay.reader.releaseMediaControls()
+        }
+        let toldAtTheRelease = system.told.count
+        XCTAssertEqual(system.press(.pause), .success)
+        XCTAssertEqual(system.told.count, toldAtTheRelease, "A Pause after Release Media Controls told the system something")
+        XCTAssertEqual(system.told.last, .some(nil))
+        XCTAssertFalse(system.coordinator.holdsMediaControls(ownerID: owner), "A Pause took back the controls the book released")
+    }
+
     // MARK: - After the Sleep Timer
 
     /// A 15-minute sleep timer with a two-second fade runs out and pauses
