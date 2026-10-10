@@ -332,7 +332,7 @@ final class AudioEditorWindowTests: XCTestCase {
             save: { saves.count += 1 },
             cancel: { cancels.count += 1 }
         )
-        try withHostedView(row, until: { !self.editableFields(in: $0).isEmpty }) { hosting in
+        try withHostedView(row, until: { !self.editableTextFields(in: $0).isEmpty }) { hosting in
             let window = try XCTUnwrap(hosting.window, "the rename row has no window")
             // The keyboard out of the field, as after a Tab to the buttons.
             window.makeFirstResponder(nil)
@@ -360,7 +360,7 @@ final class AudioEditorWindowTests: XCTestCase {
     /// for one more. Skips where this macOS hands an offscreen window no
     /// key at all.
     private func checkReturnRunsOnce<Content: View>(in view: Content, counting runs: Tally, _ name: String) throws {
-        try withHostedView(view, until: { !self.editableFields(in: $0).isEmpty }) { hosting in
+        try withHostedView(view, until: { !self.editableTextFields(in: $0).isEmpty }) { hosting in
             let window = try windowWithKeyboardInField(of: hosting, name)
             try press(.return, in: window)
             guard ran(runs) else {
@@ -376,24 +376,24 @@ final class AudioEditorWindowTests: XCTestCase {
         }
     }
 
-    /// The editable text fields AppKit drew for `hosting`'s view.
-    private func editableFields(in hosting: NSView) -> [NSTextField] {
-        descendants(of: hosting, as: NSTextField.self).filter(\.isEditable)
-    }
-
     /// The window hosting `hosting`, with the keyboard put in the first
     /// field drawn, as a sheet puts it as it opens; fails the test, naming
     /// `name`, when there is no field or it took no keyboard focus.
     private func windowWithKeyboardInField(of hosting: NSView, _ name: String) throws -> NSWindow {
         let window = try XCTUnwrap(hosting.window, "\(name) has no window")
-        let field = try XCTUnwrap(editableFields(in: hosting).first, "\(name) drew no field")
+        let field = try XCTUnwrap(editableTextFields(in: hosting).first, "\(name) drew no field")
         XCTAssertTrue(window.makeFirstResponder(field), "\(name)'s field took no keyboard focus")
-        XCTAssertTrue(window.firstResponder is NSTextView, "\(name)'s field isn't being edited")
+        XCTAssertTrue(isEditing(field, in: window), "\(name)'s field isn't being edited")
         return window
     }
 
     /// Presses `key` in `window`, as AppKit sends a key pressed in it: to
     /// the control with keyboard focus, or to the button with that shortcut.
+    /// Unlike the shared `pressKey(_:in:)`, which offers the key to the
+    /// window's buttons as a key equivalent first, this sends it to the
+    /// window, so the field with the keyboard meets it first: what one
+    /// Return must not do is run a command both in its field and through
+    /// the default button.
     private func press(_ key: KeyEquivalent, in window: NSWindow) throws {
         window.sendEvent(try XCTUnwrap(keyDown(key, in: window), "no key-down event for \(key.character)"))
     }
