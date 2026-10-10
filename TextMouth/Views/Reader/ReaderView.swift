@@ -16,6 +16,9 @@ struct ReaderView: View {
     @EnvironmentObject var soundEffectService: SoundEffectService
     /// Which of the reader's panels are showing.
     @State private var panels = ReaderPanels()
+    /// The reader's transcription dialogs (FR05), kept here so that the
+    /// report of a speech refusal can wait while one shows.
+    @StateObject private var transcription = TranscriptionPresenter()
     /// Closes this reader's window, for Close in the cloud download view.
     @Environment(\.dismissWindow) private var dismissWindow
 
@@ -26,12 +29,17 @@ struct ReaderView: View {
                 viewModel.soundEffectService = soundEffectService
             }
             // Export and the other commands on the book as a whole (FR05).
-            .modifier(ReaderBookCommandsSupport(viewModel: viewModel))
+            .modifier(ReaderBookCommandsSupport(
+                viewModel: viewModel,
+                exportModel: $panels.export,
+                transcription: transcription
+            ))
             .modifier(ReaderErrorAlert(viewModel: viewModel))
             .modifier(ReaderPanelSheets(viewModel: viewModel, panels: $panels))
             .modifier(ReaderPanelCommands(viewModel: viewModel, panels: $panels))
-            // The report of a speech refusal, once no panel shows (B05).
-            .modifier(SpeechRefusalReportPresenter(viewModel: viewModel, panels: panels))
+            // The report of a speech refusal, once nothing else shows over
+            // the reader (B05).
+            .modifier(SpeechRefusalReportPresenter(viewModel: viewModel, panels: panels, transcription: transcription))
     }
 
     // MARK: - Content
@@ -107,8 +115,8 @@ struct ReaderView: View {
                 .accessibilityHint("Go back to where you were before browsing headings or bookmarks")
             }
 
-            toolbarButton("Where Am I?", systemImage: "location.circle", spokenLabel: whereAmISpokenLabel) {
-                viewModel.whereAmI()
+            ReaderWhereAmIToolbarButton(isSpeaking: viewModel.isWhereAmISpeaking) { detail in
+                viewModel.whereAmI(detail)
             }
 
             toolbarButton("Headings", systemImage: "list.bullet", spokenLabel: "Show heading navigator") {
@@ -159,12 +167,6 @@ struct ReaderView: View {
         .accessibilityLabel(spokenLabel)
     }
 
-    /// What VoiceOver calls the Where Am I? button: what pressing it does,
-    /// which is to stop the announcement while one is speaking.
-    private var whereAmISpokenLabel: LocalizedStringKey {
-        viewModel.isWhereAmISpeaking ? "Stop Where Am I announcement" : "Where Am I? Announces current position in the book"
-    }
-
     /// The speed in force, at the toolbar's end: an audiobook's speed, or a
     /// text book's words per minute, in the accent color while the book has
     /// a speed of its own.
@@ -202,7 +204,8 @@ struct ReaderView: View {
 
 /// Which of a reader's panels are showing, each as a sheet over the reader.
 /// The toolbar's buttons and the menu commands (`ReaderPanelCommands`) open
-/// and close them, and `ReaderPanelSheets` presents them.
+/// and close them, and `ReaderPanelSheets` presents them; the Export dialog
+/// is opened and presented by `ReaderBookCommandsSupport`.
 struct ReaderPanels {
     /// The headings (`HeadingNavigatorView`).
     var headings = false
@@ -217,6 +220,54 @@ struct ReaderPanels {
     var voice = false
     /// Search in the book (`BookSearchView`), for a text book only.
     var search = false
+    /// The Export dialog (`BookExportSheet`) for the book as a whole
+    /// (FR05), which File > Export… and the toolbar's Export button open
+    /// (`ReaderBookCommandsSupport`): the export it shows, or nil.
+    var export: BookExportModel?
+}
+
+/// The reader toolbar's Where Am I? button (FR12). Pressed, it speaks the
+/// brief summary, or stops the announcement speaking; VoiceOver calls it by
+/// what a press does. Its VoiceOver action "Where Am I? Full Summary"
+/// (VO-Command-Space), named as the Playback menu names the command, speaks
+/// the full summary, as W twice does: with quick clicks no longer reaching
+/// the full summary once the three-second rule was retired, the toolbar had
+/// no way to it (board #1593).
+struct ReaderWhereAmIToolbarButton: View {
+    /// Whether an announcement speaks now, which a press stops.
+    let isSpeaking: Bool
+    /// Asks the reader for a summary: the brief one at a press, the full
+    /// one from the VoiceOver action.
+    let whereAmI: (SummaryDetail) -> Void
+
+    /// The words on the button.
+    static let title = "Where Am I?"
+    /// What VoiceOver calls the button while nothing is announced.
+    static let spokenLabel = "Where Am I? Announces current position in the book"
+    /// What VoiceOver calls it while an announcement speaks, which a press
+    /// stops.
+    static let stopLabel = "Stop Where Am I announcement"
+    /// The name of its VoiceOver action, the Playback menu's name for the
+    /// command (`ShortcutAction.whereAmIFull`).
+    static var fullSummaryActionName: String { ShortcutAction.whereAmIFull.title }
+
+    var body: some View {
+        Button {
+            whereAmI(.brief)
+        } label: {
+            Label(Self.title, systemImage: "location.circle")
+        }
+        .accessibilityLabel(isSpeaking ? Self.stopLabel : Self.spokenLabel)
+        .accessibilityAction(named: Text(Self.fullSummaryActionName)) {
+            speakFullSummary()
+        }
+    }
+
+    /// What the VoiceOver action does: asks for the full summary, which
+    /// stops the full summary while it speaks, as W twice does then.
+    func speakFullSummary() {
+        whereAmI(.full)
+    }
 }
 
 /// Why the book could not be loaded, shown in place of the book, and read

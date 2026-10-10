@@ -803,6 +803,70 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertTrue(focused.holdsMediaControls, "The focused reader's own book is shown, yet it holds nothing")
     }
 
+    /// A reader whose book the system shows takes its item down as it
+    /// stops, as closing does, even while another reader's window is
+    /// focused: the system is told once that TextMouth stopped, and the
+    /// focused reader, which showed nothing, holds nothing. Before, a
+    /// reader that was not the active one took nothing down as it stopped,
+    /// so a book that stopped from behind another window stayed shown, and
+    /// the AirPods with it.
+    func testStoppingTheReaderShownFromBehindAnotherWindowTakesItsItemDown() {
+        var told: [NowPlayingItem?] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            systemNowPlaying: { told.append($0) }
+        )
+        let shown = makeSession(coordinator: coordinator)
+        let focused = makeSession(coordinator: coordinator)
+        shown.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        shown.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        focused.focus()
+
+        // The shown reader stops, which clears its Now Playing, twice as a
+        // reader's close does.
+        shown.clearNowPlaying()
+        shown.clearNowPlaying()
+
+        XCTAssertEqual(told.last, .some(nil), "The stopped book is still shown")
+        XCTAssertEqual(told.filter { $0 == nil }.count, 1, "The system was told more than once that TextMouth stopped")
+        XCTAssertEqual(coordinator.activeOwnerID, focused.ownerID)
+        XCTAssertFalse(focused.holdsMediaControls, "The focused reader, which showed nothing, holds the controls")
+        XCTAssertFalse(shown.holdsMediaControls, "The stopped reader holds the controls")
+    }
+
+    /// A reader that stops forgets its item, whether or not it was shown or
+    /// active, so it is never shown again until it plays: here a book
+    /// paused, then replaced in the system by another book that played and
+    /// paused, stops; its window becomes key; and the other book's window
+    /// closes. Before, the stopped book's paused item was kept and shown in
+    /// the closed book's place, as if it could still be resumed.
+    func testAReaderThatStoppedIsNotShownWhenTheBookShownCloses() {
+        var told: [NowPlayingItem?] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            systemNowPlaying: { told.append($0) }
+        )
+        let stopped = makeSession(coordinator: coordinator)
+        let other = makeSession(coordinator: coordinator)
+        let stoppedItem = NowPlayingItem(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        stopped.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        stopped.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        other.updateNowPlayingInfo(title: "Ferry Log", author: "Purser", isPlaying: true)
+        other.updateNowPlayingInfo(title: "Ferry Log", author: "Purser", isPlaying: false)
+        let toldBeforeTheStop = told.count
+
+        stopped.clearNowPlaying()
+        stopped.focus()
+        other.clearNowPlaying()
+        other.close()
+
+        XCTAssertEqual(told.last, .some(nil), "A book that had stopped was shown as the book shown closed")
+        XCTAssertFalse(told.dropFirst(toldBeforeTheStop).contains(stoppedItem), "The stopped book was shown paused again")
+        XCTAssertFalse(stopped.holdsMediaControls, "The stopped reader holds the controls")
+    }
+
     /// A reader holds TextMouth's media controls, the ones Release Media
     /// Controls hands back, while it is the active reader and the system
     /// shows its item: not before it shows one; not once another reader's
@@ -928,6 +992,59 @@ final class NowPlayingOwnershipTests: XCTestCase {
         ])
         XCTAssertEqual(coordinator.focusedOwnerID, second.ownerID, "The paused reader took the focus")
         XCTAssertEqual(coordinator.playingOwnerID, second.ownerID)
+    }
+
+    /// A reader preparing to play pauses every other reader that says it
+    /// plays, not the playing one alone: a book a Where Am I? announcement
+    /// holds paused told the system it paused as the announcement began,
+    /// yet says it plays, since the announcement's end plays it again. The
+    /// playing reader is paused first, and once; a reader that plays
+    /// nothing is left alone. Before, only the playing reader was paused,
+    /// so the held book played again beside the one that started.
+    func testStartingAReaderPausesABookAnAnnouncementHoldsPaused() {
+        let coordinator = NowPlayingService(installsSystemIntegrations: false)
+        var paused: [String] = []
+        var playingPlays = true
+        var heldPlays = true
+        var startingPlays = false
+        let playing = makeSession(
+            coordinator: coordinator,
+            onPause: {
+                paused.append("playing")
+                playingPlays = false
+            },
+            isCurrentlyPlaying: { playingPlays }
+        )
+        let held = makeSession(
+            coordinator: coordinator,
+            onPause: {
+                paused.append("held")
+                heldPlays = false
+            },
+            isCurrentlyPlaying: { heldPlays }
+        )
+        let idle = makeSession(coordinator: coordinator, onPause: { paused.append("idle") })
+        let starting = makeSession(
+            coordinator: coordinator,
+            onPlay: { startingPlays = true },
+            isCurrentlyPlaying: { startingPlays }
+        )
+        // The held book played, and told the system it paused as its
+        // announcement began; the other plays on.
+        held.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        held.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        playing.updateNowPlayingInfo(title: "Ferry Log", author: "Purser", isPlaying: true)
+        starting.focus()
+
+        XCTAssertEqual(coordinator.dispatchPlayCommand(isSuppressed: false), .success)
+
+        XCTAssertEqual(paused, ["playing", "held"], "Not every book that says it plays was paused, once, the playing one first")
+        XCTAssertFalse(heldPlays, "The book the announcement holds was not paused")
+        XCTAssertTrue(startingPlays)
+        XCTAssertEqual(coordinator.playingOwnerID, starting.ownerID)
+        XCTAssertEqual(coordinator.focusedOwnerID, starting.ownerID, "A paused reader took the focus")
+        // A session let go of leaves the coordinator, so all are kept to the end.
+        withExtendedLifetime([playing, held, idle]) {}
     }
 
     // MARK: - Commands Received on Any Thread

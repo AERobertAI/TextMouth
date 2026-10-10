@@ -33,7 +33,14 @@ extension ReaderViewModel {
             cancelWhereAmIIfActive()
         case .replace(with: let replacement):
             // The announcement goes on in more detail: the book stays as the
-            // first left it, and no second start sound plays.
+            // first left it, and no second start sound plays. It speaks on a
+            // fresh synthesizer, the one saying the brief summary stopped and
+            // let go with its delegate: an utterance handed to a synthesizer
+            // just told to stop can be cancelled with what it was saying, and
+            // that cancel, of the announcement speaking, would end the full
+            // summary at once, taken for one nobody asked for, with the book
+            // left paused.
+            replaceWhereAmISynthesizer()
             speakWhereAmISummary(replacement)
         case .speak(let summary):
             pauseBookForWhereAmI()

@@ -87,7 +87,17 @@ extension ReaderViewModel {
 
     /// Resume playback if the book is already paused, otherwise fall
     /// back to a cold start when nothing is active.
+    ///
+    /// While Where Am I? speaks it does nothing, as `play()` does
+    /// (`WhereAmIInterruptionPolicy.blocksBookPlayback`): the announcement
+    /// goes on, and the book it paused plays again as it ends. A Play from
+    /// the AirPods or a media key once resumed the book over the
+    /// announcement, since only a cold start went through that guard.
     func playOrResume() {
+        guard !WhereAmIInterruptionPolicy.blocksBookPlayback(isAnnouncementSpeaking: isWhereAmISpeaking) else {
+            DiagnosticLog.trace(.playback, "play: Where Am I speaks; the book plays again as it ends")
+            return
+        }
         if isAudioBook {
             if audioPlaybackService.isPaused {
                 resumeAudioPlayback()
@@ -757,6 +767,34 @@ extension ReaderViewModel {
         )
         isCurrentlyPlaying = false
         isCurrentlyPaused = false
+        settleStopMadeBySpeech()
+        showSpeechRefusalReport(refusal)
+    }
+
+    /// Speech paused itself, the cursor where it paused, because the voice
+    /// did not start the passage there, on fresh synthesizers too
+    /// (`SpeechService.onSpeechStalled`): the reader makes the pause its own,
+    /// as `showPlaybackStoppedAfterRefusal(_:)` makes a refusal's stop its
+    /// own, and tells the listener once
+    /// (`SpeechService.voiceDidNotStartAnnouncement`). The reader's flags
+    /// follow speech's, which shows itself paused, and Play speaks from there
+    /// afresh.
+    func showPlaybackPausedAfterStartStalls() {
+        guard !hasClosed else { return }
+        DiagnosticLog.event(
+            .playback,
+            "PLAYBACK_PAUSED_AFTER_START_STALLS: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset)"
+        )
+        settleStopMadeBySpeech()
+        announceToVoiceOver(SpeechService.voiceDidNotStartAnnouncement)
+    }
+
+    /// Everything a pause does but pausing speech, which has stopped or
+    /// paused itself: a minutes sleep timer's countdown waits for Play, the
+    /// listening session ends, Now Playing is told the book is paused, so
+    /// the next press of the AirPods or a media key is Play and reaches this
+    /// reader, and the stop is recorded and the place saved.
+    private func settleStopMadeBySpeech() {
         sleepTimerService.pauseCountdown(by: readerID)
         readingStatsService.endSession(bookID: book.id)
         nowPlayingService.updateNowPlayingInfo(
@@ -764,7 +802,6 @@ extension ReaderViewModel {
         )
         recordPlaybackStopped()
         savePosition()
-        showSpeechRefusalReport(refusal)
     }
 
     // MARK: - Where a Chapter's End Stops the Timer
@@ -2260,8 +2297,9 @@ extension ReaderViewModel {
     /// `playGoesToTheHandOver()`): before the next book is asked for, it
     /// asks for it at once, and the half second's own request then asks
     /// nothing more; after that, until the next book's reader claims the
-    /// request and starts it, it changes nothing. Either way this finished
-    /// book plays nothing over the book announced. Such a Play once played
+    /// request and starts it, it changes nothing, and says that the next
+    /// book is still starting. Either way this finished book plays nothing
+    /// over the book announced. Such a Play once played
     /// it: from its end, which ended it again and said "Starting" twice, or
     /// after a rewind from there, until the next book's start paused it.
     ///
@@ -2281,6 +2319,7 @@ extension ReaderViewModel {
         announceToVoiceOver(EndOfBookWording.starting(title))
         let handOver = NextBookHandOver(
             nextBookID: nextBookID,
+            titled: title,
             autoplayRequests: autoplayRequests,
             askingWith: askForNextBook
         )
@@ -2297,6 +2336,12 @@ extension ReaderViewModel {
     /// unless it has been asked for already, so that the book announced
     /// starts and nothing of this one plays over it.
     ///
+    /// A Play once the next book has been asked for, while its window opens
+    /// and before it plays, says so ("Still starting: Dune",
+    /// `EndOfBookWording.stillStarting(_:)`), so that the press is heard:
+    /// it once did nothing and said nothing for as long as the next book
+    /// took, up to the 30 seconds its request waits.
+    ///
     /// - Returns: True when the Play went to the hand-over. False when no
     ///   hand-over is under way: none began, or the next book has started,
     ///   or its request was thrown away as too old, and the Play plays this
@@ -2307,11 +2352,15 @@ extension ReaderViewModel {
             nextBookHandOver = nil
             return false
         }
+        let askedBefore = handOver.hasAskedForNextBook
         DiagnosticLog.trace(
             .playback,
-            "play: the hand-over to the next book is under way; asked before=\(handOver.hasAskedForNextBook)"
+            "play: the hand-over to the next book is under way; asked before=\(askedBefore)"
         )
         handOver.askForNextBookIfNotYetAsked()
+        if askedBefore {
+            announceToVoiceOver(EndOfBookWording.stillStarting(handOver.nextBookTitle))
+        }
         return true
     }
 
@@ -2570,8 +2619,23 @@ extension ReaderViewModel {
     /// makes none: one that reaches a book stopped, finished, or paused
     /// already, such as a Pause from the AirPods or a media key sent to a
     /// window that was not playing. It once made the sound whatever it
-    /// paused.
+    /// paused. Such a pause tells Now Playing nothing either, unless the
+    /// book holds the media controls: it once told the system a stopped
+    /// book was paused, which took the AirPods.
+    ///
+    /// A pause while Where Am I? speaks ends the announcement first, as
+    /// Play/Pause during it does (`endWhereAmIWithoutResuming()`): the book
+    /// it paused stays paused, its pause settled. Left speaking, the
+    /// announcement resumed the book as it ended, undoing the pause: a
+    /// sleep timer that ran out during it, a Pause from the AirPods or a
+    /// media key, and the AirPods leaving, which paused nothing then, all
+    /// had the book play on, at full volume and with no timer, or through
+    /// the Mac's speakers.
     func pause(playingPauseSound: Bool) {
+        if isWhereAmISpeaking {
+            stopWhereAmISynthesizer()
+            endWhereAmIWithoutResuming()
+        }
         // Capture pre-pause playing state BEFORE we issue any pause calls.
         // The audio / speech services flip their flags synchronously, so
         // checking after would always return "not playing" and the guard
@@ -2635,9 +2699,18 @@ extension ReaderViewModel {
             sleepTimerService.pauseCountdown(by: readerID)
         }
         readingStatsService.endSession(bookID: book.id)
-        nowPlayingService.updateNowPlayingInfo(
-            title: book.title, author: book.author, isPlaying: false
-        )
+        // Now Playing hears of the pause only when it paused something, or
+        // when the book holds the media controls already, which it shows
+        // paused again. A pause that paused nothing in a book holding
+        // nothing, as one reaching a stopped book's window, tells the system
+        // nothing: told the book is paused, the system would show that
+        // stopped book and send it the AirPods, taking them from the app or
+        // the book they were with.
+        if wasPlaying || nowPlayingService.holdsMediaControls {
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title, author: book.author, isPlaying: false
+            )
+        }
         // Only record the stopped timestamp / persist position if we
         // actually transitioned from playing to paused. A no-op pause
         // (e.g. spurious media-key event when already paused, or a
@@ -2940,20 +3013,25 @@ extension ReaderViewModel {
 final class NextBookHandOver {
     /// The book listening goes on with.
     let nextBookID: UUID
+    /// That book's title, as "Starting: <title>" said it.
+    let nextBookTitle: String
     /// The requests the next book's reader claims as it starts.
     private let autoplayRequests: ReaderAutoplayRequests
     /// Asks for the next book; nil once it has. It holds the finished
     /// book's reader, which it asks through, only until it has asked.
     private var askForNextBook: (() -> Void)?
 
-    /// A hand-over to the book `nextBookID`, which `askForNextBook` asks
-    /// for, through requests kept in `autoplayRequests`.
+    /// A hand-over to the book `nextBookID`, titled `nextBookTitle`, which
+    /// `askForNextBook` asks for, through requests kept in
+    /// `autoplayRequests`.
     init(
         nextBookID: UUID,
+        titled nextBookTitle: String,
         autoplayRequests: ReaderAutoplayRequests,
         askingWith askForNextBook: @escaping () -> Void
     ) {
         self.nextBookID = nextBookID
+        self.nextBookTitle = nextBookTitle
         self.autoplayRequests = autoplayRequests
         self.askForNextBook = askForNextBook
     }

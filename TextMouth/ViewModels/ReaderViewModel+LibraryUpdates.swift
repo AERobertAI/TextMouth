@@ -160,6 +160,15 @@ extension ReaderViewModel {
     /// starts from, so a later save there cannot put back what the library
     /// replaced, and Now Playing. The window title, Where Am I?, and the
     /// reader's announcements read the book itself.
+    ///
+    /// Now Playing is corrected only while this reader holds the media
+    /// controls, by the rule the reader's own saves follow
+    /// (`showSavedMetadataInNowPlaying()`): a book playing, paused, or
+    /// resting finished at its end, shown as it is. A reader that holds
+    /// nothing has nothing there to correct, and updating it would put a
+    /// stopped book back. The rule was once "playing or paused", so a
+    /// finished book, which holds the controls but is neither, kept its old
+    /// title in Now Playing after a rename in the library.
     private func showEditedMetadata() {
         if let epubMetadata {
             self.epubMetadata = book.mergingEditableEPUBMetadata(epubMetadata)
@@ -167,15 +176,6 @@ extension ReaderViewModel {
         if let audioMetadata {
             self.audioMetadata = book.mergingEditableAudioMetadata(audioMetadata)
         }
-        // Now Playing names this reader's book only while it plays or is
-        // paused; a stopped reader has nothing there to correct, and
-        // updating it would put a stopped book back.
-        if isCurrentlyPlaying || isCurrentlyPaused {
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title,
-                author: book.author,
-                isPlaying: isPlaybackActivelyAdvancing
-            )
-        }
+        showSavedMetadataInNowPlaying()
     }
 }

@@ -275,26 +275,37 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         XCTAssertFalse(debugLogLines(containing: "SPEAK_INFO_CANCEL_UNEXPECTED").isEmpty)
     }
 
-    /// The end of a summary the speaker stopped or replaced changes
-    /// nothing: neither its cancel nor its finish ends the summary speaking
-    /// after it, and the synthesizer is kept.
+    /// The end of a summary the speaker stopped or replaced changes nothing.
+    /// A summary that takes the place of one still speaking, here the full
+    /// one after the brief, speaks on a fresh synthesizer, and the one that
+    /// spoke the brief summary is silenced and let go with its delegate, so
+    /// nothing it reports reaches the speaker: on the same synthesizer, the
+    /// new summary could be cancelled with the old, and that cancel taken
+    /// for one nobody asked for would end it at once. The end of a summary
+    /// a press stopped, reported by the synthesizer that spoke it, ends no
+    /// summary speaking after it, and the synthesizer is kept.
     func testTheEndOfAStoppedOrReplacedSummaryChangesNothing() throws {
         let (speaker, recorders) = makeSpeakerCountingSynthesizers()
         pressOnClassics(.brief, speaker)
-        let recorder = try XCTUnwrap(recorders.made.first)
-        let brief = try XCTUnwrap(recorder.utterances.last)
+        let briefSynthesizer = try XCTUnwrap(recorders.made.first)
         pressOnClassics(.full, speaker)
-        let full = try XCTUnwrap(recorder.utterances.last)
 
-        report(brief, to: recorder, cancelled: true)
-        report(brief, to: recorder)
+        XCTAssertEqual(recorders.made.count, 2, "the full summary did not speak on a fresh synthesizer")
+        let fullSynthesizer = try XCTUnwrap(recorders.made.last)
+        let full = try XCTUnwrap(fullSynthesizer.utterances.last)
+        XCTAssertEqual(full.speechString, LibraryInfoWording.full(classics, now: start))
+        XCTAssertNil(briefSynthesizer.delegate, "the brief summary's synthesizer still reports to the speaker")
+        XCTAssertGreaterThan(briefSynthesizer.stops, 0, "the brief summary was not silenced")
+        XCTAssertEqual(speaker.detailSpeaking, .full)
 
-        XCTAssertEqual(speaker.detailSpeaking, .full, "the replaced summary's end ended the full one")
         XCTAssertNil(pressOnClassics(.full, speaker), "a full press stops the full summary")
-        report(full, to: recorder, cancelled: true)
+        report(full, to: fullSynthesizer, cancelled: true)
         XCTAssertFalse(speaker.isSpeaking)
-        XCTAssertEqual(recorders.made.count, 1, "a cancel the speaker asked for replaced the synthesizer")
+        XCTAssertEqual(recorders.made.count, 2, "a cancel the speaker asked for replaced the synthesizer")
         XCTAssertEqual(pressOnClassics(.brief, speaker), LibraryInfoWording.brief(classics))
+        XCTAssertEqual(recorders.made.count, 2, "a summary with nothing speaking took a fresh synthesizer")
+        report(full, to: fullSynthesizer)
+        XCTAssertEqual(speaker.detailSpeaking, .brief, "the stopped summary's finish ended the one speaking")
     }
 
     // MARK: - The Text of a Press

@@ -527,6 +527,13 @@ final class NowPlayingService {
     /// so that its report of the pause neither takes the focus back
     /// (`playingOwnerPaused(_:)`) nor shows its book paused in the system
     /// for the moment before the requested reader's book is shown playing.
+    ///
+    /// Any other reader that says it plays is paused too, though it is not
+    /// the playing owner: a book a Where Am I? announcement holds paused,
+    /// which plays again as the announcement ends, says it plays, and its
+    /// pause ends the announcement and keeps the book paused. Only the
+    /// playing owner was paused before, so such a book played on beside
+    /// the one that started.
     func prepareForPlayback(ownerID: UUID) {
         guard let handlers = handlersByOwner[ownerID] else {
             diagnostic("playback preparation ignored owner=\(shortOwnerID(ownerID)) reason=unregistered")
@@ -536,7 +543,8 @@ final class NowPlayingService {
         noteExternalRoutingChange()
 
         focusedOwnerID = ownerID
-        if let previousOwnerID = playingOwnerID,
+        let previousOwnerID = playingOwnerID
+        if let previousOwnerID,
            previousOwnerID != ownerID,
            let previousHandlers = handlersByOwner[previousOwnerID] {
             diagnostic(
@@ -545,6 +553,21 @@ final class NowPlayingService {
             )
             playingOwnerID = nil
             previousHandlers.onPause()
+        }
+        // Every other reader that says it plays, as a book a Where Am I?
+        // announcement holds paused does, is paused too; the playing owner,
+        // paused above, is left out, so it is never paused twice. They are
+        // listed before any is paused, so a handler that changes the owners
+        // cannot change the list.
+        let otherPlaying = handlersByOwner.filter { otherOwnerID, otherHandlers in
+            otherOwnerID != ownerID && otherOwnerID != previousOwnerID && otherHandlers.isCurrentlyPlaying()
+        }
+        for (otherOwnerID, otherHandlers) in otherPlaying {
+            diagnostic(
+                "exclusive pause other=\(shortOwnerID(otherOwnerID)) "
+                    + "next=\(shortOwnerID(ownerID))"
+            )
+            otherHandlers.onPause()
         }
 
         if handlers.isCurrentlyPlaying() {
@@ -1199,21 +1222,40 @@ final class NowPlayingService {
         center.playbackState = item.isPlaying ? .playing : .paused
     }
 
+    /// The reader `ownerID` stopped, or released the media controls: it has
+    /// nothing left to show, so its item is forgotten, and, if the system
+    /// shows its item, taken down, whether or not it is the active reader,
+    /// as closing takes it down (`unregister(ownerID:)`); the active
+    /// reader's own item, if it has one, is then shown in its place. The
+    /// active reader that stops gives up the media session too, which a
+    /// Play accepted before must not take back.
+    ///
+    /// Before, a reader that was not the active one took nothing down, so
+    /// a book shown paused stayed shown after it stopped from behind
+    /// another reader's window, as when its chapter could not be got from
+    /// the cloud or its text was replaced, and the AirPods stayed with a
+    /// book that had stopped.
     func clearNowPlaying(ownerID: UUID) {
-        guard activeOwnerID == ownerID else { return }
-        // Releasing media controls is an ownership decision even when paused;
-        // an older queued Play must not immediately reclaim them.
-        noteExternalRoutingChange()
+        let wasActive = activeOwnerID == ownerID
+        let wasShown = shownOwnerID == ownerID
+        // A stopped reader has nothing to show, now or once it is the active
+        // one again.
+        nowPlayingInfoByOwner.removeValue(forKey: ownerID)
+        guard wasActive || wasShown else { return }
+        if wasActive {
+            // Releasing media controls is an ownership decision even when
+            // paused; an older queued Play must not immediately reclaim them.
+            noteExternalRoutingChange()
+        }
         if playingOwnerID == ownerID {
             playingOwnerID = nil
         }
-        nowPlayingInfoByOwner.removeValue(forKey: ownerID)
         // Only the item this reader shows is taken down. A reader that shows
         // none, such as a window that never played closing while another
         // book waits paused, must not tell the system TextMouth stopped: the
         // paused book stays shown, so macOS keeps sending the AirPods here.
         // A reader that stops and then releases media controls clears once.
-        guard shownOwnerID == ownerID else { return }
+        guard wasShown else { return }
         clearSystemNowPlaying()
         publishCachedNowPlayingInfoForActiveOwner()
     }

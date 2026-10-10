@@ -22,6 +22,14 @@ enum EndOfBookWording {
         "Restarting: \(title)"
     }
 
+    /// What VoiceOver hears when Play reaches a finished book whose next
+    /// book has been asked for, and is opening, but does not play yet:
+    /// "Still starting: <title>", as "Starting: <title>" said it, so that
+    /// the press is heard.
+    static func stillStarting(_ title: String) -> String {
+        "Still starting: \(title)"
+    }
+
     // MARK: - Nothing Follows
 
     /// What VoiceOver hears when a book ends and nothing follows it:

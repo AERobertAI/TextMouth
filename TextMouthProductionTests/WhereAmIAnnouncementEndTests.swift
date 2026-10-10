@@ -100,6 +100,39 @@ final class WhereAmIAnnouncementEndTests: XCTestCase {
         )
     }
 
+    // MARK: - The Full Summary in the Brief One's Place
+
+    /// W twice, the full summary taking the place of the brief one still
+    /// speaking, speaks it on a fresh synthesizer, the one saying the brief
+    /// summary silenced and let go with its delegate, so nothing it reports
+    /// reaches the reader: the full summary cannot be cancelled with the
+    /// brief one and taken for a cancel nobody asked for, which would end it
+    /// at once with the book left paused. Its own end resumes the book, with
+    /// one start sound and one end sound.
+    func testTheFullSummarySpeaksOnAFreshSynthesizer() throws {
+        let harbour = try openPlayingAudiobook("Where Am I Full Summary Synthesizer")
+        let reader = harbour.reader
+        _ = try pressWhereAmI(in: harbour)
+        let briefSynthesizer = reader.whereAmISynth
+
+        reader.whereAmI(.full)
+
+        XCTAssertTrue(reader.isWhereAmISpeaking, "the full summary does not speak")
+        XCTAssertEqual(reader.whereAmIDetail, .full)
+        XCTAssertFalse(reader.whereAmISynth === briefSynthesizer, "the full summary spoke on the brief one's synthesizer")
+        XCTAssertNil(briefSynthesizer.delegate, "the brief summary's synthesizer still reports to the reader")
+        XCTAssertTrue(reader.whereAmISynth.delegate === reader.whereAmIDelegate, "nothing hears the fresh synthesizer")
+        let full = try XCTUnwrap(harbour.announcements.utterances.last)
+
+        deliver(finishOf: full, to: reader)
+
+        XCTAssertTrue(
+            waitUntil(timeout: ReaderViewModel.whereAmIEndSoundDelay + 5) { isPlaying(reader) },
+            "the book did not resume after the full summary"
+        )
+        XCTAssertEqual(harbour.sounds.played, [.whereAmIStart, .whereAmIEnd])
+    }
+
     // MARK: - Fixtures
 
     /// A reader playing a silent audiobook, with what it handed over.

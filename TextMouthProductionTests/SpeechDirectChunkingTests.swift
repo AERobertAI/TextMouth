@@ -11,9 +11,10 @@ import XCTest
 /// The speech services here hand their utterances to a recorder standing in
 /// for the synthesizer, and the tests deliver the synthesizer's callbacks
 /// themselves, so nothing is heard. Their texts are longer than the render
-/// limit, so nothing is rendered either. Each test ends well within the
-/// second after which the direct-speech watchdog would look at the idle
-/// synthesizer. Only the opt-in benchmark uses the synthesizer, muted.
+/// limit, so nothing is rendered either. Their watchdogs never tick, unless
+/// a test gives them timers it ticks by hand (`ManualWatchdogTimers`), so
+/// no test waits for one. Only the opt-in benchmark uses the synthesizer,
+/// muted.
 @MainActor
 final class SpeechDirectChunkingTests: XCTestCase {
 
@@ -764,18 +765,83 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertTrue(speech.isSpeaking)
     }
 
+    /// The place of a retry is forgotten once speech reports a word past
+    /// it. The engine refuses a chunk, the retry speaks on past the place
+    /// where it began, and the listener later moves back to that place,
+    /// where the engine refuses again: that is a new refusal, which gets
+    /// its own retry, where the place's second refusal once ended speech at
+    /// once, however long after speech had moved on.
+    func testARefusalAtARetrysPlaceAfterSpeechMovedOnGetsItsOwnRetry() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var refusals = 0
+        speech.onSpeechRefused = { _ in refusals += 1 }
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+        let retry = try handedOver(1, by: recorder)
+        report(start: retry, to: speech)
+        // The retry says its first word, at the place, and goes on past it.
+        report(word: NSRange(location: 0, length: 4), of: retry, to: speech)
+        report(word: NSRange(location: 40, length: 5), of: retry, to: speech)
+
+        // The listener moves back to the place, and the engine refuses there.
+        speech.seek(toCharOffset: start)
+        let refusedAgain = try XCTUnwrap(recorder.utterances.last)
+        report(cancel: refusedAgain, to: speech)
+
+        XCTAssertTrue(speech.isSpeaking, "the refusal after speech moved on ended speech without its retry")
+        XCTAssertEqual(refusals, 0)
+        let retriedAgain = try XCTUnwrap(recorder.utterances.last)
+        XCTAssertFalse(retriedAgain === refusedAgain, "the refused chunk was not spoken again")
+        XCTAssertEqual(
+            retriedAgain.speechString,
+            SpeechMarkupGuard.neutralizedStrictly(chunk(at: start, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText))
+        )
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(lines.contains("DIRECT_RETRY_PLACE_PASSED: offset=\(start + 40) place=\(start)"), "\(lines)")
+        XCTAssertEqual(lines.filter { $0.hasPrefix("DIRECT_RETRY offset=\(start) ") }.count, 2, "\(lines)")
+        XCTAssertFalse(lines.contains { $0.hasPrefix("DIRECT_RETRY_FAILED") }, "\(lines)")
+    }
+
+    /// A word reported at the retry's place itself is not past it: refused
+    /// there again, speech ends, as at the place's second refusal.
+    func testAWordAtTheRetrysPlaceIsNotPastIt() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var refusals = 0
+        speech.onSpeechRefused = { _ in refusals += 1 }
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+        let retry = try handedOver(1, by: recorder)
+        report(start: retry, to: speech)
+        report(word: NSRange(location: 0, length: 4), of: retry, to: speech)
+
+        recordingAnnouncements {
+            report(cancel: retry, to: speech)
+        }
+
+        XCTAssertFalse(speech.isActive, "a second refusal at the place, with no word past it, did not end speech")
+        XCTAssertEqual(refusals, 1)
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertFalse(lines.contains { $0.hasPrefix("DIRECT_RETRY_PLACE_PASSED") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.hasPrefix("DIRECT_RETRY_FAILED: offset=\(start) ") }, "\(lines)")
+    }
+
 
     // MARK: - Switching to rendered audio
 
     // The engine plays silence installed as audio rendered from the text,
     // at volume 0, so nothing is heard.
 
-    /// The watchdog, finding the synthesizer idle while speech should be
-    /// heard, switches to audio rendered from this speech at the last word
-    /// reported, and the engine plays. The recorder's synthesizer never had
-    /// the utterance, so it is idle from the start.
-    func testTheWatchdogSwitchesAnIdleSynthesizerToRenderedAudio() throws {
-        try TextMouthPaths.ensureDirectoryStructure()
+    /// A sleep fade that begins during direct speech fades it through
+    /// quieter utterances from the last word reported, planned once at the
+    /// fade's first step, and never switches it to the audio the engine
+    /// holds of this speech: that switch, made while speech was heard,
+    /// could repeat or skip a few words as the fade began. At every step of
+    /// the fade, down to silence, speech stays direct and the engine silent.
+    func testASleepFadeNeverSwitchesDirectSpeechToRenderedAudio() throws {
         let (speech, recorder) = makeDirectSpeech()
         defer { speech.stop() }
         speech.speak(Self.longText)
@@ -783,35 +849,51 @@ final class SpeechDirectChunkingTests: XCTestCase {
         let first = try handedOver(0, by: recorder)
         report(start: first, to: speech)
         report(word: NSRange(location: 300, length: 5), of: first, to: speech)
+        let handedBeforeTheFade = recorder.utterances.count
 
-        let lines = logLines(in: .speechTransitions) {
-            XCTAssertTrue(waitUntil(timeout: 5) { !speech.usingDirectMode }, "the watchdog never switched")
+        // The fade's steps, from full volume to silence, as the sleep timer
+        // takes them over its ten seconds.
+        for step in stride(from: 10, through: 0, by: -1) {
+            speech.setSleepTimerFadeVolume(Float(step) / 10, duration: 10)
+            XCTAssertTrue(speech.usingDirectMode, "the step to \(step) tenths switched speech to rendered audio")
+            XCTAssertFalse(speech.audioEngine.isPlaying, "the step to \(step) tenths started the rendered audio")
         }
 
-        XCTAssertTrue(speech.audioEngine.isPlaying, "the rendered audio did not start")
+        let planned = DirectSpeechFadePlanner.segments(
+            in: Self.longText, fromUTF16Offset: 300, duration: 10, wordsPerMinute: speech.wordsPerMinute
+        )
+        let fade = recorder.utterances.dropFirst(handedBeforeTheFade)
+        XCTAssertFalse(planned.isEmpty)
+        XCTAssertEqual(fade.map(\.speechString), planned.map(\.text), "the fade was not planned once, from the last word")
+        XCTAssertEqual(fade.map(\.volume), planned.map(\.volume))
         XCTAssertTrue(speech.isSpeaking)
-        XCTAssertEqual(recorder.utterances.count, 2, "direct speech went on")
-        XCTAssertTrue(lines.contains { $0.contains("DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=300 ") }, "\(lines)")
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertFalse(lines.contains { $0.hasPrefix("SLEEP_FADE_SWITCH") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.hasPrefix("SLEEP_FADE_DIRECT_STARTED: offset=300 ") }, "\(lines)")
     }
 
-    /// A sleep fade that begins during direct speech switches to audio
-    /// rendered from it at the last word reported, whose volume the engine
-    /// fades, instead of queuing quieter utterances.
-    func testASleepFadeSwitchesDirectSpeechToRenderedAudio() throws {
+    /// Speech already playing from rendered audio, switched to at a seek,
+    /// where nothing is heard, fades through the engine's mixer at every
+    /// step of a sleep fade and stays with the engine: nothing is handed to
+    /// the synthesizer. The audio is silence, so nothing is heard at any
+    /// volume.
+    func testASleepFadeOfRenderedAudioFadesTheEngine() throws {
         let (speech, recorder) = makeDirectSpeech()
         defer { speech.stop() }
         speech.speak(Self.longText)
         installSilentRenderedAudio(of: Self.longText, in: speech)
-        let first = try handedOver(0, by: recorder)
-        report(start: first, to: speech)
-        report(word: NSRange(location: 300, length: 5), of: first, to: speech)
-
-        speech.setSleepTimerFadeVolume(0.5, duration: 10)
-
-        XCTAssertFalse(speech.usingDirectMode)
+        report(start: try handedOver(0, by: recorder), to: speech)
+        speech.seek(toCharOffset: 300)
+        XCTAssertFalse(speech.usingDirectMode, "the seek did not switch to rendered audio")
         XCTAssertTrue(speech.audioEngine.isPlaying, "the rendered audio did not start")
-        XCTAssertEqual(speech.audioEngine.outputVolume, 0.5)
-        XCTAssertEqual(recorder.utterances.count, 2, "fade segments were queued")
+        let handedBeforeTheFade = recorder.utterances.count
+
+        for volume: Float in [0.8, 0.5, 0.2, 0] {
+            speech.setSleepTimerFadeVolume(volume, duration: 10)
+            XCTAssertEqual(speech.audioEngine.outputVolume, volume, "the engine did not fade to \(volume)")
+            XCTAssertFalse(speech.usingDirectMode, "the fade moved speech off the engine")
+        }
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheFade, "the fade handed utterances to the synthesizer")
     }
 
     /// When the engine holds audio rendered from this speech in the current
@@ -901,6 +983,432 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY_ENGINE: rendered audio of this speech plays on at offset=\(start) ") }, "\(lines)")
         XCTAssertFalse(lines.contains { $0.contains("DIRECT_RETRY_FAILED:") }, "\(lines)")
     }
+
+    // MARK: - An Engine That Cannot Start
+
+    // The engine is made to fail to start, as it does when macOS has no
+    // output it can use (`_refusesToStartForTesting`), so it plays nothing.
+
+    /// A seek in direct speech switches to the audio the engine holds of
+    /// this speech; when the engine cannot start, speech goes on directly
+    /// from the new place (`SEEK_ENGINE_FAILED`), as the other switches fall
+    /// back, rather than showing itself speaking with neither the
+    /// synthesizer nor the engine playing.
+    func testASeekWhoseEngineCannotStartSpeaksDirectlyFromThere() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        speech.audioEngine._refusesToStartForTesting = true
+        report(start: try handedOver(0, by: recorder), to: speech)
+        let handedBeforeTheSeek = recorder.utterances.count
+
+        speech.seek(toCharOffset: 50_000)
+
+        XCTAssertTrue(speech.usingDirectMode, "speech was left on an engine that did not start")
+        XCTAssertFalse(speech.audioEngine.isPlaying)
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheSeek + 1, "nothing was spoken from the new place")
+        XCTAssertEqual(
+            try handedOver(handedBeforeTheSeek, by: recorder).speechString,
+            chunk(at: 50_000, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText)
+        )
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: 50_000, length: 0))
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(
+            lines.contains { $0 == "SEEK_ENGINE_FAILED: rendered audio did not start; speaking directly at offset=50000" },
+            "\(lines)"
+        )
+    }
+
+    /// A refused chunk whose rendered audio cannot play, the engine failing
+    /// to start, is spoken again directly from where it was refused,
+    /// strictly guarded, as without rendered audio
+    /// (`DIRECT_RETRY_ENGINE_FAILED`), on a fresh synthesizer.
+    func testARefusalWhoseEngineCannotStartIsSpokenAgainDirectly() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        speech.audioEngine._refusesToStartForTesting = true
+        let refusing = try synthesizer(0, by: recorder)
+
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+
+        XCTAssertTrue(speech.usingDirectMode, "speech was left on an engine that did not start")
+        XCTAssertFalse(speech.audioEngine.isPlaying)
+        XCTAssertTrue(speech.isSpeaking)
+        let retry = try handedOver(1, by: recorder)
+        XCTAssertEqual(
+            retry.speechString,
+            SpeechMarkupGuard.neutralizedStrictly(chunk(at: start, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText))
+        )
+        XCTAssertFalse(try synthesizer(1, by: recorder) === refusing, "the retry went to the synthesizer that refused")
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(lines.contains { $0.hasPrefix("DIRECT_RETRY_ENGINE_FAILED: rendered audio did not start at offset=\(start);") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.hasPrefix("DIRECT_RETRY offset=\(start) ") }, "\(lines)")
+    }
+
+    // MARK: - The Watchdogs
+
+    // The watchdogs tick on timers the test ticks by hand
+    // (`ManualWatchdogTimers`), so no test waits for one. The recorder's
+    // synthesizer never has an utterance, so it is idle throughout.
+
+    /// The playback watchdog, which a start arms, finding the synthesizer
+    /// idle for two ticks in a row while speech should be heard, switches
+    /// to audio rendered from this speech at the last word reported, and
+    /// the engine plays; one idle tick is no stall.
+    func testTheWatchdogSwitchesAnIdleSynthesizerToRenderedAudio() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        report(word: NSRange(location: 300, length: 5), of: first, to: speech)
+        let playbackWatchdog = try XCTUnwrap(timers.running.last, "the start armed no watchdog")
+        XCTAssertEqual(timers.running.count, 1)
+
+        timers.tick(playbackWatchdog, times: 1)
+        XCTAssertTrue(speech.usingDirectMode, "one idle tick was taken for a stall")
+        timers.tick(playbackWatchdog, times: 1)
+
+        XCTAssertFalse(speech.usingDirectMode, "the watchdog never switched")
+        XCTAssertTrue(speech.audioEngine.isPlaying, "the rendered audio did not start")
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertEqual(recorder.utterances.count, 2, "direct speech went on")
+        XCTAssertTrue(playbackWatchdog.isCancelled)
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(lines.contains { $0.hasPrefix("DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=300 ") }, "\(lines)")
+    }
+
+    /// When the engine cannot start, the playback watchdog's switch speaks
+    /// directly from the last word reported instead
+    /// (`DIRECT_WATCHDOG_ENGINE_FAILED`), and that utterance is watched in
+    /// its turn until it starts.
+    func testTheWatchdogSpeaksDirectlyWhenTheEngineCannotStart() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        speech.audioEngine._refusesToStartForTesting = true
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        report(word: NSRange(location: 300, length: 5), of: first, to: speech)
+        let playbackWatchdog = try XCTUnwrap(timers.running.last)
+
+        timers.tick(playbackWatchdog, times: 2)
+
+        XCTAssertTrue(speech.usingDirectMode, "speech was left on an engine that did not start")
+        XCTAssertFalse(speech.audioEngine.isPlaying)
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertEqual(recorder.utterances.count, 3, "nothing was spoken again")
+        XCTAssertEqual(
+            try handedOver(2, by: recorder).speechString,
+            chunk(at: 300, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText)
+        )
+        XCTAssertEqual(timers.running.count, 1, "the utterance spoken again is not watched")
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(
+            lines.contains("DIRECT_WATCHDOG_ENGINE_FAILED: rendered audio did not start; speaking directly at offset=300"),
+            "\(lines)"
+        )
+    }
+
+    /// An utterance handed to the synthesizer that neither starts, nor is
+    /// cancelled, nor finishes, while speech should be heard, is spoken
+    /// again from its start on a fresh synthesizer once the start watchdog
+    /// has waited out its timeout, and the chapter does not end; a tick
+    /// short of the timeout does nothing. Before, nothing watched such an
+    /// utterance, since the watchdog armed at a start, and speech showed
+    /// itself speaking in silence.
+    func testAnUtteranceThatNeverStartsIsSpokenAgainOnAFreshSynthesizer() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        var finishes = 0
+        speech.onUtteranceFinished = { finishes += 1 }
+        let stalledChunk = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize)
+        speech.speak(Self.longText, fromCharOffset: stalledChunk.start)
+        let stalled = try handedOver(0, by: recorder)
+        let stalling = try synthesizer(0, by: recorder)
+        let startWatchdog = try XCTUnwrap(timers.running.first, "nothing watches the utterance handed over")
+
+        timers.tick(startWatchdog, times: SpeechService.directStartWatchdogColdRequiredTicks - 1)
+        XCTAssertEqual(recorder.utterances.count, 1, "the start watchdog acted before its timeout")
+
+        timers.tick(startWatchdog, times: 1)
+
+        XCTAssertEqual(recorder.utterances.count, 2, "the utterance that never started was not spoken again")
+        XCTAssertEqual(try handedOver(1, by: recorder).speechString, stalled.speechString, "it was not spoken again from its start")
+        XCTAssertFalse(try synthesizer(1, by: recorder) === stalling, "it was spoken again on the synthesizer that never started it")
+        XCTAssertTrue(speech._directSynthesizerForTesting.delegate === speech)
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertEqual(finishes, 0)
+        XCTAssertTrue(startWatchdog.isCancelled)
+        XCTAssertEqual(timers.running.count, 1, "the utterance spoken again is not watched")
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(
+            lines.contains(
+                "DIRECT_START_WATCHDOG_RECOVERY: utterance at offset=\(stalledChunk.start) chunkEnd=\(stalledChunk.end) "
+                    + "never started; going on at offset=\(stalledChunk.start), recovery 1 of 2 there"
+            ),
+            "\(lines)"
+        )
+        XCTAssertTrue(lines.contains("DIRECT_SYNTH_REPLACED: fresh synthesizer after the live utterance never started"), "\(lines)")
+    }
+
+    /// The start watchdog stops as the utterance it watches starts, when
+    /// the playback watchdog takes over, and as a word of it is reported,
+    /// which shows that it started even had its start gone unreported, so
+    /// that what is being heard is never spoken again.
+    func testTheStartWatchdogStopsAsTheUtteranceStarts() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        let startWatchdog = try XCTUnwrap(timers.running.first)
+        timers.tick(startWatchdog, times: SpeechService.directStartWatchdogColdRequiredTicks - 1)
+
+        report(start: try handedOver(0, by: recorder), to: speech)
+
+        XCTAssertTrue(startWatchdog.isCancelled, "the start watchdog goes on watching an utterance that started")
+        XCTAssertEqual(timers.running.count, 1, "the playback watchdog did not take over")
+
+        // A seek hands over an utterance, which says its first word before
+        // its start is heard of.
+        speech.seek(toCharOffset: 50_000)
+        let afterTheSeek = try XCTUnwrap(recorder.utterances.last)
+        let seekWatchdog = try XCTUnwrap(timers.running.last)
+        report(word: NSRange(location: 0, length: 4), of: afterTheSeek, to: speech)
+
+        XCTAssertTrue(seekWatchdog.isCancelled, "the start watchdog goes on watching an utterance whose words are heard")
+        XCTAssertEqual(timers.running.count, 1, "the playback watchdog did not take over")
+        XCTAssertTrue(recorder.utterances.last === afterTheSeek, "something was spoken again")
+    }
+
+    /// A pause, however long, is no stall: the start watchdog counts only
+    /// ticks in which the utterance should be heard, and starts its count
+    /// again after them.
+    func testAPauseBeforeTheUtteranceStartsIsNoStall() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        let startWatchdog = try XCTUnwrap(timers.running.first)
+        timers.tick(startWatchdog, times: SpeechService.directStartWatchdogColdRequiredTicks - 1)
+
+        speech.pause()
+        timers.tick(startWatchdog, times: SpeechService.directStartWatchdogColdRequiredTicks * 3)
+
+        XCTAssertEqual(recorder.utterances.count, 1, "a paused utterance was spoken again")
+        XCTAssertTrue(speech.isPaused)
+        XCTAssertFalse(startWatchdog.isCancelled, "the pause stopped watching the utterance")
+        XCTAssertFalse(speech.recentTransitionLines.lines.contains { $0.message.hasPrefix("DIRECT_START_WATCHDOG_RECOVERY") })
+    }
+
+    /// An utterance that never starts, while the engine holds audio
+    /// rendered from this speech, goes on from that audio where the
+    /// utterance begins, where nothing was heard.
+    func testAnUtteranceThatNeverStartsGoesOnFromRenderedAudio() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        speech.speak(Self.longText, fromCharOffset: 20_000)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        let startWatchdog = try XCTUnwrap(timers.running.first)
+
+        timers.tick(startWatchdog, times: SpeechService.directStartWatchdogColdRequiredTicks)
+
+        XCTAssertFalse(speech.usingDirectMode, "the utterance that never started was not left for rendered audio")
+        XCTAssertTrue(speech.audioEngine.isPlaying, "the rendered audio did not start")
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertEqual(recorder.utterances.count, 1, "the utterance was spoken again directly")
+    }
+
+    /// A queued chunk the synthesizer goes on to as the chunk before it
+    /// ends, and then never starts, is watched from that end and spoken
+    /// again from its own start, not from the last word of the chunk
+    /// before it.
+    func testAQueuedChunkThatNeverStartsIsSpokenAgainFromItsStart() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        let secondStart = chunk(at: 0, size: SpeechService.directModeFirstChunkSize).end
+        report(word: NSRange(location: 900, length: 4), of: first, to: speech)
+        // The first chunk ends: the queued second is live, and never starts.
+        report(finish: first, to: speech)
+        let startWatchdog = try XCTUnwrap(timers.running.last, "nothing watches the queued chunk")
+        XCTAssertEqual(timers.running.count, 1)
+
+        timers.tick(startWatchdog, times: SpeechService.directStartWatchdogRequiredTicks)
+
+        XCTAssertEqual(recorder.utterances.count, 3, "the queued chunk was not spoken again")
+        XCTAssertEqual(
+            try handedOver(2, by: recorder).speechString,
+            chunk(at: secondStart, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText)
+        )
+        XCTAssertTrue(speech.isSpeaking)
+    }
+
+    /// The start watchdog counts a tick only while direct speech should be
+    /// heard: speaking, not paused, direct, and not fading.
+    func testTheStartWatchdogCountsOnlyWhileSpeechShouldBeHeard() {
+        XCTAssertTrue(SpeechService.shouldAwaitDirectStart(
+            appIsSpeaking: true, appIsPaused: false, usingDirectMode: true, isSleepFadeActive: false
+        ))
+        let quietStates: [(Bool, Bool, Bool, Bool)] = [
+            (false, false, true, false), // Speech stopped.
+            (true, true, true, false),   // Speech is paused.
+            (true, false, false, false), // Rendered audio plays.
+            (true, false, true, true),   // A sleep fade plays its own segments.
+        ]
+        for state in quietStates {
+            XCTAssertFalse(SpeechService.shouldAwaitDirectStart(
+                appIsSpeaking: state.0, appIsPaused: state.1, usingDirectMode: state.2, isSleepFadeActive: state.3
+            ), "\(state)")
+        }
+        XCTAssertGreaterThan(
+            Double(SpeechService.directStartWatchdogRequiredTicks) * SpeechService.directWatchdogInterval,
+            SpeechService.directStartWatchdogTimeout,
+            "the watchdog does not wait out its whole timeout"
+        )
+        XCTAssertGreaterThan(
+            Double(SpeechService.directStartWatchdogColdRequiredTicks) * SpeechService.directWatchdogInterval,
+            SpeechService.directStartWatchdogColdTimeout,
+            "the watchdog does not wait out its whole timeout on a fresh synthesizer"
+        )
+        XCTAssertGreaterThan(SpeechService.directStartWatchdogColdTimeout, SpeechService.directStartWatchdogTimeout)
+    }
+
+    /// The first utterance on a synthesizer that has not started one yet,
+    /// as the service's first and every fresh one, waits the longer start
+    /// timeout, since a voice still loading starts slowly; once the
+    /// synthesizer has started an utterance, the next one, here after a
+    /// seek, waits the ordinary timeout.
+    func testTheFirstUtteranceOnANewSynthesizerWaitsLongerToStart() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        let first = try handedOver(0, by: recorder)
+        let coldWatchdog = try XCTUnwrap(timers.running.last)
+
+        timers.tick(coldWatchdog, times: SpeechService.directStartWatchdogRequiredTicks)
+        XCTAssertEqual(recorder.utterances.count, 1, "the first utterance on a new synthesizer was recovered at the ordinary timeout")
+
+        report(start: first, to: speech)
+        speech.seek(toCharOffset: 50_000)
+        let handedAtTheSeek = recorder.utterances.count
+        let warmWatchdog = try XCTUnwrap(timers.running.last)
+        timers.tick(warmWatchdog, times: SpeechService.directStartWatchdogRequiredTicks)
+
+        XCTAssertEqual(recorder.utterances.count, handedAtTheSeek + 1, "an utterance on a synthesizer that had started one waited longer")
+        XCTAssertEqual(
+            try handedOver(handedAtTheSeek, by: recorder).speechString,
+            chunk(at: 50_000, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText)
+        )
+    }
+
+    /// Two recoveries at one place, each speaking it again on a fresh
+    /// synthesizer that never starts it either, and the third stall there
+    /// pauses speech at the place, the cursor kept, with nothing more handed
+    /// over and nothing watched: speech never recovers in silence without
+    /// end. The reader is told once, and speech says nothing over it. The
+    /// line logged holds offsets only. Play speaks from the place afresh,
+    /// and the place has its two recoveries again.
+    func testAnUtteranceThatNeverStartsAfterTwoRecoveriesPausesSpeechThere() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        var stalls = 0
+        speech.onSpeechStalled = { stalls += 1 }
+        let place = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize)
+        speech.speak(Self.longText, fromCharOffset: place.start)
+
+        for recovery in 1...SpeechService.directStartWatchdogRecoveriesPerPlace {
+            let watchdog = try XCTUnwrap(timers.running.last, "nothing watches the utterance")
+            timers.tick(watchdog, times: SpeechService.directStartWatchdogColdRequiredTicks)
+            XCTAssertEqual(recorder.utterances.count, recovery + 1, "recovery \(recovery) spoke nothing again")
+            XCTAssertTrue(speech.isSpeaking && !speech.isPaused)
+        }
+        let lastWatchdog = try XCTUnwrap(timers.running.last)
+        let handedBeforeTheStop = recorder.utterances.count
+        let announced = recordingAnnouncements {
+            timers.tick(lastWatchdog, times: SpeechService.directStartWatchdogColdRequiredTicks)
+        }
+
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheStop, "speech recovered a third time at the place")
+        XCTAssertTrue(speech.isSpeaking && speech.isPaused, "speech did not pause where the voice would not start")
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: place.start, length: 0), "the cursor left the place")
+        XCTAssertEqual(stalls, 1, "the reader was not told once")
+        XCTAssertEqual(announced.announcements, [], "speech spoke over the reader it told")
+        XCTAssertTrue(timers.running.isEmpty, "a watchdog still watches the paused speech")
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(
+            lines.contains(
+                "DIRECT_START_STALLED: offset=\(place.start) chunkEnd=\(place.end) never started after 2 recoveries; "
+                    + "speech paused there"
+            ),
+            "\(lines)"
+        )
+
+        XCTAssertTrue(speech.resume(), "Play did not speak again")
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheStop + 1)
+        XCTAssertEqual(try handedOver(handedBeforeTheStop, by: recorder).speechString, place.words(of: Self.longText))
+        let afterPlay = try XCTUnwrap(timers.running.last)
+        timers.tick(afterPlay, times: SpeechService.directStartWatchdogColdRequiredTicks)
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheStop + 2, "Play did not give the place its recoveries again")
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertEqual(stalls, 1)
+    }
+
+    /// With no reader to tell, speech that pauses where the voice would not
+    /// start says why itself, once, in the pinned words.
+    func testWithNoReaderSpeechSaysItselfThatTheVoiceDidNotStart() throws {
+        let timers = ManualWatchdogTimers()
+        let (speech, _) = makeDirectSpeech(watchdogTimers: timers)
+        defer { speech.stop() }
+        speech.speak(Self.longText, fromCharOffset: 20_000)
+
+        let announced = recordingAnnouncements {
+            for _ in 0...SpeechService.directStartWatchdogRecoveriesPerPlace {
+                guard let watchdog = timers.running.last else { return }
+                timers.tick(watchdog, times: SpeechService.directStartWatchdogColdRequiredTicks)
+            }
+        }
+
+        XCTAssertTrue(speech.isPaused, "speech did not pause where the voice would not start")
+        XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.voiceDidNotStartAnnouncement])
+        XCTAssertEqual(SpeechService.voiceDidNotStartAnnouncement, "Speech stopped: the voice did not start. Press Play to try again.")
+    }
+
+    /// The app's watchdog timer ticks on the main run loop until it is
+    /// cancelled, and not after.
+    func testTheRunLoopWatchdogTimerTicksUntilCancelled() {
+        let ticks = OSAllocatedUnfairLock(initialState: 0)
+        let timer = RunLoopWatchdogTimer(interval: 0.01) {
+            ticks.withLock { $0 += 1 }
+        }
+        XCTAssertTrue(waitUntil(timeout: 2) { ticks.withLock { $0 } >= 2 }, "the timer did not tick on the main run loop")
+
+        timer.cancel()
+        let atCancel = ticks.withLock { $0 }
+        RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+
+        XCTAssertEqual(ticks.withLock { $0 }, atCancel, "the timer ticked after it was cancelled")
+    }
+
+    // MARK: - Benchmark
 
     /// What the synthesizer itself does with the two changes, muted: the
     /// first word of a 1,000-unit utterance against a 5,000-unit one (the
@@ -1004,13 +1512,22 @@ final class SpeechDirectChunkingTests: XCTestCase {
     /// go to the returned recorder instead of the synthesizer. The recorder
     /// notes, beside each utterance, the synthesizer speech would have
     /// handed it to, read through a seam no production code uses.
-    private func makeDirectSpeech() -> (SpeechService, UtteranceRecorder) {
+    ///
+    /// Its watchdogs tick on `watchdogTimers`, which the test ticks by hand;
+    /// without them they never tick, as for any speech handing its
+    /// utterances to a recorder.
+    private func makeDirectSpeech(watchdogTimers: ManualWatchdogTimers? = nil) -> (SpeechService, UtteranceRecorder) {
         let speech = SpeechService(userDefaults: makeSandboxedPreferences("direct-chunking"))
         let recorder = UtteranceRecorder()
         // Weak: speech holds this closure.
         speech._directUtteranceRecorderForTesting = { [weak speech] utterance in
             recorder.utterances.append(utterance)
             recorder.synthesizers.append(speech?._directSynthesizerForTesting)
+        }
+        if let watchdogTimers {
+            speech._watchdogTimerForTesting = { interval, tick in
+                watchdogTimers.start(interval: interval, tick: tick)
+            }
         }
         return (speech, recorder)
     }
@@ -1156,6 +1673,48 @@ final class SpeechDirectChunkingTests: XCTestCase {
 }
 
 // MARK: - Test doubles
+
+/// The timers direct speech's watchdogs tick on, ticked by the test by hand
+/// in place of the main run loop's (`SpeechService._watchdogTimerForTesting`),
+/// so no test waits for a watchdog. Used only on the main thread.
+final class ManualWatchdogTimers {
+    /// One timer: the tick it calls, and whether it was cancelled.
+    final class ManualTimer: SpeechWatchdogTimer {
+        /// What the timer calls at each tick.
+        let tick: @Sendable () -> Void
+        /// Whether the watchdog cancelled it.
+        private(set) var isCancelled = false
+
+        init(tick: @escaping @Sendable () -> Void) {
+            self.tick = tick
+        }
+
+        func cancel() {
+            isCancelled = true
+        }
+    }
+
+    /// Every timer started, oldest first.
+    private(set) var started: [ManualTimer] = []
+
+    /// The timers not cancelled, oldest first.
+    var running: [ManualTimer] { started.filter { !$0.isCancelled } }
+
+    /// Start a timer that calls `tick`, as the watchdogs ask.
+    func start(interval: TimeInterval, tick: @escaping @Sendable () -> Void) -> SpeechWatchdogTimer {
+        let timer = ManualTimer(tick: tick)
+        started.append(timer)
+        return timer
+    }
+
+    /// Tick `timer` `count` times, as the run loop would once every
+    /// interval, stopping once it is cancelled.
+    func tick(_ timer: ManualTimer, times count: Int) {
+        for _ in 0..<max(0, count) where !timer.isCancelled {
+            timer.tick()
+        }
+    }
+}
 
 /// Keeps every utterance direct speech hands over, in place of the
 /// synthesizer, in order, and beside each the synthesizer it would have
