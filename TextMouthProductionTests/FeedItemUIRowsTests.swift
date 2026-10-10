@@ -164,10 +164,30 @@ final class FeedItemUIRowsTests: XCTestCase {
 
     // MARK: - Delete Download
 
-    /// Delete Download of an episode the listener opened says its place,
-    /// bookmarks, and transcript are kept for when it is downloaded again,
-    /// and its row then says the place it kept; a download never opened
-    /// says it can be downloaded again.
+    /// Delete Download's words name only what the kept package holds, each
+    /// with its verb: one part, several, or none, which says only that it
+    /// can be downloaded again (feed review item 18).
+    func testDeleteDownloadNamesOnlyWhatItKept() {
+        let deleted = "Deleted the download of “Ep. 368”."
+        XCTAssertEqual(FeedWording.downloadDeleted(title: "Ep. 368"), "\(deleted) It can be downloaded again.")
+        XCTAssertEqual(
+            FeedWording.downloadDeleted(title: "Ep. 368", kept: [.transcript]),
+            "\(deleted) Its transcript is kept for when you download it again."
+        )
+        XCTAssertEqual(
+            FeedWording.downloadDeleted(title: "Ep. 368", kept: [.bookmarks]),
+            "\(deleted) Its bookmarks are kept for when you download it again."
+        )
+        XCTAssertEqual(
+            FeedWording.downloadDeleted(title: "Ep. 368", kept: [.place, .bookmarks, .settings, .transcript]),
+            "\(deleted) Its place, bookmarks, own settings, and transcript are kept for when you download it again."
+        )
+    }
+
+    /// Delete Download of an episode the listener opened says what is kept
+    /// of it for when it is downloaded again, its place and bookmarks, and
+    /// its row then says the place it kept; a download never opened says it
+    /// can be downloaded again.
     func testDeleteDownloadSaysWhatItKept() async throws {
         let world = try FeedTestWorld(self, label: "FeedItemUIDeleteDownload")
         await world.start()
@@ -201,9 +221,11 @@ final class FeedItemUIRowsTests: XCTestCase {
         }
 
         try deleteDownload("guid:ep-1")
+        // Only what the kept package holds is named: here no transcript
+        // (feed review item 18).
         XCTAssertEqual(
             heard.last,
-            "Deleted the download of “Episode 1”. Its place, bookmarks, and transcript are kept for when you download it again."
+            "Deleted the download of “Episode 1”. Its place and bookmarks are kept for when you download it again."
         )
         let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
         XCTAssertEqual(FeedItemRowContent(item, of: feed, in: world.center, wordsPerMinute: 200).kept?.bookmarkCount, 1)

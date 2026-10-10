@@ -179,9 +179,11 @@ extension LibraryFeedsPresenter {
             do {
                 try center.deleteDownload(item.id, of: record.feed.id)
                 // A package that held the listener's place was kept, its
-                // row waiting on the feed's shelf (FR11, branch A2).
-                let keptPlace = context.library.feedItemRows(of: record.feed.id).kept[item.id] != nil
-                announce(FeedWording.downloadDeleted(title: item.title, keptPlace: keptPlace), context.window)
+                // row waiting on the feed's shelf (FR11, branch A2): say
+                // only what it holds (feed review item 18).
+                let kept = context.library.feedItemRows(of: record.feed.id).kept[item.id]
+                    .map { FeedWording.KeptParts.of($0, package: $0.tmbDirectory) } ?? []
+                announce(FeedWording.downloadDeleted(title: item.title, kept: kept), context.window)
             } catch {
                 refuse(error, in: context)
             }
