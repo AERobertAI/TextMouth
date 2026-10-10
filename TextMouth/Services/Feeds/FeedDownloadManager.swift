@@ -102,14 +102,11 @@ extension FeedFetchError {
 /// where it stopped.
 @MainActor
 final class FeedDownloadManager {
-    /// Why a download was asked for.
-    enum Origin: String, Codable, Equatable, Sendable {
-        /// The listener asked: Download, or opening an item.
-        case listener
-        /// A refresh found the item new, with automatic downloads on: it waits
-        /// for a network without data limits.
-        case automatic
-    }
+    /// Who asked for a download (FR11): the listener, through Download or
+    /// opening an item, or the newest-N rule, whose downloads are
+    /// discretionary, waiting for a network without data limits. A finished
+    /// download records it in its item (`FeedItem.downloadOrigin`).
+    typealias Origin = FeedDownloadOrigin
 
     /// One download asked for.
     struct Request: Equatable, Sendable {
@@ -157,9 +154,9 @@ final class FeedDownloadManager {
     /// Whether TextMouth is quitting (`stopForQuit()`): no download starts,
     /// and none that stops forgets its place.
     private(set) var isStoppedForQuit = false
-    /// The automatic downloads a network with data limits put off, in the
-    /// order they were, waiting for a refresh TextMouth makes by itself to
-    /// reach a network without them (`retryPutOffDownloads()`).
+    /// The newest-N rule's downloads a network with data limits put off, in
+    /// the order they were, waiting for a refresh TextMouth makes by itself
+    /// to reach a network without them (`retryPutOffDownloads()`).
     private(set) var putOff: [Request] = []
     /// The whole percent last published for the download under way.
     private var publishedPercent = -1
@@ -251,15 +248,16 @@ final class FeedDownloadManager {
         }
     }
 
-    /// Asks again for the automatic downloads a network with data limits put
-    /// off, in their order, as a refresh TextMouth made by itself, which
-    /// such a network refuses too, has just reached the network: it has no
-    /// data limits now. One refused again is put off again.
+    /// Asks again for the newest-N rule's downloads a network with data
+    /// limits put off, in their order, as a refresh TextMouth made by
+    /// itself, which such a network refuses too, has just reached the
+    /// network: it has no data limits now. One refused again is put off
+    /// again.
     func retryPutOffDownloads() {
         let waiting = putOff
         putOff.removeAll()
         for request in waiting {
-            download(request.itemID, of: request.feedID, origin: .automatic)
+            download(request.itemID, of: request.feedID, origin: .window)
         }
     }
 
@@ -322,15 +320,24 @@ final class FeedDownloadManager {
                 DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_CANCELLED: \(item.title) (\(feed.title))")
                 return
             }
-            if failure == .transfer(.constrainedNetwork), request.origin == .automatic,
+            // As it stands now: the listener may have asked for it meanwhile.
+            let asked = latest(request)
+            if failure == .transfer(.constrainedNetwork), asked.origin == .window,
                !putOff.contains(where: { $0.feedID == request.feedID && $0.itemID == request.itemID }) {
                 // A network with data limits put it off: its failure says it
                 // waits, and it is tried again once one without them is
                 // reached.
-                putOff.append(request)
+                putOff.append(asked)
             }
             let message = failure.message(about: item.title)
-            store.updateItem(request.itemID, of: request.feedID) { $0.state = .failed(message) }
+            store.updateItem(request.itemID, of: request.feedID) { item in
+                item.state = .failed(message)
+                // A download the listener asked for stays the listener's to
+                // try again, never the newest-N rule's (FR11).
+                if asked.origin == .listener {
+                    item.downloadOrigin = .listener
+                }
+            }
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FAILED: \(item.title) (\(feed.title)): \(message)")
             announce(.downloadFailed(feedID: request.feedID, itemID: request.itemID, reason: message))
         }
@@ -368,7 +375,7 @@ final class FeedDownloadManager {
                 enclosure.url,
                 resumingFrom: resumeData,
                 to: holding,
-                discretionary: request.origin == .automatic,
+                discretionary: request.origin == .window,
                 handle: transfer
             ) { written, expected in
                 // On the main queue, in the order the bytes arrived.
@@ -404,7 +411,7 @@ final class FeedDownloadManager {
     /// download's file went.
     private func downloadArticle(_ item: FeedItem, of feed: Feed, request: Request, restoring kept: Book?) async throws -> Book {
         let network = environment.network
-        let discretionary = request.origin == .automatic
+        let discretionary = request.origin == .window
         let body = await FeedEpisodeImporter.articleBody(for: item) { link in
             guard case .body(let page)? = try? await network.fetch(link, discretionary: discretionary) else { return nil }
             return page.text
@@ -447,13 +454,24 @@ final class FeedDownloadManager {
     }
 
     /// Adds `book` to the library and marks the item of `request` downloaded
-    /// as it.
+    /// as it, by whoever asked for it (FR11): the listener when the listener
+    /// asked at any point, otherwise the newest-N rule.
     private func commit(_ book: Book, for request: Request) {
         library()?.addFeedBook(book)
+        let origin = latest(request).origin
         store.updateItem(request.itemID, of: request.feedID) { item in
             item.state = .downloaded(bookID: book.id)
             item.downloadDeletedDate = nil
+            item.downloadOrigin = origin
         }
+    }
+
+    /// `request` as it stands now: the download under way when it is the
+    /// same item's, which asking again while it ran may have made the
+    /// listener's, or one that opens when done; otherwise as it was asked.
+    private func latest(_ request: Request) -> Request {
+        guard let current, current.feedID == request.feedID, current.itemID == request.itemID else { return request }
+        return current
     }
 
     /// Publishes how far the download `request` has got, when its whole

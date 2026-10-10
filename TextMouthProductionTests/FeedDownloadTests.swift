@@ -551,7 +551,7 @@ final class FeedDownloadTests: XCTestCase {
         let list = world.center.downloads.savedAtQuitFile
         try FileManager.default.createDirectory(at: list.deletingLastPathComponent(), withIntermediateDirectories: true)
         try JSONEncoder().encode([
-            FeedDownloadManager.SavedDownload(feedID: feed.id, itemID: "guid:ep-1", origin: .automatic),
+            FeedDownloadManager.SavedDownload(feedID: feed.id, itemID: "guid:ep-1", origin: .window),
             FeedDownloadManager.SavedDownload(feedID: UUID(), itemID: "guid:ep-1", origin: .listener),
         ]).write(to: list)
         try world.center.deleteItem("guid:ep-1", of: feed.id)

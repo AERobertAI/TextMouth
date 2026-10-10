@@ -7,9 +7,10 @@ import Foundation
 /// what the feed says about it, and what the listener has done with it.
 ///
 /// The feed's fields (title, texts, dates, enclosure, and the rest) follow
-/// the feed at each refresh. The listener's fields (`state`, `playedDate`,
-/// `downloadDeletedDate`, and `deletedDate`) change only through what the
-/// listener and TextMouth do with the item, never through a refresh.
+/// the feed at each refresh. The listener's fields (`state`,
+/// `downloadOrigin`, `playedDate`, `downloadDeletedDate`, and `deletedDate`)
+/// change only through what the listener and TextMouth do with the item,
+/// never through a refresh.
 struct FeedItem: Codable, Equatable, Identifiable, Sendable {
     /// The item's identity (`FeedItemIdentity`): its guid, else its
     /// enclosure's address, else its link and title. Fixed when the item is
@@ -49,12 +50,21 @@ struct FeedItem: Codable, Equatable, Identifiable, Sendable {
     var chapters: FeedResource?
     /// Where the item's download stands.
     var state: FeedItemState
+    /// Who asked for the item's download last (FR11): the newest-N rule,
+    /// which may remove the file once the item falls outside the newest, or
+    /// the listener, whose download the rule never removes; also the
+    /// listener once the listener has deleted or stopped a download, which
+    /// leaves the item to the listener from then on. Nil for an item no
+    /// download has been asked for since FR11, whose download made before
+    /// counts as the listener's. Read through `decodeIfPresent`, and written
+    /// only when set.
+    var downloadOrigin: FeedDownloadOrigin?
     /// When the item played to the end (an article: was read to the end), or
     /// was marked played; nil while unplayed.
     var playedDate: Date?
-    /// When the item's download was deleted, by the delete-after-played rule
-    /// or by the listener, keeping the item itself; nil while it is
-    /// downloaded or was never deleted.
+    /// When the item's download was deleted, by the delete-after-played
+    /// rule, the newest-N rule, or the listener, keeping the item itself;
+    /// nil while it is downloaded or was never deleted.
     var downloadDeletedDate: Date?
     /// When the listener deleted the item itself. The record keeps it, out of
     /// every list, so the next refresh never brings it back.
@@ -78,6 +88,7 @@ struct FeedItem: Codable, Equatable, Identifiable, Sendable {
         transcripts: [FeedResource]? = nil,
         chapters: FeedResource? = nil,
         state: FeedItemState = .notDownloaded,
+        downloadOrigin: FeedDownloadOrigin? = nil,
         playedDate: Date? = nil,
         downloadDeletedDate: Date? = nil,
         deletedDate: Date? = nil
@@ -97,6 +108,7 @@ struct FeedItem: Codable, Equatable, Identifiable, Sendable {
         self.transcripts = transcripts
         self.chapters = chapters
         self.state = state
+        self.downloadOrigin = downloadOrigin
         self.playedDate = playedDate
         self.downloadDeletedDate = downloadDeletedDate
         self.deletedDate = deletedDate
@@ -223,6 +235,37 @@ extension FeedItemState: Codable {
             try container.encode(Kind.downloaded, forKey: .kind)
             try container.encode(bookID, forKey: .bookID)
         }
+    }
+}
+
+// MARK: - Who Asked for a Download (FR11)
+
+/// Who asked for an item's download (FR11, branch B): the listener, or the
+/// newest-N rule, which keeps a feed's newest items downloaded under "Every
+/// item listed, newest 5 downloaded".
+///
+/// An item keeps it (`FeedItem.downloadOrigin`) so the rule manages its own
+/// downloads alone: it removes the file of a download it made once the item
+/// falls outside the newest, never one the listener asked for; and once the
+/// listener has deleted or stopped a download, it leaves the item to the
+/// listener. The download manager's requests carry it too
+/// (`FeedDownloadManager.Origin`): the rule's are discretionary, waiting for
+/// a network without data limits.
+enum FeedDownloadOrigin: String, Codable, Equatable, Sendable {
+    /// The listener: Download, Open, or trying a failed download again; or,
+    /// for an item, the listener's deleting or stopping its download.
+    case listener
+    /// The newest-N rule, keeping the newest items downloaded.
+    case window
+
+    /// Reads an origin without ever failing, so no odd value makes its
+    /// record unreadable: "automatic", which the list of downloads under way
+    /// at quit gave a download that started by itself before FR11, reads as
+    /// the rule's, as such downloads now are; any other name this version
+    /// does not know reads as the listener's, which the rule leaves alone.
+    init(from decoder: Decoder) throws {
+        let name = try? decoder.singleValueContainer().decode(String.self)
+        self = name == Self.window.rawValue || name == "automatic" ? .window : .listener
     }
 }
 

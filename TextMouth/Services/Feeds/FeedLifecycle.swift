@@ -148,12 +148,15 @@ extension FeedCenter {
         }
     }
 
-    /// Notes in the record that the item `itemID` of the feed `feedID` is no
-    /// longer downloaded, from now.
+    /// Notes in the record that the listener removed the download of the
+    /// item `itemID` of the feed `feedID`, from now: it is no longer
+    /// downloaded, and it is the listener's, so the newest-N rule never
+    /// downloads it again by itself (FR11).
     private func noteDownloadRemoved(_ itemID: FeedItem.ID, of feedID: UUID) {
         store.updateItem(itemID, of: feedID) { item in
             item.state = .notDownloaded
             item.downloadDeletedDate = environment.now()
+            item.downloadOrigin = .listener
         }
     }
 

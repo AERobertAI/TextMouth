@@ -601,10 +601,10 @@ final class FeedCenter: ObservableObject {
     }
 
     /// Announces the end of one feed's refresh, and, with automatic downloads
-    /// on, downloads the items it found new. A refresh TextMouth made by
-    /// itself that was not put off reached a network without data limits,
-    /// which such a refresh needs, so the automatic downloads one put off
-    /// are tried again first.
+    /// on, downloads the items it found new, as the newest-N rule's. A
+    /// refresh TextMouth made by itself that was not put off reached a
+    /// network without data limits, which such a refresh needs, so the
+    /// downloads one put off are tried again first.
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
         requestSweep()
@@ -613,7 +613,7 @@ final class FeedCenter: ObservableObject {
             downloads.retryPutOffDownloads()
         }
         for itemID in report.newItemIDs {
-            downloads.download(itemID, of: report.feedID, origin: .automatic)
+            downloads.download(itemID, of: report.feedID, origin: .window)
         }
     }
 
@@ -633,9 +633,12 @@ final class FeedCenter: ObservableObject {
     }
 
     /// Stops the download of the item `itemID` of the feed `feedID`, or takes
-    /// it out of the queue.
+    /// it out of the queue, as Cancel Download does: the item is the
+    /// listener's from then on, so the newest-N rule never downloads it again
+    /// by itself (FR11).
     func cancelDownload(_ itemID: FeedItem.ID, of feedID: UUID) {
         downloads.cancel(itemID, of: feedID)
+        store.updateItem(itemID, of: feedID) { $0.downloadOrigin = .listener }
     }
 
     /// The items of the feed `feedID` whose packages were kept with the
