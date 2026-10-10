@@ -38,6 +38,19 @@ final class LibraryFeedItemEditTests: XCTestCase {
 
     // MARK: - What a Kept Package Keeps
 
+    /// The files TextMouth keeps beside a book's own file in its package,
+    /// its record and its text among them, each named by one constant, are
+    /// never taken for the book's content, as a kept article's package holds
+    /// them without its file (REV11).
+    func testAPackagesOwnFilesAreNeverItsContent() {
+        XCTAssertEqual(TextMouthPaths.bookInfoFileName, "bookInfo.json")
+        XCTAssertEqual(TextMouthPaths.contentMarkdownFileName, "content.md")
+        for name in [TextMouthPaths.bookInfoFileName, TextMouthPaths.contentMarkdownFileName, TextMouthPaths.contentIndexFileName] {
+            XCTAssertFalse(FileImportService.isPackageContentName(name), name)
+        }
+        XCTAssertTrue(FileImportService.isPackageContentName("Post 1.html"))
+    }
+
     /// The copies Edit Text kept and content.md, which may hold an edit,
     /// stay in a kept package whatever the book's format, with the record,
     /// the content index, and the transcript, while the speech prepared from
