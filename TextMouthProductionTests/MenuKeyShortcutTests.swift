@@ -586,6 +586,18 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertNil(ShortcutAction.whereAmI.refusal(of: plainW))
         XCTAssertEqual(ShortcutAction.openBook.refusal(ofKeys: [commandO, controlG]), .secondKeyEquivalent(controlG))
         XCTAssertNil(ShortcutAction.togglePlayback.refusal(ofKeys: [KeyBinding(key: "space"), KeyBinding(key: "k"), plainW]))
+        // One rule, holding keys as the Shortcuts tab holds those in force:
+        // a key held already is never refused, and the key past the number
+        // held is the one named, whichever place it is given in.
+        XCTAssertNil(ShortcutAction.openBook.refusal(ofKeys: [plainW], holding: [plainW]))
+        XCTAssertEqual(ShortcutAction.openBook.refusal(ofKeys: [plainW, controlG], holding: [plainW]), .secondKeyEquivalent(controlG))
+        XCTAssertEqual(ShortcutAction.openBook.refusal(ofKeys: [controlG, commandO], holding: [commandO]), .secondKeyEquivalent(controlG))
+        XCTAssertNil(ShortcutAction.openBook.refusal(ofKeys: [commandO, controlG], holding: [commandO, controlG]))
+        XCTAssertEqual(
+            ShortcutAction.openBook.refusal(ofKeys: [commandO, plainW], holding: [commandO]),
+            .notOnePressWithCommandOrControl(plainW),
+            "a key it cannot take is named before a second key"
+        )
 
         XCTAssertEqual(
             ShortcutsSettingsWording.refused(.notOnePressWithCommandOrControl(plainW), for: .openBook),

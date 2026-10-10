@@ -633,14 +633,24 @@ extension ShortcutAction {
         return isKeyEquivalent ? key.keyEquivalentRefusal : nil
     }
 
-    /// Why `keys` cannot be this action's keys, or nil when they can: the
-    /// first key refused, or, for a key equivalent's action, a second key.
-    func refusal(ofKeys keys: [KeyBinding]) -> ShortcutRefusal? {
-        if let refused = keys.lazy.compactMap(refusal(of:)).first {
+    /// Why `keys` cannot become this action's keys, or nil when they can:
+    /// the first key they add to `held`, the keys it has now, that it cannot
+    /// take (`refusal(of:)`), or, for a key equivalent's action, whose item
+    /// has one key, a key past the number it may have, which is one, or as
+    /// many as it holds. A key it holds already is never refused, so keys a
+    /// store edited by hand gave it never stop the user changing it. The one
+    /// rule the Shortcuts tab (`KeyboardShortcutManager`), with the keys in
+    /// force, and config.json (`ShortcutListing.refusal(for:)`), with none,
+    /// both follow (REV11).
+    func refusal(ofKeys keys: [KeyBinding], holding held: [KeyBinding] = []) -> ShortcutRefusal? {
+        let added = keys.filter { !held.contains($0) }
+        if let refused = added.lazy.compactMap(refusal(of:)).first {
             return refused
         }
-        if isKeyEquivalent, keys.count > 1 {
-            return .secondKeyEquivalent(keys[1])
+        let allowed = max(1, held.count)
+        if isKeyEquivalent, keys.count > allowed,
+           let extra = keys.dropFirst(allowed).first(where: { !held.contains($0) }) ?? added.first {
+            return .secondKeyEquivalent(extra)
         }
         return nil
     }
@@ -1274,10 +1284,12 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
     }
 
     /// Why the keys this entry gives `action` cannot be its keys
-    /// (`ShortcutAction.refusal(ofKeys:)`, FR12's branch D), or nil when
-    /// they can or the entry gives none.
+    /// (`ShortcutAction.refusal(ofKeys:holding:)`, FR12's branch D, holding
+    /// none: an entry the record holds already is let through before this
+    /// is asked, `ShortcutEdits.entriesLeftOut(of:)`), or nil when they can
+    /// or the entry gives none.
     func refusal(for action: ShortcutAction) -> ShortcutRefusal? {
-        bindings.flatMap(action.refusal(ofKeys:))
+        bindings.flatMap { action.refusal(ofKeys: $0) }
     }
 
     /// A list of shortcuts, written as an array literal.
