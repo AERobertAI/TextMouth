@@ -640,11 +640,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// Called on the main queue when speech ended because the Mac's speech
     /// engine refused its text on a fresh synthesizer too
     /// (`endDirectSpeechRefused(at:refusing:spanning:)`), after speech shows
-    /// itself stopped at the cursor and the listener has heard
-    /// `engineRefusedAnnouncement`, with what was refused (`SpeechRefusal`),
-    /// for the report of the refusal (B05). A reader may show playback
-    /// stopped in turn; nothing else is needed, since Play speaks on from
-    /// the cursor.
+    /// itself stopped at the cursor, with what was refused
+    /// (`SpeechRefusal`), for the report of the refusal (B05). The reader
+    /// tells the listener, by the report's sheet or by an announcement of
+    /// its own, so that one message is heard; with no reader set, speech
+    /// says `engineRefusedAnnouncement` itself. A reader may show playback
+    /// stopped in turn; Play speaks on from the cursor.
     var onSpeechRefused: ((SpeechRefusal) -> Void)?
 
     /// The full text currently being spoken, kept after a stop for a later
@@ -1100,8 +1101,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// What the listener hears when the Mac's speech engine refused the
     /// text twice, on a fresh synthesizer too, and speech ended where it
-    /// was (`endDirectSpeechRefused(at:refusing:spanning:)`). Play speaks
-    /// on from there.
+    /// was (`endDirectSpeechRefused(at:refusing:spanning:)`), when speech
+    /// has no reader to tell (`onSpeechRefused`); a reader tells the
+    /// listener itself (`SpeechRefusalWording.announcement`). Play speaks on
+    /// from there.
     nonisolated static let engineRefusedAnnouncement = "Speech stopped: the Mac's speech engine refused this text."
 
     /// Speak again after the system cancelled the live utterance on its own
@@ -1283,8 +1286,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// stopped, not paused, and keeps its text and the cursor at `offset`,
     /// so that Play speaks on from there, as the reader restarts stopped
     /// speech from its cursor, and the chapter neither ends nor moves on.
-    /// The listener hears `engineRefusedAnnouncement`, and the reader is
-    /// told what was refused (`onSpeechRefused`, `SpeechRefusal`).
+    /// The reader is told what was refused (`onSpeechRefused`,
+    /// `SpeechRefusal`) and tells the listener; with no reader to tell, the
+    /// listener hears `engineRefusedAnnouncement`.
     ///
     /// The caller has already let go of the synthesizer that refused, and
     /// of what it held (`replaceDirectSynthesizer()`), so that Play speaks
@@ -1322,12 +1326,17 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             volume: refused.volume,
             recentLines: recentTransitionLines.lines
         )
-        // The synthesizer's callbacks reach this service on the main queue,
-        // where announcements are made.
-        MainActor.assumeIsolated {
-            VoiceOverAnnouncer.announce(Self.engineRefusedAnnouncement)
+        if let onSpeechRefused {
+            // One message: the reader tells the listener, by the report's
+            // sheet or by an announcement of its own (B05).
+            onSpeechRefused(refusal)
+        } else {
+            // The synthesizer's callbacks reach this service on the main
+            // queue, where announcements are made.
+            MainActor.assumeIsolated {
+                VoiceOverAnnouncer.announce(Self.engineRefusedAnnouncement)
+            }
         }
-        onSpeechRefused?(refusal)
     }
 
     /// Stop the direct synthesizer and clear the live-utterance marker so

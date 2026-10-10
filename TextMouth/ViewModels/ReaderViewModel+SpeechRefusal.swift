@@ -19,25 +19,41 @@ extension ReaderViewModel {
 
     /// Shows the report of `refusal`, which stopped this reader's speech
     /// where the cursor now is because the Mac's speech engine refused a
-    /// passage twice (B05). The report joins what the reader knows of the
-    /// place (the book, the position as Where Am I? says it, the chapter,
-    /// and the chapter's text as the book has it) to what speech handed
-    /// over, and takes the place of any report shown, counting the
-    /// refusals at its place (`SpeechRefusalAlert.show(_:)`). One line, of
-    /// offsets only, records it in speech's log, after the line that ended
-    /// speech.
+    /// passage twice (B05), and tells the listener once. The report joins
+    /// what the reader knows of the place (the book, the position as Where
+    /// Am I? says it, the chapter, and the chapter's text as the book has
+    /// it) to what speech handed over, and takes the place of any report
+    /// shown, counting the refusals at its place
+    /// (`SpeechRefusalAlert.show(_:)`). One line, of offsets only, records
+    /// it in speech's log, after the line that ended speech.
+    ///
+    /// The listener hears one message, not two that talk over each other:
+    /// the sheet's own, VoiceOver moving to it, when it opens at once in
+    /// front of the listener; anywhere else, where the sheet waits on its
+    /// window or is open already, `SpeechRefusalWording.announcement`.
     ///
     /// A refusal comes only while a chapter of a text book speaks, so the
-    /// chapter's text is always there; were it not, nothing would show.
+    /// chapter's text is always there; were it not, no report could be
+    /// made, and the listener would hear speech's own announcement.
     func showSpeechRefusalReport(_ refusal: SpeechRefusal) {
-        guard let report = makeSpeechRefusalReport(of: refusal) else { return }
+        // Read before the report changes, which opens the sheet.
+        let standing = speechRefusalWindowStanding
+        guard let report = makeSpeechRefusalReport(of: refusal) else {
+            VoiceOverAnnouncer.announce(SpeechService.engineRefusedAnnouncement, from: hostWindow)
+            return
+        }
         speechRefusalAlert.show(report)
+        let announced = !standing.sheetSpeaksForItself
+        if announced {
+            VoiceOverAnnouncer.announce(SpeechRefusalWording.announcement, from: hostWindow)
+        }
         let shown = speechRefusalAlert.report ?? report
         DiagnosticLog.event(
             .playback,
             "SPEECH_REFUSAL_REPORTED: chapter=\(shown.chapterIndex) offset=\(shown.chapterOffset) "
                 + "spokenOffset=\(refusal.offset) chunkStart=\(refusal.refusedRange.lowerBound) "
-                + "chunkEnd=\(refusal.refusedRange.upperBound) timesHere=\(shown.timesRefusedHere)",
+                + "chunkEnd=\(refusal.refusedRange.upperBound) timesHere=\(shown.timesRefusedHere) "
+                + "announced=\(announced)",
             in: .speechTransitions
         )
     }

@@ -469,6 +469,15 @@ enum SpeechRefusalWindowStanding: Equatable, Sendable {
     var sheetTakesVoiceOverFocus: Bool {
         self != .behind
     }
+
+    /// Whether the report, coming now, is told to the listener by its sheet
+    /// alone, which opens at once in front and speaks for itself. Anywhere
+    /// else, under a sheet or behind, the sheet opens later or not in
+    /// front, or is open already and only changes, so VoiceOver hears
+    /// `SpeechRefusalWording.announcement` instead: one message either way.
+    var sheetSpeaksForItself: Bool {
+        self == .inFront
+    }
 }
 
 // MARK: - What a Reader Keeps

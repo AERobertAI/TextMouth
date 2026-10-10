@@ -157,4 +157,14 @@ final class SpeechRefusalSheetTests: XCTestCase {
         XCTAssertTrue(Standing.underASheet.sheetTakesVoiceOverFocus)
         XCTAssertFalse(Standing.behind.sheetTakesVoiceOverFocus)
     }
+
+    /// One message at the stop: the sheet speaks for itself only when it
+    /// opens at once in front of the listener; under another sheet, or
+    /// with the report open already, or behind, VoiceOver hears the
+    /// announcement instead.
+    func testTheSheetSpeaksForItselfOnlyWhenItOpensAtOnceInFront() {
+        XCTAssertTrue(SpeechRefusalWindowStanding.inFront.sheetSpeaksForItself)
+        XCTAssertFalse(SpeechRefusalWindowStanding.underASheet.sheetSpeaksForItself)
+        XCTAssertFalse(SpeechRefusalWindowStanding.behind.sheetSpeaksForItself)
+    }
 }

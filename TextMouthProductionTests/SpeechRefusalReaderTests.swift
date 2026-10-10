@@ -17,20 +17,24 @@ final class SpeechRefusalReaderTests: XCTestCase {
     /// The engine refuses the chunk where Play starts and the retry of it:
     /// the reader keeps the report of the refusal, which names the book, its
     /// format, the chapter, the place as Where Am I? says it, and the place
-    /// where speech stopped, counted once; and one line in speech's log
-    /// records it, by offsets alone.
+    /// where speech stopped, counted once; VoiceOver hears one message,
+    /// since the reader's window is not in front to speak for itself; and
+    /// one line in speech's log records it, by offsets alone.
     func testARefusalGivesTheReaderItsReport() throws {
         let world = try makeIntegrationWorld("Refusal Report")
         let book = openTextBook(in: world)
         let reader = book.reader
         reader.playOrResume()
 
+        var announced = AnnouncementRecorder()
         let lines = logLines(in: .speechTransitions) {
-            _ = recordingAnnouncements {
+            announced = recordingAnnouncements {
                 refuseTwice(book)
             }
         }
 
+        XCTAssertEqual(reader.speechRefusalWindowStanding, .behind, "A reader with no window was taken for one in front")
+        XCTAssertEqual(announced.announcements.map(\.message), [SpeechRefusalWording.announcement])
         XCTAssertFalse(reader.speechService.isSpeaking, "Speech did not stop")
         let report = try XCTUnwrap(reader.speechRefusalAlert.report, "The reader keeps no report of the refusal")
         XCTAssertEqual(report.bookTitle, "Quay Ledger")
@@ -53,7 +57,7 @@ final class SpeechRefusalReaderTests: XCTestCase {
             lines.contains {
                 $0.contains(
                     "SPEECH_REFUSAL_REPORTED: chapter=0 offset=\(Self.openingOffset) spokenOffset=\(Self.openingOffset) "
-                        + "chunkStart=\(Self.openingOffset) chunkEnd=\(chunkEnd) timesHere=1"
+                        + "chunkStart=\(Self.openingOffset) chunkEnd=\(chunkEnd) timesHere=1 announced=true"
                 )
             },
             "\(lines)"
@@ -101,8 +105,11 @@ final class SpeechRefusalReaderTests: XCTestCase {
         reader.playOrResume()
         XCTAssertTrue(reader.speechService.isSpeaking, "Play did not speak after the refusal")
         assertSpeaks(book, from: Self.openingOffset, "Play after the refusal")
-        _ = recordingAnnouncements { refuseTwice(book) }
+        let second = recordingAnnouncements { refuseTwice(book) }
 
+        // The report open already changes in place, which VoiceOver does
+        // not read again, so the stop is said.
+        XCTAssertEqual(second.announcements.map(\.message), [SpeechRefusalWording.announcement])
         XCTAssertEqual(reader.speechRefusalAlert.report?.timesRefusedHere, 2, "The second refusal did not update the report")
         XCTAssertEqual(reader.speechRefusalAlert.report?.chapterOffset, Self.openingOffset)
 

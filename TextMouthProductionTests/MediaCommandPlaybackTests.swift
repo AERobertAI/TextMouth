@@ -497,7 +497,9 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// ends, so no time away is credited as listening; the system is told
     /// the book is paused, never stopped, so the AirPods stay with TextMouth
     /// and their next press is Play; and the place where speech stopped and
-    /// the stop itself are saved. Play then speaks on from that place.
+    /// the stop itself are saved. VoiceOver hears once that speech stopped
+    /// and that the details are in the book's window, which is not in front
+    /// (B05). Play then speaks on from that place.
     func testARefusedTextStopsAsAPauseAndPlaySpeaksOnFromThere() throws {
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Refusal")
@@ -513,7 +515,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             refusedAt = refuseTheChunkAfterTheFirst(of: quay)
         }
 
-        XCTAssertEqual(recorder.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
+        XCTAssertEqual(recorder.announcements.map(\.message), [SpeechRefusalWording.announcement])
         XCTAssertFalse(reader.speechService.isSpeaking, "Speech did not stop")
         XCTAssertEqual(reader.currentCharacterOffset, refusedAt, "The cursor is not where speech stopped")
         XCTAssertFalse(statistics.hasActiveSession, "The listening session stayed open")

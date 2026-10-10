@@ -348,9 +348,11 @@ final class SpeechDirectChunkingTests: XCTestCase {
 
     /// Cancelled again at the same place, on the fresh synthesizer, speech
     /// ends there: it shows itself stopped at the cursor, not paused, keeps
-    /// its text for Play, the chapter neither ends nor moves on, the reader
-    /// is told, and the listener hears why, in the pinned words.
-    func testACancelOfTheRetryEndsSpeechWithTheAnnouncement() throws {
+    /// its text for Play, the chapter neither ends nor moves on, and the
+    /// reader is told, which tells the listener itself (B05), so that speech
+    /// says nothing over it. Speech with no reader to tell says why itself,
+    /// in the pinned words.
+    func testACancelOfTheRetryEndsSpeechAndTellsTheReaderOrTheListener() throws {
         try TextMouthPaths.ensureDirectoryStructure()
         let (speech, recorder) = makeDirectSpeech()
         defer { speech.stop() }
@@ -384,9 +386,19 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(refusals.count, 1)
         XCTAssertEqual(refusals.first?.offset, start)
         XCTAssertEqual(recorder.utterances.count, 2, "nothing more is handed over")
-        XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
-        XCTAssertEqual(SpeechService.engineRefusedAnnouncement, "Speech stopped: the Mac's speech engine refused this text.")
+        XCTAssertEqual(announced.announcements, [], "speech spoke over the reader it told")
         XCTAssertTrue(lines.contains { $0.contains("DIRECT_RETRY_FAILED: offset=\(start) ") }, "\(lines)")
+
+        // With no reader to tell, speech tells the listener itself.
+        speech.onSpeechRefused = nil
+        speech.speak(Self.longText, fromCharOffset: start)
+        report(cancel: try handedOver(2, by: recorder), to: speech)
+        let alone = try recordingAnnouncements {
+            report(cancel: try handedOver(3, by: recorder), to: speech)
+        }
+        XCTAssertFalse(speech.isActive)
+        XCTAssertEqual(alone.announcements.map(\.message), [SpeechService.engineRefusedAnnouncement])
+        XCTAssertEqual(SpeechService.engineRefusedAnnouncement, "Speech stopped: the Mac's speech engine refused this text.")
     }
 
     /// Speech that ends on a refusal tells its reader what was refused, for
