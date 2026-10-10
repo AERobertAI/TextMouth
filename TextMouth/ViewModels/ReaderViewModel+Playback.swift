@@ -34,8 +34,12 @@ extension ReaderViewModel {
               content.chapters.indices.contains(currentChapterIndex) else { return }
         guard !playGoesToTheHandOver() else { return }
         // Don't start playback while Where Am I has the book in hand: an
-        // announcement speaking, or the resume one that ended still owes.
-        guard !isWhereAmIUnderWay else { return }
+        // announcement speaking, or the resume or the Play one that ended
+        // still owes. The play waits for it instead (`holdPlayForWhereAmI()`).
+        guard !isWhereAmIUnderWay else {
+            holdPlayForWhereAmI()
+            return
+        }
         // A play waiting for its chapter's speech starts once it is ready.
         guard !isWaitingForChapterSpeech else { return }
         // Find what a text book will say before claiming playback, so a book
@@ -87,15 +91,16 @@ extension ReaderViewModel {
     /// Resume playback if the book is already paused, otherwise fall
     /// back to a cold start when nothing is active.
     ///
-    /// While Where Am I? has the book in hand (`isWhereAmIUnderWay`) it does
-    /// nothing, as `play()` does: the announcement goes on, and the book it
-    /// paused plays again as it ends, or, once it has ended, as its end
-    /// sound has played. A Play from the AirPods or a media key once resumed
-    /// the book over the announcement, since only a cold start went through
-    /// that guard.
+    /// While Where Am I? has the book in hand (`isWhereAmIUnderWay`) it
+    /// waits for it, as `play()` does: the announcement goes on, and the book
+    /// it paused plays again as it ends, or, once it has ended, as its end
+    /// sound has played; a book it did not pause, paused or stopped before
+    /// it, starts then (`holdPlayForWhereAmI()`). A Play from the AirPods or
+    /// a media key once resumed the book over the announcement, and later,
+    /// for a book paused before the announcement, did nothing at all (REV11).
     func playOrResume() {
         guard !isWhereAmIUnderWay else {
-            DiagnosticLog.trace(.playback, "play: Where Am I speaks; the book plays again as it ends")
+            holdPlayForWhereAmI()
             return
         }
         if isAudioBook {
@@ -287,9 +292,12 @@ extension ReaderViewModel {
     /// the announcement the reader did not ask for
     /// (`whereAmISynthesizerCancelled(_:)`). The resume an announcement
     /// that ended by itself still owes (`isWhereAmIResumePending`) ends the
-    /// same way: the book stays paused, its pause settled.
+    /// same way: the book stays paused, its pause settled. A Play held for
+    /// the announcement's end (`isPlayHeldByWhereAmI`) is let go, the book
+    /// left as it was before the Play.
     func endWhereAmIWithoutResuming() {
         isWhereAmISpeaking = false
+        isPlayHeldByWhereAmI = false
         if wasPlayingBeforeWhereAmI || isWhereAmIResumePending {
             wasPlayingBeforeWhereAmI = false
             isWhereAmIResumePending = false
@@ -302,9 +310,10 @@ extension ReaderViewModel {
 
     /// Ends whatever Where Am I? has of the book (`isWhereAmIUnderWay`)
     /// without resuming it, as Play/Pause, and anything that pauses the
-    /// book, ends it: an announcement speaking is silenced first, and the
-    /// book it paused, or the one whose resume an announcement that ended by
-    /// itself still owes, stays paused (`endWhereAmIWithoutResuming()`).
+    /// book, ends it: an announcement speaking is silenced first, the book
+    /// it paused, or the one whose resume an announcement that ended by
+    /// itself still owes, stays paused, and a Play held for its end is let
+    /// go (`endWhereAmIWithoutResuming()`).
     ///
     /// - Returns: Whether Where Am I had anything to end.
     @discardableResult
@@ -1470,14 +1479,22 @@ extension ReaderViewModel {
     }
 
     /// Start the play a Where Am I announcement held, now that the
-    /// announcement has ended: a play that waited for its chapter's speech,
+    /// announcement has ended: a Play pressed during it, for a book it had
+    /// not paused (`isPlayHeldByWhereAmI`), starts the book as Play does
+    /// (`playOrResume()`); a play that waited for its chapter's speech,
     /// which was ready while the announcement spoke (`continueWaitingPlay()`),
     /// starts from the cursor as it is now. Nothing starts while an
     /// announcement speaks, when no play waits, or while the speech the play
     /// waits for is still being prepared, whose end starts the play itself.
     func startPlayHeldByWhereAmI() {
-        guard !hasClosed, !isWhereAmISpeaking,
-              let awaited = chapterSpeechCache.awaitedByPlay,
+        guard !hasClosed, !isWhereAmISpeaking else { return }
+        if isPlayHeldByWhereAmI {
+            isPlayHeldByWhereAmI = false
+            DiagnosticLog.trace(.playback, "play: Where Am I ended; starting the book for the Play pressed during it")
+            playOrResume()
+            return
+        }
+        guard let awaited = chapterSpeechCache.awaitedByPlay,
               !chapterSpeechCache.isPreparingInBackground(awaited) else { return }
         DiagnosticLog.trace(.playback, "play: Where Am I ended; starting the chapter's speech it held")
         continueWaitingPlay()

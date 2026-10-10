@@ -224,6 +224,113 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
+    /// A Play from the AirPods while Where Am I? speaks, for a book paused
+    /// before the announcement, waits for it: the announcement goes on, and
+    /// the book plays from where it paused once the announcement's end
+    /// sound has played, as a Play plays it, with the play sound, and is
+    /// shown playing. Before, the Play was dropped without a word, and the
+    /// book stayed paused (REV11).
+    func testAPlayDuringWhereAmIStartsABookPausedBeforeAsItEnds() throws {
+        for kind in BookKind.allCases {
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Where Am I Held Play \(kind)")
+            let book = try openPlayingBook(kind, in: world, joining: system)
+            XCTAssertEqual(system.press(.pause), .success, "\(kind)")
+            let sounds = recordSounds(of: book, "Where Am I Held Play \(kind)")
+            let announcement = try pressWhereAmI(in: book)
+
+            XCTAssertEqual(system.press(.play), .success, "\(kind)")
+
+            XCTAssertTrue(book.reader.isWhereAmISpeaking, "\(kind): the Play ended the announcement")
+            XCTAssertTrue(book.isPaused, "\(kind): the Play started the book over the announcement")
+            finishWhereAmIByItself(book, announcement)
+            book.endSound.passEndSound()
+            XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(kind): the book did not start as the announcement ended")
+            XCTAssertEqual(sounds.played, [.whereAmIStart, .whereAmIEnd, .play], "\(kind)")
+            assertToldSystem(system, that: book.reader, plays: true, "\(kind): the Play held for Where Am I?")
+        }
+    }
+
+    /// A Play from the AirPods while Where Am I? speaks, for a book stopped
+    /// before the announcement, starts the book from its place once the
+    /// announcement's end sound has played.
+    func testAPlayDuringWhereAmIStartsAStoppedBookAsItEnds() throws {
+        for kind in BookKind.allCases {
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Where Am I Held Play Stopped \(kind)")
+            let book = try openPlayingBook(kind, in: world, joining: system)
+            book.reader.stop()
+            book.reader.whereAmI()
+            XCTAssertTrue(book.reader.isWhereAmISpeaking, "\(kind): Where Am I? does not speak")
+            let announcement = try XCTUnwrap(book.announcements.utterances.last, "\(kind): no announcement was handed over")
+
+            XCTAssertEqual(system.press(.play), .success, "\(kind)")
+
+            XCTAssertFalse(book.isPlaying, "\(kind): the Play started the book over the announcement")
+            book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+            handleQueuedCallbacks()
+            book.endSound.passEndSound()
+            XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(kind): the book did not start as the announcement ended")
+        }
+    }
+
+    /// Where Am I? pressed again while it speaks stops it, and a Play held
+    /// for its end starts the book at once, as the announcement's end would
+    /// have.
+    func testAPlayHeldByWhereAmIStartsAtOnceWhenAPressEndsIt() throws {
+        for kind in BookKind.allCases {
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Where Am I Held Play Pressed \(kind)")
+            let book = try openPlayingBook(kind, in: world, joining: system)
+            XCTAssertEqual(system.press(.pause), .success, "\(kind)")
+            _ = try pressWhereAmI(in: book)
+            XCTAssertEqual(system.press(.play), .success, "\(kind)")
+
+            book.reader.whereAmI()
+
+            XCTAssertFalse(book.reader.isWhereAmISpeaking, "\(kind): the press did not stop the announcement")
+            XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(kind): the held Play did not start the book")
+            assertToldSystem(system, that: book.reader, plays: true, "\(kind): the held Play")
+        }
+    }
+
+    /// A Play held for the end of Where Am I? counts as the book playing,
+    /// so whatever pauses a playing book lets it go: a Pause from the
+    /// AirPods, Play/Pause, or a recording starting ends the announcement,
+    /// the book stays paused as it was, and nothing starts it once the end
+    /// sound's moment would have passed.
+    func testAPlayHeldByWhereAmIIsLetGoByAPause() throws {
+        let pauses: [(name: String, pause: (PlayingBook, MediaSystem) -> Void)] = [
+            ("a Pause from the AirPods", { _, system in
+                XCTAssertEqual(system.press(.pause), .success)
+            }),
+            ("Play/Pause", { book, _ in
+                book.reader.togglePlayPause()
+            }),
+            ("a recording starting", { _, system in
+                XCTAssertEqual(system.coordinator.pauseEveryPlayingReader(), 1, "the book holding a Play was not paused")
+            }),
+        ]
+        for kind in BookKind.allCases {
+            for (name, pause) in pauses {
+                let context = "\(kind), \(name)"
+                let system = MediaSystem()
+                let world = try makeIntegrationWorld("Where Am I Held Play Let Go \(kind) \(name)")
+                let book = try openPlayingBook(kind, in: world, joining: system)
+                XCTAssertEqual(system.press(.pause), .success, context)
+                _ = try pressWhereAmI(in: book)
+                XCTAssertEqual(system.press(.play), .success, context)
+
+                pause(book, system)
+
+                XCTAssertFalse(book.reader.isWhereAmIUnderWay, "\(context): Where Am I? still holds the Play")
+                book.endSound.passEndSound()
+                XCTAssertFalse(book.isPlaying, "\(context): the held Play started the book")
+                XCTAssertTrue(book.isPaused, "\(context): the book is not paused where it was")
+            }
+        }
+    }
+
     // MARK: - Another Book Started During Where Am I?
 
     /// Another book started while Where Am I? speaks pauses the book the

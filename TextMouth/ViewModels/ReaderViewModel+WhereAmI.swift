@@ -262,23 +262,41 @@ extension ReaderViewModel {
 
     /// Whether Where Am I? still has the book in hand: an announcement
     /// speaking, or one that ended by itself and resumes the book it paused
-    /// once its end sound has played (`isWhereAmIResumePending`). Nothing
-    /// but Where Am I plays the book meanwhile, and whatever pauses or stops
-    /// the book ends what it holds without resuming it
+    /// once its end sound has played (`isWhereAmIResumePending`), or starts
+    /// the book for a Play pressed during it (`isPlayHeldByWhereAmI`).
+    /// Nothing but Where Am I plays the book meanwhile, and whatever pauses
+    /// or stops the book ends what it holds without resuming it
     /// (`stopWhereAmIWithoutResuming()`, `endWhereAmIAsTheBookStops()`).
     var isWhereAmIUnderWay: Bool {
-        isWhereAmISpeaking || isWhereAmIResumePending
+        isWhereAmISpeaking || isWhereAmIResumePending || isPlayHeldByWhereAmI
     }
 
     /// Whether Where Am I? will play the book once it is over: the
     /// announcement speaking paused the book as it played, or one that
-    /// ended by itself resumes it once its end sound has played. The book
-    /// counts as playing meanwhile, for the system's media commands (the
-    /// Now Playing session's `isCurrentlyPlaying`) and for Next in Reading
-    /// List, so that whatever pauses a playing book pauses this one too, for
-    /// good (REV11).
+    /// ended by itself resumes it once its end sound has played, or a Play
+    /// pressed during it waits for its end. The book counts as playing
+    /// meanwhile, for the system's media commands (the Now Playing session's
+    /// `isCurrentlyPlaying`) and for Next in Reading List, so that whatever
+    /// pauses a playing book pauses this one too, for good (REV11).
     var whereAmIWillPlayBook: Bool {
-        (isWhereAmISpeaking && wasPlayingBeforeWhereAmI) || isWhereAmIResumePending
+        (isWhereAmISpeaking && wasPlayingBeforeWhereAmI) || isWhereAmIResumePending || isPlayHeldByWhereAmI
+    }
+
+    /// Holds a Play pressed while Where Am I? has the book in hand
+    /// (`isWhereAmIUnderWay`), so that the book starts once the announcement
+    /// is over (`startPlayHeldByWhereAmI()`), as a play waiting for its
+    /// chapter's speech is held: the Play waits for the announcement, as
+    /// Play always has, where a Play for a book paused before the
+    /// announcement was once dropped without a word (REV11). A book Where Am
+    /// I will play anyway, or one playing or waiting to play, needs nothing
+    /// held.
+    func holdPlayForWhereAmI() {
+        guard !whereAmIWillPlayBook, !isPlaybackUnderWay else {
+            DiagnosticLog.trace(.playback, "play: Where Am I speaks; the book plays again as it ends")
+            return
+        }
+        isPlayHeldByWhereAmI = true
+        DiagnosticLog.trace(.playback, "play: Where Am I speaks; the book starts as it ends")
     }
 
     /// Cancel a Where Am I announcement if one is active, resuming book
@@ -498,10 +516,10 @@ extension ReaderViewModel {
     /// Release Media Controls, Edit Text, a chapter that cannot be
     /// downloaded, and closing the window all go through, or by a playback
     /// failure, which stops the book as `stop()` does. An announcement
-    /// speaking is silenced, and the book it paused is forgotten, as is the
-    /// resume one that ended by itself still owes, so that nothing resumes
-    /// the stopped book, nor tells Now Playing that it plays, when the
-    /// announcement would have ended. The stop does the rest itself: it
+    /// speaking is silenced, and the book it paused is forgotten, as are the
+    /// resume one that ended by itself still owes and a Play held for its
+    /// end, so that nothing resumes or starts the stopped book, nor tells
+    /// Now Playing that it plays, when the announcement would have ended. The stop does the rest itself: it
     /// closes the listening session, takes the book out of Now Playing, and
     /// records the stop.
     ///
@@ -516,6 +534,7 @@ extension ReaderViewModel {
         isWhereAmISpeaking = false
         wasPlayingBeforeWhereAmI = false
         isWhereAmIResumePending = false
+        isPlayHeldByWhereAmI = false
     }
 
     /// Resume the book a Where Am I announcement paused, as it was paused:

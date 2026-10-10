@@ -247,6 +247,14 @@ final class ReaderViewModel: ObservableObject {
     /// announcement, which takes the resume over (REV11). Accessed from the
     /// WhereAmI and Playback extensions.
     var isWhereAmIResumePending = false
+    /// Whether a Play pressed while a Where Am I announcement spoke, for a
+    /// book the announcement had not paused (one paused or stopped before
+    /// it), waits for the announcement to end to start the book
+    /// (`startPlayHeldByWhereAmI()`): set by the Play, and cleared as the
+    /// book starts, or by a pause, a stop, Play/Pause, or a cancel nobody
+    /// asked for, which leave the book as it was (REV11). Accessed from the
+    /// WhereAmI and Playback extensions.
+    var isPlayHeldByWhereAmI = false
     /// Takes the work a Where Am I announcement that ended by itself leaves
     /// for once its end sound has played, in place of the main queue's
     /// delay (`whereAmIEndSoundDelay`), so that hosted tests run it when
