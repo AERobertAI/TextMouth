@@ -1640,3 +1640,57 @@ ARCHITECTURE wording:
 - "`BookInfoFacts.readingListPlace` makes `LibraryInfoWording.briefParts(of:)` add `readingListNote(_:)` after the place note."
 - "`ReaderRequestStore<Request: ReaderRequest>` (Services/ReaderRequestStore.swift) is the one store of reader requests. Requests are keyed by book and claimed once; they are thrown away after `lifetime` (30 s) unless their book is held (`hold(for:)`/`release(for:)`). Each request is told as it is made (`requestsMade`), and `discard(for:)` drops one. `ReaderAutoplayRequests` and `ReadingListOpenRequests` are its two kinds, with `shared` and `request(…)` in constrained extensions."
 - "A reader holds its book's requests from `startDownload(.opening)` until `claimAutoplayRequest()`, `discardAutoplayRequest()`, or `endCloudWorkForClose()`. ContentView's two open refusals call `ReaderOpenRefusal.dropRequests(for:)`."
+
+## From the whereamikeys agent (fix/where-am-i-and-keys), Oct 10
+
+Not verified, for the user to try by hand:
+Real AirPods, VoiceOver, braille and real menus were not tested. Things to try:
+- Shift-R during W: the announcement stops at once and the AirPods stay released.
+- A sleep timer running out just as W ends: the book stays paused.
+- An AirPods Play during W on a paused book: it starts after the end sound.
+- Open Book… given Command-S: the tab says "Taken from Audio Editor: Save", and in an editor window the menu opens the panel.
+- A sheet over a sheet in a reader: reader shortcuts work there.
+- The Record window's hints and the "New Recording" group, read by VoiceOver.
+- A cloud chapter whose download finishes during W: it plays after the announcement.
+
+Decisions and assumptions:
+- **Item 3:** the Play is held rather than explained. This doesn't conflict with the rule that Play waits for the announcement; holding it is waiting. The held Play starts as a normal Play, with the play sound.
+- **Item 2:**
+  - A Play in the 0.3 seconds after W ends changes nothing, because the owed resume plays the book once, with no extra play sound.
+  - Play/Pause in that moment leaves the book paused, matching Play/Pause during the announcement and the system's view that the book is playing.
+  - A skip in that moment resumes the book at once.
+  - W pressed again in that moment takes the resume over, which closes the TODO's open note from the full-summary merge.
+- **Item 1:**
+  - If the book won't resume when W ends, its pause is settled and the system is told nothing (`WHERE_AM_I_RESUME_REJECTED`).
+  - A playback failure now ends the announcement too, since it already "stops as `stop()` does".
+- **The 0.3-second delay** is now injectable, so new tests pass the clock in. I also converted the end-sound waits in `MediaCommandPlaybackTests` and `WhereAmIAnnouncementEndTests`.
+- **Item 4:** a key equivalent's key is claimed in every kind of window its menu item acts in, which adds the audio editor only for File commands set to every window. Two old assertions that pinned the bug were updated.
+- **Item 5:** this reuses `WindowCommandRouting.rootWindow(for:)` instead of a second walk up the sheets.
+- **7a:** movetolibrary never answered my question #1748, so I went ahead as stated there. The edit touches only FeedWording's Add Feed lines.
+- **7b:** the one refusal rule now names the key past the allowed number wherever it sits. Before, config.json named the second key and the Shortcuts tab named the first added key.
+- **7d:** the pause also runs when W speaks over a book that isn't playing, so that announcement still ends; a new test pins this. readinglistfollowups agreed.
+- **7e:** the old "Recording Window: …" names are still read from config.json (in any letter case) and from the stored record; only the new names are written.
+- **#1778:** kept narrow, as you asked. A chapter whose download is still under way when W ends behaves as before; that case is in the follow-ups.
+
+**Board posts:** findings #1777 (the DAISY menu test depends on the front window, as item 6's did), #1778 (now fixed) and #1821. Coordination: #1748, #1749 (answered yes), #1750, #1762, #1794, #1809 (told a10fixes the "Toggle Bookmark" rename can use `formerNames` after this merges).
+
+README wording:
+- **Where Am I paragraph, after the Play/Pause sentence:**
+  > A Play from the AirPods, a media key, or Control Center while Where Am I? speaks waits for it: a book the announcement paused plays again as it ends, and a book paused or stopped before it starts once its end sound has played, with the play sound. Until the book plays again, it still counts as playing: a sleep timer running out, a Pause from the AirPods or their leaving, a recording or another book starting, or Play/Pause in that moment leaves it paused, and Where Am I? pressed again keeps it paused until the new announcement ends. Release Media Controls, Edit Text, or anything else that stops the book ends the announcement with it, so the book stays stopped and the AirPods stay released. In a cloud library, a chapter whose files arrive while Where Am I? speaks plays once the announcement has ended.
+- **Voice that never starts:** replace "Speech stopped: the voice did not start…" with "Speech paused: the voice did not start. Press Play to try again."
+- **Logs bullet, add:**
+  > WHERE_AM_I_RESUME_REJECTED tells of a book Where Am I? paused that would not resume as the announcement ended; it is left paused.
+- **Shortcuts tab, add:**
+  > A menu command that works in every window, such as Open Book…, acts in an audio editor's window too, so its key is its own there: giving it a key an editor action has takes the key from that action, as in "Command + S, recorded for Open Book… Taken from Audio Editor: Save." The Record window's buttons are listed under New Recording, the window's name; config.json names them "New Recording: Record" and so on, and still reads the "Recording Window: …" names earlier versions wrote. In a sheet over a sheet, the shortcuts are those of the window under them both.
+- **Record window, add:**
+  > Each button's hint names its key in force, in words, as in "Starts recording from AirPods Pro. Shortcut: Command + R.", and names none while the button has no key.
+
+ARCHITECTURE wording:
+- **Where Am I entry, add:**
+  > `stop()`, and a playback failure, end an announcement with the book (`endWhereAmIAsTheBookStops()`: synthesizer silenced; `wasPlayingBeforeWhereAmI`, `isWhereAmIResumePending`, `isPlayHeldByWhereAmI`, `isChapterHeldByWhereAmI` cleared). `resumeBookPausedForWhereAmI()` tells Now Playing "playing" only when the backend's resume returns true; otherwise it settles the pause (WHERE_AM_I_RESUME_REJECTED). An announcement that ends by itself sets `isWhereAmIResumePending` and runs `resumeAfterWhereAmIEndSound()` after `whereAmIEndSoundDelay` (`afterWhereAmIEndSound(_:)`; tests take the work through `_afterWhereAmIEndSoundForTesting`, `WhereAmIEndSoundClock`). While `isWhereAmIUnderWay` (speaking, a resume owed, or a Play held), `play()` and `playOrResume()` call `holdPlayForWhereAmI()`, which sets `isPlayHeldByWhereAmI` for a book the announcement did not pause. A chapter whose files arrive during an announcement waits too (`isChapterHeldByWhereAmI`, part of `isWaitingForChapterDownload`). `startPlayHeldByWhereAmI()` starts a held Play through `playOrResume()` and a held chapter through `playAudioChapter()`. `whereAmIWillPlayBook` counts all of these as playing for the Now Playing session's `isCurrentlyPlaying` and for `goThroughReadingList`, whose pause now ends the announcement. `pause(playingPauseSound:)` and `togglePlayPause()` end them through `stopWhereAmIWithoutResuming()`. `cancelWhereAmIIfActive()` resumes an owed book at once, and `pauseBookForWhereAmI()` takes an owed resume over.
+- **Keyboard shortcuts entry, add:**
+  > `ShortcutScope.windowKinds(of:)` gives the kinds of window where an action's keys act: its scope's, and for a key equivalent every kind its menu item acts in, an audio editor's included for a File command working in every window. `ShortcutAction.sharesAWindow(in:with:in:)` is the clash rule's overlap (`ShortcutEdits.key(_:of:clashesWith:of:)`, the move from the saved map). `KeyClaims`, `ShortcutPressDispatcher.Index`, `KeyboardShortcutManager.action(holding:in:)`, and the tests' `ShortcutKeyOwners` follow it. `ShortcutAction.refusal(ofKeys:holding:)` is the one refusal rule: the manager passes its keys in force, and config.json passes none. `defaultBindings` and `audioEditorDefaultBindings` are static lets. The Record window's group is `ShortcutAction.recordingWindowCategory`, "New Recording" (`RecordingWording.windowTitle`). `ShortcutAction.formerNames` keeps "Recording Window: …" readable through `named(_:)` and `exactlyNamed(_:)` (`ShortcutEdits.reading(_:)`).
+- **Windows > Key presses, add:**
+  > `windowKind(ofKeyWindow:)` takes a sheet over a sheet for the window under them both (`WindowCommandRouting.rootWindow(for:)`).
+- **Record window, add:**
+  > `RecordingWindowView` reads its buttons' keys from `StoredKeyEquivalents` and passes each to its hint (`RecordingWording.recordHint(device:key:)`, `pauseHint(key:)`, `resumeHint(key:)`, `stopHint(key:)`), worded by `KeyBinding.accessibleDisplayString`. `FeedWording.addFeedCommand` and `RecordingWording.menuTitle` are gone; the menus use `ShortcutAction.addFeed.title` and `ShortcutAction.newRecording.title`.
