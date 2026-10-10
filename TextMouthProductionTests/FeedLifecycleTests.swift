@@ -71,7 +71,24 @@ final class FeedLifecycleTests: XCTestCase {
 
         XCTAssertNil(world.center.store.item(linkedTo: episode.id))
         XCTAssertEqual(world.center.finishedBookKind(of: episode.id), .episode, "the moved episode became an audiobook")
-        let audiobook = Book(title: "Ferry Songs", format: .audio, filePath: "/Ferry Songs.m4a", md5Hash: "")
+        // An audiobook in a package of its own whose record is read and
+        // holds no feed link, so it counts as an audiobook for that reason,
+        // not because no record could be read (REV13 feeds 10).
+        var audiobook = Book(
+            title: "Ferry Songs",
+            format: .audio,
+            filePath: "",
+            md5Hash: UUID().uuidString,
+            folderPath: world.folder.path,
+            tmbDirectoryName: "Ferry Songs.tmb"
+        )
+        let package = audiobook.packageDirectory(inDataDirectory: TextMouthPaths.root)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let file = package.appendingPathComponent("Ferry Songs.m4a")
+        try FeedMediaFixtures.silentAAC().write(to: file)
+        audiobook.filePath = file.path
+        try audiobook.makeBookInfo().save(to: package)
+        XCTAssertNil(try StoredBookRecord.read(from: audiobook.tmbDirectory).info.metadata.feedLink, "the audiobook's record names a feed")
         world.library.library.books.append(audiobook)
         XCTAssertEqual(world.center.finishedBookKind(of: audiobook.id), .audiobook)
     }
