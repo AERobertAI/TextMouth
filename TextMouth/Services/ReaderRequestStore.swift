@@ -40,8 +40,11 @@ extension ReaderRequest {
 /// readers and notifications look for it. A request that has outlived
 /// `lifetime` is thrown away rather than claimed, so a book whose window
 /// failed to open does not act on it when someone opens the book much
-/// later. Each request is told as it is made (`requestsMade`), so that a
-/// reader already open for its book can claim it there and then.
+/// later; but while a book's reader downloads the book from the cloud to
+/// open it, which can take longer, the reader holds its requests
+/// (`hold(for:)`), and they wait for as long as that takes (FR02). Each
+/// request is told as it is made (`requestsMade`), so that a reader already
+/// open for its book can claim it there and then.
 @MainActor
 final class ReaderRequestStore<Request: ReaderRequest> {
     /// How long a request stays usable, in seconds. Opening a book's window
@@ -54,6 +57,10 @@ final class ReaderRequestStore<Request: ReaderRequest> {
 
     /// The waiting requests, keyed by the book each one is for.
     private var waiting: [UUID: Request] = [:]
+
+    /// The books whose readers hold their requests while the books download
+    /// to open (`hold(for:)`): their requests never grow too old to use.
+    private var held: Set<UUID> = []
 
     /// The clock that dates and ages requests.
     private let now: () -> Date
@@ -110,13 +117,46 @@ final class ReaderRequestStore<Request: ReaderRequest> {
     /// Whether a usable request is waiting for `bookID`. Unlike
     /// `consume(for:)`, this leaves the request waiting.
     func hasRequest(for bookID: UUID) -> Bool {
-        waiting[bookID]?.isUsable(at: now()) ?? false
+        waiting[bookID].map { isUsable($0, at: now()) } ?? false
+    }
+
+    // MARK: Holding Requests While a Book Downloads (FR02)
+
+    /// Keeps every request for `bookID`, the one waiting and any made later,
+    /// usable however old it grows, until `release(for:)`: the book's reader
+    /// is downloading the book from the cloud before it can load it, which
+    /// can take longer than `lifetime`, and the request is still wanted. A
+    /// finished book's request that the book start playing is so kept, and
+    /// claimed once the book has downloaded and loaded.
+    func hold(for bookID: UUID) {
+        held.insert(bookID)
+    }
+
+    /// Ends the hold `hold(for:)` began: the book's requests age again from
+    /// when they were made, so one older than `lifetime` lapses. The reader
+    /// lets go once its book has loaded, or once its download failed, was
+    /// cancelled, or its window closed.
+    func release(for bookID: UUID) {
+        held.remove(bookID)
+    }
+
+    /// Whether the book `bookID`'s requests are held (`hold(for:)`).
+    func isHolding(_ bookID: UUID) -> Bool {
+        held.contains(bookID)
+    }
+
+    // MARK: Ageing
+
+    /// Whether `request` may still be claimed at `date`: while its book's
+    /// reader holds it, whatever its age, and otherwise within `lifetime`.
+    private func isUsable(_ request: Request, at date: Date) -> Bool {
+        held.contains(request.bookID) || request.isUsable(at: date)
     }
 
     /// Throw away every request too old to use, so none can be claimed
     /// later and the store never holds more than the fresh ones.
     private func discardUnusableRequests() {
         let date = now()
-        waiting = waiting.filter { $0.value.isUsable(at: date) }
+        waiting = waiting.filter { isUsable($0.value, at: date) }
     }
 }

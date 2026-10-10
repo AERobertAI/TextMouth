@@ -2398,19 +2398,26 @@ extension ReaderViewModel {
     /// play, so its request is claimed and dropped.
     ///
     /// A closed reader claims nothing, and a reader still loading leaves
-    /// the request waiting until loading ends.
+    /// the request waiting until loading ends, however long a download from
+    /// the cloud makes that (`ReaderAutoplayRequests.hold(for:)`, FR02):
+    /// once loaded, the reader holds its book's requests no longer.
     func claimAutoplayRequest() {
-        guard !hasClosed, !isLoading,
-              autoplayRequests.consume(for: book.id) != nil else { return }
+        guard !hasClosed, !isLoading else { return }
+        let request = autoplayRequests.consume(for: book.id)
+        autoplayRequests.release(for: book.id)
+        guard request != nil else { return }
         DiagnosticLog.trace(.playback, "continue to next book: starting this book")
         cancelWhereAmIIfActive()
         playOrResume()
     }
 
     /// Throw away this book's waiting request because the book could not be
-    /// loaded, so that the request cannot start it later.
+    /// loaded, or its download failed or was cancelled, so that the request
+    /// cannot start it later, and hold its requests no longer.
     func discardAutoplayRequest() {
-        guard autoplayRequests.consume(for: book.id) != nil else { return }
+        let request = autoplayRequests.consume(for: book.id)
+        autoplayRequests.release(for: book.id)
+        guard request != nil else { return }
         DiagnosticLog.trace(.playback, "continue to next book: this book could not be loaded; request dropped")
     }
 

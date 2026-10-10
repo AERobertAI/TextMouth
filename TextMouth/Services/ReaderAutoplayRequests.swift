@@ -9,7 +9,9 @@ import Foundation
 /// in its folder, and a book read from the reading list makes one for the
 /// book it continues to there (FR09). The next book's reader claims it
 /// exactly once: when it finishes loading, or straight away when it was
-/// already open and loaded. It waits in `ReaderAutoplayRequests`, a
+/// already open and loaded. A next book only in the cloud downloads before
+/// it loads, and its reader holds the request meanwhile, however long that
+/// takes (FR02). It waits in `ReaderAutoplayRequests`, a
 /// `ReaderRequestStore`.
 struct ReaderAutoplayRequest: ReaderRequest {
     /// The book that should start playing.

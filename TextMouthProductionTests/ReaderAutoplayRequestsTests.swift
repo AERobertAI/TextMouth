@@ -136,6 +136,67 @@ final class ReaderAutoplayRequestsTests: XCTestCase {
         XCTAssertNil(store.consume(for: nextBook))
     }
 
+    // MARK: - Held While a Book Downloads (FR02)
+
+    /// A request whose book's reader holds it, while the book downloads to
+    /// open, stays usable however old it grows, and is claimed once.
+    func testAHeldRequestWaitsHoweverOldItGrows() throws {
+        let (store, clock) = makeStore()
+        store.request(for: nextBook, from: finishedBook)
+        store.hold(for: nextBook)
+
+        clock.advance(by: ReaderAutoplayRequests.lifetime * 20)
+
+        XCTAssertTrue(store.isHolding(nextBook))
+        XCTAssertTrue(store.hasRequest(for: nextBook))
+        XCTAssertEqual(try XCTUnwrap(store.consume(for: nextBook)).previousBookID, finishedBook)
+        XCTAssertNil(store.consume(for: nextBook))
+    }
+
+    /// A request made for a book whose reader already holds its requests,
+    /// as when a finished book continues to a book downloading in a window
+    /// of its own, is held too.
+    func testARequestMadeWhileHeldIsHeldToo() {
+        let (store, clock) = makeStore()
+        store.hold(for: nextBook)
+        clock.advance(by: 5)
+
+        store.request(for: nextBook, from: finishedBook)
+        clock.advance(by: ReaderAutoplayRequests.lifetime * 4)
+
+        XCTAssertTrue(store.hasRequest(for: nextBook))
+    }
+
+    /// Letting go of a hold makes the request age again from when it was
+    /// made: one older than the lifetime lapses.
+    func testReleasingLetsAHeldRequestAgeAgain() {
+        let (store, clock) = makeStore()
+        store.request(for: nextBook, from: finishedBook)
+        store.hold(for: nextBook)
+        clock.advance(by: ReaderAutoplayRequests.lifetime + 1)
+
+        store.release(for: nextBook)
+
+        XCTAssertFalse(store.isHolding(nextBook))
+        XCTAssertFalse(store.hasRequest(for: nextBook))
+        XCTAssertNil(store.consume(for: nextBook))
+    }
+
+    /// A hold keeps its own book's requests alone: another book's request
+    /// ages as before, and is thrown away when the store is next used.
+    func testAHoldKeepsOnlyItsOwnBooksRequests() {
+        let (store, clock) = makeStore()
+        store.request(for: nextBook, from: finishedBook)
+        store.request(for: otherBook, from: finishedBook)
+        store.hold(for: nextBook)
+
+        clock.advance(by: ReaderAutoplayRequests.lifetime + 1)
+
+        XCTAssertFalse(store.hasRequest(for: otherBook))
+        XCTAssertNil(store.consume(for: otherBook))
+        XCTAssertNotNil(store.consume(for: nextBook))
+    }
+
     // MARK: - One Store for Both Kinds
 
     /// The autoplay requests and the reading list's are kept by one store
