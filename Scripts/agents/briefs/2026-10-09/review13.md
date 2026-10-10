@@ -1,0 +1,18 @@
+# Task brief: reviewfeeds3 and reviewapp — read-only review of the October 10 afternoon merges
+
+Two reviewers share this brief; each takes its own merges. You are read-only: **edit no file, make no commit, run no build or test, post nothing on the board.** Your report goes to the orchestrator. Read `common.md` beside this file for the user's rules; the usage override it describes ended at the 8:00 a.m. reset, so read only "5-hour session" and "Weekly (all models)", ignore "Weekly (Fable)", and stop with what you have below 10% left. `review12.md` beside this file is the format; REV10, REV11, and REV12 in TODO-2026-09-04.md list what earlier reviews found and where each went, so report those again only if a merge below reopened one.
+
+## Your merges
+Read each merge's diff against its first parent (`git diff <merge>^1 <merge>`), its commits, and the code it relies on; the agents' notes are in `AGENT-NOTES-2026-10-04.md` under "Agent notes, October 9, 2026".
+- **reviewfeeds3**: `30eab7f9` feature/move-to-library (FR11's branch D: Unsubscribe as a switch, Resubscribe, the "in library" state, Move to Library… and its crash-safe order, the gone feed's return) and `7339bcb7` fix/feed-policy-review (REV11's and REV12's feed fixes: books in use, Delete Download wording, rule failures and offline waits, marks taking back downloads, the guarded state reset, announcements after sheets, the downloads section's Cancel and focus, OPML, an article's earlier text, one Trash item). Say what each of the user's two feeds does through Unsubscribe, Resubscribe, and Move to Library…, and where a place, a bookmark, a transcript, or a download could be lost.
+- **reviewapp**: `bf6bcf00` fix/import-and-sheet-followups (the import overlay's no-new-books, waiting count, bytes, steps, one checksum read, size-weighted estimate, one observer view; the New Folder fields' focus and Escape; Add Feed's default button), `704b1b53` fix/a10-accessibility (Settings' grouped scrolling forms, hints, the edit bar's Done, values read once, plurals, the heading filter, save-to-defaults labels, kept search rows and the 500 limit, Text tab's reset), and `c89cd338` fix/where-am-i-followups (jumps ending Where Am I?, held Plays after a cancel, Edit Text during Where Am I?, waiting plays counted as playing, held chapters through a move, the retired policy). The user's rule that speech never switches from the voice to rendered audio while heard matters for the third.
+
+## What to look for, in this order
+1. **Correctness**: a concrete input or state that gives a wrong result, a crash, a hang, lost or corrupted user data, a race, a loop, a state flag that can stick, an announcement that repeats or never comes.
+2. **Accessibility**: a value VoiceOver cannot reach, wording that reads wrong or twice, focus lost, a duplicate control by the user's rule (a slider beside a stepper counts; a field beside a stepper does not).
+3. **Tests**: a test that can trap (unguarded subscripts are a standing hazard), play sound, read `~/.TextMouth`, or pass for the wrong reason, and behavior added with no test.
+4. **Design and cleanliness**: duplication (DRY is a hard rule), comments that say what the code does not do, dead code, misleading names.
+5. **The agents' claims**: which are false or inexact (`docs10` is writing from them now).
+
+## How to report
+For each finding: a one-line title; the file and line on main; the severity (`bug`, `risk`, `test-gap`, `cleanup`, `doc-mismatch`); the concrete scenario; your confidence (`confirmed` or `plausible`); and the smallest fix. Most severe first. Then what you checked and found sound, briefly.

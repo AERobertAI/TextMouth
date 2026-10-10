@@ -1,0 +1,21 @@
+# Task brief: textanchors2 — T06's addendum, relocating places by diff when the text is rebuilt
+
+Slug `textanchors2`; branch `docs/text-anchors-addendum`. A design addendum only: no change to the app, and no app build or suite. Read `common.md` beside this file first (the user's rules; its usage override ended at the 8:00 a.m. reset, so read only "5-hour session" and "Weekly (all models)", ignore "Weekly (Fable)", and stop with what you have below 10% left). You may write and run standalone measurement programs in the session's scratchpad (prefix them `textanchors2-`); the first note's programs and results are in the scratchpad folder `textanchors-measure/` with its `textanchors-*.py` scripts; reuse them. Read `~/.TextMouth` only for counts, never content.
+
+## What the user answered
+T06's entry in TODO-2026-09-04.md quotes every answer to `TEXT-ANCHORS-RESEARCH-2026-10-10.md`'s ten questions (`humanQuestions/2026-10-10.md`). Yes to anchors, silent moves, skipped headings by level, label, and text, Edit Text moving places, the backfill, a place past its chapter's end going to the end, an anchor build with no extraction change, and Replace keeping places later. Two answers change the design:
+- (2) No Places to Review list: "no, or at least I don't care enough about those places to spend time fixing them... is there any improvements to the algorithm you can make to make it smarter (like Git or Diff...?) to try pushing it to 0. Also how long does it take to find the text and make a best guess? Can the character possition ever save over mmarkdown that can change?"
+- (8) A bounded diff at rebuild: "Maybe it should save /cash text before and after places (like a bigger amound like 10000 chars before and after) before updating the cash, then try to restore the places, then delete the old text?"
+
+## What to measure and decide
+1. **The hybrid:** when a book's text is rebuilt (every path through `MarkdownCacheService.writeCache`, and Edit Text), the old text is still on disk until it is replaced. Measure: keep a snapshot of N characters around each place (N = 10,000 as the user suggests, and smaller and larger), align old and new by a diff (Myers or patience diff over words or lines, as Git does) to move each place, fall back to the anchors where the diff cannot decide, and put any place still unplaced at its best guess with a log line and no announcement. On the first note's real version steps and synthetic acceptance cases, report how many places each layer places, how many end on wrong words, and how many stay unplaced, against anchors alone; aim at zero, and say what still defeats it.
+2. **Where the old text is not available** (another Mac's rebuild of a cloud library, a newer build reading a cache an older build wrote and replaced): anchors alone, as the first note measured.
+3. **Timing,** answering the user plainly: the time to find the text and make a best guess, per place and per book, for a short book, a typical EPUB, and the longest fixture, in optimized code if you can; the snapshot's memory and disk while it lives.
+4. **"Can the character position ever save over markdown that can change?":** answer in plain words what a saved place depends on after this design, and when an offset is still used.
+5. **The build plan, revised:** the first note's four branches, now without the review list's interface (branch D), with the snapshot-and-diff relocation in the relocation branch; the end of a book as a place of its own (the P07 note's risk: a finished book stays at its end when its text is read anew); sizes and tests.
+
+## The addendum
+Write `TEXT-ANCHORS-ADDENDUM-2026-10-10.md` in the repository root, in the style of `FEED-ITEMS-ADDENDUM-2026-10-07.md`: a summary first, the measurements and how they were taken, the revised design and build plan, what you could not verify, and any question that remains for the user, as a yes-or-no with a recommended answer (none, if the answers settle everything). Commit it on your branch with `git add -f`, one commit, ending `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Register on the board as `textanchors2` with `--files TEXT-ANCHORS-ADDENDUM-2026-10-10.md`.
+
+## Report
+The addendum's summary, the measurements, the revised plan, any question left, and what you could not verify.
