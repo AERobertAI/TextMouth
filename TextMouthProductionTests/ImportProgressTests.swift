@@ -234,7 +234,8 @@ final class ImportProgressTests: XCTestCase {
         clock.advance(by: 30)
         progress.receive(.importing(done: 3, total: 4))
         // The large book came quicker than its size foretold, and the
-        // audiobook left takes the average of the three: 34 seconds.
+        // audiobook left, which has no size, takes the average time of the
+        // three books timed: 34 seconds in all, about 11 seconds each.
         XCTAssertEqual(progress.state.details(at: clock.now), ["Less than a minute left"])
 
         progress.receive(.importingBook(number: 4, total: 4, book: "Harbor Talks.m4b", step: .readingSource))
