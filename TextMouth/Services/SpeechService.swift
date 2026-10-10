@@ -685,10 +685,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     private var pendingDirectSeekOffset: Int?
     /// Where direct speech last spoke again from after the system cancelled
     /// its live utterance (`DIRECT_RETRY`), or nil when it has not since
-    /// speech was last stopped. A cancel that comes back to the same offset
-    /// means the engine refuses the text there on a fresh synthesizer too:
-    /// speech then ends (`endDirectSpeechRefused(at:refusing:spanning:)`)
-    /// instead of trying forever.
+    /// speech was last stopped, or since speech reported a word past it
+    /// (`forgetRetryPlace(passedBy:)`). A cancel that comes back to the same
+    /// offset before speech moves past it means the engine refuses the text
+    /// there on a fresh synthesizer too: speech then ends
+    /// (`endDirectSpeechRefused(at:refusing:spanning:)`) instead of trying
+    /// forever.
     private var lastDirectRetryOffset: Int?
     /// The part of the text being spoken, in its UTF-16 offsets, that direct
     /// speech hands the synthesizer strictly guarded, every bracket silent
@@ -1254,9 +1256,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// Take the one retry of the place at `offset`, the start of what is
     /// left of a refused utterance that ran to `end`: that rest is spoken
     /// strictly guarded (`strictlyGuardedRange`). False, taking nothing,
-    /// when speech was refused at `offset` before, so that the engine
-    /// refuses this text on any synthesizer, even with no bracket in it, or
-    /// when there is no text to speak again; speech should then end there
+    /// when speech was refused at `offset` before and has not moved past it
+    /// since (`lastDirectRetryOffset`), so that the engine refuses this text
+    /// on any synthesizer, even with no bracket in it, or when there is no
+    /// text to speak again; speech should then end there
     /// (`endDirectSpeechRefused(at:refusing:spanning:)`).
     private func takeRetry(from offset: Int, to end: Int) -> Bool {
         guard !currentText.isEmpty, lastDirectRetryOffset != offset else { return false }
@@ -2045,7 +2048,24 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         // from the start of the whole chapter text.
         let absoluteRange = NSRange(location: characterRange.location + baseOffset, length: characterRange.length)
         currentWordRange = absoluteRange
+        forgetRetryPlace(passedBy: absoluteRange.location)
         onWordSpoken?(absoluteRange, word)
+    }
+
+    /// Forget the place of the last retry (`lastDirectRetryOffset`) once a
+    /// word past it is reported at `offset`: speech has moved on from the
+    /// refused passage, so a refusal met at that same place later, after a
+    /// seek back to it, is a new refusal, which earns its own retry. A word
+    /// reported at the place itself is not past it: refused there again,
+    /// speech still ends (`endDirectSpeechRefused(at:refusing:spanning:)`).
+    ///
+    /// The place was once kept until speech stopped, so a refusal met there
+    /// again, however long after speech had moved on, ended speech at once,
+    /// without its one retry.
+    private func forgetRetryPlace(passedBy offset: Int) {
+        guard let place = lastDirectRetryOffset, offset > place else { return }
+        lastDirectRetryOffset = nil
+        transitionLog(.trace, "DIRECT_RETRY_PLACE_PASSED: offset=\(offset) place=\(place)")
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {

@@ -764,6 +764,70 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertTrue(speech.isSpeaking)
     }
 
+    /// The place of a retry is forgotten once speech reports a word past
+    /// it. The engine refuses a chunk, the retry speaks on past the place
+    /// where it began, and the listener later moves back to that place,
+    /// where the engine refuses again: that is a new refusal, which gets
+    /// its own retry, where the place's second refusal once ended speech at
+    /// once, however long after speech had moved on.
+    func testARefusalAtARetrysPlaceAfterSpeechMovedOnGetsItsOwnRetry() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var refusals = 0
+        speech.onSpeechRefused = { _ in refusals += 1 }
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+        let retry = try handedOver(1, by: recorder)
+        report(start: retry, to: speech)
+        // The retry says its first word, at the place, and goes on past it.
+        report(word: NSRange(location: 0, length: 4), of: retry, to: speech)
+        report(word: NSRange(location: 40, length: 5), of: retry, to: speech)
+
+        // The listener moves back to the place, and the engine refuses there.
+        speech.seek(toCharOffset: start)
+        let refusedAgain = try XCTUnwrap(recorder.utterances.last)
+        report(cancel: refusedAgain, to: speech)
+
+        XCTAssertTrue(speech.isSpeaking, "the refusal after speech moved on ended speech without its retry")
+        XCTAssertEqual(refusals, 0)
+        let retriedAgain = try XCTUnwrap(recorder.utterances.last)
+        XCTAssertFalse(retriedAgain === refusedAgain, "the refused chunk was not spoken again")
+        XCTAssertEqual(
+            retriedAgain.speechString,
+            SpeechMarkupGuard.neutralizedStrictly(chunk(at: start, size: SpeechService.directModeFirstChunkSize).words(of: Self.longText))
+        )
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(lines.contains("DIRECT_RETRY_PLACE_PASSED: offset=\(start + 40) place=\(start)"), "\(lines)")
+        XCTAssertEqual(lines.filter { $0.hasPrefix("DIRECT_RETRY offset=\(start) ") }.count, 2, "\(lines)")
+        XCTAssertFalse(lines.contains { $0.hasPrefix("DIRECT_RETRY_FAILED") }, "\(lines)")
+    }
+
+    /// A word reported at the retry's place itself is not past it: refused
+    /// there again, speech ends, as at the place's second refusal.
+    func testAWordAtTheRetrysPlaceIsNotPastIt() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var refusals = 0
+        speech.onSpeechRefused = { _ in refusals += 1 }
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        report(cancel: try handedOver(0, by: recorder), to: speech)
+        let retry = try handedOver(1, by: recorder)
+        report(start: retry, to: speech)
+        report(word: NSRange(location: 0, length: 4), of: retry, to: speech)
+
+        recordingAnnouncements {
+            report(cancel: retry, to: speech)
+        }
+
+        XCTAssertFalse(speech.isActive, "a second refusal at the place, with no word past it, did not end speech")
+        XCTAssertEqual(refusals, 1)
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertFalse(lines.contains { $0.hasPrefix("DIRECT_RETRY_PLACE_PASSED") }, "\(lines)")
+        XCTAssertTrue(lines.contains { $0.hasPrefix("DIRECT_RETRY_FAILED: offset=\(start) ") }, "\(lines)")
+    }
+
 
     // MARK: - Switching to rendered audio
 
