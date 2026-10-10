@@ -74,7 +74,7 @@ extension ReaderViewModel {
     /// <title>", a moment for VoiceOver to begin saying it, then the
     /// requests and the window (`continueThroughReadingList(to:)`); this
     /// book stops resting finished as it says so
-    /// (`handOverToNextBook(titled:askingWith:)`). Nothing follows for Stop,
+    /// (`handOverToNextBook(to:titled:askingWith:)`). Nothing follows for Stop,
     /// at that end of the list, or past only finished books, and the book
     /// says which, and rests finished. The sleep timer keeps its rules: this
     /// reader's timer in effect starts nothing, since it could never pause
@@ -105,7 +105,7 @@ extension ReaderViewModel {
         }
         // The next book takes over, as Continue to Next Book's does, so
         // this one no longer rests finished at its end.
-        handOverToNextBook(titled: next.title) {
+        handOverToNextBook(to: next.id, titled: next.title) {
             self.continueThroughReadingList(to: next.id)
         }
     }

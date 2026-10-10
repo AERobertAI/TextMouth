@@ -378,6 +378,118 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertEqual(system.exclusivePauses, [], "The next book's start paused the book that handed over")
     }
 
+    /// A Play from the AirPods in the moment a finished book hands over to
+    /// the next one, after "Starting: <title>" and before the next book is
+    /// asked for, goes to the hand-over: the next book is asked for at once,
+    /// and only once, and its reader starts it, while the finished book
+    /// plays nothing and says nothing more. Before, the Play reached the
+    /// finished book, which played from its end, finished again, and said
+    /// "Starting" a second time.
+    func testAPlayDuringTheHandOverStartsTheNextBookAtOnce() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Hand-over Play")
+        let finishedBook = try world.makeSilentAudioBook(
+            title: "First Crossing", trackDurations: [30], endOfBook: .continueNext
+        )
+        let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(finished)
+        var asked = 0
+        let watching = world.notifications.publisher(for: .continueToNextBook).sink { _ in asked += 1 }
+        defer { watching.cancel() }
+
+        // The first book plays, and ends with the hand-over. The main run
+        // loop has not turned since, so the next book is not asked for yet.
+        finished.play()
+        XCTAssertTrue(finished.audioPlaybackService.isPlaying, "The first book did not play")
+        finished.audioPlaybackService.stop()
+        let handingOver = recordingAnnouncements {
+            finished.handleEndOfBook()
+            XCTAssertEqual(asked, 0, "The next book was asked for before the announcement had a moment")
+
+            XCTAssertEqual(system.press(.play), .success)
+            XCTAssertEqual(asked, 1, "The Play did not ask for the next book at once")
+            XCTAssertTrue(world.autoplayRequests.hasRequest(for: nextBook.id), "The Play left the next book no request")
+            // Long enough for the hand-over's own request to have come.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(asked, 1, "The next book was asked for more than once")
+        XCTAssertEqual(handingOver.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertFalse(finished.audioPlaybackService.isPlaying, "The Play played the finished book")
+        XCTAssertFalse(finished.isCurrentlyPlaying, "The finished book shows Playing")
+
+        // The next book's window opens for the request and starts it.
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(next)
+        let nextAudio = next.audioPlaybackService
+        XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "The next book did not start")
+        assertToldSystem(system, that: next, plays: true, "The next book's start")
+        XCTAssertEqual(system.exclusivePauses, [], "The next book's start paused the finished book")
+    }
+
+    /// Once the next book has been asked for, and until its reader claims
+    /// the request and starts it, a Play that reaches the finished book
+    /// changes nothing, even after the AirPods' rewind has moved its cursor
+    /// back: nothing of the finished book plays over the book announced,
+    /// nothing more is said, and the next book is not asked for again.
+    /// Before, the Play played the finished book from where the rewind left
+    /// it, until the next book's start paused it. Once the next book plays,
+    /// the hand-over is over, and a Play in the finished book's window plays
+    /// it from there, as a Play in any book's window does.
+    func testAPlayAfterTheNextBookIsAskedForPlaysNothingOfTheFinishedBook() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Hand-over Play Asked")
+        world.settings.skipBackwardUnit = .seconds15
+        // Forty seconds into a minute: the 15-second rewind lands exactly,
+        // well inside the track.
+        let finishedBook = try world.makeSilentAudioBook(
+            title: "First Crossing",
+            trackDurations: [60],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 400),
+            endOfBook: .continueNext
+        )
+        let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(finished)
+        var asked = 0
+        let watching = world.notifications.publisher(for: .continueToNextBook).sink { _ in asked += 1 }
+        defer { watching.cancel() }
+
+        finished.play()
+        XCTAssertTrue(finished.audioPlaybackService.isPlaying, "The first book did not play")
+        finished.audioPlaybackService.stop()
+        var rewoundTo = 0
+        let pressing = recordingAnnouncements {
+            finished.handleEndOfBook()
+            XCTAssertTrue(eventually { asked == 1 }, "The next book was never asked for")
+
+            let atTheRewind = finished.currentCharacterOffset
+            XCTAssertEqual(system.press(.previousTrack), .success)
+            rewoundTo = finished.currentCharacterOffset
+            XCTAssertEqual(rewoundTo, atTheRewind - Self.fifteenSecondsOfAudio, "The rewind did not move the cursor back")
+            XCTAssertEqual(system.press(.play), .success)
+        }
+        XCTAssertEqual(pressing.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertFalse(finished.audioPlaybackService.isPlaying, "The Play played the finished book")
+        XCTAssertFalse(finished.isCurrentlyPlaying, "The finished book shows Playing")
+        XCTAssertEqual(asked, 1, "The next book was asked for again")
+        XCTAssertTrue(world.autoplayRequests.hasRequest(for: nextBook.id), "The next book's request is gone")
+
+        // The next book's window opens for the request and starts it.
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        waitForReaderToLoad(next)
+        XCTAssertTrue(next.audioPlaybackService.isPlaying, "The next book did not start")
+        assertToldSystem(system, that: next, plays: true, "The next book's start")
+
+        // The hand-over is over: Play in the finished book's window plays it
+        // from where the rewind left it, and pauses the next book.
+        finished.windowBecameKey()
+        finished.play()
+        assertPlaysAudio(finished, inChapter: 0, from: rewoundTo, "Play in the finished book's window once the next book played")
+        XCTAssertTrue(next.audioPlaybackService.isPaused, "The next book was not paused")
+        assertToldSystem(system, that: finished, plays: true, "Play in the finished book's window once the next book played")
+    }
+
     // MARK: - Two Windows, One Closed
 
     /// The listener opens another book's window and closes it again, while

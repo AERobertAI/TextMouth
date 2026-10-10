@@ -23,10 +23,16 @@ extension ReaderViewModel {
     /// waits for that speech instead of preparing the chapter again on the
     /// main thread, showing Playing meanwhile (`waitForChapterSpeech(_:)`).
     /// Play pressed while it waits changes nothing.
+    ///
+    /// While this finished book hands listening over to the next book, Play
+    /// starts that book instead, never this one (`playGoesToTheHandOver()`).
+    /// Every Play of a finished book comes here, from the AirPods, the
+    /// keyboard, or the menu, since it is neither playing nor paused.
     func play() {
         // Loading or closed readers cannot own a playback/statistics session.
         guard !hasClosed, !isLoading, let content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
+        guard !playGoesToTheHandOver() else { return }
         // Don't start playback while Where Am I is speaking
         if WhereAmIInterruptionPolicy.blocksBookPlayback(
             isAnnouncementSpeaking: isWhereAmISpeaking
@@ -2066,7 +2072,7 @@ extension ReaderViewModel {
     /// finished book means to hear its end again. A book that loops is not
     /// finished: it plays again, or waits at its beginning. Nor is a book
     /// that hands over to the next one, in its folder or in the reading
-    /// list (`handOverToNextBook(titled:askingWith:)`): the next book takes
+    /// list (`handOverToNextBook(to:titled:askingWith:)`): the next book takes
     /// the media controls. A book whose sleep timer keeps the next one from
     /// starting, or with no next book, rests finished.
     func handleEndOfBook() {
@@ -2155,7 +2161,7 @@ extension ReaderViewModel {
                 } else {
                     // The next book takes over, so this one no longer rests
                     // finished at its end.
-                    handOverToNextBook(titled: nextBook.title) {
+                    handOverToNextBook(to: nextBook.id, titled: nextBook.title) {
                         self.continueToNextBook(nextBook.id)
                     }
                 }
@@ -2214,11 +2220,11 @@ extension ReaderViewModel {
     /// next book's window takes focus.
     static let continueToNextBookDelay: TimeInterval = 0.5
 
-    /// Hand listening over from this finished book to the book titled
-    /// `title`, which `askForNextBook` then asks for: the next book in the
-    /// folder, for Continue to Next Book (`continueToNextBook(_:)`), or the
-    /// next book in the reading list (`continueThroughReadingList(to:)`,
-    /// FR09).
+    /// Hand listening over from this finished book to the book
+    /// `nextBookID`, titled `title`, which `askForNextBook` then asks for:
+    /// the next book in the folder, for Continue to Next Book
+    /// (`continueToNextBook(_:)`), or the next book in the reading list
+    /// (`continueThroughReadingList(to:)`, FR09).
     ///
     /// The book stops resting finished at its end (`hasFinishedBook`) as it
     /// says "Starting: <title>", since the book it hands over to takes the
@@ -2244,18 +2250,65 @@ extension ReaderViewModel {
     /// announcement. This reader is kept until then, so closing its window
     /// meanwhile still continues, as announced.
     ///
+    /// A Play that reaches this reader while the hand-over is under way, a
+    /// Play or Play/Pause from the AirPods, a media key, the keyboard, or
+    /// the menu, goes to the hand-over (`nextBookHandOver`,
+    /// `playGoesToTheHandOver()`): before the next book is asked for, it
+    /// asks for it at once, and the half second's own request then asks
+    /// nothing more; after that, until the next book's reader claims the
+    /// request and starts it, it changes nothing. Either way this finished
+    /// book plays nothing over the book announced. Such a Play once played
+    /// it: from its end, which ended it again and said "Starting" twice, or
+    /// after a rewind from there, until the next book's start paused it.
+    ///
     /// - Parameters:
+    ///   - nextBookID: The book listening goes on with.
     ///   - title: The next book's title, as the announcement says it.
     ///   - askForNextBook: Asks for the next book, after the announcement.
-    func handOverToNextBook(titled title: String, askingWith askForNextBook: @escaping () -> Void) {
+    func handOverToNextBook(
+        to nextBookID: UUID,
+        titled title: String,
+        askingWith askForNextBook: @escaping () -> Void
+    ) {
         hasFinishedBook = false
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
         )
         announceToVoiceOver(EndOfBookWording.starting(title))
+        let handOver = NextBookHandOver(
+            nextBookID: nextBookID,
+            autoplayRequests: autoplayRequests,
+            askingWith: askForNextBook
+        )
+        nextBookHandOver = handOver
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
-            askForNextBook()
+            handOver.askForNextBookIfNotYetAsked()
         }
+    }
+
+    /// Whether a Play that reaches this reader goes to the hand-over to the
+    /// next book (`handOverToNextBook(to:titled:askingWith:)`) instead of
+    /// playing this finished book: it does while the hand-over is under way
+    /// (`NextBookHandOver.isUnderWay`), and asks for the next book at once
+    /// unless it has been asked for already, so that the book announced
+    /// starts and nothing of this one plays over it.
+    ///
+    /// - Returns: True when the Play went to the hand-over. False when no
+    ///   hand-over is under way: none began, or the next book has started,
+    ///   or its request was thrown away as too old, and the Play plays this
+    ///   book as any Play in its window does.
+    private func playGoesToTheHandOver() -> Bool {
+        guard let handOver = nextBookHandOver else { return false }
+        guard handOver.isUnderWay else {
+            nextBookHandOver = nil
+            return false
+        }
+        DiagnosticLog.trace(
+            .playback,
+            "play: the hand-over to the next book is under way; asked before=\(handOver.hasAskedForNextBook)"
+        )
+        handOver.askForNextBookIfNotYetAsked()
+        return true
     }
 
     /// Ask the next book to start playing, then ask for its reader window.
@@ -2861,5 +2914,63 @@ extension ReaderViewModel {
             }
             return position
         }
+    }
+}
+
+// MARK: - The Hand-over to the Next Book
+
+/// A finished book's hand-over of listening to the book after it, in its
+/// folder or in the reading list
+/// (`ReaderViewModel.handOverToNextBook(to:titled:askingWith:)`), from
+/// "Starting: <title>" until the next book's reader claims the request to
+/// play it.
+///
+/// The next book is asked for once: half a second after the announcement,
+/// or at once by a Play that reaches the finished book meanwhile
+/// (`askForNextBookIfNotYetAsked()`). Asking makes the request the next
+/// book's reader claims as it starts (`ReaderAutoplayRequests`), so the
+/// hand-over is under way until that request is no longer waiting: claimed
+/// as that book starts, dropped by a reader that could not load it, or
+/// thrown away as too old (`ReaderAutoplayRequests.lifetime`).
+@MainActor
+final class NextBookHandOver {
+    /// The book listening goes on with.
+    let nextBookID: UUID
+    /// The requests the next book's reader claims as it starts.
+    private let autoplayRequests: ReaderAutoplayRequests
+    /// Asks for the next book; nil once it has. It holds the finished
+    /// book's reader, which it asks through, only until it has asked.
+    private var askForNextBook: (() -> Void)?
+
+    /// A hand-over to the book `nextBookID`, which `askForNextBook` asks
+    /// for, through requests kept in `autoplayRequests`.
+    init(
+        nextBookID: UUID,
+        autoplayRequests: ReaderAutoplayRequests,
+        askingWith askForNextBook: @escaping () -> Void
+    ) {
+        self.nextBookID = nextBookID
+        self.autoplayRequests = autoplayRequests
+        self.askForNextBook = askForNextBook
+    }
+
+    /// Whether the next book has been asked for.
+    var hasAskedForNextBook: Bool {
+        askForNextBook == nil
+    }
+
+    /// Whether the hand-over is still under way: the next book not yet
+    /// asked for, or asked for and its request still waiting for that
+    /// book's reader to claim it as it starts.
+    var isUnderWay: Bool {
+        !hasAskedForNextBook || autoplayRequests.hasRequest(for: nextBookID)
+    }
+
+    /// Asks for the next book, unless it has been asked for already, so it
+    /// is asked for exactly once, however often this is called.
+    func askForNextBookIfNotYetAsked() {
+        guard let ask = askForNextBook else { return }
+        askForNextBook = nil
+        ask()
     }
 }
