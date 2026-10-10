@@ -1446,3 +1446,88 @@ ARCHITECTURE wording:
     > A Shift press falls back to its unshifted binding only for ShortcutAction.actionsTakingShiftAlong (Skip Forward, Skip Backward, Increase Speed). No press matches a key equivalent's stroke, nor, in a sheet or an alert, KeyBinding.dialogKeys.
   - Replace the #1451 sentence with:
     > A menu command's key is never the manager's, so Shift-Command-T is New from Text…'s in a Library window and Show Sleep Timer's in a reader (#1451 ended).
+
+## From the feeditemui agent (feature/feed-item-policy-ui), Oct 10
+
+Not verified, and what the user should try:
+- **Live VoiceOver and braille** on the pop-up menus, the number, the rows, the read-only Book Info, and the "now in effect" announcement. Its timing is unverified too: the hosted tests read the AppKit controls but not SwiftUI text. Hosted tests can't show Book Info closing with Done, Return or Escape.
+- **Real networks, and the user's real preferences.** The defaults were assumed; config.json was not read.
+
+What the user should try, with VoiceOver and the braille display:
+1. **Settings, Feeds tab:**
+   - VoiceOver should say "List and download, Every item listed, newest 5 downloaded, pop-up button", then the choice's sentence as a hint.
+   - Choose "Only the newest 5 listed", then set "How many of the newest, 5 items, stepper" to 3.
+   - About ten seconds later it should say "List and download is now in effect: Only the newest 3 listed."
+   - Under "Every item listed, downloads by hand", the number should read as dimmed.
+2. **Finish It!'s Feed Info:**
+   - The checkbox should read "Use the global setting (Every item listed, newest 5 downloaded), checkbox, checked".
+   - Unchecking it should make the menu ("Every episode listed, newest 5 downloaded") and the number available; a change is announced ten seconds later.
+   - Checking it again should be announced as "…now follows the global setting…".
+3. **A feed's folder:**
+   - An item whose download was deleted after listening should read "…, Not Downloaded, 42 percent, 16 minutes remaining, 2 bookmarks, …", with the hint "Downloads it again, then opens it where you left off".
+   - A waiting item should read "Waiting to Download, it downloads on a network without data limits" and offer Cancel Download among its actions.
+4. **Book Info:** Command-I on a downloaded episode, and the reader's Book Info button ("Show book information"), should open a read-only sheet with one line per detail.
+
+The user's settings after this build's first launch:
+This is pinned by a test on records shaped like their two feeds.
+- **Settings, Feeds:** "List and download: Every item listed, newest 5 downloaded", "How many of the newest: 5 items", and "Delete downloads after playing: 1 day".
+- **Finish It!'s Feed Info:** "Use the global setting (…)" is checked, and the dimmed menu reads "Every episode listed, newest 5 downloaded", with the number at "5 episodes".
+- **The Digital Antiquarian's Feed Info:** the same, but worded "Every item listed, …" and "5 items", since it mixes articles and episodes.
+- **Unopened:** neither feed appears. Every item of each was published before its subscription, so none is new. Under the old rule, Finish It! was listed for its 381 unplayed episodes.
+
+Decisions and assumptions:
+- **Choice titles always carry the number,** even for 1 ("newest 1 downloaded").
+- **I adjusted two hints from the design for accuracy:**
+  - "removes older downloads it made" (the rule never removes the user's own downloads);
+  - "downloads only what you ask for" (the short list's title doesn't say that).
+- **Settings wording vs Feed Info wording:** Feed Info uses the feed's noun. Its checkbox quotes the global choice in Settings' words, as the design's accessibility section has it.
+- **The "now in effect" announcement:**
+  - The engine sends a new `FeedEvent.itemPolicyApplied` when branch B's ten-second wait ends, and `FeedArrivals` speaks it.
+  - It is also spoken after a config.json edit.
+  - A feed unsubscribed during its wait is not spoken of.
+- **The choice's sentence on screen is hidden from VoiceOver,** since VoiceOver hears it as the menu's hint. The ten-second note below it is read normally.
+- **A kept record's row** gives progress and time left only when the kept record has a place; without one, the row's own duration already says the length. Beside a download's own percentage, progress reads "percent read".
+- **Book Info for feed items is a new read-only sheet**, rather than a read-only mode of the editors. It names the feed and speaks durations in words.
+- **Clean Up Transcript** is offered by the same rule as Edit Audio (`isTranscriptCleanable`), so it never appears for a feed item.
+- **The retired preference keys stay in the store,** read only by branch B's one-time move, and `Feed.keepEntriesOverride` stays for the per-feed move.
+- **Shared pieces instead of duplicates:** `FeedNumberField`, `BookRow.remainingText`, `CountWording.bookmarks`, and `LibraryViewModel.feedTitle(of:)`. The last is in my new file because `LibraryViewModel+Feeds.swift` belongs to feedfollowups.
+
+Board traffic, no findings filed:
+- #1678: question to feedindexfixes, answered in #1683.
+- #1679: question to playbackfixes, unanswered; its merged code didn't touch my lines.
+- #1680: notice to menukeys about the retired-keys line.
+- #1690: notice to feedfollowups about one line of its test, acknowledged in #1691.
+
+README wording:
+- **Settings, Feeds** (replaces the "Episodes and Articles: Keep the newest …" bullet):
+  "Episodes and Articles: List and download, a pop-up menu, decides what every feed lists and what downloads by itself: Every item listed, newest 5 downloaded (the default), Every item listed, downloads by hand, or Only the newest 5 listed. Each title says the number in force, and VoiceOver speaks the choice as the menu's value and the choice's own sentence as its hint, which the screen shows under the menu. How many of the newest, a number field and a stepper, sets that number, from 1 to 2,000, 5 by default; VoiceOver speaks it with its unit, as in "5 items", and dims it under Every item listed, downloads by hand, which counts none. A change takes effect once it has stayed unchanged for ten seconds, so typing 15 never passes through 1, and VoiceOver then says, as in "List and download is now in effect: Only the newest 3 listed." Then Delete downloads after playing, from 0, at once, to 365 days, 1 by default, or Never delete played downloads. A feed can have its own List and download choice and its own days, in its Feed Info."
+- **Feed Info** (replaces "how many entries the feed keeps…"):
+  "It holds This Feed's Settings: the feed's List and download choice and number, worded with its own items, as in "Every episode listed, newest 5 downloaded", under Use the global setting (Every item listed, newest 5 downloaded), which dims them while checked and, unchecked, gives the feed the global choice as its own to change; and how many days after playing its downloads are deleted, with its own Use the global setting. A change takes effect after the same ten seconds, and VoiceOver says, as in "List and download for Finish It! is now in effect: Every episode listed, newest 3 downloaded.", or, once the box is checked again, "List and download for Finish It! now follows the global setting: Every item listed, newest 5 downloaded." Each change is saved as you make it."
+- **Unopened** (the Library categories bullet, and the Feeds section bullet): "in Unopened it lists a feed only while it has a new episode or article, one published since you subscribed and neither played nor opened, so a podcast's back catalogue never keeps it there". The Feeds section bullet ends that clause "until its last new one is played, opened, marked played, or deleted".
+- **"kept" becomes "listed" everywhere a feed's size is quoted:** "10 of 381 episodes listed", "Episodes (10 of 381 listed)", "10 of more than 2000 episodes listed", and "Subscribed to Planet Money: 10 of 381 episodes listed."
+- **Counts** (replaces "how many of the feed's entries TextMouth keeps … besides its downloads…"): "The count begins with how many of the feed's entries TextMouth lists, of how many the feed lists, as in "10 of 381 episodes listed": every entry under the first two List and download choices, and under Only the newest 5 listed the newest, less those played without a download, beside every download." The line "A feed keeps every item you played … whatever Keep the newest says" ends "whatever List and download lists."
+- **Item rows:** "…and any other with, in this order, Played (Read for an article); its download's state, with why a download failed or waits, as in "Waiting to Download, it downloads on a network without data limits"; for one whose download you deleted after listening, the place kept for it as its book's row said it, as in "42 percent, 16 minutes remaining" (a played one says none), and its bookmarks, as in "2 bookmarks"; New; its date; and its duration. The screen shows the same words, and such a row's hint is "Downloads it again, then opens it where you left off"."
+- **Item commands:**
+  - "Download, or Cancel Download while it downloads; both for one waiting to download by itself, where Cancel Download leaves it to you: "“Ep. 368” no longer waits to download; it downloads when you choose Download.""
+  - "Delete Download of one you listened to says "Deleted the download of “Ep. 368”. Its place, bookmarks, and transcript are kept for when you download it again.""
+- **New bullet under Podcasts and article feeds:** "While an episode or article belongs to its feed, its Book Info, from the Library (Command-I or Book Info) or its reader, is read-only: under "An episode's details come from its feed." ("An article's…") it gives its title, artist or author, feed, an episode's album, genre, year, duration, and format, an article's format and word count, and when it was added and last opened, each read as one line whose value can be selected and copied; no field takes typing, and Done, Return, or Escape closes it. Its reader's Book Info button says "Show book information". Clean Up Transcript (Experimental)…, with its Undo Cleanup, is not offered for it; Transcribe Audio… and Delete Transcript… are."
+  - In the three places that offer Clean Up Transcript to "a transcribed audiobook", add "(not an episode in its feed)".
+- **config.json** (replaces the feedKeepEntries and feedAutoDownload clauses): "feedItems, the List and download choice ("everyListedNewestDownloaded", the default, "everyListedDownloadsByHand", or "onlyNewestListed"; a name TextMouth doesn't know leaves the choice as it is); feedNewestCount, its number (1 to 2,000, the default 5; a number outside moves to the nearer bound). feedKeepEntries and feedAutoDownload, which these replace, are no longer read from or written to config.json; the first launch of this version moves them to the choice once and leaves them in the preferences store as they were."
+
+ARCHITECTURE wording:
+- **FeedSettings entry:**
+  "FeedSettings: the feed settings in force (feedRefreshAtLaunch, feedRefreshIntervalHours, feedItems and feedNewestCount as `itemPolicy`, feedDeleteDownloadsDaysAfterPlayed, feedRefreshAlert, feedNotifications), which the engine reads, the Feeds tab changes through SettingsViewModel.feedSettings, and config.json mirrors. The retired feedKeepEntries and feedAutoDownload (keepEntriesPreference, autoDownloadPreference) are read only by moveToItemPolicyIfNeeded(in:) and listed in Portability.retiredStoreKeys. FeedItemPolicyControls draws the choice here and in Feed Info: a menu-style Picker labelled "List and download", whose titles and hints come from FeedWording.itemPolicyTitle and itemPolicyHint (with the feed's ItemNoun in Feed Info), and its number through FeedNumberField, the field and stepper every feed number shares. FeedThresholdControl draws the two numbers that can be off, each a FeedNumberField with its off checkbox."
+- **Feed views entry:**
+  - "Unopened lists a feed while FeedItemCounts.new is above zero (FeedCenter.isNew; FR11, question 8)."
+  - "sizePhrase(listed:total:noun:) and sectionTitle say "listed" (FeedWording.listedNote)."
+  - "FeedItemRowContent carries the item's kept row as FeedKeptProgress (from feedItemRows(of:).kept, by item identity): its progress and time left in the book row's own words (BookRow.progressText, spokenProgress, remainingText, now nonisolated), unless played, and its bookmark count (CountWording.bookmarks). itemRowLabel adds FeedItemState.reason (a failure's or a wait's) and the kept parts; itemRowHint(_:keptPlace:) gives the hint."
+  - "FeedFolderSections and FeedFolderListing.make take the library's wordsPerMinute."
+  - "FeedItemAction.actions offers Download and Cancel Download for a waiting item; the runner words a waiting item's cancel (waitingDownloadCancelled) and a kept package's delete (downloadDeleted(title:keptPlace:))."
+- **New items arriving entry:**
+  "FeedArrivals also speaks FeedEvent.itemPolicyApplied(feedIDs:), which FeedCenter.itemPolicyChanged(for:) sends as its ten-second wait ends: FeedWording.itemPolicyApplied(to:in:) gives the global setting's sentence, or one per feed still subscribed. `announce` is injectable."
+- **Book metadata entry:**
+  "A feed item's Book Info is read-only (Book.hasReadOnlyBookInfo): LibraryView.bookInfoSheet(for:) and ReaderBookInfoSheet show FeedItemBookInfoSheet, whose details (FeedItemBookInfoWording.details(of:info:feedTitle:), BookInfoDetail) FeedInfoValue draws with an optional spoken value; there is no editor and no Save. The reader's button label comes from readerButtonLabel(readOnly:). LibraryViewModel.feedTitle(of:) names a book's feed, for Book Info and Speak Info."
+- **Transcription entry:**
+  "Clean Up Transcript is offered only where LibraryAudioCommand.isTranscriptCleanable allows (the isAudioEditable rule, never a feed item), in rows and in the reader's canCleanUpBookTranscript."
+- **Test support entry:**
+  "SwiftUI gives a menu Picker's NSPopUpButton no action of its own; a test chooses an item through NSMenu.performActionForItem(at:), as a click does."
