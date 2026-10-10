@@ -352,9 +352,14 @@ enum TextMouthPaths {
             || name.hasPrefix(transcriptFileName + LibraryIndexQuarantine.nameMarker)
     }
 
+    /// The name of the folder inside a .tmb package holding the speech
+    /// prepared for the book (`cachedAudioDir(in:)`). Packages on disk use
+    /// it, so it never changes.
+    static let cachedAudioFolderName = "cachedAudio"
+
     /// Path to the per-book cached audio directory inside a .tmb package
     static func cachedAudioDir(in tmbDir: URL) -> URL {
-        tmbDir.appendingPathComponent("cachedAudio", isDirectory: true)
+        tmbDir.appendingPathComponent(cachedAudioFolderName, isDirectory: true)
     }
 
     // MARK: - Directory Setup
