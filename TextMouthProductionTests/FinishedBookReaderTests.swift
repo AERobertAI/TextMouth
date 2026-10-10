@@ -196,6 +196,38 @@ final class FinishedBookReaderTests: XCTestCase {
         XCTAssertEqual(told(), [], "Play at the end was told as a finish")
     }
 
+    /// With the end-of-book choice "Stop, and Play Starts Over" (TODO P07,
+    /// question 13), a book stops at its end as with Stop, "Finished:
+    /// <title>", resting there, counted once; Play then starts it over from
+    /// its beginning, "Starting again: <title>", which tells and counts no
+    /// finish.
+    func testWithStopAndPlayStartsOverPlayStartsAFinishedBookOver() throws {
+        let world = try makeIntegrationWorld("Finished Play Starts Over")
+        let book = try makeAudioBook(.filePerChapter, titled: "Harbour Soundings", in: world, endOfBook: .stopAndPlayStartsOver)
+        let reader = world.openReader(for: book, nowPlaying: privateMediaSession())
+        waitForReaderToLoad(reader)
+        let told = recordFinishesTold()
+
+        let ending = recordingAnnouncements {
+            reader.play()
+            waitForTheEnd(of: reader, "The end")
+        }
+        XCTAssertEqual(ending.announcements.map(\.message), ["Finished: Harbour Soundings"])
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The book did not rest at its end")
+        XCTAssertEqual(told(), [book.id], "The end was not told once")
+
+        let startingOver = recordingAnnouncements {
+            reader.play()
+        }
+        XCTAssertEqual(startingOver.announcements.map(\.message), ["Starting again: Harbour Soundings"])
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Play did not start the finished book over")
+        XCTAssertEqual(reader.currentChapterIndex, 0, "Play did not start the book over from its beginning")
+        XCTAssertFalse(reader.hasFinishedBook, "The book started over is still finished")
+        reader.stop()
+        XCTAssertEqual(told(), [book.id], "Starting over was told as a finish")
+        XCTAssertEqual(ReadingStatsService.shared.stats.finishedBooks.map(\.bookID), [book.id.uuidString])
+    }
+
     // MARK: - Counting
 
     /// A rewind after a book's end replays the end, which is no new finish

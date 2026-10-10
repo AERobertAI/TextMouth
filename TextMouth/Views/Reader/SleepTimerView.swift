@@ -349,7 +349,7 @@ struct SleepTimerView: View {
             return "Pauses playback when this book ends, before Continue to Next Book starts the next book."
         case .loop:
             return "Pauses playback when this book ends, before Loop to Start plays it again."
-        case .stop:
+        case .stop, .stopAndPlayStartsOver:
             return "This book already stops playing at its end, since Continue to Next Book is off; the timer stops it there too."
         }
     }

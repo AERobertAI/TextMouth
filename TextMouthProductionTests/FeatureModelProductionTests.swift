@@ -345,8 +345,10 @@ final class FeatureModelProductionTests: XCTestCase {
         XCTAssertEqual(ReaderViewModel.applyPunctuationPauses("One\n\nTwo", level: 3).text, "One\n\n.\n\nTwo")
     }
 
-    func testEndOfBookBehaviorHasThreeCases() {
-        XCTAssertEqual(EndOfBookBehavior.allCases.count, 3)
+    /// The choices, in the order the pickers list them, Play starting a
+    /// finished book over beside Stop (TODO P07).
+    func testEndOfBookBehaviorHasFourCases() {
+        XCTAssertEqual(EndOfBookBehavior.allCases, [.stop, .stopAndPlayStartsOver, .loop, .continueNext])
     }
 
     func testEndOfBookBehaviorRawValuesRoundTrip() {

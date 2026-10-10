@@ -739,6 +739,31 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
         }
     }
 
+    /// With "Stop, and Play Starts Over", Play on a finished book starts it
+    /// over (TODO P07): it says "Starting again: <title>", and speaks from
+    /// the first chapter with anything to say, past a silent cover, as Play
+    /// does from the beginning.
+    func testPlayStartsAFinishedBookOverFromItsFirstChapterWithWords() throws {
+        let story = Chapter(title: "One", text: "The story begins.")
+        try withReader(
+            chapters: [chapter(sections: [("Cover", "Cover image.")]), story],
+            skipping: ["Cover"],
+            endOfBook: .stopAndPlayStartsOver,
+            at: ReadingPosition(chapterIndex: 1, characterOffset: story.text.utf16.count)
+        ) { reader in
+            XCTAssertTrue(reader.cursorRestsAtEnd, "The book does not rest at its end")
+            reader.play()
+            let startedSpeaking = reader.speechService.isSpeaking
+            silence(reader)
+
+            XCTAssertTrue(startedSpeaking, "Play did not start the book over")
+            XCTAssertEqual(reader.lastAnnouncement, "Starting again: Quiet Pages")
+            XCTAssertEqual(reader.currentChapterIndex, 1)
+            XCTAssertEqual(reader.currentCharacterOffset, 0)
+            XCTAssertEqual(reader.currentTransformation?.modifiedText, "The story begins.")
+        }
+    }
+
     /// With anything speakable, looping still restarts from the beginning.
     func testLoopRestartsFromTheBeginningWhenAnythingIsSpeakable() throws {
         try withReader(

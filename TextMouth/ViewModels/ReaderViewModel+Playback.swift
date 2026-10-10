@@ -93,6 +93,11 @@ extension ReaderViewModel {
     /// default, it should just say "fished" if there not enabled to move to
     /// the next book or start over". So:
     /// - Stop: "Finished: <title>", and nothing else.
+    /// - Stop, and Play Starts Over, the choice the user asked for "not by
+    ///   default" ("Maybe this mode should be added to the menu with the
+    ///   modes for what to do at the end of a book?"): the book plays again
+    ///   from its beginning, "Starting again: <title>", passing over what
+    ///   says nothing, as Play does.
     /// - Continue to Next Book: the next book in the folder takes listening
     ///   over, "Starting: <title>", or the book says why none follows, as at
     ///   the end.
@@ -120,6 +125,8 @@ extension ReaderViewModel {
         switch effectiveEndOfBookBehavior {
         case .stop:
             announceToVoiceOver(EndOfBookWording.finished(book.title))
+        case .stopAndPlayStartsOver:
+            playFromTheBeginning(announcing: EndOfBookWording.startingAgain(book.title))
         case .loop:
             playFromTheBeginning(announcing: EndOfBookWording.restarting(book.title))
         case .continueNext:
@@ -2306,7 +2313,8 @@ extension ReaderViewModel {
         }
 
         switch behavior {
-        case .stop:
+        case .stop, .stopAndPlayStartsOver:
+            // The two stop alike at the end; only Play at the end differs.
             finishAtTheEnd(replayingAFinishedEnd: replayedFinishedEnd)
             finishListening(
                 announcing: EndOfBookWording.finished(book.title, sleepTimerExpired: sleepTimerStoppedHere)
@@ -2392,7 +2400,8 @@ extension ReaderViewModel {
     /// Says `announcement`, and plays the book from its beginning
     /// (`returnToTheBeginning()`) as Play does, passing over what says
     /// nothing, with the play sound and a listening session: a book that
-    /// loops, at its end and on Play at its end.
+    /// loops, at its end and on Play at its end, and a finished book whose
+    /// Play starts it over (`EndOfBookBehavior.stopAndPlayStartsOver`).
     private func playFromTheBeginning(announcing announcement: String) {
         returnToTheBeginning()
         announceToVoiceOver(announcement)

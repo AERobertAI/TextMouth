@@ -10,10 +10,23 @@ enum RewindUnit: String, CaseIterable, Codable {
     case heading = "Heading"
 }
 
-/// What happens when a book ends
+/// What happens when a book ends, and what Play then does on the finished
+/// book (`ReaderViewModel.handleEndOfBook()` and `playFromTheEnd()`, TODO
+/// P07). Each raw value is the choice's name in the Playback tab's and a
+/// book's own picker, which list every case in this order, and what
+/// config.json and the book's record keep.
 enum EndOfBookBehavior: String, CaseIterable, Codable {
+    /// The book stops at its end, finished; Play then says "Finished:
+    /// <title>" and does nothing else.
     case stop = "Stop"
+    /// The book stops at its end, finished, as with Stop; Play then starts
+    /// it over from its beginning, "Starting again: <title>". The user
+    /// asked on October 10, 2026 for this choice beside the others, Play's
+    /// starting over "not by default".
+    case stopAndPlayStartsOver = "Stop, and Play Starts Over"
+    /// The book plays again from its beginning, and is never finished.
     case loop = "Loop to Start"
+    /// The next book in the folder plays.
     case continueNext = "Continue to Next Book"
 
     static func effective(localRawValue: String?, global: Self) -> Self {

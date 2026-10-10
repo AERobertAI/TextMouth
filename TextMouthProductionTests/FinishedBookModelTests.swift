@@ -64,6 +64,33 @@ final class FinishedBookModelTests: XCTestCase {
         XCTAssertFalse(book(at: nil, chapter: 0, offset: Self.total - 1).restsAtEnd)
     }
 
+    // MARK: - The Choice That Starts a Finished Book Over
+
+    /// The end-of-book choice the user asked for on October 10, 2026, "not
+    /// by default", beside Stop, Loop, and Continue to Next Book (TODO P07,
+    /// question 13): its name, which both pickers list and config.json and a
+    /// book's record keep, read back from either; what VoiceOver hears as
+    /// Play starts a finished book over; what the Playback tab says of it;
+    /// and the sleep timer's End of book hint, which says the book stops at
+    /// its end anyway, as for Stop.
+    func testTheChoiceThatStartsAFinishedBookOverIsNamedAndKept() {
+        let name = "Stop, and Play Starts Over"
+        XCTAssertEqual(EndOfBookBehavior.stopAndPlayStartsOver.rawValue, name)
+        XCTAssertEqual(SettingsPolicy.endOfBookBehavior.value(fromRaw: name), .stopAndPlayStartsOver)
+        XCTAssertEqual(SettingsPolicy.endOfBookBehavior.validatedConfigRawValue(name), name, "config.json refuses it")
+        XCTAssertEqual(EndOfBookBehavior.effective(localRawValue: name, global: .stop), .stopAndPlayStartsOver)
+        XCTAssertEqual(EndOfBookWording.startingAgain("Breakwater Survey"), "Starting again: Breakwater Survey")
+        XCTAssertEqual(
+            EndOfBookWording.playOnAFinishedBookCaption,
+            "With \"Stop\", Play on a finished book says it is finished; "
+                + "with \"Stop, and Play Starts Over\", Play starts it again from the beginning."
+        )
+        XCTAssertEqual(
+            SleepTimerView.endOfBookHint(for: .stopAndPlayStartsOver),
+            "This book already stops playing at its end, since Continue to Next Book is off; the timer stops it there too."
+        )
+    }
+
     // MARK: - Counting Books Finished
 
     /// Books Finished counts each book once (TODO P07; the user, October

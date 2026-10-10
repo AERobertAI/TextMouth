@@ -400,6 +400,8 @@ final class ContinueToNextBookTests: XCTestCase {
         )] = [
             ("stop", .stop, false, false, "Finished: First Volume", true, 1, true),
             ("stop with the timer", .stop, false, true, "Finished: First Volume. Sleep timer expired.", true, 1, true),
+            // It stops at the end as Stop does; only Play at the end differs.
+            ("stop, and Play starts over", .stopAndPlayStartsOver, false, false, "Finished: First Volume", true, 1, true),
             (
                 "continue with no next book", .continueNext, false, false,
                 "Finished: First Volume. No more books in folder.", true, 1, true

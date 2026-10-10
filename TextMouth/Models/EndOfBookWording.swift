@@ -22,6 +22,14 @@ enum EndOfBookWording {
         "Restarting: \(title)"
     }
 
+    /// What VoiceOver hears as Play starts a finished book over from its
+    /// beginning, its end-of-book choice "Stop, and Play Starts Over" (TODO
+    /// P07): "Starting again: <title>", before the book plays, so the
+    /// listener knows the place moved.
+    static func startingAgain(_ title: String) -> String {
+        "Starting again: \(title)"
+    }
+
     /// What VoiceOver hears when Play reaches a finished book whose next
     /// book has been asked for, and is opening, but does not play yet:
     /// "Still starting: <title>", as "Starting: <title>" said it, so that
@@ -64,4 +72,13 @@ enum EndOfBookWording {
 
     /// No book follows the finished one in its folder.
     static let noMoreBooksInFolderNote = "No more books in folder"
+
+    // MARK: - The Choices
+
+    /// What the Playback tab says, under its "When book ends" picker, of
+    /// what Play does on a finished book with each choice that stops there
+    /// (TODO P07), shown and read alike.
+    static let playOnAFinishedBookCaption =
+        "With \"Stop\", Play on a finished book says it is finished; "
+        + "with \"Stop, and Play Starts Over\", Play starts it again from the beginning."
 }
