@@ -304,6 +304,22 @@ enum LibraryPersistenceService {
         }
     }
 
+    /// Writes `library` at once, in place of any snapshot waiting, and waits
+    /// for it: each feed's index, then library.json, in the one write that
+    /// splits the library (`writeIndexFile`), as the move of a download made
+    /// before FR11 into its feed's folder needs its row in the feed's index
+    /// before library.json lets it go. A failure is reported, with a retry,
+    /// as every index write's is; while index writes are held nothing is
+    /// written. Call it on the main thread, never from either queue.
+    static func saveAndWait(_ library: Library) {
+        saveQueue.sync {
+            // `library` is newer than any snapshot waiting, which it holds.
+            pendingLibrary = nil
+            saveGeneration &+= 1
+            write(library)
+        }
+    }
+
     /// Writes the record of the book `bookID` still waiting in the debounce,
     /// if one is, at once, on the metadata queue, and waits for it: for a
     /// change that must be on disk before what it replaced is removed, as

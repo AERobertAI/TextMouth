@@ -33,10 +33,12 @@ extension LibraryViewModel: FeedLibraryHost {
     /// Starts the feed engine with this library, once the library has
     /// loaded: it reads the feeds' records off the main thread and, outside
     /// a process hosting tests, refreshes every feed when the settings say
-    /// to. Returns at once, so nothing the engine does holds the library
-    /// back.
+    /// to. Once the records have loaded, the downloads made before FR11 move
+    /// into their feeds' folders (`moveDownloadsIntoTheirFeeds(records:)`).
+    /// Returns at once, so nothing the engine does holds the library back.
     func startFeeds() {
         feeds.start(library: self)
+        moveFeedDownloadsOnceRecordsLoad()
     }
 
     // MARK: - FeedLibraryHost

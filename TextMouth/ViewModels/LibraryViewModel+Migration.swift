@@ -216,7 +216,8 @@ extension LibraryViewModel {
     /// A book of the library's own sharing a joining row's ID, as library.json
     /// still lists a download whose first-launch move had moved its package
     /// when TextMouth stopped, gives way to the feed item's row, whose
-    /// package is the one here. A shelf row sharing the ID of a book of the
+    /// package is the one here, and its record is written again where it is
+    /// now, finishing that move. A shelf row sharing the ID of a book of the
     /// library's own that stays is dropped, the book standing, so no ID is
     /// ever both. Returns whether any row changed, which needs a save.
     @discardableResult
@@ -234,20 +235,23 @@ extension LibraryViewModel {
             )
         }
         let joiningIDs = Set(rows.map(\.id))
-        let replaced = joined.books.filter { joiningIDs.contains($0.id) }.count
+        let replacedIDs = Set(joined.books.map(\.id)).intersection(joiningIDs)
         joined.books.removeAll { joiningIDs.contains($0.id) }
         joined.books.append(contentsOf: rows)
         let bookIDs = Set(joined.books.map(\.id))
         let shadowed = joined.feedShelf.takeRows { bookIDs.contains($0.id) }.count
-        if replaced + shadowed > 0 {
+        if replacedIDs.count + shadowed > 0 {
             DiagnosticLog.event(
                 .storage,
-                "FEED_INDEX: \(replaced) row(s) of library.json gave way to the feed items holding their packages, "
+                "FEED_INDEX: \(replacedIDs.count) row(s) of library.json gave way to the feed items holding their packages, "
                     + "and \(shadowed) feed item row(s) to the library's books holding theirs"
             )
         }
         library = joined
-        return adopted + replaced + shadowed > 0
+        for row in rows where replacedIDs.contains(row.id) {
+            LibraryPersistenceService.saveBookInfo(for: row)
+        }
+        return adopted + replacedIDs.count + shadowed > 0
     }
 
     /// Fixes stale file paths: when a book's file is not at its recorded
