@@ -230,7 +230,8 @@ extension Notification.Name {
     static let audioEditorShortcut = Notification.Name("audioEditorShortcut")
 }
 
-/// A keyboard binding: key + modifiers
+/// A keyboard binding: key + modifiers, pressed once or, for a double press,
+/// twice (FR12).
 struct KeyBinding: Codable, Equatable, Hashable {
     /// The key character (lowercased letter) or special key name:
     /// "space", "rightArrow", "leftArrow", "upArrow", "downArrow", "tab",
@@ -240,8 +241,33 @@ struct KeyBinding: Codable, Equatable, Hashable {
     var option: Bool = false
     var shift: Bool = false
     var control: Bool = false
+    /// Whether the binding is its key pressed twice within the double-press
+    /// time (FR12, `SettingsPolicy.shortcutDoublePressSeconds`), rather than
+    /// once. A double press and a single press of one key are two bindings,
+    /// which two actions may hold; `ShortcutPressDispatcher` tells them
+    /// apart as the key is pressed.
+    var isDoublePress: Bool = false
 
-    /// Human-readable display string
+    /// The word that follows a double press's shortcut where it is shown,
+    /// spoken, or written in config.json: "W twice", "w twice".
+    static let twiceWord = "twice"
+
+    /// The key press the binding is made of: the binding as a single press,
+    /// its key as a key press gives it (`from(event:)`), a character in
+    /// lower case. A double press is its stroke pressed twice; key presses
+    /// are matched by their strokes.
+    var stroke: KeyBinding {
+        KeyBinding(
+            key: key.count == 1 ? key.lowercased() : key,
+            command: command,
+            option: option,
+            shift: shift,
+            control: control
+        )
+    }
+
+    /// Human-readable display string, such as "⌘I", or "⌘I twice" for a
+    /// double press.
     var displayString: String {
         var parts: [String] = []
         if control { parts.append("\u{2303}") }      // ⌃
@@ -249,13 +275,14 @@ struct KeyBinding: Codable, Equatable, Hashable {
         if shift { parts.append("\u{21E7}") }         // ⇧
         if command { parts.append("\u{2318}") }       // ⌘
         parts.append(keyDisplayName)
-        return parts.joined()
+        return withTwice(parts.joined())
     }
 
     /// The binding in words, as VoiceOver speaks it and a braille display
     /// shows it: its modifiers, then its key, joined by " + ", such as
-    /// "Shift + Command + B" or "Command + Right Arrow". No part is a
-    /// symbol, which a braille display shows as a sign (FR12).
+    /// "Shift + Command + B" or "Command + Right Arrow", and " twice" after
+    /// a double press: "W twice", "Command + I twice". No part is a symbol,
+    /// which a braille display shows as a sign (FR12).
     var accessibleDisplayString: String {
         var parts: [String] = []
         if control { parts.append("Control") }
@@ -263,7 +290,14 @@ struct KeyBinding: Codable, Equatable, Hashable {
         if shift { parts.append("Shift") }
         if command { parts.append("Command") }
         parts.append(keyNameInWords)
-        return parts.joined(separator: " + ")
+        return withTwice(parts.joined(separator: " + "))
+    }
+
+    /// `text`, naming the binding's key and modifiers, followed by " twice"
+    /// for a double press: the one place every form of a binding, on the
+    /// screen, in words, and in config.json, says that it is one.
+    private func withTwice(_ text: String) -> String {
+        isDoublePress ? "\(text) \(Self.twiceWord)" : text
     }
 
     /// The keys of one action in words, as the Shortcuts tab says them:
@@ -306,7 +340,10 @@ struct KeyBinding: Codable, Equatable, Hashable {
         }
     }
 
-    /// Check if this binding matches an NSEvent
+    /// Whether the key press `event` is this binding's stroke: its key with
+    /// exactly its modifiers. A double press's binding matches each of its
+    /// two presses; `ShortcutPressDispatcher` decides which press a key
+    /// press is.
     func matches(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         guard flags.contains(.command) == command,
@@ -375,6 +412,50 @@ struct KeyBinding: Codable, Equatable, Hashable {
     }
 }
 
+// MARK: - A Binding as the Preferences Store Saves It
+
+/// Written by hand, in an extension so the memberwise initializer stays, to
+/// keep every binding saved before double presses existed readable (FR12):
+/// Swift's synthesized decoding would require `isDoublePress` in every
+/// saved binding, and a record that fails to read is lost. A single press
+/// is written exactly as before, with no flag, so this user's record and
+/// config.json read and write unchanged, and an older build reads a double
+/// press as its single press rather than failing.
+extension KeyBinding {
+    /// The binding's fields as they are saved, in the order every release
+    /// has written them.
+    private enum CodingKeys: String, CodingKey {
+        case key, command, option, shift, control, isDoublePress
+    }
+
+    /// Reads a saved binding: its key and four modifiers, which every
+    /// release writes, and the double press flag, written only when true,
+    /// so a binding saved without it is a single press.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        key = try container.decode(String.self, forKey: .key)
+        command = try container.decode(Bool.self, forKey: .command)
+        option = try container.decode(Bool.self, forKey: .option)
+        shift = try container.decode(Bool.self, forKey: .shift)
+        control = try container.decode(Bool.self, forKey: .control)
+        isDoublePress = try container.decodeIfPresent(Bool.self, forKey: .isDoublePress) ?? false
+    }
+
+    /// Writes the key and the four modifiers as every release has, and the
+    /// double press flag only for a double press.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(key, forKey: .key)
+        try container.encode(command, forKey: .command)
+        try container.encode(option, forKey: .option)
+        try container.encode(shift, forKey: .shift)
+        try container.encode(control, forKey: .control)
+        if isDoublePress {
+            try container.encode(true, forKey: .isDoublePress)
+        }
+    }
+}
+
 // MARK: - Shortcuts as config.json Writes Them
 
 extension KeyBinding {
@@ -384,26 +465,35 @@ extension KeyBinding {
         "space", "tab", "return", "delete", "escape", "leftArrow", "rightArrow", "upArrow", "downArrow",
     ]
 
+    /// The word config.json also reads before a double press's shortcut, as
+    /// in "double w", though it writes "w twice".
+    static let doubleWord = "double"
+
     /// The binding as config.json writes it: its modifiers in the order
     /// Settings shows them (Control, Option, Shift, Command), then its key,
     /// joined by "+", such as "space", "command+rightArrow", or
-    /// "option+shift+command+b".
+    /// "option+shift+command+b", and " twice" after a double press, such as
+    /// "w twice" (FR12).
     var configText: String {
-        (ConfigModifier.allCases.filter { $0.isHeld(in: self) }.map(\.word) + [key]).joined(separator: "+")
+        withTwice((ConfigModifier.allCases.filter { $0.isHeld(in: self) }.map(\.word) + [key]).joined(separator: "+"))
     }
 
     /// Reads a shortcut written in config.json: modifier names joined to a
-    /// key by "+", as `configText` writes them.
+    /// key by "+", as `configText` writes them, and "twice" after a double
+    /// press.
     ///
     /// Text edited by hand is read generously: names may be capitalized,
     /// spaces are ignored, cmd, ctrl, opt, and alt stand for command,
     /// control, and option, and a letter key may be a capital. The key comes
-    /// last and may itself be the plus key, as in "command++". Returns nil
-    /// for text that names no key, or a key that is neither a special key's
-    /// name nor a single character.
+    /// last and may itself be the plus key, as in "command++". A double
+    /// press may say "twice" after the shortcut, in any letter case, with or
+    /// without a space before it, or "double" before it: "w twice",
+    /// "W Twice", "wtwice", and "double w" are all W pressed twice. Returns
+    /// nil for text that names no key, or a key that is neither a special
+    /// key's name nor a single character.
     init?(configText: String) {
         var remaining = Substring(configText.filter { !$0.isWhitespace })
-        var binding = KeyBinding(key: "")
+        var binding = KeyBinding(key: "", isDoublePress: Self.takeDoublePressWord(from: &remaining))
         // Take modifiers off the front while one is followed by "+"; what
         // remains is the key.
         while let leading = ConfigModifier.leading(in: remaining) {
@@ -413,6 +503,23 @@ extension KeyBinding {
         guard let key = Self.storedKey(named: remaining) else { return nil }
         binding.key = key
         self = binding
+    }
+
+    /// Takes the word marking a double press off `text`, spaces already
+    /// removed: "twice" at its end, or else "double" at its start, in any
+    /// letter case. Returns whether there was one. Only one word is taken,
+    /// and never the whole text, so "twice" alone, "w twice twice", and
+    /// "double w twice" name no key.
+    private static func takeDoublePressWord(from text: inout Substring) -> Bool {
+        if text.count > twiceWord.count, text.suffix(twiceWord.count).lowercased() == twiceWord {
+            text = text.dropLast(twiceWord.count)
+            return true
+        }
+        if text.count > doubleWord.count, text.prefix(doubleWord.count).lowercased() == doubleWord {
+            text = text.dropFirst(doubleWord.count)
+            return true
+        }
+        return false
     }
 
     /// Reads the shortcuts config.json lists for one action, keeping the
