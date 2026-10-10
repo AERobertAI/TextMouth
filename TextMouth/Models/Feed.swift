@@ -79,6 +79,17 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
     /// deleted, in place of the setting
     /// (`FeedSettings.deleteDownloadsDaysAfterPlayed`); nil follows it.
     var deleteDownloadsDaysAfterPlayedOverride: Int?
+    /// When the listener unsubscribed from the feed (FR11, branch D); nil
+    /// while it is subscribed (`isSubscribed`). Unsubscribing is a switch,
+    /// as the listener asked on October 9 ("just keep it a feed with rules
+    /// kept except you can't check it or manually check it for new
+    /// items"): the feed keeps its record, its folder, its settings, and
+    /// its downloads, and only checking stops; Resubscribe clears it. Read
+    /// through `decodeIfPresent`, as every optional field of the record is,
+    /// so a record written before it existed reads as subscribed, and
+    /// written only when set, so a subscribed feed's record file is
+    /// exactly as it was.
+    var unsubscribedDate: Date?
 
     /// A new subscription to the feed at `feedURL`, whose downloads go to
     /// the folder `folderID`, begun at `date`. Its title is the address's
@@ -100,6 +111,16 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
         itemPolicyOverride = nil
         keepEntriesOverride = nil
         deleteDownloadsDaysAfterPlayedOverride = nil
+        unsubscribedDate = nil
+    }
+
+    /// Whether TextMouth checks the feed for new items (FR11, branch D): at
+    /// launch, on the interval, in Refresh All Feeds, and by Check Feed.
+    /// An unsubscribed feed is checked by none of them, while its rules
+    /// still act on its downloads and Download still downloads a listed
+    /// item (`unsubscribedDate`).
+    var isSubscribed: Bool {
+        unsubscribedDate == nil
     }
 }
 
