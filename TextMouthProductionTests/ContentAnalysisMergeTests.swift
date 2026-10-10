@@ -795,6 +795,11 @@ final class ContentAnalysisMergeTests: XCTestCase {
     /// books made from two different seeds differ in every field.
     private static func bookWithEveryFieldSet(seed: Int) -> Book {
         let date = Date(timeIntervalSince1970: TimeInterval(1_700_000_000 + seed * 1_000))
+        // A skipped heading in step with its ID, as a book keeps both (T06).
+        let skipped = SkippedHeading(
+            level: 1 + seed % 6, label: "Heading \(seed)", chapterIndex: seed, characterOffset: seed * 7,
+            anchor: anchor(seed: seed, at: "heading")
+        )
         return Book(
             id: UUID(),
             title: "Title \(seed)",
@@ -805,9 +810,12 @@ final class ContentAnalysisMergeTests: XCTestCase {
             folderPath: "Folder \(seed)",
             dateAdded: date,
             lastOpened: date.addingTimeInterval(1),
-            readingPosition: ReadingPosition(chapterIndex: seed, characterOffset: seed * 10),
+            readingPosition: ReadingPosition(chapterIndex: seed, characterOffset: seed * 10, anchor: anchor(seed: seed, at: "position")),
             bookmarks: [
-                Bookmark(number: seed, chapterIndex: seed, characterOffset: seed, label: "Mark \(seed)", dateCreated: date)
+                Bookmark(
+                    number: seed, chapterIndex: seed, characterOffset: seed, label: "Mark \(seed)", dateCreated: date,
+                    anchor: anchor(seed: seed, at: "bookmark")
+                )
             ],
             totalWordCount: seed * 100,
             totalCharacterCount: seed * 500,
@@ -818,7 +826,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
             localVoiceID: "voice.\(seed)",
             localWPM: Double(200 + seed),
             localPitch: 1 + Double(seed) / 10,
-            skippedHeadingIDs: ["heading-\(seed)"],
+            skippedHeadingIDs: [skipped.id],
+            skippedHeadings: [skipped],
             localEndOfBookBehavior: "behavior-\(seed)",
             localSkipForwardUnit: "forward-\(seed)",
             localSkipBackwardUnit: "backward-\(seed)",
@@ -842,6 +851,16 @@ final class ContentAnalysisMergeTests: XCTestCase {
                 sinceImport: seed.isMultiple(of: 2)
             ),
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item-\(seed)")
+        )
+    }
+
+    /// A saved place's anchor (T06) whose every value derives from `seed`
+    /// and names the place it is `at`, so anchors made from two different
+    /// seeds differ throughout.
+    private static func anchor(seed: Int, at place: String) -> TextAnchor {
+        TextAnchor(
+            before: "\(place) before \(seed)", after: "\(place) after \(seed)",
+            fraction: Double(seed) / 10, measuredIn: "measure-\(seed)", version: seed
         )
     }
 

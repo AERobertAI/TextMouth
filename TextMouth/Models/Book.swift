@@ -120,8 +120,20 @@ struct Book: Identifiable, Codable, Hashable {
     var localWPM: Double?
     /// Per-book pitch multiplier override (nil = use global setting, range 0.5–2.0)
     var localPitch: Double?
-    /// Heading IDs that should be skipped during playback
-    var skippedHeadingIDs: [String]?
+    /// Heading IDs that should be skipped during playback (`Heading.id`):
+    /// what the reader matches against the book's headings, and all older
+    /// builds keep. `skippedHeadings` follows every change to them (T06).
+    var skippedHeadingIDs: [String]? {
+        didSet { skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings) }
+    }
+    /// The headings skipped during playback by their level, label, and
+    /// place, with the text at their start (T06), so a skip can follow its
+    /// heading when the book's text is read anew. In step with
+    /// `skippedHeadingIDs`: made from the IDs when a row or record has none
+    /// (every one written before T06), and following every change to them,
+    /// since the IDs are what the reader saves until it saves skipped
+    /// headings itself (T06's branch B).
+    var skippedHeadings: [SkippedHeading]?
     /// Per-book end-of-book behavior override (nil = use global)
     var localEndOfBookBehavior: String?
     /// Per-book forward navigation unit (nil or invalid = use global).
@@ -227,6 +239,7 @@ struct Book: Identifiable, Codable, Hashable {
         localWPM: Double? = nil,
         localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
+        skippedHeadings: [SkippedHeading]? = nil,
         localEndOfBookBehavior: String? = nil,
         localSkipForwardUnit: String? = nil,
         localSkipBackwardUnit: String? = nil,
@@ -269,6 +282,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.localWPM = localWPM
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
+        self.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.localSkipForwardUnit = localSkipForwardUnit
         self.localSkipBackwardUnit = localSkipBackwardUnit
@@ -321,6 +335,10 @@ struct Book: Identifiable, Codable, Hashable {
         localWPM = fields.optionalValue(.localWPM) { SettingsPolicy.validatedLocalSpeed($0, isAudio: isAudio) }
         localPitch = fields.optionalValue(.localPitch, validate: SettingsPolicy.validatedLocalPitch)
         skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
+        // Skipped headings that cannot be read count as none; either way
+        // they are put in step with the IDs, which an older build may have
+        // changed alone.
+        skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
         localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
@@ -866,6 +884,7 @@ struct Book: Identifiable, Codable, Hashable {
                 localWPM: localWPM,
                 localPitch: localPitch,
                 skippedHeadingIDs: skippedHeadingIDs,
+                skippedHeadings: skippedHeadings,
                 localEndOfBookBehavior: localEndOfBookBehavior,
                 localSkipForwardUnit: localSkipForwardUnit,
                 localSkipBackwardUnit: localSkipBackwardUnit,
@@ -913,6 +932,7 @@ struct Book: Identifiable, Codable, Hashable {
             localWPM: state.localWPM,
             localPitch: state.localPitch,
             skippedHeadingIDs: state.skippedHeadingIDs,
+            skippedHeadings: state.skippedHeadings,
             localEndOfBookBehavior: state.localEndOfBookBehavior,
             localSkipForwardUnit: state.localSkipForwardUnit,
             localSkipBackwardUnit: state.localSkipBackwardUnit,
@@ -1180,19 +1200,25 @@ struct ReadingPosition: Codable, Hashable {
     /// Global character offset across all chapters (for library time estimation)
     var globalCharacterOffset: Int?
     var lastUpdated: Date
+    /// The text around this place when it was saved (T06), by which it is
+    /// found again when the book's text is read anew (`TextAnchorFinder`);
+    /// nil for a place saved before anchors, or by a build without them.
+    var anchor: TextAnchor?
 
-    init(chapterIndex: Int = 0, headingIndex: Int? = nil, characterOffset: Int = 0, globalCharacterOffset: Int? = nil) {
+    init(chapterIndex: Int = 0, headingIndex: Int? = nil, characterOffset: Int = 0, globalCharacterOffset: Int? = nil, anchor: TextAnchor? = nil) {
         self.chapterIndex = chapterIndex
         self.headingIndex = headingIndex
         self.characterOffset = characterOffset
         self.globalCharacterOffset = globalCharacterOffset
         self.lastUpdated = Date()
+        self.anchor = anchor
     }
 
     /// Decodes a saved position, repairing indices and offsets no position
     /// can have (negative, or too large for an `Int`) instead of failing the
     /// book and, with it, the whole library. The reader still clamps the
-    /// result against the loaded content.
+    /// result against the loaded content. An anchor that cannot be read
+    /// counts as none: the place keeps its numbers.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
@@ -1201,6 +1227,7 @@ struct ReadingPosition: Codable, Hashable {
         characterOffset = fields.position(.characterOffset)
         globalCharacterOffset = fields.optionalPosition(.globalCharacterOffset)
         lastUpdated = try container.decode(Date.self, forKey: .lastUpdated)
+        anchor = fields.optionalValue(.anchor) { $0 }
     }
 }
 
@@ -1211,6 +1238,11 @@ struct Bookmark: Identifiable, Codable, Hashable {
     var characterOffset: Int
     var label: String
     var dateCreated: Date
+    /// The text around the bookmark's place when it was made (T06), by
+    /// which the place is found again when the book's text is read anew
+    /// (`TextAnchorFinder`); nil for a bookmark made before anchors, or by a
+    /// build without them.
+    var anchor: TextAnchor?
 
     init(
         id: UUID = UUID(),
@@ -1218,7 +1250,8 @@ struct Bookmark: Identifiable, Codable, Hashable {
         chapterIndex: Int,
         characterOffset: Int,
         label: String = "",
-        dateCreated: Date = Date()
+        dateCreated: Date = Date(),
+        anchor: TextAnchor? = nil
     ) {
         self.id = id
         self.number = number
@@ -1226,10 +1259,13 @@ struct Bookmark: Identifiable, Codable, Hashable {
         self.characterOffset = characterOffset
         self.label = label
         self.dateCreated = dateCreated
+        self.anchor = anchor
     }
 
     /// Decodes a saved bookmark, repairing a location no bookmark can have
-    /// (negative, or too large for an `Int`) instead of failing the book.
+    /// (negative, or too large for an `Int`) instead of failing the book. An
+    /// anchor that cannot be read counts as none: the bookmark keeps its
+    /// numbers.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
@@ -1239,6 +1275,7 @@ struct Bookmark: Identifiable, Codable, Hashable {
         characterOffset = fields.position(.characterOffset)
         label = try container.decode(String.self, forKey: .label)
         dateCreated = try container.decode(Date.self, forKey: .dateCreated)
+        anchor = fields.optionalValue(.anchor) { $0 }
     }
 
     /// Concise label shared by bookmark rows and the bookmarks rotor, such as
@@ -1262,5 +1299,88 @@ struct Bookmark: Identifiable, Codable, Hashable {
     /// speaks it: the long date of the user's locale, "October 9, 2026".
     var dateText: String {
         dateCreated.formatted(date: .long, time: .omitted)
+    }
+}
+
+/// A heading the listener skips (T06): its level, its label, and where it
+/// starts, with the text at its start, so the skip can follow its heading
+/// when the book's text is read anew (`TextAnchorFinder.findHeading`).
+///
+/// A skip has been a heading ID (`Heading.id`,
+/// "<chapter>-<offset>-<level>-<label>"), which changes whenever the text
+/// before the heading or its label changes, and then names no heading, so
+/// the section plays again: 456 of 735 skipped headings in the real
+/// extraction changes measured (TEXT-ANCHORS-ADDENDUM-2026-10-10.md,
+/// section 5). A book keeps both, in step (`Book.skippedHeadings`,
+/// `Book.skippedHeadingIDs`): the IDs for older builds, which know nothing
+/// else.
+struct SkippedHeading: Codable, Hashable, Sendable {
+    /// The heading's level, 1 to 6.
+    var level: Int
+    /// The heading's label, as the Headings sheet shows it.
+    var label: String
+    /// The chapter the heading starts in.
+    var chapterIndex: Int
+    /// Where the heading starts in its chapter's reading text, in UTF-16
+    /// units.
+    var characterOffset: Int
+    /// The text at the heading's start when it was skipped; nil for a skip
+    /// made before anchors.
+    var anchor: TextAnchor?
+
+    init(level: Int, label: String, chapterIndex: Int, characterOffset: Int, anchor: TextAnchor? = nil) {
+        self.level = level
+        self.label = label
+        self.chapterIndex = chapterIndex
+        self.characterOffset = characterOffset
+        self.anchor = anchor
+    }
+
+    /// The skip of `heading`, with the text at its start.
+    init(_ heading: Heading, anchor: TextAnchor? = nil) {
+        self.init(
+            level: heading.level,
+            label: heading.text,
+            chapterIndex: heading.chapterIndex,
+            characterOffset: heading.characterOffset,
+            anchor: anchor
+        )
+    }
+
+    /// The skip a heading ID names, read from the ID's form,
+    /// "<chapter>-<offset>-<level>-<label>" (a label may hold hyphens of its
+    /// own); nil for an ID not exactly in that form, as a hand-edited or
+    /// damaged one may be, which names no heading TextMouth makes.
+    init?(id: String) {
+        let parts = id.split(separator: "-", maxSplits: 3, omittingEmptySubsequences: false)
+        guard parts.count == 4,
+              let chapterIndex = Int(parts[0]),
+              let characterOffset = Int(parts[1]),
+              let level = Int(parts[2])
+        else { return nil }
+        self.init(level: level, label: String(parts[3]), chapterIndex: chapterIndex, characterOffset: characterOffset)
+        // Only an ID this skip writes back the same is in today's form
+        // ("07-…" or "+7-…" would read as chapter 7 but is no heading's ID).
+        guard self.id == id else { return nil }
+    }
+
+    /// The heading ID this skip has (`Heading.id`), which the reader and
+    /// older builds match against the book's headings.
+    var id: String {
+        Heading(level: level, text: label, chapterIndex: chapterIndex, characterOffset: characterOffset).id
+    }
+
+    /// The skipped headings `ids` names, in their order and in step with
+    /// them: each one of `kept` whose ID is among them, with its anchor, and
+    /// each other read from its ID; an ID not in today's form is left out.
+    /// Nil when none is left, as for no IDs.
+    static func inStep(with ids: [String]?, keeping kept: [SkippedHeading]?) -> [SkippedHeading]? {
+        guard let ids, !ids.isEmpty else { return nil }
+        var keptByID: [String: SkippedHeading] = [:]
+        for heading in kept ?? [] where keptByID[heading.id] == nil {
+            keptByID[heading.id] = heading
+        }
+        let headings = ids.compactMap { keptByID[$0] ?? SkippedHeading(id: $0) }
+        return headings.isEmpty ? nil : headings
     }
 }
