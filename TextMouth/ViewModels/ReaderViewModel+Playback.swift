@@ -2508,6 +2508,12 @@ extension ReaderViewModel {
     /// `playingPauseSound`: not as a sleep timer's fade ends, nor as Next
     /// in Reading List and Previous in Reading List leave this book for
     /// another, whose start makes its own sound (FR09).
+    ///
+    /// The sound says that something paused, so a pause that pauses nothing
+    /// makes none: one that reaches a book stopped, finished, or paused
+    /// already, such as a Pause from the AirPods or a media key sent to a
+    /// window that was not playing. It once made the sound whatever it
+    /// paused.
     func pause(playingPauseSound: Bool) {
         // Capture pre-pause playing state BEFORE we issue any pause calls.
         // The audio / speech services flip their flags synchronously, so
@@ -2517,7 +2523,7 @@ extension ReaderViewModel {
         // So does a text book waiting for its chapter's speech, which stops.
         let wasPlaying = isPlaybackUnderWay
 
-        if playingPauseSound {
+        if playingPauseSound && wasPlaying {
             soundEffectService?.play(for: .pause)
         }
         // `AVPlayer.pause()` / `AVAudioPlayerNode.pause()` do not

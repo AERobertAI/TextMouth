@@ -299,6 +299,20 @@ extension XCTestCase {
     }
 }
 
+// MARK: - Sound Effects Recorded, Never Heard
+
+/// Sound effects that record each event they are asked to play, and play
+/// nothing, for a reader whose sounds a test checks
+/// (`ReaderViewModel.soundEffectService`).
+final class RecordedSoundEffects: SoundEffectService {
+    /// The events asked for, oldest first.
+    var played: [SoundEvent] = []
+
+    override func play(for event: SoundEvent) {
+        played.append(event)
+    }
+}
+
 // MARK: - Fixture EPUBs
 
 /// One chapter of a fixture EPUB: an XHTML document in the reading order.

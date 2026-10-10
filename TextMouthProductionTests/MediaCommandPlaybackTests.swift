@@ -56,6 +56,30 @@ final class MediaCommandPlaybackTests: XCTestCase {
         assertToldSystem(system, that: quay.reader, plays: true, "Play after Pause")
     }
 
+    /// The pause sound says that something paused, so it is made only when
+    /// a pause pauses something: a Pause from the AirPods that reaches the
+    /// book before it ever played, or once it is paused already, makes no
+    /// sound, while the Pause that pauses it as it plays makes the sound
+    /// once. Before, every pause made it. The sounds are recorded, never
+    /// heard.
+    func testThePauseSoundIsMadeOnlyWhenAPausePausesSomething() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Pause Sound")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let sounds = RecordedSoundEffects(preferences: makeSandboxedPreferences("Media Commands Pause Sound"))
+        quay.reader.soundEffectService = sounds
+
+        XCTAssertEqual(system.press(.pause), .success)
+        XCTAssertEqual(sounds.played, [], "A Pause before the book ever played made a sound")
+
+        quay.reader.play()
+        reportWordSpoken(by: quay)
+        XCTAssertEqual(system.press(.pause), .success)
+        XCTAssertTrue(quay.reader.speechService.isPaused, "Pause did not pause speech")
+        XCTAssertEqual(system.press(.pause), .success)
+        XCTAssertEqual(sounds.played, [.play, .pause], "The pause sound was not made exactly once, as the book paused")
+    }
+
     // MARK: - After the Sleep Timer
 
     /// A 15-minute sleep timer with a two-second fade runs out and pauses

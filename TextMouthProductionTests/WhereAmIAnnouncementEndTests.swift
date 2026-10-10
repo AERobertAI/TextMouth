@@ -210,14 +210,3 @@ final class WhereAmIAnnouncementEndTests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 5) { handled }, "The main queue never ran", file: file, line: line)
     }
 }
-
-/// Sound effects that record each event they are asked to play, and play
-/// nothing.
-private final class RecordedSoundEffects: SoundEffectService {
-    /// The events asked for, oldest first.
-    var played: [SoundEvent] = []
-
-    override func play(for event: SoundEvent) {
-        played.append(event)
-    }
-}
