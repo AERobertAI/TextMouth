@@ -535,6 +535,43 @@ enum VoiceWarmUp {
     }
 }
 
+// MARK: - Watchdog Timers
+
+/// A repeating timer one of direct speech's watchdogs ticks on, until it is
+/// cancelled (`SpeechService.startWatchdogTimer(tick:)`).
+protocol SpeechWatchdogTimer: AnyObject {
+    /// Keeps the timer from ticking again.
+    func cancel()
+}
+
+/// The app's watchdog timer: a repeating timer on the main run loop, in its
+/// common modes, so that it ticks while a menu is open too.
+final class RunLoopWatchdogTimer: SpeechWatchdogTimer {
+    /// The timer ticking.
+    private let timer: Timer
+
+    /// Starts calling `tick` every `interval` seconds on the main run loop.
+    /// Made on the main thread, as the speech service makes it.
+    init(interval: TimeInterval, tick: @escaping @Sendable () -> Void) {
+        let timer = Timer(timeInterval: interval, repeats: true) { _ in tick() }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+    }
+
+    func cancel() {
+        timer.invalidate()
+    }
+}
+
+/// A watchdog timer that never ticks: the watchdogs' timer while a test
+/// stands in for the synthesizer (`SpeechService._directUtteranceRecorderForTesting`)
+/// without giving timers of its own, since there no utterance starts,
+/// speaks, or ends unless the test says so, and a watchdog ticking on the
+/// clock would recover from that silence in the middle of a slow test.
+final class StoppedWatchdogTimer: SpeechWatchdogTimer {
+    func cancel() {}
+}
+
 /// Manages TTS playback using two modes:
 /// 1. **Audio Engine mode** (default): Pre-renders speech with AVSpeechSynthesizer.write(),
 ///    plays through AVAudioEngine + AVAudioUnitTimePitch for real-time speed changes and instant seeking.
@@ -716,13 +753,31 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// providing enough audio buffer for the engine to render in the
     /// background.
     static let directModeChunkSize = 5_000
-    /// Polls AVFoundation's own playback state after direct speech has started.
+    /// How often direct speech's two watchdogs tick, in seconds: the
+    /// playback watchdog, which looks at AVFoundation's own playback state
+    /// once the live utterance has started, and the start watchdog, which
+    /// waits for it to start.
+    static let directWatchdogInterval: TimeInterval = 0.5
     /// Two consecutive idle observations leave time for a normal `didFinish`
     /// callback to reach the main queue before recovery is attempted.
-    private static let directPlaybackWatchdogInterval: TimeInterval = 0.5
     private static let directPlaybackWatchdogRequiredIdleChecks = 2
-    private var directPlaybackWatchdogTimer: Timer?
+    private var directPlaybackWatchdogTimer: SpeechWatchdogTimer?
     private var directPlaybackWatchdogIdleChecks = 0
+    /// How long the live utterance may go without starting, in seconds,
+    /// while speech should be heard, before the start watchdog recovers
+    /// (`recoverFromUnstartedDirectUtterance()`): longer than the 3 to 4.5 s
+    /// a voice not loaded yet once made the first word wait (PERF03), so a
+    /// slow first start is never taken for a stall.
+    static let directStartWatchdogTimeout: TimeInterval = 5
+    /// How many ticks in a row the start watchdog must find the live
+    /// utterance not started before it recovers: the timeout's worth, and
+    /// one more, so that a start reported on the main queue just before the
+    /// deadline is handled before the watchdog acts on it.
+    static var directStartWatchdogRequiredTicks: Int {
+        Int((directStartWatchdogTimeout / directWatchdogInterval).rounded(.up)) + 1
+    }
+    private var directStartWatchdogTimer: SpeechWatchdogTimer?
+    private var directStartWatchdogTicks = 0
     /// Timer to poll playback position from audio engine
     private var positionTimer: Timer?
 
@@ -921,6 +976,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         // to filter callbacks for previously-stopped utterances.
         liveDirectUtterance = utterance
         handToSynthesizer(utterance)
+        // Watched until it starts, when the playback watchdog takes over.
+        startDirectStartWatchdog(for: utterance)
     }
 
     /// Hand the synthesizer the chunk after the one that just started, so
@@ -996,61 +1053,131 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         }
     }
 
+    /// Starts the repeating timer a direct-speech watchdog ticks on, every
+    /// `directWatchdogInterval` seconds: the timers a test gave
+    /// (`_watchdogTimerForTesting`), else one that never ticks while a test
+    /// stands in for the synthesizer (`StoppedWatchdogTimer`), else the main
+    /// run loop's (`RunLoopWatchdogTimer`), as in the app.
+    private func startWatchdogTimer(tick: @escaping @Sendable () -> Void) -> SpeechWatchdogTimer {
+        if let startTimer = _watchdogTimerForTesting {
+            return startTimer(Self.directWatchdogInterval, tick)
+        }
+        if _directUtteranceRecorderForTesting != nil {
+            return StoppedWatchdogTimer()
+        }
+        return RunLoopWatchdogTimer(interval: Self.directWatchdogInterval, tick: tick)
+    }
+
     /// Monitor a direct utterance after AVFoundation confirms that it started.
     /// This does not estimate speech duration. It recovers only when both the
     /// app and AVFoundation agree playback should be active, but the system
-    /// synthesizer remains idle for two consecutive checks.
+    /// synthesizer remains idle for two consecutive checks. It takes over
+    /// from the start watchdog, which watched the utterance until then.
     private func startDirectPlaybackWatchdog(for utterance: AVSpeechUtterance) {
-        stopDirectPlaybackWatchdog()
+        stopDirectWatchdogs()
         let watchedUtteranceID = ObjectIdentifier(utterance)
-        let timer = Timer(timeInterval: Self.directPlaybackWatchdogInterval, repeats: true) { [weak self] timer in
-            guard let self else {
-                timer.invalidate()
-                return
-            }
-
-            guard self.liveDirectUtterance.map(ObjectIdentifier.init) == watchedUtteranceID else {
-                // A newer utterance owns playback now. Its didStart callback
-                // installs a replacement watchdog, so this timer is obsolete.
-                timer.invalidate()
-                return
-            }
-
-            let shouldRecover = Self.shouldRecoverIdleDirectSpeech(
-                appIsSpeaking: self.isSpeaking,
-                appIsPaused: self.isPaused,
-                usingDirectMode: self.usingDirectMode,
-                synthesizerIsSpeaking: self.directSynth.isSpeaking,
-                synthesizerIsPaused: self.directSynth.isPaused,
-                hasLiveUtterance: self.liveDirectUtterance != nil
-            )
-            guard shouldRecover else {
-                self.directPlaybackWatchdogIdleChecks = 0
-                return
-            }
-
-            self.directPlaybackWatchdogIdleChecks += 1
-            guard self.directPlaybackWatchdogIdleChecks >= Self.directPlaybackWatchdogRequiredIdleChecks else {
-                return
-            }
-
-            timer.invalidate()
-            if self.directPlaybackWatchdogTimer === timer {
-                self.directPlaybackWatchdogTimer = nil
-            }
-            self.directPlaybackWatchdogIdleChecks = 0
-            self.recoverFromIdleDirectSynthesizer(watchedUtteranceID: watchedUtteranceID)
+        directPlaybackWatchdogTimer = startWatchdogTimer { [weak self] in
+            self?.directPlaybackWatchdogTicked(watching: watchedUtteranceID)
         }
-        RunLoop.main.add(timer, forMode: .common)
-        directPlaybackWatchdogTimer = timer
     }
 
-    /// Cancel the direct-speech watchdog whenever playback deliberately stops,
+    /// One tick of the playback watchdog watching the utterance
+    /// `watchedUtteranceID` names: once the synthesizer has been idle for
+    /// two ticks in a row while speech should be heard, recover
+    /// (`recoverFromIdleDirectSynthesizer(watchedUtteranceID:)`).
+    private func directPlaybackWatchdogTicked(watching watchedUtteranceID: ObjectIdentifier) {
+        guard liveDirectUtterance.map(ObjectIdentifier.init) == watchedUtteranceID else {
+            // A newer utterance owns playback now, and a watchdog of its own
+            // watches it, so this one is obsolete.
+            stopDirectPlaybackWatchdog()
+            return
+        }
+
+        let shouldRecover = Self.shouldRecoverIdleDirectSpeech(
+            appIsSpeaking: isSpeaking,
+            appIsPaused: isPaused,
+            usingDirectMode: usingDirectMode,
+            synthesizerIsSpeaking: directSynth.isSpeaking,
+            synthesizerIsPaused: directSynth.isPaused,
+            hasLiveUtterance: liveDirectUtterance != nil
+        )
+        guard shouldRecover else {
+            directPlaybackWatchdogIdleChecks = 0
+            return
+        }
+
+        directPlaybackWatchdogIdleChecks += 1
+        guard directPlaybackWatchdogIdleChecks >= Self.directPlaybackWatchdogRequiredIdleChecks else {
+            return
+        }
+
+        stopDirectPlaybackWatchdog()
+        recoverFromIdleDirectSynthesizer(watchedUtteranceID: watchedUtteranceID)
+    }
+
+    /// Cancel the playback watchdog whenever playback deliberately stops,
     /// switches backend, or completes normally.
     private func stopDirectPlaybackWatchdog() {
-        directPlaybackWatchdogTimer?.invalidate()
+        directPlaybackWatchdogTimer?.cancel()
         directPlaybackWatchdogTimer = nil
         directPlaybackWatchdogIdleChecks = 0
+    }
+
+    /// Watch `utterance`, just handed to the synthesizer as the live one,
+    /// until it starts, when the playback watchdog takes over
+    /// (`startDirectPlaybackWatchdog(for:)`). An utterance that neither
+    /// starts, nor is cancelled, nor finishes was watched by nothing, since
+    /// the playback watchdog arms at a start, and speech showed itself
+    /// speaking in silence until the listener pressed Pause and Play.
+    private func startDirectStartWatchdog(for utterance: AVSpeechUtterance) {
+        stopDirectWatchdogs()
+        let watchedUtteranceID = ObjectIdentifier(utterance)
+        directStartWatchdogTimer = startWatchdogTimer { [weak self] in
+            self?.directStartWatchdogTicked(watching: watchedUtteranceID)
+        }
+    }
+
+    /// One tick of the start watchdog watching the utterance
+    /// `watchedUtteranceID` names, which has not started: once it has gone
+    /// unstarted for `directStartWatchdogRequiredTicks` ticks in a row while
+    /// speech should be heard, recover
+    /// (`recoverFromUnstartedDirectUtterance()`). A tick while speech is
+    /// paused, stopped, playing rendered audio, or fading counts nothing and
+    /// starts the count again.
+    private func directStartWatchdogTicked(watching watchedUtteranceID: ObjectIdentifier) {
+        guard liveDirectUtterance.map(ObjectIdentifier.init) == watchedUtteranceID else {
+            // Another utterance, or none, is live now: speech stopped or
+            // moved on, and whatever is live is watched afresh.
+            stopDirectStartWatchdog()
+            return
+        }
+        guard Self.shouldAwaitDirectStart(
+            appIsSpeaking: isSpeaking,
+            appIsPaused: isPaused,
+            usingDirectMode: usingDirectMode,
+            isSleepFadeActive: isDirectSleepFadeActive
+        ) else {
+            directStartWatchdogTicks = 0
+            return
+        }
+        directStartWatchdogTicks += 1
+        guard directStartWatchdogTicks >= Self.directStartWatchdogRequiredTicks else { return }
+        stopDirectStartWatchdog()
+        recoverFromUnstartedDirectUtterance()
+    }
+
+    /// Cancel the start watchdog, as the utterance it watches starts, or as
+    /// speech stops, switches backend, or finishes.
+    private func stopDirectStartWatchdog() {
+        directStartWatchdogTimer?.cancel()
+        directStartWatchdogTimer = nil
+        directStartWatchdogTicks = 0
+    }
+
+    /// Cancel both of direct speech's watchdogs.
+    private func stopDirectWatchdogs() {
+        stopDirectStartWatchdog()
+        stopDirectPlaybackWatchdog()
     }
 
     /// Recover an utterance for which AVFoundation became idle without sending
@@ -1096,6 +1223,30 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         speakDirect(currentText, fromCharOffset: safeOffset)
     }
 
+    /// Recover the live utterance, which the synthesizer was handed
+    /// `directStartWatchdogTimeout` seconds ago, or more, while speech
+    /// should be heard, and which it has neither started, nor cancelled,
+    /// nor finished (`DIRECT_START_WATCHDOG_RECOVERY`), as the playback
+    /// watchdog recovers from an idle synthesizer: from rendered audio of
+    /// this speech when the engine holds some, else directly, from where
+    /// the utterance begins, since nothing of it was heard.
+    ///
+    /// A fresh synthesizer takes the place of the one that held it first
+    /// (`replaceDirectSynthesizer(after:)`): one that refused an utterance
+    /// never starts another (on October 7 a plain text waited ten seconds on
+    /// it for nothing, while a fresh one spoke it at once), so speaking
+    /// again on it would stall again.
+    private func recoverFromUnstartedDirectUtterance() {
+        let offset = retryOffset(from: directModeBaseOffset, to: directModeChunkEnd)
+        transitionLog(.event, "DIRECT_START_WATCHDOG_RECOVERY: utterance at offset=\(directModeBaseOffset) chunkEnd=\(directModeChunkEnd) never started; going on at offset=\(offset)")
+        replaceDirectSynthesizer(after: "the live utterance never started")
+        if renderedAudioMatchesSpeech {
+            switchToRenderedAudioOrSpeakDirectly(at: offset, failureTag: "DIRECT_START_WATCHDOG_ENGINE_FAILED")
+        } else {
+            speakDirect(currentText, fromCharOffset: offset)
+        }
+    }
+
     // MARK: - Recovery after the system cancels the live utterance
 
     /// What the listener hears when the Mac's speech engine refused the
@@ -1109,8 +1260,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// Speak again after the system cancelled the live utterance on its own
     /// (`DIRECT_CANCEL_UNEXPECTED`), as it does when the speech engine
     /// refuses a text it reads as broken markup (`SpeechMarkupGuard`): the
-    /// refused utterance never starts, so the watchdog, which its start
-    /// would arm, never looks, and the synthesizer that refused it never
+    /// refused utterance never starts, so the playback watchdog, which its
+    /// start would arm, never looks, and the start watchdog would act only
+    /// once its timeout passed; and the synthesizer that refused it never
     /// speaks again, so speaking again on it would be silent too.
     ///
     /// A fresh synthesizer takes its place first, whatever follows
@@ -1272,13 +1424,15 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// and let go with whatever it still held (`stopDirectSynthesizer()`):
     /// after the engine refuses an utterance, the synthesizer that held it
     /// never speaks again (a plain text on it waited 10 s for nothing,
-    /// while a fresh instance spoke it at once).
-    private func replaceDirectSynthesizer() {
+    /// while a fresh instance spoke it at once). `reason`, which the log
+    /// line gives, says what the old one did: by default, that the system
+    /// cancelled the live utterance.
+    private func replaceDirectSynthesizer(after reason: String = "the system cancelled the live utterance") {
         stopDirectSynthesizer()
         directSynth.delegate = nil
         directSynth = AVSpeechSynthesizer()
         directSynth.delegate = self
-        transitionLog(.event, "DIRECT_SYNTH_REPLACED: fresh synthesizer after the system cancelled the live utterance")
+        transitionLog(.event, "DIRECT_SYNTH_REPLACED: fresh synthesizer after \(reason)")
     }
 
     /// End direct speech at `offset` because the engine refused its text on
@@ -1347,7 +1501,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// system delivered a different number of didFinish events than we
     /// expected. Identity comparison can't desync.
     private func stopDirectSynthesizer() {
-        stopDirectPlaybackWatchdog()
+        stopDirectWatchdogs()
         liveDirectUtterance = nil
         // Stopping the synthesizer drops the chunk queued behind the live
         // one too; any callback for it is then for no chunk at all.
@@ -1959,6 +2113,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// tests can see it replaced after the system cancelled an utterance.
     var _directSynthesizerForTesting: AVSpeechSynthesizer { directSynth }
 
+    /// Starts the timers direct speech's watchdogs tick on, given the
+    /// interval and the tick, in place of the main run loop's, so hosted
+    /// tests tick them by hand and never wait for one. Nil, as in the app,
+    /// starts the run loop's, or none that ticks while a test hands
+    /// utterances to its recorder (`startWatchdogTimer(tick:)`).
+    var _watchdogTimerForTesting: ((TimeInterval, @escaping @Sendable () -> Void) -> SpeechWatchdogTimer)?
+
     deinit {
         stop()
     }
@@ -2007,6 +2168,22 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             && hasLiveUtterance
     }
 
+    /// Decide whether a tick of the start watchdog counts toward its
+    /// recovery: direct speech should be heard, and its live utterance, the
+    /// one the watchdog watches, has not started. A pause, a stop, rendered
+    /// audio, and a sleep fade, whose segments the watchdog does not watch
+    /// (the timer's own end stops them), count nothing. Kept pure, as
+    /// `shouldRecoverIdleDirectSpeech` is, so every condition is tested
+    /// without a synthesizer.
+    nonisolated static func shouldAwaitDirectStart(
+        appIsSpeaking: Bool,
+        appIsPaused: Bool,
+        usingDirectMode: Bool,
+        isSleepFadeActive: Bool
+    ) -> Bool {
+        appIsSpeaking && !appIsPaused && usingDirectMode && !isSleepFadeActive
+    }
+
     func speechSynthesizer(
         _ synthesizer: AVSpeechSynthesizer,
         willSpeakRangeOfSpeechString characterRange: NSRange,
@@ -2040,6 +2217,12 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             baseOffset = fadeOffset
         } else if Self.isLiveDirectUtterance(spoken.utterance, liveUtterance: liveDirectUtterance) {
             baseOffset = directModeBaseOffset
+            // A word of the live utterance shows that it started, even had
+            // its start not been reported: the playback watchdog takes over,
+            // so the start watchdog never speaks again what is being heard.
+            if directStartWatchdogTimer != nil {
+                startDirectPlaybackWatchdog(for: spoken.utterance)
+            }
         } else {
             return
         }
@@ -2138,7 +2321,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                         )
 
                     case .finishChapter:
-                        self.stopDirectPlaybackWatchdog()
+                        self.stopDirectWatchdogs()
                         self.clearDirectSleepFadeState()
                         self.isSpeaking = false
                         self.isPaused = false
@@ -2173,7 +2356,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             }
 
             self.transitionLog(.trace, "DIRECT_FINISH_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) chunked=\(self.directModeChunked)")
-            self.stopDirectPlaybackWatchdog()
+            self.stopDirectWatchdogs()
 
             // This utterance has finished naturally — clear the marker so
             // a future stop-without-start doesn't accidentally process its
@@ -2181,11 +2364,15 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             self.liveDirectUtterance = nil
 
             // The synthesizer goes straight on to the chunk queued after this
-            // one, which is the one speaking now; its start re-arms the
-            // watchdog and queues the chunk after it.
+            // one, which is the one speaking now. Until its start arms the
+            // playback watchdog and queues the chunk after it, the start
+            // watchdog watches it: a queued chunk the synthesizer never
+            // starts would otherwise leave speech showing itself speaking
+            // in silence.
             if let queued = self.queuedDirectChunk {
                 self.transitionLog(.trace, "CHUNK_CONTINUE: queued chunk at offset \(queued.chunk.start)")
                 self.promoteQueuedDirectChunk()
+                self.startDirectStartWatchdog(for: queued.utterance)
                 return
             }
 
@@ -2230,10 +2417,11 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             let isCurrent = Self.isLiveDirectUtterance(cancelled.utterance, liveUtterance: self.liveDirectUtterance)
             if isCurrent, self.usingDirectMode, self.isSpeaking {
                 // The app never cancels the live utterance itself: every
-                // stop lets go of it first. The watchdog cannot look into
-                // this: its start arms it, and an utterance the engine
-                // refuses never starts. Speech goes on from a fresh
-                // synthesizer instead, now, or at Play when paused.
+                // stop lets go of it first. The playback watchdog cannot
+                // look into this: its start arms it, and an utterance the
+                // engine refuses never starts; the start watchdog would wait
+                // out its timeout. Speech goes on from a fresh synthesizer
+                // instead, now, or at Play when paused.
                 // Read before logging, so the line says what the synthesizer reports now.
                 let synthesizerIsSpeaking = self.directSynth.isSpeaking
                 let synthesizerIsPaused = self.directSynth.isPaused
