@@ -201,6 +201,10 @@ final class FeedDownloadManager {
     private(set) var putOff: [Request] = []
     /// The whole percent last published for the download under way.
     private var publishedPercent = -1
+    /// Called on the main actor as an import has finished, just before its
+    /// book is listed, for a test to act at that moment, as Delete Episode
+    /// can while an import runs; nil in the app.
+    var beforeCommit: (@MainActor (Request) -> Void)?
     /// Runs imports in order, off the main thread.
     private let importQueue = DispatchQueue(label: "com.textmouth.feed-imports", qos: .userInitiated)
 
@@ -539,9 +543,12 @@ final class FeedDownloadManager {
                     do {
                         let book = try boundary.perform(.importing) { _ -> Book in
                             let imported = try importBook()
-                            DispatchQueue.main.sync {
+                            let listed = DispatchQueue.main.sync {
                                 self.commit(imported.book, for: request)
                             }
+                            // Its item was deleted while it imported: the
+                            // download ends as if stopped.
+                            guard listed else { throw FeedDownloadError.transfer(.cancelled) }
                             return imported.book
                         }
                         continuation.resume(returning: book)
@@ -559,8 +566,21 @@ final class FeedDownloadManager {
 
     /// Adds `book` to the library and marks the item of `request` downloaded
     /// as it, by whoever asked for it (FR11): the listener when the listener
-    /// asked at any point, otherwise the newest-N rule.
-    private func commit(_ book: Book, for request: Request) {
+    /// asked at any point, otherwise the newest-N rule. Returns whether it
+    /// did.
+    ///
+    /// An item gone from its record, or deleted, while its download imported
+    /// (Delete Episode stops a transfer, but not an import once begun, which
+    /// may be restoring the item's kept package meanwhile) gets no row: the
+    /// package the import just published, in the kept package's place when
+    /// it restored one, is deleted for good, so nothing of a deleted item
+    /// comes back.
+    private func commit(_ book: Book, for request: Request) -> Bool {
+        beforeCommit?(request)
+        guard let item = store.record(of: request.feedID)?.item(request.itemID), item.deletedDate == nil else {
+            discardPackage(of: book)
+            return false
+        }
         library()?.addFeedBook(book)
         let origin = latest(request).origin
         store.updateItem(request.itemID, of: request.feedID) { item in
@@ -568,6 +588,23 @@ final class FeedDownloadManager {
             item.downloadDeletedDate = nil
             item.downloadOrigin = origin
         }
+        return true
+    }
+
+    /// Deletes for good the package an import published for an item deleted
+    /// while it imported: only a package in its feed's own folder, as every
+    /// download publishes one, and never anything else.
+    private func discardPackage(of book: Book) {
+        guard book.feedLink != nil, FeedItemPackage.isPackageName(book.tmbDirectoryName) else { return }
+        do {
+            try FileManager.default.removeItem(at: book.tmbDirectory)
+        } catch CocoaError.fileNoSuchFile {
+            // Deleted with its item already.
+        } catch {
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_LEFT: \(book.title): its item was deleted, and its package could not be: \(error.localizedDescription)")
+            return
+        }
+        DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DISCARDED: \(book.title): its item was deleted while it imported")
     }
 
     /// `request` as it stands now: the download under way when it is the
