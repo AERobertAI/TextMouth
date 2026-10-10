@@ -7,6 +7,11 @@ import Foundation
 /// it stays a book of the library's own where it is, and the next launch
 /// tries again.
 enum FeedItemMoveError: LocalizedError, Equatable {
+    /// Its row names no package the library manages: no package name, or a
+    /// folder path that leaves the library
+    /// (`FileImportService.namesManagedPackage(_:)`), so the "package" it
+    /// names could be a whole folder of other books.
+    case packageNotManaged
     /// Its package is neither in its library folder nor in its feed's.
     case packageMissing
     /// A package of its name is in its library folder and in its feed's
@@ -15,6 +20,8 @@ enum FeedItemMoveError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
+        case .packageNotManaged:
+            return "its row names no package the library manages"
         case .packageMissing:
             return "its package is in neither its library folder nor its feed's"
         case .packageInBothPlaces:
@@ -83,7 +90,21 @@ extension LibraryViewModel {
     /// item's download (`FeedItemState.downloaded`). A book whose feed is no
     /// longer subscribed is named by no record, and stays a book of the
     /// library's own, as Unsubscribe has always promised.
+    ///
+    /// A row whose package name or folder path names no package the library
+    /// manages (`FileImportService.namesManagedPackage(_:)`) is left out and
+    /// stays a book where it is: with no package name its "package" would be
+    /// its whole folder, and with ".." in its folder path it could be every
+    /// folder of the library, which one rename would carry into the feed's
+    /// folder with every other book in it.
     func downloadsToMoveIntoTheirFeeds(records: [UUID: FeedRecord]) -> [(book: Book, link: FeedBookLink)] {
+        downloadRows(namedBy: records).filter { FileImportService.namesManagedPackage($0.book) }
+    }
+
+    /// Every row of the library's own that a feed's record in `records`
+    /// names as an item's download, with the link it would take, whether or
+    /// not its row names a package that can move.
+    private func downloadRows(namedBy records: [UUID: FeedRecord]) -> [(book: Book, link: FeedBookLink)] {
         var links: [UUID: FeedBookLink] = [:]
         for record in records.values {
             for item in record.items {
@@ -95,6 +116,21 @@ extension LibraryViewModel {
         return library.books.compactMap { book in
             guard !book.isFeedItem, let link = links[book.id] else { return nil }
             return (book, link)
+        }
+    }
+
+    /// Writes one FEED_DOWNLOAD_MOVE_REFUSED line for each download in
+    /// `records` that stays a book because its row names no package the
+    /// library manages (`downloadsToMoveIntoTheirFeeds(records:)`), naming
+    /// what its row holds, so a download that never moves can be found.
+    private func logDownloadsThatCannotMove(records: [UUID: FeedRecord]) {
+        for (book, _) in downloadRows(namedBy: records) where !FileImportService.namesManagedPackage(book) {
+            DiagnosticLog.event(
+                .storage,
+                "FEED_DOWNLOAD_MOVE_REFUSED: \"\(book.title)\": its row names no package the library manages "
+                    + "(package name \"\(book.tmbDirectoryName)\", folder \"\(book.folderPath)\"); "
+                    + "it stays a book where it is"
+            )
         }
     }
 
@@ -135,6 +171,7 @@ extension LibraryViewModel {
     @discardableResult
     func moveDownloadsIntoTheirFeeds(records: [UUID: FeedRecord]? = nil) async -> Int {
         let records = records ?? feeds.store.records
+        logDownloadsThatCannotMove(records: records)
         guard canMoveDownloads, !downloadsToMoveIntoTheirFeeds(records: records).isEmpty else { return 0 }
         guard let hold = try? StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders) else {
             DiagnosticLog.event(
@@ -199,11 +236,19 @@ extension LibraryViewModel {
     /// it is there: steps 1 to 3 of `moveDownloadsIntoTheirFeeds(records:)`.
     /// A package an earlier launch moved before it stopped is found in the
     /// feed's folder and not moved again.
-    /// - Throws: `FeedItemMoveError` when the package is in neither place or
-    ///   both, or the error that kept a folder from being made, the package
-    ///   from moving, or its record from being written; the package is then
-    ///   put back where it was when this call had moved it.
+    /// - Throws: `FeedItemMoveError` when the row names no package the
+    ///   library manages, before anything on disk is touched, or when the
+    ///   package is in neither place or both; or the error that kept a
+    ///   folder from being made, the package from moving, or its record from
+    ///   being written; the package is then put back where it was when this
+    ///   call had moved it.
     nonisolated static func moveIntoItsFeed(_ book: Book, link: FeedBookLink, root: URL) throws -> Book {
+        // The list of downloads to move leaves such a row out already; this
+        // check keeps the rename below from ever taking a whole folder,
+        // whoever calls it.
+        guard FileImportService.namesManagedPackage(book) else {
+            throw FeedItemMoveError.packageNotManaged
+        }
         let source = book.packageDirectory(inDataDirectory: root)
         var moved = book
         moved.folderPath = ""

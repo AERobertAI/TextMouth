@@ -1294,6 +1294,27 @@ enum FileImportService {
         try removeItemRespectingTrashSetting(at: tmbDir)
     }
 
+    /// Whether `book`'s row names a package the library manages, by its
+    /// spelling alone, before anything on disk is looked at: a package name
+    /// that is a single path component ending in ".tmb", in a library folder
+    /// path without traversal (`BookFolder.isValidLibraryPath(_:)`).
+    ///
+    /// A row failing it must never have its package deleted or moved: a
+    /// missing package name (a row without that key reads as "") makes the
+    /// "package" the row's whole folder, and a folder path holding ".." can
+    /// make it every folder of the library, or the data directory itself.
+    /// The deletion guard (`managedPackageURLForDeletion(_:libraryDirectory:)`)
+    /// and the first launch's move of downloads into their feeds' folders
+    /// (FR11, `LibraryViewModel.downloadsToMoveIntoTheirFeeds(records:)`)
+    /// both refuse such a row.
+    static func namesManagedPackage(_ book: Book) -> Bool {
+        let name = book.tmbDirectoryName
+        return !name.isEmpty
+            && (name as NSString).lastPathComponent == name
+            && name.lowercased().hasSuffix(".tmb")
+            && BookFolder.isValidLibraryPath(book.folderPath)
+    }
+
     /// Validate the deletion target independently of filesystem mutation. A
     /// missing legacy package name otherwise resolves to the entire folder.
     /// Resolve symlinks as well as dot components before checking containment.
@@ -1302,10 +1323,7 @@ enum FileImportService {
         libraryDirectory: URL = TextMouthPaths.libraryDir
     ) throws -> URL {
         let name = book.tmbDirectoryName
-        guard !name.isEmpty,
-              (name as NSString).lastPathComponent == name,
-              name.lowercased().hasSuffix(".tmb"),
-              BookFolder.isValidLibraryPath(book.folderPath) else {
+        guard namesManagedPackage(book) else {
             throw FileImportError.importFailed(
                 "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it."
             )
