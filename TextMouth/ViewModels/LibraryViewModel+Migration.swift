@@ -1507,6 +1507,222 @@ extension LibraryViewModel {
         return .success("Opening the library in \(folder.path)…")
     }
 
+    // MARK: - Finished Books at Their Ends (TODO P07)
+
+    /// The preference that records the one-time move of finished books to
+    /// their ends (`moveFinishedBooksToTheirEndsOnce`) as made on this Mac:
+    /// its version, `finishedBooksAtEndVersion`, once made.
+    nonisolated static let finishedBooksAtEndKey = "library.finishedBooksAtEndVersion"
+
+    /// The version of the one-time move this TextMouth makes.
+    nonisolated static let finishedBooksAtEndVersion = 1
+
+    /// The lowest percent a book's row shows as "100%": its percent rounds
+    /// to a whole one (`BookRow.progressText(for:)`), and 99.5 rounds up.
+    nonisolated static let rowsHundredPercent = 99.5
+
+    /// Puts each book Books Finished counts whose row reads 100 percent at
+    /// its end, once (TODO P07): the user decided on October 10, 2026
+    /// ("yes", question 16) that the books already counted be "put at their
+    /// end once", so they read as finished, as every book that plays to its
+    /// end now rests (`ReaderViewModel.restAtEnd()`). The design note found
+    /// 27 of the user's 28 counted books at 100 percent, some at their last
+    /// word, some within the last second of an audiobook, and some saved
+    /// past the end of a text extracted again since; the one at 99 percent
+    /// stays where it is, and so does every book Books Finished does not
+    /// count, however near its end.
+    ///
+    /// Runs once the launch's maintenance has ended
+    /// (`updateContentCachesAndStatistics`), and only while this Mac has not
+    /// made the move (`finishedBooksAtEndKey`) and the statistics file has
+    /// been read: statistics that stand in for a file still in the cloud or
+    /// in a data directory not there yet list no finished book, and would
+    /// move nothing. The move is made once every book it is for was here to
+    /// be moved: a book whose record or index is only in the cloud, or that
+    /// a reader window has open, keeps its place and waits for a later
+    /// launch, which makes the move then.
+    ///
+    /// - Parameters:
+    ///   - statistics: The statistics whose Books Finished names the books.
+    ///   - preferences: Where the move is recorded as made.
+    ///   - access: How the move reaches the books' files: `live` in the app;
+    ///     tests pass one that pretends files are in the cloud.
+    ///   - completion: Called on the main actor once the move has ended, or
+    ///     at once when it is not made.
+    func moveFinishedBooksToTheirEndsOnce(
+        statistics: ReadingStatsService = .shared,
+        preferences: UserDefaults = TextMouthRuntime.current.preferences,
+        access: MaintenanceFileAccess = .live,
+        then completion: (@MainActor @Sendable () -> Void)? = nil
+    ) {
+        guard preferences.integer(forKey: Self.finishedBooksAtEndKey) < Self.finishedBooksAtEndVersion,
+              !statistics.statsAwaitDataDirectory, !statistics.statsAwaitFileInCloud else {
+            completion?()
+            return
+        }
+        moveFinishedBooksToTheirEnds(counted: statistics.stats.finishedBookIDs, access: access) { outcome in
+            if outcome.waiting == 0 {
+                preferences.set(Self.finishedBooksAtEndVersion, forKey: Self.finishedBooksAtEndKey)
+            }
+            completion?()
+        }
+    }
+
+    /// What the move of finished books to their ends did
+    /// (`moveFinishedBooksToTheirEnds(counted:access:then:)`).
+    struct FinishedBooksAtEndOutcome: Equatable, Sendable {
+        /// The books put at their ends.
+        var moved = 0
+        /// The books left where they are for a later move: a record or
+        /// index only in the cloud, or a reader window open on the book.
+        var waiting = 0
+        /// The books left where they are for good: no content index to
+        /// find the end in, or one that disagrees with the row's measure.
+        var unplaced = 0
+
+        /// The debug log's line for the move, counts alone.
+        var logLine: String {
+            "FINISHED_BOOKS_AT_END: moved \(moved) of the books Books Finished counts to their ends; "
+                + "\(waiting) wait for a later launch; \(unplaced) without a content index to place them by"
+        }
+    }
+
+    /// One move of the one-time pass, read off the main thread: the book,
+    /// the place its row held when the pass read it, and its end.
+    private struct FinishedBookEndMove: Sendable {
+        let bookID: UUID
+        let from: ReadingPosition?
+        let to: ReadingPosition
+    }
+
+    /// Puts each of the library's books that `counted` names, whose row
+    /// reads 100 percent, at its end (`finishedBooksShortOfTheirEnds`), as
+    /// `moveFinishedBooksToTheirEndsOnce` describes, and calls `completion`
+    /// with what it did, on the main actor.
+    ///
+    /// Each book's content index is read off the main thread, with dataless
+    /// files left in the cloud, for its last chapter and that chapter's
+    /// length (`finishedBookEnd(of:index:)`). Each move goes to the row and
+    /// its record, as a reader saves a place (`persistReadingPosition`),
+    /// dated now; a book whose row moved meanwhile, or that a reader window
+    /// opened meanwhile, keeps its place and waits. One `FINISHED_BOOKS_AT_END`
+    /// line in the debug log counts what was done.
+    func moveFinishedBooksToTheirEnds(
+        counted: Set<UUID>,
+        access: MaintenanceFileAccess = .live,
+        then completion: @escaping @MainActor @Sendable (FinishedBooksAtEndOutcome) -> Void
+    ) {
+        let candidates = Self.finishedBooksShortOfTheirEnds(library.books, counted: counted)
+        // A book a reader window has open keeps its place: the reader holds
+        // the cursor, and its next save would put it back.
+        let open = openBookIDs
+        let readable = candidates.filter { !open.contains($0.id) }
+        let openCount = candidates.count - readable.count
+        DispatchQueue.global(qos: .utility).async {
+            var moves: [FinishedBookEndMove] = []
+            var inCloud = 0
+            var unplaced = 0
+            for book in readable {
+                switch Self.readFinishedBookEnd(of: book, access: access) {
+                case .end(let end):
+                    moves.append(FinishedBookEndMove(bookID: book.id, from: book.readingPosition, to: end))
+                case .atItsEnd:
+                    break
+                case .inCloud:
+                    inCloud += 1
+                case .unplaced:
+                    unplaced += 1
+                }
+            }
+            let read = (moves: moves, waiting: openCount + inCloud, unplaced: unplaced)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                var outcome = FinishedBooksAtEndOutcome(waiting: read.waiting, unplaced: read.unplaced)
+                for move in read.moves {
+                    // A row that moved while the pass read, or a book a
+                    // reader opened meanwhile, keeps its place for later.
+                    guard self.bookByID(move.bookID)?.readingPosition == move.from,
+                          !self.openBookIDs.contains(move.bookID) else {
+                        outcome.waiting += 1
+                        continue
+                    }
+                    self.persistReadingPosition(bookID: move.bookID, position: move.to)
+                    outcome.moved += 1
+                }
+                DiagnosticLog.event(.storage, outcome.logLine)
+                completion(outcome)
+            }
+        }
+    }
+
+    /// The books the one-time move is for, in `books`: each that `counted`
+    /// names, Books Finished's, whose row reads 100 percent
+    /// (`rowsHundredPercent`) and whose package is known. A book at its end
+    /// already is among them, since only its index can say whether its
+    /// place is exactly its end; past its end, as a place saved before its
+    /// text was extracted again can be, it is not.
+    nonisolated static func finishedBooksShortOfTheirEnds(_ books: [Book], counted: Set<UUID>) -> [Book] {
+        books.filter { book in
+            counted.contains(book.id)
+                && !book.tmbDirectoryName.isEmpty
+                && (book.percentComplete ?? 0) >= rowsHundredPercent
+        }
+    }
+
+    /// What reading a finished book's content index found.
+    private enum FinishedBookEndReading {
+        /// The place the book moves to: its end.
+        case end(ReadingPosition)
+        /// The book's place is its end already.
+        case atItsEnd
+        /// Its record or index is only in the cloud: it waits.
+        case inCloud
+        /// It has no index to place it by, or one that disagrees with its
+        /// row's measure.
+        case unplaced
+    }
+
+    /// Reads `book`'s content index from its package, with dataless files
+    /// left in the cloud, and finds where it moves (`finishedBookEnd`).
+    nonisolated private static func readFinishedBookEnd(of book: Book, access: MaintenanceFileAccess) -> FinishedBookEndReading {
+        let package = book.tmbDirectory
+        let index: BookContentIndex?
+        do {
+            index = try access.read(TextMouthPaths.contentIndexPath(in: package)) {
+                try BookInfo.load(from: package).contentIndex
+            }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            return .inCloud
+        } catch {
+            return .unplaced
+        }
+        guard let index else { return .unplaced }
+        guard index.totalCharacterCount == book.totalCharacterCount else { return .unplaced }
+        guard let end = finishedBookEnd(of: book, index: index) else { return .atItsEnd }
+        return .end(end)
+    }
+
+    /// Where the one-time move puts `book`, given `index`, its content
+    /// index: its end, its last chapter at the length the index records,
+    /// whose global offset is the book's total, as a reader puts a book
+    /// that plays to its end (`ReaderViewModel.restAtEnd()`); nil when its
+    /// place is that already, or the index has no chapter.
+    nonisolated static func finishedBookEnd(of book: Book, index: BookContentIndex) -> ReadingPosition? {
+        guard let last = index.chapters.last else { return nil }
+        let end = ReadingPosition(
+            chapterIndex: index.chapters.count - 1,
+            characterOffset: last.characterCount,
+            globalCharacterOffset: index.totalCharacterCount
+        )
+        if let place = book.readingPosition,
+           place.chapterIndex == end.chapterIndex,
+           place.characterOffset == end.characterOffset,
+           place.globalCharacterOffset == end.globalCharacterOffset {
+            return nil
+        }
+        return end
+    }
+
     // MARK: - Time Estimation
 
     func totalTimeRemaining(books: [Book], wpm: Double) -> (time: TimeInterval, knownCount: Int, unknownCount: Int) {
