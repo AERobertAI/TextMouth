@@ -311,12 +311,18 @@ enum LibraryPersistenceService {
     /// before library.json lets it go. A failure is reported, with a retry,
     /// as every index write's is; while index writes are held nothing is
     /// written. Call it on the main thread, never from either queue.
-    static func saveAndWait(_ library: Library) {
+    ///
+    /// Returns whether every index reached the disk: false while index
+    /// writes are held, or when a feed's index or library.json could not be
+    /// written. Removing a feed item's file waits for this (FR11, branch
+    /// A2): a file goes only once its row is in its feed's index.
+    @discardableResult
+    static func saveAndWait(_ library: Library) -> Bool {
         saveQueue.sync {
             // `library` is newer than any snapshot waiting, which it holds.
             pendingLibrary = nil
             saveGeneration &+= 1
-            write(library)
+            return write(library)
         }
     }
 
@@ -339,14 +345,17 @@ enum LibraryPersistenceService {
     /// queued before the index was found unreadable.
     ///
     /// A failure is reported with a retry of this snapshot, and the library
-    /// then counts as unsaved until an index write succeeds.
-    private static func write(_ library: Library) {
+    /// then counts as unsaved until an index write succeeds. Returns whether
+    /// the snapshot reached the disk.
+    @discardableResult
+    private static func write(_ library: Library) -> Bool {
         if let hold = indexWriteHold() {
             noteSkippedIndexWrite(hold)
-            return
+            return false
         }
         do {
             try writeIndexFile(library)
+            return true
         } catch {
             print("Failed to save library: \(error)")
             // A feed's index that failed names its own file (FR11).
@@ -355,6 +364,7 @@ enum LibraryPersistenceService {
                 retryIndexWrite(library, failureID: failureID)
             }
             reportIfDataDirectoryVanished()
+            return false
         }
     }
 

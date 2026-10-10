@@ -43,9 +43,11 @@ struct FeedEnvironment {
     /// The statistics service whose finished books (`.bookDidFinish`) mark
     /// feed items played, or nil for none.
     var finishedBooksSource: AnyObject?
-    /// Deletes a book's package as the listener's own deletions do, to the
-    /// Trash or for good as the removal setting says (Delete Download).
-    var deleteBookPackage: @MainActor (Book) throws -> Void
+    /// Removes an item as the listener's own deletions do, to the Trash or
+    /// for good as the removal setting says: a download's file, or its whole
+    /// package (Delete Download, FR11). A test removes it for good, never
+    /// to the Trash.
+    var removeItem: @MainActor (URL) throws -> Void
 
     /// The app's: the data directory's Feeds folder, this Mac's Caches, the
     /// network, and the app's preferences. A process hosting tests never
@@ -68,7 +70,7 @@ struct FeedEnvironment {
             boundary: .shared,
             bookStorage: { CloudServices.bookStorage },
             finishedBooksSource: ReadingStatsService.shared,
-            deleteBookPackage: { try FileImportService.deleteBookPackage($0) }
+            removeItem: { try FileImportService.removeItemRespectingTrashSetting(at: $0) }
         )
     }
 }
@@ -90,9 +92,17 @@ protocol FeedLibraryHost: AnyObject {
     func feedItemRows(of feedID: UUID) -> FeedItemRows
     /// Lists a book a feed download published, and saves the library.
     func addFeedBook(_ book: Book)
-    /// Takes out of the library a book whose package was deleted, and saves
-    /// the library.
-    func removeFeedBook(_ book: Book)
+    /// Removes the files of the feed items `books` through `remove`, once
+    /// each record that keeps the listener's state and the feeds' indexes
+    /// are on disk, keeping each package that holds something of the
+    /// listener's when `keepingPackages` (FR11, branch A2).
+    /// - Throws: `FeedItemPackageError.indexNotWritten`, with no file
+    ///   touched.
+    func removeFeedFiles(
+        of books: [Book],
+        keepingPackages: Bool,
+        remove: (FeedFileRemoval) throws -> Void
+    ) throws -> FeedFileRemovalOutcome
     /// The books open in readers now, which nothing may delete.
     var feedBooksOpenInReaders: Set<UUID> { get }
     /// Publishes the books open in readers whenever they change.

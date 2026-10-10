@@ -541,8 +541,8 @@ final class FeedTestWorld {
             boundary: .shared,
             bookStorage: { cloud },
             finishedBooksSource: stats,
-            // Never the Trash in a test: the package is deleted for good.
-            deleteBookPackage: { try FileManager.default.removeItem(at: $0.tmbDirectory) }
+            // Never the Trash in a test: a file or package goes for good.
+            removeItem: { try FileManager.default.removeItem(at: $0) }
         )
         center = FeedCenter(environment: environment)
         // The library lists this engine's feeds' items (FR11).

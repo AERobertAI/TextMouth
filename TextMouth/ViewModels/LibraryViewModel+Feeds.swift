@@ -92,6 +92,95 @@ extension LibraryViewModel: FeedLibraryHost {
         save()
     }
 
+    /// Removes the files of the feed items `books` the library lists, in the
+    /// order that never loses the listener's place (FR11, branch A2;
+    /// FEED-ITEMS-ADDENDUM-2026-10-07.md, section 6):
+    ///
+    /// 1. With `keepingPackages`, each book whose package holds something
+    ///    of the listener's (`FeedItemPackage.holdsListenerState`) has its
+    ///    record written at once, from its row as the library holds it now,
+    ///    and waited for (`LibraryPersistenceService.writePendingBookInfoNow`).
+    /// 2. Each row leaves the books, to its feed's shelf when its package
+    ///    stays, and the library's indexes, its feed's among them, are
+    ///    written at once and waited for (`LibraryPersistenceService.saveAndWait`).
+    /// 3. Only then does `remove` remove each file and what it made, or each
+    ///    whole package.
+    ///
+    /// A row whose file `remove` could not remove goes back among the books
+    /// as it was, still on the reading list. The others leave the reading
+    /// list; a package gone whole has its pending record writes forgotten,
+    /// as every removal that deletes a package does; and the reading text
+    /// this Mac kept for each goes. `removeDeletedBook(_:)` itself is not
+    /// used: a kept package's record must still take its pending writes.
+    /// A book the library no longer lists, or one of its own, is passed over.
+    /// - Returns: The removals whose files went, and why each other's stayed.
+    /// - Throws: `FeedItemPackageError.indexNotWritten` when the indexes
+    ///   could not be written: the library is as it was, and no file was
+    ///   touched.
+    func removeFeedFiles(
+        of books: [Book],
+        keepingPackages: Bool,
+        remove: (FeedFileRemoval) throws -> Void
+    ) throws -> FeedFileRemovalOutcome {
+        var updated = library
+        var removals: [FeedFileRemoval] = []
+        for requested in books {
+            guard let row = feedBook(withID: requested.id), let feedID = row.feedLink?.feedID,
+                  !removals.contains(where: { $0.row.id == row.id }) else { continue }
+            let keeps = keepingPackages && FeedItemPackage.holdsListenerState(row, package: row.tmbDirectory)
+            if keeps {
+                // 1. The record takes the row's state before anything else changes.
+                LibraryPersistenceService.saveBookInfo(for: row)
+                LibraryPersistenceService.writePendingBookInfoNow(bookID: row.id)
+                updated.feedShelf.put(row)
+            } else {
+                updated.feedShelf.keepIndex(of: feedID)
+            }
+            updated.books.removeAll { $0.id == row.id }
+            removals.append(FeedFileRemoval(row: row, keepsPackage: keeps))
+        }
+        var outcome = FeedFileRemovalOutcome()
+        guard !removals.isEmpty else { return outcome }
+
+        // 2. The rows leave the books, and the indexes are on disk before any
+        // file goes; a failed write keeps every file and every row as it was.
+        let before = library
+        library = updated
+        guard LibraryPersistenceService.saveAndWait(library) else {
+            library = before
+            save()
+            throw FeedItemPackageError.indexNotWritten
+        }
+
+        // 3. The files.
+        var afterwards = library
+        var changed = false
+        for removal in removals {
+            let id = removal.row.id
+            do {
+                try remove(removal)
+                outcome.removed.append(removal)
+                changed = !afterwards.readingList.remove([id]).isEmpty || changed
+                if !removal.keepsPackage {
+                    LibraryPersistenceService.forgetDeletedBook(removal.row)
+                }
+                ReadingTextCache.shared.remove(bookID: id)
+            } catch {
+                outcome.failures.append((row: removal.row, error: error))
+                _ = afterwards.feedShelf.takeRows { $0.id == id }
+                if !afterwards.books.contains(where: { $0.id == id }) {
+                    afterwards.books.append(removal.row)
+                }
+                changed = true
+            }
+        }
+        if changed {
+            library = afterwards
+            save()
+        }
+        return outcome
+    }
+
     /// The books open in readers now.
     var feedBooksOpenInReaders: Set<UUID> {
         openBookIDs
