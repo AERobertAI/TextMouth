@@ -549,6 +549,31 @@ final class FeedInLibraryStateTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .inLibrary(bookID: book.id))
     }
 
+    /// A book moved into its own feed's folder is listed there once, as its
+    /// book's row offering its item's commands, never also under the
+    /// folder's other books (REV13 feeds 1): the listing pairs a book with
+    /// its item wherever the item's book is, "In Library" too. A search that
+    /// narrows the book out narrows its item out with it.
+    func testABookMovedIntoItsFeedsOwnFolderIsListedOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedInLibraryOwnFolder")
+        let (feed, book) = try await feedWithAnEpisodeInTheLibrary(world)
+        XCTAssertEqual(world.library.feedFolderPath(forFolderID: feed.folderID), book.folderPath, "the book is not in its feed's folder")
+
+        let listing = FeedFolderListing.make(
+            feedID: feed.id, center: world.center, shownBooks: [book], folderBooks: [book], search: "", wordsPerMinute: 200
+        )
+
+        XCTAssertEqual(listing.otherBooks, [], "the moved book was listed again among the folder's other books")
+        XCTAssertEqual(listing.entries.map(\.id), ["book:\(book.id.uuidString)", "item:guid:ep-2", "item:guid:ep-3"])
+        guard case .book(_, let actions)? = listing.entries.first else { return XCTFail("\(listing.entries)") }
+        XCTAssertEqual(actions.map(\.title), ["Mark Played", "Show Description…", "Delete Episode…"])
+
+        let searched = FeedFolderListing.make(
+            feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [book], search: "Episode", wordsPerMinute: 200
+        )
+        XCTAssertEqual(searched.entries.map(\.id), ["item:guid:ep-2", "item:guid:ep-3"], "a book narrowed out came back as its item's row")
+    }
+
     // MARK: - The Rules
 
     /// While its book is in the library, the item is never downloaded again:
