@@ -52,6 +52,21 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(model.feedItemRows(of: feedID).kept["guid:ep"]?.id, row.id)
     }
 
+    /// A book whose ID the library's books hold twice, as no write makes
+    /// them, is found at its first place by the feed rows' lookup, as
+    /// `bookByID` and the list cache find it (`LibraryListCache.index(of:)`).
+    func testABookListedTwiceIsFoundAtItsFirstPlace() {
+        let model = LibraryViewModel(initializeServices: false)
+        let first = Book(title: "First", format: .txt, filePath: "/First.txt", md5Hash: "")
+        var second = first
+        second.title = "Second"
+        model.library = Library(books: [first, second])
+
+        XCTAssertEqual(model.feedBook(withID: first.id)?.title, "First")
+        XCTAssertEqual(model.bookByID(first.id)?.title, "First")
+        XCTAssertEqual(LibraryListCache.index(of: [first, second]), [first.id: 0])
+    }
+
     /// A feed's counts and its items' states find each row by the item's
     /// identity: an item whose row is here is downloaded and, never opened,
     /// new; an item whose row was kept after its file went is neither

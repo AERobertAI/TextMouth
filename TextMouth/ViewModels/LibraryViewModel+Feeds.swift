@@ -308,7 +308,7 @@ final class FeedItemRowLookup {
     /// Each feed's rows by item.
     private var rowsByFeed: [UUID: FeedItemRows] = [:]
     /// Each book's index in the library's books, by ID; the first of an ID
-    /// wins, as `bookByID` finds it.
+    /// wins, as `bookByID` finds it (`LibraryListCache.index(of:)`).
     private var bookIndexByID: [UUID: Int] = [:]
 
     /// The feed `feedID`'s rows in `library`, whose content revision is
@@ -333,10 +333,7 @@ final class FeedItemRowLookup {
         guard self.revision != revision else { return }
         self.revision = revision
         rowsByFeed = FeedItemRows.byFeed(in: library)
-        bookIndexByID = Dictionary(
-            library.books.enumerated().map { ($0.element.id, $0.offset) },
-            uniquingKeysWith: { first, _ in first }
-        )
+        bookIndexByID = LibraryListCache.index(of: library.books)
     }
 }
 

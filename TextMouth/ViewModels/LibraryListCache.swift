@@ -199,8 +199,9 @@ final class LibraryListCache {
     }
 
     /// Each book's index in `books`, by ID; the first one wins should an ID
-    /// appear twice.
-    private static func index(of books: [Book]) -> [UUID: Int] {
+    /// appear twice, as `LibraryViewModel.bookByID` finds the first. The
+    /// feed rows' lookup finds books by ID the same way (`FeedItemRowLookup`).
+    static func index(of books: [Book]) -> [UUID: Int] {
         Dictionary(books.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
     }
 
