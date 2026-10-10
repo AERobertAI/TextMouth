@@ -343,7 +343,8 @@ extension LibraryFeedsPresenter {
 
     /// Reads the OPML file at `url` off the main thread, then opens the
     /// Import OPML sheet with its subscriptions, or shows why it can't be
-    /// read.
+    /// read in an alert, which VoiceOver reads as it appears, as the feed
+    /// commands' refusals are shown (REV14 feeds 6).
     /// - Returns: The reading, which tests await.
     @discardableResult
     func readOPMLFile(_ url: URL, in context: FeedCommandContext, parentPath: String) -> Task<Void, Never> {
@@ -366,7 +367,6 @@ extension LibraryFeedsPresenter {
                 )
             case .failure(let error):
                 notice = FeedNotice(title: FeedWording.importFailedTitle, message: error.message)
-                announce(error.message, context.window)
             }
         }
     }
@@ -374,14 +374,14 @@ extension LibraryFeedsPresenter {
     // MARK: Export OPML…
 
     /// Library > Export OPML…: asks where to save the subscriptions in a
-    /// Save panel on the window, and writes them there, or says there are
-    /// none to export: no feed at all, or only feeds the listener
-    /// unsubscribed from, which an export leaves out (REV11, board #1814).
+    /// Save panel on the window, and writes them there, or shows in an alert
+    /// that there are none to export: no feed at all, or only feeds the
+    /// listener unsubscribed from, which an export leaves out (REV11, board
+    /// #1814). VoiceOver reads the alert as it appears (REV14 feeds 6).
     func chooseOPMLDestination(in context: FeedCommandContext) {
         guard context.center.feeds.contains(where: \.isSubscribed) else {
             let message = context.center.feeds.isEmpty ? FeedWording.nothingToExport : FeedWording.nothingSubscribedToExport
             notice = FeedNotice(title: FeedWording.exportFailedTitle, message: message)
-            announce(message, context.window)
             return
         }
         let panel = NSSavePanel()
@@ -400,10 +400,11 @@ extension LibraryFeedsPresenter {
     }
 
     /// Writes every subscription to the OPML file `url`, and says how many
-    /// went where, or why it couldn't be written. A feed the listener
-    /// unsubscribed from is left out, as no subscription, so another
-    /// reader importing the file never subscribes to it again, and the
-    /// words say how many were left out (REV11, board #1814).
+    /// went where, or shows in an alert why it couldn't be written. A
+    /// feed the listener unsubscribed from is left out, as no
+    /// subscription, so another reader importing the file never
+    /// subscribes to it again, and the words say how many were left out
+    /// (REV11, board #1814).
     func exportOPML(to url: URL, in context: FeedCommandContext) {
         let feeds = context.center.feeds.filter(\.isSubscribed)
         let leftOut = context.center.feeds.count - feeds.count
@@ -412,9 +413,7 @@ extension LibraryFeedsPresenter {
             try data.write(to: url, options: .atomic)
             announce(FeedWording.exported(count: feeds.count, fileName: url.lastPathComponent, unsubscribedCount: leftOut), context.window)
         } catch {
-            let message = FeedWording.exportFailed(error.localizedDescription)
-            notice = FeedNotice(title: FeedWording.exportFailedTitle, message: message)
-            announce(message, context.window)
+            notice = FeedNotice(title: FeedWording.exportFailedTitle, message: FeedWording.exportFailed(error.localizedDescription))
         }
     }
 }

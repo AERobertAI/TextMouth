@@ -216,7 +216,9 @@ final class FeedUIDeleteFeedTests: XCTestCase {
     }
 
     /// A Delete Feed… refused, as while a download is open in a reader, says
-    /// why in an alert, which VoiceOver hears, and the feed stays.
+    /// why in an alert, which VoiceOver reads as it appears, with nothing
+    /// announced besides, which VoiceOver could read twice (REV14 feeds
+    /// 6), and the feed stays.
     func testARefusedDeleteFeedSaysWhyInAnAlert() async throws {
         let harness = try await Harness(self, label: "FeedUIDeleteFeedRefused")
         harness.world.library.openBookIDs.insert(harness.book.id)
@@ -227,7 +229,7 @@ final class FeedUIDeleteFeedTests: XCTestCase {
         let refusal = "“Episode 1” is open in a reader. Close it, then choose Delete Feed… again."
         XCTAssertEqual(harness.presenter.notice?.title, FeedWording.deleteRefusedTitle)
         XCTAssertEqual(harness.presenter.notice?.message, refusal)
-        XCTAssertEqual(harness.heard.last, refusal)
+        XCTAssertFalse(harness.heard.contains(refusal), "the alert's words were announced too")
         XCTAssertNotNil(harness.world.center.store.record(of: harness.feed.id))
     }
 

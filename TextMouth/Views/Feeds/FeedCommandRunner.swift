@@ -226,7 +226,7 @@ extension LibraryFeedsPresenter {
     /// closes first. VoiceOver hears what went once the question's alert
     /// has closed (REV13 item 1); a feed that stays, as when one of its
     /// downloads is open in a reader or being transcribed, says why in an
-    /// alert.
+    /// alert, which VoiceOver reads as it appears (REV14 feeds 6).
     /// - Returns: The deletion, which tests await; nil once the feed's
     ///   record is gone.
     @discardableResult
@@ -243,7 +243,7 @@ extension LibraryFeedsPresenter {
                 guard let outcome = try await center.deleteFeed(feedID) else { return }
                 say(FeedWording.deletedFeed(outcome, noun: noun), afterAlert: true, in: context)
             } catch {
-                refuse(message: FeedWording.deleteFeedRefused(error, title: feed.title, mode: mode), in: context)
+                refuse(message: FeedWording.deleteFeedRefused(error, title: feed.title, mode: mode))
             }
         }
     }
@@ -254,7 +254,7 @@ extension LibraryFeedsPresenter {
     /// row, saying what it did from the window it was chosen in. A refusal,
     /// such as Delete Download while the book is open, transcribed, or
     /// exported, shows in an alert in the engine's words, which VoiceOver
-    /// also hears.
+    /// reads as it appears (`refuse(message:)`, REV14 feeds 6).
     func perform(_ action: FeedItemAction, in context: FeedCommandContext) {
         let center = context.center
         guard let record = center.store.record(of: action.feedID), let item = record.item(action.itemID) else { return }
@@ -288,7 +288,7 @@ extension LibraryFeedsPresenter {
                     .map { FeedWording.KeptParts.of($0, package: $0.tmbDirectory) } ?? []
                 announce(FeedWording.downloadDeleted(title: item.title, kept: kept), context.window)
             } catch {
-                refuse(error, in: context)
+                refuse(error)
             }
         case .markPlayed, .markUnplayed:
             let played = action.command == .markPlayed
@@ -380,7 +380,7 @@ extension LibraryFeedsPresenter {
                 let inLibrary = context.center.store.record(of: feedID)?.item(itemID)?.state.libraryBookID != nil
                 say(FeedWording.itemDeleted(title: title, isInLibrary: inLibrary), afterAlert: true, in: context)
             } catch {
-                refuse(error, in: context)
+                refuse(error)
             }
         case let .unsubscribe(feedID, keptItemIDs):
             unsubscribe(feedID, deletingKeptOf: keptItemIDs, in: context)
@@ -407,10 +407,10 @@ extension LibraryFeedsPresenter {
 
     /// Shows why a deletion was refused, in the engine's words for a
     /// download in use (`FeedDownloadInUseError`, naming it), in the cloud
-    /// storage's for a book it refused, and in the file system's otherwise,
-    /// and says it.
-    private func refuse(_ error: Error, in context: FeedCommandContext) {
-        refuse(message: Self.refusal(for: error), in: context)
+    /// storage's for a book it refused, and in the file system's otherwise
+    /// (`refuse(message:)`).
+    private func refuse(_ error: Error) {
+        refuse(message: Self.refusal(for: error))
     }
 
     /// The words of a refused deletion's alert for `error`: a download in
@@ -424,9 +424,13 @@ extension LibraryFeedsPresenter {
         return (error as? BookCloudError)?.explanation(in: nil) ?? error.localizedDescription
     }
 
-    /// Shows `message`, why a deletion was refused, in an alert, and says it.
-    private func refuse(message: String, in context: FeedCommandContext) {
+    /// Shows `message`, why a deletion was refused, in an alert, which
+    /// VoiceOver reads as it appears, as it reads the app's other alerts:
+    /// the library's error alert, the transcription notices, the reader's
+    /// error alert, and the feed arrivals alert. Nothing announces the same
+    /// words besides, which VoiceOver could read twice, or cut off as the
+    /// alert takes its focus (REV14 feeds 6).
+    private func refuse(message: String) {
         notice = FeedNotice(title: FeedWording.deleteRefusedTitle, message: message)
-        announce(message, context.window)
     }
 }

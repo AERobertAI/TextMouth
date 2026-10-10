@@ -249,7 +249,8 @@ final class FeedUIOPMLTests: XCTestCase {
         await presenter.readOPMLFile(try requireFile("feeds/anchor-episodic.xml"), in: context, parentPath: "").value
         XCTAssertNil(presenter.opmlImport)
         XCTAssertEqual(presenter.notice?.message, OPMLReadError.notOPML.message)
-        XCTAssertEqual(heard, [OPMLReadError.notOPML.message])
+        // The alert speaks for itself (REV14 feeds 6).
+        XCTAssertEqual(heard, [], "the alert's words were announced too")
     }
 
     // MARK: - Exporting
@@ -266,6 +267,7 @@ final class FeedUIOPMLTests: XCTestCase {
 
         presenter.chooseOPMLDestination(in: context)
         XCTAssertEqual(presenter.notice?.message, FeedWording.nothingToExport)
+        XCTAssertEqual(heard, [], "the alert's words were announced too")
 
         world.server.serve("/atlas.xml", .feed(FeedXML.rss(title: "The Tactile Atlas", items: [Self.item])))
         world.server.serve("/harbour.xml", .feed(FeedXML.rss(title: "Harbour Notes", items: [Self.item])))
@@ -314,8 +316,9 @@ final class FeedUIOPMLTests: XCTestCase {
 
         world.center.unsubscribe(atlas.id)
         presenter.chooseOPMLDestination(in: context)
-        XCTAssertEqual(presenter.notice?.message, FeedWording.nothingSubscribedToExport)
-        XCTAssertEqual(heard.last, "There are no subscriptions to export: every feed in your library is unsubscribed.")
+        XCTAssertEqual(presenter.notice?.message, "There are no subscriptions to export: every feed in your library is unsubscribed.")
+        XCTAssertEqual(FeedWording.nothingSubscribedToExport, presenter.notice?.message)
+        XCTAssertFalse(heard.contains(FeedWording.nothingSubscribedToExport), "the alert's words were announced too")
     }
 
     // MARK: - The Sheet as Drawn
