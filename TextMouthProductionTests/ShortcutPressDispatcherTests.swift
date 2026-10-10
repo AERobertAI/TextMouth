@@ -639,16 +639,65 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertFalse(harness.press(KeyBinding(key: "t", shift: true), at: 12, scope: .audioEditor))
 
         XCTAssertEqual(harness.performed, [.editorSkipBackLong])
-        XCTAssertFalse(ShortcutScope.audioEditor.matchesShiftBeyondItsBindings)
-        XCTAssertTrue(ShortcutScope.app.matchesShiftBeyondItsBindings)
+        XCTAssertFalse(ShortcutAction.allCases.contains { $0.scope == .audioEditor && $0.takesShiftAlong })
+    }
+
+    /// Shift reaches only the actions that take it along: Skip Forward and
+    /// Skip Backward, by letter and by arrow, and Increase Speed, whose
+    /// Command-Plus a US keyboard types as Shift-Command-Equals. Through the
+    /// manager, real key presses with Shift and no binding of their own
+    /// (Shift-Command-Delete, Shift-Space, Shift-Return, Shift-K, Shift-W,
+    /// Shift-I, Shift-Command-L, -I, -E, and -A) post nothing and go on to
+    /// the window, while Shift-J, Shift-L, Shift-Command with the arrows, and
+    /// Shift-Command-Equals still act, saying Shift was held.
+    func testShiftReachesOnlyTheActionsThatTakeIt() throws {
+        XCTAssertEqual(ShortcutAction.actionsTakingShiftAlong, [.skipForward, .skipBackward, .increaseSpeed])
+        let center = NotificationCenter()
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("press-dispatcher-shift-narrow"),
+            installsEventMonitor: false,
+            notificationCenter: center
+        )
+        let posted = PostedShortcutActions(on: center)
+        let ignored: [KeyBinding] = [
+            KeyBinding(key: "delete", command: true, shift: true),
+            KeyBinding(key: "space", shift: true),
+            KeyBinding(key: "return", shift: true),
+            KeyBinding(key: "k", shift: true),
+            KeyBinding(key: "w", shift: true),
+            KeyBinding(key: "i", shift: true),
+            KeyBinding(key: "l", command: true, shift: true),
+            KeyBinding(key: "i", command: true, shift: true),
+            KeyBinding(key: "e", command: true, shift: true),
+            KeyBinding(key: "a", command: true, shift: true),
+        ]
+        for (offset, key) in ignored.enumerated() {
+            let event = try ShortcutKeyPresses.keyPress(of: key, at: Double(10 + offset))
+            XCTAssertFalse(manager.handleKeyEvent(event, keyWindow: nil, firstResponder: nil), key.configText)
+        }
+        XCTAssertEqual(posted.names, [])
+
+        let acting: [(characters: String, keyCode: UInt16, modifiers: NSEvent.ModifierFlags, action: ShortcutAction)] = [
+            ("J", 38, [.shift], .skipBackward),
+            ("L", 37, [.shift], .skipForward),
+            ("\u{F702}", 123, [.shift, .command, .numericPad, .function], .skipBackward),
+            ("\u{F703}", 124, [.shift, .command, .numericPad, .function], .skipForward),
+            ("+", 24, [.shift, .command], .increaseSpeed),
+        ]
+        for (offset, press) in acting.enumerated() {
+            let event = try keyDown(press.characters, keyCode: press.keyCode, at: Double(30 + offset), modifiers: press.modifiers)
+            XCTAssertTrue(manager.handleKeyEvent(event, keyWindow: nil, firstResponder: nil), press.action.rawValue)
+        }
+        XCTAssertEqual(posted.names, acting.map(\.action.rawValue))
     }
 
     /// A waiting single press keeps whether Shift was held: Shift-J, with
-    /// J's double press another action's, waits, then skips back by the
-    /// Shift unit in its window when the time is up; Shift held for both
-    /// presses makes the double press, with Shift.
+    /// J's double press another action's that takes Shift along too, Skip
+    /// Forward's, waits, then skips back by the Shift unit in its window
+    /// when the time is up; Shift held for both presses makes the double
+    /// press, with Shift.
     func testAWaitingPressKeepsItsShift() {
-        let harness = Harness([.skipBackward: [plainJ], .goToLibrary: [jTwice]])
+        let harness = Harness([.skipBackward: [plainJ], .skipForward: [jTwice]])
         let window = makeWindow()
         let shiftJ = KeyBinding(key: "j", shift: true)
 
@@ -661,12 +710,27 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
         harness.press(shiftJ, at: 20, in: window)
         harness.press(shiftJ, at: 20.2, in: window)
-        XCTAssertEqual(harness.performed, [.skipBackward, .goToLibrary])
+        XCTAssertEqual(harness.performed, [.skipBackward, .skipForward])
         XCTAssertEqual(harness.triggers.last?.shiftHeld, true)
 
         harness.press(plainJ, at: 30, in: window)
         harness.press(shiftJ, at: 30.2, in: window)
-        XCTAssertEqual(harness.performed, [.skipBackward, .goToLibrary, .skipBackward], "J then Shift-J is no double press")
+        XCTAssertEqual(harness.performed, [.skipBackward, .skipForward, .skipBackward], "J then Shift-J is no double press")
+    }
+
+    /// Shift never reaches a double press whose action takes no Shift along:
+    /// with J twice Go to Library's, Shift-J acts at once as Skip Backward
+    /// with Shift, waiting for nothing, and Shift-J twice skips back twice.
+    func testShiftLeavesADoublePressThatTakesNoShift() {
+        let harness = Harness([.skipBackward: [plainJ], .goToLibrary: [jTwice]])
+        let shiftJ = KeyBinding(key: "j", shift: true)
+
+        harness.press(shiftJ, at: 10)
+        harness.press(shiftJ, at: 10.2)
+
+        XCTAssertEqual(harness.performed, [.skipBackward, .skipBackward])
+        XCTAssertEqual(harness.triggers.map(\.shiftHeld), [true, true])
+        XCTAssertTrue(harness.timers.isEmpty, "no press waited")
     }
 
     /// Through the manager, real key presses with Shift post the skips with

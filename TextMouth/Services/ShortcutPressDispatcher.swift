@@ -39,10 +39,15 @@ import AppKit
 /// - A waiting single press acts in the window it was pressed in, with
 ///   whether Shift was held then, even after the time; when that window has
 ///   gone meanwhile, it acts nowhere.
-/// - In the app's windows, a press with Shift that matches no binding of
-///   its own matches its binding without Shift, and says Shift was held, so
-///   Shift-J and Shift-L skip by the Playback tab's Shift units; never in a
-///   text field (`match(_:)`).
+/// - A press with Shift that matches no binding of its own matches its
+///   binding without Shift, and says Shift was held, only for an action that
+///   takes Shift along (`ShortcutAction.takesShiftAlong`): Shift-J and
+///   Shift-L skip by the Playback tab's Shift units, and Shift-Command-=,
+///   Command-Plus on a US keyboard, increases the speed; Shift-Space,
+///   Shift-Return, or Shift-Command-Delete do nothing. Never in a text field
+///   (`match(_:)`). The audio editor's actions take no Shift along, so there
+///   Shift-R never falls back to R's Punch In, nor Shift-T to Trim to
+///   Selection.
 /// - A key equivalent's key (`ShortcutAction.isKeyEquivalent`, FR12's
 ///   branch D) is never taken: it goes on to the menu item or button that
 ///   acts on it, as an unmatched key does, and Shift never turns it into
@@ -300,12 +305,13 @@ final class ShortcutPressDispatcher {
     ///
     /// A press with Shift that matches no binding of its own, single or
     /// double, matches its binding without Shift, saying that Shift was
-    /// held (finding 4 of the design): Shift-J skips back by the Shift unit.
-    /// Never in a focused text field, where Shift with an arrow selects text
-    /// and Shift with a letter types a capital, and only in a scope that
-    /// allows it (`ShortcutScope.matchesShiftBeyondItsBindings`). A key
-    /// equivalent's key is matched before that, so Shift-Command-P stays
-    /// Copy Reading Position's whatever action has Command-P.
+    /// held (finding 4 of the design), when the action that binding triggers
+    /// takes Shift along (`ShortcutAction.takesShiftAlong`): Shift-J skips
+    /// back by the Shift unit, while Shift-Space plays nothing. Never in a
+    /// focused text field, where Shift with an arrow selects text and Shift
+    /// with a letter types a capital. A key equivalent's key is matched
+    /// before that, so Shift-Command-P stays Copy Reading Position's
+    /// whatever action has Command-P.
     private func match(_ press: Press) -> Match? {
         guard let stroke = press.stroke, let scope = press.scope,
               KeyboardShortcutManager.shouldHandle(binding: stroke, whenTextInputIsFocused: press.textInputIsFocused),
@@ -315,10 +321,10 @@ final class ShortcutPressDispatcher {
         if let actions = index.actions(for: stroke, in: scope) {
             return Match(stroke: stroke, actions: actions, shiftHeld: false)
         }
-        guard stroke.shift, !press.textInputIsFocused, scope.matchesShiftBeyondItsBindings else { return nil }
+        guard stroke.shift, !press.textInputIsFocused else { return nil }
         var unshifted = stroke
         unshifted.shift = false
-        guard let actions = index.actions(for: unshifted, in: scope) else { return nil }
+        guard let actions = index.actions(for: unshifted, in: scope)?.takingShiftAlong() else { return nil }
         return Match(
             stroke: unshifted,
             actions: actions,
@@ -352,6 +358,17 @@ extension ShortcutPressDispatcher {
             /// before it acts: the key has a single action and a double
             /// action that does not escalate it.
             var singleWaits = false
+
+            /// The actions a press of the key with Shift held beyond its own
+            /// modifiers may run: those that take Shift along
+            /// (`ShortcutAction.takesShiftAlong`), the single press waiting
+            /// only while both are kept; nil when neither takes it.
+            func takingShiftAlong() -> Actions? {
+                let keptSingle = single.flatMap { $0.takesShiftAlong ? $0 : nil }
+                let keptDouble = double.flatMap { $0.takesShiftAlong ? $0 : nil }
+                guard keptSingle != nil || keptDouble != nil else { return nil }
+                return Actions(single: keptSingle, double: keptDouble, singleWaits: singleWaits && keptSingle != nil && keptDouble != nil)
+            }
         }
 
         /// A key whose single press waits, and the two actions that make it.
@@ -698,5 +715,21 @@ extension ShortcutAction {
     /// dispatcher's index sees for itself.
     var escalates: ShortcutAction? {
         Self.escalations[self]
+    }
+
+    /// The actions a key press with Shift held beyond their keys' own
+    /// modifiers still triggers, told that Shift was held (finding 4 of
+    /// FR12's design): Skip Forward and Skip Backward, which then skip by the
+    /// Playback tab's Shift units, and Increase Speed, whose Command with "+"
+    /// a US keyboard types with Shift. No other action takes Shift along, so
+    /// Shift-Space, Shift-Return, Shift-W, or Shift-Command-Delete never
+    /// play, open, speak, or remove anything their key without Shift would,
+    /// and a key with Shift stays free for an action of its own.
+    static let actionsTakingShiftAlong: Set<ShortcutAction> = [.skipForward, .skipBackward, .increaseSpeed]
+
+    /// Whether a press of one of this action's keys with Shift held as well
+    /// still triggers it (`actionsTakingShiftAlong`).
+    var takesShiftAlong: Bool {
+        Self.actionsTakingShiftAlong.contains(self)
     }
 }

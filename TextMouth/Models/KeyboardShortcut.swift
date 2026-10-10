@@ -296,24 +296,6 @@ enum ShortcutScope: Hashable, Sendable {
     /// The audio editor's windows (FR04), and nowhere else: so the editor
     /// can take Space, J, K, and L for itself.
     case audioEditor
-
-    /// Whether a press with Shift that matches no binding of its own
-    /// matches its binding without Shift there, telling the action that
-    /// Shift was held (finding 4 of FR12's design), as `hasExtraShift`
-    /// always meant: Shift-J and Shift-Command-Right Arrow then skip by the
-    /// Playback tab's Shift units, and Increase Speed's Command with "+",
-    /// which a US keyboard types with Shift, matches.
-    ///
-    /// True in the app's windows, where the Shift units are. False in an
-    /// audio editor's, whose Shift keys are actions of their own (Shift-J
-    /// and Shift-L skip ten seconds, Shift-W says the selection) and whose
-    /// actions have no use for Shift: there a press with Shift matches only
-    /// a binding with Shift, as it always has, so Shift-R, this user's
-    /// Release Media Controls elsewhere, never falls back to R's Punch In,
-    /// nor Shift-T to Trim to Selection.
-    var matchesShiftBeyondItsBindings: Bool {
-        self == .app
-    }
 }
 
 extension Notification.Name {

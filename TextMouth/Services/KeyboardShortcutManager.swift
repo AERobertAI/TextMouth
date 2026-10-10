@@ -567,8 +567,9 @@ final class KeyboardShortcutManager: ObservableObject {
     /// matched: the press had Shift and the binding has none. The action is
     /// told so (`shiftHeld`), and Skip Forward and Skip Backward then go by
     /// the Playback tab's Shift units; the dispatcher matches such a press
-    /// to its binding without Shift where none with Shift is its own
-    /// (finding 4 of FR12's design).
+    /// to its binding without Shift where none with Shift is its own, for
+    /// an action that takes Shift along (finding 4 of FR12's design,
+    /// `ShortcutAction.takesShiftAlong`).
     nonisolated static func hasExtraShift(
         eventHasShift: Bool,
         bindingRequiresShift: Bool
