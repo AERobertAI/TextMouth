@@ -370,9 +370,10 @@ struct HeadingNavigatorView: View {
     }
 
     /// The rows the sheet shows for `reader`'s book: its places named on
-    /// its clock (`ReaderViewModel.placeClock`), and an audiobook's lengths
-    /// heard at its speed. Before the book's content loads, each row shows
-    /// its heading alone.
+    /// its clock (`ReaderViewModel.placeClock`), an audiobook's lengths
+    /// heard at its speed, and that speed named beside each length while
+    /// the setting asks for it (`ReaderViewModel.namedListeningSpeed`).
+    /// Before the book's content loads, each row shows its heading alone.
     static func headingItems(
         for reader: ReaderViewModel,
         displayed: [Heading],
@@ -397,7 +398,8 @@ struct HeadingNavigatorView: View {
             mode: mode,
             content: content,
             clock: clock,
-            listeningSpeed: reader.isAudioBook ? reader.audioSpeed : 1
+            listeningSpeed: reader.isAudioBook ? reader.audioSpeed : 1,
+            namedSpeed: reader.namedListeningSpeed
         )
     }
 
@@ -413,7 +415,9 @@ struct HeadingNavigatorView: View {
     ///   the book's end, heard at `listeningSpeed`: an audiobook's speed, or
     ///   1 for a text book, whose clock already counts its words at its
     ///   speed. Headings the level filter hides stay part of the heading
-    ///   before them, rather than ending it.
+    ///   before them, rather than ending it. `namedSpeed`, while the setting
+    ///   names the speed, follows each length, shown and spoken ("25:03 at
+    ///   2.0x"); nil leaves the lengths as they always read.
     /// - Percentage: where each heading starts, as a share of the book's
     ///   units.
     static func headingItems(
@@ -423,7 +427,8 @@ struct HeadingNavigatorView: View {
         mode: HeadingDisplayMode,
         content: DocumentContent,
         clock: PlaceClock,
-        listeningSpeed: Double
+        listeningSpeed: Double,
+        namedSpeed: ReaderTimeWording.ListeningSpeed? = nil
     ) -> [HeadingListItem] {
         // Heading offsets and totalCharacterCount use UTF-16 coordinates;
         // grapheme counts shift every later chapter after emoji/combining text.
@@ -459,8 +464,8 @@ struct HeadingNavigatorView: View {
                 return HeadingListItem(
                     heading: heading,
                     isSkipped: isSkipped,
-                    infoText: TimeFormatting.format(seconds),
-                    accessibilitySuffix: TimeFormatting.spoken(seconds)
+                    infoText: TimeFormatting.format(seconds) + ReaderTimeWording.shownSpeed(namedSpeed),
+                    accessibilitySuffix: TimeFormatting.spoken(seconds) + ReaderTimeWording.spokenSpeed(namedSpeed)
                 )
             case .timeIntoBook:
                 return HeadingListItem(

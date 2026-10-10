@@ -1152,6 +1152,15 @@ enum BookSettingsSheetWording {
 /// duplicate the percent / time-remaining flows).
 struct BookInfoBar: View {
     @ObservedObject var viewModel: ReaderViewModel
+    /// The settings, observed so the time left and the total follow the
+    /// setting that names their speed beside them at once (P08).
+    @ObservedObject private var settingsViewModel: SettingsViewModel
+
+    /// The status row of `viewModel`'s reader.
+    init(viewModel: ReaderViewModel) {
+        self.viewModel = viewModel
+        self.settingsViewModel = viewModel.settingsViewModel
+    }
 
     /// Mutually-exclusive expansion state — clicking percent collapses
     /// any open time panel and vice-versa, so the bar never grows by
@@ -1207,12 +1216,13 @@ struct BookInfoBar: View {
             .accessibilityLabel("\(viewModel.displayFormattedPercentComplete) through the book")
             .accessibilityHint(percentButtonHint)
 
-            // Time remaining — click to open jump-to-time
+            // Time remaining — click to open jump-to-time. With the setting
+            // on, it and the total name the speed they count at (P08).
             Button {
                 togglePanel(.time)
             } label: {
                 Label {
-                    Text("\(viewModel.displayFormattedTimeRemaining) left")
+                    Text(ReaderTimeWording.timeLeftShown(viewModel.displayFormattedTimeRemaining, namedSpeed))
                 } icon: {
                     Image(systemName: "clock")
                         .foregroundColor(.green)
@@ -1221,19 +1231,19 @@ struct BookInfoBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(TimeFormatting.spoken(viewModel.displayTimeRemaining)) remaining at current speed")
+            .accessibilityLabel(ReaderTimeWording.timeLeftSpoken(viewModel.displayTimeRemaining, namedSpeed))
             .accessibilityHint(timeButtonHint)
 
             // Total book time — non-interactive
             Label {
-                Text("Total: \(viewModel.formattedTotalTime)")
+                Text(ReaderTimeWording.totalShown(viewModel.formattedTotalTime, namedSpeed))
             } icon: {
                 Image(systemName: "book.closed")
                     .foregroundColor(.secondary)
             }
             .font(.caption)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Total time: \(TimeFormatting.spoken(viewModel.totalEstimatedTime))")
+            .accessibilityLabel(ReaderTimeWording.totalSpoken(viewModel.totalEstimatedTime, namedSpeed))
 
             Spacer()
 
@@ -1257,6 +1267,12 @@ struct BookInfoBar: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
+    }
+
+    /// The speed the time left and the total name beside them, or nil while
+    /// the setting is off (`ReaderViewModel.namedListeningSpeed`).
+    private var namedSpeed: ReaderTimeWording.ListeningSpeed? {
+        viewModel.namedListeningSpeed
     }
 
     /// Mutual-exclusion expand/collapse with a small animation. Tapping

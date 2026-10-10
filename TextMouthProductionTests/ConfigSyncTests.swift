@@ -1160,6 +1160,7 @@ final class ConfigSyncTests: XCTestCase {
             "showBookmarkInPlaybackControls": true,
             "showSpeedInPlaybackControls": false,
             "showExportInReaderToolbar": true,
+            "includeSpeedWithTimes": true,
             // Shortcuts, text, and sounds, kept by their services.
             "keyboardShortcutEdits": try XCTUnwrap(shortcuts.storedData),
             "shortcutDoublePressSeconds": 1.2,

@@ -147,9 +147,11 @@ enum RecordingTimeFixtures {
 
     /// A reader for a book of `format` whose source does not exist, so its
     /// background load fails harmlessly and the test assigns its content;
-    /// backed by a library and settings of its own. The caller closes it.
+    /// backed by a library of its own and `settings`, or settings without
+    /// services. A test that changes a setting passes settings on
+    /// preferences of its own. The caller closes the reader.
     @MainActor
-    static func makeReader(format: BookFormat) -> ReaderViewModel {
+    static func makeReader(format: BookFormat, settings: SettingsViewModel? = nil) -> ReaderViewModel {
         let book = Book(
             title: "Place Clock",
             format: format,
@@ -161,7 +163,7 @@ enum RecordingTimeFixtures {
         return ReaderViewModel(
             book: book,
             libraryViewModel: library,
-            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+            settingsViewModel: settings ?? SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
         )
     }
 

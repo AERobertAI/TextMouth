@@ -500,6 +500,26 @@ struct PlaybackSettingsView: View {
                 Text("Playback Controls")
             }
 
+            // Times (P08): whether the reader names the speed that time
+            // left and total time count at. An explicit binding, so the
+            // model's setter publishes the change to open readers.
+            Section {
+                Toggle(ReaderTimeWording.settingTitle, isOn: Binding(
+                    get: { settingsViewModel.includeSpeedWithTimes },
+                    set: { settingsViewModel.includeSpeedWithTimes = $0 }
+                ))
+                    .accessibilityHint(ReaderTimeWording.settingHint)
+
+                // The hint for the eye; VoiceOver hears it once, as the
+                // checkbox's hint (TODO A10).
+                Text(ReaderTimeWording.settingHint)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
+            } header: {
+                Text(ReaderTimeWording.settingSection)
+            }
+
             // The reader's toolbar (FR05): File > Export… is always there;
             // this adds a button for it beside the reader's other tools.
             Section {

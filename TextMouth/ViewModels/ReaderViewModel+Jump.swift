@@ -124,6 +124,15 @@ extension ReaderViewModel {
         isAudioBook ? .recording : .words(perMinute: speechService.wordsPerMinute)
     }
 
+    /// The speed this book's amounts of time are heard at, when the setting
+    /// names it beside them (P08, `SettingsViewModel.includeSpeedWithTimes`):
+    /// an audiobook's speed, or a text book's words a minute. Nil while the
+    /// setting is off, when every time reads as it did before the setting.
+    var namedListeningSpeed: ReaderTimeWording.ListeningSpeed? {
+        guard settingsViewModel.includeSpeedWithTimes else { return nil }
+        return isAudioBook ? .audio(audioSpeed) : .words(perMinute: speechService.wordsPerMinute)
+    }
+
     /// Go to Time's starting value: the reading position's time on the
     /// book's clock, in whole seconds as every time is shown ("2:13:05"), at
     /// every speed the same for an audiobook; "0:00" before the book loads.
