@@ -16,6 +16,8 @@ struct SubstitutionsSettingsView: View {
     @State private var editingRule: SubstitutionRule?
     /// Whether the sheet for adding a new rule is open.
     @State private var showAddRule = false
+    /// Whether Reset to Defaults is asking before it replaces the rules.
+    @State private var showResetConfirmation = false
 
     /// - Parameter service: The rules to show and change: the app's shared
     ///   rules, unless a test supplies its own.
@@ -35,8 +37,11 @@ struct SubstitutionsSettingsView: View {
                 Button("Add Rule") { showAddRule = true }
                     .accessibilityLabel("Add a new substitution rule")
 
-                Button("Reset to Defaults") { service.resetToDefaults() }
+                // Asks first, naming what it replaces: it used to replace
+                // every rule at once (TODO A10).
+                Button("Reset to Defaults") { showResetConfirmation = true }
                     .accessibilityLabel("Reset all rules to factory defaults")
+                    .accessibilityHint(Self.resetHint)
             }
             .padding()
 
@@ -73,6 +78,17 @@ struct SubstitutionsSettingsView: View {
             RepeatedSymbolsSettingsView(service: service)
                 .padding(.horizontal)
                 .padding(.vertical, 8)
+        }
+        .alert(Self.resetConfirmationTitle, isPresented: $showResetConfirmation) {
+            Button("Reset", role: .destructive) {
+                service.resetToDefaults()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(Self.resetConfirmationMessage(
+                ruleCount: service.rules.count,
+                defaultCount: TextSubstitutionService.defaultRules.count
+            ))
         }
         .sheet(isPresented: $showAddRule) {
             SubstitutionRuleEditorView(
@@ -213,6 +229,21 @@ extension SubstitutionsSettingsView {
     /// What VoiceOver says after a delete, such as "Mr. deleted".
     nonisolated static func deletedAnnouncement(ruleName: String) -> String {
         "\(ruleName) deleted"
+    }
+
+    /// Reset to Defaults' hint: what it does, and that it asks first.
+    nonisolated static let resetHint = "Asks first, then replaces every rule with TextMouth's default rules."
+    /// The title of the alert Reset to Defaults asks with.
+    nonisolated static let resetConfirmationTitle = "Reset Text Rules to Defaults?"
+
+    /// What the alert asks about: how many rules the list holds and how
+    /// many it will hold, as in "The 15 rules in the list will be replaced
+    /// by TextMouth's 16 default rules. Rules you added or changed will be
+    /// lost."
+    nonisolated static func resetConfirmationMessage(ruleCount: Int, defaultCount: Int) -> String {
+        let rules = CountWording.phrase(ruleCount, singular: "rule", plural: "rules")
+        let defaults = CountWording.phrase(defaultCount, singular: "default rule", plural: "default rules")
+        return "The \(rules) in the list will be replaced by TextMouth's \(defaults). Rules you added or changed will be lost."
     }
 
     /// The footer's count of the rules: "1 rule (1 enabled)", "15 rules (12

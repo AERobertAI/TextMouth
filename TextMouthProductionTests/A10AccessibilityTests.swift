@@ -457,6 +457,28 @@ final class SearchResultRowsTests: XCTestCase {
     }
 }
 
+// MARK: - Resetting the Text Rules
+
+/// The Text tab's Reset to Defaults replaced every rule at once; it now
+/// asks first, naming what it replaces.
+@MainActor
+final class TextRulesResetTests: XCTestCase {
+    /// Reset to Defaults says it asks, and the alert counts the rules it
+    /// replaces and the defaults that replace them.
+    func testResettingTheTextRulesAsksFirstAndCountsThem() {
+        XCTAssertEqual(SubstitutionsSettingsView.resetHint, "Asks first, then replaces every rule with TextMouth's default rules.")
+        XCTAssertEqual(SubstitutionsSettingsView.resetConfirmationTitle, "Reset Text Rules to Defaults?")
+        XCTAssertEqual(
+            SubstitutionsSettingsView.resetConfirmationMessage(ruleCount: 15, defaultCount: 16),
+            "The 15 rules in the list will be replaced by TextMouth's 16 default rules. Rules you added or changed will be lost."
+        )
+        XCTAssertEqual(
+            SubstitutionsSettingsView.resetConfirmationMessage(ruleCount: 1, defaultCount: 1),
+            "The 1 rule in the list will be replaced by TextMouth's 1 default rule. Rules you added or changed will be lost."
+        )
+    }
+}
+
 // MARK: - Shared Fixtures
 
 extension XCTestCase {
