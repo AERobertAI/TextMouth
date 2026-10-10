@@ -309,25 +309,27 @@ extension FeedWording {
     /// The Unsubscribe confirmation's button.
     static let unsubscribeButton = "Unsubscribe"
 
-    /// The Unsubscribe confirmation's message: TextMouth stops checking the
-    /// feed, and the books its downloads made stay where they are, named,
-    /// the first three by title, as books. When the feed kept the places of
-    /// `keptCount` downloads removed earlier (FR11, branch A2), the message
-    /// ends by saying those go (REV10, item 3).
-    static func unsubscribeMessage(bookTitles: [String], folderPath: String?, keptCount: Int = 0) -> String {
-        let stops = "TextMouth stops checking this feed and forgets the items it hasn't downloaded."
-        let place = folderPath.map { " in \($0)" } ?? ""
-        let keptGo = keptRecordsDeleted(count: keptCount)
-        guard !bookTitles.isEmpty else {
-            return "\(stops) Nothing it downloaded is left\(folderPath == nil ? "" : "; its folder stays\(place)").\(keptGo)"
-        }
-        let shown = bookTitles.prefix(3).map { "“\($0)”" }
-        let rest = bookTitles.count - shown.count
-        let names = rest > 0
-            ? shown.joined(separator: ", ") + ", and \(rest) more"
-            : LibraryCloudWording.list(Array(shown))
-        let these = bookTitles.count == 1 ? "This book it downloaded stays" : "These \(bookTitles.count) books it downloaded stay"
-        return "\(stops) \(these)\(place): \(names).\(keptGo)"
+    /// The Unsubscribe confirmation's message, saying what unsubscribing
+    /// does now (FR11, branch D): TextMouth stops checking the feed for new
+    /// items, called `noun`, and the feed stays, with its settings and its
+    /// `downloadCount` downloads, until Resubscribe checks it again. When the
+    /// feed kept the places of `keptCount` downloads removed earlier (FR11,
+    /// branch A2), the message ends by saying those go. "TextMouth stops
+    /// checking this feed for new episodes. The feed stays in your library
+    /// with its settings and its 2 downloaded episodes, and Resubscribe
+    /// checks it again. It also deletes the places, bookmarks, and
+    /// transcripts kept for 3 removed downloads."
+    static func unsubscribeMessage(downloadCount: Int, keptCount: Int, noun: ItemNoun) -> String {
+        let stops = "TextMouth stops checking this feed for new \(noun.plural)."
+        let downloads = downloadCount > 0 ? " and its \(downloadedCount(downloadCount, noun))" : ""
+        let stays = "The feed stays in your library with its settings\(downloads), and Resubscribe checks it again."
+        return "\(stops) \(stays)\(keptRecordsDeleted(count: keptCount))"
+    }
+
+    /// `count` downloads of items called `noun`: "1 downloaded episode", "2
+    /// downloaded articles".
+    private static func downloadedCount(_ count: Int, _ noun: ItemNoun) -> String {
+        "\(count) downloaded \(count == 1 ? noun.singular : noun.plural)"
     }
 
     /// The Unsubscribe confirmation's last sentence, with a space before it,
@@ -340,9 +342,24 @@ extension FeedWording {
             : " It also deletes the places, bookmarks, and transcripts kept for \(count) removed downloads."
     }
 
-    /// What VoiceOver hears once a feed is unsubscribed from.
-    static func unsubscribed(title: String, bookCount: Int) -> String {
-        guard bookCount > 0 else { return "Unsubscribed from \(title)." }
-        return "Unsubscribed from \(title). \(CountWording.phrase(bookCount, singular: "book it downloaded stays", plural: "books it downloaded stay")) in the library."
+    /// What VoiceOver hears once the feed titled `title`, whose items are
+    /// called `noun`, is unsubscribed from (FR11, branch D): checking
+    /// stopped, its downloads stay, and what it kept of removed downloads
+    /// was deleted, as `outcome` counts them. "Unsubscribed from Finish It!:
+    /// TextMouth no longer checks it for new episodes; its 2 downloaded
+    /// episodes stay. The places and bookmarks kept for 3 removed downloads
+    /// were deleted."
+    static func unsubscribed(title: String, outcome: FeedUnsubscribeOutcome, noun: ItemNoun) -> String {
+        let stays = outcome.downloadCount == 1 ? "stays" : "stay"
+        let downloads = outcome.downloadCount > 0 ? "; its \(downloadedCount(outcome.downloadCount, noun)) \(stays)" : ""
+        let stopped = "Unsubscribed from \(title): TextMouth no longer checks it for new \(noun.plural)\(downloads)."
+        switch outcome.deletedKeptCount {
+        case 0:
+            return stopped
+        case 1:
+            return "\(stopped) The place and bookmarks kept for 1 removed download were deleted."
+        case let count:
+            return "\(stopped) The places and bookmarks kept for \(count) removed downloads were deleted."
+        }
     }
 }

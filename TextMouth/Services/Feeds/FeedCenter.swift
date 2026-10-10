@@ -192,6 +192,16 @@ enum FeedSubscribeOutcome: Equatable, Sendable {
     case choose([FeedLink])
 }
 
+/// What unsubscribing from a feed did (FR11, branch D,
+/// `FeedCenter.unsubscribe(_:)`), for the words the listener hears.
+struct FeedUnsubscribeOutcome: Equatable, Sendable {
+    /// How many of the feed's downloads stay, its items in its own folder.
+    var downloadCount: Int
+    /// How many packages the feed kept for downloads removed earlier were
+    /// deleted, with their places, bookmarks, and transcripts.
+    var deletedKeptCount: Int
+}
+
 /// Why subscribing to an address failed (FR03), in sentences a listener reads.
 enum FeedSubscribeError: Error, Equatable, Sendable {
     /// The address is not an http or https address.
@@ -620,14 +630,56 @@ final class FeedCenter: ObservableObject {
         return store.feeds.first { FeedAddress.comparisonKey($0.feedURL) == key }
     }
 
-    /// Ends the subscription `feedID`: its record and this Mac's fetch
-    /// details go, and every book it downloaded stays in its folder.
-    func unsubscribe(_ feedID: UUID) {
-        guard let feed = store.record(of: feedID)?.feed else { return }
-        downloads.cancelAll(of: feedID)
-        store.remove(feedID)
-        fetchStates.remove(feedID)
-        DiagnosticLog.event(.feeds, "FEED_UNSUBSCRIBED: \(feed.title)")
+    /// Unsubscribes from the feed `feedID` (FR11, branch D), as the listener
+    /// asked on October 9: "just keep it a feed with rules kept except you
+    /// can't check it or manually check it for new items". Only checking
+    /// stops (`Feed.isSubscribed`; `FeedRefresher`). The feed keeps its
+    /// record, which notes when it was unsubscribed, its library folder,
+    /// still a feed's, its own settings, its downloads, which stay its items
+    /// in its own folder, and this Mac's fetch details; its rules go on
+    /// removing what they remove. The newest-N rule's downloads not yet
+    /// under way are taken back, since it downloads nothing for an
+    /// unsubscribed feed, and the one under way, like the listener's, runs
+    /// on. The packages the feed kept for downloads removed earlier go, with
+    /// their places and bookmarks (`deleteKeptPackages(of:)`), as the
+    /// listener accepted: "Clearing out old deleted episodes itself seems
+    /// fine". Resubscribe (`resubscribe(_:)`) checks the feed again.
+    /// - Returns: What unsubscribing did, for the words the listener hears;
+    ///   nil for a feed TextMouth has no record of, or one already
+    ///   unsubscribed, which changes nothing.
+    @discardableResult
+    func unsubscribe(_ feedID: UUID) -> FeedUnsubscribeOutcome? {
+        guard let feed = store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
+        store.update(feedID) { $0.feed.unsubscribedDate = environment.now() }
+        downloads.withdrawRuleDownloads(of: feedID) { _ in true }
+        let outcome = FeedUnsubscribeOutcome(
+            downloadCount: library?.feedItemRows(of: feedID).downloaded.count ?? 0,
+            deletedKeptCount: deleteKeptPackages(of: feedID)
+        )
+        DiagnosticLog.event(
+            .feeds,
+            "FEED_UNSUBSCRIBED: \(feed.title): checking stops; "
+                + "\(CountWording.phrase(outcome.downloadCount, singular: "download stays", plural: "downloads stay")); "
+                + "deleted \(CountWording.phrase(outcome.deletedKeptCount, singular: "package", plural: "packages")) "
+                + "kept for removed downloads"
+        )
+        return outcome
+    }
+
+    /// Subscribes again to the feed `feedID`, which the listener unsubscribed
+    /// from (FR11, branch D): checking starts again, at launch, on the
+    /// interval, and in Refresh All Feeds, and the feed is checked at once,
+    /// as Check Feed checks it, on any network; the end of that check asks
+    /// for the newest-N rule's pass over the feed, as every check's end
+    /// does, which downloads its newest again.
+    /// - Returns: How the check at once ended; nil for a feed TextMouth has
+    ///   no record of, or one subscribed already, which changes nothing.
+    @discardableResult
+    func resubscribe(_ feedID: UUID) async -> FeedRefreshReport? {
+        guard let feed = store.record(of: feedID)?.feed, !feed.isSubscribed else { return nil }
+        store.update(feedID) { $0.feed.unsubscribedDate = nil }
+        DiagnosticLog.event(.feeds, "FEED_RESUBSCRIBED: \(feed.title): checking starts again, at once")
+        return await refresh(feedID)
     }
 
     // MARK: Refreshing

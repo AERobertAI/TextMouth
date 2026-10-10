@@ -236,6 +236,51 @@ extension FeedCenter {
         store.updateItem(itemID, of: feedID) { $0.deletedDate = environment.now() }
     }
 
+    /// Deletes the packages the feed `feedID` kept for downloads removed
+    /// earlier, as Unsubscribe does (FR11, branch D), with the places,
+    /// playback times, bookmarks, settings, and transcripts they hold, as the
+    /// listener accepted ("Clearing out old deleted episodes itself seems
+    /// fine"): each as Delete Episode deletes a kept package, through the
+    /// listener's own removal (`FeedEnvironment.removeItem`, the Trash or for
+    /// good as the removal setting says), once the feed's index is written
+    /// without its row (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`).
+    /// A kept package whose item is downloading again stays, for its
+    /// download to restore. A failed index write keeps every package, and a
+    /// package that cannot be removed keeps its row on the feed's shelf;
+    /// each is logged, and nothing is lost.
+    /// - Returns: How many packages went.
+    func deleteKeptPackages(of feedID: UUID) -> Int {
+        guard let library else { return 0 }
+        // In a fixed order, so the log and the index's writes never depend
+        // on a dictionary's.
+        let kept = library.feedItemRows(of: feedID).kept
+            .filter { !downloads.isDownloading($0.key, of: feedID) }
+            .sorted { $0.key < $1.key }
+            .map(\.value)
+        guard !kept.isEmpty else { return 0 }
+        let root = TextMouthPaths.root
+        let outcome: FeedFileRemovalOutcome
+        do {
+            outcome = try library.removeFeedFiles(of: kept, keepingPackages: false) { removal in
+                try environment.removeItem(FeedItemPackage.packageForRemoval(of: removal.row, in: root))
+            }
+        } catch {
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_KEPT_PACKAGES_PUT_OFF: \(feedID.uuidString.prefix(8)): \(error.localizedDescription); "
+                    + "the packages kept for removed downloads stay"
+            )
+            return 0
+        }
+        for failure in outcome.failures {
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_KEPT_PACKAGE_DELETE_FAILED: \(failure.row.title): \(failure.error.localizedDescription); its place stays kept"
+            )
+        }
+        return outcome.removed.count
+    }
+
     // MARK: The Engine's Own Work
 
     /// Asks for a sweep of played downloads: one starts at once, or after the

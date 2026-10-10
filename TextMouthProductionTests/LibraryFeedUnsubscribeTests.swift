@@ -476,18 +476,20 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
 // MARK: - The Unsubscribe Command
 
 /// Unsubscribe… through the feed commands' runner, as the Library window runs
-/// it (REV10, item 3): its question names the downloads that stay and what
-/// the feed kept of removed downloads, which goes; confirmed, the feed ends,
-/// VoiceOver hears it at once, and the downloads become books in the feed's
-/// folder while the kept package goes.
+/// it (FR11, branch D): its question says the feed stays with its download
+/// and what it kept of removed downloads goes; confirmed, only checking
+/// stops: the feed keeps its record, its folder, its settings, and its
+/// download, its item in its own folder, VoiceOver hears so at once, and the
+/// package kept after another download went is deleted. Resubscribe checks
+/// it again at once.
 final class LibraryFeedUnsubscribeCommandTests: XCTestCase {
 
     /// The download the listener kept and the package kept after another
-    /// download went: the question says so, and Unsubscribe makes the first
-    /// a book in the feed's folder and deletes the second, with the feed's
-    /// own folder.
+    /// download went: the question says so, and Unsubscribe keeps the first
+    /// in its feed and deletes the second, the feed's index written without
+    /// it first; a second Unsubscribe changes nothing.
     @MainActor
-    func testUnsubscribeReturnsTheDownloadsAndDeletesWhatTheFeedKept() async throws {
+    func testUnsubscribeKeepsTheFeedAndDeletesWhatItKeptOfRemovedDownloads() async throws {
         let world = try FeedTestWorld(self, label: "LibraryFeedUnsubscribe")
         let (feed, books) = try await downloadedEpisodes(2, in: world)
         let keptBook = try XCTUnwrap(books.first)
@@ -495,56 +497,94 @@ final class LibraryFeedUnsubscribeCommandTests: XCTestCase {
         world.library.persistReadingPosition(bookID: keptBook.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 42))
         try world.center.deleteDownload("guid:ep-1", of: feed.id)
         XCTAssertEqual(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"]?.id, keptBook.id, "the opened download's package was not kept")
+        world.center.setDeleteDownloadsDaysAfterPlayed(3, of: feed.id)
         let presenter = LibraryFeedsPresenter()
         let heard = Heard()
         presenter.announce = { message, _ in heard.lines.append(message) }
         let context = FeedCommandContext(center: world.center, library: world.library, window: nil)
 
         let confirmation = try XCTUnwrap(presenter.unsubscribeConfirmation(for: feed.id, in: context))
-        XCTAssertEqual(
-            confirmation.message,
-            FeedWording.unsubscribeMessage(bookTitles: [download.title], folderPath: world.folder.path, keptCount: 1)
-        )
+        XCTAssertEqual(confirmation.message, FeedWording.unsubscribeMessage(downloadCount: 1, keptCount: 1, noun: .episode))
         XCTAssertTrue(
             confirmation.message.hasSuffix(" It also deletes the place, bookmarks, and transcript kept for 1 removed download."),
             confirmation.message
         )
 
         let title = try XCTUnwrap(world.center.store.record(of: feed.id)?.feed.title)
-        let outcome = await presenter.unsubscribe(feed.id, in: context)?.value
+        let outcome = presenter.unsubscribe(feed.id, in: context)
 
-        XCTAssertTrue(world.center.feeds.isEmpty)
-        XCTAssertEqual(heard.lines.last, "Unsubscribed from \(title). 1 book it downloaded stays in the library.")
-        XCTAssertEqual(outcome?.returned.map(\.id), [download.id])
-        XCTAssertEqual(outcome?.deletedKeptPackages, 1)
-        let returned = try XCTUnwrap(world.library.bookByID(download.id))
-        XCTAssertNil(returned.feedLink)
-        XCTAssertEqual(returned.folderPath, world.folder.path)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: returned.filePath))
-        XCTAssertTrue(returned.tmbDirectory.path.hasPrefix(world.folder.url.path), returned.tmbDirectory.path)
+        XCTAssertEqual(outcome, FeedUnsubscribeOutcome(downloadCount: 1, deletedKeptCount: 1))
+        XCTAssertEqual(
+            heard.lines.last,
+            "Unsubscribed from \(title): TextMouth no longer checks it for new episodes; its 1 downloaded episode stays. "
+                + "The place and bookmarks kept for 1 removed download were deleted."
+        )
+        let record = try XCTUnwrap(world.center.store.record(of: feed.id), "unsubscribing removed the feed's record")
+        XCTAssertFalse(record.feed.isSubscribed)
+        XCTAssertEqual(record.feed.unsubscribedDate, world.clock.value)
+        XCTAssertEqual(record.feed.folderID, feed.folderID)
+        XCTAssertEqual(record.feed.deleteDownloadsDaysAfterPlayedOverride, 3, "unsubscribing dropped the feed's own setting")
+        XCTAssertEqual(record.items.map(\.id), ["guid:ep-1", "guid:ep-2"])
+        let stays = try XCTUnwrap(world.library.bookByID(download.id))
+        XCTAssertEqual(stays.feedLink, download.feedLink, "the download left its feed")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: stays.filePath))
         XCTAssertFalse(FileManager.default.fileExists(atPath: keptBook.tmbDirectory.path), "the kept package stayed")
-        XCTAssertFalse(FileManager.default.fileExists(atPath: FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root).path))
         XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        let indexed = try FeedIndexFiles.decoded(Data(contentsOf: FeedPaths.indexFile(of: feed.id, in: TextMouthPaths.root))).books
+        XCTAssertEqual(indexed.map(\.id), [download.id], "the feed's index still lists the deleted package")
+        XCTAssertNil(presenter.unsubscribeConfirmation(for: feed.id, in: context), "an unsubscribed feed asked to unsubscribe")
+        XCTAssertNil(presenter.unsubscribe(feed.id, in: context), "a second Unsubscribe did something")
     }
 
-    /// The question's last sentence, which names what unsubscribing deletes
-    /// of downloads removed earlier, as VoiceOver reads it, and none when the
-    /// feed kept nothing.
-    func testTheQuestionNamesWhatTheFeedKept() {
-        let stops = "TextMouth stops checking this feed and forgets the items it hasn't downloaded."
-        XCTAssertEqual(
-            FeedWording.unsubscribeMessage(bookTitles: ["One"], folderPath: "Atlas", keptCount: 1),
-            "\(stops) This book it downloaded stays in Atlas: “One”. "
-                + "It also deletes the place, bookmarks, and transcript kept for 1 removed download."
-        )
-        XCTAssertEqual(
-            FeedWording.unsubscribeMessage(bookTitles: [], folderPath: nil, keptCount: 3),
-            "\(stops) Nothing it downloaded is left. It also deletes the places, bookmarks, and transcripts kept for 3 removed downloads."
-        )
-        XCTAssertEqual(
-            FeedWording.unsubscribeMessage(bookTitles: [], folderPath: "Atlas", keptCount: 0),
-            "\(stops) Nothing it downloaded is left; its folder stays in Atlas."
-        )
+    /// A package kept after its download went whose item is downloading
+    /// again as Unsubscribe is chosen stays, and its download restores it:
+    /// the same book, with its place.
+    @MainActor
+    func testAKeptPackageWhoseItemDownloadsAgainStays() async throws {
+        let world = try FeedTestWorld(self, label: "LibraryFeedUnsubscribeRestore")
+        let (feed, books) = try await downloadedEpisodes(1, in: world)
+        let book = try XCTUnwrap(books.first)
+        let place = ReadingPosition(chapterIndex: 0, characterOffset: 42)
+        world.library.persistReadingPosition(bookID: book.id, position: place)
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        var slow = FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4")
+        slow.chunkSize = 512
+        slow.pause = 0.05
+        world.server.serve("/audio/1.m4a", slow)
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("the download is under way") { !world.server.requests(to: "/audio/1.m4a").dropFirst().isEmpty }
+
+        let outcome = world.center.unsubscribe(feed.id)
+
+        XCTAssertEqual(outcome?.deletedKeptCount, 0, "a package downloading again was deleted")
+        let restored = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        XCTAssertEqual(restored.id, book.id)
+        XCTAssertEqual(restored.readingPosition?.characterOffset, place.characterOffset)
+    }
+
+    /// Resubscribe checks the feed at once, finding what was published
+    /// while it was unsubscribed, and every later check goes on as before; a
+    /// second Resubscribe changes nothing.
+    @MainActor
+    func testResubscribeChecksTheFeedAtOnce() async throws {
+        let world = try FeedTestWorld(self, label: "LibraryFeedResubscribe")
+        let (feed, _) = try await downloadedEpisodes(1, in: world)
+        world.center.unsubscribe(feed.id)
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [
+            FeedXML.Item(guid: "ep-0", title: "Episode Zero", published: world.day(1)),
+            FeedXML.Item(guid: "ep-1", title: "Episode 1", published: world.day(-1)),
+        ])))
+        world.advance(by: 2 * 86_400)
+
+        let report = await world.center.resubscribe(feed.id)
+
+        XCTAssertEqual(report?.newItemIDs, ["guid:ep-0"])
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.feed.isSubscribed, true)
+        XCTAssertNil(world.center.store.record(of: feed.id)?.feed.unsubscribedDate)
+        let again = await world.center.resubscribe(feed.id)
+        XCTAssertNil(again, "a second Resubscribe checked the feed")
+        let summary = await world.center.refreshAll(origin: .listener)
+        XCTAssertEqual(summary.reports.map(\.feedID), [feed.id])
     }
 
     // MARK: - Fixtures

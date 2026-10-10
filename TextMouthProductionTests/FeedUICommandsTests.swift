@@ -6,8 +6,8 @@ import XCTest
 /// The feed reader's commands (FR03): what a feed and an item offer, by
 /// where an item's download stands, and what each does through the engine,
 /// against a stub server: Check Feed, Feed Info… with the feed's own
-/// settings and folder, Mark All Played, Unsubscribe… naming the books left
-/// behind, Open, Download, Cancel Download, Delete Download (refused while
+/// settings and folder, Mark All Played, Unsubscribe… saying the feed and
+/// its downloads stay, Open, Download, Cancel Download, Delete Download (refused while
 /// the book is open, in the engine's words), Mark Played and Unplayed, Show
 /// Description…, Show in Finder, and Delete Episode… after a confirmation.
 /// No episode is played aloud: a download only becomes a book.
@@ -233,27 +233,30 @@ final class FeedUICommandsTests: XCTestCase {
         XCTAssertEqual(harness.heard.last, "The Tactile Atlas: no new episodes.")
     }
 
-    /// Unsubscribe… asks first, naming the books its downloads made, which
-    /// stay; confirmed, the feed goes and its books stay.
-    func testUnsubscribeNamesTheBooksLeftBehind() async throws {
+    /// Unsubscribe… asks first, saying the feed stays with its download;
+    /// confirmed, checking stops, and the feed and its download stay (FR11,
+    /// branch D).
+    func testUnsubscribeKeepsTheFeedAndItsDownload() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsUnsubscribe")
         harness.presenter.perform(harness.action(.download), in: harness.context)
         let book = try await downloadedBook(harness.world, feed: harness.feed, item: Harness.episodeID)
         let unsubscribe = try XCTUnwrap(FeedAction.actions(for: harness.feed.id, noun: .episode).last)
-        let folderPath = harness.world.library.feedFolderPath(forFolderID: harness.feed.folderID)
 
         harness.presenter.perform(unsubscribe, in: harness.context)
 
         let confirmation = try XCTUnwrap(harness.presenter.confirmation)
         XCTAssertEqual(confirmation.title, "Unsubscribe from The Tactile Atlas?")
-        XCTAssertEqual(confirmation.message, FeedWording.unsubscribeMessage(bookTitles: [book.title], folderPath: folderPath))
-        XCTAssertTrue(confirmation.message.contains("“A map you can touch”"), confirmation.message)
+        XCTAssertEqual(confirmation.message, FeedWording.unsubscribeMessage(downloadCount: 1, keptCount: 0, noun: .episode))
 
         harness.presenter.confirm(confirmation, in: harness.context)
 
-        XCTAssertTrue(harness.world.center.feeds.isEmpty)
-        XCTAssertNotNil(harness.world.library.bookByID(book.id), "unsubscribing deleted a download")
-        XCTAssertEqual(harness.heard.last, "Unsubscribed from The Tactile Atlas. 1 book it downloaded stays in the library.")
+        XCTAssertEqual(harness.world.center.feeds.map(\.id), [harness.feed.id])
+        XCTAssertEqual(harness.record?.feed.isSubscribed, false)
+        XCTAssertEqual(harness.world.library.bookByID(book.id)?.feedLink, book.feedLink, "unsubscribing took a download from its feed")
+        XCTAssertEqual(
+            harness.heard.last,
+            "Unsubscribed from The Tactile Atlas: TextMouth no longer checks it for new episodes; its 1 downloaded episode stays."
+        )
     }
 
     /// Feed Info… opens the feed's sheet; its two settings follow the
@@ -315,19 +318,40 @@ final class FeedUICommandsTests: XCTestCase {
         XCTAssertEqual(FeedWording.markedAll(count: 1, title: "Notes", noun: .article), "Marked 1 article of Notes read.")
         XCTAssertEqual(FeedWording.markedAll(count: 0, title: "Notes", noun: .article), "Every article of Notes is already read.")
 
-        let stops = "TextMouth stops checking this feed and forgets the items it hasn't downloaded."
-        XCTAssertEqual(FeedWording.unsubscribeMessage(bookTitles: [], folderPath: "Shows/Atlas"), "\(stops) Nothing it downloaded is left; its folder stays in Shows/Atlas.")
-        XCTAssertEqual(FeedWording.unsubscribeMessage(bookTitles: [], folderPath: nil), "\(stops) Nothing it downloaded is left.")
+        // Unsubscribe's question and announcement say what happens now (FR11,
+        // branch D): the feed stays, checking stops, and what it kept of
+        // removed downloads goes.
         XCTAssertEqual(
-            FeedWording.unsubscribeMessage(bookTitles: ["One", "Two"], folderPath: "Atlas"),
-            "\(stops) These 2 books it downloaded stay in Atlas: “One” and “Two”."
+            FeedWording.unsubscribeMessage(downloadCount: 0, keptCount: 0, noun: .episode),
+            "TextMouth stops checking this feed for new episodes. "
+                + "The feed stays in your library with its settings, and Resubscribe checks it again."
         )
         XCTAssertEqual(
-            FeedWording.unsubscribeMessage(bookTitles: ["One", "Two", "Three", "Four", "Five"], folderPath: "Atlas"),
-            "\(stops) These 5 books it downloaded stay in Atlas: “One”, “Two”, “Three”, and 2 more."
+            FeedWording.unsubscribeMessage(downloadCount: 2, keptCount: 3, noun: .article),
+            "TextMouth stops checking this feed for new articles. "
+                + "The feed stays in your library with its settings and its 2 downloaded articles, and Resubscribe checks it again. "
+                + "It also deletes the places, bookmarks, and transcripts kept for 3 removed downloads."
         )
-        XCTAssertEqual(FeedWording.unsubscribed(title: "Atlas", bookCount: 0), "Unsubscribed from Atlas.")
-        XCTAssertEqual(FeedWording.unsubscribed(title: "Atlas", bookCount: 3), "Unsubscribed from Atlas. 3 books it downloaded stay in the library.")
+        XCTAssertEqual(
+            FeedWording.unsubscribeMessage(downloadCount: 1, keptCount: 1, noun: .item),
+            "TextMouth stops checking this feed for new items. "
+                + "The feed stays in your library with its settings and its 1 downloaded item, and Resubscribe checks it again. "
+                + "It also deletes the place, bookmarks, and transcript kept for 1 removed download."
+        )
+        XCTAssertEqual(
+            FeedWording.unsubscribed(title: "Atlas", outcome: FeedUnsubscribeOutcome(downloadCount: 0, deletedKeptCount: 0), noun: .episode),
+            "Unsubscribed from Atlas: TextMouth no longer checks it for new episodes."
+        )
+        XCTAssertEqual(
+            FeedWording.unsubscribed(title: "Atlas", outcome: FeedUnsubscribeOutcome(downloadCount: 2, deletedKeptCount: 1), noun: .episode),
+            "Unsubscribed from Atlas: TextMouth no longer checks it for new episodes; its 2 downloaded episodes stay. "
+                + "The place and bookmarks kept for 1 removed download were deleted."
+        )
+        XCTAssertEqual(
+            FeedWording.unsubscribed(title: "Notes", outcome: FeedUnsubscribeOutcome(downloadCount: 1, deletedKeptCount: 4), noun: .article),
+            "Unsubscribed from Notes: TextMouth no longer checks it for new articles; its 1 downloaded article stays. "
+                + "The places and bookmarks kept for 4 removed downloads were deleted."
+        )
     }
 
     // MARK: - The Sheets as Drawn

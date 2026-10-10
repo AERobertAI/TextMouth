@@ -83,58 +83,42 @@ extension LibraryFeedsPresenter {
         return nil
     }
 
-    /// The question asked before unsubscribing from the feed `feedID`,
-    /// naming the books its downloads made, which stay, and what it kept of
-    /// downloads removed earlier, which goes; nil once it is no longer
+    /// The question asked before unsubscribing from the feed `feedID`, saying
+    /// what happens now (FR11, branch D): checking stops, the feed stays
+    /// with its settings and its downloads, which it counts, and what it
+    /// kept of downloads removed earlier goes; nil once it is no longer
     /// subscribed.
     func unsubscribeConfirmation(for feedID: UUID, in context: FeedCommandContext) -> FeedConfirmation? {
-        guard let feed = context.center.store.record(of: feedID)?.feed else { return nil }
+        guard let feed = context.center.store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
+        let rows = context.library.feedItemRows(of: feedID)
         return FeedConfirmation(
             kind: .unsubscribe(feedID: feedID),
             title: FeedWording.unsubscribeQuestion(title: feed.title),
             message: FeedWording.unsubscribeMessage(
-                bookTitles: downloadedBooks(of: feedID, in: context).map(\.title),
-                folderPath: context.center.folderPath(of: feed),
-                keptCount: context.library.feedItemRows(of: feedID).kept.count
+                downloadCount: rows.downloaded.count,
+                keptCount: rows.kept.count,
+                noun: .of(context.center.listedItems(of: feedID))
             ),
             confirmTitle: FeedWording.unsubscribeButton
         )
     }
 
-    /// Ends the subscription to the feed `feedID`, once confirmed, and
-    /// VoiceOver hears how many of its downloads stay. Until Unsubscribe
-    /// keeps a feed's downloads by the listener's choice (FR11, branch D),
-    /// they become books of the library's own, in the feed's folder, or at
-    /// the top level when that folder is gone, and what the feed kept of
-    /// downloads removed earlier is deleted
-    /// (`LibraryViewModel.returnDownloads(ofFeed:toFolderID:removingWith:)`,
-    /// REV10, item 3): without the feed, nothing would list them. The
-    /// subscription ends at once; the downloads follow as soon as no import
-    /// or analysis is writing into the library.
-    /// - Returns: The return of the feed's downloads, which tests await; nil
-    ///   when the feed is no longer subscribed.
+    /// Unsubscribes from the feed `feedID`, once confirmed (FR11, branch D):
+    /// only checking stops, the feed staying with its folder, its settings,
+    /// and its downloads, and the packages it kept for downloads removed
+    /// earlier go (`FeedCenter.unsubscribe(_:)`); VoiceOver hears so at once.
+    /// - Returns: What unsubscribing did; nil when the feed was no longer
+    ///   subscribed, which changes nothing.
     @discardableResult
-    func unsubscribe(_ feedID: UUID, in context: FeedCommandContext) -> Task<FeedDownloadReturn, Never>? {
+    func unsubscribe(_ feedID: UUID, in context: FeedCommandContext) -> FeedUnsubscribeOutcome? {
         guard let feed = context.center.store.record(of: feedID)?.feed else { return nil }
-        let books = downloadedBooks(of: feedID, in: context)
-        context.center.unsubscribe(feedID)
+        let noun = FeedWording.ItemNoun.of(context.center.listedItems(of: feedID))
+        guard let outcome = context.center.unsubscribe(feedID) else { return nil }
         if feedInfo?.feedID == feedID {
             feedInfo = nil
         }
-        announce(FeedWording.unsubscribed(title: feed.title, bookCount: books.count), context.window)
-        let library = context.library
-        let folderID = feed.folderID
-        return Task {
-            await library.returnDownloads(ofFeed: feedID, toFolderID: folderID)
-        }
-    }
-
-    /// The books the feed `feedID`'s downloads made that the library lists,
-    /// newest item first.
-    private func downloadedBooks(of feedID: UUID, in context: FeedCommandContext) -> [Book] {
-        context.center.listedItems(of: feedID).compactMap { item in
-            context.center.downloadedRow(of: item, in: feedID)
-        }
+        announce(FeedWording.unsubscribed(title: feed.title, outcome: outcome, noun: noun), context.window)
+        return outcome
     }
 
     // MARK: An Item's Commands

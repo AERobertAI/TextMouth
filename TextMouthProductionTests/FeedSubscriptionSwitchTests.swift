@@ -81,7 +81,8 @@ final class FeedSubscriptionRecordTests: XCTestCase {
 /// downloads nothing for it by itself, takes back what it asked for, and
 /// still removes its downloads beyond the newest, and Download by hand still
 /// downloads a listed item. Each feed is unsubscribed here through its
-/// record alone, as the engine's Unsubscribe leaves it. No test reaches the
+/// record alone, as the engine's Unsubscribe leaves it, but in the test of
+/// what the engine's Unsubscribe takes back at once. No test reaches the
 /// network: every request goes to the world's stub server.
 @MainActor
 final class FeedSubscriptionCheckingTests: XCTestCase {
@@ -199,6 +200,28 @@ final class FeedSubscriptionCheckingTests: XCTestCase {
         XCTAssertEqual(pass.requestedItemIDs, [])
         let first = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
         XCTAssertNotNil(world.library.bookByID(first.id))
+        XCTAssertEqual(world.server.requests(to: "/audio/2.m4a"), [], "a download taken back was fetched")
+    }
+
+    /// The engine's Unsubscribe takes back the rule's downloads not yet under
+    /// way at once, and leaves the listener's waiting downloads and the one
+    /// under way to finish.
+    func testUnsubscribingTakesBackTheRulesWaitingDownloadsAtOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedSwitchUnsubscribeWithdraws")
+        FeedSettings.newestCountPreference.write(3, to: world.preferences)
+        let feed = try await subscribeServed(world, episodes: 4, pausing: 0.05)
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        await waitFor("the first download is under way") { !world.server.requests(to: "/audio/1.m4a").isEmpty }
+        world.center.download("guid:ep-4", of: feed.id)
+
+        world.center.unsubscribe(feed.id)
+
+        let record = try XCTUnwrap(world.center.store.record(of: feed.id))
+        XCTAssertEqual(record.item("guid:ep-2")?.state, .notDownloaded)
+        XCTAssertEqual(record.item("guid:ep-3")?.state, .notDownloaded)
+        XCTAssertTrue(world.center.downloads.isDownloading("guid:ep-4", of: feed.id), "the listener's download was taken back")
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-4")
         XCTAssertEqual(world.server.requests(to: "/audio/2.m4a"), [], "a download taken back was fetched")
     }
 
