@@ -456,12 +456,18 @@ struct LibraryRemoveCommandWording: Equatable {
     }
 
     /// The menu bar's Remove command, which acts on whatever is selected in
-    /// the library window and so names no count: "Remove from Library..."
-    /// when it asks first, otherwise "Move to Trash" or "Delete
-    /// Permanently". With confirmation off it never promises less than it
-    /// does.
-    static func menuBarTitle(preferences: RemovalPreferences) -> String {
-        preferences.confirmsFirst ? askFirstTitle : preferences.deletionMode.buttonTitle()
+    /// the key Library window, `selection`, and so names no count: "Remove
+    /// from Library..." when it asks first, otherwise "Move to Trash" or
+    /// "Delete Permanently"; with feed items alone selected, their Delete
+    /// Download, as the edit bar names it: "Delete Download…" or "Delete
+    /// Downloads…", without the ellipsis when it deletes at once (REV11 F2,
+    /// the feed-policy-review follow-up). With confirmation off it never
+    /// promises less than it does.
+    static func menuBarTitle(preferences: RemovalPreferences, selection: LibraryRemovalSelection? = nil) -> String {
+        if let selection, selection.feedItemsOnly {
+            return LibraryRemoveCommandWording(preferences: preferences, count: selection.count, feedItemsOnly: true).shortTitle
+        }
+        return preferences.confirmsFirst ? askFirstTitle : preferences.deletionMode.buttonTitle()
     }
 
     /// The edit bar's short button: "Remove..." when it asks first,
@@ -496,6 +502,24 @@ struct LibraryRemoveCommandWording: Equatable {
             return removal.mode.filesSentence(plural: removal.count != 1)
         }
         return "Asks whether to \(preferences.deletingTheFiles) or keep them in the TextMouth library folder."
+    }
+}
+
+/// The books the library's Remove acts on in a Library window, as the
+/// Library menu's Remove names them (`LibraryRemoveCommandWording.menuBarTitle`):
+/// how many are selected, and whether every one is a feed item, whose
+/// Remove is its Delete Download (REV11 F2). Each Library window publishes
+/// its own as a scene value (`FocusedValues.libraryRemovalSelection`).
+struct LibraryRemovalSelection: Equatable {
+    /// How many books are selected.
+    let count: Int
+    /// Whether at least one book is selected and every one is a feed item.
+    let feedItemsOnly: Bool
+
+    /// The selection of `books`.
+    init(_ books: [Book]) {
+        count = books.count
+        feedItemsOnly = !books.isEmpty && books.allSatisfy(\.isFeedItem)
     }
 }
 

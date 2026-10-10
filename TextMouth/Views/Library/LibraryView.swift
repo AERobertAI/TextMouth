@@ -542,6 +542,12 @@ struct LibraryView: View {
             }
         }
         .trackingRemovalPreferences($removalPreferences)
+        // The selection as the Library menu's Remove names it: Delete
+        // Download for feed items alone (REV11 F2).
+        .focusedSceneValue(
+            \.libraryRemovalSelection,
+            LibraryRemovalSelection(LibrarySelectionPolicy.selected(in: books, native: selectedBookIDs, edit: editSelection))
+        )
         // Keeps the books' cloud states refreshed while the window is
         // visible, shows Remove Download's refusals (FR02), and takes the
         // Library menu's Keep on This Mac and Stop Keeping on This Mac.

@@ -115,6 +115,32 @@ final class LibraryFeedRemoveTests: XCTestCase {
         XCTAssertTrue(LibraryRemoveCommandWording.isOfferedOnRow(for: [book], feedActions: []))
     }
 
+    /// The Library menu's Remove names the key Library window's selection:
+    /// for feed items alone, their Delete Download, as the edit bar names it,
+    /// with the ellipsis only when it asks first; for books, or books and
+    /// feed items together, or nothing selected, the library's own words
+    /// (the feed-policy-review follow-up of REV11 F2).
+    func testTheLibraryMenusRemoveNamesFeedItemsAsTheirDeleteDownload() {
+        let episode = Self.feedItem("Ep. 368")
+        let other = Self.feedItem("Ep. 367")
+        let book = Book(title: "Field Notes", format: .txt, filePath: "/Library/Notes.tmb/notes.txt", md5Hash: "notes", tmbDirectoryName: "Notes.tmb")
+        let asks = RemovalPreferences(confirmsFirst: true, movesToTrash: true)
+        let atOnce = RemovalPreferences(confirmsFirst: false, movesToTrash: false)
+        func title(_ preferences: RemovalPreferences, _ books: [Book]?) -> String {
+            LibraryRemoveCommandWording.menuBarTitle(preferences: preferences, selection: books.map(LibraryRemovalSelection.init))
+        }
+
+        XCTAssertEqual(title(asks, [episode]), "Delete Download…")
+        XCTAssertEqual(title(asks, [episode, other]), "Delete Downloads…")
+        XCTAssertEqual(title(atOnce, [episode, other]), "Delete Downloads")
+        XCTAssertEqual(title(asks, [episode, book]), "Remove from Library...")
+        XCTAssertEqual(title(atOnce, [book]), "Delete Permanently")
+        XCTAssertEqual(title(asks, []), "Remove from Library...")
+        XCTAssertEqual(title(asks, nil), "Remove from Library...", "with no Library window in front")
+        XCTAssertEqual(LibraryRemovalSelection([episode, other]), LibraryRemovalSelection([other, episode]))
+        XCTAssertFalse(LibraryRemovalSelection([]).feedItemsOnly)
+    }
+
     // MARK: - The Report
 
     /// The report names the books that went and the downloads deleted, and
