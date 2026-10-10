@@ -1922,3 +1922,46 @@ ARCHITECTURE wording:
 - **Replace the Now Playing handler sentence with:** "The handler the reader gives its NowPlayingSession as isCurrentlyPlaying is whereAmIWillPlayBook || isPlaybackUnderWay, so a book Where Am I? will play, and a play waiting for its chapter's speech or files, count as playing."
 - **Add:** "showEditedText(_:) restarts a book Where Am I? will play as it restarts a playing one. pauseAudioForPackageMove() leaves a chapter held for Where Am I? held, and resumeAudioAfterPackageMove() leaves it to the announcement while it is held; an announcement ending during an off-main move lets the chapter go in startPlayHeldByWhereAmI(), leaving it to the move's end (audioPausedForMove)."
 - **Keyboard shortcuts entry:** "KeyClaims, ShortcutPressDispatcher.Index, and the tests' ShortcutKeyOwners (keysOnTwoActions(in:scopes:), actions(holding:in:sharingAWindowWith:scopes:)) follow it", in place of the sentence naming KeyboardShortcutManager.action(holding:in:).
+
+## From the feedpolicyfixes agent (fix/feed-policy-review), Oct 10
+
+Not verified:
+- **Real networks:** offline and metered-network refusals were only simulated by the stub server.
+- **Real transcription of a feed episode:** the F1 tests set the transcribing book directly.
+- **The Trash:** the test worlds delete for good and count removals, so "one Trash item" is checked by count only.
+- **Live VoiceOver:** not checked for the 0.6-second delay after a sheet closes, the focus move on Cancel, or the medium priority of the "under way" announcement.
+- **Real cloud:** not tested.
+
+Decisions and assumptions:
+- **What counts as "in use" (F1):** open readers, plus exports under way (`BookExportModel.booksBeingExported`), plus `TranscribedBooks.shared.transcribingBookID`. Only the rules wait for these; the listener's own commands are not refused.
+- **Delete Download wording (F2):**
+  - A single feed item's row no longer offers Remove from Library…
+  - The edit bar's Remove becomes Delete Download… (Delete Downloads… for several) only when every selected book is a feed item. A mixed selection keeps Remove from Library…
+- **Failures and waits (F4, item 15):** the listener's origin always wins, on commit and on failure. Being offline is a network wait only for the rule's downloads.
+- **Refresh (F3):** a refresh retries only the put-off downloads the rule still counts. The others stay put off until the next pass takes them back.
+- **OPML:** an unsubscribed feed is named apart and left unchecked; I chose not to resubscribe it automatically. Export leaves unsubscribed feeds out and says how many it left out.
+- **Dead code (#1815):** `cancelAll(of:)`, `FeedStore.remove(_:)` and `FeedFetchStates.remove(_:)` are kept for a possible Delete Feed… (humanQuestions/2026-10-09.md question 1). Their docs now say so.
+- **Article text (item 11):**
+  - The earlier `content.md` is kept as an `.edited-` copy only when the new text differs.
+  - Delete Download of an article moves its file and text into a hidden `.removing-` folder, then removes that one folder.
+- **"Under way" announcement (item 17):** said once, after 10 seconds, only for a run whose first download was the rule's. It is skipped once a quarter has been heard, or after Cancel.
+- **Item 22's test:** advances the test clock 5 seconds per episode and 1 second per article. It checks the time left against `TimeLeftEstimate` built from the inputs it expects. Because the test files are tiny, the user's 63 MB episodes come out at days.
+- **ContentView.swift (importandsheets' file):** I made a 7-line change to the Remove alert's Delete button without a reply to my question #1865.
+- **Racing tests (item 6):** both now wait for the engine's settle step. Each first proves the old reading fails by holding the import queue. You can take them off AGENTS.md's load-sensitive list.
+
+README wording:
+- "The newest-N rule and the after-playing sweep never remove a download while it is open, being transcribed, or being exported; they leave it for their next pass."
+- "A feed item's row offers Delete Download… rather than Remove from Library…; with only feed items selected, the edit bar's button is Delete Download… (Delete Downloads… for several)."
+- "Offline, or on a network with data limits, the rule's downloads, articles included, wait for a network rather than failing. A download the rule no longer wants, marked played or no longer among the newest, is taken back at once, failed ones included."
+- "When TextMouth starts downloads by itself, VoiceOver says once, after ten seconds, how many are under way and the time left ("Feed downloads: 9 under way, about 4 minutes left."). Cancel in the feed downloads section moves VoiceOver to the Library list."
+- "Import OPML names feeds you unsubscribed from and leaves them unchecked; Export OPML lists only feeds you subscribe to and says how many it left out."
+- "Downloading an article again keeps its earlier text as an edited copy when the new text differs; Delete Download puts an article in the Trash as one item. What a sheet did is announced once it has closed."
+
+ARCHITECTURE wording:
+- "`FeedLibraryHost.feedBooksInUse` (open readers, `BookExportModel.booksBeingExported`, `TranscribedBooks.shared.transcribingBookID`) is what the sweep and the newest-N rule leave for their next pass (`FeedDueRemovalOutcome.inUse`, the reports' `inUseBookIDs`)."
+- "`FeedNewestRule.countedItemIDs(in:under:)` defines what the rule counts. Each pass withdraws every rule download it no longer counts, failed ones included (`withdrawRuleDownloads`, `FeedItem.hasRulesFailedDownload`). Mark Played and Mark All Played request a pass for their feed; a refresh's end requests one before `retryCountedPutOffDownloads()`. `FeedDownloadOrigin.after(_:given:)` never overwrites the listener's origin, and a download cancelled as its file arrives stops before import."
+- "`FeedLifecycle.noteDownloadGone(…, removing:)` resets an item's state only while it names the removed book."
+- "`AnnouncementAfterSheet` and `VoiceOverAnnouncer.announceAfterSheetCloses(_:from:)` post a sheet's outcome 0.6 s after it closes; `MoveToLibrarySheetPresentation` presents Move to Library in the Library and reader windows."
+- "`FeedItemPackage.removeFileAndText(of:in:remove:)` removes an article's file and text as one hidden folder; `keepEarlierText(_:in:)` keeps a replaced text as an `.edited-` copy."
+- "`FeedDownloadProgress` announces a run the rule began once it has run 10 s (`FeedDownloadProgressWording.underWay`). `LibraryWindowView.cancelFeedDownloads(of:in:)` cancels and moves focus to the list."
+- "`FeedTestWorld.finish(_:)` stops downloads as quitting does and waits for sweeps before flushing. `relaunch(_:configuring:)` and `holdImports(_:)`/`WorkGate` let tests hook the next engine and hold the import queue."
