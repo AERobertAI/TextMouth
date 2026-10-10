@@ -809,11 +809,17 @@ extension LibraryViewModel {
         updateBook(id: bookID) { $0.skippedHeadingIDs = skippedIDs.isEmpty ? nil : skippedIDs }
     }
 
+    /// Gives the book `bookID` its own voice, speed, and pitch, nil for each
+    /// it takes from the settings. The speed is kept within its format's
+    /// range, as the book's record reads it back (REV11): words per minute
+    /// for a text book, a playback rate for an audiobook, so an article
+    /// given a rate of 1.5 keeps 50 words per minute in its row as in its
+    /// record; a pitch is kept within the pitch's range likewise.
     func updateLocalVoiceAndSpeed(bookID: UUID, voiceID: String?, wpm: Double?, pitch: Double? = nil) {
         updateBook(id: bookID) { book in
             book.localVoiceID = voiceID
-            book.localWPM = wpm
-            book.localPitch = pitch
+            book.localWPM = wpm.flatMap { SettingsPolicy.validatedLocalSpeed($0, isAudio: book.format.isAudio) }
+            book.localPitch = pitch.flatMap(SettingsPolicy.validatedLocalPitch)
         }
     }
 

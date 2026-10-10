@@ -575,6 +575,31 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: article.tmbDirectory).path))
     }
 
+    /// A book's own speed is kept within its format's range in its row, as
+    /// its record reads it back (REV11): an article given a playback rate of
+    /// 1.5 keeps the slowest words per minute, 50, in its row as in its
+    /// record, where its row once kept 1.5; a speed that can be none, and a
+    /// pitch out of range, are kept as the record reads them too.
+    func testAnArticlesOwnSpeedIsKeptWithinItsRange() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordArticleSpeed")
+        let feed = try await subscribeToArticles(1, in: world)
+        world.center.download("guid:post-1", of: feed.id)
+        let article = try await downloadedBook(world, feed: feed, item: "guid:post-1")
+
+        world.library.updateLocalVoiceAndSpeed(bookID: article.id, voiceID: nil, wpm: 1.5, pitch: 99)
+        LibraryPersistenceService.writePendingBookInfoNow(bookID: article.id)
+
+        let row = try XCTUnwrap(world.library.bookByID(article.id))
+        XCTAssertEqual(row.localWPM, SettingsPolicy.wordsPerMinute.range.lowerBound)
+        XCTAssertEqual(row.localPitch, SettingsPolicy.validatedLocalPitch(99))
+        let recorded = try recordedBook(in: article.tmbDirectory)
+        XCTAssertEqual(recorded.localWPM, row.localWPM, "the row's speed and the record's differ")
+        XCTAssertEqual(recorded.localPitch, row.localPitch)
+
+        world.library.updateLocalVoiceAndSpeed(bookID: article.id, voiceID: nil, wpm: .nan)
+        XCTAssertNil(world.library.bookByID(article.id)?.localWPM)
+    }
+
     // MARK: - A Kept Package That Cannot Be Listed
 
     /// A package that is there but cannot be listed, as one whose folder
