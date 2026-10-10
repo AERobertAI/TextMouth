@@ -242,10 +242,13 @@ enum DirectSpeechFadePlanner {
         // Include a modest margin because voices do not all speak at exactly
         // the calibrated WPM. The timer still stops playback at the requested
         // wall-clock duration; extra queued words are never allowed to leak.
-        let estimatedWords = max(
-            1,
-            Int(ceil(max(1, wordsPerMinute) * duration / 60.0 * 1.25))
-        )
+        // Written as typed steps, which multiply and divide in the order the
+        // single expression did, so the count is the same to the last bit:
+        // as one expression of untyped literals and `ceil`'s overloads it
+        // took the type checker 231 ms (board #1141).
+        let calibratedWordsPerMinute: Double = max(1.0, wordsPerMinute)
+        let wordsWithMargin: Double = calibratedWordsPerMinute * duration / 60.0 * 1.25
+        let estimatedWords = max(1, Int(wordsWithMargin.rounded(.up)))
         let remaining = text[startIndex...]
         var wordRanges: [Range<String.Index>] = []
         text.enumerateSubstrings(
