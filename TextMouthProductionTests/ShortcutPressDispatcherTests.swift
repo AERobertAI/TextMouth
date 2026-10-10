@@ -90,11 +90,72 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(harness.index.waitingKeys, [])
     }
 
-    /// No action escalates another until FR12's branch C gives the full
-    /// summaries actions of their own.
-    func testNoActionEscalatesAnotherYet() {
-        XCTAssertEqual(ShortcutAction.escalations, [:])
-        XCTAssertTrue(ShortcutAction.allCases.allSatisfy { $0.escalates == nil })
+    /// The full summaries alone escalate (FR12's branch C): Where Am I? Full
+    /// Summary escalates Where Am I?, Speak Full Info escalates Speak Info,
+    /// and no other action escalates any.
+    func testOnlyTheFullSummariesEscalateTheirBriefOnes() {
+        XCTAssertEqual(ShortcutAction.escalations, [.whereAmIFull: .whereAmI, .speakFullInfo: .speakInfo])
+        XCTAssertEqual(ShortcutAction.whereAmIFull.escalates, .whereAmI)
+        XCTAssertEqual(ShortcutAction.speakFullInfo.escalates, .speakInfo)
+        let others = ShortcutAction.allCases.filter { $0 != .whereAmIFull && $0 != .speakFullInfo }
+        XCTAssertTrue(others.allSatisfy { $0.escalates == nil }, others.filter { $0.escalates != nil }.map(\.rawValue).joined(separator: ", "))
+    }
+
+    // MARK: - The Full Summaries' Keys (FR12's Branch C)
+
+    /// With the default keys, the first W and the first I act at once, as
+    /// the brief summaries, and a second press within the double-press time
+    /// switches to the full one; a third quick press is ignored, and a press
+    /// after the time is the brief action again, which stops a summary
+    /// speaking (question 3). Nothing ever waits on a timer.
+    func testIAndWTwiceSwitchToTheFullSummariesWithoutWaiting() {
+        let harness = Harness(ShortcutAction.defaultBindings, escalations: ShortcutAction.escalations)
+        let plainI = KeyBinding(key: "i")
+
+        for (key, brief, full) in [(plainW, ShortcutAction.whereAmI, ShortcutAction.whereAmIFull), (plainI, .speakInfo, .speakFullInfo)] {
+            let start = harness.now + 10
+            harness.press(key, at: start)
+            XCTAssertEqual(harness.performed.suffix(1), [brief], "\(key.configText): the first press acts at once")
+            harness.press(key, at: start + 0.3)
+            XCTAssertEqual(harness.performed.suffix(2), [brief, full], "\(key.configText) twice")
+            XCTAssertTrue(harness.press(key, at: start + 0.6))
+            XCTAssertEqual(harness.performed.suffix(2), [brief, full], "\(key.configText): the third quick press is ignored")
+            harness.press(key, at: start + 2)
+            XCTAssertEqual(harness.performed.suffix(3), [brief, full, brief], "\(key.configText) after the time")
+        }
+        XCTAssertEqual(harness.timers.count, 0, "nothing waits")
+        XCTAssertEqual(harness.index.waitingKeys, [])
+    }
+
+    /// Through the manager, W twice posts Where Am I? at once and then Where
+    /// Am I? Full Summary, and I twice Speak Info and then Speak Full Info,
+    /// each with the window pressed in, as the reader and the Library
+    /// window take them.
+    func testTheManagerPostsTheBriefSummaryThenTheFullOne() throws {
+        let center = NotificationCenter()
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("press-dispatcher-full-summaries"),
+            installsEventMonitor: false,
+            notificationCenter: center,
+            clock: { 10 },
+            startTimer: { delay, fire in HandFiredTimer(delay: delay, fire: fire) }
+        )
+        var posted: [(name: Notification.Name, window: NSWindow?)] = []
+        let names: [Notification.Name] = [.whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo]
+        let subscription = Publishers.MergeMany(names.map { center.publisher(for: $0) }).sink { notification in
+            posted.append((notification.name, notification.userInfo?["sourceWindow"] as? NSWindow))
+        }
+        defer { subscription.cancel() }
+        let window = makeWindow()
+
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10), keyWindow: window, firstResponder: nil))
+        XCTAssertEqual(posted.map(\.name), [.whereAmI], "W speaks the brief summary at once")
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10.2), keyWindow: window, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20), keyWindow: window, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20.2), keyWindow: window, firstResponder: nil))
+
+        XCTAssertEqual(posted.map(\.name), [.whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo])
+        XCTAssertTrue(posted.allSatisfy { $0.window === window }, "a summary was posted without its window")
     }
 
     // MARK: - An Unrelated Double Action

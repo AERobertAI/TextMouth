@@ -266,7 +266,9 @@ final class TextFieldEditingKeysTests: XCTestCase {
     /// VoiceOver reading the field's own edit, as in any app. Every other
     /// default key posts its own action from a field, and every default key
     /// posts its own action from a view that takes no text, each pressed in
-    /// a window of its own scope, the app's or an audio editor's. Restart
+    /// a window of its own scope, the app's or an audio editor's; a double
+    /// press, W twice or I twice, is pressed twice, its first press posting
+    /// the brief summary it escalates. Restart
     /// Sleep Timer's key, which is no field's, is left out: its press
     /// writes the sleep timer's diagnostic log.
     func testNoActionFiresForAKeyAFieldTakes() throws {
@@ -277,12 +279,16 @@ final class TextFieldEditingKeysTests: XCTestCase {
                 for binding in bindings {
                     let label = "\(action.rawValue): \(binding.configText)"
                     let fieldTakesIt = !KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true)
+                    // A double press's first press posts the action it
+                    // escalates, at once, and its second its own (FR12's
+                    // branch C: W twice and I twice).
+                    let posts = (binding.isDoublePress ? [action.escalates].compactMap { $0 } : []) + [action]
                     let inField = try press(binding, on: manager, firstResponder: fieldEditor(), keyWindow: keyWindow)
                     XCTAssertEqual(inField.consumed, !fieldTakesIt, label)
-                    XCTAssertEqual(inField.posted, fieldTakesIt ? [] : [action.rawValue], label)
+                    XCTAssertEqual(inField.posted, fieldTakesIt ? [] : posts.map(\.rawValue), label)
                     let elsewhere = try press(binding, on: manager, firstResponder: NSTableView(), keyWindow: keyWindow)
                     XCTAssertTrue(elsewhere.consumed, label)
-                    XCTAssertEqual(elsewhere.posted, [action.rawValue], label)
+                    XCTAssertEqual(elsewhere.posted, posts.map(\.rawValue), label)
                 }
             }
         }
@@ -346,17 +352,18 @@ final class TextFieldEditingKeysTests: XCTestCase {
         try body(window)
     }
 
-    /// Presses `binding` once through `manager`, in `keyWindow` while
-    /// `firstResponder` has the keyboard. Returns whether the manager
-    /// consumed the press, and every notification it posted: each action's
-    /// name, or the notification's own name if it carried no action.
+    /// Presses `binding` through `manager`, in `keyWindow` while
+    /// `firstResponder` has the keyboard: its key once, or, for a double
+    /// press, twice in quick succession (FR12). Returns whether the manager
+    /// consumed the presses, failing the test should it consume some and
+    /// not others, and every notification it posted: each action's name,
+    /// or the notification's own name if it carried no action.
     private func press(
         _ binding: KeyBinding,
         on manager: KeyboardShortcutManager,
         firstResponder: NSResponder?,
         keyWindow: NSWindow? = nil
     ) throws -> (consumed: Bool, posted: [String]) {
-        let event = try keyPress(of: binding)
         var posted: [String] = []
         // Every action's notification; the audio editor's actions share one.
         let names = Set(ShortcutAction.allCases.map(\.notificationName))
@@ -365,8 +372,14 @@ final class TextFieldEditingKeysTests: XCTestCase {
                 posted.append(notification.userInfo?["action"] as? String ?? notification.name.rawValue)
             }
         defer { subscription.cancel() }
-        let consumed = manager.handleKeyEvent(event, keyWindow: keyWindow, firstResponder: firstResponder)
-        return (consumed, posted)
+        // Each event is made as it is pressed, timed by the Mac's uptime, so
+        // a second press follows the first well within the double-press time.
+        var consumed: [Bool] = []
+        for _ in 0..<(binding.isDoublePress ? 2 : 1) {
+            consumed.append(manager.handleKeyEvent(try keyPress(of: binding), keyWindow: keyWindow, firstResponder: firstResponder))
+        }
+        XCTAssertEqual(Set(consumed).count, 1, "the manager consumed some presses of \(binding.configText) and not others")
+        return (consumed.allSatisfy { $0 }, posted)
     }
 
     /// The key code and characters the keyboard gives each key a binding

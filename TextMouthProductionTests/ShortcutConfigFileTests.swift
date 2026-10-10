@@ -51,7 +51,8 @@ final class ShortcutConfigFileTests: XCTestCase {
 
     /// The file lists this user's shortcuts as the design's excerpt shows:
     /// Release Media Controls as a list, every other action "default: " and
-    /// its keys, in the file's alphabetical order.
+    /// its keys, the full summaries' double presses among them, in the
+    /// file's alphabetical order.
     func testTheFileListsThisUsersShortcutsAsTheDesignShows() throws {
         var config = ConfigService.AppConfig()
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
@@ -70,8 +71,10 @@ final class ShortcutConfigFileTests: XCTestCase {
             #"      "shift+r""#,
             #"    ],"#,
             #"    "Show Bookmarks" : "default: shift+command+b","#,
+            #"    "Speak Full Info" : "default: i twice","#,
             #"    "Speak Info" : "default: i","#,
-            #"    "Where Am I?" : "default: w""#,
+            #"    "Where Am I?" : "default: w","#,
+            #"    "Where Am I? Full Summary" : "default: w twice""#,
             #"  },"#,
         ]
         // Each line whole, after the one before it: the next search starts at
@@ -180,6 +183,8 @@ final class ShortcutConfigFileTests: XCTestCase {
         XCTAssertEqual(saved.keyboardShortcuts["Next Bookmark"], "default: option+shift+command+b")
         XCTAssertEqual(saved.keyboardShortcuts["Show Bookmarks"], "default: shift+command+b")
         XCTAssertEqual(saved.keyboardShortcuts["Speak Info"], "default: i")
+        XCTAssertEqual(saved.keyboardShortcuts["Speak Full Info"], "default: i twice")
+        XCTAssertEqual(saved.keyboardShortcuts["Where Am I? Full Summary"], "default: w twice")
         XCTAssertEqual(saved.keyboardShortcuts["Add to Reading List"], "default: none")
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
         XCTAssertEqual(manager.bindingsFor(.nextBookmark), [optionShiftCommandB])
@@ -256,6 +261,36 @@ final class ShortcutConfigFileTests: XCTestCase {
         let launched = launch(url, store: store)
 
         XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), ShortcutEdits([.whereAmI: [KeyBinding(key: "w", option: true)]]))
+        withExtendedLifetime(launched) {}
+    }
+
+    /// This user's config.json in the new form, written by a build without
+    /// the full summaries (FR12's branch C), gains them at the next launch
+    /// as "default: i twice" and "default: w twice", which they then have;
+    /// Release Media Controls keeps Shift-R as the user's own, and the
+    /// record is left as it was.
+    func testAFileWrittenBeforeTheFullSummariesGainsThemAsDefaults() throws {
+        let url = try makeConfigFileURL()
+        let store = try isolatedDefaults()
+        let record = ShortcutEdits([.releaseMediaControls: [shiftR]])
+        KeyboardShortcutManager.editsPreference.write(record, to: store)
+        var file = launchConsistentConfig(edits: record)
+        file.keyboardShortcuts["Speak Full Info"] = nil
+        file.keyboardShortcuts["Where Am I? Full Summary"] = nil
+        try ConfigService.fileData(for: file).write(to: url)
+
+        let launched = launch(url, store: store)
+
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertEqual(saved.keyboardShortcuts["Speak Full Info"], "default: i twice")
+        XCTAssertEqual(saved.keyboardShortcuts["Where Am I? Full Summary"], "default: w twice")
+        XCTAssertEqual(saved.keyboardShortcuts["Release Media Controls"], ["shift+r"])
+        XCTAssertEqual(saved.keyboardShortcuts.count, ShortcutAction.allCases.count)
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        XCTAssertEqual(manager.bindingsFor(.speakFullInfo), [KeyBinding(key: "i", isDoublePress: true)])
+        XCTAssertEqual(manager.bindingsFor(.whereAmIFull), [KeyBinding(key: "w", isDoublePress: true)])
+        XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [shiftR])
         withExtendedLifetime(launched) {}
     }
 
