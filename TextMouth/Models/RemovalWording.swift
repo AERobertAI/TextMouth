@@ -369,21 +369,28 @@ struct FeedDownloadRemovalWording: Equatable {
         (asksFirst ? "Asks before deleting." : mode.filesSentence(plural: isPlural)) + " " + keptSentence
     }
 
-    /// The report once the downloads are deleted, of which `keptCount` kept
-    /// their packages with the listener's place, bookmarks, or transcript:
-    /// "Moved the download of “Ep. 368” to the Trash. Its place, bookmarks,
-    /// and transcript are kept.", or "Deleted 3 downloads permanently. The
-    /// places, bookmarks, and transcripts of 2 of them are kept."
-    func completionMessage(keptCount: Int) -> String {
+    /// The report once the downloads are deleted, `kept` holding, for each
+    /// download whose package stayed, what that package holds of the
+    /// listener's (`FeedWording.KeptParts`), so the report names only that,
+    /// as Delete Download does (feed review item 18), never a part no package
+    /// holds: "Moved the download of “Ep. 368” to the Trash. Its place and
+    /// bookmarks are kept.", or "Deleted 3 downloads permanently. The places
+    /// and transcripts of 2 of them are kept." A package kept for none of
+    /// the parts named, as one kept because the item was opened, says
+    /// nothing kept.
+    func completionMessage(kept: [FeedWording.KeptParts]) -> String {
         let deleted = mode.completionSentence(subject, plural: isPlural)
-        guard keptCount > 0 else { return deleted }
-        if !isPlural {
-            return deleted + " Its place, bookmarks, and transcript are kept."
+        let holding = kept.filter { !$0.isEmpty }
+        let parts = holding.reduce(into: FeedWording.KeptParts()) { $0.formUnion($1) }
+        guard !holding.isEmpty else { return deleted }
+        if !isPlural, let itsParts = parts.sentenceSubject {
+            return "\(deleted) \(itsParts) kept."
         }
-        if keptCount >= count {
-            return deleted + " Their places, bookmarks, and transcripts are kept."
+        let nouns = LibraryCloudWording.list(parts.nouns(several: true))
+        if holding.count >= count {
+            return "\(deleted) Their \(nouns) are kept."
         }
-        return deleted + " The places, bookmarks, and transcripts of \(keptCount) of them are kept."
+        return "\(deleted) The \(nouns) of \(holding.count) of them are kept."
     }
 }
 

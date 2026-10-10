@@ -144,30 +144,45 @@ final class LibraryFeedRemoveTests: XCTestCase {
     // MARK: - The Report
 
     /// The report names the books that went and the downloads deleted, and
-    /// says which downloads kept their place, bookmarks, and transcript.
+    /// says what the kept packages hold, naming only the parts they hold,
+    /// never "place, bookmarks, and transcript" whatever each kept: a
+    /// package kept for none of those parts says nothing kept.
     func testTheReportSaysWhatTheDownloadsKept() {
         let episode = Self.feedItem("Ep. 368")
         let others = [Self.feedItem("Ep. 367"), Self.feedItem("Ep. 366")]
         let book = Book(title: "Field Notes", format: .txt, filePath: "/Library/Notes.tmb/notes.txt", md5Hash: "notes", tmbDirectoryName: "Notes.tmb")
 
         XCTAssertEqual(
-            LibraryViewModel.removalCompletion([book, episode], mode: .moveToTrash, keptIDs: [episode.id]),
+            LibraryViewModel.removalCompletion([book, episode], mode: .moveToTrash, kept: [episode.id: [.place, .bookmarks]]),
             "Moved “Field Notes” to the Trash. Moved the download of “Ep. 368” to the Trash. "
-                + "Its place, bookmarks, and transcript are kept."
+                + "Its place and bookmarks are kept."
         )
         XCTAssertEqual(
-            LibraryViewModel.removalCompletion([episode], mode: .moveToTrash, keptIDs: []),
+            LibraryViewModel.removalCompletion([episode], mode: .moveToTrash, kept: [episode.id: [.transcript]]),
+            "Moved the download of “Ep. 368” to the Trash. Its transcript is kept."
+        )
+        XCTAssertEqual(
+            LibraryViewModel.removalCompletion([episode], mode: .moveToTrash, kept: [:]),
             "Moved the download of “Ep. 368” to the Trash."
         )
         XCTAssertEqual(
-            LibraryViewModel.removalCompletion([episode] + others, mode: .deletePermanently, keptIDs: [episode.id, others[0].id]),
-            "Deleted 3 downloads permanently. The places, bookmarks, and transcripts of 2 of them are kept."
+            LibraryViewModel.removalCompletion([episode], mode: .moveToTrash, kept: [episode.id: []]),
+            "Moved the download of “Ep. 368” to the Trash.",
+            "a package kept for none of the parts named was said to keep them"
         )
         XCTAssertEqual(
-            LibraryViewModel.removalCompletion(others, mode: .moveToTrash, keptIDs: Set(others.map(\.id))),
-            "Moved 2 downloads to the Trash. Their places, bookmarks, and transcripts are kept."
+            LibraryViewModel.removalCompletion(
+                [episode] + others,
+                mode: .deletePermanently,
+                kept: [episode.id: [.place], others[0].id: [.place, .transcript]]
+            ),
+            "Deleted 3 downloads permanently. The places and transcripts of 2 of them are kept."
         )
-        XCTAssertNil(LibraryViewModel.removalCompletion([], mode: .moveToTrash, keptIDs: []))
+        XCTAssertEqual(
+            LibraryViewModel.removalCompletion(others, mode: .moveToTrash, kept: [others[0].id: [.bookmarks], others[1].id: [.settings]]),
+            "Moved 2 downloads to the Trash. Their bookmarks and own settings are kept."
+        )
+        XCTAssertNil(LibraryViewModel.removalCompletion([], mode: .moveToTrash, kept: [:]))
     }
 
     /// Removing an episode the listener opened, as the library's Remove does
@@ -198,8 +213,8 @@ final class LibraryFeedRemoveTests: XCTestCase {
         XCTAssertNil(world.library.bookByID(book.id))
         XCTAssertEqual(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"]?.id, book.id)
         XCTAssertEqual(heard.announcements, [], "the report was said while the question closed")
-        XCTAssertEqual(report, FeedDownloadRemovalWording(mode, items: [book]).completionMessage(keptCount: 1))
-        XCTAssertTrue(report?.hasSuffix("Its place, bookmarks, and transcript are kept.") == true)
+        XCTAssertEqual(report, FeedDownloadRemovalWording(mode, items: [book]).completionMessage(kept: [[.place]]))
+        XCTAssertTrue(report?.hasSuffix("Its place is kept.") == true, report ?? "")
 
         // The question's button says it a moment after the question closes.
         let words = try XCTUnwrap(report)
