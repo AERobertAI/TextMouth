@@ -425,7 +425,8 @@ final class ReaderViewModel: ObservableObject {
     var appliedLibraryRevision = 0
     /// Audio that was playing when the library said the book's package was
     /// about to move, set aside until the move ends and playback goes on
-    /// from the cursor (TODO P10); nil the rest of the time.
+    /// from the cursor (TODO P10); nil the rest of the time. Meanwhile the
+    /// book counts as playing (`isPlaybackUnderWay`).
     var audioPausedForMove: AudioPausedForMove?
     /// The book's edited text when the user's edit was taken while this
     /// reader was still loading the text it had (FR05): shown once loading
@@ -868,12 +869,13 @@ final class ReaderViewModel: ObservableObject {
             // So does a play under way that has not begun to sound
             // (`isPlaybackUnderWay`): one waiting for its chapter's speech,
             // prepared off the main thread, or an audiobook's waiting for its
-            // chapter's files to download, which shows Playing. Counted as
+            // chapter's files to download, or set aside while the library
+            // moves its package, each of which shows Playing. Counted as
             // not playing, it was not paused by the AirPods leaving or a
             // recording starting, nor by another book starting unless it was
             // the book last playing, and it began to speak or play once
             // ready, through the Mac's speakers or under the recording
-            // (REV12's leftovers).
+            // (REV12's leftovers, REV13).
             isCurrentlyPlaying: { [weak self] in
                 guard let self else { return false }
                 return self.whereAmIWillPlayBook || self.isPlaybackUnderWay

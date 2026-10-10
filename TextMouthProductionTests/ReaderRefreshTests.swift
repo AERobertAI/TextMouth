@@ -319,39 +319,14 @@ final class ReaderRefreshTests: XCTestCase {
     /// file. Once the move is over, playback goes on from the same place in
     /// the moved package, still showing Playing.
     func testAudioStopsReadingBeforeItsPackageMovesAndPlaysOnAtTheSamePlace() throws {
-        let world = try makeIntegrationWorld("Reader Refresh Audio Before Move")
-        let book = try world.makeSilentAudioBook(
-            title: "Breakwater Soundings",
-            trackDurations: [2, 2],
-            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
-        )
-        let reader = world.openReader(for: book)
-        waitForReaderToLoad(reader)
-        XCTAssertNil(reader.errorMessage, "The book did not open")
-        reader.play()
-        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
-        let duringMove = PlayerObservation()
+        let playing = try openPlayingAudiobook("Reader Refresh Audio Before Move")
 
-        try world.library.commitLibraryTransition(
-            Self.library(world.library.library, moving: book.id, to: "\(world.folder.path)/Shelf"),
-            affectedBookIDs: [book.id],
-            disk: observingDisk(reader, into: duringMove)
-        )
+        let duringMove = try moveToShelf(playing) {}
 
-        XCTAssertEqual(duringMove.moves, 1)
         XCTAssertNil(duringMove.loadedURL, "The player held a file while its package moved")
         XCTAssertFalse(duringMove.isPlaying, "Audio played while its package moved")
-        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not go on after the move")
-        XCTAssertEqual(
-            Self.folderPath(of: reader.audioPlaybackService.loadedURL),
-            Self.standardizedPath(try row(of: book, in: world.library).filePath)
-        )
-        XCTAssertEqual(reader.currentChapterIndex, 0)
-        XCTAssertEqual(reader.currentCharacterOffset, 5)
-        XCTAssertEqual(reader.audioPlaybackService.currentTime, 0.5, accuracy: 0.001)
-        XCTAssertTrue(reader.isCurrentlyPlaying)
-        XCTAssertFalse(reader.isCurrentlyPaused)
-        reader.stop()
+        try assertPlaysOnFromTheMovedPackage(playing)
+        playing.reader.stop()
     }
 
     /// A package move that fails is put back, and audio that was playing
@@ -448,6 +423,43 @@ final class ReaderRefreshTests: XCTestCase {
             Self.standardizedPath(try row(of: book, in: world.library).filePath)
         )
         XCTAssertEqual(reader.audioPlaybackService.currentTime, 0.5, accuracy: 0.001)
+        reader.stop()
+    }
+
+    // MARK: - Listening During a Package Move
+    //
+    // A move made off the main thread (`performLibraryTransition`) leaves
+    // the main thread free while the package moves, so anything the
+    // listener or the app does can come between the two events of the move.
+    // That cannot be caused by hand: these tests run the command inside the
+    // disk's move of `commitLibraryTransition`, which runs on the main
+    // thread between the same two events.
+
+    /// A sleep timer set to start playback while the library moves the
+    /// package of the audiobook playing leaves the audio set aside for the
+    /// move to the move's end: nothing is loaded from the package while it
+    /// moves, no play sound is made, and once the move is over the audio
+    /// plays on, started once, from the same place in the moved package,
+    /// the timer running. Before, the timer's play took the book for one
+    /// not playing and played the chapter from the moving files, with the
+    /// play sound (REV13 2).
+    func testASleepTimerStartingPlaybackDuringAMoveLeavesTheAudioToTheMovesEnd() throws {
+        preserveSharedSleepTimer()
+        let playing = try openPlayingAudiobook("Reader Refresh Timer During Move")
+        let reader = playing.reader
+        let generationBefore = reader.chapterPlaybackGeneration
+
+        let duringMove = try moveToShelf(playing) {
+            reader.startSleepTimer(duration: .minutes(15), startPlaybackIfNeeded: true)
+        }
+
+        XCTAssertNil(duringMove.loadedURL, "The timer's play loaded the chapter from the moving package")
+        XCTAssertFalse(duringMove.isPlaying, "Audio played while its package moved")
+        XCTAssertEqual(playing.sounds.played, [], "The timer's play made the play sound")
+        XCTAssertTrue(reader.sleepTimerService.isActive, "The timer does not run")
+        try assertPlaysOnFromTheMovedPackage(playing)
+        XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore + 1, "The chapter did not start exactly once")
+        reader.cancelSleepTimer()
         reader.stop()
     }
 
@@ -708,6 +720,92 @@ final class ReaderRefreshTests: XCTestCase {
         return proposed
     }
 
+    /// A reader playing a two-track silent audiobook, from half a second
+    /// into its first track, in a world of its own, and what a test needs
+    /// of it.
+    @MainActor
+    private struct PlayingAudiobook {
+        let world: IntegrationWorld
+        let book: Book
+        let reader: ReaderViewModel
+        /// The Now Playing coordinator of the reader's own, through which a
+        /// test sends what the system sends.
+        let nowPlaying: NowPlayingService
+        /// The sound effects the reader asks for once it plays, recorded,
+        /// never heard.
+        let sounds: RecordedSoundEffects
+    }
+
+    /// Opens a reader of a two-track silent audiobook saved half a second
+    /// into its first track, in a world of its own named after `label` and
+    /// joined to a Now Playing coordinator of its own, and plays it; the
+    /// sound effects it asks for from then on are recorded.
+    private func openPlayingAudiobook(
+        _ label: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> PlayingAudiobook {
+        let world = try makeIntegrationWorld(label)
+        let book = try world.makeSilentAudioBook(
+            title: "Breakwater Soundings",
+            trackDurations: [2, 2],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
+        )
+        let nowPlaying = NowPlayingService(installsSystemIntegrations: false)
+        let reader = world.openReader(for: book, nowPlaying: nowPlaying)
+        waitForReaderToLoad(reader, file: file, line: line)
+        XCTAssertNil(reader.errorMessage, "The book did not open", file: file, line: line)
+        reader.play()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start", file: file, line: line)
+        let sounds = RecordedSoundEffects(preferences: makeSandboxedPreferences(label))
+        reader.soundEffectService = sounds
+        return PlayingAudiobook(world: world, book: book, reader: reader, nowPlaying: nowPlaying, sounds: sounds)
+    }
+
+    /// Moves `playing`'s book to the folder Shelf through the library's
+    /// transition, as Move to Folder… does, running `whileMoving` as its
+    /// package moves, and returns what the player held then, after it ran.
+    private func moveToShelf(
+        _ playing: PlayingAudiobook,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        whileMoving: @escaping @MainActor @Sendable () -> Void
+    ) throws -> PlayerObservation {
+        let world = playing.world
+        let duringMove = PlayerObservation()
+        try world.library.commitLibraryTransition(
+            Self.library(world.library.library, moving: playing.book.id, to: "\(world.folder.path)/Shelf"),
+            affectedBookIDs: [playing.book.id],
+            disk: observingDisk(playing.reader, into: duringMove, whileMoving: whileMoving)
+        )
+        XCTAssertEqual(duringMove.moves, 1, "The package did not move once", file: file, line: line)
+        return duringMove
+    }
+
+    /// Checks that `playing`'s audio plays on, shown playing, from the place
+    /// it played at, half a second into the first track, in the package
+    /// where the library has moved the book.
+    private func assertPlaysOnFromTheMovedPackage(
+        _ playing: PlayingAudiobook,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let reader = playing.reader
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not go on after the move", file: file, line: line)
+        XCTAssertEqual(
+            Self.folderPath(of: reader.audioPlaybackService.loadedURL),
+            Self.standardizedPath(try row(of: playing.book, in: playing.world.library).filePath),
+            "The audio does not play from the moved package",
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(reader.currentChapterIndex, 0, "The audio plays another chapter", file: file, line: line)
+        XCTAssertEqual(reader.currentCharacterOffset, 5, "The cursor moved", file: file, line: line)
+        XCTAssertEqual(reader.audioPlaybackService.currentTime, 0.5, accuracy: 0.001, file: file, line: line)
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader does not show Playing", file: file, line: line)
+        XCTAssertFalse(reader.isCurrentlyPaused, "The reader shows paused", file: file, line: line)
+    }
+
     /// What a reader's audio player held at the moment a package moved.
     /// Main-actor isolated, as the disk operations of
     /// `commitLibraryTransition` run there.
@@ -734,16 +832,21 @@ final class ReaderRefreshTests: XCTestCase {
     /// `observation` what `reader`'s audio player holds as each package
     /// moves. With `failing`, each move throws instead of moving, as a full
     /// disk or a permission problem would, and the transition is put back.
+    /// `whileMoving` runs first, as each package moves, as anything can run
+    /// on the main thread while a move made off it is under way, so the
+    /// player is observed after it.
     private func observingDisk(
         _ reader: ReaderViewModel,
         into observation: PlayerObservation,
-        failing: Bool = false
+        failing: Bool = false,
+        whileMoving: @escaping @MainActor @Sendable () -> Void = {}
     ) -> LibraryTransitionDisk {
         LibraryTransitionDisk(
             moveItem: { source, destination in
                 // `commitLibraryTransition` runs its disk work on the main
                 // actor, where the reader's player lives.
                 try MainActor.assumeIsolated {
+                    whileMoving()
                     observation.moves += 1
                     observation.loadedURL = reader.audioPlaybackService.loadedURL
                     observation.isPlaying = reader.audioPlaybackService.isPlaying

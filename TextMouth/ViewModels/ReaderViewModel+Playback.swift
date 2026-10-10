@@ -181,7 +181,8 @@ extension ReaderViewModel {
     /// Plays the book as Play does (`playOrResume()`) unless playback is
     /// under way (`isPlaybackUnderWay`): a paused book resumes and a stopped
     /// one starts, while a book playing, or waiting to play for its
-    /// chapter's speech or files, is left as it is. While Where Am I? has the
+    /// chapter's speech or files, or for the end of a move of its package
+    /// (`audioPausedForMove`), is left as it is. While Where Am I? has the
     /// book in hand, the play waits for it, as Play does
     /// (`holdPlayForWhereAmI()`). For the plays a command makes for the
     /// listener: Auto-play on navigate (`autoPlayIfEnabled()`), and a sleep
@@ -3015,12 +3016,20 @@ extension ReaderViewModel {
     /// once the files are here; likewise a text book waiting for the speech
     /// of its chapter, prepared off the main thread, which speaks once the
     /// speech is ready.
+    ///
+    /// So is audio set aside while the library moves the book's package
+    /// (`audioPausedForMove`): the reader shows Playing, and the audio plays
+    /// on from the cursor once the move is over. Counted as stopped, it was
+    /// started again over the move by a sleep timer set to start playback,
+    /// from the moving files and with the play sound, and Where Am I? and
+    /// the system's media commands took the book for one not playing
+    /// (REV13).
     var isPlaybackUnderWay: Bool {
         if isAudioBook {
             return Self.wasActivelyPlaying(
                 isPlaying: audioPlaybackService.isPlaying,
                 isPaused: audioPlaybackService.isPaused
-            ) || isWaitingForChapterDownload
+            ) || isWaitingForChapterDownload || audioPausedForMove != nil
         }
         return Self.wasActivelyPlaying(isPlaying: speechService.isSpeaking, isPaused: speechService.isPaused)
             || isWaitingForChapterSpeech
