@@ -43,11 +43,7 @@ enum FeedItemPackage {
             || !row.bookmarks.isEmpty
             || row.lastPlaybackStarted != nil
             || row.lastPlaybackStopped != nil
-            || row.hasLocalVoiceSettings
-            || !(row.skippedHeadingIDs ?? []).isEmpty
-            || row.localEndOfBookBehavior != nil
-            || row.localSkipForwardUnit != nil
-            || row.localSkipBackwardUnit != nil
+            || row.hasOwnSettings
             || !(row.handEdits?.fields.isEmpty ?? true)
             || holdsListenersFiles(package)
     }

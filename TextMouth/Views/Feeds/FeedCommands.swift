@@ -379,10 +379,7 @@ extension FeedWording {
             var parts: KeptParts = []
             if row.readingPosition != nil { parts.insert(.place) }
             if !row.bookmarks.isEmpty { parts.insert(.bookmarks) }
-            if row.hasLocalVoiceSettings || !(row.skippedHeadingIDs ?? []).isEmpty || row.localEndOfBookBehavior != nil
-                || row.localSkipForwardUnit != nil || row.localSkipBackwardUnit != nil {
-                parts.insert(.settings)
-            }
+            if row.hasOwnSettings { parts.insert(.settings) }
             if FeedItemPackage.entryNames(of: package).contains(where: TextMouthPaths.isTranscriptFile) {
                 parts.insert(.transcript)
             }

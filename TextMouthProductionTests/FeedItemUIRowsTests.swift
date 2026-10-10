@@ -192,6 +192,35 @@ final class FeedItemUIRowsTests: XCTestCase {
 
     // MARK: - Delete Download
 
+    /// A book's own settings are one rule (REV13 feeds 11): each setting of
+    /// its own makes `Book.hasOwnSettings` true, keeps a feed item's package
+    /// once its file goes, and is named "own settings" by Delete Download
+    /// and the library's Remove; a book with none of them has none.
+    func testABooksOwnSettingsAreOneRule() throws {
+        let package = try makeSandboxDirectory("FeedItemUIOwnSettings")
+        let plain = Book(title: "Ep. 368", format: .audio, filePath: package.appendingPathComponent("Ep. 368.m4a").path, md5Hash: "ep-368")
+        XCTAssertFalse(plain.hasOwnSettings)
+        XCTAssertFalse(FeedItemPackage.holdsListenerState(plain, package: package))
+        XCTAssertEqual(FeedWording.KeptParts.of(plain, package: package), [])
+
+        let settings: [(name: String, set: (inout Book) -> Void)] = [
+            ("a voice", { $0.localVoiceID = "com.apple.voice.compact.en-GB.Daniel" }),
+            ("a speed", { $0.localWPM = 220 }),
+            ("a pitch", { $0.localPitch = 1.1 }),
+            ("headings skipped", { $0.skippedHeadingIDs = ["chapter-2"] }),
+            ("an end of its own", { $0.localEndOfBookBehavior = "stop" }),
+            ("a skip forward", { $0.localSkipForwardUnit = "30s" }),
+            ("a skip back", { $0.localSkipBackwardUnit = "15s" }),
+        ]
+        for setting in settings {
+            var book = plain
+            setting.set(&book)
+            XCTAssertTrue(book.hasOwnSettings, setting.name)
+            XCTAssertTrue(FeedItemPackage.holdsListenerState(book, package: package), setting.name)
+            XCTAssertEqual(FeedWording.KeptParts.of(book, package: package), [.settings], setting.name)
+        }
+    }
+
     /// Delete Download's words name only what the kept package holds, each
     /// with its verb: one part, several, or none, which says only that it
     /// can be downloaded again (feed review item 18).
