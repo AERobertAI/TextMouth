@@ -816,6 +816,34 @@ final class ReaderCloudDownloadTests: XCTestCase {
         assertNothingPlaysOnceTheDownloadEnds(for: book, in: cloud, reader: reader)
     }
 
+    /// With Auto-play on navigate, a bookmark picked while a chapter's files
+    /// download moves the reader to the bookmark and leaves it waiting: the
+    /// download goes on, and the chapter plays once its files are here.
+    /// Before, the auto-play went through Play/Pause, which took the waiting
+    /// reader for one playing and paused it, so the download was stopped
+    /// and nothing played.
+    func testAutoPlayAfterABookmarkLeavesAChaptersDownloadToPlay() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Auto-play", clone: Self.failingClone)
+        cloud.world.settings.autoPlayOnNavigate = true
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        let halfASecond = Int(0.5 * ReaderViewModel.audioCharsPerSecond)
+
+        reader.navigateToBookmark(Bookmark(number: 1, chapterIndex: 1, characterOffset: halfASecond))
+
+        XCTAssertEqual(cloud.storage.downloadsCancelled, [], "Auto-play stopped the chapter's download")
+        XCTAssertTrue(reader.isWaitingForChapterDownload, "The reader no longer waits for the chapter")
+        XCTAssertFalse(reader.isCurrentlyPaused, "Auto-play paused the reader")
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(reader.currentCharacterOffset, halfASecond, "The bookmark did not move the cursor")
+
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+
+        XCTAssertEqual(reader.audioPlaybackService.loadedURL?.lastPathComponent, "02.wav", "Another chapter played")
+        reader.stop()
+    }
+
     /// A chapter whose files finish downloading while Where Am I? speaks
     /// waits for the announcement, as a Play pressed during it does: nothing
     /// plays under the announcement, the reader goes on showing Playing, and
