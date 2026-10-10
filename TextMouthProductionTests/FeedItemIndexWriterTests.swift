@@ -73,7 +73,7 @@ final class FeedItemIndexWriterTests: FeedItemIndexTestCase {
 
         let outcome = model.rebuildLibraryIndex()
 
-        guard case .rebuilt(let bookCount, _) = outcome else { return XCTFail("\(outcome)") }
+        guard case .rebuilt(let bookCount, _, _) = outcome else { return XCTFail("\(outcome)") }
         XCTAssertEqual(bookCount, model.library.libraryBookCount)
         XCTAssertLessThan(bookCount, model.library.books.count, "the outcome counts the feed item")
         try assertLibraryJSONHoldsNoFeedItem([item])

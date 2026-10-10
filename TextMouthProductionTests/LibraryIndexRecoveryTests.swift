@@ -151,6 +151,8 @@ final class LibraryIndexRecoveryTests: XCTestCase {
 
     /// When the damaged index is gone by the time Try Again runs, nothing is
     /// left to protect, so the provisional library becomes the new index.
+    /// An index cut short gave no reading list or sort settings to keep,
+    /// and the outcome says so.
     @MainActor
     func testTryAgainAfterTheIndexWasRemovedSavesTheProvisionalLibrary() throws {
         let shelf = uniqueFolderName("Recovery Shelf")
@@ -166,7 +168,11 @@ final class LibraryIndexRecoveryTests: XCTestCase {
 
         XCTAssertEqual(
             outcome,
-            .savedProvisionalLibrary(bookCount: model.library.books.count, preservedCopy: copy)
+            .savedProvisionalLibrary(
+                bookCount: model.library.books.count,
+                preservedCopy: copy,
+                notKept: [.readingList, .sortSettings]
+            )
         )
         XCTAssertNil(model.indexRecovery)
         let written = try XCTUnwrap(LibraryPersistenceService.load().library)
@@ -303,16 +309,235 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         XCTAssertFalse(LibraryIndexRecoveryOutcome.rebuilt(bookCount: 2, preservedCopy: nil).message.contains("kept at"))
     }
 
-    /// The Rebuild Library Index choice says what is lost and names the saved
-    /// copy that keeps the old data.
+    /// Saving the provisional library as the new index says which parts of
+    /// the arrangement it could not keep, before naming the copy that
+    /// keeps them, and says nothing of them when it kept both.
+    func testOutcomeMessagesNameWhatCouldNotBeKept() {
+        let copy = URL(fileURLWithPath: "/tmp/library.json.unreadable-20260921T141320Z")
+
+        XCTAssertEqual(
+            LibraryIndexRecoveryOutcome.rebuilt(bookCount: 12, preservedCopy: copy, notKept: [.readingList, .sortSettings]).message,
+            "The library index was rebuilt with 12 books. TextMouth could not read the reading list or the sort "
+                + "settings in the previous index. The previous index is kept at \(copy.path)."
+        )
+        XCTAssertEqual(
+            LibraryIndexRecoveryOutcome.rebuilt(bookCount: 1, preservedCopy: nil, notKept: [.sortSettings]).message,
+            "The library index was rebuilt with 1 book. TextMouth could not read the sort settings in the previous index."
+        )
+        XCTAssertEqual(
+            LibraryIndexRecoveryOutcome.savedProvisionalLibrary(bookCount: 2, preservedCopy: nil, notKept: [.readingList]).message,
+            "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books "
+                + "as the new index, with 2 books. TextMouth could not read the reading list in the previous index."
+        )
+        XCTAssertFalse(LibraryIndexRecoveryOutcome.rebuilt(bookCount: 2, preservedCopy: copy).message.contains("could not read"))
+    }
+
+    // MARK: - The Reading List and the Sort Settings (FR09)
+
+    /// Rebuild Library Index keeps the reading list and the sort settings
+    /// of an index that cannot be read as a whole but still holds them
+    /// readably: the library shown while recovering has them, the books
+    /// adopted from their records keep their places on the list, and the
+    /// rebuilt index saves them, with nothing said to be lost.
+    @MainActor
+    func testRebuildKeepsTheReadingListAndSortSettingsAnUnreadableIndexStillHolds() throws {
+        let shelf = uniqueFolderName("Recovery Shelf")
+        let first = try makePackage(title: "First Listed", inFolder: shelf)
+        let second = try makePackage(title: "Second Listed", inFolder: shelf)
+        var index = indexHolding(first)
+        index.books.append(second)
+        index.readingList = ReadingList(bookIDs: [second.id, first.id], continuation: .playBookAbove, skipsFinished: false)
+        try sandbox.stage(.unknownFormat, of: index, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+
+        XCTAssertEqual(model.indexRecovery?.arrangementNotKept, [])
+        XCTAssertEqual(model.library.readingList, index.readingList)
+        XCTAssertEqual(model.readingListBooks.map(\.id), [second.id, first.id])
+        XCTAssertEqual(model.library.folderSortSettings[shelf], index.folderSortSettings[shelf])
+
+        let outcome = model.rebuildLibraryIndex()
+
+        guard case .rebuilt(_, _, let notKept) = outcome else { return XCTFail("\(outcome)") }
+        XCTAssertEqual(notKept, [])
+        XCTAssertFalse(outcome.message.contains("could not read"), outcome.message)
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(written.readingList, index.readingList)
+        XCTAssertEqual(written.folderSortSettings[shelf], index.folderSortSettings[shelf])
+    }
+
+    /// An index cut short holds nothing that can be read: the library shown
+    /// starts with no reading list and no sort settings, and Rebuild
+    /// Library Index says it could not read either.
+    @MainActor
+    func testRebuildSaysWhatItCouldNotReadInAnIndexCutShort() throws {
+        let shelf = uniqueFolderName("Recovery Shelf")
+        let book = try makePackage(title: "Cut Short", inFolder: shelf)
+        var index = indexHolding(book)
+        index.readingList = ReadingList(bookIDs: [book.id])
+        try sandbox.stage(.truncated, of: index, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+
+        XCTAssertEqual(model.indexRecovery?.arrangementNotKept, [.readingList, .sortSettings])
+        XCTAssertEqual(model.library.readingList, ReadingList())
+
+        let outcome = model.rebuildLibraryIndex()
+
+        guard case .rebuilt(_, _, let notKept) = outcome else { return XCTFail("\(outcome)") }
+        XCTAssertEqual(notKept, [.readingList, .sortSettings])
+        XCTAssertTrue(
+            outcome.message.contains("TextMouth could not read the reading list or the sort settings in the previous index."),
+            outcome.message
+        )
+    }
+
+    /// When the data directory comes back with an index that can't be read,
+    /// the library shown keeps this session's reading list and sort
+    /// settings, the latest, whatever the unreadable index holds, and
+    /// Rebuild Library Index saves them.
+    @MainActor
+    func testRecoveryAfterTheDataDirectoryReturnedKeepsTheSessionsArrangement() throws {
+        let shelf = uniqueFolderName("Recovery Shelf")
+        let book = try makePackage(title: "Session Listed", inFolder: shelf)
+        let session = ReadingList(bookIDs: [book.id], continuation: .stop, skipsFinished: true)
+        let sessionSort = FolderSortSetting(sortField: .author, sortAscending: false)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book], folderSortSettings: [shelf: sessionSort], readingList: session)
+        try sandbox.stage(.truncated, of: indexHolding(book), at: sandbox.indexURL)
+
+        model.reloadLibraryAfterDataDirectoryReturned()
+
+        XCTAssertNotNil(model.indexRecovery)
+        XCTAssertEqual(model.indexRecovery?.arrangementNotKept, [])
+        XCTAssertEqual(model.library.readingList, session)
+        XCTAssertEqual(model.library.folderSortSettings[shelf], sessionSort)
+
+        let outcome = model.rebuildLibraryIndex()
+
+        guard case .rebuilt(_, _, let notKept) = outcome else { return XCTFail("\(outcome)") }
+        XCTAssertEqual(notKept, [])
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(written.readingList, session)
+        XCTAssertEqual(written.folderSortSettings[shelf], sessionSort)
+    }
+
+    /// Try Again that still can't read the index keeps what the library
+    /// shown could not keep, for Rebuild Library Index to say.
+    @MainActor
+    func testTryAgainThatStillFailsKeepsWhatCouldNotBeKept() throws {
+        try sandbox.stage(.truncated, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+
+        _ = model.retryLibraryIndex()
+
+        XCTAssertEqual(model.indexRecovery?.arrangementNotKept, [.readingList, .sortSettings])
+    }
+
+    /// The arrangement of an unreadable index is read part by part: a
+    /// missing part, or one written as null, loses nothing; a reading list
+    /// that is not a list is lost on its own; sort settings keep every
+    /// entry that can be read; and bytes that are not a JSON object, or no
+    /// bytes at all, give neither part.
+    func testTheArrangementOfAnUnreadableIndexIsReadPartByPart() throws {
+        let book = UUID()
+        func read(_ json: String) -> SalvagedLibraryArrangement {
+            SalvagedLibraryArrangement.read(from: Data(json.utf8))
+        }
+
+        let neither = SalvagedLibraryArrangement(readingList: nil, sortSettings: nil, unread: [.readingList, .sortSettings])
+        XCTAssertEqual(SalvagedLibraryArrangement.read(from: nil), neither)
+        XCTAssertEqual(read("{ \"books\": [ {"), neither)
+        XCTAssertEqual(read("[1, 2]"), neither)
+
+        let none = read("{ \"books\": 7 }")
+        XCTAssertEqual(none, SalvagedLibraryArrangement(readingList: ReadingList(), sortSettings: [:], unread: []))
+        XCTAssertEqual(read("{ \"readingList\": null, \"folderSortSettings\": null }"), none)
+
+        let listLost = read("""
+            { "readingList": 5, "folderSortSettings": { "Essays": { "sortField": "Author", "sortAscending": false } } }
+            """)
+        XCTAssertNil(listLost.readingList)
+        XCTAssertEqual(listLost.sortSettings, ["Essays": FolderSortSetting(sortField: .author, sortAscending: false)])
+        XCTAssertEqual(listLost.unread, [.readingList])
+
+        let someSorts = read("""
+            { "readingList": { "bookIDs": ["\(book.uuidString)"], "continuation": "stop" },
+              "folderSortSettings": { "Essays": { "sortField": "Author", "sortAscending": false }, "Broken": { "sortField": 3 } } }
+            """)
+        XCTAssertEqual(someSorts.readingList, ReadingList(bookIDs: [book], continuation: .stop))
+        XCTAssertEqual(someSorts.sortSettings, ["Essays": FolderSortSetting(sortField: .author, sortAscending: false)])
+        XCTAssertEqual(someSorts.unread, [.sortSettings])
+
+        let noSorts = read("{ \"folderSortSettings\": [1] }")
+        XCTAssertNil(noSorts.sortSettings)
+        XCTAssertEqual(noSorts.unread, [.sortSettings])
+    }
+
+    /// Each part of the arrangement comes from the session when the session
+    /// holds it, the index's bytes read only for a part it does not hold;
+    /// a part neither gives is named as not kept.
+    func testEachPartComesFromTheSessionWhenItHoldsOne() throws {
+        let book = UUID()
+        let sessionList = ReadingList(bookIDs: [book])
+        let sessionSorts = ["Essays": FolderSortSetting(sortField: .author, sortAscending: false)]
+        let indexSorts = ["Poems": FolderSortSetting(sortField: .dateAdded, sortAscending: true)]
+        let indexBytes = try LibraryIndexSandbox.encoded(Library(folderSortSettings: indexSorts))
+        var reads = 0
+        func bytes(_ data: Data?) -> () -> Data? {
+            { reads += 1; return data }
+        }
+
+        let both = LibraryViewModel.recoveredArrangement(
+            session: Library(folderSortSettings: sessionSorts, readingList: sessionList),
+            unreadableIndex: bytes(indexBytes)
+        )
+        XCTAssertEqual(both, .init(readingList: sessionList, sortSettings: sessionSorts, notKept: []))
+        XCTAssertEqual(reads, 0, "the index was read though the session held both parts")
+
+        let listOnly = LibraryViewModel.recoveredArrangement(
+            session: Library(readingList: sessionList),
+            unreadableIndex: bytes(indexBytes)
+        )
+        XCTAssertEqual(listOnly, .init(readingList: sessionList, sortSettings: indexSorts, notKept: []))
+
+        let nothing = LibraryViewModel.recoveredArrangement(session: Library(), unreadableIndex: bytes(nil))
+        XCTAssertEqual(nothing, .init(readingList: ReadingList(), sortSettings: [:], notKept: [.readingList, .sortSettings]))
+
+        let sortsHeld = LibraryViewModel.recoveredArrangement(
+            session: Library(folderSortSettings: sessionSorts),
+            unreadableIndex: bytes(nil)
+        )
+        XCTAssertEqual(sortsHeld, .init(readingList: ReadingList(), sortSettings: sessionSorts, notKept: [.readingList]))
+        XCTAssertEqual(reads, 3)
+    }
+
+    /// The Rebuild Library Index choice says what it keeps and what is
+    /// lost, names any part of the arrangement it could not read, and names
+    /// the saved copy that keeps the old data.
     func testRebuildDescriptionNamesTheLossAndTheSavedCopy() {
         let copy = URL(fileURLWithPath: "/tmp/library.json.unreadable-20260921T141320Z")
 
         let described = LibraryIndexRecoveryText.rebuild(savedCopy: copy)
 
-        XCTAssertTrue(described.contains("Folder placement, sort settings, and manual order"))
-        XCTAssertTrue(described.contains("The saved copy at \(copy.path) keeps the old data."))
+        XCTAssertEqual(
+            described,
+            "Saves the temporary library as the new index, with the reading list and the sort settings "
+                + "TextMouth could read. Folder placement and manual order that were stored only in the "
+                + "unreadable index are lost from the library. The saved copy at \(copy.path) keeps the old data."
+        )
         XCTAssertTrue(LibraryIndexRecoveryText.rebuild(savedCopy: nil).contains("does not rebuild if it cannot"))
+        XCTAssertTrue(
+            LibraryIndexRecoveryText.rebuild(savedCopy: copy, notKept: [.readingList]).contains(
+                "are lost from the library. TextMouth could not read the reading list in the unreadable index. The saved copy"
+            )
+        )
+        XCTAssertTrue(
+            LibraryIndexRecoveryText.rebuild(savedCopy: copy, notKept: [.readingList, .sortSettings]).contains(
+                "TextMouth could not read the reading list or the sort settings in the unreadable index."
+            )
+        )
     }
 
     /// Storage settings name an unreadable index in words, ahead of the data
