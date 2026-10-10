@@ -101,8 +101,14 @@ final class FeedDownloadProgressViewTests: XCTestCase {
 
     /// The section a Library window shows is the library's feed downloads'
     /// progress as it is at the moment shown, and its Cancel, the library's,
-    /// stops the feed engine's downloads, saying what it stopped.
+    /// stops the feed engine's downloads, saying what it stopped, and moves
+    /// VoiceOver's focus from the section, which goes as the run ends, to
+    /// the window's list (feed review item 19).
     func testTheWindowsSectionShowsTheLibrarysDownloadsAndItsCancelStopsThem() async throws {
+        var focusMoves = 0
+        let focusListBefore = LibraryWindowView.focusListAfterCancel
+        LibraryWindowView.focusListAfterCancel = { _ in focusMoves += 1 }
+        defer { LibraryWindowView.focusListAfterCancel = focusListBefore }
         let world = try FeedTestWorld(self, label: "FeedProgressSectionCancel")
         let words = (1...300).map { "word\($0)" }.joined(separator: " ")
         let items = (1...2).map { number in
@@ -124,6 +130,7 @@ final class FeedDownloadProgressViewTests: XCTestCase {
         XCTAssertEqual(recorder.announcements.map(\.message), ["Stopped 2 feed downloads."])
         XCTAssertEqual(world.center.store.record(of: feed.id)?.items.map(\.state), [.notDownloaded, .notDownloaded])
         XCTAssertFalse(world.library.feedDownloadProgress.state.isRunning)
+        XCTAssertEqual(focusMoves, 1, "Cancel left VoiceOver's focus on the section that went")
     }
 
     /// VoiceOver finds the section as one container labelled with every
