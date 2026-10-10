@@ -301,12 +301,14 @@ test("Select All has Cmd+A binding") {
 test("Library category includes all library actions") {
     let libraryActions = ShortcutAction.allCases.filter { $0.category == "Library" }
     // With Import DAISY Folder… and Add Feed…, the Library menu's commands
-    // whose keys became editable (FR12's branch D).
-    try assertEqual(libraryActions.count, 13, "Should have 13 library actions")
+    // whose keys became editable (FR12's branch D), and Move to Library…
+    // (FR11's branch D).
+    try assertEqual(libraryActions.count, 14, "Should have 14 library actions")
     let names = libraryActions.map { $0.rawValue }
     try assertTrue(names.contains("Remove from Library"))
     try assertTrue(names.contains("New Folder"))
     try assertTrue(names.contains("Move to Folder"))
+    try assertTrue(names.contains("Move to Library…"))
     try assertTrue(names.contains("Select All"))
     try assertTrue(names.contains("Open Selected Book"))
     try assertTrue(names.contains("Book Info"))
