@@ -1886,3 +1886,39 @@ ARCHITECTURE wording:
 - **Bookmark date:** "Bookmark.dateText is the row's visible date and the end of its label."
 - **ViewBodyCounter:** "ViewBodyCounter now counts SearchResultRow."
 - **Hosted-test sandbox, new item:** "A hosted view whose width outgrows the width offered (as the old columns-style forms did) makes the window chase it until AppKit raises an exception that ends the test host; host such views inside a fixed frame, or measure them with NSHostingController.sizeThatFits(in:) and no window."
+
+## From the whereamifollowups agent (fix/where-am-i-followups), Oct 10
+
+Not verified (for the user to try by hand):
+- W then Next Heading while a text book or an audiobook plays: the announcement stops and the book plays on from the heading.
+- W then a bookmark, a search result, Go to percent, or Return to previous position.
+- With Auto-play on: pause, W, then pick a bookmark.
+- Edit Text during W while the book plays.
+- Restart Sleep Timer during W.
+- Real AirPods, VoiceOver, braille and listening in general.
+- The engine cancelling an announcement, and a package move during W in a cloud library, cannot be caused by hand.
+
+Decisions:
+- **Item 1:** `cancelWhereAmIIfActive()` sits just after `navigateTo`'s content guard. The book resumes and then moves, exactly as the skips do. Auto-play now goes through Play instead of Play/Pause, which had paused a play waiting for its chapter (a separate bug, so a separate commit).
+- **Item 2:** I fixed all 15 `audioChapterFiles[...]` subscripts and the one `files[0]` in ReaderCloudDownloadTests, not just the two the review named. The five `quarterSteps[n]` left index a constant four-item array and cannot trap.
+- **Item 3:** only a held Play survives a cancel. A Play pressed during W for a book W itself paused is not held, so after a cancel that book still stays paused (follow-up 4).
+- **Item 4:** a held Play also counts as "playing" for Edit Text, which restarts the book with `play()` and its play sound.
+- **Item 5:** "another book starting" already paused a waiting reader when it was the book last playing; the fix matters for the other cases. I corrected a commit message and a comment that overstated this.
+- **Items 1 and 6:** Auto-play and the sleep timer share one new helper, `playUnlessUnderWay()`.
+- **Item 7:** a move made off the main thread lets the announcement end mid-move, so the held chapter is then left to the move's end rather than read while the files move.
+- **Item 8:** I removed `action(holding:in:)` rather than make it symmetric, since only tests used it. Its tests now use the Shortcuts tab's own path and a test helper built on `sharesAWindow`.
+- **Item 9:** the policy is gone and the three "silence if speaking" copies are one `silenceWhereAmI()`. I declined the optional fold of the five flags into one state: it would reach `ReaderViewModel+CloudDownload.swift` and three test files that set the flags by hand.
+- **Commit order:** item 7 was committed before 5 and 6 because they share files.
+- **Board:** finding #1857 says about 600 numeric subscripts remain in about 40 other test files. My other posts are commit and build notices, and done #1893.
+
+README wording:
+- **Where Am I? bullet:** "A jump while Where Am I? speaks — Next Heading or Previous Heading, a heading, bookmark, or search result picked from its list, Go to a percent or a time, or Return to previous position — ends the announcement as a skip does: a book it paused plays on from where the jump lands, and a book a Play was pressed for starts there. With Auto-play on navigate, a book paused or stopped before the announcement plays from where the jump lands. Should the speech engine cancel the announcement, a Play pressed during it still starts the book. Edit Text taken while Where Am I? speaks over a playing book ends the announcement, and the book plays on in the edited text from its place. Setting a sleep timer while Where Am I? speaks lets the announcement finish and plays the book as it ends."
+- **Media keys paragraph:** "A book waiting to play, for its chapter's speech or for a chapter's files to download, counts as playing: the AirPods leaving, a recording starting, or another book starting pauses it, so it never starts by itself once ready. Auto-play on navigate leaves such a book waiting."
+- **Cloud paragraph:** "A chapter whose files arrive while Where Am I? speaks waits for the announcement even if the library moves the book meanwhile, and then plays from the book's new place."
+
+ARCHITECTURE wording:
+- **Where Am I? entry, "Who may write it", add:** "navigateTo(chapterIndex:characterOffset:), every jump's path, ends an announcement first through cancelWhereAmIIfActive(), as the skips do. silenceWhereAmI() silences an announcement speaking and records that none speaks, for cancelWhereAmIIfActive(), stopWhereAmIWithoutResuming(), and endWhereAmIAsTheBookStops()."
+- **Replace the blocksBookPlayback sentence with:** "play() and playOrResume() hold a Play while Where Am I? has the book in hand (isWhereAmIUnderWay; holdPlayForWhereAmI()), and its end resumes a book it paused or starts the held Play (startPlayHeldByWhereAmI()); a cancel nobody asked for starts a held Play at once (whereAmISynthesizerCancelled(_:)), the book it paused staying paused. playUnlessUnderWay() plays as Play does unless a play is under way (isPlaybackUnderWay), for Auto-play on navigate (autoPlayIfEnabled()) and a sleep timer set to start playback. WhereAmIInterruptionPolicy is gone."
+- **Replace the Now Playing handler sentence with:** "The handler the reader gives its NowPlayingSession as isCurrentlyPlaying is whereAmIWillPlayBook || isPlaybackUnderWay, so a book Where Am I? will play, and a play waiting for its chapter's speech or files, count as playing."
+- **Add:** "showEditedText(_:) restarts a book Where Am I? will play as it restarts a playing one. pauseAudioForPackageMove() leaves a chapter held for Where Am I? held, and resumeAudioAfterPackageMove() leaves it to the announcement while it is held; an announcement ending during an off-main move lets the chapter go in startPlayHeldByWhereAmI(), leaving it to the move's end (audioPausedForMove)."
+- **Keyboard shortcuts entry:** "KeyClaims, ShortcutPressDispatcher.Index, and the tests' ShortcutKeyOwners (keysOnTwoActions(in:scopes:), actions(holding:in:sharingAWindowWith:scopes:)) follow it", in place of the sentence naming KeyboardShortcutManager.action(holding:in:).
