@@ -346,12 +346,23 @@ final class FeedUICommandsTests: XCTestCase {
         XCTAssertEqual(
             FeedWording.unsubscribed(title: "Atlas", outcome: FeedUnsubscribeOutcome(downloadCount: 2, deletedKeptCount: 1), noun: .episode),
             "Unsubscribed from Atlas: TextMouth no longer checks it for new episodes; its 2 downloaded episodes stay. "
-                + "The place and bookmarks kept for 1 removed download were deleted."
+                + "The place, bookmarks, and transcript kept for 1 removed download were deleted."
         )
         XCTAssertEqual(
             FeedWording.unsubscribed(title: "Notes", outcome: FeedUnsubscribeOutcome(downloadCount: 1, deletedKeptCount: 4), noun: .article),
             "Unsubscribed from Notes: TextMouth no longer checks it for new articles; its 1 downloaded article stays. "
-                + "The places and bookmarks kept for 4 removed downloads were deleted."
+                + "The places, bookmarks, and transcripts kept for 4 removed downloads were deleted."
+        )
+    }
+
+    /// Feed Info's folder line says what choosing another folder does since
+    /// a feed's downloads stay in its own folder (FR11): the feed's items,
+    /// those downloaded too, are listed in the new folder (REV11), where
+    /// they once stayed behind.
+    func testFeedInfoSaysTheDownloadsFollowItsFolder() {
+        XCTAssertEqual(
+            FeedWording.folderInfoHelp,
+            "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too."
         )
     }
 

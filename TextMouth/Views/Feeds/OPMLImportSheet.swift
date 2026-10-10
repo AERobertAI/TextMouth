@@ -5,8 +5,9 @@ import UniformTypeIdentifiers
 // MARK: - Importing Subscriptions (FR03)
 
 /// How an OPML import ended (FR03): the feeds subscribed to, those already
-/// subscribed, those that failed and why, which of the new ones use plain
-/// http, and whether the listener stopped it.
+/// subscribed, those in the library already that the listener unsubscribed
+/// from, those that failed and why, which of the new ones use plain http,
+/// and whether the listener stopped it.
 struct OPMLImportSummary: Equatable {
     /// One subscription that failed.
     struct Failure: Equatable {
@@ -20,6 +21,11 @@ struct OPMLImportSummary: Equatable {
     var subscribed: [String] = []
     /// The titles of the feeds subscribed to already, left as they were.
     var alreadySubscribed: [String] = []
+    /// The titles, as the library has them, of the feeds in the library
+    /// that the listener unsubscribed from (FR11, branch D): left
+    /// unsubscribed, as the listener chose, and named, so Resubscribe can
+    /// check them again (REV11, board #1814).
+    var unsubscribed: [String] = []
     /// The subscriptions that failed.
     var failed: [Failure] = []
     /// The titles of the new feeds that use plain http.
@@ -35,6 +41,9 @@ struct OPMLImportSummary: Equatable {
             : "Subscribed to \(CountWording.phrase(subscribed.count, singular: "feed", plural: "feeds")).")
         if !alreadySubscribed.isEmpty {
             parts.append(CountWording.phrase(alreadySubscribed.count, singular: "was", plural: "were") + " subscribed already.")
+        }
+        if !unsubscribed.isEmpty {
+            parts.append(FeedWording.importFoundUnsubscribed(unsubscribed))
         }
         if !failed.isEmpty {
             let named = failed.map { "\($0.title) (\($0.reason))" }
@@ -106,9 +115,11 @@ final class OPMLImportModel: ObservableObject, Identifiable {
     }
 
     /// Subscribes to each subscription in turn, skipping those subscribed
-    /// already; a page naming several feeds subscribes to its first, the
-    /// site's main feed. Returns the work, which tests await; nil while one
-    /// runs or once one has ended.
+    /// already, and those in the library already that the listener
+    /// unsubscribed from, which stay unsubscribed and are named (REV11,
+    /// board #1814); a page naming several feeds subscribes to its first,
+    /// the site's main feed. Returns the work, which tests await; nil while
+    /// one runs or once one has ended.
     @discardableResult
     func start() -> Task<Void, Never>? {
         guard work == nil, summary == nil else { return nil }
@@ -121,8 +132,12 @@ final class OPMLImportModel: ObservableObject, Identifiable {
                     break
                 }
                 progress = Progress(done: index, total: subscriptions.count, current: subscription.title)
-                if center.subscribedFeed(at: subscription.feedURL) != nil {
-                    summary.alreadySubscribed.append(subscription.title)
+                if let existing = center.subscribedFeed(at: subscription.feedURL) {
+                    if existing.isSubscribed {
+                        summary.alreadySubscribed.append(subscription.title)
+                    } else {
+                        summary.unsubscribed.append(existing.title)
+                    }
                     continue
                 }
                 await subscribe(subscription, into: choice, recordingIn: &summary)
@@ -156,9 +171,13 @@ final class OPMLImportModel: ObservableObject, Identifiable {
                 summary.insecure.append(feed.title)
             }
         } catch let error as FeedSubscribeError {
-            if case .alreadySubscribed = error {
+            switch error {
+            case .alreadySubscribed:
                 summary.alreadySubscribed.append(subscription.title)
-            } else {
+            case .unsubscribedAlready(let title):
+                // A page that names a feed the listener unsubscribed from.
+                summary.unsubscribed.append(title)
+            default:
                 summary.failed.append(.init(title: subscription.title, reason: error.message))
             }
         } catch {
@@ -356,11 +375,13 @@ extension LibraryFeedsPresenter {
 
     /// Library > Export OPML…: asks where to save the subscriptions in a
     /// Save panel on the window, and writes them there, or says there are
-    /// none to export.
+    /// none to export: no feed at all, or only feeds the listener
+    /// unsubscribed from, which an export leaves out (REV11, board #1814).
     func chooseOPMLDestination(in context: FeedCommandContext) {
-        guard !context.center.feeds.isEmpty else {
-            notice = FeedNotice(title: FeedWording.exportFailedTitle, message: FeedWording.nothingToExport)
-            announce(FeedWording.nothingToExport, context.window)
+        guard context.center.feeds.contains(where: \.isSubscribed) else {
+            let message = context.center.feeds.isEmpty ? FeedWording.nothingToExport : FeedWording.nothingSubscribedToExport
+            notice = FeedNotice(title: FeedWording.exportFailedTitle, message: message)
+            announce(message, context.window)
             return
         }
         let panel = NSSavePanel()
@@ -379,13 +400,17 @@ extension LibraryFeedsPresenter {
     }
 
     /// Writes every subscription to the OPML file `url`, and says how many
-    /// went where, or why it couldn't be written.
+    /// went where, or why it couldn't be written. A feed the listener
+    /// unsubscribed from is left out, as no subscription, so another
+    /// reader importing the file never subscribes to it again, and the
+    /// words say how many were left out (REV11, board #1814).
     func exportOPML(to url: URL, in context: FeedCommandContext) {
-        let feeds = context.center.feeds
+        let feeds = context.center.feeds.filter(\.isSubscribed)
+        let leftOut = context.center.feeds.count - feeds.count
         let data = FeedOPML.document(listing: feeds, title: FeedWording.exportDocumentTitle, date: context.center.environment.now())
         do {
             try data.write(to: url, options: .atomic)
-            announce(FeedWording.exported(count: feeds.count, fileName: url.lastPathComponent), context.window)
+            announce(FeedWording.exported(count: feeds.count, fileName: url.lastPathComponent, unsubscribedCount: leftOut), context.window)
         } catch {
             let message = FeedWording.exportFailed(error.localizedDescription)
             notice = FeedNotice(title: FeedWording.exportFailedTitle, message: message)
@@ -425,15 +450,41 @@ extension FeedWording {
     static let exportFailedTitle = "Couldn't Export Subscriptions"
     /// What Export OPML says with no subscription.
     static let nothingToExport = "There are no subscriptions to export."
+    /// What Export OPML says when every feed in the library is one the
+    /// listener unsubscribed from, which an export leaves out (REV11).
+    static let nothingSubscribedToExport = "There are no subscriptions to export: every feed in your library is unsubscribed."
+    /// What an import's summary says of the feeds it lists that are in the
+    /// library already, unsubscribed from (FR11, branch D), named by their
+    /// titles there: they stay unsubscribed, as the listener chose, and
+    /// Resubscribe checks one again (REV11, board #1814). One is said as Add
+    /// Feed says it.
+    static func importFoundUnsubscribed(_ titles: [String]) -> String {
+        guard titles.count != 1, !titles.isEmpty else {
+            return FeedSubscribeError.unsubscribedAlready(title: titles.first ?? "").message
+        }
+        return "\(LibraryCloudWording.list(titles)) are in your library, unsubscribed. "
+            + "Choose Resubscribe on a feed's row, or in its Feed Info, to check it again."
+    }
     /// The Save panel's suggested file name.
     static let exportFileName = "TextMouth Subscriptions.opml"
     /// The Save panel's message.
     static let exportPanelMessage = "Save your subscriptions as an OPML file, which other feed readers import."
     /// The exported document's title.
     static let exportDocumentTitle = "TextMouth Subscriptions"
-    /// What VoiceOver hears once the subscriptions are exported.
-    static func exported(count: Int, fileName: String) -> String {
-        "Exported \(CountWording.phrase(count, singular: "subscription", plural: "subscriptions")) to \(fileName)."
+    /// What VoiceOver hears once the subscriptions are exported, with how
+    /// many feeds the listener unsubscribed from were left out (REV11):
+    /// "Exported 2 subscriptions to Mine.opml. 1 feed you unsubscribed from
+    /// was left out."
+    static func exported(count: Int, fileName: String, unsubscribedCount: Int = 0) -> String {
+        let exported = "Exported \(CountWording.phrase(count, singular: "subscription", plural: "subscriptions")) to \(fileName)."
+        switch unsubscribedCount {
+        case ...0:
+            return exported
+        case 1:
+            return exported + " 1 feed you unsubscribed from was left out."
+        default:
+            return exported + " \(unsubscribedCount) feeds you unsubscribed from were left out."
+        }
     }
     /// Why the subscriptions couldn't be written.
     static func exportFailed(_ reason: String) -> String {

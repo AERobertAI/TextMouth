@@ -243,8 +243,8 @@ final class FeedArrivals: ObservableObject {
         switch event {
         case .refreshedAll(let summary) where summary.origin.isDiscretionary:
             announceArrivals(in: summary)
-        case .itemPolicyApplied(let feedIDs):
-            if let sentence = FeedWording.itemPolicyApplied(to: feedIDs, in: center) {
+        case let .itemPolicyApplied(global, feedIDs):
+            if let sentence = FeedWording.itemPolicyApplied(global: global, feedIDs: feedIDs, in: center) {
                 announce(sentence)
             }
         default:

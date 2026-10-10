@@ -74,6 +74,28 @@ enum VoiceOverAnnouncer {
         poster(VoiceOverAnnouncement(message: message, priority: priority), window)
     }
 
+    /// How long an announcement waits once a sheet or dialog has closed,
+    /// in seconds: a moment for VoiceOver to settle back on the window
+    /// beneath, so the closing never cuts the words off (REV11 F6).
+    static let afterSheetDelay: TimeInterval = 0.6
+
+    /// Runs `announce` once a sheet or dialog has closed, a moment later
+    /// (`afterSheetDelay`): for a caller announcing its own way, as a test
+    /// listening in does.
+    static func afterSheetCloses(_ announce: @escaping @MainActor () -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + afterSheetDelay) {
+            announce()
+        }
+    }
+
+    /// Asks VoiceOver to speak `message` from `window` once a sheet or
+    /// dialog over it has closed (`afterSheetCloses(_:)`), as a Library
+    /// window says what a subscription, Move to Folder…, Move to Library…,
+    /// or Remove's Delete Download did (REV11 F6).
+    static func announceAfterSheetCloses(_ message: String, from window: NSWindow?) {
+        afterSheetCloses { announce(message, from: window) }
+    }
+
     /// The app's poster. It requests the announcement from `window`, falling
     /// back to the key window and then the main window, and does nothing when
     /// the app has no window to post from.
@@ -87,5 +109,33 @@ enum VoiceOverAnnouncer {
                 .priority: announcement.priority.rawValue
             ]
         )
+    }
+}
+
+// MARK: - Said Once a Sheet Has Closed
+
+/// What a sheet's work left to say, kept while the sheet closes and said
+/// once it has (REV11 F6): VoiceOver hears the closing first, which would
+/// cut off words posted with it. The sheet's owner keeps the sentence as
+/// the sheet's work ends (`keep(_:)`), and says it from the sheet's
+/// `onDismiss` (`sheetDidClose(say:)`), a moment later
+/// (`VoiceOverAnnouncer.afterSheetCloses(_:)`).
+@MainActor
+final class AnnouncementAfterSheet {
+    /// The sentence kept to say once the sheet has closed, if any.
+    private(set) var pending: String?
+
+    /// Keeps `sentence` to say once the sheet has closed; nil keeps
+    /// nothing, as after Cancel.
+    func keep(_ sentence: String?) {
+        pending = sentence
+    }
+
+    /// Says the sentence kept, once, through `say`, a moment after the
+    /// sheet has closed; nothing when none was kept.
+    func sheetDidClose(say: @escaping @MainActor (String) -> Void) {
+        guard let sentence = pending else { return }
+        pending = nil
+        VoiceOverAnnouncer.afterSheetCloses { say(sentence) }
     }
 }

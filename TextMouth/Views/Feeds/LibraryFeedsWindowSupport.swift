@@ -93,9 +93,7 @@ final class LibraryFeedsPresenter: ObservableObject {
             return
         }
         let message = FeedWording.subscribed(title: current.title, counts: center.counts(of: feed.id))
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            VoiceOverAnnouncer.announce(message, from: window)
-        }
+        VoiceOverAnnouncer.announceAfterSheetCloses(message, from: window)
     }
 }
 
@@ -231,14 +229,12 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                     presenter.itemDescription = nil
                 }
             }
-            .sheet(item: $presenter.moveToLibrary) { request in
-                MoveToLibrarySheet(
-                    request: request,
-                    library: library,
-                    announce: { message in presenter.announce(message, hostWindow) },
-                    onClose: { presenter.moveToLibrary = nil }
-                )
-            }
+            // What the move did is said once the sheet has closed (REV11 F6).
+            .modifier(MoveToLibrarySheetPresentation(
+                request: $presenter.moveToLibrary,
+                library: library,
+                say: { message in presenter.announce(message, hostWindow) }
+            ))
     }
 
     /// The notice after a command, and the question before one that can't

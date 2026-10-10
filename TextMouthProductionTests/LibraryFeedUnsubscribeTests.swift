@@ -518,7 +518,7 @@ final class LibraryFeedUnsubscribeCommandTests: XCTestCase {
         XCTAssertEqual(
             heard.lines.last,
             "Unsubscribed from \(title): TextMouth no longer checks it for new episodes; its 1 downloaded episode stays. "
-                + "The place and bookmarks kept for 1 removed download were deleted."
+                + "The place, bookmarks, and transcript kept for 1 removed download were deleted."
         )
         let record = try XCTUnwrap(world.center.store.record(of: feed.id), "unsubscribing removed the feed's record")
         XCTAssertFalse(record.feed.isSubscribed)

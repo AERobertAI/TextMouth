@@ -22,25 +22,28 @@ final class LibraryFeedMoveToFolderTests: FeedItemIndexTestCase {
     }
 
     /// What VoiceOver hears of the items left: each named, up to three, then
-    /// how many more; nothing when none was left.
+    /// how many more, and the command that does move one, Move to Library…
+    /// (REV11); nothing when none was left.
     func testWhatIsSaidOfTheItemsLeft() {
         XCTAssertNil(LibraryTransitionWording.feedItemsLeft(titles: []))
         XCTAssertEqual(
             LibraryTransitionWording.feedItemsLeft(titles: ["Ep. 368"]),
-            "Left “Ep. 368” where it is: episodes and articles stay in their feeds."
+            "Left “Ep. 368” where it is: episodes and articles stay in their feeds; Move to Library… makes one a book of your library."
         )
         XCTAssertEqual(
             LibraryTransitionWording.feedItemsLeft(titles: ["Ep. 368", "Ep. 367"]),
-            "Left “Ep. 368” and “Ep. 367” where they are: episodes and articles stay in their feeds."
+            "Left “Ep. 368” and “Ep. 367” where they are: episodes and articles stay in their feeds; Move to Library… makes one a book of your library."
         )
         XCTAssertEqual(
             LibraryTransitionWording.feedItemsLeft(titles: ["A", "B", "C", "D", "E"]),
-            "Left “A”, “B”, “C”, and 2 more where they are: episodes and articles stay in their feeds."
+            "Left “A”, “B”, “C”, and 2 more where they are: episodes and articles stay in their feeds; Move to Library… makes one a book of your library."
         )
     }
 
     /// A mixed selection's move takes the book into the folder, leaves the
-    /// article in its feed's folder, and says which it left.
+    /// article in its feed's folder, and returns which it left, saying
+    /// nothing itself, for the Move sheet's owner to say once the sheet has
+    /// closed, so its closing never cuts the words off (REV11 F6).
     @MainActor
     func testAMixedSelectionMovesTheBooksAndSaysWhatItLeft() async throws {
         let book = try makePackagedBook(title: "Middlemarch")
@@ -56,13 +59,13 @@ final class LibraryFeedMoveToFolderTests: FeedItemIndexTestCase {
 
         let outcome = await model.moveBooksReturningOutcome([book, item], toFolder: destination)
 
-        XCTAssertEqual(outcome, .success(nil))
+        XCTAssertEqual(outcome, .success("Left “Lamentable Lemmings” where it is: episodes and articles stay in their feeds; Move to Library… makes one a book of your library."))
         let moved = try XCTUnwrap(model.bookByID(book.id))
         XCTAssertEqual(moved.folderPath, destination)
         XCTAssertTrue(FileManager.default.fileExists(atPath: moved.filePath), "the book's file is not where its row says")
         XCTAssertEqual(model.bookByID(item.id), item)
         XCTAssertTrue(FileManager.default.fileExists(atPath: item.bookFileURL.path))
-        XCTAssertEqual(heard.messages, ["Left “Lamentable Lemmings” where it is: episodes and articles stay in their feeds."])
+        XCTAssertEqual(heard.messages, [], "the note was said while the Move sheet closed")
     }
 
     // MARK: - Fixtures

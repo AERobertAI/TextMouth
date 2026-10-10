@@ -406,6 +406,69 @@ final class FeedDownloadProgressTests: XCTestCase {
         XCTAssertFalse(progress.state.isCancelling, "Cancel outlasted its run")
     }
 
+    /// A run TextMouth started by itself, which nobody heard begin, is heard
+    /// once, at medium priority, as soon as it has run long, with how many
+    /// downloads are under way; a run the listener began is not (feed
+    /// review item 17).
+    func testARunStartedByItselfIsHeardOnceItHasRunLong() {
+        let clock = CommandClock()
+        let none = FeedDownloadWaits()
+        let byItself = FeedDownloadProgress(now: { clock.now })
+
+        let recorder = recordingAnnouncements {
+            byItself.begin(
+                title: "Ep. 381", feedTitle: "Finish It!", transfer: Self.transfer(0, of: 1_000),
+                queued: Array(repeating: nil, count: 8), waits: none, byItself: true
+            )
+            clock.advance(by: 5)
+            byItself.receive(Self.transfer(100, of: 1_000))
+            clock.advance(by: 6)
+            byItself.receive(Self.transfer(200, of: 1_000))
+            byItself.receive(Self.transfer(300, of: 1_000))
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Feed downloads: 9 under way."])
+        XCTAssertEqual(recorder.announcements.map(\.priority), [.medium])
+        XCTAssertEqual(
+            FeedDownloadProgressWording.underWay(9, secondsLeft: 240),
+            "Feed downloads: 9 under way, about 4 minutes left."
+        )
+
+        let listeners = FeedDownloadProgress(now: { clock.now })
+        let quiet = recordingAnnouncements {
+            listeners.begin(title: "Ep. 380", feedTitle: "Finish It!", transfer: Self.transfer(0, of: 1_000), queued: [nil], waits: none)
+            clock.advance(by: 20)
+            listeners.receive(Self.transfer(100, of: 1_000))
+        }
+        XCTAssertEqual(quiet.announcements, [], "a run the listener began was heard as if it began by itself")
+    }
+
+    /// A download asked for after Cancel, while the one Cancel let finish was
+    /// still being added, ends the cancelling as it begins: the section no
+    /// longer says "Cancelling...", and its Cancel is offered again (feed
+    /// review item 13).
+    func testADownloadBegunAfterCancelEndsTheCancelling() {
+        let clock = CommandClock()
+        let progress = FeedDownloadProgress(now: { clock.now })
+        let none = FeedDownloadWaits()
+
+        _ = recordingAnnouncements {
+            progress.begin(title: "Ep. 370", feedTitle: "Finish It!", transfer: nil, queued: [], waits: none)
+            progress.beginAddingToLibrary()
+            progress.cancel(stopped: [], finishing: "Ep. 370")
+            XCTAssertTrue(progress.state.isCancelling)
+            // The listener asks for another while the first is being added.
+            progress.update(queued: [nil], waits: none)
+            progress.end(.downloaded, queued: [nil], waits: none)
+            XCTAssertTrue(progress.state.isCancelling, "the cancelling ended before a download began")
+            progress.begin(title: "Ep. 371", feedTitle: "Finish It!", transfer: nil, queued: [], waits: none)
+        }
+
+        XCTAssertTrue(progress.state.isRunning)
+        XCTAssertFalse(progress.state.isCancelling, "Cancelling outlasted the downloads it stopped")
+        XCTAssertFalse(progress.state.lines(at: clock.now).contains(FeedDownloadProgressWording.cancelling))
+    }
+
     /// As TextMouth quits, the progress shows nothing and says nothing, and
     /// a download that stops afterwards changes nothing.
     func testQuittingClearsTheProgressWithoutAWord() {

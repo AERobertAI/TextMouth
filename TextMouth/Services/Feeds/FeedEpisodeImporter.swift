@@ -265,6 +265,10 @@ enum FeedEpisodeImporter {
             let staging = try ImportStaging.makeEmpty(publishingTo: keptPackage)
             defer { staging.discard() }
             try FeedItemPackage.copyWhatANewDownloadKeeps(from: keptPackage, to: staging.directory)
+            // An article's text, which the rules keep and may hold an edit,
+            // is written anew from the new file: the earlier one is read
+            // now, to stay beside the new one should they differ (REV11).
+            let earlierText = format.isAudio ? nil : try FeedItemPackage.keptText(of: keptPackage)
             let keptState = (try? StoredBookRecord.read(from: keptPackage))?.info.state
 
             let file = try stageFile(named: fileName, in: staging, run: &run, placeFile: placeFile)
@@ -277,18 +281,28 @@ enum FeedEpisodeImporter {
             staged.feedLink = link
             // What reading the new file measures replaces what the old one's did.
             staged.contentAnalysisFields = Book.ContentAnalysisFields()
+            var keptCopy: URL?
             let restored = try FileImportService.publishReadableBook(
                 staged,
                 from: staging,
                 run: &run,
                 feedLink: link,
                 replacing: keptState,
-                publish: { try FeedItemPackage.putInPlace($0, of: keptPackage) }
+                publish: { built in
+                    keptCopy = try FeedItemPackage.keepEarlierText(earlierText, in: built.directory)
+                    try FeedItemPackage.putInPlace(built, of: keptPackage)
+                }
             )
             DiagnosticLog.event(
                 .feeds,
                 "FEED_DOWNLOAD_RESTORED: \(restored.book.title): downloaded again into its kept package, with its place and bookmarks"
             )
+            if let keptCopy {
+                DiagnosticLog.event(
+                    .feeds,
+                    "FEED_ARTICLE_TEXT_KEPT: \(restored.book.title): its earlier text, unlike the new download's, kept as \(keptCopy.lastPathComponent)"
+                )
+            }
             return restored
         }
     }
@@ -336,11 +350,13 @@ enum FeedEpisodeImporter {
     /// `shortArticleWords` words and the item links a page, whose article
     /// (`readablePart(ofPage:)`) is used when it reads as more words.
     /// `fetchPage` fetches the page's HTML, or returns nil when it can't.
-    static func articleBody(for item: FeedItem, fetchPage: @Sendable (URL) async -> String?) async -> String {
+    /// - Throws: what `fetchPage` throws, as a download that must wait for
+    ///   its page rather than be written from its summary does.
+    static func articleBody(for item: FeedItem, fetchPage: @Sendable (URL) async throws -> String?) async rethrows -> String {
         let own = item.content ?? item.summary
         let ownWords = own.map { wordCount($0.plainText) } ?? 0
         guard ownWords < shortArticleWords, let link = item.link,
-              let page = await fetchPage(link),
+              let page = try await fetchPage(link),
               let readable = readablePart(ofPage: page),
               let pageText = FeedTextConverter.read(html: readable),
               wordCount(pageText.plainText) > ownWords else {

@@ -134,8 +134,22 @@ enum FeedDownloadProgressWording {
     /// of its downloads: "Feed downloads: 3 of 12 done, about 4 minutes
     /// left." The time left is said when there is an estimate.
     static func quarter(done: Int, of total: Int, failed: Int, secondsLeft: TimeInterval?) -> String {
-        let timeLeft = secondsLeft.map { ", " + ImportProgressWording.lowercasedFirst(ImportProgressWording.timeLeft($0)) } ?? ""
-        return "Feed downloads: \(count(done: done, of: total, failed: failed))\(timeLeft)."
+        "Feed downloads: \(count(done: done, of: total, failed: failed))\(timeLeftClause(secondsLeft))."
+    }
+
+    /// Announced once as a run TextMouth started by itself, which nobody
+    /// heard begin, has run long, before any of its quarters: "Feed
+    /// downloads: 9 under way, about 4 minutes left." (feed review item 17).
+    /// `count` counts the downloads not yet done, the one under way among
+    /// them; the time left is said when there is an estimate.
+    static func underWay(_ count: Int, secondsLeft: TimeInterval?) -> String {
+        "Feed downloads: \(count) under way\(timeLeftClause(secondsLeft))."
+    }
+
+    /// ", about 4 minutes left" for an estimate of `secondsLeft`, and
+    /// nothing without one.
+    private static func timeLeftClause(_ secondsLeft: TimeInterval?) -> String {
+        secondsLeft.map { ", " + ImportProgressWording.lowercasedFirst(ImportProgressWording.timeLeft($0)) } ?? ""
     }
 
     /// Announced as a run of downloads that ran long ends: "Feed downloads

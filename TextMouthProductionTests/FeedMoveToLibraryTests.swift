@@ -402,9 +402,10 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
     // MARK: - Through the Commands
 
     /// Move to Library… on a downloaded episode's book row opens its sheet
-    /// for the episode; Move there moves it, VoiceOver hearing so, and the
-    /// feed's folder then lists the episode "In Library". Chosen with only a
-    /// book of the library's own, it opens nothing and says why.
+    /// for the episode; Move there moves it, VoiceOver hearing so once the
+    /// sheet has closed (REV11 F6), and the feed's folder then lists the
+    /// episode "In Library". Chosen with only a book of the library's own,
+    /// it opens nothing and says why.
     func testTheItemsCommandMovesTheEpisodeThroughItsSheet() async throws {
         let world = try FeedTestWorld(self, label: "FeedMoveToLibraryCommand")
         world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
@@ -430,17 +431,26 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
         XCTAssertEqual(request.books.map(\.id), [book.id])
         XCTAssertEqual(request.heading, "Move “Episode 1” to Library")
         XCTAssertEqual(request.hint, FeedWording.moveToLibraryHint(count: 1, noun: .episode))
-        let outcome = await request.move(toFolder: keepers, in: world.library) { heard.append($0) }
-        XCTAssertEqual(outcome, .success(nil))
-        XCTAssertEqual(
-            heard.last,
-            "Moved “Episode 1” into \(keepers). It's a book of your library now, and its feed lists it In Library."
-        )
+        // What the move did waits for the sheet to close (REV11 F6): the move
+        // returns it, the sheet's owner keeps it while the sheet closes, as
+        // `MoveToLibrarySheetPresentation` does, and it is said a moment
+        // after, once VoiceOver is back on the window.
+        let sentence = "Moved “Episode 1” into \(keepers). It's a book of your library now, and its feed lists it In Library."
+        let outcome = await request.move(toFolder: keepers, in: world.library)
+        XCTAssertEqual(outcome, .success(sentence))
+        XCTAssertEqual(heard, [], "the move was said while its sheet closed")
+        let afterMove = AnnouncementAfterSheet()
+        afterMove.keep(outcome.message)
+        afterMove.sheetDidClose { heard.append($0) }
+        XCTAssertEqual(heard, [], "the move was said before its sheet had closed")
+        XCTAssertNil(afterMove.pending, "a sentence was kept to be said twice")
+        await waitFor("the move is said once its sheet has closed") { heard == [sentence] }
         let after = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [], search: "", wordsPerMinute: 200)
         guard case .item(let row)? = after.entries.first else { return XCTFail("\(after.entries)") }
         XCTAssertEqual(row.state, .inLibrary(bookID: book.id))
         XCTAssertTrue(row.label.hasPrefix("Episode 1, In Library, "), row.label)
 
+        // The sheet closes, as its presentation closes it after a move.
         presenter.moveToLibrary = nil
         let ownBook = Book(title: "Middlemarch", format: .txt, filePath: "/nonexistent/m.txt", md5Hash: UUID().uuidString)
         presenter.requestMoveToLibrary([ownBook, try XCTUnwrap(world.library.bookByID(book.id))], in: context)

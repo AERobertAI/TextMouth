@@ -452,6 +452,19 @@ final class FeedTestWorld {
     /// The book storage, which says the library is on this Mac until a test
     /// moves it to the cloud.
     let cloud = FakeBookCloudStorage(location: .local)
+    /// What the listener's own deletions removed, in order, each by its
+    /// name with the names it held, as the Trash would hold them (REV11).
+    let removedItems = LockedValue<[RemovedItem]>([])
+    /// Whether the listener's own deletions are refused, as a Trash that
+    /// cannot take an item refuses it.
+    let refusesRemovals = LockedValue(false)
+
+    /// One item a listener's deletion removed: its name, and the names
+    /// inside it, sorted, when it is a folder.
+    struct RemovedItem: Equatable, Sendable {
+        let name: String
+        let contents: [String]
+    }
     /// The statistics service whose finished books mark items played.
     let stats: ReadingStatsService
     /// The folder holding resume data.
@@ -519,6 +532,8 @@ final class FeedTestWorld {
         let lowPowerMode = lowPowerMode
         let freeSpace = freeSpace
         let cloud = cloud
+        let removedItems = removedItems
+        let refusesRemovals = refusesRemovals
         stats = statistics ?? ReadingStatsService(fileURL: sandbox.appendingPathComponent("reading_stats.json"))
         let stats = stats
         resumeFolder = sandbox.appendingPathComponent("Resume Data", isDirectory: true)
@@ -544,8 +559,14 @@ final class FeedTestWorld {
             boundary: .shared,
             bookStorage: { cloud },
             finishedBooksSource: stats,
-            // Never the Trash in a test: a file or package goes for good.
-            removeItem: { try FileManager.default.removeItem(at: $0) }
+            // Never the Trash in a test: a file or package goes for good,
+            // noted as the Trash would hold it, unless the test refuses it.
+            removeItem: { item in
+                guard !refusesRemovals.value else { throw CocoaError(.fileWriteNoPermission) }
+                let contents = ((try? FileManager.default.contentsOfDirectory(atPath: item.path)) ?? []).sorted()
+                removedItems.value.append(RemovedItem(name: item.lastPathComponent, contents: contents))
+                try FileManager.default.removeItem(at: item)
+            }
         )
         center = FeedCenter(environment: environment)
         // The library lists this engine's feeds' items (FR11).
@@ -576,8 +597,19 @@ final class FeedTestWorld {
     /// (`FeedStore.flush()`); its fetch details, whose writes make their
     /// folder again when it is gone; and every statistics save, whose
     /// failure the app's failure center announces.
+    ///
+    /// Its download work stops first, as quitting stops it, and its own
+    /// work, a sweep or a pass of the newest-N rule, is let end, so no write
+    /// either asks for lands once the flush is done, as a stray save once
+    /// did for a test ending with work in flight (feed review item 22). The
+    /// wait gives up after 15 seconds, so a teardown never hangs.
     static func finish(_ center: FeedCenter) async {
         center.stop()
+        await center.downloads.stopForQuit()
+        let deadline = Date().addingTimeInterval(15)
+        while center.isSweeping || center.downloads.current != nil, Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
         await center.store.flush()
         await center.fetchStates.flush()
         ReadingStatsService.waitForQueuedSaves()
@@ -601,15 +633,18 @@ final class FeedTestWorld {
 
     /// The engine the next launch makes: a new one on the world's folders,
     /// network, clock, and library, working on its own as the app's does,
-    /// started, with what its start begins finished. `test` stops it when
-    /// it ends, and waits for its writes, before the world's folders go.
-    func relaunch(_ test: XCTestCase) async -> FeedCenter {
+    /// started, with what its start begins finished. `configure` sees it
+    /// before it starts, as a test that hooks into its downloads needs.
+    /// `test` stops it when it ends, and waits for its writes, before the
+    /// world's folders go.
+    func relaunch(_ test: XCTestCase, configuring configure: (FeedCenter) -> Void = { _ in }) async -> FeedCenter {
         var next = environment
         next.worksOnItsOwn = true
         let relaunched = FeedCenter(environment: next)
         test.addTeardownBlock {
             await Self.finish(relaunched)
         }
+        configure(relaunched)
         await relaunched.start(library: library)?.value
         return relaunched
     }
@@ -632,6 +667,22 @@ final class FeedTestWorld {
     /// Moves the clock on by `interval` seconds.
     func advance(by interval: TimeInterval) {
         clock.value = clock.value.addingTimeInterval(interval)
+    }
+
+    /// Holds the engine's import queue, where its rules remove files off the
+    /// main thread and downloads are imported, until the gate it returns is
+    /// released, as heavy load can hold it: a removal begun meanwhile has
+    /// taken its rows out of the books and written its records and indexes,
+    /// but has removed no file and settled no item's state (REV11 F5, and
+    /// the races of board #1821). `test`'s teardown releases it too.
+    func holdImports(_ test: XCTestCase) async -> WorkGate {
+        let gate = WorkGate()
+        gate.arm()
+        test.addTeardownBlock { gate.release() }
+        let downloads = center.downloads
+        Task { await downloads.runBesideImports { gate.pass() } }
+        await test.waitFor("the import queue is held") { gate.wasReached }
+        return gate
     }
 
     /// A date `days` days from the clock's start.
@@ -663,6 +714,50 @@ extension XCTestCase {
                 return
             }
             try? await Task.sleep(for: .milliseconds(10))
+        }
+    }
+}
+
+// MARK: - Holding Work Partway
+
+/// Holds work on a background thread at its first pass once armed, until
+/// the test lets it go, so the test can see what is under way at that
+/// moment: an export reading its first file, or the feed engine's import
+/// queue (`FeedTestWorld.holdImports(_:)`). The wait gives up after 30
+/// seconds, so no thread waits for good should a test end early, and each
+/// test releases it in its teardown as well.
+final class WorkGate: Sendable {
+    /// Whether the gate holds the next pass, and whether one reached it.
+    private let state = OSAllocatedUnfairLock(initialState: (armed: false, reached: false))
+    /// Signalled to let the held pass go.
+    private let released = DispatchSemaphore(value: 0)
+
+    /// Makes the next pass wait at the gate.
+    func arm() {
+        state.withLock { $0.armed = true }
+    }
+
+    /// Whether a pass has reached the armed gate.
+    var wasReached: Bool {
+        state.withLock { $0.reached }
+    }
+
+    /// Lets the held pass go; a release with none held only lets the next
+    /// one through.
+    func release() {
+        released.signal()
+    }
+
+    /// Called by the work at each pass: the first once the gate is armed
+    /// waits until `release()`, and every other passes at once.
+    func pass() {
+        let holds = state.withLock { state -> Bool in
+            guard state.armed, !state.reached else { return false }
+            state.reached = true
+            return true
+        }
+        if holds {
+            _ = released.wait(timeout: .now() + 30)
         }
     }
 }

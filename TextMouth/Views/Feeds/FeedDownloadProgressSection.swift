@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 // MARK: - The Feed Downloads Section (FR10)
@@ -76,7 +77,31 @@ extension LibraryWindowView {
     /// this section, made here so tests can press the very button the
     /// window shows.
     static func feedDownloadSection(for library: LibraryViewModel, at now: Date = Date()) -> FeedDownloadProgressSection {
-        FeedDownloadProgressSection(state: library.feedDownloadProgress.state, now: now, onCancel: library.cancelFeedDownloads)
+        FeedDownloadProgressSection(state: library.feedDownloadProgress.state, now: now) {
+            cancelFeedDownloads(of: library, in: NSApp.keyWindow)
+        }
+    }
+
+    /// Stops `library`'s feed downloads, as the section's Cancel does, and
+    /// moves VoiceOver's focus from the section, which goes once the run
+    /// ends, to the list of the Library window `window`, where Cancel was
+    /// pressed, so focus is never left on nothing (feed review item 19).
+    @MainActor
+    static func cancelFeedDownloads(of library: LibraryViewModel, in window: NSWindow?) {
+        library.cancelFeedDownloads()
+        focusListAfterCancel(window)
+    }
+
+    /// Moves VoiceOver's focus to the list of the Library window given, a
+    /// moment after Cancel, once the section has gone: to the element the
+    /// window first focuses (`StandardVoiceOverFocusTriggerView`). A test
+    /// listens in its place.
+    @MainActor
+    static var focusListAfterCancel: @MainActor (NSWindow?) -> Void = { window in
+        guard let window else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + VoiceOverAnnouncer.afterSheetDelay) {
+            StandardVoiceOverFocusTriggerView.staticFindAndFocus(in: window)
+        }
     }
 }
 

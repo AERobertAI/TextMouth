@@ -142,6 +142,45 @@ final class BookExportSheetTests: XCTestCase {
         XCTAssertFalse(BookExportModel.isInsideDataDirectory(try makeSandboxDirectory("Export Dialog Outside")))
     }
 
+    /// An export holds the books it reads in use from the moment it starts
+    /// until it ends (REV11 F1), so the feed engine's rules leave an episode
+    /// or article being exported for their next pass
+    /// (`LibraryViewModel.feedBooksInUse`). Two exports of one book count
+    /// apart: the book stays in use until both have ended.
+    func testAnExportHoldsItsBooksInUseUntilItEnds() async throws {
+        let world = try makeIntegrationWorld("Export Dialog In Use")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let gate = WorkGate()
+        addTeardownBlock { gate.release() }
+        let access = MaintenanceFileAccess(isDataless: { _ in false }, refusesRead: { _ in
+            gate.pass()
+            return false
+        })
+        let folder = try makeSandboxDirectory("Export Dialog In Use Folder")
+        let model = BookExportModel(books: [book], library: world.library, destination: folder, access: access)
+        await model.load()
+        XCTAssertFalse(BookExportModel.booksBeingExported.contains(book.id), "listing the books held them")
+
+        gate.arm()
+        let export = Task { await model.export() }
+        await waitFor("the export reads its first file") { gate.wasReached }
+        XCTAssertTrue(BookExportModel.booksBeingExported.contains(book.id))
+        XCTAssertTrue(world.library.feedBooksInUse.contains(book.id))
+        gate.release()
+        let outcome = await export.value
+        XCTAssertEqual(outcome?.exported.count, 1)
+        XCTAssertFalse(BookExportModel.booksBeingExported.contains(book.id), "an export that ended still holds its book")
+        XCTAssertFalse(world.library.feedBooksInUse.contains(book.id))
+
+        let other = UUID()
+        BookExportModel.noteExportStarted([book.id])
+        BookExportModel.noteExportStarted([book.id, other])
+        BookExportModel.noteExportEnded([book.id])
+        XCTAssertEqual(BookExportModel.booksBeingExported.intersection([book.id, other]), [book.id, other])
+        BookExportModel.noteExportEnded([book.id, other])
+        XCTAssertEqual(BookExportModel.booksBeingExported.intersection([book.id, other]), [])
+    }
+
     /// With nothing checked, Export is unavailable and exports nothing.
     func testNothingIsExportedWithNothingChecked() async throws {
         let world = try makeIntegrationWorld("Export Dialog Unchecked")

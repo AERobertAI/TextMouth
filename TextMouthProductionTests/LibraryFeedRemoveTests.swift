@@ -46,6 +46,75 @@ final class LibraryFeedRemoveTests: XCTestCase {
         XCTAssertEqual(mixed.deleteButtonTitle, "Move to Trash")
     }
 
+    // MARK: - The Command (REV11 F2)
+
+    /// For feed items alone the library's Remove is worded as their Delete
+    /// Download, asking first or deleting at once as the preference says,
+    /// and its hint never promises the choice to keep the files, which their
+    /// question does not offer; books, and books with feed items, keep the
+    /// library's words.
+    func testTheRemoveCommandForFeedItemsAloneIsDeleteDownload() {
+        let episode = Self.feedItem("Ep. 368")
+        let article = Self.feedItem("Lamentable Lemmings")
+        let book = Book(title: "Field Notes", format: .txt, filePath: "/Library/Notes.tmb/notes.txt", md5Hash: "notes", tmbDirectoryName: "Notes.tmb")
+        let asks = RemovalPreferences(confirmsFirst: true, movesToTrash: true)
+        let atOnce = RemovalPreferences(confirmsFirst: false, movesToTrash: false)
+
+        let one = LibraryRemoveCommandWording(preferences: asks, books: [episode])
+        XCTAssertEqual(one.menuTitle, "Delete Download…")
+        XCTAssertEqual(one.shortTitle, "Delete Download…")
+        XCTAssertEqual(one.accessibilityLabel, "Delete the download of “Ep. 368”")
+        XCTAssertEqual(
+            one.accessibilityHint,
+            "Asks before deleting. Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again."
+        )
+
+        let two = LibraryRemoveCommandWording(preferences: atOnce, books: [episode, article])
+        XCTAssertEqual(two.menuTitle, "Delete 2 Downloads")
+        XCTAssertEqual(two.shortTitle, "Delete Downloads")
+        XCTAssertEqual(two.accessibilityLabel, "Delete 2 downloads")
+        XCTAssertEqual(
+            two.accessibilityHint,
+            "Their files are deleted permanently and cannot be recovered. "
+                + "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again."
+        )
+
+        // The edit bar knows how many are selected, and that each is a feed item.
+        let bar = LibraryRemoveCommandWording(preferences: asks, count: 1, feedItemsOnly: true)
+        XCTAssertEqual(bar.shortTitle, "Delete Download…")
+        XCTAssertEqual(bar.accessibilityLabel, "Delete 1 download")
+        XCTAssertFalse(bar.accessibilityHint.contains("keep them"), bar.accessibilityHint)
+
+        let mixed = LibraryRemoveCommandWording(preferences: asks, books: [book, episode])
+        XCTAssertNil(mixed.feedDownloads)
+        XCTAssertEqual(mixed.menuTitle, "Remove 2 Books from Library...")
+        XCTAssertNil(LibraryRemoveCommandWording(preferences: asks, count: 0, feedItemsOnly: true).feedDownloads)
+    }
+
+    /// A row's menu offers the library's Remove unless the row is one feed
+    /// item whose own commands offer Delete Download, which Remove would
+    /// repeat; several feed items, a book, and a feed item whose commands
+    /// are not known keep it.
+    func testARowLeavesOutRemoveBesideItsOwnDeleteDownload() {
+        let episode = Self.feedItem("Ep. 368")
+        let book = Book(title: "Field Notes", format: .txt, filePath: "/Library/Notes.tmb/notes.txt", md5Hash: "notes", tmbDirectoryName: "Notes.tmb")
+        let own = FeedItemAction.actions(
+            feedID: UUID(),
+            itemID: "guid:Ep. 368",
+            itemTitle: "Ep. 368",
+            state: .downloaded(bookID: episode.id),
+            isPlayed: false,
+            isArticle: false,
+            onBookRow: true
+        )
+        XCTAssertTrue(own.contains { $0.command == .deleteDownload })
+
+        XCTAssertFalse(LibraryRemoveCommandWording.isOfferedOnRow(for: [episode], feedActions: own))
+        XCTAssertTrue(LibraryRemoveCommandWording.isOfferedOnRow(for: [episode], feedActions: []))
+        XCTAssertTrue(LibraryRemoveCommandWording.isOfferedOnRow(for: [episode, Self.feedItem("Ep. 367")], feedActions: own))
+        XCTAssertTrue(LibraryRemoveCommandWording.isOfferedOnRow(for: [book], feedActions: []))
+    }
+
     // MARK: - The Report
 
     /// The report names the books that went and the downloads deleted, and
@@ -77,8 +146,9 @@ final class LibraryFeedRemoveTests: XCTestCase {
 
     /// Removing an episode the listener opened, as the library's Remove does
     /// once its question is confirmed, deletes its download, keeps its row
-    /// on its feed's shelf, and says so through VoiceOver in the words of
-    /// the removal setting in force.
+    /// on its feed's shelf, and returns what it did in the words of the
+    /// removal setting in force, saying nothing itself, for the question's
+    /// owner to say once the question has closed (REV11 F6).
     @MainActor
     func testRemovingAnOpenedEpisodeSaysItsPlaceIsKept() async throws {
         let world = try FeedTestWorld(self, label: "LibraryFeedRemove")
@@ -93,18 +163,25 @@ final class LibraryFeedRemoveTests: XCTestCase {
         world.library.persistReadingPosition(bookID: book.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 42))
         let mode = world.library.removalPreferences.deletionMode
 
+        var report: String?
         let heard = recordingAnnouncements {
-            world.library.performRemoveBooks([book], deleteTMB: true)
+            report = world.library.removeBooksAndDelete([book])
         }
 
         XCTAssertFalse(world.library.showError, world.library.errorMessage ?? "")
         XCTAssertNil(world.library.bookByID(book.id))
         XCTAssertEqual(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"]?.id, book.id)
-        XCTAssertEqual(
-            heard.announcements.map(\.message),
-            [FeedDownloadRemovalWording(mode, items: [book]).completionMessage(keptCount: 1)]
-        )
-        XCTAssertTrue(heard.announcements.first?.message.hasSuffix("Its place, bookmarks, and transcript are kept.") == true)
+        XCTAssertEqual(heard.announcements, [], "the report was said while the question closed")
+        XCTAssertEqual(report, FeedDownloadRemovalWording(mode, items: [book]).completionMessage(keptCount: 1))
+        XCTAssertTrue(report?.hasSuffix("Its place, bookmarks, and transcript are kept.") == true)
+
+        // The question's button says it a moment after the question closes.
+        let words = try XCTUnwrap(report)
+        let capture = AnnouncementCapture()
+        defer { capture.stop() }
+        VoiceOverAnnouncer.announceAfterSheetCloses(words, from: nil)
+        XCTAssertEqual(capture.messages, [], "the report was said before the question had closed")
+        await waitFor("the report is said once the question has closed") { capture.messages == [words] }
     }
 
     // MARK: - Fixtures

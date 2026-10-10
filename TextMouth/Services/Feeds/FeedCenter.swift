@@ -117,6 +117,12 @@ protocol FeedLibraryHost: AnyObject {
     func settleFeedFileRemovals(_ removals: [FeedFileRemoval], failures: [UUID: any Error]) -> FeedFileRemovalOutcome
     /// The books open in readers now, which nothing may delete.
     var feedBooksOpenInReaders: Set<UUID> { get }
+    /// The books in use now, which no rule of the engine's removes, leaving
+    /// each for the rule's next pass (REV11 F1): those open in readers,
+    /// which covers one playing; the book being transcribed, whose
+    /// transcript is saved into its package only once its audio has been
+    /// heard; and those an export is reading.
+    var feedBooksInUse: Set<UUID> { get }
     /// Whether the book `bookID` is on the reading list, whose downloads the
     /// newest-N rule never removes (FR11).
     func feedBookIsOnReadingList(_ bookID: UUID) -> Bool
@@ -164,9 +170,10 @@ enum FeedEvent: Equatable, Sendable {
     case downloadFailed(feedID: UUID, itemID: FeedItem.ID, reason: String)
     /// A change of the "List and download" choice or its number took effect,
     /// once it had stayed unchanged for `FeedCenter.itemPolicyQuietTime`
-    /// (FR11): the global setting's, which covers every feed, when
-    /// `feedIDs` is nil, or else those feeds' own.
-    case itemPolicyApplied(feedIDs: Set<UUID>?)
+    /// (FR11): the global setting's, which covers every feed, when `global`,
+    /// and the feeds `feedIDs`' own, both when both changed within one wait
+    /// (feed review item 20).
+    case itemPolicyApplied(global: Bool, feedIDs: Set<UUID>)
 }
 
 // MARK: - Subscribing
@@ -315,9 +322,14 @@ final class FeedCenter: ObservableObject {
     /// The wait for the choice and its number to stay unchanged before the
     /// newest-N rule acts on a change, while it runs (FR11).
     private var itemPolicyWait: Task<Void, Never>?
-    /// The feeds whose choice or number changed since the rule last acted on
-    /// a change, every feed when nil (FR11).
-    private var feedsWithChangedItemPolicy: Set<UUID>? = []
+    /// The feeds whose own choice or number changed since the rule last
+    /// acted on a change (FR11).
+    private var feedsWithChangedItemPolicy: Set<UUID> = []
+    /// Whether the global choice or number changed since the rule last acted
+    /// on a change, kept beside the feeds' own, so a feed's change made
+    /// within the global change's wait is announced too (feed review item
+    /// 20).
+    private var globalItemPolicyChanged = false
     /// Passes the stores' changes on to this engine's observers.
     private var forwarding: [AnyCancellable] = []
     /// Hears finished books, and the readers that open and close.
@@ -331,6 +343,10 @@ final class FeedCenter: ObservableObject {
     /// The pass of the newest-N rule asked for and not run yet, with every
     /// pass asked for meanwhile (FR11).
     var pendingItemPolicyPass: FeedItemPolicyPassRequest?
+    /// Whether each audiobook of the library's own came from a feed, as its
+    /// package record's feed link says, by book ID: read once a book for
+    /// Books Finished (`finishedBookKind(of:)`, REV11).
+    var feedOriginOfRecords: [UUID: Bool] = [:]
 
     /// An engine working with `environment`, started by `start(library:)`.
     init(environment: FeedEnvironment) {
@@ -718,19 +734,37 @@ final class FeedCenter: ObservableObject {
     }
 
     /// Announces the end of one feed's refresh, and asks for the newest-N
-    /// rule's pass over the feed (FR11), which downloads its newest and
-    /// removes its oldest downloads beyond them, trying its failed downloads
-    /// again when the refresh reached the network. A refresh TextMouth made
-    /// by itself that was not put off reached a network without data limits,
-    /// which such a refresh needs, so the downloads one put off are tried
-    /// again first.
+    /// rule's pass over the feed (FR11), which takes back what it no longer
+    /// counts, downloads its newest, and removes its oldest downloads beyond
+    /// them, trying its failed downloads again when the refresh reached the
+    /// network. A refresh TextMouth made by itself that was not put off
+    /// reached a network without data limits, which such a refresh needs, so
+    /// the downloads one put off are tried again: once the pass is asked
+    /// for, and only those the rule still counts, so a put-off download
+    /// whose item was played, or left the newest, never starts before the
+    /// pass takes it back (REV11 F3).
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
         requestSweep()
-        if report.origin.isDiscretionary, report.outcome != .skipped {
-            downloads.retryPutOffDownloads()
-        }
         requestItemPolicyPass(for: [report.feedID], retryingFailures: report.outcome != .skipped)
+        if report.origin.isDiscretionary, report.outcome != .skipped {
+            retryCountedPutOffDownloads()
+        }
+    }
+
+    /// Asks again for the downloads a network with data limits put off whose
+    /// items the newest-N rule still counts (`countedItemIDs(in:under:)`),
+    /// working out each feed's count once; the others stay put off for the
+    /// rule's pass to take back (REV11 F3).
+    private func retryCountedPutOffDownloads() {
+        var counted: [UUID: Set<FeedItem.ID>] = [:]
+        downloads.retryPutOffDownloads { request in
+            let feedCounts = counted[request.feedID] ?? store.record(of: request.feedID).map {
+                Self.countedItemIDs(in: $0, under: itemPolicy(of: request.feedID))
+            } ?? []
+            counted[request.feedID] = feedCounts
+            return feedCounts.contains(request.itemID)
+        }
     }
 
     /// Passes a download's event on to the engine's listeners, and, when a
@@ -820,8 +854,11 @@ final class FeedCenter: ObservableObject {
 
     // MARK: A Feed's Own Settings
 
-    /// Sends the feed `feedID`'s downloads to the library folder `folderID`
-    /// from now on; the books it downloaded stay where they are.
+    /// Lists the feed `feedID`'s items in the library folder `folderID` from
+    /// now on, those already downloaded among them: a feed's downloads stay
+    /// in the feed's own folder in the data directory, and the library
+    /// folder only lists them, by the feed's ID (FR11), so all of them
+    /// follow at once, and nothing moves on disk.
     func setFolder(_ folderID: UUID, of feedID: UUID) {
         store.update(feedID) { $0.feed.folderID = folderID }
     }
@@ -858,13 +895,19 @@ final class FeedCenter: ObservableObject {
     /// one, and, for a choice that downloads by hand, takes back the rule's
     /// downloads not yet under way and removes nothing. As the wait ends,
     /// the engine announces that the change took effect
-    /// (`FeedEvent.itemPolicyApplied`), for VoiceOver to say so (branch C).
-    /// Only an engine working on its own waits; a test runs the pass
-    /// itself.
+    /// (`FeedEvent.itemPolicyApplied`), for VoiceOver to say so (branch C):
+    /// the global change and each feed's own, both when both were made
+    /// within one wait (feed review item 20). Only an engine working on its
+    /// own waits; a test runs the pass itself.
     func itemPolicyChanged(for feedIDs: Set<UUID>?) {
         guard environment.worksOnItsOwn else { return }
-        // Every feed when either change covers every feed.
-        feedsWithChangedItemPolicy = feedsWithChangedItemPolicy.flatMap { changed in feedIDs.map { changed.union($0) } }
+        // The global change and the feeds' own are kept apart, so neither
+        // hides the other from what VoiceOver hears.
+        if let feedIDs {
+            feedsWithChangedItemPolicy.formUnion(feedIDs)
+        } else {
+            globalItemPolicyChanged = true
+        }
         itemPolicyWait?.cancel()
         let sleep = environment.sleep
         itemPolicyWait = Task { [weak self] in
@@ -874,11 +917,14 @@ final class FeedCenter: ObservableObject {
                 return
             }
             guard let self, !Task.isCancelled else { return }
+            let global = self.globalItemPolicyChanged
             let feeds = self.feedsWithChangedItemPolicy
+            self.globalItemPolicyChanged = false
             self.feedsWithChangedItemPolicy = []
             self.itemPolicyWait = nil
-            self.events.send(.itemPolicyApplied(feedIDs: feeds))
-            self.requestItemPolicyPass(for: feeds)
+            self.events.send(.itemPolicyApplied(global: global, feedIDs: feeds))
+            // A global change covers every feed.
+            self.requestItemPolicyPass(for: global ? nil : feeds)
         }
     }
 

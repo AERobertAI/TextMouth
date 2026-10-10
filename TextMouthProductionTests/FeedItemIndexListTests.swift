@@ -196,8 +196,11 @@ final class FeedItemIndexListTests: FeedItemIndexTestCase {
     }
 
     /// Moving a selection to a folder moves no feed's item: its package stays
-    /// in its feed's folder, its row keeps its place, and VoiceOver hears
-    /// that it was left where it is (REV10, item 6), rather than nothing.
+    /// in its feed's folder, its row keeps its place, and the move says it
+    /// was left where it is (REV10, item 6), rather than nothing: the Move
+    /// sheet's move returns the words for the sheet's owner to say once the
+    /// sheet has closed (REV11 F6), and a move with no sheet says them at
+    /// once.
     @MainActor
     func testAFolderEditMovesNoFeedItem() async throws {
         /// What VoiceOver was asked to say, in order.
@@ -212,12 +215,16 @@ final class FeedItemIndexListTests: FeedItemIndexTestCase {
         VoiceOverAnnouncer.poster = { announcement, _ in heard.messages.append(announcement.message) }
         defer { VoiceOverAnnouncer.poster = previousPoster }
 
+        let note = "Left “Stays In Its Feed” where it is: episodes and articles stay in their feeds; Move to Library… makes one a book of your library."
         let outcome = await model.moveBooksReturningOutcome([item], toFolder: folderPath)
 
-        XCTAssertEqual(outcome, .success(nil))
+        XCTAssertEqual(outcome, .success(note))
         XCTAssertEqual(model.bookByID(item.id), item)
         XCTAssertTrue(FileManager.default.fileExists(atPath: item.bookFileURL.path))
-        XCTAssertEqual(heard.messages, ["Left “Stays In Its Feed” where it is: episodes and articles stay in their feeds."])
+        XCTAssertEqual(heard.messages, [], "the note was said while the Move sheet closed")
+
+        await model.moveBooks([item], toFolder: folderPath).value
+        XCTAssertEqual(heard.messages, [note])
     }
 
     /// A changed feed link changes the lists, as a book moving between

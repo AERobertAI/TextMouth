@@ -16,6 +16,9 @@ struct EditModeBar: View {
     /// Whether removing asks first and where deleted files go, so the
     /// Remove button says what it will do.
     let removalPreferences: RemovalPreferences
+    /// Whether every selected book is a feed item (FR11), whose Remove is
+    /// its Delete Download, which the button then says it is (REV11 F2).
+    var selectedAreFeedItems = false
     let onSelectAll: () -> Void
     let onDeselectAll: () -> Void
     let onMove: () -> Void
@@ -30,9 +33,10 @@ struct EditModeBar: View {
     /// context menu does.
     var onReadingListCommand: (ReadingListCommand) -> Void = { _ in }
 
-    /// The words for removing the selected books.
+    /// The words for removing the selected books: Delete Download's when
+    /// every one is a feed item.
     private var removal: LibraryRemoveCommandWording {
-        LibraryRemoveCommandWording(preferences: removalPreferences, count: selectedCount)
+        LibraryRemoveCommandWording(preferences: removalPreferences, count: selectedCount, feedItemsOnly: selectedAreFeedItems)
     }
 
     var body: some View {
@@ -952,17 +956,21 @@ struct LibraryBookListRow: View, Equatable {
                 }
             }
         }
-        Divider()
-        // Says what removal will do: ask first, or
-        // move the files to the Trash, or delete them.
-        Button(
-            LibraryRemoveCommandWording(
-                preferences: removalPreferences,
-                books: targets
-            ).menuTitle,
-            role: .destructive
-        ) {
-            actions.remove(targets)
+        // Says what removal will do: ask first, or move the files to the
+        // Trash, or delete them; for feed items alone, Delete Download.
+        // One feed item's own Delete Download above stands for it, so the
+        // menu offers no command twice (REV11 F2).
+        if LibraryRemoveCommandWording.isOfferedOnRow(for: targets, feedActions: feedActions) {
+            Divider()
+            Button(
+                LibraryRemoveCommandWording(
+                    preferences: removalPreferences,
+                    books: targets
+                ).menuTitle,
+                role: .destructive
+            ) {
+                actions.remove(targets)
+            }
         }
     }
 }

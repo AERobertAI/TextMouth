@@ -14,11 +14,13 @@ import Foundation
 /// content.md, which is an audiobook's transcript text and may hold an edit
 /// of an article's text made with Edit Text before feed items lost it. No
 /// rule of the engine ever deletes an article's content.md; the listener's
-/// own Delete Download takes it with the file, as the Trash setting says.
-/// Everything else made from the file goes with it: the speech prepared for
-/// it (cachedAudio), and any audio edits. Downloading the item again puts
-/// the new file into the same package, under the same book ID
-/// (`FeedEpisodeImporter`). A package that holds nothing of the listener's
+/// own Delete Download takes it with the file, as one item, as the Trash
+/// setting says (`removeFileAndText(of:in:remove:)`). Everything else made
+/// from the file goes with it: the speech prepared for it (cachedAudio),
+/// and any audio edits. Downloading the item again puts the new file into
+/// the same package, under the same book ID (`FeedEpisodeImporter`),
+/// keeping an article's earlier text beside the new one as an `.edited-`
+/// copy when they differ (`keepEarlierText(_:in:)`). A package that holds nothing of the listener's
 /// goes whole, so an automatic download that aged out unopened leaves
 /// nothing behind.
 ///
@@ -169,6 +171,75 @@ enum FeedItemPackage {
         }
     }
 
+    /// What begins the hidden name of the folder an article's file and text
+    /// wait in, beside its package, while the listener's Delete Download
+    /// removes them as one item (`removeFileAndText(of:in:remove:)`).
+    /// Hidden, it is no package of the feed's folder (`isPackageName(_:)`).
+    static let removalHolderPrefix = ".removing-"
+
+    /// Removes `row`'s file from `package` through `remove`, as the
+    /// listener's own Delete Download does, to the Trash or for good as the
+    /// removal setting says: for a text book, an article, with its
+    /// content.md, which may hold an edit, as one item, so the Trash holds
+    /// one, which puts both back (REV11). Both first move, by rename, into a
+    /// folder named after the file, inside a hidden holder beside the
+    /// package in its feed's folder; a refusal puts both back in the
+    /// package. Should something keep them from going back, they stay in
+    /// the holder, which is then left, with one log line, rather than lost.
+    /// - Throws: why the file, or the file and its text, could not be
+    ///   removed; nothing was removed then.
+    @MainActor
+    static func removeFileAndText(of row: Book, in package: URL, remove: @MainActor (URL) throws -> Void) throws {
+        let file = fileEntry(of: row, in: package)
+        let text = TextMouthPaths.contentMarkdownPath(in: package)
+        let fileManager = FileManager.default
+        guard !row.format.isAudio, fileManager.fileExists(atPath: text.path) else {
+            try remove(file)
+            return
+        }
+        let holder = package.deletingLastPathComponent()
+            .appendingPathComponent(removalHolderPrefix + UUID().uuidString, isDirectory: true)
+        let together = holder.appendingPathComponent(file.deletingPathExtension().lastPathComponent, isDirectory: true)
+        try fileManager.createDirectory(at: together, withIntermediateDirectories: true)
+        var moved: [(from: URL, to: URL)] = []
+        do {
+            for entry in [file, text] {
+                let destination = together.appendingPathComponent(entry.lastPathComponent)
+                try fileManager.moveItem(at: entry, to: destination)
+                moved.append((entry, destination))
+            }
+            try remove(together)
+        } catch {
+            for step in moved.reversed() {
+                try? fileManager.moveItem(at: step.to, to: step.from)
+            }
+            removeHolderIfEmpty(holder, of: row)
+            throw error
+        }
+        removeHolderIfEmpty(holder, of: row)
+    }
+
+    /// Removes the holder `holder` of `removeFileAndText(of:in:remove:)`
+    /// once nothing is left in it but an empty folder; anything still in it
+    /// stays, with one FEED_DOWNLOAD_HELD_ASIDE line naming `row`.
+    private static func removeHolderIfEmpty(_ holder: URL, of row: Book) {
+        let fileManager = FileManager.default
+        // Every file left inside, at any depth; empty folders don't count.
+        let filesLeft = ((try? fileManager.subpathsOfDirectory(atPath: holder.path)) ?? []).filter { path in
+            var isFolder: ObjCBool = false
+            _ = fileManager.fileExists(atPath: holder.appendingPathComponent(path).path, isDirectory: &isFolder)
+            return !isFolder.boolValue
+        }
+        guard filesLeft.isEmpty else {
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_DOWNLOAD_HELD_ASIDE: \(row.title): its file or text could not go back into its package and waits in \(holder.lastPathComponent)"
+            )
+            return
+        }
+        try? fileManager.removeItem(at: holder)
+    }
+
     /// Removes what `removal` says from the data directory at `root`, for
     /// good, without downloading anything, as the engine's rules do: the
     /// file and what it made, keeping the package with what stays in it
@@ -216,6 +287,42 @@ extension FeedItemPackage {
         where TextMouthPaths.isTranscriptFile(name) || TextMouthPaths.isKeptTextCopy(name) {
             try FileManager.default.copyItem(at: kept.appendingPathComponent(name), to: staged.appendingPathComponent(name))
         }
+    }
+
+    /// The text the kept package at `package` holds, its content.md's
+    /// bytes, read without downloading anything; nil when it has none.
+    /// - Throws: why a content.md that is there could not be read, as one
+    ///   only in the cloud: the download then fails, and the kept package
+    ///   stays as it was, so no edit in it is lost.
+    static func keptText(of package: URL) throws -> Data? {
+        let text = TextMouthPaths.contentMarkdownPath(in: package)
+        do {
+            return try DatalessFiles.withoutDownloading { try Data(contentsOf: text) }
+        } catch CocoaError.fileReadNoSuchFile {
+            return nil
+        }
+    }
+
+    /// Keeps `earlier`, the text a kept package held, in `staged`, the
+    /// package a new download of its article built, as an `.edited-` copy
+    /// beside the new text, whenever the two differ (REV11): the new text is
+    /// written from the new file, and the earlier one may hold an edit made
+    /// with Edit Text before feed items lost it, which the engine's rules
+    /// kept. A copy of the same bytes already there, carried over from the
+    /// kept package, serves (`BookTextEditSessions.keepCopy(of:bytes:)`).
+    /// - Returns: The copy kept, or nil when none was needed.
+    /// - Throws: `FeedItemPackageError.earlierTextNotKept` when no copy
+    ///   could be written: the download then fails, and the kept package,
+    ///   with its text, stays as it was.
+    @discardableResult
+    static func keepEarlierText(_ earlier: Data?, in staged: URL) throws -> URL? {
+        guard let earlier else { return nil }
+        let text = TextMouthPaths.contentMarkdownPath(in: staged)
+        guard (try? Data(contentsOf: text)) != earlier else { return nil }
+        guard let copy = BookTextEditSessions.keepCopy(of: text, bytes: earlier) else {
+            throw FeedItemPackageError.earlierTextNotKept
+        }
+        return copy
     }
 
     /// Puts the package `staging` built in place of the kept package at
@@ -373,6 +480,10 @@ enum FeedItemPackageError: LocalizedError, Equatable {
     /// Remove from Library Only was chosen for a feed item, which stays in
     /// its feed while its file is here: nothing is removed.
     case staysInItsFeed
+    /// A new download of an article could not keep its earlier text beside
+    /// the new one (REV11): the download fails, and the kept package stays
+    /// as it was.
+    case earlierTextNotKept
 
     var errorDescription: String? {
         switch self {
@@ -383,6 +494,8 @@ enum FeedItemPackageError: LocalizedError, Equatable {
                 + "Try again once the library can be saved."
         case .staysInItsFeed:
             return "It belongs to its feed while it is downloaded. Delete Download removes its file and keeps its place and bookmarks."
+        case .earlierTextNotKept:
+            return "TextMouth couldn't keep the article's earlier text beside the new download, so it kept the article as it was."
         }
     }
 }

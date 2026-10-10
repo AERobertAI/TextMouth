@@ -55,7 +55,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         )
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.onlyNewestListed, count: 5, noun: nil),
-            "Lists the newest 5, leaving out those you have played, and downloads only what you ask for; "
+            "Lists the newest 5 you haven't played, and every download, and downloads only what you ask for; "
                 + "the others keep their records and come back when you list more."
         )
         // A feed's own words: its items, and "read" for articles.
@@ -66,7 +66,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         )
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.onlyNewestListed, count: 2, noun: .article),
-            "Lists the newest 2, leaving out those you have read, and downloads only what you ask for; "
+            "Lists the newest 2 you haven't read, and every download, and downloads only what you ask for; "
                 + "the others keep their records and come back when you list more."
         )
         XCTAssertTrue(FeedWording.itemPolicyHint(.everyListedDownloadsByHand, count: 5, noun: .item).hasPrefix("Lists every episode and article;"))
@@ -101,8 +101,8 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         XCTAssertEqual(FeedCenter.itemPolicyQuietTime, .seconds(10))
         XCTAssertEqual(
             FeedWording.itemPolicyQuietNote,
-            "A change of List and download takes effect once it has stayed unchanged for ten seconds, "
-                + "and VoiceOver announces it then."
+            "The list follows a change of List and download at once; what downloads or goes "
+                + "waits until the change has stayed for ten seconds, and VoiceOver announces it then."
         )
         XCTAssertEqual(
             FeedSettingsWording.perFeedNote,
@@ -202,6 +202,40 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         await waitFor("the wait ends") { !world.center.isWaitingOnItemPolicyChange }
         await waitFor("the engine's own work ends") { !world.center.isSweeping }
         XCTAssertEqual(heard.count, 3, "a feed gone during its wait was heard of: \(heard)")
+        withExtendedLifetime(arrivals) {}
+    }
+
+    /// A feed's own change made within the global change's wait is heard
+    /// with it, after the global setting's sentence, rather than lost under
+    /// it (feed review item 20).
+    func testAFeedsChangeWithinTheGlobalWaitIsHeardToo() async throws {
+        let world = try FeedTestWorld(self, label: "FeedItemUIAppliedBoth", worksOnItsOwn: true)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        // A choice that downloads by hand, so no pass downloads anything.
+        FeedSettings.itemsPreference.write(.onlyNewestListed, to: world.preferences)
+        let arrivals = FeedArrivals(center: world.center, notifier: InertFeedNotifier())
+        var heard: [String] = []
+        arrivals.announce = { heard.append($0) }
+        await world.start()
+        world.server.serve("/ferries.xml", .feed(FeedXML.rss(title: "Night Ferries", items: [
+            FeedXML.Item(guid: "ep-1", title: "A crossing at dusk", published: world.day(-1), enclosure: "https://ferries.example/1.mp3"),
+        ])))
+        let feed = try await world.subscribe("/ferries.xml")
+        await waitFor("the engine's own work ends") { !world.center.isSweeping }
+
+        FeedSettings.newestCountPreference.write(3, to: world.preferences)
+        await waitFor("the wait starts") { world.sleep.requestedWaits.count == 1 }
+        world.center.setItemPolicy(FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 2), of: feed.id)
+        await waitFor("the wait starts over") { world.sleep.requestedWaits.count == 2 }
+        world.sleep.wakeOldest()
+        await waitFor("the changes are heard") { !heard.isEmpty }
+
+        XCTAssertEqual(heard, [
+            "List and download is now in effect: Only the newest 3 listed. "
+                + "List and download for Night Ferries is now in effect: Every episode listed, downloads by hand.",
+        ])
+        await waitFor("the engine's own work ends") { !world.center.isSweeping }
         withExtendedLifetime(arrivals) {}
     }
 

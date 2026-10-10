@@ -75,8 +75,8 @@ final class FeedInfoModel: ObservableObject, Identifiable {
         feed.flatMap { center.folderPath(of: $0) } ?? ""
     }
 
-    /// Sends the feed's downloads from now on to the folder at `path`; the
-    /// books it downloaded stay where they are.
+    /// Lists the feed's items in the folder at `path` from now on, those
+    /// already downloaded among them (`FeedCenter.setFolder(_:of:)`).
     func chooseFolder(atPath path: String) {
         guard let folder = library.library.folders.first(where: { $0.fullPath == path }) else { return }
         center.setFolder(folder.id, of: feedID)
@@ -549,8 +549,11 @@ extension FeedWording {
     static let folderInfoCaption = "Downloads go to"
     /// The folder picker's spoken label in Feed Info.
     static let folderInfoLabel = "Folder the feed's downloads go to"
-    /// The line under Feed Info's folder picker.
-    static let folderInfoHelp = "Choosing another folder sends new downloads there; the books already downloaded stay where they are."
+    /// The line under Feed Info's folder picker. A feed's downloads stay in
+    /// the feed's own folder in the data directory, and the library folder
+    /// only lists them (FR11), so all of them follow the choice.
+    static let folderInfoHelp = "Choosing another folder lists the feed's episodes and articles there instead, "
+        + "those already downloaded too."
     /// The stand-in Feed Info's folder picker shows while the feed's folder is gone.
     static let chooseFolderOption = "Choose a folder"
     /// The Description heading in Feed Info; the text area under it is

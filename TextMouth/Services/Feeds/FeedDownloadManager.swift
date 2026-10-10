@@ -44,8 +44,9 @@ enum FeedDownloadError: Error, Equatable, Sendable {
 /// (FR11): it is put off by itself and tried again by itself, its item
 /// saying "Waiting to Download" and why (`FeedItemState.waiting`).
 enum FeedDownloadWait: Equatable, Sendable {
-    /// A network with data limits refused it: it is asked for again once a
-    /// refresh TextMouth makes by itself reaches a network without them.
+    /// A network with data limits refused it, or this Mac was offline (REV11
+    /// F4): it is asked for again once a refresh TextMouth makes by itself
+    /// reaches a network without data limits.
     case network
     /// The library's disk lacks room for the file, of this many bytes, and
     /// the space TextMouth keeps free: the rule tries it again at its next
@@ -53,11 +54,12 @@ enum FeedDownloadWait: Equatable, Sendable {
     case room(bytes: Int64)
 
     /// The wait a failure of one of the rule's downloads is: a network with
-    /// data limits, or too little room; nil for any other failure, which
-    /// fails as a listener's download does.
+    /// data limits, this Mac being offline, as at a first launch away from
+    /// any network (REV11 F4), or too little room; nil for any other
+    /// failure, which fails as a listener's download does.
     init?(_ failure: FeedDownloadError) {
         switch failure {
-        case .transfer(.constrainedNetwork):
+        case .transfer(.constrainedNetwork), .transfer(.offline):
             self = .network
         case .notEnoughSpace(let bytes):
             self = .room(bytes: bytes)
@@ -205,6 +207,10 @@ final class FeedDownloadManager {
     /// book is listed, for a test to act at that moment, as Delete Episode
     /// can while an import runs; nil in the app.
     var beforeCommit: (@MainActor (Request) -> Void)?
+    /// Called on the main actor as an episode's file has arrived, before
+    /// its import begins, for a test to act at that moment, as a Cancel
+    /// pressed then does; nil in the app.
+    var afterTransfer: (@MainActor (Request) -> Void)?
     /// Runs imports in order, off the main thread.
     private let importQueue = DispatchQueue(label: "com.textmouth.feed-imports", qos: .userInitiated)
     /// How far the downloads have got, as the Library windows' feed
@@ -355,7 +361,11 @@ final class FeedDownloadManager {
     }
 
     /// Takes every waiting, running, and put-off download of the feed
-    /// `feedID` away, as when it is no longer subscribed.
+    /// `feedID` away, as a feed leaving the library would need. No command
+    /// calls it since Unsubscribe keeps the feed and only withdraws the
+    /// rule's downloads (FR11, branch D, `withdrawRuleDownloads`); it stays
+    /// for a Delete Feed…, which is still the listener's to decide, with
+    /// `FeedStore.remove(_:)` and `FeedFetchStates.remove(_:)`.
     func cancelAll(of feedID: UUID) {
         defer { publishQueue() }
         queue.removeAll { $0.feedID == feedID }
@@ -367,10 +377,13 @@ final class FeedDownloadManager {
 
     /// Takes back the newest-N rule's downloads of the feed `feedID` not yet
     /// under way whose items `shouldWithdraw` names (FR11): those waiting in
-    /// the queue, those a network with data limits put off, and those
-    /// waiting for room. Each item is not downloaded, and stays the rule's,
-    /// to be asked for again should it count again; the download under way
-    /// runs on, and the listener's downloads are never taken back.
+    /// the queue, those a network with data limits put off, those waiting
+    /// for room, and those that failed (REV11 F4), so no row says "Download
+    /// Failed" of a download nobody asked for once its item no longer
+    /// counts. Each item is not downloaded, and stays the rule's, to be
+    /// asked for again should it count again; the download under way runs
+    /// on, and the listener's downloads, failed or not, are never taken
+    /// back.
     /// - Returns: The items taken back.
     @discardableResult
     func withdrawRuleDownloads(of feedID: UUID, where shouldWithdraw: (FeedItem.ID) -> Bool) -> [FeedItem.ID] {
@@ -381,11 +394,13 @@ final class FeedDownloadManager {
         var withdrawn = (queue + putOff).filter(goes).map(\.itemID)
         queue.removeAll(where: goes)
         putOff.removeAll(where: goes)
-        // A wait for room holds no request: its item alone says it waits.
-        let waitingForRoom = store.record(of: feedID)?.items.filter { item in
-            item.state.waitingReason != nil && !withdrawn.contains(item.id) && shouldWithdraw(item.id)
+        // A wait for room holds no request, and neither does the rule's
+        // failed download: their items alone say so.
+        let settled = store.record(of: feedID)?.items.filter { item in
+            (item.state.waitingReason != nil || item.hasRulesFailedDownload)
+                && !withdrawn.contains(item.id) && shouldWithdraw(item.id)
         }.map(\.id) ?? []
-        withdrawn += waitingForRoom
+        withdrawn += settled
         guard !withdrawn.isEmpty else { return [] }
         store.update(feedID) { record in
             for index in record.items.indices where withdrawn.contains(record.items[index].id) {
@@ -398,13 +413,14 @@ final class FeedDownloadManager {
     }
 
     /// Asks again for the newest-N rule's downloads a network with data
-    /// limits put off, in their order, as a refresh TextMouth made by
-    /// itself, which such a network refuses too, has just reached the
-    /// network: it has no data limits now. One refused again is put off
-    /// again.
-    func retryPutOffDownloads() {
-        let waiting = putOff
-        putOff.removeAll()
+    /// limits put off that `shouldRetry` names, every one unless it names
+    /// fewer, in their order, as a refresh TextMouth made by itself, which
+    /// such a network refuses too, has just reached the network: it has no
+    /// data limits now. One refused again is put off again; one not named
+    /// stays put off, for the rule's next pass to take back (REV11 F3).
+    func retryPutOffDownloads(where shouldRetry: (Request) -> Bool = { _ in true }) {
+        let waiting = putOff.filter(shouldRetry)
+        putOff.removeAll { waiting.contains($0) }
         for request in waiting {
             download(request.itemID, of: request.feedID, origin: .window)
         }
@@ -426,7 +442,12 @@ final class FeedDownloadManager {
             let ending = await run(request)
             current = nil
             currentTask = nil
-            progress.end(ending, queued: queuedSizes, waits: waitingApart())
+            // Once TextMouth quits, the progress it cleared stays clear, so
+            // the section never shows again while the quit waits (feed
+            // review item 21).
+            if !isStoppedForQuit {
+                progress.end(ending, queued: queuedSizes, waits: waitingApart())
+            }
             startNext()
         }
     }
@@ -493,10 +514,10 @@ final class FeedDownloadManager {
             store.updateItem(request.itemID, of: request.feedID) { item in
                 item.state = .failed(message)
                 // A download the listener asked for stays the listener's to
-                // try again, never the newest-N rule's (FR11).
-                if asked.origin == .listener {
-                    item.downloadOrigin = .listener
-                }
+                // try again, never the newest-N rule's (FR11); the rule's
+                // failure is the rule's, which a pass takes back once the
+                // item no longer counts (REV11 F4).
+                item.downloadOrigin = FeedDownloadOrigin.after(asked.origin, given: item.downloadOrigin)
             }
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FAILED: \(item.title) (\(feed.title)): \(message)")
             announce(.downloadFailed(feedID: request.feedID, itemID: request.itemID, reason: message))
@@ -557,6 +578,11 @@ final class FeedDownloadManager {
         }
         try? FileManager.default.removeItem(at: resumeFile)
         defer { try? FileManager.default.removeItem(at: holding) }
+        afterTransfer?(request)
+        // Stopped as its file arrived, by Cancel Download or the downloads
+        // section's Cancel: it stops here, before its book is imported, as
+        // an article stops before its book is written (feed review item 15).
+        try Task.checkCancellation()
         guard let fileExtension = FeedEpisodeImporter.fileExtension(responseMIMEType: downloaded.mimeType, enclosure: enclosure) else {
             throw FeedDownloadError.unsupportedFile(downloaded.mimeType ?? enclosure.mimeType ?? enclosure.url.pathExtension)
         }
@@ -573,9 +599,19 @@ final class FeedDownloadManager {
     private func downloadArticle(_ item: FeedItem, of feed: Feed, request: Request, restoring kept: Book?) async throws -> Book {
         let network = environment.network
         let discretionary = request.origin == .window
-        let body = await FeedEpisodeImporter.articleBody(for: item) { link in
-            guard case .body(let page)? = try? await network.fetch(link, discretionary: discretionary) else { return nil }
-            return page.text
+        let body = try await FeedEpisodeImporter.articleBody(for: item) { link in
+            do {
+                guard case .body(let page) = try await network.fetch(link, discretionary: discretionary) else { return nil }
+                return page.text
+            } catch let refusal as FeedFetchError where discretionary && Self.waitsForANetwork(refusal) {
+                // The rule's article waits for a network without data
+                // limits, as its episodes do, rather than be written for
+                // good from its summary (feed review item 14).
+                throw FeedDownloadError.transfer(refusal)
+            } catch {
+                // Any other failure leaves the item's own text to stand.
+                return nil
+            }
         }
         // Stopped meanwhile, by Cancel Download or the downloads section's
         // Cancel (FR10): it stops here, before its book is written. A page
@@ -640,8 +676,9 @@ final class FeedDownloadManager {
 
     /// Adds `book` to the library and marks the item of `request` downloaded
     /// as it, by whoever asked for it (FR11): the listener when the listener
-    /// asked at any point, otherwise the newest-N rule. Returns whether it
-    /// did.
+    /// asked at any point, or made the item theirs meanwhile, as Cancel does
+    /// (feed review item 15), otherwise the newest-N rule. Returns whether
+    /// it did.
     ///
     /// An item gone from its record, or deleted, while its download imported
     /// (Delete Episode stops a transfer, but not an import once begun, which
@@ -660,7 +697,7 @@ final class FeedDownloadManager {
         store.updateItem(request.itemID, of: request.feedID) { item in
             item.state = .downloaded(bookID: book.id)
             item.downloadDeletedDate = nil
-            item.downloadOrigin = origin
+            item.downloadOrigin = FeedDownloadOrigin.after(origin, given: item.downloadOrigin)
         }
         return true
     }
@@ -711,27 +748,39 @@ final class FeedDownloadManager {
 
     /// Tells the downloads' progress that the download `request` began, by
     /// its item's and its feed's titles, an episode's file at none of the
-    /// bytes its feed gives; an article's page comes uncounted. A request
-    /// whose item went begins nothing, and ends at once.
+    /// bytes its feed gives; an article's page comes uncounted, and whether
+    /// the newest-N rule asked for it by itself, which nobody heard begin
+    /// (feed review item 17). A request whose item went begins nothing, and
+    /// ends at once.
     private func beginProgress(of request: Request) {
         guard let record = store.record(of: request.feedID), let item = record.item(request.itemID) else {
             publishQueue()
             return
         }
         let transfer = Self.isEpisode(item) ? Self.progress(written: 0, expected: 0, estimate: item.enclosure?.length) : nil
-        progress.begin(title: item.title, feedTitle: record.feed.title, transfer: transfer, queued: queuedSizes, waits: waitingApart())
+        progress.begin(
+            title: item.title,
+            feedTitle: record.feed.title,
+            transfer: transfer,
+            queued: queuedSizes,
+            waits: waitingApart(),
+            byItself: request.origin == .window
+        )
     }
 
     /// Tells the downloads' progress the downloads waiting to start and
-    /// those waiting apart, as they stand now.
+    /// those waiting apart, as they stand now; nothing once TextMouth quits,
+    /// whose progress stays clear (feed review item 21).
     private func publishQueue() {
+        guard !isStoppedForQuit else { return }
         progress.update(queued: queuedSizes, waits: waitingApart())
     }
 
     /// What Speak Download Progress says now (FR10): every line the feed
     /// downloads section shows, or that no download is under way, with the
-    /// downloads waiting apart counted anew first, as a feed unsubscribed
-    /// since the queue last changed takes its items' waits with it.
+    /// downloads waiting apart counted anew first, as a wait for room lives
+    /// only in its item's state, which can change, or go with its feed's
+    /// record, without the queue changing.
     func spokenProgress() -> String {
         publishQueue()
         return progress.spokenStatus()
@@ -889,6 +938,13 @@ final class FeedDownloadManager {
     /// How long resume data is kept: a week, past which a server has most
     /// likely changed the file or forgotten the download.
     static let resumeDataLifetime: TimeInterval = 7 * 86_400
+
+    /// Whether a fetch that failed as `refusal` waits for a network, when
+    /// the newest-N rule asked for it: refused on a network with data
+    /// limits, or this Mac offline (`FeedDownloadWait.network`).
+    nonisolated static func waitsForANetwork(_ refusal: FeedFetchError) -> Bool {
+        FeedDownloadWait(.transfer(refusal)) == .network
+    }
 
     /// `error` as a download error.
     private static func downloadError(_ error: Error) -> FeedDownloadError {

@@ -15,15 +15,17 @@ extension LibraryViewModel {
         removeBooks([book])
     }
 
-    /// Request removal of one or more books — shows confirmation if enabled
+    /// Request removal of one or more books — shows confirmation if enabled.
+    /// Without one, a removal of feed items alone says at once what it did
+    /// and kept, no dialog closing over the words.
     func removeBooks(_ books: [Book]) {
         guard !books.isEmpty else { return }
         if configService.config.confirmBeforeDelete {
             pendingRemoveBooks = books
             showRemoveBookDialog = true
-        } else {
+        } else if let report = performRemoveBooks(books, deleteTMB: true) {
             // Default: remove from library and delete .tmb
-            performRemoveBooks(books, deleteTMB: true)
+            VoiceOverAnnouncer.announce(report)
         }
     }
 
@@ -101,7 +103,12 @@ extension LibraryViewModel {
     /// Trash or permanently as the preference chooses. Books whose packages
     /// cannot be deleted stay, and the error alert names them in the words
     /// of that mode.
-    func removeBooksAndDelete(_ books: [Book]) {
+    /// - Returns: For feed items alone, their Delete Download, what it did
+    ///   and kept, which the Remove question's owner says once the question
+    ///   has closed, so its closing never cuts the words off (REV11 F6); nil
+    ///   otherwise.
+    @discardableResult
+    func removeBooksAndDelete(_ books: [Book]) -> String? {
         performRemoveBooks(books, deleteTMB: true)
     }
 
@@ -118,25 +125,27 @@ extension LibraryViewModel {
     }
 
     /// Internal helper to remove books with optional .tmb deletion. Books
-    /// that stay are named through the library's error alert. A removal of
-    /// feed items alone, their Delete Download (FR11), says through
-    /// VoiceOver what it did and what it kept, as the feed's own Delete
-    /// Download says what it did, since the row that leaves becomes an
-    /// item's row saying "Not Downloaded".
+    /// that stay are named through the library's error alert.
+    /// - Returns: For a removal of feed items alone, their Delete Download
+    ///   (FR11), what it did and what it kept, for the caller to say through
+    ///   VoiceOver, as the feed's own Delete Download says what it did, since
+    ///   the row that leaves becomes an item's row saying "Not Downloaded":
+    ///   at once, or once the Remove question has closed (REV11 F6); nil for
+    ///   any other removal, which the rows' leaving says.
+    @discardableResult
     func performRemoveBooks(
         _ books: [Book],
         deleteTMB: Bool,
         deletePackage: ((Book) throws -> Void)? = nil
-    ) {
+    ) -> String? {
         let outcome = removeBooksReturningOutcome(
             books,
             deletingPackages: deleteTMB,
             deletePackage: deletePackage
         )
         presentFailure(of: outcome)
-        if outcome.succeeded, deleteTMB, !books.isEmpty, books.allSatisfy(\.isFeedItem), let report = outcome.message {
-            VoiceOverAnnouncer.announce(report)
-        }
+        guard outcome.succeeded, deleteTMB, !books.isEmpty, books.allSatisfy(\.isFeedItem) else { return nil }
+        return outcome.message
     }
 
     /// Removes `books` from the library. With `deletingPackages`, each
@@ -235,13 +244,18 @@ extension LibraryViewModel {
     }
 
     /// Move one or more books to the specified folder path. A failure is
-    /// explained through the library's error alert. Returns the task doing
-    /// the work, whose packages move off the main actor (PERF14); callers
-    /// need not wait for it.
+    /// explained through the library's error alert, and the feed items left
+    /// where they are are named through VoiceOver at once, no sheet closing
+    /// over the words. Returns the task doing the work, whose packages move
+    /// off the main actor (PERF14); callers need not wait for it.
     @discardableResult
     func moveBooks(_ books: [Book], toFolder path: String) -> Task<Void, Never> {
         Task {
-            presentFailure(of: await moveBooksReturningOutcome(books, toFolder: path))
+            let outcome = await moveBooksReturningOutcome(books, toFolder: path)
+            presentFailure(of: outcome)
+            if outcome.succeeded, let note = outcome.message {
+                VoiceOverAnnouncer.announce(note)
+            }
         }
     }
 
@@ -252,9 +266,11 @@ extension LibraryViewModel {
     /// the main actor (`performLibraryTransition`, PERF14).
     ///
     /// A feed item among `books` stays where it is, in its feed's folder
-    /// (FR11), and once the others have moved VoiceOver hears which items
-    /// were left (`LibraryTransitionWording.feedItemsLeft(titles:)`), so a
-    /// mixed selection's move never closes as if every item had moved.
+    /// (FR11), and the success's message names the items left
+    /// (`LibraryTransitionWording.feedItemsLeft(titles:)`), for the caller
+    /// to say: the Move sheet's owner once the sheet has closed, so its
+    /// closing never cuts the words off (REV11 F6), and so a mixed
+    /// selection's move never closes as if every item had moved.
     func moveBooksReturningOutcome(_ books: [Book], toFolder path: String) async -> OperationOutcome {
         let left = books.filter(\.isFeedItem)
         var proposed = library
@@ -267,10 +283,7 @@ extension LibraryViewModel {
                 try await performLibraryTransition(proposed, affectedBookIDs: ids)
                 lastMovedFolderPath = path
             }
-            if let note = LibraryTransitionWording.feedItemsLeft(titles: left.map(\.title)) {
-                VoiceOverAnnouncer.announce(note)
-            }
-            return .success(nil)
+            return .success(LibraryTransitionWording.feedItemsLeft(titles: left.map(\.title)))
         } catch {
             return .failure("Could not move books", error)
         }
@@ -796,11 +809,17 @@ extension LibraryViewModel {
         updateBook(id: bookID) { $0.skippedHeadingIDs = skippedIDs.isEmpty ? nil : skippedIDs }
     }
 
+    /// Gives the book `bookID` its own voice, speed, and pitch, nil for each
+    /// it takes from the settings. The speed is kept within its format's
+    /// range, as the book's record reads it back (REV11): words per minute
+    /// for a text book, a playback rate for an audiobook, so an article
+    /// given a rate of 1.5 keeps 50 words per minute in its row as in its
+    /// record; a pitch is kept within the pitch's range likewise.
     func updateLocalVoiceAndSpeed(bookID: UUID, voiceID: String?, wpm: Double?, pitch: Double? = nil) {
         updateBook(id: bookID) { book in
             book.localVoiceID = voiceID
-            book.localWPM = wpm
-            book.localPitch = pitch
+            book.localWPM = wpm.flatMap { SettingsPolicy.validatedLocalSpeed($0, isAudio: book.format.isAudio) }
+            book.localPitch = pitch.flatMap(SettingsPolicy.validatedLocalPitch)
         }
     }
 
@@ -1090,8 +1109,10 @@ enum LibraryTransitionWording {
 
     /// What VoiceOver hears when Move to Folder… leaves feed items titled
     /// `titles` where they are, as it leaves every episode and article in its
-    /// feed's folder (FR11), naming the first three: "Left “Ep. 368” where it
-    /// is: episodes and articles stay in their feeds."; nil for none.
+    /// feed's folder (FR11), naming the first three and the command that
+    /// does move one (FR11, branch D): "Left “Ep. 368” where it is: episodes
+    /// and articles stay in their feeds; Move to Library… makes one a book of
+    /// your library."; nil for none.
     static func feedItemsLeft(titles: [String]) -> String? {
         guard !titles.isEmpty else { return nil }
         let shown = titles.prefix(3).map { "“\($0)”" }
@@ -1100,6 +1121,7 @@ enum LibraryTransitionWording {
             ? shown.joined(separator: ", ") + ", and \(rest) more"
             : LibraryCloudWording.list(Array(shown))
         let place = titles.count == 1 ? "where it is" : "where they are"
-        return "Left \(names) \(place): episodes and articles stay in their feeds."
+        return "Left \(names) \(place): episodes and articles stay in their feeds; "
+            + "\(ShortcutAction.moveToLibrary.title) makes one a book of your library."
     }
 }

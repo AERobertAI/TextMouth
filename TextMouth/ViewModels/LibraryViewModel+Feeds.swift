@@ -231,6 +231,20 @@ extension LibraryViewModel: FeedLibraryHost {
         openBookIDs
     }
 
+    /// The books in use now, which the feed engine's rules leave for their
+    /// next pass (REV11 F1): those open in readers; the book being
+    /// transcribed, as `TranscribedBooks` records it from the moment the
+    /// transcription starts until its transcript is saved
+    /// (`TranscriptionJobCenter`); and those an export is reading
+    /// (`BookExportModel.booksBeingExported`).
+    var feedBooksInUse: Set<UUID> {
+        var inUse = openBookIDs.union(BookExportModel.booksBeingExported)
+        if let transcribing = TranscribedBooks.shared.transcribingBookID {
+            inUse.insert(transcribing)
+        }
+        return inUse
+    }
+
     /// Whether the book `bookID` is on the reading list, whose downloads the
     /// feeds' newest-N rule never removes (FR11).
     func feedBookIsOnReadingList(_ bookID: UUID) -> Bool {

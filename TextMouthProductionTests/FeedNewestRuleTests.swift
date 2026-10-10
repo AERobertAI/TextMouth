@@ -86,9 +86,43 @@ final class FeedNewestRuleTests: XCTestCase {
         XCTAssertEqual(world.server.requests(to: "/audio/3.m4a"), [], "a stopped download was fetched")
     }
 
+    /// Cancel Download pressed as the rule's episode's file arrives stops it
+    /// before its import, so no book is listed and the item is the
+    /// listener's; and an item the listener makes theirs while the rule's
+    /// download of it is being listed stays theirs, never the rule's again
+    /// (feed review item 15).
+    func testCancelAsTheFileArrivesStopsItAndAnImportKeepsTheListenersItem() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleCancelArriving")
+        let feed = try await subscribeServed(world, episodes: 2)
+        let downloads = world.center.downloads
+        addTeardownBlock { @MainActor in
+            downloads.afterTransfer = nil
+            downloads.beforeCommit = nil
+        }
+
+        downloads.afterTransfer = { [weak world] request in
+            world?.center.cancelDownload(request.itemID, of: request.feedID)
+        }
+        downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        await waitFor("the download stops as its file arrives") {
+            !world.server.requests(to: "/audio/1.m4a").isEmpty && downloads.current == nil
+        }
+        downloads.afterTransfer = nil
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
+        XCTAssertEqual(origin(of: "guid:ep-1", in: feed, world), .listener)
+        XCTAssertEqual(world.library.feedItemRows(of: feed.id).downloaded, [:], "a download stopped as its file arrived was imported")
+
+        downloads.beforeCommit = { [weak world] request in
+            world?.center.store.updateItem(request.itemID, of: request.feedID) { $0.downloadOrigin = .listener }
+        }
+        downloads.download("guid:ep-2", of: feed.id, origin: .window)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-2")
+        XCTAssertEqual(origin(of: "guid:ep-2", in: feed, world), .listener, "the import gave the listener's item back to the rule")
+    }
+
     /// A download the listener asked for that fails is the listener's, to
-    /// try again by hand; one the rule asked for that fails stays the
-    /// rule's.
+    /// try again by hand; one the rule asked for that fails is the rule's
+    /// (REV11 F4), which a pass takes back once the item no longer counts.
     func testAFailedDownloadKeepsWhoAskedForIt() async throws {
         let world = try FeedTestWorld(self, label: "FeedRuleOriginFailed")
         world.server.serve("/audio/1.m4a", StubResponse(status: 404))
@@ -105,7 +139,80 @@ final class FeedNewestRuleTests: XCTestCase {
         let listeners = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
         XCTAssertEqual(listeners.state, .failed("The server says the file is gone."))
         XCTAssertEqual(listeners.downloadOrigin, .listener)
-        XCTAssertNil(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.downloadOrigin)
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.downloadOrigin, .window)
+    }
+
+    // MARK: - Failures Nobody Asked For (REV11 F4)
+
+    /// Offline, as at a first launch away from any network, the rule's
+    /// downloads wait for a network rather than fail, saying so, fetching
+    /// nothing, and never written as failures; the listener's own download
+    /// fails, saying the Mac is offline. Online again, the next refresh
+    /// TextMouth makes by itself tries the rule's again, and they download.
+    func testOfflineTheRulesDownloadsWaitForANetwork() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleOffline")
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        let feed = try await subscribeServed(world, episodes: 3)
+        world.online.value = false
+
+        let report = await world.center.applyItemPolicy(to: [feed.id])
+        world.center.download("guid:ep-3", of: feed.id)
+        await waitFor("every download ends") {
+            let items = world.center.store.record(of: feed.id)?.items ?? []
+            return items.allSatisfy { !$0.state.isDownloading } && world.center.downloads.current == nil
+        }
+
+        XCTAssertEqual(report.requestedItemIDs, ["guid:ep-1", "guid:ep-2"])
+        for itemID in ["guid:ep-1", "guid:ep-2"] {
+            let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item(itemID))
+            XCTAssertEqual(item.state, .waiting(FeedDownloadWait.network.reason), itemID)
+            XCTAssertFalse(item.hasRulesFailedDownload, itemID)
+        }
+        XCTAssertEqual(world.center.downloads.putOff.map(\.itemID), ["guid:ep-1", "guid:ep-2"])
+        XCTAssertEqual(
+            world.center.store.record(of: feed.id)?.item("guid:ep-3")?.state,
+            .failed("This Mac is offline, so “Episode 3” can't be downloaded. Connect to the internet and try again.")
+        )
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [], "an offline download reached the server")
+
+        world.online.value = true
+        _ = await world.center.refreshAll(origin: .scheduled)
+        _ = try await downloadedBooks(world, feed: feed, items: ["guid:ep-1", "guid:ep-2"])
+        XCTAssertTrue(world.center.downloads.putOff.isEmpty)
+    }
+
+    /// The rule's failed download is the rule's, and a pass that no longer
+    /// counts its item, as when the number shrinks, takes the failure back:
+    /// the item is not downloaded, so no row keeps "Download Failed" for a
+    /// download nobody asked for. A failure the rule still counts stays,
+    /// tried again after a refresh, and the listener's own failure stays
+    /// whatever the rule counts.
+    func testTheRulesFailureIsTakenBackOnceItsItemNoLongerCounts() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleFailureTakenBack")
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        for number in 1...3 {
+            world.server.serve("/audio/\(number).m4a", StubResponse(status: 404))
+        }
+        let feed = try await subscribe(world, episodes: 3)
+
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        world.center.download("guid:ep-3", of: feed.id)
+        await waitFor("every download fails") {
+            let items = world.center.store.record(of: feed.id)?.items ?? []
+            return items.allSatisfy { $0.state.failureReason != nil } && world.center.downloads.current == nil
+        }
+        XCTAssertEqual(origin(of: "guid:ep-2", in: feed, world), .window)
+
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        let report = await world.center.applyItemPolicy(to: [feed.id])
+
+        XCTAssertEqual(report.withdrawnItemIDs, ["guid:ep-2"])
+        let record = try XCTUnwrap(world.center.store.record(of: feed.id))
+        XCTAssertEqual(record.item("guid:ep-2")?.state, .notDownloaded)
+        XCTAssertEqual(record.item("guid:ep-2")?.downloadOrigin, .window, "the item stopped being the rule's")
+        XCTAssertNotNil(record.item("guid:ep-1")?.state.failureReason, "a failure the rule still counts went")
+        XCTAssertNotNil(record.item("guid:ep-3")?.state.failureReason, "the listener's failure went")
+        XCTAssertEqual(record.item("guid:ep-3")?.downloadOrigin, .listener)
     }
 
     /// Who asked is read without ever making a record unreadable: a name
@@ -146,8 +253,9 @@ final class FeedNewestRuleTests: XCTestCase {
     /// Without room for a file beside the space TextMouth keeps free, the
     /// rule's download waits, saying it needs room, fetching nothing and
     /// never put off for a network; the listener's fails, saying there
-    /// isn't room. Cancel Download ends the wait, and with room again the
-    /// rule's download goes ahead.
+    /// isn't room. Cancel Download ends the wait and makes the item the
+    /// listener's; with room again a download asked for as the rule's goes
+    /// ahead, and the item stays the listener's (feed review item 15).
     func testADownloadWithoutRoomWaitsWhileTheListenersFails() async throws {
         let world = try FeedTestWorld(self, label: "FeedRuleRoom")
         let audio = try FeedMediaFixtures.silentAAC()
@@ -182,7 +290,7 @@ final class FeedNewestRuleTests: XCTestCase {
         world.freeSpace.value = 100_000_000_000
         world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
         _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
-        XCTAssertEqual(origin(of: "guid:ep-1", in: feed, world), .window)
+        XCTAssertEqual(origin(of: "guid:ep-1", in: feed, world), .listener, "a download took the item from the listener")
     }
 
     /// A wait, like a download under way, ends with the app: the record's
@@ -311,7 +419,7 @@ final class FeedNewestRuleTests: XCTestCase {
         FeedSettings.newestCountPreference.write(1, to: world.preferences)
         let report = await world.center.applyItemPolicy(to: [feed.id])
 
-        XCTAssertEqual(report.openBookIDs, [books[3].id])
+        XCTAssertEqual(report.inUseBookIDs, [books[3].id])
         XCTAssertEqual(report.onReadingListBookIDs, [books[2].id])
         XCTAssertEqual(report.removedBookIDs, [books[1].id])
         XCTAssertEqual(report.keptPackageBookIDs, [books[1].id], "the started episode's place was not kept")
@@ -326,6 +434,39 @@ final class FeedNewestRuleTests: XCTestCase {
         XCTAssertEqual(next.removedBookIDs, [books[3].id])
         XCTAssertEqual(next.onReadingListBookIDs, [books[2].id])
         XCTAssertNotNil(world.library.bookByID(books[2].id), "a download on the reading list went")
+    }
+
+    /// The rule never removes a download in use (REV11 F1): one being
+    /// transcribed, whose transcript would be thrown away with its file, and
+    /// one being exported, are passed over and looked at again at the next
+    /// pass, which removes them once neither work is under way.
+    func testAPassLeavesADownloadBeingTranscribedOrExported() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleInUse")
+        FeedSettings.newestCountPreference.write(3, to: world.preferences)
+        let feed = try await subscribeServed(world, episodes: 3)
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        let books = try await downloadedBooks(world, feed: feed, items: (1...3).map { "guid:ep-\($0)" })
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+
+        // Episode 3, the oldest, is being transcribed, and episode 2 exported.
+        transcriptions.setTranscribing(books[2].id)
+        BookExportModel.noteExportStarted([books[1].id])
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        let report = await world.center.applyItemPolicy(to: [feed.id])
+        BookExportModel.noteExportEnded([books[1].id])
+        transcriptions.setTranscribing(nil)
+
+        XCTAssertEqual(report.inUseBookIDs, [books[2].id, books[1].id])
+        XCTAssertEqual(report.removedBookIDs, [])
+        for book in books {
+            XCTAssertNotNil(world.library.bookByID(book.id), "a download in use went: \(book.title)")
+        }
+
+        let next = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(next.inUseBookIDs, [])
+        XCTAssertEqual(next.removedBookIDs, [books[2].id, books[1].id])
     }
 
     /// Under the choices that download by hand, a pass takes back the rule's
@@ -432,6 +573,69 @@ final class FeedNewestRuleTests: XCTestCase {
         await waitFor("the engine's own work ends") { !world.center.isSweeping }
     }
 
+    /// Mark Played and Mark All Played ask for the rule's pass over their
+    /// feed at once (REV11 F3), which takes back its downloads of the played
+    /// items still waiting in the queue: marked during the batch the rule
+    /// started, no played episode downloads after the one under way, which
+    /// finishes.
+    func testMarkingPlayedTakesBackTheRulesQueuedDownloads() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleMarkPlayed", worksOnItsOwn: true)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        FeedSettings.newestCountPreference.write(4, to: world.preferences)
+        await world.start()
+        // Subscribing asks for the rule's pass, which asks for the newest 4,
+        // each file arriving over a second or more.
+        let feed = try await subscribeServed(world, episodes: 4, pausing: 0.05)
+        await waitFor("the first download is under way") { !world.server.requests(to: "/audio/1.m4a").isEmpty }
+        XCTAssertEqual(world.center.downloads.queue.map(\.itemID), ["guid:ep-2", "guid:ep-3", "guid:ep-4"])
+
+        world.center.markPlayed("guid:ep-2", of: feed.id)
+        await waitFor("the pass takes back the played episode's download") {
+            world.center.downloads.queue.map(\.itemID) == ["guid:ep-3", "guid:ep-4"]
+        }
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state, .notDownloaded)
+
+        XCTAssertEqual(world.center.markAllPlayed(of: feed.id), 3)
+        await waitFor("the pass takes back the queue") { world.center.downloads.queue.isEmpty }
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        await waitFor("the engine's own work ends") { !world.center.isSweeping && world.center.downloads.current == nil }
+
+        for number in 2...4 {
+            XCTAssertEqual(world.server.requests(to: "/audio/\(number).m4a"), [], "played episode \(number) downloaded")
+            XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-\(number)")?.state, .notDownloaded)
+        }
+    }
+
+    /// A refresh TextMouth makes by itself that reaches the network asks for
+    /// the rule's pass, and tries again only the put-off downloads the rule
+    /// still counts (REV11 F3): one whose item was played meanwhile stays put
+    /// off, never fetched, for the pass to take back.
+    func testARefreshTriesAgainOnlyThePutOffDownloadsTheRuleStillCounts() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleRetryCounted")
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        let audio = FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4")
+        world.server.serve("/audio/1.m4a", .refusedOnAMeteredNetwork(), audio)
+        world.server.serve("/audio/2.m4a", .refusedOnAMeteredNetwork(), audio)
+        let feed = try await subscribe(world, episodes: 2)
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        await waitFor("both downloads are put off") {
+            world.center.downloads.putOff.count == 2 && world.center.downloads.current == nil
+        }
+
+        // This engine does not work on its own, so marking runs no pass.
+        world.center.markPlayed("guid:ep-2", of: feed.id)
+        _ = await world.center.refreshAll(origin: .scheduled)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(world.server.requests(to: "/audio/2.m4a").count, 1, "a put-off download the rule no longer counts was tried again")
+        XCTAssertEqual(world.center.downloads.putOff.map(\.itemID), ["guid:ep-2"])
+        let pass = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(pass.withdrawnItemIDs, ["guid:ep-2"])
+        XCTAssertTrue(world.center.downloads.putOff.isEmpty)
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state, .notDownloaded)
+    }
+
     /// A reader closing lets the sweep of played downloads run, never the
     /// rule: a download open in a reader stays when its reader closes, and
     /// goes at the rule's next pass, after a refresh (the listener's answer
@@ -534,19 +738,7 @@ final class FeedNewestRuleTests: XCTestCase {
     /// discretionary work, which a network with data limits puts off; a
     /// second pass asks for nothing and removes nothing.
     func testTheFirstLaunchDownloadsTheUsersNewestFive() async throws {
-        let world = try FeedTestWorld(self, label: "FeedRuleFirstLaunch")
-        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
-        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
-        let users = try UsersFeeds(world)
-        try users.write(to: world)
-        let article = users.articleRow(in: world)
-        world.library.library.books.append(article)
-        let audio = try FeedMediaFixtures.silentAAC()
-        for number in 377...381 {
-            world.server.serve("/finish-it/\(number).m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
-        }
-        world.server.serve("/antiquarian/museum.mp4", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
-        world.server.serve("/antiquarian/reading.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        let (world, users, _) = try usersFirstLaunch("FeedRuleFirstLaunch")
 
         let relaunched = await world.relaunch(self)
 
@@ -577,7 +769,92 @@ final class FeedNewestRuleTests: XCTestCase {
         XCTAssertEqual(again, FeedItemPolicyPassReport())
     }
 
+    /// The run of downloads that first launch begins, as the feed downloads
+    /// section counts it and VoiceOver hears it (feed review item 22): the
+    /// rule's 9, "Finish It!"'s newest 5, newest first, then "The Digital
+    /// Antiquarian"'s 4 in their order, each counted "of 9" from the first;
+    /// the run, which TextMouth began by itself, heard once it has run 10
+    /// seconds, then at each quarter, and at its end; and each time left
+    /// counting the episodes still to come by the bytes their feed gives,
+    /// at the rate the finished episodes' files came, and an article left
+    /// at the time the article done took (feed review item 16). By the
+    /// world's clock, each episode's file, a second of silence, takes 5
+    /// seconds, and each article 1, so the user's 63 MB episodes come to
+    /// days.
+    func testTheFirstLaunchsRunIsCountedAndHeard() async throws {
+        let (world, users, audio) = try usersFirstLaunch("FeedRuleFirstLaunchRun")
+        // The run in the order the rule asks for it, each download by the
+        // bytes its feed gives for its file: nil for an article.
+        let episode = UsersFeeds.finishItEpisodeBytes
+        let run: [(title: String, bytes: Int64?)] = [
+            ("Ep. 381", episode), ("Ep. 380", episode), ("Ep. 379", episode), ("Ep. 378", episode), ("Ep. 377", episode),
+            ("The Story of Zork, Part 4", nil),
+            ("A Visit to the Computer Museum", 5_700_000),
+            ("Infocom's Last Days", nil),
+            ("Reading Aloud in 1984", 2_100_000),
+        ]
+        let articleIDs = Set(users.antiquarian.items.filter { $0.enclosure == nil }.map(\.id))
+        let heard = AnnouncementCapture()
+        defer { heard.stop() }
+        var atCommit: [FeedDownloadProgressState] = []
+
+        let relaunched = await world.relaunch(self) { center in
+            let progress = center.downloads.progress
+            center.downloads.beforeCommit = { request in
+                atCommit.append(progress.state)
+                world.advance(by: articleIDs.contains(request.itemID) ? 1 : 5)
+            }
+        }
+        let progress = relaunched.downloads.progress
+        await waitFor("the run of 9 ends", timeout: 60) { atCommit.count == run.count && !progress.state.isRunning }
+
+        XCTAssertEqual(atCommit.map { $0.download?.title ?? "none" }, run.map(\.title))
+        XCTAssertEqual(atCommit.map(\.total), Array(repeating: run.count, count: run.count), "a download was not counted of 9")
+        XCTAssertEqual(atCommit.map(\.done), Array(0..<run.count))
+        XCTAssertEqual(atCommit.first?.queued, run.dropFirst().map(\.bytes), "a download waited by other than its feed's size")
+
+        /// The time left once `done` of the run's downloads are done: those
+        /// done timed as the clock went, each episode's file of
+        /// `audio.count` bytes, and those left by their feed's sizes.
+        func secondsLeft(afterDone done: Int) -> TimeInterval? {
+            var timing = WorkTiming()
+            for download in run.prefix(done) {
+                timing.add(seconds: download.bytes == nil ? 1 : 5, bytes: download.bytes == nil ? 0 : Int64(audio.count))
+            }
+            return TimeLeftEstimate.secondsLeft(after: timing, for: run.dropFirst(done).map { TimeLeftEstimate.Remaining(bytes: $0.bytes) })
+        }
+        XCTAssertEqual(heard.messages.filter { $0.hasPrefix("Feed downloads") }, [
+            FeedDownloadProgressWording.underWay(7, secondsLeft: secondsLeft(afterDone: 2)),
+            FeedDownloadProgressWording.quarter(done: 3, of: 9, failed: 0, secondsLeft: secondsLeft(afterDone: 3)),
+            FeedDownloadProgressWording.quarter(done: 5, of: 9, failed: 0, secondsLeft: secondsLeft(afterDone: 5)),
+            FeedDownloadProgressWording.quarter(done: 7, of: 9, failed: 0, secondsLeft: secondsLeft(afterDone: 7)),
+            FeedDownloadProgressWording.finished(downloaded: 9, failed: 0, waits: FeedDownloadWaits()),
+        ])
+    }
+
     // MARK: - Helpers
+
+    /// A world whose next launch is the user's first with the newest-N
+    /// rule, on records and settings shaped like the user's (`UsersFeeds`):
+    /// no refresh at launch or by the hour, the article the user opened
+    /// listed among the books, and each of the 9 files the rule asks for
+    /// served as `audio`, a second of silence.
+    private func usersFirstLaunch(_ label: String) throws -> (world: FeedTestWorld, users: UsersFeeds, audio: Data) {
+        let world = try FeedTestWorld(self, label: label)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        let users = try UsersFeeds(world)
+        try users.write(to: world)
+        world.library.library.books.append(users.articleRow(in: world))
+        let audio = try FeedMediaFixtures.silentAAC()
+        let file = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        for number in 377...381 {
+            world.server.serve("/finish-it/\(number).m4a", file)
+        }
+        world.server.serve("/antiquarian/museum.mp4", file)
+        world.server.serve("/antiquarian/reading.m4a", file)
+        return (world, users, audio)
+    }
 
     /// Subscribes `world` to a feed of `episodes` audio episodes, each served
     /// as a second of silence, whose parts come `pausing` seconds apart when

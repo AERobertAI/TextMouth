@@ -307,6 +307,23 @@ final class LogContentPolicyTests: XCTestCase {
         "FEED_PARSE_REPAIRED",
         "FEED_DOWNLOAD_STARTED", "FEED_DOWNLOAD_FINISHED", "FEED_DOWNLOAD_FAILED", "FEED_DOWNLOAD_CANCELLED",
         "FEED_ITEM_PLAYED", "FEED_DOWNLOAD_DELETED", "FEED_DOWNLOAD_DELETE_FAILED", "FEED_SWEEP_LEFT_IN_CLOUD",
+        // Feed items in their feeds' own folders (FR11): each feed's index and the first launch's
+        // move into it; a download kept, restored, set aside, or held aside, and an article's
+        // earlier text kept; the rules' downloads, waits, and removals; Cancel; the feed's
+        // choice moved; Move to Library…; Unsubscribe and Resubscribe; and the return of a
+        // gone feed's downloads.
+        "FEED_INDEX", "FEED_INDEX_IN_CLOUD", "FEED_INDEX_NEWER", "FEED_INDEX_UNREADABLE",
+        "FEED_DOWNLOADS_MOVE", "FEED_DOWNLOADS_MOVED", "FEED_DOWNLOAD_MOVE_FAILED", "FEED_DOWNLOAD_MOVE_REFUSED",
+        "FEED_ITEMS_KEPT", "FEED_ITEMS_DOWNLOADED_AGAIN",
+        "FEED_DOWNLOAD_CACHE_LEFT", "FEED_DOWNLOAD_DISCARDED", "FEED_DOWNLOAD_FORGOTTEN", "FEED_DOWNLOAD_LEFT",
+        "FEED_DOWNLOAD_RESTORED", "FEED_DOWNLOAD_HELD_ASIDE", "FEED_ARTICLE_TEXT_KEPT",
+        "FEED_PACKAGE_PUT_BACK", "FEED_PACKAGE_SET_ASIDE_LEFT", "FEED_PACKAGE_SET_ASIDE_REMOVED", "FEED_PACKAGE_SWAP_FAILED",
+        "FEED_KEPT_PACKAGE_DELETE_FAILED", "FEED_KEPT_PACKAGES_PUT_OFF",
+        "FEED_RULE_DOWNLOADS", "FEED_RULE_LEFT_IN_CLOUD", "FEED_RULE_PUT_OFF", "FEED_SWEEP_PUT_OFF",
+        "FEED_DOWNLOAD_WAITING", "FEED_DOWNLOADS_CANCELLED", "FEED_ITEM_POLICY_MOVED",
+        "FEED_ITEM_MOVED_TO_LIBRARY", "FEED_MOVE_TO_LIBRARY_FAILED", "FEED_MOVE_TO_LIBRARY_PUT_OFF", "FEED_LIBRARY_BOOK_GONE",
+        "FEED_RESUBSCRIBED", "FEED_RECORD_ABSENT", "FEED_RECORD_BACK",
+        "FEED_DOWNLOADS_RETURN", "FEED_DOWNLOADS_RETURNED", "FEED_DOWNLOAD_RETURN_FAILED",
         // The logs themselves (the user's decision of October 3): lines changing place between the
         // data directory's Logs folder and this Mac's, and a log started over because it could not
         // be renamed to its older generation.

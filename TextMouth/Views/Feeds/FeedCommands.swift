@@ -319,11 +319,56 @@ extension FeedWording {
 
     /// What VoiceOver hears once Delete Download deleted a download: that it
     /// can be downloaded again, or, when its package kept what the listener
-    /// had of it (`keptPlace`, FR11, branch A2), that this waits for then,
-    /// in the nouns the library's own Remove of an episode uses.
-    static func downloadDeleted(title: String, keptPlace: Bool = false) -> String {
-        guard keptPlace else { return "Deleted the download of “\(title)”. It can be downloaded again." }
-        return "Deleted the download of “\(title)”. Its place, bookmarks, and transcript are kept for when you download it again."
+    /// had of it (FR11, branch A2), what waits for then, naming only what
+    /// it holds (`kept`, feed review item 18): "Its place and bookmarks are
+    /// kept for when you download it again."
+    static func downloadDeleted(title: String, kept: KeptParts = []) -> String {
+        let deleted = "Deleted the download of “\(title)”."
+        guard let parts = kept.sentenceSubject else { return "\(deleted) It can be downloaded again." }
+        return "\(deleted) \(parts) kept for when you download it again."
+    }
+
+    /// What a package kept after its download went holds of the listener's
+    /// that Delete Download names (feed review item 18): its place, its
+    /// bookmarks, its own settings, and its transcript.
+    struct KeptParts: OptionSet, Equatable, Sendable {
+        let rawValue: Int
+        static let place = KeptParts(rawValue: 1 << 0)
+        static let bookmarks = KeptParts(rawValue: 1 << 1)
+        static let settings = KeptParts(rawValue: 1 << 2)
+        static let transcript = KeptParts(rawValue: 1 << 3)
+
+        /// What the kept row `row` and its package at `package` hold, the
+        /// package listed without downloading anything.
+        static func of(_ row: Book, package: URL) -> KeptParts {
+            var parts: KeptParts = []
+            if row.readingPosition != nil { parts.insert(.place) }
+            if !row.bookmarks.isEmpty { parts.insert(.bookmarks) }
+            if row.hasLocalVoiceSettings || !(row.skippedHeadingIDs ?? []).isEmpty || row.localEndOfBookBehavior != nil
+                || row.localSkipForwardUnit != nil || row.localSkipBackwardUnit != nil {
+                parts.insert(.settings)
+            }
+            if FeedItemPackage.entryNames(of: package).contains(where: TextMouthPaths.isTranscriptFile) {
+                parts.insert(.transcript)
+            }
+            return parts
+        }
+
+        /// The parts as a sentence's subject with its verb, as in "Its
+        /// place and bookmarks are", or "Its transcript is"; nil for none.
+        var sentenceSubject: String? {
+            // Each part's noun, in the order said, and whether it is plural.
+            let nouns: [(part: KeptParts, noun: String, isPlural: Bool)] = [
+                (.place, "place", false),
+                (.bookmarks, "bookmarks", true),
+                (.settings, "own settings", true),
+                (.transcript, "transcript", false),
+            ]
+            let named = nouns.filter { contains($0.part) }
+            guard let first = named.first else { return nil }
+            let plural = named.count > 1 || first.isPlural
+            return "Its \(LibraryCloudWording.list(named.map(\.noun))) \(plural ? "are" : "is")"
+        }
     }
 
     /// The title of the alert saying why a download, or an item, could not
@@ -460,9 +505,10 @@ extension FeedWording {
     /// What VoiceOver hears once the feed titled `title`, whose items are
     /// called `noun`, is unsubscribed from (FR11, branch D): checking
     /// stopped, its downloads stay, and what it kept of removed downloads
-    /// was deleted, as `outcome` counts them. "Unsubscribed from Finish It!:
-    /// TextMouth no longer checks it for new episodes; its 2 downloaded
-    /// episodes stay. The places and bookmarks kept for 3 removed downloads
+    /// was deleted, as `outcome` counts them, named as the question named
+    /// it (`unsubscribeMessage`). "Unsubscribed from Finish It!: TextMouth
+    /// no longer checks it for new episodes; its 2 downloaded episodes stay.
+    /// The places, bookmarks, and transcripts kept for 3 removed downloads
     /// were deleted."
     static func unsubscribed(title: String, outcome: FeedUnsubscribeOutcome, noun: ItemNoun) -> String {
         let stays = outcome.downloadCount == 1 ? "stays" : "stay"
@@ -472,9 +518,9 @@ extension FeedWording {
         case 0:
             return stopped
         case 1:
-            return "\(stopped) The place and bookmarks kept for 1 removed download were deleted."
+            return "\(stopped) The place, bookmarks, and transcript kept for 1 removed download were deleted."
         case let count:
-            return "\(stopped) The places and bookmarks kept for \(count) removed downloads were deleted."
+            return "\(stopped) The places, bookmarks, and transcripts kept for \(count) removed downloads were deleted."
         }
     }
 }

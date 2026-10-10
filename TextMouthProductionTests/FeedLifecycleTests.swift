@@ -54,6 +54,28 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertEqual(world.stats.booksFinishedAllTimeByKind, FinishedBookCounts(textBooks: 1, audiobooks: 1, episodes: 1))
     }
 
+    /// A book Move to Library… made of an episode counts as an episode among
+    /// Books Finished even once no feed's record names its item, as after a
+    /// lost record, by the feed link its package record keeps while its row
+    /// lost it (REV11); an audiobook of the library's own whose record holds
+    /// no link stays an audiobook.
+    func testAMovedEpisodeCountsAsAnEpisodeWithoutItsFeedsRecord() async throws {
+        let world = try FeedTestWorld(self, label: "FeedFinishedMoved")
+        let (feed, episode) = try await downloadedEpisode(in: world)
+        let outcome = await world.library.moveToLibraryReturningOutcome([episode], toFolder: world.folder.path)
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        XCTAssertNil(world.library.bookByID(episode.id)?.feedLink, "the moved book's row kept its feed link")
+        XCTAssertEqual(world.center.finishedBookKind(of: episode.id), .episode)
+
+        world.center.store.remove(feed.id)
+
+        XCTAssertNil(world.center.store.item(linkedTo: episode.id))
+        XCTAssertEqual(world.center.finishedBookKind(of: episode.id), .episode, "the moved episode became an audiobook")
+        let audiobook = Book(title: "Ferry Songs", format: .audio, filePath: "/Ferry Songs.m4a", md5Hash: "")
+        world.library.library.books.append(audiobook)
+        XCTAssertEqual(world.center.finishedBookKind(of: audiobook.id), .audiobook)
+    }
+
     /// Mark as Played and Mark as Unplayed set and clear the played date.
     func testMarkingPlayedAndUnplayed() async throws {
         let world = try FeedTestWorld(self, label: "FeedMarkPlayed")
@@ -130,6 +152,13 @@ final class FeedLifecycleTests: XCTestCase {
 
     /// A due download open in a reader waits; once its reader closes, the
     /// engine, working on its own, deletes it at once.
+    ///
+    /// The row leaves the books a step before the item's state settles,
+    /// the files going off the main thread between the two, so the test
+    /// reads the state only once the engine's own work has ended (board
+    /// #1821). It holds that step open to show it: with the row gone, the
+    /// state is still the download's, as a reading made at that moment, as
+    /// this test once made it, found under load.
     func testADownloadOpenInAReaderWaitsUntilItCloses() async throws {
         let world = try FeedTestWorld(self, label: "FeedDeleteOpen", worksOnItsOwn: true)
         FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
@@ -143,12 +172,90 @@ final class FeedLifecycleTests: XCTestCase {
         world.center.markPlayed("guid:ep-1", of: feed.id)
 
         let report = await world.center.sweepPlayedDownloads()
-        XCTAssertEqual(report.openBookIDs, [book.id])
+        XCTAssertEqual(report.inUseBookIDs, [book.id])
         XCTAssertNotNil(world.library.bookByID(book.id))
+        await waitFor("the engine's own work ends") { !world.center.isSweeping }
 
+        let imports = await world.holdImports(self)
         world.library.openBookIDs = []
-        await waitFor("the download is deleted once its reader closes") { world.library.bookByID(book.id) == nil }
+        await waitFor("the download's row goes once its reader closes") { world.library.bookByID(book.id) == nil }
+        XCTAssertEqual(
+            world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state,
+            .downloaded(bookID: book.id),
+            "the state settled with the row, so reading it there would not race"
+        )
+        imports.release()
+        await waitFor("the engine's own work ends, its removal settled") { !world.center.isSweeping }
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
+    }
+
+    /// A due download in use waits for a later sweep, as one open in a
+    /// reader does (REV11 F1): one being transcribed, whose transcript would
+    /// be thrown away with its file, and one being exported. Once neither
+    /// work is under way, the sweep deletes it.
+    func testADownloadBeingTranscribedOrExportedWaitsForALaterSweep() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeleteInUse")
+        let (feed, book) = try await downloadedEpisode(in: world)
+        FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        let transcriptions = TranscribedBooks.shared
+        let transcribingBefore = transcriptions.transcribingBookID
+        addTeardownBlock { @MainActor in transcriptions.setTranscribing(transcribingBefore) }
+
+        transcriptions.setTranscribing(book.id)
+        var report = await world.center.sweepPlayedDownloads()
+        transcriptions.setTranscribing(nil)
+        XCTAssertEqual(report.inUseBookIDs, [book.id])
+        XCTAssertEqual(report.deletedBookIDs, [])
+        XCTAssertNotNil(world.library.bookByID(book.id), "a download being transcribed was deleted")
+
+        BookExportModel.noteExportStarted([book.id])
+        report = await world.center.sweepPlayedDownloads()
+        BookExportModel.noteExportEnded([book.id])
+        XCTAssertEqual(report.inUseBookIDs, [book.id])
+        XCTAssertNotNil(world.library.bookByID(book.id), "a download being exported was deleted")
+
+        report = await world.center.sweepPlayedDownloads()
+        XCTAssertEqual(report.inUseBookIDs, [])
+        XCTAssertEqual(report.deletedBookIDs, [book.id])
+    }
+
+    /// An item opened while a rule removes its file downloads again, and the
+    /// removal, ending a step later off the main thread, leaves the new
+    /// download's state alone (REV11 F5): the item says Downloading for its
+    /// whole transfer, never Not Downloaded, while the date its download
+    /// went is noted all the same.
+    func testAnItemOpenedDuringARulesRemovalStaysDownloading() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRemovalOpened")
+        let (feed, book) = try await downloadedEpisode(in: world)
+        // Opened once, so its package is kept with its place, and Open
+        // restores it.
+        world.library.markBookOpened(book.id)
+        FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        // The next download arrives over seconds, so it is under way when
+        // the removal ends.
+        let audio = try FeedMediaFixtures.silentAAC()
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.2
+        world.server.serve("/audio/1.m4a", slow)
+        let imports = await world.holdImports(self)
+
+        let sweep = Task { await world.center.sweepPlayedDownloads() }
+        await waitFor("the removal readies the row") { world.library.bookByID(book.id) == nil }
+        world.center.open("guid:ep-1", of: feed.id)
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .downloading)
+        imports.release()
+        let report = await sweep.value
+
+        XCTAssertEqual(report.deletedBookIDs, [book.id])
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        XCTAssertEqual(item.state, .downloading, "the removal reset an item downloading again")
+        XCTAssertEqual(item.downloadDeletedDate, world.clock.value)
+        world.center.cancelDownload("guid:ep-1", of: feed.id)
+        await waitFor("the download stops") { world.center.downloads.current == nil }
     }
 
     /// In a cloud library, a due download is deleted only when this Mac

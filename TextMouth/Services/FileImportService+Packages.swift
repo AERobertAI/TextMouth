@@ -443,9 +443,9 @@ extension FileImportService {
     /// removal marker).
     static func isPackageContentName(_ name: String) -> Bool {
         !name.hasPrefix(".")
-            && name != "bookInfo.json"
+            && name != TextMouthPaths.bookInfoFileName
             && name != TextMouthPaths.contentIndexFileName
-            && name != "content.md"
+            && name != TextMouthPaths.contentMarkdownFileName
             && name != BookOrigin.fileName
             && name != BookOrigin.originalTakeFileName
             && name != AudioEditPackage.folderName

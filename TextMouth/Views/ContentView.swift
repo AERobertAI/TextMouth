@@ -150,7 +150,12 @@ struct LibraryWindowView: View {
         ) {
             Button(removalChoice.deleteButtonTitle, role: .destructive) {
                 let books = libraryViewModel.pendingRemoveBooks
-                libraryViewModel.removeBooksAndDelete(books)
+                // Feed items' Delete Download says what it kept once the
+                // question has closed, so its closing never cuts the words
+                // off (REV11 F6).
+                if let report = libraryViewModel.removeBooksAndDelete(books) {
+                    VoiceOverAnnouncer.announceAfterSheetCloses(report, from: hostWindow)
+                }
                 libraryViewModel.pendingRemoveBooks = []
             }
             // Not for feed items alone, which Remove from Library Only refuses:

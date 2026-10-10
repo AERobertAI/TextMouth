@@ -195,8 +195,9 @@ final class LibraryInfoWordingTests: XCTestCase {
 
     /// Articles are unread rather than unplayed, nothing unplayed is left
     /// out, a feed whose folder is gone says so and names no folder, and a
-    /// feed no longer subscribed has no address to say. A failed check's
-    /// message, which ends with a period, is not given a second one.
+    /// feed whose record is gone has no address to say (an unsubscribed one
+    /// keeps its record and its address since FR11's branch D). A failed
+    /// check's message, which ends with a period, is not given a second one.
     func testAFeedOfArticlesWithoutAFolderOrAnAddress() {
         var feed = FeedInfoFacts(
             title: "Harbour Notes",

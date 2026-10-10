@@ -497,6 +497,109 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(world.library.library.feedShelf.rows, [])
     }
 
+    /// Downloading an article again writes its text anew from the new file;
+    /// the text the rules kept, which may hold an edit made before feed
+    /// items lost Edit Text, stays beside it as an `.edited-` copy when the
+    /// two differ, and no copy is made when they are the same (REV11).
+    func testDownloadingAnArticleAgainKeepsItsEarlierTextWhenItDiffers() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordArticleEarlierText")
+        let feed = try await subscribeToArticles(2, in: world)
+        var articles: [Book] = []
+        for number in 1...2 {
+            world.center.download("guid:post-\(number)", of: feed.id)
+            articles.append(try listen(to: try await downloadedBook(world, feed: feed, item: "guid:post-\(number)"), in: world))
+        }
+        let editedPackage = try XCTUnwrap(articles.first).tmbDirectory
+        let untouchedPackage = try XCTUnwrap(articles.last).tmbDirectory
+        let editedText = TextMouthPaths.contentMarkdownPath(in: editedPackage)
+        try "# Edited by hand".write(to: editedText, atomically: true, encoding: .utf8)
+        let untouchedText = try Data(contentsOf: TextMouthPaths.contentMarkdownPath(in: untouchedPackage))
+        // The rules remove both files and keep both texts.
+        FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
+        world.center.markPlayed("guid:post-1", of: feed.id)
+        world.center.markPlayed("guid:post-2", of: feed.id)
+        let report = await world.center.sweepPlayedDownloads()
+        XCTAssertEqual(Set(report.keptPackageBookIDs), Set(articles.map(\.id)))
+
+        for number in 1...2 {
+            world.center.download("guid:post-\(number)", of: feed.id)
+            _ = try await downloadedBook(world, feed: feed, item: "guid:post-\(number)")
+        }
+
+        let copies = try FileManager.default.contentsOfDirectory(atPath: editedPackage.path).filter(TextMouthPaths.isKeptTextCopy)
+        XCTAssertEqual(copies.count, 1, "\(copies)")
+        let copy = editedPackage.appendingPathComponent(try XCTUnwrap(copies.first))
+        XCTAssertEqual(try String(contentsOf: copy, encoding: .utf8), "# Edited by hand")
+        XCTAssertNotEqual(try String(contentsOf: editedText, encoding: .utf8), "# Edited by hand", "the new download took the old text for its own")
+        XCTAssertEqual(
+            try FileManager.default.contentsOfDirectory(atPath: untouchedPackage.path).filter(TextMouthPaths.isKeptTextCopy),
+            [],
+            "a copy of the same text was kept"
+        )
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.contentMarkdownPath(in: untouchedPackage)), untouchedText)
+    }
+
+    /// Delete Download of an article removes its file and its text, which
+    /// may hold an edit, as one item, so the Trash holds one, which puts
+    /// both back (REV11); a refused removal puts both back in the package,
+    /// and nothing is left beside it.
+    func testAnArticlesDeleteDownloadIsOneItem() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordArticleOneItem")
+        let feed = try await subscribeToArticles(1, in: world)
+        world.center.download("guid:post-1", of: feed.id)
+        let article = try listen(to: try await downloadedBook(world, feed: feed, item: "guid:post-1"), in: world)
+        let fileName = article.bookFileURL.lastPathComponent
+        let text = TextMouthPaths.contentMarkdownPath(in: article.tmbDirectory)
+        let feedFolder = FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root)
+        /// The holders a removal left beside the packages, by name.
+        func holdersLeft() throws -> [String] {
+            try FileManager.default.contentsOfDirectory(atPath: feedFolder.path).filter { $0.hasPrefix(FeedItemPackage.removalHolderPrefix) }
+        }
+
+        world.refusesRemovals.value = true
+        XCTAssertThrowsError(try world.center.deleteDownload("guid:post-1", of: feed.id))
+        world.refusesRemovals.value = false
+        XCTAssertTrue(FileManager.default.fileExists(atPath: article.filePath), "a refused removal left the file out of its package")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: text.path), "a refused removal left the text out of its package")
+        XCTAssertEqual(try holdersLeft(), [])
+        XCTAssertEqual(world.removedItems.value, [])
+
+        try world.center.deleteDownload("guid:post-1", of: feed.id)
+
+        XCTAssertEqual(world.removedItems.value, [
+            FeedTestWorld.RemovedItem(name: (fileName as NSString).deletingPathExtension, contents: ["content.md", fileName].sorted()),
+        ])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: article.filePath))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: text.path))
+        XCTAssertEqual(try holdersLeft(), [], "the holder stayed")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: article.tmbDirectory).path))
+    }
+
+    /// A book's own speed is kept within its format's range in its row, as
+    /// its record reads it back (REV11): an article given a playback rate of
+    /// 1.5 keeps the slowest words per minute, 50, in its row as in its
+    /// record, where its row once kept 1.5; a speed that can be none, and a
+    /// pitch out of range, are kept as the record reads them too.
+    func testAnArticlesOwnSpeedIsKeptWithinItsRange() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordArticleSpeed")
+        let feed = try await subscribeToArticles(1, in: world)
+        world.center.download("guid:post-1", of: feed.id)
+        let article = try await downloadedBook(world, feed: feed, item: "guid:post-1")
+
+        world.library.updateLocalVoiceAndSpeed(bookID: article.id, voiceID: nil, wpm: 1.5, pitch: 99)
+        LibraryPersistenceService.writePendingBookInfoNow(bookID: article.id)
+
+        let row = try XCTUnwrap(world.library.bookByID(article.id))
+        XCTAssertEqual(row.localWPM, SettingsPolicy.wordsPerMinute.range.lowerBound)
+        XCTAssertEqual(row.localPitch, SettingsPolicy.validatedLocalPitch(99))
+        let recorded = try recordedBook(in: article.tmbDirectory)
+        XCTAssertEqual(recorded.localWPM, row.localWPM, "the row's speed and the record's differ")
+        XCTAssertEqual(recorded.localPitch, row.localPitch)
+
+        world.library.updateLocalVoiceAndSpeed(bookID: article.id, voiceID: nil, wpm: .nan)
+        XCTAssertNil(world.library.bookByID(article.id)?.localWPM)
+    }
+
     // MARK: - A Kept Package That Cannot Be Listed
 
     /// A package that is there but cannot be listed, as one whose folder
