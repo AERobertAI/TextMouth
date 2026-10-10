@@ -154,6 +154,7 @@ final class ReaderViewModel: ObservableObject {
     }
     @Published var currentChapterIndex = 0 {
         didSet {
+            letGoOfOpenedPlaceAnchorIfLeft()
             schedulePlaybackUIRefresh()
             scheduleLivePositionPublish()
         }
@@ -164,6 +165,7 @@ final class ReaderViewModel: ObservableObject {
     /// every spoken word.
     var currentCharacterOffset = 0 {
         didSet {
+            letGoOfOpenedPlaceAnchorIfLeft()
             schedulePlaybackUIRefresh()
             scheduleLivePositionPublish()
         }
@@ -468,6 +470,16 @@ final class ReaderViewModel: ObservableObject {
     private var livePositionWorkItem: DispatchWorkItem?
     private var lastLivePositionPublish = Date.distantPast
     private var lastPersistedCheckpoint: Date?
+    /// The measure of the text this reader shows, which every anchor it
+    /// captures records (T06; `noteLoadedTextForAnchors(cacheFormatVersion:)`):
+    /// nil before the text loads, or when the version of the content.md it
+    /// came from is not known.
+    var textAnchorMeasure: String?
+    /// The place the book opened at, with the anchor it was saved with,
+    /// while the cursor has not left it (T06): saved again there, the place
+    /// keeps the words it was saved with (`anchorToSave(at:)`). Nil once the
+    /// cursor moves, for an audiobook, and for a place saved without words.
+    var openedPlaceAnchor: OpenedPlaceAnchor?
     private struct PlaybackUIRefreshSnapshot {
         let chapterIndex: Int
         let offset: Int
@@ -1338,6 +1350,10 @@ final class ReaderViewModel: ObservableObject {
             currentChapterIndex = opening.chapter
             currentCharacterOffset = opening.offset
         }
+        // Every place saved from now on takes its words from this text, but
+        // the place the book opened at keeps the words it was saved with
+        // while the cursor stays there (T06).
+        noteLoadedTextForAnchors(cacheFormatVersion: loaded.cacheFormatVersion)
         // A book that played to its end was saved exactly there, and opens
         // finished, as it rested before TextMouth quit (TODO P07): its next
         // backward skip plays its end again, and Play does what Play does at
@@ -1770,12 +1786,15 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Builds the one canonical snapshot used by reader persistence and live
-    /// library estimates, preventing formula inputs from drifting apart.
+    /// library estimates, preventing formula inputs from drifting apart. A
+    /// text book's place carries the words around it (T06), by which a
+    /// later text of the book can find it again (`anchorToSave(at:)`).
     private func makeCurrentReadingPosition() -> ReadingPosition {
         ReadingPosition(
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset,
-            globalCharacterOffset: currentGlobalOffset
+            globalCharacterOffset: currentGlobalOffset,
+            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
         )
     }
 

@@ -3,8 +3,84 @@ import Foundation
 // MARK: - Saved Places (T06)
 
 /// How a reader treats the places its book was saved at (T06): where a
-/// saved place opens once the book's text has loaded.
+/// saved place opens once the book's text has loaded, and the words around
+/// each place it saves, its anchor, by which a later text of the book can
+/// find the place again (`TextAnchorFinder`). Nothing here is spoken or
+/// shown.
 extension ReaderViewModel {
+
+    // MARK: The Words Around a Saved Place
+
+    /// The place a book opened at, with the anchor it was saved with
+    /// (`openedPlaceAnchor`).
+    struct OpenedPlaceAnchor: Equatable {
+        /// Where the book opened: its saved place, in the text as loaded.
+        let place: TextPlace
+        /// The anchor that place was saved with.
+        let anchor: TextAnchor
+    }
+
+    /// The anchor of `place` in the text this reader shows, as it reads
+    /// now, measured in `textAnchorMeasure`. Nil for an audiobook, whose
+    /// places count time in its recording (P08), before the text has
+    /// loaded, and for a chapter the text lacks.
+    func capturedAnchor(at place: TextPlace) -> TextAnchor? {
+        guard !isAudioBook, let content else { return nil }
+        return content.anchor(at: place, measuredIn: textAnchorMeasure)
+    }
+
+    /// The anchor a place this reader saves at `place` keeps: the one the
+    /// place the book opened at was saved with, while the cursor has not
+    /// left that place (`openedPlaceAnchor`), and otherwise the words
+    /// around `place` as the text reads now.
+    ///
+    /// So a place saved again where it was, as every open, close, and
+    /// pause without moving saves it, keeps the words it was saved with,
+    /// even when the text has changed under it since. A later build can
+    /// then find it by those words, where words captured at its old numbers
+    /// in the changed text would hold it to whatever stands there now. Once
+    /// the listener moves, a place is wherever they took it, and takes the
+    /// words there.
+    func anchorToSave(at place: TextPlace) -> TextAnchor? {
+        if let opened = openedPlaceAnchor, opened.place == place {
+            return opened.anchor
+        }
+        return capturedAnchor(at: place)
+    }
+
+    /// Lets go of the anchor of the place the book opened at once the
+    /// cursor is anywhere else: called by the cursor's observers, so a
+    /// return to the same numbers later, after the listener has heard the
+    /// text there, takes the words there.
+    func letGoOfOpenedPlaceAnchorIfLeft() {
+        guard let opened = openedPlaceAnchor,
+              opened.place != TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset) else { return }
+        openedPlaceAnchor = nil
+    }
+
+    /// Notes the text just loaded as the one the places this reader saves
+    /// take their words from (T06), once the saved place has been brought
+    /// into it (`openingPlace(of:savedGlobalOffset:in:)`):
+    ///
+    /// - Its measure (`TextAnchor.measure(ofTextCachedBy:)`): the text cache
+    ///   version the load vouches for, `cacheFormatVersion`, or, when it
+    ///   vouches for none, as when a rebuild failed and the content.md
+    ///   already there was read as it is, the version the book records for
+    ///   that content.md; nil when neither is known.
+    /// - The anchor of the place the book opened at, when the cursor is at
+    ///   the place the book's row saved and that place has an anchor, which
+    ///   saves made before the cursor moves keep (`anchorToSave(at:)`).
+    func noteLoadedTextForAnchors(cacheFormatVersion: String?) {
+        textAnchorMeasure = (cacheFormatVersion ?? book.cacheFormatVersion).map(TextAnchor.measure(ofTextCachedBy:))
+        let cursor = TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset)
+        let saved = libraryViewModel.bookByID(book.id)?.readingPosition ?? book.readingPosition
+        if !isAudioBook, let saved, let anchor = saved.anchor,
+           saved.chapterIndex == cursor.chapter, saved.characterOffset == cursor.offset {
+            openedPlaceAnchor = OpenedPlaceAnchor(place: cursor, anchor: anchor)
+        } else {
+            openedPlaceAnchor = nil
+        }
+    }
 
     // MARK: Where a Saved Place Opens
 
