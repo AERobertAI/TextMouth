@@ -24,6 +24,13 @@ final class OffscreenTestWindow: NSWindow {
 extension XCTestCase {
     /// Hosts `view` in a titled `OffscreenTestWindow`, laid out once.
     /// Callers take it down with `takeDown(_:)`.
+    ///
+    /// A root view whose width outgrows the width it is offered, as a macOS
+    /// form in the columns style does, crashes the test host, with a crash
+    /// dialog the user sees: give such a view a fixed frame of the window's
+    /// size before hosting it, `view.frame(width: size.width, height:
+    /// size.height)`, or measure it without a window (`withHostedView`
+    /// says why, and how).
     @MainActor
     func hostOffscreen<Content: View>(
         _ view: Content,

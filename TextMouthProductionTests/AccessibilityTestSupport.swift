@@ -23,6 +23,17 @@ extension XCTestCase {
     ///
     /// SwiftUI creates platform views during layout; polling for a ready
     /// state means a slow first render cannot let a test pass vacuously.
+    ///
+    /// A root view whose width outgrows the width it is offered, as a macOS
+    /// form in the columns style does, crashes the test host: the hosting
+    /// view sets the window's smallest and largest sizes from its content's,
+    /// so the window chases the view until AppKit raises "more Update
+    /// Constraints in Window passes than there are views in the window",
+    /// and the user sees a crash dialog (twice on October 10, 2026). Give
+    /// such a view a fixed frame of the window's size before hosting it,
+    /// `view.frame(width: size.width, height: size.height)`, or measure it
+    /// with `NSHostingController(rootView:).sizeThatFits(in:)` and no
+    /// window, as `SettingsTabFitTests` does.
     @MainActor
     func withHostedView<Content: View>(
         _ view: Content,
