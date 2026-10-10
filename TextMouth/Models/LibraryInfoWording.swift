@@ -38,6 +38,10 @@ struct BookInfoFacts: Equatable {
     var isKeptOnThisMac: Bool
     /// Whether a reader window has the book open.
     var isOpenInWindow: Bool
+    /// The title of the feed an episode or an article in its feed's folder
+    /// belongs to (FR11), which Speak Info names where it names a book's
+    /// folder; nil for a book of the library's own.
+    var feedTitle: String? = nil
 }
 
 /// What Speak Info knows of a folder.
@@ -131,17 +135,17 @@ enum LibraryInfoWording {
     // MARK: A Book
 
     /// A book's brief summary, in parts: its title; "By" its author, unless
-    /// nothing named one; its format; its folder, or that it is in none;
-    /// its progress and time left as its row speaks them; and "Unopened"
-    /// for a book never opened. Example: "Middlemarch. By George Eliot.
-    /// EPUB. In Classics. 42 percent. 2 hours, 5 minutes remaining."
+    /// nothing named one; its format; where it is (`placeNote(of:)`); its
+    /// progress and time left as its row speaks them; and "Unopened" for a
+    /// book never opened. Example: "Middlemarch. By George Eliot. EPUB. In
+    /// Classics. 42 percent. 2 hours, 5 minutes remaining."
     static func briefParts(of book: BookInfoFacts) -> [String] {
         var parts = [book.title]
         if !Book.isUnknownAuthor(book.author) {
             parts.append("By \(book.author)")
         }
         parts.append(book.format)
-        parts.append(book.folderPath.isEmpty ? noFolderNote : "In \(book.folderPath)")
+        parts.append(placeNote(of: book))
         if let progress = book.progress {
             parts.append(progress)
         }
@@ -152,6 +156,17 @@ enum LibraryInfoWording {
             parts.append(unopenedNote)
         }
         return parts
+    }
+
+    /// Where a book is, as its brief summary says it: in its feed, for an
+    /// episode or an article in its feed's folder, which names no folder of
+    /// its own (FR11): "In The Digital Antiquarian, a feed"; otherwise in its
+    /// folder, "In Classics", or in none, "Not in a folder".
+    static func placeNote(of book: BookInfoFacts) -> String {
+        if let feedTitle = book.feedTitle {
+            return "In \(feedTitle), a feed"
+        }
+        return book.folderPath.isEmpty ? noFolderNote : "In \(book.folderPath)"
     }
 
     /// What a book's full summary adds: when it was added and last opened,
