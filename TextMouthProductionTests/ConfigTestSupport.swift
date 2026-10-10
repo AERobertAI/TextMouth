@@ -76,6 +76,7 @@ extension ConfigService.AppConfig {
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             shortcuts.listings(defaults: ShortcutAction.defaultBindings)
         )
+        config.shortcutDoublePressSeconds = 1.2
         config.logLocation = LogLocation.machine.rawValue
         config.transcriptionLocale = TranscriptFixtures.languageOtherThanTheDefault
         config.offerTranscriptionAfterImport = true

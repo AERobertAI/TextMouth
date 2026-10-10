@@ -765,6 +765,41 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertFalse(debugLogLines(containing: "config.json keyboardShortcuts.Go Back: could not be read").isEmpty)
     }
 
+    /// The double-press time (FR12) is read from config.json moved into 0.2
+    /// to 2 seconds and to the nearest tenth, the move logged; applied, it
+    /// reaches the shortcut manager at once; and it is saved back as the
+    /// tenth in force, half a second while the store holds none. A file
+    /// without it, or with one that cannot be read, leaves it alone.
+    func testTheDoublePressTimeIsReadInTenthsAppliedAndSaved() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let store = try isolatedDefaults()
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        let viewModel = makeIsolatedViewModel(store)
+        var standard = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &standard)
+        XCTAssertEqual(try jsonObject(standard)["shortcutDoublePressSeconds"] as? Double, 0.5)
+
+        let read: [(text: String, seconds: Double?)] = [
+            ("0.8", 0.8), ("0.75", 0.8), ("0.05", 0.2), ("7", 2), ("1", 1), ("\"fast\"", nil), ("null", nil),
+        ]
+        for (text, seconds) in read {
+            XCTAssertEqual(try decodeConfig(#"{"shortcutDoublePressSeconds": \#(text)}"#).shortcutDoublePressSeconds, seconds, text)
+        }
+        XCTAssertNil(try decodeConfig("{}").shortcutDoublePressSeconds)
+        XCTAssertFalse(debugLogLines(containing: "config.json shortcutDoublePressSeconds").isEmpty, "a moved value is logged")
+
+        viewModel.applyConfigChanges(try decodeConfig(#"{"shortcutDoublePressSeconds": 1.24}"#))
+        XCTAssertEqual(manager.doublePressTime, 1.2)
+        XCTAssertEqual(store.double(forKey: "shortcutDoublePressSeconds"), 1.2)
+        viewModel.applyConfigChanges(try decodeConfig("{}"))
+        XCTAssertEqual(manager.doublePressTime, 1.2, "a file without it leaves it alone")
+
+        var saved = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &saved)
+        let text = String(decoding: try ConfigService.fileData(for: saved), as: UTF8.self)
+        XCTAssertTrue(text.contains(#""shortcutDoublePressSeconds" : 1.2,"#), text)
+    }
+
     // MARK: - Where the logs are written
 
     /// The log location applied from config.json is stored where the log
@@ -1127,6 +1162,7 @@ final class ConfigSyncTests: XCTestCase {
             "showExportInReaderToolbar": true,
             // Shortcuts, text, and sounds, kept by their services.
             "keyboardShortcutEdits": try XCTUnwrap(shortcuts.storedData),
+            "shortcutDoublePressSeconds": 1.2,
             "substitutionsEnabled": false,
             "repeatedSymbolStyle": RepeatedSymbolStyle.leaveOut.rawValue,
             "repeatedSymbolThreshold": 7,

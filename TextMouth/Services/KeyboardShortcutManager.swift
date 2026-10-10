@@ -21,6 +21,11 @@ final class KeyboardShortcutManager: ObservableObject {
     /// belongs to two actions of one scope. Key presses match these. A
     /// change of the record and these is published once (`take(_:)`).
     private(set) var bindings: [ShortcutAction: [KeyBinding]]
+    /// How soon a second press must follow the first to make a double press,
+    /// in seconds (FR12), as the store holds it: one time for every
+    /// shortcut. A change made anywhere, in the Shortcuts tab or in
+    /// config.json, is published, and the next key press goes by it.
+    private(set) var doublePressTime: TimeInterval
 
     private var eventMonitor: Any?
     /// The store holding the record.
@@ -50,8 +55,14 @@ final class KeyboardShortcutManager: ObservableObject {
         let stored = Self.storedEdits(in: userDefaults)
         edits = stored
         bindings = stored.effectiveBindings(defaults: ShortcutAction.defaultBindings)
-        storeObserver = PreferenceObserver(keys: [Self.editsPreference.key], in: userDefaults) { [weak self] _ in
-            self?.takeEditsFromStore()
+        doublePressTime = Self.doublePressTimePreference.read(from: userDefaults)
+        let observedKeys = [Self.editsPreference.key, Self.doublePressTimePreference.key]
+        storeObserver = PreferenceObserver(keys: observedKeys, in: userDefaults) { [weak self] key in
+            if key == Self.doublePressTimePreference.key {
+                self?.takeDoublePressTimeFromStore()
+            } else {
+                self?.takeEditsFromStore()
+            }
         }
         if installsEventMonitor {
             startMonitoring()
@@ -73,6 +84,23 @@ final class KeyboardShortcutManager: ObservableObject {
         write: { edits, store, key in
             guard let data = edits.storedData else { return }
             store.set(data, forKey: key)
+        }
+    )
+
+    /// How soon a second press must follow the first to make a double press
+    /// (FR12), in seconds, in the preferences store: one time for every
+    /// shortcut, set in the Shortcuts tab and in config.json. It is read and
+    /// written through `SettingsPolicy.validatedDoublePressSeconds(_:)`, so
+    /// it is always 0.2 to 2 seconds in tenths, and half a second while the
+    /// store holds none. The settings model mirrors it in config.json
+    /// through this same definition.
+    nonisolated static let doublePressTimePreference = StoredPreference<Double>(
+        key: SettingsPolicy.shortcutDoublePressSeconds.key,
+        read: { store, _ in
+            SettingsPolicy.validatedDoublePressSeconds(SettingsPolicy.shortcutDoublePressSeconds.storedValue(in: store))
+        },
+        write: { seconds, store, key in
+            store.set(SettingsPolicy.validatedDoublePressSeconds(seconds), forKey: key)
         }
     )
 
@@ -105,6 +133,23 @@ final class KeyboardShortcutManager: ObservableObject {
     /// that change it.
     private func takeEditsFromStore() {
         take(Self.storedEdits(in: userDefaults))
+    }
+
+    /// Takes the double-press time from the store whenever it changes
+    /// there, by `setDoublePressTime(_:)` or by anyone else, publishing it
+    /// when it differs from the one in force.
+    private func takeDoublePressTimeFromStore() {
+        let stored = Self.doublePressTimePreference.read(from: userDefaults)
+        guard stored != doublePressTime else { return }
+        objectWillChange.send()
+        doublePressTime = stored
+    }
+
+    /// Saves `seconds` as the double-press time, as the Shortcuts tab's
+    /// stepper sets it: validated and in tenths of a second. The store
+    /// reports the change at once, and the time in force follows.
+    func setDoublePressTime(_ seconds: TimeInterval) {
+        Self.doublePressTimePreference.write(seconds, to: userDefaults)
     }
 
     /// Makes `newEdits` the record in force, with its keys, publishing once

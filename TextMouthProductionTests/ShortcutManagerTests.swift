@@ -155,6 +155,31 @@ final class ShortcutManagerTests: XCTestCase {
         XCTAssertFalse(KeyboardShortcutManager.moveSavedShortcutsIfNeeded(in: store, fileListings: nil), "the move runs once")
     }
 
+    /// The double-press time (FR12) is half a second while the store holds
+    /// none; the Shortcuts tab's stepper saves it in tenths within 0.2 to 2
+    /// seconds, and a change made in the store by anyone, config.json
+    /// applied included, is published once and is in force at once.
+    func testTheDoublePressTimeFollowsTheStoreInTenths() {
+        let (manager, store) = makeManager("double-press-time")
+        XCTAssertEqual(manager.doublePressTime, 0.5)
+        var publications = 0
+        let subscription = manager.objectWillChange.sink { publications += 1 }
+
+        manager.setDoublePressTime(0.7999999999999999)
+        XCTAssertEqual(manager.doublePressTime, 0.8)
+        XCTAssertEqual(store.double(forKey: KeyboardShortcutManager.doublePressTimePreference.key), 0.8)
+        XCTAssertEqual(publications, 1)
+
+        manager.setDoublePressTime(0.8)
+        XCTAssertEqual(publications, 1, "the same time publishes nothing")
+
+        store.set(9.0, forKey: KeyboardShortcutManager.doublePressTimePreference.key)
+        XCTAssertEqual(manager.doublePressTime, 2, "a stored value out of range reads as the nearest bound")
+        XCTAssertEqual(publications, 2)
+        subscription.cancel()
+        XCTAssertEqual(KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false).doublePressTime, 2)
+    }
+
     /// A stored record with an entry this build cannot use loads the rest.
     func testAStoredRecordWithAnUnusableEntryLoadsTheRest() {
         let store = makeSandboxedPreferences("shortcut-manager-lenient")

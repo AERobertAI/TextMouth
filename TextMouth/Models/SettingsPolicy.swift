@@ -343,6 +343,15 @@ enum SettingsPolicy {
     static let soundEffectsVolume = NumericSettingRule(
         key: "soundEffectsVolume", range: 0...1, defaultValue: 0.5
     )
+    /// How soon a second press of a key must follow the first to make a
+    /// double press, in seconds (Shortcuts settings stepper, FR12): one time
+    /// for every shortcut, from 0.2 to 2 seconds in tenths, and half a
+    /// second until the user picks another. The shortcut manager keeps it
+    /// (`KeyboardShortcutManager.doublePressTimePreference`), in tenths
+    /// (`validatedDoublePressSeconds(_:)`).
+    static let shortcutDoublePressSeconds = NumericSettingRule(
+        key: "shortcutDoublePressSeconds", range: 0.2...2, defaultValue: 0.5
+    )
 
     // MARK: Enum-backed
 
@@ -466,6 +475,23 @@ enum SettingsPolicy {
     /// Minutes a sleep timer can run: the range of the custom-duration
     /// stepper in the sleep timer sheet.
     static let sleepTimerMinutes: ClosedRange<Int> = 1...480
+}
+
+// MARK: - The double-press time
+
+extension SettingsPolicy {
+    /// The double-press time's step, as tenths in a second: the Shortcuts
+    /// tab's stepper moves it a tenth of a second at a time.
+    static let shortcutDoublePressTenthsPerSecond = 10.0
+
+    /// `seconds` as a double-press time (FR12): validated by
+    /// `shortcutDoublePressSeconds`, so a value out of range moves to the
+    /// nearest bound, then moved to the nearest tenth of a second, so the
+    /// store and config.json hold 0.3, never 0.30000000000000004 or 0.75.
+    static func validatedDoublePressSeconds(_ seconds: Double) -> Double {
+        let tenths = (shortcutDoublePressSeconds.validated(seconds) * shortcutDoublePressTenthsPerSecond).rounded()
+        return tenths / shortcutDoublePressTenthsPerSecond
+    }
 }
 
 // MARK: - Saved book state
