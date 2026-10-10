@@ -508,6 +508,13 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertTrue(world.autoplayRequests.hasRequest(for: second.id), "No request to start the next book")
         XCTAssertEqual(ReadingStatsService.shared.stats.finishedBooks.map(\.bookID), [first.id.uuidString])
         XCTAssertFalse(reader.hasFinishedBook, "The book that continued through the list still rests finished at its end")
+        // It played to its end, and is saved exactly there (TODO P07).
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The book that continued is not at its end")
+        XCTAssertEqual(
+            world.library.bookByID(first.id)?.readingPosition?.globalCharacterOffset,
+            reader.content?.totalCharacterCount,
+            "The book that continued is not saved at its end"
+        )
         XCTAssertFalse(reader.isCurrentlyPlaying)
 
         // The window opened for the requests makes the next book's reader.
@@ -651,6 +658,7 @@ final class ReadingListReaderTests: XCTestCase {
                 XCTAssertFalse(world.autoplayRequests.hasRequest(for: book.id), "\(testCase.announcement): started \(book.title)")
             }
             XCTAssertTrue(reader.hasFinishedBook, testCase.announcement)
+            XCTAssertTrue(reader.cursorRestsAtEnd, "\(testCase.announcement): not at the end")
             XCTAssertEqual(
                 ReadingStatsService.shared.stats.finishedBooks.last?.bookID,
                 testCase.reading.id.uuidString,

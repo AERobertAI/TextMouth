@@ -232,7 +232,8 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
 
     /// With every chapter skipped, Play ends the book through the configured
     /// Stop behavior at once. Nothing is spoken, the reader never shows
-    /// Playing, no listening session starts, and the cursor stays put.
+    /// Playing, no listening session starts, and the book rests at its end,
+    /// as every book that stops there does (TODO P07).
     func testPlayWithEveryChapterSkippedEndsTheBookWithoutPlaying() throws {
         try withReader(
             chapters: [
@@ -245,7 +246,7 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             settle()
 
             assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages")
-            XCTAssertEqual(reader.currentChapterIndex, 0)
+            assertRestsAtItsEnd(reader)
             XCTAssertEqual(
                 ReadingStatsService.shared.stats.finishedBooks.map(\.bookID),
                 [reader.book.id.uuidString]
@@ -516,7 +517,9 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
 
     /// A book with one speakable chapter among skipped ones plays only that
     /// chapter: speech starts there, nothing is chosen to look ahead to, and
-    /// when it finishes the book ends without visiting a skipped chapter.
+    /// when it finishes the book ends without playing a skipped chapter. The
+    /// cursor then rests at the book's end, past the skipped chapter that
+    /// closes it, where every book that stops there rests (TODO P07).
     func testOnlySpeakableChapterAmongSkippedOnesPlaysAlone() throws {
         try withReader(
             chapters: [
@@ -539,8 +542,10 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
 
             XCTAssertEqual(spokenText, "The only story.")
             XCTAssertNil(lookAhead)
-            XCTAssertEqual(visitedChapters, [0, 2])
-            XCTAssertEqual(reader.currentChapterIndex, 2)
+            // Speech visited the speakable chapter alone; the last chapter
+            // is where the finished book rests.
+            XCTAssertEqual(visitedChapters, [0, 2, 3])
+            assertRestsAtItsEnd(reader)
             XCTAssertEqual(reader.lastAnnouncement, "Finished: Quiet Pages")
             XCTAssertFalse(reader.speechService.isSpeaking)
             XCTAssertFalse(reader.isCurrentlyPlaying)
@@ -671,7 +676,7 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
 
     /// Looping a book with nothing speakable anywhere would end it again at
     /// once, forever. It stops instead, exactly as the Stop behavior does,
-    /// leaving the cursor where the book ended.
+    /// resting at its end (TODO P07).
     func testLoopWithNothingSpeakableStopsInsteadOfRestarting() throws {
         try withReader(
             chapters: [
@@ -685,8 +690,7 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             reader.handleEndOfBook()
 
             XCTAssertEqual(reader.lastAnnouncement, "Finished: Quiet Pages")
-            XCTAssertEqual(reader.currentChapterIndex, 1)
-            XCTAssertEqual(reader.currentCharacterOffset, 3)
+            assertRestsAtItsEnd(reader)
             XCTAssertFalse(reader.speechService.isSpeaking)
             XCTAssertFalse(reader.isCurrentlyPlaying)
             XCTAssertFalse(ReadingStatsService.shared.hasActiveSession)
@@ -694,6 +698,44 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
                 ReadingStatsService.shared.stats.finishedBooks.map(\.bookID),
                 [reader.book.id.uuidString]
             )
+        }
+    }
+
+    /// A book whose last section is skipped, as a Project Gutenberg book's
+    /// licence often is, ends where speech has nothing left to say, and
+    /// rests exactly at its end, past the skipped section (TODO P07): its
+    /// row reads 100 percent. It once rested at its last spoken word,
+    /// 90 percent through alice.epub with its licence skipped.
+    func testABookWhoseLastSectionIsSkippedRestsAtItsEndPastIt() throws {
+        let story = Chapter(title: "One", text: "The story ends here.")
+        try withReader(
+            chapters: [story, chapter(sections: [("Licence", "The terms of use, at length.")])],
+            skipping: ["Licence"],
+            at: ReadingPosition(chapterIndex: 0, characterOffset: story.text.utf16.count)
+        ) { reader in
+            reader.play()
+            settle()
+
+            assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages")
+            assertRestsAtItsEnd(reader)
+        }
+    }
+
+    /// The last chapter spoken to its end leaves the book exactly at its
+    /// end (TODO P07), not at the last word speech reported, where the
+    /// cursor stood as speech finished: 4 to 9 characters short of the end
+    /// in every fixture the design note measured.
+    func testALastChapterSpokenToItsEndRestsAtTheBooksEnd() throws {
+        let text = "These are the final words."
+        try withReader(chapters: [Chapter(title: "Last", text: text)]) { reader in
+            reader.play()
+            // Speech reports the last word as it speaks it.
+            reader.currentCharacterOffset = (text as NSString).range(of: "words.").location
+            finishChapter(reader)
+            settle()
+
+            XCTAssertEqual(reader.lastAnnouncement, "Finished: Quiet Pages")
+            assertRestsAtItsEnd(reader)
         }
     }
 
@@ -795,6 +837,34 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             file: file,
             line: line
         )
+    }
+
+    /// Check that `reader`'s book rests exactly at its end (TODO P07): the
+    /// cursor at its last chapter's full length, which the reader itself
+    /// reads as the end, and the library row saved there, with the book's
+    /// total as its global offset, which the row reads as finished and 100
+    /// percent once the book is measured, as the library measures every
+    /// book.
+    private func assertRestsAtItsEnd(
+        _ reader: ReaderViewModel,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard let end = reader.endOfBookPlace, let content = reader.content else {
+            XCTFail("The reader holds no book", file: file, line: line)
+            return
+        }
+        XCTAssertEqual(reader.currentChapterIndex, end.chapterIndex, "The cursor is in another chapter", file: file, line: line)
+        XCTAssertEqual(reader.currentCharacterOffset, end.characterOffset, "The cursor is short of the end", file: file, line: line)
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The reader does not read its cursor as the end", file: file, line: line)
+        var row = reader.libraryViewModel.bookByID(reader.book.id)
+        let saved = row?.readingPosition
+        XCTAssertEqual(saved?.chapterIndex, end.chapterIndex, "The row is saved in another chapter", file: file, line: line)
+        XCTAssertEqual(saved?.characterOffset, end.characterOffset, "The row is saved short of the end", file: file, line: line)
+        XCTAssertEqual(saved?.globalCharacterOffset, content.totalCharacterCount, "The row's place is not the book's end", file: file, line: line)
+        row?.totalCharacterCount = content.totalCharacterCount
+        XCTAssertEqual(row?.restsAtEnd, true, "The measured row is not finished", file: file, line: line)
+        XCTAssertEqual(row?.percentComplete, 100, "The measured row does not read 100 percent", file: file, line: line)
     }
 
     /// A chapter whose only section follows two blank lines, as converted

@@ -1893,12 +1893,14 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertEqual(recorder.announcements, [], "Skip Backward after the end announced something")
     }
 
-    /// After an audiobook has finished, Next Track at the end stays at the
-    /// end, plays nothing, and announces nothing more, and Pause changes
-    /// nothing either; the keyboard's Skip Backward then moves the cursor
-    /// back by the skip unit from the end and plays, as the AirPods' rewind
-    /// does. The keyboard's shortcut, the playback bar's button, and the
-    /// AirPods all reach `skipBackward()`.
+    /// After an audiobook has finished, Next Track at the end stays exactly
+    /// at the end, where the finished book rests (TODO P07), plays nothing,
+    /// and announces nothing more, and Pause changes nothing either; the
+    /// keyboard's Skip Backward then moves the cursor back by the skip unit
+    /// from the end and plays, as the AirPods' rewind does. The keyboard's
+    /// shortcut, the playback bar's button, and the AirPods all reach
+    /// `skipBackward()`. Next Track once moved the cursor a tenth of a
+    /// second back from the end, where a skip forward stops.
     func testNextTrackAndPauseAtTheEndChangeNothingAndTheKeyboardsSkipBackwardPlays() throws {
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Finished Keyboard Audio")
@@ -1911,7 +1913,8 @@ final class MediaCommandPlaybackTests: XCTestCase {
             XCTAssertEqual(system.press(.nextTrack), .success)
             XCTAssertFalse(audio.isPlaying, "Next Track at the end played")
             XCTAssertEqual(reader.currentChapterIndex, 1, "Next Track at the end left the last chapter")
-            XCTAssertEqual(reader.currentCharacterOffset, chapterEnd - 1, "Next Track at the end did not stay at the end")
+            XCTAssertEqual(reader.currentCharacterOffset, chapterEnd, "Next Track at the end did not stay at the end")
+            XCTAssertTrue(reader.cursorRestsAtEnd, "Next Track left the book short of its end")
             assertToldSystem(system, that: reader, plays: false, "Next Track at the end")
 
             XCTAssertEqual(system.press(.pause), .success)
@@ -1921,7 +1924,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             reader.lastSkipTime = .distantPast
             reader.skipBackward()
         }
-        assertPlaysAudio(reader, from: chapterEnd - 1 - Self.fifteenSecondsOfAudio, "Skip Backward after the end")
+        assertPlaysAudio(reader, from: chapterEnd - Self.fifteenSecondsOfAudio, "Skip Backward after the end")
         assertToldSystem(system, that: reader, plays: true, "Skip Backward after the end")
         XCTAssertEqual(recorder.announcements, [], "A skip or Pause at the end announced something")
     }

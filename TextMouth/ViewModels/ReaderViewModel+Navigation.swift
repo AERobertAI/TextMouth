@@ -208,8 +208,18 @@ extension ReaderViewModel {
     /// longer (REV07, speech finding 5, as the orchestrator recommended on
     /// October 7). The AirPods reach only the active owner, so their rewind
     /// plays any finished book it reaches.
+    ///
+    /// A forward skip from the book's end, where a finished book rests
+    /// (`cursorRestsAtEnd`, TODO P07), has nowhere to go, and the cursor
+    /// stays there, finished. Every skip by time or by words stops one unit,
+    /// or one word, inside the last chapter, so it would otherwise move the
+    /// cursor back off the end, and the book would read as finished no more.
     func performSkip(unit: SkipUnit, forward: Bool) {
         DiagnosticLog.trace(.playback, "performSkip unit=\(unit.rawValue) forward=\(forward) wpm=\(speechService.wordsPerMinute)")
+        guard !(forward && cursorRestsAtEnd) else {
+            DiagnosticLog.trace(.playback, "performSkip: the book rests at its end; a forward skip stays there")
+            return
+        }
         // Taken before the skip: a structural skip jumps (`navigateTo`),
         // which itself leaves the finished state behind.
         let wasFinished = hasFinishedBook

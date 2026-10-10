@@ -565,8 +565,9 @@ extension ReaderViewModel {
     }
 
     /// End the book because nothing speakable remains from the cursor. The
-    /// cursor stays where it is, and the end-of-book behavior decides what
-    /// happens next.
+    /// end-of-book behavior decides what happens next, and where the cursor
+    /// rests: at the book's end, past what says nothing, unless the book
+    /// loops (`handleEndOfBook()`, TODO P07).
     private func endBookWithNothingLeftToSpeak() {
         DiagnosticLog.trace(.playback, "nothing speakable from chapter=\(currentChapterIndex) offset=\(currentCharacterOffset); ending book")
         handleEndOfBook()
@@ -2194,6 +2195,15 @@ extension ReaderViewModel {
     /// list (`handOverToNextBook(to:titled:askingWith:)`): the next book takes
     /// the media controls. A book whose sleep timer keeps the next one from
     /// starting, or with no next book, rests finished.
+    ///
+    /// Every end but a loop's saves the book exactly at its end, its last
+    /// chapter at its full length (`finishAtTheEnd()`, TODO P07), which the
+    /// library row then reads as finished (`Book.restsAtEnd`): the place a
+    /// book ended at was once the last word speech reported, or the last
+    /// quarter second the player reported, a few characters short of the
+    /// end, and a book whose last part says nothing, such as a skipped
+    /// licence, ended well short of it. A book that hands over to the next
+    /// one rests at its end too: it played to it.
     func handleEndOfBook() {
         // Time after the end of the book is not listening time, so close this
         // book's session here, once, for every way a book can end. Another
@@ -2238,7 +2248,7 @@ extension ReaderViewModel {
 
         switch behavior {
         case .stop:
-            readingStatsService.markBookFinished(bookID: book.id, title: book.title)
+            finishAtTheEnd()
             finishListening(
                 announcing: EndOfBookWording.finished(book.title, sleepTimerExpired: sleepTimerStoppedHere)
             )
@@ -2266,8 +2276,7 @@ extension ReaderViewModel {
             }
 
         case .continueNext:
-            readingStatsService.markBookFinished(bookID: book.id, title: book.title)
-            savePosition()
+            finishAtTheEnd()
             // Find the next book in the same folder by manual sort order
             if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
                 if sleepTimerEndsListening {
@@ -2315,6 +2324,63 @@ extension ReaderViewModel {
             title: book.title, author: book.author, isPlaying: false
         )
         announceToVoiceOver(announcement)
+    }
+
+    // MARK: - Resting at the End (TODO P07)
+
+    /// The book has played or been read to its end, and stops there or
+    /// continues to the next book: Books Finished counts it, and it rests
+    /// exactly at its end, saved (`restAtEnd()`). Called by every end that
+    /// does not loop, in its folder and in the reading list.
+    func finishAtTheEnd() {
+        readingStatsService.markBookFinished(bookID: book.id, title: book.title)
+        restAtEnd()
+    }
+
+    /// Puts the cursor at the book's end (`endOfBookPlace`), the last
+    /// chapter at its full length, and saves it there, so that the book's
+    /// row, and the reader opened on it after a relaunch, find it finished
+    /// (`Book.restsAtEnd`, `cursorRestsAtEnd`): the user decided on October
+    /// 10, 2026 that "a book that plays to its end is saved exactly at its
+    /// end, and stays finished after TextMouth quits". It moves the cursor
+    /// past whatever of the last part says nothing, a skipped section or
+    /// text substitutions removed, and past the last word speech reported,
+    /// or the last tick the player reported, where it stood.
+    ///
+    /// A move to another chapter, past chapters that say nothing, begins a
+    /// new playback generation, as every move to another chapter does, so
+    /// the end of the play in the chapter left, were it reported again,
+    /// could not move on from it; a move within the chapter that ended
+    /// begins none, since no play begins there. An audiobook's player,
+    /// stopped at the end, reports no position that could move the cursor
+    /// back (`AudioPositionObserverPolicy`).
+    func restAtEnd() {
+        guard let end = endOfBookPlace else { return }
+        if end.chapterIndex != currentChapterIndex {
+            chapterPlaybackGeneration += 1
+        }
+        currentChapterIndex = end.chapterIndex
+        currentCharacterOffset = end.characterOffset
+        savePosition()
+    }
+
+    /// Where a book that has played or been read to its end rests (TODO
+    /// P07): its last chapter, at its full length in UTF-16 code units, so
+    /// the place's global offset is the book's total. Nil while no content
+    /// is loaded.
+    var endOfBookPlace: (chapterIndex: Int, characterOffset: Int)? {
+        guard let content, let last = content.chapters.indices.last else { return nil }
+        return (last, content.chapters[last].text.utf16Length)
+    }
+
+    /// Whether the cursor rests at the book's end (TODO P07): at or past
+    /// the end of its text, as the reader puts a book that played to its
+    /// end (`restAtEnd()`), and as a finished book opens. The live cursor's
+    /// counterpart of the row's `Book.restsAtEnd`, measured the same way.
+    /// False while no content is loaded, and for a book with no text.
+    var cursorRestsAtEnd: Bool {
+        guard let content, content.totalCharacterCount > 0 else { return false }
+        return currentGlobalOffset >= content.totalCharacterCount
     }
 
     /// The effective end-of-book behavior for this book (per-book override or global default)

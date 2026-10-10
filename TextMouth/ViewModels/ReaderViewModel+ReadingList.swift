@@ -66,8 +66,10 @@ extension ReaderViewModel {
     /// should override it". `handleEndOfBook()` calls it once the book's
     /// listening session has closed and the book rests finished at its end.
     ///
-    /// The book is counted finished, as a book that stops or continues is,
-    /// before the list is asked what follows, so it is never its own answer.
+    /// The book is counted finished, and rests exactly at its end, saved
+    /// (`finishAtTheEnd()`, TODO P07), as a book that stops or continues
+    /// does, before the list is asked what follows, so it is never its own
+    /// answer.
     /// The book below or above it, passing over finished books while the
     /// list says so, then opens to be read from the list and plays, as
     /// Continue to Next Book starts the next book in a folder: "Starting:
@@ -86,8 +88,7 @@ extension ReaderViewModel {
     ///   - sleepTimerStoppedHere: Whether that timer stopped playback here,
     ///     at the end of the heading or of the book.
     func finishBookReadFromReadingList(sleepTimerEndsListening: Bool, sleepTimerStoppedHere: Bool) {
-        readingStatsService.markBookFinished(bookID: book.id, title: book.title)
-        savePosition()
+        finishAtTheEnd()
         guard let next = libraryViewModel.readingListContinuation(after: book.id) else {
             let note = readingListEndNote()
             DiagnosticLog.trace(.playback, "end of book: nothing follows in the reading list (\(note))")

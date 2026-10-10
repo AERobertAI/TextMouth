@@ -422,8 +422,8 @@ final class ContinueToNextBookTests: XCTestCase {
                 books.append(try makeAudioBook(title: "Second Volume"))
             }
             let world = try makeWorld(books: books)
-            // Fifteen seconds back from the saved position, half a second
-            // into the second track, lands at the start of the first.
+            // Fifteen seconds back from the end of the second track, where
+            // the finished book rests, lands at the start of the first.
             world.settings.skipBackwardUnit = .seconds15
             // The reader joins a media session of its own, as its only
             // reader, so it is the active owner, as a finished book's reader
@@ -447,6 +447,23 @@ final class ContinueToNextBookTests: XCTestCase {
             XCTAssertEqual(ending.announcements.map(\.message), [testCase.announcement], testCase.name)
             XCTAssertEqual(reader.hasFinishedBook, testCase.finished, "\(testCase.name): finished")
             XCTAssertEqual(reader.currentChapterIndex, testCase.chapter, "\(testCase.name): chapter")
+            // Every end but a loop's rests exactly at the book's end, saved
+            // there, the book that continued included (TODO P07); a loop
+            // starts again, or waits, at the beginning.
+            let restsAtEnd = testCase.behavior != .loop
+            XCTAssertEqual(reader.cursorRestsAtEnd, restsAtEnd, "\(testCase.name): at the end")
+            if restsAtEnd {
+                XCTAssertEqual(
+                    reader.currentCharacterOffset,
+                    reader.endOfBookPlace?.characterOffset,
+                    "\(testCase.name): short of the end"
+                )
+                XCTAssertEqual(
+                    world.library.bookByID(finished.id)?.readingPosition?.globalCharacterOffset,
+                    reader.content?.totalCharacterCount,
+                    "\(testCase.name): not saved at the end"
+                )
+            }
             // Only a loop that restarts plays after the end.
             XCTAssertEqual(
                 reader.audioPlaybackService.isPlaying,
