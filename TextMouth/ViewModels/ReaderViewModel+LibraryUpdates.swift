@@ -151,6 +151,13 @@ extension ReaderViewModel {
     /// the old one when the move was put back. A chapter Where Am I? still
     /// holds waits for the announcement's end, which plays it
     /// (`startPlayHeldByWhereAmI()`), rather than play under it.
+    ///
+    /// So does the audio set aside when an announcement speaks as the move
+    /// ends, one pressed while the package moved, which found the audio
+    /// waiting rather than playing and paused nothing: it is held for the
+    /// announcement's end (`isChapterHeldByWhereAmI`), as a chapter whose
+    /// files came during the announcement is, at the volume it played at.
+    /// The move's end once played it at once, under the announcement (REV13).
     private func resumeAudioAfterPackageMove() {
         guard let paused = audioPausedForMove else { return }
         audioPausedForMove = nil
@@ -158,14 +165,41 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "the book's package moved; the chapter held for Where Am I's end waits for it still")
             return
         }
+        guard !isWhereAmISpeaking else {
+            // The player was stopped for the move; the chapter it plays as
+            // the announcement ends starts at the volume the move found.
+            audioPlaybackService.setVolume(paused.volume)
+            isChapterHeldByWhereAmI = true
+            DiagnosticLog.trace(.playback, "the book's package moved while Where Am I speaks; its audio plays on as the announcement ends")
+            return
+        }
         restartAudioAtCursor(volume: paused.volume)
+    }
+
+    /// Lets go of audio set aside for a move of the book's package
+    /// (`audioPausedForMove`), so that the move's end leaves the book as the
+    /// listener left it rather than play it on. A pause or a stop made while
+    /// the package moves, as a move made off the main thread allows, calls
+    /// it: a Pause or Play/Pause, a sleep timer's end, a recording or
+    /// another book starting, the AirPods leaving, a stop, or Release Media
+    /// Controls. Each once left the audio set aside, and the move's end
+    /// played on what the listener had stopped (open after the
+    /// where-am-i-followups merge). The volume it was set aside at goes with
+    /// it: the next play starts at the volume its place calls for.
+    ///
+    /// - Parameter reason: Why, for the log line.
+    func letGoOfAudioSetAsideForMove(because reason: String) {
+        guard audioPausedForMove != nil else { return }
+        audioPausedForMove = nil
+        DiagnosticLog.trace(.playback, "the audio set aside for the package move does not play on: \(reason)")
     }
 
     /// Plays the cursor's chapter again from the cursor, loading its audio
     /// from wherever the book's files are now, at `volume`, the volume it
     /// played at, which a sleep timer may be fading. The listening session,
-    /// the sleep timer, and the media controls carry on as they were.
-    private func restartAudioAtCursor(volume: Float) {
+    /// the sleep timer, and the media controls carry on as they were. Also
+    /// how a resume plays an audiobook afresh (`restartPlaybackAtCursor()`).
+    func restartAudioAtCursor(volume: Float) {
         audioPlaybackService.stop()
         audioPlaybackService.setVolume(volume)
         playAudioChapter()

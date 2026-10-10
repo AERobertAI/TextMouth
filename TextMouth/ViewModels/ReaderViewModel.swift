@@ -343,23 +343,28 @@ final class ReaderViewModel: ObservableObject {
     /// announcement, which takes the resume over (REV11). Accessed from the
     /// WhereAmI and Playback extensions.
     var isWhereAmIResumePending = false
-    /// Whether a Play pressed while a Where Am I announcement spoke, for a
-    /// book the announcement had not paused (one paused or stopped before
-    /// it), waits for the announcement to end to start the book
-    /// (`startPlayHeldByWhereAmI()`): set by the Play, and cleared as the
-    /// book starts, or by a pause, a stop, Play/Pause, or a cancel nobody
-    /// asked for, which leave the book as it was (REV11). Accessed from the
-    /// WhereAmI and Playback extensions.
+    /// Whether a Play pressed while a Where Am I announcement spoke waits
+    /// for the announcement to end to start the book
+    /// (`startPlayHeldByWhereAmI()`): for a book the announcement had not
+    /// paused (one paused or stopped before it), or for the one it paused,
+    /// should the system cancel the announcement rather than let it resume
+    /// the book (`holdPlayForWhereAmI()`). Set by the Play, and cleared as
+    /// the book starts or resumes, as the announcement ends by itself, is
+    /// pressed away, or is cancelled by the system, or by a pause, a stop,
+    /// or Play/Pause, which leave the book as it was (REV11). Accessed from
+    /// the WhereAmI and Playback extensions.
     var isPlayHeldByWhereAmI = false
     /// Whether the chapter about to play, whose files finished downloading
-    /// while a Where Am I announcement spoke (FR02), waits for the
-    /// announcement to end to play (`startPlayHeldByWhereAmI()`), the reader
-    /// showing Playing meanwhile, as a Play pressed during it waits: set by
-    /// the download's end, and cleared as the chapter starts
+    /// while a Where Am I announcement spoke (FR02), or whose package's move
+    /// ended while one spoke with its audio set aside for the move, waits
+    /// for the announcement to end to play (`startPlayHeldByWhereAmI()`),
+    /// the reader showing Playing meanwhile, as a Play pressed during it
+    /// waits: set by the download's or the move's end
+    /// (`resumeAudioAfterPackageMove()`), and cleared as the chapter starts
     /// (`playAudioChapter()`), or by a pause, Play/Pause, or a stop, which
     /// leave it unplayed (`stopWaitingForChapterDownload(because:)`,
     /// `endWhereAmIAsTheBookStops()`). Accessed from the CloudDownload,
-    /// WhereAmI, and Playback extensions.
+    /// LibraryUpdates, WhereAmI, and Playback extensions.
     var isChapterHeldByWhereAmI = false
     /// Takes the work a Where Am I announcement that ended by itself leaves
     /// for once its end sound has played, in place of the main queue's
@@ -373,7 +378,9 @@ final class ReaderViewModel: ObservableObject {
     /// output device instead of continuing a graph/synth paused on the old
     /// route. Also set when the library moves a paused audiobook's files, so
     /// resuming plays them from where they are then instead of from a player
-    /// still holding the old place (TODO P10).
+    /// still holding the old place (TODO P10). Play's resume and a Where Am
+    /// I? announcement's resume of the book it paused both honor it
+    /// (`restartPlaybackAtCursor()`), which clears it.
     var restartPlaybackBackendOnNextResume = false
     /// Whether the book has finished and rests at its end: its last chapter
     /// played or was spoken to its end, or nothing speakable was left, and
@@ -422,7 +429,10 @@ final class ReaderViewModel: ObservableObject {
     var appliedLibraryRevision = 0
     /// Audio that was playing when the library said the book's package was
     /// about to move, set aside until the move ends and playback goes on
-    /// from the cursor (TODO P10); nil the rest of the time.
+    /// from the cursor (TODO P10); nil the rest of the time. Meanwhile the
+    /// book counts as playing (`isPlaybackUnderWay`), and a pause or a stop
+    /// lets the audio go (`letGoOfAudioSetAsideForMove(because:)`), so that
+    /// the move's end leaves the book as the listener left it.
     var audioPausedForMove: AudioPausedForMove?
     /// The book's edited text when the user's edit was taken while this
     /// reader was still loading the text it had (FR05): shown once loading
@@ -865,12 +875,13 @@ final class ReaderViewModel: ObservableObject {
             // So does a play under way that has not begun to sound
             // (`isPlaybackUnderWay`): one waiting for its chapter's speech,
             // prepared off the main thread, or an audiobook's waiting for its
-            // chapter's files to download, which shows Playing. Counted as
+            // chapter's files to download, or set aside while the library
+            // moves its package, each of which shows Playing. Counted as
             // not playing, it was not paused by the AirPods leaving or a
             // recording starting, nor by another book starting unless it was
             // the book last playing, and it began to speak or play once
             // ready, through the Mac's speakers or under the recording
-            // (REV12's leftovers).
+            // (REV12's leftovers, REV13).
             isCurrentlyPlaying: { [weak self] in
                 guard let self else { return false }
                 return self.whereAmIWillPlayBook || self.isPlaybackUnderWay

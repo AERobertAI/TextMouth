@@ -290,24 +290,31 @@ extension ReaderViewModel {
 
     /// Whether Where Am I? still has the book in hand: an announcement
     /// speaking, or one that ended by itself and resumes the book it paused
-    /// once its end sound has played (`isWhereAmIResumePending`), or starts
-    /// the book for a Play pressed during it (`isPlayHeldByWhereAmI`).
-    /// Nothing but Where Am I plays the book meanwhile, and whatever pauses
-    /// or stops the book ends what it holds without resuming it
-    /// (`stopWhereAmIWithoutResuming()`, `endWhereAmIAsTheBookStops()`). A
-    /// chapter whose files came during an announcement
-    /// (`isChapterHeldByWhereAmI`) is left out: it is a reader waiting for
-    /// its chapter (`isWaitingForChapterDownload`), which a pause itself lets
-    /// go, so the pause that ends Where Am I can pause it in turn.
+    /// once its end sound has played (`isWhereAmIResumePending`), starts the
+    /// book for a Play pressed during it (`isPlayHeldByWhereAmI`), or plays
+    /// an audiobook's chapter held for its end (`isChapterHeldByWhereAmI`),
+    /// whose files came, or whose package's move ended, while it spoke.
+    ///
+    /// Nothing but Where Am I plays the book meanwhile: a Play waits for it
+    /// (`holdPlayForWhereAmI()`), so a Play in the moment after an
+    /// announcement ends, before its end sound has played, starts nothing
+    /// then, and the book or the chapter starts once, as the end sound
+    /// passes, with no play sound over it. Whatever pauses or stops the book
+    /// ends what it holds without resuming it (`stopWhereAmIWithoutResuming()`,
+    /// `endWhereAmIAsTheBookStops()`), and pauses a held chapter as it
+    /// pauses any play waiting to start. A held chapter was once left out,
+    /// and a Play in that moment started it at once, under the end sound,
+    /// with the play sound (open after the where-am-i-followups merge).
     var isWhereAmIUnderWay: Bool {
-        isWhereAmISpeaking || isWhereAmIResumePending || isPlayHeldByWhereAmI
+        isWhereAmISpeaking || isWhereAmIResumePending || isPlayHeldByWhereAmI || isChapterHeldByWhereAmI
     }
 
     /// Whether Where Am I? will play the book once it is over: the
     /// announcement speaking paused the book as it played, or one that
     /// ended by itself resumes it once its end sound has played, or a Play
-    /// pressed during it, or a chapter whose files were downloaded during it
-    /// (`isChapterHeldByWhereAmI`), waits for its end. The book counts as
+    /// pressed during it, or a chapter whose files were downloaded, or whose
+    /// package's move ended, during it (`isChapterHeldByWhereAmI`), waits
+    /// for its end. The book counts as
     /// playing meanwhile, for the system's media commands (the Now Playing
     /// session's `isCurrentlyPlaying`) and for Next in Reading List, so that
     /// whatever pauses a playing book pauses this one too, for good (REV11).
@@ -321,12 +328,22 @@ extension ReaderViewModel {
     /// is over (`startPlayHeldByWhereAmI()`), as a play waiting for its
     /// chapter's speech is held: the Play waits for the announcement, as
     /// Play always has, where a Play for a book paused before the
-    /// announcement was once dropped without a word (REV11). A book Where Am
-    /// I will play anyway, or one playing or waiting to play, needs nothing
-    /// held.
+    /// announcement was once dropped without a word (REV11).
+    ///
+    /// A Play for the book the announcement speaking paused is held too,
+    /// though the announcement's end resumes that book anyway, which answers
+    /// the Play (`resumeBookPausedForWhereAmI()`): a cancel nobody asked for
+    /// ends the announcement without that resume, and the held Play then
+    /// starts the book, where the cancel once dropped it (REV13's
+    /// leftovers). A book whose resume an announcement that ended still
+    /// owes, one a Play is held for already, a chapter held for the
+    /// announcement's end, and a book playing or waiting to play need
+    /// nothing held: each plays as the announcement ends, by itself or by a
+    /// cancel, with no help from the Play.
     func holdPlayForWhereAmI() {
-        guard !whereAmIWillPlayBook, !isPlaybackUnderWay else {
-            DiagnosticLog.trace(.playback, "play: Where Am I speaks; the book plays again as it ends")
+        let isPausedByTheAnnouncement = isWhereAmISpeaking && wasPlayingBeforeWhereAmI
+        guard isPausedByTheAnnouncement || (!whereAmIWillPlayBook && !isPlaybackUnderWay) else {
+            DiagnosticLog.trace(.playback, "play: Where Am I has the book in hand; it plays as the announcement ends")
             return
         }
         isPlayHeldByWhereAmI = true
@@ -443,32 +460,36 @@ extension ReaderViewModel {
     /// A cancel of the announcement speaking, which the reader did not ask
     /// for, as when the speech engine refuses its text, ends it without the
     /// end sound or the resume a finished announcement makes: the book it
-    /// paused stays paused, and a play waiting for its chapter's speech or
-    /// files pauses, as when Play/Pause ends an announcement
-    /// (`endWhereAmIWithoutResuming()`), so Play/Pause works at once instead
-    /// of only ending an announcement nobody hears. Its synthesizer is
-    /// replaced, since one the engine refused never speaks again, as the
-    /// speech service replaces its own.
+    /// paused stays paused, its pause settled (`endWhereAmIWithoutResuming()`),
+    /// so Play/Pause works at once instead of only ending an announcement
+    /// nobody hears. Its synthesizer is replaced, since one the engine
+    /// refused never speaks again, as the speech service replaces its own.
     ///
-    /// A Play pressed during the announcement, for a book it had not paused
-    /// (`isPlayHeldByWhereAmI`), was the listener's own and waited only for
-    /// the announcement: it starts the book now that the announcement has
-    /// ended, as Play does (`playOrResume()`). The cancel once let it go
-    /// with the rest, so the Play was dropped without a word (REV12).
+    /// Every play that waited for the announcement starts as its end would
+    /// have started it, now that it has ended (`startPlayHeldByWhereAmI()`):
+    /// a Play pressed during it (`isPlayHeldByWhereAmI`) starts the book as
+    /// Play does, the book the announcement paused included, which a Play
+    /// asked for; an audiobook's chapter whose files came during it
+    /// (`isChapterHeldByWhereAmI`) plays; and a play waiting for its
+    /// chapter's speech starts from the cursor, at once when the speech is
+    /// ready, or as soon as it is. A play still waiting for its chapter's
+    /// files goes on waiting, and plays once they are here. Each was the
+    /// listener's own and waited only for the announcement. The cancel once
+    /// let the held Play go with the rest, dropping it without a word
+    /// (REV12), and then paused a play that was waiting, as Play/Pause
+    /// does, so a Play pressed just before the announcement was lost (REV13).
     func whereAmISynthesizerCancelled(_ cancelled: ReportedUtterance) {
         guard isLiveWhereAmIUtterance(cancelled) else { return }
-        let playWasHeld = isPlayHeldByWhereAmI
+        let playWaits = isPlayHeldByWhereAmI || isChapterHeldByWhereAmI || isPlaybackUnderWay
         DiagnosticLog.event(
             .playback,
             "WHERE_AM_I_CANCEL_UNEXPECTED: the announcement was cancelled before it ended; synthesizer replaced, "
-                + (playWasHeld ? "the Play held for it starts the book" : "book left paused")
+                + (playWaits ? "the play that waited for it goes on as at its end" : "book left paused")
         )
         liveWhereAmIUtterance = nil
         replaceWhereAmISynthesizer()
         endWhereAmIWithoutResuming()
-        if playWasHeld {
-            playOrResume()
-        }
+        startPlayHeldByWhereAmI()
     }
 
     /// Whether `reported` is the announcement speaking now
@@ -595,15 +616,35 @@ extension ReaderViewModel {
 
     /// Resume the book a Where Am I announcement paused, as it was paused:
     /// directly, without the play sound or a new listening session, and
-    /// tell Now Playing it plays again once it does.
+    /// tell Now Playing it plays again once it does. A Play pressed for the
+    /// book during the announcement (`isPlayHeldByWhereAmI`) is answered by
+    /// the resume and let go.
     ///
     /// A book whose playback would not resume, its speech or its player
     /// gone since the announcement paused it, plays nothing, so the system
     /// is told nothing: told the book played, it would send the AirPods to
     /// a book that plays nothing. The book is left paused, its pause settled
     /// as one left by an announcement that ends without resuming
-    /// (`settlePauseLeftByWhereAmI()`), and the next Play starts it afresh.
+    /// (`settlePauseLeftByWhereAmI()`), and the next Play starts it afresh:
+    /// a Play held for it then starts it so at once (`startPlayHeldByWhereAmI()`).
+    ///
+    /// A book whose output changed during the announcement, as when AirPods
+    /// connect, or whose files the library moved meanwhile, is marked to be
+    /// played afresh (`restartPlaybackBackendOnNextResume`), since its paused
+    /// engine, synthesizer, or player may stay bound to the old output or
+    /// files. It plays on afresh from the cursor instead, as Play's resume
+    /// plays such a book (`restartPlaybackAtCursor()`): a text book in direct
+    /// speech, the voice, never moved to rendered audio. Before, this resume
+    /// took up the paused backend whatever the mark said, so a book playing
+    /// rendered audio could resume on the output it began on (REV13's
+    /// leftovers).
     private func resumeBookPausedForWhereAmI() {
+        guard !restartPlaybackBackendOnNextResume else {
+            DiagnosticLog.trace(.playback, "Where Am I ended; the book's output or files changed during it, so it plays on afresh from the cursor")
+            isPlayHeldByWhereAmI = false
+            restartPlaybackAtCursor()
+            return
+        }
         let resumed = isAudioBook ? audioPlaybackService.resume() : speechService.resume()
         guard resumed else {
             DiagnosticLog.event(
@@ -613,6 +654,7 @@ extension ReaderViewModel {
             settlePauseLeftByWhereAmI()
             return
         }
+        isPlayHeldByWhereAmI = false
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: true
         )

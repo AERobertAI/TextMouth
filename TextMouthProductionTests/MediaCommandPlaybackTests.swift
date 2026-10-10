@@ -198,6 +198,50 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
+    // MARK: - The Output Changing During Where Am I?
+
+    /// The AirPods connecting while Where Am I? speaks over a playing book
+    /// change the output under the book the announcement paused, which
+    /// marks it to be played afresh, since a paused synthesizer, engine, or
+    /// player can stay bound to the output it began on. The announcement
+    /// goes on, and as its end sound passes the book plays on afresh from
+    /// where it paused, started once more and shown playing: the text book
+    /// in direct speech, the voice, never moved to rendered audio. Before,
+    /// Where Am I's own resume took up the paused backend, ignoring the mark
+    /// (REV13's leftovers).
+    func testTheAirPodsConnectingDuringWhereAmIHaveTheBookPlayAfreshAsItEnds() throws {
+        for kind in BookKind.allCases {
+            let system = MediaSystem()
+            system.takeAirPodsOut()
+            let world = try makeIntegrationWorld("Where Am I AirPods Connect \(kind)")
+            world.settings.bluetoothMonitoringEnabled = true
+            world.settings.bluetoothDisconnectDelay = 2
+            let book = try openPlayingBook(kind, in: world, joining: system)
+            system.coordinator.refreshPreviousDeviceInfo()
+            XCTAssertFalse(system.coordinator.previousDeviceWasBluetooth, "\(kind): the AirPods are the output already")
+            let place: Place = (book.reader.currentChapterIndex, book.reader.currentCharacterOffset)
+            let announcement = try pressWhereAmI(in: book)
+            let generation = book.reader.chapterPlaybackGeneration
+
+            system.putAirPodsIn()
+
+            XCTAssertTrue(book.reader.isWhereAmISpeaking, "\(kind): the AirPods connecting ended the announcement")
+            XCTAssertTrue(book.isPaused, "\(kind): the AirPods connecting resumed the book")
+            XCTAssertTrue(book.reader.restartPlaybackBackendOnNextResume, "\(kind): the book was not marked to be played afresh")
+            finishWhereAmIByItself(book, announcement)
+            book.endSound.passEndSound()
+
+            XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(kind): the book did not play on as the announcement ended")
+            XCTAssertFalse(book.reader.restartPlaybackBackendOnNextResume, "\(kind): the mark was left for the next resume")
+            XCTAssertEqual(book.reader.chapterPlaybackGeneration, generation + 1, "\(kind): the book was not played afresh, once")
+            assertPlays(book, from: place, "\(kind): the book played afresh as Where Am I? ended")
+            if kind == .text {
+                XCTAssertTrue(book.reader.speechService.usingDirectMode, "text: speech moved to rendered audio")
+            }
+            assertToldSystem(system, that: book.reader, plays: true, "\(kind): the book played afresh as Where Am I? ended")
+        }
+    }
+
     // MARK: - A Play During Where Am I?
 
     /// A Play from the AirPods or a media key while Where Am I? speaks does
@@ -363,6 +407,37 @@ final class MediaCommandPlaybackTests: XCTestCase {
                 XCTAssertEqual(system.told.last, .some(playing), "\(context): the system was not told the book plays")
                 XCTAssertEqual(system.coordinator.playingOwnerID, book.reader.nowPlayingService.ownerID, context)
             }
+        }
+    }
+
+    /// A Play from the AirPods while Where Am I? speaks over the book it
+    /// paused, which the announcement's end would have played again, starts
+    /// the book when the system cancels the announcement instead, as the
+    /// speech engine does with a text it refuses: the announcement ends
+    /// without its end sound, and the book plays on from where it paused,
+    /// with the play sound, shown playing. Before, the cancel left the book
+    /// paused and the Play was dropped without a word (REV13's leftovers).
+    /// With no Play, a cancel still leaves the book paused
+    /// (`WhereAmIAnnouncementEndTests`), and the end's own resume answers a
+    /// Play with no second start (`testAPlayFromTheAirPodsDuringWhereAmILetsTheAnnouncementFinish`).
+    func testAPlayDuringWhereAmIStartsTheBookItPausedWhenTheSystemCancelsIt() throws {
+        for kind in BookKind.allCases {
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Where Am I Play Then Cancel \(kind)")
+            let book = try openPlayingBook(kind, in: world, joining: system)
+            let sounds = recordSounds(of: book, "Where Am I Play Then Cancel \(kind)")
+            let announcement = try pressWhereAmI(in: book)
+            XCTAssertEqual(system.press(.play), .success, "\(kind)")
+            XCTAssertTrue(book.isPaused, "\(kind): the Play resumed the book over the announcement")
+
+            book.reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didCancel: announcement)
+            handleQueuedCallbacks()
+
+            XCTAssertFalse(book.reader.isWhereAmIUnderWay, "\(kind): Where Am I? still has the book")
+            XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(kind): the Play did not start the book")
+            XCTAssertEqual(sounds.played, [.whereAmIStart, .play], "\(kind)")
+            XCTAssertFalse(book.endSound.hasWorkWaiting, "\(kind): work waits for an end sound")
+            assertToldSystem(system, that: book.reader, plays: true, "\(kind): a Play during Where Am I?, then a cancel")
         }
     }
 
@@ -2409,6 +2484,14 @@ final class MediaCommandPlaybackTests: XCTestCase {
         func takeAirPodsOut() {
             state.defaultOutput = MediaSystem.speakers
             state.outputs = [MediaSystem.speakers]
+            coordinator.handleDefaultOutputChange()
+        }
+
+        /// The AirPods come out of their case and connect: CoreAudio adds
+        /// them and reports the default output changed to them.
+        func putAirPodsIn() {
+            state.defaultOutput = MediaSystem.airPods
+            state.outputs = [MediaSystem.airPods, MediaSystem.speakers]
             coordinator.handleDefaultOutputChange()
         }
     }
