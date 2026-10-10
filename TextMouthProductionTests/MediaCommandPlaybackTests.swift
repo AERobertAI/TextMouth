@@ -227,6 +227,33 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
+    // MARK: - Another Book Started During Where Am I?
+
+    /// Another book started while Where Am I? speaks pauses the book the
+    /// announcement holds paused, as it pauses a book that plays: the
+    /// announcement ends, the held book stays paused once the
+    /// announcement's end would have come, and only the book that started
+    /// plays, with the media controls. Before, the held book, which had
+    /// told the system it paused, was not paused, and it played again
+    /// beside the other as the announcement ended.
+    func testABookStartedDuringWhereAmIPausesTheBookTheAnnouncementHolds() throws {
+        for kind in BookKind.allCases {
+            let system = MediaSystem()
+            let world = try makeIntegrationWorld("Where Am I Another Book \(kind)")
+            let held = try openPlayingBook(kind, in: world, joining: system)
+            let announcement = try pressWhereAmI(in: held)
+            let slipway = openTextBook(titled: "Slipway Ledger", in: world, joining: system)
+
+            slipway.reader.play()
+            reportWordSpoken(by: slipway)
+
+            XCTAssertEqual(system.exclusivePauses.count, 1, "\(kind): the held book was not paused once: \(system.exclusivePauses)")
+            assertStaysPausedAfterTheAnnouncementEnds(held, announcement, "\(kind): another book started during Where Am I?")
+            assertSpeaks(slipway, from: Self.openingOffset, "\(kind): the book started during Where Am I?")
+            assertToldSystem(system, that: slipway.reader, plays: true, "\(kind): the book started during Where Am I?")
+        }
+    }
+
     // MARK: - After the Sleep Timer
 
     /// A 15-minute sleep timer with a two-second fade runs out and pauses

@@ -994,6 +994,59 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertEqual(coordinator.playingOwnerID, second.ownerID)
     }
 
+    /// A reader preparing to play pauses every other reader that says it
+    /// plays, not the playing one alone: a book a Where Am I? announcement
+    /// holds paused told the system it paused as the announcement began,
+    /// yet says it plays, since the announcement's end plays it again. The
+    /// playing reader is paused first, and once; a reader that plays
+    /// nothing is left alone. Before, only the playing reader was paused,
+    /// so the held book played again beside the one that started.
+    func testStartingAReaderPausesABookAnAnnouncementHoldsPaused() {
+        let coordinator = NowPlayingService(installsSystemIntegrations: false)
+        var paused: [String] = []
+        var playingPlays = true
+        var heldPlays = true
+        var startingPlays = false
+        let playing = makeSession(
+            coordinator: coordinator,
+            onPause: {
+                paused.append("playing")
+                playingPlays = false
+            },
+            isCurrentlyPlaying: { playingPlays }
+        )
+        let held = makeSession(
+            coordinator: coordinator,
+            onPause: {
+                paused.append("held")
+                heldPlays = false
+            },
+            isCurrentlyPlaying: { heldPlays }
+        )
+        let idle = makeSession(coordinator: coordinator, onPause: { paused.append("idle") })
+        let starting = makeSession(
+            coordinator: coordinator,
+            onPlay: { startingPlays = true },
+            isCurrentlyPlaying: { startingPlays }
+        )
+        // The held book played, and told the system it paused as its
+        // announcement began; the other plays on.
+        held.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: true)
+        held.updateNowPlayingInfo(title: "Tide Tables", author: "Harbour Office", isPlaying: false)
+        playing.updateNowPlayingInfo(title: "Ferry Log", author: "Purser", isPlaying: true)
+        starting.focus()
+
+        XCTAssertEqual(coordinator.dispatchPlayCommand(isSuppressed: false), .success)
+
+        XCTAssertEqual(paused, ["playing", "held"], "Not every book that says it plays was paused, once, the playing one first")
+        XCTAssertFalse(heldPlays, "The book the announcement holds was not paused")
+        XCTAssertTrue(startingPlays)
+        XCTAssertEqual(coordinator.playingOwnerID, starting.ownerID)
+        XCTAssertEqual(coordinator.focusedOwnerID, starting.ownerID, "A paused reader took the focus")
+        // A session let go of leaves the coordinator, so all are kept to the end.
+        withExtendedLifetime([playing, held, idle]) {}
+    }
+
     // MARK: - Commands Received on Any Thread
 
     /// MediaPlayer does not say which thread it calls a command's handler

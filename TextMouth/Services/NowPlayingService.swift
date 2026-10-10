@@ -527,6 +527,13 @@ final class NowPlayingService {
     /// so that its report of the pause neither takes the focus back
     /// (`playingOwnerPaused(_:)`) nor shows its book paused in the system
     /// for the moment before the requested reader's book is shown playing.
+    ///
+    /// Any other reader that says it plays is paused too, though it is not
+    /// the playing owner: a book a Where Am I? announcement holds paused,
+    /// which plays again as the announcement ends, says it plays, and its
+    /// pause ends the announcement and keeps the book paused. Only the
+    /// playing owner was paused before, so such a book played on beside
+    /// the one that started.
     func prepareForPlayback(ownerID: UUID) {
         guard let handlers = handlersByOwner[ownerID] else {
             diagnostic("playback preparation ignored owner=\(shortOwnerID(ownerID)) reason=unregistered")
@@ -536,7 +543,8 @@ final class NowPlayingService {
         noteExternalRoutingChange()
 
         focusedOwnerID = ownerID
-        if let previousOwnerID = playingOwnerID,
+        let previousOwnerID = playingOwnerID
+        if let previousOwnerID,
            previousOwnerID != ownerID,
            let previousHandlers = handlersByOwner[previousOwnerID] {
             diagnostic(
@@ -545,6 +553,21 @@ final class NowPlayingService {
             )
             playingOwnerID = nil
             previousHandlers.onPause()
+        }
+        // Every other reader that says it plays, as a book a Where Am I?
+        // announcement holds paused does, is paused too; the playing owner,
+        // paused above, is left out, so it is never paused twice. They are
+        // listed before any is paused, so a handler that changes the owners
+        // cannot change the list.
+        let otherPlaying = handlersByOwner.filter { otherOwnerID, otherHandlers in
+            otherOwnerID != ownerID && otherOwnerID != previousOwnerID && otherHandlers.isCurrentlyPlaying()
+        }
+        for (otherOwnerID, otherHandlers) in otherPlaying {
+            diagnostic(
+                "exclusive pause other=\(shortOwnerID(otherOwnerID)) "
+                    + "next=\(shortOwnerID(ownerID))"
+            )
+            otherHandlers.onPause()
         }
 
         if handlers.isCurrentlyPlaying() {
