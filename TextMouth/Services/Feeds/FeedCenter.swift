@@ -337,6 +337,10 @@ final class FeedCenter: ObservableObject {
     /// The pass of the newest-N rule asked for and not run yet, with every
     /// pass asked for meanwhile (FR11).
     var pendingItemPolicyPass: FeedItemPolicyPassRequest?
+    /// Whether each audiobook of the library's own came from a feed, as its
+    /// package record's feed link says, by book ID: read once a book for
+    /// Books Finished (`finishedBookKind(of:)`, REV11).
+    var feedOriginOfRecords: [UUID: Bool] = [:]
 
     /// An engine working with `environment`, started by `start(library:)`.
     init(environment: FeedEnvironment) {

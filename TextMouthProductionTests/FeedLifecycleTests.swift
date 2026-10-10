@@ -54,6 +54,28 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertEqual(world.stats.booksFinishedAllTimeByKind, FinishedBookCounts(textBooks: 1, audiobooks: 1, episodes: 1))
     }
 
+    /// A book Move to Library… made of an episode counts as an episode among
+    /// Books Finished even once no feed's record names its item, as after a
+    /// lost record, by the feed link its package record keeps while its row
+    /// lost it (REV11); an audiobook of the library's own whose record holds
+    /// no link stays an audiobook.
+    func testAMovedEpisodeCountsAsAnEpisodeWithoutItsFeedsRecord() async throws {
+        let world = try FeedTestWorld(self, label: "FeedFinishedMoved")
+        let (feed, episode) = try await downloadedEpisode(in: world)
+        let outcome = await world.library.moveToLibraryReturningOutcome([episode], toFolder: world.folder.path)
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        XCTAssertNil(world.library.bookByID(episode.id)?.feedLink, "the moved book's row kept its feed link")
+        XCTAssertEqual(world.center.finishedBookKind(of: episode.id), .episode)
+
+        world.center.store.remove(feed.id)
+
+        XCTAssertNil(world.center.store.item(linkedTo: episode.id))
+        XCTAssertEqual(world.center.finishedBookKind(of: episode.id), .episode, "the moved episode became an audiobook")
+        let audiobook = Book(title: "Ferry Songs", format: .audio, filePath: "/Ferry Songs.m4a", md5Hash: "")
+        world.library.library.books.append(audiobook)
+        XCTAssertEqual(world.center.finishedBookKind(of: audiobook.id), .audiobook)
+    }
+
     /// Mark as Played and Mark as Unplayed set and clear the played date.
     func testMarkingPlayedAndUnplayed() async throws {
         let world = try FeedTestWorld(self, label: "FeedMarkPlayed")

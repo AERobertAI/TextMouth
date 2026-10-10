@@ -74,13 +74,34 @@ extension FeedCenter {
     /// What kind of book the book `bookID` is, as Books Finished counts it
     /// (`ReadingStatsService.finishedBookKind`): a podcast episode when this
     /// engine downloaded it as an episode, in its feed or moved into the
-    /// library since (FR11, branch D: the moved book keeps its feed link in
-    /// its record, and its item names it), and otherwise an audiobook or a
+    /// library since (`cameFromAFeed(_:)`), and otherwise an audiobook or a
     /// text book by its format, an article being a text book; nil when the
     /// library no longer lists it, or the engine has not started.
     func finishedBookKind(of bookID: UUID) -> FinishedBookKind? {
         guard let book = library?.feedBook(withID: bookID) else { return nil }
-        return FinishedBookKind.of(format: book.format, isFeedDownload: store.item(linkedTo: bookID) != nil)
+        return FinishedBookKind.of(format: book.format, isFeedDownload: cameFromAFeed(book))
+    }
+
+    /// Whether `book` came from a feed: a feed item's row, a book an item of
+    /// a record names, or an audiobook of the library's own that Move to
+    /// Library… made of an episode (FR11, branch D), whose package record
+    /// keeps the feed link its row lost, as it does once no record names
+    /// its item, after a lost record (REV11). That record is read once a
+    /// book, without downloading anything, and remembered, as where a book
+    /// came from never changes; a book of another format is a text book
+    /// whatever it came from, so none is read for it.
+    private func cameFromAFeed(_ book: Book) -> Bool {
+        if book.isFeedItem || store.item(linkedTo: book.id) != nil { return true }
+        guard book.format.isAudio else { return false }
+        if let known = feedOriginOfRecords[book.id] { return known }
+        // A record that can't be read now, as one only in the cloud, is
+        // read again next time rather than remembered.
+        guard let record = try? DatalessFiles.withoutDownloading({ try StoredBookRecord.read(from: book.tmbDirectory) }) else {
+            return false
+        }
+        let fromAFeed = record.info.metadata.feedLink != nil
+        feedOriginOfRecords[book.id] = fromAFeed
+        return fromAFeed
     }
 
     /// Marks the item `itemID` of the feed `feedID` played (an article: read)
