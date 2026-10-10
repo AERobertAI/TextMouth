@@ -32,6 +32,25 @@ enum CountWording {
         phrase(count, singular: "bookmark", plural: "bookmarks")
     }
 
+    /// `count` minutes: "1 minute", "30 minutes", as the sleep timer and
+    /// spoken durations count them.
+    static func minutes(_ count: Int) -> String {
+        phrase(count, singular: "minute", plural: "minutes")
+    }
+
+    /// `count` seconds: "1 second", "5 seconds".
+    static func seconds(_ count: Int) -> String {
+        phrase(count, singular: "second", plural: "seconds")
+    }
+
+    /// `part` of `whole` things, the noun agreeing with the whole, which it
+    /// counts: "0 of 1 book", "1 of 1 book", "2 of 5 books", as the
+    /// Library's edit bar counts the books selected (TODO A10; it said "0 of
+    /// 1 books").
+    static func part(_ part: Int, of whole: Int, singular: String, plural: String) -> String {
+        "\(part) of \(phrase(whole, singular: singular, plural: plural))"
+    }
+
     /// The library's books and the feeds beside them, as the library counts
     /// them wherever it counts its books (FR11): "743 books, 2 feeds", "1
     /// book, 1 feed". A feed's episodes and articles are never counted as

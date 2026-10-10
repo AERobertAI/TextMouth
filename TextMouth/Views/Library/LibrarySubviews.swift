@@ -50,7 +50,7 @@ struct EditModeBar: View {
                     onSelectAll()
                 }
             }
-            .accessibilityLabel(selectedCount == totalCount ? "Deselect all books" : "Select all \(totalCount) books")
+            .accessibilityLabel(Self.selectAllLabel(selectedCount: selectedCount, totalCount: totalCount))
 
             Button("Move") { onMove() }
                 .disabled(selectedCount == 0)
@@ -74,7 +74,21 @@ struct EditModeBar: View {
         .padding(.vertical, 8)
         .background(Color.accentColor.opacity(0.1))
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Edit mode, \(selectedCount) of \(totalCount) books selected")
+        .accessibilityLabel(Self.accessibilityLabel(selectedCount: selectedCount, totalCount: totalCount))
+    }
+
+    /// What VoiceOver calls the bar: "Edit mode, 0 of 1 book selected",
+    /// "Edit mode, 2 of 5 books selected", the noun agreeing with the books
+    /// listed (TODO A10; it said "0 of 1 books").
+    nonisolated static func accessibilityLabel(selectedCount: Int, totalCount: Int) -> String {
+        "Edit mode, \(CountWording.part(selectedCount, of: totalCount, singular: "book", plural: "books")) selected"
+    }
+
+    /// What VoiceOver calls Select All, or Deselect All once every book is
+    /// selected: "Select all 1 book", "Select all 12 books", "Deselect all
+    /// books" (TODO A10; it said "Select all 1 books").
+    nonisolated static func selectAllLabel(selectedCount: Int, totalCount: Int) -> String {
+        selectedCount == totalCount ? "Deselect all books" : "Select all \(CountWording.books(totalCount))"
     }
 }
 

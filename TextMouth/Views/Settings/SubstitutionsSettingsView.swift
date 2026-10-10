@@ -57,7 +57,7 @@ struct SubstitutionsSettingsView: View {
             }
 
             HStack {
-                Text("\(service.rules.count) rules (\(service.rules.filter { $0.isEnabled }.count) enabled)")
+                Text(Self.ruleCountText(rules: service.rules.count, enabled: service.rules.filter { $0.isEnabled }.count))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
@@ -213,6 +213,12 @@ extension SubstitutionsSettingsView {
     /// What VoiceOver says after a delete, such as "Mr. deleted".
     nonisolated static func deletedAnnouncement(ruleName: String) -> String {
         "\(ruleName) deleted"
+    }
+
+    /// The footer's count of the rules: "1 rule (1 enabled)", "15 rules (12
+    /// enabled)" (TODO A10; it said "1 rules").
+    nonisolated static func ruleCountText(rules: Int, enabled: Int) -> String {
+        "\(CountWording.phrase(rules, singular: "rule", plural: "rules")) (\(enabled) enabled)"
     }
 
     /// The footer's help on reordering, naming both ways to do it and the

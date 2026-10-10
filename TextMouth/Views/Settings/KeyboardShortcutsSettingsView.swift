@@ -470,7 +470,7 @@ enum ShortcutsSettingsWording {
     static func seconds(_ value: Double) -> String {
         let tenths = (value * SettingsPolicy.shortcutDoublePressTenthsPerSecond).rounded()
         guard tenths.truncatingRemainder(dividingBy: SettingsPolicy.shortcutDoublePressTenthsPerSecond) != 0 else {
-            return CountWording.phrase(Int(tenths / SettingsPolicy.shortcutDoublePressTenthsPerSecond), singular: "second", plural: "seconds")
+            return CountWording.seconds(Int(tenths / SettingsPolicy.shortcutDoublePressTenthsPerSecond))
         }
         return String(format: "%.1f seconds", tenths / SettingsPolicy.shortcutDoublePressTenthsPerSecond)
     }

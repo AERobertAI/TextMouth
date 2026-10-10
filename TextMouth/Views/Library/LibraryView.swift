@@ -1416,12 +1416,12 @@ struct LibraryView: View {
 
     /// The hint of the toolbar's Edit button, which enters edit mode and
     /// leaves it: what pressing it does, and, while in edit mode, how many
-    /// books are selected. A hint says the result, not what to do (TODO
-    /// A10; it said "Enter edit mode to select multiple books for moving or
-    /// deleting").
+    /// books are selected, "1 book selected" or "3 books selected". A hint
+    /// says the result, not what to do (TODO A10; it said "Enter edit mode
+    /// to select multiple books for moving or deleting", and "1 books").
     nonisolated static func editModeButtonHint(isEditMode: Bool, selectedCount: Int) -> String {
         isEditMode
-            ? "Exits edit mode. \(selectedCount) books selected."
+            ? "Exits edit mode. \(CountWording.books(selectedCount)) selected."
             : "Enters edit mode, for selecting several books to move or remove."
     }
 

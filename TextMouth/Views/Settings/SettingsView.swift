@@ -429,14 +429,8 @@ struct PlaybackSettingsView: View {
                     // The fade for the eye; VoiceOver hears it once, as the
                     // stepper's value, and the caption below says what off
                     // does (TODO A10).
-                    Group {
-                        if settingsViewModel.sleepFadeOutDuration > 0 {
-                            Text("Fade out: \(Int(settingsViewModel.sleepFadeOutDuration)) seconds")
-                        } else {
-                            Text("Fade out: Off")
-                        }
-                    }
-                    .accessibilityHidden(true)
+                    Text("Fade out: \(Self.fadeOutText(settingsViewModel.sleepFadeOutDuration))")
+                        .accessibilityHidden(true)
                     // The stepper's own label is empty: a hidden title
                     // would be spoken before the accessibility label
                     // ("Seconds, Fade out duration").
@@ -448,7 +442,7 @@ struct PlaybackSettingsView: View {
                         EmptyView()
                     }
                     .accessibilityLabel("Fade out duration")
-                    .accessibilityValue(settingsViewModel.sleepFadeOutDuration > 0 ? "\(Int(settingsViewModel.sleepFadeOutDuration)) seconds" : "Off")
+                    .accessibilityValue(Self.fadeOutText(settingsViewModel.sleepFadeOutDuration))
 
                     Text("Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.")
                         .font(.caption)
@@ -518,6 +512,13 @@ struct PlaybackSettingsView: View {
             TranscriptionSettingsSection()
         }
         .padding()
+    }
+
+    /// The sleep timer's fade as the Playback tab shows it and its stepper
+    /// speaks it: "Off" for none, else its whole seconds counted, "1
+    /// second", "3 seconds" (TODO A10; it said "1 seconds").
+    nonisolated static func fadeOutText(_ seconds: Double) -> String {
+        seconds > 0 ? CountWording.seconds(Int(seconds)) : "Off"
     }
 }
 

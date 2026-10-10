@@ -192,10 +192,10 @@ struct SleepTimerView: View {
 
             // Preset minute durations
             ForEach(Self.presetMinutes, id: \.self) { minutes in
-                Button("\(minutes) minutes") {
+                Button(SleepTimerDuration.minutes(minutes).displayName) {
                     setNewTimer(.minutes(minutes))
                 }
-                .accessibilityLabel("Set timer for \(minutes) minutes and start playing")
+                .accessibilityLabel(Self.setTimerLabel(minutes: minutes))
                 // The top Close control remains immediately available, but
                 // opening the sheet places VoiceOver on the first primary
                 // timer action instead of the dismiss action.
@@ -235,7 +235,7 @@ struct SleepTimerView: View {
                     customMinutes = max(1, min(customMinutes, 480))
                     setNewTimer(.minutes(customMinutes))
                 }
-                .accessibilityLabel("Set timer for \(customMinutes) minutes and start playing")
+                .accessibilityLabel(Self.setTimerLabel(minutes: customMinutes))
             }
         }
     }
@@ -277,9 +277,9 @@ struct SleepTimerView: View {
     }
 
     /// The custom minutes as the field and its stepper both speak them,
-    /// unit and all: "30 minutes".
+    /// unit and all: "1 minute", "30 minutes".
     private var customMinutesSpoken: String {
-        "\(customMinutes) minutes"
+        CountWording.minutes(customMinutes)
     }
 
     /// Start (or restart) the timer and optionally dismiss the sheet.
@@ -306,6 +306,13 @@ struct SleepTimerView: View {
     nonisolated static let customMinutesStep = 5
     /// The custom timer's stepper's label, which the field's hint names.
     nonisolated static let adjustMinutesLabel = "Adjust minutes"
+
+    /// What VoiceOver calls a button that sets a timer for `minutes`, a
+    /// preset's or the custom timer's Set: "Set timer for 1 minute and start
+    /// playing", by the timer's own name (TODO A10; it said "1 minutes").
+    nonisolated static func setTimerLabel(minutes: Int) -> String {
+        "Set timer for \(SleepTimerDuration.minutes(minutes).displayName) and start playing"
+    }
     /// The custom minutes field's hint: what typing does, the stepper beside
     /// it by name and step, and what Return does there (TODO A10; it said
     /// "use the stepper arrows", which name no control VoiceOver lands on).

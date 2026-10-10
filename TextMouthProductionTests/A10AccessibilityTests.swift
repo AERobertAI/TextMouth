@@ -246,6 +246,60 @@ final class ResultHintTests: XCTestCase {
     }
 }
 
+// MARK: - Counted Words
+
+/// Every count the audit found with a plural noun beside it, whatever the
+/// count, now goes through `CountWording`: one book, one rule, one minute,
+/// one second, and the screen and VoiceOver say the same words.
+@MainActor
+final class CountedWordTests: XCTestCase {
+    /// The counts the fixes use: minutes, seconds, and a part of a whole
+    /// whose noun agrees with the whole.
+    func testCountWordingCountsMinutesSecondsAndParts() {
+        XCTAssertEqual(CountWording.minutes(1), "1 minute")
+        XCTAssertEqual(CountWording.minutes(0), "0 minutes")
+        XCTAssertEqual(CountWording.minutes(30), "30 minutes")
+        XCTAssertEqual(CountWording.seconds(1), "1 second")
+        XCTAssertEqual(CountWording.seconds(5), "5 seconds")
+        XCTAssertEqual(CountWording.part(0, of: 1, singular: "book", plural: "books"), "0 of 1 book")
+        XCTAssertEqual(CountWording.part(1, of: 1, singular: "book", plural: "books"), "1 of 1 book")
+        XCTAssertEqual(CountWording.part(2, of: 5, singular: "book", plural: "books"), "2 of 5 books")
+    }
+
+    /// The Library's edit mode counts one book as one: the toolbar's Edit
+    /// button, the bar's Select All, and the bar itself.
+    func testTheLibrarysEditModeCountsOneBook() {
+        XCTAssertEqual(LibraryView.editModeButtonHint(isEditMode: true, selectedCount: 1), "Exits edit mode. 1 book selected.")
+        XCTAssertEqual(LibraryView.editModeButtonHint(isEditMode: true, selectedCount: 0), "Exits edit mode. 0 books selected.")
+        XCTAssertEqual(EditModeBar.selectAllLabel(selectedCount: 0, totalCount: 1), "Select all 1 book")
+        XCTAssertEqual(EditModeBar.selectAllLabel(selectedCount: 2, totalCount: 12), "Select all 12 books")
+        XCTAssertEqual(EditModeBar.selectAllLabel(selectedCount: 1, totalCount: 1), "Deselect all books")
+        XCTAssertEqual(EditModeBar.accessibilityLabel(selectedCount: 0, totalCount: 1), "Edit mode, 0 of 1 book selected")
+        XCTAssertEqual(EditModeBar.accessibilityLabel(selectedCount: 2, totalCount: 5), "Edit mode, 2 of 5 books selected")
+    }
+
+    /// The Text tab's footer counts one rule as one.
+    func testTheTextTabCountsOneRule() {
+        XCTAssertEqual(SubstitutionsSettingsView.ruleCountText(rules: 1, enabled: 1), "1 rule (1 enabled)")
+        XCTAssertEqual(SubstitutionsSettingsView.ruleCountText(rules: 15, enabled: 12), "15 rules (12 enabled)")
+        XCTAssertEqual(SubstitutionsSettingsView.ruleCountText(rules: 0, enabled: 0), "0 rules (0 enabled)")
+    }
+
+    /// The sleep timer counts one minute as one, in its name, the
+    /// announcement of setting it, and its buttons' labels; and the
+    /// Playback tab's fade counts one second as one.
+    func testTheSleepTimerCountsOneMinuteAndOneSecond() {
+        XCTAssertEqual(SleepTimerDuration.minutes(1).displayName, "1 minute")
+        XCTAssertEqual(SleepTimerDuration.minutes(45).displayName, "45 minutes")
+        XCTAssertEqual(SleepTimerView.announcement(forSetting: .minutes(1)), "Timer set for 1 minute.")
+        XCTAssertEqual(SleepTimerView.setTimerLabel(minutes: 1), "Set timer for 1 minute and start playing")
+        XCTAssertEqual(SleepTimerView.setTimerLabel(minutes: 60), "Set timer for 60 minutes and start playing")
+        XCTAssertEqual(PlaybackSettingsView.fadeOutText(0), "Off")
+        XCTAssertEqual(PlaybackSettingsView.fadeOutText(1), "1 second")
+        XCTAssertEqual(PlaybackSettingsView.fadeOutText(3), "3 seconds")
+    }
+}
+
 // MARK: - Shared Fixtures
 
 extension XCTestCase {

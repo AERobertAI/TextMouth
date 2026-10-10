@@ -150,7 +150,7 @@ struct MiscellaneousSettingsView: View {
     /// spoken value both use this phrase; VoiceOver used to hear "1 seconds"
     /// beside a screen that said "1 second".
     nonisolated static func disconnectDelayPhrase(_ seconds: Double) -> String {
-        CountWording.phrase(Int(seconds), singular: "second", plural: "seconds")
+        CountWording.seconds(Int(seconds))
     }
 
     /// Display string for the time window slider that handles both
@@ -158,7 +158,7 @@ struct MiscellaneousSettingsView: View {
     private var formattedWindow: String {
         let value = settingsViewModel.restartTimerGestureWindow
         if value == floor(value) {
-            return CountWording.phrase(Int(value), singular: "second", plural: "seconds")
+            return CountWording.seconds(Int(value))
         }
         return String(format: "%.1f seconds", value)
     }
