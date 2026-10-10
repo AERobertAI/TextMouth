@@ -135,6 +135,23 @@ final class LibrarySortSavingTests: XCTestCase {
         XCTAssertEqual(model.library.folderSortSettings, ["Shelf": earlierManual])
     }
 
+    /// Choosing the field a location already shows, the Sort menu's checked
+    /// item, keeps the sort and saves nothing (TODO A11): a saved descending
+    /// sort stays descending, and a location still showing its category's
+    /// default gains no setting.
+    @MainActor
+    func testChoosingTheCheckedFieldKeepsTheSortAndSavesNothing() {
+        let authorDescending = FolderSortSetting(sortField: .author, sortAscending: false)
+        let model = makeModel(Library(folderSortSettings: ["Shelf": authorDescending]))
+        let shelf = LibraryLocation(category: .folders, folderPath: "Shelf")
+        let recent = LibraryLocation(category: .recent, folderPath: "Shelf")
+
+        XCTAssertEqual(model.userChangedSort(.choose(.author), at: shelf).titleFragment, "Author Descending")
+        XCTAssertEqual(model.userChangedSort(.choose(.lastOpened), at: recent).titleFragment, "Last Opened Descending")
+
+        XCTAssertEqual(model.library.folderSortSettings, ["Shelf": authorDescending])
+    }
+
     /// A change is saved with the directions the location remembers, so
     /// leaving manual order restores the field's direction even after the
     /// library is loaded again.

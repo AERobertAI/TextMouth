@@ -4,7 +4,14 @@ import AppKit
 import AVFoundation
 import os.log
 
+/// The window of a long chapter's text that the reader shows: where it is
+/// cut (`bounds(in:around:maximumLength:)`) and when it moves
+/// (`shouldRefresh`).
 enum VisibleTextWindowPolicy {
+    /// Whether the window must be cut again for `offset`: always for a
+    /// chapter shown whole, and otherwise when the window shows another
+    /// chapter or `offset` has come within `guardFraction` of the window's
+    /// length of either edge.
     static func shouldRefresh(
         chapterTextLength: Int,
         maximumDisplayLength: Int,
@@ -23,6 +30,95 @@ enum VisibleTextWindowPolicy {
         let lowerBound = windowStart + guardSize
         let upperBound = max(lowerBound, windowEnd - guardSize)
         return offset < lowerBound || offset > upperBound
+    }
+
+    /// Where the window of `text` shown around `offset` begins and ends, in
+    /// UTF-16 offsets: the whole text when it is no longer than
+    /// `maximumLength`; otherwise about `maximumLength` characters centered
+    /// on `offset`, as nearly as the text's ends allow.
+    ///
+    /// The window always holds `offset`, and it begins and ends on whole
+    /// words, which VoiceOver and a braille display read there (TODO A11).
+    /// Each edge the window cuts moves inward, by at most a quarter of the
+    /// window and never past `offset`: to a paragraph break, so the window
+    /// keeps whole paragraphs where it can; else to a line break; else
+    /// nowhere, when the cut falls between two words; else to a space. Only
+    /// a quarter of the window with no space in it, as in a language
+    /// written without spaces, leaves an edge where it was cut, between two
+    /// whole characters.
+    ///
+    /// The window used to begin after the first paragraph break anywhere in
+    /// it, and to end at the last one after that, or where it was cut. In
+    /// text whose paragraphs end in single line breaks, one blank line near
+    /// the window's end left a window of a few words after the reading
+    /// position, ending mid-word.
+    static func bounds(in text: String, around offset: Int, maximumLength: Int) -> Range<Int> {
+        let length = text.utf16Length
+        guard length > maximumLength else { return 0..<length }
+
+        let cursor = min(max(offset, 0), length)
+        let half = maximumLength / 2
+        let center = min(max(cursor, half), length - half)
+        // How far an edge may move inward to reach a boundary.
+        let reach = maximumLength / 4
+        var start = center - half
+        var end = center + half
+        if start > 0 {
+            start = startBoundary(in: text, cutAt: start, limit: min(cursor, start + reach))
+        }
+        if end < length {
+            end = endBoundary(in: text, cutAt: end, limit: max(cursor, end - reach))
+        }
+        // However the boundaries fell, the window holds the reading position.
+        return min(start, cursor)..<max(end, cursor)
+    }
+
+    /// Where a window cut at the UTF-16 offset `cut` begins, moving no
+    /// further than `limit`: just after the first paragraph break, else line
+    /// break, before `limit`; else at the cut, when it falls between words;
+    /// else just after the first space before `limit`; else at the cut. A
+    /// cut inside a character moves on to the character's end first.
+    private static func startBoundary(in text: String, cutAt cut: Int, limit: Int) -> Int {
+        var cutIndex = text.index(atUTF16Offset: cut)
+        if text.utf16Offset(of: cutIndex) < cut, cutIndex < text.endIndex {
+            cutIndex = text.index(after: cutIndex)
+        }
+        let limitIndex = text.index(atUTF16Offset: limit)
+        guard limitIndex > cutIndex else { return text.utf16Offset(of: cutIndex) }
+        let searched = cutIndex..<limitIndex
+        if let lineBreak = text.range(of: "\n\n", range: searched) ?? text.range(of: "\n", range: searched) {
+            return text.utf16Offset(of: lineBreak.upperBound)
+        }
+        guard !isBetweenWords(text, at: cutIndex) else { return text.utf16Offset(of: cutIndex) }
+        let space = text.rangeOfCharacter(from: .whitespacesAndNewlines, range: searched)
+        return text.utf16Offset(of: space?.upperBound ?? cutIndex)
+    }
+
+    /// Where a window cut at the UTF-16 offset `cut` ends, moving back no
+    /// further than `limit`: where the last paragraph break, else line
+    /// break, after `limit` begins; else at the cut, when it falls between
+    /// words; else where the last space after `limit` begins; else at the
+    /// cut. A cut inside a character moves back to the character's start
+    /// first.
+    private static func endBoundary(in text: String, cutAt cut: Int, limit: Int) -> Int {
+        let cutIndex = text.index(atUTF16Offset: cut)
+        let limitIndex = text.index(atUTF16Offset: limit)
+        guard cutIndex > limitIndex else { return text.utf16Offset(of: cutIndex) }
+        let searched = limitIndex..<cutIndex
+        if let lineBreak = text.range(of: "\n\n", options: .backwards, range: searched)
+            ?? text.range(of: "\n", options: .backwards, range: searched) {
+            return text.utf16Offset(of: lineBreak.lowerBound)
+        }
+        guard !isBetweenWords(text, at: cutIndex) else { return text.utf16Offset(of: cutIndex) }
+        let space = text.rangeOfCharacter(from: .whitespacesAndNewlines, options: .backwards, range: searched)
+        return text.utf16Offset(of: space?.lowerBound ?? cutIndex)
+    }
+
+    /// Whether a cut at `index` falls between two words: at either end of
+    /// `text`, or beside whitespace.
+    private static func isBetweenWords(_ text: String, at index: String.Index) -> Bool {
+        guard index > text.startIndex, index < text.endIndex else { return true }
+        return text[text.index(before: index)].isWhitespace || text[index].isWhitespace
     }
 }
 
@@ -1343,11 +1439,13 @@ final class ReaderViewModel: ObservableObject {
     /// Chapters under this limit are shown in full. Larger chapters show
     /// a sliding window around the current reading position so the UI
     /// stays responsive. The full text remains in memory for TTS.
-    private static let maxDisplayChars = 20_000
+    /// Internal (not private) so tests can cut their texts to it.
+    static let maxDisplayChars = 20_000
 
     /// Return the text to display in the reader view. For small chapters,
     /// returns the full text. For large chapters, returns a window of text
-    /// centred on the current character offset.
+    /// around the current character offset, holding it, that begins and
+    /// ends on whole words (`VisibleTextWindowPolicy.bounds`).
     private func makeVisibleTextWindow(_ fullText: String, centeredAt offset: Int) -> VisibleTextWindow {
         guard fullText.utf16Length > Self.maxDisplayChars else {
             return VisibleTextWindow(
@@ -1357,32 +1455,13 @@ final class ReaderViewModel: ObservableObject {
             )
         }
 
-        let halfWindow = Self.maxDisplayChars / 2
-        let center = min(max(offset, halfWindow), fullText.utf16Length - halfWindow)
-        let windowStart = max(center - halfWindow, 0)
-        let windowEnd = min(center + halfWindow, fullText.utf16Length)
-
-        let startIdx = fullText.index(atUTF16Offset: windowStart)
-        let endIdx = fullText.index(atUTF16Offset: windowEnd)
-
-        // Snap to paragraph boundaries so text doesn't start/end mid-word
-        var adjustedStart = startIdx
-        if windowStart > 0 {
-            if let paraBreak = fullText.range(of: "\n\n", range: startIdx..<endIdx) {
-                adjustedStart = paraBreak.upperBound
-            }
-        }
-        var adjustedEnd = endIdx
-        if windowEnd < fullText.utf16Length {
-            if let paraBreak = fullText.range(of: "\n\n", options: .backwards, range: adjustedStart..<endIdx) {
-                adjustedEnd = paraBreak.lowerBound
-            }
-        }
-
+        let bounds = VisibleTextWindowPolicy.bounds(in: fullText, around: offset, maximumLength: Self.maxDisplayChars)
+        let start = fullText.index(atUTF16Offset: bounds.lowerBound)
+        let end = fullText.index(atUTF16Offset: bounds.upperBound)
         return VisibleTextWindow(
-            text: String(fullText[adjustedStart..<adjustedEnd]),
-            startOffset: fullText.utf16Offset(of: adjustedStart),
-            endOffset: fullText.utf16Offset(of: adjustedEnd)
+            text: String(fullText[start..<end]),
+            startOffset: fullText.utf16Offset(of: start),
+            endOffset: fullText.utf16Offset(of: end)
         )
     }
 
