@@ -409,7 +409,14 @@ extension LibraryViewModel {
     /// the import overlay shows while any is, says how many wait behind the
     /// one it shows (FR10), and is cleared once none is.
     func importActivityChanged(to activeCount: Int) {
-        isImporting = activeCount > 0
+        // Assigned only when it changes, as `noteImportsQueued` publishes
+        // only a change: each assignment publishes the library model, which
+        // every Library window's list observes, and the count moves with
+        // every import queued and every import done (REV13).
+        let importing = activeCount > 0
+        if isImporting != importing {
+            isImporting = importing
+        }
         importProgress.noteImportsQueued(activeCount)
         if activeCount == 0 {
             importProgress.clear()

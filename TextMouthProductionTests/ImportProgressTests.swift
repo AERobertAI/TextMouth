@@ -34,6 +34,39 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(libraryPublishes, 0, "the library model published, which redraws every Library window's list")
     }
 
+    /// Over a queue of several imports the library model publishes twice,
+    /// as the first starts and as the last ends; each change between, as
+    /// one more is queued or one is done, publishes only the overlay's own
+    /// progress, which counts those waiting. Until October 10, 2026 every
+    /// change of the queue's count published the model, which every
+    /// Library window's list observes (REV13).
+    func testTheLibraryPublishesAsImportsStartAndEndAlone() {
+        let library = LibraryViewModel(initializeServices: false)
+        library.observeImportActivity()
+        var libraryPublishes = 0
+        let watcher = library.objectWillChange.sink { libraryPublishes += 1 }
+        defer { watcher.cancel() }
+        let imports = 3
+        let gate = DispatchSemaphore(value: 0)
+        // Whatever the test does, no import is left waiting at its end.
+        addTeardownBlock { for _ in 0..<imports { gate.signal() } }
+
+        for _ in 0..<imports {
+            library.importOperationQueue.enqueue { gate.wait() }
+        }
+        XCTAssertTrue(
+            waitUntil(timeout: 5) { library.importProgress.state.waitingImports == imports - 1 },
+            "the overlay counts \(library.importProgress.state.waitingImports) imports waiting"
+        )
+        XCTAssertTrue(library.isImporting)
+        for _ in 0..<imports {
+            gate.signal()
+        }
+        XCTAssertTrue(waitUntil(timeout: 5) { !library.isImporting }, "the imports never ended")
+
+        XCTAssertEqual(libraryPublishes, 2, "the library model published for a change of the queue's count")
+    }
+
     /// One view observes every progress shown apart from the library model
     /// (`ProgressObserver`, #1461): hosted over the text extraction's
     /// progress or the imports', it draws its content anew each time that
