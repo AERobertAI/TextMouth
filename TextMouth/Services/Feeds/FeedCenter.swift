@@ -748,16 +748,31 @@ final class FeedCenter: ObservableObject {
     // MARK: Downloading
 
     /// Downloads the item `itemID` of the feed `feedID` because the listener
-    /// asked (Download, or trying a failed download again).
+    /// asked (Download, or trying a failed download again). An item moved
+    /// into the library, whose book the library still lists, is never
+    /// downloaded again (FR11, branch D).
     func download(_ itemID: FeedItem.ID, of feedID: UUID) {
+        guard libraryBook(of: itemID, in: feedID) == nil else { return }
         downloads.download(itemID, of: feedID, origin: .listener)
     }
 
     /// Opens the item `itemID` of the feed `feedID`: its book at once when
-    /// it is downloaded, or else once it has downloaded, ahead of the others
-    /// waiting, as a book in the cloud downloads before it opens.
+    /// it is downloaded, or moved into the library (FR11, branch D), or else
+    /// once it has downloaded, ahead of the others waiting, as a book in the
+    /// cloud downloads before it opens.
     func open(_ itemID: FeedItem.ID, of feedID: UUID) {
+        if let book = libraryBook(of: itemID, in: feedID) {
+            library?.openFeedBook(book.id)
+            return
+        }
         downloads.download(itemID, of: feedID, origin: .listener, opening: true)
+    }
+
+    /// The book the item `itemID` of the feed `feedID` became in the library
+    /// by Move to Library… (FR11, branch D), while the library lists it.
+    func libraryBook(of itemID: FeedItem.ID, in feedID: UUID) -> Book? {
+        guard let bookID = store.record(of: feedID)?.item(itemID)?.state.libraryBookID else { return nil }
+        return library?.feedBook(withID: bookID)
     }
 
     /// Stops the download of the item `itemID` of the feed `feedID`, or takes
@@ -778,9 +793,13 @@ final class FeedCenter: ObservableObject {
 
     /// The state the library shows for `item` of the feed `feedID`: its own,
     /// except that an item whose book the library no longer lists, as after
-    /// the book was deleted from the library, is not downloaded.
+    /// the book was deleted from the library, is not downloaded, whether it
+    /// was its feed's download or moved into the library (FR11, branch D).
     func state(of item: FeedItem, in feedID: UUID) -> FeedItemState {
         if item.state.bookID != nil, downloadedRow(of: item, in: feedID) == nil {
+            return .notDownloaded
+        }
+        if let bookID = item.state.libraryBookID, let library, library.feedBook(withID: bookID) == nil {
             return .notDownloaded
         }
         return item.state

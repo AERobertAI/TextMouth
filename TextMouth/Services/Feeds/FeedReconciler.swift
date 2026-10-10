@@ -16,7 +16,8 @@ import Foundation
 /// Then the kept-entries rule decides what the record keeps (the listener's
 /// decision of October 4, whose number is now the feed's listing under the
 /// "List and download" choice, FR11: every entry, or the newest of the short
-/// list): every item downloaded, or downloading, always;
+/// list): every item downloaded, or downloading, or moved into the library
+/// (FR11, branch D), always;
 /// every item played, whose played date would otherwise be lost (board
 /// #1412), and every item whose package was kept with the listener's place
 /// after its file went (FR11, branch A2), always too; and the newest
@@ -189,13 +190,15 @@ enum FeedReconciler {
     }
 
     /// The items kept of `candidates` under the kept-entries rule, newest
-    /// first: every item downloaded or downloading; every item played, so
-    /// its played date is never lost (board #1412), and every item
-    /// `keptRecords` names, whose package was kept with the listener's place
-    /// after its file went (FR11, branch A2), each listed as a downloaded
-    /// item is; every item the listener deleted (`merge` passes only those
-    /// the feed still lists); and the newest `keepEntries` of the rest, or
-    /// all when `keepEntries` is -1.
+    /// first: every item downloaded or downloading, and every item moved
+    /// into the library (FR11, branch D), whose "In Library" state is what
+    /// keeps the feed from downloading it again; every item played, so its
+    /// played date is never lost (board #1412), and every item `keptRecords`
+    /// names, whose package was kept with the listener's place after its
+    /// file went (FR11, branch A2), each listed as a downloaded item is;
+    /// every item the listener deleted (`merge` passes only those the feed
+    /// still lists); and the newest `keepEntries` of the rest, or all when
+    /// `keepEntries` is -1.
     static func kept(
         _ candidates: [FeedItem],
         keepEntries: Int,
@@ -213,7 +216,7 @@ enum FeedReconciler {
             }
             let isWithinNewest = keepEntries < 0 || listedKept < keepEntries
             let holdsTheListenersRecord = item.playedDate != nil || keptRecords.contains(item.id)
-            if isWithinNewest || item.state.bookID != nil || item.state.isDownloading || holdsTheListenersRecord {
+            if isWithinNewest || item.state.linkedBookID != nil || item.state.isDownloading || holdsTheListenersRecord {
                 kept.append(item)
             }
             listedKept += 1

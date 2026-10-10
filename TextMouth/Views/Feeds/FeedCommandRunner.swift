@@ -158,7 +158,9 @@ extension LibraryFeedsPresenter {
         let state = center.state(of: item, in: action.feedID)
         switch action.command {
         case .open:
-            if state.bookID == nil {
+            // A download, or a book moved into the library (FR11, branch D),
+            // opens at once; anything else downloads first.
+            if state.linkedBookID == nil {
                 announce(FeedWording.downloadingToOpen(title: item.title), context.window)
             }
             center.open(item.id, of: record.feed.id)
@@ -203,7 +205,8 @@ extension LibraryFeedsPresenter {
                 title: FeedWording.deleteItemQuestion(title: item.title),
                 message: FeedWording.deleteItemMessage(
                     isArticle: item.isArticle,
-                    keepsListenerState: keepsListenerState(of: item.id, in: record.feed.id, context)
+                    keepsListenerState: keepsListenerState(of: item.id, in: record.feed.id, context),
+                    isInLibrary: state.libraryBookID != nil
                 ),
                 confirmTitle: FeedWording.deleteItemButton(isArticle: item.isArticle)
             )
@@ -246,7 +249,10 @@ extension LibraryFeedsPresenter {
         case let .deleteItem(feedID, itemID, title):
             do {
                 try context.center.deleteItem(itemID, of: feedID)
-                announce(FeedWording.itemDeleted(title: title), context.window)
+                // An item moved into the library keeps its book there (FR11,
+                // branch D), and its state says so after the deletion too.
+                let inLibrary = context.center.store.record(of: feedID)?.item(itemID)?.state.libraryBookID != nil
+                announce(FeedWording.itemDeleted(title: title, isInLibrary: inLibrary), context.window)
             } catch {
                 refuse(error, in: context)
             }

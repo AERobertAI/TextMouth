@@ -136,6 +136,11 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
     /// - for a downloaded item, Show in Finder on an item row (a book's row
     ///   has its own), and Delete Download;
     /// - Delete Episode….
+    ///
+    /// An item moved into the library (FR11, branch D) offers Open, which
+    /// opens its book there, Mark Played or Unplayed, Show Description…, and
+    /// Delete Episode…, which hides its row and leaves the book: nothing
+    /// downloads it again.
     /// - Parameters:
     ///   - onBookRow: Whether the commands are for a downloaded item's book's
     ///     row, which offers Open and Show in Finder itself.
@@ -159,7 +164,7 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
             commands += [.download, .cancelDownload]
         case .downloading:
             commands.append(.cancelDownload)
-        case .downloaded:
+        case .downloaded, .inLibrary:
             break
         }
         commands.append(isPlayed ? .markUnplayed : .markPlayed)
@@ -329,17 +334,24 @@ extension FeedWording {
     /// The confirmation's message, saying what deleting does: the item
     /// leaves the list and its download goes, and, when TextMouth keeps the
     /// listener's place, bookmarks, or transcript for it
-    /// (`keepsListenerState`, FR11, branch A2), those go too.
-    static func deleteItemMessage(isArticle: Bool, keepsListenerState: Bool = false) -> String {
+    /// (`keepsListenerState`, FR11, branch A2), those go too. For an item
+    /// moved into the library (`isInLibrary`, FR11, branch D), the item
+    /// leaves the list and its book stays.
+    static func deleteItemMessage(isArticle: Bool, keepsListenerState: Bool = false, isInLibrary: Bool = false) -> String {
         let kind = isArticle ? "article" : "episode"
+        guard !isInLibrary else {
+            return "The \(kind) leaves the list for good; the book it became in your library stays. "
+                + "Checking the feed won't bring it back."
+        }
         let kept = keepsListenerState ? " The place, bookmarks, and transcript kept for it are deleted too." : ""
         return "The \(kind) leaves the list for good, and its download, if any, is deleted.\(kept) "
             + "Checking the feed won't bring it back."
     }
 
-    /// What VoiceOver hears once an item is deleted.
-    static func itemDeleted(title: String) -> String {
-        "Deleted “\(title)”."
+    /// What VoiceOver hears once an item is deleted: for one moved into the
+    /// library (`isInLibrary`, FR11, branch D), that its book stays.
+    static func itemDeleted(title: String, isInLibrary: Bool = false) -> String {
+        isInLibrary ? "Deleted “\(title)” from its feed; its book stays in your library." : "Deleted “\(title)”."
     }
 
     // MARK: Unsubscribing

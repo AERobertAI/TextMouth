@@ -32,10 +32,11 @@ extension FeedCenter {
     /// Whether `item` of `feed` is new: published (or, undated, first seen)
     /// after the subscription began, so subscribing marks none of a feed's
     /// back catalog new, never played, and never opened, whether its file is
-    /// here or its row was kept after its file went (FR11). Its row is found
-    /// by the item's identity, in one step.
+    /// here or its row was kept after its file went (FR11), and not moved
+    /// into the library, where it is the listener's own book (FR11, branch
+    /// D). Its row is found by the item's identity, in one step.
     func isNew(_ item: FeedItem, of feed: Feed) -> Bool {
-        guard item.playedDate == nil, item.sortDate > feed.subscribedDate else { return false }
+        guard item.playedDate == nil, item.sortDate > feed.subscribedDate, item.state.libraryBookID == nil else { return false }
         if let book = downloadedRow(of: item, in: feed.id) ?? library?.feedItemRows(of: feed.id).kept[item.id] {
             return book.lastOpened == nil
         }
@@ -59,7 +60,9 @@ extension FeedCenter {
                 counts.downloaded += 1
             case .downloading:
                 counts.downloading += 1
-            case .notDownloaded, .waiting, .failed:
+            // An item moved into the library is no download of its feed's
+            // (FR11, branch D).
+            case .notDownloaded, .waiting, .failed, .inLibrary:
                 break
             }
             if isNew(item, of: record.feed) {

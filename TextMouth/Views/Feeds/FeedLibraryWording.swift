@@ -208,8 +208,9 @@ extension FeedWording {
     /// server says the file is gone, …"; "…, Waiting to Download, it
     /// downloads on a network without data limits, …"; "Ep. 368, Not
     /// Downloaded, 42 percent, 16 minutes remaining, 2 bookmarks, July 17,
-    /// 2026, 64 minutes". A played item says no progress, only its
-    /// bookmarks.
+    /// 2026, 64 minutes"; and, moved into the library (FR11, branch D), "Ep.
+    /// 368, In Library, July 17, 2026, 64 minutes". A played item says no
+    /// progress, only its bookmarks.
     static func itemRowLabel(_ row: FeedItemRowContent) -> String {
         var parts = [row.title]
         if row.isPlayed { parts.append(playedNote(isArticle: row.isArticle)) }
@@ -223,11 +224,14 @@ extension FeedWording {
     }
 
     /// An item row's spoken hint, which says what its default action does:
-    /// "Opens it" for a downloaded item; for one whose place was kept after
-    /// its file went (`keptPlace`, FR11), "Downloads it again, then opens it
-    /// where you left off"; for any other, "Downloads it, then opens it".
+    /// "Opens it" for a downloaded item; "Opens its book in your library" for
+    /// one moved into the library (FR11, branch D); for one whose place was
+    /// kept after its file went (`keptPlace`, FR11), "Downloads it again,
+    /// then opens it where you left off"; for any other, "Downloads it, then
+    /// opens it".
     static func itemRowHint(_ state: FeedItemState, keptPlace: Bool = false) -> String {
         if state.bookID != nil { return "Opens it" }
+        if state.libraryBookID != nil { return "Opens its book in your library" }
         return keptPlace ? "Downloads it again, then opens it where you left off" : "Downloads it, then opens it"
     }
 

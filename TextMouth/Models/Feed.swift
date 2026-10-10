@@ -228,6 +228,13 @@ struct FeedRecord: Codable, Equatable, Sendable {
         items.first { $0.state.bookID == bookID }
     }
 
+    /// The item linked to the book `bookID`, if any: its download, in its
+    /// feed's folder, or the book it became in the library by Move to
+    /// Library… (FR11, branch D, `FeedItemState.linkedBookID`).
+    func item(linkedTo bookID: UUID) -> FeedItem? {
+        items.first { $0.state.linkedBookID == bookID }
+    }
+
     /// Every item the listener has not deleted, newest first: what the
     /// library lists while the feed lists every item, and what the "List
     /// and download" choice's newest are counted among
@@ -250,14 +257,17 @@ struct FeedRecord: Codable, Equatable, Sendable {
     /// deleted, or, under "Only the newest 5 listed", the short list: the
     /// newest of them (`newestItems(_:)`), less those played whose files are
     /// not here, so a played episode drops off the list, and every item
-    /// whose file is here (`hasFile`) or that downloads, or waits to,
-    /// wherever it falls. The items left out stay in the record, hidden, and
-    /// come back when the list widens.
+    /// whose file is here (`hasFile`), that downloads, or waits to, or that
+    /// was moved into the library (FR11, branch D), wherever it falls, as
+    /// its row says "In Library" until Delete Episode hides it. The items
+    /// left out stay in the record, hidden, and come back when the list
+    /// widens.
     func listedItems(under listing: FeedItemPolicy.Listing, hasFile: (FeedItem) -> Bool) -> [FeedItem] {
         guard case .newest(let count) = listing else { return listedItems }
         let newest = Set(newestItems(count).map(\.id))
         return listedItems.filter { item in
-            hasFile(item) || item.state.isTransient || (newest.contains(item.id) && item.playedDate == nil)
+            hasFile(item) || item.state.isTransient || item.state.libraryBookID != nil
+                || (newest.contains(item.id) && item.playedDate == nil)
         }
     }
 
