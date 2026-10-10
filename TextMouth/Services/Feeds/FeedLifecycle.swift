@@ -30,6 +30,12 @@ struct FeedDueRemoval: Sendable {
     let reason: String
 }
 
+/// Why a file one of the engine's rules removed off the main thread stayed
+/// (FR11): the words its error gave, carried back to the main actor.
+struct FeedFileRemovalFailure: LocalizedError, Sendable {
+    let errorDescription: String?
+}
+
 /// What removing the downloads a rule found due did
 /// (`FeedCenter.removeDue(_:from:by:at:putOffEvent:)`).
 struct FeedDueRemovalOutcome {
@@ -262,8 +268,9 @@ extension FeedCenter {
     /// overrides it). Each file goes as Delete Download's does, keeping its
     /// package while it holds something of the listener's (FR11, branch
     /// A2): the records and the feeds' indexes are written first, and a
-    /// failed write keeps every file. Its item stays, not downloaded, with
-    /// the date its download went.
+    /// failed write keeps every file; the files themselves then go off the
+    /// main thread (`removeDue`). Its item stays, not downloaded, with the
+    /// date its download went.
     ///
     /// Files are deleted for good, rather than moved to the Trash, so played
     /// episodes never fill the Trash, with dataless files left in the cloud.
@@ -331,12 +338,23 @@ extension FeedCenter {
     /// cloud library, only those whose packages this Mac holds whole, as
     /// their cloud state says, read first off the main thread without
     /// downloading anything; never one a reader opened meanwhile. Each keeps
-    /// its package while it holds something of the listener's, the records
-    /// and the feeds' indexes written first
-    /// (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`), and a
-    /// failed write keeps every file, logged as `putOffEvent`. Each item
+    /// its package while it holds something of the listener's, in the order
+    /// that never loses the listener's place: the records and the feeds'
+    /// indexes written and waited for on the main actor first
+    /// (`FeedLibraryHost.readyFeedFilesForRemoval(of:keepingPackages:)`),
+    /// a failed write keeping every file, logged as `putOffEvent`; then the
+    /// files, off the main thread; then the outcome, back on the main actor
+    /// (`FeedLibraryHost.settleFeedFileRemovals(_:failures:)`). Each item
     /// whose file went is not downloaded from `now`, and keeps who asked for
     /// it; each removal is logged with its reason and `rule`.
+    ///
+    /// No rule's removal races a download restoring an item into its kept
+    /// package, and not because of the thread it runs on: a due download's
+    /// row is among the books, its file here, while a restoring item's row
+    /// is on its feed's shelf, its file gone, so a restore can be asked for
+    /// only once the readying step has shelved the row. Its import then
+    /// waits on the import queue behind the removal of the files, which runs
+    /// there (`FeedDownloadManager.runBesideImports(_:)`).
     /// - Returns: The removals whose files went, the books left in the
     ///   cloud, and whether the removal was put off.
     func removeDue(
@@ -357,17 +375,29 @@ extension FeedCenter {
         let removable = due.filter { heldWhole.contains($0.book.id) && !library.feedBooksOpenInReaders.contains($0.book.id) }
         guard !removable.isEmpty else { return outcome }
 
-        let root = TextMouthPaths.root
-        let removal: FeedFileRemovalOutcome
+        // 1 and 2: the records and the indexes, on the main actor.
+        let readied: [FeedFileRemoval]
         do {
-            removal = try library.removeFeedFiles(of: removable.map(\.book), keepingPackages: true) { removal in
-                try FeedItemPackage.removeForGood(removal, in: root)
-            }
+            readied = try library.readyFeedFilesForRemoval(of: removable.map(\.book), keepingPackages: true)
         } catch {
             DiagnosticLog.event(.feeds, "\(putOffEvent): \(error.localizedDescription)")
             outcome.wasPutOff = true
             return outcome
         }
+        // 3: the files, off the main thread, beside the imports.
+        let root = TextMouthPaths.root
+        let failed = await downloads.runBesideImports { () -> [UUID: String] in
+            var failed: [UUID: String] = [:]
+            for removal in readied {
+                do {
+                    try FeedItemPackage.removeForGood(removal, in: root)
+                } catch {
+                    failed[removal.row.id] = error.localizedDescription
+                }
+            }
+            return failed
+        }
+        let removal = library.settleFeedFileRemovals(readied, failures: failed.mapValues { FeedFileRemovalFailure(errorDescription: $0) })
         for removed in removal.removed {
             guard let entry = removable.first(where: { $0.book.id == removed.row.id }) else { continue }
             store.updateItem(entry.itemID, of: entry.feedID) { item in

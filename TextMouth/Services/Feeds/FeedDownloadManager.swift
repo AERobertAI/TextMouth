@@ -513,6 +513,20 @@ final class FeedDownloadManager {
         }
     }
 
+    /// Runs `work` off the main thread on the queue imports run on, after
+    /// every import asked for before it, and returns what it returns (FR11).
+    /// The engine's own rules remove feed items' files here, so a download
+    /// restoring an item into its kept package, which imports here too, never
+    /// interleaves with the removal of a file from that package.
+    func runBesideImports<Value: Sendable>(_ work: @escaping @Sendable () -> Value) async -> Value {
+        let queue = importQueue
+        return await withCheckedContinuation { (continuation: CheckedContinuation<Value, Never>) in
+            queue.async {
+                continuation.resume(returning: work())
+            }
+        }
+    }
+
     /// Runs `importBook` on the import queue as storage work and, before that
     /// work ends, adds its book to the library and marks the item downloaded
     /// on the main actor, as every import adds its book.

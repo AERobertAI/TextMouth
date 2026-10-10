@@ -103,6 +103,18 @@ protocol FeedLibraryHost: AnyObject {
         keepingPackages: Bool,
         remove: (FeedFileRemoval) throws -> Void
     ) throws -> FeedFileRemovalOutcome
+    /// The first part of `removeFeedFiles(of:keepingPackages:remove:)`, for
+    /// a removal whose files go off the main thread (FR11): the records and
+    /// the feeds' indexes on disk, the rows out of the books, nothing
+    /// removed yet.
+    /// - Returns: The removals to make.
+    /// - Throws: `FeedItemPackageError.indexNotWritten`, with nothing
+    ///   changed.
+    func readyFeedFilesForRemoval(of books: [Book], keepingPackages: Bool) throws -> [FeedFileRemoval]
+    /// The last part of `removeFeedFiles(of:keepingPackages:remove:)`, once
+    /// the files of `removals` have gone, but for those `failures` names
+    /// with why, whose rows go back where they were.
+    func settleFeedFileRemovals(_ removals: [FeedFileRemoval], failures: [UUID: any Error]) -> FeedFileRemovalOutcome
     /// The books open in readers now, which nothing may delete.
     var feedBooksOpenInReaders: Set<UUID> { get }
     /// Whether the book `bookID` is on the reading list, whose downloads the

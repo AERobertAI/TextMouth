@@ -354,6 +354,47 @@ final class FeedNewestRuleTests: XCTestCase {
         XCTAssertNotNil(world.library.bookByID(first.id), "a choice that downloads by hand removed a download")
     }
 
+    // MARK: - Removing Off the Main Thread
+
+    /// The engine's rules remove files off the main thread, on the queue
+    /// imports run on, so a restore never interleaves with a removal.
+    func testWorkBesideImportsRunsOffTheMainThread() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleOffMain")
+        let onMainThread = await world.center.downloads.runBesideImports { Thread.isMainThread }
+        XCTAssertFalse(onMainThread)
+    }
+
+    /// A file the rule cannot remove, off the main thread, stays: its row
+    /// goes back among the books, its feed's index lists it again, and its
+    /// item stays downloaded, so nothing of it is lost; the next pass tries
+    /// again, and removes it once it can.
+    func testAFileTheRuleCannotRemoveStaysWithItsRow() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRuleRemoveFails")
+        FeedSettings.newestCountPreference.write(2, to: world.preferences)
+        let feed = try await subscribeServed(world, episodes: 2)
+        _ = await world.center.applyItemPolicy(to: [feed.id])
+        let books = try await downloadedBooks(world, feed: feed, items: ["guid:ep-1", "guid:ep-2"])
+        let package = books[1].tmbDirectory
+        // A package whose entries cannot be deleted.
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: package.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: package.path) }
+
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        let report = await world.center.applyItemPolicy(to: [feed.id])
+
+        XCTAssertEqual(report.removedBookIDs, [])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: books[1].filePath))
+        XCTAssertNotNil(world.library.bookByID(books[1].id), "the row whose file stayed was not put back")
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state, .downloaded(bookID: books[1].id))
+        LibraryPersistenceService.flushPendingSave()
+        let indexed = try FeedIndexFiles.decoded(Data(contentsOf: FeedPaths.indexFile(of: feed.id, in: TextMouthPaths.root))).books
+        XCTAssertTrue(indexed.contains { $0.id == books[1].id }, "the feed's index lost the row whose file stayed")
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: package.path)
+        let next = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(next.removedBookIDs, [books[1].id])
+    }
+
     // MARK: - When the Rule Runs
 
     /// Working on its own, the engine downloads a feed's newest at once when
