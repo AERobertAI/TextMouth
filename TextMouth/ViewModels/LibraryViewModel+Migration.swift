@@ -1309,6 +1309,8 @@ extension LibraryViewModel {
         guard !unchanged else { return migrated }
         var kept = current
         let moved = StorageBoundary.shared.rebaseToCurrent(&kept)
+        // The feed shelf's rows move with the books' (FR11).
+        kept.feedShelf.changeRows { $0 = StorageBoundary.shared.rebasedToCurrent($0) }
         DiagnosticLog.event(
             .storage,
             "DATA_DIRECTORY_MOVE: the library changed while it was copied; kept the change, "

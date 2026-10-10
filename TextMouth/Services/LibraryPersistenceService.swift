@@ -1202,7 +1202,7 @@ enum LibraryPersistenceService {
             try writeIndexFile(library)
             endIndexWriteSuspension()
             logIndexEvent(
-                "rebuilt the library index with \(library.books.count) book(s); "
+                "rebuilt the library index with \(library.libraryBookCount) book(s); "
                     + (preservedCopy.map { "previous index kept at \($0.path)" }
                         ?? "no index file was there to replace")
             )

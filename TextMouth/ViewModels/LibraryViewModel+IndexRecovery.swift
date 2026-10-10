@@ -151,7 +151,7 @@ extension LibraryViewModel {
             finishRecovery()
             library = merged
             resumeStartupWork()
-            return .restored(bookCount: library.books.count)
+            return .restored(bookCount: library.libraryBookCount)
         case .missing:
             // The damaged file was moved or deleted outside TextMouth, so
             // nothing is left to protect. Keep the provisional library and
@@ -159,7 +159,7 @@ extension LibraryViewModel {
             finishRecovery()
             resumeStartupWork()
             return .savedProvisionalLibrary(
-                bookCount: library.books.count,
+                bookCount: library.libraryBookCount,
                 preservedCopy: recovery.failure.quarantineURL
             )
         }
@@ -176,7 +176,7 @@ extension LibraryViewModel {
             let replacedCopy = try LibraryPersistenceService.replaceUnreadableIndex(with: library)
             finishRecovery()
             return .rebuilt(
-                bookCount: library.books.count,
+                bookCount: library.libraryBookCount,
                 preservedCopy: replacedCopy ?? recovery.failure.quarantineURL
             )
         } catch {
