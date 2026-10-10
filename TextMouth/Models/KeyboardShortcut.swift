@@ -372,11 +372,16 @@ enum ShortcutRefusal: Equatable, Sendable {
     /// A second key for a menu command or a Record window button, whose item
     /// has one key equivalent.
     case secondKeyEquivalent(KeyBinding)
+    /// A key of one of macOS's own commands (`KeyBinding.systemCommands`),
+    /// named here, which a shortcut would take from it: the manager meets a
+    /// key before the menus do (finding 10 of FR12's design).
+    case systemCommand(KeyBinding, command: String)
 
     /// The key refused.
     var key: KeyBinding {
         switch self {
-        case .notOnePressWithCommandOrControl(let key), .editsText(let key), .secondKeyEquivalent(let key):
+        case .notOnePressWithCommandOrControl(let key), .editsText(let key), .secondKeyEquivalent(let key),
+             .systemCommand(let key, _):
             return key
         }
     }
@@ -392,16 +397,56 @@ enum ShortcutRefusal: Equatable, Sendable {
             return "a text field edits with it, and a menu command's shortcut would take it from the field"
         case .secondKeyEquivalent:
             return "a menu command has one shortcut"
+        case .systemCommand(_, let command):
+            return "\(command) has it in the menus, and no shortcut may take it"
         }
     }
 }
 
+extension KeyBinding {
+    /// The keys of macOS's own commands in TextMouth's menus, which no
+    /// shortcut may take (finding 10 of FR12's design), each with its
+    /// command's name: Quit, Close, Settings, Hide, and Minimize, and the
+    /// Edit menu's. A key held for its own command, as Select All's
+    /// Command-A or the audio editor's Undo and Copy are, is no taking
+    /// (`ShortcutAction.refusal(of:)`).
+    static let systemCommands: [KeyBinding: String] = [
+        KeyBinding(key: "q", command: true): "Quit TextMouth",
+        KeyBinding(key: "w", command: true): "Close",
+        KeyBinding(key: "w", command: true, option: true): "Close All",
+        KeyBinding(key: ",", command: true): "Settings",
+        KeyBinding(key: "h", command: true): "Hide TextMouth",
+        KeyBinding(key: "h", command: true, option: true): "Hide Others",
+        KeyBinding(key: "m", command: true): "Minimize",
+        KeyBinding(key: "m", command: true, option: true): "Minimize All",
+        KeyBinding(key: "z", command: true): "Undo",
+        KeyBinding(key: "z", command: true, shift: true): "Redo",
+        KeyBinding(key: "x", command: true): "Cut",
+        KeyBinding(key: "c", command: true): "Copy",
+        KeyBinding(key: "v", command: true): "Paste",
+        KeyBinding(key: "v", command: true, option: true, shift: true): "Paste and Match Style",
+        KeyBinding(key: "a", command: true): "Select All",
+    ]
+
+    /// The name of the system command whose key this binding's stroke is,
+    /// pressed once or twice (a double press's first press would keep it
+    /// from the command), or nil.
+    var systemCommand: String? {
+        Self.systemCommands[stroke]
+    }
+}
+
 extension ShortcutAction {
-    /// Why `key` cannot be one of this action's keys, or nil when it can: a
-    /// key equivalent's action takes only a key that can be one
+    /// Why `key` cannot be one of this action's keys, or nil when it can: no
+    /// action takes a system command's key, unless it is one of the action's
+    /// own defaults, which stand for that command, as Select All's Command-A
+    /// does; and a key equivalent's action takes only a key that can be one
     /// (`KeyBinding.keyEquivalentRefusal`).
     func refusal(of key: KeyBinding) -> ShortcutRefusal? {
-        isKeyEquivalent ? key.keyEquivalentRefusal : nil
+        if let command = key.systemCommand, Self.defaultBindings[self]?.contains(key) != true {
+            return .systemCommand(key, command: command)
+        }
+        return isKeyEquivalent ? key.keyEquivalentRefusal : nil
     }
 
     /// Why `keys` cannot be this action's keys, or nil when they can: the

@@ -487,6 +487,48 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertFalse(KeyboardShortcutManager.adopt([.openBook: ["w"]], in: store), "the record holds it already")
     }
 
+    // MARK: - Keys macOS's Own Commands Keep (Finding 10)
+
+    /// No action takes a system command's key, pressed once or twice: Quit,
+    /// Close, Settings, Hide, Minimize, and the Edit menu's keys stay
+    /// macOS's, said with the command's name; but an action's own default,
+    /// which stands for that command, as Select All's Command-A and the
+    /// audio editor's Undo do, may be given back.
+    func testNoActionTakesASystemCommandsKey() {
+        let commandQ = KeyBinding(key: "q", command: true)
+        let commandA = KeyBinding(key: "a", command: true)
+        let commandZ = KeyBinding(key: "z", command: true)
+
+        XCTAssertEqual(ShortcutAction.togglePlayback.refusal(of: commandQ), .systemCommand(commandQ, command: "Quit TextMouth"))
+        XCTAssertEqual(
+            ShortcutAction.togglePlayback.refusal(of: commandQ.asDoublePress(true)),
+            .systemCommand(commandQ.asDoublePress(true), command: "Quit TextMouth")
+        )
+        XCTAssertEqual(ShortcutAction.openBook.refusal(of: KeyBinding(key: "w", command: true)), .systemCommand(KeyBinding(key: "w", command: true), command: "Close"))
+        XCTAssertEqual(ShortcutAction.showBookInfo.refusal(of: commandA), .systemCommand(commandA, command: "Select All"))
+        XCTAssertNil(ShortcutAction.selectAll.refusal(of: commandA), "Select All's own default")
+        XCTAssertNil(ShortcutAction.editorUndo.refusal(of: commandZ), "the editor's own Undo")
+        XCTAssertEqual(ShortcutAction.editorCopy.refusal(of: commandZ), .systemCommand(commandZ, command: "Undo"))
+        XCTAssertNil(ShortcutAction.togglePlayback.refusal(of: KeyBinding(key: "q", command: true, shift: true)), "Shift-Command-Q is no command of TextMouth's menus")
+        XCTAssertEqual(
+            ShortcutsSettingsWording.refused(.systemCommand(commandQ, command: "Quit TextMouth"), for: .togglePlayback),
+            "Command + Q not recorded for Play / Pause: Quit TextMouth has it in the menus, and no shortcut may take it."
+        )
+        // Every default key of a system command's is its own action's.
+        for (action, keys) in ShortcutAction.defaultBindings {
+            for key in keys {
+                XCTAssertNil(action.refusal(of: key), "\(action.rawValue)'s default \(key.configText)")
+            }
+        }
+        // Through the manager and config.json alike, the key stays macOS's.
+        let manager = makeManager("system-commands")
+        XCTAssertEqual(manager.addBinding(commandQ, to: .togglePlayback), .systemCommand(commandQ, command: "Quit TextMouth"))
+        XCTAssertEqual(manager.bindingsFor(.togglePlayback), [KeyBinding(key: "space"), KeyBinding(key: "k")])
+        let store = makeSandboxedPreferences("menu-keys-system-config")
+        XCTAssertTrue(KeyboardShortcutManager.adopt([.whereAmI: ["command+h"]], in: store))
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), ShortcutEdits())
+    }
+
     // MARK: - Names in config.json
 
     /// A name ending in an ellipsis is read with three periods or none in
