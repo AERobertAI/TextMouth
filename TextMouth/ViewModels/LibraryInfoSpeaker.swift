@@ -100,7 +100,8 @@ final class LibraryInfoSpeaker {
     private(set) var lastSpokenText: String?
     /// Makes each synthesizer the speaker speaks through: its first, at the
     /// first press, and a fresh one after the system cancels an
-    /// announcement.
+    /// announcement or for a summary that takes the place of one still
+    /// speaking.
     private let synthesizerFactory: @MainActor () -> any LibraryInfoSynthesizing
     /// The synthesizer, made at the first press.
     private lazy var synthesizer: any LibraryInfoSynthesizing = synthesizerFactory()
@@ -234,9 +235,19 @@ final class LibraryInfoSpeaker {
     /// speaks: with the app's voice and speed, never VoiceOver's.
     private func speak(_ text: String, detail: SummaryDetail, about rowID: UUID?, voice: AVSpeechSynthesisVoice?, wordsPerMinute: Double) {
         // What speaks is forgotten before it is silenced, so its cancel is
-        // known for one the speaker asked for.
+        // known for one the speaker asked for. A summary that takes the
+        // place of one still speaking goes to a fresh synthesizer, the old
+        // one stopped and let go with its delegate: an utterance handed to a
+        // synthesizer just told to stop can be cancelled with what it was
+        // saying, and that cancel would end the new summary at once, taken
+        // for one nobody asked for.
+        let replacesOneSpeaking = announcement != nil
         announcement = nil
-        synthesizer.stopSpeaking(at: .immediate)
+        if replacesOneSpeaking {
+            replaceSynthesizer()
+        } else {
+            synthesizer.stopSpeaking(at: .immediate)
+        }
         let delegate = LibraryInfoSpeechDelegate(
             onFinished: { [weak self] finished in self?.synthesizerFinished(finished) },
             onCancelled: { [weak self] cancelled in self?.synthesizerCancelled(cancelled) }
