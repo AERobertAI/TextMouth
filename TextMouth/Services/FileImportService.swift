@@ -994,15 +994,23 @@ enum FileImportService {
     /// that is on disk and names its book. `package` is where the record goes
     /// now, which for a staged package is not yet the book's own location.
     /// `feedLink` names the feed item a downloaded book comes from (FR03).
+    /// `replacing` is the state of the record a download of a kept feed item
+    /// replaces (FR11, branch A2): the new record keeps its note of the
+    /// transcript the package keeps, and a revision above its own.
     static func writeVerifiedRecord(
         of book: Book,
         contentIndex: BookContentIndex,
         into package: URL,
-        feedLink: FeedBookLink? = nil
+        feedLink: FeedBookLink? = nil,
+        replacing replaced: BookState? = nil
     ) throws {
         var info = book.makeBookInfo()
         info.contentIndex = contentIndex
         info.metadata.feedLink = feedLink
+        if let replaced {
+            info.state.transcript = replaced.transcript
+            info.state.revision = BookState.revision(after: replaced.revision ?? 0)
+        }
         try info.save(to: package)
 
         let saved = try BookInfo.load(from: package)

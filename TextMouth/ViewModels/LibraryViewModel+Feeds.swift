@@ -70,7 +70,9 @@ extension LibraryViewModel: FeedLibraryHost {
     /// The book is a feed item's (FR11): its row carries the feed link the
     /// import gave it and no library folder, its package is in its feed's
     /// folder, and the save writes it to its feed's index, which the library
-    /// keeps from now on, never to library.json.
+    /// keeps from now on, never to library.json. A download that restored a
+    /// row kept after an earlier download's file went takes that row's place
+    /// on the shelf (branch A2), so no book is ever both.
     func addFeedBook(_ book: Book) {
         guard bookByID(book.id) == nil else { return }
         var row = book
@@ -78,6 +80,7 @@ extension LibraryViewModel: FeedLibraryHost {
         if let feedID = row.feedLink?.feedID {
             row.folderPath = ""
             updated.feedShelf.keepIndex(of: feedID)
+            _ = updated.feedShelf.takeRows { $0.id == row.id }
         }
         updated.books.append(row)
         library = updated

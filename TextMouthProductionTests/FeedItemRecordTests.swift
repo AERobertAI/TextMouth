@@ -192,6 +192,54 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
     }
 
+    // MARK: - Downloading Again
+
+    /// Downloading again an item whose package was kept restores the same
+    /// book: the same ID and package, its place, playback times, bookmarks,
+    /// and settings, in its row and its record, and its transcript, copied
+    /// into the new package and read again there, as the new file's audio
+    /// is the one transcribed; the row joins the books, leaving the shelf,
+    /// and the item is downloaded as that book.
+    func testDownloadingAgainRestoresTheSameBook() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordRestore")
+        let (feed, book, transcript) = try await transcribedEpisodeWhoseDownloadWasDeleted(in: world)
+
+        world.center.download("guid:ep-1", of: feed.id)
+        let restored = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(restored.id, book.id)
+        XCTAssertEqual(restored.tmbDirectory, book.tmbDirectory)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: restored.filePath))
+        try assertKeepsTheListenersState(restored, of: book, "the restored row")
+        try assertKeepsTheListenersState(try recordedBook(in: restored.tmbDirectory), of: book, "the restored record")
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .downloaded(bookID: book.id))
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.transcriptPath(in: restored.tmbDirectory)), transcript)
+        let index = try XCTUnwrap(BookInfo.load(from: restored.tmbDirectory).contentIndex)
+        XCTAssertNotNil(TranscriptTextLoader.load(for: restored, audioIndex: index).text, "the transcript of the same audio shows no text")
+    }
+
+    /// A transcript whose audio differs from the new download's, as when a
+    /// host inserts other advertisements into each download, is kept in the
+    /// restored package, and the episode finds it stale: one
+    /// TRANSCRIPT_STALE line, and no text until it is transcribed again.
+    func testATranscriptOfOtherAudioIsKeptAndFoundStale() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordRestoreStale")
+        let (feed, book, transcript) = try await transcribedEpisodeWhoseDownloadWasDeleted(in: world)
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(duration: 2), mimeType: "audio/mp4"))
+
+        world.center.download("guid:ep-1", of: feed.id)
+        let restored = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        let stale = "\(TranscriptTextLoader.staleTag): \(restored.title)"
+        let staleBefore = debugLogLines(containing: stale).count
+        let index = try XCTUnwrap(BookInfo.load(from: restored.tmbDirectory).contentIndex)
+
+        XCTAssertNil(TranscriptTextLoader.load(for: restored, audioIndex: index).text)
+        XCTAssertEqual(restored.id, book.id)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.transcriptPath(in: restored.tmbDirectory)), transcript)
+        XCTAssertEqual(debugLogLines(containing: stale).count, staleBefore + 1)
+    }
+
     // MARK: - A Failed Index Write
 
     /// When the feed's index cannot be written, Delete Download keeps the
@@ -276,6 +324,24 @@ final class FeedItemRecordTests: XCTestCase {
         library.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: nil, wpm: 1.5)
         library.updateSkippedHeadings(bookID: book.id, skippedIDs: ["credits"])
         return try XCTUnwrap(library.bookByID(book.id))
+    }
+
+    /// Downloads episode 1 into `world`, listens to it, gives it a transcript
+    /// of its audio as the transcription service makes one, and deletes its
+    /// download, which keeps its package. Returns the feed, the row as the
+    /// listener left it, and transcript.json's bytes.
+    private func transcribedEpisodeWhoseDownloadWasDeleted(in world: FeedTestWorld) async throws -> (Feed, Book, Data) {
+        let (feed, books) = try await downloadedEpisodes(1, in: world)
+        let book = try listen(to: try XCTUnwrap(books.first), in: world)
+        let heard = try TranscriptionPlan.make(for: book).files.map { file in
+            (file.path, [TranscriptFixtures.sentence("Quillwort grows by the ferry slip.", from: 0, to: 900)])
+        }
+        let transcript = try TranscriptFixtures.transcript(of: book, sentences: Dictionary(uniqueKeysWithValues: heard))
+        _ = try TranscriptStore.write(transcript, into: book.tmbDirectory)
+        let bytes = try Data(contentsOf: TextMouthPaths.transcriptPath(in: book.tmbDirectory))
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        XCTAssertEqual(world.library.library.feedShelf.rows.map(\.id), [book.id], "the transcribed download's package was not kept")
+        return (feed, book, bytes)
     }
 
     /// Fails unless `kept` holds what the listener left in `listened`: its

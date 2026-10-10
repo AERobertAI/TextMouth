@@ -84,8 +84,7 @@ enum FeedItemPackage {
     ///   does not hold.
     static func packageForRemoval(of row: Book, in root: URL) throws -> URL {
         let name = row.tmbDirectoryName
-        guard let link = row.feedLink, !name.isEmpty, !name.hasPrefix("."),
-              (name as NSString).lastPathComponent == name, name.lowercased().hasSuffix(".tmb") else {
+        guard let link = row.feedLink, isPackageName(name) else {
             throw FeedItemPackageError.notAFeedPackage
         }
         let package = FeedPaths.packageDirectory(named: name, of: link.feedID, in: root)
@@ -95,6 +94,15 @@ enum FeedItemPackage {
             throw FeedItemPackageError.notAFeedPackage
         }
         return package
+    }
+
+    /// Whether `name` names a package directly in a feed's folder: one
+    /// component, not hidden, ending in ".tmb", as a download names one
+    /// (`TextMouthPaths.tmbName`), so no row can name the folder itself, or
+    /// a staged or set-aside package.
+    static func isPackageName(_ name: String) -> Bool {
+        !name.isEmpty && !name.hasPrefix(".") && (name as NSString).lastPathComponent == name
+            && name.lowercased().hasSuffix(".tmb")
     }
 
     /// Whether `item` is inside `folder`, comparing their paths as written
@@ -159,6 +167,68 @@ enum FeedItemPackage {
         }
         if removal.keepsPackage {
             removeWhatTheFileMade(of: removal.row, from: package)
+        }
+    }
+}
+
+// MARK: - Downloading Again (FR11)
+
+extension FeedItemPackage {
+    /// Copies into `staged`, the package a new download of a kept item is
+    /// built in, what it keeps of the kept package at `kept`: the
+    /// transcript's files and, for an audiobook, the copies Edit Text kept
+    /// beside its text. The record and the content index are written anew,
+    /// and an audiobook's content.md is written again from its transcript
+    /// when the episode opens (`TranscriptTextLoader`), or found stale when
+    /// the new file's audio differs.
+    /// - Throws: why one could not be copied: the download then fails and
+    ///   the kept package stays as it was, so no transcript is lost.
+    static func copyWhatANewDownloadKeeps(from kept: URL, to staged: URL, format: BookFormat) throws {
+        for name in entryNames(of: kept)
+        where TextMouthPaths.isTranscriptFile(name) || (format.isAudio && TextMouthPaths.isKeptTextCopy(name)) {
+            try FileManager.default.copyItem(at: kept.appendingPathComponent(name), to: staged.appendingPathComponent(name))
+        }
+    }
+
+    /// Puts the package `staging` built in place of the kept package at
+    /// `kept`, which a new download of its item replaces: in one swap of
+    /// the two folders where the volume allows it, after which the kept
+    /// package is at the staged name, where `staging.discard()` removes it.
+    /// On a volume that cannot swap two folders, the kept package steps
+    /// aside under a hidden name beside it while the new one is published,
+    /// and goes once it is, or comes back when it cannot be. With no
+    /// package at `kept`, the new one is published as any import's is.
+    /// - Throws: why the new package could not be put in place; the kept
+    ///   package is then where it was.
+    static func putInPlace(_ staging: ImportStaging, of kept: URL) throws {
+        guard FileManager.default.fileExists(atPath: kept.path) else {
+            try staging.publish()
+            return
+        }
+        if swapItems(staging.directory, kept) {
+            return
+        }
+        let aside = kept.deletingLastPathComponent()
+            .appendingPathComponent(".replaced-\(UUID().uuidString).tmb", isDirectory: true)
+        try FileManager.default.moveItem(at: kept, to: aside)
+        do {
+            try staging.publish()
+        } catch {
+            try? FileManager.default.moveItem(at: aside, to: kept)
+            throw error
+        }
+        try? FileManager.default.removeItem(at: aside)
+    }
+
+    /// Swaps the items at `first` and `second`, on one volume, in one step
+    /// (`renamex_np` with `RENAME_SWAP`), and says whether it did: a volume
+    /// that cannot swap two folders leaves both where they were.
+    private static func swapItems(_ first: URL, _ second: URL) -> Bool {
+        first.withUnsafeFileSystemRepresentation { from in
+            second.withUnsafeFileSystemRepresentation { to in
+                guard let from, let to else { return false }
+                return renamex_np(from, to, UInt32(RENAME_SWAP)) == 0
+            }
         }
     }
 }

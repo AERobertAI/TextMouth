@@ -82,7 +82,9 @@ enum FeedEpisodeImporter {
 
     /// Imports the episode file at `file`, which is moved into the book's
     /// package as `fileName`, as an audiobook of `feed` in the feed's own
-    /// folder (FR11), added at `dateAdded`.
+    /// folder (FR11), added at `dateAdded`; or, with `kept`, the item's row
+    /// kept after an earlier download's file went, as that same book in its
+    /// kept package (`restoreBook`, FR11 branch A2).
     /// - Throws: an `ImportFailure` naming the file and the step that
     ///   failed; whatever was staged is removed, and `file` is left where it
     ///   was when the move had not happened.
@@ -91,24 +93,28 @@ enum FeedEpisodeImporter {
         named fileName: String,
         item: FeedItem,
         of feed: Feed,
-        dateAdded: Date
+        dateAdded: Date,
+        restoring kept: Book? = nil
     ) throws -> ImportedBook {
-        try importBook(named: fileName, format: .audio, item: item, of: feed, dateAdded: dateAdded) { staged in
+        try importBook(named: fileName, format: .audio, item: item, of: feed, dateAdded: dateAdded, restoring: kept) { staged in
             try FileManager.default.moveItem(at: file, to: staged)
         }
     }
 
     /// Imports an article whose book is the HTML `html` as an HTML book of
-    /// `feed` in the feed's own folder (FR11), added at `dateAdded`.
+    /// `feed` in the feed's own folder (FR11), added at `dateAdded`; or,
+    /// with `kept`, as that same book in its kept package, as
+    /// `importEpisode` does.
     /// - Throws: an `ImportFailure`, as `importEpisode` does.
     static func importArticle(
         html: String,
         item: FeedItem,
         of feed: Feed,
-        dateAdded: Date
+        dateAdded: Date,
+        restoring kept: Book? = nil
     ) throws -> ImportedBook {
         let fileName = Self.fileName(title: item.title, fileExtension: "html")
-        return try importBook(named: fileName, format: .html, item: item, of: feed, dateAdded: dateAdded) { staged in
+        return try importBook(named: fileName, format: .html, item: item, of: feed, dateAdded: dateAdded, restoring: kept) { staged in
             try Data(html.utf8).write(to: staged, options: .atomic)
         }
     }
@@ -138,16 +144,22 @@ enum FeedEpisodeImporter {
 
     /// The import both kinds share: a package staged for the book, its file
     /// put in by `placeFile`, then read, recorded with its feed item, and
-    /// published in the feed's own folder.
+    /// published in the feed's own folder. With `kept`, a row whose package
+    /// was kept after an earlier download's file went, the same book is
+    /// restored there instead (`restoreBook`).
     private static func importBook(
         named fileName: String,
         format: BookFormat,
         item: FeedItem,
         of feed: Feed,
         dateAdded: Date,
+        restoring kept: Book?,
         placeFile: (URL) throws -> Void
     ) throws -> ImportedBook {
-        try ImportRun.perform(importing: fileName) { run in
+        if let kept, FeedItemPackage.isPackageName(kept.tmbDirectoryName) {
+            return try restoreBook(kept, named: fileName, format: format, item: item, of: feed, placeFile: placeFile)
+        }
+        return try ImportRun.perform(importing: fileName) { run in
             let bookID = UUID()
             let author = bookAuthor(for: item, of: feed)
             let link = FeedBookLink(feedID: feed.id, itemID: item.id)
@@ -191,6 +203,77 @@ enum FeedEpisodeImporter {
                 run: &run,
                 feedLink: link
             )
+        }
+    }
+
+    /// Imports a new download of `item` into the package kept for it after
+    /// an earlier download's file went (FR11, branch A2), restoring the same
+    /// book. `kept`, the item's row as its feed's index keeps it, gives the
+    /// book its ID, package, date added, place, playback times, bookmarks,
+    /// and settings; the new file, put in by `placeFile` as `fileName`,
+    /// gives its file, its checksum, and what reading it measures.
+    ///
+    /// The package is staged as every import's is, with the transcript the
+    /// kept package holds copied in, read as the reader will read it, and
+    /// recorded, the kept record's note of its transcript kept and its
+    /// revision passed; only then does it take the kept package's place, in
+    /// one step where the volume allows (`FeedItemPackage.putInPlace`), so
+    /// the kept package stays whole until the new one is. A transcript whose
+    /// audio differs from the new file's, as when a host inserts other
+    /// advertisements into each download, is kept: the episode finds it
+    /// stale (TRANSCRIPT_STALE) and shows no text until it is transcribed
+    /// again (`TranscriptTextLoader`).
+    private static func restoreBook(
+        _ kept: Book,
+        named fileName: String,
+        format: BookFormat,
+        item: FeedItem,
+        of feed: Feed,
+        placeFile: (URL) throws -> Void
+    ) throws -> ImportedBook {
+        try ImportRun.perform(importing: fileName) { run in
+            let link = FeedBookLink(feedID: feed.id, itemID: item.id)
+
+            try run.begin(.preparingPackage)
+            try TextMouthPaths.ensureDirectoryStructure()
+            let root = TextMouthPaths.root
+            try FileManager.default.createDirectory(at: FeedPaths.itemsFolder(of: feed.id, in: root), withIntermediateDirectories: true)
+            let keptPackage = FeedPaths.packageDirectory(named: kept.tmbDirectoryName, of: feed.id, in: root)
+            let staging = try ImportStaging.makeEmpty(publishingTo: keptPackage)
+            defer { staging.discard() }
+            try FeedItemPackage.copyWhatANewDownloadKeeps(from: keptPackage, to: staging.directory, format: format)
+            let keptState = (try? StoredBookRecord.read(from: keptPackage))?.info.state
+
+            try run.begin(.copying, in: staging.directory)
+            let stagedFile = staging.directory.appendingPathComponent(fileName)
+            try placeFile(stagedFile)
+
+            try run.begin(.readingSource, in: staging.directory)
+            var staged = kept
+            staged.format = format
+            staged.filePath = stagedFile.path
+            staged.md5Hash = try FileImportService.md5Hash(of: stagedFile)
+            staged.folderPath = ""
+            staged.tmbDirectoryName = staging.name
+            staged.feedLink = link
+            // What reading the new file measures replaces what the old one's did.
+            staged.contentAnalysisFields = Book.ContentAnalysisFields()
+            let content = try FileImportService.readableContent(of: &staged, run: &run)
+            let book = staging.published(staged)
+
+            try run.begin(.savingRecord, in: staging.directory)
+            try FileImportService.writeVerifiedRecord(
+                of: book,
+                contentIndex: content.index,
+                into: staging.directory,
+                feedLink: link,
+                replacing: keptState
+            )
+
+            try run.begin(.publishing, in: staging.directory)
+            try FeedItemPackage.putInPlace(staging, of: keptPackage)
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_RESTORED: \(book.title): downloaded again into its kept package, with its place and bookmarks")
+            return ImportedBook(book: book, report: content.report)
         }
     }
 
