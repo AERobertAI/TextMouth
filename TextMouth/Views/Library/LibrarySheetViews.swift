@@ -300,11 +300,12 @@ struct LibraryFolderOption: Hashable {
 /// The folder chooser of the Move dialog, which Add Feed uses as well: a
 /// pop-up of the places offered, a New Folder... button, and, once that is
 /// pressed, the fields that make a new folder, which then becomes the place
-/// chosen. A folder that can't be made keeps the fields open with the name,
-/// and the owner's failure notice says why. While the fields are shown,
-/// Return presses their Create; an owner with a Return-key button of its
-/// own withdraws that shortcut meanwhile, following `isMakingFolder`, so
-/// one press does one thing.
+/// chosen; the name field takes the keyboard as the fields open, so a
+/// VoiceOver user lands where they type. A folder that can't be made keeps
+/// the fields open with the name, and the owner's failure notice says why.
+/// While the fields are shown, Return presses their Create; an owner with a
+/// Return-key button of its own withdraws that shortcut meanwhile,
+/// following `isMakingFolder`, so one press does one thing.
 struct LibraryFolderPicker: View {
     /// The places the pop-up offers.
     let options: [LibraryFolderOption]
@@ -336,6 +337,9 @@ struct LibraryFolderPicker: View {
     @State private var newFolderName = ""
     /// The parent chosen for the new folder.
     @State private var newFolderParent = ""
+    /// Whether the new folder's name field has the keyboard, which it takes
+    /// as the fields appear (`focusNameField()`).
+    @FocusState private var isNameFieldFocused: Bool
 
     /// The title of the button that closes the new folder's fields: not
     /// "Cancel", which the sheet's own button is, so VoiceOver tells the
@@ -401,12 +405,13 @@ struct LibraryFolderPicker: View {
     }
 
     /// The new folder's name and parent, with Cancel and Create, which
-    /// Return presses.
+    /// Return presses. The name field takes the keyboard as they appear.
     private var newFolderFields: some View {
         GroupBox("New Folder") {
             VStack(spacing: 8) {
                 TextField("Folder name", text: $newFolderName)
                     .textFieldStyle(.roundedBorder)
+                    .focused($isNameFieldFocused)
                     .accessibilityLabel("New folder name")
 
                 Picker("Parent folder", selection: $newFolderParent) {
@@ -437,6 +442,19 @@ struct LibraryFolderPicker: View {
             .padding(.vertical, 4)
         }
         .disabled(isDisabled)
+        .onAppear(perform: focusNameField)
+    }
+
+    /// Gives the new folder's name field the keyboard, as the fields
+    /// appear, whether New Folder... opened them or they were shown from
+    /// the start: typing names the folder at once, and VoiceOver, which
+    /// follows the keyboard, lands on the field the user types in rather
+    /// than on the button that went away. On the next turn of the run
+    /// loop, once AppKit holds the field the focus goes to.
+    private func focusNameField() {
+        DispatchQueue.main.async {
+            isNameFieldFocused = true
+        }
     }
 
     /// Makes the folder named in the fields, and chooses it once it is made.

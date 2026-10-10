@@ -212,6 +212,14 @@ extension XCTestCase {
         descendants(of: root, as: NSTextField.self).filter(\.isEditable)
     }
 
+    /// Whether `field` has the keyboard in `window`: the window's first
+    /// responder is the field editor editing it, as after a click in it.
+    @MainActor
+    func isEditing(_ field: NSTextField, in window: NSWindow) -> Bool {
+        guard let editor = window.firstResponder as? NSTextView else { return false }
+        return (editor.delegate as AnyObject?) === field
+    }
+
     // MARK: The Folder Picker's New Folder Fields
 
     /// The new folder's name field, drawn while the folder picker's New

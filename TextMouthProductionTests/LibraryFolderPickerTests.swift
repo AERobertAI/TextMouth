@@ -75,6 +75,35 @@ final class LibraryFolderPickerTests: XCTestCase {
         }
     }
 
+    // MARK: - The Keyboard in the Name Field
+
+    /// As the new folder's fields appear, the keyboard goes to their name
+    /// field, so typing names the folder at once, and VoiceOver, which
+    /// follows the keyboard, lands where the user types rather than on the
+    /// New Folder... button that went away. (SwiftUI draws that button as no
+    /// AppKit button a test can press, so the fields are shown from the
+    /// start here; they take the keyboard the same way, as they appear.)
+    func testTheNameFieldTakesTheKeyboardAsTheFieldsAppear() throws {
+        let sheet = MoveFolderSheet(
+            books: [makeBook()],
+            library: makeLibrary(withFolders: ["Reports"]),
+            lastMovedFolderPath: "",
+            onMove: { _ in .success(nil) },
+            onCreateFolder: { _, _ in .success(nil) },
+            onCancel: {},
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, until: { !self.newFolderNameFields(in: $0).isEmpty }) { hostingView in
+            let window = try XCTUnwrap(hostingView.window)
+            let field = try XCTUnwrap(newFolderNameFields(in: hostingView).first)
+            XCTAssertTrue(
+                waitUntil { self.isEditing(field, in: window) },
+                "the name field did not take the keyboard; \(String(describing: window.firstResponder)) has it"
+            )
+        }
+    }
+
     // MARK: - Cancel New Folder
 
     /// The button that closes the new folder's fields says which Cancel it
