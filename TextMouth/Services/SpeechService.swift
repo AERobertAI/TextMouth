@@ -100,6 +100,60 @@ struct ReportedUtterance: @unchecked Sendable {
     var id: ObjectIdentifier { ObjectIdentifier(utterance) }
 }
 
+/// The newest lines a speech service wrote to its transition log
+/// (`DiagnosticLog.File.speechTransitions`), each with the time it was
+/// written, kept in memory so that the report of a refusal can show them
+/// without reading the log files on the main thread (B05).
+///
+/// They are the service's own lines, which hold offsets and lengths, never
+/// the book's words. Every line is kept, the routine trace lines too, which
+/// the log file gets only while tracing is on: they show how speech came to
+/// the refusal.
+struct RecentTransitionLines: Equatable, Sendable {
+    /// How many lines a speech service keeps: enough for the chunks, the
+    /// cancels, and the retries that lead up to a refusal.
+    static let defaultCapacity = 40
+
+    /// One line, with when it was written.
+    struct Line: Equatable, Sendable {
+        /// When the line was written.
+        let time: Date
+        /// Whether it is an event, which the file always gets, or routine
+        /// chatter, which it gets only while tracing is on.
+        let level: DiagnosticLog.Level
+        /// The line's words, as the service wrote them.
+        let message: String
+
+        /// The line as the log file holds it, so that it can be found
+        /// there: the time as the log writer writes it
+        /// (`LogWriter.line(_:)`), and a trace line's mark as the policy's
+        /// gate writes it (`DiagnosticLog.Gate`), before the words.
+        var logged: String {
+            let mark = level == .trace ? "TRACE \(DiagnosticLog.Category.playback.rawValue): " : ""
+            return "\(time): \(mark)\(message)"
+        }
+    }
+
+    /// The most lines kept.
+    let capacity: Int
+    /// The lines kept, oldest first.
+    private(set) var lines: [Line] = []
+
+    /// An empty record that keeps at most `capacity` lines.
+    init(capacity: Int = Self.defaultCapacity) {
+        self.capacity = max(0, capacity)
+    }
+
+    /// Keeps `message`, written at `level` at `time`, and lets go of the
+    /// oldest lines beyond `capacity`.
+    mutating func append(_ message: String, level: DiagnosticLog.Level, at time: Date = Date()) {
+        lines.append(Line(time: time, level: level, message: message))
+        if lines.count > capacity {
+            lines.removeFirst(lines.count - capacity)
+        }
+    }
+}
+
 /// One piece of a text that direct speech hands the synthesizer as a single
 /// utterance. Kept independent of AVFoundation so its boundaries can be
 /// tested on any text.
@@ -670,14 +724,25 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     private var settingsCancellables = Set<AnyCancellable>()
 
+    /// The newest lines this service wrote to its transition log, the
+    /// routine ones included, for the report of a refusal (B05). Written
+    /// only by `transitionLog(_:_:)`, on the main thread.
+    private(set) var recentTransitionLines = RecentTransitionLines()
+
     /// Records a playback-mode transition in speech's own log
     /// (`DiagnosticLog.File.speechTransitions`). An anomaly, such as a
     /// failed render or resume, a watchdog recovery, or an unexpected
     /// cancellation, is an event and always written; the routine start and
     /// finish of chunks, renders, and mode switches are trace, written only
     /// while tracing is on. Lines hold offsets and lengths, never the text.
+    ///
+    /// Every line, written to the file or not, is kept in
+    /// `recentTransitionLines` too, so its words are made at every call: a
+    /// few numbers, at most a few times a chunk.
     private func transitionLog(_ level: DiagnosticLog.Level, _ message: @autoclosure () -> String) {
-        DiagnosticLog.log(level, .playback, message(), in: .speechTransitions)
+        let line = message()
+        recentTransitionLines.append(line, level: level)
+        DiagnosticLog.log(level, .playback, line, in: .speechTransitions)
     }
 
     /// Preferences store holding the global speed, pitch, and voice. The app
