@@ -383,6 +383,27 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: "FEED_SWEEP_PUT_OFF").count, putOffBefore + 1)
     }
 
+    // MARK: - What a Refusal Says
+
+    /// What a refused removal says, as its alert shows it and VoiceOver
+    /// speaks it: a download not where its feed keeps it, a feed's list
+    /// that could not be saved first, and Remove from Library Only on a
+    /// feed's item.
+    func testWhatARefusedRemovalSays() {
+        XCTAssertEqual(
+            FeedItemPackageError.notAFeedPackage.localizedDescription,
+            "This download isn't where its feed keeps its downloads, so TextMouth left its files as they are."
+        )
+        XCTAssertEqual(
+            FeedItemPackageError.indexNotWritten.localizedDescription,
+            "TextMouth couldn't save its list of this feed's downloads, so the download was kept. Try again once the library can be saved."
+        )
+        XCTAssertEqual(
+            FeedItemPackageError.staysInItsFeed.localizedDescription,
+            "It belongs to its feed while it is downloaded. Delete Download removes its file and keeps its place and bookmarks."
+        )
+    }
+
     // MARK: - Helpers
 
     /// A date `seconds` after a fixed start, in whole seconds, which the
