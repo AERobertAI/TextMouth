@@ -331,8 +331,10 @@ enum SpeechRefusalWording {
     static let copyTitle = "Copy Details"
     static let copyHint = "Copies the whole report as plain text, to paste where it helps find the cause"
 
-    /// What VoiceOver hears once Copy Details has copied the report.
+    /// What VoiceOver hears once Copy Details has copied the report, and
+    /// should the pasteboard refuse it.
     static let copiedAnnouncement = "Details copied"
+    static let notCopiedAnnouncement = "The details could not be copied"
 
     /// The button that closes the sheet, which Return and Escape press, and
     /// what it does.
@@ -431,6 +433,41 @@ enum SpeechRefusalWording {
         guard !lines.isEmpty else { return ["Speech log: no lines."] }
         let count = CountWording.phrase(lines.count, singular: "line", plural: "lines")
         return ["Speech log, its last \(count), offsets and lengths only:"] + lines.map(\.logged)
+    }
+}
+
+// MARK: - Where the Book's Window Stands
+
+/// Where a book's window stands for the listener when the report of a
+/// refusal comes (B05), which decides whether the report's sheet can speak
+/// for itself. A refusal never takes the keyboard or VoiceOver from another
+/// window or app: its sheet waits on its own window.
+enum SpeechRefusalWindowStanding: Equatable, Sendable {
+    /// The window is the key window of the active app, with nothing over
+    /// it: the sheet opens at once in front of the listener, and VoiceOver
+    /// moves to it.
+    case inFront
+    /// The window has the keyboard in the active app, but a sheet is over
+    /// it, one of the reader's panels or the report itself: the report
+    /// waits for the panel to close, or updates in place.
+    case underASheet
+    /// Another window or another app is in front: the sheet waits on its
+    /// window.
+    case behind
+
+    /// Where a window stands: whether TextMouth is the active app, whether
+    /// the window is its key window, whether a sheet is over the window, and
+    /// whether that sheet is the key window.
+    static func of(appIsActive: Bool, windowIsKey: Bool, windowHasSheet: Bool, keyWindowIsItsSheet: Bool) -> Self {
+        guard appIsActive, windowIsKey || keyWindowIsItsSheet else { return .behind }
+        return windowHasSheet || keyWindowIsItsSheet ? .underASheet : .inFront
+    }
+
+    /// Whether the report's sheet, made now, moves VoiceOver to its heading
+    /// as it opens: when it opens in front of the listener, at once or as
+    /// the panel over the window closes; never from behind.
+    var sheetTakesVoiceOverFocus: Bool {
+        self != .behind
     }
 }
 

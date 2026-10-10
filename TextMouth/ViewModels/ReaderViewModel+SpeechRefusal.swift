@@ -1,8 +1,22 @@
-import Foundation
+import AppKit
 
 // MARK: - The Report of a Speech Refusal (B05)
 
 extension ReaderViewModel {
+    /// Where this reader's window stands for the listener now
+    /// (`SpeechRefusalWindowStanding`), read from AppKit: as the report of a
+    /// refusal comes, and as its sheet is made. A reader with no window, as
+    /// in a test, stands behind.
+    var speechRefusalWindowStanding: SpeechRefusalWindowStanding {
+        let keyWindow = NSApp.keyWindow
+        return .of(
+            appIsActive: NSApp.isActive,
+            windowIsKey: hostWindow.map { $0 === keyWindow } ?? false,
+            windowHasSheet: hostWindow?.attachedSheet != nil,
+            keyWindowIsItsSheet: hostWindow.map { keyWindow?.sheetParent === $0 } ?? false
+        )
+    }
+
     /// Shows the report of `refusal`, which stopped this reader's speech
     /// where the cursor now is because the Mac's speech engine refused a
     /// passage twice (B05). The report joins what the reader knows of the
