@@ -345,9 +345,12 @@ extension ReaderViewModel {
         if isAudioBook {
             if audioPlaybackService.isPaused {
                 resumeAudioPlayback()
-            } else if audioPlaybackService.isPlaying || isWaitingForChapterDownload {
+            } else if isPlaybackUnderWay {
                 // A reader waiting for its chapter's files to download
-                // (FR02) shows Playing, so Play/Pause pauses it too.
+                // (FR02), or with its audio set aside while the library
+                // moves its package, shows Playing, so Play/Pause pauses it
+                // too. Set-aside audio was once taken for stopped, and
+                // Play/Pause played the chapter from the moving files.
                 pause()
             } else {
                 play()
@@ -420,11 +423,15 @@ extension ReaderViewModel {
     /// A Where Am I announcement ends with the book
     /// (`endWhereAmIAsTheBookStops()`), as a pause ends it, so that its end
     /// neither resumes the stopped book nor tells Now Playing that it plays.
+    /// Audio set aside while the library moves the book's package is let go
+    /// (`letGoOfAudioSetAsideForMove(because:)`), so that the move's end
+    /// leaves the stopped book stopped.
     func stop() {
         endWhereAmIAsTheBookStops()
         let wasActive: Bool
         if isAudioBook {
-            wasActive = audioPlaybackService.isPlaying || audioPlaybackService.isPaused
+            // Audio set aside for a move counts, as it does for `pause()`.
+            wasActive = audioPlaybackService.isPlaying || audioPlaybackService.isPaused || audioPausedForMove != nil
         } else {
             // A play waiting for its chapter's speech counts, as it does
             // for `pause()`.
@@ -436,6 +443,7 @@ extension ReaderViewModel {
         // while audio is still playing causes a brief pop of
         // full-volume audio (same fix pattern as pause()).
         if isAudioBook {
+            letGoOfAudioSetAsideForMove(because: "playback stopped")
             audioPlaybackService.stop()
         } else {
             stopWaitingForChapterSpeech()
@@ -827,14 +835,15 @@ extension ReaderViewModel {
     /// does not start once the speech is ready, stops its speech, and lets
     /// go of the next chapter rendered ahead, unplayed. An audiobook stops
     /// waiting for a chapter's files to download, so that chapter does not
-    /// start once they are here, and lets go of its player, together with
-    /// any next chapter's file it may already have rolled on into, one named
-    /// to follow before the timer was set. Either way the reader shows
-    /// playback stopped, ends its listening session, and tells Now Playing,
-    /// as a pause does. The caller tells the listener why.
+    /// start once they are here, or for the end of a move of its package
+    /// (`stopAudioWaitingToPlay(because:)`), and lets go of its player,
+    /// together with any next chapter's file it may already have rolled on
+    /// into, one named to follow before the timer was set. Either way the
+    /// reader shows playback stopped, ends its listening session, and tells
+    /// Now Playing, as a pause does. The caller tells the listener why.
     private func stopPlaybackForSleepTimer(waitingAt chapterIndex: Int, characterOffset: Int) {
         if isAudioBook {
-            stopWaitingForChapterDownload(because: "the sleep timer stopped playback")
+            stopAudioWaitingToPlay(because: "the sleep timer stopped playback")
             audioPlaybackService.stop()
             isCurrentlyPlaying = false
             isCurrentlyPaused = false
@@ -2943,10 +2952,11 @@ extension ReaderViewModel {
         // engine is stopped at volume 0 so downstream time-pitch/mixer
         // buffers cannot be exposed when volume is restored.
         if isAudioBook {
-            // Stop waiting for a chapter's download, so the chapter does not
-            // start when the download ends (a sleep timer that ran out would
-            // otherwise have the book play on).
-            stopWaitingForChapterDownload(because: "playback paused")
+            // Stop waiting for a chapter's download, or for the end of a
+            // move of the book's package, so that nothing starts the book
+            // when it ends (a sleep timer that ran out would otherwise have
+            // the book play on).
+            stopAudioWaitingToPlay(because: "playback paused")
             audioPlaybackService.pause()
             // Only advertise the "playing-but-paused" state when there
             // was something to pause. Otherwise (book stopped or never
@@ -3005,6 +3015,19 @@ extension ReaderViewModel {
             recordPlaybackStopped()
             savePosition()
         }
+    }
+
+    /// Stops an audiobook waiting to play, so that nothing starts it later:
+    /// a chapter whose files download, or which waits for a Where Am I?
+    /// announcement's end (`stopWaitingForChapterDownload(because:)`), and
+    /// audio set aside while the library moves the book's package
+    /// (`letGoOfAudioSetAsideForMove(because:)`). Playback was paused, or
+    /// this reader's sleep timer stopped it.
+    ///
+    /// - Parameter reason: Why, for the log lines.
+    private func stopAudioWaitingToPlay(because reason: String) {
+        stopWaitingForChapterDownload(because: reason)
+        letGoOfAudioSetAsideForMove(because: reason)
     }
 
     nonisolated static func wasActivelyPlaying(isPlaying: Bool, isPaused: Bool) -> Bool {

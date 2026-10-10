@@ -503,6 +503,52 @@ final class ReaderRefreshTests: XCTestCase {
         reader.stop()
     }
 
+    /// What stops the audiobook playing, done while the library moves its
+    /// package, takes the audio set aside for the move, so the move's end
+    /// leaves the book as it was left: a pause, Play/Pause, a minutes sleep
+    /// timer running out, and a recording starting leave it paused, shown
+    /// paused; a stop and Release Media Controls leave it stopped. Nothing
+    /// is loaded from the package while it moves, nothing plays once the
+    /// move is over, and the system no longer shows the book playing; a
+    /// pause makes the pause sound, as it would for audio playing. Play
+    /// then plays on from the same place in the moved package. Before, each
+    /// left the audio set aside, and the move's end played on what had been
+    /// stopped; Play/Pause even played the chapter from the moving files
+    /// (open after the where-am-i-followups merge).
+    func testWhatStopsTheAudioDuringAMoveKeepsItStoppedAfterTheMove() throws {
+        preserveSharedSleepTimer()
+        for way in StopDuringMove.allCases {
+            let context = "\(way.name) during the move"
+            let playing = try openPlayingAudiobook("Reader Refresh Stopped During Move \(way)")
+            let reader = playing.reader
+            let nowPlaying = playing.nowPlaying
+            if way == .sleepTimerRunningOut {
+                playing.world.settings.sleepFadeOutDuration = 0
+                reader.startSleepTimer(duration: .minutes(15))
+            }
+
+            var observed: PlayerObservation?
+            try recordingAnnouncements {
+                observed = try moveToShelf(playing) { way.stop(reader, joining: nowPlaying) }
+            }
+
+            let duringMove = try XCTUnwrap(observed, context)
+            XCTAssertNil(duringMove.loadedURL, "\(context): the chapter was loaded from the moving package")
+            XCTAssertNil(reader.audioPausedForMove, "\(context): the audio is still set aside")
+            XCTAssertNil(reader.audioPlaybackService.loadedURL, "\(context): the move's end played the audio on")
+            XCTAssertFalse(reader.audioPlaybackService.isPlaying, "\(context): the audio plays")
+            XCTAssertEqual(reader.isCurrentlyPlaying, way.leavesTheBookPaused, "\(context): the reader shows the book otherwise")
+            XCTAssertEqual(reader.isCurrentlyPaused, way.leavesTheBookPaused, "\(context): the reader shows the book otherwise")
+            XCTAssertNil(nowPlaying.playingOwnerID, "\(context): the system still shows the book playing")
+            XCTAssertEqual(playing.sounds.played, way.makesThePauseSound ? [.pause] : [], context)
+
+            reader.togglePlayPause()
+
+            try assertPlaysOnFromTheMovedPackage(playing, "\(context), then Play/Pause")
+            reader.stop()
+        }
+    }
+
     // MARK: - Applying Updates
 
     /// Two readers have the same book open when the library renames it:
@@ -822,28 +868,104 @@ final class ReaderRefreshTests: XCTestCase {
         return duringMove
     }
 
+    /// The ways a test stops an audiobook's audio while its package moves,
+    /// each as the listener or the app stops it.
+    private enum StopDuringMove: CaseIterable {
+        /// A Pause, as from the AirPods or a media key.
+        case pause
+        /// Play/Pause, as from the keyboard.
+        case playPause
+        /// A minutes sleep timer, set before the move, running out.
+        case sleepTimerRunningOut
+        /// A recording starting, which pauses every book playing.
+        case recordingStarting
+        /// A stop.
+        case stop
+        /// Release Media Controls.
+        case releaseMediaControls
+
+        /// What a failure message calls it.
+        var name: String {
+            switch self {
+            case .pause: return "a pause"
+            case .playPause: return "Play/Pause"
+            case .sleepTimerRunningOut: return "the sleep timer running out"
+            case .recordingStarting: return "a recording starting"
+            case .stop: return "a stop"
+            case .releaseMediaControls: return "Release Media Controls"
+            }
+        }
+
+        /// Whether it leaves the book paused, shown paused, rather than
+        /// stopped.
+        var leavesTheBookPaused: Bool {
+            switch self {
+            case .pause, .playPause, .sleepTimerRunningOut, .recordingStarting: return true
+            case .stop, .releaseMediaControls: return false
+            }
+        }
+
+        /// Whether it makes the pause sound: every pause but the sleep
+        /// timer's, which pauses in silence.
+        var makesThePauseSound: Bool {
+            switch self {
+            case .pause, .playPause, .recordingStarting: return true
+            case .sleepTimerRunningOut, .stop, .releaseMediaControls: return false
+            }
+        }
+
+        /// Stops `reader`'s audio this way; `nowPlaying` is the coordinator
+        /// it joined.
+        @MainActor
+        func stop(_ reader: ReaderViewModel, joining nowPlaying: NowPlayingService) {
+            switch self {
+            case .pause:
+                reader.pause()
+            case .playPause:
+                reader.togglePlayPause()
+            case .sleepTimerRunningOut:
+                reader.sleepTimerService.remainingSeconds = 1
+                reader.sleepTimerService._advanceCountdownForTesting()
+            case .recordingStarting:
+                XCTAssertEqual(nowPlaying.pauseEveryPlayingReader(), 1, "The recording did not pause the book")
+            case .stop:
+                reader.stop()
+            case .releaseMediaControls:
+                reader.releaseMediaControls()
+            }
+        }
+    }
+
     /// Checks that `playing`'s audio plays on, shown playing, from the place
     /// it played at, half a second into the first track, in the package
-    /// where the library has moved the book.
+    /// where the library has moved the book; `context` begins each failure.
     private func assertPlaysOnFromTheMovedPackage(
         _ playing: PlayingAudiobook,
+        _ context: String = "After the move",
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
         let reader = playing.reader
-        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not go on after the move", file: file, line: line)
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "\(context): the audio does not play", file: file, line: line)
         XCTAssertEqual(
             Self.folderPath(of: reader.audioPlaybackService.loadedURL),
             Self.standardizedPath(try row(of: playing.book, in: playing.world.library).filePath),
-            "The audio does not play from the moved package",
+            "\(context): the audio does not play from the moved package",
             file: file,
             line: line
         )
-        XCTAssertEqual(reader.currentChapterIndex, 0, "The audio plays another chapter", file: file, line: line)
-        XCTAssertEqual(reader.currentCharacterOffset, 5, "The cursor moved", file: file, line: line)
-        XCTAssertEqual(reader.audioPlaybackService.currentTime, 0.5, accuracy: 0.001, file: file, line: line)
-        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader does not show Playing", file: file, line: line)
-        XCTAssertFalse(reader.isCurrentlyPaused, "The reader shows paused", file: file, line: line)
+        XCTAssertEqual(reader.currentChapterIndex, 0, "\(context): the audio plays another chapter", file: file, line: line)
+        XCTAssertEqual(reader.currentCharacterOffset, 5, "\(context): the cursor moved", file: file, line: line)
+        XCTAssertEqual(
+            reader.audioPlaybackService.currentTime,
+            0.5,
+            accuracy: 0.001,
+            "\(context): the audio plays from another place",
+            file: file,
+            line: line
+        )
+        XCTAssertTrue(reader.isCurrentlyPlaying, "\(context): the reader does not show Playing", file: file, line: line)
+        XCTAssertFalse(reader.isCurrentlyPaused, "\(context): the reader shows paused", file: file, line: line)
     }
 
     /// What a reader's audio player held at the moment a package moved.

@@ -176,6 +176,24 @@ extension ReaderViewModel {
         restartAudioAtCursor(volume: paused.volume)
     }
 
+    /// Lets go of audio set aside for a move of the book's package
+    /// (`audioPausedForMove`), so that the move's end leaves the book as the
+    /// listener left it rather than play it on. A pause or a stop made while
+    /// the package moves, as a move made off the main thread allows, calls
+    /// it: a Pause or Play/Pause, a sleep timer's end, a recording or
+    /// another book starting, the AirPods leaving, a stop, or Release Media
+    /// Controls. Each once left the audio set aside, and the move's end
+    /// played on what the listener had stopped (open after the
+    /// where-am-i-followups merge). The volume it was set aside at goes with
+    /// it: the next play starts at the volume its place calls for.
+    ///
+    /// - Parameter reason: Why, for the log line.
+    func letGoOfAudioSetAsideForMove(because reason: String) {
+        guard audioPausedForMove != nil else { return }
+        audioPausedForMove = nil
+        DiagnosticLog.trace(.playback, "the audio set aside for the package move does not play on: \(reason)")
+    }
+
     /// Plays the cursor's chapter again from the cursor, loading its audio
     /// from wherever the book's files are now, at `volume`, the volume it
     /// played at, which a sleep timer may be fading. The listening session,

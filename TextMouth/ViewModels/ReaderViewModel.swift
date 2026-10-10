@@ -428,7 +428,9 @@ final class ReaderViewModel: ObservableObject {
     /// Audio that was playing when the library said the book's package was
     /// about to move, set aside until the move ends and playback goes on
     /// from the cursor (TODO P10); nil the rest of the time. Meanwhile the
-    /// book counts as playing (`isPlaybackUnderWay`).
+    /// book counts as playing (`isPlaybackUnderWay`), and a pause or a stop
+    /// lets the audio go (`letGoOfAudioSetAsideForMove(because:)`), so that
+    /// the move's end leaves the book as the listener left it.
     var audioPausedForMove: AudioPausedForMove?
     /// The book's edited text when the user's edit was taken while this
     /// reader was still loading the text it had (FR05): shown once loading
