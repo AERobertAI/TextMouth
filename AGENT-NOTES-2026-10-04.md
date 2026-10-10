@@ -1008,3 +1008,52 @@ README wording:
 
 ARCHITECTURE wording:
 "`Book.feedLink` (FR11) names the feed and item a download came from while the book belongs to its feed. It travels with `Book.FileLocation` and the package record, and makes `tmbDirectory` place the package in `Feeds/<feed ID>/` (`Book.packageDirectory(inDataDirectory:)`, `FeedPaths+Items.swift`). Each feed's index (`FeedIndex`, `FeedIndexFiles`) is `Feeds/<feed ID>/library.json`. It is read with library.json onto `Library.feedShelf` (`FeedShelf`: rows held apart from the books, and the feeds whose indexes the library keeps), each row placed where its package is. An unreadable index is preserved and its rows rebuilt from the packages' records, and packages the index doesn't list are read the same way. `Library.encode(to:)` writes only the library's own books (`libraryBooks`), and `LibraryPersistenceService.writeIndexFile` writes each changed feed index before library.json. The startup repair shelves feed items and then joins them (`joinFeedItems`): those whose files are here join `library.books`, journaled checkpoints come from records, and a duplicate library.json row gives way. The library's lists, counts, Recent, duplicate rules, metadata refresh, Rebuild Directory (`withFeedItemsSetAside`), and the transition planner leave feed items out; a feed's folder lists them by feed ID (`feedItems(listedIn:)`, with the list cache keyed by the feed shown). Downloads publish into the feed's folder (`FeedEpisodeImporter.destinationPackageURL`). Once the feed records load, `LibraryViewModel+FeedItemMove.swift` moves earlier downloads (`moveDownloadsIntoTheirFeeds`, then `saveAndWait`) and heals items an older build marked not downloaded (`markFeedItemsDownloadedAgain`). The data-directory move stages feed records and indexes (`stageFeedIndexes`). Count wording lives in `CountWording.booksAndFeeds`, `TimeRemainingBar.countText`, `FolderRow.feedsBelow`, `LibraryStatistics`, and `StorageChoice.CurrentLibrary.feedCount`."
+
+## From the nowplaying agent (fix/now-playing-followups), Oct 10
+
+Suite, what was not verified, and the user's checks by hand:
+`Executed 5115 tests, with 58 tests skipped and 0 failures (0 unexpected) in 570.977 (572.791) seconds`. That is main's 5099 plus 16 new tests, with no Swift warnings. The build folder is deleted and the test host unregistered; the icon cache is at 2,248 entries.
+
+**Not verified:**
+- Real AirPods, media keys, Control Center's Now Playing display, and live VoiceOver or braille.
+- Item 5 on a text book: the tests use silent audiobooks, but every Play of a finished book goes through `play()`, so the code path is the same.
+
+What you should try by hand with two books open, A and B:
+1. Play A, move to B's window, and press the AirPods: A pauses and shows paused. The next press resumes A, not B.
+2. The same with A's sleep timer running out while B's window is in front: the next press resumes A.
+3. Pause A, go to B (never played), then close A's window: Now Playing no longer shows A, and the AirPods go back to the other app.
+4. In B's window press Shift-R: VoiceOver says "Media controls not released: this book does not hold them." and A is untouched.
+5. At a Continue to Next Book or reading-list end, press Play as "Starting: …" is spoken, and also try a rewind followed by Play: the next book starts at once, "Starting" is said once, and the finished book's end is never replayed.
+6. With music playing in another app, save metadata in a stopped book's window: the AirPods stay with the music.
+
+Decisions:
+- **Item 1:** a playing reader that pauses, wherever its window is, keeps the media focus. So its book shows paused and the next Play reaches it; a window that becomes key afterwards takes the focus back. The rule covers every pause path, including the coordinator's own Pause and Play/Pause, the route-change pause, and a recording starting.
+  - The existing test `testRapidPauseThenToggleRoutesToggleToFocusedOwner` pinned the old routing. It is renamed `…ToTheBookThatPaused` and now expects the Play/Pause to resume the book that paused, as the brief asks.
+  - When another book starts, the reader that starts now takes the focus before the playing one pauses, so the paused one is never shown paused for a moment.
+- **Item 2:** after the closed reader's item is taken down, the active reader's own paused item, if it has one, is shown in its place. That matches what already happens when the active reader closes.
+- **Item 3 words:** "Media controls not released: this book does not hold them." It opens like "Media controls released", so the two are told apart from the first words on a braille display. The test that pinned silence now expects these words.
+- **Item 5 rule:** a Play during the hand-over goes to the hand-over:
+  - Before the next book is asked for, it asks for it at once, and the half-second ask then asks nothing more.
+  - After that, until the next book's reader claims its request (or the request is dropped or lapses after 30 seconds), Play changes nothing.
+  - Skips still move the cursor only. Once the next book plays, Play in the finished book's window plays it as usual.
+  - `handOverToNextBook` gained the next book's ID (`to:titled:askingWith:`).
+- **Item 6:** both saves go through one helper that publishes only while the reader holds the media controls.
+- **Item 7:** each NUL becomes a space after the bracket guard, one unit for one, so every offset holds. The offline probe found that in Samantha only NUL loses words: the other 63 C0, DEL and C1 characters (64 in all, pinned by a test) were all spoken in full. In Alex nothing was lost, NUL included. In the hosted test the raw NUL sentence rendered 39,434 frames and the guarded one 151,050, against 145,418 for the sentence without it.
+
+**Board:** finding #1581, and a reply (#1572) to `fullsummary`. That agent is editing `endWhereAmIWithoutResuming()` in my Playback file and a sink in `ReaderViewModel.swift`; our hunks are not adjacent, and whichever branch merges second rebases.
+
+README wording (media keys paragraph and the markup paragraph):
+- Replace its first sentence with: "Headphone and media keys control the reader that is playing, or, when none is, whichever came last of the reader window you used and the book that paused: a book that pauses while another book's window is in front, from the AirPods, a media key, or its sleep timer running out, is shown paused in Now Playing, and the next Play resumes it rather than starting the book in front. Moving to another book's window afterwards makes that window's book the one Play starts."
+- After "…without playing over the book announced." add: "Play pressed in that moment, from the AirPods, a media key, or the keyboard, starts Dune at once instead of half a second later, and until Dune starts, Play never plays the finished book; once Dune plays, Play in the finished book's window plays it as usual."
+- Replace "a key you gave it then does nothing there, and says nothing." with: "a key you gave it then changes nothing there and says "Media controls not released: this book does not hold them.""
+- Append to the paragraph: "Closing a book's window takes its book out of Now Playing whenever Now Playing shows it, even from behind another book's window; the book in the window in front is shown instead if it has been played and paused, and otherwise the AirPods and the media keys go back to other apps. A Pause that pauses nothing, as one reaching a book already paused or finished, makes no pause sound. Saving a book's metadata shows its new title in Now Playing only while the book holds the media controls, so a save in a stopped book's window never takes the AirPods from the app you were listening to."
+- In the markup paragraph add: "A null character (U+0000), which a badly converted file can hold, made the speech engine drop the rest of a passage without a sound; since October 10, 2026 TextMouth hands the voice a space in its place. No other control character dropped anything."
+
+ARCHITECTURE wording:
+- **Who may write it:** "unregister(ownerID:) takes the closing reader's item down whether or not it is the active owner, and shows the active reader's own item, if it has one, in its place."
+- **Which reader takes a command:** replace "the playing reader, else the one focused most recently" with "the playing reader, else focusedOwnerID: whichever came last of the reader whose window became key (focus(ownerID:)), the reader about to play (prepareForPlayback(ownerID:)), and the playing reader that paused, wherever its window is (playingOwnerPaused(_:), from updateNowPlayingInfo with isPlaying false and from the coordinator's own Pause, Play/Pause, route-change pause, and pauseEveryPlayingReader()). prepareForPlayback(ownerID:) gives the reader about to play the focus before it pauses the playing reader, which is no longer the playing one as it pauses, so that reader's report takes nothing back."
+- **The hand-over:** "handOverToNextBook(to:titled:askingWith:) keeps a NextBookHandOver in ReaderViewModel.nextBookHandOver: the next book's ID, asked for exactly once, at continueToNextBookDelay or at once by a Play; it is under way until that book's ReaderAutoplayRequests request is no longer waiting. play() asks playGoesToTheHandOver() first, so a Play of the finished book during the hand-over asks for the next book, or changes nothing once it has been asked for, and never plays the finished book."
+- **Release Media Controls:** "releaseMediaControls() changes nothing where it isn't offered and says MediaControlsWording.notHeld; MediaControlsWording (NowPlayingService.swift) holds both its sentences."
+- **Saves and pause sound:** "The reader's two metadata saves publish through showSavedMetadataInNowPlaying(), only while holdsMediaControls. pause(playingPauseSound:) makes the pause sound only when isPlaybackUnderWay was true before it paused."
+- **SpeechMarkupGuard entry:** "neutralized(_:) also turns each NUL (U+0000), which ends the text for the speech engine and drops the rest of an utterance without a cancel (#1542), into a space, after guarding brackets; every other control character passes, since the offline probe (Scripts/agents/probes/speech-control-character-probe.swift) found none that loses words."
+- **Test support:** "RecordedSoundEffects (IntegrationTestSupport.swift) records the sounds a reader asks for and plays none."
