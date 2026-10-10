@@ -36,7 +36,10 @@ extension LibraryViewModel {
     /// the feeds' records have loaded, which happens off the main thread
     /// just after the library has: the records say which of the library's
     /// books are downloads. Until then each download shows where it always
-    /// did. Then marks downloaded again the items an older TextMouth marked
+    /// did. Then returns to the library the downloads of every feed whose
+    /// folder is here while its record is gone
+    /// (`returnDownloadsOfFeedsWithoutRecords(subscribed:removingWith:)`),
+    /// and marks downloaded again the items an older TextMouth marked
     /// otherwise (`markFeedItemsDownloadedAgain()`). Called once, as the
     /// feeds start.
     func moveFeedDownloadsOnceRecordsLoad() {
@@ -46,6 +49,7 @@ extension LibraryViewModel {
             .sink { [weak self] _ in
                 Task { @MainActor [weak self] in
                     await self?.moveDownloadsIntoTheirFeeds()
+                    await self?.returnDownloadsOfFeedsWithoutRecords()
                     self?.markFeedItemsDownloadedAgain()
                 }
             }
@@ -224,10 +228,11 @@ extension LibraryViewModel {
         return moved.count
     }
 
-    /// Whether downloads may move into their feeds now: not while the
-    /// library index is recovered, the data directory is unavailable, or the
-    /// data directory moves.
-    private var canMoveDownloads: Bool {
+    /// Whether feed items' packages may move between the Library folder and
+    /// their feeds' folders now, either way: not while the library index is
+    /// recovered, the data directory is unavailable, or the data directory
+    /// moves.
+    var canMoveDownloads: Bool {
         indexRecovery == nil && dataDirectoryUnavailability == nil && dataDirectoryMove == nil
     }
 
@@ -249,12 +254,35 @@ extension LibraryViewModel {
         guard FileImportService.namesManagedPackage(book) else {
             throw FeedItemMoveError.packageNotManaged
         }
-        let source = book.packageDirectory(inDataDirectory: root)
         var moved = book
         moved.folderPath = ""
         moved.feedLink = link
-        let destination = moved.packageDirectory(inDataDirectory: root)
-        moved.filePath = FeedIndexFiles.path(book.filePath, inPackageNamed: book.tmbDirectoryName, at: destination)
+        return try relocatePackage(of: book, as: moved, root: root)
+    }
+
+    /// Moves the package of `book` from where `book` places it in the data
+    /// directory at `root` to where `relocated`, the same book with another
+    /// place, puts it, in one rename, and writes its record there; returns
+    /// `relocated` with its file at its place in the moved package. The two
+    /// moves between a library folder and a feed's folder both take this
+    /// step: a download made before FR11 moving into its feed's folder
+    /// (`moveIntoItsFeed(_:link:root:)`), and an unsubscribed feed's
+    /// download returning to the library (`returnIntoTheLibrary(_:folderPath:root:)`).
+    ///
+    /// A package already where `relocated` puts it, and not where `book`
+    /// does, was moved by an earlier launch that stopped before it was done,
+    /// and is not moved again; its record is written all the same. The
+    /// caller has checked that both rows name a package the library manages
+    /// (`FileImportService.namesManagedPackage(_:)`).
+    /// - Throws: `FeedItemMoveError` when the package is in neither place or
+    ///   both, or the error that kept a folder from being made, the package
+    ///   from moving, or its record from being written; the package is then
+    ///   put back where it was when this call had moved it.
+    nonisolated static func relocatePackage(of book: Book, as relocated: Book, root: URL) throws -> Book {
+        let source = book.packageDirectory(inDataDirectory: root)
+        var relocated = relocated
+        let destination = relocated.packageDirectory(inDataDirectory: root)
+        relocated.filePath = FeedIndexFiles.path(book.filePath, inPackageNamed: book.tmbDirectoryName, at: destination)
 
         let fileManager = FileManager.default
         try fileManager.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -272,13 +300,13 @@ extension LibraryViewModel {
             throw FeedItemMoveError.packageMissing
         }
         do {
-            try moved.saveBookInfoThrowing(inPackageAt: destination)
+            try relocated.saveBookInfoThrowing(inPackageAt: destination)
         } catch {
             if renamed {
                 try? fileManager.moveItem(at: destination, to: source)
             }
             throw error
         }
-        return moved
+        return relocated
     }
 }
