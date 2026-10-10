@@ -209,18 +209,7 @@ struct TextAnchorFinder: Sendable {
     ///   chapter. Without it, the guess keeps the saved offset, held within
     ///   the chapter.
     func find(_ anchor: TextAnchor, savedAt saved: TextPlace, savedChapterLength: Int? = nil) -> Result {
-        // The end of the book stays the end, whatever was added or removed
-        // there. The anchor marks the end when its place was at or past the
-        // book's length, as P07 measures a finished book
-        // (`Book.restsAtEnd`). A place exactly at the end stays; one past
-        // it, whose numbers point past the text, goes to the end itself.
-        if anchor.marksEndOfBook {
-            if words.isEnd(saved) { return Result(place: saved, finding: .unchanged) }
-            return Result(place: words.endPlace, finding: .found(.endOfBook))
-        }
-        if anchor.stands(at: saved, in: words.texts) {
-            return Result(place: saved, finding: .unchanged)
-        }
+        if let settled = settled(anchor, savedAt: saved) { return settled }
         let quote = Quote(anchor)
         let expected = anchor.fraction * Double(words.totalLength)
         switch search(quote, expected: expected) {
@@ -234,6 +223,48 @@ struct TextAnchorFinder: Sendable {
                 finding: .guessed(.sameShare)
             )
         }
+    }
+
+    /// The first two rules, which settle a place without searching for it:
+    /// the end of the book stays the end, and a place whose anchor's text
+    /// still stands exactly around its saved numbers stays; nil when neither
+    /// settles it. `find` begins with them, and so does the diff of an old
+    /// text with the new one (`PlaceRelocator`), which tries the old text
+    /// before any search.
+    func settled(_ anchor: TextAnchor, savedAt saved: TextPlace) -> Result? {
+        // The end of the book stays the end, whatever was added or removed
+        // there. The anchor marks the end when its place was at or past the
+        // book's length, as P07 measures a finished book
+        // (`Book.restsAtEnd`). A place exactly at the end stays; one past
+        // it, whose numbers point past the text, goes to the end itself.
+        if anchor.marksEndOfBook {
+            if words.isEnd(saved) { return Result(place: saved, finding: .unchanged) }
+            return Result(place: words.endPlace, finding: .found(.endOfBook))
+        }
+        if anchor.stands(at: saved, in: words.texts) {
+            return Result(place: saved, finding: .unchanged)
+        }
+        return nil
+    }
+
+    /// The first search's one best spot for `anchor`, wherever in the book
+    /// it lies: the spot whose saved words score best, with 8 or more, when
+    /// no other spot scores as well; nil otherwise. The tie and locality
+    /// rules play no part, and the place's saved numbers none: this is the
+    /// diff's question when a place's words are gone from their spot
+    /// (`PlaceRelocator`). If the one best spot lies in text the diff found
+    /// put in, the words moved there, however far, since a second copy the
+    /// diff kept would have been lined up with them instead.
+    ///
+    /// Returns where the place lands there (as `find` would land it) and
+    /// the word it stands before.
+    func onlyBestSpot(for anchor: TextAnchor) -> (place: TextPlace, word: Int)? {
+        let quote = Quote(anchor)
+        let spots = candidateSpots(quote)
+        guard let best = spots.map(\.score).max(), best >= Self.minimumScore else { return nil }
+        let top = spots.filter { $0.score == best }
+        guard top.count == 1, let only = top.first else { return nil }
+        return (landing(beforeWord: only.word, quote), only.word)
     }
 
     // MARK: - Finding a Skipped Heading
@@ -599,24 +630,14 @@ struct TextAnchorFinder: Sendable {
 
     // MARK: - Where a Found Place Lands
 
-    /// The place a search found standing before word `word`: that word's
-    /// start. A place that stood inside its own word keeps how far into it
-    /// it was, when the word there is that word. A place with no words
-    /// after it in its quote (at its chapter's end, or before nothing but
-    /// punctuation there) stands just after the word before it, so when the
-    /// next word begins another chapter, or the book has none, it is the
-    /// end of that word's chapter rather than the next chapter's start.
+    /// The place a search found standing before word `word`, by the one
+    /// landing rule (`BookWords.landing`): that word's start; a place that
+    /// stood inside its own word keeps how far into it it was, when the word
+    /// there is that word; and a place with no words after it in its quote
+    /// (at its chapter's end, or before nothing but punctuation there)
+    /// stands just after the word before it.
     private func landing(beforeWord word: Int, _ quote: Quote) -> TextPlace {
-        if let inside = quote.inside, word >= 0, word < words.count, words.keys[word] == inside.key {
-            return TextPlace(chapter: words.chapter(ofWord: word), offset: min(words.starts[word] + inside.offset, words.ends[word]))
-        }
-        if quote.after.isEmpty, word > 0, word <= words.count {
-            let chapter = words.chapter(ofWord: word - 1)
-            if word == words.count || words.chapter(ofWord: word) != chapter {
-                return TextPlace(chapter: chapter, offset: words.length(ofChapter: chapter))
-            }
-        }
-        return words.start(ofWord: word)
+        words.landing(beforeWord: word, inside: quote.inside, nothingAfter: quote.after.isEmpty)
     }
 
     /// The last guess, for a place whose words are found nowhere: the same

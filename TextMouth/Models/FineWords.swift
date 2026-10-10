@@ -321,6 +321,34 @@ struct BookWords: Sendable {
         globalOffset(of: start(ofWord: word))
     }
 
+    /// Where a found place lands when it stands before word `word`: one
+    /// rule for every way of finding a place again, the saved-words search
+    /// (`TextAnchorFinder`) and the diff of an old text with a new one
+    /// (`PlaceRelocator`) alike.
+    ///
+    /// - The place lands at the word's start.
+    /// - A place that stood inside a word (as a bookmark nudged clear of
+    ///   another can) keeps how far into it it was when `word` is that same
+    ///   word: `inside` gives that word's key and how many UTF-16 units into
+    ///   it the place stood. It never lands past the word's end.
+    /// - A place with no word after it in its chapter (`nothingAfter`: at
+    ///   its chapter's end, or before nothing but punctuation there) stands
+    ///   just after the word before `word`: so when `word` begins another
+    ///   chapter, or the book has no more words, it is the end of that
+    ///   word's chapter rather than the next chapter's start.
+    func landing(beforeWord word: Int, inside: (key: UInt64, offset: Int)? = nil, nothingAfter: Bool = false) -> TextPlace {
+        if let inside, word >= 0, word < count, keys[word] == inside.key {
+            return TextPlace(chapter: chapter(ofWord: word), offset: min(starts[word] + inside.offset, ends[word]))
+        }
+        if nothingAfter, word > 0, word <= count {
+            let chapter = chapter(ofWord: word - 1)
+            if word == count || self.chapter(ofWord: word) != chapter {
+                return TextPlace(chapter: chapter, offset: length(ofChapter: chapter))
+            }
+        }
+        return start(ofWord: word)
+    }
+
     /// The word `place` stands inside, or else the first word after it;
     /// `count` when no word follows it in the book.
     func word(at place: TextPlace) -> Int {
