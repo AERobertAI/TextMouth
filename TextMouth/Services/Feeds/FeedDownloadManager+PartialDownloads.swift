@@ -58,12 +58,19 @@ enum FeedPartialDownloads {
     /// left as it is; nothing is reported, since a leftover costs only room
     /// until the system empties its folder.
     static func discard(resumeDataAt file: URL, temporaryFolder: URL = FileManager.default.temporaryDirectory) {
-        if let data = try? Data(contentsOf: file),
-           let partial = partialFile(namedIn: data, temporaryFolder: temporaryFolder),
-           isPlainFile(partial) {
-            try? FileManager.default.removeItem(at: partial)
+        if let data = try? Data(contentsOf: file) {
+            discardPartialFile(namedIn: data, temporaryFolder: temporaryFolder)
         }
         try? FileManager.default.removeItem(at: file)
+    }
+
+    /// Removes the partial file `resumeData` names in `temporaryFolder`, the
+    /// process's own unless a test gives its own, as for a transfer stopped
+    /// for good whose resume data is not kept; resume data that names none,
+    /// or a partial file that is not a plain file, removes nothing.
+    static func discardPartialFile(namedIn resumeData: Data, temporaryFolder: URL = FileManager.default.temporaryDirectory) {
+        guard let partial = partialFile(namedIn: resumeData, temporaryFolder: temporaryFolder), isPlainFile(partial) else { return }
+        try? FileManager.default.removeItem(at: partial)
     }
 
     /// Removes every resume data file in `folder` whose name begins with

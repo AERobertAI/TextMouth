@@ -4,11 +4,12 @@ import Foundation
 
 /// The newest-N rule's downloads that wait rather than run (FR11), counted
 /// apart from the downloads under way by their reason (FR10): those put off
-/// for a network without data limits, and those waiting for room on this
-/// Mac. Each such item's row says "Waiting to Download" and why
-/// (`FeedItemState.waiting`).
+/// until this Mac is on a network without data limits, and those waiting
+/// for room on this Mac. Each such item's row says "Waiting to Download"
+/// and why (`FeedItemState.waiting`).
 struct FeedDownloadWaits: Equatable, Sendable {
-    /// The downloads waiting for a network without data limits.
+    /// The downloads waiting until this Mac is on a network without data
+    /// limits: offline, or on a network with them.
     var network = 0
     /// The downloads waiting for room on this Mac.
     var room = 0
@@ -82,29 +83,23 @@ enum FeedDownloadProgressWording {
     static let cancelling = ImportProgressWording.cancellingLine
 
     /// The downloads waiting apart, a line for each reason with any: "2
-    /// waiting for a network without data limits", "1 waiting for room on
-    /// this Mac".
+    /// waiting until this Mac is on a network without data limits", which
+    /// covers a Mac offline too (REV13 item 4), "1 waiting for room on this
+    /// Mac".
     static func waits(_ waits: FeedDownloadWaits) -> [String] {
-        waitLines(waits, still: false)
-    }
-
-    /// The waiting downloads' lines, with "still" before "waiting" when
-    /// `still`, as said after Cancel, which leaves them waiting.
-    private static func waitLines(_ waits: FeedDownloadWaits, still: Bool) -> [String] {
-        let waiting = still ? "still waiting" : "waiting"
         var lines: [String] = []
         if waits.network > 0 {
-            lines.append("\(waits.network) \(waiting) for a network without data limits")
+            lines.append("\(waits.network) waiting until this Mac is on a network without data limits")
         }
         if waits.room > 0 {
-            lines.append("\(waits.room) \(waiting) for room on this Mac")
+            lines.append("\(waits.room) waiting for room on this Mac")
         }
         return lines
     }
 
     /// The waiting downloads' lines as sentences, to follow another.
-    private static func waitSentences(_ waits: FeedDownloadWaits, still: Bool = false) -> [String] {
-        waitLines(waits, still: still).map { "\($0)." }
+    private static func waitSentences(_ waits: FeedDownloadWaits) -> [String] {
+        Self.waits(waits).map { "\($0)." }
     }
 
     // MARK: What VoiceOver Reads
@@ -112,14 +107,14 @@ enum FeedDownloadProgressWording {
     /// What VoiceOver reads for the section: the title, then each line it
     /// shows, as sentences, "Feed Downloads: 2 of 9 done. Download 3 of 9:
     /// “Ep. 368” from Finish It!, 40% of 63 MB. About 4 minutes left. 2
-    /// waiting for a network without data limits."
+    /// waiting until this Mac is on a network without data limits."
     static func spokenStatus(_ lines: [String]) -> String {
         ImportProgressWording.spokenStatus(title: title, lines: lines)
     }
 
     /// What Speak Download Progress says while no download runs, with the
     /// downloads waiting apart, if any: "No feed download is under way. 2
-    /// waiting for a network without data limits."
+    /// waiting until this Mac is on a network without data limits."
     static func noneUnderWay(waits: FeedDownloadWaits) -> String {
         ([noDownloadUnderWay] + waitSentences(waits)).joined(separator: " ")
     }
@@ -176,14 +171,16 @@ enum FeedDownloadProgressWording {
         return ([ending] + waitSentences(waits)).joined(separator: " ")
     }
 
-    /// Announced at once as Cancel stops the downloads: the one stopped by
-    /// its title, as Cancel Download says it ("Stopped downloading
-    /// “Ep. 368”."), or how many ("Stopped 6 feed downloads."); then the
-    /// download that finishes all the same, `finishing`, because its book
-    /// was already being added to the library; then the downloads Cancel
-    /// leaves waiting for a network or for room. With nothing stopped and
-    /// nothing finishing, no download was under way.
-    static func cancelled(stopped titles: [String], finishing: String?, waits: FeedDownloadWaits) -> String {
+    /// Announced as Cancel stops the downloads (FR14), once VoiceOver's
+    /// focus has moved to the list (REV13 item 3): the one stopped by its
+    /// title, as Cancel Download says it ("Stopped downloading
+    /// “Ep. 368”."), or how many ("Stopped 6 feed downloads."), the rule's
+    /// waiting ones among them; then the download that finishes all the
+    /// same, `finishing`, because its book was already being added to the
+    /// library; then, with anything stopped, when TextMouth tries again by
+    /// itself (`retryAfterCancel`). With nothing stopped and nothing
+    /// finishing, no download was under way.
+    static func cancelled(stopped titles: [String], finishing: String?) -> String {
         var sentences: [String] = []
         switch titles.count {
         case 0:
@@ -198,8 +195,16 @@ enum FeedDownloadProgressWording {
         if let finishing {
             sentences.append("“\(finishing)” is already being added to the library.")
         }
-        return (sentences + waitSentences(waits, still: true)).joined(separator: " ")
+        if !titles.isEmpty {
+            sentences.append(retryAfterCancel)
+        }
+        return sentences.joined(separator: " ")
     }
+
+    /// When TextMouth downloads again by itself what Cancel stopped (FR14):
+    /// the newest-N rule's next pass after each feed's next check, never
+    /// sooner, or the first pass when TextMouth next opens.
+    static let retryAfterCancel = "TextMouth downloads each feed's newest again at its next check, or the next time it opens."
 
     // MARK: The Section's Controls
 
@@ -208,13 +213,12 @@ enum FeedDownloadProgressWording {
     /// What VoiceOver calls the Cancel button: the import overlay has a
     /// Cancel too, so the name says what it cancels.
     static let cancelButtonLabel = "Cancel Feed Downloads"
-    /// What VoiceOver says the Cancel button does: it stops the download
-    /// under way and those waiting to start, whether the listener or the
-    /// newest-N rule asked for them, and the rule never starts them again
-    /// by itself (`FeedItem.downloadOrigin`); the rule's downloads waiting
-    /// for a network or for room are left waiting.
-    static let cancelButtonHint = "Stops the downloads under way and waiting to start, "
-        + "and TextMouth won't start them again by itself. Downloads waiting for a network or for room keep waiting."
+    /// What VoiceOver says the Cancel button does (FR14): it stops every
+    /// feed download, whoever asked for it, the rule's waiting for a network
+    /// or for room too, and deletes what they had downloaded; and TextMouth
+    /// downloads each feed's newest again by itself later (`retryAfterCancel`).
+    static let cancelButtonHint = "Stops every feed download, those waiting for a network or for room too, "
+        + "and deletes what they had downloaded. " + retryAfterCancel
     /// What VoiceOver calls the section's bar, which counts every download
     /// of the run, the one under way by its bytes.
     static let overallBarLabel = "All feed downloads"

@@ -298,7 +298,7 @@ final class FeedNewestRuleTests: XCTestCase {
     func testAWaitIsNeverWrittenToDisk() throws {
         let waiting = FeedItemState.waiting(FeedDownloadWait.network.reason)
         XCTAssertTrue(waiting.isTransient)
-        XCTAssertEqual(waiting.waitingReason, "it downloads on a network without data limits")
+        XCTAssertEqual(waiting.waitingReason, "it downloads once this Mac is on a network without data limits")
         XCTAssertNil(waiting.failureReason)
         XCTAssertEqual(FeedDownloadWait.room(bytes: 61_000_000).reason, "it needs room for 61 MB on this Mac")
         XCTAssertNil(FeedDownloadWait(.transfer(.notFound)))

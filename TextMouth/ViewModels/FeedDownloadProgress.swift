@@ -250,8 +250,9 @@ struct FeedDownloadProgressState: Equatable {
 /// VoiceOver hears a run that lasts without having to find the section, by
 /// the import overlay's rules: each quarter of the run's downloads, once,
 /// at medium priority, and how the run ended, only once it has run for
-/// `announcedAfter`, and never after Cancel; and, at once, what Cancel
-/// stopped.
+/// `announcedAfter`, and never after Cancel. What Cancel stopped is said by
+/// the window that pressed it, once its focus has moved (FR14; REV13 item
+/// 3).
 @MainActor
 final class FeedDownloadProgress: ObservableObject {
     /// How long a run must have lasted before VoiceOver hears its quarters
@@ -347,14 +348,13 @@ final class FeedDownloadProgress: ObservableObject {
         announceStartIfDue(at: date)
     }
 
-    /// Notes that Cancel stopped the downloads titled `stopped`, and that
-    /// the download titled `finishing`, if any, finishes all the same, its
-    /// book already being added to the library; VoiceOver hears it at once,
-    /// with the downloads left waiting apart. The run then ends without
-    /// announcing its end.
-    func cancel(stopped: [String], finishing: String?) {
+    /// Notes that Cancel was pressed: the section says "Cancelling…" while a
+    /// download whose book is already being added finishes, and the run
+    /// ends without announcing its end. What Cancel stopped is said by the
+    /// window, once VoiceOver's focus has left the section (REV13 item 3,
+    /// `LibraryWindowView.cancelFeedDownloads(of:in:)`).
+    func cancel() {
         change { $0.cancel() }
-        VoiceOverAnnouncer.announce(FeedDownloadProgressWording.cancelled(stopped: stopped, finishing: finishing, waits: state.waits))
     }
 
     /// Shows nothing more, and says nothing: TextMouth quits, and each

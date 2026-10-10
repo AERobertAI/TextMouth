@@ -82,25 +82,36 @@ extension LibraryWindowView {
         }
     }
 
-    /// Stops `library`'s feed downloads, as the section's Cancel does, and
+    /// Stops `library`'s feed downloads, as the section's Cancel does (FR14),
     /// moves VoiceOver's focus from the section, which goes once the run
     /// ends, to the list of the Library window `window`, where Cancel was
-    /// pressed, so focus is never left on nothing (feed review item 19).
+    /// pressed, so focus is never left on nothing (feed review item 19), and
+    /// only then says what Cancel did, so the window's focus change never
+    /// talks over it (REV13 item 3).
     @MainActor
     static func cancelFeedDownloads(of library: LibraryViewModel, in window: NSWindow?) {
-        library.cancelFeedDownloads()
-        focusListAfterCancel(window)
+        let said = library.cancelFeedDownloads()
+        focusListAfterCancel(window) {
+            VoiceOverAnnouncer.announce(said, from: window)
+        }
     }
 
     /// Moves VoiceOver's focus to the list of the Library window given, a
-    /// moment after Cancel, once the section has gone: to the element the
-    /// window first focuses (`StandardVoiceOverFocusTriggerView`). A test
-    /// listens in its place.
+    /// moment after Cancel, once the section has gone, to the element the
+    /// window first focuses (`StandardVoiceOverFocusTriggerView`), then runs
+    /// `then` once the focus attempts have been posted: they come 0.3
+    /// seconds apart (`StandardVoiceOverFocusTriggerView.focusAttemptCount`),
+    /// within the moment waited again. With no window, `then` runs at once.
+    /// A test listens in its place.
     @MainActor
-    static var focusListAfterCancel: @MainActor (NSWindow?) -> Void = { window in
-        guard let window else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + VoiceOverAnnouncer.afterSheetDelay) {
+    static var focusListAfterCancel: @MainActor (NSWindow?, @escaping @MainActor () -> Void) -> Void = { window, then in
+        guard let window else {
+            then()
+            return
+        }
+        VoiceOverAnnouncer.afterSheetCloses {
             StandardVoiceOverFocusTriggerView.staticFindAndFocus(in: window)
+            VoiceOverAnnouncer.afterSheetCloses(then)
         }
     }
 }

@@ -149,6 +149,7 @@ extension FeedCenter {
         store.remove(feedID)
         fetchStates.remove(feedID)
         downloads.reopenFeed(feedID)
+        rulePauses[feedID] = nil
 
         // 5. Its library folder, when nothing else is in it.
         let folder = await library.removeFolderOfDeletedFeed(feed.folderID)

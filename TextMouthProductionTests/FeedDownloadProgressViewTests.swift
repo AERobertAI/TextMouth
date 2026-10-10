@@ -101,14 +101,26 @@ final class FeedDownloadProgressViewTests: XCTestCase {
 
     /// The section a Library window shows is the library's feed downloads'
     /// progress as it is at the moment shown, and its Cancel, the library's,
-    /// stops the feed engine's downloads, saying what it stopped, and moves
-    /// VoiceOver's focus from the section, which goes as the run ends, to
-    /// the window's list (feed review item 19).
+    /// stops the feed engine's downloads, moves VoiceOver's focus from the
+    /// section, which goes as the run ends, to the window's list (feed
+    /// review item 19), and only then says what it stopped, so the focus
+    /// change never talks over it (REV13 item 3).
     func testTheWindowsSectionShowsTheLibrarysDownloadsAndItsCancelStopsThem() async throws {
         var focusMoves = 0
+        var saidBeforeFocus: [String] = []
         let focusListBefore = LibraryWindowView.focusListAfterCancel
-        LibraryWindowView.focusListAfterCancel = { _ in focusMoves += 1 }
-        defer { LibraryWindowView.focusListAfterCancel = focusListBefore }
+        let posterBefore = VoiceOverAnnouncer.poster
+        let heard = HeardAnnouncements()
+        VoiceOverAnnouncer.poster = { announcement, _ in heard.messages.append(announcement.message) }
+        LibraryWindowView.focusListAfterCancel = { _, then in
+            saidBeforeFocus = heard.messages
+            focusMoves += 1
+            then()
+        }
+        defer {
+            LibraryWindowView.focusListAfterCancel = focusListBefore
+            VoiceOverAnnouncer.poster = posterBefore
+        }
         let world = try FeedTestWorld(self, label: "FeedProgressSectionCancel")
         let words = (1...300).map { "word\($0)" }.joined(separator: " ")
         let items = (1...2).map { number in
@@ -122,12 +134,11 @@ final class FeedDownloadProgressViewTests: XCTestCase {
         let section = LibraryWindowView.feedDownloadSection(for: world.library)
         XCTAssertEqual(section.state, world.library.feedDownloadProgress.state)
         XCTAssertEqual(section.state.lines(at: section.now), ["0 of 2 done", "Download 1 of 2: “Note 1” from Corkboard News"])
-        let recorder = recordingAnnouncements {
-            section.onCancel()
-        }
+        section.onCancel()
         await waitFor("the download under way stops") { !world.center.downloads.isDownloading("guid:post-1", of: feed.id) }
 
-        XCTAssertEqual(recorder.announcements.map(\.message), ["Stopped 2 feed downloads."])
+        XCTAssertEqual(saidBeforeFocus, [], "Cancel spoke before VoiceOver's focus moved")
+        XCTAssertEqual(heard.messages, ["Stopped 2 feed downloads. " + FeedDownloadProgressWording.retryAfterCancel])
         XCTAssertEqual(world.center.store.record(of: feed.id)?.items.map(\.state), [.notDownloaded, .notDownloaded])
         XCTAssertFalse(world.library.feedDownloadProgress.state.isRunning)
         XCTAssertEqual(focusMoves, 1, "Cancel left VoiceOver's focus on the section that went")
@@ -154,7 +165,7 @@ final class FeedDownloadProgressViewTests: XCTestCase {
         let status = progress.state.spokenStatus(at: clock.now)
         XCTAssertEqual(
             status,
-            "Feed Downloads: 0 of 2 done. Download 1 of 2: “Ep. 368” from Finish It!, 40% of 63 MB. 2 waiting for a network without data limits."
+            "Feed Downloads: 0 of 2 done. Download 1 of 2: “Ep. 368” from Finish It!, 40% of 63 MB. 2 waiting until this Mac is on a network without data limits."
         )
 
         try withHostedView(section, until: { !self.accessibilityElements(labelled: status, in: $0).isEmpty }) { hostingView in

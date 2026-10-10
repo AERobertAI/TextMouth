@@ -487,7 +487,7 @@ final class FeedDownloadTests: XCTestCase {
                 && world.center.downloads.current == nil
         }
         let waiting = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:new")?.state)
-        XCTAssertEqual(waiting, .waiting("it downloads on a network without data limits"))
+        XCTAssertEqual(waiting, .waiting("it downloads once this Mac is on a network without data limits"))
         XCTAssertEqual(waiting.visibleNote, "Waiting to Download")
         XCTAssertEqual(world.center.downloads.putOff.map(\.itemID), ["guid:new"])
         await world.center.store.flush()

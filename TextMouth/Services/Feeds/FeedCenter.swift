@@ -214,6 +214,18 @@ enum FeedSubscribeOutcome: Equatable, Sendable {
     case choose([FeedLink])
 }
 
+/// How long the feed downloads section's Cancel holds back a feed's
+/// newest-N downloads (FR14, `FeedCenter.cancelEveryDownload()`): until a
+/// check of the feed that began after Cancel has ended. TextMouth's next
+/// launch ends every pause, which lives only in memory.
+enum FeedRulePause: Equatable, Sendable {
+    /// Until the feed's next check ends.
+    case untilNextCheck
+    /// Until the check after the one under way as Cancel was pressed ends:
+    /// a check that began before Cancel ends none.
+    case untilTheCheckAfterTheOneUnderWay
+}
+
 /// What unsubscribing from a feed did (FR11, branch D,
 /// `FeedCenter.unsubscribe(_:)`), for the words the listener hears.
 struct FeedUnsubscribeOutcome: Equatable, Sendable {
@@ -362,6 +374,11 @@ final class FeedCenter: ObservableObject {
     /// package record's feed link says, by book ID: read once a book for
     /// Books Finished (`finishedBookKind(of:)`, REV11).
     var feedOriginOfRecords: [UUID: Bool] = [:]
+    /// The feeds whose newest-N downloads the feed downloads section's
+    /// Cancel holds back, and until when (FR14, `cancelEveryDownload()`):
+    /// the rule asks for none of their items meanwhile, while its other
+    /// work, taking back and removing, goes on.
+    var rulePauses: [UUID: FeedRulePause] = [:]
 
     /// An engine working with `environment`, started by `start(library:)`.
     init(environment: FeedEnvironment) {
@@ -697,6 +714,9 @@ final class FeedCenter: ObservableObject {
         guard let feed = store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
         store.update(feedID) { $0.feed.unsubscribedDate = environment.now() }
         downloads.withdrawRuleDownloads(of: feedID) { _ in true }
+        // The rule downloads nothing for it by itself now, so a pause Cancel
+        // put on it has nothing left to hold back (FR14).
+        rulePauses[feedID] = nil
         let outcome = FeedUnsubscribeOutcome(
             downloadCount: library?.feedItemRows(of: feedID).downloaded.count ?? 0,
             deletedKeptCount: deleteKeptPackages(of: feedID)
@@ -760,11 +780,50 @@ final class FeedCenter: ObservableObject {
     /// pass takes it back (REV11 F3).
     private func refreshEnded(_ report: FeedRefreshReport) {
         events.send(.refreshed(report))
+        endRulePause(afterCheckOf: report.feedID)
         requestSweep()
         requestItemPolicyPass(for: [report.feedID], retryingFailures: report.outcome != .skipped)
         if report.origin.isDiscretionary, report.outcome != .skipped {
             retryCountedPutOffDownloads()
         }
+    }
+
+    /// Notes that a check of the feed `feedID` ended, which ends the pause
+    /// the feed downloads section's Cancel put on the feed's newest-N
+    /// downloads (FR14), so the pass this check asks for downloads them
+    /// again; a check that was under way as Cancel was pressed only leaves
+    /// the pause to the next one.
+    private func endRulePause(afterCheckOf feedID: UUID) {
+        switch rulePauses[feedID] {
+        case .untilTheCheckAfterTheOneUnderWay?:
+            rulePauses[feedID] = .untilNextCheck
+        case .untilNextCheck?:
+            rulePauses[feedID] = nil
+        case nil:
+            break
+        }
+    }
+
+    /// Stops every feed download as the feed downloads section's Cancel
+    /// does, a pause rather than a refusal (FR14,
+    /// `FeedDownloadManager.cancelEveryDownload()`): what was under way,
+    /// waiting to start, or waiting for a network or for room stops, and
+    /// every partial download goes. For each feed whose download stopped,
+    /// the newest-N rule downloads nothing by itself until a check of the
+    /// feed that began after Cancel has ended (the hourly check, Check Feed,
+    /// Refresh All Feeds, or Resubscribe), never sooner, whatever else asks
+    /// for a pass meanwhile, or until TextMouth next opens, whose first pass
+    /// covers every feed. The listener's own Download is never held back.
+    /// - Returns: What VoiceOver hears of it, which the window says once
+    ///   its focus has moved (REV13 item 3).
+    @discardableResult
+    func cancelEveryDownload() -> String {
+        let cancellation = downloads.cancelEveryDownload()
+        for feedID in cancellation.feedIDs {
+            // A check under way began before Cancel, so ends no pause.
+            rulePauses[feedID] = refreshingFeedIDs.contains(feedID) ? .untilTheCheckAfterTheOneUnderWay : .untilNextCheck
+        }
+        return FeedDownloadProgressWording.cancelled(stopped: cancellation.stopped, finishing: cancellation.finishing)
     }
 
     /// Asks again for the downloads a network with data limits put off whose
