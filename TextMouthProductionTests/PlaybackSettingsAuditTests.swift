@@ -281,9 +281,9 @@ final class PlaybackSettingsAuditTests: XCTestCase {
 
     // MARK: - Per-book speed sheet
 
-    /// The sheet's stepper and slider share one binding that moves by the
-    /// fine step, lands on exact values, and updates the live player and the
-    /// saved book immediately.
+    /// The sheet's slider moves by the fine step through a binding that
+    /// lands on exact values and updates the live player and the saved book
+    /// immediately.
     func testSheetBindingMovesAudioSpeedByFineSteps() {
         let reader = makeReader(format: .audio)
         defer { reader.close() }
@@ -313,7 +313,7 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         }
     }
 
-    /// The stepper and slider hints state the fine step in words.
+    /// The slider's hint states the fine step in words.
     func testSheetControlHintStatesTheFineStep() {
         XCTAssertEqual(
             AudioSpeed.stepHint(AudioSpeed.fineStep),
@@ -321,32 +321,55 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         )
     }
 
-    /// In the rendered sheet, VoiceOver finds both audio controls labelled
-    /// "Audio speed", hears the spoken speed and the step, and its increment
-    /// action moves by exactly the fine step.
-    func testRenderedAudioSheetControlsAreLabelledAndMoveByFineStep() throws {
+    /// In the rendered sheet an audiobook's speed has one control, a slider,
+    /// as a text book's has (TODO A11; a stepper beside it did the same
+    /// thing). VoiceOver hears it once, "Audio speed, 1.25 times speed",
+    /// with the step as its hint, and its increment and decrement move by
+    /// exactly the fine step.
+    func testRenderedAudioSheetSetsTheSpeedWithOneSlider() throws {
         let reader = makeReader(format: .audio, localWPM: 1.25)
         defer { reader.close() }
 
         try withHostedControls(BookVoicePickerView(viewModel: reader)) { controls in
-            for role in [NSAccessibility.Role.incrementor, .slider] {
-                let control = try XCTUnwrap(controls.first { $0.role == role }, role.rawValue)
-                XCTAssertEqual(control.label, "Audio speed", role.rawValue)
-                XCTAssertEqual(control.valueDescription, "1.25 times speed", role.rawValue)
-                XCTAssertEqual(control.hint, "Changes the speed in steps of 0.05 times", role.rawValue)
-            }
+            let speedControls = controls.filter { [.slider, .incrementor].contains($0.role) }
+            XCTAssertEqual(speedControls.map(\.role), [.slider], "\(controls.map(\.label))")
+            let slider = try XCTUnwrap(speedControls.first)
+            XCTAssertEqual(slider.label, BookSettingsSheetWording.audioSpeedLabel)
+            XCTAssertEqual(slider.label, "Audio speed")
+            XCTAssertEqual(slider.valueDescription, "1.25 times speed")
+            XCTAssertEqual(slider.hint, "Changes the speed in steps of 0.05 times")
 
-            let stepper = try XCTUnwrap(controls.first { $0.role == .incrementor })
-            _ = stepper.element.accessibilityPerformIncrement()
+            _ = slider.element.accessibilityPerformIncrement()
             XCTAssertEqual(reader.audioSpeed, 1.3)
-            // SwiftUI re-renders asynchronously; the spoken value must follow,
-            // and the slider must receive 1.3 before it is adjusted.
-            XCTAssertTrue(waitUntil { stepper.element.accessibilityValueDescription() == "1.3 times speed" })
+            // SwiftUI re-renders asynchronously; the spoken value must
+            // follow, and the slider must receive 1.3 before it is adjusted
+            // again.
+            XCTAssertTrue(waitUntil { slider.element.accessibilityValueDescription() == "1.3 times speed" })
 
-            let slider = try XCTUnwrap(controls.first { $0.role == .slider })
             _ = slider.element.accessibilityPerformDecrement()
             XCTAssertEqual(reader.audioSpeed, 1.25)
         }
+    }
+
+    /// An audiobook's settings are named "Audio Settings" on the toolbar
+    /// button, to VoiceOver, and on the sheet, since the sheet holds more
+    /// than the speed (TODO A11); a text book's keep their names.
+    func testAnAudiobooksSettingsAreNamedAudioSettings() {
+        XCTAssertEqual(BookSettingsSheetWording.buttonTitle(isAudioBook: true), "Audio Settings")
+        XCTAssertEqual(BookSettingsSheetWording.buttonLabel(isAudioBook: true), "Audio Settings")
+        XCTAssertEqual(BookSettingsSheetWording.heading(isAudioBook: true), "Audio Settings for This Book")
+        XCTAssertEqual(
+            BookSettingsSheetWording.title(isAudioBook: true, bookTitle: "Canal Survey"),
+            "Audio Settings: Canal Survey"
+        )
+
+        XCTAssertEqual(BookSettingsSheetWording.buttonTitle(isAudioBook: false), "Voice")
+        XCTAssertEqual(BookSettingsSheetWording.buttonLabel(isAudioBook: false), "Change voice for this book")
+        XCTAssertEqual(BookSettingsSheetWording.heading(isAudioBook: false), "Voice & Speed for This Book")
+        XCTAssertEqual(
+            BookSettingsSheetWording.title(isAudioBook: false, bookTitle: "Canal Survey"),
+            "Voice & Speed: Canal Survey"
+        )
     }
 
     /// The toolbar button opening the sheet shows a speed gauge for audio

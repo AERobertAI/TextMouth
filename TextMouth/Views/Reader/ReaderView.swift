@@ -101,7 +101,7 @@ struct ReaderView: View {
     /// The reader's toolbar, in order: Return, while there is a reading
     /// position to return to; Where Am I?; the buttons that open the
     /// Headings, Bookmarks, Sleep Timer, Search (a text book's only), Voice
-    /// or Speed, and Book Info panels; and the speed in force.
+    /// or Audio Settings, and Book Info panels; and the speed in force.
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         ToolbarItemGroup {
@@ -138,10 +138,12 @@ struct ReaderView: View {
                 }
             }
 
+            // The book's own settings: a text book's voice, or an
+            // audiobook's audio settings (TODO A11).
             toolbarButton(
-                viewModel.isAudioBook ? "Speed" : "Voice",
+                LocalizedStringKey(BookSettingsSheetWording.buttonTitle(isAudioBook: viewModel.isAudioBook)),
                 systemImage: Self.bookSettingsSymbol(isAudioBook: viewModel.isAudioBook),
-                spokenLabel: viewModel.isAudioBook ? "Change audio speed for this book" : "Change voice for this book"
+                spokenLabel: LocalizedStringKey(BookSettingsSheetWording.buttonLabel(isAudioBook: viewModel.isAudioBook))
             ) {
                 panels.voice.toggle()
             }
@@ -199,9 +201,10 @@ struct ReaderView: View {
         viewModel.book.localWPM != nil ? .accentColor : .secondary
     }
 
-    /// SF Symbol for the toolbar button that opens per-book settings. Audio
-    /// books open speed-only settings, so they show a speed gauge rather
-    /// than the voice icon a sighted user would read as "voice settings".
+    /// SF Symbol for the toolbar button that opens per-book settings. An
+    /// audiobook's Audio Settings show a speed gauge, for the speed they
+    /// set first, rather than the voice icon a sighted user would read as
+    /// "voice settings".
     static func bookSettingsSymbol(isAudioBook: Bool) -> String {
         isAudioBook ? "gauge.with.needle" : "person.wave.2"
     }
@@ -222,7 +225,7 @@ struct ReaderPanels {
     var sleepTimer = false
     /// The book's info (`ReaderBookInfoSheet`).
     var bookInfo = false
-    /// The book's voice and speed, or an audiobook's speed
+    /// The book's voice and speed, or an audiobook's audio settings
     /// (`BookVoicePickerView`).
     var voice = false
     /// Search in the book (`BookSearchView`), for a text book only.
@@ -838,7 +841,7 @@ struct BookVoicePickerView: View {
     var body: some View {
         let _ = ViewBodyCounter.record("BookVoicePickerView")
         VStack(spacing: 16) {
-            Text(viewModel.isAudioBook ? "Audio Speed for This Book" : "Voice & Speed for This Book")
+            Text(BookSettingsSheetWording.heading(isAudioBook: viewModel.isAudioBook))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
@@ -848,7 +851,7 @@ struct BookVoicePickerView: View {
                     // voice, WPM, and pitch controls would otherwise write
                     // incompatible local state, so none of them appear here.
                     Section("Audio Speed") {
-                        audioSpeedControls
+                        audioSpeedSlider
                     }
                 } else {
                     Section {
@@ -1002,7 +1005,7 @@ struct BookVoicePickerView: View {
         }
         .padding()
         .frame(width: 450, height: 600)
-        .navigationTitle("\(viewModel.isAudioBook ? "Audio Speed" : "Voice & Speed"): \(viewModel.book.title)")
+        .navigationTitle(BookSettingsSheetWording.title(isAudioBook: viewModel.isAudioBook, bookTitle: viewModel.book.title))
         .onAppear {
             // Default to the current voice's language
             if let voice = viewModel.speechService.currentVoice {
@@ -1013,43 +1016,38 @@ struct BookVoicePickerView: View {
         }
     }
 
-    /// Audio books get the current speed, a stepper for precise changes, and
-    /// a slider for large ones. Both controls move by `AudioSpeed.fineStep`
-    /// through one binding.
+    /// An audiobook's speed, set with one slider as a text book's is
+    /// (TODO A11). A stepper beside it did the same thing, and a line of
+    /// text read the speed to VoiceOver a third time. The slider moves by
+    /// `AudioSpeed.fineStep`, and VoiceOver reads it once: "Audio speed,
+    /// 1.25 times speed", then the step as its hint. The speed shown above
+    /// it is for the eye alone, as on a text book's sheet.
     ///
-    /// On macOS these controls are AppKit cells. SwiftUI copies an explicit
-    /// `accessibilityLabel` onto them, but not the label view, so the label
+    /// On macOS the slider is an AppKit cell. SwiftUI copies an explicit
+    /// `accessibilityLabel` onto it, but not the label view, so the label
     /// is repeated. `accessibilityValue` becomes the AXValueDescription that
     /// VoiceOver speaks instead of the cell's bare number.
-    @ViewBuilder
-    private var audioSpeedControls: some View {
-        let controlLabel = "Audio speed"
-        let spokenSpeed = AudioSpeed.spokenLabel(for: viewModel.audioSpeed)
-        let stepHint = AudioSpeed.stepHint(AudioSpeed.fineStep)
+    private var audioSpeedSlider: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // The speed for the eye; VoiceOver hears it once, as the
+            // slider's value.
+            Text("Speed: \(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))")
+                .accessibilityHidden(true)
 
-        Text(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))
-            .accessibilityLabel(spokenSpeed)
-
-        Stepper(value: audioSpeedBinding, in: AudioSpeed.range, step: AudioSpeed.fineStep) {
-            Text(controlLabel)
+            Slider(value: audioSpeedBinding, in: AudioSpeed.range, step: AudioSpeed.fineStep) {
+                Text(BookSettingsSheetWording.audioSpeedLabel)
+            }
+            .accessibilityLabel(BookSettingsSheetWording.audioSpeedLabel)
+            .accessibilityValue(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
+            .accessibilityHint(AudioSpeed.stepHint(AudioSpeed.fineStep))
         }
-        .accessibilityLabel(controlLabel)
-        .accessibilityValue(spokenSpeed)
-        .accessibilityHint(stepHint)
-
-        Slider(value: audioSpeedBinding, in: AudioSpeed.range, step: AudioSpeed.fineStep) {
-            Text(controlLabel)
-        }
-        .accessibilityLabel(controlLabel)
-        .accessibilityValue(spokenSpeed)
-        .accessibilityHint(stepHint)
     }
 
-    /// The one binding behind the audio stepper and slider. Writes go through
+    /// The binding behind the audio speed slider. Writes go through
     /// `setAudioSpeed(_:)`, which snaps, clamps, applies, saves, and announces
     /// the speed, so the playback bar and toolbar caption update at once.
     /// Internal (not private) so hosted tests can drive exactly what the
-    /// controls do.
+    /// slider does.
     var audioSpeedBinding: Binding<Double> {
         Binding(
             get: { viewModel.audioSpeed },
@@ -1089,6 +1087,49 @@ struct BookVoicePickerView: View {
 
 /// The voice sheet's only input is its reader (PERF30).
 extension BookVoicePickerView: SheetOverOneReader {}
+
+/// What the reader calls a book's own settings sheet (`BookVoicePickerView`)
+/// and the toolbar button that opens it: a text book's voice, speed, and
+/// pitch, or an audiobook's audio settings. The user asked on October 10
+/// (TODO A11) that the audiobook's be named "audio settings", since the
+/// sheet holds more than the speed it was named for. Its button says the
+/// same words on screen and to VoiceOver.
+enum BookSettingsSheetWording {
+    /// An audiobook's sheet: the button's title, its VoiceOver label, and
+    /// the sheet's name.
+    private static let audioSettings = "Audio Settings"
+
+    /// The sheet's name, which begins its heading and its title: "Audio
+    /// Settings", or a text book's "Voice & Speed".
+    private static func sheetName(isAudioBook: Bool) -> String {
+        isAudioBook ? audioSettings : "Voice & Speed"
+    }
+
+    /// The toolbar button's title: "Audio Settings", or a text book's
+    /// "Voice".
+    static func buttonTitle(isAudioBook: Bool) -> String {
+        isAudioBook ? audioSettings : "Voice"
+    }
+
+    /// What VoiceOver calls the toolbar button: an audiobook's is its title.
+    static func buttonLabel(isAudioBook: Bool) -> String {
+        isAudioBook ? audioSettings : "Change voice for this book"
+    }
+
+    /// The heading at the top of the sheet: "Audio Settings for This Book".
+    static func heading(isAudioBook: Bool) -> String {
+        "\(sheetName(isAudioBook: isAudioBook)) for This Book"
+    }
+
+    /// The sheet's title, naming the book: "Audio Settings: " and the title.
+    static func title(isAudioBook: Bool, bookTitle: String) -> String {
+        "\(sheetName(isAudioBook: isAudioBook)): \(bookTitle)"
+    }
+
+    /// The audiobook speed slider's label, which VoiceOver reads before the
+    /// speed: "Audio speed, 1.25 times speed".
+    static let audioSpeedLabel = "Audio speed"
+}
 
 // MARK: - Book Info Bar
 
