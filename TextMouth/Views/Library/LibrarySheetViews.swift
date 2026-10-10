@@ -307,7 +307,9 @@ struct LibraryFolderOption: Hashable {
 /// Cancel New Folder, which closes them, saying so, before a second Escape
 /// closes the sheet; an owner with a Return-key or Escape button of its own
 /// withdraws that shortcut meanwhile, following `isMakingFolder`, so one
-/// press does one thing.
+/// press does one thing, and Create gives Return up while the owner hands it
+/// to a button of its own (`createTakesReturn`), so one button at a time is
+/// the default.
 struct LibraryFolderPicker: View {
     /// The places the pop-up offers.
     let options: [LibraryFolderOption]
@@ -328,10 +330,15 @@ struct LibraryFolderPicker: View {
     /// Whether the controls are unavailable, as while the owner works.
     let isDisabled: Bool
     /// Where the owner follows whether the new-folder fields are showing,
-    /// kept current by the picker, so a Return-key button of the owner's
-    /// can stand down while they are; its first value says whether the
-    /// fields start shown. Nil for an owner with no such button.
+    /// kept current by the picker, so a Return-key or Escape button of the
+    /// owner's can stand down while they are; its first value says whether
+    /// the fields start shown. Nil for an owner with no such button.
     let isMakingFolder: Binding<Bool>?
+    /// Whether the fields' Create takes Return while they are shown: true,
+    /// unless the owner gives the key to a button of its own for now, as Add
+    /// Feed gives it to Search while the Search field has the keyboard, so
+    /// one button at a time is the default button and draws as one.
+    let createTakesReturn: Bool
 
     /// Whether the new-folder fields are showing.
     @State private var showNewFolder: Bool
@@ -362,8 +369,9 @@ struct LibraryFolderPicker: View {
     }
 
     /// The picker with its pop-up's `options`, the `newFolderParents` a new
-    /// folder may go in, and the `selection` it keeps; `isDisabled` and
-    /// `isMakingFolder` are for the owners that need them.
+    /// folder may go in, and the `selection` it keeps; `isDisabled`,
+    /// `isMakingFolder`, and `createTakesReturn` are for the owners that
+    /// need them.
     init(
         options: [LibraryFolderOption],
         newFolderParents: [LibraryFolderOption],
@@ -373,7 +381,8 @@ struct LibraryFolderPicker: View {
         onCreateFolder: @escaping (String, String) -> OperationOutcome,
         failureMessage: Binding<String?>,
         isDisabled: Bool = false,
-        isMakingFolder: Binding<Bool>? = nil
+        isMakingFolder: Binding<Bool>? = nil,
+        createTakesReturn: Bool = true
     ) {
         self.options = options
         self.newFolderParents = newFolderParents
@@ -384,6 +393,7 @@ struct LibraryFolderPicker: View {
         _failureMessage = failureMessage
         self.isDisabled = isDisabled
         self.isMakingFolder = isMakingFolder
+        self.createTakesReturn = createTakesReturn
         _showNewFolder = State(initialValue: isMakingFolder?.wrappedValue ?? false)
     }
 
@@ -448,9 +458,12 @@ struct LibraryFolderPicker: View {
                     Spacer()
                     // Return presses Create while the fields are shown; the
                     // owner's Return-key button stands down meanwhile
-                    // (`isMakingFolder`), so one press does one thing.
+                    // (`isMakingFolder`), so one press does one thing, and
+                    // Create stands down while the owner gives the key to
+                    // a button of its own (`createTakesReturn`), so one
+                    // button at a time is the default.
                     Button("Create", action: createFolder)
-                        .keyboardShortcut(.defaultAction)
+                        .keyboardShortcut(createTakesReturn ? KeyboardShortcut.defaultAction : nil)
                         .disabled(BookFolder.normalizedName(newFolderName) == nil)
                 }
             }

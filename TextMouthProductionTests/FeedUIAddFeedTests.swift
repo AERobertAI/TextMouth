@@ -586,6 +586,63 @@ final class FeedUIAddFeedTests: XCTestCase {
         XCTAssertEqual(heard, [FeedWording.checkingAddress, FeedWording.choosePrompt(count: 2), FeedWording.checkingAddress])
     }
 
+    /// With the new folder's fields shown and a name typed in them, Return
+    /// in the Search field never makes the folder: Create stands down while
+    /// the Search field has the keyboard, so one button at a time is the
+    /// default. With no words typed, Return does nothing there, Search
+    /// being unavailable; with words, it searches; back in the name field,
+    /// it makes the folder. Until October 10, 2026, Return in an empty
+    /// Search field made the folder.
+    func testReturnInTheSearchFieldNeverMakesTheNewFolder() throws {
+        let world = try FeedTestWorld(self, label: "FeedUIReturnSearch")
+        world.server.serve("/search", try .directoryAnswer("itunes-search-empty.json", feedsOn: world.server))
+        guard startTurningTheRunLoop(world) else { return }
+        var heard: [String] = []
+        let model = AddFeedModel(center: world.center, parentPath: "", announce: { heard.append($0) })
+        let creates = CallLog<String>()
+        let sheet = AddFeedSheet(
+            model: model,
+            library: world.library.library,
+            feedFolders: LibraryFeedFolders(center: world.center),
+            // Refused, so the fields stay shown with their name.
+            onCreateFolder: { name, _ in
+                creates.record(name)
+                return .failure("Could not create folder: refused for the test")
+            },
+            onSubscribed: { _ in },
+            onCancel: {},
+            makingFolder: true
+        )
+
+        try withHostedView(sheet, size: NSSize(width: 520, height: 720), until: { !self.newFolderNameFields(in: $0).isEmpty }) { hosting in
+            try typeNewFolderName("Shows", in: hosting)
+            let search = try XCTUnwrap(
+                feedEditableFields(in: hosting).first { $0.placeholderString == FeedWording.searchLabel },
+                "the Search field was not drawn"
+            )
+
+            // The Search field empty: nothing takes Return.
+            try typeReplacingText("", in: search, of: hosting)
+            XCTAssertFalse(pressReturnKey(in: hosting), "a button took Return in the empty Search field")
+            settleHostedView(hosting)
+            XCTAssertEqual(creates.calls, [], "Return in the Search field made the new folder")
+
+            // Words typed: Return searches, and makes no folder.
+            try typeReplacingText("tactile", in: search, of: hosting)
+            guard pressReturnKey(in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertEqual(heard.first, FeedWording.searching, "Return did not press Search")
+            XCTAssertTrue(waitUntil(timeout: 10) { !model.isSearching }, "the search did not end")
+            XCTAssertEqual(creates.calls, [], "Return in the Search field made the new folder")
+
+            // Back in the name field, Return makes the folder.
+            try typeNewFolderName("Shows", in: hosting)
+            XCTAssertTrue(pressReturnKey(in: hosting), "nothing took Return in the name field")
+            XCTAssertEqual(creates.calls, ["Shows"], "Return in the name field did not press Create")
+        }
+    }
+
     // MARK: - The Escape Key
 
     /// While the new folder's fields are shown, Escape closes them, says

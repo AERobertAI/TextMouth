@@ -207,6 +207,8 @@ final class AddFeedModel: ObservableObject, Identifiable {
 /// and while the picker's New Folder fields are shown it presses their
 /// Create, Subscribe standing down meanwhile, so one press does one thing;
 /// Escape then closes the fields, Cancel standing down until they close.
+/// One button at a time is the default: in the Search field, Search, even
+/// with the fields shown, Create standing down meanwhile.
 /// While the address is read the sheet says so; a web page naming several
 /// feeds turns the sheet to a radio group of them; a failure stays in the
 /// sheet, beside the address, and is announced.
@@ -331,7 +333,11 @@ struct AddFeedSheet: View {
                 onCreateFolder: onCreateFolder,
                 failureMessage: $folderFailure,
                 isDisabled: model.isWorking,
-                isMakingFolder: $isMakingFolder
+                isMakingFolder: $isMakingFolder,
+                // Search takes Return while its field has the keyboard, so
+                // Create stands down then: one default button at a time,
+                // and Return in the Search field never makes a folder.
+                createTakesReturn: !searchFocused
             )
             // A page naming several feeds replaces this step, picker and
             // all: its fields are gone, so Subscribe takes Return back.
