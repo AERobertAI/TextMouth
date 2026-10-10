@@ -9,10 +9,12 @@ enum RecordingWording {
 
     // MARK: - The Window and Its Commands
 
-    /// The window's title, which VoiceOver reads as the window's name.
+    /// The window's title, which VoiceOver reads as the window's name, and
+    /// the name of its buttons' group in the Shortcuts tab
+    /// (`ShortcutAction.recordingWindowCategory`). The menu command that
+    /// opens it, in the File and Library menus, is named by its action
+    /// (`ShortcutAction.newRecording.title`).
     static let windowTitle = "New Recording"
-    /// The menu command that opens the window, in the File and Library menus.
-    static let menuTitle = "New Recording…"
 
     // MARK: - Microphone
 

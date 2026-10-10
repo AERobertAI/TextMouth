@@ -604,7 +604,7 @@ final class FeedUIAddFeedTests: XCTestCase {
         // The app's menus, which hold every other menu command's key.
         guard let menu = NSApp.mainMenu else { throw XCTSkip("the test host has no main menu") }
         let items = feedMenuItems(of: menu)
-        guard let addFeed = items.first(where: { $0.title == FeedWording.addFeedCommand }) else {
+        guard let addFeed = items.first(where: { $0.title == ShortcutAction.addFeed.title }) else {
             throw XCTSkip("the test host's menus are not built")
         }
         let front = FrontWindowKind.shared.kind

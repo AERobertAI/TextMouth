@@ -616,14 +616,16 @@ final class RecordingWindowTests: XCTestCase {
         XCTAssertEqual(answering("r", .command).map(\.title), [])
         XCTAssertEqual(answering("p", .command).map(\.title), [])
         XCTAssertEqual(answering(".", .command).map(\.title), [])
-        XCTAssertEqual(answering("n", [.option, .command]).map(\.title), [RecordingWording.menuTitle])
+        let newRecording = ShortcutAction.newRecording.title
+        XCTAssertEqual(newRecording, "New Recording…")
+        XCTAssertEqual(answering("n", [.option, .command]).map(\.title), [newRecording])
 
         let file = try XCTUnwrap(menu.items.first { $0.title == "File" }?.submenu)
         let titles = file.items.map(\.title)
         let fromText = try XCTUnwrap(titles.firstIndex(of: ShortcutAction.newFromText.title))
-        XCTAssertEqual(titles[safe: fromText + 1], RecordingWording.menuTitle)
+        XCTAssertEqual(titles[safe: fromText + 1], newRecording)
         let library = try XCTUnwrap(menu.items.first { $0.title == "Library" }?.submenu)
-        XCTAssertTrue(library.items.contains { $0.title == RecordingWording.menuTitle })
+        XCTAssertTrue(library.items.contains { $0.title == newRecording })
     }
 
     /// The Record window shows neither the Library's nor a reader's menus.

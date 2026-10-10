@@ -50,8 +50,6 @@ final class MenuKeyShortcutTests: XCTestCase {
         }
         XCTAssertEqual(ShortcutAction.recordingStop.rawValue, "New Recording: Stop", "config.json tells it from the editor's Stop")
         XCTAssertEqual(ShortcutAction.recordingWindowCategory, RecordingWording.windowTitle, "the group is named as VoiceOver names the window")
-        XCTAssertEqual(ShortcutAction.addFeed.title, FeedWording.addFeedCommand)
-        XCTAssertEqual(ShortcutAction.newRecording.title, RecordingWording.menuTitle)
         XCTAssertEqual(ShortcutAction.recordingRecord.title, RecordingWording.recordTitle)
         XCTAssertEqual(ShortcutAction.recordingStop.title, RecordingWording.stopTitle)
         XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Playback" }.suffix(2), [.copyReadingPosition, .searchInBook])
