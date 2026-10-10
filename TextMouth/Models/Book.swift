@@ -1406,4 +1406,52 @@ extension Book {
         skippedHeadingIDs = skipped?.map(\.id)
         skippedHeadings = skipped
     }
+
+    /// How many of this book's saved places keep no words yet (T06): its
+    /// reading position, its bookmarks, and its skipped headings without
+    /// anchors. An audiobook's places count time in its recording and need
+    /// none (P08), so it has none.
+    var placesWithoutAnchors: Int {
+        guard !format.isAudio else { return 0 }
+        let position = readingPosition.map { $0.anchor == nil ? 1 : 0 } ?? 0
+        return position
+            + bookmarks.filter { $0.anchor == nil }.count
+            + (skippedHeadings ?? []).filter { $0.anchor == nil }.count
+    }
+
+    /// Gives each of this book's places that `captured` holds words for
+    /// those words, when the place is still saved where they were captured
+    /// and still has none (T06, question 6), and returns the words it gave.
+    /// A place the listener moved meanwhile, or one given words meanwhile,
+    /// keeps its own. Nothing else changes: a place's date stays, since it
+    /// has not moved, and so do the skipped headings' IDs.
+    @discardableResult
+    mutating func adoptCapturedAnchors(_ captured: CapturedPlaceAnchors) -> CapturedPlaceAnchors {
+        var adopted = CapturedPlaceAnchors()
+        if let placed = captured.position, var position = readingPosition, position.anchor == nil,
+           position.chapterIndex == placed.place.chapter, position.characterOffset == placed.place.offset {
+            position.anchor = placed.anchor
+            readingPosition = position
+            adopted.position = placed
+        }
+        for index in bookmarks.indices {
+            let bookmark = bookmarks[index]
+            guard bookmark.anchor == nil, let placed = captured.bookmarks[bookmark.id],
+                  bookmark.chapterIndex == placed.place.chapter,
+                  bookmark.characterOffset == placed.place.offset else { continue }
+            bookmarks[index].anchor = placed.anchor
+            adopted.bookmarks[bookmark.id] = placed
+        }
+        if var skipped = skippedHeadings, !captured.skippedHeadings.isEmpty {
+            for index in skipped.indices where skipped[index].anchor == nil {
+                guard let anchor = captured.skippedHeadings[skipped[index].id] else { continue }
+                skipped[index].anchor = anchor
+                adopted.skippedHeadings[skipped[index].id] = anchor
+            }
+            // Set directly, not through `setSkippedHeadings(_:)`: the same
+            // headings, now with their words, keep the IDs as they are.
+            skippedHeadings = skipped
+        }
+        return adopted
+    }
 }

@@ -82,6 +82,26 @@ extension ReaderViewModel {
         }
     }
 
+    /// Gives the bookmarks and skipped headings this book saved without
+    /// words theirs, from the text just loaded, as it reads now (T06,
+    /// question 6; `CapturedPlaceAnchors.capturing(missingFrom:in:measuredIn:includingPosition:)`):
+    /// the book's row and record through the library, and this reader's own
+    /// copies. The position takes its words from the save the load makes.
+    /// Places that have words keep them, and nothing is spoken or shown.
+    func captureMissingAnchorsAtLoad() {
+        guard !isAudioBook, let content, let row = libraryViewModel.bookByID(book.id) else { return }
+        let captured = CapturedPlaceAnchors.capturing(
+            missingFrom: row,
+            in: content,
+            measuredIn: textAnchorMeasure,
+            includingPosition: false
+        )
+        guard !captured.isEmpty else { return }
+        libraryViewModel.adoptCapturedAnchors([book.id: captured])
+        bookmarks = libraryViewModel.bookmarksForBook(book.id)
+        book.adoptCapturedAnchors(captured)
+    }
+
     // MARK: Where a Saved Place Opens
 
     /// Where a book saved at `saved` opens in `content`, its text as just

@@ -1352,8 +1352,10 @@ final class ReaderViewModel: ObservableObject {
         }
         // Every place saved from now on takes its words from this text, but
         // the place the book opened at keeps the words it was saved with
-        // while the cursor stays there (T06).
+        // while the cursor stays there; the bookmarks and skipped headings
+        // saved before anchors take theirs from it now (T06).
         noteLoadedTextForAnchors(cacheFormatVersion: loaded.cacheFormatVersion)
+        captureMissingAnchorsAtLoad()
         // A book that played to its end was saved exactly there, and opens
         // finished, as it rested before TextMouth quit (TODO P07): its next
         // backward skip plays its end again, and Play does what Play does at

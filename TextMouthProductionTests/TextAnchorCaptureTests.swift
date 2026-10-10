@@ -274,6 +274,124 @@ final class TextAnchorCaptureTests: XCTestCase {
         XCTAssertEqual(TextAnchor.measure(ofTextCachedBy: MarkdownCacheService.currentCacheVersion), TextAnchor.currentMeasure)
     }
 
+    // MARK: - Places Saved Before Anchors, as the Book Loads (Question 6)
+
+    /// A book whose places were saved before anchors gives them their words
+    /// as it loads, from its text as it reads now: a bookmark at its place,
+    /// one past its chapter's end at that end, a skipped heading its ID
+    /// names at the heading's start, and the position through the load's
+    /// own save. A bookmark in a chapter the book lacks, and a skipped
+    /// heading whose ID names no heading now, keep none; a bookmark that had
+    /// words keeps them, and the IDs stay as they were. The row, the record,
+    /// and the reader's own copies take them.
+    func testPlacesSavedBeforeAnchorsTakeTheirWordsAsTheBookLoads() throws {
+        let world = try makeIntegrationWorld("Anchor Capture At Load")
+        let book = try world.importBook(from: writeOrchardEPUB())
+        let content = try MarkdownCacheService.loadFromCache(for: book)
+        let pressing = try XCTUnwrap(content.allHeadings.first { $0.text == "The Cider Press" }, "the fixture lacks the heading")
+        let firstLength = content.chapters[0].text.utf16Length
+        let earlier = TextAnchor(before: "an earlier ", after: "capture", fraction: 0.7, measuredIn: "3.0.4/1.0.0")
+        let inPlace = Bookmark(number: 1, chapterIndex: 1, characterOffset: 33, label: "Frost")
+        let pastItsEnd = Bookmark(number: 2, chapterIndex: 0, characterOffset: firstLength + 6)
+        let lostChapter = Bookmark(number: 3, chapterIndex: 7, characterOffset: 4)
+        let anchored = Bookmark(number: 4, chapterIndex: 2, characterOffset: 12, anchor: earlier)
+        let gone = "1-999-1-Gone Heading"
+        // The places as a build before anchors saved them: skips by ID alone.
+        world.library.updateBook(id: book.id) { row in
+            row.readingPosition = ReadingPosition(chapterIndex: 2, characterOffset: 50)
+            row.bookmarks = [inPlace, pastItsEnd, lostChapter, anchored]
+            row.skippedHeadingIDs = [pressing.id, gone]
+        }
+
+        let reader = world.openReader(for: try XCTUnwrap(world.library.bookByID(book.id)))
+        waitForReaderToLoad(reader)
+
+        func words(_ chapter: Int, _ offset: Int) -> TextAnchor? {
+            content.anchor(at: TextPlace(chapter: chapter, offset: offset), measuredIn: TextAnchor.currentMeasure)
+        }
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.bookmarks.map(\.anchor), [words(1, 33), words(0, firstLength + 6), nil, earlier])
+        XCTAssertEqual(row.bookmarks.map(\.characterOffset), [33, firstLength + 6, 4, 12], "a bookmark moved")
+        let waiting = try XCTUnwrap(SkippedHeading(id: gone))
+        let expectedSkips = [
+            SkippedHeading(pressing, anchor: words(pressing.chapterIndex, pressing.characterOffset)),
+            waiting,
+        ]
+        XCTAssertEqual(row.skippedHeadings, expectedSkips)
+        XCTAssertEqual(row.skippedHeadingIDs, [pressing.id, gone])
+        XCTAssertEqual(row.readingPosition?.anchor, words(2, 50))
+        XCTAssertEqual(reader.bookmarks, row.bookmarks, "the reader's bookmarks lack their words")
+        XCTAssertEqual(reader.book.skippedHeadings, expectedSkips, "the reader's skipped headings lack their words")
+        LibraryPersistenceService.flushPendingSave()
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(record.bookmarks.map(\.anchor), row.bookmarks.map(\.anchor))
+        XCTAssertEqual(record.state.skippedHeadings, expectedSkips)
+        XCTAssertEqual(record.state.readingPosition?.anchor, words(2, 50))
+    }
+
+    /// Words captured for a place go only to a place still saved where they
+    /// were captured and still without words: a position and a bookmark the
+    /// listener moved meanwhile, places given words meanwhile, and a heading
+    /// no longer skipped keep what they have. A place given words keeps its
+    /// date, and the skipped headings their IDs. An audiobook's places need
+    /// no words. Pure: no window.
+    func testCapturedWordsGoOnlyToPlacesStillSavedWhereTheyWere() {
+        let words = TextAnchor(before: "the pomace is ", after: "carted to the pigs", fraction: 0.9, measuredIn: TextAnchor.currentMeasure)
+        let other = TextAnchor(before: "juice from ", after: "the first pressing", fraction: 0.8)
+        let pressing = SkippedHeading(level: 1, label: "The Cider Press", chapterIndex: 2, characterOffset: 0)
+        let bookmark = Bookmark(number: 1, chapterIndex: 2, characterOffset: 40)
+        let place = TextPlace(chapter: 2, offset: 40)
+        var captured = CapturedPlaceAnchors()
+        captured.position = CapturedPlaceAnchors.Placed(place: place, anchor: words)
+        captured.bookmarks[bookmark.id] = CapturedPlaceAnchors.Placed(place: place, anchor: words)
+        captured.skippedHeadings[pressing.id] = words
+        func orchard(position: ReadingPosition?, bookmarks: [Bookmark], skippedIDs: [String]?, skipped: [SkippedHeading]? = nil) -> Book {
+            Book(
+                title: "Orchard Ledger", format: .epub, filePath: "/nowhere/orchard.epub", md5Hash: "orchard",
+                readingPosition: position, bookmarks: bookmarks, skippedHeadingIDs: skippedIDs, skippedHeadings: skipped
+            )
+        }
+
+        var still = orchard(position: ReadingPosition(chapterIndex: 2, characterOffset: 40), bookmarks: [bookmark], skippedIDs: [pressing.id])
+        let dated = still.readingPosition?.lastUpdated
+        XCTAssertEqual(still.placesWithoutAnchors, 3)
+        XCTAssertEqual(still.adoptCapturedAnchors(captured), captured)
+        XCTAssertEqual(still.readingPosition?.anchor, words)
+        XCTAssertEqual(still.readingPosition?.lastUpdated, dated, "the place was dated anew")
+        XCTAssertEqual(still.bookmarks.first?.anchor, words)
+        XCTAssertEqual(still.skippedHeadings?.first?.anchor, words)
+        XCTAssertEqual(still.skippedHeadingIDs, [pressing.id])
+        XCTAssertEqual(still.placesWithoutAnchors, 0)
+
+        let movedBookmark = Bookmark(id: bookmark.id, number: 1, chapterIndex: 2, characterOffset: 41)
+        var moved = orchard(position: ReadingPosition(chapterIndex: 2, characterOffset: 41), bookmarks: [movedBookmark], skippedIDs: nil)
+        XCTAssertTrue(moved.adoptCapturedAnchors(captured).isEmpty)
+        XCTAssertNil(moved.readingPosition?.anchor)
+        XCTAssertNil(moved.bookmarks.first?.anchor)
+        XCTAssertNil(moved.skippedHeadings)
+
+        var givenBookmark = bookmark
+        givenBookmark.anchor = other
+        var givenSkip = pressing
+        givenSkip.anchor = other
+        var given = orchard(
+            position: ReadingPosition(chapterIndex: 2, characterOffset: 40, anchor: other),
+            bookmarks: [givenBookmark],
+            skippedIDs: [pressing.id],
+            skipped: [givenSkip]
+        )
+        XCTAssertTrue(given.adoptCapturedAnchors(captured).isEmpty)
+        XCTAssertEqual(given.readingPosition?.anchor, other)
+        XCTAssertEqual(given.bookmarks.first?.anchor, other)
+        XCTAssertEqual(given.skippedHeadings?.first?.anchor, other)
+
+        let audiobook = Book(
+            title: "Tide Clock Recordings", format: .audio, filePath: "/nowhere/tide.m4b", md5Hash: "tide",
+            readingPosition: ReadingPosition(chapterIndex: 0, characterOffset: 9), bookmarks: [bookmark]
+        )
+        XCTAssertEqual(audiobook.placesWithoutAnchors, 0)
+    }
+
     // MARK: - Where a Saved Place Opens (Question 7)
 
     /// A saved place opens where the loaded text holds it; one the text
