@@ -55,9 +55,21 @@ extension LibraryViewModel: FeedLibraryHost {
     /// Lists a book a feed download published, and saves the library. An
     /// episode skips the duplicate question, and the library's rule against
     /// two books of one file, since two shows can carry one file.
+    ///
+    /// The book is a feed item's (FR11): its row carries the feed link the
+    /// import gave it and no library folder, its package is in its feed's
+    /// folder, and the save writes it to its feed's index, which the library
+    /// keeps from now on, never to library.json.
     func addFeedBook(_ book: Book) {
         guard bookByID(book.id) == nil else { return }
-        library.books.append(book)
+        var row = book
+        var updated = library
+        if let feedID = row.feedLink?.feedID {
+            row.folderPath = ""
+            updated.feedShelf.keepIndex(of: feedID)
+        }
+        updated.books.append(row)
+        library = updated
         save()
     }
 

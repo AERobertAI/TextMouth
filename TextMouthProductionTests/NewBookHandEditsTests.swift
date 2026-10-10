@@ -137,20 +137,20 @@ final class NewBookHandEditsTests: XCTestCase {
         )
         let download = sources.appendingPathComponent("download.wav")
         try AudioTestFixtures.writeSilence(to: download)
+        // A feed's downloads go to a folder of the feed's own (FR11).
+        addTeardownBlock { try? FileManager.default.removeItem(at: FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root)) }
 
         let episode = try FeedEpisodeImporter.importEpisode(
             download,
             named: "Episode 12 The Breakwater.wav",
             item: item,
             of: feed,
-            toFolder: folderPath,
             dateAdded: Date()
         ).book
         let article = try FeedEpisodeImporter.importArticle(
             html: FeedEpisodeImporter.articleHTML(for: item, of: feed, body: "<p>The breakwater held.</p>"),
             item: item,
             of: feed,
-            toFolder: folderPath,
             dateAdded: Date()
         ).book
 

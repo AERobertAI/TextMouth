@@ -71,7 +71,13 @@ final class FeedUICommandsTests: XCTestCase {
         harness.presenter.perform(download, in: harness.context)
 
         let book = try await downloadedBook(harness.world, feed: harness.feed, item: Harness.episodeID)
-        XCTAssertEqual(book.folderPath, harness.world.library.feedFolderPath(forFolderID: harness.feed.folderID))
+        // Listed in its feed's folder, by its feed link (FR11).
+        let feedFolder = try XCTUnwrap(harness.world.library.feedFolderPath(forFolderID: harness.feed.folderID))
+        XCTAssertEqual(book.feedLink?.feedID, harness.feed.id)
+        XCTAssertEqual(
+            harness.world.library.displayedBooks(at: LibraryLocation(category: .folders, folderPath: feedFolder)).map(\.id),
+            [book.id]
+        )
         XCTAssertEqual(harness.heard.first, "Downloading “A map you can touch”.")
 
         var opened: [UUID] = []

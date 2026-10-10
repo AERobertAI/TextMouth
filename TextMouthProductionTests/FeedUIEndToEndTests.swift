@@ -65,7 +65,9 @@ final class FeedUIEndToEndTests: XCTestCase {
         let download = try XCTUnwrap(FeedItemAction.actions(for: row).first { $0.command == .download })
         presenter.perform(download, in: context)
         let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
-        XCTAssertEqual(book.folderPath, folderPath)
+        // Listed in its feed's folder, by its feed link (FR11).
+        XCTAssertEqual(book.feedLink?.feedID, feed.id)
+        XCTAssertEqual(world.library.displayedBooks(at: LibraryLocation(category: .folders, folderPath: folderPath)).map(\.id), [book.id])
 
         // Now the episode is its book's row, with the episode's commands.
         listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [book], folderBooks: [book], search: "")

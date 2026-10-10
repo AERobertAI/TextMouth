@@ -36,7 +36,9 @@ final class FeedEndToEndTests: XCTestCase {
         XCTAssertEqual(summary.newItemCount, 1)
         // The refresh found it new, and downloads it by itself.
         let book = try await downloadedBook(world, feed: feed, item: "guid:ep-2")
-        XCTAssertEqual(book.folderPath, world.folder.path)
+        // A feed item's, in its feed's own folder (FR11).
+        XCTAssertEqual(book.folderPath, "")
+        XCTAssertEqual(book.feedLink, FeedBookLink(feedID: feed.id, itemID: "guid:ep-2"))
         XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).metadata.feedLink, FeedBookLink(feedID: feed.id, itemID: "guid:ep-2"))
 
         let reader = try openReader(for: book, in: world)

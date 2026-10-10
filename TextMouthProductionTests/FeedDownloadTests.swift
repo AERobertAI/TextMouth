@@ -38,14 +38,24 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(book.author, "The Tactile Atlas")
         XCTAssertEqual(book.audioAlbum, "The Tactile Atlas")
         XCTAssertEqual(book.format, .audio)
-        XCTAssertEqual(book.folderPath, world.folder.path)
+        // A feed item's: in its feed's own folder, outside the Library
+        // folder, its row naming its feed and item and no folder (FR11).
+        XCTAssertEqual(book.folderPath, "")
+        XCTAssertEqual(book.feedLink, FeedBookLink(feedID: feed.id, itemID: "guid:ep-1"))
         XCTAssertEqual(book.bookFileURL.pathExtension, "m4a")
         XCTAssertEqual(book.dateAdded, world.clock.value)
         XCTAssertGreaterThan(book.audioDuration ?? 0, 0)
         XCTAssertTrue(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
-        XCTAssertTrue(book.tmbDirectory.path.hasPrefix(world.folder.url.path + "/"))
+        XCTAssertTrue(book.tmbDirectory.path.hasPrefix(FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root).path + "/"))
+        XCTAssertTrue(book.bookFileURL.path.hasPrefix(book.tmbDirectory.path + "/"))
         let record = try BookInfo.load(from: book.tmbDirectory)
         XCTAssertEqual(record.metadata.feedLink, FeedBookLink(feedID: feed.id, itemID: "guid:ep-1"))
+        // Saved to the feed's index, never to library.json.
+        LibraryPersistenceService.flushPendingSave()
+        let index = try FeedIndexFiles.decoded(Data(contentsOf: FeedPaths.indexFile(of: feed.id, in: TextMouthPaths.root)))
+        XCTAssertEqual(index.books.map(\.id), [book.id])
+        let libraryJSON = try String(contentsOf: TextMouthPaths.libraryIndexFile, encoding: .utf8)
+        XCTAssertFalse(libraryJSON.contains(book.id.uuidString), "library.json holds the download")
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .downloaded(bookID: book.id))
         XCTAssertEqual(events, [
             .downloadStarted(feedID: feed.id, itemID: "guid:ep-1"),

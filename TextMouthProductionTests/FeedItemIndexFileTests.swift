@@ -164,6 +164,29 @@ final class FeedItemIndexFileTests: FeedItemIndexTestCase {
         XCTAssertEqual(try indexedRows().count, 0)
     }
 
+    /// A download added to the library is a feed item's row, with no
+    /// library folder, written to its feed's index; deleting it writes the
+    /// index without it.
+    @MainActor
+    func testADownloadAddedThenDeletedIsWrittenToItsIndexThenOutOfIt() throws {
+        var download = try makeFeedItem(title: "Added And Deleted")
+        download.folderPath = "Where The Feed Was"
+        let model = makeModel(with: [])
+
+        model.addFeedBook(download)
+        LibraryPersistenceService.flushPendingSave()
+        let added = try XCTUnwrap(model.bookByID(download.id))
+        XCTAssertEqual(added.folderPath, "")
+        XCTAssertEqual(try indexedRows().map(\.id), [download.id])
+
+        try FileManager.default.removeItem(at: added.tmbDirectory)
+        model.removeFeedBook(added)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try indexedRows(), [])
+        try assertLibraryJSONHoldsNoFeedItem([download])
+    }
+
     /// A feed the library keeps no row of, whose folder is gone, has nothing
     /// left to keep, and its folder is not made again.
     func testAFeedWithNoRowAndNoFolderIsNotMadeAgain() throws {

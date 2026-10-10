@@ -3,11 +3,16 @@ import SwiftSoup
 
 // MARK: - A Download Becomes a Book (FR03)
 
-/// How a feed item's download becomes a book in its feed's folder (FR03),
-/// through the import pipeline every book takes: a package staged where
+/// How a feed item's download becomes a book of its feed (FR03), through the
+/// import pipeline every book takes: a package staged where
 /// `ImportScratchSpace` stages it, the file moved in, the book read as the
 /// reader will read it, its record written and read back, and the package
 /// published with one rename (`FileImportService.publishReadableBook`).
+///
+/// The package is published in the feed's own folder, `Feeds/<feed ID>/`,
+/// outside the Library folder (FR11, `destinationPackageURL`), and the book
+/// is a feed item's: its row names its feed and item and no library folder,
+/// and its feed's index keeps it rather than library.json.
 ///
 /// - An episode, audio or video, becomes an audiobook. Video plays as sound
 ///   alone (the listener's decision of October 4), and is among the formats
@@ -76,8 +81,8 @@ enum FeedEpisodeImporter {
     // MARK: Importing
 
     /// Imports the episode file at `file`, which is moved into the book's
-    /// package as `fileName`, as an audiobook in the library folder
-    /// `folderPath`, added at `dateAdded`.
+    /// package as `fileName`, as an audiobook of `feed` in the feed's own
+    /// folder (FR11), added at `dateAdded`.
     /// - Throws: an `ImportFailure` naming the file and the step that
     ///   failed; whatever was staged is removed, and `file` is left where it
     ///   was when the move had not happened.
@@ -86,53 +91,74 @@ enum FeedEpisodeImporter {
         named fileName: String,
         item: FeedItem,
         of feed: Feed,
-        toFolder folderPath: String,
         dateAdded: Date
     ) throws -> ImportedBook {
-        try importBook(named: fileName, format: .audio, item: item, of: feed, toFolder: folderPath, dateAdded: dateAdded) { staged in
+        try importBook(named: fileName, format: .audio, item: item, of: feed, dateAdded: dateAdded) { staged in
             try FileManager.default.moveItem(at: file, to: staged)
         }
     }
 
-    /// Imports an article whose book is the HTML `html` as an HTML book in
-    /// the library folder `folderPath`, added at `dateAdded`.
+    /// Imports an article whose book is the HTML `html` as an HTML book of
+    /// `feed` in the feed's own folder (FR11), added at `dateAdded`.
     /// - Throws: an `ImportFailure`, as `importEpisode` does.
     static func importArticle(
         html: String,
         item: FeedItem,
         of feed: Feed,
-        toFolder folderPath: String,
         dateAdded: Date
     ) throws -> ImportedBook {
         let fileName = Self.fileName(title: item.title, fileExtension: "html")
-        return try importBook(named: fileName, format: .html, item: item, of: feed, toFolder: folderPath, dateAdded: dateAdded) { staged in
+        return try importBook(named: fileName, format: .html, item: item, of: feed, dateAdded: dateAdded) { staged in
             try Data(html.utf8).write(to: staged, options: .atomic)
         }
     }
 
+    /// Where a download of the feed `feedID` publishes its package (FR11):
+    /// in the feed's own folder, `Feeds/<feed ID>/`, made first when it is
+    /// missing, inside a data directory that must be there, under the name
+    /// the book's title, author, date added, and ID give it, as
+    /// `FileImportService.destinationPackageURL` names a book's package in a
+    /// library folder.
+    static func destinationPackageURL(
+        title: String,
+        author: String,
+        dateAdded: Date,
+        bookID: UUID,
+        feedID: UUID
+    ) throws -> URL {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let root = TextMouthPaths.root
+        try FileManager.default.createDirectory(
+            at: FeedPaths.itemsFolder(of: feedID, in: root),
+            withIntermediateDirectories: true
+        )
+        let name = TextMouthPaths.tmbName(title: title, author: author, dateAdded: dateAdded, bookID: bookID)
+        return FeedPaths.packageDirectory(named: name, of: feedID, in: root)
+    }
+
     /// The import both kinds share: a package staged for the book, its file
     /// put in by `placeFile`, then read, recorded with its feed item, and
-    /// published.
+    /// published in the feed's own folder.
     private static func importBook(
         named fileName: String,
         format: BookFormat,
         item: FeedItem,
         of feed: Feed,
-        toFolder folderPath: String,
         dateAdded: Date,
         placeFile: (URL) throws -> Void
     ) throws -> ImportedBook {
         try ImportRun.perform(importing: fileName) { run in
             let bookID = UUID()
             let author = bookAuthor(for: item, of: feed)
+            let link = FeedBookLink(feedID: feed.id, itemID: item.id)
 
             try run.begin(.preparingPackage)
-            let staging = try ImportStaging.makeEmpty(publishingTo: try FileImportService.destinationPackageURL(
+            let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
                 title: item.title,
                 author: author,
                 dateAdded: dateAdded,
                 bookID: bookID,
-                folderPath: folderPath
+                feedID: feed.id
             ))
             defer { staging.discard() }
 
@@ -142,6 +168,8 @@ enum FeedEpisodeImporter {
 
             try run.begin(.readingSource, in: staging.directory)
             let hash = try FileImportService.md5Hash(of: stagedFile)
+            // A feed item's row names its feed and item and no library folder
+            // (FR11); while staged, its package is the staged one.
             let staged = Book(
                 id: bookID,
                 title: item.title,
@@ -149,18 +177,19 @@ enum FeedEpisodeImporter {
                 format: format,
                 filePath: stagedFile.path,
                 md5Hash: hash,
-                folderPath: folderPath,
+                folderPath: "",
                 dateAdded: dateAdded,
                 tmbDirectoryName: staging.name,
                 audioAlbum: format.isAudio ? feed.title : nil,
                 audioGenre: format.isAudio ? "Podcast" : nil,
-                audioYear: format.isAudio ? item.published.map { String(Calendar(identifier: .gregorian).component(.year, from: $0)) } : nil
+                audioYear: format.isAudio ? item.published.map { String(Calendar(identifier: .gregorian).component(.year, from: $0)) } : nil,
+                feedLink: link
             )
             return try FileImportService.publishReadableBook(
                 staged,
                 from: staging,
                 run: &run,
-                feedLink: FeedBookLink(feedID: feed.id, itemID: item.id)
+                feedLink: link
             )
         }
     }
