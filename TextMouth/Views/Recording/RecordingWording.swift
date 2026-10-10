@@ -60,17 +60,36 @@ enum RecordingWording {
     static let stopTitle = "Stop"
 
     /// The Record button's hint, naming the microphone it records from and
-    /// its shortcut.
-    static func recordHint(device: String?) -> String {
+    /// `key`, its shortcut in force (`shortcutSentence(_:)`).
+    static func recordHint(device: String?, key: KeyBinding?) -> String {
         let source = device.map { "from \($0)" } ?? "once a microphone is connected"
-        return "Starts recording \(source). Shortcut: Command-R."
+        return "Starts recording \(source)." + shortcutSentence(key)
     }
-    /// The Pause button's hint while recording.
-    static let pauseHint = "Pauses the recording; Resume continues the same recording. Shortcut: Command-P."
-    /// The same button's hint while paused.
-    static let resumeHint = "Continues the paused recording. Shortcut: Command-P."
-    /// The Stop button's hint.
-    static let stopHint = "Stops recording and saves it in your library as an audiobook. Shortcut: Command-Period."
+    /// The Pause button's hint while recording, naming `key`, its shortcut
+    /// in force.
+    static func pauseHint(key: KeyBinding?) -> String {
+        "Pauses the recording; Resume continues the same recording." + shortcutSentence(key)
+    }
+    /// The same button's hint while paused, naming `key`, its shortcut in
+    /// force.
+    static func resumeHint(key: KeyBinding?) -> String {
+        "Continues the paused recording." + shortcutSentence(key)
+    }
+    /// The Stop button's hint, naming `key`, its shortcut in force.
+    static func stopHint(key: KeyBinding?) -> String {
+        "Stops recording and saves it in your library as an audiobook." + shortcutSentence(key)
+    }
+
+    /// What ends a button's hint: `key`, the button's shortcut in force, in
+    /// words, as the Shortcuts tab says keys
+    /// (`KeyBinding.accessibleDisplayString`), as in " Shortcut: Command +
+    /// R."; nothing while the button has no key, as when the user gave its
+    /// key to another action. Since the keys became the user's to change
+    /// (FR12's branch D), a hint naming the old fixed keys could name a key
+    /// that does something else.
+    private static func shortcutSentence(_ key: KeyBinding?) -> String {
+        key.map { " Shortcut: \($0.accessibleDisplayString)." } ?? ""
+    }
 
     /// The button that opens the saved recording.
     static let openInReaderTitle = "Open in Reader"

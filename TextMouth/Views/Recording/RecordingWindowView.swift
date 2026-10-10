@@ -164,32 +164,39 @@ struct RecordingWindowView: View {
         .help(RecordingWording.folderHint)
     }
 
-    /// Record, Pause or Resume, and Stop, each with its key in force.
+    /// Record, Pause or Resume, and Stop, each with its key in force, which
+    /// its hint names.
     private var controlButtons: some View {
-        HStack {
+        let recordKey = keys.keyEquivalent(for: .recordingRecord)
+        let pauseKey = keys.keyEquivalent(for: .recordingPauseOrResume)
+        let stopKey = keys.keyEquivalent(for: .recordingStop)
+        let recordHint = RecordingWording.recordHint(device: model.selectedDevice?.name, key: recordKey)
+        let pauseHint = isPaused ? RecordingWording.resumeHint(key: pauseKey) : RecordingWording.pauseHint(key: pauseKey)
+        let stopHint = RecordingWording.stopHint(key: stopKey)
+        return HStack {
             Button(RecordingWording.recordTitle) {
                 Task { await model.record() }
             }
-            .keyboardShortcut(keys.keyEquivalent(for: .recordingRecord)?.keyboardShortcut)
+            .keyboardShortcut(recordKey?.keyboardShortcut)
             .disabled(!model.canRecord)
-            .accessibilityHint(RecordingWording.recordHint(device: model.selectedDevice?.name))
-            .help(RecordingWording.recordHint(device: model.selectedDevice?.name))
+            .accessibilityHint(recordHint)
+            .help(recordHint)
 
             Button(isPaused ? RecordingWording.resumeTitle : RecordingWording.pauseTitle) {
                 Task { await model.togglePause() }
             }
-            .keyboardShortcut(keys.keyEquivalent(for: .recordingPauseOrResume)?.keyboardShortcut)
+            .keyboardShortcut(pauseKey?.keyboardShortcut)
             .disabled(!model.canPause)
-            .accessibilityHint(isPaused ? RecordingWording.resumeHint : RecordingWording.pauseHint)
-            .help(isPaused ? RecordingWording.resumeHint : RecordingWording.pauseHint)
+            .accessibilityHint(pauseHint)
+            .help(pauseHint)
 
             Button(RecordingWording.stopTitle) {
                 Task { await model.stop() }
             }
-            .keyboardShortcut(keys.keyEquivalent(for: .recordingStop)?.keyboardShortcut)
+            .keyboardShortcut(stopKey?.keyboardShortcut)
             .disabled(!model.canStop)
-            .accessibilityHint(RecordingWording.stopHint)
-            .help(RecordingWording.stopHint)
+            .accessibilityHint(stopHint)
+            .help(stopHint)
         }
     }
 

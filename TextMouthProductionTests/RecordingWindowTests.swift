@@ -63,20 +63,75 @@ final class RecordingWindowTests: XCTestCase {
         XCTAssertEqual(RecordingWording.elapsedText(3_725), "Elapsed: 1:02:05")
     }
 
-    /// Each button's hint says what it does and its shortcut; Record names
-    /// the microphone it records from.
+    /// Each button's hint says what it does and its shortcut, in words, as
+    /// the Shortcuts tab says keys; Record names the microphone it records
+    /// from.
     func testTheButtonsSayWhatTheyDoAndTheirShortcuts() {
-        XCTAssertEqual(RecordingWording.recordHint(device: "AirPods Pro"), "Starts recording from AirPods Pro. Shortcut: Command-R.")
-        XCTAssertEqual(RecordingWording.recordHint(device: nil), "Starts recording once a microphone is connected. Shortcut: Command-R.")
-        XCTAssertTrue(RecordingWording.pauseHint.hasSuffix("Shortcut: Command-P."))
-        XCTAssertTrue(RecordingWording.resumeHint.hasSuffix("Shortcut: Command-P."))
-        XCTAssertTrue(RecordingWording.stopHint.hasSuffix("Shortcut: Command-Period."))
+        let commandR = KeyBinding(key: "r", command: true)
+        let commandP = KeyBinding(key: "p", command: true)
+        XCTAssertEqual(
+            RecordingWording.recordHint(device: "AirPods Pro", key: commandR),
+            "Starts recording from AirPods Pro. Shortcut: Command + R."
+        )
+        XCTAssertEqual(
+            RecordingWording.recordHint(device: nil, key: commandR),
+            "Starts recording once a microphone is connected. Shortcut: Command + R."
+        )
+        XCTAssertEqual(
+            RecordingWording.pauseHint(key: commandP),
+            "Pauses the recording; Resume continues the same recording. Shortcut: Command + P."
+        )
+        XCTAssertEqual(RecordingWording.resumeHint(key: commandP), "Continues the paused recording. Shortcut: Command + P.")
+        XCTAssertEqual(
+            RecordingWording.stopHint(key: KeyBinding(key: ".", command: true)),
+            "Stops recording and saves it in your library as an audiobook. Shortcut: Command + Period."
+        )
         XCTAssertEqual(RecordingWording.savedAnnouncement(title: "Notes"), "Saved Recording as Notes")
         XCTAssertNil(CloseQuestion(need: .nothing))
         XCTAssertEqual(CloseQuestion(need: .stopOrDiscard)?.title, "Stop and save the recording?")
         XCTAssertEqual(CloseQuestion(need: .stopOrDiscard)?.saveButton, "Stop and Save")
         XCTAssertEqual(CloseQuestion(need: .saveOrDiscard)?.title, "Save the recording?")
         XCTAssertEqual(CloseQuestion(need: .saveOrDiscard)?.saveButton, "Save")
+    }
+
+    /// Each button's hint names the key in force, as the window reads it
+    /// from the record of the user's shortcuts: the defaults with none
+    /// changed, Command + R, Command + P, and Command + Period; a key the
+    /// user gave the button instead; and no key at all while another action
+    /// has the button's key. Before, the hints named the default keys
+    /// whatever the key in force.
+    func testEachButtonsHintNamesItsKeyInForce() {
+        let store = makeSandboxedPreferences("recording-hints-keys")
+        let keys = StoredKeyEquivalents(store: store)
+        let hints = {
+            [
+                RecordingWording.recordHint(device: "AirPods Pro", key: keys.keyEquivalent(for: .recordingRecord)),
+                RecordingWording.pauseHint(key: keys.keyEquivalent(for: .recordingPauseOrResume)),
+                RecordingWording.resumeHint(key: keys.keyEquivalent(for: .recordingPauseOrResume)),
+                RecordingWording.stopHint(key: keys.keyEquivalent(for: .recordingStop)),
+            ]
+        }
+        XCTAssertEqual(hints(), [
+            "Starts recording from AirPods Pro. Shortcut: Command + R.",
+            "Pauses the recording; Resume continues the same recording. Shortcut: Command + P.",
+            "Continues the paused recording. Shortcut: Command + P.",
+            "Stops recording and saves it in your library as an audiobook. Shortcut: Command + Period.",
+        ])
+
+        // Record given Option-Command-R, and Command-P given to Skip
+        // Forward, which works in the Record window too, and so takes it
+        // from Pause or Resume.
+        var edits = ShortcutEdits()
+        edits.setKeys([KeyBinding(key: "r", command: true, option: true)], for: .recordingRecord)
+        edits.setKeys([KeyBinding(key: "p", command: true)], for: .skipForward)
+        KeyboardShortcutManager.editsPreference.write(edits, to: store)
+
+        XCTAssertEqual(hints(), [
+            "Starts recording from AirPods Pro. Shortcut: Option + Command + R.",
+            "Pauses the recording; Resume continues the same recording.",
+            "Continues the paused recording.",
+            "Stops recording and saves it in your library as an audiobook. Shortcut: Command + Period.",
+        ])
     }
 
     // MARK: - Choosing a Microphone
