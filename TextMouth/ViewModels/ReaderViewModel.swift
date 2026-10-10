@@ -255,6 +255,16 @@ final class ReaderViewModel: ObservableObject {
     /// asked for, which leave the book as it was (REV11). Accessed from the
     /// WhereAmI and Playback extensions.
     var isPlayHeldByWhereAmI = false
+    /// Whether the chapter about to play, whose files finished downloading
+    /// while a Where Am I announcement spoke (FR02), waits for the
+    /// announcement to end to play (`startPlayHeldByWhereAmI()`), the reader
+    /// showing Playing meanwhile, as a Play pressed during it waits: set by
+    /// the download's end, and cleared as the chapter starts
+    /// (`playAudioChapter()`), or by a pause, Play/Pause, or a stop, which
+    /// leave it unplayed (`stopWaitingForChapterDownload(because:)`,
+    /// `endWhereAmIAsTheBookStops()`). Accessed from the CloudDownload,
+    /// WhereAmI, and Playback extensions.
+    var isChapterHeldByWhereAmI = false
     /// Takes the work a Where Am I announcement that ended by itself leaves
     /// for once its end sound has played, in place of the main queue's
     /// delay (`whereAmIEndSoundDelay`), so that hosted tests run it when

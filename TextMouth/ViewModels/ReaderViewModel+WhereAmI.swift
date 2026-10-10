@@ -266,7 +266,11 @@ extension ReaderViewModel {
     /// the book for a Play pressed during it (`isPlayHeldByWhereAmI`).
     /// Nothing but Where Am I plays the book meanwhile, and whatever pauses
     /// or stops the book ends what it holds without resuming it
-    /// (`stopWhereAmIWithoutResuming()`, `endWhereAmIAsTheBookStops()`).
+    /// (`stopWhereAmIWithoutResuming()`, `endWhereAmIAsTheBookStops()`). A
+    /// chapter whose files came during an announcement
+    /// (`isChapterHeldByWhereAmI`) is left out: it is a reader waiting for
+    /// its chapter (`isWaitingForChapterDownload`), which a pause itself lets
+    /// go, so the pause that ends Where Am I can pause it in turn.
     var isWhereAmIUnderWay: Bool {
         isWhereAmISpeaking || isWhereAmIResumePending || isPlayHeldByWhereAmI
     }
@@ -274,12 +278,14 @@ extension ReaderViewModel {
     /// Whether Where Am I? will play the book once it is over: the
     /// announcement speaking paused the book as it played, or one that
     /// ended by itself resumes it once its end sound has played, or a Play
-    /// pressed during it waits for its end. The book counts as playing
-    /// meanwhile, for the system's media commands (the Now Playing session's
-    /// `isCurrentlyPlaying`) and for Next in Reading List, so that whatever
-    /// pauses a playing book pauses this one too, for good (REV11).
+    /// pressed during it, or a chapter whose files were downloaded during it
+    /// (`isChapterHeldByWhereAmI`), waits for its end. The book counts as
+    /// playing meanwhile, for the system's media commands (the Now Playing
+    /// session's `isCurrentlyPlaying`) and for Next in Reading List, so that
+    /// whatever pauses a playing book pauses this one too, for good (REV11).
     var whereAmIWillPlayBook: Bool {
         (isWhereAmISpeaking && wasPlayingBeforeWhereAmI) || isWhereAmIResumePending || isPlayHeldByWhereAmI
+            || isChapterHeldByWhereAmI
     }
 
     /// Holds a Play pressed while Where Am I? has the book in hand
@@ -517,9 +523,10 @@ extension ReaderViewModel {
     /// downloaded, and closing the window all go through, or by a playback
     /// failure, which stops the book as `stop()` does. An announcement
     /// speaking is silenced, and the book it paused is forgotten, as are the
-    /// resume one that ended by itself still owes and a Play held for its
-    /// end, so that nothing resumes or starts the stopped book, nor tells
-    /// Now Playing that it plays, when the announcement would have ended. The stop does the rest itself: it
+    /// resume one that ended by itself still owes and a Play or a downloaded
+    /// chapter held for its end, so that nothing resumes or starts the
+    /// stopped book, nor tells Now Playing that it plays, when the
+    /// announcement would have ended. The stop does the rest itself: it
     /// closes the listening session, takes the book out of Now Playing, and
     /// records the stop.
     ///
@@ -535,6 +542,7 @@ extension ReaderViewModel {
         wasPlayingBeforeWhereAmI = false
         isWhereAmIResumePending = false
         isPlayHeldByWhereAmI = false
+        isChapterHeldByWhereAmI = false
     }
 
     /// Resume the book a Where Am I announcement paused, as it was paused:

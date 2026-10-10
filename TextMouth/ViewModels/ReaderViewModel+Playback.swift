@@ -294,7 +294,10 @@ extension ReaderViewModel {
     /// that ended by itself still owes (`isWhereAmIResumePending`) ends the
     /// same way: the book stays paused, its pause settled. A Play held for
     /// the announcement's end (`isPlayHeldByWhereAmI`) is let go, the book
-    /// left as it was before the Play.
+    /// left as it was before the Play. An audiobook holding the chapter
+    /// whose files came during the announcement (`isChapterHeldByWhereAmI`)
+    /// pauses at the chapter, as a play waiting for its chapter's speech
+    /// does.
     func endWhereAmIWithoutResuming() {
         isWhereAmISpeaking = false
         isPlayHeldByWhereAmI = false
@@ -303,7 +306,7 @@ extension ReaderViewModel {
             isWhereAmIResumePending = false
             settlePauseLeftByWhereAmI()
         }
-        if isWaitingForChapterSpeech {
+        if isWaitingForChapterSpeech || isChapterHeldByWhereAmI {
             pause(playingPauseSound: false)
         }
     }
@@ -1481,17 +1484,25 @@ extension ReaderViewModel {
     /// Start the play a Where Am I announcement held, now that the
     /// announcement has ended: a Play pressed during it, for a book it had
     /// not paused (`isPlayHeldByWhereAmI`), starts the book as Play does
-    /// (`playOrResume()`); a play that waited for its chapter's speech,
-    /// which was ready while the announcement spoke (`continueWaitingPlay()`),
-    /// starts from the cursor as it is now. Nothing starts while an
-    /// announcement speaks, when no play waits, or while the speech the play
-    /// waits for is still being prepared, whose end starts the play itself.
+    /// (`playOrResume()`); an audiobook's chapter whose files were
+    /// downloaded during it (`isChapterHeldByWhereAmI`) plays, as the
+    /// download's end would have played it; a play that waited for its
+    /// chapter's speech, which was ready while the announcement spoke
+    /// (`continueWaitingPlay()`), starts from the cursor as it is now.
+    /// Nothing starts while an announcement speaks, when no play waits, or
+    /// while the speech the play waits for is still being prepared, whose
+    /// end starts the play itself.
     func startPlayHeldByWhereAmI() {
         guard !hasClosed, !isWhereAmISpeaking else { return }
         if isPlayHeldByWhereAmI {
             isPlayHeldByWhereAmI = false
             DiagnosticLog.trace(.playback, "play: Where Am I ended; starting the book for the Play pressed during it")
             playOrResume()
+            return
+        }
+        if isChapterHeldByWhereAmI {
+            DiagnosticLog.trace(.playback, "play: Where Am I ended; playing the chapter downloaded during it")
+            playAudioChapter()
             return
         }
         guard let awaited = chapterSpeechCache.awaitedByPlay,
@@ -1867,6 +1878,9 @@ extension ReaderViewModel {
     /// audio service's next report can be: an end of an earlier play still
     /// on its way is stale.
     func playAudioChapter() {
+        // Whatever starts the chapter now, a chapter held for a Where Am I
+        // announcement's end waits no more (`isChapterHeldByWhereAmI`).
+        isChapterHeldByWhereAmI = false
         guard isAudioBook, let content = content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
         listenForAudioEnd(of: beginChapterPlay())

@@ -541,9 +541,11 @@ extension ReaderViewModel {
 
     /// Whether the reader waits for the files of the chapter about to play
     /// to download: it shows Playing, but nothing plays until they are here
-    /// (`chapterFilesReadyToPlay()`).
+    /// (`chapterFilesReadyToPlay()`); or, its files downloaded while a Where
+    /// Am I announcement spoke, for the announcement to end
+    /// (`isChapterHeldByWhereAmI`), which plays it.
     var isWaitingForChapterDownload: Bool {
-        cloudSession.downloadPurpose?.chapterNumber != nil
+        cloudSession.downloadPurpose?.chapterNumber != nil || isChapterHeldByWhereAmI
     }
 
     /// Stops waiting for the download of the chapter about to play, when one
@@ -554,12 +556,20 @@ extension ReaderViewModel {
     /// pausing a listener who has fallen asleep), and the book's state is
     /// recorded as found afterwards. When the chapter next plays, its files
     /// are checked afresh, and downloaded again if they are still only in
-    /// the cloud.
+    /// the cloud. A chapter whose files are here, waiting only for a Where
+    /// Am I announcement to end (`isChapterHeldByWhereAmI`), is let go the
+    /// same way: it does not start as the announcement ends.
     ///
     /// - Parameter reason: Why, for the log line.
-    /// - Returns: Whether a chapter's download was under way.
+    /// - Returns: Whether the reader waited for a chapter: its download
+    ///   under way, or held for Where Am I.
     @discardableResult
     func stopWaitingForChapterDownload(because reason: String) -> Bool {
+        if isChapterHeldByWhereAmI {
+            isChapterHeldByWhereAmI = false
+            DiagnosticLog.trace(.playback, "the chapter held for Where Am I's end does not play: \(reason)")
+            return true
+        }
         guard let purpose = cloudSession.downloadPurpose, purpose.chapterNumber != nil else { return false }
         stopWaitingForDownload(purpose, because: reason)
         cloudPhase = nil
@@ -593,7 +603,10 @@ extension ReaderViewModel {
 
     /// The download finished: every file of the book is on this Mac. The
     /// book loads, or the chapter waiting for it plays unless the reader was
-    /// stopped meanwhile.
+    /// stopped meanwhile. While a Where Am I announcement speaks, the chapter
+    /// waits for it to end (`isChapterHeldByWhereAmI`), as a Play pressed
+    /// during it waits, and plays then (`startPlayHeldByWhereAmI()`); it once
+    /// started under the announcement (REV11).
     private func downloadDidFinish(_ purpose: ReaderDownloadPurpose) {
         endDownloadWork(cancelling: false)
         cloudServices.states.record(.downloaded, for: book.id)
@@ -608,6 +621,11 @@ extension ReaderViewModel {
             // A reader stopped while it waited stays stopped.
             guard isCurrentlyPlaying && !isCurrentlyPaused else { return }
             cloudSession.chapterJustDownloaded = true
+            guard !isWhereAmISpeaking else {
+                isChapterHeldByWhereAmI = true
+                DiagnosticLog.trace(.playback, "the chapter's files are here while Where Am I speaks; it plays as the announcement ends")
+                return
+            }
             playAudioChapter()
         }
     }
