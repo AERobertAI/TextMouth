@@ -469,16 +469,17 @@ final class ReadingStatsService: ObservableObject {
 
     /// Books finished in the year containing `now`, in the system's
     /// calendar, so a display can read this at the same instant as the
-    /// listening times.
+    /// listening times. Each book counts once, in the year of the finish
+    /// Books Finished counts (`ReadingStats.countedFinishes`, TODO P07).
     func booksFinishedThisYear(at now: Date) -> Int {
         finishedBooks(inYearOf: now).count
     }
 
     /// The books finished in the year containing `now`, in the system's
-    /// calendar: the year each finish counts in, whatever its kind.
+    /// calendar: the year each counted finish falls in, whatever its kind.
     private func finishedBooks(inYearOf now: Date) -> [FinishedBookEntry] {
         let year = Calendar.current.component(.year, from: now)
-        return stats.finishedBooks.filter {
+        return stats.countedFinishes.filter {
             Calendar.current.component(.year, from: $0.dateFinished) == year
         }
     }
@@ -488,9 +489,15 @@ final class ReadingStatsService: ObservableObject {
         FinishedBookCounts(kinds: finishedBooks(inYearOf: now).map(kind(of:)))
     }
 
-    /// The books finished ever, counted by kind.
+    /// The books finished ever, each counted once (TODO P07): how many
+    /// books Books Finished All Time says.
+    var booksFinishedAllTime: Int {
+        stats.countedFinishes.count
+    }
+
+    /// The books finished ever, each counted once, by kind.
     var booksFinishedAllTimeByKind: FinishedBookCounts {
-        FinishedBookCounts(kinds: stats.finishedBooks.map(kind(of:)))
+        FinishedBookCounts(kinds: stats.countedFinishes.map(kind(of:)))
     }
 
     /// The kind of the book `entry` counts: the one recorded as it finished,
@@ -682,7 +689,11 @@ struct ReadingStats: Codable {
     var totalListeningSeconds: TimeInterval = 0
     /// Per-book listening time in seconds, keyed by book UUID string
     var bookListeningSeconds: [String: TimeInterval] = [:]
-    /// Books that have been finished
+    /// Books that have been finished, oldest first, as each finish was
+    /// written: one entry for each book since TextMouth counts each book
+    /// once (TODO P07), and more for a book an earlier version counted at
+    /// each of its ends, which are kept as they were and counted once
+    /// (`countedFinishes`).
     var finishedBooks: [FinishedBookEntry] = []
     /// The version of the rules the keys of `dailyListeningSeconds`
     /// follow: `ListeningDays.keyVersion` once they are Gregorian keys, as
@@ -716,13 +727,46 @@ struct ReadingStats: Codable {
         }
         return sum
     }
+
+    // MARK: Books Finished, Each Once (TODO P07)
+
+    /// How many books Recently Finished lists.
+    static let recentlyFinishedLimit = 10
+
+    /// The finishes Books Finished counts: each book once, by the first
+    /// entry naming it, in the order the entries were written. The user
+    /// decided on October 10, 2026: "yes, only one finish per book for now".
+    /// An earlier version wrote an entry at each end of a book, a finish
+    /// heard again or replayed by Play at the end, and those entries are
+    /// kept in the file as they were, and counted once: the user's
+    /// statistics held 67 entries for 28 books, and Books Finished counts 28.
+    var countedFinishes: [FinishedBookEntry] {
+        var counted = Set<String>()
+        return finishedBooks.filter { counted.insert($0.bookID).inserted }
+    }
+
+    /// The books Recently Finished lists, newest first: the last `limit`
+    /// finishes Books Finished counts (`countedFinishes`), so each book is
+    /// listed once, by the finish it counts. Its rows were once the last
+    /// entries, one book nine times among the user's ten.
+    func recentlyFinished(limit: Int = recentlyFinishedLimit) -> [FinishedBookEntry] {
+        Array(countedFinishes.suffix(limit).reversed())
+    }
 }
 
 /// One book counted among Books Finished.
-struct FinishedBookEntry: Codable {
+struct FinishedBookEntry: Codable, Identifiable {
     var bookID: String
     var title: String
     var dateFinished: Date
+
+    /// The entry's own identity, its book and the moment it finished, by
+    /// which Recently Finished keys its rows: no two entries share it,
+    /// while two entries an earlier version wrote for one book share their
+    /// book's ID (TODO P07).
+    var id: String {
+        "\(bookID) \(dateFinished.timeIntervalSinceReferenceDate)"
+    }
     /// What kind of book it was, when known (FR03): told as it finished.
     /// None for a book finished before TextMouth recorded kinds, or one it
     /// could not tell, which Books Finished counts by the library's answer

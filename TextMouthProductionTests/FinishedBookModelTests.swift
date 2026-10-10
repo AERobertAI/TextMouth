@@ -105,7 +105,74 @@ final class FinishedBookModelTests: XCTestCase {
         )
     }
 
+    /// Statistics shaped like the user's, as the design note counted them on
+    /// October 10, 2026, with no title or ID of theirs: 67 entries for 28
+    /// books, all of 2026; 12 books counted more than once, 39 extra entries
+    /// in all; the last 10 entries 2 books, one of them 9 times. The file
+    /// keeps all 67 (TODO P07: "only one finish per book for now"); Books
+    /// Finished All Time and This Year say 28, and by kind each book counts
+    /// once; Recently Finished lists the ten books finished last, each once,
+    /// newest first, each row keyed by an entry of its own, where it once
+    /// listed one book nine times.
+    @MainActor
+    func testStatsCountTheUsersRepeatedFinishesOnce() throws {
+        let service = makeStatsService(over: try makeStatisticsFile())
+        let (entries, books) = try Self.usersFinishes()
+        service.stats.finishedBooks = entries
+        service.finishedBookKind = { _ in .text }
+        let now = try XCTUnwrap(Calendar.current.date(from: DateComponents(year: 2026, month: 2, day: 15, hour: 12)))
+
+        XCTAssertEqual(entries.count, 67, "The fixture is not the user's shape")
+        XCTAssertEqual(Set(entries.suffix(10).map(\.bookID)).count, 2, "The fixture's last ten entries are not two books")
+        XCTAssertEqual(service.stats.finishedBooks.count, 67, "The repeats were not kept in the file")
+
+        let figures = ReadingStatsFigures(service: service, at: now)
+        XCTAssertEqual(figures.booksFinishedAllTime, 28)
+        XCTAssertEqual(figures.booksFinishedThisYear, 28)
+        XCTAssertEqual(figures.booksFinishedAllTimeByKind, FinishedBookCounts(textBooks: 28))
+        XCTAssertEqual(figures.booksFinishedThisYearByKind, FinishedBookCounts(textBooks: 28))
+
+        let recent = service.stats.recentlyFinished()
+        XCTAssertEqual(recent.map(\.bookID), books.suffix(10).reversed().map(\.uuidString), "Recently Finished lists other books")
+        XCTAssertEqual(Set(recent.map(\.id)).count, recent.count, "Two rows share an identity")
+        XCTAssertEqual(recent.first?.dateFinished, entries.first { $0.bookID == books[27].uuidString }?.dateFinished,
+                       "The newest book is not listed by the finish counted")
+    }
+
     // MARK: - Fixtures
+
+    /// Finishes shaped like the user's (`testStatsCountTheUsersRepeatedFinishesOnce`):
+    /// 28 books finished a day apart through January 2026; the first ten
+    /// heard to their end three more times, a second apart, and the
+    /// eleventh once more, as Play on a finished book replayed its end; and
+    /// the newest finished nine times within nine seconds, as one book was
+    /// on October 7.
+    ///
+    /// - Returns: The entries, oldest first, and the books in the order of
+    ///   their first finishes.
+    private static func usersFinishes() throws -> (entries: [FinishedBookEntry], books: [UUID]) {
+        let books = (0..<28).map { _ in UUID() }
+        let start = try XCTUnwrap(Calendar.current.date(from: DateComponents(year: 2026, month: 1, day: 1, hour: 12)))
+        var entries: [FinishedBookEntry] = []
+        func finish(_ book: Int, day: Int, second: Int) {
+            entries.append(FinishedBookEntry(
+                bookID: books[book].uuidString,
+                title: "Book \(book + 1)",
+                dateFinished: start.addingTimeInterval(TimeInterval(day * 86_400 + second))
+            ))
+        }
+        for book in 0..<27 {
+            finish(book, day: book, second: 0)
+            let repeats = book < 10 ? 3 : (book == 10 ? 1 : 0)
+            for again in 0..<repeats {
+                finish(book, day: book, second: 1 + again)
+            }
+        }
+        for second in 0..<9 {
+            finish(27, day: 27, second: second)
+        }
+        return (entries, books)
+    }
 
     /// A statistics file of this test's own, in a folder of its own under
     /// the hosted tests' data root, removed with everything in it when the

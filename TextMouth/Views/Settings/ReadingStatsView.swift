@@ -75,7 +75,9 @@ struct ReadingStatsView: View {
 
             if !statsService.stats.finishedBooks.isEmpty {
                 Section {
-                    ForEach(statsService.stats.finishedBooks.suffix(10).reversed(), id: \.bookID) { entry in
+                    // Each book once, by the finish Books Finished counts,
+                    // each row keyed by its own entry (TODO P07).
+                    ForEach(statsService.stats.recentlyFinished()) { entry in
                         HStack {
                             Text(entry.title)
                             Spacer()
