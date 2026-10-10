@@ -344,6 +344,13 @@ extension LibraryViewModel {
                   let proposedIndex = proposedIndexes[bookID] else { continue }
             let original = library.books[originalIndex]
             var updated = proposed.books[proposedIndex]
+            // A feed item's package is in its feed's own folder, which no
+            // folder edit moves, and its row names no library folder (FR11):
+            // it keeps its place as it is.
+            guard !original.isFeedItem else {
+                proposed.books[proposedIndex].fileLocation = original.fileLocation
+                continue
+            }
             guard !original.tmbDirectoryName.isEmpty else { continue }
 
             let source = original.tmbDirectory

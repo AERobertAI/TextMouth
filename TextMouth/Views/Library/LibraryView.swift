@@ -341,6 +341,9 @@ struct LibraryView: View {
             // a feed's folder it counts the feed's items first and ends with
             // the feed's last check (FR03). It is the same view everywhere,
             // so moving between folders never makes it anew.
+            // Elsewhere it names the feeds the Feeds section lists there beside
+            // the books, "743 books, 2 feeds" (FR11), recounted as the engine
+            // changes, which the bar's wrapper observes.
             FeedFolderSummaryBar(center: feedFolders.center, feedID: feedID) { summary in
                 TimeRemainingBar(
                     books: allBooks,
@@ -350,7 +353,8 @@ struct LibraryView: View {
                     focusIdentifier: focusTarget == .timeSummary ? voiceOverFocusID : nil,
                     shouldTriggerFocus: focusTarget == .timeSummary,
                     livePositions: libraryViewModel.livePositions,
-                    feedSummary: summary
+                    feedSummary: summary,
+                    feedCount: summary == nil ? LibraryFeedsSectionRows.feeds(at: location, center: feedFolders.center).count : 0
                 )
             }
 
@@ -1053,7 +1057,11 @@ struct LibraryView: View {
                         // itself does not observe.
                         FeedFolderRow(center: feedFolders.center, folder: folder, feedID: feedID)
                     } else {
-                        FolderRow(folder: folder, bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath))
+                        FolderRow(
+                            folder: folder,
+                            bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath),
+                            feedsBelow: feedFolders.feedCount(below: folder)
+                        )
                     }
                 }
                 .buttonStyle(.plain)

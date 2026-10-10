@@ -440,7 +440,9 @@ extension LibraryViewModel {
 
                 var existingHashes: Set<String> = []
                 DispatchQueue.main.sync {
-                    existingHashes = Set(self.library.books.map(\.md5Hash))
+                    // The library's own books: a feed's item never keeps a
+                    // book of the same file out (FR11).
+                    existingHashes = Set(self.library.libraryBooks.map(\.md5Hash))
                 }
                 let result = try FileImportService.importZip(
                     from: url,

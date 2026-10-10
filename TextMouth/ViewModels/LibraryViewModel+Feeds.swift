@@ -5,18 +5,40 @@ import Foundation
 /// engine starts with the library, finds a feed's folder by its ID, and adds
 /// the books its downloads publish.
 extension LibraryViewModel: FeedLibraryHost {
-    /// The feed engine this library works with: the app's.
+    /// The feed engine this library works with: the app's, unless a test
+    /// gave its own (`feedEngine`).
     var feeds: FeedCenter {
-        FeedCenter.shared
+        feedEngine ?? FeedCenter.shared
+    }
+
+    // MARK: - A Feed's Items in Its Folder (FR11)
+
+    /// The feed whose folder is the library folder at `path`, if any.
+    func feedID(listedIn path: String) -> UUID? {
+        guard !path.isEmpty, let folder = library.folders.first(where: { $0.fullPath == path }) else { return nil }
+        return feeds.store.feed(inFolder: folder.id)?.id
+    }
+
+    /// The feed items the library folder at `path` lists beside its own
+    /// books (FR11): the rows of its feed's items whose files are here,
+    /// found by feed ID, since a feed item's row names no folder; none for a
+    /// folder that holds no feed. So a folder's rename or move, and Feed
+    /// Info's change of folder, take a feed's items along without changing
+    /// any row.
+    func feedItems(listedIn path: String) -> [Book] {
+        guard let feedID = feedID(listedIn: path) else { return [] }
+        return library.books.filter { $0.feedLink?.feedID == feedID }
     }
 
     /// Starts the feed engine with this library, once the library has
     /// loaded: it reads the feeds' records off the main thread and, outside
     /// a process hosting tests, refreshes every feed when the settings say
-    /// to. Returns at once, so nothing the engine does holds the library
-    /// back.
+    /// to. Once the records have loaded, the downloads made before FR11 move
+    /// into their feeds' folders (`moveDownloadsIntoTheirFeeds(records:)`).
+    /// Returns at once, so nothing the engine does holds the library back.
     func startFeeds() {
         feeds.start(library: self)
+        moveFeedDownloadsOnceRecordsLoad()
     }
 
     // MARK: - FeedLibraryHost
@@ -35,9 +57,21 @@ extension LibraryViewModel: FeedLibraryHost {
     /// Lists a book a feed download published, and saves the library. An
     /// episode skips the duplicate question, and the library's rule against
     /// two books of one file, since two shows can carry one file.
+    ///
+    /// The book is a feed item's (FR11): its row carries the feed link the
+    /// import gave it and no library folder, its package is in its feed's
+    /// folder, and the save writes it to its feed's index, which the library
+    /// keeps from now on, never to library.json.
     func addFeedBook(_ book: Book) {
         guard bookByID(book.id) == nil else { return }
-        library.books.append(book)
+        var row = book
+        var updated = library
+        if let feedID = row.feedLink?.feedID {
+            row.folderPath = ""
+            updated.feedShelf.keepIndex(of: feedID)
+        }
+        updated.books.append(row)
+        library = updated
         save()
     }
 

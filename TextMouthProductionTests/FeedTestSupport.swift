@@ -489,7 +489,17 @@ final class FeedTestWorld {
         worksOnItsOwn: Bool = false,
         statistics: ReadingStatsService? = nil
     ) throws {
-        // Registered first, so it runs last, once the engine has stopped.
+        // Registered first of all, so it runs last, once the library index
+        // has been put back, which writes any save still waiting: a feed's
+        // downloads go to a folder of the feed's own in the data directory's
+        // Feeds folder (FR11), and every such folder this world made goes.
+        let feedFoldersBefore = Self.feedItemsFolders()
+        test.addTeardownBlock {
+            for folder in Self.feedItemsFolders().subtracting(feedFoldersBefore) {
+                try? FileManager.default.removeItem(at: folder)
+            }
+        }
+        // Registered next, so it runs once the engine has stopped.
         let index = try LibraryIndexSandbox.capture()
         test.addTeardownBlock { index.restore() }
         let sandbox = try test.makeSandboxDirectory(label)
@@ -535,12 +545,24 @@ final class FeedTestWorld {
             deleteBookPackage: { try FileManager.default.removeItem(at: $0.tmbDirectory) }
         )
         center = FeedCenter(environment: environment)
+        // The library lists this engine's feeds' items (FR11).
+        library.feedEngine = center
         let server = server
         let center = center
         test.addTeardownBlock {
             server.stop()
             await MainActor.run { center.stop() }
         }
+    }
+
+    /// The feeds' own folders in the data directory's Feeds folder now, each
+    /// named by a feed's ID (FR11).
+    nonisolated static func feedItemsFolders() -> Set<URL> {
+        let feeds = FeedPaths.recordsFolder(in: TextMouthPaths.root)
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: feeds.path)) ?? []
+        return Set(names.compactMap { name in
+            FeedPaths.feedID(ofItemsFolderNamed: name).map { _ in feeds.appendingPathComponent(name, isDirectory: true) }
+        })
     }
 
     /// Starts the engine in the world's library and waits for what it

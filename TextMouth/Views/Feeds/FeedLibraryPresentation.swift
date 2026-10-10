@@ -81,9 +81,11 @@ extension FeedCenter {
 
 extension FolderNavigationHistory {
     /// What VoiceOver hears on entering the folder at `path`: its name and
-    /// its books counted ("Fiction, 12 books"), or, for a feed's folder, its
-    /// name, the note "Feed", and the feed's items counted ("Planet Money,
-    /// Feed, 10 of 381 episodes kept, 3 downloaded, 2 new") (FR03).
+    /// its books counted, with the feeds the Feeds section lists there
+    /// beside them ("Library, 743 books, 2 feeds", FR11), or, for a feed's
+    /// folder, its name, the note "Feed", and the feed's items counted
+    /// ("Planet Money, Feed, 10 of 381 episodes kept, 3 downloaded, 2 new")
+    /// (FR03).
     @MainActor
     static func announcement(for path: String, library: Library, feedFolders: LibraryFeedFolders) -> String {
         if !path.isEmpty,
@@ -91,7 +93,8 @@ extension FolderNavigationHistory {
            let feedID = feedFolders.feedID(inFolder: folder.id) {
             return FeedWording.folderAnnouncement(name: folder.name, counts: feedFolders.center.counts(of: feedID))
         }
-        return announcement(for: path, library: library)
+        let feeds = LibraryFeedsSectionRows.feeds(at: LibraryLocation(category: .folders, folderPath: path), center: feedFolders.center)
+        return announcement(for: path, library: library, feedCount: feeds.count)
     }
 }
 

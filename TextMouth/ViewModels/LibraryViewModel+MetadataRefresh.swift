@@ -49,9 +49,11 @@ extension LibraryViewModel {
 
     /// Whether the refresh reads `book`'s file again: its row was stamped by
     /// an older reader than `ImportedFileMetadata.readerVersion`, or by
-    /// none, as every row was before readers were versioned.
+    /// none, as every row was before readers were versioned. Never for a
+    /// feed's item (FR11), whose title and author come from its feed.
     nonisolated static func needsMetadataRefresh(_ book: Book) -> Bool {
-        SemanticVersion.isOutdated(stored: book.metadataReaderVersion, current: ImportedFileMetadata.readerVersion)
+        !book.isFeedItem
+            && SemanticVersion.isOutdated(stored: book.metadataReaderVersion, current: ImportedFileMetadata.readerVersion)
     }
 
     /// The fields of `book` the refresh replaces with what its file names

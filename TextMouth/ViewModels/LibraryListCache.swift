@@ -48,15 +48,23 @@ final class LibraryListCache {
         let isAscending: Bool
         /// The search, lowercased as the list matches it; "" for none.
         let search: String
+        /// The feed whose folder is shown in Folders, whose items the list
+        /// holds beside the folder's books (FR11); nil for any other place.
+        /// A feed given another folder, or the feeds' records loading after
+        /// the library, changes it, so the list is derived again although no
+        /// book changed.
+        let feedID: UUID?
 
         /// The list at `location`, in `sort`'s order, narrowed by `search`
-        /// (already lowercased; "" for none).
-        init(location: LibraryLocation, sort: LibrarySortState, search: String) {
+        /// (already lowercased; "" for none), holding the items of the feed
+        /// `feedID` when the folder shown is that feed's.
+        init(location: LibraryLocation, sort: LibrarySortState, search: String, feedID: UUID? = nil) {
             category = location.category
             folderPath = location.category == .folders ? location.folderPath : ""
             field = sort.field
             isAscending = sort.isAscending
             self.search = search
+            self.feedID = location.category == .folders ? feedID : nil
         }
     }
 
@@ -200,9 +208,10 @@ final class LibraryListCache {
 
     /// How many books are in the folder `path` and every folder below it, as
     /// `Library.totalBooksInFolderTree` counts them, from counts made for
-    /// every folder in one pass per list revision.
+    /// every folder in one pass per list revision: the library's own books,
+    /// never a feed's items (FR11).
     func bookCount(inFolderTree path: String, in library: Library) -> Int {
-        let counts = folderTreeCounts ?? Self.folderTreeCounts(of: library.books)
+        let counts = folderTreeCounts ?? Self.folderTreeCounts(of: library.libraryBooks)
         folderTreeCounts = counts
         return counts[path] ?? 0
     }
@@ -268,12 +277,14 @@ final class LibraryListCache {
 
 private extension Book {
     /// Whether `other` has the same value in every field a library list
-    /// reads: its ID and folder (membership), the fields sorts and the
-    /// Recent category order by, the title and author a search matches, and
-    /// the file path and content hash a measured size follows.
+    /// reads: its ID, folder, and feed link (membership: a feed's items are
+    /// listed by their feed, FR11), the fields sorts and the Recent category
+    /// order by, the title and author a search matches, and the file path
+    /// and content hash a measured size follows.
     func hasSameListFields(as other: Book) -> Bool {
         id == other.id
             && folderPath == other.folderPath
+            && feedLink == other.feedLink
             && title == other.title
             && author == other.author
             && dateAdded == other.dateAdded

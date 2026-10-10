@@ -55,6 +55,13 @@ final class LibraryFeedFolders: ObservableObject {
         feedIDsByFolderID[folder.id] != nil
     }
 
+    /// How many feeds have their folders below `folder`, as the Feeds section
+    /// lists them when that folder is shown (FR11): what a plain folder's
+    /// row names beside its books, "Podcasts, 3 books, 2 feeds".
+    func feedCount(below folder: BookFolder) -> Int {
+        LibraryFeedsSectionRows.feeds(at: LibraryLocation(category: .folders, folderPath: folder.fullPath), center: center).count
+    }
+
     /// The feed of each folder holding one, by folder ID: of feeds sharing
     /// a folder, the first by title, as the store orders its feeds, and of
     /// two with one title, the one whose ID sorts first, so the choice never
@@ -133,7 +140,12 @@ extension LibraryFeedFolders {
             }
             rows.shown.append(folder)
             rows.rotorEntries.append(FolderRotorEntry(
-                label: FolderRow.accessibilityLabel(name: folder.name, bookCount: bookCount(folder), feedCounts: feedCounts),
+                label: FolderRow.accessibilityLabel(
+                    name: folder.name,
+                    bookCount: bookCount(folder),
+                    feedCounts: feedCounts,
+                    feedsBelow: feedCounts == nil ? feedCount(below: folder) : 0
+                ),
                 id: folder.id
             ))
         }

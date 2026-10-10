@@ -95,6 +95,19 @@ enum LibraryPersistenceService {
     /// frequent position saves do not flood the debug log. Confined to
     /// saveQueue.
     nonisolated(unsafe) private static var loggedIndexWriteHolds: Set<IndexWriteHold> = []
+    /// What each feed's index holds on disk as this process last read or
+    /// wrote it (FR11), so a save writes a feed's index only when its bytes
+    /// changed. Confined to saveQueue, where every index is read and written.
+    nonisolated(unsafe) private static var feedIndexesOnDisk = FeedIndexesOnDisk()
+
+    /// The bytes of each feed's index on disk, in one data directory.
+    private struct FeedIndexesOnDisk {
+        /// The data directory the bytes are in; the record starts over when
+        /// it changes, as after a data-directory move.
+        var rootPath: String?
+        /// Each feed's index, as last read or written.
+        var bytes: [UUID: Data] = [:]
+    }
 
     /// Why library.json is not being written.
     private enum IndexWriteHold {
@@ -291,6 +304,22 @@ enum LibraryPersistenceService {
         }
     }
 
+    /// Writes `library` at once, in place of any snapshot waiting, and waits
+    /// for it: each feed's index, then library.json, in the one write that
+    /// splits the library (`writeIndexFile`), as the move of a download made
+    /// before FR11 into its feed's folder needs its row in the feed's index
+    /// before library.json lets it go. A failure is reported, with a retry,
+    /// as every index write's is; while index writes are held nothing is
+    /// written. Call it on the main thread, never from either queue.
+    static func saveAndWait(_ library: Library) {
+        saveQueue.sync {
+            // `library` is newer than any snapshot waiting, which it holds.
+            pendingLibrary = nil
+            saveGeneration &+= 1
+            write(library)
+        }
+    }
+
     /// Writes the record of the book `bookID` still waiting in the debounce,
     /// if one is, at once, on the metadata queue, and waits for it: for a
     /// change that must be on disk before what it replaced is removed, as
@@ -320,7 +349,9 @@ enum LibraryPersistenceService {
             try writeIndexFile(library)
         } catch {
             print("Failed to save library: \(error)")
-            failureCenter.recordFailure(.libraryIndex, path: libraryFileURL.path, error: error) { failureID in
+            // A feed's index that failed names its own file (FR11).
+            let path = (error as? FeedIndexWriteError)?.file.path ?? libraryFileURL.path
+            failureCenter.recordFailure(.libraryIndex, path: path, error: error) { failureID in
                 retryIndexWrite(library, failureID: failureID)
             }
             reportIfDataDirectoryVanished()
@@ -369,6 +400,13 @@ enum LibraryPersistenceService {
     /// checkpoint made so far, so it clears the checkpoint journal (PERF15).
     /// The retry of an older failed snapshot, made while a newer one waits,
     /// leaves the journal for that newer one to clear.
+    ///
+    /// This is the one write path of library.json, and it splits the library
+    /// (FR11): each feed's index takes that feed's rows first
+    /// (`writeFeedIndexes(of:)`), and library.json the library's own books
+    /// (`Library.encode(to:)`). A feed's index that cannot be written stops
+    /// the write before library.json, so a row leaving library.json for its
+    /// feed's index is never in neither.
     private static func writeIndexFile(_ library: Library) throws {
         var library = library
         let moved = StorageBoundary.shared.rebaseToCurrent(&library)
@@ -378,6 +416,8 @@ enum LibraryPersistenceService {
                     + "were moved to its new location before writing"
             )
         }
+        try TextMouthPaths.ensureDirectoryStructure()
+        try writeFeedIndexes(of: library)
         try encodeAndWrite(library, to: libraryFileURL)
         failureCenter.recordSuccess(.libraryIndex)
         // Writing again: a later hold is logged afresh.
@@ -413,6 +453,62 @@ enum LibraryPersistenceService {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         return try encoder.encode(library)
+    }
+
+    // MARK: - Feed Indexes (FR11)
+
+    /// Writes each feed's index from `library`'s feed items
+    /// (`Library.feedIndexRows`), each row placed where its package is
+    /// (`FeedIndexFiles.placed(_:in:of:)`), and only the indexes whose bytes
+    /// differ from what this process last read or wrote of them: listening
+    /// to an episode rewrites its feed's small index, never another feed's.
+    /// A feed the library keeps no row of now gets an empty index, unless its
+    /// folder is gone too, when there is nothing left to keep and nothing is
+    /// made again. Must run on saveQueue, after the data directory's folders
+    /// are made.
+    /// - Throws: `FeedIndexWriteError` for the first index that could not be
+    ///   written; those written before it stay written.
+    private static func writeFeedIndexes(of library: Library) throws {
+        let root = TextMouthPaths.root
+        if feedIndexesOnDisk.rootPath != root.path {
+            feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path)
+        }
+        let byFeed = library.feedIndexRows.sorted { $0.key.uuidString < $1.key.uuidString }
+        for (feedID, rows) in byFeed {
+            let placed = rows.map { FeedIndexFiles.placed($0, in: root, of: feedID) }
+            let data = try FeedIndexFiles.encoded(FeedIndex(feedID: feedID, books: placed))
+            guard feedIndexesOnDisk.bytes[feedID] != data else { continue }
+            let folder = FeedPaths.itemsFolder(of: feedID, in: root)
+            if placed.isEmpty, !FileManager.default.fileExists(atPath: folder.path) {
+                feedIndexesOnDisk.bytes[feedID] = data
+                continue
+            }
+            let file = FeedPaths.indexFile(of: feedID, in: root)
+            do {
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                try data.write(to: file, options: .atomic)
+            } catch {
+                throw FeedIndexWriteError(file: file, underlying: error)
+            }
+            feedIndexesOnDisk.bytes[feedID] = data
+        }
+    }
+
+    /// Every feed's rows, read from each feed's folder in the data directory
+    /// in use (`FeedIndexFiles.readAll(in:fromPackages:)`), on the shelf,
+    /// each feed's index kept, for the library model to join the rows whose
+    /// files are here to its books once the startup repair is done (FR11).
+    /// With `fromPackages`, as while the library index is recovered, the
+    /// packages' records are read in place of the indexes. What was read of
+    /// each index is noted, so the first save writes only what changed.
+    static func loadFeedShelf(fromPackages: Bool = false) -> FeedShelf {
+        saveQueue.sync {
+            let root = TextMouthPaths.root
+            let read = FeedIndexFiles.readAll(in: root, fromPackages: fromPackages)
+            feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path, bytes: read.compactMapValues(\.indexBytes))
+            let rows = read.keys.sorted { $0.uuidString < $1.uuidString }.flatMap { read[$0]?.rows ?? [] }
+            return FeedShelf(rows: rows, indexedFeedIDs: Set(read.keys))
+        }
     }
 
     /// Save a single book's bookInfo.json. Call this when a specific book's data changes.
@@ -489,14 +585,17 @@ enum LibraryPersistenceService {
                 stored = nil
             }
             // The record was read from the analyzed book's package, so that
-            // is where the book it describes lives.
-            let latest = pending ?? stored.map {
-                Book(
-                    record: $0.info,
+            // is where the book it describes lives: in the library's folder
+            // or its feed's, as the analyzed book's location says (FR11).
+            let latest = pending ?? stored.map { stored -> Book in
+                var book = Book(
+                    record: stored.info,
                     filePath: analyzed.filePath,
                     folderPath: analyzed.folderPath,
                     tmbDirectoryName: analyzed.tmbDirectoryName
                 )
+                book.fileLocation = analyzed.fileLocation
+                return book
             } ?? analyzed
             if let change = contentChange(from: analyzed, to: latest) {
                 logDroppedAnalysis(of: analyzed, because: change)
@@ -976,7 +1075,18 @@ enum LibraryPersistenceService {
     /// cannot be used is reported as unreadable, never as an empty library;
     /// by the time this returns, its bytes are preserved and index writes are
     /// suspended, and the unreadable file itself has not been touched.
+    ///
+    /// Each feed's index is read with it (FR11): a library that loads holds
+    /// every feed's rows on its shelf (`loadFeedShelf(fromPackages:)`).
     static func load() -> LibraryLoadResult {
+        let result = loadLibraryIndex()
+        guard case .loaded(var library) = result else { return result }
+        library.feedShelf = loadFeedShelf()
+        return .loaded(library)
+    }
+
+    /// library.json alone, as `load()` reads it.
+    private static func loadLibraryIndex() -> LibraryLoadResult {
         // Try new location first
         if FileManager.default.fileExists(atPath: libraryFileURL.path) {
             return readIndex(at: libraryFileURL)
@@ -1092,7 +1202,7 @@ enum LibraryPersistenceService {
             try writeIndexFile(library)
             endIndexWriteSuspension()
             logIndexEvent(
-                "rebuilt the library index with \(library.books.count) book(s); "
+                "rebuilt the library index with \(library.libraryBookCount) book(s); "
                     + (preservedCopy.map { "previous index kept at \($0.path)" }
                         ?? "no index file was there to replace")
             )
@@ -1127,5 +1237,19 @@ enum LibraryPersistenceService {
     /// Records a library index recovery event in the console and the debug log.
     private static func logIndexEvent(_ message: String) {
         logLine("LIBRARY_INDEX: \(message)")
+    }
+}
+
+/// A feed's index that could not be written (FR11): the save stopped before
+/// library.json, which keeps every row it held, and is reported and retried
+/// as a failed library index write, naming this file.
+struct FeedIndexWriteError: LocalizedError {
+    /// The index that could not be written.
+    let file: URL
+    /// Why it could not be written.
+    let underlying: any Error
+
+    var errorDescription: String? {
+        underlying.localizedDescription
     }
 }

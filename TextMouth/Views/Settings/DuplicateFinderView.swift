@@ -404,7 +404,7 @@ struct DuplicateFinderView: View {
         if activeFilters.contains(.isbn) && isbnCache.isEmpty {
             isLoadingISBNs = true
             Task {
-                let cache = await loadISBNs(from: libraryViewModel.library.books)
+                let cache = await loadISBNs(from: libraryViewModel.booksForDuplicateScan)
                 await MainActor.run {
                     isbnCache = cache
                     isLoadingISBNs = false
@@ -421,7 +421,7 @@ struct DuplicateFinderView: View {
     /// is announced instead.
     private func runScan(announcing: Bool) {
         scanResults = DuplicateFinderEngine.findDuplicates(
-            books: libraryViewModel.library.books,
+            books: libraryViewModel.booksForDuplicateScan,
             filters: activeFilters,
             isbnCache: isbnCache
         )

@@ -288,14 +288,17 @@ final class FeedDownloadManager {
         DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_STARTED: \(item.title) (\(feed.title))")
         announce(.downloadStarted(feedID: request.feedID, itemID: request.itemID))
         do {
-            guard let folderPath = library()?.feedFolderPath(forFolderID: feed.folderID) else {
+            // A download goes to its feed's own folder (FR11); the feed's
+            // library folder is where it is listed, so a feed whose folder is
+            // gone downloads nothing, as before.
+            guard library()?.feedFolderPath(forFolderID: feed.folderID) != nil else {
                 throw FeedDownloadError.folderMissing
             }
             let book: Book
             if let enclosure = item.enclosure, enclosure.isPlayable {
-                book = try await downloadEpisode(item, enclosure: enclosure, of: feed, toFolder: folderPath, request: request)
+                book = try await downloadEpisode(item, enclosure: enclosure, of: feed, request: request)
             } else {
-                book = try await downloadArticle(item, of: feed, toFolder: folderPath, request: request)
+                book = try await downloadArticle(item, of: feed, request: request)
             }
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_FINISHED: \(item.title) (\(feed.title))")
             announce(.downloadFinished(feedID: request.feedID, itemID: request.itemID, bookID: book.id))
@@ -334,7 +337,6 @@ final class FeedDownloadManager {
         _ item: FeedItem,
         enclosure: FeedEnclosure,
         of feed: Feed,
-        toFolder folderPath: String,
         request: Request
     ) async throws -> Book {
         // A file no type or extension names as one TextMouth plays is never
@@ -386,12 +388,12 @@ final class FeedDownloadManager {
         let fileName = FeedEpisodeImporter.fileName(title: item.title, fileExtension: fileExtension)
         let now = environment.now()
         return try await importAndCommit(request) {
-            try FeedEpisodeImporter.importEpisode(holding, named: fileName, item: item, of: feed, toFolder: folderPath, dateAdded: now)
+            try FeedEpisodeImporter.importEpisode(holding, named: fileName, item: item, of: feed, dateAdded: now)
         }
     }
 
     /// Writes an article's book and imports it as an HTML book.
-    private func downloadArticle(_ item: FeedItem, of feed: Feed, toFolder folderPath: String, request: Request) async throws -> Book {
+    private func downloadArticle(_ item: FeedItem, of feed: Feed, request: Request) async throws -> Book {
         let network = environment.network
         let discretionary = request.origin == .automatic
         let body = await FeedEpisodeImporter.articleBody(for: item) { link in
@@ -401,7 +403,7 @@ final class FeedDownloadManager {
         let html = FeedEpisodeImporter.articleHTML(for: item, of: feed, body: body)
         let now = environment.now()
         return try await importAndCommit(request) {
-            try FeedEpisodeImporter.importArticle(html: html, item: item, of: feed, toFolder: folderPath, dateAdded: now)
+            try FeedEpisodeImporter.importArticle(html: html, item: item, of: feed, dateAdded: now)
         }
     }
 

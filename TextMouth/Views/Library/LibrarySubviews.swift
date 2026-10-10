@@ -88,10 +88,15 @@ struct TimeRemainingBar: View {
     /// the end. Nil, the default, everywhere else, where the bar is as it
     /// was; given, the bar shows even before any item is downloaded.
     var feedSummary: FeedWording.FolderSummary? = nil
+    /// How many feeds the Feeds section lists where the bar is (FR11), which
+    /// the bar names beside the books, as in "743 books, 2 feeds"; 0, the
+    /// default, where it lists none, and the bar then counts the books
+    /// alone. A feed's episodes and articles are never among `books`.
+    var feedCount: Int = 0
 
     var body: some View {
         let (time, known, unknown) = computeTimeRemaining()
-        if known > 0 || unknown > 0 || feedSummary != nil {
+        if known > 0 || unknown > 0 || feedSummary != nil || feedCount > 0 {
             HStack(spacing: 12) {
                 Label {
                     if known > 0 {
@@ -129,7 +134,7 @@ struct TimeRemainingBar: View {
                         .foregroundColor(feedSummary.check.failed ? .red : .secondary)
                 }
 
-                Text(feedSummary?.counts ?? CountWording.books(books.count))
+                Text(countText)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -167,10 +172,16 @@ struct TimeRemainingBar: View {
         return (total, known, unknown)
     }
 
+    /// What the bar counts, shown and spoken alike: in a feed's folder, the
+    /// feed's items in place of the books; elsewhere the books, and the
+    /// feeds beside them where there are any (FR11).
+    var countText: String {
+        feedSummary?.counts ?? CountWording.booksAndFeeds(books: books.count, feeds: feedCount)
+    }
+
     private func accessibilityLabel(time: TimeInterval, known: Int, unknown: Int) -> String {
         var parts: [String] = []
-        // A feed's folder counts the feed's items in place of the books.
-        parts.append(feedSummary?.counts ?? CountWording.books(books.count))
+        parts.append(countText)
         if known > 0 {
             parts.append("\(TimeFormatting.spoken(time)) total remaining at current speed")
         }
@@ -260,6 +271,10 @@ struct FolderRow: View {
     /// note "Feed" after the folder's name and counts the feed's items in
     /// place of its books. Nil, the default, for any other folder.
     var feedCounts: FeedItemCounts? = nil
+    /// How many feeds have their folders below this one, as the Feeds
+    /// section lists them there (FR11), which the row names beside its
+    /// books; 0, the default, for none.
+    var feedsBelow: Int = 0
 
     var body: some View {
         HStack {
@@ -272,30 +287,33 @@ struct FolderRow: View {
                 FeedBadge(text: FeedWording.feedNote, color: .secondary)
             }
             Spacer()
-            Text(Self.countText(bookCount: bookCount, feedCounts: feedCounts))
+            Text(Self.countText(bookCount: bookCount, feedCounts: feedCounts, feedsBelow: feedsBelow))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Self.accessibilityLabel(name: folder.name, bookCount: bookCount, feedCounts: feedCounts))
+        .accessibilityLabel(Self.accessibilityLabel(name: folder.name, bookCount: bookCount, feedCounts: feedCounts, feedsBelow: feedsBelow))
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Double-tap to open folder")
     }
 
     /// What the row shows after the folder's name: its books counted, "12
-    /// books", or, for a feed's folder, the feed's items as the feed's row
-    /// counts them, "10 of 381 episodes kept, 3 downloaded" (FR03).
-    static func countText(bookCount: Int, feedCounts: FeedItemCounts?) -> String {
-        feedCounts.map(FeedWording.countsPhrase) ?? CountWording.books(bookCount)
+    /// books", with the feeds below it beside them, "3 books, 2 feeds", or
+    /// those feeds alone where it holds no book, "2 feeds" (FR11); or, for a
+    /// feed's folder, the feed's items as the feed's row counts them, "10 of
+    /// 381 episodes kept, 3 downloaded" (FR03).
+    static func countText(bookCount: Int, feedCounts: FeedItemCounts?, feedsBelow: Int = 0) -> String {
+        feedCounts.map(FeedWording.countsPhrase) ?? CountWording.booksAndFeeds(books: bookCount, feeds: feedsBelow)
     }
 
     /// What VoiceOver says for a folder's row and for its entry in the
     /// Folders rotor, which share it: "Fiction, 12 books", "Poems, 1 book",
-    /// and, for a feed's folder, its name, "Feed", and the feed's items as
-    /// the feed's row counts them, "Planet Money, Feed, 10 of 381 episodes
-    /// kept, 3 downloaded", never its downloads as books (FR03).
-    static func accessibilityLabel(name: String, bookCount: Int, feedCounts: FeedItemCounts?) -> String {
-        guard let feedCounts else { return "\(name), \(CountWording.books(bookCount))" }
+    /// "Podcasts, 3 books, 2 feeds", "Shows, 2 feeds" (FR11), and, for a
+    /// feed's folder, its name, "Feed", and the feed's items as the feed's
+    /// row counts them, "Planet Money, Feed, 10 of 381 episodes kept, 3
+    /// downloaded", never its downloads as books (FR03).
+    static func accessibilityLabel(name: String, bookCount: Int, feedCounts: FeedItemCounts?, feedsBelow: Int = 0) -> String {
+        guard let feedCounts else { return "\(name), \(countText(bookCount: bookCount, feedCounts: nil, feedsBelow: feedsBelow))" }
         return FeedWording.folderAnnouncement(name: name, counts: feedCounts)
     }
 }

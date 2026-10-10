@@ -8,14 +8,26 @@ import Foundation
 /// values explicitly and adds stable title/UUID tie-breakers.
 enum LibraryBookSorter {
     /// Recent-library policy: omit unopened books, newest first, and cap the
-    /// quick-access list to a small stable count.
+    /// quick-access list to a small stable count. Of each feed's items, only
+    /// the one opened last is listed, within the same count (FR11), so a
+    /// week of one podcast takes one place, and resuming it stays one step.
     static func recent(_ books: [Book], limit: Int = 10) -> [Book] {
-        Array(
-            books
-                .filter { $0.lastOpened != nil }
-                .sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
-                .prefix(max(0, limit))
-        )
+        guard limit > 0 else { return [] }
+        let opened = books
+            .filter { $0.lastOpened != nil }
+            .sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
+        var listedFeeds = Set<UUID>()
+        var listed: [Book] = []
+        for book in opened {
+            if let feedID = book.feedLink?.feedID, !listedFeeds.insert(feedID).inserted {
+                continue
+            }
+            listed.append(book)
+            if listed.count == limit {
+                break
+            }
+        }
+        return listed
     }
 
     /// Return the logical size of a file or all regular files contained in a

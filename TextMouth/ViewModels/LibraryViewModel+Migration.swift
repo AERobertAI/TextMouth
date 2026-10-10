@@ -35,18 +35,32 @@ extension LibraryViewModel {
     /// The work of `migrateOldBooksIfNeeded(access:)`, run with dataless
     /// files left in the cloud.
     private func repairLibrary(access: MaintenanceFileAccess) {
+        // The checkpoint journal, read once, before the repair's save clears
+        // it: the library's own books and the feed items both take their
+        // newer positions from it (PERF15, FR11).
+        let journaled = LibraryPersistenceService.booksWithCheckpointsAhead()
+
         // Every repair below reconciles the index with the disk and then saves
         // the index. While the index cannot be read there is nothing to
         // reconcile, and saving would replace the evidence the user may still
-        // recover, so show a library rebuilt from disk and save nothing.
+        // recover, so show a library rebuilt from disk and save nothing. The
+        // feed items join it all the same: their indexes are not library.json.
         guard indexRecovery == nil else {
             buildProvisionalLibrary()
+            joinFeedItems(journaled: journaled, access: access, skips: nil)
             return
         }
 
         let skips = CloudSkips(.startupRepair)
         defer { skips.log() }
         var needsSave = false
+
+        // A feed item's row meets none of the repairs below, which reconcile
+        // the library's own books with the Library folder: its package is in
+        // its feed's folder (FR11). Every feed item's row waits on the shelf
+        // until the repair is done, when those whose files are here join the
+        // books again.
+        library.shelveFeedItems()
 
         // A book taken out with Remove from Library Only stays out, even when
         // this index was saved before the removal. It goes first, so no
@@ -56,7 +70,7 @@ extension LibraryViewModel {
         // A crash can leave reading checkpoints that reached their books'
         // records but not this index (PERF15). Their newer positions come
         // next, so the repairs below and the save after them keep them.
-        if adoptNewerRecordedPositions(access: access, skips: skips) { needsSave = true }
+        if adoptNewerRecordedPositions(journaled: journaled, access: access, skips: skips) { needsSave = true }
 
         // Merge folder rows that name one directory on this volume before the
         // repairs below reason about where each book's package lives.
@@ -85,6 +99,10 @@ extension LibraryViewModel {
         // This recovers books left behind by interrupted imports or crashes.
         let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, access: access, skips: skips)
         if adopted > 0 { needsSave = true }
+
+        // The feed items whose files are here join the books, before anything
+        // can edit the reading list or open a reader (FR11).
+        if joinFeedItems(journaled: journaled, access: access, skips: skips) { needsSave = true }
 
         if needsSave {
             save()
@@ -118,36 +136,58 @@ extension LibraryViewModel {
         return retired
     }
 
-    /// Gives each book that the checkpoint journal names the reading position
-    /// its package record holds, when that is newer than its row's (PERF15):
-    /// a reading checkpoint writes the record at once but library.json
-    /// within minutes, so a crash in between leaves the record ahead
-    /// (`LibraryPersistenceService.saveReadingCheckpoint`). The record's
-    /// last-opened date comes with it when that is newer too, as a
-    /// checkpoint sets both. Returns whether any row changed.
+    /// Gives each book that the checkpoint journal (`journaled`) names the
+    /// reading position its package record holds, when that is newer than
+    /// its row's (PERF15): a reading checkpoint writes the record at once but
+    /// library.json within minutes, so a crash in between leaves the record
+    /// ahead (`LibraryPersistenceService.saveReadingCheckpoint`). Returns
+    /// whether any row changed.
+    private func adoptNewerRecordedPositions(journaled: Set<UUID>, access: MaintenanceFileAccess, skips: CloudSkips) -> Bool {
+        guard !journaled.isEmpty else { return false }
+        var books = library.books
+        let adopted = Self.adoptNewerRecordedPositions(in: &books, journaled: journaled, access: access, skips: skips)
+        guard adopted > 0 else { return false }
+        library.books = books
+        let phrase = CountWording.phrase(adopted, singular: "book", plural: "books")
+        DiagnosticLog.event(
+            .storage,
+            "LIBRARY_INDEX: took the reading positions of \(phrase) from their records, "
+                + "which held checkpoints saved after the index"
+        )
+        return true
+    }
+
+    /// Gives each of `rows` that `journaled` names the reading position its
+    /// package record holds, when that is newer than the row's, and the
+    /// record's last-opened date with it when that is newer too, as a
+    /// checkpoint sets both. Returns how many rows changed. The library's
+    /// own books and the feed items take their checkpoints this way alike.
     ///
     /// Only bookInfo.json is read, with dataless files left in the cloud. A
-    /// book whose package or record is in the cloud keeps its row and is
+    /// row whose package or record is in the cloud stays as it is and is
     /// counted in `skips`; a record that is missing, cannot be read, or
     /// names another book changes nothing.
-    private func adoptNewerRecordedPositions(access: MaintenanceFileAccess, skips: CloudSkips) -> Bool {
-        let journaled = LibraryPersistenceService.booksWithCheckpointsAhead()
-        guard !journaled.isEmpty else { return false }
+    private static func adoptNewerRecordedPositions(
+        in rows: inout [Book],
+        journaled: Set<UUID>,
+        access: MaintenanceFileAccess,
+        skips: CloudSkips?
+    ) -> Int {
         var adopted = 0
-        for index in library.books.indices where journaled.contains(library.books[index].id) {
-            let book = library.books[index]
+        for index in rows.indices where journaled.contains(rows[index].id) {
+            let book = rows[index]
             guard !book.tmbDirectoryName.isEmpty else { continue }
             let package = book.tmbDirectory
             let recordURL = TextMouthPaths.bookInfoPath(in: package)
             guard !access.isInCloud(package), !access.isInCloud(recordURL) else {
-                skips.record(book)
+                skips?.record(book)
                 continue
             }
             let record: BookInfo
             do {
                 record = try access.read(recordURL) { try StoredBookRecord.read(from: package) }.info
             } catch where DatalessFiles.isDownloadRefusal(error) {
-                skips.record(book)
+                skips?.record(book)
                 continue
             } catch {
                 continue
@@ -155,20 +195,63 @@ extension LibraryViewModel {
             guard record.metadata.bookID == book.id,
                   let recorded = record.state.readingPosition,
                   recorded.lastUpdated > (book.readingPosition?.lastUpdated ?? .distantPast) else { continue }
-            library.books[index].readingPosition = recorded
+            rows[index].readingPosition = recorded
             if let opened = record.metadata.lastOpened, opened > (book.lastOpened ?? .distantPast) {
-                library.books[index].lastOpened = opened
+                rows[index].lastOpened = opened
             }
             adopted += 1
         }
-        guard adopted > 0 else { return false }
-        let books = CountWording.phrase(adopted, singular: "book", plural: "books")
-        DiagnosticLog.event(
-            .storage,
-            "LIBRARY_INDEX: took the reading positions of \(books) from their records, "
-                + "which held checkpoints saved after the index"
-        )
-        return true
+        return adopted
+    }
+
+    /// The feed's own repair, at the end of the startup repair (FR11):
+    /// every feed item's row on the shelf whose file is on this Mac, or in
+    /// the cloud, joins the library model's books, so the reader, positions,
+    /// bookmarks, settings, and the reading list find it as they find any
+    /// book; a row whose file is gone stays on the shelf, where nothing lists
+    /// it and its feed's index keeps it. A checkpoint the journal names that
+    /// is newer than a joining row comes from its record, as a book's does
+    /// (`adoptNewerRecordedPositions(in:journaled:access:skips:)`).
+    ///
+    /// A book of the library's own sharing a joining row's ID, as library.json
+    /// still lists a download whose first-launch move had moved its package
+    /// when TextMouth stopped, gives way to the feed item's row, whose
+    /// package is the one here, and its record is written again where it is
+    /// now, finishing that move. A shelf row sharing the ID of a book of the
+    /// library's own that stays is dropped, the book standing, so no ID is
+    /// ever both. Returns whether any row changed, which needs a save.
+    @discardableResult
+    func joinFeedItems(journaled: Set<UUID>, access: MaintenanceFileAccess = .live, skips: CloudSkips? = nil) -> Bool {
+        guard !library.feedShelf.isEmpty else { return false }
+        var joined = library
+        var rows = joined.feedShelf.takeRows { access.presence(of: $0.bookFileURL) != .absent }
+        let adopted = Self.adoptNewerRecordedPositions(in: &rows, journaled: journaled, access: access, skips: skips)
+        if adopted > 0 {
+            DiagnosticLog.event(
+                .storage,
+                "FEED_INDEX: took the reading positions of "
+                    + "\(CountWording.phrase(adopted, singular: "feed item", plural: "feed items")) from their records, "
+                    + "which held checkpoints saved after their feeds' indexes"
+            )
+        }
+        let joiningIDs = Set(rows.map(\.id))
+        let replacedIDs = Set(joined.books.map(\.id)).intersection(joiningIDs)
+        joined.books.removeAll { joiningIDs.contains($0.id) }
+        joined.books.append(contentsOf: rows)
+        let bookIDs = Set(joined.books.map(\.id))
+        let shadowed = joined.feedShelf.takeRows { bookIDs.contains($0.id) }.count
+        if replacedIDs.count + shadowed > 0 {
+            DiagnosticLog.event(
+                .storage,
+                "FEED_INDEX: \(replacedIDs.count) row(s) of library.json gave way to the feed items holding their packages, "
+                    + "and \(shadowed) feed item row(s) to the library's books holding theirs"
+            )
+        }
+        library = joined
+        for row in rows where replacedIDs.contains(row.id) {
+            LibraryPersistenceService.saveBookInfo(for: row)
+        }
+        return adopted + replacedIDs.count + shadowed > 0
     }
 
     /// Fixes stale file paths: when a book's file is not at its recorded
@@ -906,12 +989,18 @@ extension LibraryViewModel {
         waiting: (StorageWork?) async -> Void = { _ in }
     ) async -> OperationOutcome {
         let run = await runDirectoryRebuild(waiting: waiting)
-        let bookCount = library.books.count
         return Self.maintenanceOutcome(
             run,
             failureContext: Self.rebuildFailureContext,
-            done: "Done. \(bookCount) \(bookCount == 1 ? "book" : "books") in library."
+            done: Self.rebuildDirectoryDoneMessage(library)
         )
+    }
+
+    /// What Rebuild Directory says once it is done: "Done. 743 books in
+    /// library.", counting the library's own books, never a feed's items
+    /// (FR11), which the rebuild leaves where they are.
+    nonisolated static func rebuildDirectoryDoneMessage(_ library: Library) -> String {
+        "Done. \(CountWording.books(library.libraryBookCount)) in library."
     }
 
     /// The work of Rebuild Directory: the legacy migration report, or the
@@ -932,7 +1021,11 @@ extension LibraryViewModel {
         do {
             try ensureLibraryIndexIsReadable()
             let migration = try await withStorageWorkHeld(moving: nil, waiting: waiting) { () throws -> LegacyMigrationReport? in
-                let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
+                // A feed's items are never in the Library folder the rebuild
+                // reconciles (FR11), so they wait aside while it does.
+                let migration = try library.withFeedItemsSetAside {
+                    try FileImportService.rebuildDirectoryStructure(library: &$0)
+                }
                 save()
                 LibraryPersistenceService.saveAllBookInfos(library)
                 return migration
@@ -996,7 +1089,10 @@ extension LibraryViewModel {
                 : DataDirectoryMoveRequest(destination: defaultRoot, isResetToDefault: true, access: access)
             let migration = try await withStorageWorkHeld(moving: move, waiting: waiting) { () throws -> LegacyMigrationReport? in
                 try TextMouthPaths.ensureDirectoryStructure()
-                let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
+                // As in Rebuild Directory, a feed's items wait aside (FR11).
+                let migration = try library.withFeedItemsSetAside {
+                    try FileImportService.rebuildDirectoryStructure(library: &$0)
+                }
                 configService.config.dataDirectoryPath = ""
                 configService.saveToDisk()
                 save()
@@ -1219,6 +1315,8 @@ extension LibraryViewModel {
         guard !unchanged else { return migrated }
         var kept = current
         let moved = StorageBoundary.shared.rebaseToCurrent(&kept)
+        // The feed shelf's rows move with the books' (FR11).
+        kept.feedShelf.changeRows { $0 = StorageBoundary.shared.rebasedToCurrent($0) }
         DiagnosticLog.event(
             .storage,
             "DATA_DIRECTORY_MOVE: the library changed while it was copied; kept the change, "

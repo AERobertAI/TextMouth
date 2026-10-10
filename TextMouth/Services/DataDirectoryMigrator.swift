@@ -473,11 +473,17 @@ enum DataDirectoryMigrator {
 
     /// Points every book in the data directory at its place in the new
     /// location, under the name the preferences will hold, writes the result
-    /// as the staged copy's package records and library.json, and checks it
-    /// against the copy in `staging`. Each record is written as a save of its
-    /// book writes one, so each package's content index stays as it was
-    /// copied.
-    /// - Returns: The library the staged library.json holds.
+    /// as the staged copy's package records, each feed's index, and
+    /// library.json, and checks it against the copy in `staging`. Each record
+    /// is written as a save of its book writes one, so each package's content
+    /// index stays as it was copied.
+    ///
+    /// A feed item's row (FR11) is staged in its feed's folder of the copy,
+    /// its record written there, and goes to its feed's index, never to the
+    /// staged library.json (`Library.encode(to:)`); a row of the feed shelf,
+    /// whose file is not here, moves with the rest and goes to its feed's
+    /// index too.
+    /// - Returns: The library the staged library.json and feed indexes hold.
     private static func stage(
         _ library: Library,
         from source: DataDirectoryLocation,
@@ -500,10 +506,9 @@ enum DataDirectoryMigrator {
             }
 
             if !migratedLibrary.books[index].tmbDirectoryName.isEmpty {
-                let stagedPackage = staging
-                    .appendingPathComponent("Library", isDirectory: true)
-                    .appendingPathComponent(migratedLibrary.books[index].folderPath, isDirectory: true)
-                    .appendingPathComponent(migratedLibrary.books[index].tmbDirectoryName, isDirectory: true)
+                // In its library folder of the copy, or, for a feed item, in
+                // its feed's folder (`Book.packageDirectory(inDataDirectory:)`).
+                let stagedPackage = migratedLibrary.books[index].packageDirectory(inDataDirectory: staging)
                 // Written as every save of the book writes its record
                 // (PERF15), over the record copied with the package, reading
                 // bookInfo.json alone. The copied contentIndex.json stays as
@@ -514,6 +519,12 @@ enum DataDirectoryMigrator {
                 try migratedLibrary.books[index].saveBookInfoThrowing(inPackageAt: stagedPackage)
             }
         }
+        migratedLibrary.feedShelf.changeRows { row in
+            if let moved = source.relocating(row.filePath, to: destination.named) {
+                row.filePath = moved
+            }
+        }
+        try stageFeedIndexes(of: migratedLibrary, at: destination, in: staging, fileManager: fileManager)
 
         let libraryURL = staging.appendingPathComponent("library.json")
         let encoder = JSONEncoder()
@@ -522,11 +533,33 @@ enum DataDirectoryMigrator {
         try encoder.encode(migratedLibrary).write(to: libraryURL, options: .atomic)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+        // library.json holds the library's own books, never a feed item's
+        // row (FR11, `Library.encode(to:)`).
         guard let validated = try? decoder.decode(Library.self, from: Data(contentsOf: libraryURL)),
-              validated.books.count == migratedLibrary.books.count else {
+              validated.books.count == migratedLibrary.libraryBookCount else {
             throw DataDirectoryMigrationError.invalidLibrary
         }
         return migratedLibrary
+    }
+
+    /// Writes each feed's index in the staged copy from `library`'s feed
+    /// items (FR11, `Library.feedIndexRows`), each row placed where its
+    /// package is in the data directory at `destination`, as a save there
+    /// would write it (`FeedIndexFiles`). A feed the library keeps no row of
+    /// keeps the index copied with its folder; one whose folder is gone has
+    /// nothing to keep.
+    private static func stageFeedIndexes(
+        of library: Library,
+        at destination: DataDirectoryLocation,
+        in staging: URL,
+        fileManager: FileManager
+    ) throws {
+        for (feedID, rows) in library.feedIndexRows where !rows.isEmpty {
+            let placed = rows.map { FeedIndexFiles.placed($0, in: destination.named, of: feedID) }
+            let data = try FeedIndexFiles.encoded(FeedIndex(feedID: feedID, books: placed))
+            try fileManager.createDirectory(at: FeedPaths.itemsFolder(of: feedID, in: staging), withIntermediateDirectories: true)
+            try data.write(to: FeedPaths.indexFile(of: feedID, in: staging), options: .atomic)
+        }
     }
 
     /// Renames the checked copy in `staging` to the destination's real
