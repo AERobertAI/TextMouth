@@ -214,15 +214,16 @@ enum FeedEpisodeImporter {
     /// gives its file, its checksum, and what reading it measures.
     ///
     /// The package is staged as every import's is, with the transcript the
-    /// kept package holds copied in, read as the reader will read it, and
-    /// recorded, the kept record's note of its transcript kept and its
-    /// revision passed; only then does it take the kept package's place, in
-    /// one step where the volume allows (`FeedItemPackage.putInPlace`), so
-    /// the kept package stays whole until the new one is. A transcript whose
-    /// audio differs from the new file's, as when a host inserts other
-    /// advertisements into each download, is kept: the episode finds it
-    /// stale (TRANSCRIPT_STALE) and shows no text until it is transcribed
-    /// again (`TranscriptTextLoader`).
+    /// kept package holds copied in (a kept package that cannot be listed
+    /// fails the download, and stays as it is), read as the reader will
+    /// read it, and recorded, the kept record's note of its transcript kept
+    /// and its revision passed; only then does it take the kept package's
+    /// place, in one step where the volume allows
+    /// (`FeedItemPackage.putInPlace`), so the kept package stays whole until
+    /// the new one is. A transcript whose audio differs from the new file's,
+    /// as when a host inserts other advertisements into each download, is
+    /// kept: the episode finds it stale (TRANSCRIPT_STALE) and shows no text
+    /// until it is transcribed again (`TranscriptTextLoader`).
     private static func restoreBook(
         _ kept: Book,
         named fileName: String,

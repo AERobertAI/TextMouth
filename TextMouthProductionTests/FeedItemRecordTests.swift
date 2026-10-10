@@ -240,6 +240,70 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: stale).count, staleBefore + 1)
     }
 
+    // MARK: - A Kept Package That Cannot Be Listed
+
+    /// A package that is there but cannot be listed, as one whose folder
+    /// can't be read, is taken to hold a transcript, so its file's removal
+    /// keeps it whatever its row holds; a package that is gone holds none,
+    /// and one that can be listed holds one only when its transcript is
+    /// there. Copying what a new download keeps out of a package that cannot
+    /// be listed fails, rather than copying nothing, and out of one that is
+    /// gone copies nothing without failing.
+    func testAPackageThatCannotBeListedIsTakenToHoldATranscript() throws {
+        let folder = try makeSandboxDirectory("FeedPackageListing")
+        let listable = folder.appendingPathComponent("Listable.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: listable, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(to: TextMouthPaths.bookInfoPath(in: listable))
+        let unlistable = folder.appendingPathComponent("Unlistable.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: unlistable, withIntermediateDirectories: true)
+        try lockListing(of: unlistable)
+        let gone = folder.appendingPathComponent("Gone.tmb", isDirectory: true)
+        let staged = try makeSandboxDirectory("FeedPackageListingStaged")
+        let neverOpened = Self.row("Never Opened", feedID: UUID(), itemID: "guid:never")
+
+        XCTAssertFalse(FeedItemPackage.holdsTranscript(listable))
+        try Data("{}".utf8).write(to: TextMouthPaths.transcriptPath(in: listable))
+        XCTAssertTrue(FeedItemPackage.holdsTranscript(listable))
+        XCTAssertTrue(FeedItemPackage.holdsTranscript(unlistable), "a package that cannot be listed was taken to hold no transcript")
+        XCTAssertTrue(FeedItemPackage.holdsListenerState(neverOpened, package: unlistable))
+        XCTAssertFalse(FeedItemPackage.holdsTranscript(gone))
+        XCTAssertFalse(FeedItemPackage.holdsListenerState(neverOpened, package: gone))
+        XCTAssertThrowsError(try FeedItemPackage.copyWhatANewDownloadKeeps(from: unlistable, to: staged))
+        XCTAssertNoThrow(try FeedItemPackage.copyWhatANewDownloadKeeps(from: gone, to: staged))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: staged.path), [])
+    }
+
+    /// Downloading again an item whose kept package cannot be listed fails,
+    /// rather than taking the package for empty and putting a package
+    /// without its transcript in its place: the kept package stays with its
+    /// record and transcript, its row stays on the feed's shelf, and the
+    /// item says why it is not downloaded. Once the package can be listed,
+    /// the item downloads again as the same book, its transcript copied in.
+    func testAKeptPackageThatCannotBeListedFailsItsDownloadAndStays() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordUnlistable")
+        let (feed, book, transcript) = try await transcribedEpisodeWhoseDownloadWasDeleted(in: world)
+        let package = book.tmbDirectory
+        let record = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: package))
+        try lockListing(of: package)
+
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("the download fails") {
+            world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state.failureReason != nil
+                && !world.center.downloads.isDownloading("guid:ep-1", of: feed.id)
+        }
+
+        XCTAssertEqual(chmod(package.path, 0o755), 0)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.transcriptPath(in: package)), transcript)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.bookInfoPath(in: package)), record, "the kept record changed")
+        XCTAssertEqual(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"]?.id, book.id)
+        XCTAssertNil(world.library.bookByID(book.id))
+
+        world.center.download("guid:ep-1", of: feed.id)
+        let restored = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        XCTAssertEqual(restored.id, book.id)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.transcriptPath(in: restored.tmbDirectory)), transcript)
+    }
+
     // MARK: - Delete Episode
 
     /// Delete Episode deletes an item's package whole, whether its package
@@ -518,6 +582,19 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(kept.bookmarks.map(\.characterOffset), [21], what, file: file, line: line)
         XCTAssertEqual(kept.localWPM, 1.5, what, file: file, line: line)
         XCTAssertEqual(kept.skippedHeadingIDs, ["credits"], what, file: file, line: line)
+    }
+
+    /// Takes away the read permission of the folder `folder`, so it cannot
+    /// be listed while what it holds can still be reached by name, as a
+    /// package whose folder TextMouth cannot read; the permission comes
+    /// back when the test ends, before its sandbox goes. Skips for a user
+    /// whom no permission stops, as root.
+    private func lockListing(of folder: URL) throws {
+        XCTAssertEqual(chmod(folder.path, 0o300), 0)
+        addTeardownBlock { _ = chmod(folder.path, 0o755) }
+        if (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) != nil {
+            throw XCTSkip("this user lists a folder without its read permission")
+        }
     }
 
     /// The book the record of the package at `package` describes.

@@ -50,9 +50,13 @@ enum FeedItemPackage {
     }
 
     /// Whether the package at `package` holds a transcript, or a copy of one
-    /// kept beside it, looked for without downloading anything.
+    /// kept beside it, looked for without downloading anything. A package
+    /// that is there but cannot be listed, as one whose folder is only in
+    /// the cloud or cannot be read, is taken to hold one, so it is kept
+    /// rather than deleted on a guess.
     static func holdsTranscript(_ package: URL) -> Bool {
-        entryNames(of: package).contains(where: TextMouthPaths.isTranscriptFile)
+        guard let names = try? listedEntryNames(of: package) else { return true }
+        return names.contains(where: TextMouthPaths.isTranscriptFile)
     }
 
     /// Whether the entry named `name` at the top of a package whose book is
@@ -72,10 +76,24 @@ enum FeedItemPackage {
     }
 
     /// The names at the top of the package at `package`, listed without
-    /// downloading anything; none when it cannot be listed.
+    /// downloading anything; none when it cannot be listed, which only a
+    /// removal of what may go can take as none, removing nothing then.
     static func entryNames(of package: URL) -> [String] {
-        DatalessFiles.withoutDownloading {
-            (try? FileManager.default.contentsOfDirectory(atPath: package.path)) ?? []
+        (try? listedEntryNames(of: package)) ?? []
+    }
+
+    /// The names at the top of the package at `package`, listed without
+    /// downloading anything; none when no package is there.
+    /// - Throws: why a package that is there could not be listed, as when
+    ///   its folder is only in the cloud or cannot be read: what it holds is
+    ///   then unknown, never taken for nothing.
+    static func listedEntryNames(of package: URL) throws -> [String] {
+        do {
+            return try DatalessFiles.withoutDownloading {
+                try FileManager.default.contentsOfDirectory(atPath: package.path)
+            }
+        } catch CocoaError.fileReadNoSuchFile {
+            return []
         }
     }
 
@@ -187,10 +205,14 @@ extension FeedItemPackage {
     /// are written anew, and an audiobook's content.md is written again from
     /// its transcript when the episode opens (`TranscriptTextLoader`), or
     /// found stale when the new file's audio differs.
-    /// - Throws: why one could not be copied: the download then fails and
-    ///   the kept package stays as it was, so no transcript is lost.
+    /// - Throws: why the kept package, which is there, could not be listed,
+    ///   or why one could not be copied: the download then fails and the
+    ///   kept package stays as it was, so no transcript is lost. A listing
+    ///   taken for empty would have copied nothing, and the new package
+    ///   would then have taken the kept one's place, discarding it with
+    ///   everything it held.
     static func copyWhatANewDownloadKeeps(from kept: URL, to staged: URL) throws {
-        for name in entryNames(of: kept)
+        for name in try listedEntryNames(of: kept)
         where TextMouthPaths.isTranscriptFile(name) || TextMouthPaths.isKeptTextCopy(name) {
             try FileManager.default.copyItem(at: kept.appendingPathComponent(name), to: staged.appendingPathComponent(name))
         }
