@@ -75,11 +75,17 @@ enum FeedDownloadWait: Equatable, Sendable {
     var reason: String {
         switch self {
         case .network:
-            return "it downloads once this Mac is on a network without data limits"
+            return "it \(Self.networkWait)"
         case .room(let bytes):
             return "it needs room for \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)) on this Mac"
         }
     }
+
+    /// The one wording of a wait for a network (FR14, REV13 item 4), after
+    /// its subject: "downloads once this Mac is on a network without data
+    /// limits", which the row's reason and a refused download's message
+    /// both say.
+    static let networkWait = "downloads once this Mac is on a network without data limits"
 }
 
 extension FeedFetchError {
@@ -108,7 +114,8 @@ extension FeedFetchError {
         case .notAWebAddress:
             return "The file's address isn't a web address TextMouth can open."
         case .constrainedNetwork:
-            return "“\(title)” waits for a network without data limits to download by itself."
+            // The wait's one wording (FR14), as the item's row says it.
+            return "“\(title)” \(FeedDownloadWait.networkWait)."
         case .cancelled:
             return "The download was stopped."
         }

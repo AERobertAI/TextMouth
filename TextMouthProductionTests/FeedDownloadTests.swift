@@ -513,6 +513,17 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(world.server.requests(to: "/audio/old.m4a").count, 1)
     }
 
+    /// A download refused on a network with data limits is worded as the
+    /// one wait FR14 settled on, as a waiting item's row says it (REV13 item
+    /// 4): it downloads once this Mac is on a network without data limits.
+    func testAConstrainedNetworksRefusalIsWordedAsTheOneWait() {
+        XCTAssertEqual(
+            FeedFetchError.constrainedNetwork.downloadMessage(about: "Ep. 368"),
+            "“Ep. 368” downloads once this Mac is on a network without data limits."
+        )
+        XCTAssertEqual(FeedDownloadWait.network.reason, "it downloads once this Mac is on a network without data limits")
+    }
+
     // MARK: - Quitting
 
     /// Quitting while an episode downloads and another waits holds the quit
