@@ -120,8 +120,9 @@ final class DoublePressBindingTests: XCTestCase {
 
         XCTAssertEqual(manager.edits, ShortcutEdits([.releaseMediaControls: [shiftR]]))
         XCTAssertEqual(store.data(forKey: KeyboardShortcutManager.editsPreference.key), Data(Self.thisUsersRecord.utf8))
+        let defaultsInForce = ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings)
         for action in ShortcutAction.allCases where action != .releaseMediaControls {
-            XCTAssertEqual(manager.bindingsFor(action), ShortcutAction.defaultBindings[action], action.rawValue)
+            XCTAssertEqual(manager.bindingsFor(action), defaultsInForce[action], action.rawValue)
         }
         let written = SettingsPolicy.keyboardShortcuts.fileEntries(manager.edits.listings(defaults: ShortcutAction.defaultBindings))
         for (name, entry) in entries {

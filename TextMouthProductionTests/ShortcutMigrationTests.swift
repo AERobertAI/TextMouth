@@ -20,13 +20,15 @@ final class ShortcutMigrationTests: XCTestCase {
 
     // MARK: - This User's Shortcuts
 
-    /// The eight actions added after the October 5 build that wrote this
+    /// The eighteen actions added after the October 5 build that wrote this
     /// user's shortcuts: Speak Info, Speak Import Progress, the reading
-    /// list's four commands, and the two full summaries (FR12).
-    static let actionsAddedSinceOctober5: Set<ShortcutAction> = [
+    /// list's four commands, the two full summaries (FR12), and the menu
+    /// commands and Record window buttons whose keys were fixed before (FR12's
+    /// branch D).
+    static let actionsAddedSinceOctober5: Set<ShortcutAction> = ShortcutAction.keyEquivalentActions.union([
         .speakInfo, .speakImportProgress, .addToReadingList, .removeFromReadingList,
         .nextInReadingList, .previousInReadingList, .whereAmIFull, .speakFullInfo,
-    ]
+    ])
 
     /// Every action the October 5 build had, in the order Settings lists
     /// them.
@@ -116,8 +118,10 @@ final class ShortcutMigrationTests: XCTestCase {
         // The full summaries, newer than the map, get their double presses.
         XCTAssertEqual(inForce[.speakFullInfo], [KeyBinding(key: "i", isDoublePress: true)], file: file, line: line)
         XCTAssertEqual(inForce[.whereAmIFull], [KeyBinding(key: "w", isDoublePress: true)], file: file, line: line)
+        // Every other action has its defaults in force, as with nothing edited.
+        let defaultsInForce = ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings)
         for action in ShortcutAction.allCases where action != .releaseMediaControls {
-            XCTAssertEqual(inForce[action], ShortcutAction.defaultBindings[action], "\(action.rawValue)", file: file, line: line)
+            XCTAssertEqual(inForce[action], defaultsInForce[action], "\(action.rawValue)", file: file, line: line)
         }
     }
 

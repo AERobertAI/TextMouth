@@ -127,7 +127,7 @@ final class ShortcutManagerTests: XCTestCase {
         manager.resetToDefaults()
 
         XCTAssertEqual(manager.edits, ShortcutEdits())
-        XCTAssertEqual(manager.bindings, ShortcutAction.defaultBindings)
+        XCTAssertEqual(manager.bindings, ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings))
         XCTAssertEqual(store.data(forKey: KeyboardShortcutManager.editsPreference.key), Data("{}".utf8))
     }
 
@@ -142,7 +142,7 @@ final class ShortcutManagerTests: XCTestCase {
         savedMap[.releaseMediaControls] = [shiftR]
         store.set(try JSONEncoder().encode(savedMap.keyedByRawValue), forKey: KeyboardShortcutManager.savedMapKey)
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
-        XCTAssertEqual(manager.bindings, ShortcutAction.defaultBindings)
+        XCTAssertEqual(manager.bindings, ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings))
         var publications = 0
         let subscription = manager.objectWillChange.sink { publications += 1 }
 

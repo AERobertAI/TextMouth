@@ -528,6 +528,18 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(index.waitingKeys, [])
         for action in ShortcutAction.allCases {
             for binding in defaults[action] ?? [] {
+                // A key equivalent's key goes on to its menu item or button
+                // (FR12's branch D), but New from Text's Shift-Command-T,
+                // which Show Sleep Timer, listed first, keeps until each
+                // works in a kind of window of its own (branch E).
+                if action.isKeyEquivalent {
+                    XCTAssertEqual(
+                        index.isKeyEquivalent(binding, in: action.scope),
+                        action != .newFromText,
+                        "\(action.rawValue)'s \(binding.configText)"
+                    )
+                    continue
+                }
                 guard let actions = index.actions(for: binding, in: action.scope) else {
                     XCTFail("\(action.rawValue)'s \(binding.configText) is in no index")
                     continue

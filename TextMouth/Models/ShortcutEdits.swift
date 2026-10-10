@@ -55,9 +55,10 @@ struct ShortcutEdits: Equatable, Sendable {
         keysByEditedAction[action]
     }
 
-    /// Makes `action` the user's with `keys`, each once, and takes each of
-    /// them from every other edited action of its scope, which keeps its
-    /// other keys and stays edited: no key means two things in one place.
+    /// Makes `action` the user's with `keys`, each once, and takes from
+    /// every other edited action each key that clashes with one of them
+    /// (`key(_:of:clashesWith:of:)`); that action keeps its other keys and
+    /// stays edited: no key means two things in one place.
     ///
     /// An unedited action that had one of the keys goes without it while
     /// this action holds it (`effectiveBindings(defaults:)`), and is not made
@@ -65,10 +66,28 @@ struct ShortcutEdits: Equatable, Sendable {
     /// go.
     mutating func setKeys(_ keys: [KeyBinding], for action: ShortcutAction) {
         let given = keys.withoutRepeats
-        for other in editedActions where other != action && other.scope == action.scope {
-            keysByEditedAction[other]?.removeAll(where: given.contains)
+        for other in editedActions where other != action {
+            guard let held = keysByEditedAction[other] else { continue }
+            // Worked out before the record changes, which the clash rule reads.
+            let kept = held.filter { heldKey in
+                !given.contains { key(heldKey, of: other, clashesWith: $0, of: action) }
+            }
+            keysByEditedAction[other] = kept
         }
         keysByEditedAction[action] = given
+    }
+
+    /// Whether `key`, held by `action`, and `otherKey`, held by `other`,
+    /// cannot both be in force: where both actions work, the same key, or,
+    /// when either is a key equivalent, one key's single and double press
+    /// (FR12's branch D). A menu or button takes a key's first press, so a
+    /// double press of a key equivalent's key would never reach the shortcut
+    /// manager, and a double press's first press, which the manager takes,
+    /// would never reach the menu (`KeyClaims.forms(of:for:)`).
+    func key(_ key: KeyBinding, of action: ShortcutAction, clashesWith otherKey: KeyBinding, of other: ShortcutAction) -> Bool {
+        guard action.scope == other.scope else { return false }
+        let forms = KeyClaims.forms(of: key, for: action)
+        return KeyClaims.forms(of: otherKey, for: other).contains(where: forms.contains)
     }
 
     /// Gives `action` back to the defaults, as Reset to Default does.
@@ -83,17 +102,18 @@ struct ShortcutEdits: Equatable, Sendable {
     ///
     /// The actions claim their keys in the order Settings lists them, the
     /// edited ones first, so no key ever belongs to two actions of one scope
-    /// here, whatever the record holds. Every change keeps one owner for
+    /// here, whatever the record holds; a key equivalent's key counts as
+    /// pressed once and twice (`KeyClaims`). Every change keeps one owner for
     /// each key, so two edited actions can hold one only in a store edited
     /// by hand; the one Settings lists first then keeps it, the rule
     /// config.json's own conflicts follow (`resolvingSharedKeys(favoring:)`).
     func effectiveBindings(defaults: [ShortcutAction: [KeyBinding]]) -> [ShortcutAction: [KeyBinding]] {
-        var claimed: [ShortcutScope: Set<KeyBinding>] = [:]
+        var claims = KeyClaims()
         var bindings: [ShortcutAction: [KeyBinding]] = [:]
-        // The keys of `keys` no action of `action`'s scope has claimed yet,
-        // each claimed for `action` as it is kept.
+        // The keys of `keys` that clash with no key claimed yet, each
+        // claimed for `action` as it is kept.
         func claim(_ keys: [KeyBinding], for action: ShortcutAction) -> [KeyBinding] {
-            keys.filter { claimed[action.scope, default: []].insert($0).inserted }
+            keys.filter { claims.claim($0, for: action) == nil }
         }
         // The edited actions claim their keys first, so that no default, a
         // later release's new one included, ever takes one of them.
@@ -107,6 +127,50 @@ struct ShortcutEdits: Equatable, Sendable {
     }
 }
 
+// MARK: - One Owner for Each Key
+
+/// The keys claimed so far, each for one action, as the keys in force are
+/// handed out and as a key two edited actions hold is settled (FR12): a key
+/// that clashes with one claimed where both actions work goes without.
+///
+/// A key equivalent's key stands for its stroke pressed once and pressed
+/// twice (`forms(of:for:)`, FR12's branch D), since a menu or button takes
+/// a key's first press: no other action may have the key's double press, nor
+/// the key itself. A single press and a double press of one key held by
+/// two other actions are no clash; the shortcut manager tells them apart.
+struct KeyClaims {
+    /// A key claimed: the action it was claimed for, and the key as that
+    /// action holds it.
+    struct Holder: Equatable {
+        let action: ShortcutAction
+        let key: KeyBinding
+    }
+
+    /// Each scope's claimed keys, each form of a key with its holder.
+    private var holders: [ShortcutScope: [KeyBinding: Holder]] = [:]
+
+    /// The keys `key` of `action` stands for: itself, or, for a key
+    /// equivalent's action, its stroke pressed once and twice.
+    static func forms(of key: KeyBinding, for action: ShortcutAction) -> [KeyBinding] {
+        action.isKeyEquivalent ? [key.stroke, key.stroke.asDoublePress(true)] : [key]
+    }
+
+    /// Claims `key` for `action` where `action` works, unless a key clashing
+    /// with it is claimed there already. Returns nil once claimed, or the
+    /// holder of the clashing key, which keeps it.
+    mutating func claim(_ key: KeyBinding, for action: ShortcutAction) -> Holder? {
+        let forms = Self.forms(of: key, for: action)
+        let claimedHere = holders[action.scope] ?? [:]
+        if let holder = forms.compactMap({ claimedHere[$0] }).first {
+            return holder
+        }
+        for form in forms {
+            holders[action.scope, default: [:]][form] = Holder(action: action, key: key)
+        }
+        return nil
+    }
+}
+
 // MARK: - A Key Two Edited Actions Hold
 
 extension ShortcutEdits {
@@ -114,65 +178,72 @@ extension ShortcutEdits {
     /// config.json or the move from the old saved map can give, and the
     /// action left holding it.
     struct SharedKey: Equatable, Sendable {
-        /// The key.
+        /// The key, as the action that goes without it held it.
         let key: KeyBinding
         /// The action that keeps it.
         let keeper: ShortcutAction
         /// The action that goes without it, keeping its other keys, still
         /// edited.
         let loser: ShortcutAction
+        /// The keeper's key when it is not the same key but clashes with it:
+        /// a key equivalent's key and the same key pressed twice (FR12's
+        /// branch D); nil when the two held one key.
+        var keepersKey: KeyBinding? = nil
     }
 
     /// A record with each key two edited actions held left to one of them,
     /// and every key so settled, in the order they were found.
     typealias Settlement = (edits: ShortcutEdits, sharedKeys: [SharedKey])
 
-    /// The record with every key that two or more edited actions of one
-    /// scope hold left to one of them (FR12, section 5.2 of the design), and
-    /// each key so settled.
+    /// The record with every key that clashes with another edited action's
+    /// left to one of them (FR12, section 5.2 of the design): the same key in
+    /// one scope, or a key equivalent's key and the same key pressed twice.
+    /// Each key so settled is returned too.
     ///
     /// The holder whose entry is in `changed` keeps the key, as recording a
     /// key in Settings takes it for the action recorded. When several
     /// holders changed, or none did (a file edited while TextMouth was closed
     /// that lists one key twice), the one Settings lists first keeps it.
     /// Every other holder goes without that key, keeps its other keys, and
-    /// stays edited.
+    /// stays edited. The keys settled are listed by the actions that lost
+    /// them, in the order Settings lists those, so the result is the same at
+    /// every launch.
     func resolvingSharedKeys(favoring changed: Set<ShortcutAction>) -> Settlement {
-        // Each key's holders in the order Settings lists them, and the keys
-        // in the order they are first held, so the result is the same at
-        // every launch.
-        var holders: [ScopedKey: [ShortcutAction]] = [:]
-        var order: [ScopedKey] = []
-        for action in editedActions {
-            for key in keysByEditedAction[action] ?? [] {
-                let scoped = ScopedKey(scope: action.scope, key: key)
-                if holders[scoped] == nil {
-                    order.append(scoped)
-                }
-                if holders[scoped]?.contains(action) != true {
-                    holders[scoped, default: []].append(action)
-                }
-            }
-        }
+        // The changed holders claim their keys first, then every other, each
+        // group in Settings order; a key clashing with one claimed is lost.
+        let claimingOrder = editedActions.filter(changed.contains) + editedActions.filter { !changed.contains($0) }
+        var claims = KeyClaims()
         var settled = self
         var sharedKeys: [SharedKey] = []
-        for scoped in order {
-            guard let actions = holders[scoped], actions.count > 1 else { continue }
-            let favored = actions.filter(changed.contains)
-            guard let keeper = (favored.isEmpty ? actions : favored).first else { continue }
-            for loser in actions where loser != keeper {
-                settled.keysByEditedAction[loser]?.removeAll { $0 == scoped.key }
-                sharedKeys.append(SharedKey(key: scoped.key, keeper: keeper, loser: loser))
+        for action in claimingOrder {
+            for key in keysByEditedAction[action] ?? [] {
+                // One action's own keys never clash with each other here.
+                guard let keeper = claims.claim(key, for: action), keeper.action != action else { continue }
+                settled.keysByEditedAction[action]?.removeAll { $0 == key }
+                sharedKeys.append(SharedKey(
+                    key: key,
+                    keeper: keeper.action,
+                    loser: action,
+                    keepersKey: keeper.key == key ? nil : keeper.key
+                ))
             }
         }
-        return (settled, sharedKeys)
+        // By the losers' places in Settings, and, for one loser, in the
+        // order it held its keys.
+        let rank = ShortcutAction.settingsRank
+        let ordered = sharedKeys.enumerated().sorted { first, second in
+            let ranks = (rank[first.element.loser, default: 0], rank[second.element.loser, default: 0])
+            return ranks.0 != ranks.1 ? ranks.0 < ranks.1 : first.offset < second.offset
+        }
+        return (settled, ordered.map(\.element))
     }
 }
 
-/// A key within one scope, as the keys two actions hold are found.
-private struct ScopedKey: Hashable {
-    let scope: ShortcutScope
-    let key: KeyBinding
+extension ShortcutAction {
+    /// Each action's place in the order Settings lists them, from 0.
+    static let settingsRank: [ShortcutAction: Int] = Dictionary(
+        uniqueKeysWithValues: allCases.enumerated().map { ($1, $0) }
+    )
 }
 
 // MARK: - The Move From the Whole Saved Map
@@ -394,14 +465,19 @@ extension ShortcutEdits {
     /// action that keeps it, and the one that goes without it, such as
     /// "config.json keyboardShortcuts.Show Bookmarks: shared
     /// "shift+command+b" with "Next Bookmark", which keeps it; "Show
-    /// Bookmarks" goes without it".
+    /// Bookmarks" goes without it". A key clashing with a different key of
+    /// the keeper's, a key equivalent's and its double press, names both:
+    /// "…: "command+o" clashed with "Book Info"'s "command+o twice", which
+    /// keeps it; "Open Book…" goes without it".
     static func log(_ sharedKeys: [SharedKey], source: String, field: String) {
         for shared in sharedKeys {
+            let clash = shared.keepersKey.map { keepersKey in
+                "\"\(shared.key.configText)\" clashed with \"\(shared.keeper.rawValue)\"'s \"\(keepersKey.configText)\""
+            } ?? "shared \"\(shared.key.configText)\" with \"\(shared.keeper.rawValue)\""
             StoredValueRepair.log(
                 source: source,
                 codingPath: [LoggedName(field), LoggedName(shared.loser.rawValue)],
-                detail: "shared \"\(shared.key.configText)\" with \"\(shared.keeper.rawValue)\", which keeps it; "
-                    + "\"\(shared.loser.rawValue)\" goes without it"
+                detail: "\(clash), which keeps it; \"\(shared.loser.rawValue)\" goes without it"
             )
         }
     }

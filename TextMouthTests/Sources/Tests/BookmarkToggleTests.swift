@@ -541,11 +541,16 @@ test("No default binding is shared between actions of one scope") {
     // The audio editor's actions, matched only in its windows, may share a
     // key with an action that works everywhere else (ShortcutScope); within
     // either scope a key means one thing.
+    // New from Text's Shift-Command-T is Show Sleep Timer's default too,
+    // which Show Sleep Timer keeps until each works in a kind of window of
+    // its own (FR12's branch E).
+    let sharedUntilScoped: Set<ShortcutAction> = [.newFromText, .showSleepTimer]
     let defaults = ShortcutAction.defaultBindings
     var seen: [ShortcutScope: [KeyBinding: ShortcutAction]] = [:]
     for (action, bindings) in defaults {
         for binding in bindings {
-            if let existing = seen[action.scope]?[binding] {
+            if let existing = seen[action.scope]?[binding],
+               !(sharedUntilScoped.contains(action) && sharedUntilScoped.contains(existing)) {
                 throw TestError.assertionFailed("Binding \(binding.displayString) is shared by \(action.rawValue) and \(existing.rawValue)")
             }
             seen[action.scope, default: [:]][binding] = action

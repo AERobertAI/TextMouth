@@ -10,6 +10,12 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case cycleBackwardNavigationUnit = "Cycle Backward Navigation Unit"
     case increaseSpeed = "Increase Speed"
     case decreaseSpeed = "Decrease Speed"
+    /// Playback > Copy Reading Position, a menu command whose key is its
+    /// menu item's key equivalent (FR12's branch D, `isKeyEquivalent`).
+    case copyReadingPosition = "Copy Reading Position"
+    /// Playback > Search in Book, a menu command whose key is its menu
+    /// item's key equivalent (FR12's branch D).
+    case searchInBook = "Search in Book"
     case goToLibrary = "Go to Library"
     case goBack = "Go Back"
     case goForward = "Go Forward"
@@ -68,6 +74,26 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// Takes the selected books off the reading list (FR09). It has no key
     /// until the user gives it one in Settings.
     case removeFromReadingList = "Remove from Reading List"
+    /// Library > Import DAISY Folder…, a menu command whose key is its menu
+    /// item's key equivalent (FR12's branch D).
+    case importDAISYFolder = "Import DAISY Folder…"
+    /// Library > Add Feed…, a menu command whose key is its menu item's key
+    /// equivalent (FR12's branch D).
+    case addFeed = "Add Feed…"
+
+    // The File menu's commands (FR12's branch D): a group named as their
+    // menu is, each a key equivalent of its menu item.
+    case openBook = "Open Book…"
+    case newFromText = "New from Text…"
+    case newRecording = "New Recording…"
+
+    // The Record window's buttons (FR12's branch D): a group of their own,
+    // each a key equivalent of its button, whose raw values begin with the
+    // group's name, as the audio editor's do, so config.json never takes the
+    // window's Stop for another.
+    case recordingRecord = "Recording Window: Record"
+    case recordingPauseOrResume = "Recording Window: Pause or Resume"
+    case recordingStop = "Recording Window: Stop"
 
     // The audio editor's (FR04): a group of their own, matched only while an
     // editor window is key (`ShortcutScope`), so they may share keys with
@@ -121,13 +147,29 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// The heading of the audio editor's group in Settings, and the start
     /// of each of its actions' raw values.
     static let audioEditorCategory = "Audio Editor"
+    /// The heading of the File menu's commands in Settings (FR12's branch
+    /// D), named as their menu is.
+    static let fileCategory = "File"
+    /// The heading of the Record window's buttons in Settings (FR12's
+    /// branch D), and the start of each of their raw values.
+    static let recordingWindowCategory = "Recording Window"
+    /// The groups whose actions' raw values begin with the group's name and
+    /// a colon, so config.json tells them apart from actions of the same name
+    /// elsewhere: the audio editor's Play / Pause from the reader's, the
+    /// Record window's Stop from the editor's.
+    private static let groupsNamingTheirActions = [audioEditorCategory, recordingWindowCategory]
 
     /// The action's name as Settings lists it under its group's heading:
-    /// its raw value, less the group's name that begins an audio editor
-    /// action's.
+    /// its raw value, less the group's name that begins the raw value of an
+    /// action of the audio editor or the Record window.
     var title: String {
-        let prefix = Self.audioEditorCategory + ": "
-        return rawValue.hasPrefix(prefix) ? String(rawValue.dropFirst(prefix.count)) : rawValue
+        for group in Self.groupsNamingTheirActions {
+            let prefix = group + ": "
+            if rawValue.hasPrefix(prefix) {
+                return String(rawValue.dropFirst(prefix.count))
+            }
+        }
+        return rawValue
     }
 
     /// Where the action's shortcuts work: the audio editor's group in its
@@ -136,7 +178,11 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         category == Self.audioEditorCategory ? .audioEditor : .app
     }
 
-    /// The notification to post when this action is triggered
+    /// The notification to post when this action is triggered. A key
+    /// equivalent's action (`isKeyEquivalent`) is never posted by the
+    /// shortcut manager: its menu item or button acts on its key itself, and
+    /// this names the notification choosing that command posts, or
+    /// `actsWithoutNotification` for one that acts directly.
     var notificationName: Notification.Name {
         switch self {
         case .togglePlayback: return .togglePlayback
@@ -147,6 +193,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .cycleBackwardNavigationUnit: return .cycleBackwardNavigationUnit
         case .increaseSpeed: return .increaseSpeed
         case .decreaseSpeed: return .decreaseSpeed
+        case .copyReadingPosition: return .copyReadingPosition
+        case .searchInBook: return .searchInBook
         case .goToLibrary: return .goToLibrary
         case .goBack: return .goBack
         case .goForward: return .goForward
@@ -178,6 +226,14 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .moveBookDown: return .moveBookDown
         case .addToReadingList: return .addToReadingList
         case .removeFromReadingList: return .removeFromReadingList
+        case .importDAISYFolder: return .importDAISYFolder
+        case .addFeed: return .addFeed
+        case .openBook: return .openBookFile
+        case .newFromText: return .newFromText
+        // File > New Recording… opens the Record window itself, and the
+        // window's buttons call its model: no notification is theirs.
+        case .newRecording, .recordingRecord, .recordingPauseOrResume, .recordingStop:
+            return .actsWithoutNotification
         // The audio editor's actions all post one name, carrying the action
         // in their user info, and its window performs them.
         case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
@@ -199,7 +255,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .togglePlayback, .releaseMediaControls, .skipForward, .skipBackward,
              .cycleForwardNavigationUnit, .cycleBackwardNavigationUnit,
-             .increaseSpeed, .decreaseSpeed:
+             .increaseSpeed, .decreaseSpeed, .copyReadingPosition, .searchInBook:
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading,
              .nextInReadingList, .previousInReadingList:
@@ -211,8 +267,12 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress:
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown,
-             .addToReadingList, .removeFromReadingList:
+             .addToReadingList, .removeFromReadingList, .importDAISYFolder, .addFeed:
             return "Library"
+        case .openBook, .newFromText, .newRecording:
+            return Self.fileCategory
+        case .recordingRecord, .recordingPauseOrResume, .recordingStop:
+            return Self.recordingWindowCategory
         case .editorPlayPause, .editorStop, .editorSkipBack, .editorSkipForward,
              .editorSkipBackLong, .editorSkipForwardLong, .editorSkipBackShort, .editorSkipForwardShort,
              .editorGoToStart, .editorGoToEnd, .editorGoToTime, .editorPreviousChapter, .editorNextChapter,
@@ -261,6 +321,48 @@ extension Notification.Name {
     /// value under "action" in its user info, and the window it was pressed
     /// in under "sourceWindow": that window's editor performs it.
     static let audioEditorShortcut = Notification.Name("audioEditorShortcut")
+    /// Never posted: the notification name of the actions whose command acts
+    /// directly, with no notification of its own, File > New Recording… and
+    /// the Record window's buttons (FR12's branch D). The shortcut manager
+    /// posts no key equivalent's action, so nothing listens for this.
+    static let actsWithoutNotification = Notification.Name("actsWithoutNotification")
+}
+
+// MARK: - Key Equivalents (FR12's Branch D)
+
+extension ShortcutAction {
+    /// The actions whose keys are key equivalents (FR12's branch D): the
+    /// menu commands whose keys were fixed before, and the Record window's
+    /// buttons. Their menu item or button shows the key in force and acts on
+    /// it; the shortcut manager never takes it. A command added later joins
+    /// them here.
+    static let keyEquivalentActions: Set<ShortcutAction> = [
+        .copyReadingPosition, .searchInBook, .importDAISYFolder, .addFeed,
+        .openBook, .newFromText, .newRecording,
+        .recordingRecord, .recordingPauseOrResume, .recordingStop,
+    ]
+
+    /// Whether the action's key is a key equivalent: of its menu item, or of
+    /// its button in the Record window, which acts on it as menus always
+    /// have, from a text field and with no window open. Such a key is one
+    /// press with Command or Control (`KeyBinding.canBeKeyEquivalent`), the
+    /// shortcut manager never takes it, and it is the action's only key, as
+    /// an item has one key equivalent.
+    var isKeyEquivalent: Bool {
+        Self.keyEquivalentActions.contains(self)
+    }
+}
+
+extension KeyBinding {
+    /// Whether the binding can be a key equivalent (FR12's branch D): one
+    /// press, since no menu or button takes a double press; with Command or
+    /// Control, so that it acts from a text field, where a key without them
+    /// types; and none of the keys a text field edits with
+    /// (`TextEditingKeys`), which a key equivalent would take from the field,
+    /// since the menus meet a key before the field does.
+    var canBeKeyEquivalent: Bool {
+        !isDoublePress && (command || control) && !TextEditingKeys.contains(self)
+    }
 }
 
 /// A keyboard binding: key + modifiers, pressed once or, for a double press,
@@ -871,11 +973,28 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
 extension ShortcutAction {
     /// The action config.json's `name` names: its name as Settings shows it,
     /// in any letter case, the exact name tried first, so "where am i?" is
-    /// Where Am I?. Nil for a name that names none. A renamed action would
-    /// keep its former name readable here.
+    /// Where Am I?; and a name ending in an ellipsis may end in three periods
+    /// or none instead (FR12's branch D), so "open book..." and "Open Book"
+    /// are Open Book…, as a name typed on a braille display is likely to
+    /// read. Nil for a name that names none. A renamed action would keep its
+    /// former name readable here.
     static func named(_ name: String) -> ShortcutAction? {
-        ShortcutAction(rawValue: name)
-            ?? allCases.first { $0.rawValue.caseInsensitiveCompare(name) == .orderedSame }
+        if let exact = ShortcutAction(rawValue: name) {
+            return exact
+        }
+        let wanted = comparableName(name)
+        return allCases.first { comparableName($0.rawValue) == wanted }
+    }
+
+    /// `name` as `named(_:)` compares names: in lower case, without an
+    /// ellipsis at its end, written as one character or as three periods.
+    /// No two actions' names compare alike (a test checks).
+    static func comparableName(_ name: String) -> String {
+        var compared = name.lowercased()
+        for ellipsis in ["…", "..."] where compared.hasSuffix(ellipsis) {
+            compared.removeLast(ellipsis.count)
+        }
+        return compared
     }
 }
 
@@ -912,6 +1031,12 @@ extension ShortcutAction {
             .decreaseSpeed: [
                 KeyBinding(key: "-", command: true)
             ],
+            // The menu commands' keys, fixed before FR12's branch D and
+            // their defaults since, as are the Record window's below: one
+            // press with Command or Control each, the key equivalent of its
+            // menu item or button.
+            .copyReadingPosition: [KeyBinding(key: "p", command: true, shift: true)],
+            .searchInBook: [KeyBinding(key: "f", command: true)],
             .goToLibrary: [
                 KeyBinding(key: "l", command: true)
             ],
@@ -1013,7 +1138,22 @@ extension ShortcutAction {
             // No keys by default (FR09): the user gives them keys of their
             // choosing in Settings, as Release Media Controls.
             .addToReadingList: [],
-            .removeFromReadingList: []
+            .removeFromReadingList: [],
+            .importDAISYFolder: [KeyBinding(key: "o", command: true, shift: true)],
+            // Shift-Command-F: Command-F alone searches a book.
+            .addFeed: [KeyBinding(key: "f", command: true, shift: true)],
+            .openBook: [KeyBinding(key: "o", command: true)],
+            // Show Sleep Timer's default too, which Show Sleep Timer, listed
+            // first, keeps, as it always took the key before this menu
+            // item: New from Text has it once each works in a kind of
+            // window of its own (FR12's branch E, #1451).
+            .newFromText: [KeyBinding(key: "t", command: true, shift: true)],
+            // Beside Command-N for a new Library window.
+            .newRecording: [KeyBinding(key: "n", command: true, option: true)],
+            // The Record window's Record, Pause or Resume, and Stop.
+            .recordingRecord: [KeyBinding(key: "r", command: true)],
+            .recordingPauseOrResume: [KeyBinding(key: "p", command: true)],
+            .recordingStop: [KeyBinding(key: ".", command: true)],
         ]
         return everywhereElse.merging(audioEditorDefaultBindings) { existing, _ in existing }
     }

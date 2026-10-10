@@ -532,11 +532,17 @@ final class RecordingWindowTests: XCTestCase {
 
     // MARK: - Shortcuts and Menus
 
-    /// The window's shortcuts are none of the reader's or the library's
-    /// default shortcuts.
+    /// The window's shortcuts, and File > New Recording…'s, are their own
+    /// actions' defaults since they became editable (FR12's branch D), and
+    /// none of the reader's or the library's.
     func testTheShortcutsAreNoneOfTheReadersOrTheLibrarys() {
-        let defaults = ShortcutAction.defaultBindings.values.flatMap { $0 }
-        for shortcut in [RecordingShortcuts.record, RecordingShortcuts.pauseOrResume, RecordingShortcuts.stop, RecordingShortcuts.newRecording] {
+        let shortcuts: [(shortcut: KeyboardShortcut, action: ShortcutAction)] = [
+            (RecordingShortcuts.record, .recordingRecord),
+            (RecordingShortcuts.pauseOrResume, .recordingPauseOrResume),
+            (RecordingShortcuts.stop, .recordingStop),
+            (RecordingShortcuts.newRecording, .newRecording),
+        ]
+        for (shortcut, action) in shortcuts {
             let binding = KeyBinding(
                 key: String(shortcut.key.character),
                 command: shortcut.modifiers.contains(.command),
@@ -544,7 +550,9 @@ final class RecordingWindowTests: XCTestCase {
                 shift: shortcut.modifiers.contains(.shift),
                 control: shortcut.modifiers.contains(.control)
             )
-            XCTAssertFalse(defaults.contains(binding), "\(binding.displayString) is a default shortcut already")
+            XCTAssertEqual(ShortcutAction.defaultBindings[action], [binding], action.rawValue)
+            let others = ShortcutAction.defaultBindings.filter { $0.key != action }.values.flatMap { $0 }
+            XCTAssertFalse(others.contains(binding), "\(binding.displayString) is another action's default too")
         }
     }
 

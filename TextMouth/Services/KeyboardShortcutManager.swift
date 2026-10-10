@@ -15,7 +15,10 @@ import Combine
 ///
 /// Each key press goes to a `ShortcutPressDispatcher`, which tells single
 /// presses from double presses by the double-press time the store holds, and
-/// says which action, if any, the press triggers; the manager posts it.
+/// says which action, if any, the press triggers; the manager posts it. A key
+/// equivalent's key, a menu command's or one of the Record window's buttons'
+/// (FR12's branch D), is never taken: its menu item or button shows the key
+/// in force (`keyEquivalent(for:)`) and acts on it, as menus always have.
 @MainActor
 final class KeyboardShortcutManager: ObservableObject {
     /// The record of the shortcuts the user edited, as the store holds it.
@@ -344,10 +347,38 @@ final class KeyboardShortcutManager: ObservableObject {
         KeyBinding.accessibleDisplayString(for: bindingsFor(action))
     }
 
-    /// The action of `scope` whose keys in force hold `binding`, if any: the
-    /// one a key recorded in Settings is taken from.
+    /// The action of `scope` whose keys in force hold `binding`, if any.
     func action(holding binding: KeyBinding, in scope: ShortcutScope) -> ShortcutAction? {
         ShortcutAction.allCases.first { $0.scope == scope && bindingsFor($0).contains(binding) }
+    }
+
+    /// The actions other than `action` that hold fewer keys in force than
+    /// `earlier` gave them, in the order Settings lists them: the ones a
+    /// change of `action`'s keys took a key from, whether the very key or one
+    /// clashing with it (a key equivalent's key and its double press, FR12's
+    /// branch D), as the Shortcuts tab says after recording a key.
+    func actions(thatLostKeysSince earlier: [ShortcutAction: [KeyBinding]], besides action: ShortcutAction) -> [ShortcutAction] {
+        ShortcutAction.allCases.filter { other in
+            other != action && !(earlier[other] ?? []).allSatisfy(bindingsFor(other).contains)
+        }
+    }
+
+    // MARK: - Key Equivalents (FR12's Branch D)
+
+    /// The key `action`'s menu item or button shows and acts on, for an
+    /// action whose key is a key equivalent (`ShortcutAction.isKeyEquivalent`):
+    /// its first key in force that can be one, or nil for none, as while
+    /// another action has its default key. Nil for every other action, whose
+    /// keys the manager matches itself.
+    func keyEquivalent(for action: ShortcutAction) -> KeyBinding? {
+        Self.keyEquivalent(for: action, in: bindings)
+    }
+
+    /// `keyEquivalent(for:)` among `bindings`, every action's keys in force,
+    /// for whoever reads them from a store without a manager of its own.
+    nonisolated static func keyEquivalent(for action: ShortcutAction, in bindings: [ShortcutAction: [KeyBinding]]) -> KeyBinding? {
+        guard action.isKeyEquivalent else { return nil }
+        return bindings[action]?.first(where: \.canBeKeyEquivalent)
     }
 
     /// The action whose single press waits on the key `binding` is a press

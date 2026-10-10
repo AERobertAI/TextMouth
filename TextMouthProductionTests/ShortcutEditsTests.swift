@@ -117,9 +117,14 @@ final class ShortcutEditsTests: XCTestCase {
 
     // MARK: - The Keys in Force
 
-    /// With nothing edited, every action has exactly its defaults.
+    /// With nothing edited, every action has exactly its defaults, but New
+    /// from Text: its Shift-Command-T is Show Sleep Timer's default too,
+    /// which Show Sleep Timer, listed first, keeps until each works in a
+    /// kind of window of its own (FR12's branch E).
     func testAnEmptyRecordGivesEveryActionItsDefaults() {
-        XCTAssertEqual(ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings), ShortcutAction.defaultBindings)
+        var expected = ShortcutAction.defaultBindings
+        expected[.newFromText] = []
+        XCTAssertEqual(ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings), expected)
     }
 
     /// A default changed by a later release reaches every action the user

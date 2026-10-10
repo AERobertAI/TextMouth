@@ -139,7 +139,7 @@ final class TextFieldEditingKeysTests: XCTestCase {
             let scalar = try XCTUnwrap(Unicode.Scalar(key.appKit), key.name)
             let characters = String(Character(scalar))
             XCTAssertEqual(key.held, characters, "\(key.name) is not held as AppKit's character")
-            let event = try keyDown(keyCode: key.keyCode, characters: characters, modifiers: [.function, .command])
+            let event = try ShortcutKeyPresses.keyDown(keyCode: key.keyCode, characters: characters, modifiers: [.function, .command])
             let recorded = try XCTUnwrap(KeyBinding.from(event: event), key.name)
             XCTAssertEqual(recorded, KeyBinding(key: key.held, command: true), key.name)
             XCTAssertTrue(recorded.matches(event), key.name)
@@ -268,14 +268,32 @@ final class TextFieldEditingKeysTests: XCTestCase {
     /// posts its own action from a view that takes no text, each pressed in
     /// a window of its own scope, the app's or an audio editor's; a double
     /// press, W twice or I twice, is pressed twice, its first press posting
-    /// the brief summary it escalates. Restart
-    /// Sleep Timer's key, which is no field's, is left out: its press
-    /// writes the sleep timer's diagnostic log.
+    /// the brief summary it escalates. A key equivalent's key, a menu
+    /// command's or a Record window button's (FR12's branch D), posts
+    /// nothing and goes on to its menu item or button, from a field and
+    /// elsewhere. The keys are each action's in force, so New from Text,
+    /// whose Shift-Command-T is Show Sleep Timer's until each works in a kind
+    /// of window of its own, has none. Restart Sleep Timer's key, which is
+    /// no field's, is left out: its press writes the sleep timer's
+    /// diagnostic log.
     func testNoActionFiresForAKeyAFieldTakes() throws {
         let manager = makeManager()
         try withEditorWindow { editorWindow in
-            for (action, bindings) in ShortcutAction.defaultBindings where action != .restartSleepTimer {
+            for action in ShortcutAction.allCases where action != .restartSleepTimer {
                 let keyWindow = action.scope == .audioEditor ? editorWindow : nil
+                let bindings = manager.bindingsFor(action)
+                if action.isKeyEquivalent {
+                    for binding in bindings {
+                        let label = "\(action.rawValue): \(binding.configText)"
+                        let firstResponders: [NSResponder] = [fieldEditor(), NSTableView()]
+                        for firstResponder in firstResponders {
+                            let pressed = try press(binding, on: manager, firstResponder: firstResponder, keyWindow: keyWindow)
+                            XCTAssertFalse(pressed.consumed, label)
+                            XCTAssertEqual(pressed.posted, [], label)
+                        }
+                    }
+                    continue
+                }
                 for binding in bindings {
                     let label = "\(action.rawValue): \(binding.configText)"
                     let fieldTakesIt = !KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true)
@@ -376,60 +394,12 @@ final class TextFieldEditingKeysTests: XCTestCase {
         // a second press follows the first well within the double-press time.
         var consumed: [Bool] = []
         for _ in 0..<(binding.isDoublePress ? 2 : 1) {
-            consumed.append(manager.handleKeyEvent(try keyPress(of: binding), keyWindow: keyWindow, firstResponder: firstResponder))
+            consumed.append(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: binding), keyWindow: keyWindow, firstResponder: firstResponder))
         }
         XCTAssertEqual(Set(consumed).count, 1, "the manager consumed some presses of \(binding.configText) and not others")
         return (consumed.allSatisfy { $0 }, posted)
     }
 
-    /// The key code and characters the keyboard gives each key a binding
-    /// names rather than spells; a binding matches these keys by code.
-    private static let namedKeyPresses: [String: (keyCode: UInt16, characters: String)] = [
-        "space": (49, " "),
-        "tab": (48, "\t"),
-        "return": (36, "\r"),
-        "delete": (51, "\u{7F}"),
-        "escape": (53, "\u{1B}"),
-        "leftArrow": (123, "\u{F702}"),
-        "rightArrow": (124, "\u{F703}"),
-        "downArrow": (125, "\u{F701}"),
-        "upArrow": (126, "\u{F700}"),
-    ]
-
-    /// A key-down event for `binding`'s key with exactly its modifiers, as
-    /// the manager's event monitor is handed one, made up for the test and
-    /// never sent to any window.
-    private func keyPress(of binding: KeyBinding) throws -> NSEvent {
-        var flags: NSEvent.ModifierFlags = []
-        if binding.command { flags.insert(.command) }
-        if binding.option { flags.insert(.option) }
-        if binding.shift { flags.insert(.shift) }
-        if binding.control { flags.insert(.control) }
-        let named = Self.namedKeyPresses[binding.key]
-        // A key a binding spells is matched by its character, which Shift
-        // capitalizes as the keyboard does; its code goes unread.
-        let characters = named?.characters ?? (binding.shift ? binding.key.uppercased() : binding.key)
-        return try keyDown(keyCode: named?.keyCode ?? 0, characters: characters, modifiers: flags)
-    }
-
-    /// A key-down event giving `characters` for the key with code
-    /// `keyCode`, `modifiers` held, made up for the test and never sent to
-    /// any window.
-    private func keyDown(keyCode: UInt16, characters: String, modifiers: NSEvent.ModifierFlags) throws -> NSEvent {
-        let event = NSEvent.keyEvent(
-            with: .keyDown,
-            location: .zero,
-            modifierFlags: modifiers,
-            timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: 0,
-            context: nil,
-            characters: characters,
-            charactersIgnoringModifiers: characters,
-            isARepeat: false,
-            keyCode: keyCode
-        )
-        return try XCTUnwrap(event, "no key press for the key with code \(keyCode)")
-    }
 
     /// `key` with each of the sixteen sets of Command, Option, Shift, and
     /// Control, none held included.

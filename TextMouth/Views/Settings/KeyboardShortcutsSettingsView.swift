@@ -273,18 +273,18 @@ struct ShortcutBindingRow: View {
 
     /// Makes `change`, which gives the action `binding`, then tells
     /// VoiceOver, wherever its cursor is, the key recorded for the action;
-    /// when another action had it, which one it was taken from, since a key
-    /// once moved silently; and when its key's single press now waits out
-    /// the double-press time, before which action.
+    /// when other actions lost a key to it, which ones, since a key once
+    /// moved silently; and when its key's single press now waits out the
+    /// double-press time, before which action.
     private func announcing(_ binding: KeyBinding, _ change: () -> Void) {
-        let previousOwner = shortcutManager.action(holding: binding, in: action.scope)
+        let keysBefore = shortcutManager.bindings
         let waitedBefore = shortcutManager.waitingAction(for: binding, in: action.scope)
         change()
         let waitsNow = shortcutManager.waitingAction(for: binding, in: action.scope)
         VoiceOverAnnouncer.announce(ShortcutsSettingsWording.recorded(
             binding,
             for: action,
-            takenFrom: previousOwner == action ? nil : previousOwner,
+            takenFrom: shortcutManager.actions(thatLostKeysSince: keysBefore, besides: action),
             nowWaitsBefore: waitsNow == waitedBefore ? nil : waitsNow
         ))
     }
@@ -419,9 +419,22 @@ enum ShortcutsSettingsWording {
         takenFrom previousOwner: ShortcutAction?,
         nowWaitsBefore waitingAction: ShortcutAction? = nil
     ) -> String {
+        recorded(key, for: action, takenFrom: previousOwner.map { [$0] } ?? [], nowWaitsBefore: waitingAction)
+    }
+
+    /// `recorded(_:for:takenFrom:nowWaitsBefore:)` for a key taken from
+    /// any number of actions, every one named: "Command + O twice, recorded
+    /// for Book Info. Taken from Open Book…", or "… Taken from Play / Pause
+    /// and Where Am I?" when two actions lost a key to it.
+    static func recorded(
+        _ key: KeyBinding,
+        for action: ShortcutAction,
+        takenFrom previousOwners: [ShortcutAction],
+        nowWaitsBefore waitingAction: ShortcutAction? = nil
+    ) -> String {
         var sentences = [sentence("\(key.accessibleDisplayString), recorded for \(action.rawValue)")]
-        if let previousOwner {
-            sentences.append(sentence("Taken from \(previousOwner.rawValue)"))
+        if !previousOwners.isEmpty {
+            sentences.append(sentence("Taken from \(LibraryCloudWording.list(previousOwners.map(\.rawValue)))"))
         }
         if let waitingAction {
             sentences.append(nowWaits(key, before: waitingAction))

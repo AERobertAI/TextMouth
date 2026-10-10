@@ -43,6 +43,10 @@ import AppKit
 ///   its own matches its binding without Shift, and says Shift was held, so
 ///   Shift-J and Shift-L skip by the Playback tab's Shift units; never in a
 ///   text field (`match(_:)`).
+/// - A key equivalent's key (`ShortcutAction.isKeyEquivalent`, FR12's
+///   branch D) is never taken: it goes on to the menu item or button that
+///   acts on it, as an unmatched key does, and Shift never turns it into
+///   another action's.
 ///
 /// The clock and the timer a waiting single press waits on are passed in,
 /// so tests decide when time passes and never wait themselves.
@@ -290,18 +294,22 @@ final class ShortcutPressDispatcher {
     }
 
     /// The shortcut `press` matches, or nil: none for a key no binding
-    /// names, where no shortcuts match, or for a key a focused text field
-    /// keeps, which never counts as a press.
+    /// names, where no shortcuts match, for a key a focused text field
+    /// keeps, which never counts as a press, or for a key equivalent's key,
+    /// which goes on to its menu item or button (FR12's branch D).
     ///
     /// A press with Shift that matches no binding of its own, single or
     /// double, matches its binding without Shift, saying that Shift was
     /// held (finding 4 of the design): Shift-J skips back by the Shift unit.
     /// Never in a focused text field, where Shift with an arrow selects text
     /// and Shift with a letter types a capital, and only in a scope that
-    /// allows it (`ShortcutScope.matchesShiftBeyondItsBindings`).
+    /// allows it (`ShortcutScope.matchesShiftBeyondItsBindings`). A key
+    /// equivalent's key is matched before that, so Shift-Command-P stays
+    /// Copy Reading Position's whatever action has Command-P.
     private func match(_ press: Press) -> Match? {
         guard let stroke = press.stroke, let scope = press.scope,
-              KeyboardShortcutManager.shouldHandle(binding: stroke, whenTextInputIsFocused: press.textInputIsFocused) else {
+              KeyboardShortcutManager.shouldHandle(binding: stroke, whenTextInputIsFocused: press.textInputIsFocused),
+              !index.isKeyEquivalent(stroke, in: scope) else {
             return nil
         }
         if let actions = index.actions(for: stroke, in: scope) {
@@ -360,17 +368,32 @@ extension ShortcutPressDispatcher {
 
         /// Each scope's keys, with their actions.
         private var actionsByScope: [ShortcutScope: [KeyBinding: Actions]] = [:]
+        /// Each scope's keys that are key equivalents (FR12's branch D), as
+        /// single presses: a menu item or a button acts on each, and a press
+        /// of one goes on to it untouched.
+        private var keyEquivalentsByScope: [ShortcutScope: Set<KeyBinding>] = [:]
         /// Every key whose single press waits, in the order Settings lists
         /// their actions.
         private(set) var waitingKeys: [WaitingKey] = []
 
         /// The index of `bindings`, telling which double actions escalate
-        /// which single ones by `escalation`.
+        /// which single ones by `escalation`. A key equivalent's key is
+        /// noted as one, never given to its action, which the shortcut
+        /// manager never posts; it counts as pressed once and twice, so
+        /// between a key equivalent and another action holding its key,
+        /// once or twice, the one Settings lists first has it here.
         init(_ bindings: [ShortcutAction: [KeyBinding]], escalation: Escalation = { $0.escalates }) {
             var keyOrder: [(scope: ShortcutScope, stroke: KeyBinding)] = []
             for action in ShortcutAction.allCases {
                 for binding in bindings[action] ?? [] {
                     let stroke = binding.stroke
+                    if action.isKeyEquivalent {
+                        if actionsByScope[action.scope]?[stroke] == nil {
+                            keyEquivalentsByScope[action.scope, default: []].insert(stroke)
+                        }
+                        continue
+                    }
+                    guard keyEquivalentsByScope[action.scope]?.contains(stroke) != true else { continue }
                     var actions = actionsByScope[action.scope]?[stroke] ?? Actions()
                     if actions == Actions() {
                         keyOrder.append((action.scope, stroke))
@@ -400,6 +423,13 @@ extension ShortcutPressDispatcher {
         /// it has none there.
         func actions(for stroke: KeyBinding, in scope: ShortcutScope) -> Actions? {
             actionsByScope[scope]?[stroke.stroke]
+        }
+
+        /// Whether the key `stroke`, pressed in `scope`, is a key
+        /// equivalent's key there (FR12's branch D), which a menu item or a
+        /// button acts on.
+        func isKeyEquivalent(_ stroke: KeyBinding, in scope: ShortcutScope) -> Bool {
+            keyEquivalentsByScope[scope]?.contains(stroke.stroke) == true
         }
     }
 }

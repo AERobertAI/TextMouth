@@ -1,0 +1,288 @@
+import AppKit
+import XCTest
+@testable import TextMouth
+
+/// The menu commands' and the Record window's keys as shortcut actions of
+/// their own (FR12's branch D): Open Book…, New from Text…, New Recording…,
+/// Import DAISY Folder…, Add Feed…, Copy Reading Position, Search in Book,
+/// and the Record window's Record, Pause or Resume, and Stop. Each key is
+/// the key equivalent of its menu item or button, which acts on it; the
+/// shortcut manager never takes it, and no other action has it, pressed
+/// once or twice. Every store is the test's own.
+@MainActor
+final class MenuKeyShortcutTests: XCTestCase {
+
+    // MARK: - Keys Used Below
+
+    private let commandO = KeyBinding(key: "o", command: true)
+    private let shiftCommandT = KeyBinding(key: "t", command: true, shift: true)
+    private let shiftCommandP = KeyBinding(key: "p", command: true, shift: true)
+    private let commandP = KeyBinding(key: "p", command: true)
+    private let commandJ = KeyBinding(key: "j", command: true)
+
+    // MARK: - The Actions
+
+    /// The ten keys fixed before are actions of their own, each in the
+    /// group named as its menu is, listed where its menu lists it, with its
+    /// old key as its default; each title is the menu's or button's own.
+    func testTheFixedKeysAreActionsWithTheirOldKeys() {
+        let expected: [(action: ShortcutAction, title: String, group: String, key: KeyBinding)] = [
+            (.copyReadingPosition, "Copy Reading Position", "Playback", shiftCommandP),
+            (.searchInBook, "Search in Book", "Playback", KeyBinding(key: "f", command: true)),
+            (.importDAISYFolder, "Import DAISY Folder…", "Library", KeyBinding(key: "o", command: true, shift: true)),
+            (.addFeed, "Add Feed…", "Library", KeyBinding(key: "f", command: true, shift: true)),
+            (.openBook, "Open Book…", "File", commandO),
+            (.newFromText, "New from Text…", "File", shiftCommandT),
+            (.newRecording, "New Recording…", "File", KeyBinding(key: "n", command: true, option: true)),
+            (.recordingRecord, "Record", "Recording Window", KeyBinding(key: "r", command: true)),
+            (.recordingPauseOrResume, "Pause or Resume", "Recording Window", commandP),
+            (.recordingStop, "Stop", "Recording Window", KeyBinding(key: ".", command: true)),
+        ]
+
+        XCTAssertEqual(ShortcutAction.allCases.filter(\.isKeyEquivalent), expected.map(\.action), "in Settings order")
+        for (action, title, group, key) in expected {
+            XCTAssertEqual(action.title, title)
+            XCTAssertEqual(action.category, group, title)
+            XCTAssertEqual(ShortcutAction.defaultBindings[action], [key], title)
+            XCTAssertTrue(key.canBeKeyEquivalent, title)
+        }
+        XCTAssertEqual(ShortcutAction.recordingStop.rawValue, "Recording Window: Stop", "config.json tells it from the editor's Stop")
+        XCTAssertEqual(ShortcutAction.addFeed.title, FeedWording.addFeedCommand)
+        XCTAssertEqual(ShortcutAction.newRecording.title, RecordingWording.menuTitle)
+        XCTAssertEqual(ShortcutAction.recordingRecord.title, RecordingWording.recordTitle)
+        XCTAssertEqual(ShortcutAction.recordingStop.title, RecordingWording.stopTitle)
+        XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Playback" }.suffix(2), [.copyReadingPosition, .searchInBook])
+        XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Library" }.suffix(2), [.importDAISYFolder, .addFeed])
+    }
+
+    /// The manager never posts a key equivalent's action: its notification
+    /// is the one choosing its menu item posts, or none of its own for a
+    /// command that acts directly.
+    func testTheirNotificationsAreTheirMenuItems() {
+        let posted: [ShortcutAction: Notification.Name] = [
+            .copyReadingPosition: .copyReadingPosition,
+            .searchInBook: .searchInBook,
+            .importDAISYFolder: .importDAISYFolder,
+            .addFeed: .addFeed,
+            .openBook: .openBookFile,
+            .newFromText: .newFromText,
+            .newRecording: .actsWithoutNotification,
+            .recordingRecord: .actsWithoutNotification,
+            .recordingPauseOrResume: .actsWithoutNotification,
+            .recordingStop: .actsWithoutNotification,
+        ]
+        for (action, name) in posted {
+            XCTAssertEqual(action.notificationName, name, action.rawValue)
+        }
+    }
+
+    /// A key equivalent is one press with Command or Control that a text
+    /// field does not edit with: no double press, no plain or Shift key, and
+    /// none of a field's arrows, deletes, or Edit menu keys.
+    func testWhatCanBeAKeyEquivalent() {
+        XCTAssertTrue(commandO.canBeKeyEquivalent)
+        XCTAssertTrue(KeyBinding(key: "g", control: true).canBeKeyEquivalent)
+        XCTAssertTrue(KeyBinding(key: "o", command: true, control: true).canBeKeyEquivalent)
+        XCTAssertTrue(KeyBinding(key: ".", command: true).canBeKeyEquivalent)
+        XCTAssertFalse(commandO.asDoublePress(true).canBeKeyEquivalent)
+        XCTAssertFalse(KeyBinding(key: "w").canBeKeyEquivalent)
+        XCTAssertFalse(KeyBinding(key: "w", option: true, shift: true).canBeKeyEquivalent)
+        XCTAssertFalse(KeyBinding(key: "leftArrow", command: true).canBeKeyEquivalent)
+        XCTAssertFalse(KeyBinding(key: "delete", command: true).canBeKeyEquivalent)
+        XCTAssertFalse(KeyBinding(key: "a", command: true).canBeKeyEquivalent)
+        XCTAssertFalse(KeyBinding(key: "a", control: true).canBeKeyEquivalent, "Control-A moves to a line's start in a field")
+        XCTAssertFalse(KeyBinding(key: "o", control: true).canBeKeyEquivalent, "Control-O opens a line in a field")
+    }
+
+    // MARK: - Shift-Command-T Until Branch E
+
+    /// Show Sleep Timer keeps Shift-Command-T, its default before New from
+    /// Text's, so New from Text's menu item shows no key rather than one
+    /// that does something else; once Show Sleep Timer lets it go, New from
+    /// Text's menu has it.
+    func testShowSleepTimerKeepsShiftCommandTAndNewFromTextShowsNoKey() {
+        let manager = makeManager("sleep-timer-keeps")
+
+        XCTAssertEqual(manager.bindingsFor(.showSleepTimer), [shiftCommandT])
+        XCTAssertEqual(manager.bindingsFor(.newFromText), [])
+        XCTAssertNil(manager.keyEquivalent(for: .newFromText))
+        XCTAssertEqual(manager.keyEquivalent(for: .openBook), commandO)
+        XCTAssertNil(manager.keyEquivalent(for: .showSleepTimer), "the manager matches its own actions' keys")
+
+        manager.updateBindings(for: .showSleepTimer, to: [KeyBinding(key: "t", control: true)])
+
+        XCTAssertEqual(manager.keyEquivalent(for: .newFromText), shiftCommandT)
+        XCTAssertFalse(manager.isEdited(.newFromText), "having its default again leaves it TextMouth's")
+    }
+
+    // MARK: - The Manager Never Takes Them
+
+    /// Every key equivalent's key in force goes on to its menu item or
+    /// button, from a field and elsewhere, with nothing posted; Shift-Command-T,
+    /// Show Sleep Timer's, is the manager's.
+    func testTheManagerLeavesEveryKeyEquivalentsKeyToItsItem() throws {
+        let center = NotificationCenter()
+        let manager = makeManager("leaves-key-equivalents", center: center)
+        let posted = PostedShortcutActions(on: center)
+        let firstResponders: [NSResponder?] = [nil, NSTextView(), NSTableView()]
+
+        for action in ShortcutAction.keyEquivalentActions where action != .newFromText {
+            let key = try XCTUnwrap(manager.keyEquivalent(for: action), action.rawValue)
+            for firstResponder in firstResponders {
+                XCTAssertFalse(
+                    manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: key), keyWindow: nil, firstResponder: firstResponder),
+                    action.rawValue
+                )
+            }
+        }
+        XCTAssertEqual(posted.names, [])
+
+        XCTAssertTrue(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: shiftCommandT), keyWindow: nil, firstResponder: nil))
+        XCTAssertEqual(posted.names, [ShortcutAction.showSleepTimer.rawValue])
+    }
+
+    /// Shift never turns a key equivalent's key into another action's:
+    /// with Command-P given to Play / Pause, Shift-Command-P stays Copy
+    /// Reading Position's, while Command-P plays.
+    func testShiftNeverTurnsAKeyEquivalentsKeyIntoAnotherAction() throws {
+        let center = NotificationCenter()
+        let manager = makeManager("shift-and-key-equivalents", center: center)
+        let posted = PostedShortcutActions(on: center)
+
+        manager.updateBindings(for: .togglePlayback, to: [commandP])
+
+        XCTAssertEqual(manager.bindingsFor(.recordingPauseOrResume), [], "the Record window's Pause or Resume lost Command-P")
+        XCTAssertFalse(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: shiftCommandP), keyWindow: nil, firstResponder: nil))
+        XCTAssertEqual(posted.names, [])
+        XCTAssertTrue(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: commandP), keyWindow: nil, firstResponder: nil))
+        XCTAssertEqual(posted.names, [ShortcutAction.togglePlayback.rawValue])
+    }
+
+    // MARK: - One Owner for a Key Equivalent's Key
+
+    /// A double press of a key equivalent's key takes the key from it, since
+    /// the double press's first press would never reach the menu: Command-O
+    /// twice for Book Info leaves Open Book… with no key, still TextMouth's,
+    /// says so as the key it lost, and gives it back once Book Info is reset.
+    func testADoublePressOfAKeyEquivalentsKeyTakesItFromTheMenu() {
+        let manager = makeManager("double-takes-key-equivalent")
+        let before = manager.bindings
+
+        manager.updateBindings(for: .showBookInfo, to: [commandO.asDoublePress(true)])
+
+        XCTAssertEqual(manager.bindingsFor(.openBook), [])
+        XCTAssertNil(manager.keyEquivalent(for: .openBook))
+        XCTAssertFalse(manager.isEdited(.openBook))
+        XCTAssertEqual(manager.actions(thatLostKeysSince: before, besides: .showBookInfo), [.openBook])
+        XCTAssertEqual(
+            ShortcutsSettingsWording.recorded(commandO.asDoublePress(true), for: .showBookInfo, takenFrom: [.openBook]),
+            "Command + O twice, recorded for Book Info. Taken from Open Book…"
+        )
+
+        manager.resetToDefault(.showBookInfo)
+
+        XCTAssertEqual(manager.keyEquivalent(for: .openBook), commandO)
+    }
+
+    /// A key equivalent given a key takes the key's double press from an
+    /// edited action, which stays edited, and the key itself from any.
+    func testAKeyEquivalentTakesItsKeysDoublePressFromAnotherAction() {
+        let manager = makeManager("key-equivalent-takes-double")
+        manager.updateBindings(for: .goToLibrary, to: [commandJ.asDoublePress(true)])
+
+        manager.updateBindings(for: .openBook, to: [commandJ])
+
+        XCTAssertEqual(manager.bindingsFor(.goToLibrary), [])
+        XCTAssertTrue(manager.isEdited(.goToLibrary))
+        XCTAssertEqual(manager.keyEquivalent(for: .openBook), commandJ)
+    }
+
+    /// Two actions' single and double presses of one key share it, as
+    /// before, unless one of them is a key equivalent's; the audio editor's
+    /// keys stay apart from the rest.
+    func testOnlyAKeyEquivalentClashesWithItsKeysDoublePress() {
+        let edits = ShortcutEdits()
+        let plainJ = KeyBinding(key: "j")
+
+        XCTAssertFalse(edits.key(plainJ, of: .skipBackward, clashesWith: plainJ.asDoublePress(true), of: .goToLibrary))
+        XCTAssertTrue(edits.key(commandJ, of: .openBook, clashesWith: commandJ.asDoublePress(true), of: .goToLibrary))
+        XCTAssertTrue(edits.key(commandJ.asDoublePress(true), of: .goToLibrary, clashesWith: commandJ, of: .openBook))
+        XCTAssertTrue(edits.key(commandJ, of: .openBook, clashesWith: commandJ, of: .searchInBook))
+        XCTAssertFalse(edits.key(commandJ, of: .openBook, clashesWith: commandO, of: .searchInBook))
+        XCTAssertFalse(edits.key(commandJ, of: .openBook, clashesWith: commandJ, of: .editorSave), "the audio editor's keys are apart")
+    }
+
+    /// A key equivalent's key and its double press, held by two edited
+    /// actions after an edit of config.json, are settled as one key two
+    /// actions hold: the changed one keeps it, else the one Settings lists
+    /// first, and the debug log names both keys.
+    func testAKeyEquivalentAndItsKeysDoublePressAreSettled() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let edits = ShortcutEdits([.showBookInfo: [commandO.asDoublePress(true)], .openBook: [commandO]])
+
+        let neither = edits.resolvingSharedKeys(favoring: [])
+        XCTAssertEqual(neither.edits.keys(of: .showBookInfo), [commandO.asDoublePress(true)], "Book Info is listed first")
+        XCTAssertEqual(neither.edits.keys(of: .openBook), [])
+        XCTAssertEqual(neither.sharedKeys, [
+            ShortcutEdits.SharedKey(key: commandO, keeper: .showBookInfo, loser: .openBook, keepersKey: commandO.asDoublePress(true)),
+        ])
+        let openBookChanged = edits.resolvingSharedKeys(favoring: [.openBook])
+        XCTAssertEqual(openBookChanged.edits.keys(of: .openBook), [commandO])
+        XCTAssertEqual(openBookChanged.edits.keys(of: .showBookInfo), [])
+
+        let source = "menu-keys-test-\(UUID().uuidString)"
+        ShortcutEdits.log(neither.sharedKeys, source: source, field: "keyboardShortcuts")
+        XCTAssertEqual(debugLogLines(containing: source).map { $0.components(separatedBy: "STORED_VALUE_REPAIRED ").last ?? $0 }, [
+            "\(source) keyboardShortcuts.Open Book…: \"command+o\" clashed with \"Book Info\"'s \"command+o twice\", "
+                + "which keeps it; \"Open Book…\" goes without it",
+        ])
+    }
+
+    // MARK: - The Index
+
+    /// The index notes each key equivalent's key as one, gives it to no
+    /// action, and, between a key equivalent and another action holding its
+    /// key, once or twice, leaves it to the one Settings lists first.
+    func testTheIndexNotesKeyEquivalentsAndTheFirstListedHasAKey() {
+        let defaults = ShortcutPressDispatcher.Index(ShortcutAction.defaultBindings)
+        XCTAssertTrue(defaults.isKeyEquivalent(commandO, in: .app))
+        XCTAssertNil(defaults.actions(for: commandO, in: .app))
+        XCTAssertFalse(defaults.isKeyEquivalent(commandO, in: .audioEditor))
+        XCTAssertFalse(defaults.isKeyEquivalent(shiftCommandT, in: .app), "Show Sleep Timer, listed first, has it")
+        XCTAssertEqual(defaults.actions(for: shiftCommandT, in: .app)?.single, .showSleepTimer)
+
+        let raw = ShortcutPressDispatcher.Index([.showBookInfo: [commandO.asDoublePress(true)], .openBook: [commandO]])
+        XCTAssertFalse(raw.isKeyEquivalent(commandO, in: .app))
+        XCTAssertEqual(raw.actions(for: commandO, in: .app)?.double, .showBookInfo)
+    }
+
+    // MARK: - Names in config.json
+
+    /// A name ending in an ellipsis is read with three periods or none in
+    /// its place, in any letter case; no two actions' names read alike.
+    func testNamesReadWithOrWithoutTheirEllipsis() {
+        XCTAssertEqual(ShortcutAction.named("Open Book…"), .openBook)
+        XCTAssertEqual(ShortcutAction.named("open book..."), .openBook)
+        XCTAssertEqual(ShortcutAction.named("OPEN BOOK"), .openBook)
+        XCTAssertEqual(ShortcutAction.named("Import DAISY Folder"), .importDAISYFolder)
+        XCTAssertEqual(ShortcutAction.named("recording window: stop"), .recordingStop)
+        XCTAssertEqual(ShortcutAction.named("Audio Editor: Go to Time"), .editorGoToTime)
+        XCTAssertEqual(ShortcutAction.named("where am i?"), .whereAmI)
+        XCTAssertNil(ShortcutAction.named("Stop"), "Stop alone names neither the editor's nor the Record window's")
+        XCTAssertNil(ShortcutAction.named("Open Book…?"))
+        let compared = ShortcutAction.allCases.map { ShortcutAction.comparableName($0.rawValue) }
+        XCTAssertEqual(Set(compared).count, compared.count)
+    }
+
+    // MARK: - Helpers
+
+    /// A shortcut manager with the default keys, from a preferences store
+    /// of the test's own, watching no key presses and posting on `center`.
+    private func makeManager(_ label: String, center: NotificationCenter = NotificationCenter()) -> KeyboardShortcutManager {
+        KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("menu-keys-\(label)"),
+            installsEventMonitor: false,
+            notificationCenter: center
+        )
+    }
+}

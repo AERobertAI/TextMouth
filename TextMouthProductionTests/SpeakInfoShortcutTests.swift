@@ -42,10 +42,17 @@ final class SpeakInfoShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.defaultBindings[.showBookInfo], [KeyBinding(key: "i", command: true)])
         XCTAssertEqual(ShortcutAction.defaultBindings[.editorMarkIn], [plainI])
         XCTAssertEqual(ShortcutAction.editorMarkIn.scope, .audioEditor)
-        // The whole app scope stays free of shared defaults.
+        // The whole app scope stays free of shared defaults, but for New from
+        // Text's Shift-Command-T, Show Sleep Timer's too, which Show Sleep
+        // Timer keeps until each works in a kind of window of its own
+        // (FR12's branch E).
+        let shiftCommandT = KeyBinding(key: "t", command: true, shift: true)
         var ownersByBinding: [KeyBinding: ShortcutAction] = [:]
         for action in ShortcutAction.allCases where action.scope == .app {
             for binding in ShortcutAction.defaultBindings[action] ?? [] {
+                if action == .newFromText, binding == shiftCommandT, ownersByBinding[binding] == .showSleepTimer {
+                    continue
+                }
                 XCTAssertNil(ownersByBinding[binding], "\(binding.displayString) is \(ownersByBinding[binding]?.rawValue ?? "")'s and \(action.rawValue)'s")
                 ownersByBinding[binding] = action
             }
