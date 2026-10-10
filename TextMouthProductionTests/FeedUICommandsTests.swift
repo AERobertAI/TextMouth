@@ -47,13 +47,14 @@ final class FeedUICommandsTests: XCTestCase {
     }
 
     /// A subscribed feed offers Check Feed, Feed Info…, Mark All Played (Mark
-    /// All Read for articles), and Unsubscribe…, always; an unsubscribed
-    /// one's are `FeedSubscriptionShownTests`' (FR11, branch D).
+    /// All Read for articles), Unsubscribe…, and Delete Feed… (FR14),
+    /// always; an unsubscribed one's are `FeedSubscriptionShownTests`' (FR11,
+    /// branch D).
     func testAFeedOffersItsCommands() {
         let feedID = UUID()
         XCTAssertEqual(
             FeedAction.actions(for: feedID, noun: .episode).map(\.title),
-            ["Check Feed", "Feed Info…", "Mark All Played", "Unsubscribe…"]
+            ["Check Feed", "Feed Info…", "Mark All Played", "Unsubscribe…", "Delete Feed…"]
         )
         XCTAssertEqual(FeedAction.actions(for: feedID, noun: .article).map(\.title).dropFirst(2).first, "Mark All Read")
         XCTAssertTrue(FeedAction.actions(for: feedID, noun: .item).allSatisfy { $0.feedID == feedID })
@@ -206,7 +207,10 @@ final class FeedUICommandsTests: XCTestCase {
 
         XCTAssertNotNil(harness.item?.deletedDate)
         XCTAssertEqual(harness.world.center.listedItems(of: harness.feed.id).map(\.id), [Harness.secondID])
-        XCTAssertEqual(harness.heard.last, "Deleted “A map you can touch”.")
+        // Said once the question's alert has closed, never as it closes
+        // (REV13 item 1).
+        XCTAssertNotEqual(harness.heard.last, "Deleted “A map you can touch”.", "said as the alert closed")
+        await waitFor("the deletion is said") { harness.heard.last == "Deleted “A map you can touch”." }
         await harness.world.center.refresh(harness.feed.id)
         XCTAssertEqual(harness.world.center.listedItems(of: harness.feed.id).map(\.id), [Harness.secondID], "a check brought it back")
     }
@@ -241,7 +245,7 @@ final class FeedUICommandsTests: XCTestCase {
         let harness = try await Harness(self, label: "FeedUICommandsUnsubscribe")
         harness.presenter.perform(harness.action(.download), in: harness.context)
         let book = try await downloadedBook(harness.world, feed: harness.feed, item: Harness.episodeID)
-        let unsubscribe = try XCTUnwrap(FeedAction.actions(for: harness.feed.id, noun: .episode).last)
+        let unsubscribe = try XCTUnwrap(FeedAction.actions(for: harness.feed.id, noun: .episode).first { $0.command == .unsubscribe })
 
         harness.presenter.perform(unsubscribe, in: harness.context)
 
@@ -254,10 +258,8 @@ final class FeedUICommandsTests: XCTestCase {
         XCTAssertEqual(harness.world.center.feeds.map(\.id), [harness.feed.id])
         XCTAssertEqual(harness.record?.feed.isSubscribed, false)
         XCTAssertEqual(harness.world.library.bookByID(book.id)?.feedLink, book.feedLink, "unsubscribing took a download from its feed")
-        XCTAssertEqual(
-            harness.heard.last,
-            "Unsubscribed from The Tactile Atlas: TextMouth no longer checks it for new episodes; its 1 downloaded episode stays."
-        )
+        let unsubscribed = "Unsubscribed from The Tactile Atlas: TextMouth no longer checks it for new episodes; its 1 downloaded episode stays."
+        await waitFor("the unsubscription is said") { harness.heard.last == unsubscribed }
     }
 
     /// Feed Info… opens the feed's sheet; its two settings follow the

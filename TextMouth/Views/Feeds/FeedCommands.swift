@@ -18,6 +18,9 @@ enum FeedCommand: Hashable, Sendable {
     /// Resubscribe: checks an unsubscribed feed again, from now on and at
     /// once (FR11, branch D).
     case resubscribe
+    /// Delete Feed…: deletes the feed entirely, after a confirmation, the
+    /// one command that does (FR14).
+    case deleteFeed
 }
 
 /// One feed command, as a menu or a row's VoiceOver actions offer it.
@@ -34,9 +37,9 @@ struct FeedAction: Identifiable, Equatable, Sendable {
 
     /// The command's role in a menu: Unsubscribe stops the feed's checking
     /// and deletes what it kept of removed downloads (FR11, branch D), and
-    /// says so.
+    /// Delete Feed… deletes the feed (FR14), and each says so.
     var role: ButtonRole? {
-        command == .unsubscribe ? .destructive : nil
+        command == .unsubscribe || command == .deleteFeed ? .destructive : nil
     }
 
     /// The commands for the feed `feedID`, whose items are called `noun`, in
@@ -45,18 +48,22 @@ struct FeedAction: Identifiable, Equatable, Sendable {
     /// the context menu for feeds"): Check Feed, Feed Info…, Mark All
     /// Played, and Unsubscribe… for a subscribed feed; Feed Info…, Mark All
     /// Played, and Resubscribe for an unsubscribed one, which is not
-    /// checked. Mark All Played with nothing left to mark says so.
+    /// checked; and, last for both, Delete Feed…, the one command that
+    /// deletes a feed (FR14). Mark All Played with nothing left to mark says
+    /// so.
     static func actions(for feedID: UUID, noun: FeedWording.ItemNoun, isSubscribed: Bool = true) -> [FeedAction] {
         let markAll = FeedAction(command: .markAllPlayed, feedID: feedID, title: FeedWording.markAllPlayedTitle(noun))
         let info = FeedAction(command: .feedInfo, feedID: feedID, title: FeedWording.feedInfoTitle)
+        let delete = FeedAction(command: .deleteFeed, feedID: feedID, title: FeedWording.deleteFeedTitle)
         guard isSubscribed else {
-            return [info, markAll, FeedAction(command: .resubscribe, feedID: feedID, title: FeedWording.resubscribeTitle)]
+            return [info, markAll, FeedAction(command: .resubscribe, feedID: feedID, title: FeedWording.resubscribeTitle), delete]
         }
         return [
             FeedAction(command: .checkFeed, feedID: feedID, title: FeedWording.checkFeedTitle),
             info,
             markAll,
             FeedAction(command: .unsubscribe, feedID: feedID, title: FeedWording.unsubscribeTitle),
+            delete,
         ]
     }
 
@@ -354,20 +361,35 @@ extension FeedWording {
             return parts
         }
 
+        /// What the kept rows `rows` hold together, each package listed
+        /// without downloading anything (FR14).
+        static func of(_ rows: [Book]) -> KeptParts {
+            rows.reduce(into: KeptParts()) { $0.formUnion(.of($1, package: $1.tmbDirectory)) }
+        }
+
+        /// Each part's noun, in the order said, as one package holds it and
+        /// as several do, and whether the one package's is plural.
+        private static let nouns: [(part: KeptParts, one: String, several: String, isPlural: Bool)] = [
+            (.place, "place", "places", false),
+            (.bookmarks, "bookmarks", "bookmarks", true),
+            (.settings, "own settings", "own settings", true),
+            (.transcript, "transcript", "transcripts", false),
+        ]
+
+        /// The nouns of the parts held, in the order said: as one package
+        /// holds them ("place", "bookmarks"), or as several do ("places",
+        /// "transcripts").
+        func nouns(several: Bool) -> [String] {
+            Self.nouns.filter { contains($0.part) }.map { several ? $0.several : $0.one }
+        }
+
         /// The parts as a sentence's subject with its verb, as in "Its
         /// place and bookmarks are", or "Its transcript is"; nil for none.
         var sentenceSubject: String? {
-            // Each part's noun, in the order said, and whether it is plural.
-            let nouns: [(part: KeptParts, noun: String, isPlural: Bool)] = [
-                (.place, "place", false),
-                (.bookmarks, "bookmarks", true),
-                (.settings, "own settings", true),
-                (.transcript, "transcript", false),
-            ]
-            let named = nouns.filter { contains($0.part) }
+            let named = Self.nouns.filter { contains($0.part) }
             guard let first = named.first else { return nil }
             let plural = named.count > 1 || first.isPlural
-            return "Its \(LibraryCloudWording.list(named.map(\.noun))) \(plural ? "are" : "is")"
+            return "Its \(LibraryCloudWording.list(named.map(\.one))) \(plural ? "are" : "is")"
         }
     }
 
@@ -521,6 +543,128 @@ extension FeedWording {
             return "\(stopped) The place, bookmarks, and transcript kept for 1 removed download were deleted."
         case let count:
             return "\(stopped) The places, bookmarks, and transcripts kept for \(count) removed downloads were deleted."
+        }
+    }
+
+    // MARK: What a Feed Holds (FR14)
+
+    /// A feed's downloads, after "its": "downloaded episode" for one, "5
+    /// downloaded episodes" for more, so "its 1 downloaded episode" is never
+    /// said (REV13 item 5).
+    static func downloadsPhrase(_ count: Int, _ noun: ItemNoun) -> String {
+        count == 1 ? "downloaded \(noun.singular)" : "\(count) downloaded \(noun.plural)"
+    }
+
+    /// What a feed kept for `count` downloads removed earlier, naming only
+    /// the parts their packages hold (`parts`, as REV12 item 18 had Delete
+    /// Download say them): "the place and bookmarks kept for 1 removed
+    /// download", "the places and transcripts kept for 3 removed downloads",
+    /// or, for packages holding none of the parts named, as one kept for
+    /// its edited text, "what was kept for 2 removed downloads".
+    static func keptPhrase(count: Int, parts: KeptParts) -> String {
+        let nouns = parts.nouns(several: count > 1)
+        let what = nouns.isEmpty ? "what was" : "the \(LibraryCloudWording.list(nouns))"
+        return "\(what) kept for \(CountWording.phrase(count, singular: "removed download", plural: "removed downloads"))"
+    }
+
+    // MARK: Deleting a Feed (FR14)
+
+    /// Delete Feed…'s title, in a feed's menu, among its VoiceOver actions,
+    /// and in Feed Info: it asks first.
+    static let deleteFeedTitle = "Delete Feed…"
+    /// The Delete Feed confirmation's button.
+    static let deleteFeedButton = "Delete Feed"
+    /// Delete Feed…'s spoken hint in Feed Info.
+    static let deleteFeedHint = "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed"
+
+    /// The title of the confirmation before Delete Feed: "Delete the feed
+    /// “Finish It!”?"
+    static func deleteFeedQuestion(title: String) -> String {
+        "Delete the feed “\(title)”?"
+    }
+
+    /// The Delete Feed confirmation's message (FR14), saying what goes, as
+    /// the listener's answer asked: the feed, with its list and settings;
+    /// its `downloads` downloads of items called `noun`, and what it kept for
+    /// `kept` removed downloads, naming what those hold (`keptParts`), each
+    /// to the Trash or for good as `mode` says; its library folder at
+    /// `folderPath` when nothing else is in it; and, for a feed with
+    /// downloads, Move to Library… for one to keep. "The feed leaves your
+    /// library, with its list of episodes and its settings. It deletes its
+    /// 5 downloaded episodes and the places and bookmarks kept for 3 removed
+    /// downloads: they go to the Trash, where you can recover them until the
+    /// Trash is emptied. Its folder “Podcasts/Finish It!” goes too when
+    /// nothing else is in it. To keep an episode, choose Move to Library… on
+    /// its row first."
+    static func deleteFeedMessage(
+        downloads: Int,
+        kept: Int,
+        keptParts: KeptParts,
+        noun: ItemNoun,
+        folderPath: String?,
+        mode: RemovalMode
+    ) -> String {
+        var sentences = ["The feed leaves your library, with its list of \(noun.plural) and its settings."]
+        var deleted: [String] = []
+        if downloads > 0 {
+            deleted.append("its \(downloadsPhrase(downloads, noun))")
+        }
+        if kept > 0 {
+            deleted.append(keptPhrase(count: kept, parts: keptParts))
+        }
+        if !deleted.isEmpty {
+            let several = downloads + kept > 1
+            sentences.append("It deletes \(LibraryCloudWording.list(deleted)): \(several ? "they" : "it") \(mode.outcomePhrase(plural: several)).")
+        }
+        if let folderPath, !folderPath.isEmpty {
+            sentences.append("Its folder “\(folderPath)” goes too when nothing else is in it.")
+        }
+        if downloads > 0 {
+            sentences.append("To keep an \(noun.singular), choose \(ShortcutAction.moveToLibrary.title) on its row first.")
+        }
+        return sentences.joined(separator: " ")
+    }
+
+    /// What VoiceOver hears once Delete Feed… deleted a feed whose items are
+    /// called `noun` (FR14): what went, as `outcome` counts it, and what
+    /// became of its library folder. "Deleted the feed “Finish It!”, its 5
+    /// downloaded episodes, and what it kept for 3 removed downloads. Its
+    /// folder “Podcasts/Finish It!” is gone too."
+    static func deletedFeed(_ outcome: FeedDeleteOutcome, noun: ItemNoun) -> String {
+        var deleted = ["the feed “\(outcome.title)”"]
+        if outcome.deletedDownloads > 0 {
+            deleted.append("its \(downloadsPhrase(outcome.deletedDownloads, noun))")
+        }
+        if outcome.deletedKeptPlaces > 0 {
+            let removed = CountWording.phrase(outcome.deletedKeptPlaces, singular: "removed download", plural: "removed downloads")
+            deleted.append("what it kept for \(removed)")
+        }
+        let sentence = "Deleted \(LibraryCloudWording.list(deleted))."
+        switch outcome.folder {
+        case .deleted(let path):
+            return "\(sentence) Its folder “\(path)” is gone too."
+        case .stays(let path):
+            return "\(sentence) Its folder “\(path)” stays, as something else is in it."
+        case .notDeleted(let path):
+            return "\(sentence) Its folder “\(path)” is empty, but could not be deleted."
+        case .none:
+            return sentence
+        }
+    }
+
+    /// Why Delete Feed… left the feed titled `title` as it is (FR14), as the
+    /// alert after it says and VoiceOver hears: a download open in a reader,
+    /// an index that could not be saved, or the downloads or kept packages
+    /// that could not go, each named with why, in the words of the removal
+    /// setting `mode`.
+    static func deleteFeedRefused(_ error: FeedDeleteError, title: String, mode: RemovalMode) -> String {
+        switch error {
+        case .downloadIsOpen(let download):
+            return "“\(download)” is open in a reader. Close it, then choose \(deleteFeedTitle) again."
+        case .indexNotWritten:
+            return "TextMouth couldn't save the library before deleting the feed “\(title)”, so nothing was deleted."
+        case .filesStayed(let stayed):
+            return mode.failureMessage(stayed, noun: "item") + "\nThe feed “\(title)” stays with \(stayed.count == 1 ? "it" : "them")."
         }
     }
 }

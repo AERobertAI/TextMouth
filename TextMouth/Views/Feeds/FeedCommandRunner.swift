@@ -30,9 +30,9 @@ extension FeedCenter {
 }
 
 /// A question asked before a command that can't be undone (FR03): Delete
-/// Episode or Delete Article, and Unsubscribe, which Resubscribe undoes but
-/// for the places kept for removed downloads, which Unsubscribe deletes
-/// (FR11, branch D).
+/// Episode or Delete Article; Unsubscribe, which Resubscribe undoes but for
+/// the places kept for removed downloads, which Unsubscribe deletes (FR11,
+/// branch D); and Delete Feed… (FR14).
 struct FeedConfirmation: Identifiable, Equatable {
     /// What confirming does.
     enum Kind: Equatable {
@@ -40,6 +40,8 @@ struct FeedConfirmation: Identifiable, Equatable {
         case deleteItem(feedID: UUID, itemID: FeedItem.ID, title: String)
         /// Unsubscribes from the feed `feedID`.
         case unsubscribe(feedID: UUID)
+        /// Deletes the feed `feedID` entirely (FR14).
+        case deleteFeed(feedID: UUID)
     }
 
     /// Tells two questions apart.
@@ -89,6 +91,8 @@ extension LibraryFeedsPresenter {
             confirmation = unsubscribeConfirmation(for: feed.id, in: context)
         case .resubscribe:
             return resubscribe(feed.id, in: context)
+        case .deleteFeed:
+            confirmation = deleteFeedConfirmation(for: feed.id, in: context)
         }
         return nil
     }
@@ -133,17 +137,72 @@ extension LibraryFeedsPresenter {
     /// Unsubscribes from the feed `feedID`, once confirmed (FR11, branch D):
     /// only checking stops, the feed staying with its folder, its settings,
     /// and its downloads, and the packages it kept for downloads removed
-    /// earlier go (`FeedCenter.unsubscribe(_:)`); VoiceOver hears so at once.
-    /// Feed Info, should it show the feed, stays open, offering Resubscribe.
+    /// earlier go (`FeedCenter.unsubscribe(_:)`). VoiceOver hears so once
+    /// the question's alert has closed (`afterAlert`, REV13 item 1), or at
+    /// once when none was asked. Feed Info, should it show the feed, stays
+    /// open, offering Resubscribe.
     /// - Returns: What unsubscribing did; nil when the feed was no longer
     ///   subscribed, which changes nothing.
     @discardableResult
-    func unsubscribe(_ feedID: UUID, in context: FeedCommandContext) -> FeedUnsubscribeOutcome? {
+    func unsubscribe(_ feedID: UUID, in context: FeedCommandContext, afterAlert: Bool = true) -> FeedUnsubscribeOutcome? {
         guard let feed = context.center.store.record(of: feedID)?.feed else { return nil }
         let noun = FeedWording.ItemNoun.of(context.center.listedItems(of: feedID))
         guard let outcome = context.center.unsubscribe(feedID) else { return nil }
-        announce(FeedWording.unsubscribed(title: feed.title, outcome: outcome, noun: noun), context.window)
+        say(FeedWording.unsubscribed(title: feed.title, outcome: outcome, noun: noun), afterAlert: afterAlert, in: context)
         return outcome
+    }
+
+    // MARK: Delete Feed… (FR14)
+
+    /// The question asked before deleting the feed `feedID` (FR14), saying
+    /// what goes: the feed, its downloads, and what it kept for removed
+    /// ones, naming what those hold, to the Trash or for good as the removal
+    /// setting says, and its library folder when nothing else is in it,
+    /// pointing to Move to Library… for a download to keep; nil once its
+    /// record is gone.
+    func deleteFeedConfirmation(for feedID: UUID, in context: FeedCommandContext) -> FeedConfirmation? {
+        let center = context.center
+        guard let feed = center.store.record(of: feedID)?.feed else { return nil }
+        let rows = context.library.feedItemRows(of: feedID)
+        return FeedConfirmation(
+            kind: .deleteFeed(feedID: feedID),
+            title: FeedWording.deleteFeedQuestion(title: feed.title),
+            message: FeedWording.deleteFeedMessage(
+                downloads: rows.downloaded.count,
+                kept: rows.kept.count,
+                keptParts: .of(Array(rows.kept.values)),
+                noun: .of(center.listedItems(of: feedID)),
+                folderPath: center.folderPath(of: feed),
+                mode: context.library.removalPreferences.deletionMode
+            ),
+            confirmTitle: FeedWording.deleteFeedButton
+        )
+    }
+
+    /// Deletes the feed `feedID` entirely, once confirmed (FR14,
+    /// `FeedCenter.deleteFeed(_:)`). Feed Info, should it show the feed,
+    /// closes first. VoiceOver hears what went once the question's alert
+    /// has closed (REV13 item 1); a feed that stays, as when one of its
+    /// downloads is open in a reader, says why in an alert.
+    /// - Returns: The deletion, which tests await; nil once the feed's
+    ///   record is gone.
+    @discardableResult
+    func deleteFeed(_ feedID: UUID, in context: FeedCommandContext) -> Task<Void, Never>? {
+        let center = context.center
+        guard let feed = center.store.record(of: feedID)?.feed else { return nil }
+        let noun = FeedWording.ItemNoun.of(center.listedItems(of: feedID))
+        let mode = context.library.removalPreferences.deletionMode
+        if feedInfo?.feedID == feedID {
+            feedInfo = nil
+        }
+        return Task {
+            do throws(FeedDeleteError) {
+                guard let outcome = try await center.deleteFeed(feedID) else { return }
+                say(FeedWording.deletedFeed(outcome, noun: noun), afterAlert: true, in: context)
+            } catch {
+                refuse(message: FeedWording.deleteFeedRefused(error, title: feed.title, mode: mode), in: context)
+            }
+        }
     }
 
     // MARK: An Item's Commands
@@ -264,7 +323,9 @@ extension LibraryFeedsPresenter {
 
     // MARK: Confirmations
 
-    /// Does what `confirmation` asked about, once the listener confirmed it.
+    /// Does what `confirmation` asked about, once the listener confirmed it,
+    /// VoiceOver hearing what it did once the question's alert has closed
+    /// (REV13 item 1).
     func confirm(_ confirmation: FeedConfirmation, in context: FeedCommandContext) {
         switch confirmation.kind {
         case let .deleteItem(feedID, itemID, title):
@@ -273,19 +334,41 @@ extension LibraryFeedsPresenter {
                 // An item moved into the library keeps its book there (FR11,
                 // branch D), and its state says so after the deletion too.
                 let inLibrary = context.center.store.record(of: feedID)?.item(itemID)?.state.libraryBookID != nil
-                announce(FeedWording.itemDeleted(title: title, isInLibrary: inLibrary), context.window)
+                say(FeedWording.itemDeleted(title: title, isInLibrary: inLibrary), afterAlert: true, in: context)
             } catch {
                 refuse(error, in: context)
             }
         case .unsubscribe(let feedID):
             unsubscribe(feedID, in: context)
+        case .deleteFeed(let feedID):
+            deleteFeed(feedID, in: context)
+        }
+    }
+
+    /// Says `message` from the command's window: once the alert or sheet
+    /// the command was confirmed in has closed, when `afterAlert`
+    /// (`VoiceOverAnnouncer.afterSheetCloses(_:)`), so the alert's closing,
+    /// which moves VoiceOver back to the window, never cuts it off, as
+    /// REV11 F6 fixed for the library's Remove (REV13 item 1); otherwise at
+    /// once.
+    private func say(_ message: String, afterAlert: Bool, in context: FeedCommandContext) {
+        guard afterAlert else {
+            announce(message, context.window)
+            return
+        }
+        VoiceOverAnnouncer.afterSheetCloses { [weak self] in
+            self?.announce(message, context.window)
         }
     }
 
     /// Shows why a deletion was refused, in the engine's words for a book
     /// open in a reader and in the file system's otherwise, and says it.
     private func refuse(_ error: Error, in context: FeedCommandContext) {
-        let message = (error as? BookCloudError)?.explanation(in: nil) ?? error.localizedDescription
+        refuse(message: (error as? BookCloudError)?.explanation(in: nil) ?? error.localizedDescription, in: context)
+    }
+
+    /// Shows `message`, why a deletion was refused, in an alert, and says it.
+    private func refuse(message: String, in context: FeedCommandContext) {
         notice = FeedNotice(title: FeedWording.deleteRefusedTitle, message: message)
         announce(message, context.window)
     }

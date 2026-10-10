@@ -49,14 +49,22 @@ enum RemovalMode: Equatable, CaseIterable {
     /// go to the Trash, where you can recover them until the Trash is
     /// emptied".
     func filesClause(of owner: String) -> String {
-        let files = "\(owner) files"
+        "\(owner) files \(outcomePhrase(plural: true))"
+    }
+
+    /// What happens to what this removal deletes, as the words after their
+    /// subject, agreeing with one thing or several (`plural`): "go to the
+    /// Trash, where you can recover them until the Trash is emptied", "is
+    /// deleted permanently and cannot be recovered", "stay in the TextMouth
+    /// library folder". Delete Feed… says it of a feed's downloads (FR14).
+    func outcomePhrase(plural: Bool) -> String {
         switch self {
         case .keepFiles:
-            return "\(files) stay in the TextMouth library folder"
+            return "\(plural ? "stay" : "stays") in the TextMouth library folder"
         case .moveToTrash:
-            return "\(files) go to the Trash, where you can recover them until the Trash is emptied"
+            return "\(plural ? "go" : "goes") to the Trash, where you can recover \(plural ? "them" : "it") until the Trash is emptied"
         case .deletePermanently:
-            return "\(files) are deleted permanently and cannot be recovered"
+            return "\(plural ? "are" : "is") deleted permanently and cannot be recovered"
         }
     }
 

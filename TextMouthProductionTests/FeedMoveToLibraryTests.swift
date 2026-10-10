@@ -542,7 +542,8 @@ final class FeedInLibraryStateTests: XCTestCase {
         )
         presenter.confirm(question, in: context)
 
-        XCTAssertEqual(heard.last, "Deleted “Episode 1” from its feed; its book stays in your library.")
+        // Said once the question's alert has closed (REV13 item 1).
+        await waitFor("the deletion is said") { heard.last == "Deleted “Episode 1” from its feed; its book stays in your library." }
         XCTAssertNotNil(world.library.bookByID(book.id), "Delete Episode took the book from the library")
         XCTAssertFalse(world.center.listedItems(of: feed.id).contains { $0.id == "guid:ep-1" })
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .inLibrary(bookID: book.id))

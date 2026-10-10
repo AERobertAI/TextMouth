@@ -101,6 +101,8 @@ final class FeedUIEndToEndTests: XCTestCase {
         XCTAssertNotNil(world.library.library.folders.first { $0.id == feed.folderID }, "unsubscribing removed the folder")
         XCTAssertEqual(feedFolders.feedID(inFolder: feed.folderID), feed.id, "the feed's folder stopped being its")
         XCTAssertEqual(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).map(\.id), [feed.id])
-        XCTAssertEqual(heard.last, "Unsubscribed from The Tactile Atlas: TextMouth no longer checks it for new episodes.")
+        // Said once the question's alert has closed (REV13 item 1).
+        let unsubscribed = "Unsubscribed from The Tactile Atlas: TextMouth no longer checks it for new episodes."
+        await waitFor("the unsubscription is said") { heard.last == unsubscribed }
     }
 }
