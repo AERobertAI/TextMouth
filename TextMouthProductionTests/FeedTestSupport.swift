@@ -458,6 +458,10 @@ final class FeedTestWorld {
     /// Whether the listener's own deletions are refused, as a Trash that
     /// cannot take an item refuses it.
     let refusesRemovals = LockedValue(false)
+    /// The names of the items whose removal is refused while others go, as
+    /// a Trash refuses one item it cannot take: a feed's own folder, say,
+    /// once its packages went (FR14).
+    let refusesRemovalsNamed = LockedValue<Set<String>>([])
 
     /// One item a listener's deletion removed: its name, and the names
     /// inside it, sorted, when it is a folder.
@@ -534,6 +538,7 @@ final class FeedTestWorld {
         let cloud = cloud
         let removedItems = removedItems
         let refusesRemovals = refusesRemovals
+        let refusesRemovalsNamed = refusesRemovalsNamed
         stats = statistics ?? ReadingStatsService(fileURL: sandbox.appendingPathComponent("reading_stats.json"))
         let stats = stats
         resumeFolder = sandbox.appendingPathComponent("Resume Data", isDirectory: true)
@@ -562,7 +567,9 @@ final class FeedTestWorld {
             // Never the Trash in a test: a file or package goes for good,
             // noted as the Trash would hold it, unless the test refuses it.
             removeItem: { item in
-                guard !refusesRemovals.value else { throw CocoaError(.fileWriteNoPermission) }
+                guard !refusesRemovals.value, !refusesRemovalsNamed.value.contains(item.lastPathComponent) else {
+                    throw CocoaError(.fileWriteNoPermission)
+                }
                 let contents = ((try? FileManager.default.contentsOfDirectory(atPath: item.path)) ?? []).sorted()
                 removedItems.value.append(RemovedItem(name: item.lastPathComponent, contents: contents))
                 try FileManager.default.removeItem(at: item)
@@ -886,5 +893,47 @@ extension XCTestCase {
         }
         let bookID = try XCTUnwrap(state?.bookID, file: file, line: line)
         return try XCTUnwrap(world.library.bookByID(bookID), file: file, line: line)
+    }
+
+    /// Starts `world`'s engine, subscribes it to a feed of `episodes`
+    /// episodes, "Episode 1" ("guid:ep-1") the newest, each a second of
+    /// silence served at /audio/<number>.m4a, whose folder goes where
+    /// `choice` says (the world's own folder unless given), and downloads
+    /// the first `downloading` of them, each as the listener asks; returns
+    /// the feed and the books, episode 1 first (FR14).
+    @MainActor
+    func feedWithDownloads(
+        episodes: Int,
+        downloading: Int,
+        in world: FeedTestWorld,
+        into choice: FeedFolderChoice? = nil
+    ) async throws -> (feed: Feed, books: [Book]) {
+        await world.start()
+        let audio = try FeedMediaFixtures.silentAAC()
+        let items = (1...episodes).map { number in
+            world.server.serve("/audio/\(number).m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+            return FeedXML.Item(
+                guid: "ep-\(number)",
+                title: "Episode \(number)",
+                published: world.day(Double(-number)),
+                enclosure: world.server.url("/audio/\(number).m4a").absoluteString,
+                enclosureType: "audio/mp4",
+                enclosureLength: audio.count
+            )
+        }
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: items)))
+        let outcome = try await world.center.subscribe(
+            to: world.server.url("/feed.xml").absoluteString,
+            into: choice ?? .folder(world.bookFolder.id)
+        )
+        guard case .subscribed(let feed) = outcome else {
+            throw NSError(domain: "FeedTestWorld", code: 2, userInfo: [NSLocalizedDescriptionKey: "\(outcome)"])
+        }
+        var books: [Book] = []
+        for number in stride(from: 1, through: downloading, by: 1) {
+            world.center.download("guid:ep-\(number)", of: feed.id)
+            books.append(try await downloadedBook(world, feed: feed, item: "guid:ep-\(number)"))
+        }
+        return (feed, books)
     }
 }

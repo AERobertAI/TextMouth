@@ -89,7 +89,10 @@ extension FeedCenter {
     /// rules stay in force while checking stops, the rule downloads nothing
     /// by itself: it takes back its downloads not yet under way, asks for
     /// none, and removes as step 3 says, so its downloads beyond the newest
-    /// still go. The listener's Download still downloads a listed item.
+    /// still go. The listener's Download still downloads a listed item. A
+    /// feed whose downloads the feed downloads section's Cancel stopped is
+    /// held back the same way until its next check has ended (FR14,
+    /// `FeedCenter.cancelEveryDownload()`).
     @discardableResult
     func applyItemPolicy(to feedIDs: Set<UUID>? = nil, retrying: Set<UUID> = []) async -> FeedItemPolicyPassReport {
         var report = FeedItemPolicyPassReport()
@@ -97,7 +100,8 @@ extension FeedCenter {
         let global = FeedSettings.itemPolicy(in: environment.preferences)
         let inUse = library.feedBooksInUse
         var due: [FeedDueRemoval] = []
-        for feed in store.feeds where feedIDs?.contains(feed.id) ?? true {
+        // A feed being deleted is left to Delete Feed… (FR14).
+        for feed in store.feeds where (feedIDs?.contains(feed.id) ?? true) && !downloads.isClosed(feed.id) {
             guard let record = store.record(of: feed.id) else { continue }
             let policy = feed.itemPolicyOverride ?? global
             // What the rule no longer counts goes back: all of it for a
@@ -107,7 +111,9 @@ extension FeedCenter {
             report.withdrawnItemIDs += downloads.withdrawRuleDownloads(of: feed.id) { !counted.contains($0) }
             guard case .newest(let count) = policy.downloading else { continue }
             let newest = record.newestItems(count)
-            if feed.isSubscribed {
+            // A feed whose downloads Cancel stopped asks for none until its
+            // next check has ended (FR14, `FeedCenter.rulePauses`).
+            if feed.isSubscribed, rulePauses[feed.id] == nil {
                 let asked = newest.filter { ruleDownloads($0, of: feed.id, retryingFailures: retrying.contains(feed.id)) }
                 for item in asked {
                     downloads.download(item.id, of: feed.id, origin: .window)

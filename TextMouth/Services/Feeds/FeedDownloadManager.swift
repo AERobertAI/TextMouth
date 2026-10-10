@@ -69,12 +69,13 @@ enum FeedDownloadWait: Equatable, Sendable {
     }
 
     /// Why, as the item's row says it after "Waiting to Download": "it
-    /// downloads on a network without data limits", or "it needs room for
-    /// 61 MB on this Mac".
+    /// downloads once this Mac is on a network without data limits", which
+    /// covers a Mac offline as well as one on a network with data limits
+    /// (REV13 item 4), or "it needs room for 61 MB on this Mac".
     var reason: String {
         switch self {
         case .network:
-            return "it downloads on a network without data limits"
+            return "it downloads once this Mac is on a network without data limits"
         case .room(let bytes):
             return "it needs room for \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)) on this Mac"
         }
@@ -203,6 +204,10 @@ final class FeedDownloadManager {
     /// the order they were, waiting for a refresh TextMouth makes by itself
     /// to reach a network without them (`retryPutOffDownloads()`).
     private(set) var putOff: [Request] = []
+    /// The feeds being deleted (FR14, Delete Feed…, `closeFeed(_:)`): none
+    /// of their items is asked for, and an import of one that ends meanwhile
+    /// is discarded, so nothing of a feed comes back while its files go.
+    private(set) var closedFeedIDs: Set<UUID> = []
     /// Called on the main actor as an import has finished, just before its
     /// book is listed, for a test to act at that moment, as Delete Episode
     /// can while an import runs; nil in the app.
@@ -243,9 +248,11 @@ final class FeedDownloadManager {
     /// library, opens at once when asked. Asking again for an item that
     /// waits or downloads only adds what the new request adds, and asking
     /// for one a network with data limits put off takes the place of that
-    /// request. Nothing is asked for while TextMouth quits.
+    /// request. Nothing is asked for while TextMouth quits, nor of a feed
+    /// being deleted (FR14).
     func download(_ itemID: FeedItem.ID, of feedID: UUID, origin: Origin, opening: Bool = false) {
-        guard !isStoppedForQuit, let item = store.record(of: feedID)?.item(itemID), item.deletedDate == nil else { return }
+        guard !isStoppedForQuit, !closedFeedIDs.contains(feedID),
+              let item = store.record(of: feedID)?.item(itemID), item.deletedDate == nil else { return }
         // However it goes, the downloads' progress hears the queue (FR10).
         defer { publishQueue() }
         putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
@@ -280,7 +287,8 @@ final class FeedDownloadManager {
 
     /// Stops the download of the item `itemID`, or takes it out of the
     /// queue, or out of the downloads put off, forgetting any part
-    /// downloaded; the item is not downloaded, nor waiting (FR11).
+    /// downloaded, the partial file its resume data names included (FR14);
+    /// the item is not downloaded, nor waiting (FR11).
     func cancel(_ itemID: FeedItem.ID, of feedID: UUID) {
         defer { publishQueue() }
         putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
@@ -297,55 +305,105 @@ final class FeedDownloadManager {
                 }
             }
         }
-        try? FileManager.default.removeItem(at: resumeDataFile(for: itemID, of: feedID))
+        FeedPartialDownloads.discard(resumeDataAt: resumeDataFile(for: itemID, of: feedID))
     }
 
-    /// Stops the download under way and takes every download waiting to
-    /// start out of the queue, as the feed downloads section's Cancel does
-    /// (FR10), whether the listener or the newest-N rule asked for each:
-    /// each item is not downloaded, forgets any part downloaded, and is the
-    /// listener's from then on, so the rule never downloads it again by
-    /// itself (`FeedItem.downloadOrigin`), as Cancel Download makes one the
-    /// listener's. A download whose book is already being added to the
-    /// library finishes, since an import is never stopped partway; the
-    /// rule's downloads waiting for a network or for room keep waiting.
-    /// VoiceOver hears at once what stopped, and what still waits.
-    func cancelEveryDownload() {
-        guard !isStoppedForQuit else { return }
+    /// What the feed downloads section's Cancel stopped
+    /// (`cancelEveryDownload()`, FR14), for the words VoiceOver hears and
+    /// the newest-N rule's pause.
+    struct Cancellation: Equatable, Sendable {
+        /// The titles of the downloads stopped, each once: the one under
+        /// way, those waiting to start, and the rule's waiting for a network
+        /// or for room.
+        var stopped: [String] = []
+        /// The title of the download that finishes all the same, its book
+        /// already being added to the library.
+        var finishing: String?
+        /// The feeds whose downloads stopped, and the feed of the download
+        /// that finishes, whose end would otherwise ask the rule for more.
+        var feedIDs: Set<UUID> = []
+    }
+
+    /// Stops every feed download, as the feed downloads section's Cancel
+    /// does, a pause rather than a refusal (FR14): the download under way,
+    /// those waiting to start, and the newest-N rule's downloads waiting for
+    /// a network or for room, whoever asked for each. Each item stopped is
+    /// not downloaded, and keeps who asked for it: Cancel no longer makes an
+    /// item the listener's, so the rule downloads its newest again by
+    /// itself, after its feed's next check (`FeedCenter.cancelEveryDownload()`
+    /// holds the rule back until then), as the listener asked on October
+    /// 10: "why won't TextMouth try downloading again on its own? that just
+    /// sounds like silently unsubscribe kindof... any in progress downloads
+    /// should probably be deleted too, like mp3 parts." So every partial
+    /// download on this Mac goes too: all resume data, with the partial
+    /// files it names (`FeedPartialDownloads`), and what waits in the
+    /// holding folder to be imported. A download whose book is already
+    /// being added to the library finishes, since an import is never stopped
+    /// partway, its file in the holding folder with it. VoiceOver hears what
+    /// stopped from the window (`FeedCenter.cancelEveryDownload()`), once
+    /// its focus has moved (REV13 item 3).
+    /// - Returns: What stopped.
+    @discardableResult
+    func cancelEveryDownload() -> Cancellation {
+        guard !isStoppedForQuit else { return Cancellation() }
         // A book being added can't be stopped: it finishes as it began.
         let finishing = progress.state.download?.isAddingToLibrary == true ? current : nil
         let underWay = finishing == nil ? current : nil
-        let waiting = queue
-        let stopping = (underWay.map { [$0] } ?? []) + waiting
+        // Every download asked for, the one under way first; then the
+        // rule's waiting for room, which only their items' states say.
+        var stopping = ((underWay.map { [$0] } ?? []) + queue + putOff).map { (feedID: $0.feedID, itemID: $0.itemID) }
+        for record in store.records.values {
+            for item in record.items where item.state.waitingReason != nil {
+                stopping.append((record.feed.id, item.id))
+            }
+        }
+        var seen = Set<String>()
+        stopping = stopping.filter { seen.insert("\($0.feedID)\u{1F}\($0.itemID)").inserted }
         let titles = stopping.compactMap { store.record(of: $0.feedID)?.item($0.itemID)?.title }
         queue.removeAll()
+        putOff.removeAll()
         if underWay != nil {
             // Its task ends as Cancel Download's does, its item not
             // downloaded (`run(_:)`).
             currentTask?.cancel()
         }
-        // One change of each feed's record for all of its items stopped:
-        // those waiting to start are not downloaded now, and every one is
-        // the listener's.
-        for (feedID, requests) in Dictionary(grouping: stopping, by: \.feedID) {
-            let itemIDs = Set(requests.map(\.itemID))
-            let waitingIDs = Set(waiting.filter { $0.feedID == feedID }.map(\.itemID))
+        // One change of each feed's record for all of its items stopped but
+        // the one under way: not downloaded now, each still whoever's it was.
+        for (feedID, entries) in Dictionary(grouping: stopping, by: \.feedID) {
+            var itemIDs = Set(entries.map(\.itemID))
+            if let underWay, underWay.feedID == feedID {
+                itemIDs.remove(underWay.itemID)
+            }
             store.update(feedID) { record in
                 for index in record.items.indices where itemIDs.contains(record.items[index].id) {
-                    if waitingIDs.contains(record.items[index].id) {
-                        record.items[index].state = .notDownloaded
-                    }
-                    record.items[index].downloadOrigin = .listener
+                    record.items[index].state = .notDownloaded
                 }
             }
         }
-        for request in stopping {
-            try? FileManager.default.removeItem(at: resumeDataFile(for: request.itemID, of: request.feedID))
+        FeedPartialDownloads.discardAll(in: environment.resumeFolder)
+        if finishing == nil {
+            removeFilesWaitingForImport()
         }
         let finishingTitle = finishing.flatMap { store.record(of: $0.feedID)?.item($0.itemID)?.title }
-        DiagnosticLog.event(.feeds, "FEED_DOWNLOADS_CANCELLED: \(stopping.count) download(s) stopped\(finishingTitle == nil ? "" : ", one finishing")")
-        progress.cancel(stopped: titles, finishing: finishingTitle)
+        DiagnosticLog.event(
+            .feeds,
+            "FEED_DOWNLOADS_CANCELLED: \(stopping.count) download(s) stopped\(finishingTitle == nil ? "" : ", one finishing"), "
+                + "every partial download deleted; each feed's newest download again after its next check"
+        )
+        progress.cancel()
         publishQueue()
+        let feedIDs = Set(stopping.map(\.feedID) + (finishing.map { [$0.feedID] } ?? []))
+        return Cancellation(stopped: titles, finishing: finishingTitle, feedIDs: feedIDs)
+    }
+
+    /// Removes every file waiting in the holding folder to be imported, as
+    /// Cancel does when no import is reading one (FR14): none of them is any
+    /// download's any more.
+    private func removeFilesWaitingForImport() {
+        let folder = environment.holdingFolder
+        for name in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] {
+            try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
+        }
     }
 
     /// Whether the item `itemID` waits in the queue or downloads.
@@ -360,19 +418,38 @@ final class FeedDownloadManager {
         putOff.contains { $0.feedID == feedID && $0.itemID == itemID }
     }
 
-    /// Takes every waiting, running, and put-off download of the feed
-    /// `feedID` away, as a feed leaving the library would need. No command
-    /// calls it since Unsubscribe keeps the feed and only withdraws the
-    /// rule's downloads (FR11, branch D, `withdrawRuleDownloads`); it stays
-    /// for a Delete Feed…, which is still the listener's to decide, with
-    /// `FeedStore.remove(_:)` and `FeedFetchStates.remove(_:)`.
-    func cancelAll(of feedID: UUID) {
+    /// Stops every download of the feed `feedID` for good, as Delete Feed…
+    /// does before the feed's files go (FR14, `FeedCenter.deleteFeed(_:)`):
+    /// the one under way stops, those waiting to start and those a network
+    /// with data limits put off go, and every part of the feed's downloads
+    /// on this Mac goes with them (`FeedPartialDownloads`). None of its items
+    /// is asked for again until `reopenFeed(_:)`, and a download whose book
+    /// is already being added finishes its import, whose package is then
+    /// discarded rather than listed (`commit(_:for:)`). The items' states are
+    /// left as they are: the feed's record goes with them.
+    func closeFeed(_ feedID: UUID) {
+        closedFeedIDs.insert(feedID)
         defer { publishQueue() }
         queue.removeAll { $0.feedID == feedID }
         putOff.removeAll { $0.feedID == feedID }
         if current?.feedID == feedID {
             currentTask?.cancel()
         }
+        // Each resume data file's name begins with its feed's ID.
+        FeedPartialDownloads.discardAll(in: environment.resumeFolder, prefix: feedID.uuidString + "-")
+    }
+
+    /// Lets the items of the feed `feedID` be asked for again, once Delete
+    /// Feed… has deleted the feed, or stopped short of it, leaving the feed
+    /// as it was (FR14).
+    func reopenFeed(_ feedID: UUID) {
+        closedFeedIDs.remove(feedID)
+    }
+
+    /// Whether the feed `feedID` is being deleted (FR14), so none of its
+    /// items is asked for, and the engine's own rules leave it alone.
+    func isClosed(_ feedID: UUID) -> Bool {
+        closedFeedIDs.contains(feedID)
     }
 
     /// Takes back the newest-N rule's downloads of the feed `feedID` not yet
@@ -572,7 +649,13 @@ final class FeedDownloadManager {
             } else if let data = failure.resumeData, failure.error != .cancelled {
                 Self.saveResumeData(data, to: resumeFile)
             } else {
-                try? FileManager.default.removeItem(at: resumeFile)
+                // Stopped for good, or with nothing to go on from: no part
+                // of it stays, the partial file the system kept for any
+                // resume data included (FR14).
+                if let data = failure.resumeData {
+                    FeedPartialDownloads.discardPartialFile(namedIn: data)
+                }
+                FeedPartialDownloads.discard(resumeDataAt: resumeFile)
             }
             throw FeedDownloadError.transfer(failure.error)
         }
@@ -685,10 +768,11 @@ final class FeedDownloadManager {
     /// may be restoring the item's kept package meanwhile) gets no row: the
     /// package the import just published, in the kept package's place when
     /// it restored one, is deleted for good, so nothing of a deleted item
-    /// comes back.
+    /// comes back. So does an item of a feed being deleted (FR14).
     private func commit(_ book: Book, for request: Request) -> Bool {
         beforeCommit?(request)
-        guard let item = store.record(of: request.feedID)?.item(request.itemID), item.deletedDate == nil else {
+        guard !closedFeedIDs.contains(request.feedID),
+              let item = store.record(of: request.feedID)?.item(request.itemID), item.deletedDate == nil else {
             discardPackage(of: book)
             return false
         }
@@ -911,8 +995,8 @@ final class FeedDownloadManager {
 
     /// Removes what interrupted downloads left: every finished download
     /// waiting in the holding folder, which nothing imports any more once
-    /// TextMouth has quit, and resume data older than `resumeDataLifetime`.
-    /// Runs off the main thread.
+    /// TextMouth has quit, and resume data older than `resumeDataLifetime`,
+    /// with the partial file each names (FR14). Runs off the main thread.
     func sweepLeftovers() async {
         let holding = environment.holdingFolder
         let resume = environment.resumeFolder
@@ -929,7 +1013,13 @@ final class FeedDownloadManager {
                 let file = resume.appendingPathComponent(name)
                 let modified = (try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
                 if let modified, modified < cutoff {
-                    try? fileManager.removeItem(at: file)
+                    // The list of downloads at quit is no resume data, and
+                    // names no partial file: it simply goes.
+                    if name.hasSuffix(FeedPartialDownloads.resumeDataSuffix) {
+                        FeedPartialDownloads.discard(resumeDataAt: file)
+                    } else {
+                        try? fileManager.removeItem(at: file)
+                    }
                 }
             }
         }

@@ -122,7 +122,7 @@ final class FeedDownloadProgressEngineTests: XCTestCase {
         XCTAssertEqual(progress.state.waits, FeedDownloadWaits(network: 1, room: 1))
         XCTAssertEqual(
             progress.spokenStatus(),
-            "No feed download is under way. 1 waiting for a network without data limits. 1 waiting for room on this Mac."
+            "No feed download is under way. 1 waiting until this Mac is on a network without data limits. 1 waiting for room on this Mac."
         )
 
         world.center.cancelDownload("guid:ep-2", of: feed.id)
@@ -179,11 +179,14 @@ final class FeedDownloadProgressEngineTests: XCTestCase {
     // MARK: - Cancel
 
     /// Cancel stops the download under way and those waiting to start,
-    /// whoever asked for each, saying what it stopped: each item is not
-    /// downloaded, its resume data goes, and it is the listener's, so the
-    /// newest-N rule never downloads it again by itself. The run then ends
-    /// without announcing its end.
-    func testCancelStopsEveryDownloadAndTheRuleLeavesThemAlone() async throws {
+    /// whoever asked for each (FR14): each item is not downloaded, its
+    /// resume data goes, and it stays whoever's it was, never made the
+    /// listener's. The newest-N rule downloads none of them by itself until
+    /// the feed's next check has ended, whatever asks for a pass meanwhile;
+    /// after the check, it asks for each again. Cancel says what it stopped
+    /// and when TextMouth tries again, and the run ends without announcing
+    /// its end.
+    func testCancelPausesTheRuleUntilTheFeedsNextCheck() async throws {
         let world = try FeedTestWorld(self, label: "FeedProgressCancel")
         let audio = try FeedMediaFixtures.silentAAC()
         let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio), ("ep-2", "Episode Two", audio), ("ep-3", "Episode Three", audio)])
@@ -191,75 +194,222 @@ final class FeedDownloadProgressEngineTests: XCTestCase {
         let staleResume = downloads.resumeDataFile(for: "guid:ep-2", of: feed.id)
         try FileManager.default.createDirectory(at: staleResume.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data("partial".utf8).write(to: staleResume)
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.05
+        world.server.serve("/audio/ep-1.m4a", slow)
 
         world.center.download("guid:ep-1", of: feed.id)
         downloads.download("guid:ep-2", of: feed.id, origin: .window)
         downloads.download("guid:ep-3", of: feed.id, origin: .window)
         let recorder = recordingAnnouncements {
-            downloads.cancelEveryDownload()
+            XCTAssertEqual(
+                world.center.cancelEveryDownload(),
+                "Stopped 3 feed downloads. " + FeedDownloadProgressWording.retryAfterCancel
+            )
         }
+        XCTAssertEqual(recorder.announcements, [], "Cancel spoke before the window moved VoiceOver's focus")
         XCTAssertEqual(downloads.queue, [])
         XCTAssertTrue(downloads.progress.state.isCancelling)
         await waitFor("the download under way stops") { !downloads.isDownloading("guid:ep-1", of: feed.id) }
 
-        XCTAssertEqual(recorder.announcements.map(\.message), ["Stopped 3 feed downloads."])
         let items = try XCTUnwrap(world.center.store.record(of: feed.id)?.items)
         XCTAssertEqual(items.map(\.state), [.notDownloaded, .notDownloaded, .notDownloaded])
-        XCTAssertEqual(items.map(\.downloadOrigin), [.listener, .listener, .listener])
+        XCTAssertFalse(items.contains { $0.downloadOrigin == .listener }, "Cancel made an item the listener's")
         XCTAssertFalse(FileManager.default.fileExists(atPath: staleResume.path), "a stopped download kept its resume data")
         XCTAssertEqual(downloads.progress.state, FeedDownloadProgressState())
-        let pass = await world.center.applyItemPolicy(to: [feed.id])
-        XCTAssertEqual(pass.requestedItemIDs, [], "the rule downloaded again what Cancel stopped")
+        XCTAssertEqual(world.center.rulePauses, [feed.id: .untilNextCheck])
+        let paused = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(paused.requestedItemIDs, [], "the rule downloaded again what Cancel stopped before a check")
+
+        await world.center.refresh(feed.id)
+
+        XCTAssertEqual(world.center.rulePauses, [:])
+        let afterTheCheck = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(afterTheCheck.requestedItemIDs, ["guid:ep-1", "guid:ep-2", "guid:ep-3"])
     }
 
-    /// Cancel leaves the rule's downloads waiting for a network waiting,
-    /// and says so.
-    func testCancelLeavesTheDownloadsWaitingApartWaiting() async throws {
+    /// A check under way as Cancel is pressed began before it, so its end
+    /// leaves the pause to the check after it (FR14).
+    func testACheckUnderWayAtCancelEndsNoPause() async throws {
+        let world = try FeedTestWorld(self, label: "FeedProgressCancelChecking")
+        let audio = try FeedMediaFixtures.silentAAC()
+        let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio)])
+        var slowFeed = StubResponse.feed(FeedXML.rss(items: [
+            FeedXML.Item(
+                guid: "ep-1",
+                title: "Episode One",
+                published: world.day(-1),
+                enclosure: world.server.url("/audio/ep-1.m4a").absoluteString,
+                enclosureType: "audio/mp4",
+                enclosureLength: audio.count
+            ),
+        ]))
+        slowFeed.pause = 0.3
+        world.server.serve("/feed.xml", slowFeed)
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.05
+        world.server.serve("/audio/ep-1.m4a", slow)
+        world.center.download("guid:ep-1", of: feed.id)
+        let check = Task { await world.center.refresh(feed.id) }
+        await waitFor("the check is under way") { world.center.refreshingFeedIDs.contains(feed.id) }
+
+        world.center.cancelEveryDownload()
+        XCTAssertEqual(world.center.rulePauses, [feed.id: .untilTheCheckAfterTheOneUnderWay])
+        _ = await check.value
+
+        XCTAssertEqual(world.center.rulePauses, [feed.id: .untilNextCheck], "a check begun before Cancel ended its pause")
+        let stillPaused = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(stillPaused.requestedItemIDs, [])
+        await world.center.refresh(feed.id)
+        XCTAssertEqual(world.center.rulePauses, [:])
+    }
+
+    /// Cancel stops the rule's downloads waiting for a network or for room
+    /// too: each no longer waits, is not downloaded, and stays the rule's;
+    /// nothing is left waiting apart (FR14).
+    func testCancelStopsTheRulesWaitingDownloadsToo() async throws {
         let world = try FeedTestWorld(self, label: "FeedProgressCancelWaits")
         let audio = try FeedMediaFixtures.silentAAC()
-        let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio), ("ep-2", "Episode Two", audio)])
+        let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio), ("ep-2", "Episode Two", audio), ("ep-3", "Episode Three", audio)])
         world.server.serve("/audio/ep-1.m4a", .refusedOnAMeteredNetwork())
         let downloads = world.center.downloads
         downloads.download("guid:ep-1", of: feed.id, origin: .window)
         await waitFor("the first waits for a network") { self.settled(world, feed: feed, item: "guid:ep-1") }
+        world.freeSpace.value = 0
+        downloads.download("guid:ep-2", of: feed.id, origin: .window)
+        await waitFor("the second waits for room") { self.settled(world, feed: feed, item: "guid:ep-2") }
+        world.freeSpace.value = 100_000_000_000
+        XCTAssertEqual(downloads.progress.state.waits, FeedDownloadWaits(network: 1, room: 1))
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.05
+        world.server.serve("/audio/ep-3.m4a", slow)
+        world.center.download("guid:ep-3", of: feed.id)
 
+        let said = world.center.cancelEveryDownload()
+        await waitFor("the download under way stops") { !downloads.isDownloading("guid:ep-3", of: feed.id) }
+
+        XCTAssertEqual(said, "Stopped 3 feed downloads. " + FeedDownloadProgressWording.retryAfterCancel)
+        XCTAssertFalse(downloads.isPutOff("guid:ep-1", of: feed.id))
+        XCTAssertEqual(downloads.progress.state.waits, FeedDownloadWaits())
+        let items = try XCTUnwrap(world.center.store.record(of: feed.id)?.items)
+        XCTAssertEqual(items.map(\.state), [.notDownloaded, .notDownloaded, .notDownloaded])
+        XCTAssertFalse(items.contains { $0.downloadOrigin == .listener }, "Cancel made an item the listener's")
+    }
+
+    /// Cancel deletes every partial download on this Mac (FR14, "any in
+    /// progress downloads should probably be deleted too, like mp3 parts"):
+    /// the resume data a download stopped partway left, with the partial
+    /// file the system kept for it and that data names, here a real one,
+    /// and any file waiting to be imported; none remains.
+    func testCancelLeavesNoPartialDownload() async throws {
+        let world = try FeedTestWorld(self, label: "FeedProgressCancelParts")
+        let audio = try FeedMediaFixtures.silentAAC(duration: 2)
+        let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio), ("ep-2", "Episode Two", audio)])
+        var broken = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        broken.chunkSize = audio.count / 2
+        broken.failAfterBytes = audio.count / 2
+        world.server.serve("/audio/ep-1.m4a", broken)
+        let downloads = world.center.downloads
+        downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        await waitFor("the first stops partway") { self.settled(world, feed: feed, item: "guid:ep-1") }
+        let resumeFile = downloads.resumeDataFile(for: "guid:ep-1", of: feed.id)
+        let resumeData = try Data(contentsOf: resumeFile)
+        let partial = try XCTUnwrap(
+            FeedPartialDownloads.partialFile(namedIn: resumeData, temporaryFolder: FileManager.default.temporaryDirectory),
+            "the resume data names no partial file"
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: partial.path), "the system kept no partial file")
+        let leftover = world.downloadsFolder.appendingPathComponent("\(UUID().uuidString).download")
+        try FileManager.default.createDirectory(at: world.downloadsFolder, withIntermediateDirectories: true)
+        try Data("left by a crash".utf8).write(to: leftover)
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.05
+        world.server.serve("/audio/ep-2.m4a", slow)
         world.center.download("guid:ep-2", of: feed.id)
-        let recorder = recordingAnnouncements {
-            downloads.cancelEveryDownload()
-        }
+
+        world.center.cancelEveryDownload()
         await waitFor("the download under way stops") { !downloads.isDownloading("guid:ep-2", of: feed.id) }
 
-        XCTAssertEqual(
-            recorder.announcements.map(\.message),
-            ["Stopped downloading “Episode Two”. 1 still waiting for a network without data limits."]
-        )
-        XCTAssertTrue(downloads.isPutOff("guid:ep-1", of: feed.id))
-        XCTAssertEqual(downloads.progress.state.waits, FeedDownloadWaits(network: 1))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: partial.path), "Cancel left the partial file")
+        let resumeLeft = ((try? FileManager.default.contentsOfDirectory(atPath: world.resumeFolder.path)) ?? [])
+            .filter { $0.hasSuffix(FeedPartialDownloads.resumeDataSuffix) }
+        XCTAssertEqual(resumeLeft, [], "Cancel left resume data")
+        XCTAssertEqual((try? FileManager.default.contentsOfDirectory(atPath: world.downloadsFolder.path)) ?? [], [], "Cancel left a file to import")
     }
 
     /// A download whose book is already being added to the library when
     /// Cancel is pressed finishes, as Cancel says; those waiting to start
-    /// stop.
+    /// stop, staying whoever's they were.
     func testCancelLetsADownloadBeingAddedFinish() async throws {
         let world = try FeedTestWorld(self, label: "FeedProgressCancelAdding")
         let audio = try FeedMediaFixtures.silentAAC()
         let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio), ("ep-2", "Episode Two", audio)])
         let downloads = world.center.downloads
-        var heard: [String] = []
+        var said: [String] = []
         downloads.beforeCommit = { _ in
-            heard += self.recordingAnnouncements { downloads.cancelEveryDownload() }.announcements.map(\.message)
+            said.append(world.center.cancelEveryDownload())
         }
 
         world.center.download("guid:ep-1", of: feed.id)
         world.center.download("guid:ep-2", of: feed.id)
         _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
 
-        XCTAssertEqual(heard, ["Stopped downloading “Episode Two”. “Episode One” is already being added to the library."])
+        XCTAssertEqual(said, [
+            "Stopped downloading “Episode Two”. “Episode One” is already being added to the library. "
+                + FeedDownloadProgressWording.retryAfterCancel,
+        ])
         let second = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-2"))
         XCTAssertEqual(second.state, .notDownloaded)
-        XCTAssertEqual(second.downloadOrigin, .listener)
+        XCTAssertNotEqual(second.downloadOrigin, .listener)
         XCTAssertFalse(downloads.progress.state.isRunning)
         XCTAssertEqual(world.server.requests(to: "/audio/ep-2.m4a"), [], "a download Cancel stopped was fetched")
+    }
+
+    /// A feed whose only download Cancel let finish, its book already being
+    /// added, is paused too, so its end asks the rule for nothing more; with
+    /// nothing stopped, Cancel says only that it finishes (FR14).
+    func testAFeedWhoseDownloadFinishesAfterCancelIsPausedToo() async throws {
+        let world = try FeedTestWorld(self, label: "FeedProgressCancelFinishing")
+        let audio = try FeedMediaFixtures.silentAAC()
+        let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio)])
+        var said: [String] = []
+        world.center.downloads.beforeCommit = { _ in
+            said.append(world.center.cancelEveryDownload())
+        }
+
+        world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(said, ["“Episode One” is already being added to the library."])
+        XCTAssertEqual(world.center.rulePauses, [feed.id: .untilNextCheck])
+    }
+
+    /// The next launch ends Cancel's pause: its first pass of the newest-N
+    /// rule downloads the newest Cancel stopped (FR14).
+    func testTheNextLaunchDownloadsWhatCancelStopped() async throws {
+        let world = try FeedTestWorld(self, label: "FeedProgressCancelLaunch")
+        let audio = try FeedMediaFixtures.silentAAC()
+        let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio)])
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.05
+        world.server.serve("/audio/ep-1.m4a", slow)
+        world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        world.center.cancelEveryDownload()
+        await waitFor("the download under way stops") { !world.center.downloads.isDownloading("guid:ep-1", of: feed.id) }
+        await FeedTestWorld.finish(world.center)
+        world.server.serve("/audio/ep-1.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+
+        let next = await world.relaunch(self)
+
+        XCTAssertEqual(next.rulePauses, [:])
+        let book = try await downloadedBook(world, center: next, feed: feed, item: "guid:ep-1")
+        XCTAssertEqual(next.store.record(of: feed.id)?.item("guid:ep-1")?.downloadOrigin, .window)
+        XCTAssertEqual(book.feedLink?.feedID, feed.id)
     }
 
     /// An article stopped before its book is written is not written: its

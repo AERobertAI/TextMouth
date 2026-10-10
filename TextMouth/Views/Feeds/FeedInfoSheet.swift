@@ -29,6 +29,12 @@ final class FeedInfoModel: ObservableObject, Identifiable {
         center.store.record(of: feedID)?.feed
     }
 
+    /// Whether Unsubscribe would delete the places the feed kept for removed
+    /// downloads, so asks first (FR14).
+    var unsubscribeAsks: Bool {
+        !center.keptRowsUnsubscribeDeletes(of: feedID).isEmpty
+    }
+
     /// The feed's settings as they apply to every feed.
     var globalSettings: FeedSettings {
         center.settings
@@ -100,11 +106,14 @@ final class FeedInfoModel: ObservableObject, Identifiable {
 /// VoiceOver's text navigation; the two settings the feed may keep for
 /// itself, each with "Use the global setting": its "List and download"
 /// choice and number (FR11), worded with the feed's own noun, and its days
-/// before deleting played downloads; Unsubscribe…, which asks first and
-/// says what stays and what goes, or, for a feed the listener unsubscribed
-/// from, Resubscribe, which checks it again at once (FR11, branch D); and
-/// Done, which Escape presses. Every change is saved as it is made, and the
-/// sheet stays open across Unsubscribe and Resubscribe.
+/// before deleting played downloads; one button that is Unsubscribe, which
+/// asks first, saying what stays and what goes, only when it would delete
+/// the places kept for removed downloads (FR14), or, for a feed the
+/// listener unsubscribed from, Resubscribe, which checks it again at once
+/// (FR11, branch D); Delete Feed…, which asks first and closes the sheet
+/// once the feed is deleted (FR14); and Done, which Escape presses. Every
+/// change is saved as it is made, and the sheet stays open across
+/// Unsubscribe and Resubscribe.
 struct FeedInfoSheet: View {
     /// What the sheet shows and changes.
     @ObservedObject var model: FeedInfoModel
@@ -112,16 +121,22 @@ struct FeedInfoSheet: View {
     @ObservedObject var center: FeedCenter
     /// Which folders hold feeds.
     let feedFolders: LibraryFeedFolders
-    /// Asks for the Unsubscribe confirmation's words for the feed.
-    let unsubscribeConfirmation: () -> FeedConfirmation?
+    /// Unsubscribes from the feed at once when that deletes nothing, or
+    /// returns the question to ask first (FR14,
+    /// `LibraryFeedsPresenter.requestUnsubscribe(_:in:)`).
+    let requestUnsubscribe: () -> FeedConfirmation?
     /// Unsubscribes, once confirmed.
     let onUnsubscribe: () -> Void
     /// Subscribes again, checking the feed at once (FR11, branch D).
     let onResubscribe: () -> Void
+    /// Asks for the Delete Feed confirmation's words for the feed (FR14).
+    let deleteFeedConfirmation: () -> FeedConfirmation?
+    /// Deletes the feed, once confirmed, which closes the sheet (FR14).
+    let onDeleteFeed: () -> Void
     /// Closes the sheet.
     let onDone: () -> Void
 
-    /// The Unsubscribe confirmation showing, if any.
+    /// The question showing, Unsubscribe's or Delete Feed's, if any.
     @State private var confirmation: FeedConfirmation?
     /// Why the last folder could not be made.
     @State private var folderFailure: String?
@@ -130,17 +145,21 @@ struct FeedInfoSheet: View {
     init(
         model: FeedInfoModel,
         feedFolders: LibraryFeedFolders,
-        unsubscribeConfirmation: @escaping () -> FeedConfirmation?,
+        requestUnsubscribe: @escaping () -> FeedConfirmation?,
         onUnsubscribe: @escaping () -> Void,
         onResubscribe: @escaping () -> Void = {},
+        deleteFeedConfirmation: @escaping () -> FeedConfirmation? = { nil },
+        onDeleteFeed: @escaping () -> Void = {},
         onDone: @escaping () -> Void
     ) {
         _model = ObservedObject(wrappedValue: model)
         _center = ObservedObject(wrappedValue: model.center)
         self.feedFolders = feedFolders
-        self.unsubscribeConfirmation = unsubscribeConfirmation
+        self.requestUnsubscribe = requestUnsubscribe
         self.onUnsubscribe = onUnsubscribe
         self.onResubscribe = onResubscribe
+        self.deleteFeedConfirmation = deleteFeedConfirmation
+        self.onDeleteFeed = onDeleteFeed
         self.onDone = onDone
     }
 
@@ -167,17 +186,28 @@ struct FeedInfoSheet: View {
             OperationFailureNotice(message: folderFailure)
             HStack {
                 // Unsubscribe… or Resubscribe by the feed's state, the
-                // listener's toggle (FR11, branch D).
-                if model.feed?.isSubscribed == false {
-                    Button(FeedWording.resubscribeTitle, action: onResubscribe)
-                        .accessibilityHint(FeedWording.resubscribeHint)
-                } else {
-                    Button(FeedWording.unsubscribeTitle, role: .destructive) {
-                        confirmation = unsubscribeConfirmation()
+                // listener's toggle (FR11, branch D): one button whose title,
+                // role, hint, and action follow the state, so VoiceOver's
+                // focus stays on it as it toggles (REV13 item 2).
+                let toggle = FeedSubscriptionToggle(
+                    isSubscribed: model.feed?.isSubscribed != false,
+                    unsubscribeAsks: model.unsubscribeAsks
+                )
+                Button(toggle.title, role: toggle.isDestructive ? .destructive : nil) {
+                    if toggle.isSubscribed {
+                        // At once when it deletes nothing; otherwise asked.
+                        confirmation = requestUnsubscribe()
+                    } else {
+                        onResubscribe()
                     }
-                    .accessibilityHint(FeedWording.unsubscribeHint)
-                    .disabled(model.feed == nil)
                 }
+                .accessibilityHint(toggle.hint)
+                .disabled(model.feed == nil)
+                Button(FeedWording.deleteFeedTitle, role: .destructive) {
+                    confirmation = deleteFeedConfirmation()
+                }
+                .accessibilityHint(FeedWording.deleteFeedHint)
+                .disabled(model.feed == nil)
                 Spacer()
                 // Escape presses Done: every change is kept as it is made,
                 // and Return stays with the number fields, which it enters,
@@ -190,10 +220,25 @@ struct FeedInfoSheet: View {
         .frame(width: 520, height: 600)
         .navigationTitle(FeedWording.feedInfoTitle)
         .alert(confirmation?.title ?? "", isPresented: isConfirming, presenting: confirmation) { confirmation in
-            Button(confirmation.confirmTitle, role: .destructive, action: onUnsubscribe)
+            Button(confirmation.confirmTitle, role: .destructive) {
+                confirmed(confirmation)
+            }
             Button("Cancel", role: .cancel) {}
         } message: { confirmation in
             Text(confirmation.message)
+        }
+    }
+
+    /// Does what the question `confirmation` asked about, once confirmed:
+    /// Unsubscribe, or Delete Feed… (FR14). Feed Info asks about no item.
+    private func confirmed(_ confirmation: FeedConfirmation) {
+        switch confirmation.kind {
+        case .unsubscribe:
+            onUnsubscribe()
+        case .deleteFeed:
+            onDeleteFeed()
+        case .deleteItem:
+            break
         }
     }
 
@@ -294,7 +339,7 @@ struct FeedInfoSheet: View {
         }
     }
 
-    /// Whether the Unsubscribe confirmation shows; dismissing it forgets it.
+    /// Whether a question shows; dismissing it forgets it.
     private var isConfirming: Binding<Bool> {
         Binding(
             get: { confirmation != nil },
@@ -302,6 +347,37 @@ struct FeedInfoSheet: View {
                 if !isPresented { confirmation = nil }
             }
         )
+    }
+}
+
+/// Feed Info's one subscription button, as the feed's state makes it
+/// (FR11, branch D; REV13 item 2): Unsubscribe for a feed the listener is
+/// subscribed to, "Unsubscribe…", destructive and asking first, when it
+/// would delete the places kept for removed downloads (FR14), or
+/// Resubscribe for one unsubscribed from. One button, never two in turn,
+/// so VoiceOver's focus stays on it as the state toggles.
+struct FeedSubscriptionToggle: Equatable {
+    /// Whether the listener is subscribed to the feed, so the button
+    /// unsubscribes.
+    let isSubscribed: Bool
+    /// Whether Unsubscribe would delete the places the feed kept for
+    /// removed downloads, so asks first (FR14).
+    var unsubscribeAsks = true
+
+    /// The button's title.
+    var title: String {
+        isSubscribed ? FeedWording.unsubscribeTitle(asksFirst: unsubscribeAsks) : FeedWording.resubscribeTitle
+    }
+
+    /// Whether the button's role is destructive: Unsubscribe deletes what
+    /// the feed kept of removed downloads, when it kept some.
+    var isDestructive: Bool {
+        isSubscribed && unsubscribeAsks
+    }
+
+    /// The button's spoken hint.
+    var hint: String {
+        isSubscribed ? FeedWording.unsubscribeHint(asksFirst: unsubscribeAsks) : FeedWording.resubscribeHint
     }
 }
 
@@ -518,13 +594,19 @@ struct FeedItemDescriptionSheet: View {
 
 extension FeedWording {
     /// Feed Info's line for a feed whose record went while it was open:
-    /// unsubscribing keeps a feed (FR11, branch D), so only a record lost
-    /// outside TextMouth does.
+    /// unsubscribing keeps a feed (FR11, branch D), and Delete Feed… closes
+    /// its own Feed Info (FR14), so only Delete Feed… in another window, or
+    /// a record lost outside TextMouth, does.
     static let feedGone = "This feed is no longer in your library."
     /// The unsubscription date's label in Feed Info (FR11, branch D).
     static let unsubscribedLabel = "Unsubscribed"
-    /// Unsubscribe…'s spoken hint in Feed Info (FR11, branch D).
-    static let unsubscribeHint = "Asks first, then stops checking this feed; the feed and its downloads stay"
+    /// Unsubscribe's spoken hint in Feed Info (FR11, branch D): it asks
+    /// first only when it would delete the places kept for removed
+    /// downloads (FR14).
+    static func unsubscribeHint(asksFirst: Bool) -> String {
+        let stops = "stops checking this feed; the feed and its downloads stay"
+        return asksFirst ? "Asks first, then \(stops)" : stops.capitalizingFirstLetter
+    }
     /// Resubscribe's spoken hint in Feed Info (FR11, branch D).
     static let resubscribeHint = "Checks this feed again from now on, and at once"
     /// The address's label in Feed Info.

@@ -26,6 +26,11 @@ struct FeedItemCounts: Equatable, Sendable {
     /// after "Feed", wherever its row, its folder's row, its rotor entry,
     /// entering its folder, and Speak Info name it.
     var isSubscribed = true
+    /// How many packages the feed kept for downloads removed earlier, with
+    /// the listener's places and bookmarks, Unsubscribe would delete now
+    /// (`FeedCenter.keptRowsUnsubscribeDeletes(of:)`): Unsubscribe asks
+    /// first only when there are some (FR14), its title ending "…" then.
+    var keptForRemovedDownloads = 0
 }
 
 extension FeedCenter {
@@ -44,8 +49,9 @@ extension FeedCenter {
     }
 
     /// The items of the feed `feedID` counted as the library shows them,
-    /// with the feed's size and whether the listener is subscribed (FR11,
-    /// branch D); none for a feed whose record is gone. Each
+    /// with the feed's size, whether the listener is subscribed (FR11,
+    /// branch D), and, while subscribed, the kept places Unsubscribe would
+    /// delete (FR14); none for a feed whose record is gone. Each
     /// item's row is found by its identity in the feed's rows (FR11), so a
     /// count takes one step per item, however many books the library holds.
     /// The items are those the library lists, the short list's under "Only
@@ -53,7 +59,13 @@ extension FeedCenter {
     func counts(of feedID: UUID) -> FeedItemCounts {
         guard let record = store.record(of: feedID) else { return FeedItemCounts() }
         let items = listedItems(of: feedID)
-        var counts = FeedItemCounts(listed: items.count, total: record.feed.entryTotal, noun: .of(items), isSubscribed: record.feed.isSubscribed)
+        var counts = FeedItemCounts(
+            listed: items.count,
+            total: record.feed.entryTotal,
+            noun: .of(items),
+            isSubscribed: record.feed.isSubscribed,
+            keptForRemovedDownloads: record.feed.isSubscribed ? keptRowsUnsubscribeDeletes(of: feedID).count : 0
+        )
         for item in items {
             switch state(of: item, in: feedID) {
             case .downloaded:

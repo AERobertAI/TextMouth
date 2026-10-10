@@ -53,7 +53,7 @@ final class FeedDownloadProgressTests: XCTestCase {
     func testWaitingDownloadsAreCountedApartByTheirReason() {
         XCTAssertEqual(
             FeedDownloadProgressWording.waits(FeedDownloadWaits(network: 2, room: 1)),
-            ["2 waiting for a network without data limits", "1 waiting for room on this Mac"]
+            ["2 waiting until this Mac is on a network without data limits", "1 waiting for room on this Mac"]
         )
         XCTAssertEqual(FeedDownloadProgressWording.waits(FeedDownloadWaits(network: 0, room: 3)), ["3 waiting for room on this Mac"])
         XCTAssertEqual(FeedDownloadProgressWording.waits(FeedDownloadWaits()), [])
@@ -72,10 +72,10 @@ final class FeedDownloadProgressTests: XCTestCase {
                 "2 of 9 done",
                 "Download 3 of 9: “Ep. 368” from Finish It!, 40% of 63 MB",
                 "About 4 minutes left",
-                "2 waiting for a network without data limits",
+                "2 waiting until this Mac is on a network without data limits",
             ]),
             "Feed Downloads: 2 of 9 done. Download 3 of 9: “Ep. 368” from Finish It!, 40% of 63 MB. About 4 minutes left. "
-                + "2 waiting for a network without data limits."
+                + "2 waiting until this Mac is on a network without data limits."
         )
         XCTAssertEqual(FeedDownloadProgressWording.spokenStatus([]), "Feed Downloads")
         XCTAssertEqual(ImportProgressWording.spokenStatus(title: "Feed Downloads", lines: ["", "Cancelling..."]), "Feed Downloads: Cancelling...")
@@ -88,7 +88,7 @@ final class FeedDownloadProgressTests: XCTestCase {
         XCTAssertEqual(FeedDownloadProgressWording.noneUnderWay(waits: FeedDownloadWaits()), "No feed download is under way.")
         XCTAssertEqual(
             FeedDownloadProgressWording.noneUnderWay(waits: FeedDownloadWaits(network: 2)),
-            "No feed download is under way. 2 waiting for a network without data limits."
+            "No feed download is under way. 2 waiting until this Mac is on a network without data limits."
         )
     }
 
@@ -114,7 +114,7 @@ final class FeedDownloadProgressTests: XCTestCase {
     func testTheEndSaysWhatDownloadedAndWhatStillWaits() {
         XCTAssertEqual(
             FeedDownloadProgressWording.finished(downloaded: 8, failed: 1, waits: FeedDownloadWaits(network: 2)),
-            "Feed downloads finished: 8 downloaded, 1 failed. 2 waiting for a network without data limits."
+            "Feed downloads finished: 8 downloaded, 1 failed. 2 waiting until this Mac is on a network without data limits."
         )
         XCTAssertEqual(
             FeedDownloadProgressWording.finished(downloaded: 9, failed: 0, waits: FeedDownloadWaits()),
@@ -135,38 +135,37 @@ final class FeedDownloadProgressTests: XCTestCase {
     }
 
     /// Cancel says what it stopped: one download by its title, as Cancel
-    /// Download says it, or how many; one that finishes all the same; and
-    /// the downloads it leaves waiting.
-    func testCancelSaysWhatItStoppedAndWhatStillWaits() {
+    /// Download says it, or how many, the waiting ones among them; one that
+    /// finishes all the same; and, with anything stopped, when TextMouth
+    /// downloads again by itself (FR14).
+    func testCancelSaysWhatItStoppedAndWhenTextMouthTriesAgain() {
+        let again = "TextMouth downloads each feed's newest again at its next check, or the next time it opens."
+        XCTAssertEqual(FeedDownloadProgressWording.retryAfterCancel, again)
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(stopped: ["Ep. 368"], finishing: nil, waits: FeedDownloadWaits()),
-            FeedWording.downloadCancelled(title: "Ep. 368")
+            FeedDownloadProgressWording.cancelled(stopped: ["Ep. 368"], finishing: nil),
+            FeedWording.downloadCancelled(title: "Ep. 368") + " " + again
         )
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(stopped: ["Ep. 368"], finishing: nil, waits: FeedDownloadWaits()),
-            "Stopped downloading “Ep. 368”."
+            FeedDownloadProgressWording.cancelled(stopped: ["Ep. 368"], finishing: nil),
+            "Stopped downloading “Ep. 368”. " + again
         )
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(
-                stopped: ["1", "2", "3", "4", "5", "6"],
-                finishing: "Ep. 370",
-                waits: FeedDownloadWaits(network: 2, room: 1)
-            ),
-            "Stopped 6 feed downloads. “Ep. 370” is already being added to the library. "
-                + "2 still waiting for a network without data limits. 1 still waiting for room on this Mac."
+            FeedDownloadProgressWording.cancelled(stopped: ["1", "2", "3", "4", "5", "6"], finishing: "Ep. 370"),
+            "Stopped 6 feed downloads. “Ep. 370” is already being added to the library. " + again
         )
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(stopped: [], finishing: "Ep. 370", waits: FeedDownloadWaits()),
+            FeedDownloadProgressWording.cancelled(stopped: [], finishing: "Ep. 370"),
             "“Ep. 370” is already being added to the library."
         )
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(stopped: [], finishing: nil, waits: FeedDownloadWaits()),
+            FeedDownloadProgressWording.cancelled(stopped: [], finishing: nil),
             "No feed download is under way."
         )
     }
 
     /// The section's Cancel button is named for what it cancels and says
-    /// what it does and leaves; its bar is named too.
+    /// what it stops, deletes, and when TextMouth tries again (FR14); its bar
+    /// is named too.
     func testTheCancelButtonSaysWhatItStopsAndWhatItLeaves() {
         XCTAssertEqual(FeedDownloadProgressWording.title, "Feed Downloads")
         XCTAssertEqual(FeedDownloadProgressWording.cancelButtonTitle, "Cancel")
@@ -174,8 +173,8 @@ final class FeedDownloadProgressTests: XCTestCase {
         XCTAssertNotEqual(FeedDownloadProgressWording.cancelButtonLabel, ProgressOverlay.cancelButtonLabel)
         XCTAssertEqual(
             FeedDownloadProgressWording.cancelButtonHint,
-            "Stops the downloads under way and waiting to start, and TextMouth won't start them again by itself. "
-                + "Downloads waiting for a network or for room keep waiting."
+            "Stops every feed download, those waiting for a network or for room too, and deletes what they had downloaded. "
+                + "TextMouth downloads each feed's newest again at its next check, or the next time it opens."
         )
         XCTAssertEqual(FeedDownloadProgressWording.overallBarLabel, "All feed downloads")
         XCTAssertEqual(FeedDownloadProgressWording.cancelling, "Cancelling...")
@@ -259,13 +258,13 @@ final class FeedDownloadProgressTests: XCTestCase {
 
         progress.end(.waiting, queued: [nil], waits: network)
         XCTAssertEqual(progress.state.total, 1)
-        XCTAssertEqual(progress.state.lines(at: clock.now), ["0 of 1 done", "1 waiting for a network without data limits"])
+        XCTAssertEqual(progress.state.lines(at: clock.now), ["0 of 1 done", "1 waiting until this Mac is on a network without data limits"])
 
         progress.begin(title: "Ep. 2", feedTitle: "Finish It!", transfer: nil, queued: [], waits: network)
         progress.end(.stopped, queued: [], waits: network)
         XCTAssertFalse(progress.state.isRunning)
         XCTAssertEqual(progress.state.waits, network)
-        XCTAssertEqual(progress.spokenStatus(), "No feed download is under way. 1 waiting for a network without data limits.")
+        XCTAssertEqual(progress.spokenStatus(), "No feed download is under way. 1 waiting until this Mac is on a network without data limits.")
     }
 
     /// A download's bytes change the progress without publishing it, so its
@@ -370,38 +369,32 @@ final class FeedDownloadProgressTests: XCTestCase {
         ])
     }
 
-    /// Cancel is heard at once with what it stopped, and the section says
-    /// the downloads are cancelling in place of the time left; the run then
-    /// ends without announcing its end. Cancel with no run says none is
-    /// under way, and changes nothing.
-    func testCancelIsHeardAtOnceAndTheRunEndsQuietly() {
+    /// Cancel says nothing itself, the window saying what it stopped once
+    /// VoiceOver's focus has moved (REV13 item 3), and the section says the
+    /// downloads are cancelling in place of the time left; the run then
+    /// ends without announcing its end. Cancel with no run changes nothing.
+    func testCancelIsQuietAndTheRunEndsQuietly() {
         let clock = CommandClock()
         let progress = FeedDownloadProgress(now: { clock.now })
 
         let recorder = recordingAnnouncements {
-            progress.cancel(stopped: [], finishing: nil)
+            progress.cancel()
             XCTAssertEqual(progress.state, FeedDownloadProgressState())
 
             Self.run(progress, downloads: 1, seconds: 20, clock: clock)
-            progress.begin(title: "Ep. 370", feedTitle: "Finish It!", transfer: nil, queued: [nil, nil], waits: FeedDownloadWaits(network: 2))
+            progress.begin(title: "Ep. 370", feedTitle: "Finish It!", transfer: nil, queued: [nil, nil], waits: FeedDownloadWaits())
             clock.advance(by: 20)
-            progress.cancel(stopped: ["Ep. 370", "Ep. 371", "Ep. 372"], finishing: nil)
+            progress.cancel()
             XCTAssertEqual(progress.state.lines(at: clock.now), [
                 "0 of 3 done",
                 "Download 1 of 3: “Ep. 370” from Finish It!",
                 "Cancelling...",
-                "2 waiting for a network without data limits",
             ])
-            progress.update(queued: [], waits: FeedDownloadWaits(network: 2))
-            progress.end(.stopped, queued: [], waits: FeedDownloadWaits(network: 2))
+            progress.update(queued: [], waits: FeedDownloadWaits())
+            progress.end(.stopped, queued: [], waits: FeedDownloadWaits())
         }
 
-        XCTAssertEqual(recorder.announcements.map(\.message), [
-            "No feed download is under way.",
-            "Finished downloading “Item 1”.",
-            "Stopped 3 feed downloads. 2 still waiting for a network without data limits.",
-        ])
-        XCTAssertEqual(recorder.announcements.map(\.priority), [.high, .high, .high])
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Finished downloading “Item 1”."])
         XCTAssertFalse(progress.state.isRunning)
         XCTAssertFalse(progress.state.isCancelling, "Cancel outlasted its run")
     }
@@ -455,7 +448,7 @@ final class FeedDownloadProgressTests: XCTestCase {
         _ = recordingAnnouncements {
             progress.begin(title: "Ep. 370", feedTitle: "Finish It!", transfer: nil, queued: [], waits: none)
             progress.beginAddingToLibrary()
-            progress.cancel(stopped: [], finishing: "Ep. 370")
+            progress.cancel()
             XCTAssertTrue(progress.state.isCancelling)
             // The listener asks for another while the first is being added.
             progress.update(queued: [nil], waits: none)

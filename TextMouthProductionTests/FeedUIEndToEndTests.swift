@@ -89,18 +89,19 @@ final class FeedUIEndToEndTests: XCTestCase {
         XCTAssertEqual(after.state, .notDownloaded)
         XCTAssertTrue(after.isPlayed)
 
-        // Unsubscribe, after a confirmation: checking stops, and the feed
-        // stays, its folder still its own (FR11, branch D).
-        let unsubscribe = try XCTUnwrap(FeedAction.actions(for: feed.id, noun: .episode).first { $0.command == .unsubscribe })
+        // Unsubscribe, which deletes nothing here, so asks nothing (FR14):
+        // checking stops, and the feed stays, its folder still its own
+        // (FR11, branch D).
+        let unsubscribe = try XCTUnwrap(FeedAction.actions(for: feed.id, in: world.center).first { $0.command == .unsubscribe })
+        XCTAssertEqual(unsubscribe.title, "Unsubscribe")
         presenter.perform(unsubscribe, in: context)
-        let question = try XCTUnwrap(presenter.confirmation)
-        XCTAssertEqual(question.message, FeedWording.unsubscribeMessage(downloadCount: 0, keptCount: 0, noun: .episode))
-        presenter.confirm(question, in: context)
+        XCTAssertNil(presenter.confirmation, "an Unsubscribe that deletes nothing asked first")
         XCTAssertEqual(world.center.feeds.map(\.id), [feed.id])
         XCTAssertEqual(world.center.store.record(of: feed.id)?.feed.isSubscribed, false)
         XCTAssertNotNil(world.library.library.folders.first { $0.id == feed.folderID }, "unsubscribing removed the folder")
         XCTAssertEqual(feedFolders.feedID(inFolder: feed.folderID), feed.id, "the feed's folder stopped being its")
         XCTAssertEqual(LibraryFeedsSectionRows.rows(at: LibraryLocation(category: .allItems, folderPath: ""), center: world.center).map(\.id), [feed.id])
+        // Said at once, there being no alert to wait for.
         XCTAssertEqual(heard.last, "Unsubscribed from The Tactile Atlas: TextMouth no longer checks it for new episodes.")
     }
 }

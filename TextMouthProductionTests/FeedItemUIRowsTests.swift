@@ -53,7 +53,7 @@ final class FeedItemUIRowsTests: XCTestCase {
         world.center.store.updateItem(itemID, of: feed.id) { $0.state = .waiting(FeedDownloadWait.network.reason) }
         XCTAssertEqual(
             try row().label,
-            "Ep. 368, Waiting to Download, it downloads on a network without data limits, 50 percent, 16 minutes remaining, 2 bookmarks, \(date), 32 minutes"
+            "Ep. 368, Waiting to Download, it downloads once this Mac is on a network without data limits, 50 percent, 16 minutes remaining, 2 bookmarks, \(date), 32 minutes"
         )
 
         // The download's own percent is the feed downloads section's

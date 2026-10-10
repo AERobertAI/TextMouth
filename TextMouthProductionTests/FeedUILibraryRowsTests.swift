@@ -278,7 +278,7 @@ final class FeedUILibraryRowsTests: XCTestCase {
         world.center.store.updateItem(itemID, of: feed.id) { $0.state = .waiting(FeedDownloadWait.network.reason) }
         XCTAssertEqual(
             try label(),
-            "How tides are measured, Waiting to Download, it downloads on a network without data limits, New, \(date), 28 minutes, 3 seconds"
+            "How tides are measured, Waiting to Download, it downloads once this Mac is on a network without data limits, New, \(date), 28 minutes, 3 seconds"
         )
         world.center.store.updateItem(itemID, of: feed.id) { $0.state = .waiting(FeedDownloadWait.room(bytes: 61_000_000).reason) }
         XCTAssertEqual(

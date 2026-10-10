@@ -205,8 +205,8 @@ enum FeedItemState: Equatable, Sendable {
 
     /// Why the item's last download failed, or why it waits (FR11), as its
     /// row says it after the state's note: "the server says the file is
-    /// gone", "it downloads on a network without data limits"; nil for any
-    /// other state, or a reason left empty.
+    /// gone", "it downloads once this Mac is on a network without data
+    /// limits"; nil for any other state, or a reason left empty.
     var reason: String? {
         guard let reason = failureReason ?? waitingReason, !reason.isEmpty else { return nil }
         return reason

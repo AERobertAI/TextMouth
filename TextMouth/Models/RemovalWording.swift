@@ -49,14 +49,22 @@ enum RemovalMode: Equatable, CaseIterable {
     /// go to the Trash, where you can recover them until the Trash is
     /// emptied".
     func filesClause(of owner: String) -> String {
-        let files = "\(owner) files"
+        "\(owner) files \(outcomePhrase(plural: true))"
+    }
+
+    /// What happens to what this removal deletes, as the words after their
+    /// subject, agreeing with one thing or several (`plural`): "go to the
+    /// Trash, where you can recover them until the Trash is emptied", "is
+    /// deleted permanently and cannot be recovered", "stay in the TextMouth
+    /// library folder". Delete Feed… says it of a feed's downloads (FR14).
+    func outcomePhrase(plural: Bool) -> String {
         switch self {
         case .keepFiles:
-            return "\(files) stay in the TextMouth library folder"
+            return "\(plural ? "stay" : "stays") in the TextMouth library folder"
         case .moveToTrash:
-            return "\(files) go to the Trash, where you can recover them until the Trash is emptied"
+            return "\(plural ? "go" : "goes") to the Trash, where you can recover \(plural ? "them" : "it") until the Trash is emptied"
         case .deletePermanently:
-            return "\(files) are deleted permanently and cannot be recovered"
+            return "\(plural ? "are" : "is") deleted permanently and cannot be recovered"
         }
     }
 
@@ -501,9 +509,12 @@ struct FolderRemovalWording: Equatable {
     let folderName: String
     /// How many books the folder and its subfolders hold.
     let bookCount: Int
-    /// The title of the feed whose folder this is (FR03), whose downloads
-    /// the folder lists, or nil when it is no feed's.
-    var feedTitle: String? = nil
+    /// The titles of the feeds whose folders are inside this one, at any
+    /// depth, in the order said (FR14). A feed's own folder offers Delete
+    /// Feed… in place of Delete Folder… (`LibraryViewModel.offersDeleteFolder(_:)`),
+    /// so no feed is deleted with a folder: each stays, its folder moving
+    /// with Move Contents Out, or gone with Delete Everything.
+    var feedTitles: [String] = []
 
     /// The folder's name in quotes, as sentences name it.
     private var quotedName: String { "“\(folderName)”" }
@@ -521,21 +532,42 @@ struct FolderRemovalWording: Equatable {
     /// and everything in it leave the library, and their files go to the
     /// Trash, where you can recover them until the Trash is emptied."
     ///
-    /// A feed's folder says, last, that the feed's downloads stay, which no
-    /// folder edit touches (FR11), and where they are listed then: "It is
-    /// also the folder of the feed “Finish It!”: either way, its downloads
-    /// stay, but no folder lists them until Feed Info gives the feed
-    /// another folder."
+    /// A folder holding feeds' folders says, last, what happens to each feed
+    /// (FR14): its folder moves with Move Contents Out; with Delete
+    /// Everything the feed stays, its downloads with it, which no folder
+    /// edit touches (FR11), but no folder lists them until Feed Info gives
+    /// it another; and Delete Feed… is what deletes a feed. "It holds the
+    /// folder of the feed “Finish It!”. With Move Contents Out, the feed's
+    /// folder moves with the rest. With Move Everything to Trash, the feed
+    /// stays, with its downloads, but no folder lists them until Feed Info
+    /// gives the feed another folder; Delete Feed… on the feed's row deletes
+    /// a feed."
     var choiceMessage: String {
         let books = CountWording.books(bookCount)
-        let feed = feedTitle.map {
-            " It is also the folder of the feed “\($0)”: either way, its downloads stay, "
-                + "but no folder lists them until Feed Info gives the feed another folder."
-        } ?? ""
         return "\(quotedName) contains \(books) and may have subfolders. "
             + "With Move Contents Out, they stay in the library and only the folder is deleted. "
             + "With \(buttonTitle), the folder and everything in it leave the library, "
-            + "and \(mode.filesClause(plural: true))." + feed
+            + "and \(mode.filesClause(plural: true))." + feedsChoiceSentences
+    }
+
+    /// The choice message's sentences about the feeds inside, with a space
+    /// before them; empty when there are none.
+    private var feedsChoiceSentences: String {
+        guard let feeds = quotedFeeds else { return "" }
+        let one = feedTitles.count == 1
+        return one
+            ? " It holds the folder of the feed \(feeds). With Move Contents Out, the feed's folder moves with the rest. "
+                + "With \(buttonTitle), the feed stays, with its downloads, but no folder lists them until Feed Info "
+                + "gives the feed another folder; Delete Feed… on the feed's row deletes a feed."
+            : " It holds the folders of the feeds \(feeds). With Move Contents Out, their folders move with the rest. "
+                + "With \(buttonTitle), each feed stays, with its downloads, but no folder lists them until Feed Info "
+                + "gives the feed another folder; Delete Feed… on a feed's row deletes a feed."
+    }
+
+    /// The feeds inside, each in quotes, as a list: "“A”", "“A” and “B”";
+    /// nil for none.
+    private var quotedFeeds: String? {
+        feedTitles.isEmpty ? nil : LibraryCloudWording.list(feedTitles.map { "“\($0)”" })
     }
 
     /// The second confirmation's title: "Move Everything in “Fiction” to
@@ -547,6 +579,9 @@ struct FolderRemovalWording: Equatable {
     /// The second confirmation's message: "“Fiction”, any subfolders, and
     /// the 3 books inside will be removed from the library. Their files go
     /// to the Trash, where you can recover them until the Trash is emptied."
+    /// The feeds inside, named, stay (FR14): "The feed “Finish It!” stays,
+    /// with its downloads, without a folder until Feed Info gives it
+    /// another."
     var confirmationMessage: String {
         let contents: String
         switch bookCount {
@@ -554,7 +589,13 @@ struct FolderRemovalWording: Equatable {
         case 1: contents = "\(quotedName), any subfolders, and the book inside"
         default: contents = "\(quotedName), any subfolders, and the \(bookCount) books inside"
         }
-        return "\(contents) will be removed from the library. " + mode.filesSentence(plural: true)
+        var message = "\(contents) will be removed from the library. " + mode.filesSentence(plural: true)
+        if let feeds = quotedFeeds {
+            message += feedTitles.count == 1
+                ? " The feed \(feeds) stays, with its downloads, without a folder until Feed Info gives it another."
+                : " The feeds \(feeds) stay, with their downloads, without folders until Feed Info gives each another."
+        }
+        return message
     }
 
     /// What could not be deleted, each item staying in the library: "These
@@ -688,7 +729,9 @@ final class RemovalPreferencesModel: ObservableObject {
 
 // MARK: - Sentence Case
 
-private extension String {
+/// Sentence case for words built from parts, shared with the feed reader's
+/// words, which start sentences with a phrase it built (FR14).
+extension String {
     /// The text with its first letter in upper case, to start a sentence.
     var capitalizingFirstLetter: String {
         prefix(1).uppercased() + dropFirst()

@@ -218,9 +218,11 @@ struct LibraryFeedsWindowSupport: ViewModifier {
                 FeedInfoSheet(
                     model: model,
                     feedFolders: feedFolders,
-                    unsubscribeConfirmation: { presenter.unsubscribeConfirmation(for: model.feedID, in: context) },
+                    requestUnsubscribe: { presenter.requestUnsubscribe(model.feedID, in: context) },
                     onUnsubscribe: { presenter.unsubscribe(model.feedID, in: context) },
                     onResubscribe: { presenter.resubscribe(model.feedID, in: context) },
+                    deleteFeedConfirmation: { presenter.deleteFeedConfirmation(for: model.feedID, in: context) },
+                    onDeleteFeed: { presenter.deleteFeed(model.feedID, in: context) },
                     onDone: { presenter.feedInfo = nil }
                 )
             }
@@ -246,7 +248,8 @@ struct LibraryFeedsWindowSupport: ViewModifier {
             } message: { notice in
                 Text(notice.message)
             }
-            // The question before Delete Episode and Unsubscribe.
+            // The question before Delete Episode, Unsubscribe, and Delete
+            // Feed… (FR14).
             .alert(presenter.confirmation?.title ?? "", isPresented: isConfirming, presenting: presenter.confirmation) { confirmation in
                 Button(confirmation.confirmTitle, role: .destructive) {
                     presenter.confirm(confirmation, in: context)

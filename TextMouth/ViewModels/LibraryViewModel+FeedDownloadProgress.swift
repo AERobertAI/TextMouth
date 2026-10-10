@@ -33,11 +33,15 @@ extension LibraryViewModel {
         VoiceOverAnnouncer.announce(feeds.downloads.spokenProgress())
     }
 
-    /// Stops the feed downloads under way and waiting to start, as the feed
-    /// downloads section's Cancel does: VoiceOver hears what stopped, and
-    /// the newest-N rule never starts them again by itself
-    /// (`FeedDownloadManager.cancelEveryDownload()`).
-    func cancelFeedDownloads() {
-        feeds.downloads.cancelEveryDownload()
+    /// Stops every feed download, as the feed downloads section's Cancel
+    /// does (FR14, `FeedCenter.cancelEveryDownload()`): those under way,
+    /// waiting to start, and waiting for a network or for room, every
+    /// partial download deleted, the newest-N rule downloading each feed's
+    /// newest again after the feed's next check.
+    /// - Returns: What VoiceOver hears of it, which the window says once its
+    ///   focus has moved (REV13 item 3).
+    @discardableResult
+    func cancelFeedDownloads() -> String {
+        feeds.cancelEveryDownload()
     }
 }

@@ -23,10 +23,11 @@ struct LibraryFeedsSection<FolderMenu: View>: View {
     let open: (FeedRowContent) -> Void
     /// Runs a feed's command.
     let perform: (FeedAction) -> Void
-    /// The commands of a feed's folder (Rename, Move, and Delete Folder),
+    /// The commands of a feed's folder (Rename Folder… and Move Folder…),
     /// which its row's context menu offers after the feed's own, as the
-    /// folder's own row did before this row stood for it; nothing for a
-    /// feed whose folder is gone.
+    /// folder's own row did before this row stood for it, but for Delete
+    /// Folder…: the feed's Delete Feed… stands for it, so a feed has one
+    /// delete (FR14); nothing for a feed whose folder is gone.
     @ViewBuilder let folderMenu: (FeedRowContent) -> FolderMenu
 
     var body: some View {
@@ -35,7 +36,7 @@ struct LibraryFeedsSection<FolderMenu: View>: View {
         if !rows.isEmpty {
             Section {
                 ForEach(rows) { row in
-                    let actions = FeedAction.actions(for: row.id, noun: row.counts.noun, isSubscribed: row.counts.isSubscribed)
+                    let actions = FeedAction.actions(for: row.id, counts: row.counts)
                     Button {
                         open(row)
                     } label: {

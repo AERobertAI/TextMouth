@@ -269,20 +269,32 @@ extension LibraryViewModel {
         }
     }
 
-    /// Whether Delete Folder… asks before deleting `folder`: when it holds
-    /// books or subfolders, or is a feed's folder (FR03). A feed's folder
-    /// that lists only the feed's downloads holds no book of the library's
-    /// own, since a feed item names no folder (FR11), yet deleting it leaves
-    /// those downloads listed nowhere until Feed Info gives the feed another
-    /// folder, so it is asked about too (REV10, item 4).
+    /// Whether `folder` holds anything: books or subfolders, or is a feed's
+    /// folder (FR03), which holds no book of the library's own, since a feed
+    /// item names no folder (FR11), yet lists the feed's items. Delete
+    /// Folder… asks first when it does (REV10, item 4), though a feed's own
+    /// folder offers Delete Feed… in its place (`offersDeleteFolder(_:)`,
+    /// FR14); and Delete Feed… deletes the folder of a feed it deleted only
+    /// when nothing else is in it, another feed's items included (FR14).
     func folderHasContents(_ folder: BookFolder) -> Bool {
         library.folderHasContents(folder) || feeds.store.feed(inFolder: folder.id) != nil
     }
 
-    /// The title of the feed whose folder `folder` is, if any (FR03), as the
-    /// question before Delete Folder… names it.
-    func feedTitle(ofFolder folder: BookFolder) -> String? {
-        feeds.store.feed(inFolder: folder.id)?.title
+    /// Whether `folder`'s menu offers Delete Folder…: not for a feed's own
+    /// folder, whose feed's commands offer Delete Feed… there instead, so a
+    /// feed has one command that deletes it, as the listener asked on
+    /// October 10 ("make sure its not duplicating another delete action or
+    /// anything", FR14).
+    func offersDeleteFolder(_ folder: BookFolder) -> Bool {
+        feeds.store.feed(inFolder: folder.id) == nil
+    }
+
+    /// The titles of the feeds whose folders are inside `folder`, at any
+    /// depth, by title (FR14): the feeds the questions before Delete
+    /// Folder… name, saying what happens to each.
+    func feedTitles(inside folder: BookFolder) -> [String] {
+        let inside = folder.fullPath + "/"
+        return feeds.feeds.filter { feeds.folderPath(of: $0)?.hasPrefix(inside) == true }.map(\.title)
     }
 
     /// IDs of books whose folder differs between the published library and
