@@ -220,24 +220,35 @@ extension FeedItemPackage {
 
     /// Puts the package `staging` built in place of the kept package at
     /// `kept`, which a new download of its item replaces: in one swap of
-    /// the two folders where the volume allows it, after which the kept
-    /// package is at the staged name, where `staging.discard()` removes it.
-    /// On a volume that cannot swap two folders, the kept package steps
-    /// aside under a hidden name beside it while the new one is published,
-    /// and goes once it is, or comes back when it cannot be. With no
-    /// package at `kept`, the new one is published as any import's is.
+    /// the two folders where the volume allows it (`swap`, which only a test
+    /// gives), after which the kept package is at the staged name, where
+    /// `staging.discard()` removes it.
+    ///
+    /// On a volume that cannot swap two folders, one FEED_PACKAGE_SWAP_FAILED
+    /// line gives the swap's errno, and the kept package steps aside, under
+    /// a hidden name made from its own (`setAsideURL(of:)`), while the new
+    /// one is published; it goes once the new one is, or comes back when the
+    /// new one cannot be. A crash in between leaves it there for the item's
+    /// next download to put right (`recoverSetAside(of:)`). With no package
+    /// at `kept`, the new one is published as any import's is.
     /// - Throws: why the new package could not be put in place; the kept
     ///   package is then where it was.
-    static func putInPlace(_ staging: ImportStaging, of kept: URL) throws {
+    static func putInPlace(
+        _ staging: ImportStaging,
+        of kept: URL,
+        swap: (URL, URL) -> Int32? = swapItems
+    ) throws {
         guard FileManager.default.fileExists(atPath: kept.path) else {
             try staging.publish()
             return
         }
-        if swapItems(staging.directory, kept) {
-            return
-        }
-        let aside = kept.deletingLastPathComponent()
-            .appendingPathComponent(".replaced-\(UUID().uuidString).tmb", isDirectory: true)
+        guard let failure = swap(staging.directory, kept) else { return }
+        DiagnosticLog.event(
+            .feeds,
+            "FEED_PACKAGE_SWAP_FAILED: \(kept.lastPathComponent): errno \(failure) (\(String(cString: strerror(failure)))); "
+                + "the kept package steps aside while the new one is published"
+        )
+        let aside = setAsideURL(of: kept)
         try FileManager.default.moveItem(at: kept, to: aside)
         do {
             try staging.publish()
@@ -249,14 +260,74 @@ extension FeedItemPackage {
     }
 
     /// Swaps the items at `first` and `second`, on one volume, in one step
-    /// (`renamex_np` with `RENAME_SWAP`), and says whether it did: a volume
-    /// that cannot swap two folders leaves both where they were.
-    private static func swapItems(_ first: URL, _ second: URL) -> Bool {
+    /// (`renamex_np` with `RENAME_SWAP`): nil once it did, or the errno that
+    /// kept it from it, as ENOTSUP on a volume that cannot swap two folders,
+    /// which leaves both where they were.
+    static func swapItems(_ first: URL, _ second: URL) -> Int32? {
         first.withUnsafeFileSystemRepresentation { from in
             second.withUnsafeFileSystemRepresentation { to in
-                guard let from, let to else { return false }
-                return renamex_np(from, to, UInt32(RENAME_SWAP)) == 0
+                guard let from, let to else { return EINVAL }
+                return renamex_np(from, to, UInt32(RENAME_SWAP)) == 0 ? nil : errno
             }
+        }
+    }
+
+    // MARK: A Kept Package Set Aside
+
+    /// What begins the hidden name a kept package stands aside under while
+    /// a new one is published in its place (`setAsideURL(of:)`).
+    static let setAsidePrefix = ".replaced-"
+
+    /// Where `putInPlace(_:of:swap:)` sets aside the kept package at `kept`
+    /// on a volume that cannot swap two folders: beside it, under its own
+    /// name after `setAsidePrefix`, so the item's next download finds it
+    /// after a crash. Hidden, it is no package of the feed's folder
+    /// (`isPackageName(_:)`, `FeedIndexFiles`).
+    static func setAsideURL(of kept: URL) -> URL {
+        kept.deletingLastPathComponent().appendingPathComponent(setAsidePrefix + kept.lastPathComponent, isDirectory: true)
+    }
+
+    /// Puts right what a crash during `putInPlace(_:of:swap:)`'s fallback
+    /// left of the kept package at `kept`, before a new download of its item
+    /// reads it, each case in one line of the debug log; both are looked for
+    /// by their metadata alone, so nothing is downloaded:
+    ///
+    /// - set aside, with nothing in its place: the crash came before the new
+    ///   package was published, so the kept one moves back, with what it
+    ///   holds (FEED_PACKAGE_PUT_BACK);
+    /// - set aside, with a package in its place: the crash came once the new
+    ///   package was published, which holds everything the kept one kept,
+    ///   so the one set aside is a leftover, and goes
+    ///   (FEED_PACKAGE_SET_ASIDE_REMOVED). One that cannot go stays
+    ///   (FEED_PACKAGE_SET_ASIDE_LEFT), and only a volume that cannot swap
+    ///   two folders then fails the download, needing its name.
+    /// - Throws: why a kept package set aside could not move back: the
+    ///   download then fails, rather than publish a package without what the
+    ///   kept one holds.
+    static func recoverSetAside(of kept: URL) throws {
+        let aside = setAsideURL(of: kept)
+        guard MaintenanceFileAccess.hasItem(at: aside) else { return }
+        guard MaintenanceFileAccess.hasItem(at: kept) else {
+            try FileManager.default.moveItem(at: aside, to: kept)
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_PACKAGE_PUT_BACK: \(kept.lastPathComponent): the kept package a download set aside before it stopped is back in its place"
+            )
+            return
+        }
+        do {
+            try FileManager.default.removeItem(at: aside)
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_PACKAGE_SET_ASIDE_REMOVED: \(kept.lastPathComponent): the kept package a download set aside, left beside "
+                    + "the one it published before it stopped, is gone"
+            )
+        } catch {
+            DiagnosticLog.event(
+                .feeds,
+                "FEED_PACKAGE_SET_ASIDE_LEFT: \(kept.lastPathComponent): the kept package a download set aside could not be "
+                    + "removed: \(error.localizedDescription)"
+            )
         }
     }
 }

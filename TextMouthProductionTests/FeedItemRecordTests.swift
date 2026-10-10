@@ -304,6 +304,88 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: TextMouthPaths.transcriptPath(in: restored.tmbDirectory)), transcript)
     }
 
+    // MARK: - A Kept Package Set Aside
+
+    /// A crash while the kept package stood aside, on a volume that cannot
+    /// swap two folders, leaves it under its hidden name with nothing in its
+    /// place; the item's next download puts it back first, so the same book
+    /// is restored with the listener's state and transcript, and nothing is
+    /// left aside.
+    func testAKeptPackageACrashLeftAsideIsPutBackAsItsItemDownloadsAgain() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordSetAside")
+        let (feed, book, transcript) = try await transcribedEpisodeWhoseDownloadWasDeleted(in: world)
+        let aside = FeedItemPackage.setAsideURL(of: book.tmbDirectory)
+        try FileManager.default.moveItem(at: book.tmbDirectory, to: aside)
+        let putBack = debugLogLines(containing: "FEED_PACKAGE_PUT_BACK: \(book.tmbDirectoryName)").count
+
+        world.center.download("guid:ep-1", of: feed.id)
+        let restored = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(restored.id, book.id)
+        XCTAssertEqual(restored.tmbDirectory, book.tmbDirectory)
+        try assertKeepsTheListenersState(restored, of: book, "the restored row")
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.transcriptPath(in: restored.tmbDirectory)), transcript)
+        XCTAssertFalse(MaintenanceFileAccess.hasItem(at: aside), "the package set aside stayed")
+        XCTAssertEqual(debugLogLines(containing: "FEED_PACKAGE_PUT_BACK: \(book.tmbDirectoryName)").count, putBack + 1)
+    }
+
+    /// On a volume that cannot swap two folders the new package still takes
+    /// the kept one's place, the kept one standing aside meanwhile and then
+    /// going, and the swap's errno is in the debug log.
+    func testOnAVolumeThatCannotSwapTheNewPackageStillTakesTheKeptOnesPlace() throws {
+        let (kept, staging) = try keptPackageAndStaging("FeedSwapless")
+        defer { staging.discard() }
+        let line = "FEED_PACKAGE_SWAP_FAILED: \(kept.lastPathComponent): errno \(ENOTSUP) (Operation not supported)"
+        let logged = debugLogLines(containing: line).count
+
+        try FeedItemPackage.putInPlace(staging, of: kept, swap: { _, _ in ENOTSUP })
+
+        XCTAssertEqual(try String(contentsOf: kept.appendingPathComponent("new.txt"), encoding: .utf8), "new")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.appendingPathComponent("old.txt").path), "the kept package stayed")
+        XCTAssertFalse(MaintenanceFileAccess.hasItem(at: FeedItemPackage.setAsideURL(of: kept)), "the kept package stayed aside")
+        XCTAssertEqual(debugLogLines(containing: line).count, logged + 1)
+    }
+
+    /// On a volume that cannot swap two folders, a new package that cannot
+    /// be published leaves the kept one where it was, with what it holds.
+    func testWhenTheNewPackageCannotBePublishedTheKeptOneComesBack() throws {
+        let (kept, staging) = try keptPackageAndStaging("FeedSwaplessUnpublished")
+        defer { staging.discard() }
+        // A staged package that is gone cannot be published.
+        try FileManager.default.removeItem(at: staging.directory)
+
+        XCTAssertThrowsError(try FeedItemPackage.putInPlace(staging, of: kept, swap: { _, _ in ENOTSUP }))
+
+        XCTAssertEqual(try String(contentsOf: kept.appendingPathComponent("old.txt"), encoding: .utf8), "old")
+        XCTAssertFalse(MaintenanceFileAccess.hasItem(at: FeedItemPackage.setAsideURL(of: kept)), "the kept package stayed aside")
+    }
+
+    /// What a crash left set aside is put right before a download reads the
+    /// kept package: alone, it moves back to its own name; beside a package
+    /// a download published before the crash, which holds what it kept, it
+    /// is a leftover, and goes. With nothing set aside, nothing changes.
+    func testWhatACrashLeftAsideIsPutRight() throws {
+        let folder = try makeSandboxDirectory("FeedSetAsideRecovery")
+        let kept = folder.appendingPathComponent("Kept.tmb", isDirectory: true)
+        let aside = FeedItemPackage.setAsideURL(of: kept)
+        XCTAssertEqual(aside.lastPathComponent, ".replaced-Kept.tmb")
+        try FileManager.default.createDirectory(at: aside, withIntermediateDirectories: true)
+        try "old".write(to: aside.appendingPathComponent("old.txt"), atomically: true, encoding: .utf8)
+
+        try FeedItemPackage.recoverSetAside(of: kept)
+
+        XCTAssertEqual(try String(contentsOf: kept.appendingPathComponent("old.txt"), encoding: .utf8), "old")
+        XCTAssertFalse(MaintenanceFileAccess.hasItem(at: aside))
+
+        try FileManager.default.createDirectory(at: aside, withIntermediateDirectories: true)
+        try FeedItemPackage.recoverSetAside(of: kept)
+
+        XCTAssertFalse(MaintenanceFileAccess.hasItem(at: aside), "a leftover beside the published package stayed")
+        XCTAssertEqual(try String(contentsOf: kept.appendingPathComponent("old.txt"), encoding: .utf8), "old")
+        XCTAssertNoThrow(try FeedItemPackage.recoverSetAside(of: kept))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: kept.path))
+    }
+
     // MARK: - Delete Episode
 
     /// Delete Episode deletes an item's package whole, whether its package
@@ -595,6 +677,19 @@ final class FeedItemRecordTests: XCTestCase {
         if (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) != nil {
             throw XCTSkip("this user lists a folder without its read permission")
         }
+    }
+
+    /// A kept package holding "old.txt" in a sandbox folder labelled
+    /// `label`, and a package staged to take its place holding "new.txt".
+    /// The caller discards the staging once done.
+    private func keptPackageAndStaging(_ label: String) throws -> (kept: URL, staging: ImportStaging) {
+        let folder = try makeSandboxDirectory(label)
+        let kept = folder.appendingPathComponent("Kept.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: kept, withIntermediateDirectories: true)
+        try "old".write(to: kept.appendingPathComponent("old.txt"), atomically: true, encoding: .utf8)
+        let staging = try ImportStaging.makeEmpty(publishingTo: kept)
+        try "new".write(to: staging.directory.appendingPathComponent("new.txt"), atomically: true, encoding: .utf8)
+        return (kept, staging)
     }
 
     /// The book the record of the package at `package` describes.

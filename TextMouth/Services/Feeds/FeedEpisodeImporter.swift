@@ -240,6 +240,9 @@ enum FeedEpisodeImporter {
             let root = TextMouthPaths.root
             try FileManager.default.createDirectory(at: FeedPaths.itemsFolder(of: feed.id, in: root), withIntermediateDirectories: true)
             let keptPackage = FeedPaths.packageDirectory(named: kept.tmbDirectoryName, of: feed.id, in: root)
+            // What a crash during an earlier restore left set aside is put
+            // right before anything reads the kept package.
+            try FeedItemPackage.recoverSetAside(of: keptPackage)
             let staging = try ImportStaging.makeEmpty(publishingTo: keptPackage)
             defer { staging.discard() }
             try FeedItemPackage.copyWhatANewDownloadKeeps(from: keptPackage, to: staging.directory)
