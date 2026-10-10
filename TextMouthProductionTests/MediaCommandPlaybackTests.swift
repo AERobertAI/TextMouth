@@ -594,6 +594,31 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertFalse(slipway.reader.canReleaseMediaControls, "The window in front offers to release what it never held")
     }
 
+    /// The same when the paused book stops from behind, its window still
+    /// open, as when its chapter cannot be got from the cloud or its text
+    /// is replaced: its item is taken down, once, as if its window had
+    /// closed, so the AirPods go back to other apps rather than staying
+    /// with a book that stopped. Before, only the active reader's stop took
+    /// its item down.
+    func testStoppingThePausedBookFromBehindAnotherWindowTakesItsItemDown() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Stopped Behind")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let slipway = openTextBook(titled: "Slipway Ledger", in: world, joining: system)
+
+        quay.reader.play()
+        reportWordSpoken(by: quay)
+        quay.reader.pause()
+        slipway.reader.windowBecameKey()
+        quay.reader.stop()
+
+        XCTAssertEqual(system.told.last, .some(nil), "The stopped book is still shown")
+        XCTAssertEqual(system.told.filter { $0 == nil }.count, 1, "The system was told more than once that TextMouth stopped")
+        XCTAssertEqual(system.coordinator.activeOwnerID, slipway.reader.nowPlayingService.ownerID)
+        XCTAssertFalse(quay.reader.canReleaseMediaControls, "The stopped book offers to release controls")
+        XCTAssertFalse(slipway.reader.canReleaseMediaControls, "The window in front offers to release what it never held")
+    }
+
     // MARK: - A Book That Pauses Behind Another Window
 
     /// The listener's book plays while another book's window, which never

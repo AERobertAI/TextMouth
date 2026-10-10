@@ -1199,21 +1199,40 @@ final class NowPlayingService {
         center.playbackState = item.isPlaying ? .playing : .paused
     }
 
+    /// The reader `ownerID` stopped, or released the media controls: it has
+    /// nothing left to show, so its item is forgotten, and, if the system
+    /// shows its item, taken down, whether or not it is the active reader,
+    /// as closing takes it down (`unregister(ownerID:)`); the active
+    /// reader's own item, if it has one, is then shown in its place. The
+    /// active reader that stops gives up the media session too, which a
+    /// Play accepted before must not take back.
+    ///
+    /// Before, a reader that was not the active one took nothing down, so
+    /// a book shown paused stayed shown after it stopped from behind
+    /// another reader's window, as when its chapter could not be got from
+    /// the cloud or its text was replaced, and the AirPods stayed with a
+    /// book that had stopped.
     func clearNowPlaying(ownerID: UUID) {
-        guard activeOwnerID == ownerID else { return }
-        // Releasing media controls is an ownership decision even when paused;
-        // an older queued Play must not immediately reclaim them.
-        noteExternalRoutingChange()
+        let wasActive = activeOwnerID == ownerID
+        let wasShown = shownOwnerID == ownerID
+        // A stopped reader has nothing to show, now or once it is the active
+        // one again.
+        nowPlayingInfoByOwner.removeValue(forKey: ownerID)
+        guard wasActive || wasShown else { return }
+        if wasActive {
+            // Releasing media controls is an ownership decision even when
+            // paused; an older queued Play must not immediately reclaim them.
+            noteExternalRoutingChange()
+        }
         if playingOwnerID == ownerID {
             playingOwnerID = nil
         }
-        nowPlayingInfoByOwner.removeValue(forKey: ownerID)
         // Only the item this reader shows is taken down. A reader that shows
         // none, such as a window that never played closing while another
         // book waits paused, must not tell the system TextMouth stopped: the
         // paused book stays shown, so macOS keeps sending the AirPods here.
         // A reader that stops and then releases media controls clears once.
-        guard shownOwnerID == ownerID else { return }
+        guard wasShown else { return }
         clearSystemNowPlaying()
         publishCachedNowPlayingInfoForActiveOwner()
     }
