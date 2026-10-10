@@ -239,6 +239,7 @@
 		4D701B82B69821939DD633F7 /* BookRecordFailureReportingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45260B78618F2BDA64C0FC26 /* BookRecordFailureReportingTests.swift */; };
 		4D819BB9C6A0EA678FB52BE1 /* SpeechEngineCreationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0D2F9BC86E082D72177503 /* SpeechEngineCreationTests.swift */; };
 		4DAF165C77F9903C15E1355D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C67F22AA3696E45373BC65B0 /* ContentView.swift */; };
+		4E3C802E88134CE8DE442985 /* ShortcutPressDispatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32306AE0077F63ED034EEBE3 /* ShortcutPressDispatcherTests.swift */; };
 		4E7384F27A158D66E253A16F /* OriginalFileDeletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF75D114EAF3FF1D823C69C3 /* OriginalFileDeletionTests.swift */; };
 		4EAD3D4C89D3B74AEA68F0E4 /* PersistenceFailureCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9A86EC885299C4F99A66DF /* PersistenceFailureCenter.swift */; };
 		4FC339E28580DBABEDFC8962 /* LibraryPersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4250ABAFA28C08D022062F4 /* LibraryPersistenceService.swift */; };
@@ -781,6 +782,7 @@
 		F839B84E1B3A978AFBB35675 /* FeedSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECC8048BC1E98D863AAF0D6F /* FeedSettingsTests.swift */; };
 		F9B79B1412391681EFABA460 /* TranscriptSentenceBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C0A3D05DA45EC1B44A2D04 /* TranscriptSentenceBuilder.swift */; };
 		FB1C1119A3E8C050651CF410 /* DOCXParser+Metadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF2B3058D9636B4E1E7C007C /* DOCXParser+Metadata.swift */; };
+		FB34D9868505A6ABBD0171E1 /* ShortcutPressDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B5C2318FD444E85BA1B947D /* ShortcutPressDispatcher.swift */; };
 		FB7FE144EB99BFBA9C2C0DE2 /* FeedArrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D4FC02375690AFAC959521 /* FeedArrivals.swift */; };
 		FBE5337D4DDE25A2349EB349 /* LibraryViewModel+FolderManagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969830FA3CFFC902338D9B57 /* LibraryViewModel+FolderManagement.swift */; };
 		FC21588FD1C05D0BA1B0E346 /* DoublePressBindingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7869555A15F80E73B3762EB6 /* DoublePressBindingTests.swift */; };
@@ -854,6 +856,7 @@
 		0ADA01E6BE651B28BC03B976 /* BookParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookParser.swift; sourceTree = "<group>"; };
 		0AF5D78231C95D456E935D64 /* DAISYInlineFragmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYInlineFragmentTests.swift; sourceTree = "<group>"; };
 		0B14263B41C4B092A93FE5A0 /* AudioSegment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSegment.swift; sourceTree = "<group>"; };
+		0B5C2318FD444E85BA1B947D /* ShortcutPressDispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutPressDispatcher.swift; sourceTree = "<group>"; };
 		0B87E6FD11908D7D16656C0C /* AccessibilityTestSupportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityTestSupportTests.swift; sourceTree = "<group>"; };
 		0B92300A4E8ADD6D54B898ED /* AudioEditorFileSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorFileSheets.swift; sourceTree = "<group>"; };
 		0BB8A49BD8A57B839DDD4926 /* BookSearchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookSearchModel.swift; sourceTree = "<group>"; };
@@ -986,6 +989,7 @@
 		305CCD801F75563221157BD8 /* StorageGenerationStaleWriterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageGenerationStaleWriterTests.swift; sourceTree = "<group>"; };
 		316931C8DD128F7F46FBA63C /* AudioEditorEndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorEndToEndTests.swift; sourceTree = "<group>"; };
 		31DD12BF0D978201500B48D6 /* FolderPathEquivalence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderPathEquivalence.swift; sourceTree = "<group>"; };
+		32306AE0077F63ED034EEBE3 /* ShortcutPressDispatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutPressDispatcherTests.swift; sourceTree = "<group>"; };
 		3238950E230484033F26885C /* DAISYParser+SAXParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+SAXParser.swift"; sourceTree = "<group>"; };
 		3386D994555FA61359487942 /* DOCXParser+Numbering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DOCXParser+Numbering.swift"; sourceTree = "<group>"; };
 		33B295B1BF84FFCD94A60E5A /* LibraryIndexQuarantine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryIndexQuarantine.swift; sourceTree = "<group>"; };
@@ -1752,6 +1756,7 @@
 				589E186C9166AF7A454AC586 /* RepeatedSymbolNames.swift */,
 				7C33126D3CB872265E468B2A /* RepeatedSymbolRule.swift */,
 				C221A7F9E32DD87EF06B77F1 /* SavedFile.swift */,
+				0B5C2318FD444E85BA1B947D /* ShortcutPressDispatcher.swift */,
 				DBCC589BF20B6C90A39EE43D /* SleepTimerService.swift */,
 				12FF44399DABAB9713EDFA69 /* SoundEffectService.swift */,
 				3013F222A6D51AD37D917C0E /* SpeechMarkupGuard.swift */,
@@ -2423,6 +2428,7 @@
 				6CF1D4BC7CDEB7AD41945257 /* ShortcutListingTests.swift */,
 				CFC7B62C2565B66A16CDFA23 /* ShortcutManagerTests.swift */,
 				59FF708095E0BC233169C4D6 /* ShortcutMigrationTests.swift */,
+				32306AE0077F63ED034EEBE3 /* ShortcutPressDispatcherTests.swift */,
 				A302208FF87E613C9FBC9CC5 /* ShortcutsSettingsTabTests.swift */,
 				B5C8DBFF02248C668CCEE864 /* SleepTimerServiceTests.swift */,
 				E5899A498521BA0A311E7758 /* SourceScanTestSupport.swift */,
@@ -3095,6 +3101,7 @@
 				702E7B5445A5AB715F936097 /* ShortcutListingTests.swift in Sources */,
 				CEC224A583530455EC64C498 /* ShortcutManagerTests.swift in Sources */,
 				39BE0255DBADFE7E33549D7F /* ShortcutMigrationTests.swift in Sources */,
+				4E3C802E88134CE8DE442985 /* ShortcutPressDispatcherTests.swift in Sources */,
 				9E1C0546937F42BA32C454D7 /* ShortcutsSettingsTabTests.swift in Sources */,
 				D8F3E731356EE743DB4469C4 /* SleepTimerServiceTests.swift in Sources */,
 				DDCA01075DB335BF911AD722 /* SourceScanTestSupport.swift in Sources */,
@@ -3490,6 +3497,7 @@
 				2D478BE9B8B13B997292DECD /* SettingsView.swift in Sources */,
 				051C599F9147EB957F1A38FE /* SettingsViewModel.swift in Sources */,
 				E2C14C0E9FF51CF998751C4F /* ShortcutEdits.swift in Sources */,
+				FB34D9868505A6ABBD0171E1 /* ShortcutPressDispatcher.swift in Sources */,
 				E92AD474DFE41E5BAB23E353 /* SleepTimerService.swift in Sources */,
 				DFEA4A7750B07D5E886A1404 /* SleepTimerView.swift in Sources */,
 				DF1327ACB24442B9080C3A18 /* SoundEffectService.swift in Sources */,
