@@ -318,14 +318,15 @@ final class KeyboardShortcutManager: ObservableObject {
     /// form.
     ///
     /// Nothing is moved when the store holds a record already, nor when
-    /// config.json is in the new form already (an entry written "default"),
-    /// which is then read as any edit is: over an empty record, written now,
-    /// so that the move never runs again. The whole map (`savedMapKey`) is
-    /// read and left as it is; nothing writes it again.
+    /// config.json is in the new form already (an entry written "default",
+    /// or as an object naming where its action works), which is then read
+    /// as any edit is: over an empty record, written now, so that the move
+    /// never runs again. The whole map (`savedMapKey`) is read and left as
+    /// it is; nothing writes it again.
     @discardableResult
     static func moveSavedShortcutsIfNeeded(in store: UserDefaults, fileListings: [ShortcutAction: ShortcutListing]?) -> Bool {
         guard store.data(forKey: editsPreference.key) == nil else { return false }
-        if let fileListings, fileListings.values.contains(where: \.followsDefaults) {
+        if let fileListings, fileListings.values.contains(where: \.isInTheRecordsForm) {
             DiagnosticLog.event(
                 .storage,
                 "SHORTCUT_EDITS_MOVED: config.json is in the new form already; reading it over an empty record"
@@ -359,12 +360,15 @@ final class KeyboardShortcutManager: ObservableObject {
 
     /// Puts config.json's entries in place in `store`'s record (FR12,
     /// sections 5.1 and 5.2 of the design, `ShortcutEdits.adopting(_:)`):
-    /// a list makes its action the user's, "default" gives it back, and a key
-    /// two edited actions then hold is left to one of them and logged, naming
-    /// the key and both actions. An entry giving its action a key it cannot
-    /// take, such as a menu command's key without Command or Control
-    /// (`ShortcutListing.refusal(for:)`, FR12's branch D), is left out and
-    /// logged, the action keeping its keys. No entries change nothing.
+    /// a list makes its action the user's, an object makes it the user's
+    /// working in the kind of window it names (FR12's branch E), "default"
+    /// gives it back, and a key two edited actions then hold where their
+    /// scopes overlap is left to one of them and logged, naming the key and
+    /// both actions. An entry naming a kind of window its action cannot work
+    /// in, or giving it a key it cannot take, such as a menu command's key
+    /// without Command or Control (FR12's branch D), is left out and logged,
+    /// the action keeping what it has (`ShortcutEdits.entriesLeftOut(of:)`).
+    /// No entries change nothing.
     ///
     /// - Returns: Whether such a key was settled or an entry left out, so
     ///   the settings model saves config.json again at once and the file
@@ -373,17 +377,12 @@ final class KeyboardShortcutManager: ObservableObject {
     static func adopt(_ listings: [ShortcutAction: ShortcutListing], in store: UserDefaults) -> Bool {
         guard !listings.isEmpty else { return false }
         let record = editsPreference.read(from: store)
-        // Refused only when it would change the record: keys a store edited
-        // by hand already holds go on as they are.
-        let refusals = listings.reduce(into: [ShortcutAction: ShortcutRefusal]()) { refused, entry in
-            guard entry.value.bindings != record.keys(of: entry.key), let refusal = entry.value.refusal(for: entry.key) else { return }
-            refused[entry.key] = refusal
-        }
-        let adopted = record.adopting(listings.filter { refusals[$0.key] == nil })
-        ShortcutEdits.log(refusals, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
+        let leftOut = record.entriesLeftOut(of: listings)
+        let adopted = record.adopting(listings.filter { leftOut[$0.key] == nil })
+        ShortcutEdits.log(leftOut, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
         ShortcutEdits.log(adopted.sharedKeys, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
         editsPreference.write(adopted.edits, to: store)
-        return !adopted.sharedKeys.isEmpty || !refusals.isEmpty
+        return !adopted.sharedKeys.isEmpty || !leftOut.isEmpty
     }
 
     // MARK: - Reading the Shortcuts

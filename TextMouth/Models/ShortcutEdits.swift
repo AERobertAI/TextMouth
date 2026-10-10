@@ -29,7 +29,9 @@ import Foundation
 /// saved in before: JSON keyed by the actions' names, each with its list of
 /// keys, holding only the edited actions; an action working in a scope the
 /// user chose is an object holding its keys and the scope instead, as
-/// `{"keys": [...], "worksIn": "library"}`. Both forms are read.
+/// `{"keys": [...], "worksIn": "library"}`. Both forms are read. config.json
+/// lists every action (`listings(defaults:)`), in forms of its own
+/// (`ShortcutListing`).
 struct ShortcutEdits: Equatable, Sendable {
     /// Each edited action's keys, in the order the user gave them.
     private(set) var keysByEditedAction: [ShortcutAction: [KeyBinding]]
@@ -374,16 +376,25 @@ extension ShortcutEdits {
 
 extension ShortcutEdits {
     /// Every action's entry as config.json lists it (FR12, section 5.1 of
-    /// the design), given a build's `defaults`: an edited action's keys in
-    /// force as a list, and every other action "default: " and its keys in
-    /// force (`ShortcutListing`). An edited action set back to its default
+    /// the design), given a build's `defaults` (`ShortcutListing`): an
+    /// edited action's keys in force as a list, or, for one working in a
+    /// scope the user chose, as an object holding them and that scope (FR12's
+    /// branch E); and every other action "default: " and its keys in force,
+    /// naming its default scope when that is said, as in "default in reader
+    /// windows: shift+command+t". An edited action set back to its default
     /// keys is still a list: it stays the user's.
     func listings(defaults: [ShortcutAction: [KeyBinding]]) -> [ShortcutAction: ShortcutListing] {
         let inForce = effectiveBindings(defaults: defaults)
         var listings: [ShortcutAction: ShortcutListing] = [:]
         for action in ShortcutAction.allCases {
             let keys = inForce[action] ?? []
-            listings[action] = isEdited(action) ? .edited(keys) : .followingDefaults(keys)
+            if !isEdited(action) {
+                listings[action] = .followingDefaults(keys, worksIn: action.defaultScope)
+            } else if let scope = scopesByEditedAction[action] {
+                listings[action] = .edited(keys, worksIn: scope)
+            } else {
+                listings[action] = .edited(keys)
+            }
         }
         return listings
     }
@@ -393,13 +404,16 @@ extension ShortcutEdits {
     /// held, left to one of them.
     ///
     /// A list makes its action the user's with those keys, even keys equal
-    /// to its default; text beginning with "default" gives it back to the
-    /// defaults, as Reset to Default does; an action the listings leave out,
-    /// or whose entry cannot be read, keeps what it has. A key two edited
-    /// actions then hold goes to the one whose entry changed the record, as
-    /// recording a key in Settings takes it for the action recorded, and
-    /// when both or neither did, to the one Settings lists first
-    /// (`resolvingSharedKeys(favoring:)`).
+    /// to its default, working where it does by default; an object makes it
+    /// the user's with its keys, working in the kind of window it names
+    /// (FR12's branch E); text beginning with "default" gives it back to the
+    /// defaults, its keys and its scope, as Reset to Default does. An action
+    /// the listings leave out, or whose entry cannot be read or names a kind
+    /// of window it cannot work in (`entriesLeftOut(of:)`), keeps what it
+    /// has. A key two edited actions whose scopes then overlap hold goes to
+    /// the one whose entry changed the record, as recording a key in
+    /// Settings takes it for the action recorded, and when both or neither
+    /// did, to the one Settings lists first (`resolvingSharedKeys(favoring:)`).
     func adopting(_ listings: [ShortcutAction: ShortcutListing]) -> Settlement {
         var adopted = self
         var changed: Set<ShortcutAction> = []
@@ -411,12 +425,56 @@ extension ShortcutEdits {
                     adopted.reset(action)
                     changed.insert(action)
                 }
-            } else if let keys = listing.bindings?.withoutRepeats, adopted.keysByEditedAction[action] != keys {
+                continue
+            }
+            guard let keys = listing.bindings?.withoutRepeats,
+                  let scope = listing.scope(for: action),
+                  action.availableScopes.contains(scope) else { continue }
+            if adopted.keysByEditedAction[action] != keys || adopted.scope(of: action) != scope {
                 adopted.keysByEditedAction[action] = keys
+                adopted.scopesByEditedAction[action] = scope == action.defaultScope ? nil : scope
                 changed.insert(action)
             }
         }
         return adopted.resolvingSharedKeys(favoring: changed)
+    }
+
+    /// Why an entry of config.json is left out, its action keeping what it
+    /// has (FR12's branches D and E).
+    enum LeftOutEntry: Equatable, Sendable {
+        /// The entry names a kind of window its action cannot work in.
+        case cannotWorkIn(ShortcutScope)
+        /// The entry gives its action keys it cannot take.
+        case refused(ShortcutRefusal)
+
+        /// Why, as the repair log says it: "works in reader windows, which
+        /// it cannot", or ""w" cannot be its shortcut: a menu command's
+        /// shortcut is one press of a key with Command or Control".
+        var reason: String {
+            switch self {
+            case .cannotWorkIn(let scope):
+                return "works in \(scope.inSentence), which it cannot"
+            case .refused(let refusal):
+                return "\"\(refusal.key.configText)\" cannot be its shortcut: \(refusal.reason)"
+            }
+        }
+    }
+
+    /// The entries of `listings` this record would not take, each with why:
+    /// one naming a kind of window its action cannot work in (FR12's branch
+    /// E), as Add Feed… cannot work in reader windows, and one giving its
+    /// action keys it cannot take (`ShortcutListing.refusal(for:)`, FR12's
+    /// branch D), unless the record holds those keys already, as a store
+    /// edited by hand may, which then go on as they are.
+    func entriesLeftOut(of listings: [ShortcutAction: ShortcutListing]) -> [ShortcutAction: LeftOutEntry] {
+        listings.reduce(into: [:]) { leftOut, entry in
+            let (action, listing) = entry
+            if let scope = listing.scope(for: action), !action.availableScopes.contains(scope) {
+                leftOut[action] = .cannotWorkIn(scope)
+            } else if listing.bindings != keys(of: action), let refusal = listing.refusal(for: action) {
+                leftOut[action] = .refused(refusal)
+            }
+        }
     }
 }
 
@@ -520,15 +578,10 @@ private struct StoredEntry: Encodable {
             try container.encode(keys)
             return
         }
-        var container = encoder.container(keyedBy: StoredEntryField.self)
+        var container = encoder.container(keyedBy: ShortcutJSONKey.self)
         try container.encode(keys, forKey: .keys)
         try container.encode(worksIn.rawValue, forKey: .worksIn)
     }
-}
-
-/// The fields of a stored entry written as an object.
-private enum StoredEntryField: String, CodingKey {
-    case keys, worksIn
 }
 
 /// One stored entry's keys, or nil when they cannot be read, so that one
@@ -548,7 +601,7 @@ private struct LenientStoredKeys: Decodable {
             scopeName = nil
             return
         }
-        let object = try? decoder.container(keyedBy: StoredEntryField.self)
+        let object = try? decoder.container(keyedBy: ShortcutJSONKey.self)
         keys = try? object?.decode([KeyBinding].self, forKey: .keys)
         scopeName = try? object?.decode(String.self, forKey: .worksIn)
     }
@@ -565,7 +618,7 @@ extension ShortcutEdits {
         for entry in skipped {
             StoredValueRepair.log(
                 source: source,
-                codingPath: [LoggedName(field)] + (entry.name.map { [LoggedName($0)] } ?? []),
+                codingPath: [ShortcutJSONKey(field)] + (entry.name.map { [ShortcutJSONKey($0)] } ?? []),
                 detail: entry.reason
             )
         }
@@ -587,7 +640,7 @@ extension ShortcutEdits {
             } ?? "shared \"\(shared.key.configText)\" with \"\(shared.keeper.rawValue)\""
             StoredValueRepair.log(
                 source: source,
-                codingPath: [LoggedName(field), LoggedName(shared.loser.rawValue)],
+                codingPath: [ShortcutJSONKey(field), ShortcutJSONKey(shared.loser.rawValue)],
                 detail: "\(clash), which keeps it; \"\(shared.loser.rawValue)\" goes without it"
             )
         }
@@ -596,26 +649,36 @@ extension ShortcutEdits {
 
 extension ShortcutEdits {
     /// Writes one STORED_VALUE_REPAIRED line to the debug log for each entry
-    /// of `field` in `source` left out because its action cannot take its
-    /// keys (FR12's branch D), in the order Settings lists the actions, such
-    /// as "config.json keyboardShortcuts.Open Book…: "w" cannot be its
+    /// of `field` in `source` left out (`entriesLeftOut(of:)`, FR12's
+    /// branches D and E), in the order Settings lists the actions, such as
+    /// "config.json keyboardShortcuts.Open Book…: "w" cannot be its
     /// shortcut: a menu command's shortcut is one press of a key with
-    /// Command or Control; keeping its shortcuts".
-    static func log(_ refusals: [ShortcutAction: ShortcutRefusal], source: String, field: String) {
+    /// Command or Control; keeping its shortcuts", or "config.json
+    /// keyboardShortcuts.Add Feed…: works in reader windows, which it
+    /// cannot; keeping its shortcuts".
+    static func log(_ leftOut: [ShortcutAction: LeftOutEntry], source: String, field: String) {
         for action in ShortcutAction.allCases {
-            guard let refusal = refusals[action] else { continue }
+            guard let entry = leftOut[action] else { continue }
             StoredValueRepair.log(
                 source: source,
-                codingPath: [LoggedName(field), LoggedName(action.rawValue)],
-                detail: "\"\(refusal.key.configText)\" cannot be its shortcut: \(refusal.reason); keeping its shortcuts"
+                codingPath: [ShortcutJSONKey(field), ShortcutJSONKey(action.rawValue)],
+                detail: "\(entry.reason); keeping its shortcuts"
             )
         }
     }
 }
 
-/// Names a field, or an entry within it, in a repair log line: the parts of
-/// "keyboardShortcuts.Show Bookmarks".
-private struct LoggedName: CodingKey {
+/// A key of a JSON object, named by text (FR12): a field of a shortcut
+/// entry written as an object, "keys" or "worksIn", in the preferences store
+/// or in config.json, or a field or an entry a repair log line names, the
+/// parts of "keyboardShortcuts.Show Bookmarks".
+struct ShortcutJSONKey: CodingKey, Equatable {
+    /// The field of an entry written as an object holding its keys.
+    static let keys = ShortcutJSONKey("keys")
+    /// The field of an entry written as an object naming the kind of window
+    /// its keys work in (FR12's branch E).
+    static let worksIn = ShortcutJSONKey("worksIn")
+
     let stringValue: String
     var intValue: Int? { nil }
 
@@ -631,6 +694,12 @@ private struct LoggedName: CodingKey {
     /// Entries are named by text, never by position.
     init?(intValue: Int) {
         nil
+    }
+
+    /// The name as config.json's field names are compared: in lower case,
+    /// without spaces, so "Works In" is "worksIn".
+    var comparableName: String {
+        stringValue.lowercased().filter { !$0.isWhitespace }
     }
 }
 

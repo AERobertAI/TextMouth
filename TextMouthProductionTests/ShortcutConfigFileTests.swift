@@ -2,11 +2,12 @@ import XCTest
 @testable import TextMouth
 
 /// The shortcuts in config.json with the record of the user's edits (FR12):
-/// the two forms read from a file, names in any letter case, a key two
-/// edited actions hold after an edit, the file as the design shows it, and
-/// the move to the record at launch, on files and stores shaped like this
-/// user's. Every file and store is the test's own; nothing reads the user's
-/// own config.json or preferences.
+/// the forms read from a file, names in any letter case, an entry naming
+/// where its action works (FR12's branch E), a key two edited actions hold
+/// after an edit, the file as the design shows it, and the move to the
+/// record at launch, on files and stores shaped like this user's. Every file
+/// and store is the test's own; nothing reads the user's own config.json or
+/// preferences.
 @MainActor
 final class ShortcutConfigFileTests: XCTestCase {
 
@@ -15,6 +16,7 @@ final class ShortcutConfigFileTests: XCTestCase {
     private let shiftR = KeyBinding(key: "r", shift: true)
     private let shiftCommandB = KeyBinding(key: "b", command: true, shift: true)
     private let optionShiftCommandB = KeyBinding(key: "b", command: true, option: true, shift: true)
+    private let shiftCommandT = KeyBinding(key: "t", command: true, shift: true)
 
     // MARK: - Reading a File
 
@@ -47,6 +49,62 @@ final class ShortcutConfigFileTests: XCTestCase {
         ]))
         XCTAssertEqual(manager.bindingsFor(.goBack), ShortcutAction.defaultBindings[.goBack])
         XCTAssertTrue(debugLogLines(containing: "keyboardShortcuts.\(lowerCaseName): names nothing").isEmpty)
+    }
+
+    /// An entry written as an object makes its action the user's working
+    /// where it says (FR12's branch E), its field names, its action's name,
+    /// and its kind of window in any letter case, and the settings model
+    /// writes it back in the Works in pop-up's words; the action that lost
+    /// its key there says "none" after "default".
+    func testAnObjectNamesWhereItsActionWorks() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let store = try isolatedDefaults()
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        let viewModel = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: store)
+
+        let config = try ConfigService.decode(Data("""
+        {
+          "keyboardShortcuts": {
+            "new from text...": {"Keys": ["Shift+Command+T"], "worksIn": "every window"},
+            "Where Am I?": {"keys": "w", "Works In": "LIBRARY"}
+          }
+        }
+        """.utf8))
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertEqual(manager.scope(of: .newFromText), .app)
+        XCTAssertEqual(manager.bindingsFor(.newFromText), [shiftCommandT])
+        XCTAssertEqual(manager.bindingsFor(.showSleepTimer), [], "New from Text has Shift-Command-T in reader windows too")
+        XCTAssertEqual(manager.scope(of: .whereAmI), .library)
+        var written = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &written)
+        XCTAssertEqual(written.keyboardShortcuts["New from Text…"], .object(keys: ["shift+command+t"], worksIn: "Every window"))
+        XCTAssertEqual(written.keyboardShortcuts["Where Am I?"], .object(keys: ["w"], worksIn: "Library windows"))
+        XCTAssertEqual(written.keyboardShortcuts["Show Sleep Timer"], "default in reader windows: none")
+        XCTAssertEqual(written.keyboardShortcuts["Add Feed…"], "default in Library windows: shift+command+f")
+    }
+
+    /// An entry naming a kind of window its action cannot work in is left
+    /// out and logged, the action keeping what it has, and the file is to be
+    /// saved again; one naming a kind TextMouth does not know cannot be read
+    /// at all, and leaves its action as it is.
+    func testAnObjectNamingWhereItsActionCannotWorkIsLeftOut() throws {
+        let store = try isolatedDefaults()
+        let record = ShortcutEdits([.releaseMediaControls: [shiftR]])
+        KeyboardShortcutManager.editsPreference.write(record, to: store)
+
+        let saveAgain = KeyboardShortcutManager.adopt(
+            [.addFeed: .object(keys: ["shift+command+a"], worksIn: "Reader windows")],
+            in: store
+        )
+
+        XCTAssertTrue(saveAgain)
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+        XCTAssertFalse(debugLogLines(
+            containing: "config.json keyboardShortcuts.Add Feed…: works in reader windows, which it cannot; keeping its shortcuts"
+        ).isEmpty)
+        let unknown = try ConfigService.decode(Data(#"{"keyboardShortcuts": {"Add Feed…": {"keys": ["shift+command+a"], "worksIn": "kitchen"}}}"#.utf8))
+        XCTAssertNil(unknown.keyboardShortcuts["Add Feed…"])
     }
 
     /// The file lists this user's shortcuts as the design's excerpt shows:
@@ -188,8 +246,8 @@ final class ShortcutConfigFileTests: XCTestCase {
         XCTAssertEqual(saved.keyboardShortcuts["Add to Reading List"], "default: none")
         // The menu commands' keys, newer than the map (FR12's branch D).
         XCTAssertEqual(saved.keyboardShortcuts["Open Book…"], "default: command+o")
-        XCTAssertEqual(saved.keyboardShortcuts["New from Text…"], "default: shift+command+t", "each in its own kind of window")
-        XCTAssertEqual(saved.keyboardShortcuts["Show Sleep Timer"], "default: shift+command+t")
+        XCTAssertEqual(saved.keyboardShortcuts["New from Text…"], "default in Library windows: shift+command+t", "each in its own kind of window")
+        XCTAssertEqual(saved.keyboardShortcuts["Show Sleep Timer"], "default in reader windows: shift+command+t")
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
         XCTAssertEqual(manager.bindingsFor(.nextBookmark), [optionShiftCommandB])
         XCTAssertEqual(manager.bindingsFor(.showBookmarkList), [shiftCommandB])
@@ -300,10 +358,11 @@ final class ShortcutConfigFileTests: XCTestCase {
 
     /// This user's record and config.json with the menu commands' keys
     /// (FR12's branch D, item 5): a file written before them gains each as
-    /// "default: " and its key, New from Text Shift-Command-T, which Show
-    /// Sleep Timer has in reader windows; Release Media Controls keeps
-    /// Shift-R as the user's own, every other action follows the defaults,
-    /// and the record is left as it was. A second launch changes nothing.
+    /// "default" and its key, New from Text Shift-Command-T in Library
+    /// windows, which Show Sleep Timer has in reader windows (FR12's branch
+    /// E); Release Media Controls keeps Shift-R as the user's own, every
+    /// other action follows the defaults, and the record is left as it was.
+    /// A second launch changes nothing.
     func testAFileWrittenBeforeTheMenuKeysGainsThemAsDefaults() throws {
         let url = try makeConfigFileURL()
         let store = try isolatedDefaults()
@@ -320,12 +379,12 @@ final class ShortcutConfigFileTests: XCTestCase {
         let saved = try ConfigService.decode(Data(contentsOf: url))
         let menuKeys: [String: ShortcutListing] = [
             "Open Book…": "default: command+o",
-            "New from Text…": "default: shift+command+t",
+            "New from Text…": "default in Library windows: shift+command+t",
             "New Recording…": "default: option+command+n",
-            "Import DAISY Folder…": "default: shift+command+o",
-            "Add Feed…": "default: shift+command+f",
-            "Copy Reading Position": "default: shift+command+p",
-            "Search in Book": "default: command+f",
+            "Import DAISY Folder…": "default in Library windows: shift+command+o",
+            "Add Feed…": "default in Library windows: shift+command+f",
+            "Copy Reading Position": "default in reader windows: shift+command+p",
+            "Search in Book": "default in reader windows: command+f",
             "Recording Window: Record": "default: command+r",
             "Recording Window: Pause or Resume": "default: command+p",
             "Recording Window: Stop": "default: command+.",
@@ -334,11 +393,53 @@ final class ShortcutConfigFileTests: XCTestCase {
             XCTAssertEqual(saved.keyboardShortcuts[name], entry, name)
         }
         XCTAssertEqual(saved.keyboardShortcuts["Release Media Controls"], ["shift+r"])
-        XCTAssertEqual(saved.keyboardShortcuts["Show Sleep Timer"], "default: shift+command+t")
+        XCTAssertEqual(saved.keyboardShortcuts["Show Sleep Timer"], "default in reader windows: shift+command+t")
         XCTAssertEqual(saved.keyboardShortcuts.count, ShortcutAction.allCases.count)
         let lists = saved.keyboardShortcuts.filter { !$0.value.followsDefaults }
         XCTAssertEqual(Array(lists.keys), ["Release Media Controls"], "nothing else is the user's")
         XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+
+        let bytes = try Data(contentsOf: url)
+        let second = launch(url, store: store)
+        XCTAssertEqual(try Data(contentsOf: url), bytes)
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+        withExtendedLifetime((first, second)) {}
+    }
+
+    /// This user's config.json as a build before the kinds of windows wrote
+    /// it (FR12's branch E): every default without one, New from Text's and
+    /// Show Sleep Timer's both "default: shift+command+t". It reads as it
+    /// always did, the record left as it was, each action with its key in
+    /// its own kind of window, and the launch writes each default's kind of
+    /// window after "default"; a second launch changes nothing.
+    func testAFileWrittenBeforeTheKindsOfWindowsReadsAsItAlwaysDid() throws {
+        let url = try makeConfigFileURL()
+        let store = try isolatedDefaults()
+        let record = ShortcutEdits([.releaseMediaControls: [shiftR]])
+        KeyboardShortcutManager.editsPreference.write(record, to: store)
+        var file = launchConsistentConfig(edits: record)
+        let writtenBefore: [String: ShortcutListing] = [
+            "New from Text…": "default: shift+command+t",
+            "Show Sleep Timer": "default: shift+command+t",
+            "Import DAISY Folder…": "default: shift+command+o",
+            "Add Feed…": "default: shift+command+f",
+            "Copy Reading Position": "default: shift+command+p",
+            "Search in Book": "default: command+f",
+        ]
+        file.keyboardShortcuts.merge(writtenBefore) { _, before in before }
+        try ConfigService.fileData(for: file).write(to: url)
+
+        let first = launch(url, store: store)
+
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        XCTAssertEqual(manager.scope(of: .newFromText), .library)
+        XCTAssertEqual(manager.bindingsFor(.newFromText), [shiftCommandT])
+        XCTAssertEqual(manager.bindingsFor(.showSleepTimer), [shiftCommandT])
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertEqual(saved.keyboardShortcuts["New from Text…"], "default in Library windows: shift+command+t")
+        XCTAssertEqual(saved.keyboardShortcuts["Show Sleep Timer"], "default in reader windows: shift+command+t")
+        XCTAssertEqual(saved.keyboardShortcuts["Release Media Controls"], ["shift+r"])
 
         let bytes = try Data(contentsOf: url)
         let second = launch(url, store: store)

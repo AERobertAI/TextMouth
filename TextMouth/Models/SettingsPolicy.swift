@@ -526,14 +526,19 @@ enum SettingsPolicy {
     /// Settings names the action, in any letter case: a list of shortcuts
     /// written as `KeyBinding.configText` writes them, such as
     /// ["option+shift+command+b"], read whole or not at all, makes the
-    /// action the user's; text beginning with "default" gives it TextMouth's
-    /// defaults (`ShortcutListing`). A usable entry is kept as TextMouth
-    /// writes it; the record of the user's edits takes it in
+    /// action the user's; an object holding such a list and the kind of
+    /// window it works in, such as {"keys": ["shift+command+t"], "worksIn":
+    /// "Every window"}, makes it the user's working there (FR12's branch E);
+    /// text beginning with "default" gives it TextMouth's defaults
+    /// (`ShortcutListing`). A usable entry is kept as TextMouth writes it;
+    /// the record of the user's edits takes it in
     /// (`ShortcutEdits.adopting(_:)`).
     static let keyboardShortcuts = KeyedSettingRule<ShortcutAction, ShortcutListing, ShortcutListing>(
         key: "keyboardShortcuts",
         supportedDescription: "actions as Settings names them, in any letter case, each with a list of shortcuts "
-            + "such as [\"shift+command+b\"], or text beginning with \"default\"",
+            + "such as [\"shift+command+b\"], an object such as {\"keys\": [\"shift+command+t\"], "
+            + "\"worksIn\": \"Every window\"} naming where they work (every window, Library windows, "
+            + "or reader windows), or text beginning with \"default\"",
         caseNamed: { ShortcutAction.named($0) },
         parse: { $0.validated },
         format: { $0 }

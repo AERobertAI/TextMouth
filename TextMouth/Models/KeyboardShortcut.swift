@@ -1116,30 +1116,41 @@ private enum ConfigModifier: CaseIterable {
 
 // MARK: - An Action's Entry in config.json
 
-/// One action's entry in config.json's `keyboardShortcuts`, in either of the
-/// file's two forms (FR12, as the user chose on October 7, 2026):
+/// One action's entry in config.json's `keyboardShortcuts`, in any of the
+/// file's three forms (FR12, as the user chose on October 7, 2026, and its
+/// branch E):
 /// - a list of shortcuts, written as `KeyBinding.configText` writes them,
 ///   makes the action the user's, with those keys or, for an empty list,
-///   none: `"Release Media Controls": ["shift+r"]`;
+///   none, working where it does by default: `"Release Media Controls":
+///   ["shift+r"]`;
+/// - an object holding such a list and the kind of window the action works
+///   in makes it the user's, working there: `"New from Text…": {"keys":
+///   ["shift+command+t"], "worksIn": "Every window"}`. TextMouth writes the
+///   Works in pop-up's words, the ones the Shortcuts tab says, and reads a
+///   scope's short name too, as "library", in any letter case
+///   (`ShortcutScope.named(_:)`); its field names may be in any letter case,
+///   its keys may be one shortcut written as text, and one without
+///   "worksIn" is a list;
 /// - text beginning with "default", in any letter case, gives the action
-///   TextMouth's defaults and, as TextMouth writes it, says what they are:
-///   `"Where Am I?": "default: w"`.
+///   TextMouth's defaults, its keys and where it works, and, as TextMouth
+///   writes it, says what they are: `"Where Am I?": "default: w"`, or, for
+///   an action working in one kind of window by default, `"Show Sleep
+///   Timer": "default in reader windows: shift+command+t"`.
 ///
 /// Any other text is one shortcut, read as a list of one. The words after
 /// "default" are never read back, so changing them changes nothing: that is
 /// what lets a later release's defaults reach every action written so,
 /// however old the file, without TextMouth ever having to tell an older
 /// release's defaults from the user's edits.
-///
-/// Shortcuts scoped to a kind of window (FR12's branch E) would add a third
-/// form, an object holding a list and a scope, for an action whose scope the
-/// user changed; a list would keep the action's default scope, and the text
-/// following the defaults could name the scope in its words.
 enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, ExpressibleByStringLiteral {
     /// A list of shortcuts: the user's keys for the action.
     case list([String])
     /// Text: "default" and what the defaults are, or one shortcut.
     case text(String)
+    /// An object: the user's keys for the action and, when it names one,
+    /// the kind of window it works in, as the file names it (FR12's branch
+    /// E).
+    case object(keys: [String], worksIn: String?)
 
     /// The word that begins an entry following the defaults.
     static let defaultWord = "default"
@@ -1150,12 +1161,25 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
         .list(keys.map(\.configText))
     }
 
+    /// The entry TextMouth writes for an action the user edited that works
+    /// in a scope the user chose (FR12's branch E): its keys, and the scope
+    /// in the Works in pop-up's words, as in `{"keys": ["shift+command+t"],
+    /// "worksIn": "Every window"}`.
+    static func edited(_ keys: [KeyBinding], worksIn scope: ShortcutScope) -> ShortcutListing {
+        .object(keys: keys.map(\.configText), worksIn: scope.title)
+    }
+
     /// The entry TextMouth writes for an action following the defaults:
     /// "default: " and its keys in force, such as "default: space, k", or
-    /// "default: none" for an action that has none.
-    static func followingDefaults(_ keysInForce: [KeyBinding]) -> ShortcutListing {
+    /// "default: none" for an action that has none; and, for one working
+    /// where its default scope is said (`ShortcutScope.isSaidAsADefault`,
+    /// FR12's branch E), that kind of window after "default", so the file
+    /// says why another action may have the same key: "default in reader
+    /// windows: shift+command+t".
+    static func followingDefaults(_ keysInForce: [KeyBinding], worksIn scope: ShortcutScope = .app) -> ShortcutListing {
         let keys = keysInForce.isEmpty ? "none" : keysInForce.map(\.configText).joined(separator: ", ")
-        return .text("\(defaultWord): \(keys)")
+        let words = scope.isSaidAsADefault ? "\(defaultWord) in \(scope.inSentence)" : defaultWord
+        return .text("\(words): \(keys)")
     }
 
     /// Whether the entry gives the action TextMouth's defaults: text that
@@ -1165,14 +1189,26 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
         return words.drop(while: \.isWhitespace).lowercased().hasPrefix(Self.defaultWord)
     }
 
-    /// The keys the entry makes the user's: a list's, each read as
-    /// `KeyBinding(configText:)` reads it and kept once, or the one shortcut
-    /// other text names. Nil for an entry following the defaults, and for
-    /// one holding a shortcut that cannot be read, which leaves the action
-    /// as it is rather than dropping that shortcut and keeping the rest.
+    /// Whether the entry is in a form only the record of the user's edits
+    /// writes (FR12): text following the defaults, or an object (FR12's
+    /// branch E). The form earlier releases wrote, a list for every
+    /// action, holds neither.
+    var isInTheRecordsForm: Bool {
+        if case .object = self {
+            return true
+        }
+        return followsDefaults
+    }
+
+    /// The keys the entry makes the user's: a list's or an object's, each
+    /// read as `KeyBinding(configText:)` reads it and kept once, or the one
+    /// shortcut other text names. Nil for an entry following the defaults,
+    /// and for one holding a shortcut that cannot be read, which leaves the
+    /// action as it is rather than dropping that shortcut and keeping the
+    /// rest.
     var bindings: [KeyBinding]? {
         switch self {
-        case .list(let shortcuts):
+        case .list(let shortcuts), .object(let shortcuts, _):
             return KeyBinding.bindings(fromConfigTexts: shortcuts)
         case .text(let shortcut):
             guard !followsDefaults else { return nil }
@@ -1180,12 +1216,32 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
         }
     }
 
+    /// Where the entry has `action` work (FR12's branch E): the kind of
+    /// window an object names, read as `ShortcutScope.named(_:)` reads it,
+    /// or the action's default for every other entry and an object naming
+    /// none. Nil for an object naming no kind of window TextMouth knows,
+    /// which cannot be used. Whether `action` may work there is
+    /// `ShortcutEdits.entriesLeftOut(of:)`'s to say.
+    func scope(for action: ShortcutAction) -> ShortcutScope? {
+        guard case .object(_, let name?) = self else { return action.defaultScope }
+        return ShortcutScope.named(name)
+    }
+
     /// The entry as TextMouth writes it, or nil when it cannot be used: a
-    /// list, or one shortcut written as text, becomes a list of shortcuts
-    /// written as TextMouth writes them; text following the defaults is
-    /// kept as written, since TextMouth never reads its words.
+    /// list, one shortcut written as text, or an object naming no kind of
+    /// window becomes a list of shortcuts written as TextMouth writes them,
+    /// and an object naming one holds them with that kind of window in the
+    /// Works in pop-up's words; text following the defaults is kept as
+    /// written, since TextMouth never reads its words. An object naming a
+    /// kind of window TextMouth does not know cannot be used, as a shortcut
+    /// it cannot read cannot.
     var validated: ShortcutListing? {
-        followsDefaults ? self : bindings.map(Self.edited)
+        if followsDefaults {
+            return self
+        }
+        guard let keys = bindings else { return nil }
+        guard case .object(_, let name?) = self else { return .edited(keys) }
+        return ShortcutScope.named(name).map { .edited(keys, worksIn: $0) }
     }
 
     /// Why the keys this entry gives `action` cannot be its keys
@@ -1205,24 +1261,60 @@ enum ShortcutListing: Codable, Equatable, Sendable, ExpressibleByArrayLiteral, E
         self = .text(words)
     }
 
-    /// Reads a list of text or text; anything else cannot be read.
+    /// Reads a list of text, text, or an object holding its keys and, when
+    /// it names one, the kind of window they work in (`object(from:)`);
+    /// anything else cannot be read.
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let shortcuts = try? container.decode([String].self) {
             self = .list(shortcuts)
+        } else if let words = try? container.decode(String.self) {
+            self = .text(words)
         } else {
-            self = .text(try container.decode(String.self))
+            self = try Self.object(from: decoder)
         }
     }
 
-    /// Writes a list as a list, and text as text.
+    /// Reads an entry written as an object (FR12's branch E): "keys", a list
+    /// of text or one text, and "worksIn", text, which may be left out or
+    /// null; each field named in any letter case, with spaces or without, as
+    /// "Works In". An object without keys cannot be read.
+    private static func object(from decoder: Decoder) throws -> ShortcutListing {
+        let object = try decoder.container(keyedBy: ShortcutJSONKey.self)
+        // The object's own spelling of `field`, if it has the field.
+        func spelling(of field: ShortcutJSONKey) -> ShortcutJSONKey? {
+            object.allKeys.first { $0.comparableName == field.comparableName }
+        }
+        guard let keysField = spelling(of: .keys) else {
+            throw DecodingError.keyNotFound(ShortcutJSONKey.keys, DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "An entry written as an object lists its keys"
+            ))
+        }
+        let keys: [String]
+        if let shortcuts = try? object.decode([String].self, forKey: keysField) {
+            keys = shortcuts
+        } else {
+            keys = [try object.decode(String.self, forKey: keysField)]
+        }
+        let worksIn = try spelling(of: .worksIn).flatMap { try object.decodeIfPresent(String.self, forKey: $0) }
+        return .object(keys: keys, worksIn: worksIn)
+    }
+
+    /// Writes a list as a list, text as text, and an object as an object of
+    /// its keys and, when it names one, the kind of window they work in.
     func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
         switch self {
         case .list(let shortcuts):
+            var container = encoder.singleValueContainer()
             try container.encode(shortcuts)
         case .text(let words):
+            var container = encoder.singleValueContainer()
             try container.encode(words)
+        case .object(let shortcuts, let worksIn):
+            var container = encoder.container(keyedBy: ShortcutJSONKey.self)
+            try container.encode(shortcuts, forKey: .keys)
+            try container.encodeIfPresent(worksIn, forKey: .worksIn)
         }
     }
 }
