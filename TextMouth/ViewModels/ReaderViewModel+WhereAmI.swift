@@ -311,8 +311,10 @@ extension ReaderViewModel {
     /// announcement that ended by itself paused, whose resume waits for the
     /// end sound (`isWhereAmIResumePending`), resumes at once, so that the
     /// command acts on the book playing, as it would a moment later.
-    /// Used by skips and moves to cleanly interrupt an announcement, and by
-    /// a press of Where Am I? that stops one (`whereAmI(_:)`).
+    /// Used by skips and every jump (`navigateTo(chapterIndex:characterOffset:)`)
+    /// to cleanly interrupt an announcement, by a book continuing to this
+    /// one (`claimAutoplayRequest()`), and by a press of Where Am I? that
+    /// stops one (`whereAmI(_:)`).
     func cancelWhereAmIIfActive() {
         guard isWhereAmIUnderWay else { return }
         if isWhereAmISpeaking {
