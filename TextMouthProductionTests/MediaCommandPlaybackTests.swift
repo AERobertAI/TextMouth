@@ -1370,6 +1370,29 @@ final class MediaCommandPlaybackTests: XCTestCase {
         assertToldSystem(system, that: reader, plays: false, "A save while the book is paused")
     }
 
+    /// A rename in the Library window reaches a finished book's reader,
+    /// which holds the media controls resting paused at the end, and its
+    /// new title is shown in Now Playing, by the rule the reader's own
+    /// saves follow. Before, only a book playing or paused was shown anew,
+    /// so a finished book kept its old title there.
+    func testARenameInTheLibraryShowsAFinishedBooksNewTitle() throws {
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Finished Rename")
+        let ferry = try finishSilentAudioBook(titled: "Ferry Timetable", in: world, joining: system)
+        let reader = ferry.reader
+        assertToldSystem(system, that: reader, plays: false, "The book's end")
+        let row = try XCTUnwrap(world.library.bookByID(reader.book.id))
+
+        world.library.updateBookMetadata(
+            Book.MetadataEdit(opened: [.title: row.title], saved: [.title: "Ferry Timetable, Winter Sailings"]),
+            of: row.id
+        )
+        handleQueuedCallbacks()
+
+        XCTAssertEqual(reader.book.title, "Ferry Timetable, Winter Sailings", "The rename did not reach the reader")
+        assertToldSystem(system, that: reader, plays: false, "The rename")
+    }
+
     // MARK: - The System's Side
 
     /// The system's side of the media session as a test plays it: the

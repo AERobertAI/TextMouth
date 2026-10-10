@@ -339,8 +339,9 @@ extension ReaderViewModel {
     /// save never takes the AirPods and the media keys from the app or the
     /// book they were with. Both saves once published whatever the reader's
     /// state, so a stopped reader's save showed its book paused and took
-    /// them (#1498).
-    private func showSavedMetadataInNowPlaying() {
+    /// them (#1498). A save in the Library window, which reaches the reader
+    /// as an update, follows the same rule (`showEditedMetadata()`).
+    func showSavedMetadataInNowPlaying() {
         guard nowPlayingService.holdsMediaControls else { return }
         nowPlayingService.updateNowPlayingInfo(
             title: book.title,
