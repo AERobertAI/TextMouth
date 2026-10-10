@@ -130,6 +130,13 @@ final class FeedLifecycleTests: XCTestCase {
 
     /// A due download open in a reader waits; once its reader closes, the
     /// engine, working on its own, deletes it at once.
+    ///
+    /// The row leaves the books a step before the item's state settles,
+    /// the files going off the main thread between the two, so the test
+    /// reads the state only once the engine's own work has ended (board
+    /// #1821). It holds that step open to show it: with the row gone, the
+    /// state is still the download's, as a reading made at that moment, as
+    /// this test once made it, found under load.
     func testADownloadOpenInAReaderWaitsUntilItCloses() async throws {
         let world = try FeedTestWorld(self, label: "FeedDeleteOpen", worksOnItsOwn: true)
         FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
@@ -145,10 +152,20 @@ final class FeedLifecycleTests: XCTestCase {
         let report = await world.center.sweepPlayedDownloads()
         XCTAssertEqual(report.inUseBookIDs, [book.id])
         XCTAssertNotNil(world.library.bookByID(book.id))
+        await waitFor("the engine's own work ends") { !world.center.isSweeping }
 
+        let imports = await world.holdImports(self)
         world.library.openBookIDs = []
-        await waitFor("the download is deleted once its reader closes") { world.library.bookByID(book.id) == nil }
+        await waitFor("the download's row goes once its reader closes") { world.library.bookByID(book.id) == nil }
+        XCTAssertEqual(
+            world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state,
+            .downloaded(bookID: book.id),
+            "the state settled with the row, so reading it there would not race"
+        )
+        imports.release()
+        await waitFor("the engine's own work ends, its removal settled") { !world.center.isSweeping }
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .notDownloaded)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
     }
 
     /// A due download in use waits for a later sweep, as one open in a

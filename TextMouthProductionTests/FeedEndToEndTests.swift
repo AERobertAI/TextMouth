@@ -18,6 +18,12 @@ final class FeedEndToEndTests: XCTestCase {
     /// Finished counts, waits while the reader has it open, and has its file
     /// deleted once the reader closes: its item stays, and its package stays
     /// without the file, holding the place the reader left (FR11, branch A2).
+    ///
+    /// The row leaves the books a step before the item's state settles,
+    /// the file going off the main thread between the two, so the end is
+    /// read only once the engine's own work has ended (board #1821); the
+    /// test holds that step open to show the state still the download's
+    /// when the row is gone, as this test once read it under load.
     func testAnEpisodeFromItsFeedToTheDeletionOfItsDownload() async throws {
         let statistics = preserveSharedStatistics()
         let world = try FeedTestWorld(self, label: "FeedEndToEnd", worksOnItsOwn: true, statistics: statistics)
@@ -60,8 +66,16 @@ final class FeedEndToEndTests: XCTestCase {
         await waitFor("the sweep the finished episode asked for ends") { !world.center.isSweeping }
         XCTAssertNotNil(world.library.bookByID(book.id), "a download open in a reader was deleted")
 
+        let imports = await world.holdImports(self)
         reader.close()
-        await waitFor("the played download is deleted once its reader closes") { world.library.bookByID(book.id) == nil }
+        await waitFor("the played download's row goes once its reader closes") { world.library.bookByID(book.id) == nil }
+        XCTAssertEqual(
+            world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state,
+            .downloaded(bookID: book.id),
+            "the state settled with the row, so reading it there would not race"
+        )
+        imports.release()
+        await waitFor("the engine's own work ends, its removal settled") { !world.center.isSweeping }
         XCTAssertFalse(FileManager.default.fileExists(atPath: book.filePath))
         XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path))
         XCTAssertEqual(world.library.library.feedShelf.rows.map(\.id), [book.id], "the opened episode's row was not kept")
