@@ -15,10 +15,12 @@ struct BookInfoFacts: Equatable {
     var format: String
     /// The path of the book's folder, or "" for none.
     var folderPath: String
-    /// The reading progress as the row speaks it, "42 percent", or nil
-    /// when the book has no measured position.
+    /// The reading progress as the row speaks it, "42 percent", or
+    /// "Finished" for a book resting at its end (TODO P07), or nil when the
+    /// book has no measured position.
     var progress: String?
-    /// The time left at the current speed, or nil when it is unknown.
+    /// The time left at the current speed, or nil when it is unknown, and
+    /// for a book resting at its end, as its row says it.
     var timeRemaining: TimeInterval?
     /// Whether the book has never been opened.
     var isUnopened: Bool
@@ -144,7 +146,8 @@ enum LibraryInfoWording {
     /// FR09); its progress and time left as its row speaks them; and
     /// "Unopened" for a book never opened. Example: "Middlemarch. By George
     /// Eliot. EPUB. In Classics. In reading list, 3 of 12. 42 percent. 2
-    /// hours, 5 minutes remaining."
+    /// hours, 5 minutes remaining."; for a finished book, "Dune. By Frank
+    /// Herbert. EPUB. In Classics. Finished." (TODO P07).
     static func briefParts(of book: BookInfoFacts) -> [String] {
         var parts = [book.title]
         if !Book.isUnknownAuthor(book.author) {

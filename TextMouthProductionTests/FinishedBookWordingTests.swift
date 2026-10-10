@@ -39,6 +39,30 @@ final class FinishedBookWordingTests: XCTestCase {
         }
     }
 
+    // MARK: - Speak Info
+
+    /// Speak Info says "Finished" for a book resting at its end, as its
+    /// row does, where it said "100 percent. 0 seconds remaining.": the
+    /// book's facts are its row's (`BookInfoFacts`), and the brief summary
+    /// reads "Dune. By Frank Herbert. EPUB. In Classics. Finished."
+    func testSpeakInfoSaysFinishedForABookAtItsEnd() {
+        let finished = Self.book(at: Self.total)
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library(books: [finished], folders: [BookFolder(name: "Classics")])
+        let facts = BookInfoFacts(
+            finished,
+            library: library,
+            wordsPerMinute: 200,
+            cloudStates: BookCloudStates(),
+            keptBooks: KeptBooks(file: nil),
+            measuresFileSize: false
+        )
+
+        XCTAssertEqual(facts.progress, "Finished")
+        XCTAssertNil(facts.timeRemaining, "Speak Info says a finished book's time left")
+        XCTAssertEqual(LibraryInfoWording.brief(.book(facts)), "Dune. By Frank Herbert. EPUB. In Classics. Finished.")
+    }
+
     // MARK: - Fixtures
 
     /// The fixture book's measured text: 10,000 UTF-16 units, 2,000 words,
