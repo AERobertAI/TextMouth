@@ -354,8 +354,9 @@ struct FeedFileRemoval: Equatable, Sendable {
 struct FeedFileRemovalOutcome {
     /// The removals whose files went, in the order asked.
     var removed: [FeedFileRemoval] = []
-    /// The rows whose files stayed, each with why: each is among the
-    /// library's books again, as it was.
+    /// The rows whose files stayed, each with why: each is back where it
+    /// was, among the library's books, or on its feed's shelf for a row kept
+    /// there after its file went (`FeedFileRemoval.wasOnShelf`).
     var failures: [(row: Book, error: any Error)] = []
 }
 

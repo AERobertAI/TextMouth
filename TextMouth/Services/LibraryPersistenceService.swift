@@ -331,8 +331,17 @@ enum LibraryPersistenceService {
     /// change that must be on disk before what it replaced is removed, as
     /// saving edited audio under a new file name removes the old file only
     /// once the book's record names the new one (FR04). A failure is
-    /// reported as any queued write's is. Call it off the main thread, after
-    /// queuing the save.
+    /// reported as any queued write's is. Call it after queuing the save.
+    ///
+    /// Any thread may call it, the main thread too, as removing a feed
+    /// item's file does (FR11, branch A2,
+    /// `LibraryViewModel.readyFeedFilesForRemoval(of:keepingPackages:)`):
+    /// nothing the metadata queue runs ever waits for the main thread, each
+    /// report it makes reaching the main thread asynchronously
+    /// (`PersistenceFailureCenter`, `DataDirectoryEvents`), so the wait
+    /// cannot deadlock; it lasts until the writes queued before this one,
+    /// and this one, are done. Work that can wait off the main thread, as
+    /// the audio editor's save does, still calls it there.
     static func writePendingBookInfoNow(bookID: UUID) {
         bookInfoSaveQueue.sync {
             guard let update = pendingBookInfos.removeValue(forKey: bookID) else { return }
