@@ -153,6 +153,54 @@ final class FeedDeleteFeedTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: stoppedLine).count, linesBefore + 1, "the stop was not logged")
     }
 
+    /// A Delete Feed… that stops short once it has closed the feed, here at
+    /// a download it cannot delete, leaves no episode saying "Downloading"
+    /// or "Waiting to Download" of a download no longer coming (REV14 feeds
+    /// 4): the one under way, the one waiting to start, and the one put off
+    /// for a network without data limits are each not downloaded, as Cancel
+    /// leaves them, nothing of them is queued or put off, and each can be
+    /// downloaded again.
+    func testADeleteFeedThatStopsShortLeavesNoDownloadWaiting() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeleteStopsShort")
+        let (feed, books) = try await feedWithDownloads(episodes: 4, downloading: 1, in: world, into: .newFolder(inParentPath: world.folder.path))
+        let downloaded = try XCTUnwrap(books.first)
+        let downloads = world.center.downloads
+        // Episode 4, as the newest-N rule asks for it, waits for a network
+        // without data limits.
+        let audio = try FeedMediaFixtures.silentAAC()
+        world.server.serve("/audio/4.m4a", .refusedOnAMeteredNetwork(), FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        downloads.download("guid:ep-4", of: feed.id, origin: .window)
+        await waitFor("episode 4 waits for a network") { downloads.isPutOff("guid:ep-4", of: feed.id) && downloads.current == nil }
+        // Episode 2 downloads, slowly; episode 3 waits to start behind it.
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = 256
+        slow.pause = 0.05
+        world.server.serve("/audio/2.m4a", slow)
+        world.center.download("guid:ep-2", of: feed.id)
+        world.center.download("guid:ep-3", of: feed.id)
+        // Episode 1's package cannot be deleted, so Delete Feed… stops there.
+        world.refusesRemovalsNamed.value = [downloaded.tmbDirectoryName]
+
+        do {
+            try await world.center.deleteFeed(feed.id)
+            XCTFail("a feed whose download could not be deleted was deleted")
+        } catch {
+            guard case .filesStayed = error else { return XCTFail("\(error)") }
+        }
+        await waitFor("the download under way stops") { downloads.current == nil }
+
+        let record = try XCTUnwrap(world.center.store.record(of: feed.id), "the feed went")
+        XCTAssertEqual(record.item("guid:ep-1")?.state, .downloaded(bookID: downloaded.id))
+        for itemID in ["guid:ep-2", "guid:ep-3", "guid:ep-4"] {
+            XCTAssertEqual(record.item(itemID)?.state, .notDownloaded, "\(itemID) still says it downloads or waits")
+        }
+        XCTAssertEqual(downloads.queue, [])
+        XCTAssertFalse(downloads.isPutOff("guid:ep-4", of: feed.id), "a download put off stayed put off")
+        XCTAssertFalse(downloads.isClosed(feed.id))
+        world.center.download("guid:ep-4", of: feed.id)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-4")
+    }
+
     /// When the library's indexes cannot be written, nothing is deleted:
     /// every file and row stays, and the feed with them.
     func testAFailedIndexWriteDeletesNothing() async throws {

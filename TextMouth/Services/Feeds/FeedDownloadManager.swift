@@ -380,18 +380,14 @@ final class FeedDownloadManager {
             // downloaded (`run(_:)`).
             currentTask?.cancel()
         }
-        // One change of each feed's record for all of its items stopped but
-        // the one under way: not downloaded now, each still whoever's it was.
+        // Each of its items stopped but the one under way, not downloaded
+        // now, each still whoever's it was.
         for (feedID, entries) in Dictionary(grouping: stopping, by: \.feedID) {
             var itemIDs = Set(entries.map(\.itemID))
             if let underWay, underWay.feedID == feedID {
                 itemIDs.remove(underWay.itemID)
             }
-            store.update(feedID) { record in
-                for index in record.items.indices where itemIDs.contains(record.items[index].id) {
-                    record.items[index].state = .notDownloaded
-                }
-            }
+            markNotDownloaded(itemIDs, of: feedID)
         }
         FeedPartialDownloads.discardAll(in: environment.resumeFolder)
         if finishing == nil {
@@ -407,6 +403,20 @@ final class FeedDownloadManager {
         publishQueue()
         let feedIDs = Set(stopping.map(\.feedID) + (finishing.map { [$0.feedID] } ?? []))
         return Cancellation(stopped: titles, finishing: finishingTitle, feedIDs: feedIDs)
+    }
+
+    /// Marks the items `itemIDs` of the feed `feedID` not downloaded, as
+    /// their downloads stop before they start, or stop waiting, with nothing
+    /// left to come, in one change of the feed's record, so it is written
+    /// once: by Cancel, by the newest-N rule taking its downloads back, and
+    /// by Delete Feed… closing the feed.
+    private func markNotDownloaded(_ itemIDs: Set<FeedItem.ID>, of feedID: UUID) {
+        guard !itemIDs.isEmpty else { return }
+        store.update(feedID) { record in
+            for index in record.items.indices where itemIDs.contains(record.items[index].id) {
+                record.items[index].state = .notDownloaded
+            }
+        }
     }
 
     /// Removes every file waiting in the holding folder to be imported, as
@@ -438,14 +448,19 @@ final class FeedDownloadManager {
     /// on this Mac goes with them (`FeedPartialDownloads`). None of its items
     /// is asked for again until `reopenFeed(_:)`, and a download whose book
     /// is already being added finishes its import, whose package is then
-    /// discarded rather than listed (`commit(_:for:restoredKeptPackage:)`), as the
-    /// listener's own deletions go (REV14 feeds 2). The items' states are
-    /// left as they are: the feed's record goes with them.
+    /// discarded rather than listed (`commit(_:for:restoredKeptPackage:)`),
+    /// as the listener's own deletions go (REV14 feeds 2). Each item whose
+    /// download went is not downloaded, as Cancel leaves the items it stops,
+    /// so a Delete Feed… that stops short leaves none saying "Downloading"
+    /// or "Waiting to Download" of a download no longer coming (REV14 feeds
+    /// 4); the one under way says so as its task ends (`run(_:)`).
     func closeFeed(_ feedID: UUID) {
         closedFeedIDs.insert(feedID)
         defer { publishQueue() }
+        let dropped = Set((queue + putOff).filter { $0.feedID == feedID }.map(\.itemID))
         queue.removeAll { $0.feedID == feedID }
         putOff.removeAll { $0.feedID == feedID }
+        markNotDownloaded(dropped, of: feedID)
         if current?.feedID == feedID {
             currentTask?.cancel()
         }
@@ -493,11 +508,7 @@ final class FeedDownloadManager {
         }.map(\.id) ?? []
         withdrawn += settled
         guard !withdrawn.isEmpty else { return [] }
-        store.update(feedID) { record in
-            for index in record.items.indices where withdrawn.contains(record.items[index].id) {
-                record.items[index].state = .notDownloaded
-            }
-        }
+        markNotDownloaded(Set(withdrawn), of: feedID)
         publishQueue()
         DiagnosticLog.trace(.feeds, "the newest-N rule took back \(withdrawn.count) download(s) no longer wanted")
         return withdrawn
