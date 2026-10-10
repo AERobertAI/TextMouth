@@ -92,6 +92,10 @@ enum FeedItemCommand: Hashable, Sendable {
     case markUnplayed
     /// Show Description…: the item's text in a sheet.
     case showDescription
+    /// Move to Library…: moves the item's download out of its feed into a
+    /// folder of the library, as a book of its own, after asking which
+    /// folder (FR11, branch D).
+    case moveToLibrary
     /// Show in Finder: the item's book's package in Finder.
     case showInFinder
     /// Delete Episode… (an article: Delete Article…): hides the item for
@@ -133,6 +137,8 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
     ///   to the listener (FR11, branch C);
     /// - Mark Played for an unplayed item, or Mark Unplayed;
     /// - Show Description…;
+    /// - Move to Library…, for a download in its feed's folder on its book's
+    ///   row (`canMoveToLibrary`, FR11, branch D);
     /// - for a downloaded item, Show in Finder on an item row (a book's row
     ///   has its own), and Delete Download;
     /// - Delete Episode….
@@ -144,6 +150,8 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
     /// - Parameters:
     ///   - onBookRow: Whether the commands are for a downloaded item's book's
     ///     row, which offers Open and Show in Finder itself.
+    ///   - canMoveToLibrary: Whether the item's download, its book's row's
+    ///     book, is its feed's, which Move to Library… can move.
     static func actions(
         feedID: UUID,
         itemID: FeedItem.ID,
@@ -151,7 +159,8 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
         state: FeedItemState,
         isPlayed: Bool,
         isArticle: Bool,
-        onBookRow: Bool = false
+        onBookRow: Bool = false,
+        canMoveToLibrary: Bool = false
     ) -> [FeedItemAction] {
         var commands: [FeedItemCommand] = []
         if !onBookRow {
@@ -169,6 +178,9 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
         }
         commands.append(isPlayed ? .markUnplayed : .markPlayed)
         commands.append(.showDescription)
+        if canMoveToLibrary, state.bookID != nil {
+            commands.append(.moveToLibrary)
+        }
         if state.bookID != nil {
             if !onBookRow {
                 commands.append(.showInFinder)
@@ -230,6 +242,7 @@ extension FeedWording {
         case .markPlayed: return isArticle ? "Mark Read" : "Mark Played"
         case .markUnplayed: return isArticle ? "Mark Unread" : "Mark Unplayed"
         case .showDescription: return "Show Description…"
+        case .moveToLibrary: return ShortcutAction.moveToLibrary.title
         case .showInFinder: return "Show in Finder"
         case .deleteItem: return deleteItemButton(isArticle: isArticle) + "…"
         }
@@ -316,6 +329,53 @@ extension FeedWording {
     /// The title of the alert saying why a download, or an item, could not
     /// be deleted.
     static let deleteRefusedTitle = "Couldn't Delete"
+
+    // MARK: Moving Into the Library (FR11, Branch D)
+
+    /// What `books`, feed items' downloads, are called together: episodes
+    /// when all are audio, articles when none is, and items for a mix.
+    static func noun(of books: [Book]) -> ItemNoun {
+        let audio = books.filter { $0.format.isAudio }.count
+        if audio == books.count { return .episode }
+        return audio == 0 ? .article : .item
+    }
+
+    /// The Move to Library sheet's heading: "Move “Ep. 368” to Library" for
+    /// one item, titled as `titles` names it, or "Move 3 Episodes to
+    /// Library" for several, called `noun`.
+    static func moveToLibraryHeading(titles: [String], noun: ItemNoun) -> String {
+        guard titles.count != 1, !titles.isEmpty else { return "Move “\(titles.first ?? "")” to Library" }
+        return "Move \(titles.count) \(noun.plural.capitalized) to Library"
+    }
+
+    /// What Move to Library… does, which its sheet says under its heading
+    /// and VoiceOver hears as its Move button's hint, as the listener's
+    /// design asked: "Moves this episode into a folder of your library,
+    /// where it becomes a book you can edit; it leaves the feed", in an
+    /// article's words for an article, and a plural's for several.
+    static func moveToLibraryHint(count: Int, noun: ItemNoun) -> String {
+        guard count != 1 else {
+            return "Moves this \(noun.singular) into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+        }
+        return "Moves these \(count) \(noun.plural) into a folder of your library, where they become books you can edit; they leave their feeds"
+    }
+
+    /// What VoiceOver hears once Move to Library… moved the items titled
+    /// `titles`, called `noun`, into the folder at `folderPath` ("" for the
+    /// library's top level): "Moved “Ep. 368” into Podcasts/Keepers. It's a
+    /// book of your library now, and its feed lists it In Library."
+    static func movedToLibrary(titles: [String], noun: ItemNoun, folderPath: String) -> String {
+        let place = folderPath.isEmpty ? "the top of your library" : folderPath
+        guard titles.count != 1, !titles.isEmpty else {
+            return "Moved “\(titles.first ?? "")” into \(place). It's a book of your library now, and its feed lists it In Library."
+        }
+        return "Moved \(count(titles.count, noun)) into \(place). They're books of your library now, and their feeds list them In Library."
+    }
+
+    /// What VoiceOver hears when Move to Library… is chosen with nothing it
+    /// can move: no episode or article downloaded in its feed among the books
+    /// chosen.
+    static let nothingToMoveToLibrary = "Move to Library… moves an episode or article downloaded in its feed. Select one in its feed's folder."
 
     // MARK: Deleting an Item
 

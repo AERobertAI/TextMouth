@@ -69,6 +69,12 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case removeFromLibrary = "Remove from Library"
     case newFolder = "New Folder"
     case moveToFolder = "Move to Folder"
+    /// Moves the selected episodes and articles, or a reader's, from their
+    /// feeds into a folder of the library as books of its own, after asking
+    /// which folder (FR11, branch D): the item's context menu, its VoiceOver
+    /// actions, and the reader's Book menu offer it. It has no key until the
+    /// user gives it one in Settings.
+    case moveToLibrary = "Move to Library…"
     case selectAll = "Select All"
     case toggleEditMode = "Edit Mode"
     case moveBookUp = "Move Book Up"
@@ -268,6 +274,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .removeFromLibrary: return .removeFromLibrary
         case .newFolder: return .newFolder
         case .moveToFolder: return .moveToFolder
+        case .moveToLibrary: return .moveToLibrary
         case .selectAll: return .selectAll
         case .toggleEditMode: return .toggleEditMode
         case .moveBookUp: return .moveBookUp
@@ -314,8 +321,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Panels"
         case .whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress, .speakDownloadProgress:
             return "Information"
-        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown,
-             .addToReadingList, .removeFromReadingList, .importDAISYFolder, .addFeed:
+        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .moveToLibrary, .selectAll, .toggleEditMode,
+             .moveBookUp, .moveBookDown, .addToReadingList, .removeFromReadingList, .importDAISYFolder, .addFeed:
             return "Library"
         case .openBook, .newFromText, .newRecording:
             return Self.fileCategory
@@ -1545,6 +1552,9 @@ extension ShortcutAction {
             .moveToFolder: [
                 KeyBinding(key: "m", command: true, shift: true)
             ],
+            // No key by default (FR11, branch D): the user gives it one of
+            // their choosing in Settings.
+            .moveToLibrary: [],
             .selectAll: [
                 KeyBinding(key: "a", command: true)
             ],

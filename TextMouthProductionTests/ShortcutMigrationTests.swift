@@ -20,14 +20,15 @@ final class ShortcutMigrationTests: XCTestCase {
 
     // MARK: - This User's Shortcuts
 
-    /// The nineteen actions added after the October 5 build that wrote this
+    /// The twenty actions added after the October 5 build that wrote this
     /// user's shortcuts: Speak Info, Speak Import Progress, Speak Download
     /// Progress (FR10's feed half), the reading list's four commands, the
-    /// two full summaries (FR12), and the menu commands and Record window
-    /// buttons whose keys were fixed before (FR12's branch D).
+    /// two full summaries (FR12), Move to Library… (FR11's branch D), and
+    /// the menu commands and Record window buttons whose keys were fixed
+    /// before (FR12's branch D).
     static let actionsAddedSinceOctober5: Set<ShortcutAction> = ShortcutAction.keyEquivalentActions.union([
         .speakInfo, .speakImportProgress, .speakDownloadProgress, .addToReadingList, .removeFromReadingList,
-        .nextInReadingList, .previousInReadingList, .whereAmIFull, .speakFullInfo,
+        .nextInReadingList, .previousInReadingList, .whereAmIFull, .speakFullInfo, .moveToLibrary,
     ])
 
     /// Every action the October 5 build had, in the order Settings lists

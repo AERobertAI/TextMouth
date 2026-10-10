@@ -394,7 +394,11 @@ struct FeedFolderListing: Equatable {
                         state: state,
                         isPlayed: item.playedDate != nil,
                         isArticle: item.isArticle,
-                        onBookRow: true
+                        onBookRow: true,
+                        // A download in its feed's folder moves into the
+                        // library (FR11, branch D); one made before FR11,
+                        // a book of the library's own, needs no move.
+                        canMoveToLibrary: book.isFeedItem
                     )
                     listing.entries.append(.book(book, actions: actions))
                     continue

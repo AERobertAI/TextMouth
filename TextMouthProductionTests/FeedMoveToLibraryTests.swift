@@ -304,6 +304,151 @@ final class FeedMoveToLibraryOperationTests: XCTestCase {
     }
 }
 
+// MARK: - The Command (FR11, Branch D)
+
+/// Move to Library… as a command (FR11, branch D, item 5): a shortcut action
+/// with no default key, in the Library group; offered on a downloaded
+/// episode's book row in its feed's folder, in its context menu and as its
+/// VoiceOver action; opening the folder picker Move to Folder… uses, with
+/// the hint "Moves this episode into a folder of your library, where it
+/// becomes a book you can edit; it leaves the feed"; and, chosen with
+/// nothing it can move, saying why.
+@MainActor
+final class FeedMoveToLibraryCommandTests: XCTestCase {
+
+    // MARK: - The Action
+
+    /// The action is named "Move to Library…" in Settings and config.json,
+    /// has no key until the user gives it one, sits in the Library group
+    /// beside Move to Folder, works in every window, and posts its own
+    /// notification, which a reader or a Library window takes.
+    func testTheActionHasNoKeyAndSitsInTheLibraryGroup() {
+        XCTAssertEqual(ShortcutAction.moveToLibrary.rawValue, "Move to Library…")
+        XCTAssertEqual(ShortcutAction.moveToLibrary.title, "Move to Library…")
+        XCTAssertEqual(ShortcutAction(rawValue: "Move to Library…"), .moveToLibrary)
+        XCTAssertEqual(ShortcutAction.defaultBindings[.moveToLibrary], [])
+        XCTAssertEqual(ShortcutAction.moveToLibrary.category, ShortcutAction.moveToFolder.category)
+        XCTAssertEqual(ShortcutAction.moveToLibrary.defaultScope, .app)
+        XCTAssertEqual(ShortcutAction.moveToLibrary.notificationName, .moveToLibrary)
+        XCTAssertEqual(Notification.Name.moveToLibrary.rawValue, "moveToLibrary")
+        let order = ShortcutAction.allCases
+        XCTAssertEqual(order.firstIndex(of: .moveToLibrary), order.firstIndex(of: .moveToFolder).map { $0 + 1 }, "not beside Move to Folder")
+    }
+
+    // MARK: - Where It Is Offered
+
+    /// A downloaded episode's book row in its feed's folder offers Move to
+    /// Library… after Show Description…; an item row, a download made before
+    /// FR11 (a book of the library's own), and an item in the library do not.
+    func testADownloadsBookRowOffersMoveToLibrary() {
+        let feedID = UUID()
+        let bookID = UUID()
+        /// The titles of the commands of an item downloaded, or in `state`.
+        func titles(_ state: FeedItemState, onBookRow: Bool, canMove: Bool) -> [String] {
+            FeedItemAction.actions(
+                feedID: feedID, itemID: "a", itemTitle: "A", state: state, isPlayed: false, isArticle: false,
+                onBookRow: onBookRow, canMoveToLibrary: canMove
+            ).map(\.title)
+        }
+        XCTAssertEqual(
+            titles(.downloaded(bookID: bookID), onBookRow: true, canMove: true),
+            ["Mark Played", "Show Description…", "Move to Library…", "Delete Download", "Delete Episode…"]
+        )
+        XCTAssertFalse(titles(.downloaded(bookID: bookID), onBookRow: true, canMove: false).contains("Move to Library…"))
+        XCTAssertFalse(titles(.downloaded(bookID: bookID), onBookRow: false, canMove: false).contains("Move to Library…"))
+        XCTAssertFalse(titles(.inLibrary(bookID: bookID), onBookRow: false, canMove: true).contains("Move to Library…"))
+        XCTAssertEqual(FeedWording.title(of: .moveToLibrary, isArticle: true), "Move to Library…")
+    }
+
+    // MARK: - The Words
+
+    /// The sheet's heading and hint, the announcement after a move, and what
+    /// VoiceOver hears when there is nothing to move, for an episode, an
+    /// article, and several.
+    func testTheWords() {
+        XCTAssertEqual(
+            FeedWording.moveToLibraryHint(count: 1, noun: .episode),
+            "Moves this episode into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+        )
+        XCTAssertEqual(
+            FeedWording.moveToLibraryHint(count: 1, noun: .article),
+            "Moves this article into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+        )
+        XCTAssertEqual(
+            FeedWording.moveToLibraryHint(count: 3, noun: .item),
+            "Moves these 3 items into a folder of your library, where they become books you can edit; they leave their feeds"
+        )
+        XCTAssertEqual(FeedWording.moveToLibraryHeading(titles: ["Ep. 368"], noun: .episode), "Move “Ep. 368” to Library")
+        XCTAssertEqual(FeedWording.moveToLibraryHeading(titles: ["A", "B", "C"], noun: .episode), "Move 3 Episodes to Library")
+        XCTAssertEqual(
+            FeedWording.movedToLibrary(titles: ["Ep. 368"], noun: .episode, folderPath: "Podcasts/Keepers"),
+            "Moved “Ep. 368” into Podcasts/Keepers. It's a book of your library now, and its feed lists it In Library."
+        )
+        XCTAssertEqual(
+            FeedWording.movedToLibrary(titles: ["A", "B"], noun: .article, folderPath: ""),
+            "Moved 2 articles into the top of your library. They're books of your library now, and their feeds list them In Library."
+        )
+        XCTAssertEqual(
+            FeedWording.nothingToMoveToLibrary,
+            "Move to Library… moves an episode or article downloaded in its feed. Select one in its feed's folder."
+        )
+        let episode = Book(title: "E", format: .audio, filePath: "/e.m4a", md5Hash: "e")
+        let article = Book(title: "A", format: .html, filePath: "/a.html", md5Hash: "a")
+        XCTAssertEqual(FeedWording.noun(of: [episode]), .episode)
+        XCTAssertEqual(FeedWording.noun(of: [article]), .article)
+        XCTAssertEqual(FeedWording.noun(of: [episode, article]), .item)
+    }
+
+    // MARK: - Through the Commands
+
+    /// Move to Library… on a downloaded episode's book row opens its sheet
+    /// for the episode; Move there moves it, VoiceOver hearing so, and the
+    /// feed's folder then lists the episode "In Library". Chosen with only a
+    /// book of the library's own, it opens nothing and says why.
+    func testTheItemsCommandMovesTheEpisodeThroughItsSheet() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMoveToLibraryCommand")
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [
+            FeedXML.Item(guid: "ep-1", title: "Episode 1", published: world.day(-1),
+                         enclosure: world.server.url("/audio/1.m4a").absoluteString, enclosureType: "audio/mp4"),
+        ])))
+        let feed = try await world.subscribe("/feed.xml")
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        XCTAssertTrue(world.library.createFolderReturningOutcome(name: "Keepers", parentPath: world.folder.path).succeeded)
+        let keepers = "\(world.folder.path)/Keepers"
+        let presenter = LibraryFeedsPresenter()
+        var heard: [String] = []
+        presenter.announce = { message, _ in heard.append(message) }
+        let context = FeedCommandContext(center: world.center, library: world.library, window: nil)
+        let listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [book], folderBooks: [book], search: "", wordsPerMinute: 200)
+        guard case .book(_, let actions)? = listing.entries.first else { return XCTFail("\(listing.entries)") }
+
+        presenter.perform(try XCTUnwrap(actions.first { $0.command == .moveToLibrary }), in: context)
+
+        let request = try XCTUnwrap(presenter.moveToLibrary, "no sheet opened")
+        XCTAssertEqual(request.books.map(\.id), [book.id])
+        XCTAssertEqual(request.heading, "Move “Episode 1” to Library")
+        XCTAssertEqual(request.hint, FeedWording.moveToLibraryHint(count: 1, noun: .episode))
+        let outcome = await request.move(toFolder: keepers, in: world.library) { heard.append($0) }
+        XCTAssertEqual(outcome, .success(nil))
+        XCTAssertEqual(
+            heard.last,
+            "Moved “Episode 1” into \(keepers). It's a book of your library now, and its feed lists it In Library."
+        )
+        let after = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [], folderBooks: [], search: "", wordsPerMinute: 200)
+        guard case .item(let row)? = after.entries.first else { return XCTFail("\(after.entries)") }
+        XCTAssertEqual(row.state, .inLibrary(bookID: book.id))
+        XCTAssertTrue(row.label.hasPrefix("Episode 1, In Library, "), row.label)
+
+        presenter.moveToLibrary = nil
+        let ownBook = Book(title: "Middlemarch", format: .txt, filePath: "/nonexistent/m.txt", md5Hash: UUID().uuidString)
+        presenter.requestMoveToLibrary([ownBook, try XCTUnwrap(world.library.bookByID(book.id))], in: context)
+        XCTAssertNil(presenter.moveToLibrary, "a sheet opened with nothing to move")
+        XCTAssertEqual(heard.last, FeedWording.nothingToMoveToLibrary)
+    }
+}
+
 // MARK: - The "In Library" State (FR11, Branch D)
 
 /// An item moved into the library by Move to Library… (FR11, branch D, item

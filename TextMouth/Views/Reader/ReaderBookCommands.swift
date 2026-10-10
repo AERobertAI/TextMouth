@@ -12,7 +12,9 @@ import SwiftUI
 /// transcribed one, and Delete Transcript… asks to delete a transcribed
 /// audiobook's transcript. Its Edit Audio… opens an audiobook in the audio
 /// editor (FR04), which first asks this reader to close, since editing
-/// changes the audio it plays.
+/// changes the audio it plays. Its Move to Library… opens Move to Library…'s
+/// sheet for an episode or article in its feed (FR11, branch D), and the
+/// reader follows its book's package as it moves into the library.
 ///
 /// ReaderView attaches this in one line, as it attaches each of its parts,
 /// so that its body stays well clear of the type checker's limit (board
@@ -28,6 +30,9 @@ struct ReaderBookCommandsSupport: ViewModifier {
     /// (`ReaderPanels.export`), so that the report of a speech refusal waits
     /// while it shows.
     @Binding var exportModel: BookExportModel?
+    /// Move to Library…'s sheet showing, or nil (FR11, branch D): one of the
+    /// reader's panels too (`ReaderPanels.moveToLibrary`).
+    @Binding var moveToLibrary: MoveToLibraryRequest?
     /// The reader's transcription dialogs (FR05), which the reader view
     /// keeps, so that the report of a speech refusal waits while one shows.
     @ObservedObject var transcription: TranscriptionPresenter
@@ -36,11 +41,19 @@ struct ReaderBookCommandsSupport: ViewModifier {
     @ObservedObject private var transcribedBooks = TranscribedBooks.shared
 
     /// The commands of `viewModel`'s book, opening the Export dialog through
-    /// `exportModel` and the transcription dialogs through `transcription`.
-    init(viewModel: ReaderViewModel, exportModel: Binding<BookExportModel?>, transcription: TranscriptionPresenter) {
+    /// `exportModel`, Move to Library…'s sheet through `moveToLibrary`
+    /// (FR11, branch D), and the transcription dialogs through
+    /// `transcription`.
+    init(
+        viewModel: ReaderViewModel,
+        exportModel: Binding<BookExportModel?>,
+        moveToLibrary: Binding<MoveToLibraryRequest?> = .constant(nil),
+        transcription: TranscriptionPresenter
+    ) {
         self.viewModel = viewModel
         _settings = ObservedObject(wrappedValue: viewModel.settingsViewModel)
         _exportModel = exportModel
+        _moveToLibrary = moveToLibrary
         _transcription = ObservedObject(wrappedValue: transcription)
     }
 
@@ -81,6 +94,10 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 editAudio()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .moveToLibrary)) { notification in
+                guard takesCommand(notification) else { return }
+                requestMoveToLibrary()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .closeReaderForAudioEditing)) { notification in
                 // The audio editor is opening on this reader's book.
                 guard notification.object as? UUID == viewModel.book.id else { return }
@@ -100,8 +117,19 @@ struct ReaderBookCommandsSupport: ViewModifier {
             .focusedSceneValue(\.canCleanUpBookTranscript, hasTranscript && LibraryAudioCommand.isTranscriptCleanable(viewModel.book))
             .focusedSceneValue(\.canDeleteBookTranscript, hasTranscript)
             .focusedSceneValue(\.canEditBookAudio, AudioEditorLauncher.canEdit(viewModel.book))
+            // An episode or article in its feed moves into the library
+            // (FR11, branch D); once it has, it is the library's own.
+            .focusedSceneValue(\.canMoveBookToLibrary, viewModel.book.isFeedItem)
             .sheet(item: $exportModel) { model in
                 BookExportSheet(model: model, close: { exportModel = nil })
+            }
+            .sheet(item: $moveToLibrary) { request in
+                MoveToLibrarySheet(
+                    request: request,
+                    library: viewModel.libraryViewModel,
+                    announce: { [weak viewModel] message in VoiceOverAnnouncer.announce(message, from: viewModel?.hostWindow) },
+                    onClose: { moveToLibrary = nil }
+                )
             }
             .modifier(TranscriptionPresentation(presenter: transcription))
     }
@@ -127,6 +155,21 @@ struct ReaderBookCommandsSupport: ViewModifier {
         let library = viewModel.libraryViewModel
         let book = library.bookByID(viewModel.book.id) ?? viewModel.book
         transcription.cleanUp(book, library: library, window: viewModel.hostWindow)
+    }
+
+    /// Opens Move to Library…'s sheet for the reader's book, as the library
+    /// holds it now, when it is an episode or article downloaded in its feed
+    /// (FR11, branch D); for any other book, as when the command's key is
+    /// pressed over one, VoiceOver hears why and no sheet opens. The reader
+    /// follows its book's package as it moves.
+    private func requestMoveToLibrary() {
+        let library = viewModel.libraryViewModel
+        let book = library.bookByID(viewModel.book.id) ?? viewModel.book
+        guard let request = MoveToLibraryRequest.forBooks([book], in: library) else {
+            VoiceOverAnnouncer.announce(FeedWording.nothingToMoveToLibrary, from: viewModel.hostWindow)
+            return
+        }
+        moveToLibrary = request
     }
 
     /// Opens the reader's audiobook, as the library holds it now, in the

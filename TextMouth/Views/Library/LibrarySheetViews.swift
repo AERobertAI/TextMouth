@@ -469,6 +469,13 @@ struct MoveFolderSheet: View {
     /// shows why.
     let onCreateFolder: (String, String) -> OperationOutcome
     let onCancel: () -> Void
+    /// The sheet's heading in place of "Move …", as Move to Library… heads
+    /// it (FR11, branch D); nil for Move to Folder's own.
+    let heading: String?
+    /// What moving does, shown under the heading and spoken as the Move
+    /// button's hint, as Move to Library… says it (FR11, branch D); nil for
+    /// none.
+    let explanation: String?
 
     /// The folder path currently selected in the picker
     @State private var selectedPath: String = ""
@@ -483,6 +490,8 @@ struct MoveFolderSheet: View {
     /// The sheet that moves `books` within `library`, offering
     /// `lastMovedFolderPath` first; `makingFolder` opens it with the new
     /// folder's fields already shown, as the tests of the Return key need.
+    /// Move to Library… (FR11, branch D) gives its own `heading` and the
+    /// `explanation` of what moving does.
     init(
         books: [Book],
         library: Library,
@@ -490,7 +499,9 @@ struct MoveFolderSheet: View {
         onMove: @escaping @MainActor (String) async -> OperationOutcome,
         onCreateFolder: @escaping (String, String) -> OperationOutcome,
         onCancel: @escaping () -> Void,
-        makingFolder: Bool = false
+        makingFolder: Bool = false,
+        heading: String? = nil,
+        explanation: String? = nil
     ) {
         self.books = books
         self.library = library
@@ -498,11 +509,16 @@ struct MoveFolderSheet: View {
         self.onMove = onMove
         self.onCreateFolder = onCreateFolder
         self.onCancel = onCancel
+        self.heading = heading
+        self.explanation = explanation
         _isMakingFolder = State(initialValue: makingFolder)
     }
 
     /// Title shown in the sheet header
     private var headerTitle: String {
+        if let heading {
+            return heading
+        }
         if books.count == 1, let book = books.first {
             return "Move \"\(book.title)\""
         }
@@ -519,6 +535,15 @@ struct MoveFolderSheet: View {
             Text(headerTitle)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
+
+            // What moving does, as Move to Library… says it (FR11, branch
+            // D), read in order after the heading.
+            if let explanation {
+                Text(explanation)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             // The destination, with New Folder... below it.
             LibraryFolderPicker(
@@ -552,6 +577,7 @@ struct MoveFolderSheet: View {
                         failureMessage: $failureMessage
                     )
                 }
+                .accessibilityHint(explanation ?? "")
                 // Return moves, except while the new folder's fields are
                 // shown, when it presses their Create.
                 .keyboardShortcut(isMakingFolder ? nil : KeyboardShortcut.defaultAction)

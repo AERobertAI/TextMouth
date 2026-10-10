@@ -195,6 +195,10 @@ extension LibraryFeedsPresenter {
             announce(FeedWording.marked(title: item.title, played: played, isArticle: item.isArticle), context.window)
         case .showDescription:
             itemDescription = FeedItemDescription(item, of: record.feed)
+        case .moveToLibrary:
+            if let book = center.downloadedRow(of: item, in: record.feed.id) {
+                requestMoveToLibrary([book], in: context)
+            }
         case .showInFinder:
             if let bookID = state.bookID, let book = context.library.bookByID(bookID) {
                 revealBooks([book])
@@ -225,6 +229,21 @@ extension LibraryFeedsPresenter {
         }
         guard let downloaded = rows.downloaded[itemID] else { return false }
         return FeedItemPackage.holdsListenerState(downloaded, package: downloaded.tmbDirectory)
+    }
+
+    // MARK: Move to Library… (FR11, Branch D)
+
+    /// Opens Move to Library…'s sheet for the books of `books` it can move,
+    /// from an item's row or a Library window's selection: episodes and
+    /// articles downloaded in their feeds
+    /// (`LibraryViewModel.booksMovableToLibrary(_:)`). When none of them is
+    /// one, VoiceOver hears why, and no sheet opens.
+    func requestMoveToLibrary(_ books: [Book], in context: FeedCommandContext) {
+        guard let request = MoveToLibraryRequest.forBooks(books, in: context.library) else {
+            announce(FeedWording.nothingToMoveToLibrary, context.window)
+            return
+        }
+        moveToLibrary = request
     }
 
     // MARK: Every Feed

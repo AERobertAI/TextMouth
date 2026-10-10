@@ -551,7 +551,9 @@ struct LibraryView: View {
             library: libraryViewModel,
             hostWindow: hostWindow,
             shownFolderPath: category == .folders ? currentFolderPath : nil,
-            takesCommand: takesCommand
+            takesCommand: takesCommand,
+            // Move to Library…'s key acts on the selection (FR11, branch D).
+            selectedBooks: { selectedBooks }
         ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.

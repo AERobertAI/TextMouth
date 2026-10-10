@@ -490,12 +490,16 @@ extension FocusedValues {
 /// Text is unavailable for an audiobook without a transcript, Transcribe
 /// Audio… and Edit Audio… for a text book, and Clean Up Transcript
 /// (Experimental)… and Delete Transcript… for a book without a transcript.
+/// Move to Library… moves an episode or article out of its feed into a
+/// folder of the library (FR11, branch D), and is unavailable for any other
+/// book.
 struct BookCommands: Commands {
     @FocusedValue(\.canEditBookText) var canEditBookText
     @FocusedValue(\.canTranscribeBookAudio) var canTranscribeBookAudio
     @FocusedValue(\.canCleanUpBookTranscript) var canCleanUpBookTranscript
     @FocusedValue(\.canDeleteBookTranscript) var canDeleteBookTranscript
     @FocusedValue(\.canEditBookAudio) var canEditBookAudio
+    @FocusedValue(\.canMoveBookToLibrary) var canMoveBookToLibrary
 
     var body: some Commands {
         CommandGroup(after: .importExport) {
@@ -541,7 +545,33 @@ struct BookCommands: Commands {
                 NotificationCenter.default.post(name: .editBookAudio, object: nil)
             }
             .disabled(canEditBookAudio != true)
+
+            Divider()
+
+            // An episode or article out of its feed into a folder of the
+            // library, as a book of its own (FR11, branch D). It has no key
+            // until the user gives it one in Settings, which
+            // KeyboardShortcutManager handles for window targeting.
+            Button(ShortcutAction.moveToLibrary.title) {
+                NotificationCenter.default.post(name: .moveToLibrary, object: nil)
+            }
+            .disabled(canMoveBookToLibrary != true)
         }
+    }
+}
+
+/// Whether the book of the reader whose window is key is an episode or
+/// article downloaded in its feed, which Move to Library… can move into the
+/// library (FR11, branch D). The reader publishes it as a scene value
+/// (`ReaderBookCommandsSupport`).
+struct CanMoveBookToLibraryKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var canMoveBookToLibrary: Bool? {
+        get { self[CanMoveBookToLibraryKey.self] }
+        set { self[CanMoveBookToLibraryKey.self] = newValue }
     }
 }
 
@@ -727,6 +757,11 @@ extension Notification.Name {
     static let removeFromLibrary = Notification.Name("removeFromLibrary")
     static let newFolder = Notification.Name("newFolder")
     static let moveToFolder = Notification.Name("moveToFolder")
+    /// Posted by Book > Move to Library…, and by its key when the user gave
+    /// it one (FR11, branch D): the key reader, or the Library window that
+    /// takes it, asks which folder to move its episode or article, or its
+    /// selected ones, into as books of the library's own.
+    static let moveToLibrary = Notification.Name("moveToLibrary")
     static let selectAll = Notification.Name("selectAll")
     static let toggleEditMode = Notification.Name("toggleEditMode")
     static let moveBookUp = Notification.Name("moveBookUp")

@@ -73,7 +73,7 @@ final class FeedUIEndToEndTests: XCTestCase {
         listing = FeedFolderListing.make(feedID: feed.id, center: world.center, shownBooks: [book], folderBooks: [book], search: "", wordsPerMinute: 200)
         guard case .book(let listed, let actions)? = listing.entries.first else { return XCTFail("\(listing.entries)") }
         XCTAssertEqual(listed.id, book.id)
-        XCTAssertEqual(actions.map(\.title), ["Mark Played", "Show Description…", "Delete Download", "Delete Episode…"])
+        XCTAssertEqual(actions.map(\.title), ["Mark Played", "Show Description…", "Move to Library…", "Delete Download", "Delete Episode…"])
         XCTAssertEqual(world.center.counts(of: feed.id).downloaded, 1)
 
         // Mark Played, from the book's row.

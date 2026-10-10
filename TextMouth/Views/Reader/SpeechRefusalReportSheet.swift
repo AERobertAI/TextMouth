@@ -209,6 +209,6 @@ extension ReaderPanels {
     /// them. A panel added to `ReaderPanels` must be added here too; a test
     /// counts the panels.
     var isShowingAny: Bool {
-        headings || bookmarks || sleepTimer || bookInfo || voice || search || export != nil
+        headings || bookmarks || sleepTimer || bookInfo || voice || search || export != nil || moveToLibrary != nil
     }
 }
