@@ -62,10 +62,12 @@ struct ImportProgressState: Equatable {
         notice = message
     }
 
-    /// The state of an import of one book, named `name`, begun at `date`: a
-    /// file, or an archive holding one book. It begins by reading the file.
-    init(book name: String, at date: Date) {
-        book = BookUnderWay(name: name, number: nil, step: .readingSource, startedAt: date)
+    /// The state of an import of one book, named `name`, begun at `date` at
+    /// `step`: a file or an archive holding one book, which begins by
+    /// reading the file, a TextMouth package, which begins by checking it,
+    /// or text typed in New from Text, which begins by creating its package.
+    init(book name: String, at date: Date, step: ImportStep = .readingSource) {
+        book = BookUnderWay(name: name, number: nil, step: step, startedAt: date)
     }
 
     /// The line under the bar: the book under way and the step it is at,
@@ -255,11 +257,13 @@ final class ImportProgress: ObservableObject {
         begin(ImportProgressState(message: ImportProgressWording.startingArchive), subject: name, at: now())
     }
 
-    /// Shows the import of one book, named `name`, beginning now: a file,
-    /// or an archive holding one book (FR10).
-    func showBook(_ name: String) {
+    /// Shows the import of one book, named `name`, beginning now at `step`
+    /// (FR10): a file, or an archive holding one book, at reading the file;
+    /// a TextMouth package at checking it; New from Text's text at creating
+    /// its package.
+    func showBook(_ name: String, at step: ImportStep = .readingSource) {
         let date = now()
-        begin(ImportProgressState(book: name, at: date), subject: name, at: date)
+        begin(ImportProgressState(book: name, at: date, step: step), subject: name, at: date)
     }
 
     /// Shows `newState`, the start of an import known as `subject`, begun
@@ -393,12 +397,16 @@ final class ImportProgress: ObservableObject {
     }
 
     /// For an import of one book that runs on the import queue: shows, on
-    /// the main queue, that the book named `name` begins, and returns the
-    /// observer that shows each step its import then begins on the book's
-    /// package, before it tells `next`, the queue's test hook, when there is
-    /// one (FR10).
-    nonisolated func observeBook(_ name: String, then next: ImportStepObserver? = nil) -> ImportStepObserver {
-        DispatchQueue.main.async { self.showBook(name) }
+    /// the main queue, that the book named `name` begins at `firstStep`,
+    /// and returns the observer that shows each step its import then begins
+    /// on the book's package, before it tells `next`, the queue's test hook,
+    /// when there is one (FR10).
+    nonisolated func observeBook(
+        _ name: String,
+        startingAt firstStep: ImportStep = .readingSource,
+        then next: ImportStepObserver? = nil
+    ) -> ImportStepObserver {
+        DispatchQueue.main.async { self.showBook(name, at: firstStep) }
         return { step, package in
             DispatchQueue.main.async { self.reach(step) }
             try next?(step, package)

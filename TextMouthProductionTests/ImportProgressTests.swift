@@ -416,6 +416,87 @@ final class ImportProgressTests: XCTestCase {
         XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
     }
 
+    /// Each kind of book imported alone is shown from the step its import
+    /// begins with: a file or an archive at reading the file, a TextMouth
+    /// package at checking it, and New from Text's text at creating its
+    /// package.
+    func testABookImportedAloneIsShownFromItsFirstStep() {
+        let progress = ImportProgress()
+        _ = progress.observeBook("Leading Lights.txt")
+        XCTAssertTrue(waitUntil { progress.state.message == "“Leading Lights.txt”, reading the file" }, progress.state.message)
+        _ = progress.observeBook("Puncture Repair.tmb", startingAt: .checkingPackage)
+        XCTAssertTrue(waitUntil { progress.state.message == "“Puncture Repair.tmb”, checking the package" }, progress.state.message)
+        _ = progress.observeBook("Harbor Notes", startingAt: .preparingPackage)
+        XCTAssertTrue(waitUntil { progress.state.message == "“Harbor Notes”, creating its package" }, progress.state.message)
+    }
+
+    /// Text made into a book with New from Text is named in the overlay by
+    /// the title typed, with the step its import is held at, and the overlay
+    /// is cleared once the book is in the library; until October 10, 2026
+    /// it showed no book and no step.
+    func testNewFromTextShowsItsTitleAndStep() throws {
+        let folder = makeIntegrationLibraryFolder("Import Progress Text")
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let gate = holdImport(of: model, at: .readingText)
+
+        model.createBookFromText(
+            title: "Harbor Notes",
+            author: "",
+            text: "The pilot boards at the fairway buoy and takes the ship in.",
+            toFolder: folder.path
+        )
+
+        XCTAssertTrue(
+            waitUntil(timeout: 10) { model.importProgress.state.message == "“Harbor Notes”, reading its text" },
+            model.importProgress.state.message
+        )
+        gate.signal()
+        XCTAssertTrue(waitUntil(timeout: 10) { !model.library.books.isEmpty || model.showError }, "the import never finished")
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
+    }
+
+    /// A TextMouth package opened from the Finder that the library does not
+    /// list is named in the overlay with the step its import is held at,
+    /// then opens once it is in the library, the overlay cleared; opened
+    /// again, it is the library's book, which opens with nothing imported
+    /// and nothing left in the overlay. Until October 10, 2026 a package's
+    /// import showed no book and no step.
+    func testAPackageOpenedShowsItsNameAndStep() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let opened = CallLog<UUID>()
+        model.readerOpener = { opened.record($0) }
+        let package = try makeExternalPackage(named: "Puncture Repair")
+        let gate = holdImport(of: model, at: .readingText)
+
+        model.openTMBPackage(from: package)
+
+        XCTAssertTrue(
+            waitUntil(timeout: 10) { model.importProgress.state.message == "“Puncture Repair.tmb”, reading its text" },
+            model.importProgress.state.message
+        )
+        gate.signal()
+        XCTAssertTrue(waitUntil(timeout: 10) { !opened.calls.isEmpty || model.showError }, "the package never opened")
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        let book = try XCTUnwrap(model.library.books.first)
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        XCTAssertEqual(opened.calls, [book.id])
+        XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the import")
+
+        model.openTMBPackage(from: package)
+
+        XCTAssertTrue(waitUntil(timeout: 10) { opened.calls.count == 2 }, "the listed package did not open")
+        XCTAssertEqual(opened.calls, [book.id, book.id])
+        XCTAssertEqual(model.library.books.count, 1, "the listed package was imported again")
+        XCTAssertEqual(model.importProgress.state, ImportProgressState(), "the overlay still shows the open")
+    }
+
     /// An archive holding one audiobook, imported through the library's own
     /// queue, tells the overlay what its extraction has done: held at the
     /// step after it, the overlay has the whole archive counted, every item
@@ -783,6 +864,30 @@ final class ImportProgressTests: XCTestCase {
     }
 
     // MARK: - Fixtures
+
+    /// A TextMouth package named `name`.tmb outside the library, holding a
+    /// short plain-text book and a record that describes it, as another
+    /// Mac's or a backup's package would; removed when the test ends.
+    private func makeExternalPackage(named name: String) throws -> URL {
+        let parent = try makeSandboxDirectory("ImportProgressPackage")
+        let package = parent.appendingPathComponent("\(name).tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let content = package.appendingPathComponent("\(name).txt")
+        try Data("\(name)\n\nFind the hole by its hiss, then roughen the rubber around it.\n".utf8).write(to: content)
+        let info = BookInfo(
+            metadata: BookMetadata(
+                title: name,
+                author: "Workshop Notes",
+                format: .txt,
+                md5Hash: try FileImportService.md5Hash(of: content),
+                originalFileName: content.lastPathComponent,
+                bookID: UUID()
+            ),
+            state: BookState(tmbDirectoryName: package.lastPathComponent)
+        )
+        try info.save(to: package)
+        return package
+    }
 
     /// Holds the import `model`'s queue runs when it begins `step`, until the
     /// returned gate is signaled. The gate is signaled, and the hook
