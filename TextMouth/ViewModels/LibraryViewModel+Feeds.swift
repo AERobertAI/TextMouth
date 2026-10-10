@@ -115,7 +115,11 @@ extension LibraryViewModel: FeedLibraryHost {
     /// as every removal that deletes a package does; and the reading text
     /// this Mac kept for each goes. `removeDeletedBook(_:)` itself is not
     /// used: a kept package's record must still take its pending writes.
-    /// A book the library no longer lists, or one of its own, is passed over.
+    ///
+    /// Without `keepingPackages`, as Delete Episode asks, a row kept on its
+    /// feed's shelf after its file went is removed too, its package whole,
+    /// and goes back to the shelf when the package cannot be removed. A book
+    /// the library no longer lists, or one of its own, is passed over.
     /// - Returns: The removals whose files went, and why each other's stayed.
     /// - Throws: `FeedItemPackageError.indexNotWritten` when the indexes
     ///   could not be written: the library is as it was, and no file was
@@ -128,8 +132,18 @@ extension LibraryViewModel: FeedLibraryHost {
         var updated = library
         var removals: [FeedFileRemoval] = []
         for requested in books {
-            guard let row = feedBook(withID: requested.id), let feedID = row.feedLink?.feedID,
+            let listed = feedBook(withID: requested.id)
+            // A row kept on the shelf has no file left; only a removal of
+            // its whole package takes it.
+            let shelved = listed == nil && !keepingPackages ? library.feedShelf.rows.first { $0.id == requested.id } : nil
+            guard let row = listed ?? shelved, let feedID = row.feedLink?.feedID,
                   !removals.contains(where: { $0.row.id == row.id }) else { continue }
+            if shelved != nil {
+                _ = updated.feedShelf.takeRows { $0.id == row.id }
+                updated.feedShelf.keepIndex(of: feedID)
+                removals.append(FeedFileRemoval(row: row, keepsPackage: false, wasOnShelf: true))
+                continue
+            }
             let keeps = keepingPackages && FeedItemPackage.holdsListenerState(row, package: row.tmbDirectory)
             if keeps {
                 // 1. The record takes the row's state before anything else changes.
@@ -171,7 +185,9 @@ extension LibraryViewModel: FeedLibraryHost {
             } catch {
                 outcome.failures.append((row: removal.row, error: error))
                 _ = afterwards.feedShelf.takeRows { $0.id == id }
-                if !afterwards.books.contains(where: { $0.id == id }) {
+                if removal.wasOnShelf {
+                    afterwards.feedShelf.put(removal.row)
+                } else if !afterwards.books.contains(where: { $0.id == id }) {
                     afterwards.books.append(removal.row)
                 }
                 changed = true

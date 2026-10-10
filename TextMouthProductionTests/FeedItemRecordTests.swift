@@ -240,6 +240,33 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: stale).count, staleBefore + 1)
     }
 
+    // MARK: - Delete Episode
+
+    /// Delete Episode deletes an item's package whole, whether its package
+    /// was kept after its file went or its file is here and opened: no row
+    /// stays on the shelf, among the books, or in the feed's index, and
+    /// both items leave the feed's list.
+    func testDeleteEpisodeDeletesThePackageKeptOrNot() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordDeleteEpisode")
+        let (feed, books) = try await downloadedEpisodes(2, in: world)
+        let kept = try listen(to: books[0], in: world)
+        let opened = try listen(to: books[1], in: world)
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        XCTAssertEqual(world.library.library.feedShelf.rows.map(\.id), [kept.id])
+
+        try world.center.deleteItem("guid:ep-1", of: feed.id)
+        try world.center.deleteItem("guid:ep-2", of: feed.id)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.tmbDirectory.path), "the kept package stayed")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: opened.tmbDirectory.path), "the opened download's package was kept")
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        XCTAssertNil(world.library.bookByID(opened.id))
+        XCTAssertEqual(try indexedRows(of: feed.id), [])
+        XCTAssertEqual(world.center.listedItems(of: feed.id), [])
+        XCTAssertEqual(world.center.keptRecordItemIDs(of: feed.id), [])
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state, .notDownloaded)
+    }
+
     // MARK: - What a Refresh Keeps
 
     /// A merge keeps in the record, however far outside the newest it

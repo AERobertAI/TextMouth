@@ -97,7 +97,7 @@ extension FeedCenter {
     func deleteDownload(_ itemID: FeedItem.ID, of feedID: UUID) throws {
         guard let item = store.record(of: feedID)?.item(itemID), item.state.bookID != nil else { return }
         if let library, let book = downloadedRow(of: item, in: feedID) {
-            try removeDownload(book, in: library)
+            try removeDownload(book, in: library, keepingPackage: true, by: "Delete Download")
         }
         noteDownloadRemoved(itemID, of: feedID)
     }
@@ -108,26 +108,29 @@ extension FeedCenter {
     /// the item a record names becomes not downloaded.
     /// - Throws: what `deleteDownload(_:of:)` throws.
     func deleteDownload(ofBook book: Book, in library: FeedLibraryHost) throws {
-        try removeDownload(book, in: library)
+        try removeDownload(book, in: library, keepingPackage: true, by: "the library's Remove")
         if let (feed, item) = store.item(downloadedAs: book.id) {
             noteDownloadRemoved(item.id, of: feed.id)
         }
     }
 
     /// Removes the file of `book`, a feed item `library` lists, as the
-    /// listener's own deletion does (`FeedEnvironment.removeItem`), keeping
-    /// its package while it holds something of the listener's: its record
-    /// and its feed's index first, then the file
-    /// (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`).
+    /// listener's own deletion does (`FeedEnvironment.removeItem`): with
+    /// `keepingPackage`, keeping its package while it holds something of the
+    /// listener's, and otherwise deleting the package whole, even one kept
+    /// on the shelf after its file went. Its record and its feed's index are
+    /// written first, then the file goes
+    /// (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`);
+    /// `command` names what asked, for the debug log.
     /// - Throws: `BookCloudError.bookIsOpen` for a book open in a reader,
     ///   `FeedItemPackageError.notAFeedPackage` for a download not in its
     ///   feed's folder, as one made before FR11 until it moves there, or
     ///   whatever kept the file; nothing was removed then.
-    private func removeDownload(_ book: Book, in library: FeedLibraryHost) throws {
+    private func removeDownload(_ book: Book, in library: FeedLibraryHost, keepingPackage: Bool, by command: String) throws {
         guard !library.feedBooksOpenInReaders.contains(book.id) else { throw BookCloudError.bookIsOpen }
         guard book.isFeedItem else { throw FeedItemPackageError.notAFeedPackage }
         let root = TextMouthPaths.root
-        let outcome = try library.removeFeedFiles(of: [book], keepingPackages: true) { removal in
+        let outcome = try library.removeFeedFiles(of: [book], keepingPackages: keepingPackage) { removal in
             let package = try FeedItemPackage.packageForRemoval(of: removal.row, in: root)
             if removal.keepsPackage {
                 try environment.removeItem(FeedItemPackage.fileEntry(of: removal.row, in: package))
@@ -140,7 +143,7 @@ extension FeedCenter {
             throw failure.error
         }
         for removal in outcome.removed {
-            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETED: \(removal.row.title): \(Self.removalNote(removal)), by the listener")
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETED: \(removal.row.title): \(Self.removalNote(removal)), by \(command)")
         }
     }
 
@@ -155,16 +158,25 @@ extension FeedCenter {
 
     /// What became of a removed download's package, as its log line says.
     private static func removalNote(_ removal: FeedFileRemoval) -> String {
-        removal.keepsPackage ? "its file deleted, its place and bookmarks kept" : "deleted whole, holding nothing of the listener's"
+        removal.keepsPackage ? "its file deleted, its place and bookmarks kept" : "its package deleted whole"
     }
 
     /// Deletes the item `itemID` of the feed `feedID`, as Delete Episode does:
-    /// its download stops or is deleted, and the item leaves every list,
-    /// while its record keeps it so no refresh brings it back.
+    /// its download stops; its package goes whole, to the Trash or for good
+    /// as the removal setting says, whether its file is here or the package
+    /// was kept with the listener's place after its file went (FR11, branch
+    /// A2); and the item leaves every list, while its record keeps it so no
+    /// refresh brings it back. Refused for a book open in a reader.
     /// - Throws: what `deleteDownload(_:of:)` throws; the item then stays.
     func deleteItem(_ itemID: FeedItem.ID, of feedID: UUID) throws {
         downloads.cancel(itemID, of: feedID)
-        try deleteDownload(itemID, of: feedID)
+        guard let item = store.record(of: feedID)?.item(itemID) else { return }
+        if let library, let row = downloadedRow(of: item, in: feedID) ?? library.feedItemRows(of: feedID).kept[itemID] {
+            try removeDownload(row, in: library, keepingPackage: false, by: "Delete Episode")
+        }
+        if item.state.bookID != nil {
+            noteDownloadRemoved(itemID, of: feedID)
+        }
         store.updateItem(itemID, of: feedID) { $0.deletedDate = environment.now() }
     }
 

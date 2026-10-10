@@ -236,14 +236,18 @@ extension FeedItemPackage {
 // MARK: - One Removal
 
 /// One feed item whose file is being removed (FR11, branch A2): its row as
-/// the library held it, and whether its package stays without the file,
-/// for the listener's state it holds, or goes whole.
+/// the library held it, whether its package stays without the file, for the
+/// listener's state it holds, or goes whole, and where the row was.
 struct FeedFileRemoval: Equatable, Sendable {
     /// The row as the library held it when the removal began.
     let row: Book
     /// Whether the package stays, holding the listener's state, while the
     /// file and what it made go.
     let keepsPackage: Bool
+    /// Whether the row was kept on its feed's shelf, its file gone already,
+    /// as Delete Episode finds an item whose download was deleted; a row
+    /// whose package cannot be deleted goes back there.
+    var wasOnShelf = false
 }
 
 /// What removing feed items' files did (FR11, branch A2,
