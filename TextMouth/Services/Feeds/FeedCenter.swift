@@ -162,6 +162,11 @@ enum FeedEvent: Equatable, Sendable {
     case downloadFinished(feedID: UUID, itemID: FeedItem.ID, bookID: UUID)
     /// An item's download failed, for the reason given.
     case downloadFailed(feedID: UUID, itemID: FeedItem.ID, reason: String)
+    /// A change of the "List and download" choice or its number took effect,
+    /// once it had stayed unchanged for `FeedCenter.itemPolicyQuietTime`
+    /// (FR11): the global setting's, which covers every feed, when
+    /// `feedIDs` is nil, or else those feeds' own.
+    case itemPolicyApplied(feedIDs: Set<UUID>?)
 }
 
 // MARK: - Subscribing
@@ -766,8 +771,11 @@ final class FeedCenter: ObservableObject {
     /// change starting the wait over. The pass then downloads what a larger
     /// number newly counts, removes the rule's downloads beyond a smaller
     /// one, and, for a choice that downloads by hand, takes back the rule's
-    /// downloads not yet under way and removes nothing. Only an engine
-    /// working on its own waits; a test runs the pass itself.
+    /// downloads not yet under way and removes nothing. As the wait ends,
+    /// the engine announces that the change took effect
+    /// (`FeedEvent.itemPolicyApplied`), for VoiceOver to say so (branch C).
+    /// Only an engine working on its own waits; a test runs the pass
+    /// itself.
     func itemPolicyChanged(for feedIDs: Set<UUID>?) {
         guard environment.worksOnItsOwn else { return }
         // Every feed when either change covers every feed.
@@ -784,6 +792,7 @@ final class FeedCenter: ObservableObject {
             let feeds = self.feedsWithChangedItemPolicy
             self.feedsWithChangedItemPolicy = []
             self.itemPolicyWait = nil
+            self.events.send(.itemPolicyApplied(feedIDs: feeds))
             self.requestItemPolicyPass(for: feeds)
         }
     }

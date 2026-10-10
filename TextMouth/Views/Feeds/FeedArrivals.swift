@@ -189,6 +189,11 @@ final class InertFeedNotifier: FeedNotifying {
 /// notification for each feed, when the notifications setting is on. A
 /// refresh the listener asks for is answered where it was asked, by
 /// VoiceOver, never here. Both read the engine's events (`FeedCenter.events`).
+///
+/// It also says, through VoiceOver, when a change of the "List and
+/// download" choice or its number takes effect (FR11): ten seconds after
+/// the last change, wherever it was made (Settings, Feed Info, or
+/// config.json), whichever window is in front by then.
 @MainActor
 final class FeedArrivals: ObservableObject {
     /// The app's: the app's engine and the system's notification center, or
@@ -214,6 +219,9 @@ final class FeedArrivals: ObservableObject {
     @Published private(set) var alertWindow: ObjectIdentifier?
     /// The notifications posting now, which tests await.
     private(set) var posting: Task<Void, Never>?
+    /// Speaks what took effect: through VoiceOver, from the window in
+    /// front, unless a test listens instead.
+    var announce: @MainActor (String) -> Void = { VoiceOverAnnouncer.announce($0) }
     /// Hears the engine's events.
     private var subscription: AnyCancellable?
 
@@ -228,9 +236,26 @@ final class FeedArrivals: ObservableObject {
     }
 
     /// Announces what a refresh of every feed that TextMouth made by itself
-    /// brought, as the settings say; anything else changes nothing.
+    /// brought, as the settings say, and says when a change of the "List
+    /// and download" choice took effect (FR11); anything else changes
+    /// nothing.
     func handle(_ event: FeedEvent) {
-        guard case .refreshedAll(let summary) = event, summary.origin.isDiscretionary else { return }
+        switch event {
+        case .refreshedAll(let summary) where summary.origin.isDiscretionary:
+            announceArrivals(in: summary)
+        case .itemPolicyApplied(let feedIDs):
+            if let sentence = FeedWording.itemPolicyApplied(to: feedIDs, in: center) {
+                announce(sentence)
+            }
+        default:
+            break
+        }
+    }
+
+    /// Announces what `summary`, a refresh of every feed that TextMouth made
+    /// by itself, brought: an alert, a notification for each feed, or both,
+    /// as the settings say; nothing when nothing new came.
+    private func announceArrivals(in summary: FeedRefreshSummary) {
         let arrivals = FeedArrival.arrivals(in: summary, center: center)
         guard !arrivals.isEmpty else { return }
         let settings = center.settings

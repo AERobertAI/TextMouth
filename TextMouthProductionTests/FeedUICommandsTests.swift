@@ -259,7 +259,10 @@ final class FeedUICommandsTests: XCTestCase {
 
     /// Feed Info… opens the feed's sheet; its two settings follow the
     /// global ones until the listener gives the feed its own, and its
-    /// folder can be changed for new downloads.
+    /// folder can be changed for new downloads. Unchecking "Use the global
+    /// setting" for List and download gives the feed the global choice as
+    /// its own (FR11), a number out of range is moved into it, and checking
+    /// the box again drops the feed's own.
     func testFeedInfoKeepsTheFeedsOwnSettings() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsInfo")
         let info = try XCTUnwrap(FeedAction.actions(for: harness.feed.id, noun: .episode).first { $0.command == .feedInfo })
@@ -267,16 +270,21 @@ final class FeedUICommandsTests: XCTestCase {
         harness.presenter.perform(info, in: harness.context)
 
         let model = try XCTUnwrap(harness.presenter.feedInfo)
-        XCTAssertTrue(model.keepsGlobalEntries)
-        XCTAssertEqual(model.keepEntries, 10)
-        model.keepsGlobalEntries = false
-        XCTAssertEqual(harness.record?.feed.keepEntriesOverride, 10)
-        model.keepEntries = 25
-        XCTAssertEqual(harness.record?.feed.keepEntriesOverride, 25)
-        model.keepEntries = -7
-        XCTAssertEqual(harness.record?.feed.keepEntriesOverride, -1, "a value below the off value is the off value")
-        model.keepsGlobalEntries = true
-        XCTAssertNil(harness.record?.feed.keepEntriesOverride)
+        XCTAssertTrue(model.usesGlobalItemPolicy)
+        XCTAssertEqual(model.itemPolicy, .standard)
+        model.usesGlobalItemPolicy = false
+        XCTAssertEqual(harness.record?.feed.itemPolicyOverride, .standard)
+        XCTAssertFalse(model.usesGlobalItemPolicy)
+        model.itemPolicy = FeedItemPolicy(choice: .onlyNewestListed, newestCount: 25)
+        XCTAssertEqual(harness.record?.feed.itemPolicyOverride, FeedItemPolicy(choice: .onlyNewestListed, newestCount: 25))
+        XCTAssertEqual(model.itemPolicy.listing, .newest(25))
+        var tooMany = model.itemPolicy
+        tooMany.newestCount = 9_000
+        model.itemPolicy = tooMany
+        XCTAssertEqual(harness.record?.feed.itemPolicyOverride?.newestCount, 2_000, "a number above the range was kept")
+        model.usesGlobalItemPolicy = true
+        XCTAssertNil(harness.record?.feed.itemPolicyOverride)
+        XCTAssertEqual(model.itemPolicy, .standard)
 
         XCTAssertTrue(model.deletesAfterGlobalDays)
         model.deletesAfterGlobalDays = false
@@ -325,10 +333,14 @@ final class FeedUICommandsTests: XCTestCase {
 
     // MARK: - The Sheets as Drawn
 
-    /// Feed Info draws its two own settings, each a stepper and a number
-    /// field labelled with the setting, a "Use the global setting" checkbox
-    /// and an off checkbox, and the folder pop-up; while a setting follows
-    /// the global one its stepper is unavailable.
+    /// Feed Info draws its two own settings, each with a "Use the global
+    /// setting" checkbox: the List and download pop-up menu (FR11), its
+    /// titles naming the feed's episodes, with its number, a stepper and a
+    /// number field; and the days before deleting played downloads, with its
+    /// off checkbox; and the folder pop-up. While a setting follows the
+    /// global one its controls are unavailable; once the feed has its own,
+    /// they are available, and VoiceOver hears the pop-up menu's choice in
+    /// the feed's own words.
     func testFeedInfoDrawsItsLabelledControls() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsInfoDrawn")
         let model = FeedInfoModel(feedID: harness.feed.id, center: harness.world.center, library: harness.world.library)
@@ -340,21 +352,45 @@ final class FeedUICommandsTests: XCTestCase {
             onDone: {}
         )
 
-        withHostedView(sheet, size: NSSize(width: 560, height: 680), until: {
+        withHostedView(sheet, size: NSSize(width: 560, height: 760), until: {
             self.descendants(of: $0, as: NSStepper.self).count == 2
         }) { hosting in
             let steppers = descendants(of: hosting, as: NSStepper.self)
             XCTAssertEqual(steppers.count, 2)
             XCTAssertTrue(steppers.allSatisfy { !$0.isEnabled }, "a stepper was available while following the global setting")
-            XCTAssertEqual(feedCheckboxes(in: hosting).count, 4, "two Use the global setting and two off checkboxes")
-            XCTAssertFalse(descendants(of: hosting, as: NSPopUpButton.self).isEmpty, "no folder pop-up")
+            XCTAssertEqual(feedCheckboxes(in: hosting).count, 3, "two Use the global setting checkboxes and an off checkbox")
+            let popUps = descendants(of: hosting, as: NSPopUpButton.self)
+            XCTAssertEqual(popUps.count, 2, "the List and download and folder pop-ups")
+            let listAndDownload = popUps.first { $0.itemTitles.contains("Every episode listed, downloads by hand") }
+            XCTAssertNotNil(listAndDownload, "no List and download pop-up in the feed's words: \(popUps.map(\.itemTitles))")
+            XCTAssertEqual(listAndDownload?.isEnabled, false, "the pop-up was available while following the global setting")
+            XCTAssertEqual(listAndDownload?.titleOfSelectedItem, "Every episode listed, newest 5 downloaded")
             let controls = accessibleControls(in: hosting)
             if !controls.isEmpty {
                 let labels = controls.map(\.label)
-                XCTAssertTrue(labels.contains(FeedThresholdWording.keepEntries.label), "\(labels)")
+                XCTAssertTrue(labels.contains(FeedWording.listAndDownloadLabel), "\(labels)")
+                XCTAssertTrue(labels.contains(FeedWording.newestCountLabel), "\(labels)")
                 XCTAssertTrue(labels.contains(FeedThresholdWording.deleteDownloadsAfterPlaying.label), "\(labels)")
                 XCTAssertTrue(labels.contains(FeedWording.folderInfoLabel), "\(labels)")
+                let number = controls.first { $0.role == .incrementor && $0.label == FeedWording.newestCountLabel }
+                XCTAssertEqual(number?.valueDescription, "5 episodes")
             }
+
+            // The feed's own choice: its controls are available.
+            model.usesGlobalItemPolicy = false
+            XCTAssertTrue(
+                waitUntil {
+                    hosting.layoutSubtreeIfNeeded()
+                    return self.descendants(of: hosting, as: NSPopUpButton.self).contains {
+                        $0.isEnabled && $0.itemTitles.contains("Every episode listed, downloads by hand")
+                    }
+                },
+                "the pop-up stayed unavailable once the feed had its own choice"
+            )
+            XCTAssertTrue(
+                waitUntil { self.descendants(of: hosting, as: NSStepper.self).filter(\.isEnabled).count == 1 },
+                "the number stayed unavailable once the feed had its own choice"
+            )
         }
     }
 
@@ -414,9 +450,9 @@ final class FeedUICommandsTests: XCTestCase {
     func testReturnStaysWithTheNumberFieldsAndEscapePressesDone() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsInfoReturn")
         let model = FeedInfoModel(feedID: harness.feed.id, center: harness.world.center, library: harness.world.library)
-        // The feed keeps its own number of entries, so that field takes
-        // typing; the other still follows the global setting.
-        model.keepsGlobalEntries = false
+        // The feed has its own List and download choice, so its number
+        // takes typing; the days still follow the global setting.
+        model.usesGlobalItemPolicy = false
         var dones = 0
         let sheet = FeedInfoSheet(
             model: model,
@@ -441,8 +477,8 @@ final class FeedUICommandsTests: XCTestCase {
 
             XCTAssertFalse(pressReturnKey(in: hosting), "a button took Return from the number field")
             settleHostedView(hosting)
-            XCTAssertEqual(model.keepEntries, 25, "Return did not enter the number typed")
-            XCTAssertEqual(harness.record?.feed.keepEntriesOverride, 25)
+            XCTAssertEqual(model.itemPolicy.newestCount, 25, "Return did not enter the number typed")
+            XCTAssertEqual(harness.record?.feed.itemPolicyOverride, FeedItemPolicy(choice: .everyListedNewestDownloaded, newestCount: 25))
             XCTAssertEqual(dones, 1, "Return pressed Done")
         }
     }

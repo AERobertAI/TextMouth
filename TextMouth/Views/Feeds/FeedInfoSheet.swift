@@ -35,16 +35,22 @@ final class FeedInfoModel: ObservableObject, Identifiable {
 
     // MARK: The Feed's Own Settings
 
-    /// Whether the feed follows the global number of entries kept.
-    var keepsGlobalEntries: Bool {
-        get { feed?.keepEntriesOverride == nil }
-        set { center.setKeepEntries(newValue ? nil : globalSettings.keepEntries, of: feedID) }
+    /// Whether the feed follows the global "List and download" choice and
+    /// its number (FR11). Unchecking "Use the global setting" gives the feed
+    /// the global choice as its own, to change from there; checking it
+    /// again drops the feed's own.
+    var usesGlobalItemPolicy: Bool {
+        get { feed?.itemPolicyOverride == nil }
+        set { center.setItemPolicy(newValue ? nil : globalSettings.itemPolicy, of: feedID) }
     }
 
-    /// The number of entries the feed keeps: its own, or the global one.
-    var keepEntries: Int {
-        get { feed?.keepEntries(under: globalSettings) ?? globalSettings.keepEntries }
-        set { center.setKeepEntries(newValue, of: feedID) }
+    /// What the feed lists and downloads by itself (FR11): its own choice
+    /// and number, or the global ones. Setting it gives the feed its own,
+    /// which the feed engine acts on once it has stayed unchanged for ten
+    /// seconds (`FeedCenter.setItemPolicy(_:of:)`).
+    var itemPolicy: FeedItemPolicy {
+        get { feed?.itemPolicy(under: globalSettings) ?? globalSettings.itemPolicy }
+        set { center.setItemPolicy(newValue, of: feedID) }
     }
 
     /// Whether the feed follows the global days after playing that a
@@ -91,9 +97,11 @@ final class FeedInfoModel: ObservableObject, Identifiable {
 /// go to, which can be changed; its description, under a Description
 /// heading, in a text area labelled with the feed's title and read with
 /// VoiceOver's text navigation; the two settings the feed may keep for
-/// itself, each with "Use the global setting"; Unsubscribe…, which asks
-/// first and names the books left behind; and Done, which Escape presses.
-/// Every change applies as it is made.
+/// itself, each with "Use the global setting": its "List and download"
+/// choice and number (FR11), worded with the feed's own noun, and its days
+/// before deleting played downloads; Unsubscribe…, which asks first and
+/// names the books left behind; and Done, which Escape presses. Every
+/// change is saved as it is made.
 struct FeedInfoSheet: View {
     /// What the sheet shows and changes.
     @ObservedObject var model: FeedInfoModel
@@ -132,14 +140,17 @@ struct FeedInfoSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if let feed = model.feed {
+                // Counted once, for the items' line and for the words of
+                // the feed's own settings, which name its items.
+                let counts = center.counts(of: feed.id)
                 Text(feed.title)
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
-                        details(of: feed)
+                        details(of: feed, counts: counts)
                         Divider()
-                        ownSettings
+                        ownSettings(noun: counts.noun)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -173,10 +184,10 @@ struct FeedInfoSheet: View {
 
     // MARK: Parts
 
-    /// What the feed says of itself, and how TextMouth keeps it.
+    /// What the feed says of itself, and how TextMouth keeps it, its items
+    /// counted as `counts`.
     @ViewBuilder
-    private func details(of feed: Feed) -> some View {
-        let counts = center.counts(of: feed.id)
+    private func details(of feed: Feed, counts: FeedItemCounts) -> some View {
         FeedInfoValue(label: FeedWording.addressLabelInInfo, value: feed.feedURL.absoluteString)
         if let site = feed.siteLink {
             FeedInfoValue(label: FeedWording.siteLabel, value: site.absoluteString)
@@ -225,22 +236,24 @@ struct FeedInfoSheet: View {
         }
     }
 
-    /// The two settings the feed may keep for itself.
-    private var ownSettings: some View {
+    /// The two settings the feed may keep for itself, the first worded with
+    /// `noun`, what the feed's items are called: its "List and download"
+    /// choice and number (FR11), its checkbox naming the global choice as
+    /// Settings words it, and its days before deleting played downloads.
+    private func ownSettings(noun: FeedWording.ItemNoun) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(FeedWording.ownSettingsHeading)
                 .font(.subheadline)
                 .accessibilityAddTraits(.isHeader)
             Toggle(
-                FeedWording.useGlobal(FeedThresholdWording.keepEntries.caption(model.globalSettings.keepEntries, rule: SettingsPolicy.feedKeepEntries)),
-                isOn: Binding(get: { model.keepsGlobalEntries }, set: { model.keepsGlobalEntries = $0 })
+                FeedWording.useGlobal(FeedWording.itemPolicyTitle(model.globalSettings.itemPolicy, noun: nil)),
+                isOn: Binding(get: { model.usesGlobalItemPolicy }, set: { model.usesGlobalItemPolicy = $0 })
             )
             .accessibilityHint(FeedWording.useGlobalHint)
-            FeedThresholdControl(
-                rule: SettingsPolicy.feedKeepEntries,
-                wording: .keepEntries,
-                value: Binding(get: { model.keepEntries }, set: { model.keepEntries = $0 }),
-                isDisabled: model.keepsGlobalEntries
+            FeedItemPolicyControls(
+                policy: Binding(get: { model.itemPolicy }, set: { model.itemPolicy = $0 }),
+                noun: noun,
+                isDisabled: model.usesGlobalItemPolicy
             )
             Toggle(
                 FeedWording.useGlobal(
@@ -514,7 +527,7 @@ extension FeedWording {
     /// The heading of the feed's own settings.
     static let ownSettingsHeading = "This Feed's Settings"
     /// A "Use the global setting" checkbox's title, naming the global value:
-    /// "Use the global setting (Keep the newest: 10 entries)".
+    /// "Use the global setting (Every item listed, newest 5 downloaded)".
     static func useGlobal(_ globalCaption: String) -> String {
         "Use the global setting (\(globalCaption))"
     }
