@@ -841,6 +841,47 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
     }
 
+    // MARK: - A Sleep Timer Set During Where Am I?
+
+    /// A sleep timer set to start playback while Where Am I? speaks, as the
+    /// sleep timer's sheet, Restart Sleep Timer, and the AirPods' gesture
+    /// all set one, starts its countdown and lets the announcement finish,
+    /// and the book plays as the announcement ends, as a Play during it
+    /// does: the book the announcement paused plays again, and one paused
+    /// before it starts. Before, the timer's start went through Play/Pause,
+    /// which ended the announcement and left the book paused (REV12's
+    /// leftovers).
+    func testASleepTimerSetDuringWhereAmIPlaysTheBookAsItEnds() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        for kind in BookKind.allCases {
+            for pausedBefore in [false, true] {
+                let context = "\(kind), \(pausedBefore ? "paused before" : "playing")"
+                let system = MediaSystem()
+                let world = try makeIntegrationWorld("Where Am I Sleep Timer \(kind) \(pausedBefore)")
+                let book = try openPlayingBook(kind, in: world, joining: system)
+                if pausedBefore {
+                    XCTAssertEqual(system.press(.pause), .success, context)
+                }
+                let announcement = try pressWhereAmI(in: book)
+                // The reader shows the pause before the timer is set, as it
+                // has long since when a listener sets one.
+                handleQueuedCallbacks()
+
+                book.reader.startSleepTimer(duration: .minutes(15), startPlaybackIfNeeded: true)
+
+                XCTAssertTrue(timer.isActive, "\(context): the timer did not start")
+                XCTAssertEqual(timer.ownerID, book.reader.readerID, "\(context): the timer is not the reader's")
+                XCTAssertTrue(book.reader.isWhereAmISpeaking, "\(context): setting the timer ended the announcement")
+                XCTAssertFalse(book.isPlaying, "\(context): the book plays under the announcement")
+                finishWhereAmIByItself(book, announcement)
+                book.endSound.passEndSound()
+                XCTAssertTrue(waitUntil(timeout: 5) { book.isPlaying }, "\(context): the book did not play as the announcement ended")
+                assertToldSystem(system, that: book.reader, plays: true, context)
+            }
+        }
+    }
+
     // MARK: - After the Sleep Timer
 
     /// A 15-minute sleep timer with a two-second fade runs out and pauses
