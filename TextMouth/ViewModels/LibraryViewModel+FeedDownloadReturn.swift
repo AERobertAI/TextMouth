@@ -197,7 +197,9 @@ extension LibraryViewModel {
     /// queued first; readers with a returning book open follow its package.
     /// It does nothing while the library index is recovered, the data
     /// directory is away or moving, or another operation holds the storage
-    /// work; the next launch tries again.
+    /// work; the next launch tries again. Nor does it do anything for a feed
+    /// that left nothing (`leftSomething(feedID:)`), as one unsubscribed
+    /// before it downloaded anything: no storage work, and no save.
     /// - Parameter remove: How a package kept for a removed download, and the
     ///   feed's folder, are removed: as the feed engine removes them, unless
     ///   a test gives its own.
@@ -207,7 +209,7 @@ extension LibraryViewModel {
         toFolderID folderID: UUID?,
         removingWith remove: (@MainActor (URL) throws -> Void)? = nil
     ) async -> FeedDownloadReturn {
-        guard canMoveDownloads else { return FeedDownloadReturn() }
+        guard canMoveDownloads, leftSomething(feedID: feedID) else { return FeedDownloadReturn() }
         guard let hold = try? StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders) else {
             DiagnosticLog.event(
                 .storage,
@@ -279,6 +281,18 @@ extension LibraryViewModel {
                 + (outcome.stayed.isEmpty ? "" : "; \(outcome.stayed.count) stayed in the feed's folder")
         )
         return outcome
+    }
+
+    /// Whether the feed `feedID` left anything for the return of its
+    /// downloads to do: a download among the library's books, a row kept on
+    /// its feed's shelf after its download went, an index the library keeps
+    /// for it, or its folder in the data directory. A feed that downloaded
+    /// nothing left none of these.
+    private func leftSomething(feedID: UUID) -> Bool {
+        library.books.contains { $0.feedLink?.feedID == feedID }
+            || library.feedShelf.rows.contains { $0.feedLink?.feedID == feedID }
+            || library.feedShelf.indexedFeedIDs.contains(feedID)
+            || FileManager.default.fileExists(atPath: FeedPaths.itemsFolder(of: feedID, in: TextMouthPaths.root).path)
     }
 
     /// `row`, a download of a feed no longer subscribed, moved back into the

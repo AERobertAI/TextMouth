@@ -48,6 +48,53 @@ final class LibraryFeedDownloadReturnTests: FeedItemIndexTestCase {
         try assertReturned(fixture, toFolder: "", in: model)
     }
 
+    /// The return of a feed that left nothing, no download, no row kept, no
+    /// index, and no folder, as one unsubscribed before it downloaded
+    /// anything, does nothing: it writes no library.json, and it holds no
+    /// storage work, so another operation holding it puts nothing off.
+    @MainActor
+    func testTheReturnOfAFeedThatLeftNothingDoesNothing() async throws {
+        saveNow(Library())
+        let model = launchedModel()
+        // Whatever the launch saved is on disk before the measuring begins.
+        LibraryPersistenceService.flushPendingSave()
+        let leftNothing = UUID()
+        let index = TextMouthPaths.libraryIndexFile
+        let before = try FileManager.default.attributesOfItem(atPath: index.path)
+        let logged = debugLogLines(containing: "FEED_DOWNLOADS_RETURN").count
+
+        let outcome = await model.returnDownloads(ofFeed: leftNothing, toFolderID: nil, removingWith: Self.deleteForGood)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(outcome, FeedDownloadReturn())
+        let after = try FileManager.default.attributesOfItem(atPath: index.path)
+        XCTAssertEqual(after[.systemFileNumber] as? NSNumber, before[.systemFileNumber] as? NSNumber, "library.json was written")
+        XCTAssertEqual(after[.modificationDate] as? Date, before[.modificationDate] as? Date, "library.json was written")
+
+        let hold = try StorageBoundary.shared.holdWork(for: .rebuildingDirectory)
+        let whileHeld = await model.returnDownloads(ofFeed: leftNothing, toFolderID: nil, removingWith: Self.deleteForGood)
+        hold.release()
+
+        XCTAssertEqual(whileHeld, FeedDownloadReturn())
+        XCTAssertEqual(debugLogLines(containing: "FEED_DOWNLOADS_RETURN").count, logged, "the return asked for the storage work, or saved")
+    }
+
+    /// A feed that left only its folder, its index listing nothing, left
+    /// something: its return removes the folder.
+    @MainActor
+    func testTheReturnOfAFeedThatLeftOnlyItsFolderRemovesIt() async throws {
+        // A save writes an index of no rows only into a folder that is there.
+        try FileManager.default.createDirectory(at: feedFolderURL, withIntermediateDirectories: true)
+        saveNow(Library(feedShelf: FeedShelf(indexedFeedIDs: [feedID])))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: feedIndexURL.path), "the feed's empty index was not written")
+        let model = launchedModel()
+
+        let outcome = await model.returnDownloads(ofFeed: feedID, toFolderID: nil, removingWith: Self.deleteForGood)
+
+        XCTAssertTrue(outcome.removedFeedFolder)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: feedFolderURL.path), "the feed's folder stayed")
+    }
+
     /// A row that is no feed item's, or names no package the library
     /// manages, is refused before anything on disk is touched.
     func testTheReturnRefusesARowNamingNoManagedPackage() throws {
