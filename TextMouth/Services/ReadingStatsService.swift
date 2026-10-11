@@ -50,6 +50,22 @@ final class ReadingStatsService: ObservableObject {
     /// reads it again first, and once it is on this Mac, adds the stand-ins
     /// to what it holds and saves the sum.
     private(set) var statsAwaitFileInCloud = false
+
+    /// Whether `stats` hold what reading_stats.json held when this service
+    /// read it (REV14): true once the file was read and decoded, at launch,
+    /// once the library is available again (`dataDirectoryBecameAvailable()`),
+    /// or once a file that was only in the cloud is on this Mac and its
+    /// statistics were added to the stand-ins (`mayReplaceStatsFile()`).
+    /// False while the statistics only stand in for the file: with no file
+    /// yet, with one that could not be read or decoded, which is preserved
+    /// beside itself, with one only in the cloud, or with the data
+    /// directory not there yet.
+    ///
+    /// The one-time move of finished books to their ends waits for it
+    /// (`LibraryViewModel.moveFinishedBooksToTheirEndsOnce`): stand-ins list
+    /// no finished book, so a move made over them would move nothing and be
+    /// recorded as made, and would never run once the file could be read.
+    private(set) var statsReadFromFile = false
     /// Reads reading_stats.json, with dataless files left in the cloud.
     private let readFile: SavedFile.Reader
 
@@ -209,11 +225,14 @@ final class ReadingStatsService: ObservableObject {
     /// when there is none yet or it can't be used, or, when it is only in
     /// the cloud, fresh ones that stand in for it until a save finds it on
     /// this Mac (`statsAwaitFileInCloud`), the sync service asked for it.
+    /// Only the file's own statistics count as read (`statsReadFromFile`).
     private func loadStatsFile() {
         statsAwaitFileInCloud = false
+        statsReadFromFile = false
         switch readSavedStats() {
         case .saved(let saved):
             stats = saved
+            statsReadFromFile = true
         case .none:
             stats = ReadingStats()
         case .inCloud:
@@ -272,21 +291,27 @@ final class ReadingStatsService: ObservableObject {
     /// again first: once it is on this Mac, the listening credited meanwhile
     /// is added to what it holds, the wait ends, and the save goes on with
     /// the sum; while it is still in the cloud, nothing is written over it.
+    /// The statistics count as read from the file (`statsReadFromFile`) only
+    /// when the file held some.
     private func mayReplaceStatsFile() -> Bool {
         guard statsAwaitFileInCloud else { return true }
         let saved: ReadingStats
+        let readFromFile: Bool
         switch readSavedStats() {
         case .inCloud:
             return false
         case .none:
             // The file went, or can't be used: the stand-ins are all there is.
             saved = ReadingStats()
+            readFromFile = false
         case .saved(let found):
             saved = dayKeysMigrated(found, at: Date()) ?? found
+            readFromFile = true
         }
         let standIn = stats
         stats = saved.adding(standIn)
         statsAwaitFileInCloud = false
+        statsReadFromFile = readFromFile
         DiagnosticLog.event(
             .statistics,
             "READING_STATS_FILE: read the statistics now that the file is on this Mac, adding "

@@ -147,6 +147,34 @@ final class FeedItemIndexListTests: FeedItemIndexTestCase {
         XCTAssertNil(world.library.nextBookInFolder(after: first))
     }
 
+    /// Continue to Next Book from a feed's item passes over the downloaded
+    /// items after it that rest at their ends, finished, as it passes over a
+    /// folder's finished books (REV14): from the third, past the second, to
+    /// the first, while both stay among the items after it.
+    @MainActor
+    func testContinueToNextBookPassesOverAFeedsFinishedItems() async throws {
+        let world = try FeedTestWorld(self, label: "FeedItemNextFinished")
+        let feed = try await subscribe(world, guids: ["ep-3", "ep-2", "ep-1"])
+        let third = try makeFeedItem(title: "Third", itemID: "guid:ep-3", of: feed.id)
+        var second = try makeFeedItem(
+            title: "Second",
+            itemID: "guid:ep-2",
+            of: feed.id,
+            position: ReadingPosition(chapterIndex: 0, characterOffset: 40, globalCharacterOffset: 40)
+        )
+        second.totalCharacterCount = 40
+        XCTAssertTrue(second.restsAtEnd, "The second item does not rest at its end")
+        let first = try makeFeedItem(title: "First", itemID: "guid:ep-1", of: feed.id)
+        for book in [third, second, first] {
+            world.library.addFeedBook(book)
+            world.center.store.updateItem(book.feedLink?.itemID ?? "", of: feed.id) { $0.state = .downloaded(bookID: book.id) }
+        }
+
+        XCTAssertEqual(world.library.nextBookInFolder(after: third)?.id, first.id)
+        XCTAssertEqual(world.library.laterBooksInFolder(after: third).map(\.id), [second.id, first.id])
+        XCTAssertNil(world.library.nextBookInFolder(after: first))
+    }
+
     // MARK: - Maintenance
 
     /// The metadata refresh never reads a feed's item again: its title and

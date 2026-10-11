@@ -98,9 +98,9 @@ extension ReaderViewModel {
     ///   modes for what to do at the end of a book?"): the book plays again
     ///   from its beginning, "Starting again: <title>", passing over what
     ///   says nothing, as Play does.
-    /// - Continue to Next Book: the next book in the folder takes listening
-    ///   over, "Starting: <title>", or the book says why none follows, as at
-    ///   the end.
+    /// - Continue to Next Book: the next book in the folder that is not
+    ///   finished takes listening over, "Starting: <title>", or the book
+    ///   says why none follows, as at the end.
     /// - A book read from the reading list: the list's next book, or why
     ///   none follows, as at the end.
     /// - Loop to Start: the book plays again from its beginning,
@@ -2394,11 +2394,13 @@ extension ReaderViewModel {
 
     /// Continue to Next Book from this finished book (`handleEndOfBook()`,
     /// and Play on a book resting at its end, `playFromTheEnd()`): the next
-    /// book in its folder, by the folder's order, takes listening over
-    /// (`handOverToNextBook(to:titled:askingWith:)`), unless this reader's
-    /// sleep timer is in effect, which could never pause it, or no book
-    /// follows. Then `say` says that the book finished and why nothing
-    /// follows.
+    /// book in its folder, by the folder's order, passing over books that
+    /// rest at their ends (`LibraryViewModel.nextBookInFolder(after:)`),
+    /// takes listening over (`handOverToNextBook(to:titled:askingWith:)`),
+    /// unless this reader's sleep timer is in effect, which could never
+    /// pause it, or no book, or only finished books, follow. Then `say`
+    /// says that the book finished and why nothing follows: "No more books
+    /// in folder", or "Every book after it in the folder is finished".
     ///
     /// - Parameters:
     ///   - sleepTimerEndsListening: Whether this reader's sleep timer is in
@@ -2413,9 +2415,12 @@ extension ReaderViewModel {
         sayingNothingFollows say: (String) -> Void
     ) {
         guard let nextBook = libraryViewModel.nextBookInFolder(after: book) else {
+            let whyNothingFollows = libraryViewModel.laterBooksInFolder(after: book).isEmpty
+                ? EndOfBookWording.noMoreBooksInFolderNote
+                : EndOfBookWording.onlyFinishedBooksInFolderNote
             say(EndOfBookWording.finished(
                 book.title,
-                notes: [EndOfBookWording.noMoreBooksInFolderNote],
+                notes: [whyNothingFollows],
                 sleepTimerExpired: sleepTimerStoppedHere
             ))
             return

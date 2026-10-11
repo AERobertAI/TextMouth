@@ -457,10 +457,19 @@ struct HeadingNavigatorView: View {
 
             switch mode {
             case .timeEstimate:
-                // The next heading shown, or the book's end, found as a place.
-                let next = content.location(forGlobalOffset: nextOffsetsByID[heading.id] ?? totalCharacterCount)
-                let end = clock.time(chapterIndex: next.chapterIndex, characterOffset: next.localOffset)
-                let seconds = max(0, end - start) / speed
+                // To the next heading shown, found as a place, or, after the
+                // last one shown, to the clock's end (`PlaceClock.end`): the
+                // place of the book's total (`location(forGlobalOffset:)`) is
+                // its last unit, a unit short of the end, so a last chapter
+                // ending on a whole second, 25:03.0, showed as 25:02 (REV14).
+                // The span is added chapter by chapter, so a whole chapter
+                // lasts exactly its duration (`PlaceClock.span(from:to:)`).
+                let end = nextOffsetsByID[heading.id]
+                    .flatMap { $0 < totalCharacterCount ? content.location(forGlobalOffset: $0) : nil }
+                    .map { PlaceClock.Place(chapterIndex: $0.chapterIndex, characterOffset: $0.localOffset) }
+                    ?? clock.end
+                let headingPlace = PlaceClock.Place(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
+                let seconds = clock.span(from: headingPlace, to: end) / speed
                 return HeadingListItem(
                     heading: heading,
                     isSkipped: isSkipped,

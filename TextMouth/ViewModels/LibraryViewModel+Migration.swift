@@ -1544,13 +1544,18 @@ extension LibraryViewModel {
     ///
     /// Runs once the launch's maintenance has ended
     /// (`updateContentCachesAndStatistics`), and only while this Mac has not
-    /// made the move (`finishedBooksAtEndKey`) and the statistics file has
-    /// been read: statistics that stand in for a file still in the cloud or
-    /// in a data directory not there yet list no finished book, and would
-    /// move nothing. The move is made once every book it is for was here to
-    /// be moved: a book whose record or index is only in the cloud, or that
-    /// a reader window has open, keeps its place and waits for a later
-    /// launch, which makes the move then.
+    /// made the move (`finishedBooksAtEndKey`) and the statistics were read
+    /// from their file (`ReadingStatsService.statsReadFromFile`). Statistics
+    /// that stand in for the file, one still in the cloud, in a data
+    /// directory not there yet, not written yet, or that could not be read
+    /// or decoded, list no finished book: a move made over them would move
+    /// nothing and be recorded as made, so it would never run once the file
+    /// could be read again (REV14). Until then nothing is moved, recorded, or
+    /// logged, and a later launch that reads the file makes the move. The
+    /// move is made once every book it is for was here to be moved: a book
+    /// whose record or index is only in the cloud, or that a reader window
+    /// has open, keeps its place and waits for a later launch, which makes
+    /// the move then.
     ///
     /// - Parameters:
     ///   - statistics: The statistics whose Books Finished names the books.
@@ -1566,7 +1571,7 @@ extension LibraryViewModel {
         then completion: (@MainActor @Sendable () -> Void)? = nil
     ) {
         guard preferences.integer(forKey: Self.finishedBooksAtEndKey) < Self.finishedBooksAtEndVersion,
-              !statistics.statsAwaitDataDirectory, !statistics.statsAwaitFileInCloud else {
+              statistics.statsReadFromFile else {
             completion?()
             return
         }
@@ -1613,10 +1618,14 @@ extension LibraryViewModel {
     /// Each book's content index is read off the main thread, with dataless
     /// files left in the cloud, for its last chapter and that chapter's
     /// length (`finishedBookEnd(of:index:)`). Each move goes to the row and
-    /// its record, as a reader saves a place (`persistReadingPosition`),
-    /// dated now; a book whose row moved meanwhile, or that a reader window
-    /// opened meanwhile, keeps its place and waits. One `FINISHED_BOOKS_AT_END`
-    /// line in the debug log counts what was done.
+    /// its record, as a reader saves a place (`persistReadingPosition`), the
+    /// place dated now, so a launch after a crash takes it from the record,
+    /// but the book's last-opened date kept as it was: nobody opened the
+    /// book, and Recently Opened, the Last Opened sort, and Speak Info's
+    /// "Last opened" read that date (REV14). A book whose row moved
+    /// meanwhile, or that a reader window opened meanwhile, keeps its place
+    /// and waits. One `FINISHED_BOOKS_AT_END` line in the debug log counts
+    /// what was done.
     func moveFinishedBooksToTheirEnds(
         counted: Set<UUID>,
         access: MaintenanceFileAccess = .live,
@@ -1656,7 +1665,8 @@ extension LibraryViewModel {
                         outcome.waiting += 1
                         continue
                     }
-                    self.persistReadingPosition(bookID: move.bookID, position: move.to)
+                    // Nobody opened the book: its last-opened date stays.
+                    self.persistReadingPosition(bookID: move.bookID, position: move.to, markingOpened: false)
                     outcome.moved += 1
                 }
                 DiagnosticLog.event(.storage, outcome.logLine)

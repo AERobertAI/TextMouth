@@ -55,11 +55,12 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
     // MARK: - The Move
 
     /// Shaped like the user's library: the counted books at 100 percent
-    /// move to their ends, saved in their rows and records, dated now, and
-    /// read as finished; the one at 99 percent, the one not counted, and the
-    /// one exactly at its end already stay as they were, unwritten; the one
-    /// in the cloud and the one open in a reader window wait for a later
-    /// move, which moves them once they are here and closed.
+    /// move to their ends, saved in their rows and records, their places
+    /// dated now and their last-opened dates kept, and read as finished; the
+    /// one at 99 percent, the one not counted, and the one exactly at its
+    /// end already stay as they were, unwritten; the one in the cloud and
+    /// the one open in a reader window wait for a later move, which moves
+    /// them once they are here and closed.
     func testTheCountedBooksAtAHundredPercentArePutAtTheirEnds() throws {
         let world = try makeIntegrationWorld("Finished Books At End")
         let lastWord = try makeBook("Last Word", at: 1_993, in: world)
@@ -83,6 +84,7 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
         }
         for book in [atTheEnd, ninetyNine, notCounted, inCloud, open] {
             XCTAssertEqual(row(of: book, in: world)?.readingPosition, book.readingPosition, "\(book.title) was moved")
+            XCTAssertEqual(row(of: book, in: world)?.lastOpened, Self.lastOpened, "\(book.title) was dated opened")
         }
         XCTAssertTrue(row(of: atTheEnd, in: world)?.restsAtEnd ?? false, "The book at its end does not read as finished")
         XCTAssertFalse(row(of: ninetyNine, in: world)?.restsAtEnd ?? true, "The book at 99 percent reads as finished")
@@ -103,16 +105,13 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
     /// The move is made once on this Mac: it is recorded as made only once
     /// no book waits for it, and from then on it moves nothing, not even a
     /// counted book read again to 100 percent since. Books Finished is read
-    /// from the statistics given, as the launch reads the app's.
+    /// from statistics read from their file, as the launch reads the app's.
     func testTheMoveIsMadeOnceEveryBookWasHere() throws {
         let world = try makeIntegrationWorld("Finished Books At End Once")
         let preferences = makeSandboxedPreferences("Finished Books At End Once")
-        let statistics = makeStatistics()
         let lastWord = try makeBook("Last Word", at: 1_993, in: world)
         let inCloud = try makeBook("In the Cloud", at: 1_995, in: world)
-        for book in [lastWord, inCloud] {
-            statistics.markBookFinished(bookID: book.id, title: book.title)
-        }
+        let statistics = try makeStatistics(finishing: [lastWord, inCloud])
         let cloudIndex = TextMouthPaths.contentIndexPath(in: inCloud.tmbDirectory)
         let cloud = MaintenanceFileAccess(isDataless: { _ in false }, refusesRead: { $0 == cloudIndex })
 
@@ -136,7 +135,76 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
         XCTAssertEqual(row(of: lastWord, in: world)?.readingPosition, readAgain, "The move was made again")
     }
 
+    /// The move waits for statistics read from their file (REV14). With no
+    /// file yet, or with one cut short, the statistics only stand in for it
+    /// and Books Finished counts no book, so a move made then would be
+    /// recorded as made with nothing moved, and would never run once the
+    /// file was repaired. Nothing is moved or recorded until a launch reads
+    /// the repaired file, and that launch makes the move.
+    func testTheMoveWaitsForStatisticsReadFromTheirFile() throws {
+        let world = try makeIntegrationWorld("Finished Books At End Unread")
+        let preferences = makeSandboxedPreferences("Finished Books At End Unread")
+        let lastWord = try makeBook("Last Word", at: 1_993, in: world)
+        let file = makeStatisticsFile()
+        // What the repaired file holds: Books Finished counting the book.
+        _ = try makeStatistics(finishing: [lastWord], in: file)
+        let whole = try Data(contentsOf: file)
+        try FileManager.default.removeItem(at: file)
+
+        /// Makes the move as a launch does over `statistics`, which stand in
+        /// for their file because of `why`, and checks that it neither
+        /// moved the book nor was recorded as made.
+        func assertTheMoveWaits(over statistics: ReadingStatsService, _ why: String) throws {
+            XCTAssertFalse(statistics.statsReadFromFile, "\(why): the statistics said they were read from it")
+            try moveOnce(in: world, statistics: statistics, preferences: preferences, access: .live)
+            XCTAssertEqual(row(of: lastWord, in: world)?.readingPosition, lastWord.readingPosition, "\(why): the book moved")
+            XCTAssertEqual(
+                preferences.integer(forKey: LibraryViewModel.finishedBooksAtEndKey),
+                0,
+                "\(why): the move was recorded as made"
+            )
+        }
+
+        try assertTheMoveWaits(over: makeStatistics(at: file), "No file yet")
+        try whole.prefix(whole.count / 2).write(to: file)
+        try assertTheMoveWaits(over: makeStatistics(at: file), "A file cut short")
+
+        try whole.write(to: file)
+        try moveOnce(in: world, statistics: makeStatistics(at: file), preferences: preferences, access: .live)
+        try assertAtItsEnd(lastWord, in: world)
+        XCTAssertEqual(
+            preferences.integer(forKey: LibraryViewModel.finishedBooksAtEndKey),
+            LibraryViewModel.finishedBooksAtEndVersion,
+            "Not recorded as made once the repaired file was read"
+        )
+    }
+
+    // MARK: - The Last-Opened Date
+
+    /// A reader's save dates its book's opening now, as it always has, in
+    /// the row and so in the record; a place moved for a book nobody
+    /// opened, as the one-time move moves one, keeps the date (REV14).
+    func testOnlyAReadersSaveDatesTheBooksOpening() throws {
+        let book = Self.book(at: 1_000)
+        var library = Library(books: [book])
+        let place = ReadingPosition(chapterIndex: 2, characterOffset: 500, globalCharacterOffset: 1_500)
+
+        library.updateReadingPosition(bookID: book.id, position: place, markingOpened: false)
+        let moved = try XCTUnwrap(library.books.first)
+        XCTAssertEqual(moved.readingPosition, place)
+        XCTAssertEqual(moved.lastOpened, Self.lastOpened, "A moved place dated the book opened")
+
+        let beforeTheSave = Date()
+        library.updateReadingPosition(bookID: book.id, position: place)
+        let saved = try XCTUnwrap(library.books.first?.lastOpened, "A reader's save left the book unopened")
+        XCTAssertGreaterThanOrEqual(saved, beforeTheSave, "A reader's save did not date the book opened now")
+    }
+
     // MARK: - Fixtures
+
+    /// When every fixture book was last opened, in whole seconds, as the
+    /// record's dates are written: long before any test runs.
+    private static let lastOpened = Date(timeIntervalSince1970: 1_767_225_600)
 
     /// The chapters' lengths of every fixture book, in UTF-16 code units:
     /// 2,000 in all, so a tenth of a percent is two units.
@@ -159,8 +227,9 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
         return BookContentIndex.build(fromChapters: chapters, format: .txt)
     }
 
-    /// A text book, measured as the library measures it, whose row is saved
-    /// `globalOffset` into it, in its last chapter.
+    /// A text book, measured as the library measures it, last opened at
+    /// `lastOpened`, whose row is saved `globalOffset` into it, in its last
+    /// chapter.
     private static func book(at globalOffset: Int, title: String = "Breakwater Survey", folder: String = "") -> Book {
         let index = index()
         let lastChapterStart = index.totalCharacterCount - (chapterLengths.last ?? 0)
@@ -170,6 +239,7 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
             filePath: "/nowhere/\(title).txt",
             md5Hash: UUID().uuidString,
             folderPath: folder,
+            lastOpened: lastOpened,
             readingPosition: ReadingPosition(
                 chapterIndex: 2,
                 characterOffset: globalOffset - lastChapterStart,
@@ -192,19 +262,42 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
         return book
     }
 
-    /// Statistics of the test's own, over a file in a folder of its own,
-    /// removed when the test ends.
-    private func makeStatistics() -> ReadingStatsService {
+    /// Where a statistics file of the test's own goes, in a folder of its
+    /// own, removed with whatever is in it when the test ends.
+    private func makeStatisticsFile() -> URL {
         let folder = TextMouthPaths.root.appendingPathComponent(
             "FinishedBooksAtEndMoveTests-\(UUID().uuidString)", isDirectory: true
         )
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let statistics = ReadingStatsService(fileURL: folder.appendingPathComponent("reading_stats.json"))
+        // Registered first, so it runs after every service is stopped.
         addTeardownBlock { @MainActor in
-            statistics.shutdown()
             ReadingStatsService.waitForQueuedSaves()
             try? FileManager.default.removeItem(at: folder)
         }
+        return folder.appendingPathComponent("reading_stats.json")
+    }
+
+    /// Statistics of the test's own over `file`, read from it as the launch
+    /// reads the app's, stopped when the test ends.
+    private func makeStatistics(at file: URL) -> ReadingStatsService {
+        let statistics = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in statistics.shutdown() }
+        return statistics
+    }
+
+    /// Statistics of the test's own whose Books Finished counts `books`,
+    /// read from their file, `file` or one of the test's own, as the launch
+    /// reads the app's: the file is written first, as the books' ends wrote
+    /// it.
+    private func makeStatistics(finishing books: [Book], in file: URL? = nil) throws -> ReadingStatsService {
+        let file = file ?? makeStatisticsFile()
+        let writer = makeStatistics(at: file)
+        for book in books {
+            writer.markBookFinished(bookID: book.id, title: book.title)
+        }
+        ReadingStatsService.waitForQueuedSaves()
+        let statistics = makeStatistics(at: file)
+        XCTAssertTrue(statistics.statsReadFromFile, "The statistics were not read from their file")
         return statistics
     }
 
@@ -241,8 +334,10 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
         world.library.bookByID(book.id)
     }
 
-    /// Check that `book` was put at its end: its row there, dated after it
-    /// was saved, and reading as finished, and its record there too.
+    /// Check that `book` was put at its end: its row there, the place dated
+    /// after it was saved, the book's last-opened date kept, and reading as
+    /// finished, and its record there too, with the same last-opened date
+    /// (REV14: the move once dated every book it moved as opened now).
     private func assertAtItsEnd(
         _ book: Book,
         in world: IntegrationWorld,
@@ -258,14 +353,13 @@ final class FinishedBooksAtEndMoveTests: XCTestCase {
             file: file,
             line: line
         )
+        XCTAssertEqual(row(of: book, in: world)?.lastOpened, Self.lastOpened, "\(book.title) was dated opened", file: file, line: line)
         XCTAssertTrue(row(of: book, in: world)?.restsAtEnd ?? false, "\(book.title) does not read as finished", file: file, line: line)
         LibraryPersistenceService.flushPendingSave()
-        let recorded = try XCTUnwrap(
-            StoredBookRecord.read(from: book.tmbDirectory).info.state.readingPosition,
-            "\(book.title)'s record has no place",
-            file: file,
-            line: line
-        )
+        let record = try StoredBookRecord.read(from: book.tmbDirectory).info
+        let recorded = try XCTUnwrap(record.state.readingPosition, "\(book.title)'s record has no place", file: file, line: line)
         XCTAssertEqual(Self.place(recorded), Self.place(Self.end), "\(book.title)'s record is not at its end", file: file, line: line)
+        XCTAssertEqual(record.metadata.lastOpened, Self.lastOpened, "\(book.title)'s record was dated opened", file: file, line: line)
+        XCTAssertFalse(record.state.isNew, "\(book.title)'s record reads as never opened", file: file, line: line)
     }
 }

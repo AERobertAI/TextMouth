@@ -73,6 +73,12 @@ enum EndOfBookWording {
     /// No book follows the finished one in its folder.
     static let noMoreBooksInFolderNote = "No more books in folder"
 
+    /// Only finished books follow the finished one in its folder, and
+    /// Continue to Next Book passes over them (REV14), as the reading list
+    /// says of the finished books it passes over:
+    /// "Finished: Dune. Every book after it in the folder is finished."
+    static let onlyFinishedBooksInFolderNote = "Every book after it in the folder is finished"
+
     // MARK: - A Book Resting at Its End
 
     /// What a surface that says how far a book has got says of a book
