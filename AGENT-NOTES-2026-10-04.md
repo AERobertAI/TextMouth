@@ -2159,3 +2159,25 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
 **TODO sentence:** "REV14's feed findings (`fix/rev14-feed-findings`, merged …, October 10): Unsubscribe deletes only the kept packages its question named, decided before it takes back the rule's queued downloads; a restored package, or any package of a feed being deleted, is discarded as Removal Behavior says; holders are named for their download, and the launch puts a refused deletion's files back or trashes a holder's contents under their own name, never while the index is recovered; a Delete Feed… that stops short leaves nothing Downloading or Waiting; Cancel and its hint promise re-downloads only where the rule will make them, and otherwise say Download gets them back; refusal and OPML alerts are no longer also announced; a feed's folder holding more offers Delete Folder…, naming the feed; one helper removes a whole package, one already gone counting as removed; Delete Feed's announcement names the kept parts. REV14 feed findings 1 to 9. Agent `feedfixes14`. Not verified: real networks, the real Trash and Put Back, live VoiceOver and braille, a cloud library on two Macs."
 
 - Follow-ups: in the TODO's "Still open after the REV14 feed-fixes merge".
+
+## From the placediff agent (feature/place-diff), Oct 10
+
+**Rules changed from the reference**
+- **Whole old text only.** The window machinery and Myers' diff are dropped, since the design keeps the whole text.
+- **A place at its chapter's end** is carried by the word before it, so a restored chapter after it doesn't take it. **A place inside a word** keeps its offset. Both match how branch A's finder lands places.
+- **An old text with no words** decides nothing; the reference would have sent every place to the end.
+- **A place saved without words** has them read in the old text at its numbers.
+- **Two skipped-heading guards** the measurement never exercised. Without them, a skipped chapter that a rebuild leaves out passes its skip to the next chapter: chapter IV took chapter III's skip in a test, because the diff lines up their common "CHAPTER". Now a heading's own text must stand where it lands, and after a removal only a heading with the same label may take the skip.
+- **A heading in a chapter with no words** (a cover) is found by its label, never by the diff.
+
+**Decisions**
+- The "PLACES_RELOCATED" log line is the design's, plus ", waiting N" when a skip waits.
+- The end of the book and followed moved text count as "moved by the diff".
+- Every relocated place gets its anchor captured anew, and a position its whole-book offset recomputed, even when it stayed. A move keeps a position's time and heading index, and a bookmark's identity, number, note and date.
+- A skip that waits keeps its numbers. Two skips that now name one heading become one.
+- Anchors read in the old text record no measure (`measuredIn` is nil).
+
+**ARCHITECTURE wording** (nothing is visible, so no README change)
+"Moving saved places across a rebuilt text (T06, branch C): `PlaceRelocator` (pure, `Sendable`) moves a book's reading position, bookmarks, and skipped headings from its old text (the old content.md as this build reads it) to its new one. It lines the two texts' fine words up once by a patience diff (`PatienceDiff`). For each place it: keeps it when its anchor still stands or marks the end of the book (`TextAnchorFinder.settled`); finds it in the old text, at its numbers or else by its words; carries it by the diff's rules (solid matches, a place keeping the words that follow it, like-for-like stretches, removals slid back, moved text followed into text the diff found put in, the end to the end); else asks the saved-words search, then guesses silently. A skipped heading lands on the heading of its level where its own text lands, else is found by level, label, and words, else waits; after a removal only a heading with its label takes the skip. `relocate(_:)` returns the places to save (anchors captured anew), how each was found, and the counts for the `PLACES_RELOCATED` line (`Counts.logLine(title:)`). It shares `BookWords.landing` and `TextAnchorFinder.settled`/`onlyBestSpot` with the finder. Nothing calls it yet: branch D wires it into `MarkdownCacheService.writeCache(for:)` and branch E into Edit Text. Files: Models/PatienceDiff.swift, Models/PlaceRelocator.swift."
+
+- Follow-ups: in the TODO's "Still open after T06's branch C merge".
