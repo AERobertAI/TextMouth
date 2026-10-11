@@ -136,46 +136,74 @@ final class FeedDownloadProgressTests: XCTestCase {
 
     /// Cancel says what it stopped: one download by its title, as Cancel
     /// Download says it, or how many, the waiting ones among them; one that
-    /// finishes all the same; and, with anything stopped, when TextMouth
-    /// downloads again by itself (FR14).
-    func testCancelSaysWhatItStoppedAndWhenTextMouthTriesAgain() {
+    /// finishes all the same; and, with anything stopped, how what stopped
+    /// comes back (FR14), promising that TextMouth downloads it again by
+    /// itself only when the newest-N rule will, and saying that Download
+    /// gets back the rest (REV14 feeds 5).
+    func testCancelSaysWhatItStoppedAndHowItComesBack() {
         let again = "TextMouth downloads each feed's newest again at its next check, or the next time it opens."
         XCTAssertEqual(FeedDownloadProgressWording.retryAfterCancel, again)
+        let one = FeedCancelReturn(byItself: 1)
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(stopped: ["Ep. 368"], finishing: nil),
+            FeedDownloadProgressWording.cancelled(stopped: ["Ep. 368"], finishing: nil, comingBack: one),
             FeedWording.downloadCancelled(title: "Ep. 368") + " " + again
         )
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(stopped: ["Ep. 368"], finishing: nil),
+            FeedDownloadProgressWording.cancelled(stopped: ["Ep. 368"], finishing: nil, comingBack: one),
             "Stopped downloading “Ep. 368”. " + again
         )
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(stopped: ["1", "2", "3", "4", "5", "6"], finishing: "Ep. 370"),
+            FeedDownloadProgressWording.cancelled(stopped: ["1", "2", "3", "4", "5", "6"], finishing: "Ep. 370", comingBack: FeedCancelReturn(byItself: 6)),
             "Stopped 6 feed downloads. “Ep. 370” is already being added to the library. " + again
         )
+        // What the rule never downloads by itself, only Download gets back.
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(stopped: [], finishing: "Ep. 370"),
+            FeedDownloadProgressWording.cancelled(stopped: ["Ep. 368"], finishing: nil, comingBack: FeedCancelReturn(byDownload: 1)),
+            "Stopped downloading “Ep. 368”. To download it again, choose Download on its row."
+        )
+        XCTAssertEqual(
+            FeedDownloadProgressWording.cancelled(stopped: ["1", "2", "3"], finishing: nil, comingBack: FeedCancelReturn(byDownload: 3)),
+            "Stopped 3 feed downloads. To download them again, choose Download on their rows."
+        )
+        // A mix says how many come back by themselves, and how the others do.
+        XCTAssertEqual(
+            FeedDownloadProgressWording.cancelled(stopped: ["1", "2"], finishing: nil, comingBack: FeedCancelReturn(byItself: 1, byDownload: 1)),
+            "Stopped 2 feed downloads. TextMouth downloads 1 of them again at its feed's next check, or the next time it opens. "
+                + "To download the other one again, choose Download on its row."
+        )
+        XCTAssertEqual(
+            FeedDownloadProgressWording.cancelled(stopped: ["1", "2", "3", "4", "5"], finishing: nil, comingBack: FeedCancelReturn(byItself: 3, byDownload: 2)),
+            "Stopped 5 feed downloads. TextMouth downloads 3 of them again at their feeds' next checks, or the next time it opens. "
+                + "To download the other 2 again, choose Download on their rows."
+        )
+        XCTAssertEqual(
+            FeedDownloadProgressWording.cancelled(stopped: [], finishing: "Ep. 370", comingBack: FeedCancelReturn()),
             "“Ep. 370” is already being added to the library."
         )
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelled(stopped: [], finishing: nil),
+            FeedDownloadProgressWording.cancelled(stopped: [], finishing: nil, comingBack: FeedCancelReturn()),
             "No feed download is under way."
         )
     }
 
     /// The section's Cancel button is named for what it cancels and says
-    /// what it stops, deletes, and when TextMouth tries again (FR14); its bar
-    /// is named too.
+    /// what it stops and deletes, and how what it would stop comes back, as
+    /// Cancel would say it (FR14, REV14 feeds 5); its bar is named too.
     func testTheCancelButtonSaysWhatItStopsAndWhatItLeaves() {
         XCTAssertEqual(FeedDownloadProgressWording.title, "Feed Downloads")
         XCTAssertEqual(FeedDownloadProgressWording.cancelButtonTitle, "Cancel")
         XCTAssertEqual(FeedDownloadProgressWording.cancelButtonLabel, "Cancel Feed Downloads")
         XCTAssertNotEqual(FeedDownloadProgressWording.cancelButtonLabel, ProgressOverlay.cancelButtonLabel)
+        let stops = "Stops every feed download, those waiting for a network or for room too, and deletes what they had downloaded."
         XCTAssertEqual(
-            FeedDownloadProgressWording.cancelButtonHint,
-            "Stops every feed download, those waiting for a network or for room too, and deletes what they had downloaded. "
-                + "TextMouth downloads each feed's newest again at its next check, or the next time it opens."
+            FeedDownloadProgressWording.cancelButtonHint(FeedCancelReturn(byItself: 2)),
+            stops + " TextMouth downloads each feed's newest again at its next check, or the next time it opens."
         )
+        XCTAssertEqual(
+            FeedDownloadProgressWording.cancelButtonHint(FeedCancelReturn(byDownload: 2)),
+            stops + " To download them again, choose Download on their rows."
+        )
+        XCTAssertEqual(FeedDownloadProgressWording.cancelButtonHint(FeedCancelReturn()), stops)
         XCTAssertEqual(FeedDownloadProgressWording.overallBarLabel, "All feed downloads")
         XCTAssertEqual(FeedDownloadProgressWording.cancelling, "Cancelling...")
         XCTAssertEqual(FeedDownloadProgressWording.refreshInterval, 5)

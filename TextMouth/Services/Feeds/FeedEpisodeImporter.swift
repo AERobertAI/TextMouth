@@ -167,6 +167,15 @@ enum FeedEpisodeImporter {
         return (stagedFile, try FileImportService.md5Hash(of: stagedFile))
     }
 
+    /// Whether a download of an item whose row `kept` was kept after an
+    /// earlier download's file went restores that same book into its kept
+    /// package (`restoreBook`), which then holds the place, bookmarks, and
+    /// transcript kept for it, rather than publishing a new one: when the
+    /// row names a package of its feed's folder (FR11, branch A2).
+    static func restoresKeptPackage(_ kept: Book?) -> Bool {
+        kept.map { FeedItemPackage.isPackageName($0.tmbDirectoryName) } ?? false
+    }
+
     /// The import both kinds share: a package staged for the book, its file
     /// put in by `placeFile`, then read, recorded with its feed item, and
     /// published in the feed's own folder. With `kept`, a row whose package
@@ -181,7 +190,7 @@ enum FeedEpisodeImporter {
         restoring kept: Book?,
         placeFile: (URL) throws -> Void
     ) throws -> ImportedBook {
-        if let kept, FeedItemPackage.isPackageName(kept.tmbDirectoryName) {
+        if let kept, restoresKeptPackage(kept) {
             return try restoreBook(kept, named: fileName, format: format, item: item, of: feed, placeFile: placeFile)
         }
         return try ImportRun.perform(importing: fileName) { run in

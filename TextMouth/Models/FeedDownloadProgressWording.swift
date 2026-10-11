@@ -20,6 +20,21 @@ struct FeedDownloadWaits: Equatable, Sendable {
     }
 }
 
+// MARK: - What Cancel Stopped Comes Back (REV14 Feeds 5)
+
+/// How the downloads the feed downloads section's Cancel stops come back
+/// (`FeedCenter.comingBack(of:)`): those the newest-N rule downloads again
+/// by itself once their feeds' next checks have ended, and those only the
+/// listener's Download brings back, as a feed that downloads by hand, or
+/// one unsubscribed from, never downloads by itself, nor does any feed an
+/// item outside its newest, or one the listener made theirs.
+struct FeedCancelReturn: Equatable, Sendable {
+    /// The downloads the rule downloads again by itself.
+    var byItself = 0
+    /// The downloads only Download brings back.
+    var byDownload = 0
+}
+
 // MARK: - The Words (FR10)
 
 /// The words of the feed downloads under way (FR10), kept in one place so
@@ -178,10 +193,10 @@ enum FeedDownloadProgressWording {
     /// “Ep. 368”."), or how many ("Stopped 6 feed downloads."), the rule's
     /// waiting ones among them; then the download that finishes all the
     /// same, `finishing`, because its book was already being added to the
-    /// library; then, with anything stopped, when TextMouth tries again by
-    /// itself (`retryAfterCancel`). With nothing stopped and nothing
-    /// finishing, no download was under way.
-    static func cancelled(stopped titles: [String], finishing: String?) -> String {
+    /// library; then, with anything stopped, how what stopped comes back,
+    /// as `comingBack` counts it (`comingBack(_:)`, REV14 feeds 5). With
+    /// nothing stopped and nothing finishing, no download was under way.
+    static func cancelled(stopped titles: [String], finishing: String?, comingBack: FeedCancelReturn) -> String {
         var sentences: [String] = []
         switch titles.count {
         case 0:
@@ -196,15 +211,43 @@ enum FeedDownloadProgressWording {
         if let finishing {
             sentences.append("“\(finishing)” is already being added to the library.")
         }
-        if !titles.isEmpty {
-            sentences.append(retryAfterCancel)
+        if let back = Self.comingBack(comingBack) {
+            sentences.append(back)
         }
         return sentences.joined(separator: " ")
     }
 
-    /// When TextMouth downloads again by itself what Cancel stopped (FR14):
-    /// the newest-N rule's next pass after each feed's next check, never
-    /// sooner, or the first pass when TextMouth next opens.
+    /// How the downloads Cancel stops come back, as `comingBack` counts them
+    /// (REV14 feeds 5), said only of what will happen: when the newest-N
+    /// rule downloads every one again by itself, that it does
+    /// (`retryAfterCancel`); when it downloads none, that Download gets them
+    /// back; when it downloads some, how many, and that Download gets back
+    /// the others; nil when nothing stopped.
+    static func comingBack(_ comingBack: FeedCancelReturn) -> String? {
+        switch (comingBack.byItself, comingBack.byDownload) {
+        case (0, 0):
+            return nil
+        case (_, 0):
+            return retryAfterCancel
+        case (0, let byDownload):
+            return byDownload == 1
+                ? "To download it again, choose Download on its row."
+                : "To download them again, choose Download on their rows."
+        case let (byItself, byDownload):
+            let again = byItself == 1
+                ? "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens."
+                : "TextMouth downloads \(byItself) of them again at their feeds' next checks, or the next time it opens."
+            let others = byDownload == 1
+                ? "To download the other one again, choose Download on its row."
+                : "To download the other \(byDownload) again, choose Download on their rows."
+            return "\(again) \(others)"
+        }
+    }
+
+    /// When TextMouth downloads again by itself what Cancel stopped (FR14),
+    /// when the newest-N rule downloads every one of them by itself: the
+    /// rule's next pass after each feed's next check, never sooner, or the
+    /// first pass when TextMouth next opens.
     static let retryAfterCancel = "TextMouth downloads each feed's newest again at its next check, or the next time it opens."
 
     // MARK: The Section's Controls
@@ -214,12 +257,18 @@ enum FeedDownloadProgressWording {
     /// What VoiceOver calls the Cancel button: the import overlay has a
     /// Cancel too, so the name says what it cancels.
     static let cancelButtonLabel = "Cancel Feed Downloads"
+
     /// What VoiceOver says the Cancel button does (FR14): it stops every
     /// feed download, whoever asked for it, the rule's waiting for a network
-    /// or for room too, and deletes what they had downloaded; and TextMouth
-    /// downloads each feed's newest again by itself later (`retryAfterCancel`).
-    static let cancelButtonHint = "Stops every feed download, those waiting for a network or for room too, "
-        + "and deletes what they had downloaded. " + retryAfterCancel
+    /// or for room too, and deletes what they had downloaded; then how what
+    /// it would stop now comes back, as `comingBack` counts it and Cancel
+    /// would say it (`comingBack(_:)`, REV14 feeds 5).
+    static func cancelButtonHint(_ comingBack: FeedCancelReturn) -> String {
+        let stops = "Stops every feed download, those waiting for a network or for room too, and deletes what they had downloaded."
+        guard let back = Self.comingBack(comingBack) else { return stops }
+        return "\(stops) \(back)"
+    }
+
     /// What VoiceOver calls the section's bar, which counts every download
     /// of the run, the one under way by its bytes.
     static let overallBarLabel = "All feed downloads"

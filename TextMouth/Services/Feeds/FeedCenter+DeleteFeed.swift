@@ -120,12 +120,15 @@ extension FeedCenter {
         let removal: FeedFileRemovalOutcome
         do {
             removal = try library.removeFeedFiles(of: library.everyRow(ofFeed: feedID), keepingPackages: false) { removal in
-                // A row naming no package of the feed's folder, or one whose
-                // package is gone already, leaves nothing to remove here:
-                // whatever is left of it goes with that folder in step 3.
-                guard let package = try? FeedItemPackage.packageForRemoval(of: removal.row, in: root),
-                      FileManager.default.fileExists(atPath: package.path) else { return }
-                try environment.removeItem(package)
+                do {
+                    // A package gone already counts as removed, as for
+                    // every whole package (REV14 feeds 8).
+                    try FeedItemPackage.removeWhole(removal.row, in: root, remove: environment.removeItem)
+                } catch FeedItemPackageError.notAFeedPackage {
+                    // A row naming no package of the feed's folder leaves
+                    // nothing to remove here: whatever is left of it goes
+                    // with that folder in step 3.
+                }
             }
         } catch {
             downloads.reopenFeed(feedID)

@@ -125,8 +125,9 @@ struct FeedInfoSheet: View {
     /// returns the question to ask first (FR14,
     /// `LibraryFeedsPresenter.requestUnsubscribe(_:in:)`).
     let requestUnsubscribe: () -> FeedConfirmation?
-    /// Unsubscribes, once confirmed.
-    let onUnsubscribe: () -> Void
+    /// Unsubscribes, once the question given is confirmed, deleting only
+    /// what it named (REV14 feeds 1).
+    let onUnsubscribe: (FeedConfirmation) -> Void
     /// Subscribes again, checking the feed at once (FR11, branch D).
     let onResubscribe: () -> Void
     /// Asks for the Delete Feed confirmation's words for the feed (FR14).
@@ -152,7 +153,7 @@ struct FeedInfoSheet: View {
         model: FeedInfoModel,
         feedFolders: LibraryFeedFolders,
         requestUnsubscribe: @escaping () -> FeedConfirmation?,
-        onUnsubscribe: @escaping () -> Void,
+        onUnsubscribe: @escaping (FeedConfirmation) -> Void,
         onResubscribe: @escaping () -> Void = {},
         deleteFeedConfirmation: @escaping () -> FeedConfirmation? = { nil },
         onDeleteFeed: @escaping () -> Void = {},
@@ -245,7 +246,7 @@ struct FeedInfoSheet: View {
     private func confirmed(_ confirmation: FeedConfirmation) {
         switch confirmation.kind {
         case .unsubscribe:
-            onUnsubscribe()
+            onUnsubscribe(confirmation)
         case .deleteFeed:
             onDeleteFeed()
         case .deleteItem:

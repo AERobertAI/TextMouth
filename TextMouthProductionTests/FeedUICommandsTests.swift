@@ -100,8 +100,9 @@ final class FeedUICommandsTests: XCTestCase {
     }
 
     /// Delete Download is refused while the book is open in a reader, in
-    /// the engine's words, naming the episode, shown and spoken, and the
-    /// book stays.
+    /// the engine's words, naming the episode, shown in an alert, which
+    /// VoiceOver reads as it appears, and never announced besides, which
+    /// VoiceOver could read twice (REV14 feeds 6); the book stays.
     func testDeleteDownloadIsRefusedWhileTheBookIsOpen() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsOpenBook")
         harness.presenter.perform(harness.action(.download), in: harness.context)
@@ -113,15 +114,16 @@ final class FeedUICommandsTests: XCTestCase {
         let refusal = "“A map you can touch” is open in a reader. Close it, then try again."
         XCTAssertEqual(harness.presenter.notice?.title, FeedWording.deleteRefusedTitle)
         XCTAssertEqual(harness.presenter.notice?.message, refusal)
-        XCTAssertEqual(harness.heard.last, refusal)
+        XCTAssertFalse(harness.heard.contains(refusal), "the alert's words were announced too")
         XCTAssertNotNil(harness.world.library.bookByID(book.id), "an open book's download was deleted")
         harness.world.library.openBookIDs.remove(book.id)
     }
 
     /// Delete Download and Delete Episode… are refused while the episode is
     /// transcribed, whose transcript would be lost with its file (feed
-    /// follow-ups item 1): the alert names it and says what to do, VoiceOver
-    /// hears the same, and the episode, its file, and its row stay.
+    /// follow-ups item 1): the alert names it and says what to do, which
+    /// VoiceOver reads as it appears, with nothing announced besides
+    /// (REV14 feeds 6), and the episode, its file, and its row stay.
     func testDeleteDownloadAndDeleteEpisodeAreRefusedWhileTheEpisodeIsTranscribed() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsTranscribing")
         harness.presenter.perform(harness.action(.download), in: harness.context)
@@ -137,7 +139,7 @@ final class FeedUICommandsTests: XCTestCase {
 
         XCTAssertEqual(harness.presenter.notice?.title, FeedWording.deleteRefusedTitle)
         XCTAssertEqual(harness.presenter.notice?.message, refusal)
-        XCTAssertEqual(harness.heard.last, refusal)
+        XCTAssertFalse(harness.heard.contains(refusal), "the alert's words were announced too")
 
         harness.presenter.notice = nil
         harness.presenter.perform(harness.action(.deleteItem), in: harness.context)
@@ -437,7 +439,7 @@ final class FeedUICommandsTests: XCTestCase {
             model: model,
             feedFolders: LibraryFeedFolders(center: harness.world.center),
             requestUnsubscribe: { nil },
-            onUnsubscribe: {},
+            onUnsubscribe: { _ in },
             onDone: {}
         )
 
@@ -514,7 +516,7 @@ final class FeedUICommandsTests: XCTestCase {
             model: model,
             feedFolders: LibraryFeedFolders(center: harness.world.center),
             requestUnsubscribe: { nil },
-            onUnsubscribe: {},
+            onUnsubscribe: { _ in },
             onDone: {}
         )
 
@@ -545,7 +547,7 @@ final class FeedUICommandsTests: XCTestCase {
             model: model,
             feedFolders: LibraryFeedFolders(center: harness.world.center),
             requestUnsubscribe: { nil },
-            onUnsubscribe: {},
+            onUnsubscribe: { _ in },
             onDone: { dones += 1 },
             makingFolder: true
         )
@@ -584,7 +586,7 @@ final class FeedUICommandsTests: XCTestCase {
             model: model,
             feedFolders: LibraryFeedFolders(center: harness.world.center),
             requestUnsubscribe: { nil },
-            onUnsubscribe: {},
+            onUnsubscribe: { _ in },
             onDone: { dones += 1 }
         )
 

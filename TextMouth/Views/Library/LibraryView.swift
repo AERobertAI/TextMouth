@@ -988,17 +988,18 @@ struct LibraryView: View {
     }
 
     /// The words for Delete Everything on the folder awaiting confirmation,
-    /// in the mode the Trash preference chooses, naming the feeds whose
-    /// folders are inside it and what happens to each (FR14). With no folder
-    /// pending, no dialog shows, and only the mode-dependent button title
-    /// matters.
+    /// in the mode the Trash preference chooses, naming the feeds whose own
+    /// folder it is and those whose folders are inside it, and what happens
+    /// to each (FR14, REV14 feeds 7). With no folder pending, no dialog
+    /// shows, and only the mode-dependent button title matters.
     private var deleteEverythingWording: FolderRemovalWording {
         let folder = libraryViewModel.pendingDeleteFolder
         return FolderRemovalWording(
             mode: removalPreferences.deletionMode,
             folderName: folder?.name ?? "",
             bookCount: folder.map { libraryViewModel.bookCount(inFolderTree: $0.fullPath) } ?? 0,
-            feedTitles: folder.map { libraryViewModel.feedTitles(inside: $0) } ?? []
+            feedTitles: folder.map { libraryViewModel.feedTitles(inside: $0) } ?? [],
+            ownFeedTitles: folder.map { libraryViewModel.feedTitles(of: $0) } ?? []
         )
     }
 
@@ -1188,8 +1189,10 @@ struct LibraryView: View {
     /// A folder's commands: Rename, Move, and Delete, in its row's context
     /// menu, and, for a feed's folder, in its feed's row's, which stands for
     /// the folder where the Feeds section lists the feed (FR03). A feed's
-    /// own folder offers no Delete Folder…: its feed's commands beside these
-    /// offer Delete Feed… there, so a feed has one delete (FR14).
+    /// own folder holding nothing more than its items offers no Delete
+    /// Folder…: its feed's commands beside these offer Delete Feed… there,
+    /// so a feed has one delete (FR14); one holding more offers it, its
+    /// question naming the feed (REV14 feeds 7).
     @ViewBuilder
     private func folderMenu(_ folder: BookFolder) -> some View {
         Button("Rename Folder...") {

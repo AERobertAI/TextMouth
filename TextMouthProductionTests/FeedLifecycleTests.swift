@@ -413,28 +413,72 @@ final class FeedLifecycleTests: XCTestCase {
     /// and the Trash leaves the holder in its feed's folder, where nothing
     /// else ever removes it; the next launch sweeps it as the Delete
     /// Download it belonged to would have sent it, through the listener's
-    /// own removal (to the Trash, or for good, as Removal Behavior says),
-    /// and leaves the feed's packages and anything not a holder alone.
+    /// own removal (to the Trash, or for good, as Removal Behavior says):
+    /// what it holds goes under the article's own name, never the holder's
+    /// hidden one, which Finder hides in the Trash (REV14 feeds 3), and the
+    /// emptied holder goes after it. The feed's packages and anything not a
+    /// holder stay. Holders named before REV14, by a name of their own
+    /// alone, and those named for a download no longer listed as one, are
+    /// swept alike.
     func testTheNextLaunchSweepsAHolderACrashLeft() async throws {
         let world = try FeedTestWorld(self, label: "FeedHolderSweep")
         let (feed, book) = try await downloadedEpisode(in: world)
         let folder = FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root)
-        let holder = folder.appendingPathComponent(FeedItemPackage.removalHolderPrefix + UUID().uuidString, isDirectory: true)
-        let together = holder.appendingPathComponent("A Newer Article", isDirectory: true)
-        try FileManager.default.createDirectory(at: together, withIntermediateDirectories: true)
-        try Data("<p>Words.</p>".utf8).write(to: together.appendingPathComponent("A Newer Article.html"))
-        try Data("Words.".utf8).write(to: together.appendingPathComponent(TextMouthPaths.contentMarkdownFileName))
+        let older = try makeHolder(named: FeedItemPackage.removalHolderPrefix + UUID().uuidString, holding: "A Newer Article", in: folder)
+        let named = try makeHolder(
+            named: FeedItemPackage.removalHolderPrefix + UUID().uuidString + "-" + UUID().uuidString,
+            holding: "Another Article",
+            in: folder
+        )
         let other = folder.appendingPathComponent(".staging-left-alone", isDirectory: true)
         try FileManager.default.createDirectory(at: other, withIntermediateDirectories: true)
-        XCTAssertEqual(FeedItemPackage.removalHolders(in: TextMouthPaths.root).filter { $0.path.hasPrefix(folder.path) }, [holder])
+        XCTAssertEqual(Set(FeedItemPackage.removalHolders(in: TextMouthPaths.root).filter { $0.path.hasPrefix(folder.path) }), [older, named])
+        let swept = debugLogLines(containing: "FEED_HELD_ASIDE_SWEPT: \(older.lastPathComponent)").count
 
         _ = await world.relaunch(self)
 
-        XCTAssertFalse(FileManager.default.fileExists(atPath: holder.path), "the holder a crash left stayed")
-        XCTAssertEqual(world.removedItems.value.map(\.name), [holder.lastPathComponent])
-        XCTAssertEqual(world.removedItems.value.first?.contents, ["A Newer Article"])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: older.path), "the holder a crash left stayed")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: named.path), "the holder a crash left stayed")
+        XCTAssertEqual(
+            world.removedItems.value.sorted { $0.name < $1.name },
+            [
+                FeedTestWorld.RemovedItem(name: "A Newer Article", contents: ["A Newer Article.html", TextMouthPaths.contentMarkdownFileName]),
+                FeedTestWorld.RemovedItem(name: "Another Article", contents: ["Another Article.html", TextMouthPaths.contentMarkdownFileName]),
+            ],
+            "what a holder held went other than under its own name"
+        )
         XCTAssertTrue(FileManager.default.fileExists(atPath: book.tmbDirectory.path), "a package went with the holder")
         XCTAssertTrue(FileManager.default.fileExists(atPath: other.path), "a folder that is no holder went")
+        XCTAssertEqual(debugLogLines(containing: "FEED_HELD_ASIDE_SWEPT: \(older.lastPathComponent)").count, swept + 1)
+    }
+
+    /// No holder is swept while the library's index is recovered: its list
+    /// of books is provisional, so the download whose refused deletion left
+    /// a holder could be missing from it, and its files taken for those of
+    /// a deletion that went ahead (REV14 feeds 3). Once the index is whole,
+    /// the next sweep empties the holder.
+    func testNoHolderIsSweptWhileTheIndexIsRecovered() async throws {
+        let world = try FeedTestWorld(self, label: "FeedHolderSweepRecovery")
+        let (feed, _) = try await downloadedEpisode(in: world)
+        let folder = FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root)
+        let holder = try makeHolder(named: FeedItemPackage.removalHolderPrefix + UUID().uuidString, holding: "An Article", in: folder)
+        world.library.indexRecovery = LibraryIndexRecovery(failure: LibraryIndexReadFailure(
+            indexURL: world.folder.url.appendingPathComponent("library.json"),
+            quarantineURL: nil,
+            error: CocoaError(.fileReadCorruptFile),
+            byteCount: 0
+        ))
+
+        await world.center.sweepRemovalHolders()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: holder.path), "a holder was swept while the index was recovered")
+        XCTAssertEqual(world.removedItems.value, [])
+
+        world.library.indexRecovery = nil
+        await world.center.sweepRemovalHolders()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: holder.path), "the holder stayed once the index was whole")
+        XCTAssertEqual(world.removedItems.value.map(\.name), ["An Article"])
     }
 
     /// How a book is in use, which the listener's deletions refuse, is the
@@ -497,6 +541,18 @@ final class FeedLifecycleTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// Makes, in the feed's folder `folder`, a removal holder named `name`
+    /// holding a folder named `title` with an article's file and its text,
+    /// as a Delete Download cut short leaves one; returns the holder.
+    private func makeHolder(named name: String, holding title: String, in folder: URL) throws -> URL {
+        let holder = folder.appendingPathComponent(name, isDirectory: true)
+        let together = holder.appendingPathComponent(title, isDirectory: true)
+        try FileManager.default.createDirectory(at: together, withIntermediateDirectories: true)
+        try Data("<p>Words.</p>".utf8).write(to: together.appendingPathComponent("\(title).html"))
+        try Data("Words.".utf8).write(to: together.appendingPathComponent(TextMouthPaths.contentMarkdownFileName))
+        return holder
+    }
 
     /// Starts `world`'s engine, subscribes it to a feed of one episode,
     /// "Episode One", and downloads it; returns the feed and the book.

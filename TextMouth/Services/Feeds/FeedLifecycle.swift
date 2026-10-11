@@ -202,20 +202,20 @@ extension FeedCenter {
         guard book.isFeedItem else { throw FeedItemPackageError.notAFeedPackage }
         let root = TextMouthPaths.root
         let outcome = try library.removeFeedFiles(of: [book], keepingPackages: keepingPackage) { removal in
-            let package = try FeedItemPackage.packageForRemoval(of: removal.row, in: root)
-            if removal.keepsPackage {
-                // A text book's content.md may hold an edit made with Edit
-                // Text, so it stays in a kept package whenever one of the
-                // engine's rules removes the file
-                // (`FeedItemPackage.staysWithoutTheFile(_:)`); the listener's
-                // own Delete Download takes it with the file, as one item
-                // that follows the Trash setting as the file does, and a
-                // refusal leaves both (REV11).
-                try FeedItemPackage.removeFileAndText(of: removal.row, in: package, remove: environment.removeItem)
-                FeedItemPackage.removeWhatTheFileMade(of: removal.row, from: package)
-            } else {
-                try environment.removeItem(package)
+            guard removal.keepsPackage else {
+                // A package gone already counts as removed (REV14 feeds 8).
+                try FeedItemPackage.removeWhole(removal.row, in: root, remove: environment.removeItem)
+                return
             }
+            let package = try FeedItemPackage.packageForRemoval(of: removal.row, in: root)
+            // A text book's content.md may hold an edit made with Edit Text,
+            // so it stays in a kept package whenever one of the engine's
+            // rules removes the file (`FeedItemPackage.staysWithoutTheFile(_:)`);
+            // the listener's own Delete Download takes it with the file, as
+            // one item that follows the Trash setting as the file does, and a
+            // refusal leaves both (REV11).
+            try FeedItemPackage.removeFileAndText(of: removal.row, in: package, remove: environment.removeItem)
+            FeedItemPackage.removeWhatTheFileMade(of: removal.row, from: package)
         }
         if let failure = outcome.failures.first {
             throw failure.error
@@ -288,28 +288,30 @@ extension FeedCenter {
         store.updateItem(itemID, of: feedID) { $0.deletedDate = environment.now() }
     }
 
-    /// Deletes the packages the feed `feedID` kept for downloads removed
-    /// earlier, as Unsubscribe does (FR11, branch D), with the places,
-    /// playback times, bookmarks, settings, and transcripts they hold, as the
-    /// listener accepted ("Clearing out old deleted episodes itself seems
-    /// fine"): each as Delete Episode deletes a kept package, through the
-    /// listener's own removal (`FeedEnvironment.removeItem`, the Trash or for
-    /// good as the removal setting says), once the feed's index is written
-    /// without its row (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`).
-    /// A kept package whose item is downloading again stays, for its
-    /// download to restore. A failed index write keeps every package, and a
-    /// package that cannot be removed keeps its row on the feed's shelf;
-    /// each is logged, and nothing is lost.
+    /// Deletes `kept`, rows of the feed `feedID` kept after their downloads
+    /// went, with their packages, as Unsubscribe does (FR11, branch D), and
+    /// the places, playback times, bookmarks, settings, and transcripts they
+    /// hold, as the listener accepted ("Clearing out old deleted episodes
+    /// itself seems fine"): each as Delete Episode deletes a kept package,
+    /// through the listener's own removal (`FeedEnvironment.removeItem`, the
+    /// Trash or for good as the removal setting says), once the feed's index
+    /// is written without its row
+    /// (`FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)`).
+    /// The caller decides the rows, before anything changes
+    /// (`keptRowsUnsubscribeDeletes(of:among:)`), so nothing the listener
+    /// was not told of goes (REV14 feeds 1). A failed index write keeps
+    /// every package, and a package that cannot be removed keeps its row on
+    /// the feed's shelf; each is logged, and nothing is lost.
     /// - Returns: How many packages went.
-    func deleteKeptPackages(of feedID: UUID) -> Int {
-        guard let library else { return 0 }
-        let kept = keptRowsUnsubscribeDeletes(of: feedID)
-        guard !kept.isEmpty else { return 0 }
+    func deleteKeptPackages(_ kept: [Book], of feedID: UUID) -> Int {
+        guard let library, !kept.isEmpty else { return 0 }
         let root = TextMouthPaths.root
         let outcome: FeedFileRemovalOutcome
         do {
             outcome = try library.removeFeedFiles(of: kept, keepingPackages: false) { removal in
-                try environment.removeItem(FeedItemPackage.packageForRemoval(of: removal.row, in: root))
+                // A package gone already counts as removed, its row leaving
+                // the shelf, as Delete Feed… counts one (REV14 feeds 8).
+                try FeedItemPackage.removeWhole(removal.row, in: root, remove: environment.removeItem)
             }
         } catch {
             DiagnosticLog.event(
@@ -329,15 +331,18 @@ extension FeedCenter {
     }
 
     /// The rows of the feed `feedID` kept after their downloads went that
-    /// Unsubscribe deletes (`deleteKeptPackages(of:)`): every one but an
-    /// item's downloading again, whose download restores it, in the order
-    /// of their items, so the log and the index's writes never depend on a
-    /// dictionary's. What Unsubscribe's question counts and names, and
-    /// whether it asks at all, come from these alone (FR14; REV13 item 5).
-    func keptRowsUnsubscribeDeletes(of feedID: UUID) -> [Book] {
+    /// Unsubscribe deletes (`deleteKeptPackages(_:of:)`): every one but an
+    /// item's downloading again, waiting in the queue or under way, whose
+    /// download restores it, and, with `itemIDs`, only those of the items
+    /// it names, as the question named them; in the order of their items,
+    /// so the log and the index's writes never depend on a dictionary's.
+    /// What Unsubscribe's question counts and names, and whether it asks at
+    /// all, come from these alone (FR14; REV13 item 5), and Unsubscribe
+    /// deletes no other (REV14 feeds 1).
+    func keptRowsUnsubscribeDeletes(of feedID: UUID, among itemIDs: Set<FeedItem.ID>? = nil) -> [Book] {
         guard let library else { return [] }
         return library.feedItemRows(of: feedID).kept
-            .filter { !downloads.isDownloading($0.key, of: feedID) }
+            .filter { (itemIDs?.contains($0.key) ?? true) && !downloads.isDownloading($0.key, of: feedID) }
             .sorted { $0.key < $1.key }
             .map(\.value)
     }

@@ -234,7 +234,8 @@ struct FeedUnsubscribeOutcome: Equatable, Sendable {
     /// How many of the feed's downloads stay, its items in its own folder.
     var downloadCount: Int
     /// How many packages the feed kept for downloads removed earlier were
-    /// deleted, with their places, bookmarks, and transcripts.
+    /// deleted, with their places, bookmarks, and transcripts: of those
+    /// Unsubscribe's question named, never another (REV14 feeds 1).
     var deletedKeptCount: Int
 }
 
@@ -328,7 +329,8 @@ final class FeedCenter: ObservableObject {
             freeSpace: environment.freeSpace,
             reserve: ArchiveLimits.standard.freeSpaceReserve,
             boundary: environment.boundary,
-            now: environment.now
+            now: environment.now,
+            removeItem: environment.removeItem
         ),
         library: { [weak self] in self?.library },
         announce: { [weak self] event in self?.downloadEventHappened(event) }
@@ -471,28 +473,43 @@ final class FeedCenter: ObservableObject {
         }
     }
 
-    /// Sweeps the hidden holders a Delete Download cut short left in the
-    /// feeds' own folders (`FeedItemPackage.removalHolders(in:)`), as a crash
-    /// between moving an article's file and text into one and the Trash
-    /// taking it leaves one, which nothing else ever removes. That deletion
-    /// was committed, the feed's index written without the file first, so
-    /// each holder goes as the listener's deletion would have sent it, to
-    /// the Trash or for good as Removal Behavior says
-    /// (`FeedEnvironment.removeItem`). The folders are listed off the main
-    /// thread; a holder that cannot go stays, logged, for the next launch.
+    /// Sweeps the hidden holders a Delete Download left in the feeds' own
+    /// folders (`FeedItemPackage.removalHolders(in:)`), which nothing else
+    /// ever removes, each as its row says (REV14 feeds 3,
+    /// `FeedItemPackage.sweepHolder(_:puttingBackInto:remove:)`):
+    ///
+    /// - A holder named for a download the library still lists as
+    ///   downloaded, in the same feed's folder, kept the files of a Delete
+    ///   Download that was refused and could not put them back
+    ///   (FEED_DOWNLOAD_HELD_ASIDE): they go back into its package, so the
+    ///   row says "Downloaded" of a file that is there, whatever Removal
+    ///   Behavior says.
+    /// - Any other, as a crash between moving an article's file and text
+    ///   into one and the Trash taking it leaves, was a deletion that went
+    ///   ahead, the feed's index written without the file first: what it
+    ///   holds goes as that deletion would have sent it, to the Trash or for
+    ///   good as Removal Behavior says (`FeedEnvironment.removeItem`), under
+    ///   the file's own name rather than the holder's hidden one, so the
+    ///   Trash shows it.
+    ///
+    /// Nothing is swept while the library's index is recovered: its list of
+    /// books is provisional, and a refused deletion's row could be missing
+    /// from it. The folders are listed off the main thread; a holder that
+    /// cannot be emptied stays, logged, for the next launch.
     func sweepRemovalHolders() async {
+        guard let library, library.feedLibraryIsComplete else { return }
         let root = TextMouthPaths.root
         let holders = await OffMainWork.run(on: .global(qos: .utility)) {
             FeedItemPackage.removalHolders(in: root)
         }
         for holder in holders {
             do {
-                try environment.removeItem(holder)
-                DiagnosticLog.event(
-                    .feeds,
-                    "FEED_HELD_ASIDE_SWEPT: \(holder.lastPathComponent), left in a feed's folder by a Delete Download cut short, "
-                        + "removed as Removal Behavior says"
+                let sweep = try FeedItemPackage.sweepHolder(
+                    holder,
+                    puttingBackInto: packageWaitingForItsFiles(in: holder, library: library, root: root),
+                    remove: environment.removeItem
                 )
+                DiagnosticLog.event(.feeds, "FEED_HELD_ASIDE_SWEPT: \(holder.lastPathComponent): \(Self.sweepNote(sweep))")
             } catch {
                 DiagnosticLog.event(
                     .feeds,
@@ -500,6 +517,33 @@ final class FeedCenter: ObservableObject {
                 )
             }
         }
+    }
+
+    /// The package whose files wait in the holder `holder`, as a Delete
+    /// Download that was refused, and could not put them back, left them:
+    /// that of the download the holder is named after, which `library`
+    /// still lists as downloaded, in the holder's own feed's folder; nil
+    /// when no download is so listed, as when the deletion went ahead, or
+    /// for a holder named before REV14.
+    private func packageWaitingForItsFiles(in holder: URL, library: FeedLibraryHost, root: URL) -> URL? {
+        guard let bookID = FeedItemPackage.bookID(ofRemovalHolderNamed: holder.lastPathComponent),
+              let row = library.feedBook(withID: bookID), row.isFeedItem,
+              let package = try? FeedItemPackage.packageForRemoval(of: row, in: root),
+              package.deletingLastPathComponent().standardizedFileURL.path == holder.deletingLastPathComponent().standardizedFileURL.path
+        else { return nil }
+        return package
+    }
+
+    /// What the launch's sweep did with one holder, as its log line says it.
+    private static func sweepNote(_ sweep: FeedItemPackage.HolderSweep) -> String {
+        var notes: [String] = []
+        if !sweep.putBack.isEmpty {
+            notes.append("put back \(sweep.putBack.joined(separator: " and ")) into the package of the download whose deletion was refused")
+        }
+        if !sweep.removed.isEmpty {
+            notes.append("removed \(sweep.removed.joined(separator: " and ")) as Removal Behavior says, left by a Delete Download cut short")
+        }
+        return notes.isEmpty ? "nothing was left in it" : notes.joined(separator: "; ")
     }
 
     /// Stops the scheduled refreshes, as when a test ends.
@@ -739,15 +783,24 @@ final class FeedCenter: ObservableObject {
     /// under way are taken back, since it downloads nothing for an
     /// unsubscribed feed, and the one under way, like the listener's, runs
     /// on. The packages the feed kept for downloads removed earlier go, with
-    /// their places and bookmarks (`deleteKeptPackages(of:)`), as the
+    /// their places and bookmarks (`deleteKeptPackages(_:of:)`), as the
     /// listener accepted: "Clearing out old deleted episodes itself seems
-    /// fine". Resubscribe (`resubscribe(_:)`) checks the feed again.
+    /// fine"; but only those of the items `keptItemIDs` names, the ones
+    /// Unsubscribe's question named (none when it asked nothing), less any
+    /// downloading again since, which their downloads restore. Those are
+    /// decided first: taking back the rule's downloads leaves more kept
+    /// packages with no download to restore them, and none of those was
+    /// asked about (REV14 feeds 1). Resubscribe (`resubscribe(_:)`) checks
+    /// the feed again.
     /// - Returns: What unsubscribing did, for the words the listener hears;
     ///   nil for a feed TextMouth has no record of, or one already
     ///   unsubscribed, which changes nothing.
     @discardableResult
-    func unsubscribe(_ feedID: UUID) -> FeedUnsubscribeOutcome? {
+    func unsubscribe(_ feedID: UUID, deletingKeptOf keptItemIDs: Set<FeedItem.ID> = []) -> FeedUnsubscribeOutcome? {
         guard let feed = store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
+        // Decided before the rule's downloads are taken back below, which
+        // would add the packages they were restoring.
+        let deleting = keptRowsUnsubscribeDeletes(of: feedID, among: keptItemIDs)
         store.update(feedID) { $0.feed.unsubscribedDate = environment.now() }
         downloads.withdrawRuleDownloads(of: feedID) { _ in true }
         // The rule downloads nothing for it by itself now, so a pause Cancel
@@ -755,7 +808,7 @@ final class FeedCenter: ObservableObject {
         rulePauses[feedID] = nil
         let outcome = FeedUnsubscribeOutcome(
             downloadCount: library?.feedItemRows(of: feedID).downloaded.count ?? 0,
-            deletedKeptCount: deleteKeptPackages(of: feedID)
+            deletedKeptCount: deleteKeptPackages(deleting, of: feedID)
         )
         DiagnosticLog.event(
             .feeds,
@@ -851,7 +904,9 @@ final class FeedCenter: ObservableObject {
     /// for a pass meanwhile, or until TextMouth next opens, whose first pass
     /// covers every feed. The listener's own Download is never held back.
     /// - Returns: What VoiceOver hears of it, which the window says once
-    ///   its focus has moved (REV13 item 3).
+    ///   its focus has moved (REV13 item 3): what stopped, and how it comes
+    ///   back, promising only what the rule will download again
+    ///   (`comingBack(of:)`, REV14 feeds 5).
     @discardableResult
     func cancelEveryDownload() -> String {
         let cancellation = downloads.cancelEveryDownload()
@@ -859,7 +914,38 @@ final class FeedCenter: ObservableObject {
             // A check under way began before Cancel, so ends no pause.
             rulePauses[feedID] = refreshingFeedIDs.contains(feedID) ? .untilTheCheckAfterTheOneUnderWay : .untilNextCheck
         }
-        return FeedDownloadProgressWording.cancelled(stopped: cancellation.stopped, finishing: cancellation.finishing)
+        return FeedDownloadProgressWording.cancelled(
+            stopped: cancellation.stopped.map(\.title),
+            finishing: cancellation.finishing,
+            comingBack: comingBack(of: cancellation.stopped)
+        )
+    }
+
+    /// What VoiceOver says the feed downloads section's Cancel button does,
+    /// as Cancel would act now: what it stops, and how what it would stop
+    /// comes back, as Cancel would then say it (REV14 feeds 5).
+    func cancelButtonHint() -> String {
+        FeedDownloadProgressWording.cancelButtonHint(comingBack(of: downloads.downloadsCancelWouldStop))
+    }
+
+    /// How the downloads `stopped` come back after Cancel (REV14 feeds 5):
+    /// those the newest-N rule downloads again by itself, after their feeds'
+    /// next checks, being items it would ever download
+    /// (`ruleWouldDownload(_:)`) among the newest its feed counts
+    /// (`countedItemIDs(in:under:)`, none for a feed that downloads by hand
+    /// or is unsubscribed from); and the others, which only the listener's
+    /// Download brings back. Each feed's count of its newest is worked out
+    /// once.
+    func comingBack(of stopped: [FeedDownloadManager.Cancellation.Stopped]) -> FeedCancelReturn {
+        var counted: [UUID: Set<FeedItem.ID>] = [:]
+        let byItself = stopped.filter { download in
+            guard let record = store.record(of: download.feedID), let item = record.item(download.itemID),
+                  Self.ruleWouldDownload(item) else { return false }
+            let feedCounts = counted[download.feedID] ?? Self.countedItemIDs(in: record, under: itemPolicy(of: download.feedID))
+            counted[download.feedID] = feedCounts
+            return feedCounts.contains(download.itemID)
+        }.count
+        return FeedCancelReturn(byItself: byItself, byDownload: stopped.count - byItself)
     }
 
     /// Asks again for the downloads a network with data limits put off whose

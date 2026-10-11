@@ -38,8 +38,10 @@ struct FeedConfirmation: Identifiable, Equatable {
     enum Kind: Equatable {
         /// Deletes the item `itemID` of the feed `feedID`, titled `title`.
         case deleteItem(feedID: UUID, itemID: FeedItem.ID, title: String)
-        /// Unsubscribes from the feed `feedID`.
-        case unsubscribe(feedID: UUID)
+        /// Unsubscribes from the feed `feedID`, deleting the packages kept
+        /// for the removed downloads of the items `keptItemIDs`, those the
+        /// question named, and no other (REV14 feeds 1).
+        case unsubscribe(feedID: UUID, keptItemIDs: Set<FeedItem.ID>)
         /// Deletes the feed `feedID` entirely (FR14).
         case deleteFeed(feedID: UUID)
     }
@@ -116,8 +118,10 @@ extension LibraryFeedsPresenter {
 
     /// Unsubscribes from the feed `feedID` as the listener chose Unsubscribe
     /// (FR14, "yes"): at once, saying so, when unsubscribing would delete
-    /// nothing; otherwise not yet, the question to ask first returned, which
-    /// says what it would delete. A menu drawn before the feed's kept places
+    /// nothing, and then deleting nothing, whatever its taking back of the
+    /// rule's downloads leaves without one to restore it (REV14 feeds 1);
+    /// otherwise not yet, the question to ask first returned, which says
+    /// what it would delete. A menu drawn before the feed's kept places
     /// changed asks, or not, as the feed is now.
     /// - Returns: The question to ask first; nil when it acted at once, or
     ///   the feed is not subscribed.
@@ -134,16 +138,19 @@ extension LibraryFeedsPresenter {
     /// what happens now (FR11, branch D): checking stops, the feed stays
     /// with its settings and its downloads, which it counts, and what it
     /// kept of downloads removed earlier goes, counted and named as what
-    /// Unsubscribe will delete (`FeedCenter.keptRowsUnsubscribeDeletes(of:)`,
+    /// Unsubscribe will delete (`FeedCenter.keptRowsUnsubscribeDeletes(of:among:)`,
     /// REV13 item 5); nil once it is no longer subscribed, or when it would
-    /// delete nothing, as Unsubscribe then asks nothing (FR14).
+    /// delete nothing, as Unsubscribe then asks nothing (FR14). The question
+    /// carries the items whose kept packages it names, so confirming it
+    /// deletes those and no other, whatever changed while it was asked
+    /// (REV14 feeds 1).
     func unsubscribeConfirmation(for feedID: UUID, in context: FeedCommandContext) -> FeedConfirmation? {
         let center = context.center
         guard let feed = center.store.record(of: feedID)?.feed, feed.isSubscribed else { return nil }
         let kept = center.keptRowsUnsubscribeDeletes(of: feedID)
         guard !kept.isEmpty else { return nil }
         return FeedConfirmation(
-            kind: .unsubscribe(feedID: feedID),
+            kind: .unsubscribe(feedID: feedID, keptItemIDs: Set(kept.compactMap(\.feedLink?.itemID))),
             title: FeedWording.unsubscribeQuestion(title: feed.title),
             message: FeedWording.unsubscribeMessage(
                 downloadCount: context.library.feedItemRows(of: feedID).downloaded.count,
@@ -157,21 +164,28 @@ extension LibraryFeedsPresenter {
 
     /// Unsubscribes from the feed `feedID`, once confirmed (FR11, branch D):
     /// only checking stops, the feed staying with its folder, its settings,
-    /// and its downloads, and the packages it kept for downloads removed
-    /// earlier go (`FeedCenter.unsubscribe(_:)`). VoiceOver hears so once
-    /// the question's alert has closed (`afterAlert`, REV13 item 1), or at
-    /// once when none was asked. Feed Info, should it show the feed, stays
-    /// open, offering Resubscribe.
+    /// and its downloads, and the packages it kept for the removed downloads
+    /// of the items `keptItemIDs` go, those the question named, and no
+    /// other (`FeedCenter.unsubscribe(_:deletingKeptOf:)`, REV14 feeds 1).
+    /// VoiceOver hears so once the question's alert has closed
+    /// (`afterAlert`, REV13 item 1), or at once when none was asked. Feed
+    /// Info, should it show the feed, stays open, offering Resubscribe.
     /// - Returns: What unsubscribing did; nil when the feed was no longer
     ///   subscribed, which changes nothing.
     @discardableResult
-    func unsubscribe(_ feedID: UUID, in context: FeedCommandContext, afterAlert: Bool = true) -> FeedUnsubscribeOutcome? {
+    func unsubscribe(
+        _ feedID: UUID,
+        deletingKeptOf keptItemIDs: Set<FeedItem.ID> = [],
+        in context: FeedCommandContext,
+        afterAlert: Bool = true
+    ) -> FeedUnsubscribeOutcome? {
         let center = context.center
         guard let feed = center.store.record(of: feedID)?.feed else { return nil }
         let noun = FeedWording.ItemNoun.of(center.listedItems(of: feedID))
-        // What the packages about to go hold, named once they have gone.
-        let keptParts = FeedWording.KeptParts.of(center.keptRowsUnsubscribeDeletes(of: feedID))
-        guard let outcome = center.unsubscribe(feedID) else { return nil }
+        // What the packages about to go hold, named once they have gone:
+        // the very rows the engine deletes, read in this same turn.
+        let keptParts = FeedWording.KeptParts.of(center.keptRowsUnsubscribeDeletes(of: feedID, among: keptItemIDs))
+        guard let outcome = center.unsubscribe(feedID, deletingKeptOf: keptItemIDs) else { return nil }
         say(
             FeedWording.unsubscribed(title: feed.title, outcome: outcome, keptParts: keptParts, noun: noun),
             afterAlert: afterAlert,
@@ -198,7 +212,7 @@ extension LibraryFeedsPresenter {
             message: FeedWording.deleteFeedMessage(
                 downloads: rows.downloaded.count,
                 kept: rows.kept.count,
-                keptParts: .of(Array(rows.kept.values)),
+                keptParts: keptParts(ofFeed: feedID, in: context),
                 noun: .of(center.listedItems(of: feedID)),
                 folderPath: center.folderPath(of: feed),
                 mode: context.library.removalPreferences.deletionMode
@@ -210,9 +224,11 @@ extension LibraryFeedsPresenter {
     /// Deletes the feed `feedID` entirely, once confirmed (FR14,
     /// `FeedCenter.deleteFeed(_:)`). Feed Info, should it show the feed,
     /// closes first. VoiceOver hears what went once the question's alert
-    /// has closed (REV13 item 1); a feed that stays, as when one of its
-    /// downloads is open in a reader or being transcribed, says why in an
-    /// alert.
+    /// has closed (REV13 item 1), naming what the packages kept for
+    /// removed downloads held, as the question did (REV14 feeds 9); a
+    /// feed that stays, as when one of its downloads is open in a reader
+    /// or being transcribed, says why in an alert, which VoiceOver reads
+    /// as it appears (REV14 feeds 6).
     /// - Returns: The deletion, which tests await; nil once the feed's
     ///   record is gone.
     @discardableResult
@@ -221,17 +237,27 @@ extension LibraryFeedsPresenter {
         guard let feed = center.store.record(of: feedID)?.feed else { return nil }
         let noun = FeedWording.ItemNoun.of(center.listedItems(of: feedID))
         let mode = context.library.removalPreferences.deletionMode
+        // What the kept packages about to go hold, named once they have
+        // gone.
+        let partsKept = keptParts(ofFeed: feedID, in: context)
         if feedInfo?.feedID == feedID {
             feedInfo = nil
         }
         return Task {
             do throws(FeedDeleteError) {
                 guard let outcome = try await center.deleteFeed(feedID) else { return }
-                say(FeedWording.deletedFeed(outcome, noun: noun), afterAlert: true, in: context)
+                say(FeedWording.deletedFeed(outcome, noun: noun, keptParts: partsKept), afterAlert: true, in: context)
             } catch {
-                refuse(message: FeedWording.deleteFeedRefused(error, title: feed.title, mode: mode), in: context)
+                refuse(message: FeedWording.deleteFeedRefused(error, title: feed.title, mode: mode))
             }
         }
+    }
+
+    /// What the packages the feed `feedID` kept for removed downloads hold
+    /// (FR11, branch A2), as Delete Feed…'s question names them and its
+    /// announcement then names them again (REV14 feeds 9).
+    private func keptParts(ofFeed feedID: UUID, in context: FeedCommandContext) -> FeedWording.KeptParts {
+        .of(Array(context.library.feedItemRows(of: feedID).kept.values))
     }
 
     // MARK: An Item's Commands
@@ -240,7 +266,7 @@ extension LibraryFeedsPresenter {
     /// row, saying what it did from the window it was chosen in. A refusal,
     /// such as Delete Download while the book is open, transcribed, or
     /// exported, shows in an alert in the engine's words, which VoiceOver
-    /// also hears.
+    /// reads as it appears (`refuse(message:)`, REV14 feeds 6).
     func perform(_ action: FeedItemAction, in context: FeedCommandContext) {
         let center = context.center
         guard let record = center.store.record(of: action.feedID), let item = record.item(action.itemID) else { return }
@@ -274,7 +300,7 @@ extension LibraryFeedsPresenter {
                     .map { FeedWording.KeptParts.of($0, package: $0.tmbDirectory) } ?? []
                 announce(FeedWording.downloadDeleted(title: item.title, kept: kept), context.window)
             } catch {
-                refuse(error, in: context)
+                refuse(error)
             }
         case .markPlayed, .markUnplayed:
             let played = action.command == .markPlayed
@@ -366,10 +392,10 @@ extension LibraryFeedsPresenter {
                 let inLibrary = context.center.store.record(of: feedID)?.item(itemID)?.state.libraryBookID != nil
                 say(FeedWording.itemDeleted(title: title, isInLibrary: inLibrary), afterAlert: true, in: context)
             } catch {
-                refuse(error, in: context)
+                refuse(error)
             }
-        case .unsubscribe(let feedID):
-            unsubscribe(feedID, in: context)
+        case let .unsubscribe(feedID, keptItemIDs):
+            unsubscribe(feedID, deletingKeptOf: keptItemIDs, in: context)
         case .deleteFeed(let feedID):
             deleteFeed(feedID, in: context)
         }
@@ -393,10 +419,10 @@ extension LibraryFeedsPresenter {
 
     /// Shows why a deletion was refused, in the engine's words for a
     /// download in use (`FeedDownloadInUseError`, naming it), in the cloud
-    /// storage's for a book it refused, and in the file system's otherwise,
-    /// and says it.
-    private func refuse(_ error: Error, in context: FeedCommandContext) {
-        refuse(message: Self.refusal(for: error), in: context)
+    /// storage's for a book it refused, and in the file system's otherwise
+    /// (`refuse(message:)`).
+    private func refuse(_ error: Error) {
+        refuse(message: Self.refusal(for: error))
     }
 
     /// The words of a refused deletion's alert for `error`: a download in
@@ -410,9 +436,13 @@ extension LibraryFeedsPresenter {
         return (error as? BookCloudError)?.explanation(in: nil) ?? error.localizedDescription
     }
 
-    /// Shows `message`, why a deletion was refused, in an alert, and says it.
-    private func refuse(message: String, in context: FeedCommandContext) {
+    /// Shows `message`, why a deletion was refused, in an alert, which
+    /// VoiceOver reads as it appears, as it reads the app's other alerts:
+    /// the library's error alert, the transcription notices, the reader's
+    /// error alert, and the feed arrivals alert. Nothing announces the same
+    /// words besides, which VoiceOver could read twice, or cut off as the
+    /// alert takes its focus (REV14 feeds 6).
+    private func refuse(message: String) {
         notice = FeedNotice(title: FeedWording.deleteRefusedTitle, message: message)
-        announce(message, context.window)
     }
 }

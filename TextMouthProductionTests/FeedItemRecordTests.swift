@@ -575,6 +575,49 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: article.tmbDirectory).path))
     }
 
+    /// A Delete Download refused whose article and text could not go back
+    /// into their package, as a permission changed meanwhile can keep them,
+    /// leaves both in the hidden holder named for the download, whose row
+    /// still says Downloaded; the next launch puts both back, so the row's
+    /// file is there again, and sends nothing to the Trash, whatever Removal
+    /// Behavior says (REV14 feeds 3).
+    func testAnArticleARefusedDeleteDownloadCouldNotPutBackIsPutBackAtTheNextLaunch() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordArticleHeldAside")
+        let feed = try await subscribeToArticles(1, in: world)
+        world.center.download("guid:post-1", of: feed.id)
+        let article = try listen(to: try await downloadedBook(world, feed: feed, item: "guid:post-1"), in: world)
+        let package = article.tmbDirectory
+        let text = TextMouthPaths.contentMarkdownPath(in: package)
+        let fileName = article.bookFileURL.lastPathComponent
+        addTeardownBlock { _ = chmod(package.path, 0o755) }
+        let heldAside = debugLogLines(containing: "FEED_DOWNLOAD_HELD_ASIDE: \(article.title)").count
+        var holder: URL?
+
+        // The Trash refuses the article, and its package then refuses both
+        // back.
+        XCTAssertThrowsError(try FeedItemPackage.removeFileAndText(of: article, in: package) { together in
+            holder = together.deletingLastPathComponent()
+            XCTAssertEqual(chmod(package.path, 0o555), 0)
+            throw CocoaError(.fileWriteNoPermission)
+        })
+        XCTAssertEqual(chmod(package.path, 0o755), 0)
+
+        let left = try XCTUnwrap(holder)
+        XCTAssertEqual(FeedItemPackage.bookID(ofRemovalHolderNamed: left.lastPathComponent), article.id, "the holder is not named for its download")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: article.filePath), "the files went back after all")
+        XCTAssertEqual(debugLogLines(containing: "FEED_DOWNLOAD_HELD_ASIDE: \(article.title)").count, heldAside + 1)
+        XCTAssertEqual(world.library.bookByID(article.id)?.feedLink, article.feedLink, "the refused download left its row")
+
+        _ = await world.relaunch(self)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: package.appendingPathComponent(fileName).path), "the article was not put back")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: text.path), "the article's text was not put back")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: left.path), "the holder stayed")
+        XCTAssertEqual(world.removedItems.value, [], "something of a refused deletion went through the listener's removal")
+        XCTAssertNotNil(world.library.bookByID(article.id), "the download left the library")
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:post-1")?.state, .downloaded(bookID: article.id))
+    }
+
     /// A book's own speed is kept within its format's range in its row, as
     /// its record reads it back (REV11): an article given a playback rate of
     /// 1.5 keeps the slowest words per minute, 50, in its row as in its
@@ -773,6 +816,27 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state, .notDownloaded)
     }
 
+    /// Delete Episode of an item whose kept package is already gone, as one
+    /// removed by hand, deletes the item, its row leaving the shelf and its
+    /// feed's index, the package counting as removed, nothing being left of
+    /// it to keep, as Unsubscribe and Delete Feed… count one (REV14 feeds
+    /// 8, one rule for a package gone); it was refused before.
+    func testDeleteEpisodeOfAKeptPackageAlreadyGone() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordDeleteEpisodeGone")
+        let (feed, books) = try await downloadedEpisodes(1, in: world)
+        let kept = try listen(to: try XCTUnwrap(books.first), in: world)
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        try FileManager.default.removeItem(at: kept.tmbDirectory)
+        let removedBefore = world.removedItems.value.count
+
+        try world.center.deleteItem("guid:ep-1", of: feed.id)
+
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        XCTAssertEqual(try indexedRows(of: feed.id), [])
+        XCTAssertNotNil(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.deletedDate, "the item stayed")
+        XCTAssertEqual(world.removedItems.value.count, removedBefore, "a package already gone went through the listener's removal")
+    }
+
     /// Delete Episode while a download of the item imports, which it cannot
     /// stop once begun, leaves nothing of the item: the import lists no row
     /// for it and deletes the package it published, whether the download
@@ -798,6 +862,7 @@ final class FeedItemRecordTests: XCTestCase {
         world.center.downloads.beforeCommit = { request in
             try? world.center.deleteItem(request.itemID, of: request.feedID)
         }
+        let removedBefore = world.removedItems.value.count
 
         for itemID in ["guid:ep-1", "guid:ep-2"] {
             world.center.download(itemID, of: feed.id)
@@ -819,6 +884,41 @@ final class FeedItemRecordTests: XCTestCase {
             XCTAssertNotNil(item.deletedDate, itemID)
             XCTAssertNil(item.state.bookID, itemID)
         }
+        // The restored package, holding the place kept for episode 1, went
+        // as Delete Episode sends it, through the listener's own removal; the
+        // new download of episode 2, which held nothing of the listener's,
+        // went for good (REV14 feeds 2).
+        XCTAssertEqual(world.removedItems.value.dropFirst(removedBefore).map(\.name), [kept.tmbDirectoryName])
+    }
+
+    /// Delete Episode while the item downloads again into its kept package,
+    /// the restore waiting to be added: Delete Episode sends the kept
+    /// package, with its transcript, as the listener's own deletions go, and
+    /// the package the restore then publishes in its place, its record
+    /// holding the place and bookmarks kept for the item, is discarded the
+    /// same way, never for good behind the listener's back (REV14 feeds 2).
+    /// Nothing of the item is listed.
+    func testDeleteEpisodeDuringARestoreRemovesBothPackagesAsTheListenersDeletion() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordDeleteDuringRestore")
+        let (feed, book, _) = try await transcribedEpisodeWhoseDownloadWasDeleted(in: world)
+        let imports = await world.holdImports(self)
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("the kept episode's book is being added") {
+            world.center.downloads.progress.state.download?.isAddingToLibrary == true
+        }
+
+        try world.center.deleteItem("guid:ep-1", of: feed.id)
+        imports.release()
+        await waitFor("the restore ends") { world.center.downloads.current == nil }
+
+        let removed = world.removedItems.value.filter { $0.name == book.tmbDirectoryName }
+        XCTAssertEqual(removed.count, 2, "\(world.removedItems.value)")
+        XCTAssertTrue(removed.first?.contents.contains(where: TextMouthPaths.isTranscriptFile) == true, "the kept package went without its transcript")
+        XCTAssertTrue(removed.last?.contents.contains(TextMouthPaths.bookInfoFileName) == true, "the restored package went other than through the listener's own removal")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path), "a package of the deleted episode stayed")
+        XCTAssertNil(world.library.bookByID(book.id), "the deleted episode's book was listed")
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        XCTAssertNotNil(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.deletedDate)
     }
 
     // MARK: - What a Refresh Keeps

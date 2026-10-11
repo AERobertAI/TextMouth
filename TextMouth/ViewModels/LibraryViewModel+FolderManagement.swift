@@ -273,20 +273,33 @@ extension LibraryViewModel {
     /// folder (FR03), which holds no book of the library's own, since a feed
     /// item names no folder (FR11), yet lists the feed's items. Delete
     /// Folder… asks first when it does (REV10, item 4), though a feed's own
-    /// folder offers Delete Feed… in its place (`offersDeleteFolder(_:)`,
-    /// FR14); and Delete Feed… deletes the folder of a feed it deleted only
-    /// when nothing else is in it, another feed's items included (FR14).
+    /// folder holding nothing more offers Delete Feed… in its place
+    /// (`offersDeleteFolder(_:)`, FR14); and Delete Feed… deletes the folder
+    /// of a feed it deleted only when nothing else is in it, another feed's
+    /// items included (FR14).
     func folderHasContents(_ folder: BookFolder) -> Bool {
         library.folderHasContents(folder) || feeds.store.feed(inFolder: folder.id) != nil
     }
 
-    /// Whether `folder`'s menu offers Delete Folder…: not for a feed's own
-    /// folder, whose feed's commands offer Delete Feed… there instead, so a
-    /// feed has one command that deletes it, as the listener asked on
-    /// October 10 ("make sure its not duplicating another delete action or
-    /// anything", FR14).
+    /// Whether `folder`'s menu offers Delete Folder…: for every folder but a
+    /// feed's own folder holding nothing more than the feed's items, whose
+    /// feed's commands offer Delete Feed… there instead, so a feed has one
+    /// command that deletes it, as the listener asked on October 10 ("make
+    /// sure its not duplicating another delete action or anything", FR14).
+    /// A feed's folder that also holds books of the library's own, or
+    /// folders, as when Feed Info pointed the feed at a folder in use,
+    /// offers it too (REV14 feeds 7): its question names the feed, which
+    /// stays, without a folder, whichever way the folder goes
+    /// (`feedTitles(of:)`).
     func offersDeleteFolder(_ folder: BookFolder) -> Bool {
-        feeds.store.feed(inFolder: folder.id) == nil
+        feeds.store.feed(inFolder: folder.id) == nil || library.folderHasContents(folder)
+    }
+
+    /// The titles of the feeds whose own folder `folder` is, by title
+    /// (REV14 feeds 7): the feeds Delete Folder… leaves without a folder,
+    /// whichever way it goes, which its questions name.
+    func feedTitles(of folder: BookFolder) -> [String] {
+        feeds.feeds.filter { $0.folderID == folder.id }.map(\.title)
     }
 
     /// The titles of the feeds whose folders are inside `folder`, at any

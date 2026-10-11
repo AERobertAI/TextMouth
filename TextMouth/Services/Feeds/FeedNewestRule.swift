@@ -177,16 +177,25 @@ extension FeedCenter {
         }
     }
 
+    /// Whether the rule ever downloads `item` by itself when it is among its
+    /// feed's newest and not here: not played or deleted, not moved into
+    /// the library (FR11, branch D, which counts among the newest and is
+    /// never downloaded again: answer 4, "newest episodes should only update
+    /// if there is a new episode / item"), and one the rule may download
+    /// (`ruleMayDownload(_:)`). Each pass asks this first
+    /// (`ruleDownloads(_:of:retryingFailures:)`), and Cancel asks it of what
+    /// it stopped (`comingBack(of:)`, REV14 feeds 5).
+    static func ruleWouldDownload(_ item: FeedItem) -> Bool {
+        item.deletedDate == nil && item.playedDate == nil && item.state.libraryBookID == nil && ruleMayDownload(item)
+    }
+
     /// Whether this pass asks for `item`, one of the feed `feedID`'s newest:
-    /// not played or deleted, one the rule may download, not downloaded by
-    /// its record nor here, not moved into the library (FR11, branch D,
-    /// which counts among the newest and is never downloaded again: answer
-    /// 4, "newest episodes should only update if there is a new episode /
-    /// item"), not downloading, not put off for a network, and failed only
-    /// when `retryingFailures`. A wait for room is tried again.
+    /// one the rule would download (`ruleWouldDownload(_:)`), not downloaded
+    /// by its record nor here, not downloading, not put off for a network,
+    /// and failed only when `retryingFailures`. A wait for room is tried
+    /// again.
     private func ruleDownloads(_ item: FeedItem, of feedID: UUID, retryingFailures: Bool) -> Bool {
-        guard item.deletedDate == nil, item.playedDate == nil, item.state.libraryBookID == nil,
-              Self.ruleMayDownload(item) else { return false }
+        guard Self.ruleWouldDownload(item) else { return false }
         // An item its record names as downloaded is left for the sweep to
         // settle when its book is gone; and one whose row is here while its
         // record says otherwise, as an older TextMouth leaves it until the

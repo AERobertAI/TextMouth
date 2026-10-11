@@ -148,6 +148,23 @@ enum FeedItemPackage {
 
     // MARK: Removing
 
+    /// Removes the package of the feed item `row` whole through `remove`
+    /// (REV14 feeds 8): as Delete Episode deletes an item's package,
+    /// Unsubscribe and Delete Feed… the packages kept for removed downloads,
+    /// through the listener's own removal, and as an import discards the
+    /// package it published for an item that gets no row. One rule for all
+    /// of them: a package already gone counts as removed, nothing of it
+    /// being left to keep, so its row goes.
+    /// - Throws: `FeedItemPackageError.notAFeedPackage` for a row naming no
+    ///   package of its feed's own folder (`packageForRemoval(of:in:)`), or
+    ///   why the package could not be removed; nothing was removed then.
+    @MainActor
+    static func removeWhole(_ row: Book, in root: URL, remove: @MainActor (URL) throws -> Void) throws {
+        let package = try packageForRemoval(of: row, in: root)
+        guard MaintenanceFileAccess.hasItem(at: package) else { return }
+        try remove(package)
+    }
+
     /// Removes from `package` everything the file of `row` made that its
     /// removal leaves: each entry `staysWithoutTheFile(_:)` does not keep,
     /// for good, without downloading anything. An entry that cannot be
@@ -173,18 +190,42 @@ enum FeedItemPackage {
     /// Hidden, it is no package of the feed's folder (`isPackageName(_:)`).
     static let removalHolderPrefix = ".removing-"
 
+    /// The hidden holder `removeFileAndText(of:in:remove:)` makes beside
+    /// `package` for `row`'s file and text: named after the row's book ID,
+    /// so the launch's sweep can tell whose they are
+    /// (`bookID(ofRemovalHolderNamed:)`), then a name of its own, so a
+    /// holder left from before never stands in a new one's way.
+    static func removalHolder(for row: Book, beside package: URL) -> URL {
+        package.deletingLastPathComponent().appendingPathComponent(
+            removalHolderPrefix + row.id.uuidString + "-" + UUID().uuidString,
+            isDirectory: true
+        )
+    }
+
+    /// The book ID the holder named `name` is named after
+    /// (`removalHolder(for:beside:)`); nil for any name not a holder's. A
+    /// holder named before REV14, by a name of its own alone, gives that
+    /// name, which no book has.
+    static func bookID(ofRemovalHolderNamed name: String) -> UUID? {
+        guard name.hasPrefix(removalHolderPrefix) else { return nil }
+        return UUID(uuidString: String(name.dropFirst(removalHolderPrefix.count).prefix(36)))
+    }
+
     /// Removes `row`'s file from `package` through `remove`, as the
     /// listener's own Delete Download does, to the Trash or for good as the
     /// removal setting says: for a text book, an article, with its
     /// content.md, which may hold an edit, as one item, so the Trash holds
     /// one folder with both (REV11). Both first move, by rename, into a
     /// folder named after the file, inside a hidden holder beside the
-    /// package in its feed's folder, which is then deleted, so the Trash's
-    /// Put Back cannot return them into the package (#1935). A refusal puts both
-    /// back in the package. Should something keep them from going back, they
-    /// stay in the holder, which is then left, with one log line, rather
-    /// than lost; the next launch sweeps a holder left so, or by a crash
-    /// before the Trash took it (`FeedCenter.sweepRemovalHolders()`).
+    /// package in its feed's folder, named for the row
+    /// (`removalHolder(for:beside:)`), which is then deleted, so the Trash's
+    /// Put Back cannot return them into the package (#1935). A refusal puts
+    /// both back in the package. Should something keep them from going
+    /// back, they stay in the holder, which is then left, with one log
+    /// line, rather than lost, and the next launch puts them back into the
+    /// package of the row, which still names them; it sends a holder a
+    /// crash left, once the deletion went ahead, as Removal Behavior says
+    /// (`FeedCenter.sweepRemovalHolders()`, REV14 feeds 3).
     /// - Throws: why the file, or the file and its text, could not be
     ///   removed; nothing was removed then.
     @MainActor
@@ -196,8 +237,7 @@ enum FeedItemPackage {
             try remove(file)
             return
         }
-        let holder = package.deletingLastPathComponent()
-            .appendingPathComponent(removalHolderPrefix + UUID().uuidString, isDirectory: true)
+        let holder = removalHolder(for: row, beside: package)
         let together = holder.appendingPathComponent(file.deletingPathExtension().lastPathComponent, isDirectory: true)
         try fileManager.createDirectory(at: together, withIntermediateDirectories: true)
         var moved: [(from: URL, to: URL)] = []
@@ -242,23 +282,85 @@ enum FeedItemPackage {
 
     /// Removes the holder `holder` of `removeFileAndText(of:in:remove:)`
     /// once nothing is left in it but an empty folder; anything still in it
-    /// stays, with one FEED_DOWNLOAD_HELD_ASIDE line naming `row`.
+    /// stays, with one FEED_DOWNLOAD_HELD_ASIDE line naming `row`, for the
+    /// next launch to put back.
     private static func removeHolderIfEmpty(_ holder: URL, of row: Book) {
-        let fileManager = FileManager.default
-        // Every file left inside, at any depth; empty folders don't count.
-        let filesLeft = ((try? fileManager.subpathsOfDirectory(atPath: holder.path)) ?? []).filter { path in
-            var isFolder: ObjCBool = false
-            _ = fileManager.fileExists(atPath: holder.appendingPathComponent(path).path, isDirectory: &isFolder)
-            return !isFolder.boolValue
-        }
-        guard filesLeft.isEmpty else {
+        guard !holdsFiles(holder) else {
             DiagnosticLog.event(
                 .feeds,
-                "FEED_DOWNLOAD_HELD_ASIDE: \(row.title): its file or text could not go back into its package and waits in \(holder.lastPathComponent)"
+                "FEED_DOWNLOAD_HELD_ASIDE: \(row.title): its file or text could not go back into its package and waits in "
+                    + "\(holder.lastPathComponent), which the next launch puts back"
             )
             return
         }
-        try? fileManager.removeItem(at: holder)
+        try? FileManager.default.removeItem(at: holder)
+    }
+
+    /// Whether `item` is a file, or a folder holding a file at any depth:
+    /// an empty folder, or one of empty folders, holds nothing of anyone's.
+    /// Looked at without downloading anything.
+    private static func holdsFiles(_ item: URL) -> Bool {
+        let fileManager = FileManager.default
+        var isFolder: ObjCBool = false
+        guard fileManager.fileExists(atPath: item.path, isDirectory: &isFolder) else { return false }
+        guard isFolder.boolValue else { return true }
+        let paths = (try? DatalessFiles.withoutDownloading { try fileManager.subpathsOfDirectory(atPath: item.path) }) ?? []
+        return paths.contains { path in
+            var isSubfolder: ObjCBool = false
+            _ = fileManager.fileExists(atPath: item.appendingPathComponent(path).path, isDirectory: &isSubfolder)
+            return !isSubfolder.boolValue
+        }
+    }
+
+    /// What the launch's sweep did with one holder
+    /// (`sweepHolder(_:puttingBackInto:remove:)`), as its log line says it.
+    struct HolderSweep: Equatable, Sendable {
+        /// The names of the files put back into their package.
+        var putBack: [String] = []
+        /// The names of the folders sent as Removal Behavior says.
+        var removed: [String] = []
+    }
+
+    /// Empties the holder `holder` of `removeFileAndText(of:in:remove:)` as
+    /// the launch finds it (REV14 feeds 3), then removes it. Each folder in
+    /// it, named after an article's file, holds the file, its text, or both.
+    ///
+    /// With `package`, the package of a row the library still lists as
+    /// downloaded, whose Delete Download was refused and whose files could
+    /// not go back (FEED_DOWNLOAD_HELD_ASIDE), each that the package lacks
+    /// goes back into it, by rename, so its row has its file again. What is
+    /// left belongs to no row: a deletion that went ahead, cut short by a
+    /// crash, or a copy whose package has its own. Each folder of it goes
+    /// through `remove`, the listener's own removal, to the Trash or for
+    /// good as Removal Behavior says, under its own name, never the holder's
+    /// hidden one, so the Trash shows it. Empty folders, and a stray hidden
+    /// file such as .DS_Store, go with the holder.
+    /// - Throws: why something could not go back, or be removed; what is
+    ///   left stays in the holder, for the next launch.
+    @MainActor
+    static func sweepHolder(_ holder: URL, puttingBackInto package: URL?, remove: @MainActor (URL) throws -> Void) throws -> HolderSweep {
+        var sweep = HolderSweep()
+        let fileManager = FileManager.default
+        for name in try listedEntryNames(of: holder) where !name.hasPrefix(".") {
+            let together = holder.appendingPathComponent(name)
+            var isFolder: ObjCBool = false
+            if let package, fileManager.fileExists(atPath: together.path, isDirectory: &isFolder), isFolder.boolValue {
+                for entry in try listedEntryNames(of: together) where !entry.hasPrefix(".") {
+                    let destination = package.appendingPathComponent(entry)
+                    guard !MaintenanceFileAccess.hasItem(at: destination) else { continue }
+                    try fileManager.moveItem(at: together.appendingPathComponent(entry), to: destination)
+                    sweep.putBack.append(entry)
+                }
+            }
+            if holdsFiles(together) {
+                try remove(together)
+                sweep.removed.append(name)
+            } else {
+                try fileManager.removeItem(at: together)
+            }
+        }
+        try fileManager.removeItem(at: holder)
+        return sweep
     }
 
     /// Removes what `removal` says from the data directory at `root`, for

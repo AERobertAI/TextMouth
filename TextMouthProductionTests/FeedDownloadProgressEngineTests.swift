@@ -299,6 +299,63 @@ final class FeedDownloadProgressEngineTests: XCTestCase {
         XCTAssertFalse(items.contains { $0.downloadOrigin == .listener }, "Cancel made an item the listener's")
     }
 
+    /// Cancel promises that TextMouth downloads again by itself only what
+    /// the newest-N rule will (REV14 feeds 5): with every feed set to
+    /// download by hand, the download it stops comes back only by Download,
+    /// and Cancel says so, as its button's hint said beforehand; with
+    /// nothing left to stop, the hint promises nothing.
+    func testCancelSaysDownloadGetsBackWhatTheRuleNeverDownloads() async throws {
+        let world = try FeedTestWorld(self, label: "FeedProgressCancelByHand")
+        FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
+        let audio = try FeedMediaFixtures.silentAAC()
+        let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio)])
+        world.server.serve("/audio/ep-1.m4a", slowly(audio))
+        world.center.download("guid:ep-1", of: feed.id)
+        XCTAssertEqual(world.center.cancelButtonHint(), FeedDownloadProgressWording.cancelButtonHint(FeedCancelReturn(byDownload: 1)))
+
+        let said = world.center.cancelEveryDownload()
+
+        XCTAssertEqual(said, "Stopped downloading “Episode One”. To download it again, choose Download on its row.")
+        await waitFor("the download under way stops") { !world.center.downloads.isDownloading("guid:ep-1", of: feed.id) }
+        XCTAssertEqual(world.center.cancelButtonHint(), FeedDownloadProgressWording.cancelButtonHint(FeedCancelReturn()))
+    }
+
+    /// When the newest-N rule downloads only some of what Cancel stopped
+    /// again by itself, Cancel says how many, and that Download gets back
+    /// the others (REV14 feeds 5): here the feed counts only its newest
+    /// episode, and the listener had asked for an older one too. After the
+    /// feed's next check, the rule asks for the newest alone, as promised.
+    func testCancelSaysHowManyComeBackByThemselves() async throws {
+        let world = try FeedTestWorld(self, label: "FeedProgressCancelMixed")
+        FeedSettings.newestCountPreference.write(1, to: world.preferences)
+        let audio = try FeedMediaFixtures.silentAAC()
+        let feed = try await subscribe(world, episodes: [("ep-1", "Episode One", audio), ("ep-2", "Episode Two", audio)])
+        world.server.serve("/audio/ep-1.m4a", slowly(audio))
+        world.center.download("guid:ep-1", of: feed.id)
+        world.center.download("guid:ep-2", of: feed.id)
+
+        let said = world.center.cancelEveryDownload()
+
+        XCTAssertEqual(
+            said,
+            "Stopped 2 feed downloads. TextMouth downloads 1 of them again at its feed's next check, or the next time it opens. "
+                + "To download the other one again, choose Download on its row."
+        )
+        await waitFor("the download under way stops") { !world.center.downloads.isDownloading("guid:ep-1", of: feed.id) }
+        await world.center.refresh(feed.id)
+        let afterTheCheck = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(afterTheCheck.requestedItemIDs, ["guid:ep-1"])
+    }
+
+    /// `audio` served in parts a moment apart, so its download is still
+    /// under way when the test acts on it.
+    private func slowly(_ audio: Data) -> StubResponse {
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.05
+        return slow
+    }
+
     /// Cancel deletes every partial download on this Mac (FR14, "any in
     /// progress downloads should probably be deleted too, like mp3 parts"):
     /// the resume data a download stopped partway left, with the partial

@@ -185,6 +185,12 @@ final class FeedDownloadManager {
         var boundary: StorageBoundary
         /// The time now.
         var now: @Sendable () -> Date
+        /// Removes an item as the listener's own deletions do, to the Trash
+        /// or for good as Removal Behavior says (`FeedEnvironment.removeItem`):
+        /// how a package an import published is discarded when it holds what
+        /// was kept for the listener, or its feed is being deleted
+        /// (`commit(_:for:restoredKeptPackage:)`, REV14 feeds 2).
+        var removeItem: @MainActor (URL) throws -> Void
     }
 
     /// The records.
@@ -319,10 +325,17 @@ final class FeedDownloadManager {
     /// (`cancelEveryDownload()`, FR14), for the words VoiceOver hears and
     /// the newest-N rule's pause.
     struct Cancellation: Equatable, Sendable {
-        /// The titles of the downloads stopped, each once: the one under
-        /// way, those waiting to start, and the rule's waiting for a network
-        /// or for room.
-        var stopped: [String] = []
+        /// One download Cancel stops: its feed, its item, and its title.
+        struct Stopped: Equatable, Sendable {
+            let feedID: UUID
+            let itemID: FeedItem.ID
+            let title: String
+        }
+
+        /// The downloads stopped, each once: the one under way, those
+        /// waiting to start, and the rule's waiting for a network or for
+        /// room.
+        var stopped: [Stopped] = []
         /// The title of the download that finishes all the same, its book
         /// already being added to the library.
         var finishing: String?
@@ -353,20 +366,7 @@ final class FeedDownloadManager {
     @discardableResult
     func cancelEveryDownload() -> Cancellation {
         guard !isStoppedForQuit else { return Cancellation() }
-        // A book being added can't be stopped: it finishes as it began.
-        let finishing = progress.state.download?.isAddingToLibrary == true ? current : nil
-        let underWay = finishing == nil ? current : nil
-        // Every download asked for, the one under way first; then the
-        // rule's waiting for room, which only their items' states say.
-        var stopping = ((underWay.map { [$0] } ?? []) + queue + putOff).map { (feedID: $0.feedID, itemID: $0.itemID) }
-        for record in store.records.values {
-            for item in record.items where item.state.waitingReason != nil {
-                stopping.append((record.feed.id, item.id))
-            }
-        }
-        var seen = Set<String>()
-        stopping = stopping.filter { seen.insert("\($0.feedID)\u{1F}\($0.itemID)").inserted }
-        let titles = stopping.compactMap { store.record(of: $0.feedID)?.item($0.itemID)?.title }
+        let (underWay, finishing, stopping) = cancelTargets
         queue.removeAll()
         putOff.removeAll()
         if underWay != nil {
@@ -374,18 +374,14 @@ final class FeedDownloadManager {
             // downloaded (`run(_:)`).
             currentTask?.cancel()
         }
-        // One change of each feed's record for all of its items stopped but
-        // the one under way: not downloaded now, each still whoever's it was.
+        // Each of its items stopped but the one under way, not downloaded
+        // now, each still whoever's it was.
         for (feedID, entries) in Dictionary(grouping: stopping, by: \.feedID) {
             var itemIDs = Set(entries.map(\.itemID))
             if let underWay, underWay.feedID == feedID {
                 itemIDs.remove(underWay.itemID)
             }
-            store.update(feedID) { record in
-                for index in record.items.indices where itemIDs.contains(record.items[index].id) {
-                    record.items[index].state = .notDownloaded
-                }
-            }
+            markNotDownloaded(itemIDs, of: feedID)
         }
         FeedPartialDownloads.discardAll(in: environment.resumeFolder)
         if finishing == nil {
@@ -395,12 +391,58 @@ final class FeedDownloadManager {
         DiagnosticLog.event(
             .feeds,
             "FEED_DOWNLOADS_CANCELLED: \(stopping.count) download(s) stopped\(finishingTitle == nil ? "" : ", one finishing"), "
-                + "every partial download deleted; each feed's newest download again after its next check"
+                + "every partial download deleted; each feed's newest-N rule waits for its next check"
         )
         progress.cancel()
         publishQueue()
         let feedIDs = Set(stopping.map(\.feedID) + (finishing.map { [$0.feedID] } ?? []))
-        return Cancellation(stopped: titles, finishing: finishingTitle, feedIDs: feedIDs)
+        return Cancellation(stopped: stopping, finishing: finishingTitle, feedIDs: feedIDs)
+    }
+
+    /// The downloads the feed downloads section's Cancel stops if pressed
+    /// now (`cancelEveryDownload()`), each once, as its button's hint tells
+    /// how they come back (REV14 feeds 5); none once TextMouth quits.
+    var downloadsCancelWouldStop: [Cancellation.Stopped] {
+        isStoppedForQuit ? [] : cancelTargets.stopping
+    }
+
+    /// What the feed downloads section's Cancel stops if pressed now, and
+    /// the download it lets finish (`cancelEveryDownload()`): the download
+    /// under way, unless its book is already being added, which finishes as
+    /// it began, as an import is never stopped partway; those waiting to
+    /// start; and the newest-N rule's waiting for a network or for room,
+    /// the last only their items' states say. Each is stopped once, by its
+    /// feed, item, and title; one whose item is gone is no download.
+    private var cancelTargets: (underWay: Request?, finishing: Request?, stopping: [Cancellation.Stopped]) {
+        let finishing = progress.state.download?.isAddingToLibrary == true ? current : nil
+        let underWay = finishing == nil ? current : nil
+        var asked = ((underWay.map { [$0] } ?? []) + queue + putOff).map { (feedID: $0.feedID, itemID: $0.itemID) }
+        for record in store.records.values {
+            for item in record.items where item.state.waitingReason != nil {
+                asked.append((record.feed.id, item.id))
+            }
+        }
+        var seen = Set<String>()
+        let stopping = asked.compactMap { download -> Cancellation.Stopped? in
+            guard seen.insert("\(download.feedID)\u{1F}\(download.itemID)").inserted,
+                  let title = store.record(of: download.feedID)?.item(download.itemID)?.title else { return nil }
+            return Cancellation.Stopped(feedID: download.feedID, itemID: download.itemID, title: title)
+        }
+        return (underWay, finishing, stopping)
+    }
+
+    /// Marks the items `itemIDs` of the feed `feedID` not downloaded, as
+    /// their downloads stop before they start, or stop waiting, with nothing
+    /// left to come, in one change of the feed's record, so it is written
+    /// once: by Cancel, by the newest-N rule taking its downloads back, and
+    /// by Delete Feed… closing the feed.
+    private func markNotDownloaded(_ itemIDs: Set<FeedItem.ID>, of feedID: UUID) {
+        guard !itemIDs.isEmpty else { return }
+        store.update(feedID) { record in
+            for index in record.items.indices where itemIDs.contains(record.items[index].id) {
+                record.items[index].state = .notDownloaded
+            }
+        }
     }
 
     /// Removes every file waiting in the holding folder to be imported, as
@@ -432,13 +474,19 @@ final class FeedDownloadManager {
     /// on this Mac goes with them (`FeedPartialDownloads`). None of its items
     /// is asked for again until `reopenFeed(_:)`, and a download whose book
     /// is already being added finishes its import, whose package is then
-    /// discarded rather than listed (`commit(_:for:)`). The items' states are
-    /// left as they are: the feed's record goes with them.
+    /// discarded rather than listed (`commit(_:for:restoredKeptPackage:)`),
+    /// as the listener's own deletions go (REV14 feeds 2). Each item whose
+    /// download went is not downloaded, as Cancel leaves the items it stops,
+    /// so a Delete Feed… that stops short leaves none saying "Downloading"
+    /// or "Waiting to Download" of a download no longer coming (REV14 feeds
+    /// 4); the one under way says so as its task ends (`run(_:)`).
     func closeFeed(_ feedID: UUID) {
         closedFeedIDs.insert(feedID)
         defer { publishQueue() }
+        let dropped = Set((queue + putOff).filter { $0.feedID == feedID }.map(\.itemID))
         queue.removeAll { $0.feedID == feedID }
         putOff.removeAll { $0.feedID == feedID }
+        markNotDownloaded(dropped, of: feedID)
         if current?.feedID == feedID {
             currentTask?.cancel()
         }
@@ -486,11 +534,7 @@ final class FeedDownloadManager {
         }.map(\.id) ?? []
         withdrawn += settled
         guard !withdrawn.isEmpty else { return [] }
-        store.update(feedID) { record in
-            for index in record.items.indices where withdrawn.contains(record.items[index].id) {
-                record.items[index].state = .notDownloaded
-            }
-        }
+        markNotDownloaded(Set(withdrawn), of: feedID)
         publishQueue()
         DiagnosticLog.trace(.feeds, "the newest-N rule took back \(withdrawn.count) download(s) no longer wanted")
         return withdrawn
@@ -678,7 +722,7 @@ final class FeedDownloadManager {
         }
         let fileName = FeedEpisodeImporter.fileName(title: item.title, fileExtension: fileExtension)
         let now = environment.now()
-        return try await importAndCommit(request) {
+        return try await importAndCommit(request, restoringKeptPackage: FeedEpisodeImporter.restoresKeptPackage(kept)) {
             try FeedEpisodeImporter.importEpisode(holding, named: fileName, item: item, of: feed, dateAdded: now, restoring: kept)
         }
     }
@@ -710,7 +754,7 @@ final class FeedDownloadManager {
         try Task.checkCancellation()
         let html = FeedEpisodeImporter.articleHTML(for: item, of: feed, body: body)
         let now = environment.now()
-        return try await importAndCommit(request) {
+        return try await importAndCommit(request, restoringKeptPackage: FeedEpisodeImporter.restoresKeptPackage(kept)) {
             try FeedEpisodeImporter.importArticle(html: html, item: item, of: feed, dateAdded: now, restoring: kept)
         }
     }
@@ -732,8 +776,14 @@ final class FeedDownloadManager {
     /// Runs `importBook` on the import queue as storage work and, before that
     /// work ends, adds its book to the library and marks the item downloaded
     /// on the main actor, as every import adds its book. The downloads'
-    /// progress says the book is being added (FR10).
-    private func importAndCommit(_ request: Request, _ importBook: @escaping @Sendable () throws -> ImportedBook) async throws -> Book {
+    /// progress says the book is being added (FR10). `restoringKeptPackage`
+    /// says whether the import restores the item's kept package, holding
+    /// what was kept for the listener (`FeedEpisodeImporter.restoresKeptPackage(_:)`).
+    private func importAndCommit(
+        _ request: Request,
+        restoringKeptPackage: Bool,
+        _ importBook: @escaping @Sendable () throws -> ImportedBook
+    ) async throws -> Book {
         progress.beginAddingToLibrary()
         let boundary = environment.boundary
         let queue = importQueue
@@ -744,7 +794,7 @@ final class FeedDownloadManager {
                         let book = try boundary.perform(.importing) { _ -> Book in
                             let imported = try importBook()
                             let listed = DispatchQueue.main.sync {
-                                self.commit(imported.book, for: request)
+                                self.commit(imported.book, for: request, restoredKeptPackage: restoringKeptPackage)
                             }
                             // Its item was deleted while it imported: the
                             // download ends as if stopped.
@@ -774,13 +824,18 @@ final class FeedDownloadManager {
     /// (Delete Episode stops a transfer, but not an import once begun, which
     /// may be restoring the item's kept package meanwhile) gets no row: the
     /// package the import just published, in the kept package's place when
-    /// it restored one, is deleted for good, so nothing of a deleted item
-    /// comes back. So does an item of a feed being deleted (FR14).
-    private func commit(_ book: Book, for request: Request) -> Bool {
+    /// it restored one (`restoredKeptPackage`), is discarded, so nothing of a
+    /// deleted item comes back. So does an item of a feed being deleted
+    /// (FR14). How it goes is `discardPackage(of:asTheListenersDeletion:because:)`'s.
+    private func commit(_ book: Book, for request: Request, restoredKeptPackage: Bool) -> Bool {
         beforeCommit?(request)
-        guard !closedFeedIDs.contains(request.feedID),
-              let item = store.record(of: request.feedID)?.item(request.itemID), item.deletedDate == nil else {
-            discardPackage(of: book)
+        let feedIsClosed = closedFeedIDs.contains(request.feedID)
+        guard !feedIsClosed, let item = store.record(of: request.feedID)?.item(request.itemID), item.deletedDate == nil else {
+            discardPackage(
+                of: book,
+                asTheListenersDeletion: restoredKeptPackage || feedIsClosed,
+                because: feedIsClosed ? "its feed is being deleted" : "its item was deleted while it imported"
+            )
             return false
         }
         library()?.addFeedBook(book)
@@ -793,20 +848,33 @@ final class FeedDownloadManager {
         return true
     }
 
-    /// Deletes for good the package an import published for an item deleted
-    /// while it imported: only a package in its feed's own folder, as every
-    /// download publishes one, and never anything else.
-    private func discardPackage(of book: Book) {
-        guard book.feedLink != nil, FeedItemPackage.isPackageName(book.tmbDirectoryName) else { return }
+    /// Discards the package an import published for an item that gets no
+    /// row, because `reason`: only a package in its feed's own folder, as
+    /// every download publishes one, and never anything else. One already
+    /// gone, as with its item, counts as discarded, as every whole package
+    /// removed does (`FeedItemPackage.removeWhole(_:in:remove:)`).
+    ///
+    /// With `asTheListenersDeletion` it goes as the listener's own deletions
+    /// go, to the Trash or for good as Removal Behavior says
+    /// (`Environment.removeItem`, REV14 feeds 2): a restore's package, which
+    /// holds the place, bookmarks, and transcript kept for the item, moved
+    /// in from its kept package, and every package of a feed Delete Feed…
+    /// is deleting, whose question said where its deletions go. Otherwise
+    /// it goes for good: a new download of an item deleted while it
+    /// imported, which holds nothing of the listener's.
+    private func discardPackage(of book: Book, asTheListenersDeletion: Bool, because reason: String) {
         do {
-            try FileManager.default.removeItem(at: book.tmbDirectory)
-        } catch CocoaError.fileNoSuchFile {
-            // Deleted with its item already.
+            if asTheListenersDeletion {
+                try FeedItemPackage.removeWhole(book, in: TextMouthPaths.root, remove: environment.removeItem)
+            } else {
+                try FeedItemPackage.removeWhole(book, in: TextMouthPaths.root) { try FileManager.default.removeItem(at: $0) }
+            }
         } catch {
-            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_LEFT: \(book.title): its item was deleted, and its package could not be: \(error.localizedDescription)")
+            DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_LEFT: \(book.title): \(reason), and its package could not be removed: \(error.localizedDescription)")
             return
         }
-        DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DISCARDED: \(book.title): its item was deleted while it imported")
+        let how = asTheListenersDeletion ? "as Removal Behavior says" : "for good"
+        DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DISCARDED: \(book.title): \(reason); its package removed \(how)")
     }
 
     /// `request` as it stands now: the download under way when it is the

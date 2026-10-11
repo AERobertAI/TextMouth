@@ -683,18 +683,20 @@ extension FeedWording {
     }
 
     /// What VoiceOver hears once Delete Feed… deleted a feed whose items are
-    /// called `noun` (FR14): what went, as `outcome` counts it, and what
-    /// became of its library folder. "Deleted the feed “Finish It!”, its 5
-    /// downloaded episodes, and what it kept for 3 removed downloads. Its
-    /// folder “Podcasts/Finish It!” is gone too."
-    static func deletedFeed(_ outcome: FeedDeleteOutcome, noun: ItemNoun) -> String {
+    /// called `noun` (FR14): what went, as `outcome` counts it, naming what
+    /// the packages kept for removed downloads held (`keptParts`), as its
+    /// question named them and Unsubscribe's announcement names them
+    /// (`keptPhrase(count:parts:)`, REV14 feeds 9), and what became of its
+    /// library folder. "Deleted the feed “Finish It!”, its 5 downloaded
+    /// episodes, and the places and bookmarks kept for 3 removed downloads.
+    /// Its folder “Podcasts/Finish It!” is gone too."
+    static func deletedFeed(_ outcome: FeedDeleteOutcome, noun: ItemNoun, keptParts: KeptParts) -> String {
         var deleted = ["the feed “\(outcome.title)”"]
         if outcome.deletedDownloads > 0 {
             deleted.append("its \(downloadsPhrase(outcome.deletedDownloads, noun))")
         }
         if outcome.deletedKeptPlaces > 0 {
-            let removed = CountWording.phrase(outcome.deletedKeptPlaces, singular: "removed download", plural: "removed downloads")
-            deleted.append("what it kept for \(removed)")
+            deleted.append(keptPhrase(count: outcome.deletedKeptPlaces, parts: keptParts))
         }
         let sentence = "Deleted \(LibraryCloudWording.list(deleted))."
         switch outcome.folder {
