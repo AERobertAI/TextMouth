@@ -816,6 +816,27 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-2")?.state, .notDownloaded)
     }
 
+    /// Delete Episode of an item whose kept package is already gone, as one
+    /// removed by hand, deletes the item, its row leaving the shelf and its
+    /// feed's index, the package counting as removed, nothing being left of
+    /// it to keep, as Unsubscribe and Delete Feed… count one (REV14 feeds
+    /// 8, one rule for a package gone); it was refused before.
+    func testDeleteEpisodeOfAKeptPackageAlreadyGone() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordDeleteEpisodeGone")
+        let (feed, books) = try await downloadedEpisodes(1, in: world)
+        let kept = try listen(to: try XCTUnwrap(books.first), in: world)
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        try FileManager.default.removeItem(at: kept.tmbDirectory)
+        let removedBefore = world.removedItems.value.count
+
+        try world.center.deleteItem("guid:ep-1", of: feed.id)
+
+        XCTAssertEqual(world.library.library.feedShelf.rows, [])
+        XCTAssertEqual(try indexedRows(of: feed.id), [])
+        XCTAssertNotNil(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.deletedDate, "the item stayed")
+        XCTAssertEqual(world.removedItems.value.count, removedBefore, "a package already gone went through the listener's removal")
+    }
+
     /// Delete Episode while a download of the item imports, which it cannot
     /// stop once begun, leaves nothing of the item: the import lists no row
     /// for it and deletes the package it published, whether the download

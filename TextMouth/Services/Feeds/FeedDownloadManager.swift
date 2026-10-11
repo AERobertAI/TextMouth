@@ -851,26 +851,23 @@ final class FeedDownloadManager {
     /// Discards the package an import published for an item that gets no
     /// row, because `reason`: only a package in its feed's own folder, as
     /// every download publishes one, and never anything else. One already
-    /// gone, as with its item, counts as discarded.
+    /// gone, as with its item, counts as discarded, as every whole package
+    /// removed does (`FeedItemPackage.removeWhole(_:in:remove:)`).
     ///
     /// With `asTheListenersDeletion` it goes as the listener's own deletions
     /// go, to the Trash or for good as Removal Behavior says
     /// (`Environment.removeItem`, REV14 feeds 2): a restore's package, which
     /// holds the place, bookmarks, and transcript kept for the item, moved
     /// in from its kept package, and every package of a feed Delete Feed…
-    /// is deleting, whose question said where its deletions go. Otherwise,
-    /// a new download of an item deleted while it imported, which holds
-    /// nothing of the listener's, it goes for good.
+    /// is deleting, whose question said where its deletions go. Otherwise
+    /// it goes for good: a new download of an item deleted while it
+    /// imported, which holds nothing of the listener's.
     private func discardPackage(of book: Book, asTheListenersDeletion: Bool, because reason: String) {
-        guard book.feedLink != nil, FeedItemPackage.isPackageName(book.tmbDirectoryName) else { return }
-        let package = book.tmbDirectory
         do {
-            if MaintenanceFileAccess.hasItem(at: package) {
-                if asTheListenersDeletion {
-                    try environment.removeItem(package)
-                } else {
-                    try FileManager.default.removeItem(at: package)
-                }
+            if asTheListenersDeletion {
+                try FeedItemPackage.removeWhole(book, in: TextMouthPaths.root, remove: environment.removeItem)
+            } else {
+                try FeedItemPackage.removeWhole(book, in: TextMouthPaths.root) { try FileManager.default.removeItem(at: $0) }
             }
         } catch {
             DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_LEFT: \(book.title): \(reason), and its package could not be removed: \(error.localizedDescription)")

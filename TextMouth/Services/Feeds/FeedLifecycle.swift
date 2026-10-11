@@ -202,20 +202,20 @@ extension FeedCenter {
         guard book.isFeedItem else { throw FeedItemPackageError.notAFeedPackage }
         let root = TextMouthPaths.root
         let outcome = try library.removeFeedFiles(of: [book], keepingPackages: keepingPackage) { removal in
-            let package = try FeedItemPackage.packageForRemoval(of: removal.row, in: root)
-            if removal.keepsPackage {
-                // A text book's content.md may hold an edit made with Edit
-                // Text, so it stays in a kept package whenever one of the
-                // engine's rules removes the file
-                // (`FeedItemPackage.staysWithoutTheFile(_:)`); the listener's
-                // own Delete Download takes it with the file, as one item
-                // that follows the Trash setting as the file does, and a
-                // refusal leaves both (REV11).
-                try FeedItemPackage.removeFileAndText(of: removal.row, in: package, remove: environment.removeItem)
-                FeedItemPackage.removeWhatTheFileMade(of: removal.row, from: package)
-            } else {
-                try environment.removeItem(package)
+            guard removal.keepsPackage else {
+                // A package gone already counts as removed (REV14 feeds 8).
+                try FeedItemPackage.removeWhole(removal.row, in: root, remove: environment.removeItem)
+                return
             }
+            let package = try FeedItemPackage.packageForRemoval(of: removal.row, in: root)
+            // A text book's content.md may hold an edit made with Edit Text,
+            // so it stays in a kept package whenever one of the engine's
+            // rules removes the file (`FeedItemPackage.staysWithoutTheFile(_:)`);
+            // the listener's own Delete Download takes it with the file, as
+            // one item that follows the Trash setting as the file does, and a
+            // refusal leaves both (REV11).
+            try FeedItemPackage.removeFileAndText(of: removal.row, in: package, remove: environment.removeItem)
+            FeedItemPackage.removeWhatTheFileMade(of: removal.row, from: package)
         }
         if let failure = outcome.failures.first {
             throw failure.error
@@ -309,7 +309,9 @@ extension FeedCenter {
         let outcome: FeedFileRemovalOutcome
         do {
             outcome = try library.removeFeedFiles(of: kept, keepingPackages: false) { removal in
-                try environment.removeItem(FeedItemPackage.packageForRemoval(of: removal.row, in: root))
+                // A package gone already counts as removed, its row leaving
+                // the shelf, as Delete Feed… counts one (REV14 feeds 8).
+                try FeedItemPackage.removeWhole(removal.row, in: root, remove: environment.removeItem)
             }
         } catch {
             DiagnosticLog.event(

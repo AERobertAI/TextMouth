@@ -658,6 +658,31 @@ final class LibraryFeedUnsubscribeCommandTests: XCTestCase {
         await waitFor("the unsubscription is said") { heard.lines.last == unsubscribed }
     }
 
+    /// A kept package already gone, as one removed by hand, counts as
+    /// deleted when Unsubscribe deletes what its question named: its row
+    /// leaves the feed's shelf, nothing being left of it to keep, as Delete
+    /// Feed… and Delete Episode count one, and nothing goes through the
+    /// listener's removal (REV14 feeds 8, one rule for a package gone).
+    @MainActor
+    func testUnsubscribeCountsAKeptPackageAlreadyGoneAsDeleted() async throws {
+        let world = try FeedTestWorld(self, label: "LibraryFeedUnsubscribeGone")
+        let feed = try await subscribedToEpisodes(1, in: world)
+        let kept = try await packageTheRuleKept("guid:ep-1", of: feed, in: world)
+        try FileManager.default.removeItem(at: kept.tmbDirectory)
+        let presenter = LibraryFeedsPresenter()
+        let context = FeedCommandContext(center: world.center, library: world.library, window: nil)
+        let question = try XCTUnwrap(presenter.requestUnsubscribe(feed.id, in: context))
+        guard case let .unsubscribe(_, keptItemIDs) = question.kind else {
+            return XCTFail("Unsubscribe asked another question: \(question.kind)")
+        }
+
+        let outcome = presenter.unsubscribe(feed.id, deletingKeptOf: keptItemIDs, in: context)
+
+        XCTAssertEqual(outcome?.deletedKeptCount, 1)
+        XCTAssertNil(world.library.feedItemRows(of: feed.id).kept["guid:ep-1"], "the row of a package already gone stayed on the shelf")
+        XCTAssertEqual(world.removedItems.value, [], "a package already gone went through the listener's removal")
+    }
+
     /// Resubscribe checks the feed at once, finding what was published
     /// while it was unsubscribed, and every later check goes on as before; a
     /// second Resubscribe changes nothing.

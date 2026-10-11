@@ -148,6 +148,23 @@ enum FeedItemPackage {
 
     // MARK: Removing
 
+    /// Removes the package of the feed item `row` whole through `remove`
+    /// (REV14 feeds 8): as Delete Episode deletes an item's package,
+    /// Unsubscribe and Delete Feed… the packages kept for removed downloads,
+    /// through the listener's own removal, and as an import discards the
+    /// package it published for an item that gets no row. One rule for all
+    /// of them: a package already gone counts as removed, nothing of it
+    /// being left to keep, so its row goes.
+    /// - Throws: `FeedItemPackageError.notAFeedPackage` for a row naming no
+    ///   package of its feed's own folder (`packageForRemoval(of:in:)`), or
+    ///   why the package could not be removed; nothing was removed then.
+    @MainActor
+    static func removeWhole(_ row: Book, in root: URL, remove: @MainActor (URL) throws -> Void) throws {
+        let package = try packageForRemoval(of: row, in: root)
+        guard MaintenanceFileAccess.hasItem(at: package) else { return }
+        try remove(package)
+    }
+
     /// Removes from `package` everything the file of `row` made that its
     /// removal leaves: each entry `staysWithoutTheFile(_:)` does not keep,
     /// for good, without downloading anything. An entry that cannot be
