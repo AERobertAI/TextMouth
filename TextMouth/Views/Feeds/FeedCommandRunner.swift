@@ -212,7 +212,7 @@ extension LibraryFeedsPresenter {
             message: FeedWording.deleteFeedMessage(
                 downloads: rows.downloaded.count,
                 kept: rows.kept.count,
-                keptParts: .of(Array(rows.kept.values)),
+                keptParts: keptParts(ofFeed: feedID, in: context),
                 noun: .of(center.listedItems(of: feedID)),
                 folderPath: center.folderPath(of: feed),
                 mode: context.library.removalPreferences.deletionMode
@@ -224,9 +224,11 @@ extension LibraryFeedsPresenter {
     /// Deletes the feed `feedID` entirely, once confirmed (FR14,
     /// `FeedCenter.deleteFeed(_:)`). Feed Info, should it show the feed,
     /// closes first. VoiceOver hears what went once the question's alert
-    /// has closed (REV13 item 1); a feed that stays, as when one of its
-    /// downloads is open in a reader or being transcribed, says why in an
-    /// alert, which VoiceOver reads as it appears (REV14 feeds 6).
+    /// has closed (REV13 item 1), naming what the packages kept for
+    /// removed downloads held, as the question did (REV14 feeds 9); a
+    /// feed that stays, as when one of its downloads is open in a reader
+    /// or being transcribed, says why in an alert, which VoiceOver reads
+    /// as it appears (REV14 feeds 6).
     /// - Returns: The deletion, which tests await; nil once the feed's
     ///   record is gone.
     @discardableResult
@@ -235,17 +237,27 @@ extension LibraryFeedsPresenter {
         guard let feed = center.store.record(of: feedID)?.feed else { return nil }
         let noun = FeedWording.ItemNoun.of(center.listedItems(of: feedID))
         let mode = context.library.removalPreferences.deletionMode
+        // What the kept packages about to go hold, named once they have
+        // gone.
+        let partsKept = keptParts(ofFeed: feedID, in: context)
         if feedInfo?.feedID == feedID {
             feedInfo = nil
         }
         return Task {
             do throws(FeedDeleteError) {
                 guard let outcome = try await center.deleteFeed(feedID) else { return }
-                say(FeedWording.deletedFeed(outcome, noun: noun), afterAlert: true, in: context)
+                say(FeedWording.deletedFeed(outcome, noun: noun, keptParts: partsKept), afterAlert: true, in: context)
             } catch {
                 refuse(message: FeedWording.deleteFeedRefused(error, title: feed.title, mode: mode))
             }
         }
+    }
+
+    /// What the packages the feed `feedID` kept for removed downloads hold
+    /// (FR11, branch A2), as Delete Feed…'s question names them and its
+    /// announcement then names them again (REV14 feeds 9).
+    private func keptParts(ofFeed feedID: UUID, in context: FeedCommandContext) -> FeedWording.KeptParts {
+        .of(Array(context.library.feedItemRows(of: feedID).kept.values))
     }
 
     // MARK: An Item's Commands

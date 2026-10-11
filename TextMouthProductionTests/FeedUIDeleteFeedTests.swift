@@ -53,27 +53,52 @@ final class FeedUIDeleteFeedTests: XCTestCase {
         )
     }
 
-    /// What VoiceOver hears once a feed is deleted names what went and what
-    /// became of its folder; one download is never "1 downloaded episode".
+    /// What VoiceOver hears once a feed is deleted names what went, the
+    /// kept packages by what they held, as the question named them (REV14
+    /// feeds 9), and what became of its folder; one download is never "1
+    /// downloaded episode".
     func testWhatIsSaidOnceAFeedIsDeleted() {
         let all = FeedDeleteOutcome(title: "Finish It!", deletedDownloads: 5, deletedKeptPlaces: 3, folder: .deleted(path: "Podcasts/Finish It!"))
         XCTAssertEqual(
-            FeedWording.deletedFeed(all, noun: .episode),
-            "Deleted the feed “Finish It!”, its 5 downloaded episodes, and what it kept for 3 removed downloads. "
+            FeedWording.deletedFeed(all, noun: .episode, keptParts: [.place, .bookmarks]),
+            "Deleted the feed “Finish It!”, its 5 downloaded episodes, and the places and bookmarks kept for 3 removed downloads. "
                 + "Its folder “Podcasts/Finish It!” is gone too."
         )
         let one = FeedDeleteOutcome(title: "Corkboard", deletedDownloads: 1, deletedKeptPlaces: 0, folder: .stays(path: "Notes"))
         XCTAssertEqual(
-            FeedWording.deletedFeed(one, noun: .article),
+            FeedWording.deletedFeed(one, noun: .article, keptParts: []),
             "Deleted the feed “Corkboard” and its downloaded article. Its folder “Notes” stays, as something else is in it."
         )
         let bare = FeedDeleteOutcome(title: "Atlas", deletedDownloads: 0, deletedKeptPlaces: 0, folder: .none)
-        XCTAssertEqual(FeedWording.deletedFeed(bare, noun: .episode), "Deleted the feed “Atlas”.")
+        XCTAssertEqual(FeedWording.deletedFeed(bare, noun: .episode, keptParts: []), "Deleted the feed “Atlas”.")
         let stuck = FeedDeleteOutcome(title: "Atlas", deletedDownloads: 0, deletedKeptPlaces: 1, folder: .notDeleted(path: "Atlas"))
         XCTAssertEqual(
-            FeedWording.deletedFeed(stuck, noun: .episode),
-            "Deleted the feed “Atlas” and what it kept for 1 removed download. Its folder “Atlas” is empty, but could not be deleted."
+            FeedWording.deletedFeed(stuck, noun: .episode, keptParts: [.transcript]),
+            "Deleted the feed “Atlas” and the transcript kept for 1 removed download. Its folder “Atlas” is empty, but could not be deleted."
         )
+        // Packages that held none of the parts named, as one kept for its
+        // edited text, are what was kept, as the question says.
+        XCTAssertEqual(
+            FeedWording.deletedFeed(stuck, noun: .episode, keptParts: []),
+            "Deleted the feed “Atlas” and what was kept for 1 removed download. Its folder “Atlas” is empty, but could not be deleted."
+        )
+    }
+
+    /// Delete Feed… names, once the feed is gone, what the package it kept
+    /// for a removed download held, as its question named it (REV14 feeds
+    /// 9): here the place kept for the first episode.
+    func testDeleteFeedSaysWhatItsKeptPackagesHeld() async throws {
+        let harness = try await Harness(self, label: "FeedUIDeleteFeedKept")
+        harness.world.library.persistReadingPosition(bookID: harness.book.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 42))
+        try harness.world.center.deleteDownload("guid:ep-1", of: harness.feed.id)
+        let folderPath = try XCTUnwrap(harness.world.library.feedFolderPath(forFolderID: harness.feed.folderID))
+        let question = try XCTUnwrap(harness.presenter.deleteFeedConfirmation(for: harness.feed.id, in: harness.context))
+        XCTAssertTrue(question.message.contains("It deletes the place kept for 1 removed download"), question.message)
+
+        harness.presenter.confirm(question, in: harness.context)
+
+        let said = "Deleted the feed “The Tactile Atlas” and the place kept for 1 removed download. Its folder “\(folderPath)” is gone too."
+        await waitFor("the deletion is said") { harness.heard.last == said }
     }
 
     /// Why Delete Feed… left a feed is said in the removal setting's words,
