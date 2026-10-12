@@ -700,6 +700,63 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(extended, PlaceRelocator.Result(place: TextPlace(chapter: 1, offset: try Phrase.offset(of: "The spoons", in: added)), finding: .movedByTheDiff(.linedUp)))
     }
 
+    // MARK: - Chapters Without Words
+
+    /// A place in a chapter without words goes to the chapter without words
+    /// that matches it between its neighbours' chapters in the new text
+    /// (REV15, finding 13), keeping its offset in it: an image page an older
+    /// build read as "[]" and a newer one reads as nothing, with or without
+    /// a chapter restored right after it; an ornament page with a preface
+    /// restored before it, or rewritten ("* * *" as "⁂"); a cover at the
+    /// book's start. It never goes to the end of the chapter before it, nor
+    /// to the end of a chapter restored after it.
+    func testAPlaceInAChapterWithoutWordsGoesToItsMatchingChapter() throws {
+        let interlude = "INTERLUDE. A Winter Crossing\n\nThe ice on the millpond held for nine days, and the volunteers skated on it."
+        let preface = "PREFACE\n\nThis diary was kept by the volunteers of the Hollins Ford mill between March and November."
+        let cases: [(old: [String], saved: TextPlace, new: [String], expected: TextPlace)] = [
+            ([millrace, wheel, "[]", stones, flour], TextPlace(chapter: 2, offset: 0), [millrace, wheel, "", stones, flour], TextPlace(chapter: 2, offset: 0)),
+            ([millrace, wheel, "[]", stones, flour], TextPlace(chapter: 2, offset: 0), [millrace, wheel, "", interlude, stones, flour], TextPlace(chapter: 2, offset: 0)),
+            ([millrace, "* * *", wheel], TextPlace(chapter: 1, offset: 0), [preface, millrace, "* * *", wheel], TextPlace(chapter: 2, offset: 0)),
+            ([millrace, "* * *", wheel], TextPlace(chapter: 1, offset: 2), [preface, millrace, "* * *", wheel], TextPlace(chapter: 2, offset: 2)),
+            ([millrace, "* * *", wheel], TextPlace(chapter: 1, offset: 0), [millrace, "⁂", wheel], TextPlace(chapter: 1, offset: 0)),
+            (["[]", millrace, wheel], TextPlace(chapter: 0, offset: 0), ["", millrace, wheel], TextPlace(chapter: 0, offset: 0)),
+        ]
+        for (index, test) in cases.enumerated() {
+            let result = try relocate(test.saved, from: test.old, to: test.new)
+            XCTAssertEqual(result, PlaceRelocator.Result(place: test.expected, finding: .movedByTheDiff(.linedUp)), "case \(index)")
+        }
+        // Its page left out, the place goes to the start of the chapter after
+        // where the one before it went, a chapter restored there included.
+        let leftOut = try relocate(TextPlace(chapter: 2, offset: 0), from: [millrace, wheel, "[]", stones], to: [millrace, wheel, interlude, stones])
+        XCTAssertEqual(leftOut, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: 0), finding: .movedByTheDiff(.passageRemoved)))
+    }
+
+    /// Saved words that hold no word stand anywhere, so they keep a place at
+    /// its numbers only when the old text and the diff put it back there
+    /// (REV15, finding 12): a position on a plate (a chapter without words)
+    /// with a preface restored before it goes to the plate, not to chapter
+    /// I, which now has the plate's numbers; so does one saved without
+    /// words; and an anchor read back empty, at a place with words, is
+    /// carried by the diff. With nothing changed, each stays.
+    func testSavedWordsThatHoldNoWordAreNoEvidenceThatAPlaceStands() throws {
+        let preface = "PREFACE\n\nThis diary was kept by the volunteers of the Hollins Ford mill between March and November."
+        let old = [millrace, "", wheel, stones]
+        let new = [preface, millrace, "", wheel, stones]
+        let plate = TextPlace(chapter: 1, offset: 0)
+        let anchored = try relocate(plate, from: old, to: new)
+        XCTAssertEqual(anchored, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: 0), finding: .movedByTheDiff(.linedUp)))
+        let relocator = PlaceRelocator(oldTexts: old, newTexts: new)
+        XCTAssertEqual(relocator.relocate(nil, savedAt: plate), anchored, "saved without words")
+        let empty = TextAnchor(before: "", after: "", fraction: 0)
+        let frost = try Phrase.place(of: "frost", inChapter: 2, of: old)
+        XCTAssertEqual(relocator.relocate(empty, savedAt: frost),
+                       PlaceRelocator.Result(place: TextPlace(chapter: 3, offset: frost.offset), finding: .movedByTheDiff(.linedUp)), "an anchor read back empty")
+
+        let same = PlaceRelocator(oldTexts: old, newTexts: old)
+        XCTAssertEqual(same.relocate(try SavedPlace.anchor(at: plate, in: old), savedAt: plate), PlaceRelocator.Result(place: plate, finding: .unchanged))
+        XCTAssertEqual(same.relocate(empty, savedAt: frost), PlaceRelocator.Result(place: frost, finding: .unchanged))
+    }
+
     // MARK: - The Old Text
 
     /// A place whose old text, as this build reads it, differs from the text

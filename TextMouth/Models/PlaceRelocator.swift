@@ -17,7 +17,10 @@ import Foundation
 /// 1. **The end of the book, and the direct check** (`TextAnchorFinder.settled`):
 ///    a place at the end of the book stays at the end of the new one (P07),
 ///    and a place whose saved words still stand exactly around its saved
-///    numbers in the new text stays.
+///    numbers in the new text stays. Saved words that hold no word (a place
+///    in a chapter without words, or an anchor read back empty) stand
+///    anywhere, so they are no evidence by themselves: such a place stays
+///    only when the old text and the diff put it back where it was.
 /// 2. **The old text.** The place is found in the old text: at its numbers
 ///    when its saved words stand there, or else by its saved words, for
 ///    certain. A place saved without words is taken to stand at its numbers
@@ -64,6 +67,10 @@ import Foundation
 ///      holds the chapter's last solid match, so a chapter restored after it
 ///      does not take it, though the chapter's last words were edited or
 ///      match the restored chapter's.
+///    - **Chapters without words:** a place in a chapter without words (a
+///      cover, a plate, "* * *") goes to the chapter without words, in the
+///      same order, between where its neighbours with words went; failing
+///      one, to the start of the chapter after where the one before it went.
 /// 4. **The saved words.** What the diff cannot decide goes to the saved
 ///    words' search in the new text (`TextAnchorFinder`), except that a weak
 ///    match far from the diff's own unsure answer does not overrule it.
@@ -263,8 +270,14 @@ struct PlaceRelocator: Sendable {
     /// are the type's.
     func relocate(_ anchor: TextAnchor?, savedAt saved: TextPlace) -> Result {
         let words = savedWords(anchor, savedAt: saved)
-        // Rule 1: the end of the book, and the direct check.
-        if let settled = newFinder.settled(words.anchor, savedAt: saved) {
+        // Rule 1: the end of the book, and the direct check. Saved words
+        // that hold no word (a place in a chapter without words, or an
+        // anchor read back empty) stand anywhere, so the direct check alone
+        // is no evidence for them: the old text and the diff place such a
+        // place, and it stays only when they put it back where it was.
+        let settled = newFinder.settled(words.anchor, savedAt: saved)
+        let standsAnywhere = settled?.finding == .unchanged && Self.holdsNoWords(words.anchor)
+        if let settled, !standsAnywhere {
             return Result(place: settled.place, finding: Self.finding(settled.finding))
         }
         // Rules 2 and 3: the old text, then the diff.
@@ -272,7 +285,7 @@ struct PlaceRelocator: Sendable {
         if let start = words.readInOldText ?? placeInOldText(of: words.anchor, savedAt: saved) {
             switch carry(from: start, anchor: words.anchor) {
             case .placed(let result):
-                return result
+                return standsAnywhere && result.place == saved ? Result(place: saved, finding: .unchanged) : result
             case .unsure(let answer):
                 unsure = answer
             case .undecided:
@@ -525,7 +538,7 @@ struct PlaceRelocator: Sendable {
     private func atChapterEnd(_ start: TextPlace) -> Carried {
         let first = old.chapterFirstWords[start.chapter]
         let last = old.chapterFirstWords[start.chapter + 1] - 1
-        guard last >= first else { return .undecided }
+        guard last >= first else { return inChapterWithoutWords(start) }
         // The chapter's last solid match, by runs within the chapter: the
         // common end of a restored chapter and the next ("…come home." and
         // "CHAPTER III.") lines the chapter's last word up with the restored
@@ -538,6 +551,57 @@ struct PlaceRelocator: Sendable {
         }
         let chapter = new.chapter(ofWord: partners[solid])
         return .placed(Result(place: TextPlace(chapter: chapter, offset: new.length(ofChapter: chapter)), finding: .movedByTheDiff(.wordReplaced)))
+    }
+
+    /// Carries a place standing at `start` in a chapter without words (a
+    /// cover, a plate, an ornament page "* * *", an image page an older
+    /// build read as "[]") to the chapter of the new text that matches it:
+    /// among the chapters without words between where the diff carries its
+    /// neighbours with words (the end of the one before it, the start of
+    /// the one after), the one in the same order, at its offset held within
+    /// it. With none there (its page left out), it goes to the start of the
+    /// chapter after where the one before it went, so that a chapter
+    /// restored there is not skipped, or where the text after it begins
+    /// (rule 3, chapters without words). The measured program met no such
+    /// place.
+    private func inChapterWithoutWords(_ start: TextPlace) -> Carried {
+        // The first word after the chapter (the next chapter with words
+        // begins with it), or the number of words when none follows.
+        let nextWord = old.chapterFirstWords[start.chapter]
+        let chapterBefore = nextWord > 0 ? old.chapter(ofWord: nextWord - 1) : -1
+        // Where the chapter before it ends in the new text.
+        var newBefore = -1
+        if chapterBefore >= 0 {
+            let end = TextPlace(chapter: chapterBefore, offset: old.length(ofChapter: chapterBefore))
+            guard case .placed(let carried) = atChapterEnd(end) else { return .undecided }
+            newBefore = carried.place.chapter
+        }
+        // Where the chapter after it begins in the new text.
+        var newAfter = new.chapterCount
+        var afterWord: Int?
+        if nextWord < old.count {
+            switch verdict(forOldWord: nextWord) {
+            case .linedUp(let word), .replaced(let word), .removed(let word, sure: true):
+                afterWord = word
+                newAfter = word < new.count ? new.chapter(ofWord: word) : new.chapterCount
+            case .removed, .unlined, .undecided:
+                return .undecided
+            }
+        }
+        // Its own chapter among the chapters without words between them.
+        let rank = start.chapter - chapterBefore - 1
+        let between = newBefore + 1 < newAfter ? Array((newBefore + 1)..<newAfter) : []
+        let withoutWords = between.filter { new.chapterFirstWords[$0] == new.chapterFirstWords[$0 + 1] }
+        if !withoutWords.isEmpty {
+            let chapter = withoutWords[min(rank, withoutWords.count - 1)]
+            let offset = min(max(start.offset, 0), new.length(ofChapter: chapter))
+            return .placed(Result(place: TextPlace(chapter: chapter, offset: offset), finding: .movedByTheDiff(.linedUp)))
+        }
+        if let first = between.first {
+            return .placed(Result(place: TextPlace(chapter: first, offset: 0), finding: .movedByTheDiff(.passageRemoved)))
+        }
+        guard let afterWord else { return .undecided }
+        return .placed(Result(place: new.start(ofWord: afterWord), finding: .movedByTheDiff(.passageRemoved)))
     }
 
     /// What the diff says of one old word.
@@ -767,13 +831,24 @@ struct PlaceRelocator: Sendable {
                 return Result(place: unsure.place, finding: .guessed(.diffUnsure))
             }
             return Result(place: found.place, finding: Self.finding(found.finding))
-        case .guessed:
+        case .guessed, .unchanged:
+            // A guess; or saved words that hold no word, which stand
+            // anywhere and so keep the place's numbers only as a guess. The
+            // diff's unsure answer comes first.
             if let unsure { return Result(place: unsure.place, finding: .guessed(.diffUnsure)) }
-            return Result(place: found.place, finding: Self.finding(found.finding))
-        case .unchanged, .found:
-            // Settled by rule 1 before the diff; kept as the finder says.
+            return Result(place: found.place, finding: found.isGuess ? Self.finding(found.finding) : .guessed(.savedWords(.sameShare)))
+        case .found:
+            // The end of the book, which rule 1 settled before the diff.
             return Result(place: found.place, finding: Self.finding(found.finding))
         }
+    }
+
+    /// Whether `anchor`'s quotes hold no fine word: saved words that stand
+    /// anywhere, and so are no evidence of where a place is.
+    private static func holdsNoWords(_ anchor: TextAnchor) -> Bool {
+        var none = true
+        FineWords.forEachWord(in: anchor.before + anchor.after) { _, _, _ in none = false }
+        return none
     }
 
     /// The relocator's finding for one of the finder's. The end of the book
