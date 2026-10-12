@@ -7,13 +7,7 @@ import XCTest
 /// a search (`TextAnchorFinder.settled`), and the first search's one best
 /// spot wherever it lies (`TextAnchorFinder.onlyBestSpot`). Pure: no window,
 /// no file.
-final class PlaceRelocatorSharedRuleTests: XCTestCase {
-
-    // MARK: - A Book
-
-    /// The shared book's first two chapters (`MillBook`).
-    private let millrace = MillBook.millrace
-    private let wheel = MillBook.wheel
+final class PlaceRelocatorSharedRuleTests: XCTestCase, MillBookReading {
 
     /// The first word's key of `word`.
     private func key(_ word: String, file: StaticString = #filePath, line: UInt = #line) throws -> UInt64 {
@@ -140,7 +134,7 @@ final class PlaceRelocatorSharedRuleTests: XCTestCase {
         let anchor = try XCTUnwrap(TextAnchor(capturingAt: saved, in: BookWords(texts: book)))
         // The wheel's chapter moved to the end of a long book, far from the
         // place's share of the book, which the locality rule would heed.
-        let ledger = (1...400).map { "Ledger line \($0) recorded \($0 * 3) sacks of barley." }.joined(separator: " ")
+        let ledger = MillBook.ledger
         let moved = [millrace, ledger, wheel]
         let finder = TextAnchorFinder(texts: moved)
         let spot = try XCTUnwrap(finder.onlyBestSpot(for: anchor))

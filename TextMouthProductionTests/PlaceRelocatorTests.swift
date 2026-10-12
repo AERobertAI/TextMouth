@@ -9,18 +9,7 @@ import XCTest
 /// the end of the book, a place found first in an old text that reads
 /// differently from the text it was saved in, and the rules' edges. Each
 /// case knows exactly where every word went. Pure: no window, no file.
-final class PlaceRelocatorTests: XCTestCase {
-
-    // MARK: - A Book to Rebuild
-
-    /// The shared book's chapters (`MillBook`).
-    private let millrace = MillBook.millrace
-    private let wheel = MillBook.wheel
-    private let stones = MillBook.stones
-    private let flour = MillBook.flour
-
-    /// The four chapters as a book.
-    private var mill: [String] { [millrace, wheel, stones, flour] }
+final class PlaceRelocatorTests: XCTestCase, MillBookReading {
 
     // MARK: - Helpers
 
@@ -455,9 +444,9 @@ final class PlaceRelocatorTests: XCTestCase {
     /// does not take it: "CHAPTER" before "CHAPTER XIX." when chapter XVIII
     /// comes back, within one chapter's text.
     func testTextPutInThatBeginsWithAPlacesWordsDoesNotTakeIt() throws {
-        let seventeen = "CHAPTER XVII.\n\nThe treasurer bought a second-hand anemometer for the roof, though nobody could say why a mill needed one.\n\n"
-        let eighteen = "CHAPTER XVIII.\n\nThe county archaeologist visited in a borrowed van and photographed the wheel pit from every side.\n\n"
-        let nineteen = "CHAPTER XIX.\n\nThe last job of the year was oiling the gears, which took two people, a ladder, and most of a Sunday."
+        let seventeen = MillBook.seventeen
+        let eighteen = MillBook.eighteen
+        let nineteen = MillBook.nineteen
         let old = [seventeen + nineteen]
         let new = [seventeen + eighteen + nineteen]
         let result = try relocate(try Phrase.place(of: "CHAPTER XIX.", inChapter: 0, of: old), from: old, to: new)
@@ -543,9 +532,9 @@ final class PlaceRelocatorTests: XCTestCase {
     /// place in the removed chapter goes to "CHAPTER XIX.", not a word into
     /// it.
     func testARemovalEndingAsTheTextBeforeItEndsSlidesBack() throws {
-        let seventeen = "CHAPTER XVII.\n\nThe treasurer bought a second-hand anemometer for the roof, though nobody could say why a mill needed one.\n\n"
-        let eighteen = "CHAPTER XVIII.\n\nThe county archaeologist visited in a borrowed van and photographed the wheel pit from every side.\n\n"
-        let nineteen = "CHAPTER XIX.\n\nThe last job of the year was oiling the gears, which took two people, a ladder, and most of a Sunday."
+        let seventeen = MillBook.seventeen
+        let eighteen = MillBook.eighteen
+        let nineteen = MillBook.nineteen
         let old = [seventeen + eighteen + nineteen]
         let new = [seventeen + nineteen]
         let nineteenStart = try Phrase.place(of: "CHAPTER XIX.", inChapter: 0, of: new)
@@ -862,7 +851,7 @@ final class PlaceRelocatorTests: XCTestCase {
     /// a removed foreword goes to the start of what follows, not to a ledger
     /// line that happens to share its words.
     func testAWeakMatchFarAwayDoesNotOverruleTheDiffsUnsureAnswer() throws {
-        let ledger = (1...400).map { "Ledger line \($0) recorded \($0 * 3) sacks of barley." }.joined(separator: " ")
+        let ledger = MillBook.ledger
         let foreword = "A NOTE ON THE LEDGER\n\nThe last page of the old ledger, kept in the vestry, reads: Ledger line 300 recorded 900 sacks of barley. Nobody has found the page that came before it."
         let old = [foreword] + mill + [ledger]
         let new = mill + [ledger]

@@ -36,6 +36,19 @@ enum MillBook {
     /// Chapters I to IV.
     static var chapters: [String] { [millrace, wheel, stones, flour] }
 
+    /// Chapters XVII to XIX of a later part of the book, as one chapter's
+    /// text reads them: two chapters whose "CHAPTER" ends the text before
+    /// the next, for text put in or removed between them.
+    static let seventeen = "CHAPTER XVII.\n\nThe treasurer bought a second-hand anemometer for the roof, though nobody could say why a mill needed one.\n\n"
+    /// See `seventeen`.
+    static let eighteen = "CHAPTER XVIII.\n\nThe county archaeologist visited in a borrowed van and photographed the wheel pit from every side.\n\n"
+    /// See `seventeen`.
+    static let nineteen = "CHAPTER XIX.\n\nThe last job of the year was oiling the gears, which took two people, a ladder, and most of a Sunday."
+
+    /// A long ledger of like lines, each with numbers of its own: text whose
+    /// words stand many times, for saved words met by chance far away.
+    static let ledger = (1...400).map { "Ledger line \($0) recorded \($0 * 3) sacks of barley." }.joined(separator: " ")
+
     /// The headings of a book whose chapters are `texts`: each chapter that
     /// begins "CHAPTER" has a heading of `level` at its start, labelled with
     /// its first line, as the app's readers make them.
@@ -50,6 +63,22 @@ enum MillBook {
     static func heading(ofChapter chapter: Int, in texts: [String], file: StaticString = #filePath, line: UInt = #line) throws -> Heading {
         try XCTUnwrap(headings(of: texts).first { $0.chapterIndex == chapter }, "no heading in chapter \(chapter)", file: file, line: line)
     }
+}
+
+/// A test that reads the mill book's chapters by their names (`MillBook`).
+protocol MillBookReading {}
+
+extension MillBookReading {
+    /// Chapter I.
+    var millrace: String { MillBook.millrace }
+    /// Chapter II.
+    var wheel: String { MillBook.wheel }
+    /// Chapter III.
+    var stones: String { MillBook.stones }
+    /// Chapter IV.
+    var flour: String { MillBook.flour }
+    /// Chapters I to IV as a book.
+    var mill: [String] { MillBook.chapters }
 }
 
 /// Saved places for the relocator tests, with their words captured as this
@@ -98,5 +127,40 @@ enum Phrase {
     static func place(of phrase: String, inChapter chapter: Int, of texts: [String], occurrence: Int = 0, file: StaticString = #filePath, line: UInt = #line) throws -> TextPlace {
         let text = try XCTUnwrap(texts.indices.contains(chapter) ? texts[chapter] : nil, "no chapter \(chapter)", file: file, line: line)
         return TextPlace(chapter: chapter, offset: try offset(of: phrase, in: text, occurrence: occurrence, file: file, line: line))
+    }
+}
+
+/// A small seeded source of common words, so a test's texts are the same on
+/// every run.
+struct SeededWords {
+    /// The words drawn from: common ones, which stand many times, and a few
+    /// rarer ones, which may stand once.
+    private static let vocabulary = ["the", "and", "of", "a", "to", "in", "mill", "wheel", "stone", "flour", "sluice", "weir"]
+    private var state: UInt64
+
+    /// A source whose words follow from `seed`: the same seed gives the
+    /// same words, in the same order, on every run.
+    init(seed: UInt64) {
+        state = seed
+    }
+
+    /// The next number below `bound` (SplitMix64).
+    mutating func next(below bound: Int) -> Int {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+        z ^= z >> 31
+        return Int(z % UInt64(max(1, bound)))
+    }
+
+    /// A word of the vocabulary.
+    mutating func word() -> String {
+        Self.vocabulary[next(below: Self.vocabulary.count)]
+    }
+
+    /// `count` words.
+    mutating func words(count: Int) -> [String] {
+        (0..<count).map { _ in word() }
     }
 }

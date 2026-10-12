@@ -161,36 +161,3 @@ final class PatienceDiffTests: XCTestCase {
         XCTAssertEqual(PatienceDiff.longestRisingChain(of: []).count, 0)
     }
 }
-
-/// A small seeded source of common words, so a test's texts are the same on
-/// every run.
-private struct SeededWords {
-    /// The words drawn from: common ones, which stand many times, and a few
-    /// rarer ones, which may stand once.
-    private static let vocabulary = ["the", "and", "of", "a", "to", "in", "mill", "wheel", "stone", "flour", "sluice", "weir"]
-    private var state: UInt64
-
-    init(seed: UInt64) {
-        state = seed
-    }
-
-    /// The next number below `bound` (SplitMix64).
-    mutating func next(below bound: Int) -> Int {
-        state &+= 0x9E37_79B9_7F4A_7C15
-        var z = state
-        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
-        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
-        z ^= z >> 31
-        return Int(z % UInt64(max(1, bound)))
-    }
-
-    /// A word of the vocabulary.
-    mutating func word() -> String {
-        Self.vocabulary[next(below: Self.vocabulary.count)]
-    }
-
-    /// `count` words.
-    mutating func words(count: Int) -> [String] {
-        (0..<count).map { _ in word() }
-    }
-}
