@@ -100,6 +100,35 @@ final class PlaceRelocatorSharedRuleTests: XCTestCase {
         }
     }
 
+    // MARK: - The End of a Book, and Where a Place Opens
+
+    /// The end of a book and where a saved place opens are one rule each,
+    /// which the book, the reader, and the relocator share: a place at or
+    /// past the book's length rests at its end and one short of it does
+    /// not; a place opens in its chapter held within it, a chapter before
+    /// the first at the book's start, and a chapter past the last at the
+    /// book's end only when its offset in the whole book rests at the end,
+    /// else at the last chapter's start.
+    func testTheEndOfABookAndWhereAPlaceOpensAreOneRule() {
+        XCTAssertTrue(TextPlace.restsAtEnd(globalOffset: 280, bookLength: 280))
+        XCTAssertTrue(TextPlace.restsAtEnd(globalOffset: 300, bookLength: 280))
+        XCTAssertFalse(TextPlace.restsAtEnd(globalOffset: 279, bookLength: 280), "short of the end, however near")
+        XCTAssertFalse(TextPlace.restsAtEnd(globalOffset: 0, bookLength: 0), "a book without text")
+
+        let lengths = [100, 180]
+        func opening(_ chapter: Int, _ offset: Int, global: Int? = nil) -> TextPlace {
+            TextPlace(chapter: chapter, offset: offset).opening(savedGlobalOffset: global, chapterCount: lengths.count, bookLength: 280) { lengths[$0] }
+        }
+        XCTAssertEqual(opening(0, 37), TextPlace(chapter: 0, offset: 37))
+        XCTAssertEqual(opening(0, 109), TextPlace(chapter: 0, offset: 100))
+        XCTAssertEqual(opening(1, -3), TextPlace(chapter: 1, offset: 0))
+        XCTAssertEqual(opening(-1, 50), TextPlace(chapter: 0, offset: 0))
+        XCTAssertEqual(opening(4, 10, global: 280), TextPlace(chapter: 1, offset: 180))
+        XCTAssertEqual(opening(4, 10, global: 279), TextPlace(chapter: 1, offset: 0))
+        XCTAssertEqual(opening(4, 10), TextPlace(chapter: 1, offset: 0))
+        XCTAssertEqual(TextPlace(chapter: 2, offset: 9).opening(savedGlobalOffset: 9, chapterCount: 0, bookLength: 0) { _ in 0 }, TextPlace(chapter: 0, offset: 0))
+    }
+
     // MARK: - The One Best Spot
 
     /// The first search's one best spot is found wherever it lies, however

@@ -24,7 +24,10 @@ import Foundation
 /// 2. **The old text.** The place is found in the old text: at its numbers
 ///    when its saved words stand there, or else by its saved words, for
 ///    certain. A place saved without words is taken to stand at its numbers
-///    there, and its words are read there.
+///    there, held within that text as the reader opens a saved place
+///    (`TextPlace.opening`: a chapter past the last at the last chapter's
+///    start, or at the end only when its offset in the whole book was at
+///    the end), and its words are read there.
 /// 3. **The diff.** The old text's words are lined up with the new text's by
 ///    a patience diff (`PatienceDiff`) over fine words (`FineWords`), once
 ///    for the whole book, and the place is carried across:
@@ -267,9 +270,12 @@ struct PlaceRelocator: Sendable {
 
     /// Where a place saved at `saved` with `anchor` (nil for a place saved
     /// before anchors) is in the new text, and how it was found; the rules
-    /// are the type's.
-    func relocate(_ anchor: TextAnchor?, savedAt saved: TextPlace) -> Result {
-        let words = savedWords(anchor, savedAt: saved)
+    /// are the type's. `savedGlobalOffset` is a reading position's offset in
+    /// the whole book, which says, for a place saved without words in a
+    /// chapter the old text no longer has, whether it was at the end (nil
+    /// for a bookmark, which keeps none).
+    func relocate(_ anchor: TextAnchor?, savedAt saved: TextPlace, savedGlobalOffset: Int? = nil) -> Result {
+        let words = savedWords(anchor, savedAt: saved, savedGlobalOffset: savedGlobalOffset)
         // Rule 1: the end of the book, and the direct check. Saved words
         // that hold no word (a place in a chapter without words, or an
         // anchor read back empty) stand anywhere, so the direct check alone
@@ -298,17 +304,19 @@ struct PlaceRelocator: Sendable {
 
     /// A place's saved words as the relocator reads them: its anchor as
     /// saved; for a place saved without one, its words read in the old text
-    /// at its numbers (held within that text), with where they were read;
+    /// at its numbers (held within that text as the reader opens a saved
+    /// place, by `savedGlobalOffset`, its offset in the whole book, when it
+    /// kept one), with where they were read;
     /// and with no old text to read them in, words that hold nothing, which
     /// keep the place's numbers where its chapter still is (`TextAnchor`).
     /// (Every place the measured program moved had saved words; a place
     /// saved before anchors, which T06's branch B captures at load and at
     /// launch, can still reach a rebuild without them.)
-    private func savedWords(_ anchor: TextAnchor?, savedAt saved: TextPlace) -> SavedWords {
+    private func savedWords(_ anchor: TextAnchor?, savedAt saved: TextPlace, savedGlobalOffset: Int? = nil) -> SavedWords {
         if let anchor {
             return SavedWords(anchor: anchor, readInOldText: nil)
         }
-        if let held = heldInOldText(saved), let read = TextAnchor(capturingAt: held, in: old, measuredIn: nil) {
+        if let held = heldInOldText(saved, savedGlobalOffset: savedGlobalOffset), let read = TextAnchor(capturingAt: held, in: old, measuredIn: nil) {
             return SavedWords(anchor: read, readInOldText: held)
         }
         return SavedWords(anchor: TextAnchor(before: "", after: "", fraction: 0), readInOldText: nil)
@@ -324,14 +332,19 @@ struct PlaceRelocator: Sendable {
         return found.isGuess ? nil : found.place
     }
 
-    /// `place` held within the old text: in its chapter, no further than
-    /// the chapter's end; past the last chapter, the old text's end; nil
-    /// for an old text without chapters.
-    private func heldInOldText(_ place: TextPlace) -> TextPlace? {
+    /// `place` held within the old text as the reader opens a saved place
+    /// (`TextPlace.opening`): in its chapter, no further than the chapter's
+    /// end; past the last chapter, the old text's end when
+    /// `savedGlobalOffset` rests at the end, else the last chapter's start;
+    /// nil for an old text without chapters.
+    private func heldInOldText(_ place: TextPlace, savedGlobalOffset: Int?) -> TextPlace? {
         guard old.chapterCount > 0 else { return nil }
-        guard place.chapter < old.chapterCount else { return old.endPlace }
-        let chapter = max(place.chapter, 0)
-        return TextPlace(chapter: chapter, offset: min(max(place.offset, 0), old.length(ofChapter: chapter)))
+        return place.opening(
+            savedGlobalOffset: savedGlobalOffset,
+            chapterCount: old.chapterCount,
+            bookLength: old.totalLength,
+            chapterLength: old.length(ofChapter:)
+        )
     }
 
     // MARK: - Moving a Skipped Heading
@@ -964,7 +977,11 @@ extension PlaceRelocator {
 
         var positionFinding: Finding?
         if let position = places.position {
-            let result = relocate(position.anchor, savedAt: TextPlace(chapter: position.chapterIndex, offset: position.characterOffset))
+            let result = relocate(
+                position.anchor,
+                savedAt: TextPlace(chapter: position.chapterIndex, offset: position.characterOffset),
+                savedGlobalOffset: position.globalCharacterOffset
+            )
             moved.position = self.moved(position, to: result)
             positionFinding = result.finding
             counts.count(result.finding)

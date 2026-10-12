@@ -134,17 +134,14 @@ extension ReaderViewModel {
         savedGlobalOffset: Int?,
         in content: DocumentContent
     ) -> TextPlace {
+        // The one rule (`TextPlace.opening`), which the place relocator
+        // follows too for a place saved without words.
         let chapters = content.chapters
-        guard let last = chapters.indices.last, saved.chapter >= 0 else {
-            return TextPlace(chapter: 0, offset: 0)
-        }
-        guard saved.chapter <= last else {
-            let total = content.totalCharacterCount
-            let wasAtTheEnd = savedGlobalOffset.map { total > 0 && $0 >= total } ?? false
-            return TextPlace(chapter: last, offset: wasAtTheEnd ? chapters[last].text.utf16Length : 0)
-        }
-        let length = chapters[saved.chapter].text.utf16Length
-        return TextPlace(chapter: saved.chapter, offset: min(max(saved.offset, 0), length))
+        return saved.opening(
+            savedGlobalOffset: savedGlobalOffset,
+            chapterCount: chapters.count,
+            bookLength: content.totalCharacterCount
+        ) { chapters[$0].text.utf16Length }
     }
 
     /// The offset in the whole book of the place this reader opened its

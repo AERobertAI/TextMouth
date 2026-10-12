@@ -781,6 +781,33 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(result, PlaceRelocator.Result(place: try Phrase.place(of: "frost", inChapter: 1, of: relocator.new.texts), finding: .movedByTheDiff(.linedUp)))
     }
 
+    /// A place saved without words in a chapter the old text no longer has
+    /// is held within it as the reader opens such a place (REV15, finding 8;
+    /// `TextPlace.opening`): at the last chapter's start when its offset in
+    /// the whole book was short of the end, so it does not read finished,
+    /// and at the end when that offset was at or past the end. A bookmark,
+    /// which keeps no offset in the whole book, opens at the last chapter's
+    /// start.
+    func testAPlaceWithoutWordsInALostChapterIsHeldAsTheReaderOpensIt() throws {
+        let new = [millrace, wheel, stones, flour.replacingOccurrences(of: "longest day", with: "longest evening")]
+        let relocator = PlaceRelocator(oldTexts: mill, newTexts: new)
+        let lost = TextPlace(chapter: 5, offset: 140)
+        let total = relocator.old.totalLength
+        let lastChapterStart = PlaceRelocator.Result(place: TextPlace(chapter: 3, offset: 0), finding: .movedByTheDiff(.linedUp))
+        XCTAssertEqual(relocator.relocate(nil, savedAt: lost, savedGlobalOffset: total / 2), lastChapterStart)
+        XCTAssertEqual(relocator.relocate(nil, savedAt: lost), lastChapterStart, "a bookmark")
+        XCTAssertEqual(relocator.relocate(nil, savedAt: lost, savedGlobalOffset: total),
+                       PlaceRelocator.Result(place: relocator.new.endPlace, finding: .movedByTheDiff(.endOfBook)))
+
+        let outcome = relocator.relocate(PlaceRelocator.Places(
+            position: ReadingPosition(chapterIndex: 5, characterOffset: 140, globalCharacterOffset: total / 2),
+            bookmarks: [Bookmark(number: 1, chapterIndex: 5, characterOffset: 140)]
+        ))
+        XCTAssertEqual(outcome.places.position.map { TextPlace(chapter: $0.chapterIndex, offset: $0.characterOffset) }, TextPlace(chapter: 3, offset: 0))
+        XCTAssertEqual(outcome.places.bookmarks.map { TextPlace(chapter: $0.chapterIndex, offset: $0.characterOffset) }, [TextPlace(chapter: 3, offset: 0)])
+        XCTAssertEqual(outcome.places.position?.anchor?.marksEndOfBook, false)
+    }
+
     /// A place inside a word keeps how far into the word it was.
     func testAPlaceInsideAWordKeepsItsPlaceInTheWord() throws {
         let saved = try Phrase.place(of: "millstone", inChapter: 2, of: mill)

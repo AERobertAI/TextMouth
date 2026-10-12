@@ -209,6 +209,27 @@ extension TextPlace {
     static func restsAtEnd(globalOffset: Int, bookLength: Int) -> Bool {
         bookLength > 0 && globalOffset >= bookLength
     }
+
+    /// Where a place saved here opens in a text of `chapterCount` chapters,
+    /// `bookLength` UTF-16 units long in all, whose chapter `index` is
+    /// `chapterLength(index)` units long (T06's question 7, with P07's end
+    /// of a book; `ReaderViewModel.openingPlace` says why): a place the text
+    /// holds opens there, held within its chapter; a chapter before the
+    /// first opens at the book's start; a chapter past the last opens at the
+    /// book's end when `savedGlobalOffset`, the place's offset in the whole
+    /// book, rests at the end (`restsAtEnd`), and otherwise at the last
+    /// chapter's start. A text without chapters opens at its start. The one
+    /// rule: the reader opens a saved place by it, and the place relocator
+    /// holds a place saved without words within the old text by it.
+    func opening(savedGlobalOffset: Int?, chapterCount: Int, bookLength: Int, chapterLength: (Int) -> Int) -> TextPlace {
+        guard chapterCount > 0, chapter >= 0 else { return TextPlace(chapter: 0, offset: 0) }
+        let last = chapterCount - 1
+        guard chapter <= last else {
+            let wasAtTheEnd = savedGlobalOffset.map { Self.restsAtEnd(globalOffset: $0, bookLength: bookLength) } ?? false
+            return TextPlace(chapter: last, offset: wasAtTheEnd ? chapterLength(last) : 0)
+        }
+        return TextPlace(chapter: chapter, offset: min(max(offset, 0), chapterLength(chapter)))
+    }
 }
 
 /// A book's reading text as fine words, in reading order through every
