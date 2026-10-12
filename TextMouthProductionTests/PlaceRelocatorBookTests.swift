@@ -175,6 +175,45 @@ final class PlaceRelocatorBookTests: XCTestCase {
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1, waiting: 1))
     }
 
+    /// A skip that names a heading wins over one that waits whose saved ID
+    /// that heading now has, in either order (REV15, V21): the first "Notes"
+    /// section is removed, its skip waits with its ID, and the second
+    /// "Notes", skipped too, slides into the first one's numbers. Only the
+    /// second skip is kept, and the findings and counts are those of the
+    /// skips kept. Two skips that now name one heading are one.
+    func testASkipThatNamesAHeadingWinsOverOneThatWaits() throws {
+        let opening = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask.\n\n"
+        let first = "Notes\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
+        let second = "Notes\n\nA carpenter in the next village turned the offcuts into spoons for the market."
+        let old = [opening + first + second]
+        let new = [opening + second]
+        let firstNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count)
+        let secondNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count + first.utf16.count)
+        let newNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count)
+        XCTAssertEqual(firstNotes.id, newNotes.id, "the second section slid into the first one's numbers")
+        let relocator = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: [firstNotes, secondNotes], newHeadings: [newNotes])
+        let skips = [try SavedPlace.skip(of: firstNotes, in: old), try SavedPlace.skip(of: secondNotes, in: old)]
+        XCTAssertNil(relocator.relocate(try XCTUnwrap(skips.first)), "the first section's skip waits")
+        for order in [skips, skips.reversed()] {
+            let outcome = relocator.relocate(PlaceRelocator.Places(skippedHeadings: order))
+            XCTAssertEqual(outcome.places.skippedHeadings, [try SavedPlace.skip(of: newNotes, in: new)])
+            XCTAssertEqual(outcome.skippedHeadingFindings.count, 1)
+            XCTAssertNotNil(outcome.skippedHeadingFindings.first ?? nil)
+            XCTAssertEqual(outcome.counts.total, 1)
+            XCTAssertEqual(outcome.counts.waiting, 0)
+        }
+        // Two skips of one heading (saved under two readings' numbers) are one.
+        let stale = SkippedHeading(level: 1, label: "CHAPTER IV. First Flour", chapterIndex: 2, characterOffset: 0)
+        let mill = MillBook.chapters
+        let current = try SavedPlace.skip(of: try MillBook.heading(ofChapter: 3, in: mill), in: mill)
+        let headings = MillBook.headings(of: mill)
+        let twice = PlaceRelocator(oldTexts: mill, newTexts: mill, oldHeadings: headings, newHeadings: headings)
+            .relocate(PlaceRelocator.Places(skippedHeadings: [current, stale]))
+        XCTAssertEqual(twice.places.skippedHeadings, [current])
+        XCTAssertEqual(twice.skippedHeadingFindings, [.unchanged])
+        XCTAssertEqual(twice.counts, PlaceRelocator.Counts(unchanged: 1))
+    }
+
     // MARK: - The Start of the Book
 
     /// A position at the very start of the book (never begun, or begun

@@ -1041,16 +1041,20 @@ extension PlaceRelocator {
         /// they were. A skipped heading takes its heading's place, level,
         /// and label; one that waits stays exactly as it was (words read in
         /// the old text at its numbers would only be the words of whatever
-        /// stands there now); two skips that now name one heading are one.
+        /// stands there now); two skips that now name one heading are one,
+        /// the first kept, and a skip that names a heading is kept over one
+        /// that waits whose saved ID that heading now has.
         let places: Places
         /// How the position was found; nil for a book without one.
         let positionFinding: Finding?
         /// How each bookmark was found, in order.
         let bookmarkFindings: [Finding]
-        /// How each skipped heading was found, in order; nil for a skip that
-        /// waits.
+        /// How each skipped heading kept in `places` was found, in their
+        /// order; nil for a skip that waits. A skip dropped as one with
+        /// another has no finding here.
         let skippedHeadingFindings: [Finding?]
-        /// The counts, for the debug log's line.
+        /// The counts, for the debug log's line: the position, the
+        /// bookmarks, and the skipped headings kept in `places`.
         let counts: Counts
     }
 
@@ -1147,15 +1151,23 @@ extension PlaceRelocator {
             return self.moved(bookmark, to: result)
         }
 
-        var skippedHeadingFindings: [Finding?] = []
-        // Each heading ID once: two skips that now name one heading are one.
-        var namedIDs = Set<String>()
-        moved.skippedHeadings = places.skippedHeadings.compactMap { skipped in
+        // Each skip as it now is, with how it was found (nil while it waits).
+        let skips = places.skippedHeadings.map { skipped -> (skip: SkippedHeading, finding: Finding?) in
             let result = relocate(skipped)
-            skippedHeadingFindings.append(result?.finding)
-            counts.count(result?.finding)
-            let movedSkip = result.map { self.skip(of: $0.heading, keeping: skipped) } ?? skipped
-            return namedIDs.insert(movedSkip.id).inserted ? movedSkip : nil
+            return (result.map { self.skip(of: $0.heading, keeping: skipped) } ?? skipped, result?.finding)
+        }
+        // Each heading ID once: two skips that now name one heading are one,
+        // the first kept; and a skip that names a heading wins over one that
+        // waits whose saved ID that heading now has (the waiting skip's
+        // section was removed, and the next one slid into its numbers).
+        let namingIDs = Set(skips.filter { $0.finding != nil }.map(\.skip.id))
+        var keptIDs = Set<String>()
+        var skippedHeadingFindings: [Finding?] = []
+        moved.skippedHeadings = skips.compactMap { skip, finding in
+            guard finding != nil || !namingIDs.contains(skip.id), keptIDs.insert(skip.id).inserted else { return nil }
+            skippedHeadingFindings.append(finding)
+            counts.count(finding)
+            return skip
         }
 
         return Outcome(
