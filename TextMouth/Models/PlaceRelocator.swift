@@ -86,12 +86,18 @@ import Foundation
 /// old first words, as the end of the book stays the end; a bookmark there
 /// follows its words like any other.
 ///
-/// A skipped heading is carried like a place to the heading of its level
-/// that starts where it lands; failing that, it is found by level, label,
-/// and words (`TextAnchorFinder.findHeading`); failing that, the skip waits,
-/// applying to no heading, so no section is skipped by mistake. A heading
-/// whose text went with a passage the new text removed keeps its skip only
-/// on a heading of its level with its label.
+/// A skipped heading is found first in the old text, by the heading its ID
+/// names there, or by its level and label when only one heading has them
+/// (or at its place, where its saved words still stand exactly); never by
+/// its saved words alone, nor at its numbers alone. That heading's start is
+/// carried like a place, and a new heading there takes the skip when the
+/// diff's account of its own words proves it the same section: no other
+/// old heading whose words went into it has a label as like its own, and
+/// its label is the skip's, or most of the old heading's words went into
+/// it; among several, the label decides. Failing that, the one new heading of its level with its label
+/// takes the skip, unless the diff makes it another section; failing that,
+/// the skip waits, applying to no heading, so no section is skipped by
+/// mistake. A guess never moves a skip onto a heading.
 ///
 /// These are the measured program's rules, ported and checked against its
 /// exact truth by compiling these files in a standalone harness: every place
@@ -227,6 +233,9 @@ struct PlaceRelocator: Sendable {
     let old: BookWords
     /// The new text's words.
     let new: BookWords
+    /// The old text's headings, in order: where a skipped heading's
+    /// heading is found first.
+    let oldHeadings: [Heading]
     /// The new text's headings, in order.
     let newHeadings: [Heading]
     /// For each old word, the index of the new word the diff lines it up
@@ -238,16 +247,20 @@ struct PlaceRelocator: Sendable {
     /// For each new word, the index of the old word the diff lines up with
     /// it, or -1: a new word without one is text the diff found put in.
     private let sources: [Int]
+    /// Each old heading's own words (`ownWords(of:in:)`), in the order of
+    /// `oldHeadings`.
+    private let oldHeadingWords: [Range<Int>]
     /// The saved-words search in the old text, for a place whose words do
     /// not stand at its numbers there.
     private let oldFinder: TextAnchorFinder
     /// The saved-words search in the new text.
     private let newFinder: TextAnchorFinder
 
-    /// A relocator from the book `old` reads to the book `new` reads, whose
-    /// headings are `newHeadings`: it lines the two up by the diff once, and
-    /// indexes each one's words for the saved-words search.
-    init(old: BookWords, new: BookWords, newHeadings: [Heading] = []) {
+    /// A relocator from the book `old` reads, whose headings are
+    /// `oldHeadings`, to the book `new` reads, whose headings are
+    /// `newHeadings`: it lines the two up by the diff once, and indexes each
+    /// one's words for the saved-words search.
+    init(old: BookWords, new: BookWords, oldHeadings: [Heading] = [], newHeadings: [Heading] = []) {
         let alignment = PatienceDiff.alignment(of: old.keys, in: new.keys)
         let partners = alignment.partners
         var sources = [Int](repeating: -1, count: new.count)
@@ -256,24 +269,31 @@ struct PlaceRelocator: Sendable {
         }
         self.old = old
         self.new = new
+        self.oldHeadings = oldHeadings
         self.newHeadings = newHeadings
+        self.oldHeadingWords = oldHeadings.map { Self.ownWords(of: $0, in: old) }
         self.partners = partners
         self.leftForSize = alignment.leftForSize
         self.sources = sources
         self.oldFinder = TextAnchorFinder(words: old)
-        self.newFinder = TextAnchorFinder(words: new, headings: newHeadings)
+        self.newFinder = TextAnchorFinder(words: new)
     }
 
-    /// A relocator from a book whose chapters' reading texts were `oldTexts`
-    /// to one whose are `newTexts`, with `newHeadings`.
-    init(oldTexts: [String], newTexts: [String], newHeadings: [Heading] = []) {
-        self.init(old: BookWords(texts: oldTexts), new: BookWords(texts: newTexts), newHeadings: newHeadings)
+    /// A relocator from a book whose chapters' reading texts were `oldTexts`,
+    /// with `oldHeadings`, to one whose are `newTexts`, with `newHeadings`.
+    init(oldTexts: [String], newTexts: [String], oldHeadings: [Heading] = [], newHeadings: [Heading] = []) {
+        self.init(old: BookWords(texts: oldTexts), new: BookWords(texts: newTexts), oldHeadings: oldHeadings, newHeadings: newHeadings)
     }
 
-    /// A relocator from a loaded book's old text to its new text and
-    /// headings.
+    /// A relocator from a loaded book's old text and headings to its new
+    /// text and headings.
     init(old: DocumentContent, new: DocumentContent) {
-        self.init(oldTexts: old.chapters.map(\.text), newTexts: new.chapters.map(\.text), newHeadings: new.allHeadings)
+        self.init(
+            oldTexts: old.chapters.map(\.text),
+            newTexts: new.chapters.map(\.text),
+            oldHeadings: old.allHeadings,
+            newHeadings: new.allHeadings
+        )
     }
 
     // MARK: - Moving a Place
@@ -362,106 +382,177 @@ struct PlaceRelocator: Sendable {
     /// The heading a skipped heading names in the new text, and how it was
     /// found; nil when nothing names it, so the skip waits, applying to no
     /// heading, rather than skip another section and hide text the listener
-    /// meant to hear.
+    /// meant to hear. A skip moves only on proof: a guess never moves a skip
+    /// onto a heading, and a skip whose heading plainly still stands,
+    /// relabelled or re-levelled, keeps it.
     ///
-    /// The heading's start is carried like a place. When the diff finds the
-    /// heading's own text still there (its first word lined up or replaced
-    /// in place, and the word after it lined up just after, or replaced in
-    /// place too), the heading of its level that starts where it lands is
-    /// it, with the label the new text gives it ("[]CHAPTER I." became
-    /// "CHAPTER I. Down the Rabbit-Hole" on October 3). Otherwise the finder
-    /// decides by level, label, and saved words (`TextAnchorFinder.findHeading`):
-    /// its direct check, which needs the label too (a cover's saved words,
-    /// which hold none, stand anywhere), its scores, the one heading of its
-    /// level with its label, or the nearest such heading as a guess.
+    /// 1. **Its heading stands.** A new heading with its ID (its level,
+    ///    label, and place) is it, unchanged, when the skip's saved words, if
+    ///    it has them, still stand at its place.
+    /// 2. **Its heading in the old text** (`oldHeading(of:)`): the heading its
+    ///    ID names there; else the one old heading of its level with its
+    ///    label; else the old heading of its level at its place where its
+    ///    saved words still stand exactly (the same heading, labelled anew by
+    ///    this build's reading). Never by its saved words alone, nor at its
+    ///    numbers alone: a skip saved before T06, rebuilt from an ID that
+    ///    names nothing now, would take whatever heading stands there.
+    /// 3. **The diff** (`carried(_:label:level:)`): that heading's start is
+    ///    carried like a place, and a new heading there is it when the diff's
+    ///    account of the new heading's own words proves it the same section
+    ///    (`isSameSection`). Among several proven, the one with the skip's
+    ///    label, then with its level, then the first. A heading re-levelled
+    ///    by a new reading (Edit Text's "##" become "###", or a PDF's font
+    ///    sizes read anew) keeps its skip at its new level, as a relabelled
+    ///    one takes its new label: the listener skipped that section, and the
+    ///    new reading only names it anew.
+    /// 4. **Its label.** Failing that, the one new heading of its level with
+    ///    its label, unless the diff's account makes it another section
+    ///    (another chapter's "Notes", whose words the diff lined up with that
+    ///    chapter's own "Notes").
     ///
-    /// When the diff finds the heading's text gone with a passage the new
-    /// text removed, only a heading of its level with its label can still be
-    /// it. The heading that now begins where the passage was ("CHAPTER IV."
-    /// after chapter III is left out, whose "CHAPTER" the diff lines up with
-    /// it), or whose words before it are the skipped heading's words before
-    /// it, is another section's, and skipping it would hide text the
-    /// listener meant to hear. (The measured rules would carry such a skip to
-    /// that heading; no measured case had a skipped heading in removed text.)
+    /// The measured rules carried a skip by its saved words and judged a
+    /// heading's text by the one old word after its first; no measured case
+    /// had a skipped heading in changed text. REV15 found that those rules
+    /// handed a skip to the next section, to another chapter's section of
+    /// the same label, or to the first of a pile of headings, and dropped
+    /// the skip of a heading whose label gained or lost a word.
     func relocate(_ skipped: SkippedHeading) -> HeadingResult? {
         let saved = TextPlace(chapter: skipped.chapterIndex, offset: skipped.characterOffset)
-        let words = savedWords(skipped.anchor, savedAt: saved)
-        var labelRequired = false
-        switch carriedHeadingStart(words, savedAt: saved) {
-        case .standing(let carried)?:
-            if let heading = heading(ofLevel: skipped.level, startingAt: carried.place) {
-                return HeadingResult(heading: heading, finding: carried.finding)
-            }
-        case .removed?:
-            labelRequired = true
-        case nil:
-            break
+        // 1. Its heading stands.
+        if let same = newHeadings.first(where: { $0.id == skipped.id }),
+           skipped.anchor.map({ $0.stands(at: saved, in: new.texts) }) ?? true {
+            return HeadingResult(heading: same, finding: .unchanged)
         }
-        guard let found = newFinder.findHeading(level: skipped.level, label: skipped.label, anchor: words.anchor, savedAt: saved),
-              !labelRequired || found.heading.text == skipped.label
-        else { return nil }
-        return HeadingResult(heading: found.heading, finding: Self.finding(found.finding))
+        // 2 and 3. Its heading in the old text, carried by the diff.
+        let oldIndex = oldHeading(of: skipped)
+        if let oldIndex, let carried = carried(oldIndex, label: skipped.label, level: skipped.level) {
+            return carried
+        }
+        // 4. Its label.
+        let labelled = newHeadings.filter { $0.level == skipped.level && $0.text == skipped.label }
+        guard labelled.count == 1, let only = labelled.first, isSameSection(only, as: oldIndex, label: skipped.label) else { return nil }
+        return HeadingResult(heading: only, finding: .foundBySavedWords(.onlyHeadingWithItsLabel))
     }
 
-    /// What the diff makes of a skipped heading's start.
-    private enum CarriedHeading {
-        /// The heading's own text stands in the new text, where its start
-        /// landed: the heading of its level that starts there is it.
-        case standing(Result)
-        /// The heading's text went with a passage the new text removed.
-        case removed
+    /// The index in `oldHeadings` of a skipped heading's heading in the old
+    /// text (rule 2 of `relocate(_:)` for a skipped heading): the heading its
+    /// ID names there; else the one old heading of its level with its label,
+    /// or, of several with them (a title page's lines printed again at the
+    /// book's end), the one where the words saved with the skip find it for
+    /// certain; else the old heading of its level that starts at its place,
+    /// where the words saved with the skip (not words read there) still
+    /// stand exactly, so its numbers are not stale; nil when none is.
+    private func oldHeading(of skipped: SkippedHeading) -> Int? {
+        if let named = oldHeadings.firstIndex(where: { $0.id == skipped.id }) { return named }
+        let labelled = oldHeadings.indices.filter { oldHeadings[$0].level == skipped.level && oldHeadings[$0].text == skipped.label }
+        if labelled.count == 1 { return labelled.first }
+        let saved = TextPlace(chapter: skipped.chapterIndex, offset: skipped.characterOffset)
+        guard let anchor = skipped.anchor, !Self.holdsNoWords(anchor) else { return nil }
+        if labelled.count > 1 {
+            let found = oldFinder.find(anchor, savedAt: saved)
+            return found.isGuess ? nil : labelled.first { Self.start(of: oldHeadings[$0]) == found.place }
+        }
+        guard anchor.stands(at: saved, in: old.texts) else { return nil }
+        return oldHeadings.indices.first { oldHeadings[$0].level == skipped.level && Self.start(of: oldHeadings[$0]) == saved }
     }
 
-    /// What the diff makes of a skipped heading's start. Nil, leaving the
-    /// heading to the finder, when its saved words still stand at its numbers
-    /// or mark the end of the book, when it is not found for certain in the
-    /// old text, when no word follows its start in its chapter there (a
-    /// cover's heading: the diff could only carry the next chapter's first
-    /// word, whose heading is another), and when the diff followed moved
-    /// text, is unsure, or has nothing to go by.
-    private func carriedHeadingStart(_ words: SavedWords, savedAt saved: TextPlace) -> CarriedHeading? {
-        guard newFinder.settled(words.anchor, savedAt: saved) == nil,
-              let start = words.readInOldText ?? placeInOldText(of: words.anchor, savedAt: saved)
-        else { return nil }
+    /// Where `heading` starts.
+    private static func start(of heading: Heading) -> TextPlace {
+        TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
+    }
+
+    /// The new heading the old heading at `oldIndex` is by the diff (rule 3
+    /// of `relocate(_:)` for a skipped heading): its start carried like a
+    /// place, and among the new headings in the chapter where it lands that
+    /// start at the word it lands on, or whose own words take that word in,
+    /// those the diff's account proves the same section (`isSameSection`):
+    /// the one with `label`, then with `level`, then the first. Nil when its
+    /// start is not carried for certain (a cover's heading, with no word
+    /// after its start in its chapter, so that the next word carried would
+    /// be another heading's; or a start the diff is unsure of), or when no
+    /// heading there is proven.
+    private func carried(_ oldIndex: Int, label: String, level: Int) -> HeadingResult? {
+        let heading = oldHeadings[oldIndex]
+        let start = Self.start(of: heading)
         let word = old.word(at: start)
-        guard word < old.count, old.chapter(ofWord: word) == start.chapter,
-              case .placed(let carried) = carry(from: start, anchor: words.anchor)
+        guard word < old.count, old.chapter(ofWord: word) == heading.chapterIndex,
+              let anchor = TextAnchor(capturingAt: start, in: old),
+              case .placed(let result) = carry(from: start, anchor: anchor)
         else { return nil }
-        switch carried.finding {
-        case .movedByTheDiff(.linedUp), .movedByTheDiff(.wordReplaced):
-            return headingTextStands(after: word, landedBefore: new.word(at: carried.place)) ? .standing(carried) : .removed
-        case .movedByTheDiff(.passageRemoved):
-            return .removed
-        default:
-            return nil
+        let landed = new.word(at: result.place)
+        guard landed < new.count else { return nil }
+        let chapter = new.chapter(ofWord: landed)
+        let proven = newHeadings.filter { candidate in
+            guard candidate.chapterIndex == chapter else { return false }
+            let own = Self.ownWords(of: candidate, in: new)
+            return (own.lowerBound == landed || own.contains(landed)) && isSameSection(candidate, as: oldIndex, label: label)
         }
+        let chosen = proven.first { $0.text == label && $0.level == level }
+            ?? proven.first { $0.text == label }
+            ?? proven.first { $0.level == level }
+            ?? proven.first
+        return chosen.map { HeadingResult(heading: $0, finding: result.finding) }
     }
 
-    /// Whether the text of a heading whose first word is old word `word`,
-    /// and whose start landed before new word `landed`, still stands there:
-    /// the old word after its first word lines up just after the landing, or
-    /// was replaced in local editing ("CHAPTER III." became "CHAPTER 3.").
-    /// It doesn't when that word went with a removed passage: a chapter left
-    /// out, whose "CHAPTER" alone the diff lined up with the next chapter's.
-    private func headingTextStands(after word: Int, landedBefore landed: Int) -> Bool {
-        let following = word + 1
-        guard following < old.count else { return true }
-        if partners[following] >= 0 { return partners[following] == landed + 1 }
-        if case .replaced = verdict(forOldWord: following) { return true }
-        return false
+    /// Whether the new heading `heading` is the section of the old heading
+    /// at `oldIndex` (nil for a skip whose heading the old text does not
+    /// have), by the diff's account of its own words (`ownWords(of:in:)`):
+    /// no other old heading whose own words went into them has a label as
+    /// like its own (by words shared in order, `commonWords`), and either
+    /// its label is the skip's, `label`, or more than half of the old
+    /// heading's own words went into its own words.
+    ///
+    /// So "BOOK ONE. CHAPTER III." is not the section of "BOOK ONE. CHAPTER
+    /// II.", left out, though the diff lined up "BOOK ONE. CHAPTER" of the
+    /// two: its "III" came from III's heading, whose label is its own; nor
+    /// "Notes on the Soup" that of "Notes on the Pump"; nor another
+    /// chapter's "Notes" that of this chapter's; nor an interlude that
+    /// replaced a chapter, though the diff paired a word of the two by
+    /// chance. But "CHAPTER V." is still the section of "CHAPTER V." when
+    /// chapter IV, left out before it, lent it its "CHAPTER";
+    /// "Prologue: Before the Spring Flood" is the section of "Prologue";
+    /// and "III. The Stones" that of "CHAPTER III. The Stones". One word
+    /// after a heading's first is not enough to decide.
+    private func isSameSection(_ heading: Heading, as oldIndex: Int?, label: String) -> Bool {
+        let own = Self.ownWords(of: heading, in: new)
+        let ownKeys = Array(new.keys[own])
+        let likeness = oldIndex.map { Self.commonWords(Array(old.keys[oldHeadingWords[$0]]), ownKeys) } ?? 0
+        for word in own where sources[word] >= 0 {
+            for (index, words) in oldHeadingWords.enumerated() where index != oldIndex && words.contains(sources[word]) {
+                if Self.commonWords(Array(old.keys[words]), ownKeys) >= likeness { return false }
+            }
+        }
+        if heading.text == label { return true }
+        guard let oldIndex else { return false }
+        let oldOwn = oldHeadingWords[oldIndex]
+        let carriedIn = oldOwn.filter { own.contains(partners[$0]) }.count
+        return 2 * carriedIn > oldOwn.count
     }
 
-    /// The new heading of `level` that starts where `place` lands: in the
-    /// chapter of the word it stands before, before that same word; the first
-    /// in the book's order when two do.
-    private func heading(ofLevel level: Int, startingAt place: TextPlace) -> Heading? {
-        let word = new.word(at: place)
-        guard word < new.count else { return nil }
-        let chapter = new.chapter(ofWord: word)
-        return newHeadings.first { heading in
-            heading.level == level && heading.chapterIndex == chapter
-                && new.word(at: TextPlace(chapter: chapter, offset: heading.characterOffset)) == word
+    /// How many words two labels' words share in order: their longest
+    /// common subsequence (`PatienceDiff.lineUpExactly`).
+    private static func commonWords(_ first: [UInt64], _ second: [UInt64]) -> Int {
+        var partners = [Int](repeating: -1, count: first.count)
+        PatienceDiff.lineUpExactly(first, first.indices, second, second.indices, into: &partners)
+        return partners.filter { $0 >= 0 }.count
+    }
+
+    /// The words of `heading`'s label as they stand at its start in the text
+    /// `words` reads: from the first word at or after its start, as long as
+    /// they agree in order with the label's fine words, within its chapter
+    /// (`TextAnchorFinder.maximumQuoteWords` at most). Empty, at that first
+    /// word, for a heading whose label the text does not hold there (a
+    /// cover's, or one of a pile of headings before the same words).
+    private static func ownWords(of heading: Heading, in words: BookWords) -> Range<Int> {
+        let start = words.word(at: Self.start(of: heading))
+        guard heading.chapterIndex >= 0, heading.chapterIndex < words.chapterCount else { return start..<start }
+        let chapterEnd = words.chapterFirstWords[heading.chapterIndex + 1]
+        var end = start
+        for key in FineWords.keys(in: heading.text).prefix(TextAnchorFinder.maximumQuoteWords) {
+            guard end < chapterEnd, words.keys[end] == key else { break }
+            end += 1
         }
+        return start..<end
     }
 
     // MARK: - The Diff's Rules
@@ -918,10 +1009,10 @@ extension PlaceRelocator {
         /// and a position's offset across the whole book worked out anew when
         /// it kept one. A move is not a read: a position's time and heading
         /// index, and a bookmark's identity, number, note, and date, stay as
-        /// they were. A skipped heading takes its heading's place and label;
-        /// one that waits stays as it was, with the words it was read by, so
-        /// a later rebuild may find its heading; two skips that now name one
-        /// heading are one.
+        /// they were. A skipped heading takes its heading's place, level,
+        /// and label; one that waits stays exactly as it was (words read in
+        /// the old text at its numbers would only be the words of whatever
+        /// stands there now); two skips that now name one heading are one.
         let places: Places
         /// How the position was found; nil for a book without one.
         let positionFinding: Finding?
@@ -1034,7 +1125,7 @@ extension PlaceRelocator {
             let result = relocate(skipped)
             skippedHeadingFindings.append(result?.finding)
             counts.count(result?.finding)
-            let movedSkip = result.map { self.skip(of: $0.heading, keeping: skipped) } ?? waiting(skipped)
+            let movedSkip = result.map { self.skip(of: $0.heading, keeping: skipped) } ?? skipped
             return namedIDs.insert(movedSkip.id).inserted ? movedSkip : nil
         }
 
@@ -1072,19 +1163,7 @@ extension PlaceRelocator {
     /// The skip of `heading` in the new text, with the anchor at its start;
     /// `skipped`'s own anchor when none can be captured there.
     private func skip(of heading: Heading, keeping skipped: SkippedHeading) -> SkippedHeading {
-        let start = TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
+        let start = Self.start(of: heading)
         return SkippedHeading(heading, anchor: TextAnchor(capturingAt: start, in: new) ?? skipped.anchor)
-    }
-
-    /// A skip that waits: as it was, with the words it was read by (for a
-    /// skip saved without words, those read in the old text at its numbers),
-    /// so that a later rebuild may find its heading by them.
-    private func waiting(_ skipped: SkippedHeading) -> SkippedHeading {
-        var waiting = skipped
-        if waiting.anchor == nil {
-            let read = savedWords(nil, savedAt: TextPlace(chapter: skipped.chapterIndex, offset: skipped.characterOffset))
-            if read.readInOldText != nil { waiting.anchor = read.anchor }
-        }
-        return waiting
     }
 }

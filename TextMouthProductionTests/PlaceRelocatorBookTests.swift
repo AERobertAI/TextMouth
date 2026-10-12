@@ -118,8 +118,10 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let old = [TextAnchorRealReadings.chapterOneOpening304, TextAnchorRealReadings.chapterTwoOpening304]
         let new = [TextAnchorRealReadings.chapterOneOpening307, TextAnchorRealReadings.chapterTwoOpening307]
         let chapterTwo = Heading(level: 2, text: "CHAPTER II. The Pool of Tears", chapterIndex: 1, characterOffset: 0)
-        let skipped = try SavedPlace.skip(of: Heading(level: 2, text: "[]CHAPTER II.", chapterIndex: 1, characterOffset: 0), in: old)
-        let outcome = PlaceRelocator(oldTexts: old, newTexts: new, newHeadings: [chapterTwo]).relocate(PlaceRelocator.Places(skippedHeadings: [skipped]))
+        let oldChapterTwo = Heading(level: 2, text: "[]CHAPTER II.", chapterIndex: 1, characterOffset: 0)
+        let skipped = try SavedPlace.skip(of: oldChapterTwo, in: old)
+        let outcome = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: [oldChapterTwo], newHeadings: [chapterTwo])
+            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]))
         XCTAssertEqual(outcome.places.skippedHeadings, [try SavedPlace.skip(of: chapterTwo, in: new)])
         XCTAssertEqual(outcome.places.skippedHeadings.first?.id, chapterTwo.id)
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(movedByTheDiff: 1))
@@ -140,36 +142,37 @@ final class PlaceRelocatorBookTests: XCTestCase {
     }
 
     /// A skip saved before skipped headings kept words, whose heading nothing
-    /// names now, waits with its numbers and gains the words read in the old
-    /// text at them, so a later rebuild may find its heading by them.
-    func testASkipThatWaitsKeepsItsPlaceAndGainsItsWords() throws {
+    /// names now, waits exactly as it was, gaining no words: words read in
+    /// the old text at its numbers would be the words of whatever stands
+    /// there now, which a skip never goes by (REV15, finding 3).
+    func testASkipThatWaitsWithoutWordsStaysAsItWas() throws {
         let old = MillBook.chapters
         let new = [MillBook.millrace, MillBook.wheel, MillBook.flour]
         let skipped = SkippedHeading(level: 1, label: "CHAPTER III. The Stones", chapterIndex: 2, characterOffset: 0)
-        let outcome = PlaceRelocator(oldTexts: old, newTexts: new, newHeadings: MillBook.headings(of: new))
+        let outcome = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: MillBook.headings(of: old), newHeadings: MillBook.headings(of: new))
             .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]))
-        let waiting = try XCTUnwrap(outcome.places.skippedHeadings.first)
-        XCTAssertEqual(waiting.id, skipped.id)
-        XCTAssertEqual(waiting.anchor, TextAnchor(capturingAt: TextPlace(chapter: 2, offset: 0), in: BookWords(texts: old), measuredIn: nil))
+        XCTAssertEqual(outcome.places.skippedHeadings, [skipped])
         XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
     }
 
-    /// Two skips that now name one heading are one skip: a "Notes" section
-    /// the new text leaves out keeps its skip on the one "Notes" heading
-    /// left, which was skipped too.
-    func testTwoSkipsThatNowNameOneHeadingAreOne() throws {
+    /// A "Notes" section the new text leaves out does not pass its skip to
+    /// another chapter's "Notes", though that one was skipped too (REV15,
+    /// finding 4): the first skip waits, the second stays.
+    func testASkipOfASectionLeftOutWaitsBesideAnotherChaptersSkip() throws {
         let firstNotes = "\n\nNotes\n\nThe pump belonged to the angling club and went back with a new washer."
         let secondNotes = "\n\nNotes\n\nThe carpenter's spoons are now in the county museum, in a case by the door."
         let old = [MillBook.millrace + firstNotes, MillBook.wheel + secondNotes]
         let new = [MillBook.millrace, MillBook.wheel + secondNotes]
         let firstHeading = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: MillBook.millrace.utf16.count + 2)
         let secondHeading = Heading(level: 2, text: "Notes", chapterIndex: 1, characterOffset: MillBook.wheel.utf16.count + 2)
-        let outcome = PlaceRelocator(oldTexts: old, newTexts: new, newHeadings: MillBook.headings(of: new) + [secondHeading]).relocate(PlaceRelocator.Places(
+        let relocator = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: MillBook.headings(of: old) + [firstHeading, secondHeading],
+                                       newHeadings: MillBook.headings(of: new) + [secondHeading])
+        let outcome = relocator.relocate(PlaceRelocator.Places(
             skippedHeadings: [try SavedPlace.skip(of: firstHeading, in: old), try SavedPlace.skip(of: secondHeading, in: old)]
         ))
-        XCTAssertEqual(outcome.skippedHeadingFindings, [.foundBySavedWords(.onlyHeadingWithItsLabel), .unchanged])
-        XCTAssertEqual(outcome.places.skippedHeadings.map(\.id), [secondHeading.id])
-        XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1, foundBySavedWords: 1))
+        XCTAssertEqual(outcome.skippedHeadingFindings, [nil, .unchanged])
+        XCTAssertEqual(outcome.places.skippedHeadings.map(\.id), [firstHeading.id, secondHeading.id])
+        XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1, waiting: 1))
     }
 
     // MARK: - The Start of the Book
