@@ -274,6 +274,26 @@ final class PlaceRelocatorHeadingTests: XCTestCase {
         }
     }
 
+    /// A section of a common label left out does not pass its skip to the
+    /// next section of that label, which slid into its numbers, though the
+    /// diff lines the two headings' words up (REV15, V21): the next one's
+    /// section goes on in the heading, so it is that one's, and the skip
+    /// waits. The next one's own skip follows it there.
+    func testASectionSlidIntoARemovedOnesNumbersIsTheSecondsNotTheFirsts() throws {
+        let opening = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask.\n\n"
+        let first = "Notes\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
+        let second = "Notes\n\nA carpenter in the next village turned the offcuts into spoons for the market."
+        let old = [opening + first + second]
+        let new = [opening + second]
+        let firstNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count)
+        let secondNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count + first.utf16.count)
+        let newNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count)
+        XCTAssertNil(try relocate(firstNotes, from: old, oldHeadings: [firstNotes, secondNotes], to: new, newHeadings: [newNotes]))
+        let followed = try relocate(secondNotes, from: old, oldHeadings: [firstNotes, secondNotes], to: new, newHeadings: [newNotes])
+        XCTAssertEqual(followed?.heading, newNotes)
+        XCTAssertFalse(followed?.finding.isGuess ?? true)
+    }
+
     /// A section replaced by another, longer or about as long, does not pass
     /// its skip to the section that replaced it (REV15, finding 5): its
     /// start is where what replaced it begins, but nothing of the new

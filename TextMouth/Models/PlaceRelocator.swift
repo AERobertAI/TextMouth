@@ -91,10 +91,11 @@ import Foundation
 /// (or at its place, where its saved words still stand exactly); never by
 /// its saved words alone, nor at its numbers alone. That heading's start is
 /// carried like a place, and a new heading there takes the skip when the
-/// diff's account of its own words proves it the same section: no other
-/// old heading whose words went into it has a label as like its own, and
-/// its label is the skip's, or most of the old heading's words went into
-/// it; among several, the label decides. Failing that, the one new heading of its level with its label
+/// diff's account proves it the same section: no other old heading that
+/// lent it words, or whose section goes on in it, has a label more like its
+/// own, or as like with its section going on there instead; and its label
+/// is the skip's, or most of the old heading's words went into it. Among
+/// several, the label decides. Failing that, the one new heading of its level with its label
 /// takes the skip, unless the diff makes it another section; failing that,
 /// the skip waits, applying to no heading, so no section is skipped by
 /// mistake. A guess never moves a skip onto a heading.
@@ -496,30 +497,44 @@ struct PlaceRelocator: Sendable {
 
     /// Whether the new heading `heading` is the section of the old heading
     /// at `oldIndex` (nil for a skip whose heading the old text does not
-    /// have), by the diff's account of its own words (`ownWords(of:in:)`):
-    /// no other old heading whose own words went into them has a label as
-    /// like its own (by words shared in order, `commonWords`), and either
+    /// have), by the diff's account (rule 3 of `relocate(_:)` for a skipped
+    /// heading): no rival old heading makes a better claim to it, and either
     /// its label is the skip's, `label`, or more than half of the old
-    /// heading's own words went into its own words.
+    /// heading's own words went into its own words (`ownWords(of:in:)`).
+    ///
+    /// A rival is another old heading that lent the new heading words of
+    /// its own label, or whose section goes on in it (`sectionGoesOn`). A
+    /// rival whose label is more like the new heading's (by words shared in
+    /// order, `commonWords`) claims it; one whose label is as like claims it
+    /// unless the old heading's section goes on in it and the rival's does
+    /// not; one whose label is less like does not.
     ///
     /// So "BOOK ONE. CHAPTER III." is not the section of "BOOK ONE. CHAPTER
     /// II.", left out, though the diff lined up "BOOK ONE. CHAPTER" of the
-    /// two: its "III" came from III's heading, whose label is its own; nor
-    /// "Notes on the Soup" that of "Notes on the Pump"; nor another
-    /// chapter's "Notes" that of this chapter's; nor an interlude that
-    /// replaced a chapter, though the diff paired a word of the two by
-    /// chance. But "CHAPTER V." is still the section of "CHAPTER V." when
-    /// chapter IV, left out before it, lent it its "CHAPTER";
-    /// "Prologue: Before the Spring Flood" is the section of "Prologue";
-    /// and "III. The Stones" that of "CHAPTER III. The Stones". One word
-    /// after a heading's first is not enough to decide.
+    /// two: III's heading, whose label is its own, lent it "III"; nor "Notes
+    /// on the Soup" that of "Notes on the Pump"; nor the "Notes" that slid
+    /// into a removed "Notes" section's numbers that of the removed one,
+    /// though the diff lined their words up: the section that goes on in it
+    /// is the second's. Nor is an interlude that replaced a chapter its
+    /// section, though the diff paired a word of the two by chance. But
+    /// "CHAPTER V." is still the section of "CHAPTER V." when chapter IV,
+    /// left out before it, lent it its "CHAPTER"; "Prologue: Before the
+    /// Spring Flood" is the section of "Prologue"; and "III. The Stones"
+    /// that of "CHAPTER III. The Stones". One word after a heading's first
+    /// is not enough to decide.
     private func isSameSection(_ heading: Heading, as oldIndex: Int?, label: String) -> Bool {
         let own = Self.ownWords(of: heading, in: new)
-        let ownKeys = Array(new.keys[own])
-        let likeness = oldIndex.map { Self.commonWords(Array(old.keys[oldHeadingWords[$0]]), ownKeys) } ?? 0
-        for word in own where sources[word] >= 0 {
-            for (index, words) in oldHeadingWords.enumerated() where index != oldIndex && words.contains(sources[word]) {
-                if Self.commonWords(Array(old.keys[words]), ownKeys) >= likeness { return false }
+        let labelWords = FineWords.keys(in: heading.text)
+        let likeness = { (index: Int) in Self.commonWords(FineWords.keys(in: self.oldHeadings[index].text), labelWords) }
+        let ownLikeness = oldIndex.map(likeness) ?? 0
+        let ownGoesOn = oldIndex.map { sectionGoesOn(from: $0, into: own) } ?? false
+        for rival in oldHeadings.indices where rival != oldIndex {
+            let lent = own.contains { sources[$0] >= 0 && oldHeadingWords[rival].contains(sources[$0]) }
+            let rivalGoesOn = sectionGoesOn(from: rival, into: own)
+            guard lent || rivalGoesOn else { continue }
+            let rivalLikeness = likeness(rival)
+            if rivalLikeness > ownLikeness || (rivalLikeness == ownLikeness && !(ownGoesOn && !rivalGoesOn)) {
+                return false
             }
         }
         if heading.text == label { return true }
@@ -527,6 +542,20 @@ struct PlaceRelocator: Sendable {
         let oldOwn = oldHeadingWords[oldIndex]
         let carriedIn = oldOwn.filter { own.contains(partners[$0]) }.count
         return 2 * carriedIn > oldOwn.count
+    }
+
+    /// Whether the section of the old heading at `oldIndex` goes on in the
+    /// new heading whose own words are `newOwn`: the words that follow the
+    /// old heading's own words (`solidRun` of them, or as many as its
+    /// chapter has) line up, in order, with the words that follow the new
+    /// heading's.
+    private func sectionGoesOn(from oldIndex: Int, into newOwn: Range<Int>) -> Bool {
+        let after = oldHeadingWords[oldIndex].upperBound
+        let chapter = oldHeadings[oldIndex].chapterIndex
+        guard chapter >= 0, chapter < old.chapterCount else { return false }
+        let count = min(Self.solidRun, old.chapterFirstWords[chapter + 1] - after)
+        guard count > 0 else { return false }
+        return (0..<count).allSatisfy { partners[after + $0] == newOwn.upperBound + $0 }
     }
 
     /// How many words two labels' words share in order: their longest
