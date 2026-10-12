@@ -42,8 +42,9 @@ import Foundation
 ///      it.
 ///    - **Words gone:** after a removal, the place goes where the text after
 ///      the removal begins, slid back over words the removal ends with that
-///      also end the text before it, as Git slides a change; in a replaced
-///      stretch, where what replaced it begins.
+///      also end the text before it, as Git slides a change, though never
+///      out of the chapter where the text after the removal begins; in a
+///      replaced stretch, where what replaced it begins.
 ///    - **Moved text:** a place whose words are gone from their spot follows
 ///      them, however far, when its saved words' one best spot in the new
 ///      text holds its own word (the first after it) and lies in text the
@@ -553,9 +554,15 @@ struct PlaceRelocator: Sendable {
         // chapter XVIII, before "CHAPTER XIX."), a diff may keep the first
         // copy and drop the second. Slid back, the place goes where the text
         // after the removal begins ("CHAPTER XIX."), not a word into it.
+        // The slide stays within the chapter where the text after the
+        // removal begins: a chapter left out that ends as the chapter before
+        // it ends ("…Ffion said.") does not send its places to the end of
+        // that chapter. Nor does it pass the new text's first word.
         if boundedBefore, boundedAfter, stretchStart == stretchEnd {
+            let chapter = new.chapter(ofWord: stretchStart)
             var back = 0
             while previous - back >= 0, next - 1 - back > previous,
+                  stretchStart - 1 - back >= 0, new.chapter(ofWord: stretchStart - 1 - back) == chapter,
                   partners[previous - back] == stretchStart - 1 - back,
                   old.keys[previous - back] == old.keys[next - 1 - back] {
                 back += 1

@@ -556,6 +556,45 @@ final class PlaceRelocatorTests: XCTestCase {
         }
     }
 
+    /// The slide back stays within the chapter where the text after the
+    /// removal begins (REV15, finding 11): a chapter left out that ends with
+    /// the words the chapter before it ends with ("said.", or "Ffion said.")
+    /// sends its places to the start of the chapter after it, not to the
+    /// end of the chapter before.
+    func testTheSlideBackStaysInTheChapterAfterTheRemoval() throws {
+        let six = "CHAPTER VI.\n\nThe barge had lain in the reeds below Copthorne Lock for eleven winters before Ffion bought it for the price of a secondhand bicycle.\n\nBramwell walked its length twice, tapping the planks with a coin. \"We start on Monday,\" Ffion said."
+        let seven = "CHAPTER VII.\n\nThe engine was a two-cylinder Lister that had last run when decimal coins were new. Bramwell drained a sludge of diesel and pond water from its sump.\n\nBy Friday it idled steadily enough to frighten the moorhens. Ffion went below to fetch the torch."
+        let eight = "CHAPTER VIII.\n\nThey took the barge out on the first Sunday in May, as far as the swing bridge at Ashby Parva and back again."
+        for ending in [" \"Mind the rotten step,\" Bramwell said.", " \"Mind the rotten step,\" Ffion said.", " \"Mind the rotten step,\" Bramwell warned."] {
+            let old = [six, seven + ending, eight]
+            let new = [six, eight]
+            for phrase in ["CHAPTER VII.", "Lister", "sludge", "moorhens", "torch", "Mind the rotten"] {
+                let result = try relocate(try Phrase.place(of: phrase, inChapter: 1, of: old), from: old, to: new)
+                XCTAssertEqual(result.place, TextPlace(chapter: 1, offset: 0), "\(phrase), \(ending)")
+                XCTAssertFalse(result.finding.isGuess, "\(phrase), \(ending)")
+            }
+        }
+    }
+
+    /// The slide back never passes the new text's first word (REV15, V14):
+    /// a song whose cut verse and second chorus label end as its first
+    /// chorus label and chorus do, with the cut reaching back to the new
+    /// text's first word, sends a place in the verse to that word, not to
+    /// the start of the chapter before it.
+    func testTheSlideBackNeverPassesTheNewTextsFirstWord() throws {
+        let chorus = "Turn the wheel and grind the corn, the stones go round from dusk to morn."
+        let verse = "The river runs both high and low, the miller hums while the waters flow."
+        let after = "Sing it high and sing it low, and sing it while the waters flow."
+        let note = "(Sing the last line twice, softer the second time.)"
+        let prose = "Nobody in Ashcombe could remember who first sang it. The tune was older than the words, and the words had changed every time a new family took over the stones."
+        let old = ["", "Chorus.\n\n\(chorus)\n\n\(verse)\n\nChorus.\n\n\(chorus)\n\n\(after)\n\n\(note)\n\n\(prose)", MillBook.wheel]
+        let new = ["", "\(chorus)\n\n\(after)\n\n\(prose)", MillBook.wheel]
+        for phrase in ["The river runs", "the miller hums", "while the waters flow"] {
+            let result = try relocate(try Phrase.place(of: phrase, inChapter: 1, of: old), from: old, to: new)
+            XCTAssertEqual(result.place, TextPlace(chapter: 1, offset: 0), phrase)
+        }
+    }
+
     // MARK: - The End of the Book
 
     /// A place at the end of the book stays at the end of the new text,
