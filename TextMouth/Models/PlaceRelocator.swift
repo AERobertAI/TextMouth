@@ -102,13 +102,14 @@ import Foundation
 /// the skip waits, applying to no heading, so no section is skipped by
 /// mistake. A guess never moves a skip onto a heading.
 ///
-/// These are the measured program's rules, ported and checked against its
-/// exact truth by compiling these files in a standalone harness: every place
-/// of the real extraction changes on its own words (57,472 places in 26
-/// comparisons), and of 222,037 places in the synthetic cases, 161 on wrong
-/// words (142 of them in moved paragraphs) and 432 a few words off, exactly
-/// as the program. Where a rule here differs from it, the comment at the
-/// rule says why.
+/// These are the measured program's rules, ported, checked against its exact
+/// truth by compiling these files in a standalone harness, and corrected
+/// where the review of October 12 (REV15) found them wrong: every place of
+/// the real extraction changes lands on its own words (57,472 places in 26
+/// comparisons), and of 222,037 places in the synthetic cases, 151 land on
+/// wrong words (142 of them in moved paragraphs) and 376 a few words off,
+/// against the program's 161 and 432, with no case worse. Where a rule here
+/// differs from the program, the comment at the rule says why.
 ///
 /// The relocator is built once per rebuild of a book's text, off the main
 /// thread: it reads both texts' words, lines them up, and indexes each
