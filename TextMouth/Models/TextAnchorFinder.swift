@@ -247,19 +247,19 @@ struct TextAnchorFinder: Sendable {
         return nil
     }
 
-    /// The first search's one best spot for `anchor`, wherever in the book
-    /// it lies: the spot whose saved words score best, with 8 or more, when
-    /// no other spot scores as well, and the place's own word stands there
-    /// (the first word after it); nil otherwise. The tie and
-    /// locality rules play no part, and the place's saved numbers none: this
-    /// is the diff's question when a place's words are gone from their spot
+    /// The first search's one best spot for `anchor`, wherever in the book it
+    /// lies: the spot whose saved words score best, with 8 or more, when no
+    /// other spot scores as well, and the place's own word stands there (the
+    /// first word after it); nil otherwise. The tie and locality rules play
+    /// no part, and the place's saved numbers none: this is the diff's
+    /// question when a place's words are gone from their spot
     /// (`PlaceRelocator`). If the one best spot lies in text the diff found
     /// put in, the words moved there, however far, since a second copy the
-    /// diff kept would have been lined up with them instead. The words
-    /// before a place say only where the text before it went: when they
-    /// alone score a spot (its own word replaced, "frogspawn floated" become
-    /// "duckweed floated", or its whole section replaced), the place's text
-    /// did not move there.
+    /// diff kept would have been lined up with them instead. The words before
+    /// a place say only where the text before it went: when they alone score
+    /// a spot (its own word replaced, "frogspawn floated" become "duckweed
+    /// floated", or its whole section replaced), the place's text did not
+    /// move there.
     ///
     /// Returns where the place lands there (as `find` would land it) and
     /// the word it stands before.

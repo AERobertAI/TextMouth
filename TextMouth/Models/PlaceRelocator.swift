@@ -57,10 +57,10 @@ import Foundation
 ///      them, however far, when its saved words' one best spot in the new
 ///      text holds its own word (the first after it) and lies in text the
 ///      diff found put in: text that moved is a removal there and the same
-///      words put in here. The words before a place alone say only where
-///      the text before it went. Words met in text the
-///      diff kept (a refrain's other verse, a second contents list) are a
-///      second copy, and the place stays with the diff.
+///      words put in here. The words before a place alone say only where the
+///      text before it went. Words met in text the diff kept (a refrain's
+///      other verse, a second contents list) are a second copy, and the place
+///      stays with the diff.
 ///    - **The end:** a place at the end of the old text goes to the end of
 ///      the new one (P07); a place short of the end, however near, is not
 ///      the end (`TextPlace.restsAtEnd`). A place with no word after it in
@@ -355,12 +355,12 @@ struct PlaceRelocator: Sendable {
     /// saved; for a place saved without one, its words read in the old text
     /// at its numbers (held within that text as the reader opens a saved
     /// place, by `savedGlobalOffset`, its offset in the whole book, when it
-    /// kept one), with where they were read;
-    /// and with no old text to read them in, words that hold nothing, which
-    /// keep the place's numbers where its chapter still is (`TextAnchor`).
-    /// (Every place the measured program moved had saved words; a place
-    /// saved before anchors, which T06's branch B captures at load and at
-    /// launch, can still reach a rebuild without them.)
+    /// kept one), with where they were read; and with no old text to read
+    /// them in, words that hold nothing, which keep the place's numbers where
+    /// its chapter still is (`TextAnchor`). (Every place the measured program
+    /// moved had saved words; a place saved before anchors, which T06's
+    /// branch B captures at load and at launch, can still reach a rebuild
+    /// without them.)
     private func savedWords(_ anchor: TextAnchor?, savedAt saved: TextPlace, savedGlobalOffset: Int? = nil) -> SavedWords {
         if let anchor {
             return SavedWords(anchor: anchor, readInOldText: nil)
@@ -688,16 +688,16 @@ struct PlaceRelocator: Sendable {
     ///
     /// When the chapter's last word is a solid match (by its run within the
     /// chapter), the place lands just after its partner: at the end of its
-    /// chapter, or before what was
-    /// added after it there. The saved-words search lands such a place the
-    /// same way (`BookWords.landing`). Otherwise the chapter's last words
-    /// were edited ("…went home." became "…went away."), or its last word is
-    /// lined up only by chance, as with the like last word of a chapter
-    /// restored after it ("…to come home."): the place goes to the end of
-    /// the new chapter that holds the chapter's last solid match. The
-    /// measured program carried the next chapter's first word instead, and
-    /// so put such a place at the next chapter's start (it sampled none).
-    /// A chapter with no solid match is left to the saved words.
+    /// chapter, or before what was added after it there. The saved-words
+    /// search lands such a place the same way (`BookWords.landing`).
+    /// Otherwise the chapter's last words were edited ("…went home." became
+    /// "…went away."), or its last word is lined up only by chance, as with
+    /// the like last word of a chapter restored after it ("…to come home."):
+    /// the place goes to the end of the new chapter that holds the chapter's
+    /// last solid match. The measured program carried the next chapter's
+    /// first word instead, and so put such a place at the next chapter's
+    /// start (it sampled none). A chapter with no solid match is left to the
+    /// saved words.
     private func atChapterEnd(_ start: TextPlace) -> Carried {
         let first = old.chapterFirstWords[start.chapter]
         let last = old.chapterFirstWords[start.chapter + 1] - 1
@@ -1056,12 +1056,13 @@ extension PlaceRelocator {
         /// at the move (`relocate(_:movedAt:)`), so it wins over an older
         /// copy elsewhere; one that stayed keeps its time. A move is not a
         /// read otherwise: a position's heading index, and a bookmark's
-        /// identity, number, note, and date, stay as they were. A skipped heading takes its heading's place, level,
-        /// and label; one that waits stays exactly as it was (words read in
-        /// the old text at its numbers would only be the words of whatever
-        /// stands there now); two skips that now name one heading are one,
-        /// the first kept, and a skip that names a heading is kept over one
-        /// that waits whose saved ID that heading now has.
+        /// identity, number, note, and date, stay as they were. A skipped
+        /// heading takes its heading's place, level, and label; one that
+        /// waits stays exactly as it was (words read in the old text at its
+        /// numbers would only be the words of whatever stands there now); two
+        /// skips that now name one heading are one, the first kept, and a
+        /// skip that names a heading is kept over one that waits whose saved
+        /// ID that heading now has.
         let places: Places
         /// How the position was found; nil for a book without one.
         let positionFinding: Finding?
@@ -1211,11 +1212,11 @@ extension PlaceRelocator {
 
     /// `position` at `result`'s place (`moved(_:to:)`), with its offset
     /// across the whole book worked out anew when it kept one; dated `date`
-    /// when its chapter or offset changed, as
-    /// `AudioEditPlaces.follow` dates a moved position, so that it wins over
-    /// an older copy in the checkpoint journal's adoption or another Mac's
-    /// index (TEXT-ANCHORS-RESEARCH-2026-10-10.md); its time as it was when
-    /// it stayed, and its heading index as it was.
+    /// when its chapter or offset changed, as `AudioEditPlaces.follow` dates
+    /// a moved position, so that it wins over an older copy in the checkpoint
+    /// journal's adoption or another Mac's index
+    /// (TEXT-ANCHORS-RESEARCH-2026-10-10.md); its time as it was when it
+    /// stayed, and its heading index as it was.
     private func moved(_ position: ReadingPosition, to result: Result, at date: Date) -> ReadingPosition {
         var relocated = self.moved(position, to: result)
         relocated.globalCharacterOffset = position.globalCharacterOffset.map { _ in new.globalOffset(of: result.place) }

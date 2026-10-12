@@ -1310,7 +1310,7 @@ struct Bookmark: Identifiable, Codable, Hashable {
 
 /// A heading the listener skips (T06): its level, its label, and where it
 /// starts, with the text at its start, so the skip can follow its heading
-/// when the book's text is read anew (`TextAnchorFinder.findHeading`).
+/// when the book's text is read anew (`PlaceRelocator.relocate(_:)`).
 ///
 /// A skip has been a heading ID (`Heading.id`,
 /// "<chapter>-<offset>-<level>-<label>"), which changes whenever the text
