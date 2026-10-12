@@ -1,0 +1,160 @@
+DEDUPED CANDIDATES FOR VERIFICATION (paths relative to the repo; probe dirs relative to .../scratchpad/review/)
+==========================================================================================================
+
+V1  TextMouth/Models/PlaceRelocator.swift:296 (heldInOldText; used by savedWords at 275)
+    A place saved WITHOUT an anchor whose chapterIndex is past the old text's last chapter is held at old.endPlace; the anchor
+    read there marks the end of the book, so rule 1 (newFinder.settled) sends it to the NEW text's end (.movedByTheDiff(.endOfBook)),
+    moved(_:to:) stores globalCharacterOffset == new total and an end-marking anchor -> Book.restsAtEnd true: the book reads
+    Finished at 100%. Bookmarks there go to the end too. The reader's own rule (ReaderViewModel.openingPlace(of:savedGlobalOffset:in:),
+    ReaderViewModel+SavedPlaces.swift ~132-150) opens such a place at the last chapter's start unless its global offset was at the
+    end, and branch B (TextAnchorCapture.swift ~19, ~80) deliberately leaves exactly these places without words.
+    Finder probes: reuse/held, angleC/p1, angleAltitude/p5, angleE/p4.
+
+V2  TextMouth/Models/PlaceRelocator.swift:275 (savedWords for a nil anchor), used by relocate(_ skipped:) at 329 and waiting(_:) at 837-843
+    A skipped heading saved without an anchor (e.g. made from an old heading ID by SkippedHeading(id:)) gets words read in the OLD text
+    at its numbers even when its ID names no heading there; the relocator then binds the skip to whatever heading of its level stands
+    at those numbers (even when old == new): stale skip "2-0-1-CHAPTER II. The Wheel" in the 4-chapter mill book becomes
+    "2-0-1-CHAPTER III. The Stones" (foundBySavedWords score 20), hiding chapter III. Branch B's CapturedPlaceAnchors refuses this
+    exact case (TextAnchorCapture.swift ~80-83, ~111: such a skip "waits for its heading rather than take the words that stand where
+    it was, which could make it skip another section"). waiting() also stores those wrong words for later rebuilds.
+    Finder probes: angleC/p4, angleC/p5, angleE/p5b (p5).
+
+V3  TextMouth/Models/PlaceRelocator.swift:336-343 (relocate(_ skipped:), `!labelRequired || found.heading.text == skipped.label`)
+    After the diff finds a skipped section REMOVED (.removed -> labelRequired), any heading of its level with the same label anywhere
+    in the book is accepted: findHeading's onlyHeadingWithItsLabel ("found") or nearestHeadingWithItsLabel (guess). Chapters each
+    ending in a level-2 "Notes"; the skipped chapter-I Notes is removed -> the skip moves to chapter II's Notes, never skipped.
+    The type doc promises the skip waits "so no section is skipped by mistake".
+    Finder probes: lead/notes, angleAltitude/p2, angleA/notes.
+
+V4  TextMouth/Models/PlaceRelocator.swift:371-378 (carriedHeadingStart `default: return nil`) with 477-479 (carry's moved-text rule)
+    A skipped section REPLACED by a different section (other text put in where it was): carry's moved-text rule fires because
+    onlyBestSpot scores the spot on the BEFORE-words alone (after-score 0) and that spot's word (the replacement's first word) is
+    unpaired -> .followedMovedText -> carriedHeadingStart returns nil -> labelRequired never set -> findHeading takes the replacement
+    heading on the before-words (score 12) -> the replacement section is silently skipped. Without the moved-text rule the verdict is
+    .passageRemoved and the skip would wait (pure-removal control waits). The same rule labels a one-word in-place replacement
+    (frogspawn -> duckweed) as .followedMovedText instead of .wordReplaced.
+    Finder probes: lead/replsec, lead/replaced, angleAltitude/p1, angleA/replaced.
+
+V5  TextMouth/Models/PlaceRelocator.swift:391 (headingTextStands: `if case .replaced = verdict(forOldWord: following) { return true }`)
+    `.replaced` also covers (a) a short PURE removal: the like-for-like test (530-532) passes for newLength 0 when oldLength <= 8
+    (likeForLikeSlack), and (b) a section/chapter replaced wholesale by a different one of similar length. Either way the heading is
+    judged "standing" and the skip moves to the next/replacement heading: a removed 6-7-word "Dedication" section's skip moves onto
+    "CHAPTER I."; the test fixture's pump section shortened to "The Pump\n\nIt ran on paraffin." moves its skip to "The Soup";
+    "CHAPTER III. The Stones" replaced by "INTERLUDE. A Letter" (similar length) moves the skip to INTERLUDE.
+    Finder probes: angleA/dedication, angleA/short (pumpdir), lead/chapterrepl.
+
+V6  TextMouth/Models/PlaceRelocator.swift:387-390 (headingTextStands checks only the ONE word after the heading's first word)
+    A removed heading whose first two (or more) words equal the next heading of its level is judged standing: old chapters
+    "BOOK ONE. CHAPTER II. The Wheel" and "BOOK ONE. CHAPTER III. ..." with II removed -> skip of II becomes "BOOK ONE. CHAPTER III"
+    (.movedByTheDiff(.linedUp)); within a chapter, removing section "Notes on the Pump" moves its skip to "Notes on the Soup".
+    Finder probe: angleE/p6.
+
+V7  TextMouth/Models/PlaceRelocator.swift:398-406 (heading(ofLevel:startingAt:) returns the FIRST heading of the level whose start
+    maps to the landing word, ignoring the skip's label)
+    A same-level heading with no fine words of its own piled just before the real one ("[]" image heading, "* * *", an empty
+    label) takes the skip: the saved skip names a zero-length section (SkippedSectionFilter excludes [523,530)), so the skipped section
+    plays again; TextAnchorFinder.findHeading alone (label-aware) gets it right.
+    Finder probes: angleC/p6, angleC/p3, angleE/p2, angleA/heading.
+
+V8  TextMouth/Models/PlaceRelocator.swift:444-463 (carry's chapter-end rule)
+    For a place at its chapter's end (nothing after it in its chapter): (a) when the chapter's LAST word is not .linedUp (edited), the
+    special case is skipped and the place is carried by the NEXT chapter's first word with nothingAfter:true, landing at the END of a
+    chapter restored right after it (.movedByTheDiff(.linedUp)) -> the listener skips the restored chapter; (b) even when unedited,
+    verdict(word - 1) can pair the last word with an identical last word of INSERTED text (keeping rule's late match, or the patience
+    diff's common suffix) -> lands at the end of the inserted chapter. The comment at 445-452 promises "a chapter restored after it
+    does not take it"; TextAnchorFinder alone lands it at its own chapter's end.
+    Finder probes: angleAltitude/p4, angleB/p1, angleB/p2, angleB/p3, angleB/p5, angleD (probe dirs).
+
+V9  TextMouth/Models/PlaceRelocator.swift:553-561 (the slide-back loop)
+    The slide back over words a removal shares with the text before it has no chapter boundary: when a removed CHAPTER ends with the
+    same word(s) as the chapter before it ("...she said." / "...he said."; "...it." / "...it."), places inside the removed chapter
+    land on the previous chapter's last word(s) instead of the start of the chapter after the removal ("CHAPTER XIX." at (1,0)).
+    Finder probes: angleA/slidechapter, angleD (probe dirs).
+
+V10 TextMouth/Models/PlaceRelocator.swift:511-513 (keeping rule only tried when own < 0, !solid, or the run breaks right after)
+    Text put in before a place that begins with the place's first TWO or more words takes the place: one chapter text
+    "BOOK ONE. CHAPTER I... / BOOK ONE. CHAPTER III..." with "BOOK ONE. CHAPTER II..." restored between them: a position at
+    "BOOK ONE. CHAPTER III." lands at the restored chapter II (offset 505 instead of 899) as .linedUp, and a skip of III moves to II.
+    The type doc's "A place keeps the words that follow it" rule is meant to prevent exactly this.
+    Finder probe: angleE/p8.
+
+V11 TextMouth/Models/PlaceRelocator.swift:436-441 (no fine word after the place in the whole old text -> new.endPlace, .endOfBook)
+    A place after the last word of the last chapter that HAS words, followed only by wordless trailing chapters ("[]" back cover,
+    "* * *") or by closing punctuation, is sent to the new book's end: with a chapter (or afterword) appended by the rebuild, the place
+    jumps past it and Book.restsAtEnd becomes true (Finished). TextAnchorFinder/BookWords.landing keep it at its chapter's end;
+    Book.restsAtEnd's doc: "A place short of the end, however near, is not the end". (The measured program had this rule; the test
+    testAPlaceAfterTheLastWordGoesToTheNewEnd pins the trailing-full-stop case.)
+    Finder probes: angleB/p5, angleAltitude/p6b.
+
+V12 TextMouth/Models/PlaceRelocator.swift:444 and 463-467 (nothingAfter for a place in a chapter with NO fine words)
+    A place in a chapter whose text has no fine words (punctuation-only "* * *", "[]" as pre-3.0.5 caches wrote image pages, "} } }")
+    gets nothingAfter = true; the chapter-end guard fails (word - 1 is in an earlier chapter) and the fallback lands it at the END
+    of the PREVIOUS chapter (or the next chapter's start for chapter 0) as a certain .movedByTheDiff(.linedUp): a bookmark is filed
+    under the wrong chapter. The finder alone keeps it in its own chapter (sameShare guess).
+    Finder probes: angleB/p1, angleB/p5, angleD (probe dirs), angleA/empty.
+
+V13 TextMouth/Models/PlaceRelocator.swift:528-540 (like-for-like has no length cap)
+    A huge changed stretch of similar length on both sides counts as "local editing": (a) a stretch PatienceDiff left unmatched because
+    it exceeds largestExactStretch (a 2,240-word repetitive chant edited at both ends) -> the `before` walk runs back thousands of words
+    and the place lands at the stretch start with a sure .movedByTheDiff(.wordReplaced) ((0,4521) -> (0,98)); (b) old and new sharing
+    only first and last paragraphs -> 1,000 places land on 39 spots, 997 reported .wordReplaced rather than guesses.
+    Finder probes: angleD (chant probe), angleEff (note).
+
+V14 TextMouth/Models/PlaceRelocator.swift:555-557 (slide-back condition off-by-one)
+    `partners[previous - back] == stretchStart - 1 - back`: once stretchStart - back reaches 0, the right side is -1 and an UNPAIRED
+    old word (partner -1) satisfies it, so the loop slides one word too far: target = -1, landing(-1) = (0,0) (an empty cover chapter)
+    instead of (1,0). Needs a stretch with no fixed point (exact LCS pairing the first copy). Fix: require partners[...] >= 0.
+    Finder probe: angleA/slide.
+
+V15 TextMouth/Models/PlaceRelocator.swift:607-623 (keepingTheWordsAfter window: start = max(0, end - count - 4 - count/4))
+    The window has no lower bound at the previous solid match's partner, and matched new words need not be unpaired: removing a repeated
+    '"Not yet," she said.' sends a place in the removed copy BACK across the solid run "He waited by the door." onto the first copy
+    (new offset 101 instead of 143): the place moves backwards past a solid match (non-monotonic). Inherited from the measured
+    program's attachedPartner.
+    Finder probe: angleE/p3.
+
+V16 TextMouth/Models/PatienceDiff.swift:40-85 (no work bound on the stretch recursion; each level re-hashes its stretch)
+    Input whose fixed points fall only at stretch edges at every level costs O(n^2): word-level k=20,000 -> 5.4 s; pride.txt's 2,585
+    numbered paragraphs ("17. ...") with each paragraph followed by the one before it in the new text -> 42.5 s for one diff (828M
+    words hashed). The app's existing patience diff, TranscriptEditAlignment.matches (TextMouth/Services/TranscriptEditAlignment.swift
+    ~254-304), caps its work ("about 40 passes however pathological the edit"). A rebuild (branch D) would stall that long.
+    Finder probe: angleEff (see its main.swift / Variant.swift; build-O.sh).
+
+V17 TextMouth/Models/PlaceRelocator.swift:332-335 (the .standing path falls through to findHeading when no heading of its level
+    starts at the landing) + TextAnchorFinder.swift:315 (onlyHeadingWithItsLabel)
+    When a new reading re-levels or demotes the skipped heading (its words provably stand where it landed), the fall-through searches
+    the whole book by level and label and hands the skip to ANOTHER section with the same label (e.g. chapter II's "Notes") as found
+    for certain.
+    Finder probe: angleAltitude/p7.
+
+V18 TextMouth/Models/PlaceRelocator.swift:373 and 387-393 (headingTextStands too strict in the other direction)
+    A heading whose label gained words right after its first word ("Prologue" -> "Prologue: Before the Spring Flood"), or whose first
+    word was dropped ("CHAPTER III. The Stones" -> "III. The Stones"), is judged .removed -> labelRequired -> nil: the skip waits and
+    the skipped section plays again, while a position at the same spot is carried correctly.
+    Finder probes: angleE/p7, angleE/p1.
+
+V19 TextMouth/Models/PlaceRelocator.swift:244 (rule 1 for a place in an EMPTY chapter)
+    An empty chapter's anchor (before "" after "") "stands" anywhere, so with a chapter inserted before it, newFinder.settled returns
+    .unchanged at the OLD numbers, which are now the start of a different (already-read) chapter; the diff, which has the old text,
+    is never consulted. old [a, "", b, c] pos (1,0) -> new [preface, a, "", b, c]: stays (1,0) = start of chapter a; expected (2,0).
+    Finder probe: angleA/empty.
+
+V20 TextMouth/Models/PlaceRelocator.swift:460-463 (`inside` offset applied to every landing target)
+    The in-word offset is kept for .replaced/.removed/unsure targets that are not the place's own word: a place 2 units into a removed
+    "the" lands 2 units into an unrelated "The" that begins the text after the removal ((0,198) instead of (0,196)).
+    Finder probe: angleD (probe dirs).
+
+V21 TextMouth/Models/PlaceRelocator.swift:785-794 (skippedHeadingFindings and counts follow the INPUT skips; places are deduped)
+    After two skips merge, outcome.places.skippedHeadings has 1 entry but skippedHeadingFindings 2 and counts.total 2; a caller
+    zipping them misattributes findings; the first skip wins even when it is a waiting skip with stale words. Pinned by
+    testTwoSkipsThatNowNameOneHeadingAreOne.
+
+V22 TextMouth/Models/PlaceRelocator.swift:808-814 (moved positions keep their old lastUpdated)
+    Every position merge in the app is newer-lastUpdated-wins (LibraryViewModel+Migration adoptNewerRecordedPositions, FileImportService
+    reconciledLibraryBook, IndexRecovery carryingRecoverySessionState); AudioEditPlaces.follow dates a moved position so it wins.
+    A relocated copy and a stale old-text copy share the date, so the stale one can survive. Needs branch D's wiring to trigger.
+
+V23 (cleanup) TextMouth/Models/PatienceDiff.swift:40 duplicates TextMouth/Services/TranscriptEditAlignment.swift's patience diff
+    (matches ~254-304, uniqueAnchors ~309-327, longestIncreasingRun ~331-363, longestCommonSubsequence ~368-405): same algorithm;
+    with PatienceDiff's two limits the outputs were identical on 1220/1220 random inputs. Two copies to keep in step; already drifted
+    (work budget, counting speed-up). Finder probe: reuse/diffcmp.

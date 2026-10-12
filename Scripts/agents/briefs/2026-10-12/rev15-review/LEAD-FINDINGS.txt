@@ -1,0 +1,28 @@
+Lead reviewer's own candidates (probed)
+=======================================
+
+L1  PlaceRelocator.swift:336-343 (relocate(_ skipped:)) + TextAnchorFinder.findHeading label fallback
+    After the diff proves a skipped section was REMOVED (.removed -> labelRequired), the skip still goes to ANY other heading of its
+    level with the same label anywhere in the book (findHeading's onlyHeadingWithItsLabel, or the nearestHeadingWithItsLabel guess).
+    Probe lead/notes: chapters I and II each end with a level-2 "Notes" section; only chapter I's is skipped; Edit Text removes
+    chapter I's Notes -> skip moves to chapter II's Notes (finding .foundBySavedWords(.onlyHeadingWithItsLabel)); with a third
+    chapter's Notes too -> .guessed(.savedWords(.nearestHeadingWithItsLabel)) -> chapter II's Notes. Hides text never skipped.
+
+L2  PlaceRelocator.swift:371-378 (carriedHeadingStart) + 477-479 (carry's moved-text rule)
+    A skipped section REPLACED by a different section (text put in where it was) -> carry's moved-text rule fires (the
+    replacement's first word is unpaired, and the saved before-words find that spot uniquely, score >= 8) -> .followedMovedText
+    -> carriedHeadingStart's `default: return nil` -> no labelRequired -> findHeading scores the replacement's heading on the
+    before-words alone (score 12) -> skip transfers to the replacement section. Probe lead/replsec: "Pump Repairs" section
+    replaced by an 80-word "Forge Work" section (not like-for-like: without the moved-text rule the verdict is .removed and the
+    skip would wait, as the pure-removal control does) -> skip lands on "Forge Work". Same for a like-for-like "Bellows".
+
+L3  PlaceRelocator.swift:477-479
+    The moved-text rule also fires for a plain one-word replacement mid-chapter (frogspawn -> duckweed): finding
+    .movedByTheDiff(.followedMovedText) instead of .wordReplaced (place is right; evidence mislabelled; this is what diverts
+    headings in L2).
+
+L2b PlaceRelocator.swift:387-393 (headingTextStands)
+    A heading counts as "still there" when its first word was replaced in a like-for-like stretch and the word after it was
+    replaced too, i.e. none of its text stands. Probe lead/chapterrepl: [CH I, CH III "The Stones", CH IV] -> [CH I,
+    "INTERLUDE. A Letter" (a different chapter of similar length), CH IV]; the skip of CHAPTER III moves to INTERLUDE with
+    .movedByTheDiff(.wordReplaced). (No before-words at a chapter start, so this is not L2's moved-text path.)

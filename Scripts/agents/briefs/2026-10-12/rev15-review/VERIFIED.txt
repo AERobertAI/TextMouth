@@ -1,0 +1,28 @@
+VERIFIED LIST (after one-vote verification; all of these are already known - the sweep must NOT re-report them)
+=========================================================================================================
+(Full text of each is in CANDIDATES.txt under the same ID.)
+
+V1  CONFIRMED  PlaceRelocator.swift:296  heldInOldText: anchorless place in a chapter the old text lacks -> old.endPlace -> end-marking anchor -> new end, book Finished.
+V2  CONFIRMED  PlaceRelocator.swift:275  savedWords reads words for an anchorless skip at its stale numbers -> skip bound to whatever heading is there (even old == new); waiting() stores those words.
+V3  CONFIRMED  PlaceRelocator.swift:342  after .removed, any same-level same-label heading anywhere is accepted (onlyHeadingWithItsLabel / nearest guess) -> another chapter's "Notes" hidden.
+V4  CONFIRMED  PlaceRelocator.swift:477 / 376  moved-text rule (onlyBestSpot scored on before-words only, spot unpaired) -> .followedMovedText -> carriedHeadingStart nil -> removal guard bypassed -> replacement section's heading takes the skip. Also mislabels one-word replacements.
+V5  CONFIRMED  PlaceRelocator.swift:391  `.replaced` for the following word counts as "standing": covers a pure removal of <= 8 words (like-for-like slack, newLength 0) and wholesale same-length replacement -> next/replacement heading takes the skip.
+V6  CONFIRMED  PlaceRelocator.swift:390  only one following word checked -> removed heading sharing first two words with the next heading ("BOOK ONE. CHAPTER II" / "...III") passes its skip on.
+V7  CONFIRMED  PlaceRelocator.swift:402  heading(ofLevel:startingAt:) takes the first heading at the landing word, ignoring the label -> piled wordless heading ("Cover", "€§") takes the skip; the skipped section plays.
+V8  CONFIRMED  PlaceRelocator.swift:453-463  chapter-end rule: last word not linedUp (edited) or paired with an identical last word of inserted text -> place lands at the END of a restored/inserted chapter after it.
+V9  CONFIRMED  PlaceRelocator.swift:555  slide-back crosses chapter boundaries when the removed chapter ends like the previous chapter ("...said.") -> places land on the previous chapter's last words.
+V10 CONFIRMED  PlaceRelocator.swift:511  keeping rule only tried when the run breaks right after the place's word -> inserted text starting with the place's first 2+ words takes the place (and the skip).
+V11 CONFIRMED  PlaceRelocator.swift:439  no fine word after the place anywhere in the old text -> new.endPlace, even when only wordless trailing chapters follow -> appended text skipped, book Finished.
+V12 CONFIRMED  PlaceRelocator.swift:444/453/463  place in a chapter with no fine words -> previous chapter's end (or next chapter's start) as a sure .linedUp.
+V13 CONFIRMED  PlaceRelocator.swift:530 (and 562, PatienceDiff.swift:183)  like-for-like has no length cap; a stretch left unmatched for size counts as local editing -> places collapse onto one spot thousands of words back, reported sure.
+V14 CONFIRMED  PlaceRelocator.swift:556  slide condition matches -1 == -1 for an unpaired word when the slide reaches new word 0 -> target -1 -> (0,0).
+V15 CONFIRMED  PlaceRelocator.swift:612/617  keeping window has no lower bound at the previous solid partner and may skip kept words -> place jumps backwards across a solid run (even into the previous chapter).
+V16 PLAUSIBLE  PatienceDiff.swift:47/67  no work bound; quadratic on adversarial crossing input (5 s at 20k words); TranscriptEditAlignment.matches has a 40-pass budget.
+V17 CONFIRMED  PlaceRelocator.swift:333  .standing proves the heading's text stands at the landing, but with no heading of its level there it falls through to findHeading -> re-levelled heading's skip goes to another same-label section.
+V18 CONFIRMED  PlaceRelocator.swift:390/373  headingTextStands too strict: words added after a one-word label, or a dropped first word -> .removed -> skip lost (section plays again).
+V19 CONFIRMED  PlaceRelocator.swift:244  empty anchor in an empty chapter "stands" anywhere -> rule 1 keeps old numbers even when chapters were inserted before -> wrong chapter.
+V20 CONFIRMED  PlaceRelocator.swift:463  `inside` offset applied to .replaced/.removed/unsure targets -> lands mid-word in an unrelated same-key word.
+V21 CONFIRMED  PlaceRelocator.swift:793  dedupe keeps the first skip even when it is a waiting skip with stale words; findings/counts follow the input skips.
+V22 PLAUSIBLE  PlaceRelocator.swift:808  moved position keeps its old lastUpdated (research doc said to date it at the move); newer-wins merges then keep a stale copy on a tie.
+V23 CONFIRMED  PatienceDiff.swift:40  duplicates TranscriptEditAlignment.matches (cleanup).
+Also known (cleanup, not to re-report): dead `after` scan/min in like-for-like (540/547); bySavedWords' unreachable arm (652); redundant verdict guard (511); derivable counts; duplicated moved(...) overloads; duplicated LCS in TextAnchorFinder.alignment; reserveCapacity oversizing in wordsOnceInEach (114); nearestSolid linear scans; eager old-text index; "16 MB at most" comment wrong (PatienceDiff.swift:33); onlyBestSpot duplicates choose(); test-fixture duplication (SeededWords, chapter XVII-XIX texts, ledger, mill) and a missing doc comment on SeededWords.init(seed:).

@@ -1,0 +1,92 @@
+[
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 365,
+        "summary": "A skip that correctly waits after its section was removed is handed to the next section on the very next relocation, because carriedHeadingStart trusts placeInOldText's saved-words find in the old text (which no longer holds the section and matches on the words before it alone) and then carries it as a standing heading.",
+        "failure_scenario": "With the repo's own fixture from testASkippedSectionLeftOutWaitsRatherThanSkipTheNext: rebuild 1 (opening+Pump+Soup -> opening+Soup) keeps '0-118-2-The Pump' waiting (finding nil), but rebuild 2 with the text unchanged (Redo Text Extraction, or a second save in the same Edit Text session) returns '0-118-2-The Soup' as a sure .movedByTheDiff(.linedUp), so the Soup section, never skipped, is silently skipped. The old-text find scores 14 on the before-words alone; the relocator cannot check that a heading starts there because init(old:new:) drops the old headings. The guard the merge record credits ('the relocator guards this with the old text') holds for one rebuild only."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 454,
+        "summary": "The chapter-end rule only holds when the chapter's last word is .linedUp to its own partner; when that word was edited, or pairs with an identical last word of text inserted after the chapter (common suffix, or the keeping rule's late match), a place at the chapter's end is carried to the END of the restored or inserted chapter as a sure .linedUp.",
+        "failure_scenario": "old [millrace, wheel, flour] -> new [millrace, wheel with 'hand-painted sign.' changed to 'hand-painted placard.', stones (restored), flour]: a position or bookmark at the end of chapter II (1,382) moves to (2,401), the end of the restored chapter III, so resuming skips the whole restored chapter; TextAnchorFinder alone keeps it in chapter II. On Pride and Prejudice with each next chapter restored, 0 of 56 chapter-end places land right when the chapter's last word is edited, and 13 of 56 land in the restored chapter after an unrelated edit (chapters ending in '[Illustration]'). Contradicts the comment at 445-452 ('a chapter restored after it does not take it')."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 275,
+        "summary": "A skipped heading saved without an anchor (every pre-T06 skip rebuilt from its ID) gets words read in the old text at its stale numbers even when its ID names no heading there, so the relocator binds the skip to whatever heading of its level now starts at those numbers, and waiting() stores those wrong words for later rebuilds.",
+        "failure_scenario": "Chapter III was restored after the skip '2-0-1-CHAPTER IV. ...' was saved, so today its ID names nothing and nothing is skipped; any rebuild, even with old == new, returns the skip as '2-0-1-CHAPTER III. ...' (foundBySavedWords, score 20-24), silently hiding chapter III while chapter IV plays. '1-0-1-Contents' after a dropped cover becomes 'CHAPTER I.' the same way. Branch B's capture (TextAnchorCapture.swift ~80-83, 111) deliberately refuses exactly this because it 'could make it skip another section'."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 342,
+        "summary": "After the diff proves a skipped section was removed (labelRequired), the only guard is same level and same label, so findHeading's label-only fallback hands the skip to another chapter's section with the same generic label.",
+        "failure_scenario": "Chapters I and II each end with a level-2 'Notes'; only chapter I's is skipped; Edit Text removes it -> relocate(skip) returns chapter II's 'Notes' as .foundBySavedWords(.onlyHeadingWithItsLabel) (with a third 'Notes', as a .nearestHeadingWithItsLabel guess), so chapter II's notes, never skipped, are silently skipped. The diff had lined that heading's first word up with its own old heading, proving it is another section. Contradicts 'so no section is skipped by mistake' (lines 63-64); testTwoSkipsThatNowNameOneHeadingAreOne pins the mechanism and hides the harm only because the other Notes was skipped too."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 477,
+        "summary": "carry's moved-text rule accepts an onlyBestSpot scored on the words BEFORE the place alone, so a section replaced in place by different text is labelled .followedMovedText, and carriedHeadingStart's `default: return nil` (line 376) then skips the removal guard, letting findHeading give the skip to the replacement section's heading.",
+        "failure_scenario": "A mid-chapter level-2 'Pump Repairs' section (21 words) replaced by an 85-word 'Forge Work' section (not like-for-like): the heading's place is reported .followedMovedText and relocate(skip) returns 'Forge Work' as foundBySavedWords (score 12, all from the words before the heading), so the new section is silently skipped; with line 477 disabled the verdict is .passageRemoved and the skip waits, as the pure-removal control does. The same rule also mislabels an ordinary one-word in-place replacement as .followedMovedText instead of .wordReplaced."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 390,
+        "summary": "headingTextStands decides whether a skipped heading's text still stands from the single old word after its first word, so it is too lenient (a removed or replaced section passes its skip to the next heading) and too strict (a heading whose label gained or lost a word loses its skip).",
+        "failure_scenario": "Lenient: a removed 7-word 'Dedication' section passes the like-for-like test (7 <= 2*0+8), so `.replaced` (line 391) counts as standing and the skip moves onto 'CHAPTER I.'; 'CHAPTER III. The Stones' replaced by a same-length 'INTERLUDE. A Letter' moves the skip to INTERLUDE; removing 'BOOK ONE. CHAPTER II.' (or the section 'Notes on the Pump') moves its skip to 'BOOK ONE. CHAPTER III.' ('Notes on the Soup') because the second word lines up at landed+1 (line 390), each a sure diff move hiding a section never skipped. Strict: 'Prologue' -> 'Prologue: Before the Spring Flood' or 'CHAPTER III. The Stones' -> 'III. The Stones' fails partners[following] == landed + 1, becomes .removed, labelRequired rejects the relabelled heading, and the skipped section plays again."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 511,
+        "summary": "The keeping rule is only tried when the place's run breaks right after its own word, so text put in before a place that begins with the place's first two or more words still takes the place (and a skip there), contrary to the type doc's promise that such text 'does not take it'.",
+        "failure_scenario": "One chapter text 'BOOK ONE. CHAPTER I... / BOOK ONE. CHAPTER III...' with 'BOOK ONE. CHAPTER II. ...' restored between them: a position at 'BOOK ONE. CHAPTER III.' lands at the start of the restored chapter II (offset 505 instead of 899) as a sure .linedUp, and the skip of III moves to II, so II is hidden and III plays. Ordinary prose too: a sentence 'The captain kept a terrier...' put in before 'The captain waved once...' takes the place. testTextPutInThatBeginsWithAPlacesWordsDoesNotTakeIt covers only one shared word ('CHAPTER')."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 296,
+        "summary": "heldInOldText holds an anchorless place whose chapter the old text lacks at old.endPlace, so the words read there mark the end of the book and rule 1 moves the place to the new text's end, marking the book Finished.",
+        "failure_scenario": "ReadingPosition(chapterIndex: 5, characterOffset: 140, globalCharacterOffset: 1044 of 1899, anchor: nil) against a 4-chapter old text (branch B leaves exactly these places without words, TextAnchorCapture.swift:19 and ~80): relocate gives (3,417) .movedByTheDiff(.endOfBook), stores globalCharacterOffset equal to the new total and an end-marking anchor, so Book.restsAtEnd is true (row at 100%, Play performs the end action) and later rebuilds keep it there; bookmarks in such a chapter also go to the end. The reader's own rule (ReaderViewModel.openingPlace) opens the same place at the last chapter's start unless its global offset was at the end, and Book.restsAtEnd's doc says a place short of the end is not the end."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 439,
+        "summary": "Any place with no fine word after it anywhere in the old text is sent to new.endPlace before the chapter-end rule runs, so a place at the end of the last chapter that has words, followed only by a wordless page ('[]' back cover, '* * *'), jumps past text the rebuild appends and the book reads Finished.",
+        "failure_scenario": "Old [I, II, III, '[]'] with the position at the end of chapter III (843 of 845, not finished); the rebuild restores a title page at the start and an AFTERWORD before the back cover: the place goes to (5,2), 1056 of 1056, .movedByTheDiff(.endOfBook), so the afterword is skipped, Book.restsAtEnd turns true, and the recaptured end-marking anchor keeps it at the end in later rebuilds; TextAnchorFinder alone keeps it at (3,266). With nothing added, a place merely short of the end still becomes Finished."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 333,
+        "summary": "When the diff proves a skipped heading's own text stands where it landed but no heading of the skip's level starts there (the new reading re-levelled or demoted it), relocate(_ skipped:) discards that proof and falls through to findHeading, whose label-only rule hands the skip to another section with the same label.",
+        "failure_scenario": "Chapters I and II each end in a level-2 'Exercises'; chapter I's is skipped; the new reading makes it level 3 (Edit Text '##' -> '###', or PDF font-size levels) with an earlier edit in chapter I: relocate(skip) returns chapter II's level-2 'Exercises' as .foundBySavedWords(.onlyHeadingWithItsLabel) (a guess with a third chapter), so chapter II's exercises are silently skipped while chapter I's play, and a later rebuild keeps the wrong skip as .unchanged."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 555,
+        "summary": "The slide-back loop has no chapter boundary, so when a removed chapter ends with the same word(s) as the chapter before it, every place inside the removed chapter lands on the previous chapter's last words instead of where the text after the removal begins.",
+        "failure_scenario": "Old [VI ending '...Ffion said.', VII ending '...Bramwell said.', VIII] -> new [VI, VIII]: places at 'Lister', 'sludge', and 'torch' in VII land at (0,357) on 'said.' at the end of chapter VI as sure .movedByTheDiff(.passageRemoved), instead of (1,0) 'CHAPTER VIII.'; letters that all close 'Your brother as ever, Tobias' do the same. Positions and bookmarks are filed under the already-read chapter. The MillBook test passes only because its chapters end on different words."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 244,
+        "summary": "An anchor captured in an empty chapter holds no words and so 'stands' anywhere, so rule 1 keeps a place in an empty chapter (an image plate, a cover) at its old numbers even when chapters were inserted before it, although the old text the relocator holds shows that it moved.",
+        "failure_scenario": "Old [I, '' (plate), II, III] with the position at (1,0); the rebuild restores a preface: new [preface, I, plate, II, III] -> .unchanged at (1,0), now the start of chapter I which was already heard (expected (2,0)); its whole-book offset drops from 405 to 336 and the anchor is recaptured as 'CHAPTER I...', so later rebuilds keep the error. A damaged anchor (decoded as two empty quotes) is kept the same way."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 444,
+        "summary": "A place in a chapter whose text has no fine words (punctuation-only '* * *', a pre-3.0.5 '[]' image page, '} } }') gets nothingAfter = true, fails the chapter-end guard because word - 1 lies in an earlier chapter, and is landed at the end of the PREVIOUS chapter (or the next chapter's start) as a sure .linedUp.",
+        "failure_scenario": "Old [millrace, wheel, '[]', stones, flour] -> new [millrace, wheel, '', stones, flour] (a pre-3.0.5 cache rebuilt): a bookmark at (2,0) moves to (1,382), the end of chapter II, and is recaptured there so later rebuilds keep it; when a chapter is also restored right after the page, the place lands at the end of the restored chapter, skipping it. TextAnchorFinder alone keeps it in its own chapter."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 466,
+        "summary": "A position at the very start of the book (never begun, or after Start Over) is carried like any other place, so front matter restored at the start (a title line or a whole preface chapter) is jumped over: the relocator has an end-of-book rule (P07) but no start-of-book counterpart.",
+        "failure_scenario": "Old [I, II] with the position at (0,0); the rebuild restores a 'PREFACE' chapter before chapter I: relocate(places) moves the position to (1,0), whole-book offset 137, as a sure .movedByTheDiff(.linedUp), so starting the book skips the preface and the library row shows it begun. Branch D moves such a position whenever the book also holds a bookmark or skipped heading (addendum section 9)."
+    },
+    {
+        "file": "TextMouth/Models/PlaceRelocator.swift",
+        "line": 402,
+        "summary": "heading(ofLevel:startingAt:) returns the first heading of the level whose start maps to the landing word, ignoring the skip's label, so a wordless heading piled just before the skipped one takes the skip and the skipped section plays again.",
+        "failure_scenario": "The live library has such piles (MaddAddam chapter 69: level-1 'Cover' at 2803, 'Title Page' at 2804, 'Copyright' at 2806; The Merchant's War: level-1 '\u20ac\u00a7' just before 'BREAKTHROUGHS'). With a word added earlier in the chapter, the skip of 'Copyright' becomes the 'Cover' heading as a sure .linedUp, SkippedSectionFilter then excludes only one space, and the copyright page is read aloud; the skip stays under the wrong ID. findHeading alone (label-aware) returns 'Copyright' with score 32."
+    }
+]
