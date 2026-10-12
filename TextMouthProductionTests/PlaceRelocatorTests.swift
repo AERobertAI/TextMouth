@@ -677,6 +677,30 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(result, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: moved.offset + 4), finding: .movedByTheDiff(.linedUp)))
     }
 
+    /// A place inside a word keeps how far into it it was only on its own
+    /// word (REV15, V20): a place inside "the" in a paragraph the new text
+    /// removes lands at the start of the text after the removal, though that
+    /// text begins with "The", not inside it; and so does one in a foreword
+    /// removed at the book's start, where the diff is unsure.
+    func testAPlaceInsideAWordKeepsItsPlaceInItOnlyOnItsOwnWord() throws {
+        let heading = "CHAPTER I. The Crossing\n\n"
+        let p1 = "The ferry left the north landing at seven, carrying two carts of turnips, a crate of hens, and the vicar's bicycle, which nobody had asked to bring along. "
+        let p2 = "Halfway across, the engine coughed twice, and the pilot swore at it in three languages before the current took the bow and swung the whole boat slowly toward the weir. "
+        let p3 = "The passengers kept their seats while the deckhand rowed a line to the willow on the far bank and made it fast with a knot his grandfather had taught him. "
+        let p4 = "By noon the turnips were in the market at Upper Swaile."
+        let old = [heading + p1 + p2 + p3 + p4, wheel]
+        let new = [heading + p1 + p3 + p4, wheel]
+        let insideThe = TextPlace(chapter: 0, offset: try Phrase.offset(of: "the current", in: old[0]) + 2)
+        let removed = try relocate(insideThe, from: old, to: new)
+        XCTAssertEqual(removed, PlaceRelocator.Result(place: TextPlace(chapter: 0, offset: heading.utf16.count + p1.utf16.count), finding: .movedByTheDiff(.passageRemoved)))
+
+        let foreword = "A NOTE ON THIS EDITION\n\nThis printing follows the parish copy, so a few of the place names are guesses and the ferry timetable has been left out altogether."
+        let crossing = "The Crossing\n\n" + p1 + p3 + p4
+        let insideForeword = TextPlace(chapter: 0, offset: try Phrase.offset(of: "the ferry timetable", in: foreword) + 2)
+        let unsure = try relocate(insideForeword, from: [foreword, crossing, wheel], to: [crossing, wheel])
+        XCTAssertEqual(unsure, PlaceRelocator.Result(place: TextPlace(chapter: 0, offset: 0), finding: .guessed(.diffUnsure)))
+    }
+
     // MARK: - When the Diff Is Unsure
 
     /// Where the diff is unsure (a removal at the start of the book, with

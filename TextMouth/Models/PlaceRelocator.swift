@@ -469,15 +469,21 @@ struct PlaceRelocator: Sendable {
         }
         // A place inside a word (as a bookmark nudged clear of another can
         // be) keeps how far into it it was, as the saved-words search keeps
-        // it; the measured program moved it to the word's start.
+        // it, when it lands on its own word lined up; the measured program
+        // moved it to the word's start. Anywhere else (where what replaced
+        // its word or passage begins, or the diff's unsure answer) it lands
+        // at a word's start: another word that merely has the same key ("The"
+        // beginning the text after a removal, for a place inside "the") is
+        // not its word.
         let inside: (key: UInt64, offset: Int)? = !nothingAfter && old.starts[word] < start.offset
             ? (old.keys[word], start.offset - old.starts[word])
             : nil
-        let landing = { (newWord: Int) in self.new.landing(beforeWord: newWord, inside: inside, nothingAfter: nothingAfter) }
+        let landing = { (newWord: Int) in self.new.landing(beforeWord: newWord, nothingAfter: nothingAfter) }
         let gone: (newWord: Int, evidence: DiffEvidence, sure: Bool)
         switch verdict(forOldWord: word) {
         case .linedUp(let newWord):
-            return .placed(Result(place: landing(newWord), finding: .movedByTheDiff(.linedUp)))
+            let place = new.landing(beforeWord: newWord, inside: inside, nothingAfter: nothingAfter)
+            return .placed(Result(place: place, finding: .movedByTheDiff(.linedUp)))
         case .replaced(let newWord):
             gone = (newWord, .wordReplaced, true)
         case .removed(let newWord, let sure):
