@@ -228,7 +228,7 @@ final class PlaceRelocatorHeadingTests: XCTestCase {
         let soupHeadings = { (texts: [String]) throws -> [Heading] in [try self.section("The Soup", at: "The Soup", of: texts)] }
         let skipped = try SavedPlace.skip(of: pumpHeading, in: first)
         let rebuilt = PlaceRelocator(oldTexts: first, newTexts: second, oldHeadings: [pumpHeading] + (try soupHeadings(first)), newHeadings: try soupHeadings(second))
-            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]))
+            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(rebuilt.places.skippedHeadings, [skipped])
         XCTAssertEqual(rebuilt.skippedHeadingFindings, [nil])
         for (old, new) in [(second, second), (second, third)] {

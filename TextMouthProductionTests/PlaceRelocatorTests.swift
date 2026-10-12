@@ -802,7 +802,7 @@ final class PlaceRelocatorTests: XCTestCase {
         let outcome = relocator.relocate(PlaceRelocator.Places(
             position: ReadingPosition(chapterIndex: 5, characterOffset: 140, globalCharacterOffset: total / 2),
             bookmarks: [Bookmark(number: 1, chapterIndex: 5, characterOffset: 140)]
-        ))
+        ), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.places.position.map { TextPlace(chapter: $0.chapterIndex, offset: $0.characterOffset) }, TextPlace(chapter: 3, offset: 0))
         XCTAssertEqual(outcome.places.bookmarks.map { TextPlace(chapter: $0.chapterIndex, offset: $0.characterOffset) }, [TextPlace(chapter: 3, offset: 0)])
         XCTAssertEqual(outcome.places.position?.anchor?.marksEndOfBook, false)

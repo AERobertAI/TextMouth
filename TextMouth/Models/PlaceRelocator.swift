@@ -1036,9 +1036,11 @@ extension PlaceRelocator {
         /// new text, with its anchor captured there anew (for a place that
         /// stayed too, since the book around it may have grown or shrunk),
         /// and a position's offset across the whole book worked out anew when
-        /// it kept one. A move is not a read: a position's time and heading
-        /// index, and a bookmark's identity, number, note, and date, stay as
-        /// they were. A skipped heading takes its heading's place, level,
+        /// it kept one. A position whose chapter or offset changed is dated
+        /// at the move (`relocate(_:movedAt:)`), so it wins over an older
+        /// copy elsewhere; one that stayed keeps its time. A move is not a
+        /// read otherwise: a position's heading index, and a bookmark's
+        /// identity, number, note, and date, stay as they were. A skipped heading takes its heading's place, level,
         /// and label; one that waits stays exactly as it was (words read in
         /// the old text at its numbers would only be the words of whatever
         /// stands there now); two skips that now name one heading are one,
@@ -1122,8 +1124,9 @@ extension PlaceRelocator {
     /// Moves a book's places from the old text to the new by the type's
     /// rules: the position, each bookmark, and each skipped heading. A
     /// position at the very start of the book stays at the start of the new
-    /// text (`isAtTheStart`).
-    func relocate(_ places: Places) -> Outcome {
+    /// text (`isAtTheStart`). `date` is when the places are moved, which a
+    /// position that moved takes as its time; the relocator reads no clock.
+    func relocate(_ places: Places, movedAt date: Date) -> Outcome {
         var counts = Counts()
         var moved = places
 
@@ -1138,7 +1141,7 @@ extension PlaceRelocator {
             if result.finding != .unchanged, isAtTheStart(position) {
                 result = Result(place: TextPlace(chapter: 0, offset: 0), finding: .movedByTheDiff(.startOfBook))
             }
-            moved.position = self.moved(position, to: result)
+            moved.position = self.moved(position, to: result, at: date)
             positionFinding = result.finding
             counts.count(result.finding)
         }
@@ -1181,13 +1184,20 @@ extension PlaceRelocator {
 
     /// `position` at `result`'s place: its chapter and offset, its offset
     /// across the whole book when it kept one, and its anchor captured
-    /// there; its time and heading index as they were.
-    private func moved(_ position: ReadingPosition, to result: Result) -> ReadingPosition {
+    /// there; dated `date` when its chapter or offset changed, as
+    /// `AudioEditPlaces.follow` dates a moved position, so that it wins over
+    /// an older copy in the checkpoint journal's adoption or another Mac's
+    /// index (TEXT-ANCHORS-RESEARCH-2026-10-10.md); its time as it was when
+    /// it stayed, and its heading index as it was.
+    private func moved(_ position: ReadingPosition, to result: Result, at date: Date) -> ReadingPosition {
         var moved = position
         moved.chapterIndex = result.place.chapter
         moved.characterOffset = result.place.offset
         moved.globalCharacterOffset = position.globalCharacterOffset.map { _ in new.globalOffset(of: result.place) }
         moved.anchor = TextAnchor(capturingAt: result.place, in: new) ?? position.anchor
+        if result.place != TextPlace(chapter: position.chapterIndex, offset: position.characterOffset) {
+            moved.lastUpdated = date
+        }
         return moved
     }
 

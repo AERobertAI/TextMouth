@@ -55,6 +55,11 @@ enum MillBook {
 /// Saved places for the relocator tests, with their words captured as this
 /// build captures them.
 enum SavedPlace {
+    /// When the relocator tests move a book's places
+    /// (`PlaceRelocator.relocate(_:movedAt:)`): a fixed time, later than any
+    /// a test saves a place at.
+    static let moveDate = Date(timeIntervalSince1970: 1_800_000_000)
+
     /// The anchor of `place` in the book whose chapters are `texts`.
     static func anchor(at place: TextPlace, in texts: [String], file: StaticString = #filePath, line: UInt = #line) throws -> TextAnchor {
         try XCTUnwrap(TextAnchor(capturingAt: place, in: BookWords(texts: texts)), "no chapter \(place.chapter)", file: file, line: line)

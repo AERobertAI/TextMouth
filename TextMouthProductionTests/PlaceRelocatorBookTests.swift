@@ -31,7 +31,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
             ],
             skippedHeadings: [try SavedPlace.skip(of: try MillBook.heading(ofChapter: 2, in: book), in: book)]
         )
-        let outcome = PlaceRelocator(oldTexts: book, newTexts: book, newHeadings: MillBook.headings(of: book)).relocate(places)
+        let outcome = PlaceRelocator(oldTexts: book, newTexts: book, newHeadings: MillBook.headings(of: book)).relocate(places, movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.places, places)
         XCTAssertEqual(outcome.positionFinding, .unchanged)
         XCTAssertEqual(outcome.bookmarkFindings, [.unchanged, .unchanged])
@@ -43,11 +43,12 @@ final class PlaceRelocatorBookTests: XCTestCase {
     // MARK: - What a Moved Place Keeps
 
     /// A moved position takes its new chapter and offset, its offset across
-    /// the whole book, and its words captured anew where it now is; its time
-    /// and heading index stay, since a move is not a read. A position that
-    /// stays where it was still takes its new offset across the book when
+    /// the whole book, and its words captured anew where it now is, and is
+    /// dated at the move, so it wins over an older copy elsewhere (REV15,
+    /// V22); its heading index stays. A position that stays where it was
+    /// keeps its time, and still takes its new offset across the book when
     /// text before its chapter changed length.
-    func testAMovedPositionTakesItsNewPlaceAndWordsAndKeepsItsTime() throws {
+    func testAMovedPositionTakesItsNewPlaceAndWordsAndIsDatedAtTheMove() throws {
         let old = MillBook.chapters
         let new = rained
         let oldWords = BookWords(texts: old)
@@ -58,24 +59,25 @@ final class PlaceRelocatorBookTests: XCTestCase {
         var position = ReadingPosition(chapterIndex: 0, headingIndex: 3, characterOffset: saved.offset, globalCharacterOffset: saved.offset,
                                        anchor: try SavedPlace.anchor(at: saved, in: old))
         position.lastUpdated = Date(timeIntervalSince1970: 1_000_000)
-        let outcome = relocator.relocate(PlaceRelocator.Places(position: position))
+        let outcome = relocator.relocate(PlaceRelocator.Places(position: position), movedAt: SavedPlace.moveDate)
         let moved = try XCTUnwrap(outcome.places.position)
         let now = try Phrase.place(of: "spirit level", inChapter: 0, of: new)
         XCTAssertEqual(outcome.positionFinding, .movedByTheDiff(.linedUp))
         XCTAssertEqual(TextPlace(chapter: moved.chapterIndex, offset: moved.characterOffset), now)
         XCTAssertEqual(moved.globalCharacterOffset, now.offset)
         XCTAssertEqual(moved.anchor, TextAnchor(capturingAt: now, in: newWords))
-        XCTAssertEqual(moved.lastUpdated, position.lastUpdated)
+        XCTAssertEqual(moved.lastUpdated, SavedPlace.moveDate)
         XCTAssertEqual(moved.headingIndex, 3)
 
         // A position in a later chapter keeps its numbers, and its offset
         // across the book grows with the text put in before its chapter.
         let later = try Phrase.place(of: "French burrs", inChapter: 2, of: old)
-        let stayed = relocator.relocate(PlaceRelocator.Places(position: ReadingPosition(
-            chapterIndex: 2, characterOffset: later.offset, globalCharacterOffset: oldWords.globalOffset(of: later),
-            anchor: try SavedPlace.anchor(at: later, in: old)
-        )))
+        var laterPosition = ReadingPosition(chapterIndex: 2, characterOffset: later.offset, globalCharacterOffset: oldWords.globalOffset(of: later),
+                                            anchor: try SavedPlace.anchor(at: later, in: old))
+        laterPosition.lastUpdated = Date(timeIntervalSince1970: 1_000_000)
+        let stayed = relocator.relocate(PlaceRelocator.Places(position: laterPosition), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(stayed.positionFinding, .unchanged)
+        XCTAssertEqual(stayed.places.position?.lastUpdated, laterPosition.lastUpdated)
         XCTAssertEqual(stayed.places.position?.characterOffset, later.offset)
         XCTAssertEqual(stayed.places.position?.globalCharacterOffset, newWords.globalOffset(of: later))
         XCTAssertNotEqual(newWords.globalOffset(of: later), oldWords.globalOffset(of: later))
@@ -85,7 +87,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
     func testAPositionWithoutAnOffsetAcrossTheBookGetsNone() throws {
         let saved = try Phrase.place(of: "spirit level", inChapter: 0, of: MillBook.chapters)
         let outcome = PlaceRelocator(oldTexts: MillBook.chapters, newTexts: rained)
-            .relocate(PlaceRelocator.Places(position: ReadingPosition(chapterIndex: 0, characterOffset: saved.offset)))
+            .relocate(PlaceRelocator.Places(position: ReadingPosition(chapterIndex: 0, characterOffset: saved.offset)), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.positionFinding, .movedByTheDiff(.linedUp))
         XCTAssertNil(try XCTUnwrap(outcome.places.position).globalCharacterOffset)
     }
@@ -98,7 +100,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let saved = try Phrase.place(of: "French burrs", inChapter: 2, of: old)
         let bookmark = Bookmark(number: 7, chapterIndex: 2, characterOffset: saved.offset, label: "ask the archive",
                                 dateCreated: Date(timeIntervalSince1970: 2_000_000), anchor: try SavedPlace.anchor(at: saved, in: old))
-        let outcome = PlaceRelocator(oldTexts: old, newTexts: new).relocate(PlaceRelocator.Places(bookmarks: [bookmark]))
+        let outcome = PlaceRelocator(oldTexts: old, newTexts: new).relocate(PlaceRelocator.Places(bookmarks: [bookmark]), movedAt: SavedPlace.moveDate)
         let moved = try XCTUnwrap(outcome.places.bookmarks.first)
         let now = try Phrase.place(of: "French burrs", inChapter: 2, of: new)
         XCTAssertEqual(outcome.bookmarkFindings, [.movedByTheDiff(.linedUp)])
@@ -121,7 +123,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let oldChapterTwo = Heading(level: 2, text: "[]CHAPTER II.", chapterIndex: 1, characterOffset: 0)
         let skipped = try SavedPlace.skip(of: oldChapterTwo, in: old)
         let outcome = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: [oldChapterTwo], newHeadings: [chapterTwo])
-            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]))
+            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.places.skippedHeadings, [try SavedPlace.skip(of: chapterTwo, in: new)])
         XCTAssertEqual(outcome.places.skippedHeadings.first?.id, chapterTwo.id)
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(movedByTheDiff: 1))
@@ -134,7 +136,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let new = [MillBook.millrace, MillBook.wheel, MillBook.flour]
         let skipped = try SavedPlace.skip(of: try MillBook.heading(ofChapter: 2, in: old), in: old)
         let outcome = PlaceRelocator(oldTexts: old, newTexts: new, newHeadings: MillBook.headings(of: new))
-            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]))
+            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.places.skippedHeadings, [skipped])
         XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(waiting: 1))
@@ -150,7 +152,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let new = [MillBook.millrace, MillBook.wheel, MillBook.flour]
         let skipped = SkippedHeading(level: 1, label: "CHAPTER III. The Stones", chapterIndex: 2, characterOffset: 0)
         let outcome = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: MillBook.headings(of: old), newHeadings: MillBook.headings(of: new))
-            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]))
+            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.places.skippedHeadings, [skipped])
         XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
     }
@@ -169,7 +171,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
                                        newHeadings: MillBook.headings(of: new) + [secondHeading])
         let outcome = relocator.relocate(PlaceRelocator.Places(
             skippedHeadings: [try SavedPlace.skip(of: firstHeading, in: old), try SavedPlace.skip(of: secondHeading, in: old)]
-        ))
+        ), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.skippedHeadingFindings, [nil, .unchanged])
         XCTAssertEqual(outcome.places.skippedHeadings.map(\.id), [firstHeading.id, secondHeading.id])
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1, waiting: 1))
@@ -195,7 +197,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let skips = [try SavedPlace.skip(of: firstNotes, in: old), try SavedPlace.skip(of: secondNotes, in: old)]
         XCTAssertNil(relocator.relocate(try XCTUnwrap(skips.first)), "the first section's skip waits")
         for order in [skips, skips.reversed()] {
-            let outcome = relocator.relocate(PlaceRelocator.Places(skippedHeadings: order))
+            let outcome = relocator.relocate(PlaceRelocator.Places(skippedHeadings: order), movedAt: SavedPlace.moveDate)
             XCTAssertEqual(outcome.places.skippedHeadings, [try SavedPlace.skip(of: newNotes, in: new)])
             XCTAssertEqual(outcome.skippedHeadingFindings.count, 1)
             XCTAssertNotNil(outcome.skippedHeadingFindings.first ?? nil)
@@ -208,7 +210,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let current = try SavedPlace.skip(of: try MillBook.heading(ofChapter: 3, in: mill), in: mill)
         let headings = MillBook.headings(of: mill)
         let twice = PlaceRelocator(oldTexts: mill, newTexts: mill, oldHeadings: headings, newHeadings: headings)
-            .relocate(PlaceRelocator.Places(skippedHeadings: [current, stale]))
+            .relocate(PlaceRelocator.Places(skippedHeadings: [current, stale]), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(twice.places.skippedHeadings, [current])
         XCTAssertEqual(twice.skippedHeadingFindings, [.unchanged])
         XCTAssertEqual(twice.counts, PlaceRelocator.Counts(unchanged: 1))
@@ -233,7 +235,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let preface = "PREFACE\n\nThis diary was kept by the volunteers of the Hollins Ford mill between March and November."
         let titled = ["The Mill at Hollins Ford\n\nA restoration diary\n\n" + MillBook.millrace] + Array(old.dropFirst())
         for new in [[preface] + old, titled] {
-            let outcome = PlaceRelocator(oldTexts: old, newTexts: new).relocate(places)
+            let outcome = PlaceRelocator(oldTexts: old, newTexts: new).relocate(places, movedAt: SavedPlace.moveDate)
             let position = try XCTUnwrap(outcome.places.position)
             XCTAssertEqual(TextPlace(chapter: position.chapterIndex, offset: position.characterOffset), start)
             XCTAssertEqual(position.globalCharacterOffset, 0)
@@ -242,7 +244,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
             XCTAssertEqual(TextPlace(chapter: bookmark.chapterIndex, offset: bookmark.characterOffset),
                            try Phrase.place(of: "CHAPTER I.", inChapter: new.count - old.count, of: new))
         }
-        let unchanged = PlaceRelocator(oldTexts: old, newTexts: old).relocate(places)
+        let unchanged = PlaceRelocator(oldTexts: old, newTexts: old).relocate(places, movedAt: SavedPlace.moveDate)
         XCTAssertEqual(unchanged.positionFinding, .unchanged)
         XCTAssertEqual(unchanged.places, places)
     }
@@ -285,7 +287,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
                 Bookmark(number: 2, chapterIndex: 2, characterOffset: removed.offset, anchor: try SavedPlace.anchor(at: removed, in: old)),
             ],
             skippedHeadings: [try SavedPlace.skip(of: try MillBook.heading(ofChapter: 2, in: old), in: old)]
-        ))
+        ), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.positionFinding, .movedByTheDiff(.linedUp))
         XCTAssertEqual(outcome.bookmarkFindings, [.unchanged, .movedByTheDiff(.passageRemoved)])
         XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
