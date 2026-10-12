@@ -172,6 +172,39 @@ final class PlaceRelocatorBookTests: XCTestCase {
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1, foundBySavedWords: 1))
     }
 
+    // MARK: - The Start of the Book
+
+    /// A position at the very start of the book (never begun, or begun
+    /// over) stays at the start of the new text (REV15, finding 14): a
+    /// preface restored as a chapter of its own before chapter I, or a title
+    /// line put in at the start of chapter I, was not heard either, so the
+    /// book starts there and its row does not read begun. A bookmark at the
+    /// start follows its words, which the listener marked. With the text
+    /// unchanged, the position is unchanged.
+    func testAPositionAtTheStartOfTheBookStaysAtTheStart() throws {
+        let old = MillBook.chapters
+        let start = TextPlace(chapter: 0, offset: 0)
+        let places = PlaceRelocator.Places(
+            position: ReadingPosition(chapterIndex: 0, characterOffset: 0, globalCharacterOffset: 0, anchor: try SavedPlace.anchor(at: start, in: old)),
+            bookmarks: [Bookmark(number: 1, chapterIndex: 0, characterOffset: 0, anchor: try SavedPlace.anchor(at: start, in: old))]
+        )
+        let preface = "PREFACE\n\nThis diary was kept by the volunteers of the Hollins Ford mill between March and November."
+        let titled = ["The Mill at Hollins Ford\n\nA restoration diary\n\n" + MillBook.millrace] + Array(old.dropFirst())
+        for new in [[preface] + old, titled] {
+            let outcome = PlaceRelocator(oldTexts: old, newTexts: new).relocate(places)
+            let position = try XCTUnwrap(outcome.places.position)
+            XCTAssertEqual(TextPlace(chapter: position.chapterIndex, offset: position.characterOffset), start)
+            XCTAssertEqual(position.globalCharacterOffset, 0)
+            XCTAssertEqual(outcome.positionFinding, .movedByTheDiff(.startOfBook))
+            let bookmark = try XCTUnwrap(outcome.places.bookmarks.first)
+            XCTAssertEqual(TextPlace(chapter: bookmark.chapterIndex, offset: bookmark.characterOffset),
+                           try Phrase.place(of: "CHAPTER I.", inChapter: new.count - old.count, of: new))
+        }
+        let unchanged = PlaceRelocator(oldTexts: old, newTexts: old).relocate(places)
+        XCTAssertEqual(unchanged.positionFinding, .unchanged)
+        XCTAssertEqual(unchanged.places, places)
+    }
+
     // MARK: - The Counts and the Log Line
 
     /// Each finding counts once in its kind; the debug log's line says the

@@ -81,6 +81,11 @@ import Foundation
 ///    else the saved words' guess (the nearest of equal spots, the spot near
 ///    where the place was, or the same share of its chapter).
 ///
+/// A reading position at the very start of the book (never begun, or begun
+/// over) stays at the start of the new text, whatever was put in before its
+/// old first words, as the end of the book stays the end; a bookmark there
+/// follows its words like any other.
+///
 /// A skipped heading is carried like a place to the heading of its level
 /// that starts where it lands; failing that, it is found by level, label,
 /// and words (`TextAnchorFinder.findHeading`); failing that, the skip waits,
@@ -154,6 +159,11 @@ struct PlaceRelocator: Sendable {
         /// at the end of the new text, whatever was added or removed there
         /// (P07).
         case endOfBook
+        /// It was a reading position at the very start of the book (never
+        /// begun, or begun over), and it stays at the start of the new text,
+        /// whatever was put in before its old first words, which were not
+        /// yet heard either.
+        case startOfBook
     }
 
     /// Why a place's spot is a best guess.
@@ -969,19 +979,41 @@ extension PlaceRelocator {
         }
     }
 
+    /// Whether `position` is at the very start of the book, as a book never
+    /// begun or begun over keeps it: nothing of its saved words before it,
+    /// and nothing of the old text before it, held there as the reader opens
+    /// it. Such a position stays at the start of the new text (REV15,
+    /// finding 14): text put in before its old first words, a preface or a
+    /// title page restored, was not heard either, and the book's row should
+    /// not read begun. A bookmark there follows its words like any other:
+    /// the listener marked those words, not the start.
+    private func isAtTheStart(_ position: ReadingPosition) -> Bool {
+        guard position.anchor?.before.isEmpty ?? true,
+              let held = heldInOldText(TextPlace(chapter: position.chapterIndex, offset: position.characterOffset),
+                                       savedGlobalOffset: position.globalCharacterOffset)
+        else { return false }
+        return old.globalOffset(of: held) == 0
+    }
+
     /// Moves a book's places from the old text to the new by the type's
-    /// rules: the position, each bookmark, and each skipped heading.
+    /// rules: the position, each bookmark, and each skipped heading. A
+    /// position at the very start of the book stays at the start of the new
+    /// text (`isAtTheStart`).
     func relocate(_ places: Places) -> Outcome {
         var counts = Counts()
         var moved = places
 
         var positionFinding: Finding?
         if let position = places.position {
-            let result = relocate(
+            var result = relocate(
                 position.anchor,
                 savedAt: TextPlace(chapter: position.chapterIndex, offset: position.characterOffset),
                 savedGlobalOffset: position.globalCharacterOffset
             )
+            // A position at the very start of the book stays at the start.
+            if result.finding != .unchanged, isAtTheStart(position) {
+                result = Result(place: TextPlace(chapter: 0, offset: 0), finding: .movedByTheDiff(.startOfBook))
+            }
             moved.position = self.moved(position, to: result)
             positionFinding = result.finding
             counts.count(result.finding)
