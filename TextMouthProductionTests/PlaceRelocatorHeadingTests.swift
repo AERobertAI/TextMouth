@@ -55,6 +55,19 @@ final class PlaceRelocatorHeadingTests: XCTestCase {
         XCTAssertEqual(relocator.newHeadings.map(\.text), ["CHAPTER I. The Millrace", "CHAPTER IV. First Flour"])
     }
 
+    /// A relocator built for places alone, with neither text's headings,
+    /// lets every skip wait: without the old text's headings it could not
+    /// tell another section from the skipped one, so it names none.
+    func testARelocatorForPlacesAloneLetsEverySkipWait() throws {
+        let mill = MillBook.chapters
+        let skipped = try SavedPlace.skip(of: try MillBook.heading(ofChapter: 2, in: mill), in: mill)
+        XCTAssertNil(PlaceRelocator(oldTexts: mill, newTexts: mill).relocate(skipped))
+        let outcome = PlaceRelocator(old: BookWords(texts: mill), new: BookWords(texts: mill))
+            .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
+        XCTAssertEqual(outcome.places.skippedHeadings, [skipped])
+        XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
+    }
+
     // MARK: - Following a Heading
 
     /// A skipped heading follows its heading and takes the label the new text

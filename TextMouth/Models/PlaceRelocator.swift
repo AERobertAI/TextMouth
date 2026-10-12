@@ -262,8 +262,10 @@ struct PlaceRelocator: Sendable {
     /// A relocator from the book `old` reads, whose headings are
     /// `oldHeadings`, to the book `new` reads, whose headings are
     /// `newHeadings`: it lines the two up by the diff once, and indexes each
-    /// one's words for the saved-words search.
-    init(old: BookWords, new: BookWords, oldHeadings: [Heading] = [], newHeadings: [Heading] = []) {
+    /// one's words for the saved-words search. The two lists of headings go
+    /// together: a skipped heading is found in the old text's, and judged
+    /// another section by them, before it may name one of the new text's.
+    init(old: BookWords, new: BookWords, oldHeadings: [Heading], newHeadings: [Heading]) {
         let alignment = PatienceDiff.alignment(of: old.keys, in: new.keys)
         let partners = alignment.partners
         var sources = [Int](repeating: -1, count: new.count)
@@ -282,10 +284,22 @@ struct PlaceRelocator: Sendable {
         self.newFinder = TextAnchorFinder(words: new)
     }
 
+    /// A relocator from the book `old` reads to the book `new` reads, for
+    /// places alone: with no headings, every skipped heading waits.
+    init(old: BookWords, new: BookWords) {
+        self.init(old: old, new: new, oldHeadings: [], newHeadings: [])
+    }
+
     /// A relocator from a book whose chapters' reading texts were `oldTexts`,
     /// with `oldHeadings`, to one whose are `newTexts`, with `newHeadings`.
-    init(oldTexts: [String], newTexts: [String], oldHeadings: [Heading] = [], newHeadings: [Heading] = []) {
+    init(oldTexts: [String], newTexts: [String], oldHeadings: [Heading], newHeadings: [Heading]) {
         self.init(old: BookWords(texts: oldTexts), new: BookWords(texts: newTexts), oldHeadings: oldHeadings, newHeadings: newHeadings)
+    }
+
+    /// A relocator from a book whose chapters' reading texts were `oldTexts`
+    /// to one whose are `newTexts`, for places alone.
+    init(oldTexts: [String], newTexts: [String]) {
+        self.init(oldTexts: oldTexts, newTexts: newTexts, oldHeadings: [], newHeadings: [])
     }
 
     /// A relocator from a loaded book's old text and headings to its new

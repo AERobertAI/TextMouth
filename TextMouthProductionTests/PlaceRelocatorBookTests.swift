@@ -31,7 +31,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
             ],
             skippedHeadings: [try SavedPlace.skip(of: try MillBook.heading(ofChapter: 2, in: book), in: book)]
         )
-        let outcome = PlaceRelocator(oldTexts: book, newTexts: book, newHeadings: MillBook.headings(of: book)).relocate(places, movedAt: SavedPlace.moveDate)
+        let outcome = PlaceRelocator(oldTexts: book, newTexts: book, oldHeadings: MillBook.headings(of: book), newHeadings: MillBook.headings(of: book)).relocate(places, movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.places, places)
         XCTAssertEqual(outcome.positionFinding, .unchanged)
         XCTAssertEqual(outcome.bookmarkFindings, [.unchanged, .unchanged])
@@ -135,7 +135,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let old = MillBook.chapters
         let new = [MillBook.millrace, MillBook.wheel, MillBook.flour]
         let skipped = try SavedPlace.skip(of: try MillBook.heading(ofChapter: 2, in: old), in: old)
-        let outcome = PlaceRelocator(oldTexts: old, newTexts: new, newHeadings: MillBook.headings(of: new))
+        let outcome = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: MillBook.headings(of: old), newHeadings: MillBook.headings(of: new))
             .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.places.skippedHeadings, [skipped])
         XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
@@ -280,7 +280,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let early = try Phrase.place(of: "spirit level", inChapter: 0, of: old)
         let removed = try Phrase.place(of: "photograph", inChapter: 2, of: old)
         let late = try Phrase.place(of: "paving slabs", inChapter: 3, of: old)
-        let outcome = PlaceRelocator(oldTexts: old, newTexts: new, newHeadings: MillBook.headings(of: new)).relocate(PlaceRelocator.Places(
+        let outcome = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: MillBook.headings(of: old), newHeadings: MillBook.headings(of: new)).relocate(PlaceRelocator.Places(
             position: ReadingPosition(chapterIndex: 3, characterOffset: late.offset, anchor: try SavedPlace.anchor(at: late, in: old)),
             bookmarks: [
                 Bookmark(number: 1, chapterIndex: 0, characterOffset: early.offset, anchor: try SavedPlace.anchor(at: early, in: old)),
