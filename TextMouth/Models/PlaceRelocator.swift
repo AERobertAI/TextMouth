@@ -87,15 +87,17 @@ import Foundation
 /// follows its words like any other.
 ///
 /// A skipped heading is found first in the old text, by the heading its ID
-/// names there, or by its level and label when only one heading has them
-/// (or at its place, where its saved words still stand exactly); never by
-/// its saved words alone, nor at its numbers alone. That heading's start is
-/// carried like a place, and a new heading there takes the skip when the
-/// diff's account proves it the same section: no other old heading that
-/// lent it words, or whose section goes on in it, has a label more like its
-/// own, or as like with its section going on there instead; and its label
-/// is the skip's, or most of the old heading's words went into it. Among
-/// several, the label decides. Failing that, the one new heading of its level with its label
+/// names there, or by its level and label when one heading has them (of
+/// several, the one its saved words find for certain), or at its place,
+/// where its saved words still stand exactly; never by its saved words
+/// alone, nor at its numbers alone. That heading's start is carried like a
+/// place, and a new heading there takes the skip when the diff's account
+/// proves it the same section: no other old heading that lent it words, or
+/// whose section goes on in it, has a label more like its own, or as like
+/// with its section going on there instead; and its label is the skip's,
+/// or the skipped heading's section goes on in it, or most of that
+/// heading's words went into it. Among several, the label decides, then the
+/// level. Failing that, the one new heading of its level with its label
 /// takes the skip, unless the diff makes it another section; failing that,
 /// the skip waits, applying to no heading, so no section is skipped by
 /// mistake. A guess never moves a skip onto a heading.
@@ -499,9 +501,11 @@ struct PlaceRelocator: Sendable {
     /// Whether the new heading `heading` is the section of the old heading
     /// at `oldIndex` (nil for a skip whose heading the old text does not
     /// have), by the diff's account (rule 3 of `relocate(_:)` for a skipped
-    /// heading): no rival old heading makes a better claim to it, and either
-    /// its label is the skip's, `label`, or more than half of the old
-    /// heading's own words went into its own words (`ownWords(of:in:)`).
+    /// heading): no rival old heading makes a better claim to it, and its
+    /// label is the skip's, `label`, or the old heading's section goes on in
+    /// it (a heading relabelled outright, "Notes" become "Endnotes", over
+    /// the same text), or more than half of the old heading's own words
+    /// went into its own words (`ownWords(of:in:)`).
     ///
     /// A rival is another old heading that lent the new heading words of
     /// its own label, or whose section goes on in it (`sectionGoesOn`). A
@@ -538,7 +542,7 @@ struct PlaceRelocator: Sendable {
                 return false
             }
         }
-        if heading.text == label { return true }
+        if heading.text == label || ownGoesOn { return true }
         guard let oldIndex else { return false }
         let oldOwn = oldHeadingWords[oldIndex]
         let carriedIn = oldOwn.filter { own.contains(partners[$0]) }.count

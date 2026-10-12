@@ -117,6 +117,20 @@ final class PlaceRelocatorHeadingTests: XCTestCase {
         XCTAssertFalse(result?.finding.isGuess ?? true)
     }
 
+    /// A heading relabelled outright ("Notes" became "Endnotes") over the
+    /// same text keeps its skip: no word of its label stands, but its
+    /// section goes on in the new heading.
+    func testAHeadingRelabelledOutrightOverTheSameTextKeepsItsSkip() throws {
+        let notes = "\n\nNotes\n\nThe pump belonged to the angling club and went back with a new washer."
+        let old = [MillBook.millrace + notes, MillBook.wheel]
+        let new = [MillBook.millrace + notes.replacingOccurrences(of: "Notes", with: "Endnotes"), MillBook.wheel]
+        let oldNotes = try section("Notes", at: "Notes", of: old)
+        let endnotes = try section("Endnotes", at: "Endnotes", of: new)
+        let result = try relocate(oldNotes, from: old, oldHeadings: MillBook.headings(of: old) + [oldNotes], to: new, newHeadings: MillBook.headings(of: new) + [endnotes])
+        XCTAssertEqual(result?.heading, endnotes)
+        XCTAssertFalse(result?.finding.isGuess ?? true)
+    }
+
     /// A heading re-levelled by a new reading (Edit Text's "##" became
     /// "###") keeps its skip at its new level (REV15, finding 10): the diff
     /// proves its text stands where its start lands. The skip never goes to
