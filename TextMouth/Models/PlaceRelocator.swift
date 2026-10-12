@@ -311,9 +311,10 @@ struct PlaceRelocator: Sendable {
         // that hold no word (a place in a chapter without words, or an
         // anchor read back empty) stand anywhere, so the direct check alone
         // is no evidence for them: the old text and the diff place such a
-        // place, and it stays only when they put it back where it was.
+        // place, and it stays only when they put it back where it was. Words
+        // that mark the end of the book settle it whatever they hold.
         let settled = newFinder.settled(words.anchor, savedAt: saved)
-        let standsAnywhere = settled?.finding == .unchanged && Self.holdsNoWords(words.anchor)
+        let standsAnywhere = settled?.finding == .unchanged && !words.anchor.marksEndOfBook && Self.holdsNoWords(words.anchor)
         if let settled, !standsAnywhere {
             return Result(place: settled.place, finding: Self.finding(settled.finding))
         }

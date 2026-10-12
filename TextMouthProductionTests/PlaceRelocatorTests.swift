@@ -757,6 +757,18 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(same.relocate(empty, savedAt: frost), PlaceRelocator.Result(place: frost, finding: .unchanged))
     }
 
+    /// Saved words that mark the end of the book settle a place there
+    /// whatever they hold: a book whose text holds no words (a picture book
+    /// read as "[]") finished stays finished, unchanged, though the diff has
+    /// no words to go by.
+    func testWordsThatHoldNoneStillMarkTheEndOfTheBook() throws {
+        let book = ["[]"]
+        let end = TextPlace(chapter: 0, offset: 2)
+        let anchor = try SavedPlace.anchor(at: end, in: book)
+        XCTAssertTrue(anchor.marksEndOfBook)
+        XCTAssertEqual(PlaceRelocator(oldTexts: book, newTexts: book).relocate(anchor, savedAt: end), PlaceRelocator.Result(place: end, finding: .unchanged))
+    }
+
     // MARK: - The Old Text
 
     /// A place whose old text, as this build reads it, differs from the text
