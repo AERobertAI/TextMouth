@@ -55,9 +55,15 @@ import Foundation
 ///      the text before it went. Words met in text the
 ///      diff kept (a refrain's other verse, a second contents list) are a
 ///      second copy, and the place stays with the diff.
-///    - **The end:** a place with no words after it in the old text goes to
-///      the end of the new one (P07); a place at its chapter's end stands
-///      just after the word before it, as the saved-words search lands it.
+///    - **The end:** a place at the end of the old text goes to the end of
+///      the new one (P07); a place short of the end, however near, is not
+///      the end (`TextPlace.restsAtEnd`). A place with no word after it in
+///      its chapter stays at the end of that chapter in the new text: just
+///      after the chapter's last word when that is a solid match, as the
+///      saved-words search lands it, else at the end of the new chapter that
+///      holds the chapter's last solid match, so a chapter restored after it
+///      does not take it, though the chapter's last words were edited or
+///      match the restored chapter's.
 /// 4. **The saved words.** What the diff cannot decide goes to the saved
 ///    words' search in the new text (`TextAnchorFinder`), except that a weak
 ///    match far from the diff's own unsure answer does not overrule it.
@@ -121,7 +127,10 @@ struct PlaceRelocator: Sendable {
         case linedUp
         /// Its word was replaced or dropped in local editing (a stretch about
         /// as long in both texts): it goes just after the nearest lined-up
-        /// word before it, where what replaced its word begins.
+        /// word before it, where what replaced its word begins. (For a place
+        /// at its chapter's end whose chapter's last word is no solid match,
+        /// edited or lined up only by chance: it goes to the end of its
+        /// chapter in the new text.)
         case wordReplaced
         /// Its words went with a longer passage the new text removed or
         /// replaced: it goes where the text after the removal begins, or
@@ -130,9 +139,10 @@ struct PlaceRelocator: Sendable {
         /// Its words moved: the diff found them gone from their spot, and
         /// its saved words' one best spot lies in text the diff found put in.
         case followedMovedText
-        /// It was at the end of the book (its saved words mark the end, or no
-        /// word followed it in the old text), and it stays at the end of the
-        /// new text, whatever was added or removed there (P07).
+        /// It was at the end of the book (its saved words mark the end, or it
+        /// stood at the old text's end, `TextPlace.restsAtEnd`), and it stays
+        /// at the end of the new text, whatever was added or removed there
+        /// (P07).
         case endOfBook
     }
 
@@ -446,26 +456,18 @@ struct PlaceRelocator: Sendable {
         // of where a place was. (The measured program sent every place in an
         // old text without words to the new text's end; it met none.)
         guard old.count > 0, new.count > 0 else { return .undecided }
-        let word = old.word(at: start)
-        // No word follows the place in the old text: it was at the end, and
-        // the end of the new text is where it goes (P07).
-        guard word < old.count else {
+        // A place at the end of the old text goes to the end of the new one
+        // (P07). A place short of the end, however near, is not the end
+        // (`TextPlace.restsAtEnd`), though nothing but a closing full stop,
+        // or chapters without words, follow it.
+        if TextPlace.restsAtEnd(globalOffset: old.globalOffset(of: start), bookLength: old.totalLength) {
             return .placed(Result(place: new.endPlace, finding: .movedByTheDiff(.endOfBook)))
         }
-        // Whether no word follows the place in its own chapter: the word
-        // after it begins a later chapter.
-        let nothingAfter = old.chapter(ofWord: word) != start.chapter
-        // A place at its chapter's end stands just after the word before it,
-        // so the diff carries that word, when it lines up, and the place
-        // lands just after it: at the end of its chapter in the new text when
-        // nothing follows there (a chapter restored after it does not take
-        // it), or before what was added after it. The saved-words search
-        // lands such a place the same way (`BookWords.landing`); the measured
-        // program carried the next chapter's first word instead, and so put
-        // the place at the next chapter's start (it sampled no such place).
-        if nothingAfter, word > 0, old.chapter(ofWord: word - 1) == start.chapter,
-           case .linedUp(let before) = verdict(forOldWord: word - 1) {
-            return .placed(Result(place: new.landing(beforeWord: before + 1, nothingAfter: true), finding: .movedByTheDiff(.linedUp)))
+        let word = old.word(at: start)
+        // No word follows the place in its own chapter: the word after it,
+        // if any, begins a later chapter.
+        if word >= old.count || old.chapter(ofWord: word) != start.chapter {
+            return atChapterEnd(start)
         }
         // A place inside a word (as a bookmark nudged clear of another can
         // be) keeps how far into it it was, as the saved-words search keeps
@@ -475,14 +477,14 @@ struct PlaceRelocator: Sendable {
         // at a word's start: another word that merely has the same key ("The"
         // beginning the text after a removal, for a place inside "the") is
         // not its word.
-        let inside: (key: UInt64, offset: Int)? = !nothingAfter && old.starts[word] < start.offset
+        let inside: (key: UInt64, offset: Int)? = old.starts[word] < start.offset
             ? (old.keys[word], start.offset - old.starts[word])
             : nil
-        let landing = { (newWord: Int) in self.new.landing(beforeWord: newWord, nothingAfter: nothingAfter) }
+        let landing = { (newWord: Int) in self.new.start(ofWord: newWord) }
         let gone: (newWord: Int, evidence: DiffEvidence, sure: Bool)
         switch verdict(forOldWord: word) {
         case .linedUp(let newWord):
-            let place = new.landing(beforeWord: newWord, inside: inside, nothingAfter: nothingAfter)
+            let place = new.landing(beforeWord: newWord, inside: inside)
             return .placed(Result(place: place, finding: .movedByTheDiff(.linedUp)))
         case .replaced(let newWord):
             gone = (newWord, .wordReplaced, true)
@@ -500,6 +502,42 @@ struct PlaceRelocator: Sendable {
         }
         guard gone.sure else { return .unsure(Unsure(word: gone.newWord, place: landing(gone.newWord))) }
         return .placed(Result(place: landing(gone.newWord), finding: .movedByTheDiff(gone.evidence)))
+    }
+
+    /// Carries a place standing at `start` in the old text with no word
+    /// after it in its chapter (at the chapter's end, or before nothing but
+    /// punctuation there): it stands just after the chapter's last word, and
+    /// stays at the end of its chapter in the new text, so a chapter
+    /// restored after it does not take it (rule 3, the end).
+    ///
+    /// When the chapter's last word is a solid match (by its run within the
+    /// chapter), the place lands just after its partner: at the end of its
+    /// chapter, or before what was
+    /// added after it there. The saved-words search lands such a place the
+    /// same way (`BookWords.landing`). Otherwise the chapter's last words
+    /// were edited ("…went home." became "…went away."), or its last word is
+    /// lined up only by chance, as with the like last word of a chapter
+    /// restored after it ("…to come home."): the place goes to the end of
+    /// the new chapter that holds the chapter's last solid match. The
+    /// measured program carried the next chapter's first word instead, and
+    /// so put such a place at the next chapter's start (it sampled none).
+    /// A chapter with no solid match is left to the saved words.
+    private func atChapterEnd(_ start: TextPlace) -> Carried {
+        let first = old.chapterFirstWords[start.chapter]
+        let last = old.chapterFirstWords[start.chapter + 1] - 1
+        guard last >= first else { return .undecided }
+        // The chapter's last solid match, by runs within the chapter: the
+        // common end of a restored chapter and the next ("…come home." and
+        // "CHAPTER III.") lines the chapter's last word up with the restored
+        // chapter's, in a run that is solid only past the chapter's end.
+        var solid = last
+        while solid >= first, !isSolid(solid, within: first..<(last + 1)) { solid -= 1 }
+        guard solid >= first else { return .undecided }
+        if solid == last {
+            return .placed(Result(place: new.landing(beforeWord: partners[last] + 1, nothingAfter: true), finding: .movedByTheDiff(.linedUp)))
+        }
+        let chapter = new.chapter(ofWord: partners[solid])
+        return .placed(Result(place: TextPlace(chapter: chapter, offset: new.length(ofChapter: chapter)), finding: .movedByTheDiff(.wordReplaced)))
     }
 
     /// What the diff says of one old word.
@@ -605,17 +643,21 @@ struct PlaceRelocator: Sendable {
 
     /// Whether old word `word` lines up within a run of `solidRun` or more
     /// words lined up alike, each one's partner just after the one before's:
-    /// a solid match.
-    private func isSolid(_ word: Int) -> Bool {
-        guard word >= 0, word < old.count, partners[word] >= 0 else { return false }
+    /// a solid match. With `bounds`, only the run's old words within them
+    /// count (a chapter's: a run that goes on into the next chapter's words
+    /// does not make the chapter's last word solid).
+    private func isSolid(_ word: Int, within bounds: Range<Int>? = nil) -> Bool {
+        let low = bounds?.lowerBound ?? 0
+        let high = bounds?.upperBound ?? old.count
+        guard word >= low, word < high, word >= 0, word < old.count, partners[word] >= 0 else { return false }
         var length = 1
         var k = word - 1
-        while k >= 0, length < Self.solidRun, partners[k] >= 0, partners[k] == partners[k + 1] - 1 {
+        while k >= max(low, 0), length < Self.solidRun, partners[k] >= 0, partners[k] == partners[k + 1] - 1 {
             length += 1
             k -= 1
         }
         k = word + 1
-        while k < old.count, length < Self.solidRun, partners[k] >= 0, partners[k] == partners[k - 1] + 1 {
+        while k < min(high, old.count), length < Self.solidRun, partners[k] >= 0, partners[k] == partners[k - 1] + 1 {
             length += 1
             k += 1
         }

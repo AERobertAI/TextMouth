@@ -756,9 +756,10 @@ struct Book: Identifiable, Codable, Hashable {
     /// book resting at its end reads 100 percent there too. False for a
     /// book with no saved place, or not measured yet.
     var restsAtEnd: Bool {
-        guard let position = readingPosition,
-              let totalChars = totalCharacterCount, totalChars > 0 else { return false }
-        return (position.globalCharacterOffset ?? position.characterOffset) >= totalChars
+        guard let position = readingPosition, let totalChars = totalCharacterCount else { return false }
+        // The one rule for the end of a book (`TextPlace.restsAtEnd`), which
+        // the place relocator follows too.
+        return TextPlace.restsAtEnd(globalOffset: position.globalCharacterOffset ?? position.characterOffset, bookLength: totalChars)
     }
 
     /// Save this book's data to its bookInfo.json

@@ -197,6 +197,20 @@ struct TextPlace: Hashable, Sendable {
     var offset: Int
 }
 
+extension TextPlace {
+    /// Whether a place `globalOffset` UTF-16 units into a book whose text is
+    /// `bookLength` units long rests at the book's end, finished (TODO P07):
+    /// at or past the end, where a book that played or was read to its end
+    /// is saved. A place short of the end, however near, is not the end:
+    /// speech or a player saved there stopped before the book did. False for
+    /// a book without text. The one rule: `Book.restsAtEnd` reads a book's
+    /// saved place by it, and the place relocator sends a place to the new
+    /// text's end only by it.
+    static func restsAtEnd(globalOffset: Int, bookLength: Int) -> Bool {
+        bookLength > 0 && globalOffset >= bookLength
+    }
+}
+
 /// A book's reading text as fine words, in reading order through every
 /// chapter, with where each word stands (T06). The saved-words search
 /// (`TextAnchorFinder`) reads a book through it, and so does the diff of a

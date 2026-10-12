@@ -613,15 +613,72 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(try relocate(end, from: mill, to: mill), PlaceRelocator.Result(place: end, finding: .unchanged))
     }
 
-    /// A place with no word after it in the old text (before the closing
-    /// full stop) is at the end of the book: when the text around it
-    /// changes, it goes to the end of the new text.
-    func testAPlaceAfterTheLastWordGoesToTheNewEnd() throws {
+    /// A place short of the end, however near, is not the end (REV15,
+    /// finding 9; `Book.restsAtEnd`): a place before the book's closing full
+    /// stop stays just after its last word, before what the new text adds
+    /// there; and a place at the end of the last chapter with words, which
+    /// only a back cover without words follows, stays at the end of that
+    /// chapter when the new text adds an afterword before the cover, or
+    /// only edits the chapter's last sentence. Neither reads finished.
+    func testAPlaceShortOfTheEndIsNotTheEnd() throws {
         let beforeStop = TextPlace(chapter: 3, offset: try Phrase.offset(of: "too close.", in: flour) + "too close".utf16.count)
         XCTAssertEqual((flour as NSString).substring(from: beforeStop.offset), ".", "the closing full stop")
         let changed = [millrace, wheel, stones, flour.replacingOccurrences(of: "too close.", with: "too close together.")]
         let result = try relocate(beforeStop, from: mill, to: changed)
-        XCTAssertEqual(result, PlaceRelocator.Result(place: TextPlace(chapter: 3, offset: changed.last?.utf16.count ?? -1), finding: .movedByTheDiff(.endOfBook)))
+        XCTAssertEqual(result, PlaceRelocator.Result(place: try Phrase.place(of: "together.", inChapter: 3, of: changed), finding: .movedByTheDiff(.linedUp)))
+
+        let cover = "[]"
+        let old = [millrace, wheel, stones, cover]
+        let endOfStones = TextPlace(chapter: 2, offset: stones.utf16.count)
+        XCTAssertFalse(TextPlace.restsAtEnd(globalOffset: BookWords(texts: old).globalOffset(of: endOfStones), bookLength: BookWords(texts: old).totalLength))
+        let afterword = "AFTERWORD\n\nThe mill ground its last commercial sack in 1947 and its first for the society in 2019."
+        let added = try relocate(endOfStones, from: old, to: ["The Mill at Hollins Ford", millrace, wheel, stones, afterword, cover])
+        XCTAssertEqual(added, PlaceRelocator.Result(place: TextPlace(chapter: 3, offset: stones.utf16.count), finding: .movedByTheDiff(.linedUp)))
+        let edited = stones.replacingOccurrences(of: "growing through its eye.", with: "growing through the eye of it.")
+        let lastSentence = try relocate(endOfStones, from: old, to: [millrace, wheel, edited, cover])
+        XCTAssertEqual(lastSentence, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: edited.utf16.count), finding: .movedByTheDiff(.wordReplaced)))
+    }
+
+    /// A place at its chapter's end stays at the end of that chapter in the
+    /// new text when a chapter restored after it ends with the same word, or
+    /// when its own chapter's last words were edited (REV15, finding 2): it
+    /// never goes to the end of the restored chapter.
+    func testAPlaceAtItsChaptersEndStaysThereWhenItsLastWordsChangeOrRecur() throws {
+        let ferry = "CHAPTER I. The Ferry\n\n"
+            + "The ferry left the north landing at six, whether or not anyone was aboard. Odile kept the tide tables in a biscuit tin and argued with them every morning, as though the moon could be talked round.\n\n"
+            + "On the first crossing of the season the engine coughed twice, and the passengers pretended not to notice. A dog in a red harness stood at the bow the whole way and barked at the gulls until they gave up and went home."
+        let island = "CHAPTER II. The Island\n\n"
+            + "The island had one shop, one church, and a post box that was emptied on Thursdays if the boat came. Fenwick ran the shop and sold paraffin, stamps, and tinned peaches at prices nobody questioned.\n\n"
+            + "In winter the crossings stopped altogether, and the islanders lived on what they had laid by: salt cod, potatoes, and a great deal of gossip, which kept longer than either."
+        let crossing = "CHAPTER III. The Crossing Back\n\n"
+            + "By March the channel buoys had dragged their moorings and the harbour master spent a week re-laying them from a rowing boat.\n\n"
+            + "The first sailing of spring carried a piano, two goats, and a schoolteacher who had answered an advertisement without looking at a map."
+        let preface = "Preface\n\nThese pages were written up from the log the ferry kept for forty years, with the spelling mended and the weather left alone."
+        let earlyEdit = ferry.replacingOccurrences(of: "at six, whether", with: "at half past six, whether")
+        let lastEdit = ferry.replacingOccurrences(of: "went home.", with: "went away.")
+        let tailEdit = ferry.replacingOccurrences(of: "until they gave up and went home.", with: "until they tired and went home.")
+        let islandHome = island.replacingOccurrences(of: "which kept longer than either.", with: "and waited for the boats to come home.")
+        let islandHomeAtLast = island.replacingOccurrences(of: "which kept longer than either.", with: "and waited for the boats to come home at last.")
+        let islandWalkedHome = island.replacingOccurrences(of: "which kept longer than either.", with: "and the last of the islanders walked home.")
+        let old = [ferry, crossing]
+        let end = TextPlace(chapter: 0, offset: ferry.utf16.count)
+        let cases: [(new: [String], expected: TextPlace)] = [
+            ([lastEdit, island, crossing], TextPlace(chapter: 0, offset: lastEdit.utf16.count)),
+            ([earlyEdit, islandHome, crossing], TextPlace(chapter: 0, offset: earlyEdit.utf16.count)),
+            ([earlyEdit, islandHomeAtLast, crossing], TextPlace(chapter: 0, offset: earlyEdit.utf16.count)),
+            ([preface, ferry, islandHome, crossing], TextPlace(chapter: 1, offset: ferry.utf16.count)),
+            ([tailEdit, islandWalkedHome, crossing], TextPlace(chapter: 0, offset: tailEdit.utf16.count)),
+        ]
+        for (index, test) in cases.enumerated() {
+            let result = try relocate(end, from: old, to: test.new)
+            XCTAssertEqual(result.place, test.expected, "case \(index)")
+            if case .movedByTheDiff = result.finding {} else { XCTFail("case \(index) found by \(result.finding)") }
+        }
+        // A footnote number the old reading ran onto the chapter's end, which
+        // the new reading drops.
+        let withNote = ferry + "12"
+        let note = try relocate(TextPlace(chapter: 0, offset: withNote.utf16.count), from: [withNote, crossing], to: [ferry, island, crossing])
+        XCTAssertEqual(note, PlaceRelocator.Result(place: end, finding: .movedByTheDiff(.wordReplaced)))
     }
 
     /// A place at the end of an earlier chapter stands just after that
