@@ -28,12 +28,14 @@ import Foundation
 ///    - **A solid match:** the place's word, lined up within 4 or more words
 ///      in a row lined up alike, is there.
 ///    - **A place keeps the words that follow it:** when its match is weak,
-///      or its run breaks right after it, and every old word from it to the
-///      next solid match stands in order just before that match (a few words
-///      put in among them allowed), it goes to its own word there. So text
-///      put in before a place that begins with the place's own words
-///      ("CHAPTER" before "CHAPTER XIX." when chapter XVIII comes back) does
-///      not take it, as Git slides a change to a better boundary.
+///      or its run breaks before the next solid match, and every old word
+///      from it to that match stands in order just before that match (a few
+///      words put in among them allowed), it goes to its own word there. So
+///      text put in before a place that begins with the place's own words
+///      ("CHAPTER" before "CHAPTER XIX." when chapter XVIII comes back, or
+///      "BOOK ONE. CHAPTER" before "BOOK ONE. CHAPTER III.") does not take
+///      it, as Git slides a change to a better boundary. A kept place never
+///      jumps back across a solid match, nor before its own.
 ///    - **A like-for-like stretch** (as long in both texts, give or take,
 ///      between solid matches) is local editing: the place's own word if it
 ///      is lined up there, else just after the nearest lined-up word before
@@ -194,9 +196,9 @@ struct PlaceRelocator: Sendable {
     /// For each old word, the index of the new word the diff lines it up
     /// with, or -1 (`PatienceDiff`).
     private let partners: [Int]
-    /// For each new word, whether the diff lined an old word up with it; a
-    /// new word without one is text the diff found put in.
-    private let paired: [Bool]
+    /// For each new word, the index of the old word the diff lines up with
+    /// it, or -1: a new word without one is text the diff found put in.
+    private let sources: [Int]
     /// The saved-words search in the old text, for a place whose words do
     /// not stand at its numbers there.
     private let oldFinder: TextAnchorFinder
@@ -208,15 +210,15 @@ struct PlaceRelocator: Sendable {
     /// indexes each one's words for the saved-words search.
     init(old: BookWords, new: BookWords, newHeadings: [Heading] = []) {
         let partners = PatienceDiff.partners(of: old.keys, in: new.keys)
-        var paired = [Bool](repeating: false, count: new.count)
-        for partner in partners where partner >= 0 && partner < paired.count {
-            paired[partner] = true
+        var sources = [Int](repeating: -1, count: new.count)
+        for (word, partner) in partners.enumerated() where partner >= 0 && partner < sources.count {
+            sources[partner] = word
         }
         self.old = old
         self.new = new
         self.newHeadings = newHeadings
         self.partners = partners
-        self.paired = paired
+        self.sources = sources
         self.oldFinder = TextAnchorFinder(words: old)
         self.newFinder = TextAnchorFinder(words: new, headings: newHeadings)
     }
@@ -503,16 +505,15 @@ struct PlaceRelocator: Sendable {
     private func verdict(forOldWord word: Int) -> Verdict {
         let own = partners[word]
         let solid = isSolid(word)
-        // The nearest solid match after the word: where the words that
-        // follow a place are found, and the changed stretch's far end.
-        let next = nearestSolid(after: word)
         // A place keeps the words that follow it, when its own match is weak
-        // or its run breaks right after it.
-        if own < 0 || !solid || word + 1 >= old.count || partners[word + 1] != own + 1,
-           let kept = keepingTheWordsAfter(word, nextSolid: next) {
+        // or its run breaks before the next solid match.
+        if let kept = keepingTheWordsAfter(word, solid: solid) {
             return .linedUp(kept)
         }
-        if own >= 0, solid { return .linedUp(own) }
+        if solid { return .linedUp(own) }
+        // The nearest solid match after the word: the changed stretch's far
+        // end.
+        let next = nearestSolid(after: word)
         // The word is in a changed stretch, between the nearest solid
         // matches before and after it.
         let previous = nearestSolid(before: word)
@@ -598,23 +599,55 @@ struct PlaceRelocator: Sendable {
     }
 
     /// The rule that a place keeps the words that follow it: when every old
-    /// word from `word` up to the solid match `next` (`keepingLimit` words
-    /// at most) stands, in order, just before that match's partner in the
-    /// new text, with `keepingSlack` and a quarter of their number in new
-    /// words allowed among them, the new word that `word` stands for there.
-    /// The words are matched as late as they can be, so they keep to what
+    /// word from `word` up to the next solid match (`keepingLimit` words at
+    /// most) stands, in order, just before that match's partner in the new
+    /// text, with `keepingSlack` and a quarter of their number in new words
+    /// allowed among them, the new word that `word` stands for there. The
+    /// words are matched as late as they can be, so they keep to what
     /// follows them. Nil when they don't all stand there.
-    private func keepingTheWordsAfter(_ word: Int, nextSolid next: Int) -> Int? {
+    ///
+    /// The next solid match is the first after the place's own run of
+    /// matches breaks: right away when the place's word is no solid match
+    /// (`solid` says whether it is), else where a word's match no longer
+    /// follows the one before's. So text put in before a place that begins
+    /// with two or more of the place's words ("BOOK ONE. CHAPTER" before
+    /// "BOOK ONE. CHAPTER III." when chapter II comes back) does not take
+    /// it, though the diff lines those words up with the text put in.
+    ///
+    /// A kept place never jumps back across a solid match: the words passed
+    /// over among those it keeps may be words put in, or lone matches the
+    /// diff made by chance, but never a solid match (a line said twice, with
+    /// words kept between the copies, whose second copy the new text
+    /// removes, does not send a place in that copy back to the first). And
+    /// a place whose own word is a solid match lands past it: text put in
+    /// before a place only moves it on.
+    private func keepingTheWordsAfter(_ word: Int, solid: Bool) -> Int? {
+        // Where the place's run of matches breaks, within the rule's reach.
+        var runBreak = word
+        if solid {
+            runBreak += 1
+            while runBreak < old.count, runBreak - word <= Self.keepingLimit,
+                  partners[runBreak] >= 0, partners[runBreak] == partners[runBreak - 1] + 1 {
+                runBreak += 1
+            }
+        }
+        let next = nearestSolid(after: max(runBreak - 1, word))
         guard next < old.count else { return nil }
         let count = next - word
         guard count <= Self.keepingLimit else { return nil }
         let end = partners[next]
-        let start = max(0, end - count - Self.keepingSlack - count / 4)
+        let floor = solid ? partners[word] + 1 : 0
+        let start = max(floor, end - count - Self.keepingSlack - count / 4)
         guard end - start >= count else { return nil }
         var candidate = end - 1
         var first: Int?
         for oldWord in stride(from: next - 1, through: word, by: -1) {
-            while candidate >= start, new.keys[candidate] != old.keys[oldWord] { candidate -= 1 }
+            while candidate >= start, new.keys[candidate] != old.keys[oldWord] {
+                // A solid match is never passed over: the place would jump
+                // back across text it came after.
+                guard !isSolid(newWord: candidate) else { return nil }
+                candidate -= 1
+            }
             guard candidate >= start else { return nil }
             first = candidate
             candidate -= 1
@@ -625,7 +658,13 @@ struct PlaceRelocator: Sendable {
     /// Whether new word `word` is text the diff found put in: no old word
     /// lines up with it.
     private func isPutIn(_ word: Int) -> Bool {
-        word >= 0 && word < paired.count && !paired[word]
+        word >= 0 && word < sources.count && sources[word] < 0
+    }
+
+    /// Whether new word `word` is lined up with an old word that is a solid
+    /// match.
+    private func isSolid(newWord word: Int) -> Bool {
+        word >= 0 && word < sources.count && isSolid(sources[word])
     }
 
     // MARK: - The Saved Words, and the Guess

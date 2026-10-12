@@ -458,6 +458,76 @@ final class PlaceRelocatorTests: XCTestCase {
         })
     }
 
+    /// Text put in before a place that begins with two or more of the
+    /// place's words does not take it either, though the diff lines those
+    /// words up with the text put in (REV15, finding 7): "BOOK ONE. CHAPTER
+    /// II." restored before "BOOK ONE. CHAPTER III.", within one chapter's
+    /// text and as a chapter of its own, and a sentence beginning "The
+    /// captain" put in before "The captain waved once".
+    func testTextPutInThatBeginsWithSeveralOfAPlacesWordsDoesNotTakeIt() throws {
+        let one = "BOOK ONE. CHAPTER I. The Press\n\nThe shop on Tanner Lane had printed handbills for forty years before Ottilie bought it with her brother's insurance money. She kept the old platen press and learned to set type by candlelight when the landlord cut the gas."
+        let two = "BOOK ONE. CHAPTER II. The Apprentice\n\nDesmond arrived in March with a cardboard suitcase and a letter from the parish clerk. He could read upside down and backwards, which in a print shop is worth more than a diploma."
+        let three = "BOOK ONE. CHAPTER III. The Strike\n\nWhen the dockers walked out in August, every union hall in the city wanted leaflets by morning. Ottilie ran the press for nineteen hours straight."
+        let four = "BOOK ONE. CHAPTER IV. Proofs\n\nThe police came on the third day, polite and unhurried, and asked to see the proofs. She showed them a stack of church bulletins."
+        let joined = { (chapters: [String]) in [chapters.joined(separator: "\n\n")] }
+        let oneText = joined([one, three, four])
+        let oneTextRestored = joined([one, two, three, four])
+        let result = try relocate(try Phrase.place(of: "BOOK ONE. CHAPTER III.", inChapter: 0, of: oneText), from: oneText, to: oneTextRestored)
+        XCTAssertEqual(result, PlaceRelocator.Result(place: try Phrase.place(of: "BOOK ONE. CHAPTER III.", inChapter: 0, of: oneTextRestored), finding: .movedByTheDiff(.linedUp)))
+        let chapters = try relocate(TextPlace(chapter: 1, offset: 0), from: [one, three, four], to: [one, two, three, four])
+        XCTAssertEqual(chapters, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: 0), finding: .movedByTheDiff(.linedUp)))
+        let insertedAt = one.utf16.count + 2
+        assertEveryWordLands(from: oneText, to: oneTextRestored, exactly { place in
+            TextPlace(chapter: 0, offset: place.offset < insertedAt ? place.offset : place.offset + two.utf16.count + 2)
+        })
+
+        let before = "The ferry left the pier at half past six, loaded with crates of onions and two bicycles. "
+        let sentence = "The captain waved once from the wheelhouse and then ignored everyone until the island showed itself. "
+        let after = "By then the onions had begun to smell, and the bicycles had fallen over twice."
+        for inserted in [
+            "The captain kept a terrier that slept on the coiled ropes and growled at anyone wearing a hat. ",
+            "The captain waved his cap at the harbour wall as if someone there owed him money. ",
+        ] {
+            let old = [before + sentence + after]
+            let new = [before + inserted + sentence + after]
+            let moved = try relocate(try Phrase.place(of: "The captain waved once", inChapter: 0, of: old), from: old, to: new)
+            XCTAssertEqual(moved.place, try Phrase.place(of: "The captain waved once", inChapter: 0, of: new), inserted)
+            XCTAssertEqual(moved.finding, .movedByTheDiff(.linedUp), inserted)
+        }
+    }
+
+    /// A kept place never jumps back across a solid match to an earlier copy
+    /// of its words (REV15, V15): a place in the second of two copies of a
+    /// line, which the new text removes, goes where the text after the
+    /// removal begins, not to the first copy; and a place in a chapter's
+    /// opening line that repeats the last line of the chapter before, which
+    /// the new text removes, stays in its own chapter.
+    func testAKeptPlaceNeverJumpsBackAcrossASolidMatch() throws {
+        let lead = "The ferry from the island was forty minutes late, and the harbourmaster came out at last with a clipboard pressed to his chest. "
+        let twenty = "\"Twenty minutes,\" he said."
+        let tail = "A woman with a crate of laying hens laughed out loud and sat down on the crate."
+        let old = [lead + twenty + " Nobody in the queue moved. " + twenty + " " + tail]
+        let new = [lead + twenty + " Nobody in the queue moved. " + tail]
+        let womanStart = try Phrase.place(of: "A woman", inChapter: 0, of: new)
+        let removedCopy = try Phrase.offset(of: twenty, in: old[0], occurrence: 1)
+        for phrase in ["\"Twenty", "Twenty", "minutes", "he said", "said"] {
+            let saved = TextPlace(chapter: 0, offset: removedCopy + (try Phrase.offset(of: phrase, in: twenty)))
+            let result = try relocate(saved, from: old, to: new)
+            XCTAssertEqual(result.place, womanStart, phrase)
+            XCTAssertFalse(result.finding.isGuess, phrase)
+        }
+
+        let chapterOne = "CHAPTER ONE. The Barge Fair\n\nShe bolted the scullery door, pinched out the candle, and stood a long time at the window watching the barges tie up below the lock. \"Tomorrow, then,\" she said."
+        let heading = "CHAPTER TWO. Low Water\n\n"
+        let body = "The river had dropped in the night, and the barges lay canted in the mud like boots kicked off at a door."
+        let repeated = [chapterOne, heading + "\"Tomorrow, then,\" she said. " + body]
+        let removed = [chapterOne, heading + body]
+        for phrase in ["Tomorrow", "she said"] {
+            let result = try relocate(try Phrase.place(of: phrase, inChapter: 1, of: repeated), from: repeated, to: removed)
+            XCTAssertEqual(result.place, TextPlace(chapter: 1, offset: heading.utf16.count), phrase)
+        }
+    }
+
     /// A removal ending as the text before it ends ("CHAPTER" ends both the
     /// text before chapter XVIII and the chapter removed) slides back: a
     /// place in the removed chapter goes to "CHAPTER XIX.", not a word into
