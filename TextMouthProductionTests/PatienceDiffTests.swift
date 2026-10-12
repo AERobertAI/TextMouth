@@ -102,9 +102,18 @@ final class PatienceDiffTests: XCTestCase {
         XCTAssertEqual(Array(large.prefix(4)), [0, 1, 2, 3], "the common start lines up")
         XCTAssertEqual(Array(large.suffix(4)), Array((new.count - 4)..<new.count), "the common end lines up")
         XCTAssertEqual(large.dropFirst(4).dropLast(4).filter { $0 >= 0 }.count, 0, "the large stretch stays unmatched")
+        // The alignment says which words stayed unmatched for their
+        // stretch's size: those of the large stretch, not its common ends
+        // (REV15, V13).
+        let alignment = PatienceDiff.alignment(of: keys(old.joined(separator: " ")), in: keys(new.joined(separator: " ")))
+        XCTAssertEqual(alignment.partners, large)
+        XCTAssertEqual(alignment.leftForSize, [Bool](repeating: false, count: 4) + [Bool](repeating: true, count: 2 * side) + [Bool](repeating: false, count: 4))
 
         let small = partners("first spade rake spade rake last", "first rake spade rake spade last")
         XCTAssertEqual(small.filter { $0 >= 0 }.count, 5, "a small stretch lines up: first, three of the four, last")
+        XCTAssertEqual(PatienceDiff.alignment(of: keys("first spade rake spade rake last"), in: keys("first rake spade rake spade last")).leftForSize,
+                       [Bool](repeating: false, count: 6), "a stretch lined up exactly, or removed outright, is not left for its size")
+        XCTAssertEqual(PatienceDiff.alignment(of: keys("first spade rake last"), in: keys("first last")).leftForSize, [false, false, false, false])
     }
 
     /// A paragraph moved elsewhere is, to a diff, a removal there and the
@@ -150,38 +159,5 @@ final class PatienceDiffTests: XCTestCase {
         XCTAssertEqual(PatienceDiff.partners(of: [], in: keys("mill")), [])
         XCTAssertEqual(PatienceDiff.partners(of: keys("mill wheel"), in: []), [-1, -1])
         XCTAssertEqual(PatienceDiff.longestRisingChain(of: []).count, 0)
-    }
-}
-
-/// A small seeded source of common words, so a test's texts are the same on
-/// every run.
-private struct SeededWords {
-    /// The words drawn from: common ones, which stand many times, and a few
-    /// rarer ones, which may stand once.
-    private static let vocabulary = ["the", "and", "of", "a", "to", "in", "mill", "wheel", "stone", "flour", "sluice", "weir"]
-    private var state: UInt64
-
-    init(seed: UInt64) {
-        state = seed
-    }
-
-    /// The next number below `bound` (SplitMix64).
-    mutating func next(below bound: Int) -> Int {
-        state &+= 0x9E37_79B9_7F4A_7C15
-        var z = state
-        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
-        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
-        z ^= z >> 31
-        return Int(z % UInt64(max(1, bound)))
-    }
-
-    /// A word of the vocabulary.
-    mutating func word() -> String {
-        Self.vocabulary[next(below: Self.vocabulary.count)]
-    }
-
-    /// `count` words.
-    mutating func words(count: Int) -> [String] {
-        (0..<count).map { _ in word() }
     }
 }

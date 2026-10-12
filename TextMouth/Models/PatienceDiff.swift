@@ -30,15 +30,39 @@ import Foundation
 enum PatienceDiff {
     /// The most pairs of words (old words times new words) a stretch with no
     /// fixed point may hold and still be lined up exactly. Its table keeps a
-    /// 32-bit length for each pair: 16 MB at most, for the moment the
-    /// stretch takes. The measured program's limit.
+    /// 32-bit length for each pair of a word or the stretch's end on each
+    /// side, (old + 1) × (new + 1) of them: 32 MB at most (one old word
+    /// against four million new), for the moment the stretch takes. The
+    /// measured program's limit.
     static let largestExactStretch = 4_000_000
+
+    /// How two texts' words line up (`alignment(of:in:)`).
+    struct Alignment: Equatable, Sendable {
+        /// For each old word, the index of the new word it lines up with, or
+        /// -1 when it lines up with none.
+        var partners: [Int]
+        /// For each old word, whether it lies in a stretch with no fixed
+        /// point too large to line up exactly (rule 4), which stays
+        /// unmatched for its size, not because the new text changed it: a
+        /// long repetitive passage, whose words stand too often to be fixed
+        /// points. The diff says nothing of where such a word went.
+        var leftForSize: [Bool]
+    }
 
     /// For each word of `old`, the index in `new` of the word it lines up
     /// with, or -1 when it lines up with none (the new text removed or
-    /// replaced it). The rules are the type's.
+    /// replaced it, or its stretch was too large to line up). The rules are
+    /// the type's.
     static func partners(of old: [UInt64], in new: [UInt64]) -> [Int] {
+        alignment(of: old, in: new).partners
+    }
+
+    /// How `old` lines up with `new`: each old word's partner, as
+    /// `partners(of:in:)` gives it, and which old words were left unmatched
+    /// for their stretch's size.
+    static func alignment(of old: [UInt64], in new: [UInt64]) -> Alignment {
         var partners = [Int](repeating: -1, count: old.count)
+        var leftForSize = [Bool](repeating: false, count: old.count)
         // The stretches still to line up: a range of old words and the range
         // of new words between the same lined-up neighbors. Kept on a stack
         // rather than by recursion, so a long chain of fixed points never
@@ -67,7 +91,9 @@ enum PatienceDiff {
             let fixed = longestRisingChain(of: wordsOnceInEach(old, oldRange, new, newRange))
             guard !fixed.isEmpty else {
                 // Rule 4: a stretch with no fixed point.
-                lineUpExactly(old, oldRange, new, newRange, into: &partners)
+                if !lineUpExactly(old, oldRange, new, newRange, into: &partners) {
+                    for word in oldRange { leftForSize[word] = true }
+                }
                 continue
             }
             // Rule 3: each stretch between fixed points, on its own.
@@ -81,7 +107,7 @@ enum PatienceDiff {
             }
             stretches.append((oldNext..<oldHigh, newNext..<newHigh))
         }
-        return partners
+        return Alignment(partners: partners, leftForSize: leftForSize)
     }
 
     /// A word standing exactly once in each of two stretches: where it
@@ -174,13 +200,17 @@ enum PatienceDiff {
 
     /// Lines up `old[oldRange]` with `new[newRange]` by an exact longest
     /// common subsequence, writing each old word's partner into `partners`;
-    /// a stretch larger than `largestExactStretch` stays unmatched. Of the
-    /// longest subsequences, the one taken pairs each old word as early in
-    /// the new stretch as it can, as the measured program did.
-    static func lineUpExactly(_ old: [UInt64], _ oldRange: Range<Int>, _ new: [UInt64], _ newRange: Range<Int>, into partners: inout [Int]) {
+    /// a stretch larger than `largestExactStretch` stays unmatched, and the
+    /// result is false then (true when the stretch was lined up, or one
+    /// side of it is empty). Of the longest subsequences, the one taken
+    /// pairs each old word as early in the new stretch as it can, as the
+    /// measured program did.
+    @discardableResult
+    static func lineUpExactly(_ old: [UInt64], _ oldRange: Range<Int>, _ new: [UInt64], _ newRange: Range<Int>, into partners: inout [Int]) -> Bool {
         let n = oldRange.count
         let m = newRange.count
-        guard n > 0, m > 0, n <= largestExactStretch / m else { return }
+        guard n > 0, m > 0 else { return true }
+        guard n <= largestExactStretch / m else { return false }
         let width = m + 1
         // lengths[i * width + j]: the longest common subsequence of the old
         // stretch's words from i on and the new stretch's from j on.
@@ -205,5 +235,6 @@ enum PatienceDiff {
                 j += 1
             }
         }
+        return true
     }
 }

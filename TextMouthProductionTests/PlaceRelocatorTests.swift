@@ -9,18 +9,7 @@ import XCTest
 /// the end of the book, a place found first in an old text that reads
 /// differently from the text it was saved in, and the rules' edges. Each
 /// case knows exactly where every word went. Pure: no window, no file.
-final class PlaceRelocatorTests: XCTestCase {
-
-    // MARK: - A Book to Rebuild
-
-    /// The shared book's chapters (`MillBook`).
-    private let millrace = MillBook.millrace
-    private let wheel = MillBook.wheel
-    private let stones = MillBook.stones
-    private let flour = MillBook.flour
-
-    /// The four chapters as a book.
-    private var mill: [String] { [millrace, wheel, stones, flour] }
+final class PlaceRelocatorTests: XCTestCase, MillBookReading {
 
     // MARK: - Helpers
 
@@ -417,6 +406,16 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(result.finding, .movedByTheDiff(.passageRemoved))
     }
 
+    /// A word replaced in place is replaced, not moved (REV15, finding 5):
+    /// the words before it still stand, but its own words ("frogspawn
+    /// floated") stand nowhere now, so the moved-text rule does not follow
+    /// the words before it.
+    func testAWordReplacedInPlaceIsNotFollowedAsMovedText() throws {
+        let new = [millrace.replacingOccurrences(of: "frogspawn", with: "duckweed"), wheel, stones, flour]
+        let result = try relocate(try Phrase.place(of: "frogspawn", inChapter: 0, of: mill), from: mill, to: new)
+        XCTAssertEqual(result, PlaceRelocator.Result(place: try Phrase.place(of: "duckweed", inChapter: 0, of: new), finding: .movedByTheDiff(.wordReplaced)))
+    }
+
     /// A word the diff pairs by chance is no solid match: a paragraph moved
     /// to its chapter's end, with a short note left in its place that shares
     /// one of its words ("the"), is followed word for word, the "the" the
@@ -445,9 +444,9 @@ final class PlaceRelocatorTests: XCTestCase {
     /// does not take it: "CHAPTER" before "CHAPTER XIX." when chapter XVIII
     /// comes back, within one chapter's text.
     func testTextPutInThatBeginsWithAPlacesWordsDoesNotTakeIt() throws {
-        let seventeen = "CHAPTER XVII.\n\nThe treasurer bought a second-hand anemometer for the roof, though nobody could say why a mill needed one.\n\n"
-        let eighteen = "CHAPTER XVIII.\n\nThe county archaeologist visited in a borrowed van and photographed the wheel pit from every side.\n\n"
-        let nineteen = "CHAPTER XIX.\n\nThe last job of the year was oiling the gears, which took two people, a ladder, and most of a Sunday."
+        let seventeen = MillBook.seventeen
+        let eighteen = MillBook.eighteen
+        let nineteen = MillBook.nineteen
         let old = [seventeen + nineteen]
         let new = [seventeen + eighteen + nineteen]
         let result = try relocate(try Phrase.place(of: "CHAPTER XIX.", inChapter: 0, of: old), from: old, to: new)
@@ -458,14 +457,84 @@ final class PlaceRelocatorTests: XCTestCase {
         })
     }
 
+    /// Text put in before a place that begins with two or more of the
+    /// place's words does not take it either, though the diff lines those
+    /// words up with the text put in (REV15, finding 7): "BOOK ONE. CHAPTER
+    /// II." restored before "BOOK ONE. CHAPTER III.", within one chapter's
+    /// text and as a chapter of its own, and a sentence beginning "The
+    /// captain" put in before "The captain waved once".
+    func testTextPutInThatBeginsWithSeveralOfAPlacesWordsDoesNotTakeIt() throws {
+        let one = "BOOK ONE. CHAPTER I. The Press\n\nThe shop on Tanner Lane had printed handbills for forty years before Ottilie bought it with her brother's insurance money. She kept the old platen press and learned to set type by candlelight when the landlord cut the gas."
+        let two = "BOOK ONE. CHAPTER II. The Apprentice\n\nDesmond arrived in March with a cardboard suitcase and a letter from the parish clerk. He could read upside down and backwards, which in a print shop is worth more than a diploma."
+        let three = "BOOK ONE. CHAPTER III. The Strike\n\nWhen the dockers walked out in August, every union hall in the city wanted leaflets by morning. Ottilie ran the press for nineteen hours straight."
+        let four = "BOOK ONE. CHAPTER IV. Proofs\n\nThe police came on the third day, polite and unhurried, and asked to see the proofs. She showed them a stack of church bulletins."
+        let joined = { (chapters: [String]) in [chapters.joined(separator: "\n\n")] }
+        let oneText = joined([one, three, four])
+        let oneTextRestored = joined([one, two, three, four])
+        let result = try relocate(try Phrase.place(of: "BOOK ONE. CHAPTER III.", inChapter: 0, of: oneText), from: oneText, to: oneTextRestored)
+        XCTAssertEqual(result, PlaceRelocator.Result(place: try Phrase.place(of: "BOOK ONE. CHAPTER III.", inChapter: 0, of: oneTextRestored), finding: .movedByTheDiff(.linedUp)))
+        let chapters = try relocate(TextPlace(chapter: 1, offset: 0), from: [one, three, four], to: [one, two, three, four])
+        XCTAssertEqual(chapters, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: 0), finding: .movedByTheDiff(.linedUp)))
+        let insertedAt = one.utf16.count + 2
+        assertEveryWordLands(from: oneText, to: oneTextRestored, exactly { place in
+            TextPlace(chapter: 0, offset: place.offset < insertedAt ? place.offset : place.offset + two.utf16.count + 2)
+        })
+
+        let before = "The ferry left the pier at half past six, loaded with crates of onions and two bicycles. "
+        let sentence = "The captain waved once from the wheelhouse and then ignored everyone until the island showed itself. "
+        let after = "By then the onions had begun to smell, and the bicycles had fallen over twice."
+        for inserted in [
+            "The captain kept a terrier that slept on the coiled ropes and growled at anyone wearing a hat. ",
+            "The captain waved his cap at the harbour wall as if someone there owed him money. ",
+        ] {
+            let old = [before + sentence + after]
+            let new = [before + inserted + sentence + after]
+            let moved = try relocate(try Phrase.place(of: "The captain waved once", inChapter: 0, of: old), from: old, to: new)
+            XCTAssertEqual(moved.place, try Phrase.place(of: "The captain waved once", inChapter: 0, of: new), inserted)
+            XCTAssertEqual(moved.finding, .movedByTheDiff(.linedUp), inserted)
+        }
+    }
+
+    /// A kept place never jumps back across a solid match to an earlier copy
+    /// of its words (REV15, V15): a place in the second of two copies of a
+    /// line, which the new text removes, goes where the text after the
+    /// removal begins, not to the first copy; and a place in a chapter's
+    /// opening line that repeats the last line of the chapter before, which
+    /// the new text removes, stays in its own chapter.
+    func testAKeptPlaceNeverJumpsBackAcrossASolidMatch() throws {
+        let lead = "The ferry from the island was forty minutes late, and the harbourmaster came out at last with a clipboard pressed to his chest. "
+        let twenty = "\"Twenty minutes,\" he said."
+        let tail = "A woman with a crate of laying hens laughed out loud and sat down on the crate."
+        let old = [lead + twenty + " Nobody in the queue moved. " + twenty + " " + tail]
+        let new = [lead + twenty + " Nobody in the queue moved. " + tail]
+        let womanStart = try Phrase.place(of: "A woman", inChapter: 0, of: new)
+        let removedCopy = try Phrase.offset(of: twenty, in: old[0], occurrence: 1)
+        for phrase in ["\"Twenty", "Twenty", "minutes", "he said", "said"] {
+            let saved = TextPlace(chapter: 0, offset: removedCopy + (try Phrase.offset(of: phrase, in: twenty)))
+            let result = try relocate(saved, from: old, to: new)
+            XCTAssertEqual(result.place, womanStart, phrase)
+            XCTAssertFalse(result.finding.isGuess, phrase)
+        }
+
+        let chapterOne = "CHAPTER ONE. The Barge Fair\n\nShe bolted the scullery door, pinched out the candle, and stood a long time at the window watching the barges tie up below the lock. \"Tomorrow, then,\" she said."
+        let heading = "CHAPTER TWO. Low Water\n\n"
+        let body = "The river had dropped in the night, and the barges lay canted in the mud like boots kicked off at a door."
+        let repeated = [chapterOne, heading + "\"Tomorrow, then,\" she said. " + body]
+        let removed = [chapterOne, heading + body]
+        for phrase in ["Tomorrow", "she said"] {
+            let result = try relocate(try Phrase.place(of: phrase, inChapter: 1, of: repeated), from: repeated, to: removed)
+            XCTAssertEqual(result.place, TextPlace(chapter: 1, offset: heading.utf16.count), phrase)
+        }
+    }
+
     /// A removal ending as the text before it ends ("CHAPTER" ends both the
     /// text before chapter XVIII and the chapter removed) slides back: a
     /// place in the removed chapter goes to "CHAPTER XIX.", not a word into
     /// it.
     func testARemovalEndingAsTheTextBeforeItEndsSlidesBack() throws {
-        let seventeen = "CHAPTER XVII.\n\nThe treasurer bought a second-hand anemometer for the roof, though nobody could say why a mill needed one.\n\n"
-        let eighteen = "CHAPTER XVIII.\n\nThe county archaeologist visited in a borrowed van and photographed the wheel pit from every side.\n\n"
-        let nineteen = "CHAPTER XIX.\n\nThe last job of the year was oiling the gears, which took two people, a ladder, and most of a Sunday."
+        let seventeen = MillBook.seventeen
+        let eighteen = MillBook.eighteen
+        let nineteen = MillBook.nineteen
         let old = [seventeen + eighteen + nineteen]
         let new = [seventeen + nineteen]
         let nineteenStart = try Phrase.place(of: "CHAPTER XIX.", inChapter: 0, of: new)
@@ -473,6 +542,45 @@ final class PlaceRelocatorTests: XCTestCase {
             let result = try relocate(try Phrase.place(of: phrase, inChapter: 0, of: old), from: old, to: new)
             XCTAssertEqual(result.place, nineteenStart, phrase)
             XCTAssertFalse(result.finding.isGuess, phrase)
+        }
+    }
+
+    /// The slide back stays within the chapter where the text after the
+    /// removal begins (REV15, finding 11): a chapter left out that ends with
+    /// the words the chapter before it ends with ("said.", or "Ffion said.")
+    /// sends its places to the start of the chapter after it, not to the
+    /// end of the chapter before.
+    func testTheSlideBackStaysInTheChapterAfterTheRemoval() throws {
+        let six = "CHAPTER VI.\n\nThe barge had lain in the reeds below Copthorne Lock for eleven winters before Ffion bought it for the price of a secondhand bicycle.\n\nBramwell walked its length twice, tapping the planks with a coin. \"We start on Monday,\" Ffion said."
+        let seven = "CHAPTER VII.\n\nThe engine was a two-cylinder Lister that had last run when decimal coins were new. Bramwell drained a sludge of diesel and pond water from its sump.\n\nBy Friday it idled steadily enough to frighten the moorhens. Ffion went below to fetch the torch."
+        let eight = "CHAPTER VIII.\n\nThey took the barge out on the first Sunday in May, as far as the swing bridge at Ashby Parva and back again."
+        for ending in [" \"Mind the rotten step,\" Bramwell said.", " \"Mind the rotten step,\" Ffion said.", " \"Mind the rotten step,\" Bramwell warned."] {
+            let old = [six, seven + ending, eight]
+            let new = [six, eight]
+            for phrase in ["CHAPTER VII.", "Lister", "sludge", "moorhens", "torch", "Mind the rotten"] {
+                let result = try relocate(try Phrase.place(of: phrase, inChapter: 1, of: old), from: old, to: new)
+                XCTAssertEqual(result.place, TextPlace(chapter: 1, offset: 0), "\(phrase), \(ending)")
+                XCTAssertFalse(result.finding.isGuess, "\(phrase), \(ending)")
+            }
+        }
+    }
+
+    /// The slide back never passes the new text's first word (REV15, V14):
+    /// a song whose cut verse and second chorus label end as its first
+    /// chorus label and chorus do, with the cut reaching back to the new
+    /// text's first word, sends a place in the verse to that word, not to
+    /// the start of the chapter before it.
+    func testTheSlideBackNeverPassesTheNewTextsFirstWord() throws {
+        let chorus = "Turn the wheel and grind the corn, the stones go round from dusk to morn."
+        let verse = "The river runs both high and low, the miller hums while the waters flow."
+        let after = "Sing it high and sing it low, and sing it while the waters flow."
+        let note = "(Sing the last line twice, softer the second time.)"
+        let prose = "Nobody in Ashcombe could remember who first sang it. The tune was older than the words, and the words had changed every time a new family took over the stones."
+        let old = ["", "Chorus.\n\n\(chorus)\n\n\(verse)\n\nChorus.\n\n\(chorus)\n\n\(after)\n\n\(note)\n\n\(prose)", MillBook.wheel]
+        let new = ["", "\(chorus)\n\n\(after)\n\n\(prose)", MillBook.wheel]
+        for phrase in ["The river runs", "the miller hums", "while the waters flow"] {
+            let result = try relocate(try Phrase.place(of: phrase, inChapter: 1, of: old), from: old, to: new)
+            XCTAssertEqual(result.place, TextPlace(chapter: 1, offset: 0), phrase)
         }
     }
 
@@ -494,15 +602,72 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(try relocate(end, from: mill, to: mill), PlaceRelocator.Result(place: end, finding: .unchanged))
     }
 
-    /// A place with no word after it in the old text (before the closing
-    /// full stop) is at the end of the book: when the text around it
-    /// changes, it goes to the end of the new text.
-    func testAPlaceAfterTheLastWordGoesToTheNewEnd() throws {
+    /// A place short of the end, however near, is not the end (REV15,
+    /// finding 9; `Book.restsAtEnd`): a place before the book's closing full
+    /// stop stays just after its last word, before what the new text adds
+    /// there; and a place at the end of the last chapter with words, which
+    /// only a back cover without words follows, stays at the end of that
+    /// chapter when the new text adds an afterword before the cover, or
+    /// only edits the chapter's last sentence. Neither reads finished.
+    func testAPlaceShortOfTheEndIsNotTheEnd() throws {
         let beforeStop = TextPlace(chapter: 3, offset: try Phrase.offset(of: "too close.", in: flour) + "too close".utf16.count)
         XCTAssertEqual((flour as NSString).substring(from: beforeStop.offset), ".", "the closing full stop")
         let changed = [millrace, wheel, stones, flour.replacingOccurrences(of: "too close.", with: "too close together.")]
         let result = try relocate(beforeStop, from: mill, to: changed)
-        XCTAssertEqual(result, PlaceRelocator.Result(place: TextPlace(chapter: 3, offset: changed.last?.utf16.count ?? -1), finding: .movedByTheDiff(.endOfBook)))
+        XCTAssertEqual(result, PlaceRelocator.Result(place: try Phrase.place(of: "together.", inChapter: 3, of: changed), finding: .movedByTheDiff(.linedUp)))
+
+        let cover = "[]"
+        let old = [millrace, wheel, stones, cover]
+        let endOfStones = TextPlace(chapter: 2, offset: stones.utf16.count)
+        XCTAssertFalse(TextPlace.restsAtEnd(globalOffset: BookWords(texts: old).globalOffset(of: endOfStones), bookLength: BookWords(texts: old).totalLength))
+        let afterword = "AFTERWORD\n\nThe mill ground its last commercial sack in 1947 and its first for the society in 2019."
+        let added = try relocate(endOfStones, from: old, to: ["The Mill at Hollins Ford", millrace, wheel, stones, afterword, cover])
+        XCTAssertEqual(added, PlaceRelocator.Result(place: TextPlace(chapter: 3, offset: stones.utf16.count), finding: .movedByTheDiff(.linedUp)))
+        let edited = stones.replacingOccurrences(of: "growing through its eye.", with: "growing through the eye of it.")
+        let lastSentence = try relocate(endOfStones, from: old, to: [millrace, wheel, edited, cover])
+        XCTAssertEqual(lastSentence, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: edited.utf16.count), finding: .movedByTheDiff(.wordReplaced)))
+    }
+
+    /// A place at its chapter's end stays at the end of that chapter in the
+    /// new text when a chapter restored after it ends with the same word, or
+    /// when its own chapter's last words were edited (REV15, finding 2): it
+    /// never goes to the end of the restored chapter.
+    func testAPlaceAtItsChaptersEndStaysThereWhenItsLastWordsChangeOrRecur() throws {
+        let ferry = "CHAPTER I. The Ferry\n\n"
+            + "The ferry left the north landing at six, whether or not anyone was aboard. Odile kept the tide tables in a biscuit tin and argued with them every morning, as though the moon could be talked round.\n\n"
+            + "On the first crossing of the season the engine coughed twice, and the passengers pretended not to notice. A dog in a red harness stood at the bow the whole way and barked at the gulls until they gave up and went home."
+        let island = "CHAPTER II. The Island\n\n"
+            + "The island had one shop, one church, and a post box that was emptied on Thursdays if the boat came. Fenwick ran the shop and sold paraffin, stamps, and tinned peaches at prices nobody questioned.\n\n"
+            + "In winter the crossings stopped altogether, and the islanders lived on what they had laid by: salt cod, potatoes, and a great deal of gossip, which kept longer than either."
+        let crossing = "CHAPTER III. The Crossing Back\n\n"
+            + "By March the channel buoys had dragged their moorings and the harbour master spent a week re-laying them from a rowing boat.\n\n"
+            + "The first sailing of spring carried a piano, two goats, and a schoolteacher who had answered an advertisement without looking at a map."
+        let preface = "Preface\n\nThese pages were written up from the log the ferry kept for forty years, with the spelling mended and the weather left alone."
+        let earlyEdit = ferry.replacingOccurrences(of: "at six, whether", with: "at half past six, whether")
+        let lastEdit = ferry.replacingOccurrences(of: "went home.", with: "went away.")
+        let tailEdit = ferry.replacingOccurrences(of: "until they gave up and went home.", with: "until they tired and went home.")
+        let islandHome = island.replacingOccurrences(of: "which kept longer than either.", with: "and waited for the boats to come home.")
+        let islandHomeAtLast = island.replacingOccurrences(of: "which kept longer than either.", with: "and waited for the boats to come home at last.")
+        let islandWalkedHome = island.replacingOccurrences(of: "which kept longer than either.", with: "and the last of the islanders walked home.")
+        let old = [ferry, crossing]
+        let end = TextPlace(chapter: 0, offset: ferry.utf16.count)
+        let cases: [(new: [String], expected: TextPlace)] = [
+            ([lastEdit, island, crossing], TextPlace(chapter: 0, offset: lastEdit.utf16.count)),
+            ([earlyEdit, islandHome, crossing], TextPlace(chapter: 0, offset: earlyEdit.utf16.count)),
+            ([earlyEdit, islandHomeAtLast, crossing], TextPlace(chapter: 0, offset: earlyEdit.utf16.count)),
+            ([preface, ferry, islandHome, crossing], TextPlace(chapter: 1, offset: ferry.utf16.count)),
+            ([tailEdit, islandWalkedHome, crossing], TextPlace(chapter: 0, offset: tailEdit.utf16.count)),
+        ]
+        for (index, test) in cases.enumerated() {
+            let result = try relocate(end, from: old, to: test.new)
+            XCTAssertEqual(result.place, test.expected, "case \(index)")
+            if case .movedByTheDiff = result.finding {} else { XCTFail("case \(index) found by \(result.finding)") }
+        }
+        // A footnote number the old reading ran onto the chapter's end, which
+        // the new reading drops.
+        let withNote = ferry + "12"
+        let note = try relocate(TextPlace(chapter: 0, offset: withNote.utf16.count), from: [withNote, crossing], to: [ferry, island, crossing])
+        XCTAssertEqual(note, PlaceRelocator.Result(place: end, finding: .movedByTheDiff(.wordReplaced)))
     }
 
     /// A place at the end of an earlier chapter stands just after that
@@ -522,6 +687,75 @@ final class PlaceRelocatorTests: XCTestCase {
         let added = edited + " The spoons outsold the jam."
         let extended = try relocate(end, from: old, to: [millrace, added, flour])
         XCTAssertEqual(extended, PlaceRelocator.Result(place: TextPlace(chapter: 1, offset: try Phrase.offset(of: "The spoons", in: added)), finding: .movedByTheDiff(.linedUp)))
+    }
+
+    // MARK: - Chapters Without Words
+
+    /// A place in a chapter without words goes to the chapter without words
+    /// that matches it between its neighbours' chapters in the new text
+    /// (REV15, finding 13), keeping its offset in it: an image page an older
+    /// build read as "[]" and a newer one reads as nothing, with or without
+    /// a chapter restored right after it; an ornament page with a preface
+    /// restored before it, or rewritten ("* * *" as "⁂"); a cover at the
+    /// book's start. It never goes to the end of the chapter before it, nor
+    /// to the end of a chapter restored after it.
+    func testAPlaceInAChapterWithoutWordsGoesToItsMatchingChapter() throws {
+        let interlude = "INTERLUDE. A Winter Crossing\n\nThe ice on the millpond held for nine days, and the volunteers skated on it."
+        let preface = "PREFACE\n\nThis diary was kept by the volunteers of the Hollins Ford mill between March and November."
+        let cases: [(old: [String], saved: TextPlace, new: [String], expected: TextPlace)] = [
+            ([millrace, wheel, "[]", stones, flour], TextPlace(chapter: 2, offset: 0), [millrace, wheel, "", stones, flour], TextPlace(chapter: 2, offset: 0)),
+            ([millrace, wheel, "[]", stones, flour], TextPlace(chapter: 2, offset: 0), [millrace, wheel, "", interlude, stones, flour], TextPlace(chapter: 2, offset: 0)),
+            ([millrace, "* * *", wheel], TextPlace(chapter: 1, offset: 0), [preface, millrace, "* * *", wheel], TextPlace(chapter: 2, offset: 0)),
+            ([millrace, "* * *", wheel], TextPlace(chapter: 1, offset: 2), [preface, millrace, "* * *", wheel], TextPlace(chapter: 2, offset: 2)),
+            ([millrace, "* * *", wheel], TextPlace(chapter: 1, offset: 0), [millrace, "⁂", wheel], TextPlace(chapter: 1, offset: 0)),
+            (["[]", millrace, wheel], TextPlace(chapter: 0, offset: 0), ["", millrace, wheel], TextPlace(chapter: 0, offset: 0)),
+        ]
+        for (index, test) in cases.enumerated() {
+            let result = try relocate(test.saved, from: test.old, to: test.new)
+            XCTAssertEqual(result, PlaceRelocator.Result(place: test.expected, finding: .movedByTheDiff(.linedUp)), "case \(index)")
+        }
+        // Its page left out, the place goes to the start of the chapter after
+        // where the one before it went, a chapter restored there included.
+        let leftOut = try relocate(TextPlace(chapter: 2, offset: 0), from: [millrace, wheel, "[]", stones], to: [millrace, wheel, interlude, stones])
+        XCTAssertEqual(leftOut, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: 0), finding: .movedByTheDiff(.passageRemoved)))
+    }
+
+    /// Saved words that hold no word stand anywhere, so they keep a place at
+    /// its numbers only when the old text and the diff put it back there
+    /// (REV15, finding 12): a position on a plate (a chapter without words)
+    /// with a preface restored before it goes to the plate, not to chapter
+    /// I, which now has the plate's numbers; so does one saved without
+    /// words; and an anchor read back empty, at a place with words, is
+    /// carried by the diff. With nothing changed, each stays.
+    func testSavedWordsThatHoldNoWordAreNoEvidenceThatAPlaceStands() throws {
+        let preface = "PREFACE\n\nThis diary was kept by the volunteers of the Hollins Ford mill between March and November."
+        let old = [millrace, "", wheel, stones]
+        let new = [preface, millrace, "", wheel, stones]
+        let plate = TextPlace(chapter: 1, offset: 0)
+        let anchored = try relocate(plate, from: old, to: new)
+        XCTAssertEqual(anchored, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: 0), finding: .movedByTheDiff(.linedUp)))
+        let relocator = PlaceRelocator(oldTexts: old, newTexts: new)
+        XCTAssertEqual(relocator.relocate(nil, savedAt: plate), anchored, "saved without words")
+        let empty = TextAnchor(before: "", after: "", fraction: 0)
+        let frost = try Phrase.place(of: "frost", inChapter: 2, of: old)
+        XCTAssertEqual(relocator.relocate(empty, savedAt: frost),
+                       PlaceRelocator.Result(place: TextPlace(chapter: 3, offset: frost.offset), finding: .movedByTheDiff(.linedUp)), "an anchor read back empty")
+
+        let same = PlaceRelocator(oldTexts: old, newTexts: old)
+        XCTAssertEqual(same.relocate(try SavedPlace.anchor(at: plate, in: old), savedAt: plate), PlaceRelocator.Result(place: plate, finding: .unchanged))
+        XCTAssertEqual(same.relocate(empty, savedAt: frost), PlaceRelocator.Result(place: frost, finding: .unchanged))
+    }
+
+    /// Saved words that mark the end of the book settle a place there
+    /// whatever they hold: a book whose text holds no words (a picture book
+    /// read as "[]") finished stays finished, unchanged, though the diff has
+    /// no words to go by.
+    func testWordsThatHoldNoneStillMarkTheEndOfTheBook() throws {
+        let book = ["[]"]
+        let end = TextPlace(chapter: 0, offset: 2)
+        let anchor = try SavedPlace.anchor(at: end, in: book)
+        XCTAssertTrue(anchor.marksEndOfBook)
+        XCTAssertEqual(PlaceRelocator(oldTexts: book, newTexts: book).relocate(anchor, savedAt: end), PlaceRelocator.Result(place: end, finding: .unchanged))
     }
 
     // MARK: - The Old Text
@@ -548,6 +782,33 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(result, PlaceRelocator.Result(place: try Phrase.place(of: "frost", inChapter: 1, of: relocator.new.texts), finding: .movedByTheDiff(.linedUp)))
     }
 
+    /// A place saved without words in a chapter the old text no longer has
+    /// is held within it as the reader opens such a place (REV15, finding 8;
+    /// `TextPlace.opening`): at the last chapter's start when its offset in
+    /// the whole book was short of the end, so it does not read finished,
+    /// and at the end when that offset was at or past the end. A bookmark,
+    /// which keeps no offset in the whole book, opens at the last chapter's
+    /// start.
+    func testAPlaceWithoutWordsInALostChapterIsHeldAsTheReaderOpensIt() throws {
+        let new = [millrace, wheel, stones, flour.replacingOccurrences(of: "longest day", with: "longest evening")]
+        let relocator = PlaceRelocator(oldTexts: mill, newTexts: new)
+        let lost = TextPlace(chapter: 5, offset: 140)
+        let total = relocator.old.totalLength
+        let lastChapterStart = PlaceRelocator.Result(place: TextPlace(chapter: 3, offset: 0), finding: .movedByTheDiff(.linedUp))
+        XCTAssertEqual(relocator.relocate(nil, savedAt: lost, savedGlobalOffset: total / 2), lastChapterStart)
+        XCTAssertEqual(relocator.relocate(nil, savedAt: lost), lastChapterStart, "a bookmark")
+        XCTAssertEqual(relocator.relocate(nil, savedAt: lost, savedGlobalOffset: total),
+                       PlaceRelocator.Result(place: relocator.new.endPlace, finding: .movedByTheDiff(.endOfBook)))
+
+        let outcome = relocator.relocate(PlaceRelocator.Places(
+            position: ReadingPosition(chapterIndex: 5, characterOffset: 140, globalCharacterOffset: total / 2),
+            bookmarks: [Bookmark(number: 1, chapterIndex: 5, characterOffset: 140)]
+        ), movedAt: SavedPlace.moveDate)
+        XCTAssertEqual(outcome.places.position.map { TextPlace(chapter: $0.chapterIndex, offset: $0.characterOffset) }, TextPlace(chapter: 3, offset: 0))
+        XCTAssertEqual(outcome.places.bookmarks.map { TextPlace(chapter: $0.chapterIndex, offset: $0.characterOffset) }, [TextPlace(chapter: 3, offset: 0)])
+        XCTAssertEqual(outcome.places.position?.anchor?.marksEndOfBook, false)
+    }
+
     /// A place inside a word keeps how far into the word it was.
     func testAPlaceInsideAWordKeepsItsPlaceInTheWord() throws {
         let saved = try Phrase.place(of: "millstone", inChapter: 2, of: mill)
@@ -558,6 +819,30 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(result, PlaceRelocator.Result(place: TextPlace(chapter: 2, offset: moved.offset + 4), finding: .movedByTheDiff(.linedUp)))
     }
 
+    /// A place inside a word keeps how far into it it was only on its own
+    /// word (REV15, V20): a place inside "the" in a paragraph the new text
+    /// removes lands at the start of the text after the removal, though that
+    /// text begins with "The", not inside it; and so does one in a foreword
+    /// removed at the book's start, where the diff is unsure.
+    func testAPlaceInsideAWordKeepsItsPlaceInItOnlyOnItsOwnWord() throws {
+        let heading = "CHAPTER I. The Crossing\n\n"
+        let p1 = "The ferry left the north landing at seven, carrying two carts of turnips, a crate of hens, and the vicar's bicycle, which nobody had asked to bring along. "
+        let p2 = "Halfway across, the engine coughed twice, and the pilot swore at it in three languages before the current took the bow and swung the whole boat slowly toward the weir. "
+        let p3 = "The passengers kept their seats while the deckhand rowed a line to the willow on the far bank and made it fast with a knot his grandfather had taught him. "
+        let p4 = "By noon the turnips were in the market at Upper Swaile."
+        let old = [heading + p1 + p2 + p3 + p4, wheel]
+        let new = [heading + p1 + p3 + p4, wheel]
+        let insideThe = TextPlace(chapter: 0, offset: try Phrase.offset(of: "the current", in: old[0]) + 2)
+        let removed = try relocate(insideThe, from: old, to: new)
+        XCTAssertEqual(removed, PlaceRelocator.Result(place: TextPlace(chapter: 0, offset: heading.utf16.count + p1.utf16.count), finding: .movedByTheDiff(.passageRemoved)))
+
+        let foreword = "A NOTE ON THIS EDITION\n\nThis printing follows the parish copy, so a few of the place names are guesses and the ferry timetable has been left out altogether."
+        let crossing = "The Crossing\n\n" + p1 + p3 + p4
+        let insideForeword = TextPlace(chapter: 0, offset: try Phrase.offset(of: "the ferry timetable", in: foreword) + 2)
+        let unsure = try relocate(insideForeword, from: [foreword, crossing, wheel], to: [crossing, wheel])
+        XCTAssertEqual(unsure, PlaceRelocator.Result(place: TextPlace(chapter: 0, offset: 0), finding: .guessed(.diffUnsure)))
+    }
+
     // MARK: - When the Diff Is Unsure
 
     /// Where the diff is unsure (a removal at the start of the book, with
@@ -566,12 +851,39 @@ final class PlaceRelocatorTests: XCTestCase {
     /// a removed foreword goes to the start of what follows, not to a ledger
     /// line that happens to share its words.
     func testAWeakMatchFarAwayDoesNotOverruleTheDiffsUnsureAnswer() throws {
-        let ledger = (1...400).map { "Ledger line \($0) recorded \($0 * 3) sacks of barley." }.joined(separator: " ")
+        let ledger = MillBook.ledger
         let foreword = "A NOTE ON THE LEDGER\n\nThe last page of the old ledger, kept in the vestry, reads: Ledger line 300 recorded 900 sacks of barley. Nobody has found the page that came before it."
         let old = [foreword] + mill + [ledger]
         let new = mill + [ledger]
         let result = try relocate(try Phrase.place(of: "Ledger line 300", inChapter: 0, of: old), from: old, to: new)
         XCTAssertEqual(result, PlaceRelocator.Result(place: TextPlace(chapter: 0, offset: 0), finding: .guessed(.diffUnsure)))
+    }
+
+    /// A stretch the diff leaves unmatched for its size is no local editing
+    /// (REV15, V13): a breathing exercise of 120 like cycles, two of them
+    /// with a typo the new text fixes, holds no word that stands once in
+    /// each text between the typos, and is too large to line up exactly.
+    /// Its places no longer collapse onto the stretch's start as sure moves:
+    /// each goes to the same share of the stretch, the diff's unsure answer,
+    /// which is where its words are.
+    func testAStretchLeftUnmatchedForItsSizeIsNoLocalEditing() throws {
+        let cycle = "Breathe in, and count to four. Hold, and count to four. Breathe out, and count to four. Hold, and count to four."
+        let typo = cycle.replacingOccurrences(of: "Breathe out", with: "Breath out")
+        let lines = { (typos: Set<Int>) in (0..<120).map { typos.contains($0) ? typo : cycle }.joined(separator: "\n") }
+        let intro = "Chapter Two. The Square Breath\n\nSit on a firm chair with both feet flat on the floor.\n\n"
+        let outro = "\n\nWhen the last cycle ends, stay seated for a minute and notice how the room sounds."
+        let old = [millrace, intro + lines([5, 115]) + outro, flour]
+        let new = [millrace, intro + lines([]) + outro, flour]
+        let relocator = PlaceRelocator(oldTexts: old, newTexts: new)
+        let lineLength = cycle.utf16.count + 1
+        for line in [10, 30, 50, 70, 90, 110] {
+            // One unit shorter in the old text for the typo in line 5.
+            let saved = TextPlace(chapter: 1, offset: intro.utf16.count + line * lineLength - 1)
+            let anchor = try XCTUnwrap(TextAnchor(capturingAt: saved, in: relocator.old))
+            let result = relocator.relocate(anchor, savedAt: saved)
+            XCTAssertEqual(result, PlaceRelocator.Result(place: TextPlace(chapter: 1, offset: intro.utf16.count + line * lineLength), finding: .guessed(.diffUnsure)),
+                           "line \(line)")
+        }
     }
 
     // MARK: - Odd Input

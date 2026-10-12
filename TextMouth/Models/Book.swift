@@ -756,9 +756,10 @@ struct Book: Identifiable, Codable, Hashable {
     /// book resting at its end reads 100 percent there too. False for a
     /// book with no saved place, or not measured yet.
     var restsAtEnd: Bool {
-        guard let position = readingPosition,
-              let totalChars = totalCharacterCount, totalChars > 0 else { return false }
-        return (position.globalCharacterOffset ?? position.characterOffset) >= totalChars
+        guard let position = readingPosition, let totalChars = totalCharacterCount else { return false }
+        // The one rule for the end of a book (`TextPlace.restsAtEnd`), which
+        // the place relocator follows too.
+        return TextPlace.restsAtEnd(globalOffset: position.globalCharacterOffset ?? position.characterOffset, bookLength: totalChars)
     }
 
     /// Save this book's data to its bookInfo.json
@@ -1309,7 +1310,7 @@ struct Bookmark: Identifiable, Codable, Hashable {
 
 /// A heading the listener skips (T06): its level, its label, and where it
 /// starts, with the text at its start, so the skip can follow its heading
-/// when the book's text is read anew (`TextAnchorFinder.findHeading`).
+/// when the book's text is read anew (`PlaceRelocator.relocate(_:)`).
 ///
 /// A skip has been a heading ID (`Heading.id`,
 /// "<chapter>-<offset>-<level>-<label>"), which changes whenever the text

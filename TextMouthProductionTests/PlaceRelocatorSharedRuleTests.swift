@@ -7,13 +7,7 @@ import XCTest
 /// a search (`TextAnchorFinder.settled`), and the first search's one best
 /// spot wherever it lies (`TextAnchorFinder.onlyBestSpot`). Pure: no window,
 /// no file.
-final class PlaceRelocatorSharedRuleTests: XCTestCase {
-
-    // MARK: - A Book
-
-    /// The shared book's first two chapters (`MillBook`).
-    private let millrace = MillBook.millrace
-    private let wheel = MillBook.wheel
+final class PlaceRelocatorSharedRuleTests: XCTestCase, MillBookReading {
 
     /// The first word's key of `word`.
     private func key(_ word: String, file: StaticString = #filePath, line: UInt = #line) throws -> UInt64 {
@@ -100,6 +94,35 @@ final class PlaceRelocatorSharedRuleTests: XCTestCase {
         }
     }
 
+    // MARK: - The End of a Book, and Where a Place Opens
+
+    /// The end of a book and where a saved place opens are one rule each,
+    /// which the book, the reader, and the relocator share: a place at or
+    /// past the book's length rests at its end and one short of it does
+    /// not; a place opens in its chapter held within it, a chapter before
+    /// the first at the book's start, and a chapter past the last at the
+    /// book's end only when its offset in the whole book rests at the end,
+    /// else at the last chapter's start.
+    func testTheEndOfABookAndWhereAPlaceOpensAreOneRule() {
+        XCTAssertTrue(TextPlace.restsAtEnd(globalOffset: 280, bookLength: 280))
+        XCTAssertTrue(TextPlace.restsAtEnd(globalOffset: 300, bookLength: 280))
+        XCTAssertFalse(TextPlace.restsAtEnd(globalOffset: 279, bookLength: 280), "short of the end, however near")
+        XCTAssertFalse(TextPlace.restsAtEnd(globalOffset: 0, bookLength: 0), "a book without text")
+
+        let lengths = [100, 180]
+        func opening(_ chapter: Int, _ offset: Int, global: Int? = nil) -> TextPlace {
+            TextPlace(chapter: chapter, offset: offset).opening(savedGlobalOffset: global, chapterCount: lengths.count, bookLength: 280) { lengths[$0] }
+        }
+        XCTAssertEqual(opening(0, 37), TextPlace(chapter: 0, offset: 37))
+        XCTAssertEqual(opening(0, 109), TextPlace(chapter: 0, offset: 100))
+        XCTAssertEqual(opening(1, -3), TextPlace(chapter: 1, offset: 0))
+        XCTAssertEqual(opening(-1, 50), TextPlace(chapter: 0, offset: 0))
+        XCTAssertEqual(opening(4, 10, global: 280), TextPlace(chapter: 1, offset: 180))
+        XCTAssertEqual(opening(4, 10, global: 279), TextPlace(chapter: 1, offset: 0))
+        XCTAssertEqual(opening(4, 10), TextPlace(chapter: 1, offset: 0))
+        XCTAssertEqual(TextPlace(chapter: 2, offset: 9).opening(savedGlobalOffset: 9, chapterCount: 0, bookLength: 0) { _ in 0 }, TextPlace(chapter: 0, offset: 0))
+    }
+
     // MARK: - The One Best Spot
 
     /// The first search's one best spot is found wherever it lies, however
@@ -111,7 +134,7 @@ final class PlaceRelocatorSharedRuleTests: XCTestCase {
         let anchor = try XCTUnwrap(TextAnchor(capturingAt: saved, in: BookWords(texts: book)))
         // The wheel's chapter moved to the end of a long book, far from the
         // place's share of the book, which the locality rule would heed.
-        let ledger = (1...400).map { "Ledger line \($0) recorded \($0 * 3) sacks of barley." }.joined(separator: " ")
+        let ledger = MillBook.ledger
         let moved = [millrace, ledger, wheel]
         let finder = TextAnchorFinder(texts: moved)
         let spot = try XCTUnwrap(finder.onlyBestSpot(for: anchor))
@@ -135,5 +158,19 @@ final class PlaceRelocatorSharedRuleTests: XCTestCase {
         let weak = try XCTUnwrap(TextAnchor(capturingAt: noon, in: BookWords(texts: book)))
         XCTAssertNil(TextAnchorFinder(texts: ["A storm drain runs in the shallows by the sluice.\n\nThen the talk turned to money."]).onlyBestSpot(for: weak),
                      "a spot whose words fit too weakly")
+    }
+
+    /// A spot that only the words before a place score is not the place's
+    /// one best spot (REV15, finding 5): the words before say where the text
+    /// before it went, not that the place's own text is there. A word
+    /// replaced ("frogspawn" became "duckweed") leaves the words before it
+    /// scoring well and its own words nowhere.
+    func testAPlacesOwnWordsMustStandAtItsOneBestSpot() throws {
+        let book = [millrace]
+        let saved = try Phrase.place(of: "frogspawn", inChapter: 0, of: book)
+        let anchor = try XCTUnwrap(TextAnchor(capturingAt: saved, in: BookWords(texts: book)))
+        XCTAssertNil(TextAnchorFinder(texts: [millrace.replacingOccurrences(of: "frogspawn", with: "duckweed")]).onlyBestSpot(for: anchor))
+        let spot = try XCTUnwrap(TextAnchorFinder(texts: [wheel, millrace]).onlyBestSpot(for: anchor), "its own words stand there")
+        XCTAssertEqual(spot.place, try Phrase.place(of: "frogspawn", inChapter: 1, of: [wheel, millrace]))
     }
 }
