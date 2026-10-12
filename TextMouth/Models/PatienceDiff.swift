@@ -30,8 +30,10 @@ import Foundation
 enum PatienceDiff {
     /// The most pairs of words (old words times new words) a stretch with no
     /// fixed point may hold and still be lined up exactly. Its table keeps a
-    /// 32-bit length for each pair: 16 MB at most, for the moment the
-    /// stretch takes. The measured program's limit.
+    /// 32-bit length for each pair of a word or the stretch's end on each
+    /// side, (old + 1) × (new + 1) of them: 32 MB at most (one old word
+    /// against four million new), for the moment the stretch takes. The
+    /// measured program's limit.
     static let largestExactStretch = 4_000_000
 
     /// How two texts' words line up (`alignment(of:in:)`).

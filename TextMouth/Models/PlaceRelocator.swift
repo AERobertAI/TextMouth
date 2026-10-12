@@ -813,19 +813,19 @@ struct PlaceRelocator: Sendable {
            oldLength <= Self.likeForLikeFactor * newLength + Self.likeForLikeSlack {
             if own >= 0 { return .linedUp(own) }
             // Its own word is gone: just after the nearest lined-up word
-            // before it, or at the nearest after it when nothing came in.
+            // before it, where what replaced it begins. (The diff's pairs keep
+            // their order, so that is never past the nearest lined-up word
+            // after it, which it is when nothing came in.)
             var before = word - 1
             while before > previous, partners[before] < 0 { before -= 1 }
-            var after = word + 1
-            while after < next, partners[after] < 0 { after += 1 }
-            return .replaced(min(partners[before] + 1, partners[after]))
+            return .replaced(partners[before] + 1)
         }
         // The place's own words are gone: what replaced them begins at the
         // stretch's start, and after a plain removal the next word kept is
         // there too. With solid matches on one side only, that side still
         // says where the removed text was, as an unsure answer.
         guard boundedBefore || boundedAfter else { return .undecided }
-        var target = boundedBefore ? min(stretchStart, stretchEnd) : stretchEnd
+        var target = boundedBefore ? stretchStart : stretchEnd
         // A plain removal slides back: when the removed text ends with the
         // words that end the text before it ("CHAPTER" ending a removed
         // chapter XVIII, before "CHAPTER XIX."), a diff may keep the first
@@ -969,22 +969,18 @@ struct PlaceRelocator: Sendable {
         // text, read as this build reads it, gives the chapter's old length.
         let chapterLength = saved.chapter >= 0 && saved.chapter < old.chapterCount ? old.length(ofChapter: saved.chapter) : nil
         let found = newFinder.find(anchor, savedAt: saved, savedChapterLength: chapterLength)
-        switch found.finding {
-        case .found(.savedWords(let score)):
+        if case .found(.savedWords(let score)) = found.finding {
             if let unsure, score < Self.strongScore, abs(new.word(at: found.place) - unsure.word) > Self.nearTheDiff {
                 return Result(place: unsure.place, finding: .guessed(.diffUnsure))
             }
             return Result(place: found.place, finding: Self.finding(found.finding))
-        case .guessed, .unchanged:
-            // A guess; or saved words that hold no word, which stand
-            // anywhere and so keep the place's numbers only as a guess. The
-            // diff's unsure answer comes first.
-            if let unsure { return Result(place: unsure.place, finding: .guessed(.diffUnsure)) }
-            return Result(place: found.place, finding: found.isGuess ? Self.finding(found.finding) : .guessed(.savedWords(.sameShare)))
-        case .found:
-            // The end of the book, which rule 1 settled before the diff.
-            return Result(place: found.place, finding: Self.finding(found.finding))
         }
+        // A guess; or saved words that hold no word, which stand anywhere
+        // and so keep the place's numbers only as a guess. (Rule 1 settled
+        // the end of the book before the diff, and the search finds no
+        // heading.) The diff's unsure answer comes first.
+        if let unsure { return Result(place: unsure.place, finding: .guessed(.diffUnsure)) }
+        return Result(place: found.place, finding: found.isGuess ? Self.finding(found.finding) : .guessed(.savedWords(.sameShare)))
     }
 
     /// Whether `anchor`'s quotes hold no fine word: saved words that stand
@@ -1183,33 +1179,31 @@ extension PlaceRelocator {
         )
     }
 
-    /// `position` at `result`'s place: its chapter and offset, its offset
-    /// across the whole book when it kept one, and its anchor captured
-    /// there; dated `date` when its chapter or offset changed, as
+    /// `place` (a reading position or a bookmark) at `result`'s place: its
+    /// chapter and offset, and its anchor captured there (its own when none
+    /// can be); everything else as it was.
+    private func moved<Place: MovablePlace>(_ place: Place, to result: Result) -> Place {
+        var moved = place
+        moved.chapterIndex = result.place.chapter
+        moved.characterOffset = result.place.offset
+        moved.anchor = TextAnchor(capturingAt: result.place, in: new) ?? place.anchor
+        return moved
+    }
+
+    /// `position` at `result`'s place (`moved(_:to:)`), with its offset
+    /// across the whole book worked out anew when it kept one; dated `date`
+    /// when its chapter or offset changed, as
     /// `AudioEditPlaces.follow` dates a moved position, so that it wins over
     /// an older copy in the checkpoint journal's adoption or another Mac's
     /// index (TEXT-ANCHORS-RESEARCH-2026-10-10.md); its time as it was when
     /// it stayed, and its heading index as it was.
     private func moved(_ position: ReadingPosition, to result: Result, at date: Date) -> ReadingPosition {
-        var moved = position
-        moved.chapterIndex = result.place.chapter
-        moved.characterOffset = result.place.offset
-        moved.globalCharacterOffset = position.globalCharacterOffset.map { _ in new.globalOffset(of: result.place) }
-        moved.anchor = TextAnchor(capturingAt: result.place, in: new) ?? position.anchor
+        var relocated = self.moved(position, to: result)
+        relocated.globalCharacterOffset = position.globalCharacterOffset.map { _ in new.globalOffset(of: result.place) }
         if result.place != TextPlace(chapter: position.chapterIndex, offset: position.characterOffset) {
-            moved.lastUpdated = date
+            relocated.lastUpdated = date
         }
-        return moved
-    }
-
-    /// `bookmark` at `result`'s place, with its anchor captured there; its
-    /// identity, number, note, and date as they were.
-    private func moved(_ bookmark: Bookmark, to result: Result) -> Bookmark {
-        var moved = bookmark
-        moved.chapterIndex = result.place.chapter
-        moved.characterOffset = result.place.offset
-        moved.anchor = TextAnchor(capturingAt: result.place, in: new) ?? bookmark.anchor
-        return moved
+        return relocated
     }
 
     /// The skip of `heading` in the new text, with the anchor at its start;
@@ -1219,3 +1213,18 @@ extension PlaceRelocator {
         return SkippedHeading(heading, anchor: TextAnchor(capturingAt: start, in: new) ?? skipped.anchor)
     }
 }
+
+/// The fields a reading position and a bookmark share that moving a place
+/// sets (`PlaceRelocator.moved(_:to:)`), so that one function moves both.
+fileprivate protocol MovablePlace {
+    /// The chapter's index.
+    var chapterIndex: Int { get set }
+    /// The offset into the chapter's reading text, in UTF-16 units.
+    var characterOffset: Int { get set }
+    /// The place's saved words.
+    var anchor: TextAnchor? { get set }
+}
+
+extension ReadingPosition: MovablePlace {}
+
+extension Bookmark: MovablePlace {}
