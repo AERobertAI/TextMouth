@@ -39,7 +39,9 @@ import Foundation
 ///    - **A like-for-like stretch** (as long in both texts, give or take,
 ///      between solid matches) is local editing: the place's own word if it
 ///      is lined up there, else just after the nearest lined-up word before
-///      it.
+///      it. A stretch the diff left unmatched for its size (a long
+///      repetitive passage) is not: the diff can only suppose the place is
+///      at the same share of it in the new text, an unsure answer.
 ///    - **Words gone:** after a removal, the place goes where the text after
 ///      the removal begins, slid back over words the removal ends with that
 ///      also end the text before it, as Git slides a change, though never
@@ -137,8 +139,9 @@ struct PlaceRelocator: Sendable {
     /// Why a place's spot is a best guess.
     enum Guess: Equatable, Sendable {
         /// The diff's own answer where it was unsure (a removal at an edge of
-        /// the book, with solid matches on one side only), when the saved
-        /// words found nothing surer.
+        /// the book, with solid matches on one side only, or a stretch it
+        /// left unmatched for its size), when the saved words found nothing
+        /// surer.
         case diffUnsure
         /// The saved words' own guess (`TextAnchorFinder.Guess`).
         case savedWords(TextAnchorFinder.Guess)
@@ -199,6 +202,9 @@ struct PlaceRelocator: Sendable {
     /// For each old word, the index of the new word the diff lines it up
     /// with, or -1 (`PatienceDiff`).
     private let partners: [Int]
+    /// For each old word, whether the diff left it unmatched for its
+    /// stretch's size (`PatienceDiff.Alignment.leftForSize`).
+    private let leftForSize: [Bool]
     /// For each new word, the index of the old word the diff lines up with
     /// it, or -1: a new word without one is text the diff found put in.
     private let sources: [Int]
@@ -212,7 +218,8 @@ struct PlaceRelocator: Sendable {
     /// headings are `newHeadings`: it lines the two up by the diff once, and
     /// indexes each one's words for the saved-words search.
     init(old: BookWords, new: BookWords, newHeadings: [Heading] = []) {
-        let partners = PatienceDiff.partners(of: old.keys, in: new.keys)
+        let alignment = PatienceDiff.alignment(of: old.keys, in: new.keys)
+        let partners = alignment.partners
         var sources = [Int](repeating: -1, count: new.count)
         for (word, partner) in partners.enumerated() where partner >= 0 && partner < sources.count {
             sources[partner] = word
@@ -221,6 +228,7 @@ struct PlaceRelocator: Sendable {
         self.new = new
         self.newHeadings = newHeadings
         self.partners = partners
+        self.leftForSize = alignment.leftForSize
         self.sources = sources
         self.oldFinder = TextAnchorFinder(words: old)
         self.newFinder = TextAnchorFinder(words: new, headings: newHeadings)
@@ -474,6 +482,8 @@ struct PlaceRelocator: Sendable {
             gone = (newWord, .wordReplaced, true)
         case .removed(let newWord, let sure):
             gone = (newWord, .passageRemoved, sure)
+        case .unlined(let newWord):
+            return .unsure(Unsure(word: newWord, place: landing(newWord)))
         case .undecided:
             return .undecided
         }
@@ -498,6 +508,11 @@ struct PlaceRelocator: Sendable {
         /// solid matches bound the change on one side only (a removal at an
         /// edge of the book), whose other side the diff can only suppose.
         case removed(Int, sure: Bool)
+        /// It lies in a stretch the diff left unmatched for its size
+        /// (`PatienceDiff.Alignment.leftForSize`), which says nothing of
+        /// where it went: the diff can only suppose a place before it goes
+        /// before this new word, at the same share of the stretch.
+        case unlined(Int)
         /// No solid match on either side: the texts share nothing near it.
         case undecided
     }
@@ -531,6 +546,16 @@ struct PlaceRelocator: Sendable {
         // by chance, and only the stretch's ends can be believed.
         let oldLength = next - previous - 1
         let newLength = stretchEnd - stretchStart
+        // A stretch the diff left unmatched for its size (a long repetitive
+        // passage, whose words stand too often to be fixed points) is no
+        // local editing, however alike its two sides' lengths: the diff can
+        // only suppose the place is at the same share of the stretch in the
+        // new text, an unsure answer that the saved words may overrule.
+        if leftForSize[word] {
+            guard boundedBefore || boundedAfter else { return .undecided }
+            let share = Double(word - previous - 1) / Double(max(oldLength, 1))
+            return .unlined(stretchStart + min(Int(share * Double(newLength)), max(newLength - 1, 0)))
+        }
         if boundedBefore, boundedAfter,
            newLength <= Self.likeForLikeFactor * oldLength + Self.likeForLikeSlack,
            oldLength <= Self.likeForLikeFactor * newLength + Self.likeForLikeSlack {

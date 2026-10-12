@@ -693,6 +693,33 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(result, PlaceRelocator.Result(place: TextPlace(chapter: 0, offset: 0), finding: .guessed(.diffUnsure)))
     }
 
+    /// A stretch the diff leaves unmatched for its size is no local editing
+    /// (REV15, V13): a breathing exercise of 120 like cycles, two of them
+    /// with a typo the new text fixes, holds no word that stands once in
+    /// each text between the typos, and is too large to line up exactly.
+    /// Its places no longer collapse onto the stretch's start as sure moves:
+    /// each goes to the same share of the stretch, the diff's unsure answer,
+    /// which is where its words are.
+    func testAStretchLeftUnmatchedForItsSizeIsNoLocalEditing() throws {
+        let cycle = "Breathe in, and count to four. Hold, and count to four. Breathe out, and count to four. Hold, and count to four."
+        let typo = cycle.replacingOccurrences(of: "Breathe out", with: "Breath out")
+        let lines = { (typos: Set<Int>) in (0..<120).map { typos.contains($0) ? typo : cycle }.joined(separator: "\n") }
+        let intro = "Chapter Two. The Square Breath\n\nSit on a firm chair with both feet flat on the floor.\n\n"
+        let outro = "\n\nWhen the last cycle ends, stay seated for a minute and notice how the room sounds."
+        let old = [millrace, intro + lines([5, 115]) + outro, flour]
+        let new = [millrace, intro + lines([]) + outro, flour]
+        let relocator = PlaceRelocator(oldTexts: old, newTexts: new)
+        let lineLength = cycle.utf16.count + 1
+        for line in [10, 30, 50, 70, 90, 110] {
+            // One unit shorter in the old text for the typo in line 5.
+            let saved = TextPlace(chapter: 1, offset: intro.utf16.count + line * lineLength - 1)
+            let anchor = try XCTUnwrap(TextAnchor(capturingAt: saved, in: relocator.old))
+            let result = relocator.relocate(anchor, savedAt: saved)
+            XCTAssertEqual(result, PlaceRelocator.Result(place: TextPlace(chapter: 1, offset: intro.utf16.count + line * lineLength), finding: .guessed(.diffUnsure)),
+                           "line \(line)")
+        }
+    }
+
     // MARK: - Odd Input
 
     /// Places and texts no book holds never trap: negative numbers, a

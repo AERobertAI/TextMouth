@@ -102,9 +102,18 @@ final class PatienceDiffTests: XCTestCase {
         XCTAssertEqual(Array(large.prefix(4)), [0, 1, 2, 3], "the common start lines up")
         XCTAssertEqual(Array(large.suffix(4)), Array((new.count - 4)..<new.count), "the common end lines up")
         XCTAssertEqual(large.dropFirst(4).dropLast(4).filter { $0 >= 0 }.count, 0, "the large stretch stays unmatched")
+        // The alignment says which words stayed unmatched for their
+        // stretch's size: those of the large stretch, not its common ends
+        // (REV15, V13).
+        let alignment = PatienceDiff.alignment(of: keys(old.joined(separator: " ")), in: keys(new.joined(separator: " ")))
+        XCTAssertEqual(alignment.partners, large)
+        XCTAssertEqual(alignment.leftForSize, [Bool](repeating: false, count: 4) + [Bool](repeating: true, count: 2 * side) + [Bool](repeating: false, count: 4))
 
         let small = partners("first spade rake spade rake last", "first rake spade rake spade last")
         XCTAssertEqual(small.filter { $0 >= 0 }.count, 5, "a small stretch lines up: first, three of the four, last")
+        XCTAssertEqual(PatienceDiff.alignment(of: keys("first spade rake spade rake last"), in: keys("first rake spade rake spade last")).leftForSize,
+                       [Bool](repeating: false, count: 6), "a stretch lined up exactly, or removed outright, is not left for its size")
+        XCTAssertEqual(PatienceDiff.alignment(of: keys("first spade rake last"), in: keys("first last")).leftForSize, [false, false, false, false])
     }
 
     /// A paragraph moved elsewhere is, to a diff, a removal there and the
