@@ -417,6 +417,16 @@ final class PlaceRelocatorTests: XCTestCase {
         XCTAssertEqual(result.finding, .movedByTheDiff(.passageRemoved))
     }
 
+    /// A word replaced in place is replaced, not moved (REV15, finding 5):
+    /// the words before it still stand, but its own words ("frogspawn
+    /// floated") stand nowhere now, so the moved-text rule does not follow
+    /// the words before it.
+    func testAWordReplacedInPlaceIsNotFollowedAsMovedText() throws {
+        let new = [millrace.replacingOccurrences(of: "frogspawn", with: "duckweed"), wheel, stones, flour]
+        let result = try relocate(try Phrase.place(of: "frogspawn", inChapter: 0, of: mill), from: mill, to: new)
+        XCTAssertEqual(result, PlaceRelocator.Result(place: try Phrase.place(of: "duckweed", inChapter: 0, of: new), finding: .movedByTheDiff(.wordReplaced)))
+    }
+
     /// A word the diff pairs by chance is no solid match: a paragraph moved
     /// to its chapter's end, with a short note left in its place that shares
     /// one of its words ("the"), is followed word for word, the "the" the

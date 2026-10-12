@@ -136,4 +136,18 @@ final class PlaceRelocatorSharedRuleTests: XCTestCase {
         XCTAssertNil(TextAnchorFinder(texts: ["A storm drain runs in the shallows by the sluice.\n\nThen the talk turned to money."]).onlyBestSpot(for: weak),
                      "a spot whose words fit too weakly")
     }
+
+    /// A spot that only the words before a place score is not the place's
+    /// one best spot (REV15, finding 5): the words before say where the text
+    /// before it went, not that the place's own text is there. A word
+    /// replaced ("frogspawn" became "duckweed") leaves the words before it
+    /// scoring well and its own words nowhere.
+    func testAPlacesOwnWordsMustStandAtItsOneBestSpot() throws {
+        let book = [millrace]
+        let saved = try Phrase.place(of: "frogspawn", inChapter: 0, of: book)
+        let anchor = try XCTUnwrap(TextAnchor(capturingAt: saved, in: BookWords(texts: book)))
+        XCTAssertNil(TextAnchorFinder(texts: [millrace.replacingOccurrences(of: "frogspawn", with: "duckweed")]).onlyBestSpot(for: anchor))
+        let spot = try XCTUnwrap(TextAnchorFinder(texts: [wheel, millrace]).onlyBestSpot(for: anchor), "its own words stand there")
+        XCTAssertEqual(spot.place, try Phrase.place(of: "frogspawn", inChapter: 1, of: [wheel, millrace]))
+    }
 }

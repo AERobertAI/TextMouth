@@ -46,8 +46,10 @@ import Foundation
 ///      stretch, where what replaced it begins.
 ///    - **Moved text:** a place whose words are gone from their spot follows
 ///      them, however far, when its saved words' one best spot in the new
-///      text lies in text the diff found put in: text that moved is a
-///      removal there and the same words put in here. Words met in text the
+///      text holds its own word (the first after it) and lies in text the
+///      diff found put in: text that moved is a removal there and the same
+///      words put in here. The words before a place alone say only where
+///      the text before it went. Words met in text the
 ///      diff kept (a refrain's other verse, a second contents list) are a
 ///      second copy, and the place stays with the diff.
 ///    - **The end:** a place with no words after it in the old text goes to
