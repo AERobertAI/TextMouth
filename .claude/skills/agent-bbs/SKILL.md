@@ -50,8 +50,8 @@ A team is a lead, some members, a channel, and a task list. The lead is not coun
 - `bbs team remove NAME TEAM AGENT ...` removes members. The lead is not a member, so it cannot be removed this way.
 - `bbs teams [TEAM]` lists every team with its lead, members, and tasks, or shows only TEAM.
 
-      bbs team create boardlead board --purpose "Build teams for the board"
-      bbs register boardschema --role "Add the teams tables" --branch board/schema --files scripts/bbs.py --team board
+      bbs team create board-lead board --purpose "Build teams for the board"
+      bbs register board-schema --role "Add the teams tables" --branch board/schema --files .claude/skills/agent-bbs/scripts/bbs.py --team board
 
 A post to `team:TEAM` reaches the inbox of the lead and of every member. A member hears the channel from when it joined, and the lead from its own registration, as with a post to `all`. Every change to a team, such as creating it or adding or removing a member, posts one line to its channel, so the channel is the team's history.
 
@@ -63,7 +63,7 @@ The address has a `team:` prefix so that a team may share a name with an agent, 
 
       bbs post archivebounds --tag finding --file TextMouth/Services/DOCXParser.swift --topic "DOCXParser leaves the archive open on a missing entry" --body "extract(_:) returns at the guard without closing it. Not fixing it on this branch."
       bbs post livestats --reply-to 12 --body "Seen; fixing it in my next commit."
-      bbs post boardschema --to team:board --tag question --topic "Should purge keep an empty team?"
+      bbs post board-schema --to team:board --tag question --topic "Should purge keep an empty team?"
 
 - `bbs inbox NAME [--unread] [--since ID|TIME] [--tag TAG] [--team TEAM] [--last N] [--peek]` shows the messages that concern you, newest last. Those are messages to you or to `all` posted since you first registered, posts to the channel of any team you lead or belong to, plus messages tied to files under your current claims whenever they were posted, but never your own posts. `--team` keeps only that team's channel. It marks the messages it shows as read, unless you add `--peek`. Earlier traffic stays in the public log (`bbs read`). To reach an agent that has not registered yet, tie the message to the files it will claim.
 
@@ -103,9 +103,9 @@ The rules for moves:
 
 A lead adds a task and hands it out, and the worker moves it along:
 
-      bbs task add boardlead board --title "Teach purge about teams" --brief Scripts/agents/briefs/2026-10-12/board/housekeeping.md --assign boardhousekeeping
-      bbs task move boardhousekeeping 4 working
-      bbs task move boardhousekeeping 4 review --note "Ready: 12 tests added, suite is green."
+      bbs task add board-lead board --title "Teach purge about teams" --brief Scripts/agents/briefs/2026-10-12/board/housekeeping.md --assign board-housekeeping
+      bbs task move board-housekeeping 4 working
+      bbs task move board-housekeeping 4 review --note "Ready: 12 tests added, suite is green."
 
 ### Builds
 
@@ -139,7 +139,7 @@ The teams tables are additions. This version of the script creates whichever of 
 5. **When you notice a problem in files you do not own**, do not fix it. Post a finding tied to those files, which reaches whoever claims them: `bbs post NAME --tag finding --file PATH --topic "ONE LINE" --body "what is wrong and where"`.
 6. **When a decision affects another agent**, post a question to that agent with `bbs post NAME --tag question --to OTHER --topic "ONE LINE" --body "the question, and the assumption you are working under"`. Keep working under that assumption. Answer questions with `bbs post NAME --reply-to ID --body "..."`.
 7. **When you are done**, release your claims and say so: `bbs release NAME --all`, then `bbs post NAME --tag notice --topic "done: BRANCH"`.
-8. **In a team**, if your brief names one, know your duty. A worker joins with `--team TEAM` when it registers, posts to `--to team:TEAM` rather than to `all`, and keeps its own task's state current: `bbs task move NAME ID working` when it starts, then `bbs task move NAME ID review --note "ONE LINE"` when it is done. A lead creates the team with `bbs team create NAME TEAM --purpose "ONE LINE"`, hands out work with `bbs task add NAME TEAM --title "ONE LINE" --assign AGENT`, and keeps each task's state current, moving it to `done` or `dropped`. The orchestrator reads each team's channel with `bbs read --team TEAM`.
+8. **In a team** (when your brief names one), each role has a duty. A worker joins the team with `--team TEAM` when it registers, posts to its channel with `--to team:TEAM` rather than to `all`, and keeps its own task's state current, with `bbs task move NAME ID working` when it starts and `bbs task move NAME ID review --note "ONE LINE"` when it is done. A lead creates the team with `bbs team create NAME TEAM --purpose "ONE LINE"`, hands out work with `bbs task add NAME TEAM --title "ONE LINE" --assign AGENT`, and keeps each task's state current, moving it to `done` or `dropped`. The orchestrator reads each team's channel with `bbs read --team TEAM`.
 
 Keep posts short; the board is for coordination, not reports.
 <!-- protocol:end -->
