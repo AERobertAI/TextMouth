@@ -237,4 +237,7 @@ enum BookVoiceSettingsWording {
     static let resetToDefaultsLabel = "Reset this book's voice, speed, and pitch to the global defaults"
     /// Its hint: what resetting does.
     static let resetToDefaultsHint = "Removes this book's own voice, speed, and pitch, so it uses the global defaults."
+    /// What VoiceOver is told once a text book's reset has run; it names
+    /// all three settings the reset clears, as the button does.
+    static let resetDone = "Using global voice, speed, and pitch settings"
 }

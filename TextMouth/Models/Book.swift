@@ -100,6 +100,10 @@ struct Book: Identifiable, Codable, Hashable {
     var folderPath: String  // e.g. "Fiction/Sci-Fi" or "" for root
     var dateAdded: Date
     var lastOpened: Date?
+    /// A book is unopened while it has never been opened (`lastOpened` is
+    /// nil). It is what the Unopened category lists, and what a row's "New"
+    /// and `BookState.isNew` read.
+    var isUnopened: Bool { lastOpened == nil }
     var readingPosition: ReadingPosition?
     var bookmarks: [Bookmark]
     /// Total word count — populated when the book is first opened and parsed
@@ -882,7 +886,7 @@ struct Book: Identifiable, Codable, Hashable {
                 readingPosition: readingPosition,
                 totalWordCount: totalWordCount,
                 totalCharacterCount: totalCharacterCount,
-                isNew: lastOpened == nil,
+                isNew: isUnopened,
                 tmbDirectoryName: tmbDirectoryName,
                 lastPlaybackStarted: lastPlaybackStarted,
                 lastPlaybackStopped: lastPlaybackStopped,

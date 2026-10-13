@@ -33,14 +33,15 @@ final class TranscriptModelTests: XCTestCase {
         XCTAssertEqual(Set(object.keys), ["app", "createdAt", "files", "locale", "model", "version"])
         XCTAssertEqual(object["createdAt"] as? String, "2026-09-21T14:13:20Z")
         let files = try XCTUnwrap(object["files"] as? [[String: Any]])
-        XCTAssertEqual(files[1]["path"] as? String, "Disc 2/02.wav")
-        let sentence = try XCTUnwrap((files[0]["sentences"] as? [[String: Any]])?.first)
+        XCTAssertEqual(files[safe: 1]?["path"] as? String, "Disc 2/02.wav")
+        let firstFile = try XCTUnwrap(files[safe: 0])
+        let sentence = try XCTUnwrap((firstFile["sentences"] as? [[String: Any]])?.first)
         XCTAssertEqual(Set(sentence.keys), ["endMilliseconds", "startMilliseconds", "text", "words"])
         XCTAssertEqual(sentence["endMilliseconds"] as? Int, 2_400)
         let firstWord = try XCTUnwrap((sentence["words"] as? [[Any]])?.first)
         XCTAssertEqual(firstWord.count, 5)
         XCTAssertEqual(firstWord.prefix(4).compactMap { $0 as? Int }, [0, 9, 0, 400])
-        XCTAssertEqual(firstWord[4] as? Double, 0.9)
+        XCTAssertEqual(firstWord[safe: 4] as? Double, 0.9)
         // The keys of the file's objects come in order.
         let text = String(decoding: bytes, as: UTF8.self)
         XCTAssertLessThan(try XCTUnwrap(text.range(of: "\"app\"")).lowerBound, try XCTUnwrap(text.range(of: "\"files\"")).lowerBound)
@@ -296,9 +297,15 @@ final class TranscriptModelTests: XCTestCase {
             JSONSerialization.jsonObject(with: try TranscriptStore.encoded(transcript)) as? [String: Any]
         )
         var files = try XCTUnwrap(object["files"] as? [[String: Any]])
-        var sentences = try XCTUnwrap(files[0]["sentences"] as? [[String: Any]])
-        sentences[0]["startMilliseconds"] = "Quillwort"
-        files[0]["sentences"] = sentences
+        // Read each level through the safe subscript, so a shorter list fails
+        // here; the writes back below use indexes this unwrapping proved.
+        var file = try XCTUnwrap(files[safe: 0])
+        var sentences = try XCTUnwrap(file["sentences"] as? [[String: Any]])
+        var sentence = try XCTUnwrap(sentences[safe: 0])
+        sentence["startMilliseconds"] = "Quillwort"
+        sentences[0] = sentence
+        file["sentences"] = sentences
+        files[0] = file
         object["files"] = files
         let bytes = try JSONSerialization.data(withJSONObject: object)
 

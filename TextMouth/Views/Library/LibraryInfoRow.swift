@@ -154,7 +154,7 @@ extension BookInfoFacts {
             folderPath: book.folderPath,
             progress: BookRow.spokenProgress(for: shown, besideDownloadPercentage: false),
             timeRemaining: BookRow.timeRemaining(for: shown, wpm: wordsPerMinute),
-            isUnopened: book.lastOpened == nil,
+            isUnopened: book.isUnopened,
             dateAdded: book.dateAdded,
             lastOpened: book.lastOpened,
             bookmarkCount: book.bookmarks.count,
@@ -191,12 +191,12 @@ extension FolderInfoFacts {
     @MainActor
     init(_ folder: BookFolder, library: LibraryViewModel, feedFolders: LibraryFeedFolders, wordsPerMinute: Double) {
         let path = folder.fullPath
-        let books = library.library.books.filter { $0.folderPath == path || $0.folderPath.hasPrefix(path + "/") }
+        let books = library.library.booksInFolderTree(path)
         let timesLeft = books.compactMap { library.livePositions.applied(to: $0).estimatedTimeRemaining(wpm: wordsPerMinute) }
         self.init(
             name: folder.name,
             bookCount: books.count,
-            unopenedCount: books.filter { $0.lastOpened == nil }.count,
+            unopenedCount: books.filter { $0.isUnopened }.count,
             feedCount: LibraryFeedsSectionRows.feeds(at: LibraryLocation(category: .folders, folderPath: path), center: feedFolders.center).count,
             subfolderCount: library.subfoldersOf(path).count,
             timeRemaining: timesLeft.isEmpty ? nil : timesLeft.reduce(0, +)

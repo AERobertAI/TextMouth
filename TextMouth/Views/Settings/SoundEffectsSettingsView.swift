@@ -36,14 +36,40 @@ struct SoundEffectsSettingsView: View {
             }
 
             Section {
-                Button("Reset to Defaults") {
-                    soundEffectService.resetToDefaults()
+                Button(SoundEffectsSettingsWording.resetTitle) {
+                    Self.resetEverySound(soundEffectService)
                 }
-                .accessibilityLabel("Reset all sound effects to defaults")
+                .accessibilityLabel(SoundEffectsSettingsWording.resetLabel)
             }
         }
         .padding()
     }
+}
+
+extension SoundEffectsSettingsView {
+    /// Gives the sound assignments, the volume, and "sounds on" their
+    /// defaults again, then says so: the button said nothing otherwise, and a
+    /// VoiceOver user could not tell the reset had worked. No alert closes
+    /// here, so VoiceOver hears `SoundEffectsSettingsWording.resetDone` at
+    /// once. `announce` lets a test capture the words.
+    static func resetEverySound(
+        _ service: SoundEffectService,
+        announce: (String) -> Void = { VoiceOverAnnouncer.announce($0) }
+    ) {
+        service.resetToDefaults()
+        announce(SoundEffectsSettingsWording.resetDone)
+    }
+}
+
+/// The words of the Sound Effects tab's Reset to Defaults, pinned by tests.
+enum SoundEffectsSettingsWording {
+    /// The button's title, on screen and to VoiceOver as its name.
+    static let resetTitle = "Reset to Defaults"
+    /// The button's VoiceOver label: which settings it resets.
+    static let resetLabel = "Reset all sound effects to defaults"
+    /// What VoiceOver hears after the reset. It follows the audio filter
+    /// presets' reset wording.
+    static let resetDone = "The sound effects are reset to the defaults."
 }
 
 struct SoundEventRow: View {

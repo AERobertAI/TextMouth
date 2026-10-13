@@ -329,7 +329,9 @@ extension FeedWording {
 
     /// What VoiceOver hears once an item is marked played or unplayed.
     static func marked(title: String, played: Bool, isArticle: Bool) -> String {
-        let word = played ? playedNote(isArticle: isArticle).lowercased() : (isArticle ? "unread" : "unplayed")
+        // "unread" or "unplayed" are spelled once, by the feed counts' wording.
+        let noun: ItemNoun = isArticle ? .article : .episode
+        let word = played ? playedNote(isArticle: isArticle).lowercased() : unplayedNote(noun)
         return "Marked “\(title)” \(word)."
     }
 

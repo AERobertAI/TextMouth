@@ -116,6 +116,38 @@ final class FinishedBookWordingTests: XCTestCase {
         )
     }
 
+    // MARK: - The Library's Continue Button
+
+    /// The Continue button for a book resting at its end shows no time and
+    /// speaks none: "Continue listening to Dune", where it said "0:00
+    /// left" and "0 seconds remaining". The book's title and nothing else.
+    func testTheContinueButtonSaysNoTimeForAFinishedBook() {
+        let finished = Self.book(at: Self.total)
+        XCTAssertNil(LibraryView.continueTimeText(for: finished, wpm: 200), "A finished book's button shows its time left")
+        let label = LibraryView.continueAccessibilityLabel(for: finished, wpm: 200)
+        XCTAssertEqual(label, "Continue listening to Dune")
+        XCTAssertFalse(label.contains("remaining"), "A finished book's button speaks its time left")
+    }
+
+    /// The Continue button for a book partway through shows and speaks the
+    /// time left in the words of that book's row (`BookRow.remainingText`),
+    /// whatever the pace.
+    func testTheContinueButtonSpeaksTheTimeLeftAsTheRowDoes() throws {
+        let reading = Self.book(at: Self.total * 2 / 5)
+        for wpm in [150.0, 200, 300] {
+            let remaining = try XCTUnwrap(BookRow.timeRemaining(for: reading, wpm: wpm), "No time left at \(wpm) wpm")
+            let words = BookRow.remainingText(remaining)
+            XCTAssertEqual(LibraryView.continueTimeText(for: reading, wpm: wpm), words.visible)
+            XCTAssertEqual(
+                LibraryView.continueAccessibilityLabel(for: reading, wpm: wpm),
+                "Continue listening to Dune, \(words.spoken)"
+            )
+        }
+        // The pinned words themselves: 1,200 words left at 200 a minute.
+        XCTAssertEqual(LibraryView.continueTimeText(for: reading, wpm: 200), "6:00 left")
+        XCTAssertEqual(LibraryView.continueAccessibilityLabel(for: reading, wpm: 200), "Continue listening to Dune, 6 minutes remaining")
+    }
+
     // MARK: - Fixtures
 
     /// A place in the last of forty headings, each a chapter of its own,

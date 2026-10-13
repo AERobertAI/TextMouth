@@ -247,12 +247,6 @@ struct Library: Codable {
 
     // MARK: - Sort Settings
 
-    /// Get the sort setting for a key (folder path or category key),
-    /// falling back to the provided default or the global default.
-    func sortSetting(for key: String, default fallback: FolderSortSetting = .defaultSort) -> FolderSortSetting {
-        folderSortSettings[key] ?? fallback
-    }
-
     /// Update the sort setting for a folder path.
     mutating func setSortSetting(_ setting: FolderSortSetting, for folderPath: String) {
         folderSortSettings[folderPath] = setting
@@ -793,9 +787,7 @@ struct Library: Codable {
     /// items are in no folder (FR11), so they never count.
     func folderHasContents(_ folder: BookFolder) -> Bool {
         let path = folder.fullPath
-        let hasBooks = books.contains {
-            !$0.isFeedItem && ($0.folderPath == path || $0.folderPath.hasPrefix(path + "/"))
-        }
+        let hasBooks = !booksInFolderTree(path).isEmpty
         let hasSubfolders = folders.contains { $0.parentPath == path }
         return hasBooks || hasSubfolders
     }
@@ -805,9 +797,18 @@ struct Library: Codable {
     /// counts as their feeds instead. For the top level ("") it counts the
     /// books there, as it always has; `libraryBookCount` counts them all.
     func totalBooksInFolderTree(_ path: String) -> Int {
+        booksInFolderTree(path).count
+    }
+
+    /// The library's own books in the folder at `path` and in every folder
+    /// below it, in the library's order: never a feed's items, which name
+    /// no folder (FR11). For the top level ("") it is the books there only,
+    /// as `totalBooksInFolderTree(_:)` has always counted them. The one
+    /// place that says what "in a folder's tree" means.
+    func booksInFolderTree(_ path: String) -> [Book] {
         books.filter {
             !$0.isFeedItem && ($0.folderPath == path || $0.folderPath.hasPrefix(path + "/"))
-        }.count
+        }
     }
 
     mutating func updateWordCounts(bookID: UUID, wordCount: Int, charCount: Int) {
@@ -826,18 +827,13 @@ struct Library: Codable {
         books.filter { !$0.isFeedItem && $0.folderPath == path }
     }
 
-    /// All books of the library's own with no folder assignment.
-    func booksWithNoFolder() -> [Book] {
-        booksInFolder("")
-    }
-
     /// All books never opened, from the root and every folder: what the
     /// Unopened category lists. A book is unopened while it has no
     /// `lastOpened`, which is what `BookState.isNew` reads too. A feed's
     /// items are left out (FR11): their feed's row stands for them, as the
     /// user asked on October 7.
     func unopenedBooks() -> [Book] {
-        books.filter { !$0.isFeedItem && $0.lastOpened == nil }
+        books.filter { !$0.isFeedItem && $0.isUnopened }
     }
 
     func subfolders(of parentPath: String) -> [BookFolder] {

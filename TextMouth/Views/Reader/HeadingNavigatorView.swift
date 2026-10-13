@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 struct HeadingNavigatorView: View {
@@ -30,6 +31,34 @@ struct HeadingNavigatorView: View {
         }
     }
 
+    /// What the rows' times depend on besides the headings and the position
+    /// (P08): how the book's times are counted (an audiobook's recording, or
+    /// a text book's words at its words per minute), the speed an audiobook's
+    /// lengths are heard at, and the speed the setting names beside each
+    /// length. The sheet rebuilds its rows when this changes, so a speed
+    /// change made while it is open (Increase Speed, or the Settings window)
+    /// reaches its Durations, its Time In values, and its named speeds. It
+    /// does not change while a book plays, so playback rebuilds nothing.
+    struct RowTiming: Equatable {
+        /// How the book's times are counted, which its clock follows.
+        let count: ReaderTimeWording.Count
+        /// The speed the rows hear lengths at: an audiobook's speed, or 1
+        /// for a text book, whose clock already counts its words at its
+        /// speed. As `headingItems(for:displayed:allHeadings:skippedIDs:mode:)`
+        /// passes it.
+        let listeningSpeed: Double
+        /// The speed named beside each length, nil while the setting is off.
+        let namedSpeed: ReaderTimeWording.ListeningSpeed?
+
+        /// What `reader` counts its times by now.
+        @MainActor
+        init(of reader: ReaderViewModel) {
+            count = reader.timeCount
+            listeningSpeed = reader.isAudioBook ? reader.audioSpeed : 1
+            namedSpeed = reader.namedListeningSpeed
+        }
+    }
+
     /// What the sheet shows of its reader, which it follows instead of the
     /// whole reader (PERF30): the book's title, its headings, the sections
     /// skipped, and the heading the reading position is in under each level
@@ -45,6 +74,8 @@ struct HeadingNavigatorView: View {
         /// The heading the reading position is in, by level filter, as
         /// `HeadingNavigatorView.currentHeadingIDs` lists them.
         let currentHeadingIDs: [String?]
+        /// What the rows' times depend on, which a speed change alters.
+        let timing: RowTiming
 
         /// What `reader` shows the sheet now, at the position it displays.
         @MainActor
@@ -57,6 +88,7 @@ struct HeadingNavigatorView: View {
                 chapterIndex: reader.displayChapterIndex,
                 characterOffset: reader.displayCharacterOffset
             )
+            timing = RowTiming(of: reader)
         }
     }
 
@@ -183,6 +215,10 @@ struct HeadingNavigatorView: View {
     // Cache the rendered heading metadata in state so sheet presentation does
     // not repeatedly recompute timing/accessibility strings on the main thread.
     @State private var headingItems: [HeadingListItem] = []
+    /// The timing the rows were last built with, so a change to the
+    /// settings, which the snapshot never hears, rebuilds them only when it
+    /// changed what their times depend on.
+    @State private var builtTiming: RowTiming?
     /// The row that receives the sheet's one-time accessibility focus request.
     /// Keep this separate from `currentHeadingID`: playback may cross into a
     /// new section while the sheet is open, but it must not steal VoiceOver
@@ -342,6 +378,20 @@ struct HeadingNavigatorView: View {
         .onChange(of: shown.value.skippedHeadingIDs) { _, _ in
             rebuildHeadingItems()
         }
+        // A speed change while the sheet is open (Increase Speed acts under
+        // a sheet) reaches the snapshot, which republishes the timing.
+        .onChange(of: shown.value.timing) { _, _ in
+            rebuildHeadingItems()
+        }
+        // The setting that names the speed is the settings model's, which
+        // the reader does not republish. Look on the next main-queue turn,
+        // so the new value is stored before it is read, and rebuild only if
+        // the timing really changed: any other setting rebuilds nothing.
+        .onReceive(
+            viewModel.settingsViewModel.objectWillChange.receive(on: DispatchQueue.main)
+        ) { _ in
+            rebuildHeadingItemsIfTimingChanged()
+        }
     }
 
     private var filteredHeadings: [Heading] {
@@ -495,8 +545,20 @@ struct HeadingNavigatorView: View {
         }
     }
 
+    /// Rebuild the rows if what their times depend on differs from what
+    /// they were built with. Only the rows change: the focus request and the
+    /// current-heading badge stay where they are, and each row keeps its
+    /// heading's ID as its identity.
+    private func rebuildHeadingItemsIfTimingChanged() {
+        if RowTiming(of: viewModel) != builtTiming {
+            rebuildHeadingItems()
+        }
+    }
+
     private func rebuildHeadingItems() {
         let startedAt = CFAbsoluteTimeGetCurrent()
+        // Note the timing first, so every way into a rebuild keeps it current.
+        builtTiming = RowTiming(of: viewModel)
         headingItems = makeHeadingItems()
         let elapsed = CFAbsoluteTimeGetCurrent() - startedAt
         voiceOverFocusLog("rebuilt headings items in \(String(format: "%.3f", elapsed))s")

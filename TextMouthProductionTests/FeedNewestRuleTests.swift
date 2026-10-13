@@ -952,6 +952,8 @@ final class FeedNewestRuleTests: XCTestCase {
     }
 
     /// The books the items `itemIDs` of `feed` download as, each waited for.
+    /// It throws rather than return fewer, so the list is always as long as
+    /// `itemIDs`, and a test indexing it within that length cannot trap.
     private func downloadedBooks(_ world: FeedTestWorld, feed: Feed, items itemIDs: [FeedItem.ID]) async throws -> [Book] {
         var books: [Book] = []
         for itemID in itemIDs {

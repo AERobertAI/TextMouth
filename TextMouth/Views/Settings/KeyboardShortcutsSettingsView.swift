@@ -50,12 +50,26 @@ struct KeyboardShortcutsSettingsView: View {
         .padding()
         .alert("Reset Keyboard Shortcuts?", isPresented: $showResetConfirmation) {
             Button("Reset", role: .destructive) {
-                shortcutManager.resetToDefaults()
+                Self.resetEveryShortcut(shortcutManager)
             }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will reset all keyboard shortcuts to their default values. Any custom bindings will be lost.")
         }
+    }
+
+    /// Gives every action its default keys again, then says so: the alert's
+    /// Reset ends in silence otherwise, and a VoiceOver user could not tell
+    /// the reset had worked. VoiceOver hears `ShortcutsSettingsWording.resetDone`
+    /// once the alert has closed (REV11 F6), since hearing the alert close
+    /// would cut the words off. `announce` lets a test capture the words
+    /// without waiting out the delay.
+    static func resetEveryShortcut(
+        _ manager: KeyboardShortcutManager,
+        announce: (String) -> Void = { VoiceOverAnnouncer.announceAfterSheetCloses($0, from: nil) }
+    ) {
+        manager.resetToDefaults()
+        announce(ShortcutsSettingsWording.resetDone)
     }
 
     private var categories: [String] {
@@ -406,6 +420,10 @@ enum ShortcutsSettingsWording {
     /// That button's hint.
     static let resetToDefaultHint =
         "Gives this action TextMouth's default shortcuts again, which follow later releases' changes"
+
+    /// What VoiceOver hears after the Shortcuts tab's Reset to Defaults has
+    /// been confirmed. It follows the audio filter presets' reset wording.
+    static let resetDone = "The keyboard shortcuts are reset to the defaults."
 
     // MARK: The Recorder
 

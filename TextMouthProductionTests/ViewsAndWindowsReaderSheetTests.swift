@@ -164,6 +164,60 @@ final class ViewsAndWindowsReaderSheetTests: XCTestCase {
         XCTAssertEqual(intoTheNext["HeadingNavigatorRow"], 2, "Crossing a heading redrew other than the two rows whose badge moved")
     }
 
+    /// An open headings sheet rebuilds its rows when the reader's speed
+    /// changes (a text book's words a minute, as Increase Speed sets them),
+    /// and when the setting that names the speed is flipped, a change the
+    /// reader never republishes; a setting unrelated to times rebuilds
+    /// nothing. The rows' Durations are the ones that change.
+    func testHeadingsSheetRowsFollowASpeedChangeAndTheSetting() throws {
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: makeSandboxedPreferences("sheet-rows-speed")
+        )
+        let reader = try makeLoadedReader(settings: settings)
+        defer { reader.close() }
+        let hosted = hostOffscreen(
+            ReaderSheetHost(reader: reader) { HeadingNavigatorView(viewModel: $0) },
+            size: NSSize(width: 600, height: 700)
+        )
+        defer { takeDown(hosted.window) }
+        settle(hosted.hostingView, seconds: 0.4)
+        // The first draw of the parent after the sheet appears draws the
+        // sheet once more, whatever changed; one publish takes it out.
+        reader.objectWillChange.send()
+        settle(hosted.hostingView, seconds: 0.3)
+
+        // Rows redrawn by `change`, once the sheet has caught up with it.
+        func rowRedraws(_ change: () -> Void) -> Int {
+            let runs = bodyRuns(of: ["HeadingNavigatorRow"], in: hosted.hostingView, publishing: 1, warmUps: 0) { _ in
+                change()
+                self.settle(hosted.hostingView, seconds: 0.4)
+            }
+            return runs["HeadingNavigatorRow", default: 0]
+        }
+        /// The Duration rows the sheet should show now.
+        func durations() -> [String] {
+            let all = reader.headings
+            return HeadingNavigatorView.headingItems(
+                for: reader, displayed: all, allHeadings: all, skippedIDs: [], mode: .timeEstimate
+            ).map(\.infoText)
+        }
+
+        // A speed change while the sheet is open.
+        let before = durations()
+        let newWPM: Double = reader.speechService.wordsPerMinute == 400 ? 300 : 400
+        XCTAssertGreaterThan(rowRedraws { reader.speechService.wordsPerMinute = newWPM }, 0, "The rows kept their old times after a speed change")
+        XCTAssertNotEqual(durations(), before, "The speed change did not change the Durations")
+
+        // The setting that names the speed, flipped in another window.
+        XCTAssertGreaterThan(rowRedraws { settings.includeSpeedWithTimes = true }, 0, "The rows did not name the speed after the setting was turned on")
+        XCTAssertTrue(durations().allSatisfy { $0.hasSuffix(" at \(Int(newWPM)) words a minute") }, "\(durations())")
+
+        // A setting that has nothing to do with times.
+        XCTAssertEqual(rowRedraws { settings.showSpeedInPlaybackControls.toggle() }, 0, "An unrelated setting rebuilt the rows")
+    }
+
     /// The voice sheet draws again when a setting it shows changes, so its
     /// labels and controls follow it.
     func testVoiceSheetDrawsAgainWhenItsSpeedChanges() throws {
@@ -208,14 +262,14 @@ final class ViewsAndWindowsReaderSheetTests: XCTestCase {
 
     /// A reader with a small Markdown book loaded: three chapters, each a
     /// level-1 heading and two level-2 ones. Callers close it.
-    private func makeLoadedReader() throws -> ReaderViewModel {
+    private func makeLoadedReader(settings: SettingsViewModel? = nil) throws -> ReaderViewModel {
         let book = try makeMarkdownBook(chapters: 3, charactersPerChapter: 3_000, sectionsPerChapter: 2)
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: [book])
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: model,
-            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
+            settingsViewModel: settings ?? SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
             notificationCenter: NotificationCenter()
         )
         XCTAssertTrue(waitUntil(timeout: 30) { !reader.isLoading }, "The book never loaded")

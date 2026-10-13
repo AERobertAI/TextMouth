@@ -118,6 +118,28 @@ final class PreferenceStoreTests: XCTestCase {
         subscription.cancel()
     }
 
+    /// The Sound Effects tab's Reset to Defaults gives the defaults back in
+    /// a store of the test's own, says so in one pinned sentence, and keeps
+    /// its button words. Nothing is played: only preferences change.
+    func testTheSoundEffectsTabsResetResetsAndSaysSo() {
+        let store = makeSandboxedPreferences("sounds-reset-says-so")
+        let sounds = SoundEffectService(preferences: store)
+        sounds.assignments[.play] = "Glass"
+        sounds.volume = 0.9
+        sounds.soundsEnabled = false
+        var spoken: [String] = []
+
+        SoundEffectsSettingsView.resetEverySound(sounds) { spoken.append($0) }
+
+        XCTAssertEqual(sounds.assignments, SoundEffectService.defaultAssignments)
+        XCTAssertEqual(sounds.volume, 0.5)
+        XCTAssertTrue(sounds.soundsEnabled)
+        XCTAssertEqual(spoken, [SoundEffectsSettingsWording.resetDone])
+        XCTAssertEqual(SoundEffectsSettingsWording.resetDone, "The sound effects are reset to the defaults.")
+        XCTAssertEqual(SoundEffectsSettingsWording.resetTitle, "Reset to Defaults")
+        XCTAssertEqual(SoundEffectsSettingsWording.resetLabel, "Reset all sound effects to defaults")
+    }
+
     /// Taking a value from the store writes nothing back: once a preference
     /// is removed, the service uses its default and the store stays empty.
     func testSoundEffectsWriteNothingBackWhileFollowingTheirStore() {

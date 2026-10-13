@@ -81,10 +81,13 @@ enum TextEditingKeys {
     ]
 
     /// Whether a text field or text view keeps a key press matching
-    /// `binding` from the shortcut manager while it has the keyboard.
+    /// `binding` from the shortcut manager while it has the keyboard. A
+    /// double press belongs to a field when its stroke does, so the Edit
+    /// menu's keys are matched by the binding's `stroke` (one press, a
+    /// character in lower case), never by the whole binding.
     static func contains(_ binding: KeyBinding) -> Bool {
         keysWithAnyModifiers.contains(binding.key)
-            || editMenuKeys.contains(binding)
+            || editMenuKeys.contains(binding.stroke)
             || (binding.control && !binding.command && controlLetters.contains(binding.key))
     }
 }

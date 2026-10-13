@@ -559,10 +559,20 @@ struct LibraryView: View {
                 parentPath: $newFolderParentPath,
                 folders: libraryViewModel.library.folders,
                 onCreate: {
-                    closingOnSuccess(libraryViewModel.createFolderReturningOutcome(
+                    // The name as it was made and its parent, read before the
+                    // close clears them, for the words said once it has closed.
+                    let createdName = BookFolder.normalizedName(newFolderName)
+                    let createdParent = newFolderParentPath
+                    return closingOnSuccess(libraryViewModel.createFolderReturningOutcome(
                         name: newFolderName,
                         parentPath: newFolderParentPath
                     )) {
+                        if let createdName {
+                            VoiceOverAnnouncer.announceAfterSheetCloses(
+                                NewFolderSheet.createdAnnouncement(name: createdName, parentPath: createdParent),
+                                from: hostWindow
+                            )
+                        }
                         newFolderName = ""
                         newFolderParentPath = currentFolderPath
                         showNewFolderSheet = false
@@ -963,8 +973,8 @@ struct LibraryView: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                     Spacer()
-                    if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
-                        Text("\(TimeFormatting.format(remaining)) left")
+                    if let timeText = Self.continueTimeText(for: lastBook, wpm: settingsViewModel.wordsPerMinute) {
+                        Text(timeText)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -974,17 +984,30 @@ struct LibraryView: View {
                 .background(Color.accentColor.opacity(0.1))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel({
-                var label = "Continue listening to \(lastBook.title)"
-                if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
-                    label += ", \(TimeFormatting.spoken(remaining)) remaining"
-                }
-                return label
-            }())
+            .accessibilityLabel(Self.continueAccessibilityLabel(for: lastBook, wpm: settingsViewModel.wordsPerMinute))
             .accessibilityHint("Opens the last book you were reading")
             .accessibilityIdentifier(voiceOverFocusID)
             .background(StandardVoiceOverFocus(delay: 1.2))
         }
+    }
+
+    /// The time left the Continue button shows, "16:00 left", in the words
+    /// a library row uses (`BookRow.remainingText(_:)`), or nil when the
+    /// book has no time left to show: its estimate is unknown, or it rests
+    /// at its end, where a row says "Finished" and the button once said
+    /// "0:00 left" (TODO P07).
+    nonisolated static func continueTimeText(for book: Book, wpm: Double) -> String? {
+        BookRow.timeRemaining(for: book, wpm: wpm).map { BookRow.remainingText($0).visible }
+    }
+
+    /// What VoiceOver says for the Continue button, "Continue listening to
+    /// Emma, 16 minutes remaining", with its time spoken as the book's row
+    /// speaks it. A book with no time left to show, as a finished one,
+    /// leaves the time out: "Continue listening to Emma".
+    nonisolated static func continueAccessibilityLabel(for book: Book, wpm: Double) -> String {
+        let label = "Continue listening to \(book.title)"
+        guard let remaining = BookRow.timeRemaining(for: book, wpm: wpm) else { return label }
+        return "\(label), \(BookRow.remainingText(remaining).spoken)"
     }
 
     /// The words for Delete Everything on the folder awaiting confirmation,
@@ -1984,8 +2007,9 @@ private struct LibraryCloudWindowSupport: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: .stopKeepingOnThisMac)) { notification in
                 performKeepMenuCommand(false, notification)
             }
-            // Why Remove Download kept a book's download, which VoiceOver
-            // has also heard announced.
+            // Why Remove Download kept a book's download. This alert is the
+            // only place the refusal is said: nothing announces it besides
+            // (#2094).
             .alert(refusal?.title ?? "", isPresented: isShowingRefusal, presenting: refusal) { _ in
                 Button("OK", role: .cancel) {}
             } message: { refusal in

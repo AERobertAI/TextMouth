@@ -357,6 +357,11 @@ final class FeedUICommandsTests: XCTestCase {
         XCTAssertEqual(FeedWording.checked(report(.failed("The publisher has removed this feed.")), noun: .episode), "The publisher has removed this feed.")
         XCTAssertEqual(FeedWording.markedAll(count: 1, title: "Notes", noun: .article), "Marked 1 article of Notes read.")
         XCTAssertEqual(FeedWording.markedAll(count: 0, title: "Notes", noun: .article), "Every article of Notes is already read.")
+        // One item marked: the words follow the item's kind, in both directions.
+        XCTAssertEqual(FeedWording.marked(title: "Pilot", played: true, isArticle: false), "Marked “Pilot” played.")
+        XCTAssertEqual(FeedWording.marked(title: "Pilot", played: false, isArticle: false), "Marked “Pilot” unplayed.")
+        XCTAssertEqual(FeedWording.marked(title: "Memo", played: true, isArticle: true), "Marked “Memo” read.")
+        XCTAssertEqual(FeedWording.marked(title: "Memo", played: false, isArticle: true), "Marked “Memo” unread.")
 
         // Unsubscribe's question and announcement say what happens now (FR11,
         // branch D): the feed stays, checking stops, and what it kept of

@@ -103,6 +103,19 @@ final class TextFieldEditingKeysTests: XCTestCase {
         }
     }
 
+    /// A double press belongs to a field when its stroke does, and a key
+    /// spelled in upper case is the same key: the Edit menu's keys are
+    /// matched by the stroke, not the whole binding.
+    func testADoublePressOrAnUpperCaseKeyIsAFieldsWhenItsStrokeIs() {
+        // Double Command-A and double Shift-Command-Z: strokes of the Edit menu.
+        XCTAssertTrue(TextEditingKeys.contains(KeyBinding(key: "a", command: true, isDoublePress: true)))
+        XCTAssertTrue(TextEditingKeys.contains(KeyBinding(key: "z", command: true, shift: true, isDoublePress: true)))
+        // Command with "A" in upper case is Command-A.
+        XCTAssertTrue(TextEditingKeys.contains(KeyBinding(key: "A", command: true)))
+        // Double Command-B is an app shortcut's stroke, so it is not a field's.
+        XCTAssertFalse(TextEditingKeys.contains(KeyBinding(key: "b", command: true, isDoublePress: true)))
+    }
+
     /// Control with each letter AppKit binds with Control is a field's,
     /// alone or with Shift or Option or both; Control with any other
     /// letter, and Control-Command with any letter, are not.
