@@ -1480,7 +1480,8 @@ extension Book {
     /// moves are silent: nothing is spoken or shown, and nothing else of the
     /// book changes (no date, no last-opened time, no other field).
     ///
-    /// - The reading position moves when it is still `original`'s.
+    /// - The reading position moves when it is still `original`'s, as it is
+    ///   stored (`isAsStored`): the record keeps dates to the second.
     /// - Each bookmark moves when this book still holds it, by its `id`,
     ///   equal to `original`'s; a bookmark added, changed, or removed
     ///   meanwhile stays as this book has it, and the book's order is kept.
@@ -1493,7 +1494,7 @@ extension Book {
         let before = relocatablePlaces
 
         // The position, where it still is as it was.
-        if readingPosition == original.position {
+        if Self.isAsStored(readingPosition, original.position) {
             readingPosition = moved.position
         }
 
@@ -1502,7 +1503,7 @@ extension Book {
         let originalBookmarks = Dictionary(original.bookmarks.map { ($0.id, $0) }) { first, _ in first }
         let movedBookmarks = Dictionary(moved.bookmarks.map { ($0.id, $0) }) { first, _ in first }
         bookmarks = bookmarks.map { held in
-            guard originalBookmarks[held.id] == held, let now = movedBookmarks[held.id] else { return held }
+            guard Self.isAsStored(held, originalBookmarks[held.id]), let now = movedBookmarks[held.id] else { return held }
             return now
         }
 
@@ -1514,6 +1515,23 @@ extension Book {
         }
 
         return relocatablePlaces != before
+    }
+
+    /// Whether the place `held` is `original` as the library index and the
+    /// package record keep places: equal, or equal once both are written as
+    /// those files write them, with ISO 8601 dates, to the second. A place
+    /// saved during this run holds fractions of a second that its stored
+    /// copy has lost, so without this the same place, read back from disk
+    /// on one side, would never be "as it was", and would not move. Two
+    /// nils are alike; a nil and a place are not.
+    private static func isAsStored<Place: Encodable & Equatable>(_ held: Place?, _ original: Place?) -> Bool {
+        if held == original { return true }
+        guard let held, let original else { return false }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = .sortedKeys
+        guard let heldForm = try? encoder.encode(held), let originalForm = try? encoder.encode(original) else { return false }
+        return heldForm == originalForm
     }
 
     /// Gives each of this book's places that `captured` holds words for

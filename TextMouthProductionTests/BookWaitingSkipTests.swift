@@ -209,6 +209,33 @@ final class BookWaitingSkipTests: XCTestCase {
         XCTAssertEqual(book, untouched)
     }
 
+    /// A place saved during this run keeps fractions of a second that its
+    /// row and record, which store dates to the second, have lost: read
+    /// back from its record it is still the place as it was, so it moves
+    /// (the rebuild task found the difference).
+    func testAPlaceReadBackFromItsRecordIsStillAsItWas() throws {
+        let moving = Moving()
+        var position = moving.position
+        position.lastUpdated = Date(timeIntervalSince1970: 1_700_000_000.25)
+        let mark = Bookmark(id: moving.markA.id, number: 1, chapterIndex: 1, characterOffset: 20, label: "A",
+                            dateCreated: Date(timeIntervalSince1970: 1_700_000_000.75))
+        var original = moving.original
+        original.position = position
+        original.bookmarks = [mark, moving.markB]
+        var stored = try Self.storedAsRecord(Self.book(holding: original))
+        XCTAssertNotEqual(stored.readingPosition, position, "the record keeps dates to the second")
+        XCTAssertNotEqual(stored.bookmarks.first, mark, "the record keeps dates to the second")
+
+        XCTAssertTrue(stored.takeMovedPlaces(original: original, moved: moving.movedPlaces))
+
+        XCTAssertEqual(stored.readingPosition, moving.movedPosition)
+        XCTAssertEqual(stored.bookmarks.map(\.characterOffset), moving.movedPlaces.bookmarks.map(\.characterOffset))
+        // A place truly saved meanwhile is still kept.
+        var later = stored
+        later.readingPosition = ReadingPosition(chapterIndex: 1, characterOffset: 11)
+        XCTAssertFalse(later.takeMovedPlaces(original: original, moved: moving.movedPlaces))
+    }
+
     /// With every place as `moved` already, nothing changes and the result
     /// is false.
     func testNothingChangesWhenEveryPlaceIsAsMovedAlready() {
