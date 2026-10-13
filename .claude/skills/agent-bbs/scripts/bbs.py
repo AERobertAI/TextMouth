@@ -4,8 +4,9 @@
 Several agents work on this repository concurrently, each in its own git
 worktree on its own branch. The board lets them register, say which files
 they are editing, post short notices about builds, commits, findings and
-questions, and read what concerns them. It is one SQLite file that every
-worktree shares:
+questions, and read what concerns them. Agents can also work in teams, each
+with a lead, members, a channel addressed ``team:NAME``, and a task list.
+It is one SQLite file that every worktree shares:
 
 * ``$TEXTMOUTH_BBS_DIR/board.sqlite`` when that variable is set;
 * otherwise ``.claude/agent-bbs/board.sqlite`` in the main working tree of
@@ -65,16 +66,17 @@ SCHEMA_VERSION = 1
 #: Seconds a command waits for another process's write before giving up.
 BUSY_TIMEOUT_SECONDS = 30.0
 
-#: Recipient name that addresses every agent; no agent may register it.
+#: Recipient name that addresses every agent; no agent or team may take it.
 EVERYONE = "all"
 
 #: Prefix that turns a team's name into the address of its channel, as in "team:board".
 TEAM_PREFIX = "team:"
 
-#: Agent names: lower-case letters, digits, '.', '_' and '-', at most 40.
+#: Agent and team names: lower-case letters, digits, '.', '_' and '-', at most 40.
 NAME_RULE = re.compile(r"[a-z0-9][a-z0-9._-]{0,39}")
 
-#: Longest accepted one-line field (role, branch, topic, activity note).
+#: Longest accepted one-line field (role, branch, topic, activity note, team
+#: purpose, task title and note).
 MAX_LINE_LENGTH = 200
 
 #: Kinds of message; `notice` is the default. `task` marks the lines the board
