@@ -143,4 +143,234 @@ final class BookWaitingSkipTests: XCTestCase {
         record["state"] = state
         XCTAssertNil(try Self.decoder().decode(BookInfo.self, from: JSONSerialization.data(withJSONObject: record)).state.waitingSkippedHeadings)
     }
+
+    // MARK: - Commit 2: Fixtures for Moved Places
+
+    /// Places a rebuild moves, and the same places moved: every place in
+    /// `movedPlaces` differs from its place in `original`, so a test can tell
+    /// which ones a book took. The bookmarks keep their IDs, as the
+    /// relocator leaves them.
+    private struct Moving {
+        let position = ReadingPosition(chapterIndex: 1, characterOffset: 10)
+        let movedPosition = ReadingPosition(chapterIndex: 1, characterOffset: 15)
+        let markA = Bookmark(number: 1, chapterIndex: 1, characterOffset: 20, label: "A")
+        let markB = Bookmark(number: 2, chapterIndex: 2, characterOffset: 30, label: "B")
+        let skip = SkippedHeading(level: 2, label: "Notes", chapterIndex: 1, characterOffset: 40)
+        let movedSkip = SkippedHeading(level: 2, label: "Notes", chapterIndex: 1, characterOffset: 45)
+        let wait = SkippedHeading(level: 3, label: "Appendix", chapterIndex: 3, characterOffset: 50)
+        let movedWait = SkippedHeading(level: 3, label: "Appendix", chapterIndex: 3, characterOffset: 55)
+
+        /// `mark` at another place, with the same ID, number, label, and date.
+        func moved(_ mark: Bookmark) -> Bookmark {
+            Bookmark(id: mark.id, number: mark.number, chapterIndex: mark.chapterIndex, characterOffset: mark.characterOffset + 5, label: mark.label, dateCreated: mark.dateCreated)
+        }
+
+        /// The places as they were.
+        var original: PlaceRelocator.Places {
+            PlaceRelocator.Places(position: position, bookmarks: [markA, markB], skippedHeadings: [skip], waitingSkippedHeadings: [wait])
+        }
+
+        /// The places as the relocator moved them.
+        var movedPlaces: PlaceRelocator.Places {
+            PlaceRelocator.Places(position: movedPosition, bookmarks: [moved(markA), moved(markB)], skippedHeadings: [movedSkip], waitingSkippedHeadings: [movedWait])
+        }
+    }
+
+    /// A plain-text book holding `places`, with a last-opened time a test
+    /// checks stays as it is.
+    private static func book(holding places: PlaceRelocator.Places) -> Book {
+        var book = Book(
+            title: "Moved Places", format: .txt,
+            filePath: "/tmp/\(UUID().uuidString)-moved-places.txt", md5Hash: UUID().uuidString,
+            lastOpened: Date(timeIntervalSince1970: 1_700_000_000),
+            readingPosition: places.position,
+            bookmarks: places.bookmarks,
+            waitingSkippedHeadings: places.waitingSkippedHeadings
+        )
+        book.setSkippedHeadings(places.skippedHeadings)
+        return book
+    }
+
+    // MARK: - The Guarded Take
+
+    /// With nothing changed meanwhile every place moves, the result says so,
+    /// and nothing else of the book changes.
+    func testEveryPlaceMovesWhenNothingChangedMeanwhile() {
+        let moving = Moving()
+        var book = Self.book(holding: moving.original)
+        let untouched = book
+
+        XCTAssertTrue(book.takeMovedPlaces(original: moving.original, moved: moving.movedPlaces))
+
+        XCTAssertEqual(book.relocatablePlaces, moving.movedPlaces)
+        XCTAssertEqual(book.skippedHeadingIDs, [moving.movedSkip.id], "the IDs follow the skips")
+        // Put the places back and the whole book is as it was.
+        book.takeMovedPlaces(original: moving.movedPlaces, moved: moving.original)
+        XCTAssertEqual(book, untouched)
+    }
+
+    /// With every place as `moved` already, nothing changes and the result
+    /// is false.
+    func testNothingChangesWhenEveryPlaceIsAsMovedAlready() {
+        let moving = Moving()
+        var book = Self.book(holding: moving.movedPlaces)
+        let untouched = book
+
+        XCTAssertFalse(book.takeMovedPlaces(original: moving.original, moved: moving.movedPlaces))
+        XCTAssertEqual(book, untouched)
+    }
+
+    /// A position saved meanwhile is kept, while the bookmarks move.
+    func testAPositionSavedMeanwhileIsKeptWhileBookmarksMove() {
+        let moving = Moving()
+        let savedMeanwhile = ReadingPosition(chapterIndex: 3, characterOffset: 5)
+        var places = moving.original
+        places.position = savedMeanwhile
+        var book = Self.book(holding: places)
+
+        XCTAssertTrue(book.takeMovedPlaces(original: moving.original, moved: moving.movedPlaces))
+
+        XCTAssertEqual(book.readingPosition, savedMeanwhile)
+        XCTAssertEqual(book.bookmarks, [moving.moved(moving.markA), moving.moved(moving.markB)])
+    }
+
+    /// A bookmark whose label changed meanwhile keeps the change and its old
+    /// place, while another bookmark moves.
+    func testABookmarkRelabeledMeanwhileStaysWhileAnotherMoves() {
+        let moving = Moving()
+        var relabeled = moving.markA
+        relabeled.label = "A, renamed"
+        var places = moving.original
+        places.bookmarks = [relabeled, moving.markB]
+        var book = Self.book(holding: places)
+
+        XCTAssertTrue(book.takeMovedPlaces(original: moving.original, moved: moving.movedPlaces))
+
+        XCTAssertEqual(book.bookmarks, [relabeled, moving.moved(moving.markB)])
+        XCTAssertEqual(book.readingPosition, moving.movedPosition)
+    }
+
+    /// A bookmark added meanwhile stays, and one removed meanwhile is not
+    /// brought back; the book's order is kept.
+    func testABookmarkAddedStaysAndOneRemovedIsNotBroughtBack() {
+        let moving = Moving()
+        let added = Bookmark(number: 3, chapterIndex: 0, characterOffset: 7, label: "Added")
+        var places = moving.original
+        // The book now holds B, then the new one; A was removed.
+        places.bookmarks = [moving.markB, added]
+        var book = Self.book(holding: places)
+
+        XCTAssertTrue(book.takeMovedPlaces(original: moving.original, moved: moving.movedPlaces))
+
+        XCTAssertEqual(book.bookmarks, [moving.moved(moving.markB), added])
+    }
+
+    /// A skip toggled meanwhile keeps both skip lists as they are, while the
+    /// position moves; so does a waiting skip changed alone.
+    func testASkipToggledMeanwhileKeepsBothSkipLists() {
+        let moving = Moving()
+        let toggled = SkippedHeading(level: 1, label: "Toggled", chapterIndex: 0, characterOffset: 3)
+
+        var named = moving.original
+        named.skippedHeadings = [moving.skip, toggled]
+        var book = Self.book(holding: named)
+        XCTAssertTrue(book.takeMovedPlaces(original: moving.original, moved: moving.movedPlaces))
+        XCTAssertEqual(book.skippedHeadings, [moving.skip, toggled])
+        XCTAssertEqual(book.skippedHeadingIDs, [moving.skip.id, toggled.id])
+        XCTAssertEqual(book.waitingSkippedHeadings, [moving.wait])
+        XCTAssertEqual(book.readingPosition, moving.movedPosition)
+
+        var waiting = moving.original
+        waiting.waitingSkippedHeadings = []
+        var other = Self.book(holding: waiting)
+        XCTAssertTrue(other.takeMovedPlaces(original: moving.original, moved: moving.movedPlaces))
+        XCTAssertEqual(other.skippedHeadings, [moving.skip])
+        XCTAssertNil(other.waitingSkippedHeadings)
+        XCTAssertEqual(other.readingPosition, moving.movedPosition)
+    }
+
+    /// Skips that move to none leave the book with none, not empty lists.
+    func testSkipsMovedToNoneLeaveNilLists() {
+        let moving = Moving()
+        var book = Self.book(holding: moving.original)
+        var moved = moving.movedPlaces
+        moved.skippedHeadings = []
+        moved.waitingSkippedHeadings = []
+
+        XCTAssertTrue(book.takeMovedPlaces(original: moving.original, moved: moved))
+
+        XCTAssertNil(book.skippedHeadings)
+        XCTAssertNil(book.skippedHeadingIDs)
+        XCTAssertNil(book.waitingSkippedHeadings)
+    }
+
+    // MARK: - Places to Move
+
+    /// A book with no places, or whose only place is its start, has none to
+    /// move; an audiobook has none, whatever it holds.
+    func testBooksWithoutPlacesHoldNoneToMove() {
+        XCTAssertFalse(Self.book(holding: PlaceRelocator.Places()).holdsPlacesToMove)
+        XCTAssertFalse(Self.book(holding: PlaceRelocator.Places(position: ReadingPosition(chapterIndex: 0, characterOffset: 0))).holdsPlacesToMove)
+
+        var audiobook = Book(
+            title: "Audio", format: .audio, filePath: "/tmp/audio.m4b", md5Hash: "hash",
+            bookmarks: [Bookmark(number: 1, chapterIndex: 0, characterOffset: 90)]
+        )
+        audiobook.setSkippedHeadings([Self.named])
+        XCTAssertFalse(audiobook.holdsPlacesToMove)
+    }
+
+    /// Any one place past the start counts: a bookmark, a skip, a waiting
+    /// skip, a position in a later chapter or further into the first.
+    func testEachKindOfPlaceCounts() {
+        let kinds: [(String, PlaceRelocator.Places)] = [
+            ("bookmark", PlaceRelocator.Places(bookmarks: [Bookmark(number: 1, chapterIndex: 0, characterOffset: 0)])),
+            ("skip", PlaceRelocator.Places(skippedHeadings: [Self.named])),
+            ("waiting skip", PlaceRelocator.Places(waitingSkippedHeadings: [Self.waiting])),
+            ("later chapter", PlaceRelocator.Places(position: ReadingPosition(chapterIndex: 1, characterOffset: 0))),
+            ("further in", PlaceRelocator.Places(position: ReadingPosition(chapterIndex: 0, characterOffset: 1))),
+        ]
+        for (name, places) in kinds {
+            XCTAssertTrue(Self.book(holding: places).holdsPlacesToMove, name)
+        }
+    }
+
+    // MARK: - From the Relocator to the Reader
+
+    /// A skip that waits, as the relocator leaves it, then stored as a row
+    /// and as a record, skips nothing in the reader, though the section that
+    /// slid into its numbers has its ID, and the stored book still holds it,
+    /// exactly as it was.
+    @MainActor
+    func testAWaitingSkipFromTheRelocatorSkipsNothingInTheReader() throws {
+        let notes = NotesBook()
+        let skip = try SavedPlace.skip(of: notes.firstHeading, in: notes.both)
+        var book = Self.book(skipped: [skip])
+        let original = book.relocatablePlaces
+        let outcome = PlaceRelocator(oldTexts: notes.both, newTexts: notes.withoutFirst, oldHeadings: [notes.firstHeading, notes.secondHeading], newHeadings: [notes.slidHeading])
+            .relocate(original, movedAt: SavedPlace.moveDate)
+
+        XCTAssertTrue(book.takeMovedPlaces(original: original, moved: outcome.places))
+
+        for (name, stored) in [("row", try Self.storedAsRow(book)), ("record", try Self.storedAsRecord(book))] {
+            XCTAssertEqual(stored.waitingSkippedHeadings, [skip], name)
+            let reader = makeReader(book: stored)
+            addTeardownBlock { @MainActor in reader.close() }
+            XCTAssertFalse(reader.isHeadingSkipped(notes.slidHeading), name)
+            XCTAssertTrue(reader.skippedHeadingIDs.isEmpty, name)
+        }
+    }
+
+    /// Open `book` in a reader backed by an isolated library and settings,
+    /// as `HeadingVocabularyTests` does.
+    @MainActor
+    private func makeReader(book: Book) -> ReaderViewModel {
+        let library = LibraryViewModel()
+        library.library = Library(books: [book])
+        return ReaderViewModel(
+            book: book,
+            libraryViewModel: library,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        )
+    }
 }

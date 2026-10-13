@@ -1440,6 +1440,77 @@ extension Book {
             + (skippedHeadings ?? []).filter { $0.anchor == nil }.count
     }
 
+    /// This book's saved places as `PlaceRelocator` takes them (T06's branch
+    /// D): its reading position, its bookmarks, its skipped headings that
+    /// name a heading, and those that wait.
+    var relocatablePlaces: PlaceRelocator.Places {
+        PlaceRelocator.Places(
+            position: readingPosition,
+            bookmarks: bookmarks,
+            skippedHeadings: skippedHeadings ?? [],
+            waitingSkippedHeadings: waitingSkippedHeadings ?? []
+        )
+    }
+
+    /// Whether this book has a place a rebuild of its text could move: a
+    /// reading position past the book's start, a bookmark, a skipped
+    /// heading, or a waiting one. An audiobook has none, since its places
+    /// count time in its recording (P08), and a position at the very start
+    /// stays at the start of any text.
+    var holdsPlacesToMove: Bool {
+        guard !format.isAudio else { return false }
+        let positionPastStart = readingPosition.map { $0.chapterIndex != 0 || $0.characterOffset != 0 } ?? false
+        return positionPastStart
+            || !bookmarks.isEmpty
+            || !(skippedHeadings ?? []).isEmpty
+            || !(waitingSkippedHeadings ?? []).isEmpty
+    }
+
+    /// Takes the places `PlaceRelocator` moved (`moved`), each only where
+    /// this book still holds it exactly as it was when the moves were
+    /// computed (`original`), and returns whether any of the book's places
+    /// changed. The moves are computed from the places as they were when the
+    /// old text was copied aside; by the time they are written, the listener
+    /// may have saved a place again, and a place saved meanwhile wins. The
+    /// moves are silent: nothing is spoken or shown, and nothing else of the
+    /// book changes (no date, no last-opened time, no other field).
+    ///
+    /// - The reading position moves when it is still `original`'s.
+    /// - Each bookmark moves when this book still holds it, by its `id`,
+    ///   equal to `original`'s; a bookmark added, changed, or removed
+    ///   meanwhile stays as this book has it, and the book's order is kept.
+    /// - The skips move as one: only when both lists are still `original`'s,
+    ///   since the relocator merges skips that come to name one heading, so
+    ///   its lists do not match the old ones skip for skip. A skip toggled
+    ///   meanwhile keeps the listener's whole choice.
+    @discardableResult
+    mutating func takeMovedPlaces(original: PlaceRelocator.Places, moved: PlaceRelocator.Places) -> Bool {
+        let before = relocatablePlaces
+
+        // The position, where it still is as it was.
+        if readingPosition == original.position {
+            readingPosition = moved.position
+        }
+
+        // Each bookmark, where it still is as it was. The first of any
+        // bookmarks sharing an ID answers for it.
+        let originalBookmarks = Dictionary(original.bookmarks.map { ($0.id, $0) }) { first, _ in first }
+        let movedBookmarks = Dictionary(moved.bookmarks.map { ($0.id, $0) }) { first, _ in first }
+        bookmarks = bookmarks.map { held in
+            guard originalBookmarks[held.id] == held, let now = movedBookmarks[held.id] else { return held }
+            return now
+        }
+
+        // The skips, as one: both lists, or neither.
+        if (skippedHeadings ?? []) == original.skippedHeadings,
+           (waitingSkippedHeadings ?? []) == original.waitingSkippedHeadings {
+            setSkippedHeadings(moved.skippedHeadings)
+            waitingSkippedHeadings = moved.waitingSkippedHeadings.isEmpty ? nil : moved.waitingSkippedHeadings
+        }
+
+        return relocatablePlaces != before
+    }
+
     /// Gives each of this book's places that `captured` holds words for
     /// those words, when the place is still saved where they were captured
     /// and still has none (T06, question 6), and returns the words it gave.
