@@ -2475,3 +2475,33 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
 - **What to change:**
   - Add a pre-done grep for trapping subscripts and Swift warnings to the worker checklist.
   - Have a brief that changes load or save behaviour list the existing test classes that pin the older design.
+
+## From the REV16 fix team (team/rev16fix), Oct 13
+
+**Decisions (the lead's)**
+- **F1 kept by the lead.** The fix changed two existing finder tests that pinned the unsafe paths, which workers may not edit, and it needed a design decision. The check at load was `findHeading`'s only caller in the app, so `findHeading` itself was narrowed, and no later caller can take the weak paths.
+- **C5's design.** The next launch's recovery brings the record's places to the row, taken only where the row still holds what it held when the pass began:
+  - the position only when the record's is at least as new, to the second;
+  - a bookmark only when nothing but its place and words differ;
+  - the skips as one.
+
+  This needs no new file or format, reuses the guarded take, and also brings another Mac's committed moves to this Mac's row.
+- **What F1 gives up.** These cases now wait at load, as every such skip did before branch E, and a rebuild still carries them:
+  - a cover that moved;
+  - a section moved and edited within its first 64 characters;
+  - a heading whose label leaves fewer than four saved words past it.
+- **A limit no rule can reach.** A removed section replaced in the same place, under the same label, by one whose 64 characters on each side are identical is named by the direct check. Nothing saved can tell the two apart.
+
+**Unverified**
+- The four-words threshold (`sectionProofWords`, equal to `seedWords`) is a judgement, not measured on real books.
+- Nothing was run against the live library.
+
+**Wording**
+- **README.md:** "When a book's text changes without TextMouth rebuilding it (an edit saved elsewhere, another Mac, a feed article downloaded again) and a section you skipped is gone, TextMouth keeps that skip waiting rather than skipping another section, and applies it again if the section comes back." The October 13 pass's sentence on waiting skips may already cover this; keep one.
+- **ARCHITECTURE.md:**
+  - `TextAnchorFinder.findHeading` names a heading only by the direct check, or when all the skip's saved words after the heading match from a heading's first word, within its chapter, with at least `sectionProofWords` past the label; ties are settled by the skip's label (REV16 F1). Replace any sentence that says it finds a heading by level, label, and words, or guesses the nearest.
+  - `finishPlaceMove` gives the row `moved.taken(by: committed)` (C1).
+  - `committedTextCache` reads the record once (`BookContentAnalysisService.recoveredTextCache`) and builds `ContentAnalysisSummary(recovered:record:)` (C5).
+  - `sweepLeftoverEditTexts(of:access:then:)` keeps a copy whose book's content.md is only in the cloud (S1).
+
+**The pattern (the lead's view):** both Sonnet workers were accepted after one pass, about 6 minutes each, with briefs naming exact line ranges and helpers, and C5's design decided up front. `bbs task assign` refuses an unregistered slug, so a worker's prompt should have it assign its own task.
