@@ -69,8 +69,9 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         XCTAssertNil(presenter.cleanup)
     }
 
-    /// A feed's episode is not editable (FR11): neither the command itself
-    /// nor the VoiceOver action opens a sheet for it.
+    /// A feed's episode is not editable (FR11): neither the reader's command
+    /// (`cleanUp`) nor a row's, from its context menu or its VoiceOver
+    /// actions (`perform`), opens a sheet for it.
     func testTheCommandOpensNoSheetForAFeedsEpisode() throws {
         let world = try makeIntegrationWorld("Transcript Cleanup Feed Episode")
         var book = try transcribedBook(in: world)
