@@ -18,11 +18,13 @@ final class LibraryBookUpdatesTests: XCTestCase {
     /// Each change of a watched book's folder, file, metadata, or analysis
     /// is published once, carrying the row as the library now holds it,
     /// with a revision one higher than the last.
-    func testEachChangeOfAWatchedBookIsPublishedWithTheNextRevision() {
+    func testEachChangeOfAWatchedBookIsPublishedWithTheNextRevision() throws {
         let (model, books) = makeLibrary()
         let book = books[0]
         let recorder = record(book, in: model)
         model.bookUpdates.watch(book)
+        // Prove the row the edits below write by position is there.
+        _ = try XCTUnwrap(model.library.books[safe: 0], "The library model holds no first book")
 
         model.library.books[0].title = "Spring Tides"
         model.library.books[0].folderPath = "Shelf"
@@ -39,11 +41,13 @@ final class LibraryBookUpdatesTests: XCTestCase {
     /// its playback times) and what only the library keeps (when the book
     /// was last opened, its manual order) is published to no one, and the
     /// revision stays where it was.
-    func testReaderStateAndLibraryBookkeepingArePublishedToNoOne() {
+    func testReaderStateAndLibraryBookkeepingArePublishedToNoOne() throws {
         let (model, books) = makeLibrary()
         let book = books[0]
         let recorder = record(book, in: model)
         model.bookUpdates.watch(book)
+        // Prove the row the edits below write by position is there.
+        _ = try XCTUnwrap(model.library.books[safe: 0], "The library model holds no first book")
 
         model.updateLiveReadingPosition(bookID: book.id, position: ReadingPosition(chapterIndex: 1, characterOffset: 12))
         model.library.addBookmark(bookID: book.id, chapterIndex: 1, characterOffset: 12)
@@ -86,11 +90,13 @@ final class LibraryBookUpdatesTests: XCTestCase {
     /// its changes are published; with two readers open, closing one keeps
     /// them coming, and closing the last stops them. Each reader hears only
     /// its own book.
-    func testOnlyBooksOpenInReadersArePublished() {
+    func testOnlyBooksOpenInReadersArePublished() throws {
         let (model, books) = makeLibrary(count: 2)
         let book = books[0]
         let recorder = record(book, in: model)
         let otherRecorder = record(books[1], in: model)
+        // Prove the row the edits below write by position is there.
+        _ = try XCTUnwrap(model.library.books[safe: 0], "The library model holds no first book")
 
         model.library.books[0].title = "Unwatched Edit"
         XCTAssertEqual(recorder.events.count, 0, "A book no reader has open was published")
@@ -111,10 +117,12 @@ final class LibraryBookUpdatesTests: XCTestCase {
     /// Revisions keep rising after a book's readers close, so a reader
     /// opened later starts from the latest one and never mistakes an old
     /// update for a new one.
-    func testRevisionsKeepRisingAcrossReaders() {
+    func testRevisionsKeepRisingAcrossReaders() throws {
         let (model, books) = makeLibrary()
         let book = books[0]
         let recorder = record(book, in: model)
+        // Prove the row the edits below write by position is there.
+        _ = try XCTUnwrap(model.library.books[safe: 0], "The library model holds no first book")
 
         model.bookUpdates.watch(book)
         model.library.books[0].title = "First Reading"
@@ -131,7 +139,7 @@ final class LibraryBookUpdatesTests: XCTestCase {
     /// when the reader saves in response, is published after every update
     /// of the change under way, never in the middle of them. So each book's
     /// revisions arrive in order and each ends with its newest row.
-    func testAChangeMadeWhileAnUpdateIsAppliedIsPublishedAfterIt() {
+    func testAChangeMadeWhileAnUpdateIsAppliedIsPublishedAfterIt() throws {
         let (model, books) = makeLibrary(count: 2)
         let recorder = EventRecorder()
         var changedInResponse = false
@@ -153,6 +161,8 @@ final class LibraryBookUpdatesTests: XCTestCase {
         }
 
         var renamed = model.library
+        // Prove both rows the renames below write by position are there.
+        _ = try XCTUnwrap(renamed.books[safe: 1], "The library model holds fewer than two books")
         renamed.books[0].title = "Spring Tides"
         renamed.books[1].title = "Neap Tides"
         model.library = renamed

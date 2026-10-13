@@ -386,7 +386,7 @@ struct FeedDownloadRemovalWording: Equatable {
         if !isPlural, let itsParts = parts.sentenceSubject {
             return "\(deleted) \(itsParts) kept."
         }
-        let nouns = LibraryCloudWording.list(parts.nouns(several: true))
+        let nouns = CountWording.list(parts.nouns(several: true))
         if holding.count >= count {
             return "\(deleted) Their \(nouns) are kept."
         }
@@ -625,7 +625,7 @@ struct FolderRemovalWording: Equatable {
     /// `titles`, each in quotes, as a list: "“A”", "“A” and “B”"; nil for
     /// none.
     private static func quoted(_ titles: [String]) -> String? {
-        titles.isEmpty ? nil : LibraryCloudWording.list(titles.map { "“\($0)”" })
+        titles.isEmpty ? nil : CountWording.list(titles.map { "“\($0)”" })
     }
 
     /// The second confirmation's title: "Move Everything in “Fiction” to

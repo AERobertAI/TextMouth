@@ -422,7 +422,7 @@ extension FeedWording {
         var sentenceSubject: String? {
             let named = nouns(several: false)
             guard !named.isEmpty else { return nil }
-            return "Its \(LibraryCloudWording.list(named)) \(takesPluralVerb ? "are" : "is")"
+            return "Its \(CountWording.list(named)) \(takesPluralVerb ? "are" : "is")"
         }
     }
 
@@ -499,7 +499,7 @@ extension FeedWording {
         let stays = reasons.map { reason in
             let titles = titlesByReason[reason] ?? []
             let stay = titles.count == 1 ? "stays in its feed" : "stay in their feeds"
-            return "\(LibraryCloudWording.list(titles)) \(stay): \(reason)"
+            return "\(CountWording.list(titles)) \(stay): \(reason)"
         }
         return ([movedToLibrary(titles: moved, noun: noun, folderPath: folderPath)] + stays).joined(separator: " ")
     }
@@ -611,7 +611,7 @@ extension FeedWording {
     /// its edited text, "what was kept for 2 removed downloads".
     static func keptPhrase(count: Int, parts: KeptParts) -> String {
         let nouns = parts.nouns(several: count > 1)
-        let what = nouns.isEmpty ? "what was" : "the \(LibraryCloudWording.list(nouns))"
+        let what = nouns.isEmpty ? "what was" : "the \(CountWording.list(nouns))"
         return "\(what) kept for \(CountWording.phrase(count, singular: "removed download", plural: "removed downloads"))"
     }
 
@@ -673,7 +673,7 @@ extension FeedWording {
             // Several things, or one kept package whose parts are said in
             // the plural, as "the place and bookmarks".
             let several = downloads + kept > 1 || (downloads == 0 && keptPhraseTakesPluralVerb(count: kept, parts: keptParts))
-            sentences.append("It deletes \(LibraryCloudWording.list(deleted)): \(several ? "they" : "it") \(mode.outcomePhrase(plural: several)).")
+            sentences.append("It deletes \(CountWording.list(deleted)): \(several ? "they" : "it") \(mode.outcomePhrase(plural: several)).")
         }
         if let folderPath, !folderPath.isEmpty {
             sentences.append("Its folder “\(folderPath)” goes too when nothing else is in it.")
@@ -700,7 +700,7 @@ extension FeedWording {
         if outcome.deletedKeptPlaces > 0 {
             deleted.append(keptPhrase(count: outcome.deletedKeptPlaces, parts: keptParts))
         }
-        let sentence = "Deleted \(LibraryCloudWording.list(deleted))."
+        let sentence = "Deleted \(CountWording.list(deleted))."
         switch outcome.folder {
         case .deleted(let path):
             return "\(sentence) Its folder “\(path)” is gone too."

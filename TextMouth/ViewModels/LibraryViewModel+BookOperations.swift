@@ -1156,7 +1156,7 @@ enum LibraryTransitionWording {
         let rest = titles.count - shown.count
         let names = rest > 0
             ? shown.joined(separator: ", ") + ", and \(rest) more"
-            : LibraryCloudWording.list(Array(shown))
+            : CountWording.list(Array(shown))
         let place = titles.count == 1 ? "where it is" : "where they are"
         return "Left \(names) \(place): episodes and articles stay in their feeds; "
             + "\(ShortcutAction.moveToLibrary.title) makes one a book of your library."

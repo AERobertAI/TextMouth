@@ -11,8 +11,8 @@ final class ContentIndexValidationTests: XCTestCase {
     // MARK: - Sound indexes
 
     /// The builder's text index passes, and `isValid` agrees.
-    func testBuiltTextIndexIsValid() {
-        let index = textIndex()
+    func testBuiltTextIndexIsValid() throws {
+        let index = try textIndex()
 
         XCTAssertNil(index.validationFailure(for: .epub, audioBaseURL: nil))
         XCTAssertTrue(index.isValid(for: .epub, audioBaseURL: nil))
@@ -20,8 +20,8 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// Every audio layout the builder makes passes: a single file whose
     /// chapters name no file, one file per chapter, and segments of a file.
-    func testBuiltAudioIndexesAreValid() {
-        for index in [singleFileIndex(), multiFileIndex(), segmentedIndex()] {
+    func testBuiltAudioIndexesAreValid() throws {
+        for index in [try singleFileIndex(), try multiFileIndex(), try segmentedIndex()] {
             XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: nil), "\(String(describing: index.audioLayout))")
             XCTAssertTrue(index.isValid(for: .audio, audioBaseURL: nil))
         }
@@ -32,7 +32,7 @@ final class ContentIndexValidationTests: XCTestCase {
     /// A heading placed past its chapter's end, or before its start, is
     /// built at the nearest end, with the ID `Heading` derives there, so
     /// the builder never writes an index validation would reject.
-    func testBuilderKeepsHeadingsInsideTheirChapter() {
+    func testBuilderKeepsHeadingsInsideTheirChapter() throws {
         let chapter = Chapter(title: "Body", text: "Body.", headings: [
             Heading(level: 1, text: "Before", characterOffset: -3),
             Heading(level: 1, text: "<br>", characterOffset: 7),
@@ -40,9 +40,10 @@ final class ContentIndexValidationTests: XCTestCase {
 
         let index = BookContentIndex.build(fromChapters: [chapter], format: .markdown)
 
-        XCTAssertEqual(index.chapters[0].headings.map(\.characterOffset), [0, 5])
-        XCTAssertEqual(index.chapters[0].headings.map(\.globalCharacterOffset), [0, 5])
-        XCTAssertEqual(index.chapters[0].headings.map(\.id), index.allHeadings.map(\.id))
+        let built = try XCTUnwrap(index.chapters[safe: 0], "the chapter the builder was given")
+        XCTAssertEqual(built.headings.map(\.characterOffset), [0, 5])
+        XCTAssertEqual(built.headings.map(\.globalCharacterOffset), [0, 5])
+        XCTAssertEqual(built.headings.map(\.id), index.allHeadings.map(\.id))
         XCTAssertNil(index.validationFailure(for: .markdown, audioBaseURL: nil))
     }
 
@@ -63,8 +64,8 @@ final class ContentIndexValidationTests: XCTestCase {
     // MARK: - Identity
 
     /// An index from another builder version may derive text differently.
-    func testOutdatedVersionIsRejected() {
-        var index = textIndex()
+    func testOutdatedVersionIsRejected() throws {
+        var index = try textIndex()
         index.version = "0.9.0"
 
         XCTAssertEqual(
@@ -75,16 +76,16 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// An index made for another format describes a different reading.
-    func testIndexForAnotherFormatIsRejected() {
+    func testIndexForAnotherFormatIsRejected() throws {
         XCTAssertEqual(
-            textIndex().validationFailure(for: .txt, audioBaseURL: nil),
+            try textIndex().validationFailure(for: .txt, audioBaseURL: nil),
             "format epub does not match the book's format txt"
         )
     }
 
     /// A text book's index must be a text index, and an audio book's audio.
-    func testKindThatDoesNotSuitTheFormatIsRejected() {
-        var index = textIndex()
+    func testKindThatDoesNotSuitTheFormatIsRejected() throws {
+        var index = try textIndex()
         index.kind = .audio
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "kind audio does not match format epub")
@@ -93,24 +94,24 @@ final class ContentIndexValidationTests: XCTestCase {
     // MARK: - Chapters
 
     /// A book always has at least one chapter; an empty list is damage.
-    func testEmptyChapterListIsRejected() {
-        var index = textIndex()
+    func testEmptyChapterListIsRejected() throws {
+        var index = try textIndex()
         index.chapters = []
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters is empty")
     }
 
     /// Headings name their chapter by number, so numbers must match places.
-    func testChapterOutOfPlaceIsRejected() {
-        var index = textIndex()
+    func testChapterOutOfPlaceIsRejected() throws {
+        var index = try textIndex()
         index.chapters[1].chapterIndex = 2
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].chapterIndex is 2, expected 1")
     }
 
     /// A chapter cannot hold fewer than no characters.
-    func testNegativeCharacterCountIsRejected() {
-        var index = textIndex()
+    func testNegativeCharacterCountIsRejected() throws {
+        var index = try textIndex()
         index.chapters[1].characterCount = -5
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].characterCount is -5, below 0")
@@ -118,10 +119,10 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// Word counts can be neither negative nor larger than the character
     /// count, since every word holds at least one character.
-    func testWordCountOutsideTheChapterIsRejected() {
-        var negative = textIndex()
+    func testWordCountOutsideTheChapterIsRejected() throws {
+        var negative = try textIndex()
         negative.chapters[1].wordCount = -1
-        var excessive = textIndex()
+        var excessive = try textIndex()
         excessive.chapters[0].wordCount = 11
 
         XCTAssertEqual(negative.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].wordCount is -1, outside 0 through 15")
@@ -130,24 +131,24 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// Chapter start offsets are the running sums of the lengths before
     /// them; anything else misplaces every reading position after it.
-    func testStartOffsetThatIsNotTheRunningSumIsRejected() {
-        var index = textIndex()
+    func testStartOffsetThatIsNotTheRunningSumIsRejected() throws {
+        var index = try textIndex()
         index.chapters[1].startCharacterOffset = 9
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].startCharacterOffset is 9, expected 10")
     }
 
     /// The character total must be the sum of the chapter lengths (25).
-    func testCharacterTotalMismatchIsRejected() {
-        var index = textIndex()
+    func testCharacterTotalMismatchIsRejected() throws {
+        var index = try textIndex()
         index.totalCharacterCount = 24
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "totalCharacterCount is 24, expected 25")
     }
 
     /// The word total must be the sum of the chapter word counts (6).
-    func testWordTotalMismatchIsRejected() {
-        var index = textIndex()
+    func testWordTotalMismatchIsRejected() throws {
+        var index = try textIndex()
         index.totalWordCount = 7
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "totalWordCount is 7, expected 6")
@@ -155,8 +156,8 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// One chapter longer than any real book is rejected before playback
     /// could allocate a placeholder of that length.
-    func testOversizedChapterIsRejected() {
-        let index = resized(textIndex(), to: [10, limit + 1])
+    func testOversizedChapterIsRejected() throws {
+        let index = resized(try textIndex(), to: [10, limit + 1])
 
         XCTAssertEqual(
             index.validationFailure(for: .epub, audioBaseURL: nil),
@@ -165,8 +166,8 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// Chapters each within the limit can still add up past it.
-    func testOversizedBookIsRejected() {
-        let index = resized(textIndex(), to: [limit / 2 + 1, limit / 2 + 1])
+    func testOversizedBookIsRejected() throws {
+        let index = resized(try textIndex(), to: [limit / 2 + 1, limit / 2 + 1])
 
         XCTAssertEqual(
             index.validationFailure(for: .epub, audioBaseURL: nil),
@@ -175,13 +176,13 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// The limit itself is allowed, for one chapter and for the book.
-    func testBookAtTheLimitIsValid() {
-        XCTAssertNil(resized(textIndex(), to: [limit - 15, 15]).validationFailure(for: .epub, audioBaseURL: nil))
+    func testBookAtTheLimitIsValid() throws {
+        XCTAssertNil(resized(try textIndex(), to: [limit - 15, 15]).validationFailure(for: .epub, audioBaseURL: nil))
     }
 
     /// Counts near `Int.max` fail cleanly instead of overflowing a sum.
-    func testExtremeCountsFailWithoutOverflow() {
-        var index = textIndex()
+    func testExtremeCountsFailWithoutOverflow() throws {
+        var index = try textIndex()
         index.chapters[0].characterCount = .max
         index.chapters[1].startCharacterOffset = .max
         index.totalCharacterCount = .max
@@ -195,24 +196,24 @@ final class ContentIndexValidationTests: XCTestCase {
     // MARK: - Headings
 
     /// Headings run from level 1 through 6; the navigator knows no level 0.
-    func testHeadingLevelZeroIsRejected() {
-        var index = textIndex()
+    func testHeadingLevelZeroIsRejected() throws {
+        var index = try textIndex()
         index.chapters[0].headings[0].level = 0
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[0].headings[0].level is 0, outside 1 through 6")
     }
 
     /// Nor any level past 6.
-    func testHeadingLevelSevenIsRejected() {
-        var index = textIndex()
+    func testHeadingLevelSevenIsRejected() throws {
+        var index = try textIndex()
         index.chapters[1].headings[1].level = 7
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].headings[1].level is 7, outside 1 through 6")
     }
 
     /// Every heading the builder writes has an ID.
-    func testHeadingWithoutIDIsRejected() {
-        var index = textIndex()
+    func testHeadingWithoutIDIsRejected() throws {
+        var index = try textIndex()
         index.chapters[1].headings[0].id = ""
 
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].headings[0].id is empty")
@@ -220,11 +221,11 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// A heading past the end of its chapter, or before its start, would
     /// send navigation outside the chapter's text.
-    func testHeadingOutsideItsChapterIsRejected() {
-        var pastEnd = textIndex()
+    func testHeadingOutsideItsChapterIsRejected() throws {
+        var pastEnd = try textIndex()
         pastEnd.chapters[1].headings[1].characterOffset = 16
         pastEnd.chapters[1].headings[1].globalCharacterOffset = 26
-        var beforeStart = textIndex()
+        var beforeStart = try textIndex()
         beforeStart.chapters[1].headings[0].characterOffset = -1
         beforeStart.chapters[1].headings[0].globalCharacterOffset = 9
 
@@ -239,8 +240,8 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// A heading may sit at the very end of its chapter.
-    func testHeadingAtTheEndOfItsChapterIsValid() {
-        var index = textIndex()
+    func testHeadingAtTheEndOfItsChapterIsValid() throws {
+        var index = try textIndex()
         index.chapters[1].headings[1].characterOffset = 15
         index.chapters[1].headings[1].globalCharacterOffset = 25
 
@@ -249,8 +250,8 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// The global offset must be the chapter's start plus the local offset;
     /// here it repeats the local offset, as a builder bug could.
-    func testWrongGlobalHeadingOffsetIsRejected() {
-        var index = textIndex()
+    func testWrongGlobalHeadingOffsetIsRejected() throws {
+        var index = try textIndex()
         index.chapters[1].headings[1].globalCharacterOffset = 11
 
         XCTAssertEqual(
@@ -260,8 +261,8 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// Headings within a chapter are stored in reading order.
-    func testHeadingsOutOfOrderAreRejected() {
-        var index = textIndex()
+    func testHeadingsOutOfOrderAreRejected() throws {
+        var index = try textIndex()
         index.chapters[1].headings.reverse()
 
         XCTAssertEqual(
@@ -274,12 +275,12 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// The builder writes no audio layout, duration, or chapter timing for a
     /// text book; any of them means the index came from somewhere else.
-    func testTextIndexCarryingAudioIsRejected() {
-        var layout = textIndex()
+    func testTextIndexCarryingAudioIsRejected() throws {
+        var layout = try textIndex()
         layout.audioLayout = .singleFile
-        var duration = textIndex()
+        var duration = try textIndex()
         duration.totalAudioDuration = 1
-        var chapterAudio = textIndex()
+        var chapterAudio = try textIndex()
         chapterAudio.chapters[1].audio = BookContentAudioChapterIndex(relativeFilePath: nil, startTime: 0, duration: 1)
 
         XCTAssertEqual(layout.validationFailure(for: .epub, audioBaseURL: nil), "audioLayout is present in a text index")
@@ -290,16 +291,16 @@ final class ContentIndexValidationTests: XCTestCase {
     // MARK: - Audio
 
     /// Without a layout, playback cannot tell how chapters map to files.
-    func testAudioIndexWithoutLayoutIsRejected() {
-        var index = multiFileIndex()
+    func testAudioIndexWithoutLayoutIsRejected() throws {
+        var index = try multiFileIndex()
         index.audioLayout = nil
 
         XCTAssertEqual(index.validationFailure(for: .audio, audioBaseURL: nil), "audioLayout is missing")
     }
 
     /// Every audio chapter carries its timing, even in a single-file book.
-    func testAudioChapterWithoutTimingIsRejected() {
-        var index = multiFileIndex()
+    func testAudioChapterWithoutTimingIsRejected() throws {
+        var index = try multiFileIndex()
         index.chapters[1].audio = nil
 
         XCTAssertEqual(index.validationFailure(for: .audio, audioBaseURL: nil), "chapters[1].audio is missing")
@@ -307,8 +308,8 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// Playback restores at least one placeholder character per chapter, so
     /// a zero-length audio chapter would disagree with its restored text.
-    func testEmptyAudioChapterIsRejected() {
-        let index = resized(multiFileIndex(), to: [100, 0, 300])
+    func testEmptyAudioChapterIsRejected() throws {
+        let index = resized(try multiFileIndex(), to: [100, 0, 300])
 
         XCTAssertEqual(
             index.validationFailure(for: .audio, audioBaseURL: nil),
@@ -317,8 +318,8 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// A segment cannot start at a time that is not a number.
-    func testNonFiniteStartTimeIsRejected() {
-        var index = segmentedIndex()
+    func testNonFiniteStartTimeIsRejected() throws {
+        var index = try segmentedIndex()
         index.chapters[1].audio?.startTime = .nan
 
         XCTAssertEqual(
@@ -328,8 +329,8 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// Nor before the start of its file.
-    func testNegativeStartTimeIsRejected() {
-        var index = segmentedIndex()
+    func testNegativeStartTimeIsRejected() throws {
+        var index = try segmentedIndex()
         index.chapters[0].audio?.startTime = -1
 
         XCTAssertEqual(
@@ -340,9 +341,9 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// NaN and infinite durations would make the total, and every time
     /// remaining derived from it, meaningless.
-    func testNonFiniteDurationIsRejected() {
+    func testNonFiniteDurationIsRejected() throws {
         for duration in [TimeInterval.nan, .infinity] {
-            var index = multiFileIndex()
+            var index = try multiFileIndex()
             index.chapters[2].audio?.duration = duration
 
             XCTAssertEqual(
@@ -353,8 +354,8 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// A chapter cannot last less than no time.
-    func testNegativeDurationIsRejected() {
-        var index = multiFileIndex()
+    func testNegativeDurationIsRejected() throws {
+        var index = try multiFileIndex()
         index.chapters[2].audio?.duration = -10
 
         XCTAssertEqual(
@@ -365,12 +366,12 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// The total must equal the sum of the chapter durations (60 seconds);
     /// a missing or NaN total fails too.
-    func testDurationTotalMismatchIsRejected() {
-        var larger = multiFileIndex()
+    func testDurationTotalMismatchIsRejected() throws {
+        var larger = try multiFileIndex()
         larger.totalAudioDuration = 61
-        var missing = multiFileIndex()
+        var missing = try multiFileIndex()
         missing.totalAudioDuration = nil
-        var notANumber = multiFileIndex()
+        var notANumber = try multiFileIndex()
         notANumber.totalAudioDuration = .nan
 
         XCTAssertEqual(larger.validationFailure(for: .audio, audioBaseURL: nil), "totalAudioDuration is 61.0, expected 60.0")
@@ -379,8 +380,8 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// Rounding far below a millisecond is not damage.
-    func testDurationTotalWithinToleranceIsValid() {
-        var index = multiFileIndex()
+    func testDurationTotalWithinToleranceIsValid() throws {
+        var index = try multiFileIndex()
         index.totalAudioDuration = 60.0005
 
         XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: nil))
@@ -388,9 +389,9 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// Every chapter of a multi-file book must name its file; a missing or
     /// empty path used to drop out and shift later chapters' files.
-    func testMultiFileChapterWithoutPathIsRejected() {
+    func testMultiFileChapterWithoutPathIsRejected() throws {
         for path in [nil, ""] {
-            var index = multiFileIndex()
+            var index = try multiFileIndex()
             index.chapters[1].audio?.relativeFilePath = path
 
             XCTAssertEqual(
@@ -402,8 +403,8 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// An absolute path could name any file on disk.
-    func testAbsoluteAudioPathIsRejected() {
-        var index = multiFileIndex()
+    func testAbsoluteAudioPathIsRejected() throws {
+        var index = try multiFileIndex()
         index.chapters[1].audio?.relativeFilePath = "/etc/hosts"
 
         XCTAssertEqual(
@@ -414,9 +415,9 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// A ".." component anywhere in the path could climb out of the book's
     /// folder, even after a subfolder name.
-    func testParentFolderAudioPathIsRejected() {
+    func testParentFolderAudioPathIsRejected() throws {
         for path in ["../02.wav", "Disc 2/../../02.wav"] {
-            var index = multiFileIndex()
+            var index = try multiFileIndex()
             index.chapters[1].audio?.relativeFilePath = path
 
             XCTAssertEqual(
@@ -427,8 +428,8 @@ final class ContentIndexValidationTests: XCTestCase {
     }
 
     /// Segments name their shared file per chapter and are checked the same way.
-    func testSegmentedPathsAreChecked() {
-        var index = segmentedIndex()
+    func testSegmentedPathsAreChecked() throws {
+        var index = try segmentedIndex()
         index.chapters[0].audio?.relativeFilePath = "../book.wav"
 
         XCTAssertEqual(
@@ -514,11 +515,11 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// Only a segmented book's chapters play clips; the builder writes none
     /// for a book of whole files.
-    func testClipListOutsideASegmentedBookIsRejected() {
+    func testClipListOutsideASegmentedBookIsRejected() throws {
         let clip = BookContentAudioClipIndex(relativeFilePath: "02.wav", startTime: 0, duration: 20)
-        var multiFile = multiFileIndex()
+        var multiFile = try multiFileIndex()
         multiFile.chapters[1].audio?.clips = [clip]
-        var singleFile = singleFileIndex()
+        var singleFile = try singleFileIndex()
         singleFile.chapters[0].audio?.clips = [clip]
 
         XCTAssertEqual(
@@ -593,8 +594,8 @@ final class ContentIndexValidationTests: XCTestCase {
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: folder)
 
         for base in [folder, link] {
-            XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: base), base.path)
-            XCTAssertNil(segmentedIndex().validationFailure(for: .audio, audioBaseURL: base), base.path)
+            XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: base), base.path)
+            XCTAssertNil(try segmentedIndex().validationFailure(for: .audio, audioBaseURL: base), base.path)
         }
     }
 
@@ -606,7 +607,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let folder = try audioFolder()
         try FileManager.default.removeItem(at: folder.appendingPathComponent("02.wav"))
 
-        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
+        XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
     }
 
     /// So does a missing folder: with nothing of it on disk, only each
@@ -614,10 +615,10 @@ final class ContentIndexValidationTests: XCTestCase {
     func testMissingAudioFolderKeepsTheIndexValid() throws {
         let folder = try audioFolder()
         let missingFolder = folder.appendingPathComponent("moved away", isDirectory: true)
-        var climbing = multiFileIndex(in: folder)
+        var climbing = try multiFileIndex(in: folder)
         climbing.chapters[0].audio?.relativeFilePath = "../01.wav"
 
-        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: missingFolder))
+        XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: missingFolder))
         XCTAssertEqual(
             climbing.validationFailure(for: .audio, audioBaseURL: missingFolder),
             "chapters[0].audio.relativeFilePath \"../01.wav\" contains a \"..\" component"
@@ -632,11 +633,11 @@ final class ContentIndexValidationTests: XCTestCase {
         let track = folder.appendingPathComponent("02.wav")
         try FileManager.default.removeItem(at: track)
 
-        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
+        XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
 
         XCTAssertEqual(mkfifo(track.path, 0o644), 0, "Could not create the named pipe")
         XCTAssertEqual(
-            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
             "chapters[1].audio.relativeFilePath \"02.wav\" is not a regular file"
         )
     }
@@ -653,7 +654,7 @@ final class ContentIndexValidationTests: XCTestCase {
         )
 
         XCTAssertEqual(
-            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
             "chapters[2].audio.relativeFilePath \"Disc 2/03.wav\" resolves outside the audio folder"
         )
     }
@@ -665,7 +666,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let vanished = try scratchFolder("ContentIndexVanished").appendingPathComponent("vanished.wav")
         try replaceWithLink("02.wav", in: folder, to: vanished)
 
-        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
+        XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
     }
 
     /// A path that stays inside the folder by its spelling can still leave
@@ -677,7 +678,7 @@ final class ContentIndexValidationTests: XCTestCase {
         try replaceWithLink("02.wav", in: folder, to: outside)
 
         XCTAssertEqual(
-            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
             "chapters[1].audio.relativeFilePath \"02.wav\" resolves outside the audio folder"
         )
     }
@@ -691,7 +692,7 @@ final class ContentIndexValidationTests: XCTestCase {
         try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("Disc 2"), withDestinationURL: outside)
 
         XCTAssertEqual(
-            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
             "chapters[2].audio.relativeFilePath \"Disc 2/03.wav\" resolves outside the audio folder"
         )
     }
@@ -701,13 +702,13 @@ final class ContentIndexValidationTests: XCTestCase {
         let folder = try audioFolder()
         try replaceWithLink("02.wav", in: folder, to: folder.appendingPathComponent("01.wav"))
 
-        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
+        XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
     }
 
     /// A folder, even one inside the book's folder, is not a playable file.
     func testAudioPathNamingAFolderIsRejected() throws {
         let folder = try audioFolder()
-        var index = multiFileIndex(in: folder)
+        var index = try multiFileIndex(in: folder)
         index.chapters[2].audio?.relativeFilePath = "Disc 2"
 
         XCTAssertEqual(
@@ -721,7 +722,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let folder = try audioFolder()
         try FileManager.default.removeItem(at: folder.appendingPathComponent("book.wav"))
 
-        XCTAssertNil(segmentedIndex().validationFailure(for: .audio, audioBaseURL: folder))
+        XCTAssertNil(try segmentedIndex().validationFailure(for: .audio, audioBaseURL: folder))
     }
 
     /// So does a clip's missing file: playback names it when the chapter
@@ -762,12 +763,12 @@ final class ContentIndexValidationTests: XCTestCase {
         let outside = try scratchFolder("ContentIndexUnchecked").appendingPathComponent("elsewhere.wav")
         XCTAssertTrue(FileManager.default.createFile(atPath: outside.path, contents: Data()))
         try replaceWithLink("02.wav", in: folder, to: outside)
-        var climbing = multiFileIndex(in: folder)
+        var climbing = try multiFileIndex(in: folder)
         climbing.chapters[0].audio?.relativeFilePath = "../01.wav"
 
-        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: nil))
+        XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: nil))
         XCTAssertEqual(
-            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
             "chapters[1].audio.relativeFilePath \"02.wav\" resolves outside the audio folder"
         )
         XCTAssertEqual(
@@ -806,55 +807,55 @@ final class ContentIndexValidationTests: XCTestCase {
     func testSingleFileIndexLooksUpNoFiles() throws {
         let emptyFolder = try scratchFolder("ContentIndexSingle")
 
-        XCTAssertNil(singleFileIndex().validationFailure(for: .audio, audioBaseURL: emptyFolder))
+        XCTAssertNil(try singleFileIndex().validationFailure(for: .audio, audioBaseURL: emptyFolder))
     }
 
     // MARK: - Alignment with the reading text
 
     /// An index is aligned with the chapters it was built from.
-    func testIndexIsAlignedWithItsOwnChapters() {
-        XCTAssertNil(textIndex().alignmentFailure(with: textChapters()))
+    func testIndexIsAlignedWithItsOwnChapters() throws {
+        XCTAssertNil(try textIndex().alignmentFailure(with: textChapters()))
     }
 
     /// Text with another number of chapters cannot share the index's offsets.
-    func testIndexIsMisalignedWithAnotherChapterCount() {
+    func testIndexIsMisalignedWithAnotherChapterCount() throws {
         XCTAssertEqual(
-            textIndex().alignmentFailure(with: Array(textChapters().prefix(1))),
+            try textIndex().alignmentFailure(with: Array(textChapters().prefix(1))),
             "chapters has 2 entries, but the reading text has 1"
         )
     }
 
     /// A chapter of another length shifts every offset after it.
-    func testIndexIsMisalignedWithAnotherChapterLength() {
+    func testIndexIsMisalignedWithAnotherChapterLength() throws {
         var chapters = textChapters()
         chapters[1].text += "!"
 
         XCTAssertEqual(
-            textIndex().alignmentFailure(with: chapters),
+            try textIndex().alignmentFailure(with: chapters),
             "chapters[1].characterCount is 15, but the reading text holds 16"
         )
     }
 
     /// Text of the same length with a heading more or fewer lists headings
     /// the index does not.
-    func testIndexIsMisalignedWithAnotherHeadingCount() {
+    func testIndexIsMisalignedWithAnotherHeadingCount() throws {
         var chapters = textChapters()
         chapters[1].headings.removeLast()
 
         XCTAssertEqual(
-            textIndex().alignmentFailure(with: chapters),
+            try textIndex().alignmentFailure(with: chapters),
             "chapters[1].headings has 2 entries, but the reading text has 1"
         )
     }
 
     /// A heading that moved within same-length text would send heading
     /// navigation to the wrong words.
-    func testIndexIsMisalignedWithAMovedHeading() {
+    func testIndexIsMisalignedWithAMovedHeading() throws {
         var chapters = textChapters()
         chapters[1].headings[1].characterOffset = 6
 
         XCTAssertEqual(
-            textIndex().alignmentFailure(with: chapters),
+            try textIndex().alignmentFailure(with: chapters),
             "chapters[1].headings[1].characterOffset is 11, but the reading text has it at 6"
         )
     }
@@ -862,47 +863,47 @@ final class ContentIndexValidationTests: XCTestCase {
     /// A heading renamed in place would be announced by its old label. The
     /// reason reaches the debug log, so it says where the labels first
     /// differ and how long each is, never what either says.
-    func testIndexIsMisalignedWithARelabeledHeading() {
+    func testIndexIsMisalignedWithARelabeledHeading() throws {
         var chapters = textChapters()
         chapters[1].headings[1].text = "Fifth"
 
-        XCTAssertEqual(textIndex().alignmentFailure(with: chapters), Self.relabeledHeadingReason)
+        XCTAssertEqual(try textIndex().alignmentFailure(with: chapters), Self.relabeledHeadingReason)
     }
 
     /// A heading at another level would sit at the wrong depth of the outline.
-    func testIndexIsMisalignedWithAnotherHeadingLevel() {
+    func testIndexIsMisalignedWithAnotherHeadingLevel() throws {
         var chapters = textChapters()
         chapters[1].headings[1].level = 2
 
         XCTAssertEqual(
-            textIndex().alignmentFailure(with: chapters),
+            try textIndex().alignmentFailure(with: chapters),
             "chapters[1].headings[1].level is 3, but the reading text has 2"
         )
     }
 
     /// Words joined or split in same-length text change the counts that
     /// reading-time estimates use.
-    func testIndexIsMisalignedWithAnotherWordCount() {
+    func testIndexIsMisalignedWithAnotherWordCount() throws {
         var chapters = textChapters()
         chapters[1].text = "three-four five"
 
         XCTAssertEqual(
-            textIndex().alignmentFailure(with: chapters),
+            try textIndex().alignmentFailure(with: chapters),
             "chapters[1].wordCount is 3, but the reading text holds 2"
         )
     }
 
     /// Totals that disagree with the text are named, even when every
     /// chapter matches.
-    func testIndexIsMisalignedWithAnotherTotal() {
-        var words = textIndex()
+    func testIndexIsMisalignedWithAnotherTotal() throws {
+        var words = try textIndex()
         words.totalWordCount += 1
         XCTAssertEqual(
             words.alignmentFailure(with: textChapters()),
             "totalWordCount is 7, but the reading text holds 6"
         )
 
-        var characters = textIndex()
+        var characters = try textIndex()
         characters.totalCharacterCount -= 1
         XCTAssertEqual(
             characters.alignmentFailure(with: textChapters()),
@@ -913,14 +914,14 @@ final class ContentIndexValidationTests: XCTestCase {
     /// Without counting words, every other comparison still runs, but word
     /// counts are taken on trust, as a load does for an index whose
     /// fingerprints prove it was measured from this very text.
-    func testWordCountsAreComparedOnlyWhenCounting() {
+    func testWordCountsAreComparedOnlyWhenCounting() throws {
         var chapters = textChapters()
         chapters[1].text = "three-four five"
-        XCTAssertNil(textIndex().alignmentFailure(with: chapters, countingWords: false))
+        XCTAssertNil(try textIndex().alignmentFailure(with: chapters, countingWords: false))
 
         chapters[1].headings[1].text = "Fifth"
         XCTAssertEqual(
-            textIndex().alignmentFailure(with: chapters, countingWords: false),
+            try textIndex().alignmentFailure(with: chapters, countingWords: false),
             Self.relabeledHeadingReason
         )
     }
@@ -928,11 +929,12 @@ final class ContentIndexValidationTests: XCTestCase {
     /// A heading the parser placed past its chapter's end is recorded at the
     /// end, and alignment compares it there, so an index built from text
     /// stays aligned with that text.
-    func testHeadingPastTheEndIsAlignedWhereTheIndexRecordsIt() {
+    func testHeadingPastTheEndIsAlignedWhereTheIndexRecordsIt() throws {
         let chapters = [Chapter(title: "One", text: "Words.", headings: [Heading(level: 1, text: "", characterOffset: 40)])]
         let index = BookContentIndex.build(fromChapters: chapters, format: .epub)
 
-        XCTAssertEqual(index.chapters[0].headings[0].characterOffset, 6)
+        let heading = try XCTUnwrap(index.chapters[safe: 0]?.headings[safe: 0], "the heading the builder was given")
+        XCTAssertEqual(heading.characterOffset, 6)
         XCTAssertNil(index.alignmentFailure(with: chapters))
     }
 
@@ -955,7 +957,7 @@ final class ContentIndexValidationTests: XCTestCase {
     func testMalformedTextIndexIsRebuiltAndReplaced() throws {
         let book = try makeTextBook()
         var damaged = try savedIndex(of: book)
-        let start = damaged.chapters[1].startCharacterOffset
+        let start = try XCTUnwrap(damaged.chapters[safe: 1], "a second chapter to damage").startCharacterOffset
         damaged.chapters[1].startCharacterOffset += 7
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
@@ -963,7 +965,7 @@ final class ContentIndexValidationTests: XCTestCase {
 
         XCTAssertFalse(result.usedPersistedIndex)
         assertAligned(result, for: book)
-        XCTAssertEqual(result.index.chapters[1].startCharacterOffset, start)
+        XCTAssertEqual(result.index.chapters[safe: 1]?.startCharacterOffset, start)
         XCTAssertEqual(
             rejections(of: book),
             ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].startCharacterOffset is \(start + 7), expected \(start)"]
@@ -984,6 +986,7 @@ final class ContentIndexValidationTests: XCTestCase {
         // chapter is longer, though the package's fingerprints are unchanged.
         let addition = " Nine ten."
         var otherChapters = try MarkdownCacheService.loadFromCache(for: book).chapters
+        _ = try XCTUnwrap(otherChapters[safe: 1], "a second chapter to lengthen")
         otherChapters[1].text += addition
         var other = BookContentIndex.build(fromChapters: otherChapters, format: book.format)
         other.textCacheFingerprint = saved.textCacheFingerprint
@@ -993,8 +996,8 @@ final class ContentIndexValidationTests: XCTestCase {
 
         XCTAssertFalse(result.usedPersistedIndex)
         assertAligned(result, for: book)
-        let savedLength = saved.chapters[1].characterCount
-        XCTAssertEqual(result.index.chapters[1].characterCount, savedLength)
+        let savedLength = try XCTUnwrap(saved.chapters[safe: 1], "a second saved chapter").characterCount
+        XCTAssertEqual(result.index.chapters[safe: 1]?.characterCount, savedLength)
         XCTAssertEqual(
             rejections(of: book),
             ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].characterCount is \(savedLength + addition.utf16.count), but the reading text holds \(savedLength)"]
@@ -1021,6 +1024,7 @@ final class ContentIndexValidationTests: XCTestCase {
     func testAudioIndexMissingAPathIsRebuiltAndReplaced() throws {
         let book = try makeAudioBook()
         var damaged = try savedIndex(of: book)
+        _ = try XCTUnwrap(damaged.chapters[safe: 1], "a second chapter to damage")
         damaged.chapters[1].audio?.relativeFilePath = nil
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
@@ -1104,14 +1108,14 @@ final class ContentIndexValidationTests: XCTestCase {
             ]))
         ])
         let saved = try savedIndex(of: book)
-        XCTAssertEqual(saved.chapters[1].audio?.clips?.map(\.duration), [0.5, 1, 1])
+        XCTAssertEqual(saved.chapters[safe: 1]?.audio?.clips?.map(\.duration), [0.5, 1, 1])
 
         let result = try BookContentAnalysisService.load(book: book)
 
         XCTAssertTrue(result.usedPersistedIndex)
         XCTAssertEqual(result.index, saved)
         XCTAssertEqual(result.audioSegments?.map { $0.clips.map(\.file) }, [["a.wav"], ["a.wav", "b.wav", "Disc 2/c.wav"]])
-        XCTAssertEqual(result.audioSegments?[1].clips.last?.endTime, 1)
+        XCTAssertEqual(result.audioSegments?[safe: 1]?.clips.last?.endTime, 1)
         XCTAssertTrue(rejections(of: book).isEmpty)
     }
 
@@ -1124,6 +1128,7 @@ final class ContentIndexValidationTests: XCTestCase {
             AudioClip(file: "b.wav", startTime: 0, endTime: 1)
         ]))])
         var damaged = try savedIndex(of: book)
+        _ = try XCTUnwrap(damaged.chapters[safe: 0]?.audio?.clips?[safe: 1], "a second clip to damage")
         damaged.chapters[0].audio?.clips?[1].relativeFilePath = nil
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
@@ -1164,6 +1169,7 @@ final class ContentIndexValidationTests: XCTestCase {
     func testOversizedAudioIndexIsRebuiltWithoutAllocating() throws {
         let book = try makeAudioBook()
         var damaged = try savedIndex(of: book)
+        _ = try XCTUnwrap(damaged.chapters[safe: 0], "a first chapter to damage")
         damaged.chapters[0].characterCount = 1_000_000_000_000
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
@@ -1183,6 +1189,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let book = try makeTextBook()
         XCTAssertEqual(BookContentAnalysisService.completedTextCacheIndex(for: book), try savedIndex(of: book))
         var damaged = try savedIndex(of: book)
+        _ = try XCTUnwrap(damaged.chapters[safe: 0]?.headings[safe: 0], "a first heading to damage")
         damaged.chapters[0].headings[0].level = 9
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
@@ -1261,6 +1268,15 @@ final class ContentIndexValidationTests: XCTestCase {
 
     // MARK: - Fixtures
 
+    /// `index` itself, once it proves to hold `headings.count` chapters,
+    /// with `headings[n]` headings in chapter n. Throws, failing the test,
+    /// when the builder made another shape, so a test that changes the
+    /// fixture by position fails instead of trapping the test host.
+    private func requiringShape(_ index: BookContentIndex, headings: [Int]) throws -> BookContentIndex {
+        let shape = index.chapters.map(\.headings.count)
+        return try XCTUnwrap(shape == headings ? index : nil, "chapters with \(shape) headings, expected \(headings)")
+    }
+
     /// Two chapters of reading text. The emoji makes the first chapter's
     /// UTF-16 length (10) differ from its character count; the second
     /// chapter (15 long, starting at 10) has headings at offsets 0 and 11.
@@ -1280,16 +1296,23 @@ final class ContentIndexValidationTests: XCTestCase {
     private static let relabeledHeadingReason =
         "chapters[1].headings[1].text differs from the reading text's label at UTF-16 offset 2 (lengths 4 and 5)"
 
-    /// The index the builder makes for `textChapters()` as an EPUB.
-    private func textIndex() -> BookContentIndex {
-        BookContentIndex.build(fromChapters: textChapters(), format: .epub)
+    /// The index the builder makes for `textChapters()` as an EPUB: two
+    /// chapters, with one heading and two. Throws, failing the test, when the
+    /// builder made another shape.
+    private func textIndex() throws -> BookContentIndex {
+        try requiringShape(BookContentIndex.build(fromChapters: textChapters(), format: .epub), headings: [1, 2])
     }
 
     /// One chapter spanning a whole audio file, whose chapters name no file.
-    private func singleFileIndex() -> BookContentIndex {
-        BookContentIndex.build(
-            fromChapters: [Chapter(title: "Whole", text: placeholder(300), headings: [Heading(level: 1, text: "Whole")])],
-            format: .audio
+    /// Throws, failing the test, unless the builder made one chapter with one
+    /// heading.
+    private func singleFileIndex() throws -> BookContentIndex {
+        try requiringShape(
+            BookContentIndex.build(
+                fromChapters: [Chapter(title: "Whole", text: placeholder(300), headings: [Heading(level: 1, text: "Whole")])],
+                format: .audio
+            ),
+            headings: [1]
         )
     }
 
@@ -1299,59 +1322,76 @@ final class ContentIndexValidationTests: XCTestCase {
     /// Three tracks of 10, 20, and 30 seconds, one in a disc subfolder, as
     /// `analyzeAudio` indexes a folder of files. Unless `folder` comes from
     /// `audioFolder()`, the files need not exist, for checks that look at the
-    /// index alone.
+    /// index alone. Throws, failing the test, unless the builder made three
+    /// chapters with one heading each.
     private func multiFileIndex(
         in folder: URL = URL(fileURLWithPath: "/tmp/audio", isDirectory: true)
-    ) -> BookContentIndex {
-        BookContentIndex.build(
-            fromChapters: tracks.enumerated().map { number, track in
-                Chapter(
-                    title: track,
-                    text: placeholder(100 * (number + 1)),
-                    headings: [Heading(level: 1, text: track, chapterIndex: number)]
-                )
-            },
-            format: .audio,
-            audioFilePaths: tracks.map { folder.appendingPathComponent($0).path },
-            audioBaseURL: folder
+    ) throws -> BookContentIndex {
+        try requiringShape(
+            BookContentIndex.build(
+                fromChapters: tracks.enumerated().map { number, track in
+                    Chapter(
+                        title: track,
+                        text: placeholder(100 * (number + 1)),
+                        headings: [Heading(level: 1, text: track, chapterIndex: number)]
+                    )
+                },
+                format: .audio,
+                audioFilePaths: tracks.map { folder.appendingPathComponent($0).path },
+                audioBaseURL: folder
+            ),
+            headings: [1, 1, 1]
         )
     }
 
-    /// Two segments of one shared file, as a converted DAISY book has.
-    private func segmentedIndex() -> BookContentIndex {
-        BookContentIndex.build(
-            fromChapters: [
-                Chapter(title: "Opening", text: placeholder(50), headings: [Heading(level: 1, text: "Opening")]),
-                Chapter(title: "Middle", text: placeholder(75), headings: [Heading(level: 1, text: "Middle", chapterIndex: 1)]),
-            ],
-            format: .audio,
-            audioSegments: [
-                AudioSegment(title: "Opening", file: "book.wav", startTime: 0, endTime: 5),
-                AudioSegment(title: "Middle", file: "book.wav", startTime: 5, endTime: 12.5),
-            ]
+    /// Two segments of one shared file, as a converted DAISY book has. Throws,
+    /// failing the test, unless the builder made two chapters with one
+    /// heading each.
+    private func segmentedIndex() throws -> BookContentIndex {
+        try requiringShape(
+            BookContentIndex.build(
+                fromChapters: [
+                    Chapter(title: "Opening", text: placeholder(50), headings: [Heading(level: 1, text: "Opening")]),
+                    Chapter(title: "Middle", text: placeholder(75), headings: [Heading(level: 1, text: "Middle", chapterIndex: 1)]),
+                ],
+                format: .audio,
+                audioSegments: [
+                    AudioSegment(title: "Opening", file: "book.wav", startTime: 0, endTime: 5),
+                    AudioSegment(title: "Middle", file: "book.wav", startTime: 5, endTime: 12.5),
+                ]
+            ),
+            headings: [1, 1]
         )
     }
 
     /// A converted DAISY book whose second heading plays three clips: an
     /// opening of 5 seconds of book.wav, then 7.5 seconds of book.wav, 4 of
     /// Disc 2/03.wav, and 2 more of book.wav, later in the file (13.5 in
-    /// all). The files are those of `audioFolder()`.
+    /// all). The files are those of `audioFolder()`. Throws, failing the test,
+    /// unless the builder made two chapters with one heading each, the second
+    /// holding its three clips.
     private func severalClipIndex() throws -> BookContentIndex {
-        BookContentIndex.build(
-            fromChapters: [
-                Chapter(title: "Opening", text: placeholder(50), headings: [Heading(level: 1, text: "Opening")]),
-                Chapter(title: "Middle", text: placeholder(135), headings: [Heading(level: 1, text: "Middle", chapterIndex: 1)]),
-            ],
-            format: .audio,
-            audioSegments: [
-                AudioSegment(title: "Opening", file: "book.wav", startTime: 0, endTime: 5),
-                try XCTUnwrap(AudioSegment(title: "Middle", clips: [
-                    AudioClip(file: "book.wav", startTime: 5, endTime: 12.5),
-                    AudioClip(file: "Disc 2/03.wav", startTime: 0, endTime: 4),
-                    AudioClip(file: "book.wav", startTime: 20, endTime: 22),
-                ])),
-            ]
+        let index = try requiringShape(
+            BookContentIndex.build(
+                fromChapters: [
+                    Chapter(title: "Opening", text: placeholder(50), headings: [Heading(level: 1, text: "Opening")]),
+                    Chapter(title: "Middle", text: placeholder(135), headings: [Heading(level: 1, text: "Middle", chapterIndex: 1)]),
+                ],
+                format: .audio,
+                audioSegments: [
+                    AudioSegment(title: "Opening", file: "book.wav", startTime: 0, endTime: 5),
+                    try XCTUnwrap(AudioSegment(title: "Middle", clips: [
+                        AudioClip(file: "book.wav", startTime: 5, endTime: 12.5),
+                        AudioClip(file: "Disc 2/03.wav", startTime: 0, endTime: 4),
+                        AudioClip(file: "book.wav", startTime: 20, endTime: 22),
+                    ])),
+                ]
+            ),
+            headings: [1, 1]
         )
+        // The shape check proved chapters[1]; its three clips come next.
+        _ = try XCTUnwrap(index.chapters[1].audio?.clips?[safe: 2], "the second chapter's three clips")
+        return index
     }
 
     /// Placeholder text of `length` spaces, as the audio parser writes.

@@ -229,7 +229,13 @@ final class DataDirectoryAvailabilityTests: XCTestCase {
         XCTAssertEqual(cloud.downloadRequests.map(\.lastPathComponent), ["library.json"])
         XCTAssertEqual(
             DataDirectoryUnavailability.notDownloaded(.googleDrive, folder: root.path).explanation,
-            "The library index is in Google Drive and isn't on this Mac yet."
+            "Some of the library's files are in Google Drive and aren't on this Mac yet."
+        )
+        // The debug log's wording names the files, not only the index.
+        XCTAssertEqual(
+            DataDirectoryUnavailability.notDownloaded(.googleDrive, folder: root.path).logDescription,
+            "some of the library's files in \(DataDirectoryPaths.shortName(of: root)) "
+                + "are only in Google Drive; asked to download them"
         )
     }
 
@@ -285,7 +291,7 @@ final class DataDirectoryAvailabilityTests: XCTestCase {
              "TextMouth can't read the folder /Users/reader/Books: permission denied."),
             (.libraryMissing(folder: "/x"), "The folder is there, but the library isn't in it."),
             (.differentLibrary(folder: "/x"), "The folder is there, but it holds a different TextMouth library."),
-            (.notDownloaded(nil, folder: "/x"), "The library index is in the cloud and isn't on this Mac yet."),
+            (.notDownloaded(nil, folder: "/x"), "Some of the library's files are in the cloud and aren't on this Mac yet."),
         ]
         for (reason, explanation) in cases {
             XCTAssertEqual(reason.explanation, explanation)

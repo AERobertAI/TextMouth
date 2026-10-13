@@ -143,9 +143,10 @@ extension LibraryViewModel {
             showError = true
             return
         }
-        let booksToRemove = library.books.filter {
-            $0.folderPath == path || $0.folderPath.hasPrefix(path + "/")
-        }
+        // The same rule `removeFolderAndContents` applies afterward, so a
+        // package is deleted exactly when its record is dropped (a feed's
+        // items, in no folder, are neither).
+        let booksToRemove = library.booksInFolderTree(path)
         var failures: [String] = []
         for book in booksToRemove {
             do {

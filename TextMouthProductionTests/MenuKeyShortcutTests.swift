@@ -762,6 +762,13 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.named("recording window: pause or resume"), .recordingPauseOrResume)
         XCTAssertEqual(ShortcutAction.exactlyNamed("Recording Window: Stop"), .recordingStop)
         XCTAssertNil(ShortcutAction.exactlyNamed("recording window: stop"), "the record names actions letter for letter")
+        // The bookmark command's one name is the Bookmarks menu's; its old
+        // name, Add Bookmark, is still read (#1937).
+        XCTAssertEqual(ShortcutAction.addBookmark.rawValue, "Toggle Bookmark")
+        XCTAssertEqual(ShortcutAction.named("Toggle Bookmark"), .addBookmark)
+        XCTAssertEqual(ShortcutAction.named("Add Bookmark"), .addBookmark)
+        XCTAssertEqual(ShortcutAction.named("add bookmark"), .addBookmark)
+        XCTAssertEqual(ShortcutAction.exactlyNamed("Add Bookmark"), .addBookmark)
         let compared = (ShortcutAction.allCases.map(\.rawValue) + ShortcutAction.formerNames.keys).map(ShortcutAction.comparableName)
         XCTAssertEqual(Set(compared).count, compared.count)
     }

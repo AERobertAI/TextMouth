@@ -446,32 +446,28 @@ struct Library: Codable {
     }
 
     /// Remove a folder and ALL its contents (books and subfolders) from the library model.
+    /// The books are those of `booksInFolderTree(_:)`: a feed's items are
+    /// never taken, being in no folder (FR11).
     /// Does not touch disk — caller is responsible for deleting .tmb packages.
     mutating func removeFolderAndContents(id: UUID) -> [Book] {
         guard let folder = folders.first(where: { $0.id == id }) else { return [] }
         let folderPath = folder.fullPath
 
-        // Collect books that will be removed
-        let removedBooks = books.filter {
-            $0.folderPath == folderPath || $0.folderPath.hasPrefix(folderPath + "/")
-        }
+        // Collect books that will be removed, and take exactly those by ID so
+        // the books returned and the books removed can never disagree.
+        let removedBooks = booksInFolderTree(folderPath)
+        let removedIDs = Set(removedBooks.map(\.id))
 
         // Remove those books, from the library and from the reading list (FR09)
-        books.removeAll {
-            $0.folderPath == folderPath || $0.folderPath.hasPrefix(folderPath + "/")
-        }
-        readingList.remove(Set(removedBooks.map(\.id)))
+        books.removeAll { removedIDs.contains($0.id) }
+        readingList.remove(removedIDs)
 
         // Remove the folder and all subfolders
-        folders.removeAll {
-            $0.fullPath == folderPath || $0.fullPath.hasPrefix(folderPath + "/")
-        }
+        folders.removeAll { Self.isPath($0.fullPath, inTreeAt: folderPath) }
 
         // Clean up sort settings for deleted folder tree
-        for key in folderSortSettings.keys {
-            if key == folderPath || key.hasPrefix(folderPath + "/") {
-                folderSortSettings.removeValue(forKey: key)
-            }
+        for key in folderSortSettings.keys where Self.isPath(key, inTreeAt: folderPath) {
+            folderSortSettings.removeValue(forKey: key)
         }
 
         return removedBooks
@@ -787,9 +783,8 @@ struct Library: Codable {
     /// items are in no folder (FR11), so they never count.
     func folderHasContents(_ folder: BookFolder) -> Bool {
         let path = folder.fullPath
-        let hasBooks = !booksInFolderTree(path).isEmpty
         let hasSubfolders = folders.contains { $0.parentPath == path }
-        return hasBooks || hasSubfolders
+        return hasBooks(inFolderTree: path) || hasSubfolders
     }
 
     /// Count all books recursively inside a folder (including subfolders):
@@ -806,9 +801,30 @@ struct Library: Codable {
     /// as `totalBooksInFolderTree(_:)` has always counted them. The one
     /// place that says what "in a folder's tree" means.
     func booksInFolderTree(_ path: String) -> [Book] {
-        books.filter {
-            !$0.isFeedItem && ($0.folderPath == path || $0.folderPath.hasPrefix(path + "/"))
-        }
+        books.filter { isInFolderTree($0, at: path) }
+    }
+
+    /// Whether any of the library's own books is in the folder at `path` or
+    /// below it, by the rule `booksInFolderTree(_:)` states. It stops at the
+    /// first book it finds, where asking whether that list is empty would
+    /// build the whole list.
+    func hasBooks(inFolderTree path: String) -> Bool {
+        books.contains { isInFolderTree($0, at: path) }
+    }
+
+    /// Whether `path` is `root` itself or a folder below it, at any depth.
+    /// Whole path components only: "Essays Old" is not in the tree of
+    /// "Essays". The one spelling of this rule, for folders, sort settings,
+    /// and books alike.
+    static func isPath(_ path: String, inTreeAt root: String) -> Bool {
+        path == root || path.hasPrefix(root + "/")
+    }
+
+    /// The rule `booksInFolderTree(_:)` states for one book: a library book
+    /// (never a feed's item, which names no folder, FR11) in the folder at
+    /// `path` or below it.
+    private func isInFolderTree(_ book: Book, at path: String) -> Bool {
+        !book.isFeedItem && Self.isPath(book.folderPath, inTreeAt: path)
     }
 
     mutating func updateWordCounts(bookID: UUID, wordCount: Int, charCount: Int) {

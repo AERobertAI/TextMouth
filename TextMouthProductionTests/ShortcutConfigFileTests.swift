@@ -93,6 +93,44 @@ final class ShortcutConfigFileTests: XCTestCase {
         XCTAssertEqual(reading.skipped, [])
     }
 
+    /// The bookmark command's former name, Add Bookmark, is still read in
+    /// config.json and in the record of the user's edits, without a repair
+    /// logged, so an edit made under it is kept; TextMouth writes it back as
+    /// Toggle Bookmark alone (#1937). `MenuKeyShortcutTests` checks the
+    /// former name in other letter cases.
+    func testTheBookmarkCommandsFormerNameIsStillRead() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let store = try isolatedDefaults()
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        let viewModel = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: store)
+        let controlB = KeyBinding(key: "b", control: true)
+
+        let config = try ConfigService.decode(Data("""
+        {
+          "keyboardShortcuts": {
+            "Add Bookmark": ["control+b"]
+          }
+        }
+        """.utf8))
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertEqual(manager.edits, ShortcutEdits([.addBookmark: [controlB]]))
+        XCTAssertTrue(debugLogLines(containing: "keyboardShortcuts.Add Bookmark").isEmpty, "a former name was taken for none")
+        var written = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &written)
+        XCTAssertEqual(written.keyboardShortcuts["Toggle Bookmark"], ["control+b"])
+        XCTAssertNil(written.keyboardShortcuts["Add Bookmark"])
+
+        // A record written under the former name reads as the same edit.
+        let stored = try XCTUnwrap(ShortcutEdits([.addBookmark: [controlB]]).storedData)
+        let storedText = try XCTUnwrap(String(data: stored, encoding: .utf8))
+        XCTAssertTrue(storedText.contains("Toggle Bookmark"), storedText)
+        let formerText = storedText.replacingOccurrences(of: "Toggle Bookmark", with: "Add Bookmark")
+        let reading = ShortcutEdits.reading(Data(formerText.utf8))
+        XCTAssertEqual(reading.edits, ShortcutEdits([.addBookmark: [controlB]]))
+        XCTAssertEqual(reading.skipped, [])
+    }
+
     /// An entry written as an object makes its action the user's working
     /// where it says (FR12's branch E), its field names, its action's name,
     /// and its kind of window in any letter case, and the settings model
@@ -163,7 +201,6 @@ final class ShortcutConfigFileTests: XCTestCase {
 
         let excerpt = [
             #"  "keyboardShortcuts" : {"#,
-            #"    "Add Bookmark" : "default: command+b","#,
             #"    "Add to Reading List" : "default: none","#,
             #"    "Next Bookmark" : "default: option+shift+command+b","#,
             #"    "Play \/ Pause" : "default: space, k","#,
@@ -173,6 +210,7 @@ final class ShortcutConfigFileTests: XCTestCase {
             #"    "Show Bookmarks" : "default: shift+command+b","#,
             #"    "Speak Full Info" : "default: i twice","#,
             #"    "Speak Info" : "default: i","#,
+            #"    "Toggle Bookmark" : "default: command+b","#,
             #"    "Where Am I?" : "default: w","#,
             #"    "Where Am I? Full Summary" : "default: w twice""#,
             #"  },"#,

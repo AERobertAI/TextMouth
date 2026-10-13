@@ -864,6 +864,36 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.stop()
     }
 
+    /// A second Play, from the AirPods or a media key, while an audiobook
+    /// waits for its chapter's files starts nothing anew: no play sound is
+    /// made, the chapter's play is not begun again, the download goes on, and
+    /// the reader still shows Playing. The chapter plays once its files are
+    /// here. Before, the second Play called `play()` again, which sounded the
+    /// play sound a second time and began the chapter's play anew.
+    func testASecondPlayWhileAChapterDownloadsStartsNothingAnew() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Second Play", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        let sounds = RecordedSoundEffects(preferences: makeSandboxedPreferences("Cloud Chapter Second Play"))
+        reader.soundEffectService = sounds
+        let generationBefore = reader.chapterPlaybackGeneration
+
+        reader.playOrResume()
+
+        XCTAssertEqual(sounds.played, [], "The second Play made a sound")
+        XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore, "The second Play began the chapter's play anew")
+        XCTAssertEqual(cloud.storage.downloadsCancelled, [], "The second Play stopped the chapter's download")
+        XCTAssertTrue(reader.isWaitingForChapterDownload, "The reader no longer waits for the chapter")
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader stopped showing Playing")
+        XCTAssertFalse(reader.isCurrentlyPaused, "The second Play paused the reader")
+
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+
+        XCTAssertEqual(reader.audioPlaybackService.loadedURL?.lastPathComponent, "02.wav", "Another chapter played")
+        reader.stop()
+    }
+
     /// A chapter whose files finish downloading while Where Am I? speaks
     /// waits for the announcement, as a Play pressed during it does: nothing
     /// plays under the announcement, the reader goes on showing Playing, and

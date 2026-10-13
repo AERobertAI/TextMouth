@@ -195,9 +195,9 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
     case differentLibrary(folder: String)
     /// The folder's identity marker can't be read, for `reason`.
     case identityUnreadable(folder: String, reason: String)
-    /// The library index, or the identity marker, is only in the cloud, and
-    /// TextMouth asked the sync service for it. `provider` is nil when the
-    /// service is unknown.
+    /// The identity marker, library.json, or a feed's folder or index is only
+    /// in the cloud, and TextMouth asked the sync service for it. `provider`
+    /// is nil when the service is unknown.
     case notDownloaded(CloudProvider?, folder: String)
 
     /// The data directory's full path, as the screen shows it.
@@ -231,7 +231,7 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
         case .identityUnreadable(_, let reason):
             return "The folder is there, but TextMouth can't read its library identity file: \(reason)"
         case .notDownloaded(let provider, _):
-            return "The library index is in \(provider?.displayName ?? "the cloud") and isn't on this Mac yet."
+            return "Some of the library's files are in \(provider?.displayName ?? "the cloud") and aren't on this Mac yet."
         }
     }
 
@@ -270,7 +270,7 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
         case .identityUnreadable(_, let reason):
             return "the identity marker in \(name) can't be read: \(reason)"
         case .notDownloaded(let provider, _):
-            return "the library index in \(name) is only in \(provider?.displayName ?? "the cloud"); asked to download it"
+            return "some of the library's files in \(name) are only in \(provider?.displayName ?? "the cloud"); asked to download them"
         }
     }
 
@@ -541,8 +541,9 @@ struct DataDirectoryCheck {
         return (folder, identity)
     }
 
-    /// Asks the sync service to download `files`, the library's index or
-    /// identity marker, and reports the library as waiting for them.
+    /// Asks the sync service to download `files`, the identity marker,
+    /// library.json, or a feed's folder or index, and reports the library as
+    /// waiting for them.
     private func notDownloaded(_ files: [URL], in folder: URL, itemStatus: any CloudItemStatusProviding) -> Outcome {
         for file in files {
             try? itemStatus.requestDownload(of: file)

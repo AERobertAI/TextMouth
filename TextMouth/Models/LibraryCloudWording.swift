@@ -129,7 +129,7 @@ enum LibraryCloudWording {
             sentences.append("\(failure.title) wasn't downloaded")
         } else if failed.count > 1 {
             let books = CountWording.phrase(failed.count, singular: "book wasn't", plural: "books weren't")
-            sentences.append("\(books) downloaded: \(list(failed.map(\.title)))")
+            sentences.append("\(books) downloaded: \(CountWording.list(failed.map(\.title)))")
         }
         return summary(sentences, explanations: failed.map(\.explanation))
     }
@@ -167,7 +167,7 @@ enum LibraryCloudWording {
         } else if refused.count > 1 {
             sentences.append(
                 "The downloads of \(CountWording.books(refused.count)) weren't removed: "
-                    + list(refused.map(\.title))
+                    + CountWording.list(refused.map(\.title))
             )
         }
         // A removal alone ends with a period, as a full sentence about where
@@ -214,7 +214,7 @@ enum LibraryCloudWording {
         case 1:
             subject = "\(titles[0]) isn't"
         case 2...3:
-            subject = "\(list(titles)) aren't"
+            subject = "\(CountWording.list(titles)) aren't"
         default:
             subject = "\(CountWording.books(titles.count)) aren't"
         }
@@ -234,16 +234,6 @@ enum LibraryCloudWording {
         }
         let text = sentences.joined(separator: ". ")
         return distinct.isEmpty ? text : text + ". " + distinct.joined(separator: " ")
-    }
-
-    /// `items` as a list in a sentence: "A", "A and B", "A, B, and C".
-    static func list(_ items: [String]) -> String {
-        switch items.count {
-        case 0: return ""
-        case 1: return items[0]
-        case 2: return "\(items[0]) and \(items[1])"
-        default: return items.dropLast().joined(separator: ", ") + ", and " + (items.last ?? "")
-        }
     }
 
     /// The books an announcement is about, named by `titles`: the one

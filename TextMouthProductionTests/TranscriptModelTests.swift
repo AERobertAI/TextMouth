@@ -110,6 +110,21 @@ final class TranscriptModelTests: XCTestCase {
     /// that shows it, as transcript.json spells it, and never quotes the
     /// transcript's words.
     func testValidationNamesTheFirstUnusableField() {
+        // The cases below write into the fixture by position. Prove it is
+        // shaped for them, so a change to the fixture fails this test with
+        // a message instead of trapping the test host: two files, three
+        // sentences in the first and one in the second, and the six words
+        // of the first sentence and one of the second.
+        let fixture = TranscriptFixtures.twoFiles
+        guard fixture.files.count == 2,
+              fixture.files[0].sentences.count >= 3,
+              fixture.files[1].sentences.count >= 1,
+              fixture.files[0].sentences[0].words.count >= 6,
+              fixture.files[0].sentences[1].words.count >= 1
+        else {
+            XCTFail("TranscriptFixtures.twoFiles no longer has the files, sentences, and words these cases write to")
+            return
+        }
         let cases: [(change: (inout Transcript) -> Void, reason: String)] = [
             ({ $0.version = 0 }, "version 0 is not the supported 1"),
             ({ $0.locale = " " }, "locale is empty"),

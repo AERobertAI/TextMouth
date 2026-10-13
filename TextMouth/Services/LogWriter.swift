@@ -143,7 +143,7 @@ final class LogWriter: Sendable {
             dataDirectory: @escaping @Sendable () -> URL,
             isUnavailable: @escaping @Sendable (_ dataDirectory: URL) -> Bool,
             thisMacsFolder: @escaping @Sendable () -> URL,
-            rename: @escaping @Sendable (_ from: URL, _ to: URL) throws -> Void = { try LogWriter.renameReplacing($0, $1) },
+            rename: @escaping @Sendable (_ from: URL, _ to: URL) throws -> Void = { try SavedFile.renameReplacing($0, $1) },
             isOnlyInCloud: @escaping @Sendable (_ file: URL) -> Bool = { DatalessFiles.isDataless($0) }
         ) {
             self.location = location
@@ -425,21 +425,6 @@ final class LogWriter: Sendable {
         let limit = TextMouthPaths.maxLogFileSize / (1024 * 1024)
         return "LOG_ROTATION: \(name) reached \(limit) MB but couldn't be renamed to "
             + "\(name).\(TextMouthPaths.rotatedLogExtension) (\(reason)), so it was started over without its earlier lines"
-    }
-
-    /// Renames `from` to `to` with rename(2), which replaces whatever is at
-    /// `to` in the same step, as `FileManager.moveItem` never does.
-    /// - Throws: The POSIX error the rename failed with.
-    static func renameReplacing(_ from: URL, _ to: URL) throws {
-        let failure = from.withUnsafeFileSystemRepresentation { fromPath in
-            to.withUnsafeFileSystemRepresentation { toPath -> Int32 in
-                guard let fromPath, let toPath else { return EINVAL }
-                return Darwin.rename(fromPath, toPath) == 0 ? 0 : errno
-            }
-        }
-        guard failure == 0 else {
-            throw POSIXError(POSIXErrorCode(rawValue: failure) ?? .EIO)
-        }
     }
 
     /// Why a file operation failed, as a log line may say it: the system's

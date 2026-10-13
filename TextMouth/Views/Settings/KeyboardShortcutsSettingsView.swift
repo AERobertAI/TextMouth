@@ -579,7 +579,7 @@ enum ShortcutsSettingsWording {
     static func scopeChanged(_ action: ShortcutAction, to scope: ShortcutScope, takenFrom previousOwners: [ShortcutAction]) -> String {
         var sentences = ["\(action.rawValue) works in \(scope.inSentence)."]
         if !previousOwners.isEmpty {
-            sentences.append(sentence("Taken from \(LibraryCloudWording.list(previousOwners.map(\.rawValue)))"))
+            sentences.append(sentence("Taken from \(CountWording.list(previousOwners.map(\.rawValue)))"))
         }
         return sentences.joined(separator: " ")
     }
@@ -624,7 +624,7 @@ enum ShortcutsSettingsWording {
     ) -> String {
         var sentences = [sentence("\(key.accessibleDisplayString), recorded for \(action.rawValue)")]
         if !previousOwners.isEmpty {
-            sentences.append(sentence("Taken from \(LibraryCloudWording.list(previousOwners.map(\.rawValue)))"))
+            sentences.append(sentence("Taken from \(CountWording.list(previousOwners.map(\.rawValue)))"))
         }
         if let waitingAction {
             sentences.append(nowWaits(key, before: waitingAction))

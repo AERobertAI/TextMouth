@@ -114,4 +114,22 @@ enum SavedFile {
     static func requestDownload(of url: URL) {
         try? CloudServices.itemStatus.requestDownload(of: url)
     }
+
+    // MARK: Replacing in one step
+
+    /// Renames `from` to `to` with rename(2), which replaces whatever is at
+    /// `to` in the same step, as `FileManager.moveItem` never does. Both must
+    /// be on one volume, as a partial file beside its destination is.
+    /// - Throws: The POSIX error the rename failed with.
+    static func renameReplacing(_ from: URL, _ to: URL) throws {
+        let failure = from.withUnsafeFileSystemRepresentation { fromPath in
+            to.withUnsafeFileSystemRepresentation { toPath -> Int32 in
+                guard let fromPath, let toPath else { return EINVAL }
+                return Darwin.rename(fromPath, toPath) == 0 ? 0 : errno
+            }
+        }
+        guard failure == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: failure) ?? .EIO)
+        }
+    }
 }

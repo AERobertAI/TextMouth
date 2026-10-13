@@ -23,6 +23,11 @@ final class LibraryFeedIndexCloudCheckTests: XCTestCase {
 
         XCTAssertEqual(outcome, .unavailable(.notDownloaded(.iCloudDrive, folder: library.root.path)))
         XCTAssertEqual(library.cloud.downloadRequests.map(\.path), [index.path])
+        // The listener hears that some of the library's files are waiting, not
+        // that the library index is: library.json is here, the feed's index is not.
+        let explanation = DataDirectoryUnavailability.notDownloaded(.iCloudDrive, folder: library.root.path).explanation
+        XCTAssertEqual(explanation, "Some of the library's files are in iCloud Drive and aren't on this Mac yet.")
+        XCTAssertFalse(explanation.contains("library index"))
     }
 
     /// A feed's folder whose listing is only in the cloud, which reading the
