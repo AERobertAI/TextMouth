@@ -210,6 +210,21 @@ extension TextPlace {
         bookLength > 0 && globalOffset >= bookLength
     }
 
+    /// Whether this place is exactly the end of a text of `chapterCount`
+    /// chapters, `bookLength` UTF-16 units long in all, whose chapter `index`
+    /// starts `chapterStart(index)` units into the book and is
+    /// `chapterLength(index)` units long: the end of its chapter, with
+    /// nothing but empty chapters after it. A place past the end is not the
+    /// end's place (its numbers point past the text), and neither is any
+    /// place of a text without length. The one rule: `BookWords.isEnd` reads
+    /// it from the words, and the place relocator reads it from a loaded
+    /// text's own offsets. Both closures are asked only about chapters the
+    /// text holds.
+    func isExactlyTheEnd(chapterCount: Int, bookLength: Int, chapterStart: (Int) -> Int, chapterLength: (Int) -> Int) -> Bool {
+        guard bookLength > 0, chapter >= 0, chapter < chapterCount else { return false }
+        return offset == chapterLength(chapter) && chapterStart(chapter) + offset == bookLength
+    }
+
     /// Where a place saved here opens in a text of `chapterCount` chapters,
     /// `bookLength` UTF-16 units long in all, whose chapter `index` is
     /// `chapterLength(index)` units long (T06's question 7, with P07's end
@@ -319,9 +334,12 @@ struct BookWords: Sendable {
     /// its chapter's start; so it is not the end's place, and the finder
     /// puts it there. False for a book with no text.
     func isEnd(_ place: TextPlace) -> Bool {
-        guard totalLength > 0, place.chapter >= 0, place.chapter < chapterCount else { return false }
-        return place.offset == length(ofChapter: place.chapter)
-            && chapterStarts[place.chapter] + place.offset == totalLength
+        place.isExactlyTheEnd(
+            chapterCount: chapterCount,
+            bookLength: totalLength,
+            chapterStart: { chapterStarts[$0] },
+            chapterLength: length(ofChapter:)
+        )
     }
 
     /// The chapter word `word` stands in. A word past the book's last word
