@@ -138,6 +138,35 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: deleted).count, deletedBefore + 1)
     }
 
+    /// A rule's removal of the files is storage work: while a data-directory
+    /// move holds the work it logs that it waits and keeps the package, and
+    /// once the move lets go it removes the files.
+    func testARulesRemovalWaitsWhileAMoveHoldsStorageWork() async throws {
+        // A boundary of the test's own: holding `.shared` would stall every later test.
+        let boundary = StorageBoundary(root: try makeSandboxDirectory("FeedRemovalHeld"))
+        let world = try FeedTestWorld(self, label: "FeedRemovalHeld", boundary: boundary)
+        let (feed, book) = try await downloadedEpisode(in: world)
+        FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        let hold = try boundary.holdWork(for: .movingDataDirectory)
+        // A second release does nothing, so a failing test still lets go.
+        addTeardownBlock { hold.release() }
+        // Other tests log this line too, so the lines are counted before and after.
+        let waiting = "FEED_DOWNLOAD_DELETE_WAITING"
+        let before = debugLogLines(containing: waiting).count
+
+        let sweep = Task { await world.center.sweepPlayedDownloads() }
+        await waitFor("the removal waits for the move") { self.debugLogLines(containing: waiting).count > before }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.tmbDirectory.path), "the files went during the move")
+        hold.release()
+        let report = await sweep.value
+
+        XCTAssertEqual(report.deletedBookIDs, [book.id])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        XCTAssertEqual(item.state, .notDownloaded)
+    }
+
     /// 0 days deletes a played download at the next sweep, -1 never does,
     /// and a feed's own number wins over the setting.
     func testTheDaysSettingAndAFeedsOverride() async throws {

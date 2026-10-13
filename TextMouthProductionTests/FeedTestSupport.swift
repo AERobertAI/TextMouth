@@ -501,13 +501,17 @@ final class FeedTestWorld {
     /// as `statistics` counts them, or, without it, as a statistics service
     /// of the world's own does. Its records are written as storage work of
     /// `recordsBoundary`, the process's unless a test holds a boundary of
-    /// its own to keep a write waiting.
+    /// its own to keep a write waiting. The engine's imports and its rules'
+    /// removals of downloaded files run as storage work of `boundary`, the
+    /// process's unless a test holds a boundary of its own to keep them
+    /// waiting (never hold `.shared`: every later test would wait on it).
     init(
         _ test: XCTestCase,
         label: String,
         worksOnItsOwn: Bool = false,
         statistics: ReadingStatsService? = nil,
-        recordsBoundary: StorageBoundary = .shared
+        recordsBoundary: StorageBoundary = .shared,
+        boundary: StorageBoundary = .shared
     ) throws {
         // Registered first of all, so it runs last, once the library index
         // has been put back, which writes any save still waiting: a feed's
@@ -561,7 +565,7 @@ final class FeedTestWorld {
             resumeFolder: resumeFolder,
             downloadsFolder: downloadsFolder,
             freeSpace: { _ in freeSpace.value },
-            boundary: .shared,
+            boundary: boundary,
             bookStorage: { cloud },
             finishedBooksSource: stats,
             // Never the Trash in a test: a file or package goes for good,

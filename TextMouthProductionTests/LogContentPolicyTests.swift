@@ -309,6 +309,8 @@ final class LogContentPolicyTests: XCTestCase {
         "FEED_ITEM_PLAYED", "FEED_DOWNLOAD_DELETED", "FEED_DOWNLOAD_DELETE_FAILED", "FEED_SWEEP_LEFT_IN_CLOUD",
         // The listener's own deletion of a download in use, refused (feed follow-ups item 1).
         "FEED_DOWNLOAD_DELETE_REFUSED",
+        // A rule's deletions waiting while a data-directory move holds storage work.
+        "FEED_DOWNLOAD_DELETE_WAITING",
         // Feed items in their feeds' own folders (FR11): each feed's index and the first launch's
         // move into it; a download kept, restored, set aside, or held aside, and an article's
         // earlier text kept; the rules' downloads, waits, and removals; Cancel; the feed's
