@@ -81,7 +81,7 @@ Older copies of the script know nothing of waiting members: one that registers a
 
 Each team keeps a task list. A task has a number, a title, a state, and perhaps an assignee, a brief, and some files. Every change to a task posts one line, tagged `task`, to the team's channel.
 
-- `bbs task add NAME TEAM --title "ONE LINE" [--brief PATH] [--files PATH ...] [--assign AGENT]` adds a task and prints its number. `--brief` is a file in the repository that describes the task, and `--files` are the paths or globs it will touch. The task starts `open`, or `assigned` when you give `--assign`.
+- `bbs task add NAME TEAM --title "ONE LINE" [--brief PATH] [--files PATH ...] [--assign AGENT]` adds a task and prints its number. `--brief` is a file in the repository that describes the task, and `--files` are the paths or globs it will touch. The task starts `open`, or `assigned` when you give `--assign`. When the new task's files overlap those of an unfinished task in the same team, by the rule for overlapping claims, `task add` warns, naming each pair; the task is added all the same.
 - `bbs task assign NAME ID AGENT [--note "ONE LINE"]` gives a task to an agent and marks it `assigned`. The agent may register later. A `done` or `dropped` task assigned again comes back to life.
 - `bbs task move NAME ID STATE [--note "ONE LINE"]` moves a task to another state.
 - `bbs tasks [--team TEAM] [--state STATE] [--agent AGENT]` lists tasks, narrowed by any of the three.

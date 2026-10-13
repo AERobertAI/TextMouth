@@ -2399,6 +2399,7 @@ class TaskTests(BoardTestCase):
                 "created_by": "lead",
                 "updated": bbs.to_utc_text(NOON),
                 "updated_by": "lead",
+                "overlaps": [],
             },
         )
 
@@ -2527,7 +2528,7 @@ class TaskTests(BoardTestCase):
     def test_json_is_a_list_of_task_dicts_even_when_empty(self) -> None:
         self.assertEqual(self.ok_json("tasks"), [])
         added = self.add("A", "board", "--files", "a.py")
-        self.assertEqual(self.ok_json("tasks"), [added])
+        self.assertEqual(self.ok_json("tasks"), [self.listed(added)])
         self.assertEqual(self.ok_json("tasks", "--team", "polish"), [])
 
     def test_teams_count_their_tasks_by_state(self) -> None:
@@ -2551,9 +2552,9 @@ class TaskTests(BoardTestCase):
         first = self.add("A", "board")
         second = self.add("B", "polish")
         teams = {team["name"]: team for team in self.ok_json("teams")}
-        self.assertEqual(teams["board"]["tasks"], [first])
-        self.assertEqual(teams["polish"]["tasks"], [second])
-        self.assertEqual(self.ok_json("teams", "board")[0]["tasks"], [first])
+        self.assertEqual(teams["board"]["tasks"], [self.listed(first)])
+        self.assertEqual(teams["polish"]["tasks"], [self.listed(second)])
+        self.assertEqual(self.ok_json("teams", "board")[0]["tasks"], [self.listed(first)])
 
     def assign(self, task_id: int, agent: str, *extra: str, actor: str = "lead") -> dict:
         """Assign a task as ``actor`` (with ``extra`` options) and return its JSON."""
@@ -2756,6 +2757,90 @@ class TaskTests(BoardTestCase):
             ],
         )
         self.assertEqual(self.ok_json("tasks")[0]["assignee"], "alpha")
+
+    @staticmethod
+    def listed(added: dict) -> dict:
+        """Return what ``task add`` reported as the task appears in listings, which have no ``overlaps``."""
+        return {key: value for key, value in added.items() if key != "overlaps"}
+
+    def warnings_of(self, title: str, team: str, *files: str, actor: str = "lead") -> List[str]:
+        """Add a task listing ``files`` and return the lines of its text output that belong to a warning."""
+        text = self.ok("task", "add", actor, team, "--title", title, "--files", *files)
+        return [line for line in text.splitlines() if line.startswith(("Warning:", "  task "))]
+
+    def test_task_add_warns_when_files_overlap_an_unfinished_task_in_the_team(self) -> None:
+        self.add("First", "board", "--files", "src/a.py", "docs/")
+        text = self.ok("task", "add", "lead", "board", "--title", "Second", "--files", "src/*.py", "README")
+        self.assertEqual(
+            text.splitlines()[-2:],
+            [
+                "Warning: 1 overlap with unfinished tasks in team board:",
+                "  task 2 lists src/*.py and task 1 lists src/a.py",
+            ],
+        )
+        # The task was added all the same, and the channel only got the usual "Added task" lines.
+        self.assertEqual([t["id"] for t in self.ok_json("tasks")], [1, 2])
+        self.assertEqual(
+            [m["topic"] for m in self.channel() if m["tag"] == "task"],
+            ["Added task 1: First", "Added task 2: Second"],
+        )
+        self.assertEqual(
+            [m["tag"] for m in self.channel()],
+            ["notice", "task", "task"],
+        )
+
+    def test_the_json_of_task_add_names_each_overlapping_pair(self) -> None:
+        self.add("First", "board", "--files", "src/a.py", "docs/")
+        task = self.add("Second", "board", "--files", "src/*.py", "README")
+        self.assertEqual(
+            task["overlaps"], [{"first": {"task": 2, "path": "src/*.py"}, "second": {"task": 1, "path": "src/a.py"}}]
+        )
+
+    def test_no_warning_without_an_overlap(self) -> None:
+        self.add("First", "board", "--files", "src/a.py")
+        self.assertEqual(self.warnings_of("Disjoint", "board", "src/b.py", "docs/"), [])
+        self.assertEqual(self.add("Disjoint again", "board", "--files", "lib/c.py")["overlaps"], [])
+        # A task with no files has nothing to overlap.
+        self.assertNotIn("Warning:", self.ok("task", "add", "lead", "board", "--title", "No files"))
+        self.assertEqual(self.add("Still no files")["overlaps"], [])
+
+    def test_finished_tasks_and_other_teams_do_not_count(self) -> None:
+        self.add("Done", "board", "--files", "src/a.py")
+        self.add("Dropped", "board", "--files", "src/a.py")
+        self.move(1, "done")
+        self.move(2, "dropped")
+        # A task in another team, even an unfinished one, does not count either.
+        self.add("Elsewhere", "polish", "--files", "src/a.py", actor="beta")
+        self.assertEqual(self.warnings_of("Fresh", "board", "src/a.py"), [])
+        self.assertEqual(self.ok_json("tasks")[-1]["title"], "Fresh")
+        # The same holds for the JSON, once the unfinished "Fresh" is out of the way.
+        self.move(4, "done")
+        self.assertEqual(self.add("Fresh again", "board", "--files", "src/a.py")["overlaps"], [])
+
+    def test_each_overlapping_pair_gets_a_line_in_order(self) -> None:
+        self.add("First", "board", "--files", "src/a.py", "src/b.py")
+        self.add("Second", "board", "--files", "src/*.py")
+        text = self.ok("task", "add", "lead", "board", "--title", "Third", "--files", "src/b.py", "src/a.py")
+        self.assertEqual(
+            text.splitlines()[-5:],
+            [
+                "Warning: 4 overlaps with unfinished tasks in team board:",
+                "  task 3 lists src/b.py and task 1 lists src/b.py",
+                "  task 3 lists src/a.py and task 1 lists src/a.py",
+                "  task 3 lists src/b.py and task 2 lists src/*.py",
+                "  task 3 lists src/a.py and task 2 lists src/*.py",
+            ],
+        )
+
+    def test_overlaps_ignore_letter_case_like_claims(self) -> None:
+        self.add("First", "board", "--files", "src/a.py")
+        self.assertEqual(
+            self.warnings_of("Second", "board", "SRC/A.py"),
+            [
+                "Warning: 1 overlap with unfinished tasks in team board:",
+                "  task 2 lists SRC/A.py and task 1 lists src/a.py",
+            ],
+        )
 
 
 if __name__ == "__main__":

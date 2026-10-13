@@ -111,6 +111,9 @@ ACTIVITIES = ("building", "testing", "committing", "idle", "merging")
 #: `assigned`, `working`, and `review`, ending `done` or `dropped`.
 TASK_STATES = ("open", "assigned", "working", "review", "done", "dropped")
 
+#: The task states in which a task no longer touches its files.
+FINISHED_TASK_STATES = ("done", "dropped")
+
 #: Largest accepted message body, in bytes of UTF-8 (16 KB).
 MAX_BODY_BYTES = 16 * 1024
 
@@ -2178,8 +2181,51 @@ def assignee_reminder(conn: sqlite3.Connection, task: dict) -> str:
     return f"{assignee} has not registered yet."
 
 
+def task_overlaps(conn: sqlite3.Connection, task: dict) -> List[dict]:
+    """Return the pairs of overlapping files between ``task`` and the team's unfinished tasks.
+
+    Only other tasks in the same team whose state is not in
+    ``FINISHED_TASK_STATES`` count, and overlap follows the claims' rule
+    (``patterns_overlap``). Each pair mirrors a claims pair:
+    ``{"first": {"task": new id, "path": ...}, "second": {"task": other id, "path": ...}}``.
+    Pairs come ordered by the other task's id, then by the new task's file
+    order, then by the other task's file order.
+    """
+    overlaps = []
+    for other in load_tasks(conn, team=task["team"]):  # load_tasks orders by id
+        if other["id"] == task["id"] or other["state"] in FINISHED_TASK_STATES:
+            continue
+        for path in task["files"]:
+            for other_path in other["files"]:
+                if patterns_overlap(path, other_path):
+                    overlaps.append(
+                        {
+                            "first": {"task": task["id"], "path": path},
+                            "second": {"task": other["id"], "path": other_path},
+                        }
+                    )
+    return overlaps
+
+
+def describe_task_overlaps(team: str, overlaps: List[dict]) -> str:
+    """Warn about overlapping task files, one pair per line, or return "" when there are none."""
+    if not overlaps:
+        return ""
+    lines = [f"Warning: {plural(len(overlaps), 'overlap')} with unfinished tasks in team {team}:"]
+    for overlap in overlaps:
+        first, second = overlap["first"], overlap["second"]
+        lines.append(f"  task {first['task']} lists {first['path']} and task {second['task']} lists {second['path']}")
+    return "\n".join(lines)
+
+
 def cmd_task_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Add a task to a team's list and announce it in the team's channel."""
+    """Add a task to a team's list and announce it in the team's channel.
+
+    When the new task's files overlap those of an unfinished task in the same
+    team, the text ends with a warning naming each pair; the task is added all
+    the same. The JSON is the task plus ``overlaps``, always present, an empty
+    list when there are none.
+    """
     title = one_line(args.title, "title")
     brief = normalize_patterns([args.brief])[0] if args.brief is not None else None
     files = normalize_patterns(args.files)
@@ -2199,10 +2245,13 @@ def cmd_task_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
         post_to_team(conn, actor, team, f"Added task {task_id}{for_whom}: {title}", tag="task")
         task = load_tasks(conn, task_id=task_id)[0]
         reminder = assignee_reminder(conn, task)
+        overlaps = task_overlaps(conn, task)
     lines = [f"Added task {task_id} to team {team}.", describe_task(task)]
     if reminder:
         lines.append(reminder)
-    return Outcome(task, "\n".join(lines))
+    if overlaps:
+        lines.append(describe_task_overlaps(team, overlaps))
+    return Outcome(dict(task, overlaps=overlaps), "\n".join(lines))
 
 
 def require_task(conn: sqlite3.Connection, task_id: int) -> dict:
