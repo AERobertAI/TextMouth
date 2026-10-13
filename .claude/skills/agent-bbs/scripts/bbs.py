@@ -4,8 +4,9 @@
 Several agents work on this repository concurrently, each in its own git
 worktree on its own branch. The board lets them register, say which files
 they are editing, post short notices about builds, commits, findings and
-questions, and read what concerns them. It is one SQLite file that every
-worktree shares:
+questions, and read what concerns them. Agents can also work in teams, each
+with a lead, members, a channel addressed ``team:NAME``, and a task list.
+It is one SQLite file that every worktree shares:
 
 * ``$TEXTMOUTH_BBS_DIR/board.sqlite`` when that variable is set;
 * otherwise ``.claude/agent-bbs/board.sqlite`` in the main working tree of
@@ -57,26 +58,37 @@ DEFAULT_BOARD_SUBDIR = Path(".claude") / "agent-bbs"
 #: File name of the board database inside the board directory.
 BOARD_FILENAME = "board.sqlite"
 
-#: Version of the table layout, kept in SQLite's user_version header field.
+#: Version of the base table layout, kept in SQLite's user_version header field.
+#: Scripts from before teams refuse a board whose version is higher than theirs,
+#: so additive changes never raise it: SCHEMA_ADDITIONS applies them instead.
 SCHEMA_VERSION = 1
 
 #: Seconds a command waits for another process's write before giving up.
 BUSY_TIMEOUT_SECONDS = 30.0
 
-#: Recipient name that addresses every agent; no agent may register it.
+#: Recipient name that addresses every agent; no agent or team may take it.
 EVERYONE = "all"
 
-#: Agent names: lower-case letters, digits, '.', '_' and '-', at most 40.
+#: Prefix that turns a team's name into the address of its channel, as in "team:board".
+TEAM_PREFIX = "team:"
+
+#: Agent and team names: lower-case letters, digits, '.', '_' and '-', at most 40.
 NAME_RULE = re.compile(r"[a-z0-9][a-z0-9._-]{0,39}")
 
-#: Longest accepted one-line field (role, branch, topic, activity note).
+#: Longest accepted one-line field (role, branch, topic, activity note, team
+#: purpose, task title and note).
 MAX_LINE_LENGTH = 200
 
-#: Kinds of message; `notice` is the default.
-TAGS = ("build", "commit", "finding", "question", "notice", "merge")
+#: Kinds of message; `notice` is the default. `task` marks the lines the board
+#: posts to a team's channel when a task changes.
+TAGS = ("build", "commit", "finding", "question", "notice", "merge", "task")
 
 #: What an agent can say it is doing; shown by `agents`.
 ACTIVITIES = ("building", "testing", "committing", "idle", "merging")
+
+#: A task's states, in the order of its life: `open` (no one has it yet), then
+#: `assigned`, `working`, and `review`, ending `done` or `dropped`.
+TASK_STATES = ("open", "assigned", "working", "review", "done", "dropped")
 
 #: Largest accepted message body, in bytes of UTF-8 (16 KB).
 MAX_BODY_BYTES = 16 * 1024
@@ -223,18 +235,21 @@ def parse_since(text: str) -> Since:
 # ---------------------------------------------------------------------------
 
 
-def normalize_name(raw: str) -> str:
-    """Return the canonical form of an agent name, or raise UserError.
+def normalize_name(raw: str, kind: str = "agent") -> str:
+    """Return the canonical form of an agent or team name, or raise UserError.
 
-    Names are case-insensitive: they are stored and shown in lower case, so
-    "Orchestrator" and "orchestrator" are the same agent.
+    ``kind`` is "agent" or "team" and only shapes the error messages; both
+    follow the same rule. Names are case-insensitive: they are stored and
+    shown in lower case, so "Orchestrator" and "orchestrator" are the same
+    agent.
     """
+    article = "an" if kind == "agent" else "a"
     name = raw.strip().lower()
     if name == EVERYONE:
-        raise UserError(f"'{EVERYONE}' addresses every agent and cannot be an agent name")
+        raise UserError(f"'{EVERYONE}' addresses every agent and cannot be {article} {kind} name")
     if not NAME_RULE.fullmatch(name):
         raise UserError(
-            f"invalid agent name {raw!r}: use 1 to 40 letters, digits, '.', '_' "
+            f"invalid {kind} name {raw!r}: use 1 to 40 letters, digits, '.', '_' "
             "or '-', starting with a letter or digit"
         )
     return name
@@ -248,6 +263,18 @@ def one_line(value: str, field: str, *, allow_empty: bool = False) -> str:
     if len(text) > MAX_LINE_LENGTH:
         raise UserError(f"{field} is {len(text)} characters long; the limit is {MAX_LINE_LENGTH}")
     return text
+
+
+def clip_line(text: str) -> str:
+    """Return ``text`` cut to MAX_LINE_LENGTH characters, ending in "…" when cut.
+
+    For topics that the board writes itself, which can outgrow the limit when
+    they quote a title or list names. A user's own fields go through
+    ``one_line`` instead, which refuses a line that is too long.
+    """
+    if len(text) <= MAX_LINE_LENGTH:
+        return text
+    return text[: MAX_LINE_LENGTH - 1] + "…"
 
 
 # ---------------------------------------------------------------------------
@@ -692,6 +719,67 @@ SCHEMA = (
     """,
 )
 
+#: Tables and indexes that came after layout 1 shipped. Each is created
+#: whenever it is missing, so older scripts (which ignore them) and newer ones
+#: share one board. Every change here must be additive: a new table or index,
+#: never a changed column. A table that refers to agents or messages must
+#: cascade or hold plain names, because older scripts delete agents and
+#: messages without knowing that the table exists.
+SCHEMA_ADDITIONS = (
+    # Teams. `lead` is a plain agent name rather than a reference to agents,
+    # so purging or resetting agents never fails on it, and never deletes the
+    # team.
+    """
+    CREATE TABLE IF NOT EXISTS teams (
+        name       TEXT PRIMARY KEY,
+        lead       TEXT NOT NULL,
+        purpose    TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )
+    """,
+    # Each team's members besides its lead, and when each joined. A member row
+    # goes with its team, and with its agent when the agent is purged.
+    """
+    CREATE TABLE IF NOT EXISTS team_members (
+        team      TEXT NOT NULL REFERENCES teams(name) ON DELETE CASCADE,
+        agent     TEXT NOT NULL REFERENCES agents(name) ON DELETE CASCADE,
+        joined_at TEXT NOT NULL,
+        PRIMARY KEY (team, agent)
+    )
+    """,
+    # Finds an agent's teams, and lets deleting an agent find its member rows
+    # quickly.
+    "CREATE INDEX IF NOT EXISTS team_members_by_agent ON team_members (agent)",
+    # Each team's tasks. AUTOINCREMENT never reuses an id. `assignee`,
+    # `created_by` and `updated_by` are plain agent names, so a task outlives
+    # its agents; `brief` is a path, or NULL when the task has none.
+    """
+    CREATE TABLE IF NOT EXISTS tasks (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        team       TEXT NOT NULL REFERENCES teams(name) ON DELETE CASCADE,
+        title      TEXT NOT NULL,
+        brief      TEXT,
+        state      TEXT NOT NULL DEFAULT 'open',
+        assignee   TEXT,
+        note       TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        created_by TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        updated_by TEXT NOT NULL
+    )
+    """,
+    # Finds a team's tasks, and lets deleting a team find them quickly.
+    "CREATE INDEX IF NOT EXISTS tasks_by_team ON tasks (team)",
+    # The paths and globs each task touches, in normalize_pattern form.
+    """
+    CREATE TABLE IF NOT EXISTS task_files (
+        task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        path    TEXT NOT NULL,
+        PRIMARY KEY (task_id, path)
+    )
+    """,
+)
+
 
 def open_board() -> sqlite3.Connection:
     """Open the shared board, creating its directory and tables if needed.
@@ -740,9 +828,33 @@ def _use_write_ahead_log(conn: sqlite3.Connection) -> None:
             time.sleep(0.05)
 
 
+def _created_name(statement: str) -> str:
+    """Return the name of the table or index that one CREATE statement makes."""
+    match = re.search(r"IF NOT EXISTS\s+(\w+)", statement)
+    if match is None:  # a programming error: every schema statement says IF NOT EXISTS
+        raise ValueError(f"not a CREATE ... IF NOT EXISTS statement: {statement!r}")
+    return match.group(1)
+
+
+def _board_is_current(conn: sqlite3.Connection) -> bool:
+    """Say whether the board has its version and every added table and index.
+
+    It only reads, so opening a current board takes no write lock.
+    """
+    if conn.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
+        return False
+    present = {row[0] for row in conn.execute("SELECT name FROM sqlite_master")}
+    return all(_created_name(statement) in present for statement in SCHEMA_ADDITIONS)
+
+
 def _create_schema(conn: sqlite3.Connection) -> None:
-    """Create the tables on first use and refuse boards from newer scripts."""
-    if conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION:
+    """Create what the board is missing and refuse boards from newer scripts.
+
+    Layout 1 keeps its version number; the later tables and indexes in
+    SCHEMA_ADDITIONS are created whenever they are missing, so a board made by
+    an older script gains them the first time this script opens it.
+    """
+    if _board_is_current(conn):
         return
     with write_transaction(conn):
         # Read again under the write lock: another process may have just
@@ -753,7 +865,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
                 f"the board uses layout {version} but this {PROG} knows only "
                 f"{SCHEMA_VERSION}; update the agent-bbs skill"
             )
-        for statement in SCHEMA:
+        for statement in SCHEMA + SCHEMA_ADDITIONS:
             conn.execute(statement)
         conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
@@ -806,9 +918,13 @@ def require_agent(conn: sqlite3.Connection, raw_name: str, *, touch: bool = True
     return name
 
 
-def _did_you_mean(conn: sqlite3.Connection, name: str) -> str:
-    """Suggest the registered agent name closest to a mistyped one, if any."""
-    names = [row["name"] for row in conn.execute("SELECT name FROM agents")]
+def _did_you_mean(conn: sqlite3.Connection, name: str, table: str = "agents") -> str:
+    """Suggest the registered name closest to a mistyped one, if any.
+
+    ``table`` is "agents" or "teams". It is always a constant from the code,
+    never the user's text, because it is placed in the query as it is.
+    """
+    names = [row["name"] for row in conn.execute(f"SELECT name FROM {table}")]
     close = difflib.get_close_matches(name, names, n=1)
     return f" (did you mean '{close[0]}'?)" if close else ""
 
@@ -870,7 +986,10 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
     The first registration needs both --role and --branch; later ones may
     give either, and what they leave out is kept. --files adds claims, just
-    like `claim`, and never drops earlier ones.
+    like `claim`, and never drops earlier ones. --team joins existing teams,
+    posting "Joined team ..." to each channel; a team the agent already
+    leads or belongs to changes nothing, and an unknown team undoes the
+    whole registration.
     """
     name = normalize_name(args.name)
     role = None if args.role is None else one_line(args.role, "role")
@@ -894,6 +1013,7 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
                 (role, branch, now, name),
             )
         add_claims(conn, name, patterns)
+        joined = join_teams(conn, name, args.team)
         agent = load_agents(conn, name=name)[0]
         overlaps = overlaps_involving(conn, name)
         unread, reminder = unread_reminder(conn, name)
@@ -901,9 +1021,10 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     lines = [f"{verb} {name}.", describe_agent(agent)]
     if agent["claims"]:
         lines.append(describe_overlaps(overlaps, none="No overlaps with other agents' claims."))
+    lines.extend(f"Joined team {team}." for team in joined)
     if reminder:
         lines.append(reminder)
-    data = {"created": created, "agent": agent, "overlaps": overlaps, "unread": unread}
+    data = {"created": created, "agent": agent, "overlaps": overlaps, "joined": joined, "unread": unread}
     return Outcome(data, "\n".join(lines))
 
 
@@ -1149,8 +1270,12 @@ def require_message(conn: sqlite3.Connection, message_id: int) -> dict:
     return found[0]
 
 
-def message_filters(args: argparse.Namespace) -> Tuple[List[str], List[Any]]:
-    """Return the SQL conditions for the --since and --tag options."""
+def message_filters(conn: sqlite3.Connection, args: argparse.Namespace) -> Tuple[List[str], List[Any]]:
+    """Return the SQL conditions for the --since, --tag, and --team options.
+
+    --team keeps only the messages in that team's channel, and fails when
+    there is no such team.
+    """
     where: List[str] = []
     params: List[Any] = []
     if args.since is not None:
@@ -1160,6 +1285,9 @@ def message_filters(args: argparse.Namespace) -> Tuple[List[str], List[Any]]:
     if args.tag is not None:
         where.append("m.tag = ?")
         params.append(args.tag)
+    if args.team is not None:
+        where.append("m.recipient = ?")
+        params.append(team_address(require_team(conn, args.team)))
     return where, params
 
 
@@ -1216,11 +1344,33 @@ def resolve_recipient(
 ) -> str:
     """Return who a new post is addressed to.
 
-    --to wins: 'all', or a registered agent other than the sender. Without
-    it a reply goes back to the author of the message it answers (or, when
-    the sender wrote that message, to its recipient); any other post goes
-    to all.
+    --to wins: 'all', a registered agent other than the sender, or a team's
+    channel (team:TEAM, which the sender may belong to). Without it a reply
+    goes back to the author of the message it answers (or, when the sender
+    wrote that message, to its recipient), and any other post goes to all.
+
+    A reply to a team's message stays in that team's channel: --to may name
+    that channel again but nothing else. Nor can a reply to a message
+    outside every channel move into one.
     """
+    in_channel = None if parent is None else team_from_address(parent["to"])
+    names_team = raw is not None and raw.strip().lower().startswith(TEAM_PREFIX)
+    if in_channel is not None:
+        # Compare addresses, not text, so "Team:Board" matches "team:board".
+        if raw is not None and not (names_team and team_address(normalize_team(raw)) == parent["to"]):
+            raise UserError(
+                f"#{parent['id']} is in team {in_channel}'s channel, and a reply stays there; "
+                "leave out --to, or post without --reply-to"
+            )
+        return parent["to"]
+    if names_team:
+        address = team_address(require_team(conn, raw))
+        if parent is not None:
+            raise UserError(
+                f"#{parent['id']} is not in a team's channel, and a reply stays where the message it "
+                f"answers was posted; post to {address} without --reply-to"
+            )
+        return address
     if raw is None:
         if parent is None:
             return EVERYONE
@@ -1242,8 +1392,36 @@ def reply_topic(topic: str) -> str:
     return topic[:MAX_LINE_LENGTH]
 
 
+def insert_message(
+    conn: sqlite3.Connection,
+    sender: str,
+    recipient: str,
+    tag: str,
+    topic: str,
+    body: str = "",
+    *,
+    reply_to: Optional[int] = None,
+    files: Iterable[str] = (),
+) -> int:
+    """Store one message with the files it is tied to, and return its id.
+
+    Runs inside the caller's write transaction. Everything is already
+    validated; the caller owns the rules, this only writes the rows.
+    """
+    cursor = conn.execute(
+        "INSERT INTO messages (posted_at, sender, recipient, tag, topic, body, reply_to)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (to_utc_text(utc_now()), sender, recipient, tag, topic, body, reply_to),
+    )
+    conn.executemany(
+        "INSERT INTO message_files (message_id, path) VALUES (?, ?)",
+        [(cursor.lastrowid, path) for path in files],
+    )
+    return cursor.lastrowid
+
+
 def cmd_post(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Post a message to one agent or to all, optionally tied to files."""
+    """Post a message to one agent, a team's channel, or all, optionally tied to files."""
     topic = None if args.topic is None else one_line(args.topic, "topic")
     body = read_body(args)
     files = normalize_patterns(args.file)
@@ -1255,16 +1433,10 @@ def cmd_post(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
             if parent is None:
                 raise UserError("post needs --topic (only a reply may leave it out)")
             topic = reply_topic(parent["topic"])
-        cursor = conn.execute(
-            "INSERT INTO messages (posted_at, sender, recipient, tag, topic, body, reply_to)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (to_utc_text(utc_now()), sender, recipient, args.tag, topic, body, args.reply_to),
+        message_id = insert_message(
+            conn, sender, recipient, args.tag, topic, body, reply_to=args.reply_to, files=files
         )
-        conn.executemany(
-            "INSERT INTO message_files (message_id, path) VALUES (?, ?)",
-            [(cursor.lastrowid, path) for path in files],
-        )
-        message = require_message(conn, cursor.lastrowid)
+        message = require_message(conn, message_id)
         holders = [
             {"agent": claim["agent"], "pattern": claim["pattern"]}
             for claim in load_claims(conn)
@@ -1285,7 +1457,7 @@ def cmd_read(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     Without --since only the last DEFAULT_READ_COUNT messages are shown,
     unless --last asks for another number.
     """
-    where, params = message_filters(args)
+    where, params = message_filters(conn, args)
     if args.sender is not None:
         where.append("m.sender = ?")
         params.append(normalize_name(args.sender))
@@ -1337,6 +1509,22 @@ def cmd_thread(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 # ---------------------------------------------------------------------------
 
 
+def team_channels(conn: sqlite3.Connection, name: str, registered: str) -> Dict[str, str]:
+    """Map the address of each team an agent is in onto when its posts begin to concern it.
+
+    A lead hears its team's channel from ``registered`` (the moment the
+    agent registered), as it hears posts to all. A member hears it from the
+    moment it joined, so it is not handed the history before.
+    """
+    channels = {
+        team_address(row["name"]): registered
+        for row in conn.execute("SELECT name FROM teams WHERE lead = ?", (name,))
+    }
+    for row in conn.execute("SELECT team, joined_at FROM team_members WHERE agent = ?", (name,)):
+        channels[team_address(row["team"])] = row["joined_at"]
+    return channels
+
+
 def collect_inbox(
     conn: sqlite3.Connection,
     name: str,
@@ -1348,14 +1536,17 @@ def collect_inbox(
     """Return the messages that concern an agent, oldest first.
 
     A message concerns the agent when it is addressed to the agent or to
-    all and was posted since the agent first registered, or, whenever it
-    was posted, when one of its files falls under one of the agent's
-    current claims. So a newcomer is not handed the board's whole history
-    as unread, yet still hears of findings about the files it takes on.
+    all and was posted since the agent first registered, or is posted to
+    the channel of a team the agent is in and was posted since the agent
+    led or joined that team (see ``team_channels``), or, whenever it was
+    posted, when one of its files falls under one of the agent's current
+    claims. So a newcomer is not handed the board's whole history as
+    unread, yet still hears of findings about the files it takes on.
     The agent's own posts never concern it.
     """
     registered = conn.execute("SELECT registered_at FROM agents WHERE name = ?", (name,)).fetchone()[0]
     claims = [claim["pattern"] for claim in load_claims(conn, name=name)]
+    channels = team_channels(conn, name, registered)
     conditions, values = ["m.sender != ?", *where], [name, *params]
     if unread_only:
         conditions.append("r.message_id IS NULL")
@@ -1363,6 +1554,7 @@ def collect_inbox(
         message
         for message in query_messages(conn, where=conditions, params=values, reader=name)
         if (message["to"] in (name, EVERYONE) and message["posted"] >= registered)
+        or (message["to"] in channels and message["posted"] >= channels[message["to"]])
         or any(patterns_overlap(path, claim) for path in message["files"] for claim in claims)
     ]
 
@@ -1388,7 +1580,7 @@ def cmd_inbox(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
     Only the messages shown are marked; --peek marks none.
     """
-    where, params = message_filters(args)
+    where, params = message_filters(conn, args)
     with write_transaction(conn):
         name = require_agent(conn, args.name)
         messages = collect_inbox(conn, name, where=where, params=params, unread_only=args.unread)
@@ -1407,13 +1599,21 @@ def cmd_inbox(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     return Outcome(messages, text)
 
 
-def take_unread(conn: sqlite3.Connection, name: str, *, after: int = 0, peek: bool = False) -> List[dict]:
+def take_unread(
+    conn: sqlite3.Connection, name: str, *, after: int = 0, peek: bool = False, team: Optional[str] = None
+) -> List[dict]:
     """Return an agent's unread inbox messages with ids above ``after``.
 
-    They are marked read in the same transaction, unless ``peek``.
+    With ``team`` (an existing team's name) only that team's channel is
+    taken; the agent's other unread messages stay unread. They are marked
+    read in the same transaction, unless ``peek``.
     """
+    where, params = ["m.id > ?"], [after]
+    if team is not None:
+        where.append("m.recipient = ?")
+        params.append(team_address(team))
     with write_transaction(conn):
-        messages = collect_inbox(conn, name, where=["m.id > ?"], params=[after], unread_only=True)
+        messages = collect_inbox(conn, name, where=where, params=params, unread_only=True)
         if not peek:
             mark_read(conn, name, messages)
     return messages
@@ -1428,19 +1628,21 @@ def cmd_watch(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     object per line under --json). Messages are marked read as they are
     printed, unless --peek. Nothing is printed when nothing is new. The
     exit status is 2 when at least one message was printed and 0 when
-    none was, so a script can branch on it.
+    none was, so a script can branch on it. With --team only that team's
+    channel is watched.
     """
     with write_transaction(conn):
         name = require_agent(conn, args.name)
+        team = None if args.team is None else require_team(conn, args.team)
     if args.once:
-        messages = take_unread(conn, name, peek=args.peek)
+        messages = take_unread(conn, name, peek=args.peek, team=team)
         text = "\n\n".join(describe_message(message) for message in messages)
         return Outcome(messages, text, EXIT_HAS_MESSAGES if messages else EXIT_OK)
     deadline = None if args.timeout is None else time.monotonic() + args.timeout
     newest = 0  # highest id printed so far, so --peek never prints one twice
     printed = False
     while True:
-        for message in take_unread(conn, name, after=newest, peek=args.peek):
+        for message in take_unread(conn, name, after=newest, peek=args.peek, team=team):
             # Text gets a blank line after each message; JSON is one object per line.
             line = json.dumps(message, ensure_ascii=False) if args.json else describe_message(message) + "\n"
             print(line, flush=True)
@@ -1455,46 +1657,501 @@ def cmd_watch(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
 
 # ---------------------------------------------------------------------------
+# Teams
+# ---------------------------------------------------------------------------
+
+
+def team_address(team: str) -> str:
+    """Return the address of a team's channel, such as "team:board"."""
+    return TEAM_PREFIX + team
+
+
+def team_from_address(address: str) -> Optional[str]:
+    """Return the team a channel address names ("team:board" gives "board"), or None.
+
+    Anything that is not a team address, such as "all" or an agent's name, gives None.
+    """
+    return address[len(TEAM_PREFIX):] if address.startswith(TEAM_PREFIX) else None
+
+
+def normalize_team(raw: str) -> str:
+    """Return a team's canonical name from its plain name or its address.
+
+    "Board", "board", "team:board" and "TEAM:Board" all give "board".
+    """
+    text = raw.strip()
+    if text.lower().startswith(TEAM_PREFIX):
+        text = text[len(TEAM_PREFIX):]
+    return normalize_name(text, "team")
+
+
+def require_team(conn: sqlite3.Connection, raw: str) -> str:
+    """Return the canonical name of an existing team, or raise UserError."""
+    name = normalize_team(raw)
+    if conn.execute("SELECT 1 FROM teams WHERE name = ?", (name,)).fetchone() is None:
+        raise UserError(
+            f"there is no team '{name}'{_did_you_mean(conn, name, 'teams')}; list the teams with: {PROG} teams"
+        )
+    return name
+
+
+def load_teams(conn: sqlite3.Connection, *, name: Optional[str] = None) -> List[dict]:
+    """Return teams as JSON-ready dicts, ordered by name.
+
+    Each has its name, lead, purpose, creation time, channel address, and
+    members in the order they joined (the lead is not listed among them),
+    and their tasks. ``name`` selects one team.
+    """
+    where, params = ("WHERE name = ?", (name,)) if name is not None else ("", ())
+    teams = []
+    for row in conn.execute(f"SELECT name, lead, purpose, created_at FROM teams {where} ORDER BY name", params):
+        members = conn.execute(
+            "SELECT agent FROM team_members WHERE team = ? ORDER BY joined_at, rowid", (row["name"],)
+        )
+        teams.append(
+            {
+                "name": row["name"],
+                "lead": row["lead"],
+                "purpose": row["purpose"],
+                "created": row["created_at"],
+                "channel": team_address(row["name"]),
+                "members": [member["agent"] for member in members],
+                "tasks": load_tasks(conn, team=row["name"]),
+            }
+        )
+    return teams
+
+
+def describe_team(team: dict) -> str:
+    """Describe one team: a heading line, then purpose, channel, members, and task counts."""
+    return "\n".join(
+        [
+            f"{team['name']}: led by {team['lead']}, created {local_label(team['created'])}",
+            f"  Purpose: {team['purpose']}",
+            f"  Channel: {team['channel']}",
+            f"  Members: {', '.join(team['members']) or 'none'}",
+            f"  Tasks: {describe_task_counts(team['tasks'])}",
+        ]
+    )
+
+
+def add_member(conn: sqlite3.Connection, team: str, agent: str) -> bool:
+    """Add ``agent`` to ``team`` unless it leads the team or is already in it.
+
+    Returns whether a member row was added. Runs inside a write transaction;
+    the team and the agent must exist.
+    """
+    lead = conn.execute("SELECT lead FROM teams WHERE name = ?", (team,)).fetchone()["lead"]
+    if agent == lead:
+        return False
+    cursor = conn.execute(
+        "INSERT OR IGNORE INTO team_members (team, agent, joined_at) VALUES (?, ?, ?)",
+        (team, agent, to_utc_text(utc_now())),
+    )
+    return cursor.rowcount == 1
+
+
+def post_to_team(
+    conn: sqlite3.Connection, sender: str, team: str, topic: str, *, tag: str = "notice", body: str = ""
+) -> int:
+    """Post one line of a team's history to its channel and return the message id.
+
+    The topic is clipped to the line limit, because it may quote names or titles.
+    """
+    return insert_message(conn, sender, team_address(team), tag, clip_line(topic), body)
+
+
+def join_teams(conn: sqlite3.Connection, agent: str, raw_teams: List[str]) -> List[str]:
+    """Make ``agent`` a member of each named team and return the teams it joined.
+
+    Every name must be an existing team (plain or as an address); repeats
+    are dropped. A team the agent already leads or belongs to is skipped
+    without a post; each team joined gets one "Joined team" line in its
+    channel. Runs inside a write transaction, so an unknown team undoes the
+    joins before it.
+    """
+    joined = []
+    for team in dict.fromkeys(require_team(conn, raw) for raw in raw_teams):
+        if add_member(conn, team, agent):
+            post_to_team(conn, agent, team, f"Joined team {team}")
+            joined.append(team)
+    return joined
+
+
+def cmd_team_create(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Create a team with a lead and a purpose, and announce it in its channel."""
+    team = normalize_team(args.team)
+    purpose = one_line(args.purpose, "purpose")
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        lead = actor if args.lead is None else require_agent(conn, args.lead, touch=False)
+        if conn.execute("SELECT 1 FROM teams WHERE name = ?", (team,)).fetchone() is not None:
+            raise UserError(f"team {team} exists already; see it with: {PROG} teams {team}")
+        conn.execute(
+            "INSERT INTO teams (name, lead, purpose, created_at) VALUES (?, ?, ?, ?)",
+            (team, lead, purpose, to_utc_text(utc_now())),
+        )
+        post_to_team(conn, actor, team, f"Created team {team}, led by {lead}", body=purpose)
+        created = load_teams(conn, name=team)[0]
+    return Outcome(created, f"Created team {team}.\n{describe_team(created)}")
+
+
+def cmd_team_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Add registered agents to a team; the lead and current members are skipped."""
+    agents = list(dict.fromkeys(normalize_name(raw) for raw in args.agents))
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        team = require_team(conn, args.team)
+        # Check every agent first, so that one unknown name adds nobody.
+        for agent in agents:
+            require_agent(conn, agent, touch=False)
+        added = [agent for agent in agents if add_member(conn, team, agent)]
+        if added:
+            post_to_team(conn, actor, team, f"Added {', '.join(added)} to team {team}")
+        details = load_teams(conn, name=team)[0]
+    already = [agent for agent in agents if agent not in added]
+    lines = [f"Added {', '.join(added)} to team {team}."] if added else []
+    for agent in already:
+        lines.append(
+            f"{agent} already leads team {team}."
+            if agent == details["lead"]
+            else f"{agent} is already a member of team {team}."
+        )
+    lines.append(describe_team(details))
+    return Outcome({"team": details, "added": added, "already": already}, "\n".join(lines))
+
+
+def cmd_team_remove(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Remove members from a team; strangers and the lead are reported, not removed.
+
+    The agents need not be registered any more, so a member who was purged
+    can still be named. The lead holds no member row, so it is never removed.
+    """
+    agents = list(dict.fromkeys(normalize_name(raw) for raw in args.agents))
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        team = require_team(conn, args.team)
+        removed = [
+            agent
+            for agent in agents
+            if conn.execute("DELETE FROM team_members WHERE team = ? AND agent = ?", (team, agent)).rowcount == 1
+        ]
+        if removed:
+            post_to_team(conn, actor, team, f"Removed {', '.join(removed)} from team {team}")
+        details = load_teams(conn, name=team)[0]
+    not_members = [agent for agent in agents if agent not in removed]
+    lines = [f"Removed {', '.join(removed)} from team {team}."] if removed else []
+    lines.extend(f"{agent} is not a member of team {team}." for agent in not_members)
+    lines.append(describe_team(details))
+    return Outcome({"team": details, "removed": removed, "not_members": not_members}, "\n".join(lines))
+
+
+def cmd_teams(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """List every team with its lead and members, or show one."""
+    if args.team is not None:
+        teams = load_teams(conn, name=require_team(conn, args.team))
+        return Outcome(teams, describe_team(teams[0]))
+    teams = load_teams(conn)
+    if not teams:
+        return Outcome(teams, "No teams yet.")
+    heading = f"{plural(len(teams), 'team')}:"
+    return Outcome(teams, "\n\n".join([heading] + [describe_team(team) for team in teams]))
+
+
+# ---------------------------------------------------------------------------
+# Tasks
+# ---------------------------------------------------------------------------
+
+
+def load_tasks(
+    conn: sqlite3.Connection,
+    *,
+    task_id: Optional[int] = None,
+    team: Optional[str] = None,
+    state: Optional[str] = None,
+    assignee: Optional[str] = None,
+) -> List[dict]:
+    """Return tasks as JSON-ready dicts, ordered by id, each with its files.
+
+    Every argument that is given adds one condition. A task's ``assignee``
+    and ``brief`` are None when it has none, and its files come in the order
+    they were stored.
+    """
+    # (condition, value) pairs for the arguments that were given.
+    conditions = [
+        (f"t.{column} = ?", value)
+        for column, value in (("id", task_id), ("team", team), ("state", state), ("assignee", assignee))
+        if value is not None
+    ]
+    clause = " AND ".join(condition for condition, _ in conditions)
+    rows = conn.execute(
+        "SELECT t.*, f.path AS file FROM tasks t"
+        " LEFT JOIN task_files f ON f.task_id = t.id"
+        f"{' WHERE ' + clause if clause else ''}"
+        " ORDER BY t.id, f.rowid",
+        [value for _, value in conditions],
+    )
+    # The join yields one row per file, so gather each task's files.
+    tasks: Dict[int, dict] = {}
+    for row in rows:
+        task = tasks.get(row["id"])
+        if task is None:
+            task = tasks[row["id"]] = {
+                "id": row["id"],
+                "team": row["team"],
+                "title": row["title"],
+                "state": row["state"],
+                "assignee": row["assignee"],
+                "brief": row["brief"],
+                "files": [],
+                "note": row["note"],
+                "created": row["created_at"],
+                "created_by": row["created_by"],
+                "updated": row["updated_at"],
+                "updated_by": row["updated_by"],
+            }
+        if row["file"] is not None:
+            task["files"].append(row["file"])
+    return list(tasks.values())
+
+
+def describe_task(task: dict) -> str:
+    """Describe one task: a first line, then only the detail lines with something to say.
+
+    An assigned task's state and assignee say the same thing, so its first
+    line gives the assignee alone, rather than "assigned, assigned to ...".
+    """
+    if task["assignee"] is None:
+        who = task["state"]
+    elif task["state"] == "assigned":
+        who = f"assigned to {task['assignee']}"
+    else:
+        who = f"{task['state']}, assigned to {task['assignee']}"
+    lines = [f"Task {task['id']} in {task['team']}, {who}: {task['title']}"]
+    if task["brief"]:
+        lines.append(f"  Brief: {task['brief']}")
+    if task["files"]:
+        lines.append(f"  Files: {', '.join(task['files'])}")
+    if task["note"]:
+        lines.append(f"  Note: {task['note']}")
+    lines.append(f"  Changed: {local_label(task['updated'])} by {task['updated_by']}")
+    return "\n".join(lines)
+
+
+def describe_task_counts(tasks: List[dict]) -> str:
+    """Count tasks in each state, in life order, such as "1 open, 1 in review"; "none" for no tasks."""
+    counts = {state: sum(1 for task in tasks if task["state"] == state) for state in TASK_STATES}
+    # `review` reads better as "in review"; the other states read as they are named.
+    parts = [
+        f"{count} {'in review' if state == 'review' else state}" for state, count in counts.items() if count
+    ]
+    return ", ".join(parts) or "none"
+
+
+def assignee_reminder(conn: sqlite3.Connection, task: dict) -> str:
+    """Return a line saying the task's assignee has not registered, or "" when there is no need.
+
+    A lead may plan a task for an agent that registers later, so this is a
+    reminder and not an error.
+    """
+    assignee = task["assignee"]
+    if assignee is None or conn.execute("SELECT 1 FROM agents WHERE name = ?", (assignee,)).fetchone():
+        return ""
+    return f"{assignee} has not registered yet."
+
+
+def cmd_task_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Add a task to a team's list and announce it in the team's channel."""
+    title = one_line(args.title, "title")
+    brief = normalize_patterns([args.brief])[0] if args.brief is not None else None
+    files = normalize_patterns(args.files)
+    assignee = normalize_name(args.assign) if args.assign is not None else None
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        team = require_team(conn, args.team)
+        now = to_utc_text(utc_now())
+        cursor = conn.execute(
+            "INSERT INTO tasks (team, title, brief, state, assignee, created_at, created_by, updated_at, updated_by)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (team, title, brief, "open" if assignee is None else "assigned", assignee, now, actor, now, actor),
+        )
+        task_id = cursor.lastrowid
+        conn.executemany("INSERT INTO task_files (task_id, path) VALUES (?, ?)", [(task_id, path) for path in files])
+        for_whom = "" if assignee is None else f" for {assignee}"
+        post_to_team(conn, actor, team, f"Added task {task_id}{for_whom}: {title}", tag="task")
+        task = load_tasks(conn, task_id=task_id)[0]
+        reminder = assignee_reminder(conn, task)
+    lines = [f"Added task {task_id} to team {team}.", describe_task(task)]
+    if reminder:
+        lines.append(reminder)
+    return Outcome(task, "\n".join(lines))
+
+
+def require_task(conn: sqlite3.Connection, task_id: int) -> dict:
+    """Return the task numbered ``task_id`` as a dict, or raise a UserError saying how to list the tasks."""
+    tasks = load_tasks(conn, task_id=task_id)
+    if not tasks:
+        raise UserError(f"there is no task {task_id}; list the tasks with: {PROG} tasks")
+    return tasks[0]
+
+
+def change_task(
+    conn: sqlite3.Connection,
+    actor: str,
+    task: dict,
+    *,
+    state: str,
+    assignee: Optional[str],
+    note: str,
+    topic: str,
+) -> dict:
+    """Give ``task`` a new state, assignee, and note, announce it, and return the task as stored.
+
+    ``topic`` is the line posted to the task's team channel, with the note as
+    its body. The change is stamped with the time and ``actor``; the task's
+    creation stamps stay as they were. Runs inside a write transaction.
+    """
+    conn.execute(
+        "UPDATE tasks SET state = ?, assignee = ?, note = ?, updated_at = ?, updated_by = ? WHERE id = ?",
+        (state, assignee, note, to_utc_text(utc_now()), actor, task["id"]),
+    )
+    post_to_team(conn, actor, task["team"], topic, tag="task", body=note)
+    return load_tasks(conn, task_id=task["id"])[0]
+
+
+def cmd_task_assign(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Give a task to an agent, which marks it assigned from whatever state it was in.
+
+    The agent may register later. A finished or dropped task assigned again
+    comes back to life.
+    """
+    assignee = normalize_name(args.agent)
+    note = one_line(args.note, "note", allow_empty=True) if args.note is not None else ""
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        task = require_task(conn, args.id)
+        task = change_task(
+            conn,
+            actor,
+            task,
+            state="assigned",
+            assignee=assignee,
+            note=note,
+            topic=f"Assigned task {task['id']} to {assignee}: {task['title']}",
+        )
+        reminder = assignee_reminder(conn, task)
+    lines = [f"Assigned task {task['id']} to {assignee}.", describe_task(task)]
+    if reminder:
+        lines.append(reminder)
+    return Outcome(task, "\n".join(lines))
+
+
+def cmd_task_move(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Move a task to another state, or to the same state again to post a progress note.
+
+    ``open`` clears the assignee, because an open task is one that no one has.
+    ``assigned``, ``working``, and ``review`` need an assignee already;
+    ``done`` and ``dropped`` keep whoever the task has. A move without a
+    note clears the old note.
+    """
+    note = one_line(args.note, "note", allow_empty=True) if args.note is not None else ""
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        task = require_task(conn, args.id)
+        if args.state == "open":
+            assignee = None
+        elif args.state in ("assigned", "working", "review") and task["assignee"] is None:
+            raise UserError(
+                f"task {task['id']} has no assignee; assign it with: {PROG} task assign {actor} {task['id']} AGENT"
+            )
+        else:
+            assignee = task["assignee"]
+        task = change_task(
+            conn,
+            actor,
+            task,
+            state=args.state,
+            assignee=assignee,
+            note=note,
+            topic=f"Moved task {task['id']} to {args.state}: {task['title']}",
+        )
+    return Outcome(task, f"Moved task {task['id']} to {args.state}.\n{describe_task(task)}")
+
+
+def cmd_tasks(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """List tasks, narrowed by team, state, and assignee."""
+    team = require_team(conn, args.team) if args.team is not None else None
+    assignee = normalize_name(args.agent) if args.agent is not None else None
+    tasks = load_tasks(conn, team=team, state=args.state, assignee=assignee)
+    if not tasks:
+        filtered = any(value is not None for value in (team, args.state, assignee))
+        return Outcome(tasks, "No tasks match." if filtered else "No tasks yet.")
+    heading = f"{plural(len(tasks), 'task')}:"
+    return Outcome(tasks, "\n\n".join([heading] + [describe_task(task) for task in tasks]))
+
+
+# ---------------------------------------------------------------------------
 # Housekeeping
 # ---------------------------------------------------------------------------
 
 
 def cmd_purge(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Delete messages posted, and agents last seen, before a cutoff.
+    """Delete messages posted, agents last seen, and teams idle, before a cutoff.
 
-    A message's files and read marks go with it; an agent's claims and read
-    marks go with it. Ids are never reused, so new messages keep counting
-    up from the highest id the board has ever given.
+    A message's files and read marks go with it; an agent's claims, read
+    marks, and team memberships go with it. Ids are never reused, so new
+    messages keep counting up from the highest id the board has ever given.
+
+    A team is idle when it was created before the cutoff and its channel
+    holds no message at all once the old messages are gone. That is a fair
+    test of idleness, because every change to a team or to its tasks posts
+    to its channel: a channel with nothing newer than the cutoff means a
+    team untouched that long. Its members, tasks, and task files go with it.
+    A team's lead may be purged without the team, which keeps its lead's name.
     """
     cutoff = to_utc_text(utc_now() - dt.timedelta(days=args.older_than))
     with write_transaction(conn):
         messages = conn.execute("DELETE FROM messages WHERE posted_at < ?", (cutoff,)).rowcount
         agents = conn.execute("DELETE FROM agents WHERE last_seen < ?", (cutoff,)).rowcount
+        teams = conn.execute(
+            "DELETE FROM teams WHERE created_at < ? AND NOT EXISTS"
+            " (SELECT 1 FROM messages m WHERE m.recipient = ? || teams.name)",
+            (cutoff, TEAM_PREFIX),
+        ).rowcount
     days = f"{args.older_than:g} day{'' if args.older_than == 1 else 's'}"
-    text = f"Purged {plural(messages, 'message')} and {plural(agents, 'agent')} older than {days}."
-    return Outcome({"messages": messages, "agents": agents, "cutoff": cutoff}, text)
+    text = (
+        f"Purged {plural(messages, 'message')}, {plural(agents, 'agent')}, "
+        f"and {plural(teams, 'team')} older than {days}."
+    )
+    return Outcome({"messages": messages, "agents": agents, "teams": teams, "cutoff": cutoff}, text)
 
 
 def cmd_reset(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Delete every agent, claim, and message; refuses without --yes.
+    """Delete every agent, claim, message, team, and task; refuses without --yes.
 
     Message ids keep counting up afterwards, so an id that an agent
-    remembers for --since never hides a newer message.
+    remembers for --since never hides a newer message. Task ids keep
+    counting up for the same reason.
     """
     if not args.yes:
-        raise UserError("reset deletes every agent, claim, and message on the board; add --yes to confirm")
+        raise UserError(
+            "reset deletes every agent, claim, message, team, and task on the board; add --yes to confirm"
+        )
     with write_transaction(conn):
         counts = {
             table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-            for table in ("agents", "claims", "messages")
+            for table in ("agents", "claims", "messages", "teams", "tasks")
         }
         # Foreign keys cascade: files and read marks go with the messages,
-        # claims and read marks with the agents.
+        # claims, read marks, and memberships with the agents, and members,
+        # tasks, and task files with the teams.
         conn.execute("DELETE FROM messages")
         conn.execute("DELETE FROM agents")
+        conn.execute("DELETE FROM teams")
     text = (
         f"Reset the board: removed {plural(counts['agents'], 'agent')}, "
-        f"{plural(counts['claims'], 'claim')}, and {plural(counts['messages'], 'message')}."
+        f"{plural(counts['claims'], 'claim')}, {plural(counts['messages'], 'message')}, "
+        f"{plural(counts['teams'], 'team')}, and {plural(counts['tasks'], 'task')}."
     )
     return Outcome(counts, text)
 
@@ -1592,13 +2249,24 @@ def build_parser() -> BoardArgumentParser:
     parser.add_argument("--json", action="store_true", help="print JSON instead of text")
     commands = parser.add_subparsers(dest="command", metavar="COMMAND", required=True)
 
-    def command(name: str, handler: Any, summary: str, *, needs_board: bool = True) -> argparse.ArgumentParser:
-        """Add one command, remembering the function that runs it."""
-        sub = commands.add_parser(
+    def command(
+        name: str, handler: Any, summary: str, *, needs_board: bool = True, group: Any = None
+    ) -> argparse.ArgumentParser:
+        """Add one command, remembering the function that runs it.
+
+        It is a top-level command, or a subcommand of ``group`` (made by
+        ``command_group``) when one is given.
+        """
+        sub = (commands if group is None else group).add_parser(
             name, help=summary, description=summary, parents=[json_flag], allow_abbrev=False
         )
         sub.set_defaults(handler=handler, needs_board=needs_board)
         return sub
+
+    def command_group(name: str, summary: str) -> Any:
+        """Add a top-level command that only holds subcommands; return their collection."""
+        sub = commands.add_parser(name, help=summary, description=summary, allow_abbrev=False)
+        return sub.add_subparsers(dest=f"{name}_command", metavar="SUBCOMMAND", required=True)
 
     register = command("register", cmd_register, "create or update an agent")
     register.add_argument("name", help="your agent name, such as your task slug")
@@ -1611,6 +2279,14 @@ def build_parser() -> BoardArgumentParser:
         default=[],
         metavar="PATH",
         help="paths or globs you expect to edit, relative to the repository root (added to your claims)",
+    )
+    register.add_argument(
+        "--team",
+        nargs="+",
+        action="extend",
+        default=[],
+        metavar="TEAM",
+        help="teams to join (TEAM or team:TEAM; the team must exist)",
     )
 
     heartbeat = command("heartbeat", cmd_heartbeat, "refresh an agent's last-seen time")
@@ -1648,13 +2324,18 @@ def build_parser() -> BoardArgumentParser:
         "2026-10-02T14:05 or 14:05 (messages from then on)"
     )
 
-    post = command("post", cmd_post, "post a message to one agent or to all")
+    team_help = "only messages in this team's channel (TEAM or team:TEAM)"
+
+    post = command("post", cmd_post, "post a message to one agent, a team's channel, or all")
     post.add_argument("sender", metavar="FROM", help="your agent name")
     post.add_argument("--topic", help="a one-line subject (a reply may leave it out)")
     post.add_argument(
         "--to",
         metavar="NAME",
-        help="an agent name or 'all' (default: all, or for a reply the author of the message it answers)",
+        help=(
+            "an agent name, team:TEAM for a team's channel, or 'all' (default: all; a reply goes back to the "
+            "author of the message it answers, or stays in its team's channel)"
+        ),
     )
     post.add_argument("--tag", choices=TAGS, default="notice", help="the kind of message (default: notice)")
     post.add_argument(
@@ -1672,6 +2353,7 @@ def build_parser() -> BoardArgumentParser:
     read = command("read", cmd_read, "show the public log of messages")
     read.add_argument("--since", type=parse_since, metavar="ID_OR_TIME", help=since_help)
     read.add_argument("--tag", choices=TAGS, help="only messages of this kind")
+    read.add_argument("--team", metavar="TEAM", help=team_help)
     read.add_argument("--from", dest="sender", metavar="NAME", help="only messages from this agent")
     read.add_argument(
         "--last",
@@ -1690,6 +2372,7 @@ def build_parser() -> BoardArgumentParser:
     inbox.add_argument("--tag", choices=TAGS, help="only messages of this kind")
     inbox.add_argument("--last", type=positive_int, metavar="N", help="only the last N messages")
     inbox.add_argument("--peek", action="store_true", help="leave the messages shown unread")
+    inbox.add_argument("--team", metavar="TEAM", help=team_help)
 
     watch = command("watch", cmd_watch, "print your unread messages, then new ones as they arrive")
     watch.add_argument("name", help="your agent name")
@@ -1709,17 +2392,72 @@ def build_parser() -> BoardArgumentParser:
         "--timeout", type=positive_number, metavar="SECONDS", help="stop after this long (default: run until interrupted)"
     )
     watch.add_argument("--peek", action="store_true", help="leave the messages printed unread")
+    watch.add_argument("--team", metavar="TEAM", help=team_help)
 
-    purge = command("purge", cmd_purge, "delete old messages and agents not seen for a while")
+    team = command_group("team", "create a team or change its members")
+    team_create = command("create", cmd_team_create, "create a team with its lead and purpose", group=team)
+    team_create.add_argument("name", help="your agent name")
+    team_create.add_argument("team", metavar="TEAM", help="the new team's name, such as board")
+    team_create.add_argument("--purpose", required=True, help="one line saying what the team is for")
+    team_create.add_argument("--lead", metavar="AGENT", help="the agent who leads the team (default: you)")
+    team_add = command("add", cmd_team_add, "add members to a team", group=team)
+    team_add.add_argument("name", help="your agent name")
+    team_add.add_argument("team", metavar="TEAM", help="the team to add them to")
+    team_add.add_argument("agents", nargs="+", metavar="AGENT", help="registered agents to add")
+    team_remove = command("remove", cmd_team_remove, "remove members from a team", group=team)
+    team_remove.add_argument("name", help="your agent name")
+    team_remove.add_argument("team", metavar="TEAM", help="the team to remove them from")
+    team_remove.add_argument("agents", nargs="+", metavar="AGENT", help="members to remove")
+
+    teams = command("teams", cmd_teams, "list teams with their lead and members, or show one")
+    teams.add_argument("team", nargs="?", metavar="TEAM", help="only this team")
+
+    task = command_group("task", "add tasks to a team's list and move them through their states")
+    task_add = command("add", cmd_task_add, "add a task to a team's list", group=task)
+    task_add.add_argument("name", help="your agent name")
+    task_add.add_argument("team", metavar="TEAM", help="the team whose list gets the task")
+    task_add.add_argument("--title", required=True, help="one line saying what the task is")
+    task_add.add_argument("--brief", metavar="PATH", help="the task's brief, relative to the repository root")
+    task_add.add_argument(
+        "--files",
+        nargs="+",
+        action="extend",
+        default=[],
+        metavar="PATH",
+        help="paths or globs the task will touch",
+    )
+    task_add.add_argument("--assign", metavar="AGENT", help="the agent who takes the task; it may register later")
+    task_assign = command("assign", cmd_task_assign, "give a task to an agent", group=task)
+    task_assign.add_argument("name", help="your agent name")
+    task_assign.add_argument("id", type=positive_int, metavar="ID", help="the task's number")
+    task_assign.add_argument(
+        "agent", metavar="AGENT", help="the agent who takes the task; it may register later"
+    )
+    task_assign.add_argument("--note", help="one line to go with the change")
+    task_move = command("move", cmd_task_move, "move a task to another state", group=task)
+    task_move.add_argument("name", help="your agent name")
+    task_move.add_argument("id", type=positive_int, metavar="ID", help="the task's number")
+    task_move.add_argument("state", choices=TASK_STATES, help="the task's new state")
+    task_move.add_argument("--note", help="one line to go with the change")
+
+    tasks = command("tasks", cmd_tasks, "list tasks by team, state, or agent")
+    tasks.add_argument("--team", metavar="TEAM", help="only this team's tasks")
+    tasks.add_argument("--state", choices=TASK_STATES, help="only tasks in this state")
+    tasks.add_argument("--agent", metavar="AGENT", help="only tasks assigned to this agent")
+
+    purge = command("purge", cmd_purge, "delete old messages, and agents and teams idle for a while")
     purge.add_argument(
         "--older-than",
         type=positive_number,
         required=True,
         metavar="DAYS",
-        help="delete messages posted, and agents last seen, more than DAYS days ago (fractions allowed)",
+        help=(
+            "delete messages posted, agents last seen, and teams last active more than DAYS days ago"
+            " (fractions allowed)"
+        ),
     )
 
-    reset = command("reset", cmd_reset, "delete every agent, claim, and message")
+    reset = command("reset", cmd_reset, "delete every agent, claim, message, team, and task")
     reset.add_argument("--yes", action="store_true", help="confirm that everything should go")
 
     command("protocol", cmd_protocol, "print the protocol agents follow, for an agent brief", needs_board=False)
