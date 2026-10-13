@@ -47,10 +47,10 @@ struct OPMLImportSummary: Equatable {
         }
         if !failed.isEmpty {
             let named = failed.map { "\($0.title) (\($0.reason))" }
-            parts.append("Couldn't subscribe to \(LibraryCloudWording.list(named)).")
+            parts.append("Couldn't subscribe to \(CountWording.list(named)).")
         }
         if !insecure.isEmpty {
-            let these = insecure.count == 1 ? "\(insecure.first ?? "") uses" : "\(LibraryCloudWording.list(insecure)) use"
+            let these = insecure.count == 1 ? "\(insecure.first ?? "") uses" : "\(CountWording.list(insecure)) use"
             parts.append("\(these) plain http, so what is sent can be read or changed on the way; TextMouth still loads it.")
         }
         if stopped {
@@ -461,7 +461,7 @@ extension FeedWording {
         guard titles.count != 1, !titles.isEmpty else {
             return FeedSubscribeError.unsubscribedAlready(title: titles.first ?? "").message
         }
-        return "\(LibraryCloudWording.list(titles)) are in your library, unsubscribed. "
+        return "\(CountWording.list(titles)) are in your library, unsubscribed. "
             + "Choose Resubscribe on a feed's row, or in its Feed Info, to check it again."
     }
     /// The Save panel's suggested file name.

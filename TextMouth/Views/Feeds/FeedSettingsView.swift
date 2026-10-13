@@ -204,7 +204,7 @@ extension FeedWording {
             : "\(summary.newItemCount) new \(summary.newItemCount == 1 ? noun.singular : noun.plural)."
         var sentence = "Refreshed \(CountWording.phrase(summary.reports.count, singular: "feed", plural: "feeds")): \(found)"
         if !summary.failedFeedTitles.isEmpty {
-            sentence += " Couldn't refresh \(LibraryCloudWording.list(summary.failedFeedTitles))."
+            sentence += " Couldn't refresh \(CountWording.list(summary.failedFeedTitles))."
         }
         return sentence
     }

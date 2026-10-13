@@ -182,4 +182,18 @@ enum CountWording {
             }
         }
     }
+
+    // MARK: - Lists
+
+    /// `items` joined as a sentence lists them, "A", "A and B", "A, B, and C",
+    /// the same in what TextMouth shows and what VoiceOver speaks; empty for no
+    /// items, which each caller words for itself.
+    static func list(_ items: [String]) -> String {
+        switch items.count {
+        case 0: return ""
+        case 1: return items[0]
+        case 2: return "\(items[0]) and \(items[1])"
+        default: return items.dropLast().joined(separator: ", ") + ", and " + (items.last ?? "")
+        }
+    }
 }

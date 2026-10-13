@@ -577,7 +577,7 @@ final class LibraryCloudCommands {
         guard !keptNow.isEmpty else { return nil }
         let downloadable = keptNow.filter(canStartDownload)
         let titles = keptNow.map(\.title)
-        DiagnosticLog.event(.storage, "KEEP_ON_MAC: keeping \(LibraryCloudWording.list(titles)) on this Mac")
+        DiagnosticLog.event(.storage, "KEEP_ON_MAC: keeping \(CountWording.list(titles)) on this Mac")
         VoiceOverAnnouncer.announce(
             LibraryCloudWording.keepStarted(titles: titles, downloading: downloadable.count),
             from: window
@@ -594,7 +594,7 @@ final class LibraryCloudCommands {
         let titles = books.filter { released.contains($0.id) }.map(\.title)
         guard !titles.isEmpty else { return }
         released.forEach { keptBookRetryTimes[$0] = nil }
-        DiagnosticLog.event(.storage, "KEEP_ON_MAC: stopped keeping \(LibraryCloudWording.list(titles)) on this Mac")
+        DiagnosticLog.event(.storage, "KEEP_ON_MAC: stopped keeping \(CountWording.list(titles)) on this Mac")
         VoiceOverAnnouncer.announce(LibraryCloudWording.stoppedKeeping(titles: titles), from: window)
     }
 
@@ -764,7 +764,7 @@ final class LibraryCloudCommands {
         if origin.announcesStart {
             VoiceOverAnnouncer.announce(LibraryCloudWording.downloadStarted(titles: titles), from: window)
         }
-        DiagnosticLog.event(.storage, "\(origin.logTags.started): \(LibraryCloudWording.list(titles))")
+        DiagnosticLog.event(.storage, "\(origin.logTags.started): \(CountWording.list(titles))")
 
         let queuedIDs = queued.map(\.id)
         return Task { [self, weak window] in
@@ -895,7 +895,7 @@ final class LibraryCloudCommands {
         }
         DiagnosticLog.event(
             .storage,
-            "REMOVE_DOWNLOAD_STARTED: \(LibraryCloudWording.list(targets.map(\.title)))"
+            "REMOVE_DOWNLOAD_STARTED: \(CountWording.list(targets.map(\.title)))"
         )
 
         let failures = await Task.detached(priority: .userInitiated) {

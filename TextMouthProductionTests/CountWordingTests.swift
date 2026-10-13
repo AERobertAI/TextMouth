@@ -98,4 +98,16 @@ final class CountWordingTests: XCTestCase {
         XCTAssertEqual(MiscellaneousSettingsView.disconnectDelayPhrase(5), "5 seconds")
         XCTAssertEqual(MiscellaneousSettingsView.disconnectDelayPhrase(10), "10 seconds")
     }
+
+    // MARK: - Lists
+
+    /// The one list joiner words a list as a sentence does, and says nothing
+    /// for no items, which each caller words for itself.
+    func testListJoinsItemsAsASentenceListsThem() {
+        XCTAssertEqual(CountWording.list([]), "")
+        XCTAssertEqual(CountWording.list(["A"]), "A")
+        XCTAssertEqual(CountWording.list(["A", "B"]), "A and B")
+        XCTAssertEqual(CountWording.list(["A", "B", "C"]), "A, B, and C")
+        XCTAssertEqual(CountWording.list(["A", "B", "C", "D"]), "A, B, C, and D")
+    }
 }
