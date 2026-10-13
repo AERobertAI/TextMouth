@@ -1625,8 +1625,8 @@ def load_teams(conn: sqlite3.Connection, *, name: Optional[str] = None) -> List[
     """Return teams as JSON-ready dicts, ordered by name.
 
     Each has its name, lead, purpose, creation time, channel address, and
-    members in the order they joined (the lead is not listed among them).
-    ``name`` selects one team.
+    members in the order they joined (the lead is not listed among them),
+    and their tasks. ``name`` selects one team.
     """
     where, params = ("WHERE name = ?", (name,)) if name is not None else ("", ())
     teams = []
@@ -1642,19 +1642,21 @@ def load_teams(conn: sqlite3.Connection, *, name: Optional[str] = None) -> List[
                 "created": row["created_at"],
                 "channel": team_address(row["name"]),
                 "members": [member["agent"] for member in members],
+                "tasks": load_tasks(conn, team=row["name"]),
             }
         )
     return teams
 
 
 def describe_team(team: dict) -> str:
-    """Describe one team: a heading line, then purpose, channel, and members."""
+    """Describe one team: a heading line, then purpose, channel, members, and task counts."""
     return "\n".join(
         [
             f"{team['name']}: led by {team['lead']}, created {local_label(team['created'])}",
             f"  Purpose: {team['purpose']}",
             f"  Channel: {team['channel']}",
             f"  Members: {', '.join(team['members']) or 'none'}",
+            f"  Tasks: {describe_task_counts(team['tasks'])}",
         ]
     )
 
@@ -1809,6 +1811,17 @@ def describe_task(task: dict) -> str:
         lines.append(f"  Note: {task['note']}")
     lines.append(f"  Changed: {local_label(task['updated'])} by {task['updated_by']}")
     return "\n".join(lines)
+
+
+def describe_task_counts(tasks: List[dict]) -> str:
+    """Count tasks in each state, in life order, such as "1 open, 1 in review"; "none" for no tasks."""
+    counts = [
+        # `review` reads better as "in review"; the other states read as they are named.
+        f"{count} {'in review' if state == 'review' else state}"
+        for state in TASK_STATES
+        if (count := sum(1 for task in tasks if task["state"] == state))
+    ]
+    return ", ".join(counts) or "none"
 
 
 def assignee_reminder(conn: sqlite3.Connection, task: dict) -> str:

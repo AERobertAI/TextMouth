@@ -818,6 +818,7 @@ class TeamTests(BoardTestCase):
                 "created": bbs.to_utc_text(NOON),
                 "channel": "team:board",
                 "members": [],
+                "tasks": [],
             },
         )
 
@@ -842,6 +843,7 @@ class TeamTests(BoardTestCase):
                 "  Purpose: Build the board",
                 "  Channel: team:board",
                 "  Members: none",
+                "  Tasks: none",
             ],
         )
 
@@ -1716,6 +1718,34 @@ class TaskTests(BoardTestCase):
         added = self.add("A", "board", "--files", "a.py")
         self.assertEqual(self.ok_json("tasks"), [added])
         self.assertEqual(self.ok_json("tasks", "--team", "polish"), [])
+
+    def test_teams_count_their_tasks_by_state(self) -> None:
+        self.assertIn("  Tasks: none", self.ok("teams", "board").splitlines())
+        for title in ("A", "B", "C", "D"):
+            self.add(title)
+        self.assertIn("  Tasks: 4 open", self.ok("teams", "board").splitlines())
+        self.add("E", "board", "--assign", "alpha")
+        self.assertIn("  Tasks: 4 open, 1 assigned", self.ok("teams", "board").splitlines())
+        # `task move` comes from a later task, so set the states directly in SQL.
+        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
+            conn.execute("UPDATE tasks SET state = 'working' WHERE id IN (1, 2)")
+            conn.execute("UPDATE tasks SET state = 'review' WHERE id = 3")
+            conn.execute("UPDATE tasks SET state = 'done' WHERE id = 5")
+            conn.commit()
+        self.assertIn("  Tasks: 1 open, 2 working, 1 in review, 1 done", self.ok("teams", "board").splitlines())
+        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
+            conn.execute("UPDATE tasks SET state = 'dropped' WHERE id = 4")
+            conn.commit()
+        self.assertIn("  Tasks: 2 working, 1 in review, 1 done, 1 dropped", self.ok("teams", "board").splitlines())
+        self.assertIn("  Tasks: none", self.ok("teams", "polish").splitlines())
+
+    def test_teams_json_lists_each_teams_tasks(self) -> None:
+        first = self.add("A", "board")
+        second = self.add("B", "polish")
+        teams = {team["name"]: team for team in self.ok_json("teams")}
+        self.assertEqual(teams["board"]["tasks"], [first])
+        self.assertEqual(teams["polish"]["tasks"], [second])
+        self.assertEqual(self.ok_json("teams", "board")[0]["tasks"], [first])
 
 
 if __name__ == "__main__":
