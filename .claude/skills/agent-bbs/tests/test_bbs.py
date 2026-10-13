@@ -952,6 +952,7 @@ class TeamTests(BoardTestCase):
                 "created": bbs.to_utc_text(NOON),
                 "channel": "team:board",
                 "members": [],
+                "waiting": [],
                 "tasks": [],
             },
         )
@@ -1055,12 +1056,18 @@ class TeamTests(BoardTestCase):
             "with nobody added the text opens with the skipped line",
         )
 
-    def test_an_unknown_agent_adds_nobody(self) -> None:
+    def test_a_mistyped_name_waits_and_gets_a_hint(self) -> None:
         self.create()
-        error = self.fails("team", "add", "chief", "board", "alpha", "betta")
-        self.assertIn("unknown agent 'betta' (did you mean 'beta'?)", error)
-        self.assertEqual(self.ok_json("teams", "board")[0]["members"], [])
-        self.assertEqual(len(self.channel()), 1)
+        text = self.ok("team", "add", "chief", "board", "alpha", "betta")
+        lines = text.splitlines()
+        self.assertEqual(lines[0], "Added alpha, betta to team board.")
+        self.assertEqual(
+            lines[1],
+            "betta has not registered yet (did you mean 'beta'?); it joins team board when it registers.",
+        )
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), (["alpha"], ["betta"]))
+        self.assertEqual(self.channel()[-1]["topic"], "Added alpha, betta to team board")
 
     def test_team_add_refuses_an_unknown_actor_and_an_unknown_team(self) -> None:
         self.create()
@@ -1237,6 +1244,116 @@ class TeamTests(BoardTestCase):
         self.assertIn("unknown agent 'nobody'", self.fails("team", "remove", "nobody", "board", "alpha"))
         error = self.fails("team", "remove", "chief", "bord", "alpha")
         self.assertIn("there is no team 'bord' (did you mean 'board'?)", error)
+
+    def test_an_agent_added_before_it_registers_waits_then_joins_when_it_registers(self) -> None:
+        self.create()
+        text = self.ok("team", "add", "chief", "board", "delta")
+        self.assertEqual(
+            text.splitlines()[:2],
+            [
+                "Added delta to team board.",
+                # "delta" is close enough to the registered "beta" to draw the hint.
+                "delta has not registered yet (did you mean 'beta'?); it joins team board when it registers.",
+            ],
+        )
+        self.assertIn("  Waiting to join: delta", self.ok("teams", "board").splitlines())
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), ([], ["delta"]))
+        last = self.channel()[-1]
+        self.assertEqual((last["from"], last["topic"]), ("chief", "Added delta to team board"))
+        # Registering without --team joins it all the same.
+        registered = self.ok("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertIn("Joined team board.", registered.splitlines())
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), (["delta"], []))
+        last = self.channel()[-1]
+        self.assertEqual((last["from"], last["topic"]), ("delta", "Joined team board"))
+        self.assertNotIn("Waiting to join", self.ok("teams", "board"))
+
+    def test_a_name_far_from_every_registered_agent_waits_without_a_hint(self) -> None:
+        self.create()
+        text = self.ok("team", "add", "chief", "board", "zed")
+        self.assertEqual(
+            text.splitlines()[:2],
+            ["Added zed to team board.", "zed has not registered yet; it joins team board when it registers."],
+        )
+
+    def test_registering_a_waiting_agent_reports_the_team_in_json(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        data = self.ok_json("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertEqual(data["joined"], ["board"])
+
+    def test_a_waiting_agent_hears_the_channel_from_when_it_was_added(self) -> None:
+        self.create()
+        moments = [NOON + dt.timedelta(minutes=minutes) for minutes in (1, 2, 3, 4)]
+        with self.clock(moments[0]):
+            self.ok("post", "chief", "--to", "team:board", "--topic", "before")
+        with self.clock(moments[1]):
+            self.ok("team", "add", "chief", "board", "delta")
+        with self.clock(moments[2]):
+            self.ok("post", "chief", "--to", "team:board", "--topic", "after")
+        with self.clock(moments[3]):
+            self.ok("register", "delta", "--role", "late", "--branch", "feature/delta")
+        topics = [message["topic"] for message in self.ok_json("inbox", "delta")]
+        self.assertIn("after", topics)
+        self.assertNotIn("before", topics)
+
+    def test_registering_with_team_for_a_team_it_waits_for_joins_once(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        text = self.register_into("delta", "board")
+        self.assertEqual(text.splitlines().count("Joined team board."), 1)
+        joins = [post for post in self.channel() if post["topic"] == "Joined team board"]
+        self.assertEqual(len(joins), 1)
+        self.assertEqual(self.ok_json("teams", "board")[0]["members"], ["delta"])
+
+    def test_adding_a_waiting_agent_again_says_so_and_posts_nothing(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        posts = len(self.channel())
+        text = self.ok("team", "add", "chief", "board", "delta")
+        self.assertEqual(text.splitlines()[0], "delta is already waiting to join team board.")
+        self.assertEqual(len(self.channel()), posts)
+        result = self.ok_json("team", "add", "chief", "board", "delta")
+        self.assertEqual((result["added"], result["already"], result["waiting"]), ([], ["delta"], ["delta"]))
+
+    def test_the_json_of_team_add_lists_the_agents_that_wait(self) -> None:
+        self.create()
+        result = self.ok_json("team", "add", "chief", "board", "alpha", "delta", "chief")
+        self.assertEqual(result["added"], ["alpha", "delta"])
+        self.assertEqual(result["already"], ["chief"])
+        self.assertEqual(result["waiting"], ["delta"])
+        self.assertEqual(result["team"]["waiting"], ["delta"])
+
+    def test_removing_a_waiting_agent_stops_it_joining(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        text = self.ok("team", "remove", "chief", "board", "delta")
+        self.assertEqual(text.splitlines()[0], "Removed delta from team board.")
+        self.assertEqual(self.ok_json("teams", "board")[0]["waiting"], [])
+        self.assertEqual(self.channel()[-1]["topic"], "Removed delta from team board")
+        data = self.ok_json("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertEqual(data["joined"], [])
+
+    def test_a_waiting_agent_goes_with_its_team(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        self.ok("reset", "--yes")
+        self.register("chief")
+        self.create()
+        data = self.ok_json("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertEqual(data["joined"], [])
+
+    def test_several_waiting_teams_are_joined_in_the_order_they_were_added(self) -> None:
+        self.create("zulu")
+        self.create("alpine")
+        with self.clock(NOON):
+            self.ok("team", "add", "chief", "zulu", "delta")
+        with self.clock(NOON + dt.timedelta(minutes=1)):
+            self.ok("team", "add", "chief", "alpine", "delta")
+        data = self.ok_json("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertEqual(data["joined"], ["zulu", "alpine"])
 
 
 class MessageHelperTests(BoardTestCase):
@@ -1905,7 +2022,9 @@ class SchemaTests(BoardTestCase):
     """The tables added after layout 1, and the pre-teams script working beside the new one."""
 
     #: Every table and index that SCHEMA_ADDITIONS creates.
-    ADDED = {"teams", "team_members", "team_members_by_agent", "tasks", "tasks_by_team", "task_files"}
+    ADDED = {
+        "teams", "team_members", "team_members_by_agent", "tasks", "tasks_by_team", "task_files", "waiting_members",
+    }
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -2188,6 +2307,20 @@ class SchemaTests(BoardTestCase):
         # The old script then reads the new channel post as well.
         self.assertIn("First channel post", self.old_ok("read"))
         self.assertIn("to team:board", self.old_ok("read"))
+        self.assert_foreign_keys_hold()
+
+    def test_an_agent_the_old_script_registers_joins_when_added_again(self) -> None:
+        self.register("chief")
+        self.ok("team", "create", "chief", "board", "--purpose", "A late team")
+        self.ok("team", "add", "chief", "board", "delta")
+        # The old script registers delta but knows nothing of waiting members, so delta keeps waiting.
+        self.old_ok("register", "delta", "--role", "late", "--branch", "feature/delta")
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), ([], ["delta"]))
+        text = self.ok("team", "add", "chief", "board", "delta")
+        self.assertEqual(text.splitlines()[0], "Added delta to team board.")
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), (["delta"], []))
         self.assert_foreign_keys_hold()
 
 
