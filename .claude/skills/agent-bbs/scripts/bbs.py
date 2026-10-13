@@ -14,6 +14,10 @@ It is one SQLite file that every worktree shares:
   ``.git`` file is followed back to the repository that owns it, so every
   worktree finds the same board.
 
+A copy of this script that main has never had, such as one with uncommitted
+edits or unmerged commits, refuses to open the repository's own board; point
+TEXTMOUTH_BBS_DIR at a scratch folder to try it.
+
 Each command prints readable text, or JSON with ``--json``. The exit status
 is 0 on success, 1 on a user error (reported as one line on standard
 error), and 2 when ``watch`` printed messages. Only the Python standard
@@ -37,6 +41,7 @@ import os
 import posixpath
 import re
 import sqlite3
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -57,6 +62,22 @@ DEFAULT_BOARD_SUBDIR = Path(".claude") / "agent-bbs"
 
 #: File name of the board database inside the board directory.
 BOARD_FILENAME = "board.sqlite"
+
+#: This script's own file, resolved through any symbolic links.
+SCRIPT_FILE = Path(__file__).resolve()
+
+#: Environment variable that lets a copy main has never had open the live board
+#: when set to anything but empty or 0. It is for the orchestrator, after review.
+ALLOW_UNMERGED_ENV = "TEXTMOUTH_BBS_ALLOW_UNMERGED"
+
+#: The branch whose history decides which copies of this script may open the live board.
+REFERENCE_BRANCH = "refs/heads/main"
+
+#: Where this script lives in the repository, as git names it.
+SCRIPT_PATH_IN_REPOSITORY = ".claude/skills/agent-bbs/scripts/bbs.py"
+
+#: Seconds a git command may take before the guard gives up and lets the copy through.
+GIT_TIMEOUT_SECONDS = 10.0
 
 #: Version of the base table layout, kept in SQLite's user_version header field.
 #: Scripts from before teams refuse a board whose version is higher than theirs,
@@ -89,6 +110,9 @@ ACTIVITIES = ("building", "testing", "committing", "idle", "merging")
 #: A task's states, in the order of its life: `open` (no one has it yet), then
 #: `assigned`, `working`, and `review`, ending `done` or `dropped`.
 TASK_STATES = ("open", "assigned", "working", "review", "done", "dropped")
+
+#: The task states in which a task no longer touches its files.
+FINISHED_TASK_STATES = ("done", "dropped")
 
 #: Largest accepted message body, in bytes of UTF-8 (16 KB).
 MAX_BODY_BYTES = 16 * 1024
@@ -622,19 +646,38 @@ def _gitdir_named_by(marker: Path) -> Path:
     raise UserError(f"{marker} has no 'gitdir:' line; set {BOARD_DIR_ENV} to choose a board directory")
 
 
-def repository_board_directory(starts: Iterable[Path]) -> Path:
-    """Return the board directory of the first start inside a git repository.
+def discovery_starts() -> List[Path]:
+    """Return where to look for the repository: the current directory, then this script.
+
+    The current directory comes first and is skipped when it is gone. This
+    script's own location is the fallback, so that a command run from outside
+    any repository still reaches the repository the script belongs to.
+    """
+    starts: List[Path] = []
+    with contextlib.suppress(OSError):  # the current directory may be gone
+        starts.append(Path.cwd())
+    starts.append(SCRIPT_FILE.parent)
+    return starts
+
+
+def repository_root(starts: Iterable[Path]) -> Path:
+    """Return the main working tree of the first start inside a git repository.
 
     Each start is walked upward to its working tree, which is mapped to the
-    repository's main working tree, so every worktree shares one board.
+    repository's main working tree, so every worktree shares one repository.
     """
     for start in starts:
         worktree = find_worktree_root(start)
         if worktree is not None:
-            return main_worktree_root(worktree) / DEFAULT_BOARD_SUBDIR
+            return main_worktree_root(worktree)
     raise UserError(
         f"not inside a git repository; run from a worktree of the repository or set {BOARD_DIR_ENV}"
     )
+
+
+def repository_board_directory(starts: Iterable[Path]) -> Path:
+    """Return the board directory of the first start inside a git repository."""
+    return repository_root(starts) / DEFAULT_BOARD_SUBDIR
 
 
 def board_directory() -> Path:
@@ -648,11 +691,101 @@ def board_directory() -> Path:
     override = os.environ.get(BOARD_DIR_ENV, "").strip()
     if override:
         return Path(override).expanduser().absolute()
-    starts = []
-    with contextlib.suppress(OSError):  # the current directory may be gone
-        starts.append(Path.cwd())
-    starts.append(Path(__file__).resolve().parent)
-    return repository_board_directory(starts)
+    return repository_board_directory(discovery_starts())
+
+
+def live_board_repository(directory: Path) -> Optional[Path]:
+    """Return the repository whose own board ``directory`` is, or None.
+
+    None means ``directory`` is some other board, such as a scratch folder
+    named by ``$TEXTMOUTH_BBS_DIR``. Discovery failing also gives None,
+    because that variable may name a board outside every repository.
+    """
+    try:
+        root = repository_root(discovery_starts())
+    except UserError:
+        return None
+    if (root / DEFAULT_BOARD_SUBDIR).resolve() == directory.resolve():
+        return root
+    return None
+
+
+def run_git(repository: Path, *args: str, stdin: str = "") -> Optional[str]:
+    """Run ``git`` in ``repository`` and return its standard output, or None.
+
+    None means git could not answer: it is missing or cannot start, it did
+    not finish within ``GIT_TIMEOUT_SECONDS``, or it exited with an error.
+
+    The caller's ``GIT_*`` variables are left out. Git finds its repository
+    through ``GIT_DIR`` and its relatives before the working directory, so one
+    set by a git hook, say, would make every call fail, and the guard would
+    let any copy through, or would point it at another repository.
+    """
+    environment = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=repository,
+            env=environment,
+            input=stdin,
+            capture_output=True,
+            text=True,
+            timeout=GIT_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return result.stdout if result.returncode == 0 else None
+
+
+def script_is_unmerged(repository: Path, script: Path = SCRIPT_FILE) -> bool:
+    """Return True only when git shows that main has never had this script's content.
+
+    Every step where git cannot tell (it returns None) answers False, so that
+    the board keeps working for everyone when git is missing, slow, or the
+    repository has no main branch.
+    """
+    # The copy's blob id. With --path, git applies the repository's attributes
+    # exactly as `git add` would, even to a copy outside the repository.
+    copy_id = run_git(repository, "hash-object", f"--path={SCRIPT_PATH_IN_REPOSITORY}", "--", str(script))
+    if copy_id is None:
+        return False
+    copy_id = copy_id.strip()
+    # The usual case in one call: the copy is main's current version. No
+    # answer here only means there is no quick one, so go on to the history.
+    current_id = run_git(
+        repository, "rev-parse", "--verify", "--quiet", f"{REFERENCE_BRANCH}:{SCRIPT_PATH_IN_REPOSITORY}"
+    )
+    if current_id is not None and current_id.strip() == copy_id:
+        return False
+    # Otherwise compare with the script at each commit on main that changed it.
+    commits = run_git(repository, "rev-list", REFERENCE_BRANCH, "--", SCRIPT_PATH_IN_REPOSITORY)
+    if commits is None:  # no main branch, or git failed
+        return False
+    requests = "".join(f"{commit}:{SCRIPT_PATH_IN_REPOSITORY}\n" for commit in commits.split())
+    blob_ids = run_git(repository, "cat-file", "--batch-check=%(objectname)", stdin=requests)
+    if blob_ids is None:
+        return False
+    # If main never had the script at all, the set is empty and the copy is unmerged.
+    return copy_id not in blob_ids.split()
+
+
+def guard_live_board(directory: Path) -> None:
+    """Raise ``UserError`` when a copy that main has never had would open the live board.
+
+    The checks run in order of cost: the override variable, then whether
+    ``directory`` is a repository's own board, then git's verdict.
+    """
+    if os.environ.get(ALLOW_UNMERGED_ENV, "").strip() not in ("", "0"):
+        return
+    repository = live_board_repository(directory)
+    if repository is None:
+        return
+    if script_is_unmerged(repository):
+        raise UserError(
+            f"this copy of {PROG} has changes that are not on main, so it will not open the live board "
+            f"in {directory}; to try it, set {BOARD_DIR_ENV} to a scratch folder, "
+            "and use main's copy of the script for the live board"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -778,6 +911,19 @@ SCHEMA_ADDITIONS = (
         PRIMARY KEY (task_id, path)
     )
     """,
+    # Agents added to a team before they registered. Each joins the team when
+    # it next registers, as though it had joined when it was added. `agent`
+    # and `added_by` are plain names, since the agent has no row yet; a row
+    # goes with its team.
+    """
+    CREATE TABLE IF NOT EXISTS waiting_members (
+        team     TEXT NOT NULL REFERENCES teams(name) ON DELETE CASCADE,
+        agent    TEXT NOT NULL,
+        added_at TEXT NOT NULL,
+        added_by TEXT NOT NULL,
+        PRIMARY KEY (team, agent)
+    )
+    """,
 )
 
 
@@ -787,9 +933,11 @@ def open_board() -> sqlite3.Connection:
     The connection runs in autocommit mode; changes go through
     ``write_transaction``. Several processes may use the board at once:
     write-ahead logging lets readers proceed during a write, and the busy
-    timeout makes a writer wait its turn instead of failing.
+    timeout makes a writer wait its turn instead of failing. A copy of this
+    script that main has never had is refused before it creates anything.
     """
     directory = board_directory()
+    guard_live_board(directory)
     directory.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(
         str(directory / BOARD_FILENAME),
@@ -986,10 +1134,11 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
     The first registration needs both --role and --branch; later ones may
     give either, and what they leave out is kept. --files adds claims, just
-    like `claim`, and never drops earlier ones. --team joins existing teams,
-    posting "Joined team ..." to each channel; a team the agent already
-    leads or belongs to changes nothing, and an unknown team undoes the
-    whole registration.
+    like `claim`, and never drops earlier ones. Registering first joins every
+    team the agent was added to before it registered, then --team joins
+    existing teams, posting "Joined team ..." to each channel; a team the
+    agent already leads or belongs to changes nothing, and an unknown team
+    undoes the whole registration.
     """
     name = normalize_name(args.name)
     role = None if args.role is None else one_line(args.role, "role")
@@ -1013,7 +1162,7 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
                 (role, branch, now, name),
             )
         add_claims(conn, name, patterns)
-        joined = join_teams(conn, name, args.team)
+        joined = join_waiting_teams(conn, name) + join_teams(conn, name, args.team)
         agent = load_agents(conn, name=name)[0]
         overlaps = overlaps_involving(conn, name)
         unread, reminder = unread_reminder(conn, name)
@@ -1700,13 +1849,17 @@ def load_teams(conn: sqlite3.Connection, *, name: Optional[str] = None) -> List[
 
     Each has its name, lead, purpose, creation time, channel address, and
     members in the order they joined (the lead is not listed among them),
-    and their tasks. ``name`` selects one team.
+    the agents waiting to join in the order they were added (an empty list
+    when none), and their tasks. ``name`` selects one team.
     """
     where, params = ("WHERE name = ?", (name,)) if name is not None else ("", ())
     teams = []
     for row in conn.execute(f"SELECT name, lead, purpose, created_at FROM teams {where} ORDER BY name", params):
         members = conn.execute(
             "SELECT agent FROM team_members WHERE team = ? ORDER BY joined_at, rowid", (row["name"],)
+        )
+        waiting = conn.execute(
+            "SELECT agent FROM waiting_members WHERE team = ? ORDER BY added_at, rowid", (row["name"],)
         )
         teams.append(
             {
@@ -1716,6 +1869,7 @@ def load_teams(conn: sqlite3.Connection, *, name: Optional[str] = None) -> List[
                 "created": row["created_at"],
                 "channel": team_address(row["name"]),
                 "members": [member["agent"] for member in members],
+                "waiting": [entry["agent"] for entry in waiting],
                 "tasks": load_tasks(conn, team=row["name"]),
             }
         )
@@ -1723,30 +1877,35 @@ def load_teams(conn: sqlite3.Connection, *, name: Optional[str] = None) -> List[
 
 
 def describe_team(team: dict) -> str:
-    """Describe one team: a heading line, then purpose, channel, members, and task counts."""
-    return "\n".join(
-        [
-            f"{team['name']}: led by {team['lead']}, created {local_label(team['created'])}",
-            f"  Purpose: {team['purpose']}",
-            f"  Channel: {team['channel']}",
-            f"  Members: {', '.join(team['members']) or 'none'}",
-            f"  Tasks: {describe_task_counts(team['tasks'])}",
-        ]
-    )
+    """Describe one team: a heading line, then purpose, channel, members, who waits to join, and task counts.
+
+    The "Waiting to join" line appears only when someone waits.
+    """
+    lines = [
+        f"{team['name']}: led by {team['lead']}, created {local_label(team['created'])}",
+        f"  Purpose: {team['purpose']}",
+        f"  Channel: {team['channel']}",
+        f"  Members: {', '.join(team['members']) or 'none'}",
+    ]
+    if team["waiting"]:
+        lines.append(f"  Waiting to join: {', '.join(team['waiting'])}")
+    lines.append(f"  Tasks: {describe_task_counts(team['tasks'])}")
+    return "\n".join(lines)
 
 
-def add_member(conn: sqlite3.Connection, team: str, agent: str) -> bool:
+def add_member(conn: sqlite3.Connection, team: str, agent: str, joined_at: Optional[str] = None) -> bool:
     """Add ``agent`` to ``team`` unless it leads the team or is already in it.
 
-    Returns whether a member row was added. Runs inside a write transaction;
-    the team and the agent must exist.
+    ``joined_at`` is the time the member is recorded as joining (UTC text);
+    it defaults to now. Returns whether a member row was added. Runs inside a
+    write transaction; the team and the agent must exist.
     """
     lead = conn.execute("SELECT lead FROM teams WHERE name = ?", (team,)).fetchone()["lead"]
     if agent == lead:
         return False
     cursor = conn.execute(
         "INSERT OR IGNORE INTO team_members (team, agent, joined_at) VALUES (?, ?, ?)",
-        (team, agent, to_utc_text(utc_now())),
+        (team, agent, joined_at or to_utc_text(utc_now())),
     )
     return cursor.rowcount == 1
 
@@ -1761,6 +1920,18 @@ def post_to_team(
     return insert_message(conn, sender, team_address(team), tag, clip_line(topic), body)
 
 
+def join_team(conn: sqlite3.Connection, team: str, agent: str, joined_at: Optional[str] = None) -> bool:
+    """Make ``agent`` a member of ``team`` and post "Joined team" to its channel.
+
+    Returns whether a member was added; a lead or current member changes
+    nothing and posts nothing. ``joined_at`` is passed to ``add_member``.
+    """
+    if not add_member(conn, team, agent, joined_at):
+        return False
+    post_to_team(conn, agent, team, f"Joined team {team}")
+    return True
+
+
 def join_teams(conn: sqlite3.Connection, agent: str, raw_teams: List[str]) -> List[str]:
     """Make ``agent`` a member of each named team and return the teams it joined.
 
@@ -1770,12 +1941,23 @@ def join_teams(conn: sqlite3.Connection, agent: str, raw_teams: List[str]) -> Li
     channel. Runs inside a write transaction, so an unknown team undoes the
     joins before it.
     """
-    joined = []
-    for team in dict.fromkeys(require_team(conn, raw) for raw in raw_teams):
-        if add_member(conn, team, agent):
-            post_to_team(conn, agent, team, f"Joined team {team}")
-            joined.append(team)
-    return joined
+    teams = dict.fromkeys(require_team(conn, raw) for raw in raw_teams)
+    return [team for team in teams if join_team(conn, team, agent)]
+
+
+def join_waiting_teams(conn: sqlite3.Connection, agent: str) -> List[str]:
+    """Join every team ``agent`` was added to before it registered.
+
+    Each join is recorded at the time the agent was added, so it hears the
+    channel from then. The agent's waiting rows are deleted, and the teams
+    joined are returned in the order the agent was added. Runs inside a write
+    transaction, after the agent's row exists.
+    """
+    rows = conn.execute(
+        "SELECT team, added_at FROM waiting_members WHERE agent = ? ORDER BY added_at, rowid", (agent,)
+    ).fetchall()
+    conn.execute("DELETE FROM waiting_members WHERE agent = ?", (agent,))
+    return [row["team"] for row in rows if join_team(conn, row["team"], agent, row["added_at"])]
 
 
 def cmd_team_create(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
@@ -1797,28 +1979,60 @@ def cmd_team_create(args: argparse.Namespace, conn: sqlite3.Connection) -> Outco
 
 
 def cmd_team_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Add registered agents to a team; the lead and current members are skipped."""
+    """Add agents to a team; the lead and current members are skipped.
+
+    A registered agent becomes a member at once. One that has not registered
+    yet is recorded as waiting and joins the team when it registers; the
+    text hints at a registered name close to it, in case it is a typo.
+    Adding a waiting agent again changes nothing. A registered agent's
+    waiting row, left by an older copy of the script, is deleted. The JSON
+    has the names added, the names already there, and the names waiting after
+    this command, new or not.
+    """
     agents = list(dict.fromkeys(normalize_name(raw) for raw in args.agents))
     with write_transaction(conn):
         actor = require_agent(conn, args.name)
         team = require_team(conn, args.team)
-        # Check every agent first, so that one unknown name adds nobody.
+        lead = conn.execute("SELECT lead FROM teams WHERE name = ?", (team,)).fetchone()["lead"]
+        now = to_utc_text(utc_now())
+        added, already, waiting, hints = [], [], [], []
         for agent in agents:
-            require_agent(conn, agent, touch=False)
-        added = [agent for agent in agents if add_member(conn, team, agent)]
+            if agent == lead:
+                already.append(agent)
+            elif conn.execute("SELECT 1 FROM agents WHERE name = ?", (agent,)).fetchone() is not None:
+                # It may have registered through an older copy of the script,
+                # which leaves its waiting row behind.
+                conn.execute("DELETE FROM waiting_members WHERE team = ? AND agent = ?", (team, agent))
+                (added if add_member(conn, team, agent) else already).append(agent)
+            elif conn.execute(
+                "INSERT OR IGNORE INTO waiting_members (team, agent, added_at, added_by) VALUES (?, ?, ?, ?)",
+                (team, agent, now, actor),
+            ).rowcount == 1:
+                # Newly waiting: it counts as added, and the text explains the wait.
+                added.append(agent)
+                waiting.append(agent)
+                hints.append(
+                    f"{agent} has not registered yet{_did_you_mean(conn, agent)}; "
+                    f"it joins team {team} when it registers."
+                )
+            else:
+                already.append(agent)
+                waiting.append(agent)
         if added:
             post_to_team(conn, actor, team, f"Added {', '.join(added)} to team {team}")
         details = load_teams(conn, name=team)[0]
-    already = [agent for agent in agents if agent not in added]
     lines = [f"Added {', '.join(added)} to team {team}."] if added else []
     for agent in already:
-        lines.append(
-            f"{agent} already leads team {team}."
-            if agent == details["lead"]
-            else f"{agent} is already a member of team {team}."
-        )
+        if agent == details["lead"]:
+            lines.append(f"{agent} already leads team {team}.")
+        elif agent in waiting:
+            lines.append(f"{agent} is already waiting to join team {team}.")
+        else:
+            lines.append(f"{agent} is already a member of team {team}.")
+    lines.extend(hints)
     lines.append(describe_team(details))
-    return Outcome({"team": details, "added": added, "already": already}, "\n".join(lines))
+    data = {"team": details, "added": added, "already": already, "waiting": waiting}
+    return Outcome(data, "\n".join(lines))
 
 
 def cmd_team_remove(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
@@ -1826,15 +2040,22 @@ def cmd_team_remove(args: argparse.Namespace, conn: sqlite3.Connection) -> Outco
 
     The agents need not be registered any more, so a member who was purged
     can still be named. The lead holds no member row, so it is never removed.
+    An agent waiting to join counts as a member here: removing it stops it
+    joining when it registers.
     """
     agents = list(dict.fromkeys(normalize_name(raw) for raw in args.agents))
     with write_transaction(conn):
         actor = require_agent(conn, args.name)
         team = require_team(conn, args.team)
+        # A name may be a member or a waiting agent; either row counts as removed.
         removed = [
             agent
             for agent in agents
-            if conn.execute("DELETE FROM team_members WHERE team = ? AND agent = ?", (team, agent)).rowcount == 1
+            if sum(
+                conn.execute(f"DELETE FROM {table} WHERE team = ? AND agent = ?", (team, agent)).rowcount
+                for table in ("team_members", "waiting_members")
+            )
+            > 0
         ]
         if removed:
             post_to_team(conn, actor, team, f"Removed {', '.join(removed)} from team {team}")
@@ -1960,8 +2181,51 @@ def assignee_reminder(conn: sqlite3.Connection, task: dict) -> str:
     return f"{assignee} has not registered yet."
 
 
+def task_overlaps(conn: sqlite3.Connection, task: dict) -> List[dict]:
+    """Return the pairs of overlapping files between ``task`` and the team's unfinished tasks.
+
+    Only other tasks in the same team whose state is not in
+    ``FINISHED_TASK_STATES`` count, and overlap follows the claims' rule
+    (``patterns_overlap``). Each pair mirrors a claims pair:
+    ``{"first": {"task": new id, "path": ...}, "second": {"task": other id, "path": ...}}``.
+    Pairs come ordered by the other task's id, then by the new task's file
+    order, then by the other task's file order.
+    """
+    overlaps = []
+    for other in load_tasks(conn, team=task["team"]):  # load_tasks orders by id
+        if other["id"] == task["id"] or other["state"] in FINISHED_TASK_STATES:
+            continue
+        for path in task["files"]:
+            for other_path in other["files"]:
+                if patterns_overlap(path, other_path):
+                    overlaps.append(
+                        {
+                            "first": {"task": task["id"], "path": path},
+                            "second": {"task": other["id"], "path": other_path},
+                        }
+                    )
+    return overlaps
+
+
+def describe_task_overlaps(team: str, overlaps: List[dict]) -> str:
+    """Warn about overlapping task files, one pair per line, or return "" when there are none."""
+    if not overlaps:
+        return ""
+    lines = [f"Warning: {plural(len(overlaps), 'overlap')} with unfinished tasks in team {team}:"]
+    for overlap in overlaps:
+        first, second = overlap["first"], overlap["second"]
+        lines.append(f"  task {first['task']} lists {first['path']} and task {second['task']} lists {second['path']}")
+    return "\n".join(lines)
+
+
 def cmd_task_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Add a task to a team's list and announce it in the team's channel."""
+    """Add a task to a team's list and announce it in the team's channel.
+
+    When the new task's files overlap those of an unfinished task in the same
+    team, the text ends with a warning naming each pair; the task is added all
+    the same. The JSON is the task plus ``overlaps``, always present, an empty
+    list when there are none.
+    """
     title = one_line(args.title, "title")
     brief = normalize_patterns([args.brief])[0] if args.brief is not None else None
     files = normalize_patterns(args.files)
@@ -1981,10 +2245,13 @@ def cmd_task_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
         post_to_team(conn, actor, team, f"Added task {task_id}{for_whom}: {title}", tag="task")
         task = load_tasks(conn, task_id=task_id)[0]
         reminder = assignee_reminder(conn, task)
+        overlaps = task_overlaps(conn, task)
     lines = [f"Added task {task_id} to team {team}.", describe_task(task)]
     if reminder:
         lines.append(reminder)
-    return Outcome(task, "\n".join(lines))
+    if overlaps:
+        lines.append(describe_task_overlaps(team, overlaps))
+    return Outcome(dict(task, overlaps=overlaps), "\n".join(lines))
 
 
 def require_task(conn: sqlite3.Connection, task_id: int) -> dict:
@@ -2106,8 +2373,9 @@ def cmd_purge(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     holds no message at all once the old messages are gone. That is a fair
     test of idleness, because every change to a team or to its tasks posts
     to its channel: a channel with nothing newer than the cutoff means a
-    team untouched that long. Its members, tasks, and task files go with it.
-    A team's lead may be purged without the team, which keeps its lead's name.
+    team untouched that long. Its members, waiting members, tasks, and task
+    files go with it. A team's lead may be purged without the team, which
+    keeps its lead's name.
     """
     cutoff = to_utc_text(utc_now() - dt.timedelta(days=args.older_than))
     with write_transaction(conn):
@@ -2144,7 +2412,7 @@ def cmd_reset(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
         }
         # Foreign keys cascade: files and read marks go with the messages,
         # claims, read marks, and memberships with the agents, and members,
-        # tasks, and task files with the teams.
+        # waiting members, tasks, and task files with the teams.
         conn.execute("DELETE FROM messages")
         conn.execute("DELETE FROM agents")
         conn.execute("DELETE FROM teams")
@@ -2161,7 +2429,7 @@ def cmd_reset(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 # ---------------------------------------------------------------------------
 
 #: The skill's documentation; the protocol is the text between the markers.
-SKILL_DOCUMENT = Path(__file__).resolve().parent.parent / "SKILL.md"
+SKILL_DOCUMENT = SCRIPT_FILE.parent.parent / "SKILL.md"
 PROTOCOL_BEGIN = "<!-- protocol:begin -->"
 PROTOCOL_END = "<!-- protocol:end -->"
 
@@ -2233,7 +2501,8 @@ def positive_number(text: str) -> float:
 def build_parser() -> BoardArgumentParser:
     """Build the parser for every command.
 
-    ``--json`` is accepted before or after the command name. The copy each
+    ``--json`` is accepted before the command name, after it, or between a
+    command group (``team``, ``task``) and its subcommand. The copy each
     command gets defaults to SUPPRESS so that, when left out there, it does
     not overwrite a ``--json`` given before the command.
     """
@@ -2265,7 +2534,9 @@ def build_parser() -> BoardArgumentParser:
 
     def command_group(name: str, summary: str) -> Any:
         """Add a top-level command that only holds subcommands; return their collection."""
-        sub = commands.add_parser(name, help=summary, description=summary, allow_abbrev=False)
+        sub = commands.add_parser(
+            name, help=summary, description=summary, parents=[json_flag], allow_abbrev=False
+        )
         return sub.add_subparsers(dest=f"{name}_command", metavar="SUBCOMMAND", required=True)
 
     register = command("register", cmd_register, "create or update an agent")
@@ -2403,7 +2674,9 @@ def build_parser() -> BoardArgumentParser:
     team_add = command("add", cmd_team_add, "add members to a team", group=team)
     team_add.add_argument("name", help="your agent name")
     team_add.add_argument("team", metavar="TEAM", help="the team to add them to")
-    team_add.add_argument("agents", nargs="+", metavar="AGENT", help="registered agents to add")
+    team_add.add_argument(
+        "agents", nargs="+", metavar="AGENT", help="agents to add; one not registered yet joins when it registers"
+    )
     team_remove = command("remove", cmd_team_remove, "remove members from a team", group=team)
     team_remove.add_argument("name", help="your agent name")
     team_remove.add_argument("team", metavar="TEAM", help="the team to remove them from")

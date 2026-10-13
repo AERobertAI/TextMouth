@@ -275,6 +275,34 @@ class RegistrationTests(BoardTestCase):
         self.fails("agents", "--no-such-option")
         self.fails("heartbeat")
 
+    def test_json_flag_is_accepted_after_a_command_group(self) -> None:
+        """--json works between team or task and its subcommand, as it does elsewhere."""
+        self.register("chief")
+        self.register("alpha")
+        team = json.loads(self.ok("team", "--json", "create", "chief", "board", "--purpose", "Build it"))
+        self.assertEqual(team["name"], "board")
+        self.assertEqual(json.loads(self.ok("team", "--json", "add", "chief", "board", "alpha"))["added"], ["alpha"])
+        task = json.loads(self.ok("task", "--json", "add", "chief", "board", "--title", "First"))
+        self.assertEqual(task["id"], 1)
+        assigned = json.loads(self.ok("task", "--json", "assign", "chief", "1", "alpha"))
+        self.assertEqual(assigned["state"], "assigned")
+        moved = json.loads(self.ok("task", "--json", "move", "chief", "1", "working"))
+        self.assertEqual(moved["state"], "working")
+        self.assertEqual(json.loads(self.ok("team", "--json", "remove", "chief", "board", "alpha"))["removed"], ["alpha"])
+        # The three positions of the flag give the same data (the add is repeated, so alpha is already a member).
+        self.ok("team", "add", "chief", "board", "alpha")
+        positions = [
+            json.loads(self.ok("--json", "team", "add", "chief", "board", "alpha")),
+            json.loads(self.ok("team", "--json", "add", "chief", "board", "alpha")),
+            json.loads(self.ok("team", "add", "--json", "chief", "board", "alpha")),
+        ]
+        self.assertEqual(positions[0], positions[1])
+        self.assertEqual(positions[1], positions[2])
+        # Without the flag the same command prints text.
+        self.assertTrue(self.ok("team", "add", "chief", "board", "alpha").startswith("alpha is already a member of team board."))
+        # A group with no subcommand is still a one-line usage error.
+        self.fails("team", "--json")
+
 
 class PatternTests(TemporaryDirectoryTestCase):
     """normalize_pattern and patterns_overlap: the rules behind claims."""
@@ -952,6 +980,7 @@ class TeamTests(BoardTestCase):
                 "created": bbs.to_utc_text(NOON),
                 "channel": "team:board",
                 "members": [],
+                "waiting": [],
                 "tasks": [],
             },
         )
@@ -1055,12 +1084,18 @@ class TeamTests(BoardTestCase):
             "with nobody added the text opens with the skipped line",
         )
 
-    def test_an_unknown_agent_adds_nobody(self) -> None:
+    def test_a_mistyped_name_waits_and_gets_a_hint(self) -> None:
         self.create()
-        error = self.fails("team", "add", "chief", "board", "alpha", "betta")
-        self.assertIn("unknown agent 'betta' (did you mean 'beta'?)", error)
-        self.assertEqual(self.ok_json("teams", "board")[0]["members"], [])
-        self.assertEqual(len(self.channel()), 1)
+        text = self.ok("team", "add", "chief", "board", "alpha", "betta")
+        lines = text.splitlines()
+        self.assertEqual(lines[0], "Added alpha, betta to team board.")
+        self.assertEqual(
+            lines[1],
+            "betta has not registered yet (did you mean 'beta'?); it joins team board when it registers.",
+        )
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), (["alpha"], ["betta"]))
+        self.assertEqual(self.channel()[-1]["topic"], "Added alpha, betta to team board")
 
     def test_team_add_refuses_an_unknown_actor_and_an_unknown_team(self) -> None:
         self.create()
@@ -1237,6 +1272,116 @@ class TeamTests(BoardTestCase):
         self.assertIn("unknown agent 'nobody'", self.fails("team", "remove", "nobody", "board", "alpha"))
         error = self.fails("team", "remove", "chief", "bord", "alpha")
         self.assertIn("there is no team 'bord' (did you mean 'board'?)", error)
+
+    def test_an_agent_added_before_it_registers_waits_then_joins_when_it_registers(self) -> None:
+        self.create()
+        text = self.ok("team", "add", "chief", "board", "delta")
+        self.assertEqual(
+            text.splitlines()[:2],
+            [
+                "Added delta to team board.",
+                # "delta" is close enough to the registered "beta" to draw the hint.
+                "delta has not registered yet (did you mean 'beta'?); it joins team board when it registers.",
+            ],
+        )
+        self.assertIn("  Waiting to join: delta", self.ok("teams", "board").splitlines())
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), ([], ["delta"]))
+        last = self.channel()[-1]
+        self.assertEqual((last["from"], last["topic"]), ("chief", "Added delta to team board"))
+        # Registering without --team joins it all the same.
+        registered = self.ok("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertIn("Joined team board.", registered.splitlines())
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), (["delta"], []))
+        last = self.channel()[-1]
+        self.assertEqual((last["from"], last["topic"]), ("delta", "Joined team board"))
+        self.assertNotIn("Waiting to join", self.ok("teams", "board"))
+
+    def test_a_name_far_from_every_registered_agent_waits_without_a_hint(self) -> None:
+        self.create()
+        text = self.ok("team", "add", "chief", "board", "zed")
+        self.assertEqual(
+            text.splitlines()[:2],
+            ["Added zed to team board.", "zed has not registered yet; it joins team board when it registers."],
+        )
+
+    def test_registering_a_waiting_agent_reports_the_team_in_json(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        data = self.ok_json("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertEqual(data["joined"], ["board"])
+
+    def test_a_waiting_agent_hears_the_channel_from_when_it_was_added(self) -> None:
+        self.create()
+        moments = [NOON + dt.timedelta(minutes=minutes) for minutes in (1, 2, 3, 4)]
+        with self.clock(moments[0]):
+            self.ok("post", "chief", "--to", "team:board", "--topic", "before")
+        with self.clock(moments[1]):
+            self.ok("team", "add", "chief", "board", "delta")
+        with self.clock(moments[2]):
+            self.ok("post", "chief", "--to", "team:board", "--topic", "after")
+        with self.clock(moments[3]):
+            self.ok("register", "delta", "--role", "late", "--branch", "feature/delta")
+        topics = [message["topic"] for message in self.ok_json("inbox", "delta")]
+        self.assertIn("after", topics)
+        self.assertNotIn("before", topics)
+
+    def test_registering_with_team_for_a_team_it_waits_for_joins_once(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        text = self.register_into("delta", "board")
+        self.assertEqual(text.splitlines().count("Joined team board."), 1)
+        joins = [post for post in self.channel() if post["topic"] == "Joined team board"]
+        self.assertEqual(len(joins), 1)
+        self.assertEqual(self.ok_json("teams", "board")[0]["members"], ["delta"])
+
+    def test_adding_a_waiting_agent_again_says_so_and_posts_nothing(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        posts = len(self.channel())
+        text = self.ok("team", "add", "chief", "board", "delta")
+        self.assertEqual(text.splitlines()[0], "delta is already waiting to join team board.")
+        self.assertEqual(len(self.channel()), posts)
+        result = self.ok_json("team", "add", "chief", "board", "delta")
+        self.assertEqual((result["added"], result["already"], result["waiting"]), ([], ["delta"], ["delta"]))
+
+    def test_the_json_of_team_add_lists_the_agents_that_wait(self) -> None:
+        self.create()
+        result = self.ok_json("team", "add", "chief", "board", "alpha", "delta", "chief")
+        self.assertEqual(result["added"], ["alpha", "delta"])
+        self.assertEqual(result["already"], ["chief"])
+        self.assertEqual(result["waiting"], ["delta"])
+        self.assertEqual(result["team"]["waiting"], ["delta"])
+
+    def test_removing_a_waiting_agent_stops_it_joining(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        text = self.ok("team", "remove", "chief", "board", "delta")
+        self.assertEqual(text.splitlines()[0], "Removed delta from team board.")
+        self.assertEqual(self.ok_json("teams", "board")[0]["waiting"], [])
+        self.assertEqual(self.channel()[-1]["topic"], "Removed delta from team board")
+        data = self.ok_json("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertEqual(data["joined"], [])
+
+    def test_a_waiting_agent_goes_with_its_team(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "delta")
+        self.ok("reset", "--yes")
+        self.register("chief")
+        self.create()
+        data = self.ok_json("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertEqual(data["joined"], [])
+
+    def test_several_waiting_teams_are_joined_in_the_order_they_were_added(self) -> None:
+        self.create("zulu")
+        self.create("alpine")
+        with self.clock(NOON):
+            self.ok("team", "add", "chief", "zulu", "delta")
+        with self.clock(NOON + dt.timedelta(minutes=1)):
+            self.ok("team", "add", "chief", "alpine", "delta")
+        data = self.ok_json("register", "delta", "--role", "late", "--branch", "feature/delta")
+        self.assertEqual(data["joined"], ["zulu", "alpine"])
 
 
 class MessageHelperTests(BoardTestCase):
@@ -1644,6 +1789,168 @@ class ConcurrencyTests(BoardTestCase):
             self.assertEqual(conn.execute("PRAGMA journal_mode").fetchone()[0], "wal")
 
 
+@unittest.skipUnless(shutil.which("git"), "git is not installed")
+class LiveBoardGuardTests(TemporaryDirectoryTestCase):
+    """Only copies of the script that main has had may open a repository's own board."""
+
+    def make_repository(self, branch: str = "main") -> Path:
+        """Create a temporary repository whose one commit holds a copy of this script."""
+        repo = self.make_temp_dir() / "repo"
+        repo.mkdir()
+        git("init", "-q", "-b", branch, cwd=repo)
+        committed = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        committed.parent.mkdir(parents=True)
+        shutil.copyfile(SCRIPT, committed)
+        git("add", bbs.SCRIPT_PATH_IN_REPOSITORY, cwd=repo)
+        git("commit", "-q", "-m", "Add the board script", cwd=repo)
+        return repo
+
+    def edit(self, script: Path) -> None:
+        """Append a comment line that main has never had to a copy of the script."""
+        with script.open("a", encoding="utf-8") as handle:
+            handle.write("# an edit that main has never had\n")
+
+    def run_copy(self, script: Path, cwd: Path, **env_changes: str) -> subprocess.CompletedProcess:
+        """Run ``agents --json`` with a copy of the script, with no board override unless given.
+
+        Two safety checks come first, so that no test can reach this
+        repository's live board: the copy must not be the real script, and
+        the working directory must lie inside the system temporary folder.
+        """
+        self.assertNotEqual(script.resolve(), SCRIPT.resolve())
+        self.assertTrue(cwd.resolve().is_relative_to(Path(tempfile.gettempdir()).resolve()))
+        env = {
+            key: value
+            for key, value in git_environment().items()
+            if key not in (bbs.BOARD_DIR_ENV, bbs.ALLOW_UNMERGED_ENV)
+        }
+        env.update(env_changes)
+        return subprocess.run(
+            [sys.executable, str(script), "agents", "--json"],
+            cwd=cwd, env=env, capture_output=True, text=True, timeout=60,
+        )
+
+    def assert_refused(self, result: subprocess.CompletedProcess, repo: Path) -> None:
+        """Check the one-line refusal, word for word, and that no board folder was created."""
+        directory = repo / ".claude" / "agent-bbs"
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(
+            result.stderr,
+            f"bbs.py: error: this copy of bbs.py has changes that are not on main, so it will not open "
+            f"the live board in {directory}; to try it, set TEXTMOUTH_BBS_DIR to a scratch folder, "
+            "and use main's copy of the script for the live board\n",
+        )
+        self.assertFalse(directory.exists(), "a refused copy must create nothing")
+
+    def test_a_copy_main_has_opens_the_live_board(self) -> None:
+        repo = self.make_repository()
+        result = self.run_copy(repo / bbs.SCRIPT_PATH_IN_REPOSITORY, repo)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        self.assertEqual(json.loads(result.stdout), [])
+        self.assertTrue((repo / ".claude" / "agent-bbs" / "board.sqlite").is_file())
+
+    def test_an_edited_copy_is_refused_before_it_creates_anything(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        self.assert_refused(self.run_copy(script, repo), repo)
+
+    def test_a_commit_on_another_branch_is_refused_until_main_merges_it(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        git("checkout", "-q", "-b", "side", cwd=repo)
+        self.edit(script)
+        git("commit", "-q", "-a", "-m", "Change the script on a side branch", cwd=repo)
+        self.assert_refused(self.run_copy(script, repo), repo)
+        # Once main has merged the branch, the same copy is one main has had.
+        git("checkout", "-q", "main", cwd=repo)
+        git("merge", "-q", "--no-ff", "side", "-m", "Merge side", cwd=repo)
+        merged = self.run_copy(script, repo)
+        self.assertEqual((merged.returncode, merged.stderr), (0, ""))
+        self.assertTrue((repo / ".claude" / "agent-bbs" / "board.sqlite").is_file())
+
+    def test_an_older_copy_from_mains_history_still_opens_the_live_board(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        # Version 1 is kept outside the repository; main then moves on to version 2.
+        outside = self.make_temp_dir() / "v1-bbs.py"
+        shutil.copyfile(script, outside)
+        self.edit(script)
+        git("commit", "-q", "-a", "-m", "Change the script on main", cwd=repo)
+        older = self.run_copy(outside, repo)
+        self.assertEqual((older.returncode, older.stderr), (0, ""))
+        # A copy outside the repository with an edit main never had is refused.
+        # (Editing version 1 once would just rebuild version 2, so edit it twice.)
+        shutil.rmtree(repo / ".claude" / "agent-bbs")
+        self.edit(outside)
+        self.edit(outside)
+        self.assert_refused(self.run_copy(outside, repo), repo)
+
+    def test_a_scratch_board_skips_the_check(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        scratch = self.make_temp_dir() / "scratch-board"
+        result = self.run_copy(script, repo, **{bbs.BOARD_DIR_ENV: str(scratch)})
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        self.assertTrue((scratch / "board.sqlite").is_file())
+        self.assertFalse((repo / ".claude" / "agent-bbs").exists())
+
+    def test_naming_the_live_board_in_the_variable_is_still_checked(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        live = repo / ".claude" / "agent-bbs"
+        self.assert_refused(self.run_copy(script, repo, **{bbs.BOARD_DIR_ENV: str(live)}), repo)
+
+    def test_the_allow_variable_lets_an_unmerged_copy_through(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        # "0" and "" mean off, like unset; anything else lets the copy through.
+        self.assert_refused(self.run_copy(script, repo, **{bbs.ALLOW_UNMERGED_ENV: "0"}), repo)
+        self.assert_refused(self.run_copy(script, repo, **{bbs.ALLOW_UNMERGED_ENV: " "}), repo)
+        allowed = self.run_copy(script, repo, **{bbs.ALLOW_UNMERGED_ENV: "1"})
+        self.assertEqual((allowed.returncode, allowed.stderr), (0, ""))
+
+    def test_without_a_main_branch_the_guard_lets_the_copy_through(self) -> None:
+        repo = self.make_repository(branch="trunk")
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        result = self.run_copy(script, repo)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+
+    def test_when_git_fails_the_guard_lets_the_copy_through(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        self.assertTrue(bbs.script_is_unmerged(repo, script), "the edit is unmerged while git works")
+        for failure in (FileNotFoundError("git"), subprocess.TimeoutExpired("git", 10)):
+            with self.subTest(failure=type(failure).__name__):
+                with mock.patch.object(bbs.subprocess, "run", side_effect=failure):
+                    self.assertFalse(bbs.script_is_unmerged(repo, script))
+
+    def test_a_callers_git_variables_do_not_blind_the_guard(self) -> None:
+        # Inside a git hook, GIT_DIR and its relatives name a repository. Passed
+        # on, a wrong one would fail every git call, and the guard would let
+        # the edited copy through.
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        missing = str(self.make_temp_dir() / "no-such-git-dir")
+        self.assert_refused(self.run_copy(script, repo, GIT_DIR=missing, GIT_WORK_TREE=missing), repo)
+
+    def test_live_board_repository_names_only_the_discovered_board(self) -> None:
+        repo = self.make_repository()
+        with mock.patch.object(bbs, "discovery_starts", return_value=[repo]):
+            self.assertEqual(bbs.live_board_repository(repo / ".claude" / "agent-bbs"), repo)
+            self.assertIsNone(bbs.live_board_repository(self.make_temp_dir() / "scratch"))
+
+    def test_the_script_path_constant_names_this_file(self) -> None:
+        self.assertEqual(SCRIPT.relative_to(SKILL_DIR.parents[2]).as_posix(), bbs.SCRIPT_PATH_IN_REPOSITORY)
+
+
 class RepositoryDiscoveryTests(TemporaryDirectoryTestCase):
     """Where the board lives when TEXTMOUTH_BBS_DIR is not set."""
 
@@ -1668,6 +1975,11 @@ class RepositoryDiscoveryTests(TemporaryDirectoryTestCase):
         # End to end: run inside the worktree with no override, then read the
         # board from the main working tree in another process.
         env = environment_without_board_override()
+        # This test is about discovery, and this repository's script is foreign
+        # to the temporary repository, so the live-board guard must stand aside.
+        # (Without this it would pass only because git's built-in default
+        # branch is master, which leaves the guard unable to tell.)
+        env[bbs.ALLOW_UNMERGED_ENV] = "1"
         registered = subprocess.run(
             [sys.executable, str(SCRIPT), "register", "probe", "--role", "probe", "--branch", "side"],
             cwd=nested, env=env, capture_output=True, text=True, timeout=60,
@@ -1738,7 +2050,9 @@ class SchemaTests(BoardTestCase):
     """The tables added after layout 1, and the pre-teams script working beside the new one."""
 
     #: Every table and index that SCHEMA_ADDITIONS creates.
-    ADDED = {"teams", "team_members", "team_members_by_agent", "tasks", "tasks_by_team", "task_files"}
+    ADDED = {
+        "teams", "team_members", "team_members_by_agent", "tasks", "tasks_by_team", "task_files", "waiting_members",
+    }
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -2023,6 +2337,20 @@ class SchemaTests(BoardTestCase):
         self.assertIn("to team:board", self.old_ok("read"))
         self.assert_foreign_keys_hold()
 
+    def test_an_agent_the_old_script_registers_joins_when_added_again(self) -> None:
+        self.register("chief")
+        self.ok("team", "create", "chief", "board", "--purpose", "A late team")
+        self.ok("team", "add", "chief", "board", "delta")
+        # The old script registers delta but knows nothing of waiting members, so delta keeps waiting.
+        self.old_ok("register", "delta", "--role", "late", "--branch", "feature/delta")
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), ([], ["delta"]))
+        text = self.ok("team", "add", "chief", "board", "delta")
+        self.assertEqual(text.splitlines()[0], "Added delta to team board.")
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["members"], team["waiting"]), (["delta"], []))
+        self.assert_foreign_keys_hold()
+
 
 class TaskTests(BoardTestCase):
     """Task lists: task add, tasks, and the task counts in teams."""
@@ -2071,6 +2399,7 @@ class TaskTests(BoardTestCase):
                 "created_by": "lead",
                 "updated": bbs.to_utc_text(NOON),
                 "updated_by": "lead",
+                "overlaps": [],
             },
         )
 
@@ -2199,7 +2528,7 @@ class TaskTests(BoardTestCase):
     def test_json_is_a_list_of_task_dicts_even_when_empty(self) -> None:
         self.assertEqual(self.ok_json("tasks"), [])
         added = self.add("A", "board", "--files", "a.py")
-        self.assertEqual(self.ok_json("tasks"), [added])
+        self.assertEqual(self.ok_json("tasks"), [self.listed(added)])
         self.assertEqual(self.ok_json("tasks", "--team", "polish"), [])
 
     def test_teams_count_their_tasks_by_state(self) -> None:
@@ -2223,9 +2552,9 @@ class TaskTests(BoardTestCase):
         first = self.add("A", "board")
         second = self.add("B", "polish")
         teams = {team["name"]: team for team in self.ok_json("teams")}
-        self.assertEqual(teams["board"]["tasks"], [first])
-        self.assertEqual(teams["polish"]["tasks"], [second])
-        self.assertEqual(self.ok_json("teams", "board")[0]["tasks"], [first])
+        self.assertEqual(teams["board"]["tasks"], [self.listed(first)])
+        self.assertEqual(teams["polish"]["tasks"], [self.listed(second)])
+        self.assertEqual(self.ok_json("teams", "board")[0]["tasks"], [self.listed(first)])
 
     def assign(self, task_id: int, agent: str, *extra: str, actor: str = "lead") -> dict:
         """Assign a task as ``actor`` (with ``extra`` options) and return its JSON."""
@@ -2428,6 +2757,90 @@ class TaskTests(BoardTestCase):
             ],
         )
         self.assertEqual(self.ok_json("tasks")[0]["assignee"], "alpha")
+
+    @staticmethod
+    def listed(added: dict) -> dict:
+        """Return what ``task add`` reported as the task appears in listings, which have no ``overlaps``."""
+        return {key: value for key, value in added.items() if key != "overlaps"}
+
+    def warnings_of(self, title: str, team: str, *files: str, actor: str = "lead") -> List[str]:
+        """Add a task listing ``files`` and return the lines of its text output that belong to a warning."""
+        text = self.ok("task", "add", actor, team, "--title", title, "--files", *files)
+        return [line for line in text.splitlines() if line.startswith(("Warning:", "  task "))]
+
+    def test_task_add_warns_when_files_overlap_an_unfinished_task_in_the_team(self) -> None:
+        self.add("First", "board", "--files", "src/a.py", "docs/")
+        text = self.ok("task", "add", "lead", "board", "--title", "Second", "--files", "src/*.py", "README")
+        self.assertEqual(
+            text.splitlines()[-2:],
+            [
+                "Warning: 1 overlap with unfinished tasks in team board:",
+                "  task 2 lists src/*.py and task 1 lists src/a.py",
+            ],
+        )
+        # The task was added all the same, and the channel only got the usual "Added task" lines.
+        self.assertEqual([t["id"] for t in self.ok_json("tasks")], [1, 2])
+        self.assertEqual(
+            [m["topic"] for m in self.channel() if m["tag"] == "task"],
+            ["Added task 1: First", "Added task 2: Second"],
+        )
+        self.assertEqual(
+            [m["tag"] for m in self.channel()],
+            ["notice", "task", "task"],
+        )
+
+    def test_the_json_of_task_add_names_each_overlapping_pair(self) -> None:
+        self.add("First", "board", "--files", "src/a.py", "docs/")
+        task = self.add("Second", "board", "--files", "src/*.py", "README")
+        self.assertEqual(
+            task["overlaps"], [{"first": {"task": 2, "path": "src/*.py"}, "second": {"task": 1, "path": "src/a.py"}}]
+        )
+
+    def test_no_warning_without_an_overlap(self) -> None:
+        self.add("First", "board", "--files", "src/a.py")
+        self.assertEqual(self.warnings_of("Disjoint", "board", "src/b.py", "docs/"), [])
+        self.assertEqual(self.add("Disjoint again", "board", "--files", "lib/c.py")["overlaps"], [])
+        # A task with no files has nothing to overlap.
+        self.assertNotIn("Warning:", self.ok("task", "add", "lead", "board", "--title", "No files"))
+        self.assertEqual(self.add("Still no files")["overlaps"], [])
+
+    def test_finished_tasks_and_other_teams_do_not_count(self) -> None:
+        self.add("Done", "board", "--files", "src/a.py")
+        self.add("Dropped", "board", "--files", "src/a.py")
+        self.move(1, "done")
+        self.move(2, "dropped")
+        # A task in another team, even an unfinished one, does not count either.
+        self.add("Elsewhere", "polish", "--files", "src/a.py", actor="beta")
+        self.assertEqual(self.warnings_of("Fresh", "board", "src/a.py"), [])
+        self.assertEqual(self.ok_json("tasks")[-1]["title"], "Fresh")
+        # The same holds for the JSON, once the unfinished "Fresh" is out of the way.
+        self.move(4, "done")
+        self.assertEqual(self.add("Fresh again", "board", "--files", "src/a.py")["overlaps"], [])
+
+    def test_each_overlapping_pair_gets_a_line_in_order(self) -> None:
+        self.add("First", "board", "--files", "src/a.py", "src/b.py")
+        self.add("Second", "board", "--files", "src/*.py")
+        text = self.ok("task", "add", "lead", "board", "--title", "Third", "--files", "src/b.py", "src/a.py")
+        self.assertEqual(
+            text.splitlines()[-5:],
+            [
+                "Warning: 4 overlaps with unfinished tasks in team board:",
+                "  task 3 lists src/b.py and task 1 lists src/b.py",
+                "  task 3 lists src/a.py and task 1 lists src/a.py",
+                "  task 3 lists src/b.py and task 2 lists src/*.py",
+                "  task 3 lists src/a.py and task 2 lists src/*.py",
+            ],
+        )
+
+    def test_overlaps_ignore_letter_case_like_claims(self) -> None:
+        self.add("First", "board", "--files", "src/a.py")
+        self.assertEqual(
+            self.warnings_of("Second", "board", "SRC/A.py"),
+            [
+                "Warning: 1 overlap with unfinished tasks in team board:",
+                "  task 2 lists SRC/A.py and task 1 lists src/a.py",
+            ],
+        )
 
 
 if __name__ == "__main__":

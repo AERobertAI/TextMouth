@@ -15,7 +15,7 @@ Agents can also work in teams. A team has a lead, a channel where its members ta
 
     python3 .claude/skills/agent-bbs/scripts/bbs.py
 
-Every command prints readable text, or the same data as JSON with `--json`. Exit status 0 means success. Status 1 means a user error, explained in one line on standard error. `watch` exits with 2 when it printed messages. Your agent name is your task slug: letters, digits, `.`, `_` and `-`, without regard to letter case. `all` is reserved for messages to everyone. Team names follow the same rule as agent names. A team is addressed `team:NAME`, so a team never clashes with an agent of the same name, nor with `all`.
+Every command prints readable text, or the same data as JSON with `--json`, given before the command, after it, or between `team` or `task` and its subcommand. Exit status 0 means success. Status 1 means a user error, explained in one line on standard error. `watch` exits with 2 when it printed messages. Your agent name is your task slug: letters, digits, `.`, `_` and `-`, without regard to letter case. `all` is reserved for messages to everyone. Team names follow the same rule as agent names. A team is addressed `team:NAME`, so a team never clashes with an agent of the same name, nor with `all`.
 
 ### Agents
 
@@ -46,16 +46,18 @@ How paths are read:
 A team is a lead, some members, a channel, and a task list. The lead is not counted among the members, but a lead is in its team all the same.
 
 - `bbs team create NAME TEAM --purpose "ONE LINE" [--lead AGENT]` creates a team. The lead defaults to you, and `--lead` names another registered agent. The team's channel is `team:TEAM`.
-- `bbs team add NAME TEAM AGENT ...` adds registered agents as members. An agent can also join with `register --team`.
+- `bbs team add NAME TEAM AGENT ...` adds agents as members. An agent that has not registered yet waits to join, and joins when it registers, hearing the channel from when it was added; `teams` lists it under "Waiting to join". An agent can also join with `register --team`.
 - `bbs team remove NAME TEAM AGENT ...` removes members. The lead is not a member, so it cannot be removed this way.
 - `bbs teams [TEAM]` lists every team with its lead, members, and tasks, or shows only TEAM.
 
       bbs team create board-lead board --purpose "Build teams for the board"
       bbs register board-schema --role "Add the teams tables" --branch board/schema --files .claude/skills/agent-bbs/scripts/bbs.py --team board
 
-A post to `team:TEAM` reaches the inbox of the lead and of every member. A member hears the channel from when it joined, and the lead from its own registration, as with a post to `all`. Every change to a team, such as creating it or adding or removing a member, posts one line to its channel, so the channel is the team's history.
+A post to `team:TEAM` reaches the inbox of the lead and of every member. A member hears the channel from when it joined, or from when it was added if that was before it registered, and the lead from its own registration, as with a post to `all`. Every change to a team, such as creating it or adding or removing a member, posts one line to its channel, so the channel is the team's history.
 
 The address has a `team:` prefix so that a team may share a name with an agent, and neither is taken for the other or for `all`. Older copies of the script refuse `team:board` as an agent name rather than misread it.
+
+Older copies of the script know nothing of waiting members: one that registers a waiting agent leaves it waiting. Run `team add` again once the agent has registered.
 
 ### Messages
 
@@ -79,7 +81,7 @@ The address has a `team:` prefix so that a team may share a name with an agent, 
 
 Each team keeps a task list. A task has a number, a title, a state, and perhaps an assignee, a brief, and some files. Every change to a task posts one line, tagged `task`, to the team's channel.
 
-- `bbs task add NAME TEAM --title "ONE LINE" [--brief PATH] [--files PATH ...] [--assign AGENT]` adds a task and prints its number. `--brief` is a file in the repository that describes the task, and `--files` are the paths or globs it will touch. The task starts `open`, or `assigned` when you give `--assign`.
+- `bbs task add NAME TEAM --title "ONE LINE" [--brief PATH] [--files PATH ...] [--assign AGENT]` adds a task and prints its number. `--brief` is a file in the repository that describes the task, and `--files` are the paths or globs it will touch. The task starts `open`, or `assigned` when you give `--assign`. When the new task's files overlap those of an unfinished task in the same team, by the rule for overlapping claims, `task add` warns, naming each pair; the task is added all the same.
 - `bbs task assign NAME ID AGENT [--note "ONE LINE"]` gives a task to an agent and marks it `assigned`. The agent may register later. A `done` or `dropped` task assigned again comes back to life.
 - `bbs task move NAME ID STATE [--note "ONE LINE"]` moves a task to another state.
 - `bbs tasks [--team TEAM] [--state STATE] [--agent AGENT]` lists tasks, narrowed by any of the three.
@@ -117,13 +119,15 @@ It holds one of the three machine-wide build slots exactly as the orchestrator's
 
 ### Housekeeping
 
-- `bbs purge --older-than DAYS` deletes messages posted, and agents last seen, more than DAYS days ago, together with their files, claims and read marks. It also deletes a team that was created before the cutoff and whose channel holds nothing newer, together with its members and tasks. If a team's lead is purged, the team survives under the lead's name.
+- `bbs purge --older-than DAYS` deletes messages posted, and agents last seen, more than DAYS days ago, together with their files, claims and read marks. It also deletes a team that was created before the cutoff and whose channel holds nothing newer, together with its members, waiting members, and tasks. If a team's lead is purged, the team survives under the lead's name.
 - `bbs reset --yes` empties the board, every team and task included. Message ids keep counting up after a purge or reset, so an id remembered for `--since` never hides a newer message.
 - `bbs protocol` prints the protocol below, ready to paste into an agent brief.
 
 ### Where the board lives
 
 The board is `$TEXTMOUTH_BBS_DIR/board.sqlite` when that variable is set. Otherwise it is `.claude/agent-bbs/board.sqlite` in the repository's main working tree, which `.gitignore` excludes. The script finds that tree by walking up from the current directory to the nearest `.git` entry and following a worktree's `.git` file back to its repository. Outside any repository it starts from its own location instead. Any number of processes can use the board at once: SQLite runs in WAL mode with a 30-second busy timeout. The tests run with `python3 -m unittest discover -s .claude/skills/agent-bbs/tests`.
+
+A guard keeps changed copies of the script off the live board. Before the script opens the repository's own board, it asks git whether its own file is a version of `.claude/skills/agent-bbs/scripts/bbs.py` that `main` has had. A copy with uncommitted edits, or with commits not yet merged into `main`, is refused with a one-line error and creates nothing. Every copy `main` has had, older or newer, keeps working. A board named by `TEXTMOUTH_BBS_DIR` is not checked, unless it is the live board's own folder. When git cannot tell, because it is missing or the repository has no `main` branch, the script goes ahead. To try a changed copy, point `TEXTMOUTH_BBS_DIR` at a scratch folder, and use main's copy for the live board. After reviewing a change, the orchestrator may let an unmerged copy through with `TEXTMOUTH_BBS_ALLOW_UNMERGED=1`.
 
 The teams tables are additions. This version of the script creates whichever of them a board lacks each time it opens the board, and the layout version stays 1. Older copies of the script, run from older worktrees, keep working on the same board. They cannot post to a team, and their inbox does not show channel posts. So work in a team needs this version of the script.
 
@@ -139,7 +143,7 @@ The teams tables are additions. This version of the script creates whichever of 
 5. **When you notice a problem in files you do not own**, do not fix it. Post a finding tied to those files, which reaches whoever claims them: `bbs post NAME --tag finding --file PATH --topic "ONE LINE" --body "what is wrong and where"`.
 6. **When a decision affects another agent**, post a question to that agent with `bbs post NAME --tag question --to OTHER --topic "ONE LINE" --body "the question, and the assumption you are working under"`. Keep working under that assumption. Answer questions with `bbs post NAME --reply-to ID --body "..."`.
 7. **When you are done**, release your claims and say so: `bbs release NAME --all`, then `bbs post NAME --tag notice --topic "done: BRANCH"`.
-8. **In a team** (when your brief names one), each role has a duty. A worker joins the team with `--team TEAM` when it registers, posts to its channel with `--to team:TEAM` rather than to `all`, and keeps its own task's state current, with `bbs task move NAME ID working` when it starts and `bbs task move NAME ID review --note "ONE LINE"` when it is done. A lead creates the team with `bbs team create NAME TEAM --purpose "ONE LINE"`, hands out work with `bbs task add NAME TEAM --title "ONE LINE" --assign AGENT`, and keeps each task's state current, moving it to `done` or `dropped`. The orchestrator reads each team's channel with `bbs read --team TEAM`.
+8. **In a team** (when your brief names one), each role has a duty. A worker joins the team with `--team TEAM` when it registers, posts to its channel with `--to team:TEAM` rather than to `all`, and keeps its own task's state current, with `bbs task move NAME ID working` when it starts and `bbs task move NAME ID review --note "ONE LINE"` when it is done. A lead creates the team with `bbs team create NAME TEAM --purpose "ONE LINE"`, may add each worker before launching it with `bbs team add NAME TEAM AGENT`, hands out work with `bbs task add NAME TEAM --title "ONE LINE" --assign AGENT`, and keeps each task's state current, moving it to `done` or `dropped`. The orchestrator reads each team's channel with `bbs read --team TEAM`.
 
 Keep posts short; the board is for coordination, not reports.
 <!-- protocol:end -->
