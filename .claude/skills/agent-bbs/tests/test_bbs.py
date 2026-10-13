@@ -1455,6 +1455,11 @@ class SkillDocumentTests(BoardTestCase):
             "--tag question",
             "bbs release NAME --all",
             "--tag notice",
+            "--team TEAM",
+            "--to team:",
+            "bbs task move NAME",
+            "bbs task add",
+            "bbs read --team TEAM",
             "not reports",
         ):
             self.assertIn(step, text)
@@ -1478,6 +1483,20 @@ class SkillDocumentTests(BoardTestCase):
             with self.subTest(command=name):
                 with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit) as exit_info:
                     bbs.main([name, "--help"])
+                self.assertEqual(exit_info.exception.code, 0)
+
+    def test_every_documented_team_and_task_subcommand_exists(self) -> None:
+        """`bbs team` and `bbs task` each take a word, so check those pairs, not just the groups."""
+        pairs = set(re.findall(r"\bbbs (team|task) ([a-z]+)\b", self.DOCUMENT.read_text(encoding="utf-8")))
+        self.assertEqual(
+            pairs,
+            {("team", "create"), ("team", "add"), ("team", "remove"),
+             ("task", "add"), ("task", "assign"), ("task", "move")},
+        )
+        for group, word in sorted(pairs):
+            with self.subTest(command=f"{group} {word}"):
+                with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit) as exit_info:
+                    bbs.main([group, word, "--help"])
                 self.assertEqual(exit_info.exception.code, 0)
 
 

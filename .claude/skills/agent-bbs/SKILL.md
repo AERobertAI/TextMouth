@@ -139,6 +139,7 @@ The teams tables are additions. This version of the script creates whichever of 
 5. **When you notice a problem in files you do not own**, do not fix it. Post a finding tied to those files, which reaches whoever claims them: `bbs post NAME --tag finding --file PATH --topic "ONE LINE" --body "what is wrong and where"`.
 6. **When a decision affects another agent**, post a question to that agent with `bbs post NAME --tag question --to OTHER --topic "ONE LINE" --body "the question, and the assumption you are working under"`. Keep working under that assumption. Answer questions with `bbs post NAME --reply-to ID --body "..."`.
 7. **When you are done**, release your claims and say so: `bbs release NAME --all`, then `bbs post NAME --tag notice --topic "done: BRANCH"`.
+8. **In a team**, if your brief names one, know your duty. A worker joins with `--team TEAM` when it registers, posts to `--to team:TEAM` rather than to `all`, and keeps its own task's state current: `bbs task move NAME ID working` when it starts, then `bbs task move NAME ID review --note "ONE LINE"` when it is done. A lead creates the team with `bbs team create NAME TEAM --purpose "ONE LINE"`, hands out work with `bbs task add NAME TEAM --title "ONE LINE" --assign AGENT`, and keeps each task's state current, moving it to `done` or `dropped`. The orchestrator reads each team's channel with `bbs read --team TEAM`.
 
 Keep posts short; the board is for coordination, not reports.
 <!-- protocol:end -->
