@@ -283,7 +283,9 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
 
         var row = fixture.book
         let before = try XCTUnwrap(row.bookmarks.first)
-        row.bookmarks[0].label = "Renamed"
+        var renamed = before
+        renamed.label = "Renamed"
+        row.bookmarks = [renamed]
         let model = makeModel(with: [row])
         await runTheNextLaunchsPasses(on: model)
 

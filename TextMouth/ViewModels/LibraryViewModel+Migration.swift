@@ -899,10 +899,10 @@ extension LibraryViewModel {
     /// The work of `updateTextCache(of:force:reading:access:skips:held:)` for
     /// a book whose `files` were on this Mac when it began: recovers the
     /// cache an earlier run committed, with the places that run moved,
-    /// which its record holds and the row may lack, takes an edit of content.md saved
-    /// while TextMouth was closed (`editSavedWhileClosed(of:access:)`), or
-    /// writes the cache from the source and commits its analysis to the
-    /// book's record.
+    /// which its record holds and the row may lack; takes an edit of
+    /// content.md saved while TextMouth was closed
+    /// (`editSavedWhileClosed(of:access:)`); or writes the cache from the
+    /// source and commits its analysis to the book's record.
     /// - Throws: why no cache could be written, including the refusal of a
     ///   read that met a file which went to the cloud meanwhile.
     nonisolated private static func committedTextCache(
