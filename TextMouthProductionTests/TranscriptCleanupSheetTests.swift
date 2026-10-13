@@ -69,6 +69,21 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         XCTAssertNil(presenter.cleanup)
     }
 
+    /// A feed's episode is not editable (FR11): neither the command itself
+    /// nor the VoiceOver action opens a sheet for it.
+    func testTheCommandOpensNoSheetForAFeedsEpisode() throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Feed Episode")
+        var book = try transcribedBook(in: world)
+        book.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:harbour-log")
+        XCTAssertFalse(LibraryAudioCommand.isTranscriptCleanable(book), "the rule this test relies on")
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() }, cleanupServices: { self.makeCleanupServices() })
+
+        presenter.cleanUp(book, library: world.library, window: nil)
+        XCTAssertNil(presenter.cleanup, "cleanUp opened a sheet for a feed's episode")
+        presenter.perform(.cleanUpTranscript(book), library: world.library, window: nil)
+        XCTAssertNil(presenter.cleanup, "the command opened a sheet for a feed's episode")
+    }
+
     // MARK: - What the Sheet Shows
 
     /// The ready sheet names the rules and what they would change, lists

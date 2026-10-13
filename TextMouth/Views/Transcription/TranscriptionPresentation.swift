@@ -113,9 +113,15 @@ final class TranscriptionPresenter: ObservableObject {
 
     /// Opens the Clean Up sheet for `book`'s transcript (FR05,
     /// experimental), cleaning up through `library` and announcing from
-    /// `window`, unless a Clean Up sheet is open already.
+    /// `window`, unless a Clean Up sheet is open already. It opens nothing
+    /// for a book the command is never offered for
+    /// (`LibraryAudioCommand.isTranscriptCleanable(_:)`), such as a feed's
+    /// episode, whose transcript the user decided is not editable (FR11),
+    /// and says nothing aloud: nothing offers the command for such a book,
+    /// so no listener can ask.
     func cleanUp(_ book: Book, library: LibraryViewModel, window: NSWindow?) {
-        guard cleanup == nil else { return }
+        // The menus' own rule, so every path through here agrees with them.
+        guard cleanup == nil, LibraryAudioCommand.isTranscriptCleanable(book) else { return }
         let model = TranscriptCleanupSheetModel(book: book, library: library, services: cleanupServices())
         model.window = window
         model.onClose = { [weak self, weak model] in
