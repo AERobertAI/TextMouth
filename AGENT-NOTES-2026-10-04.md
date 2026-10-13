@@ -2317,3 +2317,30 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
   - Put a completion grep in every refactor brief.
   - Have workers join a team with `register --team`, since `bbs team add` refuses an unregistered agent.
   - Give workers the literal build path too.
+
+## From the board follow-ups team (team/board2), Oct 12
+
+**Decisions (the lead's)**
+- **The guard's design.** Refusing only uncommitted edits, as the charter suggested, would miss copies committed but not merged: a worker's branch after its commit, or a team branch after integration. Instead, the live board takes a copy only if its contents match the script at some commit main has had, so every older or newer copy from main's history keeps working.
+  - The usual case costs one git call.
+  - When git cannot tell (no git, a timeout, no main), the script goes ahead.
+  - `TEXTMOUTH_BBS_ALLOW_UNMERGED=1` overrides it. The refusal does not mention the override, so a worker's way out is a scratch board.
+- **The guard's git calls** run without the caller's `GIT_*` variables. A `GIT_DIR` from a git hook would otherwise make every call fail, and the guard let any copy through; a test pins this.
+- **Joining before registering is done,** in a new additive table, `waiting_members`, since `team_members.agent` refers to agents and the layout may only grow. A mistyped name waits, with a "did you mean" hint.
+- **JSON output.** `task add`, `team add`, and `teams` gain `overlaps` and `waiting` keys in their JSON; the text of a team with nobody waiting is unchanged.
+- **Parallel workers.** All four worked at once on the same three files, in regions their briefs named and kept apart, and all four rebased cleanly.
+
+**Unverified**
+- The git timeout path is tested only with a mock.
+- Waiting members were tested beside the script from before teams, not beside the teams-era script.
+- SKILL.md has not been read with VoiceOver or a braille display.
+- The first run on the live board after the merge creates `waiting_members`, as the teams tables were created.
+
+**Wording**
+- **README.md:** none needed. Its agents section could say: "The board refuses an unmerged copy of its script on the shared board, and a lead can add a worker to its team before the worker registers."
+- **ARCHITECTURE.md**, if it describes the board: "`guard_live_board`, called from `open_board`, lets a copy of `bbs.py` open the repository's own board only when its git blob is the script's at a commit reachable from `refs/heads/main` (`script_is_unmerged`); it skips scratch boards, goes ahead when git cannot tell, and yields to `TEXTMOUTH_BBS_ALLOW_UNMERGED=1`. The additive table `waiting_members` holds agents added before they registered; `join_waiting_teams` joins them with `joined_at` set to when they were added."
+
+**The pattern (the lead's view)**
+- **What worked:** complete briefs with exact wording and named regions. All four workers were accepted with no fix rounds, each taking 1 to 3 minutes.
+- **Sonnet's judgment:** it caught a brief's wrong expected text, a test edit that would have recreated a version main already has, and a test that added one task twice.
+- **What to change:** a one-line fix costs about 50,000 tokens as a worker of its own; fold it into a neighbouring task.
