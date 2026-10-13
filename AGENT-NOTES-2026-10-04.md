@@ -2437,3 +2437,41 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
   - **Logs section:** "opens it in Finder through LogsInFinder.show(for:) (Views/LogsInFinder.swift), which the speech refusal report also calls", with the file on its Files line.
 
 **The cost experiment (the lead's view):** a fresh Sonnet reviewer per diff cost about 47,000 tokens, almost all of it starting up, and accepted both small diffs. Reviewers pay off on diffs of a few hundred lines, or when the lead's context is already large; whether they catch real errors is untested, and a deliberately seeded fault would test it. For small slices, the lead judges first and gives one worker several files.
+
+## From the t6e team (team/t6e, T06's branch E), Oct 13
+
+**Decisions (the lead's)**
+- **The race fix applies only where no reader is involved:** the batch, the statistics pass, Edit Text's takes, and edits saved while closed. A reader re-dates its position at every open (`savePosition()`), so narrowing there would protect nothing.
+- **The move at load saves nothing on its own.** The reader takes the moves into the row, and `updateBook` writes the row and the record, as any change is saved.
+- **A place nothing finds stays exactly as saved,** numbers and words, rather than taking a guess and new words. Branch B's tests pinned this, so a later text can still find the place.
+- **One existing test's expectation changed,** in `TextAnchorCaptureTests.testPlacesSavedBeforeAnchorsTakeTheirWordsAsTheBookLoads`. A skip with no saved words whose heading no longer exists now waits, by the addendum's rule and as branch D treats it at a rebuild, kept in `waitingSkippedHeadings`.
+- **Edit Text's copies live in their own folder,** `MachineLocalPaths.editTextSnapshots`, never in `placeSnapshots`, whose recovery deletes any folder it cannot read.
+- **A copy is used only when its bytes match** the text the places were saved in (the baseline's cache digest).
+- **An open reader's cursor is carried on the main actor,** once per edit taken.
+- **The statistics-pass test was dropped,** because that path can never move places.
+
+**Unverified**
+- Nothing was run in the real app; only hosted tests.
+- That copies clone on APFS is assumed, as in branch D.
+- A reader reopened at launch after a crash is covered by the move at load, by design, with no test of its own.
+- The 20 to 130 ms cost of carrying the cursor at an edit is the relocator's documented figure, not measured.
+
+**Wording**
+- **README.md:** "When a book's text changes in any other way, your reading position, bookmarks, and skipped sections still stay with their words. Each time you open a book, TextMouth checks every saved place, and finds one whose words have moved. When you edit a book's text with Edit Text, your places follow each edit too, and an open reader's cursor stays on the words it was at. All of this is silent. A place whose words can't be found anywhere stays where it was saved, with its words, so a later version of the text that has them again can still find it."
+- **ARCHITECTURE.md:**
+  - **At load:** `PlaceRelocator.relocate(_:within:movedAt:)` checks places at every load, with no old text, and returns nil when every place stands, by direct checks only; places nothing finds stay exactly as saved (`keepingPlacesNothingFound`). `readContent` runs it off the main thread. `LoadedContent.movedPlaces` is a list (the edit's moves, then a rebuild's, then the check's), which `showLoadedContent` takes in order through `takeMovedPlaces(_:)`.
+  - **The cursor:** `PlaceRelocator.relocate(_:from:to:)` carries a reader's cursor into edited text.
+  - **Edit Text's copy:** `BookTextEditSessions.Session.oldText` is the session's copy, in `MachineLocalPaths.editTextSnapshots`. It is kept by `keepOldText(of:)` and replaced at each take through `BookTextEdit.textAside`; `textRebuilt` replaces it too, and `end` deletes it. The static `check(…placesFrom:)` moves the places when the copy's digest matches, and commits them with the analysis.
+  - **Where moves go:** `BookTextEdit.movedPlaces` reaches the row (through `ContentAnalysisSummary`) and the readers (through `textReplaced(…movedPlaces:)` and `showEditedText(_:movedPlaces:)`). `BookTextEditSettlement.readTaken` carries the whole `BookTextEdit`.
+  - **Edits saved while closed:** `settleEditSavedWhileClosed` uses the newest copy a quit left, and `extractMissingContentCaches` sweeps the rest.
+  - **Shared rules:** `ContentAnalysisSummary` narrows moves with `MovedPlaces.taken(by:)`, and `TextPlace.isExactlyTheEnd` is the one end-of-book rule.
+
+**The pattern (the lead's view)**
+- **What worked:**
+  - Waves of two workers on separate files, each brief giving the decided mechanism and line ranges: every worker's code was usable, in 8 to 29 minutes each.
+  - The "stop and ask" rule surfaced a real design conflict.
+  - One verification build per wave, and test helpers shared early.
+- **What did not:** the lead's own brief errors were the main risk. The load brief contradicted branch B, and the race brief asked for a test of an unreachable path. Workers implement a brief's design without questioning it.
+- **What to change:**
+  - Add a pre-done grep for trapping subscripts and Swift warnings to the worker checklist.
+  - Have a brief that changes load or save behaviour list the existing test classes that pin the older design.
