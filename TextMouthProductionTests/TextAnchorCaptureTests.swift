@@ -281,9 +281,10 @@ final class TextAnchorCaptureTests: XCTestCase {
     /// one past its chapter's end at that end, a skipped heading its ID
     /// names at the heading's start, and the position through the load's
     /// own save. A bookmark in a chapter the book lacks, and a skipped
-    /// heading whose ID names no heading now, keep none; a bookmark that had
-    /// words keeps them, and the IDs stay as they were. The row, the record,
-    /// and the reader's own copies take them.
+    /// heading whose ID names no heading now, keep none, and that skip waits
+    /// (T06's branch E), skipping nothing; a bookmark that had words keeps
+    /// them, and the other IDs stay as they were. The row, the record, and
+    /// the reader's own copies take them.
     func testPlacesSavedBeforeAnchorsTakeTheirWordsAsTheBookLoads() throws {
         let world = try makeIntegrationWorld("Anchor Capture At Load")
         let book = try world.importBook(from: writeOrchardEPUB())
