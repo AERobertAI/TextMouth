@@ -1239,9 +1239,24 @@ class SchemaTests(BoardTestCase):
         before = self.board_objects()
         with contextlib.closing(bbs.open_board()) as conn:
             bbs._create_schema(conn)
+            # Take the slow path too, so every statement really runs a second time.
+            with mock.patch.object(bbs, "_board_is_current", return_value=False):
+                bbs._create_schema(conn)
         self.assertEqual(self.board_objects(), before)
         self.assertLessEqual(self.ADDED, before)
         self.assertEqual(self.user_version(), 1)
+
+    def test_a_board_missing_one_addition_regains_it_and_keeps_its_rows(self) -> None:
+        self.register("alpha")
+        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
+            conn.execute("INSERT INTO teams VALUES ('board', 'alpha', 'p', '2026-10-12T00:00:00Z')")
+            conn.execute("DROP INDEX tasks_by_team")
+            conn.commit()
+        self.assertNotIn("tasks_by_team", self.board_objects())
+        self.ok("agents")
+        self.assertLessEqual(self.ADDED, self.board_objects())
+        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
+            self.assertEqual(conn.execute("SELECT name FROM teams").fetchall(), [("board",)])
 
     def test_a_board_from_a_newer_script_is_refused(self) -> None:
         self.register("alpha")
