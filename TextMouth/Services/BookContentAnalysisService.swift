@@ -417,6 +417,28 @@ enum BookContentAnalysisService {
         hasher: FingerprintHasher,
         isDataless: (URL) -> Bool
     ) throws -> BookContentIndex? {
+        try recoveredTextCache(for: book, hasher: hasher, isDataless: isDataless)?.index
+    }
+
+    /// What `recoveredTextCache(for:hasher:isDataless:)` found: the index of
+    /// the cache an earlier run committed, and the record it was read from.
+    struct RecoveredTextCache {
+        /// The index `recoveredTextCacheIndex(for:hasher:isDataless:)` gives.
+        let index: BookContentIndex
+        /// The book's package record as it was read, so a caller that also
+        /// needs it (for the places an earlier run moved) does not read it
+        /// a second time.
+        let record: BookInfo
+    }
+
+    /// `recoveredTextCacheIndex(for:hasher:isDataless:)` with the record the
+    /// index was read from. It answers whenever that does, and refuses,
+    /// throws, and gives nil in the same cases.
+    static func recoveredTextCache(
+        for book: Book,
+        hasher: FingerprintHasher,
+        isDataless: (URL) -> Bool
+    ) throws -> RecoveredTextCache? {
         guard !book.format.isAudio, MarkdownCacheService.cacheExists(for: book) else { return nil }
         let info: BookInfo
         do {
@@ -429,7 +451,7 @@ enum BookContentAnalysisService {
         guard info.state.cacheFormatVersion == MarkdownCacheService.currentCacheVersion,
               let index = info.contentIndex,
               let trustedIndex = trusted(index, for: book, audioBaseURL: nil) else { return nil }
-        guard let recorded = info.state.textCacheFingerprint else { return trustedIndex }
+        guard let recorded = info.state.textCacheFingerprint else { return RecoveredTextCache(index: trustedIndex, record: info) }
         let sourceURL = book.bookFileURL
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let verification: TextCacheVerification
@@ -454,10 +476,10 @@ enum BookContentAnalysisService {
             // A file written again with the same bytes keeps its digests
             // with its new stamps, which the row takes, so the launch's
             // check of the file's date has nothing to read next time.
-            guard verified != recorded else { return trustedIndex }
+            guard verified != recorded else { return RecoveredTextCache(index: trustedIndex, record: info) }
             var refreshed = trustedIndex
             refreshed.textCacheFingerprint = verified
-            return refreshed
+            return RecoveredTextCache(index: refreshed, record: info)
         case .stale(let staleness):
             reportStaleCache(of: book, staleness)
             return nil
