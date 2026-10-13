@@ -103,7 +103,7 @@ final class LegacyLibraryModelTests: XCTestCase {
         library.addBook(book("B", hash: "b", folder: "Fiction"))
         library.addBook(book("C", hash: "c"))
         XCTAssertEqual(library.booksInFolder("Fiction").count, 2)
-        XCTAssertEqual(library.booksWithNoFolder().map(\.title), ["C"])
+        XCTAssertEqual(library.booksInFolder("").map(\.title), ["C"])
     }
 
     func testRemovingMultipleBooksLeavesUnselectedBook() {

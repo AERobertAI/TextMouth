@@ -258,3 +258,13 @@ private final class OutcomeBox {
     /// The edit's outcome, once it is done.
     var outcome: OperationOutcome?
 }
+
+extension Library {
+    /// A reader for tests: the sort setting saved for a key (folder path or
+    /// category key), falling back to the provided default or the global
+    /// default. The app itself reads `folderSortSettings` through its own
+    /// location-aware paths, so only tests ask for a key this directly.
+    func sortSetting(for key: String, default fallback: FolderSortSetting = .defaultSort) -> FolderSortSetting {
+        folderSortSettings[key] ?? fallback
+    }
+}

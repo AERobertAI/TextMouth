@@ -247,12 +247,6 @@ struct Library: Codable {
 
     // MARK: - Sort Settings
 
-    /// Get the sort setting for a key (folder path or category key),
-    /// falling back to the provided default or the global default.
-    func sortSetting(for key: String, default fallback: FolderSortSetting = .defaultSort) -> FolderSortSetting {
-        folderSortSettings[key] ?? fallback
-    }
-
     /// Update the sort setting for a folder path.
     mutating func setSortSetting(_ setting: FolderSortSetting, for folderPath: String) {
         folderSortSettings[folderPath] = setting
@@ -824,11 +818,6 @@ struct Library: Codable {
     /// (`LibraryViewModel.feedItems(listedIn:)`).
     func booksInFolder(_ path: String) -> [Book] {
         books.filter { !$0.isFeedItem && $0.folderPath == path }
-    }
-
-    /// All books of the library's own with no folder assignment.
-    func booksWithNoFolder() -> [Book] {
-        booksInFolder("")
     }
 
     /// All books never opened, from the root and every folder: what the

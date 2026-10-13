@@ -206,7 +206,6 @@ final class UnopenedCategoryTests: XCTestCase {
         // The root's books are what Folders lists at the root.
         let root = LibraryLocation(category: .folders, folderPath: "")
         XCTAssertEqual(Set(model.displayedBooks(at: root).map(\.title)), ["Loose Pages", "Read Pages"])
-        XCTAssertEqual(model.library.booksWithNoFolder().map(\.id), model.library.booksInFolder("").map(\.id))
     }
 
     /// Opening a book takes it off the Unopened list the next time the list
