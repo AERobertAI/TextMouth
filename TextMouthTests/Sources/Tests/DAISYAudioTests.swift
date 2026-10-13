@@ -275,5 +275,3 @@ test("DAISY section runs on into the next file until the next heading") {
 }
 
 }
-
-// MARK: - Test helpers
