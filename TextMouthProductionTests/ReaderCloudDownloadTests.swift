@@ -883,6 +883,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore, "The second Play began the chapter's play anew")
         XCTAssertEqual(cloud.storage.downloadsCancelled, [], "The second Play stopped the chapter's download")
         XCTAssertTrue(reader.isWaitingForChapterDownload, "The reader no longer waits for the chapter")
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader stopped showing Playing")
         XCTAssertFalse(reader.isCurrentlyPaused, "The second Play paused the reader")
 
         cloud.cloudOnly.clear()
