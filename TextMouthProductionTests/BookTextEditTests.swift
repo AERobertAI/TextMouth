@@ -1249,12 +1249,12 @@ final class BookTextEditTests: XCTestCase {
         let reader = world.openReader(for: try XCTUnwrap(world.library.bookByID(book.id)))
         await waitForReaderToLoadYielding(reader)
         // The cursor goes on to "The tide", unsaved, as speech moves it.
-        let oldChannel = try XCTUnwrap(before.content.chapters[1].text as NSString?)
+        let oldChannel = try XCTUnwrap(before.content.chapters.dropFirst().first?.text as NSString?)
         reader.currentCharacterOffset = oldChannel.range(of: "The tide").location
 
         try await saveEdit(Self.paragraphAdded, of: book, through: editor, in: world)
 
-        let newChannel = try XCTUnwrap(after.content.chapters[1].text as NSString?)
+        let newChannel = try XCTUnwrap(after.content.chapters.dropFirst().first?.text as NSString?)
         let tide = TextPlace(chapter: 1, offset: newChannel.range(of: "The tide").location)
         XCTAssertEqual(cursor(of: reader), tide)
         // The edit saved the cursor's place, with the edited text's words there.
@@ -1289,7 +1289,10 @@ final class BookTextEditTests: XCTestCase {
         let taken = await eventually(timeout: 10) { world.library.bookByID(book.id)?.textCacheFingerprint?.cache.digest == digest }
         XCTAssertTrue(taken, "the row never took the edit")
 
-        XCTAssertTrue(reader.content?.chapters[1].text.contains("A pilot boat waits") == true, "the reader opened on the earlier text")
+        XCTAssertTrue(
+            reader.content?.chapters.dropFirst().first?.text.contains("A pilot boat waits") == true,
+            "the reader opened on the earlier text"
+        )
         XCTAssertEqual(cursor(of: reader), after.reading)
         try assertReaderFollowed(reader, to: after, book: book, in: world)
     }
