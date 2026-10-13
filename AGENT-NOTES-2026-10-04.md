@@ -2417,3 +2417,23 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
   - Check mechanical deletions with a script.
   - Run three workers at once when builds are short and other teams idle.
   - Let a cheap worker collect line ranges, so the lead's context stays small.
+
+## From the fourth polish team (team/polish4), Oct 13
+
+**Decisions (the lead's)**
+- **Two files judged safe.** Every subscript in `LibraryCloudCommandTests` and `KeepOnThisMacTests` indexes a 2-, 3-, or 4-book literal, or a 3-step property, that the test wrote itself, inside its length, so no worker was launched for them.
+- **Names.** `FeedReadOnlyText` is renamed `ReadOnlyTextArea`; `SilentKeyEquivalent` keeps its name; `showLogs` becomes `LogsInFinder.show(for:opening:)`. All three files sit at the root of `TextMouth/Views/`, beside `VoiceOverFocus.swift`. The failure wording stays in `LogsSettingsWording`.
+- **The moves were checked** by diffing each old block, with the rename applied, against its new file.
+
+**Unverified**
+- The EPUB index-17 guard compiles, but its test skips without `TEXTMOUTH_EPUB_REGRESSION_FIXTURE`.
+- The moved views were not checked by hand with VoiceOver.
+
+**Wording**
+- **README.md:** nothing; no behavior changed.
+- **ARCHITECTURE.md:**
+  - **Speech refusal report section:** read "FeedReadOnlyText" as "ReadOnlyTextArea", and "LogsSettingsSection.showLogs(for:)" as "LogsInFinder.show(for:)".
+  - **Feeds section:** "ReadOnlyTextArea (Views/ReadOnlyTextArea.swift) is the read-only NSTextView both sheets read descriptions in", and "SilentKeyEquivalent (Views/SilentKeyEquivalent.swift)", with both files on its Files line.
+  - **Logs section:** "opens it in Finder through LogsInFinder.show(for:) (Views/LogsInFinder.swift), which the speech refusal report also calls", with the file on its Files line.
+
+**The cost experiment (the lead's view):** a fresh Sonnet reviewer per diff cost about 47,000 tokens, almost all of it starting up, and accepted both small diffs. Reviewers pay off on diffs of a few hundred lines, or when the lead's context is already large; whether they catch real errors is untested, and a deliberately seeded fault would test it. For small slices, the lead judges first and gives one worker several files.
