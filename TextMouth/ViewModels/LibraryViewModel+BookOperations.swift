@@ -681,12 +681,6 @@ extension LibraryViewModel {
         LibraryPersistenceService.saveBookInfo(for: book)
     }
 
-    /// Compatibility name for navigation and bookmark call sites that expect
-    /// an immediate durable checkpoint.
-    func updateReadingPosition(bookID: UUID, position: ReadingPosition) {
-        persistReadingPosition(bookID: bookID, position: position)
-    }
-
     /// Saves `edit`, one save of a metadata editor, to the row of the book
     /// `bookID`, as every editor's save does, and returns the row as saved,
     /// or nil when the book has left the library.
@@ -765,7 +759,7 @@ extension LibraryViewModel {
         writingToFile: Bool,
         writer: EPUBMetadataWriter = .system
     ) -> EPUBMetadataSave {
-        let notInLibrary = EPUBMetadataSaveWording.notInLibrary(title: book.title)
+        let notInLibrary = MetadataEditorWording.notInLibrary(title: book.title)
         guard let row = bookByID(book.id) else {
             return .failed(message: notInLibrary)
         }

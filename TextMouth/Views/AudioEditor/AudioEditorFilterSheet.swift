@@ -20,17 +20,21 @@ struct AudioEditorFilterSheet: View {
 
     /// The presets.
     @StateObject private var presets: AudioFilterPresetLibrary
-    /// The preset chosen.
+    /// The preset chosen. It starts at the first preset listed, so the pop-up
+    /// has its choice from its first drawing; it stays nil only with no
+    /// presets.
     @State private var presetID: UUID?
     /// What the filter applies to.
     @State private var target: AudioEditorFilterTarget
 
     /// The sheet for `model`, listing `presets`, those saved in Settings
     /// unless a test gives others, and applying to the selection when there
-    /// is one.
+    /// is one. The first preset starts chosen; with no presets none is, and the
+    /// sheet shows `AudioEditorWording.noPresets` and no pop-up.
     init(model: AudioEditorModel, presets: AudioFilterPresetLibrary = AudioFilterPresetLibrary()) {
         self.model = model
         _presets = StateObject(wrappedValue: presets)
+        _presetID = State(initialValue: presets.presets.first?.id)
         _target = State(initialValue: model.selection != nil ? .selection : .wholeFile)
     }
 
@@ -98,11 +102,6 @@ struct AudioEditorFilterSheet: View {
         }
         .padding()
         .frame(minWidth: 480)
-        .onAppear {
-            if presetID == nil {
-                presetID = presets.presets.first?.id
-            }
-        }
         .onDisappear {
             // Closing the sheet stops a preview, and the edited audio comes
             // back.

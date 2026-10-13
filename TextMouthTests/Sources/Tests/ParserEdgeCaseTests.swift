@@ -1,6 +1,5 @@
 import Foundation
 
-#if canImport(TextMouth)
 @testable import TextMouth
 
 private func parseHTML(html: String, title: String) throws -> DocumentContent {
@@ -14,7 +13,6 @@ private func parseMarkdown(markdown: String, title: String) throws -> DocumentCo
 private func parsePlainText(text: String, title: String) -> DocumentContent {
     PlainTextParser.parse(text: text, title: title)
 }
-#endif
 
 @MainActor
 func runParserEdgeCaseTests() {

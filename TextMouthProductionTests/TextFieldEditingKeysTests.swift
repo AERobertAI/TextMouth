@@ -103,6 +103,33 @@ final class TextFieldEditingKeysTests: XCTestCase {
         }
     }
 
+    /// The Edit menu's keys are written once, in `KeyBinding.editMenuCommands`,
+    /// with their command names: a field's `editMenuKeys` are those six, and
+    /// `systemCommands` (which no shortcut may take) holds all fifteen,
+    /// the six with the same names. Paste and Match Style is a system
+    /// command's key but no key a field keeps.
+    func testTheEditMenuKeysAreWrittenOnceAndSystemCommandsHoldThem() {
+        let sixKeys: Set<KeyBinding> = [
+            KeyBinding(key: "a", command: true),
+            KeyBinding(key: "c", command: true),
+            KeyBinding(key: "v", command: true),
+            KeyBinding(key: "x", command: true),
+            KeyBinding(key: "z", command: true),
+            KeyBinding(key: "z", command: true, shift: true),
+        ]
+        XCTAssertEqual(TextEditingKeys.editMenuKeys, sixKeys)
+        XCTAssertEqual(KeyBinding.editMenuCommands.count, 6)
+        XCTAssertEqual(KeyBinding.systemCommands.count, 15)
+        for (binding, name) in KeyBinding.editMenuCommands {
+            XCTAssertEqual(KeyBinding.systemCommands[binding], name, name)
+        }
+        XCTAssertEqual(KeyBinding.systemCommands[KeyBinding(key: "z", command: true, shift: true)], "Redo")
+
+        let pasteAndMatchStyle = KeyBinding(key: "v", command: true, option: true, shift: true)
+        XCTAssertEqual(KeyBinding.systemCommands[pasteAndMatchStyle], "Paste and Match Style")
+        XCTAssertFalse(TextEditingKeys.editMenuKeys.contains(pasteAndMatchStyle))
+    }
+
     /// A double press belongs to a field when its stroke does, and a key
     /// spelled in upper case is the same key: the Edit menu's keys are
     /// matched by the stroke, not the whole binding.

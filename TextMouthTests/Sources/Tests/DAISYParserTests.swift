@@ -1,7 +1,6 @@
 import Foundation
 import ZIPFoundation
 
-#if canImport(TextMouth)
 @testable import TextMouth
 
 private func isDAISYZipFile(url: URL) -> Bool {
@@ -45,7 +44,6 @@ private func parseMarkdown(markdown: String, title: String = "Untitled") throws 
 private func parseHTML(html: String, title: String = "Untitled") throws -> DocumentContent {
     try HTMLParser.parse(html: html, title: title)
 }
-#endif
 
 @MainActor
 func runDAISYParserTests() {
@@ -526,7 +524,6 @@ func makeTemporaryDAISYZip(entries: [String: String]) throws -> URL {
     try makeTemporaryZip(prefix: "TextMouthDAISYTest", entries: entries.mapValues { Data($0.utf8) })
 }
 
-#if canImport(TextMouth)
 /// Serves a DAISY package from memory (path → bytes), so converter tests can
 /// exercise production code without writing an archive to disk.
 struct InMemoryDAISYPackage: DAISYFileProvider {
@@ -548,4 +545,3 @@ struct InMemoryDAISYPackage: DAISYFileProvider {
         return data
     }
 }
-#endif

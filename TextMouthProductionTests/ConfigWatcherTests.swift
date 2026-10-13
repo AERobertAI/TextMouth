@@ -735,7 +735,9 @@ final class ConfigWatcherTests: XCTestCase {
 
     /// A shortcut recorded in the Shortcuts settings, which changes the
     /// manager's bindings, is saved to config.json at once, and that save is
-    /// never applied back as an edit.
+    /// never applied back as an edit. An added key keeps the scope the user
+    /// chose for the action (the fixture has Where Am I? working in Library
+    /// windows), so the entry stays an object with its "worksIn".
     func testShortcutRecordedInSettingsIsSavedToConfig() throws {
         let url = try makeConfigFileURL()
         try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
@@ -750,7 +752,10 @@ final class ConfigWatcherTests: XCTestCase {
 
         XCTAssertEqual(counter.writes, 1)
         let saved = try ConfigService.decode(Data(contentsOf: url))
-        XCTAssertEqual(saved.keyboardShortcuts[ShortcutAction.whereAmI.rawValue], ["option+w", "control+j"])
+        XCTAssertEqual(
+            saved.keyboardShortcuts[ShortcutAction.whereAmI.rawValue],
+            .object(keys: ["option+w", "control+j"], worksIn: "Library windows")
+        )
         XCTAssertEqual(recorder.edits, [])
         withExtendedLifetime(settings) {}
     }

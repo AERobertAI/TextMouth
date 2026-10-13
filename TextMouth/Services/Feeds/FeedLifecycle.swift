@@ -504,7 +504,10 @@ extension FeedCenter {
     /// is on its feed's shelf, its file gone, so a restore can be asked for
     /// only once the readying step has shelved the row. Its import then
     /// waits on the import queue behind the removal of the files, which runs
-    /// there (`FeedDownloadManager.runBesideImports(_:)`).
+    /// there (`FeedDownloadManager.runBesideImports(_:)`), as storage work
+    /// (`StorageWork.removingFeedDownloads`): a data-directory move waits for
+    /// a removal under way, and a removal waits while a move holds the work,
+    /// then removes from the data directory as the move left it.
     /// - Returns: The removals whose files went, the books left in the
     ///   cloud, and whether the removal was put off.
     func removeDue(
@@ -541,18 +544,26 @@ extension FeedCenter {
             outcome.wasPutOff = true
             return outcome
         }
-        // 3: the files, off the main thread, beside the imports.
-        let root = TextMouthPaths.root
+        // 3: the files, off the main thread, beside the imports, as storage
+        // work: a data-directory move waits for them, and they wait for it.
+        let boundary = environment.boundary
         let failed = await downloads.runBesideImports { () -> [UUID: String] in
-            var failed: [UUID: String] = [:]
-            for removal in readied {
-                do {
-                    try FeedItemPackage.removeForGood(removal, in: root)
-                } catch {
-                    failed[removal.row.id] = error.localizedDescription
+            boundary.perform(.removingFeedDownloads, whileHeld: {
+                DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_DELETE_WAITING: storage work is held, so the deletions by \(rule) wait")
+            }) { _ -> [UUID: String] in
+                // Read inside the work: the library's root as it is now,
+                // after any move this removal waited for.
+                let root = TextMouthPaths.root
+                var failed: [UUID: String] = [:]
+                for removal in readied {
+                    do {
+                        try FeedItemPackage.removeForGood(removal, in: root)
+                    } catch {
+                        failed[removal.row.id] = error.localizedDescription
+                    }
                 }
+                return failed
             }
-            return failed
         }
         let removal = library.settleFeedFileRemovals(readied, failures: failed.mapValues { FeedFileRemovalFailure(errorDescription: $0) })
         for removed in removal.removed {

@@ -1607,14 +1607,6 @@ final class SpeechDirectChunkingTests: XCTestCase {
         handleQueuedCallbacks()
     }
 
-    /// Returns once the main queue has run every block queued on it so far:
-    /// the speech service handles each of the synthesizer's callbacks there.
-    private func handleQueuedCallbacks(file: StaticString = #filePath, line: UInt = #line) {
-        var handled = false
-        DispatchQueue.main.async { handled = true }
-        XCTAssertTrue(waitUntil(timeout: 5) { handled }, "The callbacks were never handled", file: file, line: line)
-    }
-
     /// Speak `texts` muted in `voice` with a synthesizer of its own: all at
     /// once when `queued`, or each after the one before finished, handed
     /// over from the main queue as direct speech did before PERF06. Returns

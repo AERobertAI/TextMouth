@@ -200,8 +200,11 @@ extension AudioEditorModel {
         case .goToTime:
             problem = goToTime(typed: text)
         case .insertSilence:
-            problem = silenceLength(typed: text).problem
-            if problem == nil, let seconds = silenceLength(typed: text).seconds {
+            // Read the typed length once: it gives seconds only when it finds
+            // no problem, and a problem only without seconds.
+            let length = silenceLength(typed: text)
+            problem = length.problem
+            if let seconds = length.seconds {
                 Task { await insertSilence(seconds) }
             }
         case .insertChapter:

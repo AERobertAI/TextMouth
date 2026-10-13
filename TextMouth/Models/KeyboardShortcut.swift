@@ -604,12 +604,26 @@ enum ShortcutRefusal: Equatable, Sendable {
 }
 
 extension KeyBinding {
+    /// The Edit menu's commands a text field edits with, each key with its
+    /// command's name: Undo, Redo, Cut, Copy, Paste, and Select All. A field
+    /// keeps these keys from the shortcut manager
+    /// (`TextEditingKeys.editMenuKeys`), and no shortcut may take them
+    /// (`systemCommands`).
+    static let editMenuCommands: [KeyBinding: String] = [
+        KeyBinding(key: "z", command: true): "Undo",
+        KeyBinding(key: "z", command: true, shift: true): "Redo",
+        KeyBinding(key: "x", command: true): "Cut",
+        KeyBinding(key: "c", command: true): "Copy",
+        KeyBinding(key: "v", command: true): "Paste",
+        KeyBinding(key: "a", command: true): "Select All",
+    ]
+
     /// The keys of macOS's own commands in TextMouth's menus, which no
     /// shortcut may take (finding 10 of FR12's design), each with its
     /// command's name: Quit, Close, Settings, Hide, and Minimize, and the
-    /// Edit menu's. A key held for its own command, as Select All's
-    /// Command-A or the audio editor's Undo and Copy are, is no taking
-    /// (`ShortcutAction.refusal(of:)`).
+    /// Edit menu's (`editMenuCommands`, which this holds). A key held for
+    /// its own command, as Select All's Command-A or the audio editor's Undo
+    /// and Copy are, is no taking (`ShortcutAction.refusal(of:)`).
     static let systemCommands: [KeyBinding: String] = [
         KeyBinding(key: "q", command: true): "Quit TextMouth",
         KeyBinding(key: "w", command: true): "Close",
@@ -619,14 +633,9 @@ extension KeyBinding {
         KeyBinding(key: "h", command: true, option: true): "Hide Others",
         KeyBinding(key: "m", command: true): "Minimize",
         KeyBinding(key: "m", command: true, option: true): "Minimize All",
-        KeyBinding(key: "z", command: true): "Undo",
-        KeyBinding(key: "z", command: true, shift: true): "Redo",
-        KeyBinding(key: "x", command: true): "Cut",
-        KeyBinding(key: "c", command: true): "Copy",
-        KeyBinding(key: "v", command: true): "Paste",
+        // Not a key a field keeps, so it stays out of `editMenuCommands`.
         KeyBinding(key: "v", command: true, option: true, shift: true): "Paste and Match Style",
-        KeyBinding(key: "a", command: true): "Select All",
-    ]
+    ].merging(editMenuCommands) { own, _ in own }
 
     /// The name of the system command whose key this binding's stroke is,
     /// pressed once or twice (a double press's first press would keep it

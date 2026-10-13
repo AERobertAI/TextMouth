@@ -117,6 +117,18 @@ extension XCTestCase {
         return true
     }
 
+    /// Returns once the main queue has run every block queued on it so far.
+    /// The services under test handle the synthesizer's and the player's
+    /// callbacks on the main queue, so a block queued after a callback runs
+    /// only once that callback has been handled. Fails the test, at the
+    /// caller's `file` and `line`, if the queue is not reached in time.
+    @MainActor
+    func handleQueuedCallbacks(file: StaticString = #filePath, line: UInt = #line) {
+        var handled = false
+        DispatchQueue.main.async { handled = true }
+        XCTAssertTrue(waitUntil(timeout: 5) { handled }, "The main queue never ran", file: file, line: line)
+    }
+
     /// Every accessibility element below `root` whose label is `label`,
     /// groups included.
     @MainActor
@@ -270,6 +282,12 @@ extension XCTestCase {
             controls += accessibleControls(in: child)
         }
         return controls
+    }
+
+    /// The control labelled `label` among `controls`; fails the test,
+    /// listing the labels there are, when there is none.
+    func control(labelled label: String, in controls: [AccessibleControl]) throws -> AccessibleControl {
+        try XCTUnwrap(controls.first { $0.label == label }, "no control is labelled \(label): \(controls.map(\.label))")
     }
 }
 

@@ -323,8 +323,8 @@ extension ReaderViewModel {
             Book.MetadataEdit(opened: opened, saved: metadata),
             of: book.id
         ) else {
-            // The words the EPUB editor's save uses for such a book.
-            announceToVoiceOver(EPUBMetadataSaveWording.notInLibrary(title: book.title))
+            // The words every metadata editor's save uses for such a book.
+            announceToVoiceOver(MetadataEditorWording.notInLibrary(title: book.title))
             return
         }
         book.applyEditableMetadata(from: saved)

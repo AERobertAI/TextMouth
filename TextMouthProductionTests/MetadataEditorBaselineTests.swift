@@ -212,7 +212,7 @@ final class MetadataEditorBaselineTests: XCTestCase {
 
         XCTAssertEqual(reader.book.title, "Breakwater Soundings")
         XCTAssertEqual(reader.audioMetadata?.title, "Breakwater Soundings")
-        XCTAssertEqual(reader.lastAnnouncement, EPUBMetadataSaveWording.notInLibrary(title: "Breakwater Soundings"))
+        XCTAssertEqual(reader.lastAnnouncement, MetadataEditorWording.notInLibrary(title: "Breakwater Soundings"))
     }
 
     // MARK: - Unknown Values

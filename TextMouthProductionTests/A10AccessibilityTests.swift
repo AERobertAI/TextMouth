@@ -388,18 +388,18 @@ final class HeadingFilterWordingTests: XCTestCase {
 final class SaveAsDefaultsWordingTests: XCTestCase {
     /// The shared words.
     func testTheButtonsNameTheVoiceTheSpeedAndThePitch() {
-        XCTAssertEqual(BookVoiceSettingsWording.saveAsDefaultsLabel, "Save this book's voice, speed, and pitch as the global defaults")
+        XCTAssertEqual(BookSettingsWording.saveAsDefaultsLabel, "Save this book's voice, speed, and pitch as the global defaults")
         XCTAssertEqual(
-            BookVoiceSettingsWording.saveAsDefaultsHint,
+            BookSettingsWording.saveAsDefaultsHint,
             "Updates the default voice, speed, and pitch for every book without settings of its own."
         )
-        XCTAssertEqual(BookVoiceSettingsWording.resetToDefaultsLabel, "Reset this book's voice, speed, and pitch to the global defaults")
+        XCTAssertEqual(BookSettingsWording.resetToDefaultsLabel, "Reset this book's voice, speed, and pitch to the global defaults")
         XCTAssertEqual(
-            BookVoiceSettingsWording.resetToDefaultsHint,
+            BookSettingsWording.resetToDefaultsHint,
             "Removes this book's own voice, speed, and pitch, so it uses the global defaults."
         )
         // The reset's announcement names pitch too.
-        XCTAssertEqual(BookVoiceSettingsWording.resetDone, "Using global voice, speed, and pitch settings")
+        XCTAssertEqual(BookSettingsWording.resetDone, "Using global voice, speed, and pitch settings")
     }
 
     /// What the label says is what saving does: a book's own speed, pitch,

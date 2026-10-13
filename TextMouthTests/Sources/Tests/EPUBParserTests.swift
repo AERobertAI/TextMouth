@@ -2,7 +2,6 @@ import Foundation
 import SwiftSoup
 import ZIPFoundation
 
-#if canImport(TextMouth)
 @testable import TextMouth
 
 private func extractStringFromArchive(_ archive: Archive, path: String) throws -> String {
@@ -28,7 +27,6 @@ private func parseChapterHTML(_ html: String) throws -> Chapter {
 private func parseHTML(html: String, title: String) throws -> DocumentContent {
     try HTMLParser.parse(html: html, title: title)
 }
-#endif
 
 @MainActor
 func runEPUBParserTests() {

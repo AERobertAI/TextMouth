@@ -223,12 +223,4 @@ final class RepeatedSymbolSettingsViewTests: XCTestCase {
             XCTAssertTrue(labels.contains(RepeatedSymbolsSettingsView.symbolsLabel), "\(labels)")
         }
     }
-
-    // MARK: - Helpers
-
-    /// The control VoiceOver finds under `label`, failing with every label
-    /// found when there is none.
-    private func control(labelled label: String, in controls: [AccessibleControl]) throws -> AccessibleControl {
-        try XCTUnwrap(controls.first { $0.label == label }, "no control labelled \(label): \(controls.map(\.label))")
-    }
 }

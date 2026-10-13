@@ -123,13 +123,6 @@ struct EPUBMetadataSaveWording {
 
     /// After the library alone took the metadata, as asked.
     static let savedToLibraryOnly = "Metadata saved to the library only; the EPUB file is unchanged."
-
-    /// When the book titled `title` has left the library, so its edit has
-    /// nowhere to go: "Could not save metadata: “Notes” is no longer in the
-    /// library. Nothing was changed."
-    static func notInLibrary(title: String) -> String {
-        "Could not save metadata: “\(title)” is no longer in the library. Nothing was changed."
-    }
 }
 
 // MARK: - The Editor's Words

@@ -68,13 +68,15 @@ extension ConfigService.AppConfig {
         config.useInstalledFFmpeg = false
         config.audioEditorPreviewsFilters = false
         config.audioEditorPlaysAfterMoves = false
-        // Every action, as TextMouth writes them (FR12): three edited, each
-        // a list of its keys, and every other "default: " and its keys.
+        // Every action, as TextMouth writes them (FR12): three edited, two
+        // written as lists of their keys and Where Am I?, which works in
+        // Library windows, as an object with its "worksIn"; every other as
+        // "default: " and its keys.
         let shortcuts = ShortcutEdits([
             .togglePlayback: [KeyBinding(key: "space"), KeyBinding(key: "p", control: true)],
             .whereAmI: [KeyBinding(key: "w", option: true)],
             .releaseMediaControls: [KeyBinding(key: "escape", shift: true)],
-        ])
+        ], scopes: [.whereAmI: .library])
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             shortcuts.listings(defaults: ShortcutAction.defaultBindings)
         )
