@@ -208,6 +208,89 @@ final class LibraryFolderPickerTests: XCTestCase {
         )
     }
 
+    /// What VoiceOver hears as a folder is made with the fields' Create: the
+    /// new folder's name, then the pop-up by its spoken label with the new
+    /// folder chosen in it by its full path, for a nested folder and for one
+    /// at the top level.
+    func testMakingAFolderIsAnnouncedWithTheNewFolderChosen() {
+        XCTAssertEqual(
+            LibraryFolderPicker.newFolderCreatedAnnouncement(name: "Q3", pickerLabel: "Destination folder", chosen: "Reports/Q3"),
+            "Folder Q3 created. Destination folder: Reports/Q3."
+        )
+        XCTAssertEqual(
+            LibraryFolderPicker.newFolderCreatedAnnouncement(name: "Q3", pickerLabel: "Destination folder", chosen: "Q3"),
+            "Folder Q3 created. Destination folder: Q3."
+        )
+    }
+
+    /// What VoiceOver hears once the New Folder sheet has closed on a folder
+    /// made: the name and the place it is in, "Library Root" at the top.
+    func testTheNewFolderSheetAnnouncesWhereTheFolderWasMade() {
+        XCTAssertEqual(
+            NewFolderSheet.createdAnnouncement(name: "Q3", parentPath: "Reports"),
+            "Folder Q3 created in Reports."
+        )
+        XCTAssertEqual(
+            NewFolderSheet.createdAnnouncement(name: "Q3", parentPath: ""),
+            "Folder Q3 created in Library Root."
+        )
+        XCTAssertEqual(
+            NewFolderSheet.createdAnnouncement(name: "Q3", parentPath: "Reports/2026"),
+            "Folder Q3 created in Reports/2026."
+        )
+    }
+
+    /// Pressing the fields' Create in a hosted Move sheet says the created
+    /// sentence once, and a Create that fails says no folder was made: the failure
+    /// notice says why and the fields stay open.
+    func testPressingCreateAnnouncesTheFolderOnceAndAFailureAnnouncesNothing() throws {
+        let creates = CallLog<String>()
+        // The first try is refused, the second works.
+        let sheet = MoveFolderSheet(
+            books: [makeBook()],
+            library: makeLibrary(withFolders: ["Q3"]),
+            lastMovedFolderPath: "",
+            onMove: { _ in .success(nil) },
+            onCreateFolder: { name, _ in
+                creates.record(name)
+                return creates.calls.count == 1
+                    ? .failure("Could not create folder: refused once for the test")
+                    : .success(nil)
+            },
+            onCancel: {},
+            makingFolder: true
+        )
+
+        // Record what is announced, as `announcements(during:)` does, but
+        // synchronously: the hosted view runs on this turn of the run loop.
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = VoiceOverAnnouncer.makePoster(delivering: .record)
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+        let alreadyRecorded = VoiceOverAnnouncer.recordedAnnouncements.count
+        func announced() -> [String] {
+            VoiceOverAnnouncer.recordedAnnouncements.dropFirst(alreadyRecorded).map(\.message)
+        }
+        // The announcements that say a folder was made.
+        func createdSentences() -> [String] {
+            announced().filter { $0.hasPrefix("Folder Q3 created") }
+        }
+
+        try withHostedView(sheet, until: { !self.newFolderNameFields(in: $0).isEmpty }) { hostingView in
+            try typeNewFolderName("Q3", in: hostingView)
+            guard pressReturnKey(in: hostingView) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertEqual(creates.calls, ["Q3"])
+            // The failure notice speaks for itself; nothing says a folder was made.
+            XCTAssertTrue(createdSentences().isEmpty, "a refused folder was announced: \(announced())")
+
+            settleHostedView(hostingView)
+            XCTAssertTrue(pressReturnKey(in: hostingView))
+            XCTAssertEqual(creates.calls, ["Q3", "Q3"])
+            XCTAssertEqual(createdSentences(), ["Folder Q3 created. Destination folder: Q3."])
+        }
+    }
+
     // MARK: - Cancel New Folder
 
     /// The button that closes the new folder's fields says which Cancel it

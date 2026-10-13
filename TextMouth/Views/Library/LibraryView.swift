@@ -559,10 +559,20 @@ struct LibraryView: View {
                 parentPath: $newFolderParentPath,
                 folders: libraryViewModel.library.folders,
                 onCreate: {
-                    closingOnSuccess(libraryViewModel.createFolderReturningOutcome(
+                    // The name as it was made and its parent, read before the
+                    // close clears them, for the words said once it has closed.
+                    let createdName = BookFolder.normalizedName(newFolderName)
+                    let createdParent = newFolderParentPath
+                    return closingOnSuccess(libraryViewModel.createFolderReturningOutcome(
                         name: newFolderName,
                         parentPath: newFolderParentPath
                     )) {
+                        if let createdName {
+                            VoiceOverAnnouncer.announceAfterSheetCloses(
+                                NewFolderSheet.createdAnnouncement(name: createdName, parentPath: createdParent),
+                                from: hostWindow
+                            )
+                        }
                         newFolderName = ""
                         newFolderParentPath = currentFolderPath
                         showNewFolderSheet = false

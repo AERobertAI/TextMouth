@@ -229,6 +229,16 @@ struct NewFolderSheet: View {
     /// Why the last Create failed, until the user changes the name or parent.
     @State private var failureMessage: String?
 
+    /// What VoiceOver hears once the sheet has closed on a folder made: the
+    /// new folder's `name` and the place it is in, as in "Folder Q3 created
+    /// in Reports.", or "Folder Q3 created in Library Root." at the top
+    /// level (`parentPath` is "" there). The sheet and the Create button
+    /// the focus was on are gone by then, so the window says it.
+    nonisolated static func createdAnnouncement(name: String, parentPath: String) -> String {
+        let place = parentPath.isEmpty ? LibraryFolderOption.rootLabel : parentPath
+        return "Folder \(name) created in \(place)."
+    }
+
     var body: some View {
         VStack(spacing: 16) {
             Text("New Folder")
@@ -368,6 +378,16 @@ struct LibraryFolderPicker: View {
         return "New Folder cancelled. \(pickerLabel): \(chosen)."
     }
 
+    /// What VoiceOver hears as a folder is made with the fields' Create: the
+    /// new folder's `name`, then the pop-up by its spoken label with the new
+    /// folder chosen in it, as in "Folder Q3 created. Destination folder:
+    /// Reports/Q3." `chosen` is the folder as the pop-up labels it, by its
+    /// full path. Without it the focus, on the Create button that goes away
+    /// with the fields, would land nowhere and VoiceOver would say nothing.
+    nonisolated static func newFolderCreatedAnnouncement(name: String, pickerLabel: String, chosen: String) -> String {
+        "Folder \(name) created. \(pickerLabel): \(chosen)."
+    }
+
     /// The picker with its pop-up's `options`, the `newFolderParents` a new
     /// folder may go in, and the `selection` it keeps; `isDisabled`,
     /// `isMakingFolder`, and `createTakesReturn` are for the owners that
@@ -505,9 +525,16 @@ struct LibraryFolderPicker: View {
         // A refused or failed folder keeps the fields open with the name,
         // beside the reason.
         guard failureMessage == nil else { return }
-        selection = newFolderParent.isEmpty ? name : "\(newFolderParent)/\(name)"
+        let createdPath = newFolderParent.isEmpty ? name : "\(newFolderParent)/\(name)"
+        selection = createdPath
         newFolderName = ""
         showNewFolder = false
+        // Said at once: the sheet stays open, so nothing cuts the words off.
+        VoiceOverAnnouncer.announce(Self.newFolderCreatedAnnouncement(
+            name: name,
+            pickerLabel: accessibilityLabel,
+            chosen: createdPath
+        ))
     }
 }
 
