@@ -177,7 +177,6 @@ test("NavigateTo: character offset clamped to chapter length") {
     let chapter = Chapter(title: "", text: text, headings: [])
 
     // Offset beyond text length → clamped to last char
-    let chapterLen = chapter.text.count
     let content = DocumentContent(title: "Test", author: "", chapters: [chapter])
     let clampedHigh = ReaderViewModel.clampedNavigationPosition(
         in: content, chapterIndex: 0, characterOffset: 9999
@@ -193,7 +192,6 @@ test("NavigateTo: character offset clamped to chapter length") {
 
 test("NavigateTo: empty chapter text handles gracefully") {
     let chapter = Chapter(title: "", text: "", headings: [])
-    let chapterLen = chapter.text.count
     // max(0, 0 - 1) = max(0, -1) = 0
     let content = DocumentContent(title: "Test", author: "", chapters: [chapter])
     let clampedOffset = ReaderViewModel.clampedNavigationPosition(
