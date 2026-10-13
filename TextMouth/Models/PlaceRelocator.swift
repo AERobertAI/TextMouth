@@ -1060,8 +1060,9 @@ struct PlaceRelocator: Sendable {
 
 extension PlaceRelocator {
     /// A book's saved places in its text, as the relocator moves them
-    /// together.
-    /// (`Codable`, so that a book may save the skips that wait.)
+    /// together: `Codable`, so that they can be saved beside a copy of the
+    /// book's old text while a rebuild of the text moves them (T06's
+    /// branch D).
     struct Places: Equatable, Codable, Sendable {
         /// The reading position; nil for a book without one.
         var position: ReadingPosition?

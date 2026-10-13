@@ -187,14 +187,12 @@ final class PlaceRelocatorBookTests: XCTestCase {
     /// second skip is kept, and the findings and counts are those of the
     /// skips kept. Two skips that now name one heading are one.
     func testASkipThatNamesAHeadingWinsOverOneThatWaits() throws {
-        let opening = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask.\n\n"
-        let first = "Notes\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
-        let second = "Notes\n\nA carpenter in the next village turned the offcuts into spoons for the market."
-        let old = [opening + first + second]
-        let new = [opening + second]
-        let firstNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count)
-        let secondNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count + first.utf16.count)
-        let newNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count)
+        let book = NotesBook()
+        let old = book.both
+        let new = book.withoutFirst
+        let firstNotes = book.firstHeading
+        let secondNotes = book.secondHeading
+        let newNotes = book.slidHeading
         XCTAssertEqual(firstNotes.id, newNotes.id, "the second section slid into the first one's numbers")
         let relocator = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: [firstNotes, secondNotes], newHeadings: [newNotes])
         let skips = [try SavedPlace.skip(of: firstNotes, in: old), try SavedPlace.skip(of: secondNotes, in: old)]
@@ -220,34 +218,6 @@ final class PlaceRelocatorBookTests: XCTestCase {
     }
 
     // MARK: - Skips That Wait
-
-    /// One chapter with two "Notes" sections, as `testASkipThatNamesAHeadingWinsOverOneThatWaits`
-    /// builds them: with the first removed, the second slides into its
-    /// numbers, so the new heading has the first one's ID.
-    private struct NotesBook {
-        /// The chapter's opening, before the first "Notes".
-        let opening = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask.\n\n"
-        /// The first "Notes" section.
-        let first = "Notes\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
-        /// The second "Notes" section.
-        let second = "Notes\n\nA carpenter in the next village turned the offcuts into spoons for the market."
-        /// A sentence put in at the chapter's end, an edit elsewhere.
-        let ending = " The spoons sold out by the autumn fair."
-
-        /// The text with both sections.
-        var both: [String] { [opening + first + second] }
-        /// The text without the first section.
-        var withoutFirst: [String] { [opening + second] }
-        /// The text without the first section, with a sentence added at its end.
-        var edited: [String] { [opening + second + ending] }
-        /// The first "Notes" heading, in the text with both.
-        var firstHeading: Heading { Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count) }
-        /// The second "Notes" heading, in the text with both.
-        var secondHeading: Heading { Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count + first.utf16.count) }
-        /// The only "Notes" heading of the texts without the first section;
-        /// it has the first heading's ID.
-        var slidHeading: Heading { Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count) }
-    }
 
     /// A skip of the first "Notes" whose section is removed waits, naming no
     /// heading, though the second section slides into its numbers and so has
@@ -457,7 +427,9 @@ final class PlaceRelocatorBookTests: XCTestCase {
     func testOnePlaceThatMovedReadsTheOldTextOnce() throws {
         let places = try placesInTheFirstThreeChapters()
         let old = MillBook.chapters
-        let new = [old[0], old[1].replacingOccurrences(of: "steaming each plank", with: "Rain stopped that on the second Tuesday, steaming each plank")] + Array(old.dropFirst(2))
+        let new = old.enumerated().map { index, text in
+            index == 1 ? text.replacingOccurrences(of: "steaming each plank", with: "Rain stopped that on the second Tuesday, steaming each plank") : text
+        }
         var reads = 0
         let outcome = PlaceRelocator.relocate(places, from: { reads += 1; return loaded(old) }, to: loaded(new), movedAt: SavedPlace.moveDate)
         let full = PlaceRelocator(old: loaded(old), new: loaded(new)).relocate(places, movedAt: SavedPlace.moveDate)
