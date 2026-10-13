@@ -309,7 +309,8 @@ final class LibraryCloudCommandTests: XCTestCase {
     }
 
     /// A book open in a reader still offers Remove Download, which refuses
-    /// without asking the storage, says why, and shows the same words.
+    /// without asking the storage, and shows why in an alert. The refusal is
+    /// shown, not said: nothing is announced besides (#2094).
     func testRemoveDownloadRefusesAnOpenBook() async {
         let book = cloudTestBook()
         let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
@@ -325,7 +326,7 @@ final class LibraryCloudCommandTests: XCTestCase {
             refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
         }
 
-        XCTAssertEqual(said, [explanation])
+        XCTAssertEqual(said, [], "the alert alone says it")
         XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: explanation))
         XCTAssertEqual(fixture.fake.downloadsRemoved, [])
         XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
@@ -333,7 +334,7 @@ final class LibraryCloudCommandTests: XCTestCase {
     }
 
     /// A book whose changes are not uploaded yet keeps its download, and the
-    /// storage's refusal is said and shown, naming the service.
+    /// storage's refusal is shown, not said, naming the service.
     func testRemoveDownloadRefusesChangesNotUploaded() async {
         let book = cloudTestBook()
         let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
@@ -345,13 +346,13 @@ final class LibraryCloudCommandTests: XCTestCase {
             refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
         }
 
-        XCTAssertEqual(said, [explanation])
+        XCTAssertEqual(said, [], "the alert alone says it")
         XCTAssertTrue(explanation.contains("iCloud Drive"), explanation)
         XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: explanation))
         XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
     }
 
-    /// A removal the sync service fails is said and shown as a download
+    /// A removal the sync service fails is shown, not said, as a download
     /// that could not be removed, naming the service, never as a book that
     /// could not download; the book keeps its download.
     func testRemoveDownloadTheServiceFailsSaysTheRemovalFailed() async {
@@ -365,13 +366,15 @@ final class LibraryCloudCommandTests: XCTestCase {
             refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
         }
 
-        XCTAssertEqual(said, [explanation])
+        XCTAssertEqual(said, [], "the alert alone says it")
         XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: explanation))
         XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
     }
 
     /// For a selection, the books that can go are removed, and one summary
-    /// says what was removed, where it stays, and which stayed and why.
+    /// says what was removed, where it stays, and which stayed and why. When
+    /// any stayed, that one summary is shown in the refusal's alert, not
+    /// said: nothing is announced besides (#2094).
     func testRemovingASelectionSaysOneSummary() async {
         let books = [
             cloudTestBook("Moby-Dick"),
@@ -391,7 +394,7 @@ final class LibraryCloudCommandTests: XCTestCase {
             refusal = await fixture.commands.removeDownloads(of: books, in: fixture.model, from: nil)
         }
 
-        XCTAssertEqual(said, [expected])
+        XCTAssertEqual(said, [], "the alert alone says it")
         XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: expected))
         XCTAssertEqual(fixture.fake.downloadsRemoved, [books[0].id, books[2].id])
         XCTAssertEqual(books.map { fixture.states.state(of: $0.id) }, [.inCloud, .downloaded, .inCloud])

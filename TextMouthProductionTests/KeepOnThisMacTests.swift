@@ -591,8 +591,9 @@ final class KeepOnThisMacTests: XCTestCase {
     // MARK: - Remove Download
 
     /// Remove Download refuses a kept book without asking the storage: the
-    /// book keeps its download, and the window shows, and VoiceOver hears,
-    /// why and what to do.
+    /// book keeps its download, and the window shows why and what to do in
+    /// an alert. The refusal is shown, not said: nothing is announced
+    /// besides (#2094).
     func testRemoveDownloadRefusesAKeptBook() async {
         let book = cloudTestBook()
         let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
@@ -605,14 +606,15 @@ final class KeepOnThisMacTests: XCTestCase {
 
         let explanation = BookCloudError.keptOnThisMac.explanation(in: .iCloudDrive)
         XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: explanation))
-        XCTAssertEqual(said, [explanation])
+        XCTAssertEqual(said, [], "the alert alone says it")
         XCTAssertEqual(fixture.fake.downloadsRemoved, [])
         XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
         XCTAssertEqual(fixture.storage.mainThreadCalls, 0)
     }
 
     /// In a selection, the books not kept lose their downloads, and the kept
-    /// one keeps its own, with the reason said once.
+    /// one keeps its own, with the reason shown once, by the alert, and
+    /// nothing announced (#2094).
     func testRemoveDownloadOfASelectionSparesTheKeptBooks() async {
         let kept = cloudTestBook("Moby-Dick")
         let other = cloudTestBook("Emma", author: "Jane Austen")
@@ -620,10 +622,11 @@ final class KeepOnThisMacTests: XCTestCase {
         fixture.kept.keep([kept.id])
 
         var refusal: LibraryCloudRefusal?
-        _ = await announcements {
+        let said = await announcements {
             refusal = await fixture.commands.removeDownloads(of: [kept, other], in: fixture.model, from: nil)
         }
 
+        XCTAssertEqual(said, [], "the alert alone says it")
         XCTAssertEqual(fixture.fake.downloadsRemoved, [other.id])
         XCTAssertEqual(fixture.states.state(of: other.id), .inCloud)
         XCTAssertEqual(fixture.states.state(of: kept.id), .downloaded)

@@ -854,8 +854,9 @@ final class LibraryCloudCommands {
     // MARK: Remove Download
 
     /// Removes the downloads of `books` (Remove Download), keeping the books
-    /// in the cloud, records them as in the cloud, and announces what
-    /// happened from `window`.
+    /// in the cloud, records them as in the cloud, and says what happened:
+    /// announced from `window` when every download was removed, shown in the
+    /// returned refusal's alert when any book kept its download.
     ///
     /// Only downloaded books take part, and none whose download the list is
     /// removing already, so asking twice removes once. A book open in a
@@ -865,6 +866,13 @@ final class LibraryCloudCommands {
     /// a refused book keeps its download. Nothing is deleted from the cloud,
     /// so nothing asks first. The removals read and change files, so they
     /// run off the main thread.
+    ///
+    /// A refusal is said once, by its alert, with nothing announced besides:
+    /// VoiceOver reads an alert as it appears, so the same words announced
+    /// too would be heard twice, or cut off as the alert takes its focus
+    /// (REV14 feeds 6, as `FeedCommandRunner.refuse(message:)` does; #2094).
+    /// The alert's message is the whole summary: what was removed, what
+    /// stayed, and why.
     /// - Returns: The refusal for `window` to show when any book keeps its
     ///   download; nil when every download was removed, or none could be.
     @discardableResult
@@ -935,11 +943,14 @@ final class LibraryCloudCommands {
             refused: refused,
             provider: provider
         ) else { return nil }
+        // A refusal is shown, not said: its alert carries the whole message.
+        guard refused.isEmpty else {
+            return LibraryCloudRefusal(
+                title: LibraryCloudWording.removalRefusedTitle(refusedCount: refused.count),
+                message: message
+            )
+        }
         VoiceOverAnnouncer.announce(message, from: window)
-        guard !refused.isEmpty else { return nil }
-        return LibraryCloudRefusal(
-            title: LibraryCloudWording.removalRefusedTitle(refusedCount: refused.count),
-            message: message
-        )
+        return nil
     }
 }
