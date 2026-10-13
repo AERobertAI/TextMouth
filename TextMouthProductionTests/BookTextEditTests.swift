@@ -1083,6 +1083,28 @@ final class BookTextEditTests: XCTestCase {
         XCTAssertEqual(editCopies(of: editing), [own], "the session's own copy was swept")
     }
 
+    /// A copy left for a book whose content.md is only in the cloud is kept
+    /// by the launch's sweep, as the in-cloud check keeps it
+    /// (`settleEditSavedWhileClosed`), so a later launch still has it to
+    /// check with; once the file is on this Mac, the next pass sweeps it.
+    func testTheLaunchPassKeepsACopyWhileItsBooksTextIsInTheCloud() async throws {
+        let world = try makeIntegrationWorld("Edit Places Sweep Cloud")
+        let book = try world.importBook(from: writeSource(named: "Pilot Rota Nine.md", Self.twoChapters))
+        savePlaces(try landmarks(in: Self.twoChapters), on: book, in: world)
+        let left = try leaveACopyAsAQuitDoes(of: book, in: world)
+        let cloud = CloudSwitch(MarkdownCacheService.cacheURL(for: book))
+        cloud.isInCloud = true
+
+        await runLaunchCachePass(of: world.library, access: cloud.access)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: left.path), "the sweep discarded a copy the in-cloud check kept")
+
+        cloud.isInCloud = false
+        await runLaunchCachePass(of: world.library, access: cloud.access)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: left.path), "the copy was not swept once the file was here")
+    }
+
     // MARK: Helpers of the Places Section
 
     /// The twoChapters text with a paragraph put in before "Buoys", so every
@@ -1408,10 +1430,11 @@ final class BookTextEditTests: XCTestCase {
     /// (`LibraryViewModel.extractMissingContentCaches`), as launch and a
     /// library opening do, and waits for it to end, yielding the main
     /// actor; then writes every pending save. A pass that ends after the
-    /// wait only sets a flag.
-    private func runLaunchCachePass(of library: LibraryViewModel) async {
+    /// wait only sets a flag. `access` is how the pass reaches the books'
+    /// files: a test passes one that puts a file in the cloud.
+    private func runLaunchCachePass(of library: LibraryViewModel, access: MaintenanceFileAccess = .live) async {
         let finished = OSAllocatedUnfairLock(initialState: false)
-        library.extractMissingContentCaches { finished.withLock { $0 = true } }
+        library.extractMissingContentCaches(access: access) { finished.withLock { $0 = true } }
         let ended = await eventually(timeout: 30) { finished.withLock { $0 } }
         XCTAssertTrue(ended, "the launch's cache pass never ended")
         LibraryPersistenceService.flushPendingSave()

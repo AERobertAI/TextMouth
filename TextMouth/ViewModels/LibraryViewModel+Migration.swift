@@ -636,9 +636,11 @@ extension LibraryViewModel {
                 self.rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _, _ in
                     // The pass has looked at every book: a copy of an edit's
                     // old text that a quit left, for a book with nothing
-                    // saved since, is no use. `completion` hears of it only
-                    // once they are gone.
-                    Self.sweepLeftoverEditTexts {
+                    // saved since, is no use, except one whose book's
+                    // content.md is only in the cloud, which a later launch
+                    // still checks with. `completion` hears of it only once
+                    // the others are gone.
+                    Self.sweepLeftoverEditTexts(of: books, access: access) {
                         completion?()
                     }
                 }
@@ -955,16 +957,40 @@ extension LibraryViewModel {
         }
     }
 
-    /// Deletes every copy of an edit's old text that no session of this run
+    /// Deletes the copies of an edit's old text that no session of this run
     /// uses (`PlaceSnapshot.leftovers(in:)` over `editTextSnapshots`), the
     /// ones a quit left, on a utility queue, then calls `completion` on the
     /// main actor, so a caller that waits for the cache pass finds them
     /// gone. The pass has settled every edit saved while TextMouth was
     /// closed by then (`editSavedWhileClosed(of:access:)`), using the copy of
     /// its book; one left for a book with nothing saved since is of no use.
-    nonisolated private static func sweepLeftoverEditTexts(then completion: @escaping @MainActor @Sendable () -> Void) {
+    ///
+    /// A copy stays when its book's content.md is only in the cloud now
+    /// (`access.isDataless`): the check keeps such a copy
+    /// (`BookTextEditSessions.settleEditSavedWhileClosed`), and a later
+    /// launch, with the file here, still needs it. A copy of a book not
+    /// among `books` is discarded: its places are gone with it.
+    ///
+    /// - Parameters:
+    ///   - books: The rows the pass began with.
+    ///   - access: How the pass reaches the books' files.
+    nonisolated private static func sweepLeftoverEditTexts(
+        of books: [Book],
+        access: MaintenanceFileAccess,
+        then completion: @escaping @MainActor @Sendable () -> Void
+    ) {
         DispatchQueue.global(qos: .utility).async {
-            PlaceSnapshot.leftovers(in: MachineLocalPaths.editTextSnapshots).forEach { $0.discard() }
+            let boundary = StorageBoundary.shared
+            let rows = Dictionary(books.map { ($0.id, $0) }) { first, _ in first }
+            for copy in PlaceSnapshot.leftovers(in: MachineLocalPaths.editTextSnapshots) {
+                // The book as listed, with its paths in the data directory in
+                // use now, as the place recovery reads it.
+                if let listed = rows[copy.record.bookID],
+                   access.isDataless(MarkdownCacheService.cacheURL(for: boundary.rebasedToCurrent(listed))) {
+                    continue
+                }
+                copy.discard()
+            }
             // The main queue is the main actor's executor.
             DispatchQueue.main.async {
                 MainActor.assumeIsolated { completion() }
