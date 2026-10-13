@@ -196,9 +196,11 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
         XCTAssertEqual(outcome.counts.logLine(title: "The Mill"), "PLACES_RELOCATED: The Mill: unchanged 0, moved by the diff 0, by the saved words 3, guessed 0")
     }
 
-    /// A place whose words were rewritten, stretch and all, is a best guess:
-    /// silent, in its own chapter, at a word's start.
-    func testAPlaceWhoseWordsWereRewrittenIsABestGuess() throws {
+    /// A place whose words were rewritten, stretch and all, is found nowhere:
+    /// it stays exactly as it was saved, numbers and words, so that a later
+    /// text that holds those words again can still find it (T06's branch E).
+    /// The outcome still counts it as a best guess.
+    func testAPlaceWhoseWordsWereRewrittenStaysAsSaved() throws {
         let old = MillBook.chapters
         let saved = try Phrase.place(of: "and wrote the figures", inChapter: 0, of: old)
         let rewritten = MillBook.millrace.replacingOccurrences(
@@ -207,17 +209,38 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
         )
         XCTAssertNotEqual(rewritten, MillBook.millrace)
         let new = [rewritten] + old.dropFirst()
+        let savedBookmark = try bookmark(at: saved, in: old)
         let outcome = try XCTUnwrap(PlaceRelocator.relocate(
-            PlaceRelocator.Places(bookmarks: [try bookmark(at: saved, in: old)]),
+            PlaceRelocator.Places(bookmarks: [savedBookmark]),
             within: loaded(new),
             movedAt: SavedPlace.moveDate
         ))
-        let guessed = place(of: try XCTUnwrap(outcome.places.bookmarks.first))
         XCTAssertEqual(outcome.bookmarkFindings, [.guessed(.savedWords(.sameShare))])
-        XCTAssertEqual(guessed.chapter, 0)
-        XCTAssertEqual(guessed.offset, ReaderViewModel.snappedWordStart(in: rewritten, at: guessed.offset), "a word's start")
+        XCTAssertEqual(outcome.places.bookmarks, [savedBookmark], "numbers, words, and date as saved")
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(guessed: 1))
         XCTAssertTrue(outcome.counts.anythingMoved)
+    }
+
+    /// A place whose words are found nowhere stays as saved, with its words,
+    /// while another place, found by its words, moves.
+    func testAPlaceFoundNowhereKeepsItsWordsWhileAnotherMoves() throws {
+        let old = MillBook.chapters
+        let movingBookmark = try bookmark(at: try Phrase.place(of: "spirit level", inChapter: 0, of: old), in: old, number: 1)
+        // Words no text holds, at numbers inside chapter II.
+        let lost = Bookmark(
+            number: 2, chapterIndex: 1, characterOffset: 40,
+            anchor: TextAnchor(before: "words that no text holds ", after: "nor these either", fraction: 0.4, measuredIn: "3.0.4/1.0.0")
+        )
+        let outcome = try XCTUnwrap(PlaceRelocator.relocate(
+            PlaceRelocator.Places(bookmarks: [movingBookmark, lost]), within: loaded(rained), movedAt: SavedPlace.moveDate
+        ))
+        assertFoundBySavedWords(outcome.bookmarkFindings.first)
+        XCTAssertEqual(outcome.bookmarkFindings.dropFirst().map { $0 }, [.guessed(.savedWords(.sameShare))])
+        XCTAssertEqual(
+            outcome.places.bookmarks.first.map { place(of: $0) },
+            try Phrase.place(of: "spirit level", inChapter: 0, of: rained)
+        )
+        XCTAssertEqual(outcome.places.bookmarks.dropFirst().map { $0 }, [lost], "numbers, words, and date as saved")
     }
 
     /// A position at the end of the book stays at the new end when text is
@@ -255,9 +278,10 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
     }
 
     /// A place without saved words, past its chapter's end, beside a place
-    /// that moves: it goes to its chapter's end as the reader's clamp opens
-    /// it, a best guess; a place without words that the text holds stays.
-    func testAPlaceWithoutWordsPastItsChaptersEndGoesToTheChaptersEnd() throws {
+    /// that moves: it stays exactly as saved, as does a place without words
+    /// that the text holds (nothing finds either without the old text; the
+    /// reader's clamp and its capture of missing words take them).
+    func testAPlaceWithoutWordsStaysAsSavedBesideAPlaceThatMoves() throws {
         let old = MillBook.chapters
         let moving = try bookmark(at: try Phrase.place(of: "spirit level", inChapter: 0, of: old), in: old, number: 1)
         let past = Bookmark(number: 2, chapterIndex: 1, characterOffset: 99_999)
@@ -268,39 +292,30 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
         XCTAssertEqual(outcome.bookmarkFindings.count, 3)
         assertFoundBySavedWords(outcome.bookmarkFindings.first)
         XCTAssertEqual(outcome.bookmarkFindings.dropFirst().map { $0 }, [.guessed(.savedWords(.sameShare)), .unchanged])
-        let chapterEnd = MillBook.wheel.utf16.count
-        XCTAssertEqual(outcome.places.bookmarks.dropFirst().map { place(of: $0) }, [TextPlace(chapter: 1, offset: chapterEnd), TextPlace(chapter: 3, offset: 5)])
-        // The words of the places that now stand are captured where they are.
-        let words = BookWords(texts: rained)
         // Read through `dropFirst()`, never by index: a short outcome fails
         // the assertion instead of trapping the test host.
-        XCTAssertEqual(
-            outcome.places.bookmarks.dropFirst().map(\.anchor),
-            [
-                TextAnchor(capturingAt: TextPlace(chapter: 1, offset: chapterEnd), in: words),
-                TextAnchor(capturingAt: TextPlace(chapter: 3, offset: 5), in: words),
-            ]
-        )
+        XCTAssertEqual(outcome.places.bookmarks.dropFirst().map { $0 }, [past, held], "numbers and no words, as saved")
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1, foundBySavedWords: 1, guessed: 1))
     }
 
-    /// A reading position without saved words is clamped the way the reader
-    /// opens it: past the last chapter it opens at the last chapter's start,
-    /// or at the end of the book when its offset across the book rests there.
-    func testAPositionWithoutWordsIsClampedAsTheReaderOpensIt() throws {
+    /// A reading position without saved words stays exactly as saved, past
+    /// the last chapter or not: the reader's clamp opens its cursor, not the
+    /// saved place.
+    func testAPositionWithoutWordsStaysAsSaved() throws {
         let book = MillBook.chapters
         let moving = try bookmark(at: try Phrase.place(of: "spirit level", inChapter: 0, of: book), in: book)
         // The book as loaded: the paragraph put in lengthens it.
         let length = BookWords(texts: rained).totalLength
-        let lastLength = try XCTUnwrap(book.last).utf16.count
-        let unfinished = PlaceRelocator.Places(position: ReadingPosition(chapterIndex: 9, characterOffset: 4, globalCharacterOffset: 10), bookmarks: [moving])
-        let finished = PlaceRelocator.Places(position: ReadingPosition(chapterIndex: 9, characterOffset: 4, globalCharacterOffset: length), bookmarks: [moving])
+        let unfinished = ReadingPosition(chapterIndex: 9, characterOffset: 4, globalCharacterOffset: 10)
+        let finished = ReadingPosition(chapterIndex: 9, characterOffset: 4, globalCharacterOffset: length)
         let content = loaded(rained)
-        let first = try XCTUnwrap(PlaceRelocator.relocate(unfinished, within: content, movedAt: SavedPlace.moveDate))
-        XCTAssertEqual(try place(of: first.places.position), TextPlace(chapter: 3, offset: 0))
-        let second = try XCTUnwrap(PlaceRelocator.relocate(finished, within: content, movedAt: SavedPlace.moveDate))
-        XCTAssertEqual(try place(of: second.places.position), TextPlace(chapter: 3, offset: lastLength))
-        XCTAssertEqual(second.positionFinding, .guessed(.savedWords(.sameShare)))
+        for position in [unfinished, finished] {
+            let outcome = try XCTUnwrap(PlaceRelocator.relocate(
+                PlaceRelocator.Places(position: position, bookmarks: [moving]), within: content, movedAt: SavedPlace.moveDate
+            ))
+            XCTAssertEqual(outcome.places.position, position)
+            XCTAssertEqual(outcome.positionFinding, .guessed(.savedWords(.sameShare)))
+        }
     }
 
     // MARK: - Skipped Headings

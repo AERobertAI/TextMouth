@@ -1278,11 +1278,19 @@ extension PlaceRelocator {
     /// that skip must name its heading again.
     ///
     /// Otherwise every place moves at once, by the one outcome builder: a
-    /// place that stands stays; one without words goes where the reader's
-    /// clamp opens it (a best guess when that is not where it was); one with
-    /// words that do not stand is found by them; and a named skip whose
-    /// heading is gone is found by its saved words, else waits. A skip moves
-    /// only on proof, as everywhere else: a best guess leaves it waiting.
+    /// place that stands stays; one with words that do not stand is found by
+    /// them; and a named skip whose heading is gone is found by its saved
+    /// words, else waits. A skip moves only on proof, as everywhere else: a
+    /// best guess leaves it waiting.
+    ///
+    /// A reading position or bookmark that nothing finds stays exactly as it
+    /// was saved (`keepingPlacesNothingFound(in:of:)`): one saved without
+    /// words keeps its numbers and no words (the reader's clamp moves only
+    /// the cursor, and the capture of missing words gives it words), and one
+    /// whose saved words are found nowhere keeps its numbers and its words,
+    /// so that a later text holding those words again can find it. Only a
+    /// place its words find, for certain or as a guess among spots where
+    /// they stand, moves and takes its words anew.
     ///
     /// A text that holds nothing at all moves nothing (nil): a book whose
     /// text is empty (or not readable yet) has no words to find a place by,
@@ -1307,7 +1315,7 @@ extension PlaceRelocator {
         // Some place needs moving: move them all, with the words read once.
         let words = BookWords(texts: texts)
         let finder = TextAnchorFinder(words: words, headings: headings)
-        return outcome(
+        let found = outcome(
             of: places,
             position: places.position.map {
                 resultAtLoad(for: $0, savedGlobalOffset: $0.globalCharacterOffset, startsTheBook: isNeverBegun($0), in: content, texts: texts, finder: finder)
@@ -1319,6 +1327,42 @@ extension PlaceRelocator {
             in: words,
             headings: headings,
             movedAt: date
+        )
+        return keepingPlacesNothingFound(in: found, of: places)
+    }
+
+    /// `outcome` with the reading position and the bookmarks that nothing
+    /// could find put back exactly as `saved` held them, numbers, words, and
+    /// date, so a later text that holds their words again can still find
+    /// them. Nothing finds, at load:
+    /// - a place saved without words: with no old text to read them from,
+    ///   it stays as saved, still without words; the reader's clamp moves
+    ///   only its cursor, and the capture of missing words at load gives it
+    ///   words where it is;
+    /// - a place whose saved words are found nowhere (the finder's
+    ///   `.guessed(.sameShare)`): it stays as saved, with its saved words.
+    /// A place its words find, for certain or as a guess among the spots
+    /// where they stand, is not put back. The findings and counts are
+    /// those computed, so the log still says what the check found; skipped
+    /// headings are as `outcome` made them.
+    private static func keepingPlacesNothingFound(in outcome: Outcome, of saved: Places) -> Outcome {
+        /// Whether the place with `anchor`, found as `finding`, stays as saved.
+        func staysAsSaved(_ anchor: TextAnchor?, found finding: Finding?) -> Bool {
+            anchor == nil || finding == .guessed(.savedWords(.sameShare))
+        }
+        var places = outcome.places
+        if let position = saved.position, staysAsSaved(position.anchor, found: outcome.positionFinding) {
+            places.position = position
+        }
+        places.bookmarks = zip(zip(saved.bookmarks, places.bookmarks), outcome.bookmarkFindings).map { pair, finding in
+            staysAsSaved(pair.0.anchor, found: finding) ? pair.0 : pair.1
+        }
+        return Outcome(
+            places: places,
+            positionFinding: outcome.positionFinding,
+            bookmarkFindings: outcome.bookmarkFindings,
+            skippedHeadingFindings: outcome.skippedHeadingFindings,
+            counts: outcome.counts
         )
     }
 
@@ -1384,9 +1428,10 @@ extension PlaceRelocator {
     }
 
     /// Where `place` goes at load when some place does not stand, and how it
-    /// was found. A place without words is clamped where the reader opens it
+    /// was found. A place without words is found where the reader opens it
     /// (`opening(_:savedGlobalOffset:in:)`), a best guess when that is not
-    /// where it was. A place whose words stand stays. A reading position
+    /// where it was, though `keepingPlacesNothingFound(in:of:)` leaves the
+    /// place itself as saved. A place whose words stand stays. A reading position
     /// never begun (`startsTheBook`) stays at the start, as the diff keeps
     /// it. Any other is found by its saved words, with no old text to say
     /// how long its chapter was.
