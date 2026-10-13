@@ -232,4 +232,47 @@ struct MovedPlaces: Equatable, Sendable {
     func discardSnapshot() {
         snapshot?.discard()
     }
+
+    /// These moves narrowed to the ones `committed`, the book as its record
+    /// holds it after the save, took: each move the record did not take is
+    /// put back to its original, so a writer taking the result changes only
+    /// what the record changed. A record refuses a move where another Mac
+    /// (or the listener) saved the place meanwhile; a row that took that
+    /// move anyway would hold a stale place dated at the move, which later
+    /// looks newer than the other Mac's save. Places are compared as the
+    /// record's file stores them (`Book.isAsStored`).
+    ///
+    /// - The position moves when the record holds the moved one.
+    /// - Each bookmark moves when the record holds the moved bookmark of
+    ///   its `id`. A moved bookmark with no original of its `id` stays as it
+    ///   is: nothing was there to put back.
+    /// - The skips move as one, as `Book.takeMovedPlaces` moves them: both
+    ///   lists, or neither.
+    func taken(by committed: Book) -> MovedPlaces {
+        var narrowed = moved
+
+        // The position, back to what it was unless the record took the move.
+        if !Book.isAsStored(committed.readingPosition, moved.position) {
+            narrowed.position = original.position
+        }
+
+        // Each bookmark, back to its original unless the record took it. The
+        // first of any bookmarks sharing an ID answers for it.
+        let originalBookmarks = Dictionary(original.bookmarks.map { ($0.id, $0) }) { first, _ in first }
+        let committedBookmarks = Dictionary(committed.bookmarks.map { ($0.id, $0) }) { first, _ in first }
+        narrowed.bookmarks = moved.bookmarks.map { now in
+            guard !Book.isAsStored(committedBookmarks[now.id], now), let before = originalBookmarks[now.id] else { return now }
+            return before
+        }
+
+        // The skips, as one: both lists moved, or both as they were.
+        let skipsMoved = (committed.skippedHeadings ?? []) == moved.skippedHeadings
+            && (committed.waitingSkippedHeadings ?? []) == moved.waitingSkippedHeadings
+        if !skipsMoved {
+            narrowed.skippedHeadings = original.skippedHeadings
+            narrowed.waitingSkippedHeadings = original.waitingSkippedHeadings
+        }
+
+        return MovedPlaces(bookID: bookID, original: original, moved: narrowed, snapshot: snapshot)
+    }
 }

@@ -159,6 +159,47 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
         XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
     }
 
+    /// Another Mac wrote a newer position into the book's record (not into
+    /// this Mac's row) before the batch moved the places: the record refuses
+    /// the position's move, and the row must refuse it too. A moved position
+    /// is dated at the move, so a row that took it would look newer than the
+    /// other Mac's save, and the next launch would keep the stale place. The
+    /// bookmark and the skipped heading, which the record took, move in both.
+    @MainActor
+    func testAMoveNeverWinsOverANewerPositionFromAnotherMac() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Newer \(UUID().uuidString)")
+        let model = makeModel(with: [fixture.book])
+        let rowPosition = try XCTUnwrap(fixture.book.readingPosition)
+
+        // The other Mac's save: another place in the older text, a minute
+        // newer, written into the record only, as the fixture writes it.
+        var otherMacsPosition = ReadingPosition(chapterIndex: 0, characterOffset: 3)
+        otherMacsPosition.lastUpdated = rowPosition.lastUpdated.addingTimeInterval(60)
+        var elsewhere = fixture.book
+        elsewhere.readingPosition = otherMacsPosition
+        try elsewhere.saveBookInfoThrowing()
+
+        await runCacheBatch(on: model)
+
+        // The record keeps the other Mac's position, as the file stores it.
+        let record = try recordedBook(like: fixture.book)
+        XCTAssertTrue(Book.isAsStored(record.readingPosition, otherMacsPosition), "the record lost the other Mac's position")
+        // The row keeps the position it had, and is older than the record's.
+        let row = try XCTUnwrap(model.bookByID(fixture.book.id))
+        XCTAssertTrue(Book.isAsStored(row.readingPosition, rowPosition), "the row took the refused move")
+        let rowDate = try XCTUnwrap(row.readingPosition?.lastUpdated)
+        let recordDate = try XCTUnwrap(record.readingPosition?.lastUpdated)
+        XCTAssertLessThan(rowDate, recordDate)
+        // The moves the record took reach the row too.
+        for book in [row, record] {
+            XCTAssertEqual(book.bookmarks.count, 1)
+            XCTAssertEqual(book.bookmarks.first?.chapterIndex, fixture.bookmark.chapter)
+            XCTAssertEqual(book.bookmarks.first?.characterOffset, fixture.bookmark.offset)
+            XCTAssertEqual(book.skippedHeadingIDs, [fixture.notes.id])
+        }
+        XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
+    }
+
     /// A book whose text is only in the cloud is left alone: its places stay
     /// as they were, and nothing is copied.
     @MainActor
