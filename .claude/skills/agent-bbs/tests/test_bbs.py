@@ -785,6 +785,229 @@ class WatchTests(BoardTestCase):
         self.assertIn("unknown agent", self.fails("watch", "nobody", "--once"))
 
 
+class TeamTests(BoardTestCase):
+    """team create, team add, teams, and team names."""
+
+    def setUp(self) -> None:
+        """Register a lead and three other agents."""
+        super().setUp()
+        for name in ("chief", "alpha", "beta", "gamma"):
+            self.register(name)
+
+    def create(self, team: str = "board", *extra: str) -> str:
+        """Create a team led by chief (or as ``extra`` says); return the text."""
+        return self.ok("team", "create", "chief", team, "--purpose", "Build the board", *extra)
+
+    def create_fails(self, team: str) -> str:
+        """Try to create a team that must be refused; return the error."""
+        return self.fails("team", "create", "chief", team, "--purpose", "Build the board")
+
+    def channel(self, team: str = "board") -> List[dict]:
+        """Return the messages posted to a team's channel, oldest first."""
+        return [m for m in self.ok_json("read") if m["to"] == f"team:{team}"]
+
+    def test_creating_a_team_makes_the_actor_its_lead_and_reports_every_field(self) -> None:
+        with self.clock(NOON):
+            team = self.ok_json("team", "create", "chief", "board", "--purpose", "  Build   the board ")
+        self.assertEqual(
+            team,
+            {
+                "name": "board",
+                "lead": "chief",
+                "purpose": "Build the board",
+                "created": bbs.to_utc_text(NOON),
+                "channel": "team:board",
+                "members": [],
+            },
+        )
+
+    def test_the_lead_may_be_another_registered_agent(self) -> None:
+        team = self.ok_json("team", "create", "chief", "board", "--purpose", "Build it", "--lead", "Alpha")
+        self.assertEqual(team["lead"], "alpha")
+
+    def test_creating_a_team_by_its_address_in_any_case_makes_the_plain_name(self) -> None:
+        polish = self.ok_json("team", "create", "chief", "team:Polish", "--purpose", "Polish")
+        docs = self.ok_json("team", "create", "chief", "TEAM:Docs", "--purpose", "Docs")
+        self.assertEqual((polish["name"], docs["name"]), ("polish", "docs"))
+
+    def test_the_text_of_team_create_pins_each_line(self) -> None:
+        with self.clock(NOON):
+            text = self.create()
+        stamp = bbs.local_label(bbs.to_utc_text(NOON))
+        self.assertEqual(
+            text.splitlines(),
+            [
+                "Created team board.",
+                f"board: led by chief, created {stamp}",
+                "  Purpose: Build the board",
+                "  Channel: team:board",
+                "  Members: none",
+            ],
+        )
+
+    def test_creating_a_team_posts_a_notice_to_its_channel(self) -> None:
+        self.create()
+        posts = self.channel()
+        self.assertEqual(len(posts), 1)
+        self.assertEqual(
+            (posts[0]["from"], posts[0]["tag"], posts[0]["topic"], posts[0]["body"]),
+            ("chief", "notice", "Created team board, led by chief", "Build the board"),
+        )
+
+    def test_the_actor_may_create_a_team_that_another_agent_leads(self) -> None:
+        self.create("board", "--lead", "alpha")
+        self.assertEqual(self.channel()[0]["topic"], "Created team board, led by alpha")
+        self.assertEqual(self.channel()[0]["from"], "chief")
+
+    def test_team_create_refuses_unknown_agents(self) -> None:
+        self.assertIn("unknown agent 'nobody'", self.fails("team", "create", "nobody", "board", "--purpose", "x"))
+        error = self.fails("team", "create", "chief", "board", "--purpose", "x", "--lead", "alpa")
+        self.assertIn("unknown agent 'alpa' (did you mean 'alpha'?)", error)
+        self.assertEqual(self.ok_json("teams"), [], "a refused team is not created")
+
+    def test_team_create_refuses_an_existing_team_even_by_its_address(self) -> None:
+        self.create()
+        self.assertIn("team board exists already; see it with: bbs.py teams board", self.create_fails("board"))
+        self.assertIn("exists already", self.create_fails("TEAM:Board"))
+        self.assertEqual(len(self.channel()), 1)
+
+    def test_team_create_refuses_bad_team_names(self) -> None:
+        self.assertIn("'all' addresses every agent and cannot be a team name", self.create_fails("all"))
+        self.assertIn("cannot be a team name", self.create_fails("ALL"))
+        self.assertIn("cannot be a team name", self.create_fails("team:all"))
+        for bad in ("two words", "x" * 41, "_board"):
+            with self.subTest(bad=bad):
+                self.assertIn("invalid team name", self.create_fails(bad))
+
+    def test_team_create_refuses_a_missing_blank_or_overlong_purpose(self) -> None:
+        self.assertIn("--purpose", self.fails("team", "create", "chief", "board"))
+        self.assertIn("purpose is empty", self.fails("team", "create", "chief", "board", "--purpose", "   "))
+        error = self.fails("team", "create", "chief", "board", "--purpose", "p" * 201)
+        self.assertIn("purpose is 201 characters long; the limit is 200", error)
+
+    def test_adding_members_keeps_the_order_and_drops_repeats(self) -> None:
+        self.create()
+        result = self.ok_json("team", "add", "chief", "board", "beta", "Alpha", "beta")
+        self.assertEqual(result["added"], ["beta", "alpha"])
+        self.assertEqual(result["already"], [])
+        self.assertEqual(result["team"]["members"], ["beta", "alpha"])
+
+    def test_adding_by_the_address_reports_in_text(self) -> None:
+        self.create()
+        text = self.ok("team", "add", "chief", "team:board", "alpha", "beta")
+        self.assertEqual(text.splitlines()[0], "Added alpha, beta to team board.")
+        self.assertIn("  Members: alpha, beta", text.splitlines())
+
+    def test_adding_skips_the_lead_and_current_members_with_exact_lines(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "alpha")
+        text = self.ok("team", "add", "alpha", "board", "chief", "alpha", "beta")
+        lines = text.splitlines()
+        self.assertEqual(
+            lines[:3],
+            [
+                "Added beta to team board.",
+                "chief already leads team board.",
+                "alpha is already a member of team board.",
+            ],
+        )
+        result = self.ok_json("team", "add", "alpha", "board", "chief", "alpha")
+        self.assertEqual((result["added"], result["already"]), ([], ["chief", "alpha"]))
+        self.assertEqual(
+            self.ok("team", "add", "alpha", "board", "beta").splitlines()[0],
+            "beta is already a member of team board.",
+            "with nobody added the text opens with the skipped line",
+        )
+
+    def test_an_unknown_agent_adds_nobody(self) -> None:
+        self.create()
+        error = self.fails("team", "add", "chief", "board", "alpha", "betta")
+        self.assertIn("unknown agent 'betta' (did you mean 'beta'?)", error)
+        self.assertEqual(self.ok_json("teams", "board")[0]["members"], [])
+        self.assertEqual(len(self.channel()), 1)
+
+    def test_team_add_refuses_an_unknown_actor_and_an_unknown_team(self) -> None:
+        self.create()
+        self.assertIn("unknown agent 'nobody'", self.fails("team", "add", "nobody", "board", "alpha"))
+        error = self.fails("team", "add", "chief", "bord", "alpha")
+        self.assertIn("there is no team 'bord' (did you mean 'board'?); list the teams with: bbs.py teams", error)
+
+    def test_adding_members_posts_one_line_and_none_when_nobody_was_added(self) -> None:
+        self.create()
+        self.ok("team", "add", "alpha", "board", "beta", "gamma")
+        self.ok("team", "add", "alpha", "board", "beta", "chief")
+        posts = self.channel()
+        self.assertEqual(len(posts), 2)
+        self.assertEqual((posts[1]["from"], posts[1]["topic"]), ("alpha", "Added beta, gamma to team board"))
+
+    def test_a_long_list_of_new_members_is_clipped_in_the_topic(self) -> None:
+        self.create()
+        names = [f"{letter}" * 40 for letter in "pqrst"]
+        for name in names:
+            self.register(name)
+        self.ok("team", "add", "chief", "board", *names)
+        topic = self.channel()[-1]["topic"]
+        self.assertEqual(len(topic), bbs.MAX_LINE_LENGTH)
+        self.assertTrue(topic.startswith("Added " + names[0]))
+        self.assertTrue(topic.endswith("…"))
+        self.assertEqual(self.ok_json("teams", "board")[0]["members"], names, "every member is still added")
+
+    def test_teams_says_when_there_are_none_and_counts_them(self) -> None:
+        self.assertEqual(self.ok("teams"), "No teams yet.\n")
+        self.create("board")
+        self.create("docs")
+        lines = self.ok("teams").splitlines()
+        self.assertEqual(lines[0], "2 teams:")
+        self.assertEqual(lines[1], "")
+        self.assertTrue(lines[2].startswith("board: led by chief"))
+        self.assertIn("docs: led by chief, created", self.ok("teams"))
+        self.assertTrue(self.ok("teams").split("\n\n")[1].startswith("board:"), "a blank line separates teams")
+        self.assertEqual(self.ok("teams").split("\n\n")[2].splitlines()[0][:5], "docs:")
+        self.create("solo")
+        self.assertEqual(self.ok("teams").splitlines()[0], "3 teams:")
+
+    def test_one_team_is_shown_alone_by_name_or_address_in_any_case(self) -> None:
+        self.create("board")
+        self.create("docs")
+        alone = self.ok("teams", "docs")
+        self.assertTrue(alone.startswith("docs: led by chief"))
+        self.assertNotIn("Channel: team:board", alone)
+        for spelling in ("DOCS", "team:docs", "Team:Docs"):
+            with self.subTest(spelling=spelling):
+                self.assertEqual(self.ok("teams", spelling), alone)
+
+    def test_an_unknown_team_fails_with_a_suggestion(self) -> None:
+        self.create("board")
+        self.assertIn("there is no team 'bard' (did you mean 'board'?)", self.fails("teams", "bard"))
+        self.assertNotIn("did you mean", self.fails("teams", "zzzzzz"))
+
+    def test_teams_json_is_always_a_list_ordered_by_name(self) -> None:
+        self.assertEqual(self.ok_json("teams"), [])
+        self.create("zeta")
+        self.create("alpha-team")
+        self.assertEqual([t["name"] for t in self.ok_json("teams")], ["alpha-team", "zeta"])
+        self.assertEqual([t["name"] for t in self.ok_json("teams", "zeta")], ["zeta"])
+
+    def test_team_without_a_subcommand_fails_in_one_line(self) -> None:
+        self.assertIn("SUBCOMMAND", self.fails("team"))
+
+    def test_json_works_before_and_after_the_command_name(self) -> None:
+        self.create()
+        self.assertEqual(self.ok_json("teams"), json.loads(self.ok("--json", "teams")))
+        before = json.loads(self.ok("--json", "team", "create", "chief", "docs", "--purpose", "Docs"))
+        after = self.ok_json("team", "create", "chief", "notes", "--purpose", "Notes")
+        self.assertEqual((before["name"], after["name"]), ("docs", "notes"))
+        added = json.loads(self.ok("team", "add", "--json", "chief", "docs", "alpha"))
+        self.assertEqual(added["added"], ["alpha"])
+
+    def test_a_team_and_an_agent_may_share_a_name(self) -> None:
+        self.create("alpha")
+        self.ok("team", "add", "chief", "alpha", "alpha")
+        team = self.ok_json("teams", "alpha")[0]
+        self.assertEqual((team["name"], team["members"], team["channel"]), ("alpha", ["alpha"], "team:alpha"))
+        self.assertEqual(self.ok_json("agents")[0]["name"], "alpha")
+
+
 class MessageHelperTests(BoardTestCase):
     """The small helpers that the team commands share: names, clipping, and storing a message."""
 

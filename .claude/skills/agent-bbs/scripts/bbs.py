@@ -1586,6 +1586,156 @@ def cmd_watch(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
 
 # ---------------------------------------------------------------------------
+# Teams
+# ---------------------------------------------------------------------------
+
+
+def team_address(team: str) -> str:
+    """Return the address of a team's channel, such as "team:board"."""
+    return TEAM_PREFIX + team
+
+
+def normalize_team(raw: str) -> str:
+    """Return a team's canonical name from its plain name or its address.
+
+    "Board", "board", "team:board" and "TEAM:Board" all give "board".
+    """
+    text = raw.strip()
+    if text.lower().startswith(TEAM_PREFIX):
+        text = text[len(TEAM_PREFIX):]
+    return normalize_name(text, "team")
+
+
+def require_team(conn: sqlite3.Connection, raw: str) -> str:
+    """Return the canonical name of an existing team, or raise UserError."""
+    name = normalize_team(raw)
+    if conn.execute("SELECT 1 FROM teams WHERE name = ?", (name,)).fetchone() is None:
+        raise UserError(
+            f"there is no team '{name}'{_did_you_mean(conn, name, 'teams')}; list the teams with: {PROG} teams"
+        )
+    return name
+
+
+def load_teams(conn: sqlite3.Connection, *, name: Optional[str] = None) -> List[dict]:
+    """Return teams as JSON-ready dicts, ordered by name.
+
+    Each has its name, lead, purpose, creation time, channel address, and
+    members in the order they joined (the lead is not listed among them).
+    ``name`` selects one team.
+    """
+    where, params = ("WHERE name = ?", (name,)) if name is not None else ("", ())
+    teams = []
+    for row in conn.execute(f"SELECT name, lead, purpose, created_at FROM teams {where} ORDER BY name", params):
+        members = conn.execute(
+            "SELECT agent FROM team_members WHERE team = ? ORDER BY joined_at, rowid", (row["name"],)
+        )
+        teams.append(
+            {
+                "name": row["name"],
+                "lead": row["lead"],
+                "purpose": row["purpose"],
+                "created": row["created_at"],
+                "channel": team_address(row["name"]),
+                "members": [member["agent"] for member in members],
+            }
+        )
+    return teams
+
+
+def describe_team(team: dict) -> str:
+    """Describe one team: a heading line, then purpose, channel, and members."""
+    return "\n".join(
+        [
+            f"{team['name']}: led by {team['lead']}, created {local_label(team['created'])}",
+            f"  Purpose: {team['purpose']}",
+            f"  Channel: {team['channel']}",
+            f"  Members: {', '.join(team['members']) or 'none'}",
+        ]
+    )
+
+
+def add_member(conn: sqlite3.Connection, team: str, agent: str) -> bool:
+    """Add ``agent`` to ``team`` unless it leads the team or is already in it.
+
+    Returns whether a member row was added. Runs inside a write transaction;
+    the team and the agent must exist.
+    """
+    lead = conn.execute("SELECT lead FROM teams WHERE name = ?", (team,)).fetchone()["lead"]
+    if agent == lead:
+        return False
+    cursor = conn.execute(
+        "INSERT OR IGNORE INTO team_members (team, agent, joined_at) VALUES (?, ?, ?)",
+        (team, agent, to_utc_text(utc_now())),
+    )
+    return cursor.rowcount == 1
+
+
+def post_to_team(
+    conn: sqlite3.Connection, sender: str, team: str, topic: str, *, tag: str = "notice", body: str = ""
+) -> int:
+    """Post one line of a team's history to its channel and return the message id.
+
+    The topic is clipped to the line limit, because it may quote names or titles.
+    """
+    return insert_message(conn, sender, team_address(team), tag, clip_line(topic), body)
+
+
+def cmd_team_create(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Create a team with a lead and a purpose, and announce it in its channel."""
+    team = normalize_team(args.team)
+    purpose = one_line(args.purpose, "purpose")
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        lead = actor if args.lead is None else require_agent(conn, args.lead, touch=False)
+        if conn.execute("SELECT 1 FROM teams WHERE name = ?", (team,)).fetchone() is not None:
+            raise UserError(f"team {team} exists already; see it with: {PROG} teams {team}")
+        conn.execute(
+            "INSERT INTO teams (name, lead, purpose, created_at) VALUES (?, ?, ?, ?)",
+            (team, lead, purpose, to_utc_text(utc_now())),
+        )
+        post_to_team(conn, actor, team, f"Created team {team}, led by {lead}", body=purpose)
+        created = load_teams(conn, name=team)[0]
+    return Outcome(created, f"Created team {team}.\n{describe_team(created)}")
+
+
+def cmd_team_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Add registered agents to a team; the lead and current members are skipped."""
+    agents = list(dict.fromkeys(normalize_name(raw) for raw in args.agents))
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        team = require_team(conn, args.team)
+        # Check every agent first, so that one unknown name adds nobody.
+        for agent in agents:
+            require_agent(conn, agent, touch=False)
+        added = [agent for agent in agents if add_member(conn, team, agent)]
+        if added:
+            post_to_team(conn, actor, team, f"Added {', '.join(added)} to team {team}")
+        details = load_teams(conn, name=team)[0]
+    already = [agent for agent in agents if agent not in added]
+    lines = [f"Added {', '.join(added)} to team {team}."] if added else []
+    for agent in already:
+        lines.append(
+            f"{agent} already leads team {team}."
+            if agent == details["lead"]
+            else f"{agent} is already a member of team {team}."
+        )
+    lines.append(describe_team(details))
+    return Outcome({"team": details, "added": added, "already": already}, "\n".join(lines))
+
+
+def cmd_teams(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """List every team with its lead and members, or show one."""
+    if args.team is not None:
+        teams = load_teams(conn, name=require_team(conn, args.team))
+        return Outcome(teams, describe_team(teams[0]))
+    teams = load_teams(conn)
+    if not teams:
+        return Outcome(teams, "No teams yet.")
+    heading = f"{plural(len(teams), 'team')}:"
+    return Outcome(teams, "\n\n".join([heading] + [describe_team(team) for team in teams]))
+
+
+# ---------------------------------------------------------------------------
 # Housekeeping
 # ---------------------------------------------------------------------------
 
@@ -1723,13 +1873,24 @@ def build_parser() -> BoardArgumentParser:
     parser.add_argument("--json", action="store_true", help="print JSON instead of text")
     commands = parser.add_subparsers(dest="command", metavar="COMMAND", required=True)
 
-    def command(name: str, handler: Any, summary: str, *, needs_board: bool = True) -> argparse.ArgumentParser:
-        """Add one command, remembering the function that runs it."""
-        sub = commands.add_parser(
+    def command(
+        name: str, handler: Any, summary: str, *, needs_board: bool = True, group: Any = None
+    ) -> argparse.ArgumentParser:
+        """Add one command, remembering the function that runs it.
+
+        It is a top-level command, or a subcommand of ``group`` (made by
+        ``command_group``) when one is given.
+        """
+        sub = (commands if group is None else group).add_parser(
             name, help=summary, description=summary, parents=[json_flag], allow_abbrev=False
         )
         sub.set_defaults(handler=handler, needs_board=needs_board)
         return sub
+
+    def command_group(name: str, summary: str) -> Any:
+        """Add a top-level command that only holds subcommands; return their collection."""
+        sub = commands.add_parser(name, help=summary, description=summary, allow_abbrev=False)
+        return sub.add_subparsers(dest=f"{name}_command", metavar="SUBCOMMAND", required=True)
 
     register = command("register", cmd_register, "create or update an agent")
     register.add_argument("name", help="your agent name, such as your task slug")
@@ -1840,6 +2001,20 @@ def build_parser() -> BoardArgumentParser:
         "--timeout", type=positive_number, metavar="SECONDS", help="stop after this long (default: run until interrupted)"
     )
     watch.add_argument("--peek", action="store_true", help="leave the messages printed unread")
+
+    team = command_group("team", "create a team or change its members")
+    team_create = command("create", cmd_team_create, "create a team with its lead and purpose", group=team)
+    team_create.add_argument("name", help="your agent name")
+    team_create.add_argument("team", metavar="TEAM", help="the new team's name, such as board")
+    team_create.add_argument("--purpose", required=True, help="one line saying what the team is for")
+    team_create.add_argument("--lead", metavar="AGENT", help="the agent who leads the team (default: you)")
+    team_add = command("add", cmd_team_add, "add members to a team", group=team)
+    team_add.add_argument("name", help="your agent name")
+    team_add.add_argument("team", metavar="TEAM", help="the team to add them to")
+    team_add.add_argument("agents", nargs="+", metavar="AGENT", help="registered agents to add")
+
+    teams = command("teams", cmd_teams, "list teams with their lead and members, or show one")
+    teams.add_argument("team", nargs="?", metavar="TEAM", help="only this team")
 
     purge = command("purge", cmd_purge, "delete old messages and agents not seen for a while")
     purge.add_argument(
