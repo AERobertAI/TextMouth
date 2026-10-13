@@ -58,15 +58,12 @@ struct AudioFilterProcessor: AudioEditProcessing {
                 channels: sources.base.channelCount
             )
         }
-        try? FileManager.default.removeItem(at: result)
-        do {
-            try FileManager.default.moveItem(at: partial, to: result)
-        } catch where FileManager.default.fileExists(atPath: result.path) {
-            // Another render of this very stretch, as a preview and a level
-            // measurement can ask for at once, moved its result here first:
-            // the same sound, by its name, so it stands, and this one's
-            // partial file goes with the others.
-        }
+        // The result's name is made from everything that decides its sound,
+        // so another render of this very stretch (a preview and a level
+        // measurement can ask at once) makes the same file. Each puts its
+        // own in place in one step, so neither ever finds the result
+        // missing (#1988).
+        try SavedFile.renameReplacing(partial, result)
         return AudioEditTimeline.Segment(
             source: .processed(name),
             sourceStart: 0,

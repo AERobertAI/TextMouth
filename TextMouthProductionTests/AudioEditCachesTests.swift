@@ -144,6 +144,36 @@ final class AudioEditCachesTests: XCTestCase {
         XCTAssertEqual(partial, [], "a partial render was left behind")
     }
 
+    /// A render that finds a damaged result at its name, as a write cut
+    /// short leaves, puts a whole one in its place: the same length, readable
+    /// as audio, still kept once, with no partial render left behind.
+    func testARenderReplacesADamagedResultAtItsName() async throws {
+        let fixture = try AudioEditorTestBook.ramp(seconds: 2, for: self)
+        let base = try await AudioEditBase.load(fixture.book.bookFileURL, name: fixture.book.fileInPackage)
+        let scratch = try AudioEditScratch.folder(for: fixture.book.id)
+        let processor = AudioFilterProcessor(
+            sources: AudioEditComposition.Sources(base: base, package: fixture.package, scratch: scratch),
+            engine: .builtIn
+        )
+        let first = try await processor.process(base.timeline, chain: "volume=-6dB")
+
+        // Overwrite the one processed stretch with bytes that are not audio.
+        let stretches = try processedStretches(in: scratch)
+        XCTAssertEqual(stretches.count, 1)
+        let result = scratch.appendingPathComponent(try XCTUnwrap(stretches.first))
+        try Data("not audio".utf8).write(to: result)
+        XCTAssertThrowsError(try AVAudioFile(forReading: result), "the damaged result is not audio")
+
+        let again = try await processor.process(base.timeline, chain: "volume=-6dB")
+
+        XCTAssertEqual(again, first)
+        XCTAssertEqual(again.length, 16_000)
+        XCTAssertEqual(try AVAudioFile(forReading: result).length, 16_000, "the result reads as audio again")
+        XCTAssertEqual(try processedStretches(in: scratch), stretches, "still one processed stretch")
+        let partial = try FileManager.default.contentsOfDirectory(atPath: scratch.path).filter { $0.hasPrefix(".") }
+        XCTAssertEqual(partial, [], "a partial render was left behind")
+    }
+
     // MARK: - Helpers
 
     /// A folder named `name` in `parent`, made with one small file named
