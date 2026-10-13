@@ -276,7 +276,7 @@ struct BookState: Codable {
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
-        self.waitingSkippedHeadings = waitingSkippedHeadings.flatMap { $0.isEmpty ? nil : $0 }
+        self.waitingSkippedHeadings = SkippedHeading.stored(waitingSkippedHeadings)
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.localSkipForwardUnit = localSkipForwardUnit
         self.localSkipBackwardUnit = localSkipBackwardUnit
@@ -313,8 +313,7 @@ struct BookState: Codable {
         // are put in step with the IDs.
         skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
         // As `Book` decodes them: unreadable or empty ones count as none.
-        let waiting: [SkippedHeading]? = fields.optionalValue(.waitingSkippedHeadings) { $0 }
-        waitingSkippedHeadings = waiting.flatMap { $0.isEmpty ? nil : $0 }
+        waitingSkippedHeadings = SkippedHeading.stored(fields.optionalValue(.waitingSkippedHeadings) { $0 })
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
         localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)

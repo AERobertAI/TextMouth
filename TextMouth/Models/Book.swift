@@ -301,7 +301,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
-        self.waitingSkippedHeadings = waitingSkippedHeadings.flatMap { $0.isEmpty ? nil : $0 }
+        self.waitingSkippedHeadings = SkippedHeading.stored(waitingSkippedHeadings)
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.localSkipForwardUnit = localSkipForwardUnit
         self.localSkipBackwardUnit = localSkipBackwardUnit
@@ -360,8 +360,7 @@ struct Book: Identifiable, Codable, Hashable {
         skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
         // Waiting skips that cannot be read count as none; an empty list is
         // none too.
-        let waiting: [SkippedHeading]? = fields.optionalValue(.waitingSkippedHeadings) { $0 }
-        waitingSkippedHeadings = waiting.flatMap { $0.isEmpty ? nil : $0 }
+        waitingSkippedHeadings = SkippedHeading.stored(fields.optionalValue(.waitingSkippedHeadings) { $0 })
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
         localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
@@ -1407,7 +1406,13 @@ struct SkippedHeading: Codable, Hashable, Sendable {
             keptByID[heading.id] = heading
         }
         let headings = ids.compactMap { keptByID[$0] ?? SkippedHeading(id: $0) }
-        return headings.isEmpty ? nil : headings
+        return stored(headings)
+    }
+
+    /// `headings` as a book keeps a list of skips: nil when there are
+    /// none, never an empty list.
+    static func stored(_ headings: [SkippedHeading]?) -> [SkippedHeading]? {
+        headings.flatMap { $0.isEmpty ? nil : $0 }
     }
 }
 
@@ -1420,7 +1425,7 @@ extension Book {
     /// them, for the reader's filter and for older builds, which read the
     /// IDs alone. None, or nil, skips nothing and writes neither.
     mutating func setSkippedHeadings(_ headings: [SkippedHeading]?) {
-        let skipped = headings.flatMap { $0.isEmpty ? nil : $0 }
+        let skipped = SkippedHeading.stored(headings)
         // The IDs first: their observer puts the skipped headings in step
         // with them, keeping old anchors, and the headings saved then
         // replace those with their own.
@@ -1505,7 +1510,7 @@ extension Book {
         if (skippedHeadings ?? []) == original.skippedHeadings,
            (waitingSkippedHeadings ?? []) == original.waitingSkippedHeadings {
             setSkippedHeadings(moved.skippedHeadings)
-            waitingSkippedHeadings = moved.waitingSkippedHeadings.isEmpty ? nil : moved.waitingSkippedHeadings
+            waitingSkippedHeadings = SkippedHeading.stored(moved.waitingSkippedHeadings)
         }
 
         return relocatablePlaces != before
