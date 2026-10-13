@@ -71,6 +71,64 @@ final class PlaceRelocationAtLoadTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount("PLACES_RELOCATED: \(fixture.book.title):"), 1)
     }
 
+    // MARK: A Skipped Section Removed Since Its Skip (REV16, F1)
+
+    /// The book's Markdown with the "Pump Repairs" section, which the
+    /// listener skips.
+    private static let withPump = "# The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask of soup.\n\n"
+        + "## Pump Repairs\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
+        + "## Soup\n\nHesketh guarded the flask as if it were the parish silver.\n"
+
+    /// The same Markdown without that section, as an editor or another Mac
+    /// left it: "Soup" now starts where "Pump Repairs" started.
+    private static let withoutPump = "# The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask of soup.\n\n"
+        + "## Soup\n\nHesketh guarded the flask as if it were the parish silver.\n"
+
+    /// A reader opening a book whose skipped "Pump Repairs" section was
+    /// removed since the skip was saved, with no rebuild to move the skip (an
+    /// edit saved with no copy, another Mac, a feed article downloaded
+    /// again), skips nothing: "Soup", which the listener never skipped, is
+    /// heard. The skip waits in the reader, the row, and the record, kept as
+    /// it was, so the section is skipped again if it comes back.
+    @MainActor
+    func testAReaderOpeningATextThatLostItsSkippedSectionSkipsNoOtherSection() throws {
+        var book = try makePackagedBook(title: "Pump \(UUID().uuidString)", text: Self.withPump)
+        book = try commitCache(of: book)
+        let before = try MarkdownCacheService.loadFromCache(for: book)
+        let pump = try XCTUnwrap(before.allHeadings.first { $0.text == "Pump Repairs" })
+        let measure = TextAnchor.measure(ofTextCachedBy: MarkdownCacheService.currentCacheVersion)
+        let start = TextPlace(chapter: pump.chapterIndex, offset: pump.characterOffset)
+        let skip = SkippedHeading(pump, anchor: before.anchor(at: start, measuredIn: measure))
+        book.setSkippedHeadings([skip])
+        try book.saveBookInfoThrowing()
+
+        // The text changes without a rebuild moving the skip: the source and
+        // content.md lose the section, and the record describes them, with
+        // the skip still naming "Pump Repairs".
+        try Self.withoutPump.write(to: URL(fileURLWithPath: book.filePath), atomically: true, encoding: .utf8)
+        var bare = try recordedBook(like: book)
+        bare.setSkippedHeadings([])
+        _ = try commitCache(of: bare)
+        let recorded = try recordedBook(like: book)
+        XCTAssertEqual(recorded.skippedHeadingIDs, [pump.id], "the record should still hold the skip")
+        let after = try MarkdownCacheService.loadFromCache(for: recorded)
+        let soup = try XCTUnwrap(after.allHeadings.first { $0.text == "Soup" })
+        XCTAssertEqual(soup.characterOffset, pump.characterOffset, "Soup should start where Pump Repairs started")
+
+        let model = makeModel(with: [recorded])
+        let reader = openReader(on: recorded, in: model)
+        waitForReaderToLoad(reader)
+
+        XCTAssertFalse(reader.isHeadingSkipped(soup), "the reader skips Soup, which the listener never skipped")
+        XCTAssertEqual(reader.skippedHeadingIDs, [])
+        let row = try XCTUnwrap(model.bookByID(recorded.id))
+        let record = try recordedBook(like: recorded)
+        for (copy, held) in [("reader", reader.book), ("row", row), ("record", record)] {
+            XCTAssertEqual(held.skippedHeadingIDs ?? [], [], "the \(copy) names a heading for the skip")
+            XCTAssertEqual(held.waitingSkippedHeadings, [skip], "the \(copy) does not keep the skip waiting as it was")
+        }
+    }
+
     // MARK: Off the Main Thread
 
     /// The places of a large book are found by `readContent(of:)`, which

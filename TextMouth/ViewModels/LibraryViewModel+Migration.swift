@@ -636,9 +636,11 @@ extension LibraryViewModel {
                 self.rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _, _ in
                     // The pass has looked at every book: a copy of an edit's
                     // old text that a quit left, for a book with nothing
-                    // saved since, is no use. `completion` hears of it only
-                    // once they are gone.
-                    Self.sweepLeftoverEditTexts {
+                    // saved since, is no use, except one whose book's
+                    // content.md is only in the cloud, which a later launch
+                    // still checks with. `completion` hears of it only once
+                    // the others are gone.
+                    Self.sweepLeftoverEditTexts(of: books, access: access) {
                         completion?()
                     }
                 }
@@ -896,10 +898,11 @@ extension LibraryViewModel {
 
     /// The work of `updateTextCache(of:force:reading:access:skips:held:)` for
     /// a book whose `files` were on this Mac when it began: recovers the
-    /// cache an earlier run committed, takes an edit of content.md saved
-    /// while TextMouth was closed (`editSavedWhileClosed(of:access:)`), or
-    /// writes the cache from the source and commits its analysis to the
-    /// book's record.
+    /// cache an earlier run committed, with the places that run moved,
+    /// which its record holds and the row may lack; takes an edit of
+    /// content.md saved while TextMouth was closed
+    /// (`editSavedWhileClosed(of:access:)`); or writes the cache from the
+    /// source and commits its analysis to the book's record.
     /// - Throws: why no cache could be written, including the refusal of a
     ///   read that met a file which went to the cloud meanwhile.
     nonisolated private static func committedTextCache(
@@ -910,7 +913,7 @@ extension LibraryViewModel {
     ) throws -> ContentAnalysisSummary? {
         let currentVersion = MarkdownCacheService.currentCacheVersion
         if !force {
-            if let savedIndex = try BookContentAnalysisService.recoveredTextCacheIndex(
+            if let saved = try BookContentAnalysisService.recoveredTextCache(
                 for: book,
                 hasher: access.hasher,
                 isDataless: access.isDataless
@@ -919,8 +922,18 @@ extension LibraryViewModel {
                 // the library summary requires no source parsing or writes.
                 // The package records this index with the current version.
                 var recovered = book
-                recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
-                return ContentAnalysisSummary(committed: recovered)
+                recovered.applyContentAnalysis(saved.index, cacheFormatVersion: currentVersion)
+                // The record also holds the places that run moved, which
+                // the row may have missed if TextMouth stopped before its
+                // summary reached library.json; the row takes them where
+                // it still holds its own places as they were.
+                let record = Book(
+                    record: saved.record,
+                    filePath: book.filePath,
+                    folderPath: book.folderPath,
+                    tmbDirectoryName: book.tmbDirectoryName
+                )
+                return ContentAnalysisSummary(recovered: recovered, record: record)
             }
             // The record no longer describes content.md: it may hold an
             // edit saved while TextMouth was closed, taken now when it
@@ -955,16 +968,40 @@ extension LibraryViewModel {
         }
     }
 
-    /// Deletes every copy of an edit's old text that no session of this run
+    /// Deletes the copies of an edit's old text that no session of this run
     /// uses (`PlaceSnapshot.leftovers(in:)` over `editTextSnapshots`), the
     /// ones a quit left, on a utility queue, then calls `completion` on the
     /// main actor, so a caller that waits for the cache pass finds them
     /// gone. The pass has settled every edit saved while TextMouth was
     /// closed by then (`editSavedWhileClosed(of:access:)`), using the copy of
     /// its book; one left for a book with nothing saved since is of no use.
-    nonisolated private static func sweepLeftoverEditTexts(then completion: @escaping @MainActor @Sendable () -> Void) {
+    ///
+    /// A copy stays when its book's content.md is only in the cloud now
+    /// (`access.isDataless`): the check keeps such a copy
+    /// (`BookTextEditSessions.settleEditSavedWhileClosed`), and a later
+    /// launch, with the file here, still needs it. A copy of a book not
+    /// among `books` is discarded: its places are gone with it.
+    ///
+    /// - Parameters:
+    ///   - books: The rows the pass began with.
+    ///   - access: How the pass reaches the books' files.
+    nonisolated private static func sweepLeftoverEditTexts(
+        of books: [Book],
+        access: MaintenanceFileAccess,
+        then completion: @escaping @MainActor @Sendable () -> Void
+    ) {
         DispatchQueue.global(qos: .utility).async {
-            PlaceSnapshot.leftovers(in: MachineLocalPaths.editTextSnapshots).forEach { $0.discard() }
+            let boundary = StorageBoundary.shared
+            let rows = Dictionary(books.map { ($0.id, $0) }) { first, _ in first }
+            for copy in PlaceSnapshot.leftovers(in: MachineLocalPaths.editTextSnapshots) {
+                // The book as listed, with its paths in the data directory in
+                // use now, as the place recovery reads it.
+                if let listed = rows[copy.record.bookID],
+                   access.isDataless(MarkdownCacheService.cacheURL(for: boundary.rebasedToCurrent(listed))) {
+                    continue
+                }
+                copy.discard()
+            }
             // The main queue is the main actor's executor.
             DispatchQueue.main.async {
                 MainActor.assumeIsolated { completion() }

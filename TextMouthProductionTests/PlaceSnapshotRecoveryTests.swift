@@ -115,6 +115,43 @@ final class PlaceSnapshotRecoveryTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount(recoveredLine(finished: 1, left: 0)), linesBefore + 1)
     }
 
+    /// The record refuses a move of a place another Mac saved after the old
+    /// text was copied aside, and the row takes only the moves its record
+    /// took: it keeps its own position, unmoved, and moves the bookmark and
+    /// the skip, which the record took. Otherwise the row would hold a stale
+    /// position dated at the move, which later looks newer than the other
+    /// Mac's save.
+    @MainActor
+    func testARowTakesOnlyTheMovesItsRecordTook() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Refused \(UUID().uuidString)")
+        let rowPosition = try XCTUnwrap(fixture.book.readingPosition)
+        try stopAfterRebuilding([fixture.book])
+        XCTAssertTrue(snapshotsHoldACopy(of: fixture.book))
+        // The other Mac's save, a minute newer, in the record only.
+        var otherMacsPosition = ReadingPosition(chapterIndex: 0, characterOffset: 3)
+        otherMacsPosition.lastUpdated = rowPosition.lastUpdated.addingTimeInterval(60)
+        var elsewhere = fixture.book
+        elsewhere.readingPosition = otherMacsPosition
+        try elsewhere.saveBookInfoThrowing()
+        let model = makeModel(with: [fixture.book])
+
+        await finishLeftoverMoves(on: model)
+
+        let record = try recordedBook(like: fixture.book)
+        let row = try XCTUnwrap(model.bookByID(fixture.book.id))
+        // The record keeps the other Mac's position; the row keeps its own.
+        XCTAssertTrue(Book.isAsStored(record.readingPosition, otherMacsPosition), "the record lost the other Mac's position")
+        XCTAssertTrue(Book.isAsStored(row.readingPosition, rowPosition), "the row took the move its record refused")
+        // The bookmark and the skip, which the record took, moved in both.
+        for (name, book) in [("record", record), ("row", row)] {
+            XCTAssertEqual(book.bookmarks.count, 1, "\(name)'s bookmarks")
+            XCTAssertEqual(book.bookmarks.first?.chapterIndex, fixture.bookmark.chapter, "\(name)'s bookmark chapter")
+            XCTAssertEqual(book.bookmarks.first?.characterOffset, fixture.bookmark.offset, "\(name)'s bookmark offset")
+            XCTAssertEqual(book.skippedHeadingIDs, [fixture.notes.id], "\(name)'s skipped headings")
+        }
+        XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
+    }
+
     /// The launch's passes run the recovery first: the places are moved, the
     /// cache is current afterward, and no copy is left.
     @MainActor

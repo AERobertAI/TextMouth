@@ -375,6 +375,108 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(waiting: 1))
     }
 
+    // MARK: - A Removed Section's Skip (REV16, F1)
+
+    /// Asserts that `skip`, whose section the change from `old` to `new`
+    /// removed, waits at load (with `new` alone) exactly as it waits at a
+    /// rebuild (with `old` too): kept as it was, in the waiting list, naming
+    /// no heading, counted as waiting.
+    private func assertWaitsAtLoadAsAtARebuild(
+        _ skip: SkippedHeading,
+        from old: (texts: [String], headings: [Heading]),
+        to new: (texts: [String], headings: [Heading]),
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let places = PlaceRelocator.Places(skippedHeadings: [skip])
+        let rebuilt = PlaceRelocator(oldTexts: old.texts, newTexts: new.texts, oldHeadings: old.headings, newHeadings: new.headings)
+            .relocate(places, movedAt: SavedPlace.moveDate)
+        let atLoad = try XCTUnwrap(
+            PlaceRelocator.relocate(places, within: loaded(new.texts, headings: new.headings), movedAt: SavedPlace.moveDate),
+            file: file, line: line
+        )
+        for (path, outcome) in [("at a rebuild", rebuilt), ("at load", atLoad)] {
+            XCTAssertEqual(outcome.places.skippedHeadings.map(\.id), [], "\(path), the skip names a heading", file: file, line: line)
+            XCTAssertEqual(outcome.places.waitingSkippedHeadings, [skip], "\(path), the skip does not wait as it was", file: file, line: line)
+            XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(waiting: 1), path, file: file, line: line)
+        }
+    }
+
+    /// The skipped first "Notes" is removed, and the second slides into its
+    /// numbers, taking its ID. Its words before are the removed one's, and
+    /// its label is the same, but its words after are its own: the skip
+    /// waits.
+    func testASkipOfARemovedNotesSectionWaitsRatherThanNameTheNotesThatSlidIntoItsPlace() throws {
+        let book = NotesBook()
+        try assertWaitsAtLoadAsAtARebuild(
+            try SavedPlace.skip(of: book.firstHeading, in: book.both),
+            from: (book.both, [book.firstHeading, book.secondHeading]),
+            to: (book.withoutFirst, [book.slidHeading])
+        )
+    }
+
+    /// The skipped "Pump Repairs" is removed, and "Soup", which the listener
+    /// never skipped, starts where it started, after the same words: the
+    /// skip waits rather than pass to "Soup".
+    func testASkipOfARemovedSectionWaitsRatherThanPassToTheNextSection() throws {
+        let opening = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask of soup.\n\n"
+        let pump = "Pump Repairs\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
+        let soup = "Soup\n\nHesketh guarded the flask as if it were the parish silver."
+        let chapter = Heading(level: 1, text: "CHAPTER I. The Millrace", chapterIndex: 0, characterOffset: 0)
+        let oldPump = Heading(level: 2, text: "Pump Repairs", chapterIndex: 0, characterOffset: opening.utf16.count)
+        let oldSoup = Heading(level: 2, text: "Soup", chapterIndex: 0, characterOffset: opening.utf16.count + pump.utf16.count)
+        let newSoup = Heading(level: 2, text: "Soup", chapterIndex: 0, characterOffset: opening.utf16.count)
+        try assertWaitsAtLoadAsAtARebuild(
+            try SavedPlace.skip(of: oldPump, in: [opening + pump + soup]),
+            from: ([opening + pump + soup], [chapter, oldPump, oldSoup]),
+            to: ([opening + soup], [chapter, newSoup])
+        )
+    }
+
+    /// Chapters I and II each end with a "Notes" section; chapter I's, the
+    /// one skipped, is removed. Chapter II's is the one "Notes" left, but a
+    /// label alone is no proof: the skip waits.
+    func testASkipOfARemovedNotesSectionWaitsRatherThanNameAnotherChaptersNotes() throws {
+        let first = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March.\n\n"
+        let firstNotes = "Notes\n\nThe pump belonged to the angling club."
+        let second = "CHAPTER II. The Wheel\n\nThe wheel itself was oak, eleven feet across, its paddles split by frost.\n\n"
+        let secondNotes = "Notes\n\nA carpenter from the valley came on Tuesdays."
+        let chapters = [
+            Heading(level: 1, text: "CHAPTER I. The Millrace", chapterIndex: 0, characterOffset: 0),
+            Heading(level: 1, text: "CHAPTER II. The Wheel", chapterIndex: 1, characterOffset: 0),
+        ]
+        let oldFirstNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: first.utf16.count)
+        let secondNotesHeading = Heading(level: 2, text: "Notes", chapterIndex: 1, characterOffset: second.utf16.count)
+        let old = [first + firstNotes, second + secondNotes]
+        try assertWaitsAtLoadAsAtARebuild(
+            try SavedPlace.skip(of: oldFirstNotes, in: old),
+            from: (old, chapters + [oldFirstNotes, secondNotesHeading]),
+            to: ([first, second + secondNotes], chapters + [secondNotesHeading])
+        )
+    }
+
+    /// A heading that only moved, with a paragraph put in before it and its
+    /// words after it unchanged, keeps its skip at load: the skip names it,
+    /// found by its saved words, with its new place and words, and not the
+    /// chapter's second "Notes", whose label is the same.
+    func testASkipOfAHeadingThatOnlyMovedNamesItBesideAnotherOfItsLabel() throws {
+        let book = NotesBook()
+        let skip = try SavedPlace.skip(of: book.firstHeading, in: book.both)
+        let putIn = "The clerk added a line about the weather.\n\n"
+        let new = [book.opening + putIn + book.first + book.second]
+        let moved = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: book.opening.utf16.count + putIn.utf16.count)
+        let second = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: moved.characterOffset + book.first.utf16.count)
+        let outcome = try XCTUnwrap(PlaceRelocator.relocate(
+            PlaceRelocator.Places(skippedHeadings: [skip]),
+            within: loaded(new, headings: [moved, second]),
+            movedAt: SavedPlace.moveDate
+        ))
+        XCTAssertEqual(outcome.places.skippedHeadings, [try SavedPlace.skip(of: moved, in: new)])
+        XCTAssertTrue(outcome.places.waitingSkippedHeadings.isEmpty)
+        assertFoundBySavedWords(outcome.skippedHeadingFindings.first)
+        XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(foundBySavedWords: 1))
+    }
+
     // MARK: - A Text Holding Nothing
 
     /// A text that holds nothing moves nothing, so a book whose text is not

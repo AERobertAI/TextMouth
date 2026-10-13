@@ -6,8 +6,10 @@ extension LibraryViewModel {
     /// What a pass over the leftover copies of old texts did
     /// (`finishLeftoverPlaceMoves(access:then:)`).
     struct PlaceRecoveryOutcome: Sendable {
-        /// The places moved and saved to their books' records, which the
-        /// library rows take too.
+        /// The places moved and saved to their books' records, narrowed to
+        /// the moves each record took (`MovedPlaces.taken(by:)`), which the
+        /// library rows take too: a move the record refused is not given to
+        /// the row.
         var moves: [MovedPlaces] = []
         /// Copies finished: their places moved and saved, or found to need
         /// no move.
@@ -26,8 +28,8 @@ extension LibraryViewModel {
 
     /// What finishing one leftover copy came to.
     enum PlaceMoveResult: Sendable {
-        /// Done: the places moved and saved (the moves to give the row), or
-        /// none needed to move. The copy is gone.
+        /// Done: the places moved and saved (the moves the record took, to
+        /// give the row), or none needed to move. The copy is gone.
         case finished(MovedPlaces?)
         /// Not done: the copy stays for a later launch.
         case left
@@ -143,6 +145,10 @@ extension LibraryViewModel {
     /// each copy (`finishLeftoverPlaceMoves(access:then:)`). A content.md or
     /// record in the cloud, a text that cannot be read, or a record that
     /// cannot be written leaves the copy.
+    ///
+    /// The result holds only the moves the record took: the record refuses a
+    /// move where another Mac (or the listener) saved that place meanwhile,
+    /// and the row must not take a move its record refused.
     nonisolated private static func finishPlaceMove(
         from copy: PlaceSnapshot,
         of book: Book,
@@ -160,19 +166,21 @@ extension LibraryViewModel {
         // Nothing to write when no place moved: the copy is gone.
         guard let moved = copy.movePlaces(to: text, at: Date()) else { return .finished(nil) }
         do {
-            guard try LibraryPersistenceService.saveMovedPlaces(moved, for: book) != nil else {
+            guard let committed = try LibraryPersistenceService.saveMovedPlaces(moved, for: book) else {
                 // The copy stays when the record is only in the cloud, and is
                 // gone when it could never be finished.
                 return FileManager.default.fileExists(atPath: copy.folder.path) ? .left : .gone
             }
-            return .finished(moved)
+            // The row takes what the record took, no more.
+            return .finished(moved.taken(by: committed))
         } catch {
             return .left
         }
     }
 
-    /// Gives the rows the places the pass moved and saved, each only where
-    /// the row still holds it as it was
+    /// Gives the rows the places the pass moved and saved, only the moves
+    /// each record took (`finishPlaceMove(from:of:access:)`), and each only
+    /// where the row still holds the place as it was
     /// (`Book.takeMovedPlaces(original:moved:)`), in one change of the
     /// library and one save; when no row changed, nothing is saved.
     private func takeRecoveredPlaces(_ moves: [MovedPlaces]) {

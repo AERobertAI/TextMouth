@@ -627,10 +627,16 @@ final class TextAnchorFinderTests: XCTestCase {
         XCTAssertEqual(result?.isGuess, false)
     }
 
-    /// A cover has no words to find it by: its skip finds the one heading
-    /// of its level with its label, even when a title page put in where it
-    /// was has a heading of the same level.
-    func testACoversSkippedHeadingIsTheOneHeadingOfItsLevelWithItsLabel() throws {
+    /// A cover has no words to find it by. Its skip stands while the cover
+    /// is where it was, with its label, even when a title page with a
+    /// heading of the same level is put in after it. Once the title page is
+    /// put in where the cover was, nothing proves which heading is the
+    /// cover now: the one heading of its level with its label is a label
+    /// alone, which named it until REV16 (finding F1) found a label alone
+    /// handing a skip to another chapter's section. So the skip names no
+    /// heading and waits, as every such skip did before T06's branch E; a
+    /// rebuild, which has the old text, still carries it.
+    func testACoversSkipStandsWhereItWasAndWaitsWhenTheCoverMoves() throws {
         let old = aliceOld
         let cover = try item(old.headings, 0)
         let skipped = try skip(cover, in: old.texts)
@@ -643,16 +649,16 @@ final class TextAnchorFinderTests: XCTestCase {
         let titlePage = Heading(level: 1, text: "Title Page", chapterIndex: 0, characterOffset: 0)
         let movedCover = Heading(level: 1, text: cover.text, chapterIndex: 1, characterOffset: 0)
         let texts = ["Alice’s Adventures in Wonderland, a title page.", ""] + Array(old.texts.dropFirst())
-        let result = TextAnchorFinder(texts: texts, headings: [titlePage, movedCover])
-            .findHeading(level: 1, label: cover.text, anchor: skipped.anchor, savedAt: skipped.saved)
-        XCTAssertEqual(result, TextAnchorFinder.HeadingResult(heading: movedCover, finding: .found(.onlyHeadingWithItsLabel)))
+        XCTAssertNil(TextAnchorFinder(texts: texts, headings: [titlePage, movedCover])
+            .findHeading(level: 1, label: cover.text, anchor: skipped.anchor, savedAt: skipped.saved))
     }
 
     /// Two headings of a level whose label and words stand alike (two acts
     /// that end alike and open their intervals alike): the saved words
-    /// can't choose, so the skip goes, as a best guess, to the one with its
-    /// label nearest where it was.
-    func testHeadingsAlikeAreAGuessAtTheNearestWithItsLabel() throws {
+    /// can't choose, so the skip names neither and waits, rather than skip
+    /// a section the listener may want to hear. (The nearest with its label
+    /// was a best guess, which never moved a skip anyway.)
+    func testHeadingsAlikeNameNeither() throws {
         let close = "The house lights dimmed, the conductor lifted his baton, and the hall went quiet at last."
         let interval = "Intermission\n\nThe orchestra tuned again while the stagehands carried the painted forest off and a painted harbour on."
         let actOne = "Act one, in the town square. " + close + "\n\n" + interval
@@ -664,9 +670,8 @@ final class TextAnchorFinderTests: XCTestCase {
         let new = [actOne, "A line put in.\n\n" + actTwo]
         let newFirst = Heading(level: 2, text: "Intermission", chapterIndex: 0, characterOffset: try place(of: "Intermission", inChapter: 0, of: new).offset)
         let newSecond = Heading(level: 2, text: "Intermission", chapterIndex: 1, characterOffset: try place(of: "Intermission", inChapter: 1, of: new).offset)
-        let result = TextAnchorFinder(texts: new, headings: [newFirst, newSecond])
-            .findHeading(level: 2, label: "Intermission", anchor: skipped.anchor, savedAt: skipped.saved)
-        XCTAssertEqual(result, TextAnchorFinder.HeadingResult(heading: newSecond, finding: .guessed(.nearestHeadingWithItsLabel)))
+        XCTAssertNil(TextAnchorFinder(texts: new, headings: [newFirst, newSecond])
+            .findHeading(level: 2, label: "Intermission", anchor: skipped.anchor, savedAt: skipped.saved))
     }
 
     /// Two headings of a level standing on the same words (two parts that
@@ -705,6 +710,99 @@ final class TextAnchorFinderTests: XCTestCase {
                         Heading(level: 2, text: "CHAPTER II. Something Else Entirely", chapterIndex: 2, characterOffset: 0)]
         XCTAssertNil(TextAnchorFinder(texts: rewritten, headings: headings)
             .findHeading(level: 2, label: heading.text, anchor: skipped.anchor, savedAt: skipped.saved))
+    }
+
+    // MARK: - Only on Proof (REV16, F1)
+
+    /// The opening of the chapter whose sections the proof tests remove.
+    private static let millOpening = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask of soup.\n\n"
+
+    /// What a skip of the level-2 heading `skippedLabel`, which opens
+    /// `skippedSection`, names once that section is removed from the chapter
+    /// `millOpening + skippedSection + nextSection`: the next section, under
+    /// `nextLabel`, then starts where the skipped one started, after the
+    /// same words.
+    private func nameAfterRemoving(
+        _ skippedSection: String,
+        labelled skippedLabel: String,
+        before nextSection: String,
+        labelled nextLabel: String
+    ) throws -> TextAnchorFinder.HeadingResult? {
+        let start = Self.millOpening.utf16.count
+        let skipped = try skip(Heading(level: 2, text: skippedLabel, chapterIndex: 0, characterOffset: start), in: [Self.millOpening + skippedSection + nextSection])
+        let next = Heading(level: 2, text: nextLabel, chapterIndex: 0, characterOffset: start)
+        return TextAnchorFinder(texts: [Self.millOpening + nextSection], headings: [next])
+            .findHeading(level: 2, label: skippedLabel, anchor: skipped.anchor, savedAt: skipped.saved)
+    }
+
+    /// The words before a heading prove nothing: once the skipped "Pump
+    /// Repairs" section is removed, "Soup" starts where it started, after
+    /// the same words, which alone scored it as the skipped heading.
+    func testTheWordsBeforeAHeadingAloneNameNoHeading() throws {
+        XCTAssertNil(try nameAfterRemoving(
+            "Pump Repairs\n\nThe pump belonged to the angling club and went back with a new washer.\n\n", labelled: "Pump Repairs",
+            before: "Soup\n\nHesketh guarded the flask as if it were the parish silver.", labelled: "Soup"
+        ))
+    }
+
+    /// The opening of chapter II, for the proof tests whose skipped section
+    /// ends chapter I.
+    private static let wheelOpening = "CHAPTER II. The Wheel\n\nThe wheel itself was oak, eleven feet across, its paddles split by frost.\n\n"
+
+    /// What a skip of the level-2 heading `skippedLabel`, which opens
+    /// `skippedSection` at the end of chapter I (`millOpening` +
+    /// `skippedSection`), names once that section is removed, while chapter
+    /// II (`wheelOpening` + `otherSection`) still ends with a section under
+    /// `otherLabel`. No heading is left where the skipped one was, so the
+    /// direct check cannot settle it.
+    private func nameAfterRemovingChapterOnesSection(
+        _ skippedSection: String,
+        labelled skippedLabel: String,
+        whileChapterTwoEndsWith otherSection: String,
+        labelled otherLabel: String
+    ) throws -> TextAnchorFinder.HeadingResult? {
+        let skipped = try skip(
+            Heading(level: 2, text: skippedLabel, chapterIndex: 0, characterOffset: Self.millOpening.utf16.count),
+            in: [Self.millOpening + skippedSection, Self.wheelOpening + otherSection]
+        )
+        let other = Heading(level: 2, text: otherLabel, chapterIndex: 1, characterOffset: Self.wheelOpening.utf16.count)
+        return TextAnchorFinder(texts: [Self.millOpening, Self.wheelOpening + otherSection], headings: [other])
+            .findHeading(level: 2, label: skippedLabel, anchor: skipped.anchor, savedAt: skipped.saved)
+    }
+
+    /// A label alone proves nothing: chapter I's "Notes", skipped, is
+    /// removed, and chapter II's "Notes", the one heading of its level with
+    /// that label, opens with other words.
+    func testALabelAloneNamesNoHeading() throws {
+        XCTAssertNil(try nameAfterRemovingChapterOnesSection(
+            "Notes\n\nThe pump belonged to the angling club.", labelled: "Notes",
+            whileChapterTwoEndsWith: "Notes\n\nA carpenter from the valley came on Tuesdays.", labelled: "Notes"
+        ))
+    }
+
+    /// Two sections of one label whose first words agree are not one
+    /// section: every saved word after the skipped heading must agree. The
+    /// next "Notes" opens with the skipped one's first five words, then goes
+    /// its own way.
+    func testASectionOpeningWithTheSameFewWordsIsNotTheSkippedOne() throws {
+        XCTAssertNil(try nameAfterRemoving(
+            "Notes\n\nThe pump belonged to the angling club and went back with a new washer.\n\n", labelled: "Notes",
+            before: "Notes\n\nThe pump belonged to the miller, who sold it for scrap in the spring.", labelled: "Notes"
+        ))
+    }
+
+    /// A label so long that the saved words reach fewer than four words past
+    /// it proves nothing, though every saved word agrees: chapter I's
+    /// section, skipped, is removed, and chapter II's, under the same label,
+    /// opens with the same three words. (The label is 50 UTF-16 units, so
+    /// the 64-unit quote holds only "Why did the" past it.)
+    func testALongLabelWithTooFewWordsPastItNamesNoHeading() throws {
+        let label = "Questions for the Next Meeting of the Mill Society"
+        XCTAssertEqual(label.utf16.count, 50)
+        XCTAssertNil(try nameAfterRemovingChapterOnesSection(
+            label + "\n\nWhy did the pump fail?", labelled: label,
+            whileChapterTwoEndsWith: label + "\n\nWhy did the wheel crack in March?", labelled: label
+        ))
     }
 
     /// The finder reads a loaded book's chapters and headings.
