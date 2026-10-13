@@ -1786,6 +1786,16 @@ class LiveBoardGuardTests(TemporaryDirectoryTestCase):
                 with mock.patch.object(bbs.subprocess, "run", side_effect=failure):
                     self.assertFalse(bbs.script_is_unmerged(repo, script))
 
+    def test_a_callers_git_variables_do_not_blind_the_guard(self) -> None:
+        # Inside a git hook, GIT_DIR and its relatives name a repository. Passed
+        # on, a wrong one would fail every git call, and the guard would let
+        # the edited copy through.
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        missing = str(self.make_temp_dir() / "no-such-git-dir")
+        self.assert_refused(self.run_copy(script, repo, GIT_DIR=missing, GIT_WORK_TREE=missing), repo)
+
     def test_live_board_repository_names_only_the_discovered_board(self) -> None:
         repo = self.make_repository()
         with mock.patch.object(bbs, "discovery_starts", return_value=[repo]):

@@ -712,11 +712,18 @@ def run_git(repository: Path, *args: str, stdin: str = "") -> Optional[str]:
 
     None means git could not answer: it is missing or cannot start, it did
     not finish within ``GIT_TIMEOUT_SECONDS``, or it exited with an error.
+
+    The caller's ``GIT_*`` variables are left out. Git finds its repository
+    through ``GIT_DIR`` and its relatives before the working directory, so one
+    set by a git hook, say, would make every call fail, and the guard would
+    let any copy through, or would point it at another repository.
     """
+    environment = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
     try:
         result = subprocess.run(
             ["git", *args],
             cwd=repository,
+            env=environment,
             input=stdin,
             capture_output=True,
             text=True,
