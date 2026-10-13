@@ -50,7 +50,7 @@ struct SpeechRefusalReportView: View {
 
             // Every line of the report, as Copy Details copies it. Labelled
             // "Details" alone: no heading above it says the word first.
-            FeedReadOnlyText(text: report.text, label: SpeechRefusalWording.detailsLabel)
+            ReadOnlyTextArea(text: report.text, label: SpeechRefusalWording.detailsLabel)
                 .frame(minHeight: 300)
 
             HStack {

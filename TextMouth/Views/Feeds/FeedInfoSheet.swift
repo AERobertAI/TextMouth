@@ -309,7 +309,7 @@ struct FeedInfoSheet: View {
             // Labelled with the feed's title, as Show Description labels its
             // text area with the item's: labelled Description, VoiceOver
             // would say the heading's word twice in a row.
-            FeedReadOnlyText(text: summary, label: FeedWording.descriptionTextLabel(title: feed.title))
+            ReadOnlyTextArea(text: summary, label: FeedWording.descriptionTextLabel(title: feed.title))
                 .frame(height: 120)
         }
     }
@@ -422,56 +422,6 @@ struct FeedInfoValue: View {
     }
 }
 
-// MARK: - Text Read With VoiceOver's Text Navigation
-
-/// A text VoiceOver reads as a text area (FR03): its lines, words, and
-/// letters reached with VoiceOver's text navigation and the arrow keys,
-/// which also move its insertion point, and shown on a braille display as
-/// they are, with selection and copying, but no typing. AppKit's text view
-/// gives all of that, where a SwiftUI text gives a single static element.
-struct FeedReadOnlyText: NSViewRepresentable {
-    /// The text.
-    let text: String
-    /// The text area's spoken label.
-    let label: String
-    /// Whether the text takes keyboard focus as it appears, so VoiceOver
-    /// starts in it.
-    var takesFocus = false
-
-    func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        scrollView.hasVerticalScroller = true
-        scrollView.borderType = .bezelBorder
-        if let textView = scrollView.documentView as? NSTextView {
-            textView.isEditable = false
-            textView.isSelectable = true
-            textView.isRichText = false
-            textView.font = .preferredFont(forTextStyle: .body)
-            textView.textContainerInset = NSSize(width: 6, height: 6)
-            textView.string = text
-            textView.setAccessibilityLabel(label)
-            if takesFocus {
-                // Once the text view is in its window, after the sheet's
-                // own animation.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak textView] in
-                    guard let textView, let window = textView.window else { return }
-                    window.makeFirstResponder(textView)
-                    textView.setSelectedRange(NSRange(location: 0, length: 0))
-                }
-            }
-        }
-        return scrollView
-    }
-
-    func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard let textView = scrollView.documentView as? NSTextView else { return }
-        if textView.string != text {
-            textView.string = text
-        }
-        textView.setAccessibilityLabel(label)
-    }
-}
-
 // MARK: - A Key Equivalent Without a Button
 
 /// A key that does what a button's key equivalent does, with no second
@@ -579,7 +529,7 @@ struct FeedItemDescriptionSheet: View {
             Text(description.details)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            FeedReadOnlyText(text: description.text, label: FeedWording.descriptionTextLabel(title: description.title), takesFocus: true)
+            ReadOnlyTextArea(text: description.text, label: FeedWording.descriptionTextLabel(title: description.title), takesFocus: true)
                 .frame(minHeight: 240)
             if let link = description.link {
                 FeedInfoValue(label: FeedWording.webPageLabel, value: link.absoluteString)
