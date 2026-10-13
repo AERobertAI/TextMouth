@@ -71,6 +71,26 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - A changed copy of `bbs.py` must never run against the live board: one worker did on October 12, which created the new tables early (harmlessly). Point `TEXTMOUTH_BBS_DIR` at a scratch folder first.
 - A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
 
+## Where things stood on October 13, 2026
+
+Main at 7c19d0cf (the record of the REV16 fixes). Its suite counts 6116 tests, 64 skipped, 0 failures, with no Swift warnings. The orchestrator ran on Opus. From the evening of October 12 it ran agent teams: an Opus lead launching Sonnet workers at effort high (see "Teams" above).
+
+**Merged,** each recorded in the TODO with its notes in AGENT-NOTES:
+- REV15's relocator fixes (7f23cc06);
+- the board's teams (e0b6995b) and its follow-ups (de9696b5), after which the live board refuses a copy of `bbs.py` that main never had;
+- four polish rounds (d573a64d, dda76f9f, 1c55c66e, eb956aa5), which closed REV07 and found about 80 stale follow-ups already fixed;
+- two documentation passes (72e863d2, d7810d01);
+- T06's branches D (112bb7b3) and E (cf542090), which complete T06.
+
+An independent review, REV16, then found four problems in branches D and E, one of them medium-high; all four are fixed (abbd4738).
+
+**Pending:**
+- the user's answers in `humanQuestions/2026-10-12.md` (13 small choices);
+- a documentation pass for the REV16 fixes, whose wording is in AGENT-NOTES;
+- the user's push and install. Main is far ahead of origin/main, and agents' worktrees start at origin/main.
+
+The weekly window stood at 20% left; the user's floor is about 10%.
+
 ## Where things stood on October 7, 2026 (evening)
 
 Main at the docs merge b165940c and its record, suite 4857 tests, 54 skipped, 0 failures, no Swift warnings (after the text-field keys merge; the documentation passes ran no suite). The orchestrator ran on Opus 5.5 and every agent on Opus. Merged that evening, each recorded in the TODO with its agent's notes in `AGENT-NOTES-2026-10-04.md` under "Agent notes, October 7, 2026 (evening)": the afternoon's documentation pass (5d6227cb), a feed's counts and its folder's row (9ae7becc), the reading list (01197eb1) and reading a book from it (9a61278d; FR09 done), four follow-ups (cb134bb1: #1290, #1291, #1308, #1296), the speech refusal follow-ups (6b78bd4c), ZIP import progress (f2b39d7f; FR10's first half), the keys a focused text field keeps (5b137a63; B03), the evening's documentation pass (b165940c), and two design notes, `FEED-ITEMS-RESEARCH-2026-10-07.md` (FR11) and `KEYBOARD-SHORTCUTS-RESEARCH-2026-10-07.md` (FR12). Two read-only reviewers read every line of the afternoon's five merges first; the TODO's REV07 entry lists each finding and where it went. Pending: the user's answers to the ten questions ending each design note (all recommended yes), then FR11's and FR12's builds in the branches the notes plan; the queued briefs `editbaselines.md` and `finishedbook.md` in `Scripts/agents/briefs/2026-10-07/`; an unbriefed bundle of REV07's Speak Info items and cleanups; B04 (the user's Shift-Command-B on two actions; a config.json workaround awaits the user's yes) and the Shift-Command-T clash (#1451); FR10's feed-download half after FR11's second branch. The merge chain's one red run that evening was a test host that received an ordinary quit while it was the frontmost app (no crash); xcodebuild restarted the rest and the interrupted class passed alone, which is how such a run is settled. The installed app was still the October 5 build until the user pushes and installs.
