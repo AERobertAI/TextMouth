@@ -143,7 +143,7 @@ final class LibraryCloudRefreshTests: XCTestCase {
 
     /// Adding, moving, and removing a book each refresh once more, and the
     /// added book's state is recorded.
-    func testEveryChangeToWhereBooksAreRefreshes() async {
+    func testEveryChangeToWhereBooksAreRefreshes() async throws {
         let book = cloudTestBook()
         let fixture = RefreshFixture(books: [book])
         defer { fixture.closeWindows() }
@@ -157,6 +157,7 @@ final class LibraryCloudRefreshTests: XCTestCase {
         XCTAssertEqual(fixture.storage.refreshCount, 2, "adding a book refreshes")
         XCTAssertEqual(fixture.states.state(of: added.id), .inCloud)
 
+        _ = try XCTUnwrap(fixture.model.library.books[safe: 0], "the library has no first book")
         fixture.model.library.books[0].folderPath = "Whaling"
         await fixture.refresher.waitForRefreshes()
         XCTAssertEqual(fixture.storage.refreshCount, 3, "moving a book refreshes")
@@ -169,12 +170,13 @@ final class LibraryCloudRefreshTests: XCTestCase {
     /// Changes that leave every package where it was, such as a reading
     /// position or a new title, start no refresh: they come often and change
     /// no cloud state.
-    func testChangesThatMoveNoPackageDoNotRefresh() async {
+    func testChangesThatMoveNoPackageDoNotRefresh() async throws {
         let fixture = RefreshFixture(books: [cloudTestBook()])
         defer { fixture.closeWindows() }
         fixture.openWindow()
         await fixture.refresher.waitForRefreshes()
 
+        _ = try XCTUnwrap(fixture.model.library.books[safe: 0], "the library has no first book")
         fixture.model.library.books[0].readingPosition = ReadingPosition(chapterIndex: 3, characterOffset: 12)
         fixture.model.library.books[0].title = "Moby-Dick; or, The Whale"
         await fixture.refresher.waitForRefreshes()
