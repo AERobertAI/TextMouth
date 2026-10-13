@@ -43,7 +43,7 @@ extension FeedCenter {
     func isNew(_ item: FeedItem, of feed: Feed) -> Bool {
         guard item.playedDate == nil, item.sortDate > feed.subscribedDate, item.state.libraryBookID == nil else { return false }
         if let book = downloadedRow(of: item, in: feed.id) ?? library?.feedItemRows(of: feed.id).kept[item.id] {
-            return book.lastOpened == nil
+            return book.isUnopened
         }
         return true
     }

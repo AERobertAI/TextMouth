@@ -837,7 +837,7 @@ struct Library: Codable {
     /// items are left out (FR11): their feed's row stands for them, as the
     /// user asked on October 7.
     func unopenedBooks() -> [Book] {
-        books.filter { !$0.isFeedItem && $0.lastOpened == nil }
+        books.filter { !$0.isFeedItem && $0.isUnopened }
     }
 
     func subfolders(of parentPath: String) -> [BookFolder] {

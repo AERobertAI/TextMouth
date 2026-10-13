@@ -14,7 +14,7 @@ enum LibraryBookSorter {
     static func recent(_ books: [Book], limit: Int = 10) -> [Book] {
         guard limit > 0 else { return [] }
         let opened = books
-            .filter { $0.lastOpened != nil }
+            .filter { !$0.isUnopened }
             .sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
         var listedFeeds = Set<UUID>()
         var listed: [Book] = []

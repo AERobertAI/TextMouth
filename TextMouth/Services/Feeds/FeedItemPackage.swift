@@ -38,7 +38,7 @@ enum FeedItemPackage {
     /// listener's (`holdsListenersFiles(_:)`). Only such a package stays
     /// once its file is removed.
     static func holdsListenerState(_ row: Book, package: URL) -> Bool {
-        row.lastOpened != nil
+        !row.isUnopened
             || row.readingPosition != nil
             || !row.bookmarks.isEmpty
             || row.lastPlaybackStarted != nil

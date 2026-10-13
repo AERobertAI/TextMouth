@@ -470,7 +470,7 @@ struct BookRow: View {
                     Text(book.title)
                         .font(.headline)
 
-                    if book.lastOpened == nil {
+                    if book.isUnopened {
                         Text("New")
                             .font(.caption2)
                             .fontWeight(.semibold)
@@ -597,7 +597,7 @@ struct BookRow: View {
         }
         parts.append(book.title)
         parts.append("by \(book.author)")
-        if book.lastOpened == nil {
+        if book.isUnopened {
             parts.append("New")
         } else if isOpenInWindow {
             parts.append("Now Reading")

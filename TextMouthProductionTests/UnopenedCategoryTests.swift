@@ -163,6 +163,21 @@ final class UnopenedCategoryTests: XCTestCase {
         XCTAssertEqual(model.sortState(at: unopened), shown)
     }
 
+    // MARK: - What Makes a Book Unopened
+
+    /// `Book.isUnopened` follows `lastOpened` exactly: a book is unopened
+    /// while it has no last-opened date, opened once it has one, and
+    /// unopened again if the date is cleared.
+    func testIsUnopenedFollowsLastOpened() {
+        let start = Date(timeIntervalSince1970: 1_791_000_000)
+        var book = Self.book("Pages", in: "", added: start, opened: nil)
+        XCTAssertTrue(book.isUnopened)
+        book.lastOpened = start.addingTimeInterval(60)
+        XCTAssertFalse(book.isUnopened)
+        book.lastOpened = nil
+        XCTAssertTrue(book.isUnopened)
+    }
+
     // MARK: - What It Lists
 
     /// Unopened lists every book never opened, from the root and every
