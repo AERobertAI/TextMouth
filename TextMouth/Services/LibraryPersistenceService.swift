@@ -571,6 +571,13 @@ enum LibraryPersistenceService {
     /// be read counts as none, as it does for every save). Only the analysis
     /// fields and the content index change; the reading position, bookmarks,
     /// settings, and edited metadata stay exactly as that state has them.
+    /// The one exception is `movedPlaces`, the places a rebuild of the text
+    /// moved (T06's branch D): they ride with the analysis into the same
+    /// latest state, each taken only where that state still holds it as it
+    /// was (`Book.takeMovedPlaces(original:moved:)`), so a place saved
+    /// meanwhile wins. The copy of the old text they were moved from is
+    /// discarded once they are written; a result dropped, or a write that
+    /// throws, keeps it for the next launch to finish.
     ///
     /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
     /// debug log, when the latest state describes other content than was
@@ -592,7 +599,8 @@ enum LibraryPersistenceService {
     static func saveContentAnalysis(
         for analyzed: Book,
         index: BookContentIndex,
-        cacheFormatVersion: String?
+        cacheFormatVersion: String?,
+        movedPlaces: MovedPlaces? = nil
     ) throws -> Book? {
         guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
 
@@ -638,12 +646,19 @@ enum LibraryPersistenceService {
 
             var merged = latest
             merged.applyContentAnalysis(index, cacheFormatVersion: cacheFormatVersion)
+            // The places a rebuild moved, each only where the latest state
+            // still holds it as it was when the old text was copied aside.
+            if let movedPlaces {
+                merged.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
+            }
             // A failed write throws here, leaving any waiting snapshot to its
             // own debounce, so the newer user state outlives the lost result.
             guard try writeBookInfo(merged, contentIndex: index, stored: stored) else { return nil }
             // The waiting snapshot is on disk now, merged with the analysis:
             // forget it, so its debounce does not write it a second time.
             cancelQueuedWrites(for: analyzed)
+            // The record holds the moved places now: the copy is no longer needed.
+            movedPlaces?.discardSnapshot()
             // That snapshot was the book's latest state, so an earlier failed
             // write of the book is settled too. A merge into the stored
             // record alone saved nothing newer and settles nothing.

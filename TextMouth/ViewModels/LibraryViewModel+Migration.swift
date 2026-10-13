@@ -526,9 +526,10 @@ extension LibraryViewModel {
                 guard let committed = try LibraryPersistenceService.saveContentAnalysis(
                     for: book,
                     index: analysis.index,
-                    cacheFormatVersion: analysis.cacheFormatVersion
+                    cacheFormatVersion: analysis.cacheFormatVersion,
+                    movedPlaces: analysis.movedPlaces
                 ) else { return nil }
-                return ContentAnalysisSummary(committed: committed)
+                return ContentAnalysisSummary(committed: committed, movedPlaces: analysis.movedPlaces)
             }
         } catch where DatalessFiles.isDownloadRefusal(error) {
             skips.record(book)
@@ -927,9 +928,12 @@ extension LibraryViewModel {
             // leaves the library version unchanged, so a later pass
             // tries again.
             guard let committed = try LibraryPersistenceService.saveContentAnalysis(
-                for: updatedBook, index: generated.content.contentIndex, cacheFormatVersion: currentVersion
+                for: updatedBook,
+                index: generated.content.contentIndex,
+                cacheFormatVersion: currentVersion,
+                movedPlaces: generated.movedPlaces
             ) else { return nil }
-            return ContentAnalysisSummary(committed: committed)
+            return ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces)
         } catch {
             // Leave the library version unchanged so startup retries
             // a book whose new index could not be committed.

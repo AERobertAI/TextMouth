@@ -141,7 +141,8 @@ final class TextAnchorCaptureLaunchTests: FeedItemIndexTestCase {
     /// that text, recording that it was measured in it ("3.0.3/1.0.0"),
     /// before the launch's cache batch rebuilds the text with this build's
     /// extraction: the launch's passes give places their words before any
-    /// text is rebuilt (T06, question 9).
+    /// text is rebuilt (T06, question 9). The rebuild then moves the place
+    /// onto the new text, which gives it the new text's words.
     @MainActor
     func testPlacesTakeTheirWordsBeforeTheCacheBatchRebuildsTheirText() throws {
         var book = try makePackagedBook(title: "Rebuilt Later", text: Self.ledger, cacheFormatVersion: "3.0.3")
@@ -158,10 +159,20 @@ final class TextAnchorCaptureLaunchTests: FeedItemIndexTestCase {
         let row = try XCTUnwrap(model.bookByID(book.id))
         let measure = TextAnchor.measure(ofTextCachedBy: "3.0.3")
         XCTAssertEqual(measure, "3.0.3/\(BookContentIndex.currentVersion)")
-        XCTAssertEqual(row.readingPosition?.anchor, oldText.anchor(at: TextPlace(chapter: 0, offset: 40), measuredIn: measure))
         XCTAssertEqual(row.cacheFormatVersion, MarkdownCacheService.currentCacheVersion, "the cache was not rebuilt")
         let rebuilt = try MarkdownCacheService.loadFromCache(for: book)
         XCTAssertNotEqual(rebuilt.chapters.first?.text, oldText.chapters.first?.text, "the text was not rebuilt")
+        // The rebuild then moved the place (T06's branch D) from the words
+        // it took in the older text onto the new text, where it holds the
+        // new text's words, measured as this build measures.
+        let moved = try XCTUnwrap(row.readingPosition)
+        XCTAssertEqual(
+            moved.anchor,
+            rebuilt.anchor(
+                at: TextPlace(chapter: moved.chapterIndex, offset: moved.characterOffset),
+                measuredIn: TextAnchor.measure(ofTextCachedBy: MarkdownCacheService.currentCacheVersion)
+            )
+        )
     }
 
     // MARK: - Paths That Carry Places

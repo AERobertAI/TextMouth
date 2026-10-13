@@ -73,4 +73,104 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
 
         XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
     }
+
+    // MARK: Committing the Moved Places
+
+    /// The book as its package record holds it, read from disk after every
+    /// queued library write has landed.
+    private func recordedBook(like book: Book) throws -> Book {
+        LibraryPersistenceService.flushPendingSave()
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        return Book(
+            record: record,
+            filePath: book.filePath,
+            folderPath: book.folderPath,
+            tmbDirectoryName: book.tmbDirectoryName
+        )
+    }
+
+    /// Runs the launch's cache batch over `model` until its completion.
+    @MainActor
+    private func runCacheBatch(on model: LibraryViewModel, access: MaintenanceFileAccess = .live) async {
+        let finished = expectation(description: "The cache batch finished")
+        model.extractMissingContentCaches(access: access) { finished.fulfill() }
+        await fulfillment(of: [finished], timeout: 20)
+    }
+
+    /// The cache batch rebuilds the older text and commits the moved places
+    /// with the analysis: the row and the record hold them, the copy is
+    /// gone, and the debug log says once that the places were moved.
+    @MainActor
+    func testTheBatchCommitsTheMovedPlacesToTheRowAndTheRecord() async throws {
+        let title = "Batch \(UUID().uuidString)"
+        let fixture = try makeBookInAnOlderText(title: title)
+        let model = makeModel(with: [fixture.book])
+
+        await runCacheBatch(on: model)
+
+        assertPlaces(of: try XCTUnwrap(model.bookByID(fixture.book.id)), areThoseOf: fixture)
+        let record = try recordedBook(like: fixture.book)
+        assertPlaces(of: record, areThoseOf: fixture)
+        XCTAssertEqual(record.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
+        XCTAssertEqual(logLineCount("PLACES_RELOCATED: \(title):"), 1)
+    }
+
+    /// Redo Text Extraction moves the places the same way.
+    @MainActor
+    func testRedoTextExtractionCommitsTheMovedPlaces() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Redo \(UUID().uuidString)")
+        let model = makeModel(with: [fixture.book])
+        let finished = expectation(description: "Redo Text Extraction finished")
+
+        XCTAssertTrue(model.redoAllTextExtraction(access: .live) { _ in finished.fulfill() })
+        await fulfillment(of: [finished], timeout: 20)
+
+        assertPlaces(of: try XCTUnwrap(model.bookByID(fixture.book.id)), areThoseOf: fixture)
+        assertPlaces(of: try recordedBook(like: fixture.book), areThoseOf: fixture)
+        XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
+    }
+
+    /// A position saved while the batch rebuilds the text is the listener's
+    /// newest: it wins over the moved one, in the row and in the record,
+    /// while the bookmark and the skip still move.
+    @MainActor
+    func testAPositionSavedMeanwhileIsKept() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Meanwhile \(UUID().uuidString)")
+        let model = makeModel(with: [fixture.book])
+        let held = holdCacheGeneration(of: fixture.book)
+        let finished = expectation(description: "The cache batch finished")
+
+        model.extractMissingContentCaches { finished.fulfill() }
+        await fulfillment(of: [held.reached], timeout: 20)
+        model.persistReadingPosition(bookID: fixture.book.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 3))
+        held.gate.signal()
+        await fulfillment(of: [finished], timeout: 20)
+
+        let row = try XCTUnwrap(model.bookByID(fixture.book.id))
+        let record = try recordedBook(like: fixture.book)
+        for book in [row, record] {
+            XCTAssertEqual(book.readingPosition?.chapterIndex, 0)
+            XCTAssertEqual(book.readingPosition?.characterOffset, 3)
+            XCTAssertEqual(book.bookmarks.first?.chapterIndex, fixture.bookmark.chapter)
+            XCTAssertEqual(book.bookmarks.first?.characterOffset, fixture.bookmark.offset)
+            XCTAssertEqual(book.skippedHeadingIDs, [fixture.notes.id])
+        }
+        XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
+    }
+
+    /// A book whose text is only in the cloud is left alone: its places stay
+    /// as they were, and nothing is copied.
+    @MainActor
+    func testABookInTheCloudKeepsItsPlaces() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Cloud \(UUID().uuidString)")
+        let model = makeModel(with: [fixture.book])
+        cloud.markDataless(MarkdownCacheService.cacheURL(for: fixture.book))
+
+        await runCacheBatch(on: model, access: cloud.access)
+
+        let row = try XCTUnwrap(model.bookByID(fixture.book.id))
+        XCTAssertEqual(row.relocatablePlaces, fixture.book.relocatablePlaces)
+        XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
+    }
 }

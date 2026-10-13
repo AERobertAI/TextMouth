@@ -94,8 +94,18 @@ extension CloudMaintenanceTestCase {
         XCTAssertNil(record.state.textCacheFingerprint, "the fixture's record should keep no fingerprints")
         XCTAssertEqual(record.state.cacheFormatVersion, "3.0.3")
 
+        // The book as the record holds it, which a library row loaded from
+        // disk equals: the record keeps dates to the second, so the places
+        // compare equal to the record's only after that rounding.
+        let recorded = Book(
+            record: record,
+            filePath: book.filePath,
+            folderPath: book.folderPath,
+            tmbDirectoryName: book.tmbDirectoryName
+        )
+
         return BookInAnOlderText(
-            book: book,
+            book: recorded,
             newText: newText,
             newBytes: newBytes,
             position: try Self.place(of: marker, in: newText.chapters.map(\.text)),
