@@ -32,7 +32,7 @@ final class ContentIndexValidationTests: XCTestCase {
     /// A heading placed past its chapter's end, or before its start, is
     /// built at the nearest end, with the ID `Heading` derives there, so
     /// the builder never writes an index validation would reject.
-    func testBuilderKeepsHeadingsInsideTheirChapter() {
+    func testBuilderKeepsHeadingsInsideTheirChapter() throws {
         let chapter = Chapter(title: "Body", text: "Body.", headings: [
             Heading(level: 1, text: "Before", characterOffset: -3),
             Heading(level: 1, text: "<br>", characterOffset: 7),
@@ -40,9 +40,10 @@ final class ContentIndexValidationTests: XCTestCase {
 
         let index = BookContentIndex.build(fromChapters: [chapter], format: .markdown)
 
-        XCTAssertEqual(index.chapters[0].headings.map(\.characterOffset), [0, 5])
-        XCTAssertEqual(index.chapters[0].headings.map(\.globalCharacterOffset), [0, 5])
-        XCTAssertEqual(index.chapters[0].headings.map(\.id), index.allHeadings.map(\.id))
+        let built = try XCTUnwrap(index.chapters[safe: 0], "the chapter the builder was given")
+        XCTAssertEqual(built.headings.map(\.characterOffset), [0, 5])
+        XCTAssertEqual(built.headings.map(\.globalCharacterOffset), [0, 5])
+        XCTAssertEqual(built.headings.map(\.id), index.allHeadings.map(\.id))
         XCTAssertNil(index.validationFailure(for: .markdown, audioBaseURL: nil))
     }
 
@@ -928,11 +929,12 @@ final class ContentIndexValidationTests: XCTestCase {
     /// A heading the parser placed past its chapter's end is recorded at the
     /// end, and alignment compares it there, so an index built from text
     /// stays aligned with that text.
-    func testHeadingPastTheEndIsAlignedWhereTheIndexRecordsIt() {
+    func testHeadingPastTheEndIsAlignedWhereTheIndexRecordsIt() throws {
         let chapters = [Chapter(title: "One", text: "Words.", headings: [Heading(level: 1, text: "", characterOffset: 40)])]
         let index = BookContentIndex.build(fromChapters: chapters, format: .epub)
 
-        XCTAssertEqual(index.chapters[0].headings[0].characterOffset, 6)
+        let heading = try XCTUnwrap(index.chapters[safe: 0]?.headings[safe: 0], "the heading the builder was given")
+        XCTAssertEqual(heading.characterOffset, 6)
         XCTAssertNil(index.alignmentFailure(with: chapters))
     }
 
@@ -955,7 +957,7 @@ final class ContentIndexValidationTests: XCTestCase {
     func testMalformedTextIndexIsRebuiltAndReplaced() throws {
         let book = try makeTextBook()
         var damaged = try savedIndex(of: book)
-        let start = damaged.chapters[1].startCharacterOffset
+        let start = try XCTUnwrap(damaged.chapters[safe: 1], "a second chapter to damage").startCharacterOffset
         damaged.chapters[1].startCharacterOffset += 7
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
@@ -963,7 +965,7 @@ final class ContentIndexValidationTests: XCTestCase {
 
         XCTAssertFalse(result.usedPersistedIndex)
         assertAligned(result, for: book)
-        XCTAssertEqual(result.index.chapters[1].startCharacterOffset, start)
+        XCTAssertEqual(result.index.chapters[safe: 1]?.startCharacterOffset, start)
         XCTAssertEqual(
             rejections(of: book),
             ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].startCharacterOffset is \(start + 7), expected \(start)"]
@@ -984,6 +986,7 @@ final class ContentIndexValidationTests: XCTestCase {
         // chapter is longer, though the package's fingerprints are unchanged.
         let addition = " Nine ten."
         var otherChapters = try MarkdownCacheService.loadFromCache(for: book).chapters
+        _ = try XCTUnwrap(otherChapters[safe: 1], "a second chapter to lengthen")
         otherChapters[1].text += addition
         var other = BookContentIndex.build(fromChapters: otherChapters, format: book.format)
         other.textCacheFingerprint = saved.textCacheFingerprint
@@ -993,8 +996,8 @@ final class ContentIndexValidationTests: XCTestCase {
 
         XCTAssertFalse(result.usedPersistedIndex)
         assertAligned(result, for: book)
-        let savedLength = saved.chapters[1].characterCount
-        XCTAssertEqual(result.index.chapters[1].characterCount, savedLength)
+        let savedLength = try XCTUnwrap(saved.chapters[safe: 1], "a second saved chapter").characterCount
+        XCTAssertEqual(result.index.chapters[safe: 1]?.characterCount, savedLength)
         XCTAssertEqual(
             rejections(of: book),
             ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].characterCount is \(savedLength + addition.utf16.count), but the reading text holds \(savedLength)"]
@@ -1021,6 +1024,7 @@ final class ContentIndexValidationTests: XCTestCase {
     func testAudioIndexMissingAPathIsRebuiltAndReplaced() throws {
         let book = try makeAudioBook()
         var damaged = try savedIndex(of: book)
+        _ = try XCTUnwrap(damaged.chapters[safe: 1], "a second chapter to damage")
         damaged.chapters[1].audio?.relativeFilePath = nil
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
@@ -1104,14 +1108,14 @@ final class ContentIndexValidationTests: XCTestCase {
             ]))
         ])
         let saved = try savedIndex(of: book)
-        XCTAssertEqual(saved.chapters[1].audio?.clips?.map(\.duration), [0.5, 1, 1])
+        XCTAssertEqual(saved.chapters[safe: 1]?.audio?.clips?.map(\.duration), [0.5, 1, 1])
 
         let result = try BookContentAnalysisService.load(book: book)
 
         XCTAssertTrue(result.usedPersistedIndex)
         XCTAssertEqual(result.index, saved)
         XCTAssertEqual(result.audioSegments?.map { $0.clips.map(\.file) }, [["a.wav"], ["a.wav", "b.wav", "Disc 2/c.wav"]])
-        XCTAssertEqual(result.audioSegments?[1].clips.last?.endTime, 1)
+        XCTAssertEqual(result.audioSegments?[safe: 1]?.clips.last?.endTime, 1)
         XCTAssertTrue(rejections(of: book).isEmpty)
     }
 
@@ -1124,6 +1128,7 @@ final class ContentIndexValidationTests: XCTestCase {
             AudioClip(file: "b.wav", startTime: 0, endTime: 1)
         ]))])
         var damaged = try savedIndex(of: book)
+        _ = try XCTUnwrap(damaged.chapters[safe: 0]?.audio?.clips?[safe: 1], "a second clip to damage")
         damaged.chapters[0].audio?.clips?[1].relativeFilePath = nil
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
@@ -1164,6 +1169,7 @@ final class ContentIndexValidationTests: XCTestCase {
     func testOversizedAudioIndexIsRebuiltWithoutAllocating() throws {
         let book = try makeAudioBook()
         var damaged = try savedIndex(of: book)
+        _ = try XCTUnwrap(damaged.chapters[safe: 0], "a first chapter to damage")
         damaged.chapters[0].characterCount = 1_000_000_000_000
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
@@ -1183,6 +1189,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let book = try makeTextBook()
         XCTAssertEqual(BookContentAnalysisService.completedTextCacheIndex(for: book), try savedIndex(of: book))
         var damaged = try savedIndex(of: book)
+        _ = try XCTUnwrap(damaged.chapters[safe: 0]?.headings[safe: 0], "a first heading to damage")
         damaged.chapters[0].headings[0].level = 9
         try book.saveBookInfoThrowing(contentIndex: damaged)
 
