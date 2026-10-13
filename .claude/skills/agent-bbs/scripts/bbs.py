@@ -1914,9 +1914,18 @@ def load_tasks(
 
 
 def describe_task(task: dict) -> str:
-    """Describe one task: a first line, then only the detail lines with something to say."""
-    assigned = f", assigned to {task['assignee']}" if task["assignee"] else ""
-    lines = [f"Task {task['id']} in {task['team']}, {task['state']}{assigned}: {task['title']}"]
+    """Describe one task: a first line, then only the detail lines with something to say.
+
+    An assigned task's state and assignee say the same thing, so its first
+    line gives the assignee alone, rather than "assigned, assigned to ...".
+    """
+    if task["assignee"] is None:
+        who = task["state"]
+    elif task["state"] == "assigned":
+        who = f"assigned to {task['assignee']}"
+    else:
+        who = f"{task['state']}, assigned to {task['assignee']}"
+    lines = [f"Task {task['id']} in {task['team']}, {who}: {task['title']}"]
     if task["brief"]:
         lines.append(f"  Brief: {task['brief']}")
     if task["files"]:

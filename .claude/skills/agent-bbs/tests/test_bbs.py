@@ -1945,7 +1945,7 @@ class TaskTests(BoardTestCase):
         task = self.add("Channels", "board", "--assign", "Alpha")
         self.assertEqual((task["state"], task["assignee"]), ("assigned", "alpha"))
         text = self.ok("task", "add", "lead", "board", "--title", "More", "--assign", "alpha")
-        self.assertIn("Task 2 in board, assigned, assigned to alpha: More", text.splitlines())
+        self.assertIn("Task 2 in board, assigned to alpha: More", text.splitlines())
 
     def test_an_assignee_who_has_not_registered_gets_a_reminder_and_a_registered_one_does_not(self) -> None:
         planned = self.ok("task", "add", "lead", "board", "--title", "Later", "--assign", "nobody-yet")
@@ -1999,10 +1999,10 @@ class TaskTests(BoardTestCase):
             lines = self.ok("tasks").splitlines()
         self.assertEqual(lines[0], "2 tasks:")
         self.assertIn("Task 1 in board, open: First", lines)
-        self.assertIn("Task 2 in polish, assigned, assigned to beta: Second", lines)
+        self.assertIn("Task 2 in polish, assigned to beta: Second", lines)
         self.assertLess(
             lines.index("Task 1 in board, open: First"),
-            lines.index("Task 2 in polish, assigned, assigned to beta: Second"),
+            lines.index("Task 2 in polish, assigned to beta: Second"),
         )
         # A blank line follows the heading and separates the two tasks.
         self.assertEqual(lines.count(""), 2)
@@ -2104,7 +2104,7 @@ class TaskTests(BoardTestCase):
             text.splitlines(),
             [
                 "Assigned task 1 to alpha.",
-                "Task 1 in board, assigned, assigned to alpha: Channels",
+                "Task 1 in board, assigned to alpha: Channels",
                 "  Note: Go",
                 f"  Changed: {stamp} by lead",
             ],
@@ -2238,6 +2238,24 @@ class TaskTests(BoardTestCase):
         self.assertEqual([t["title"] for t in self.ok_json("tasks", "--state", "working")], ["A"])
         self.assertEqual([t["title"] for t in self.ok_json("tasks", "--state", "done")], ["B"])
         self.assertIn("  Tasks: 1 working, 1 done", self.ok("teams", "board").splitlines())
+
+    def test_an_assigned_tasks_first_line_names_the_assignee_once(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        self.add("Housekeeping")
+        self.add("Tasks")
+        self.assign(3, "alpha")
+        self.move(3, "done", actor="alpha")
+        first_lines = [line for line in self.ok("tasks").splitlines() if line.startswith("Task ")]
+        self.assertEqual(
+            first_lines,
+            [
+                "Task 1 in board, assigned to alpha: Channels",
+                "Task 2 in board, open: Housekeeping",
+                "Task 3 in board, done, assigned to alpha: Tasks",
+            ],
+        )
+        self.move(1, "working")
+        self.assertIn("Task 1 in board, working, assigned to alpha: Channels", self.ok("tasks").splitlines())
 
     def test_a_workers_day_from_assignment_to_done(self) -> None:
         self.add("Channels", "board", "--assign", "alpha")
