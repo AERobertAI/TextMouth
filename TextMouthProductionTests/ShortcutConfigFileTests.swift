@@ -94,9 +94,10 @@ final class ShortcutConfigFileTests: XCTestCase {
     }
 
     /// The bookmark command's former name, Add Bookmark, is still read in
-    /// config.json, in any letter case, and in the record of the user's
-    /// edits, without a repair logged, so an edit made under it is kept;
-    /// TextMouth writes it back as Toggle Bookmark alone (#1937).
+    /// config.json and in the record of the user's edits, without a repair
+    /// logged, so an edit made under it is kept; TextMouth writes it back as
+    /// Toggle Bookmark alone (#1937). `MenuKeyShortcutTests` checks the
+    /// former name in other letter cases.
     func testTheBookmarkCommandsFormerNameIsStillRead() throws {
         try TextMouthPaths.ensureDirectoryStructure()
         let store = try isolatedDefaults()
