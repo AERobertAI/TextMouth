@@ -1335,11 +1335,33 @@ def resolve_recipient(
 ) -> str:
     """Return who a new post is addressed to.
 
-    --to wins: 'all', or a registered agent other than the sender. Without
-    it a reply goes back to the author of the message it answers (or, when
-    the sender wrote that message, to its recipient); any other post goes
-    to all.
+    --to wins: 'all', a registered agent other than the sender, or a team's
+    channel (team:TEAM, which the sender may belong to). Without it a reply
+    goes back to the author of the message it answers (or, when the sender
+    wrote that message, to its recipient), and any other post goes to all.
+
+    A reply to a team's message stays in that team's channel: --to may name
+    that channel again but nothing else. Nor can a reply to a message
+    outside every channel move into one.
     """
+    in_channel = None if parent is None else team_from_address(parent["to"])
+    names_team = raw is not None and raw.strip().lower().startswith(TEAM_PREFIX)
+    if in_channel is not None:
+        # Compare addresses, not text, so "Team:Board" matches "team:board".
+        if raw is not None and not (names_team and team_address(normalize_team(raw)) == parent["to"]):
+            raise UserError(
+                f"#{parent['id']} is in team {in_channel}'s channel, and a reply stays there; "
+                "leave out --to, or post without --reply-to"
+            )
+        return parent["to"]
+    if names_team:
+        address = team_address(require_team(conn, raw))
+        if parent is not None:
+            raise UserError(
+                f"#{parent['id']} is not in a team's channel, and a reply stays where the message it "
+                f"answers was posted; post to {address} without --reply-to"
+            )
+        return address
     if raw is None:
         if parent is None:
             return EVERYONE
@@ -1390,7 +1412,7 @@ def insert_message(
 
 
 def cmd_post(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Post a message to one agent or to all, optionally tied to files."""
+    """Post a message to one agent, a team's channel, or all, optionally tied to files."""
     topic = None if args.topic is None else one_line(args.topic, "topic")
     body = read_body(args)
     files = normalize_patterns(args.file)
@@ -1603,6 +1625,14 @@ def cmd_watch(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 def team_address(team: str) -> str:
     """Return the address of a team's channel, such as "team:board"."""
     return TEAM_PREFIX + team
+
+
+def team_from_address(address: str) -> Optional[str]:
+    """Return the team a channel address names ("team:board" gives "board"), or None.
+
+    Anything that is not a team address, such as "all" or an agent's name, gives None.
+    """
+    return address[len(TEAM_PREFIX):] if address.startswith(TEAM_PREFIX) else None
 
 
 def normalize_team(raw: str) -> str:
@@ -2162,7 +2192,10 @@ def build_parser() -> BoardArgumentParser:
     post.add_argument(
         "--to",
         metavar="NAME",
-        help="an agent name or 'all' (default: all, or for a reply the author of the message it answers)",
+        help=(
+            "an agent name, team:TEAM for a team's channel, or 'all' (default: all; a reply goes back to the "
+            "author of the message it answers, or stays in its team's channel)"
+        ),
     )
     post.add_argument("--tag", choices=TAGS, default="notice", help="the kind of message (default: notice)")
     post.add_argument(

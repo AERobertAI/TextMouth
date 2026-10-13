@@ -627,6 +627,64 @@ class ThreadTests(BoardTestCase):
         self.assertIn("no message #9", self.fails("thread", "9"))
 
 
+class ChannelTests(BoardTestCase):
+    """Posts to a team's channel, replies there, and who receives them."""
+
+    def setUp(self) -> None:
+        """Register lead, alpha, beta, and outsider; lead creates team board and adds alpha and beta.
+
+        Everything happens an hour before NOON, so later tests that fix
+        the clock at NOON come after it (ids 1 and 2 are the team's lines).
+        """
+        super().setUp()
+        with self.clock(NOON - dt.timedelta(hours=1)):
+            for name in ("lead", "alpha", "beta", "outsider"):
+                self.register(name)
+            self.ok("team", "create", "lead", "board", "--purpose", "Build the board")
+            self.ok("team", "add", "lead", "board", "alpha", "beta")
+
+    def post(self, sender: str, *args: str) -> dict:
+        """Post a message with a stock topic and return it as JSON."""
+        return self.ok_json("post", sender, "--topic", "news", *args)
+
+    def test_a_post_to_a_team_is_stored_with_its_address_and_reported(self) -> None:
+        text = self.ok("post", "alpha", "--to", "team:board", "--topic", "Hello team")
+        self.assertIn("Posted #3 (notice) to team:board.", text)
+        self.assertEqual(self.ok_json("read", "--last", "1")[0]["to"], "team:board")
+
+    def test_the_address_is_case_insensitive_and_must_name_a_team(self) -> None:
+        self.assertEqual(self.post("alpha", "--to", "Team:Board")["to"], "team:board")
+        self.assertIn("there is no team 'nope'", self.fails("post", "alpha", "--topic", "x", "--to", "team:nope"))
+        self.assertIn("did you mean 'board'", self.fails("post", "alpha", "--topic", "x", "--to", "team:bord"))
+
+    def test_a_reply_stays_in_the_channel_even_to_the_senders_own_post(self) -> None:
+        original = self.post("alpha", "--to", "team:board")["id"]
+        # Another member's reply, and then the author answering its own post.
+        self.assertEqual(self.ok_json("post", "beta", "--reply-to", str(original), "--body", "x")["to"], "team:board")
+        self.assertEqual(self.ok_json("post", "alpha", "--reply-to", str(original), "--body", "x")["to"], "team:board")
+        # Naming the same channel again is accepted, in any case.
+        self.assertEqual(
+            self.ok_json("post", "beta", "--reply-to", str(original), "--to", "TEAM:board")["to"], "team:board"
+        )
+
+    def test_a_reply_cannot_leave_the_channel_or_enter_one(self) -> None:
+        original = self.post("alpha", "--to", "team:board")["id"]
+        for elsewhere in ("alpha", "all", "outsider", "team:other"):
+            with self.subTest(to=elsewhere):
+                message = self.fails("post", "beta", "--reply-to", str(original), "--to", elsewhere)
+                self.assertIn(
+                    f"#{original} is in team board's channel, and a reply stays there; "
+                    "leave out --to, or post without --reply-to",
+                    message,
+                )
+        to_all = self.post("alpha")["id"]
+        self.assertIn(
+            f"#{to_all} is not in a team's channel, and a reply stays where the message it answers was posted; "
+            "post to team:board without --reply-to",
+            self.fails("post", "beta", "--reply-to", str(to_all), "--to", "team:board"),
+        )
+
+
 class InboxTests(BoardTestCase):
     """inbox: the messages that concern one agent, and read marks."""
 
