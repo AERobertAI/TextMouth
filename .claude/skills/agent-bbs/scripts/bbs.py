@@ -1268,8 +1268,12 @@ def require_message(conn: sqlite3.Connection, message_id: int) -> dict:
     return found[0]
 
 
-def message_filters(args: argparse.Namespace) -> Tuple[List[str], List[Any]]:
-    """Return the SQL conditions for the --since and --tag options."""
+def message_filters(conn: sqlite3.Connection, args: argparse.Namespace) -> Tuple[List[str], List[Any]]:
+    """Return the SQL conditions for the --since, --tag, and --team options.
+
+    --team keeps only the messages in that team's channel, and fails when
+    there is no such team.
+    """
     where: List[str] = []
     params: List[Any] = []
     if args.since is not None:
@@ -1279,6 +1283,9 @@ def message_filters(args: argparse.Namespace) -> Tuple[List[str], List[Any]]:
     if args.tag is not None:
         where.append("m.tag = ?")
         params.append(args.tag)
+    if args.team is not None:
+        where.append("m.recipient = ?")
+        params.append(team_address(require_team(conn, args.team)))
     return where, params
 
 
@@ -1448,7 +1455,7 @@ def cmd_read(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     Without --since only the last DEFAULT_READ_COUNT messages are shown,
     unless --last asks for another number.
     """
-    where, params = message_filters(args)
+    where, params = message_filters(conn, args)
     if args.sender is not None:
         where.append("m.sender = ?")
         params.append(normalize_name(args.sender))
@@ -1500,6 +1507,22 @@ def cmd_thread(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 # ---------------------------------------------------------------------------
 
 
+def team_channels(conn: sqlite3.Connection, name: str, registered: str) -> Dict[str, str]:
+    """Map the address of each team an agent is in onto when its posts begin to concern it.
+
+    A lead hears its team's channel from ``registered`` (the moment the
+    agent registered), as it hears posts to all. A member hears it from the
+    moment it joined, so it is not handed the history before.
+    """
+    channels = {
+        team_address(row["name"]): registered
+        for row in conn.execute("SELECT name FROM teams WHERE lead = ?", (name,))
+    }
+    for row in conn.execute("SELECT team, joined_at FROM team_members WHERE agent = ?", (name,)):
+        channels[team_address(row["team"])] = row["joined_at"]
+    return channels
+
+
 def collect_inbox(
     conn: sqlite3.Connection,
     name: str,
@@ -1511,14 +1534,17 @@ def collect_inbox(
     """Return the messages that concern an agent, oldest first.
 
     A message concerns the agent when it is addressed to the agent or to
-    all and was posted since the agent first registered, or, whenever it
-    was posted, when one of its files falls under one of the agent's
-    current claims. So a newcomer is not handed the board's whole history
-    as unread, yet still hears of findings about the files it takes on.
+    all and was posted since the agent first registered, or is posted to
+    the channel of a team the agent is in and was posted since the agent
+    led or joined that team (see ``team_channels``), or, whenever it was
+    posted, when one of its files falls under one of the agent's current
+    claims. So a newcomer is not handed the board's whole history as
+    unread, yet still hears of findings about the files it takes on.
     The agent's own posts never concern it.
     """
     registered = conn.execute("SELECT registered_at FROM agents WHERE name = ?", (name,)).fetchone()[0]
     claims = [claim["pattern"] for claim in load_claims(conn, name=name)]
+    channels = team_channels(conn, name, registered)
     conditions, values = ["m.sender != ?", *where], [name, *params]
     if unread_only:
         conditions.append("r.message_id IS NULL")
@@ -1526,6 +1552,7 @@ def collect_inbox(
         message
         for message in query_messages(conn, where=conditions, params=values, reader=name)
         if (message["to"] in (name, EVERYONE) and message["posted"] >= registered)
+        or (message["to"] in channels and message["posted"] >= channels[message["to"]])
         or any(patterns_overlap(path, claim) for path in message["files"] for claim in claims)
     ]
 
@@ -1551,7 +1578,7 @@ def cmd_inbox(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
     Only the messages shown are marked; --peek marks none.
     """
-    where, params = message_filters(args)
+    where, params = message_filters(conn, args)
     with write_transaction(conn):
         name = require_agent(conn, args.name)
         messages = collect_inbox(conn, name, where=where, params=params, unread_only=args.unread)
@@ -1570,13 +1597,21 @@ def cmd_inbox(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     return Outcome(messages, text)
 
 
-def take_unread(conn: sqlite3.Connection, name: str, *, after: int = 0, peek: bool = False) -> List[dict]:
+def take_unread(
+    conn: sqlite3.Connection, name: str, *, after: int = 0, peek: bool = False, team: Optional[str] = None
+) -> List[dict]:
     """Return an agent's unread inbox messages with ids above ``after``.
 
-    They are marked read in the same transaction, unless ``peek``.
+    With ``team`` (an existing team's name) only that team's channel is
+    taken; the agent's other unread messages stay unread. They are marked
+    read in the same transaction, unless ``peek``.
     """
+    where, params = ["m.id > ?"], [after]
+    if team is not None:
+        where.append("m.recipient = ?")
+        params.append(team_address(team))
     with write_transaction(conn):
-        messages = collect_inbox(conn, name, where=["m.id > ?"], params=[after], unread_only=True)
+        messages = collect_inbox(conn, name, where=where, params=params, unread_only=True)
         if not peek:
             mark_read(conn, name, messages)
     return messages
@@ -1591,19 +1626,21 @@ def cmd_watch(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     object per line under --json). Messages are marked read as they are
     printed, unless --peek. Nothing is printed when nothing is new. The
     exit status is 2 when at least one message was printed and 0 when
-    none was, so a script can branch on it.
+    none was, so a script can branch on it. With --team only that team's
+    channel is watched.
     """
     with write_transaction(conn):
         name = require_agent(conn, args.name)
+        team = None if args.team is None else require_team(conn, args.team)
     if args.once:
-        messages = take_unread(conn, name, peek=args.peek)
+        messages = take_unread(conn, name, peek=args.peek, team=team)
         text = "\n\n".join(describe_message(message) for message in messages)
         return Outcome(messages, text, EXIT_HAS_MESSAGES if messages else EXIT_OK)
     deadline = None if args.timeout is None else time.monotonic() + args.timeout
     newest = 0  # highest id printed so far, so --peek never prints one twice
     printed = False
     while True:
-        for message in take_unread(conn, name, after=newest, peek=args.peek):
+        for message in take_unread(conn, name, after=newest, peek=args.peek, team=team):
             # Text gets a blank line after each message; JSON is one object per line.
             line = json.dumps(message, ensure_ascii=False) if args.json else describe_message(message) + "\n"
             print(line, flush=True)
@@ -2186,6 +2223,8 @@ def build_parser() -> BoardArgumentParser:
         "2026-10-02T14:05 or 14:05 (messages from then on)"
     )
 
+    team_help = "only messages in this team's channel (TEAM or team:TEAM)"
+
     post = command("post", cmd_post, "post a message to one agent or to all")
     post.add_argument("sender", metavar="FROM", help="your agent name")
     post.add_argument("--topic", help="a one-line subject (a reply may leave it out)")
@@ -2213,6 +2252,7 @@ def build_parser() -> BoardArgumentParser:
     read = command("read", cmd_read, "show the public log of messages")
     read.add_argument("--since", type=parse_since, metavar="ID_OR_TIME", help=since_help)
     read.add_argument("--tag", choices=TAGS, help="only messages of this kind")
+    read.add_argument("--team", metavar="TEAM", help=team_help)
     read.add_argument("--from", dest="sender", metavar="NAME", help="only messages from this agent")
     read.add_argument(
         "--last",
@@ -2231,6 +2271,7 @@ def build_parser() -> BoardArgumentParser:
     inbox.add_argument("--tag", choices=TAGS, help="only messages of this kind")
     inbox.add_argument("--last", type=positive_int, metavar="N", help="only the last N messages")
     inbox.add_argument("--peek", action="store_true", help="leave the messages shown unread")
+    inbox.add_argument("--team", metavar="TEAM", help=team_help)
 
     watch = command("watch", cmd_watch, "print your unread messages, then new ones as they arrive")
     watch.add_argument("name", help="your agent name")
@@ -2250,6 +2291,7 @@ def build_parser() -> BoardArgumentParser:
         "--timeout", type=positive_number, metavar="SECONDS", help="stop after this long (default: run until interrupted)"
     )
     watch.add_argument("--peek", action="store_true", help="leave the messages printed unread")
+    watch.add_argument("--team", metavar="TEAM", help=team_help)
 
     team = command_group("team", "create a team or change its members")
     team_create = command("create", cmd_team_create, "create a team with its lead and purpose", group=team)

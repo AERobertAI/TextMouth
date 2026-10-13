@@ -647,10 +647,21 @@ class ChannelTests(BoardTestCase):
         """Post a message with a stock topic and return it as JSON."""
         return self.ok_json("post", sender, "--topic", "news", *args)
 
+    def inbox_ids(self, name: str, *args: str) -> List[int]:
+        """Ids of the messages in an agent's inbox with these options, left unread."""
+        return [message["id"] for message in self.ok_json("inbox", name, "--peek", *args)]
+
     def test_a_post_to_a_team_is_stored_with_its_address_and_reported(self) -> None:
         text = self.ok("post", "alpha", "--to", "team:board", "--topic", "Hello team")
         self.assertIn("Posted #3 (notice) to team:board.", text)
         self.assertEqual(self.ok_json("read", "--last", "1")[0]["to"], "team:board")
+
+    def test_a_team_post_reaches_the_lead_and_members_but_not_outsiders_or_the_sender(self) -> None:
+        post = self.post("alpha", "--to", "team:board")["id"]
+        self.assertEqual(self.inbox_ids("lead", "--since", "2"), [post])
+        self.assertEqual(self.inbox_ids("beta", "--since", "2"), [post])
+        self.assertEqual(self.inbox_ids("alpha", "--since", "2"), [])
+        self.assertEqual(self.inbox_ids("outsider"), [])
 
     def test_the_address_is_case_insensitive_and_must_name_a_team(self) -> None:
         self.assertEqual(self.post("alpha", "--to", "Team:Board")["to"], "team:board")
@@ -683,6 +694,71 @@ class ChannelTests(BoardTestCase):
             "post to team:board without --reply-to",
             self.fails("post", "beta", "--reply-to", str(to_all), "--to", "team:board"),
         )
+
+    def test_read_team_shows_exactly_the_channel(self) -> None:
+        post = self.post("alpha", "--to", "team:board")["id"]
+        self.post("alpha")
+        self.post("alpha", "--to", "beta")
+        expected = [1, 2, post]
+        for spelling in ("board", "team:board", "Team:Board"):
+            with self.subTest(team=spelling):
+                self.assertEqual([m["id"] for m in self.ok_json("read", "--team", spelling)], expected)
+        self.assertIn("did you mean 'board'", self.fails("read", "--team", "bord"))
+        self.assertIn("there is no team 'nope'", self.fails("read", "--team", "nope"))
+        # Filters combine: the two team lines are notices, so a tag filter drops none of them.
+        self.post("alpha", "--to", "team:board", "--tag", "finding")
+        self.assertEqual([m["tag"] for m in self.ok_json("read", "--team", "board", "--tag", "finding")], ["finding"])
+
+    def test_a_member_who_joins_later_does_not_get_the_earlier_channel_posts(self) -> None:
+        with self.clock(NOON - dt.timedelta(minutes=30)):
+            self.register("gamma")
+        with self.clock(NOON):
+            self.post("alpha", "--to", "team:board")
+        with self.clock(NOON + dt.timedelta(minutes=5)):
+            self.ok("team", "add", "lead", "board", "gamma")
+        with self.clock(NOON + dt.timedelta(minutes=10)):
+            later = self.post("alpha", "--to", "team:board")["id"]
+        added = [m["id"] for m in self.ok_json("read", "--team", "board") if "Added gamma" in m["topic"]]
+        self.assertEqual(len(added), 1)
+        self.assertEqual(self.inbox_ids("gamma"), [added[0], later])
+
+    def test_the_lead_hears_members_but_never_its_own_lines(self) -> None:
+        post = self.post("alpha", "--to", "team:board")["id"]
+        self.post("lead", "--to", "team:board")
+        # "Created team board" (1) and "Added alpha, beta" (2) were the lead's own.
+        self.assertEqual(self.inbox_ids("lead"), [post])
+
+    def test_files_still_reach_claimants_whatever_the_channel(self) -> None:
+        self.ok("claim", "outsider", "TextMouth/Audio/")
+        post = self.post("alpha", "--to", "team:board", "--file", "TextMouth/Audio/Player.swift")["id"]
+        self.post("alpha", "--to", "team:board")
+        self.assertEqual(self.inbox_ids("outsider"), [post])
+
+    def test_inbox_team_leaves_other_unread_messages_unread(self) -> None:
+        self.ok("inbox", "alpha")  # clears the team's own history lines
+        direct = self.post("beta", "--to", "alpha")["id"]
+        channel = self.post("beta", "--to", "team:board")["id"]
+        shown = self.ok_json("inbox", "alpha", "--team", "board", "--unread", "--since", "2")
+        self.assertEqual([m["id"] for m in shown], [channel])
+        self.assertEqual(self.inbox_ids("alpha", "--unread"), [direct])
+        self.assertIn("there is no team 'nope'", self.fails("inbox", "alpha", "--team", "nope"))
+
+    def test_watch_team_prints_only_the_channel_and_exits_by_what_it_printed(self) -> None:
+        self.ok("inbox", "alpha")  # clears the team's own history lines
+        direct = self.post("beta", "--to", "alpha")["id"]
+        self.assertEqual(self.run_bbs("watch", "alpha", "--once", "--team", "board", "--peek")[0], 0)
+        channel = self.post("beta", "--to", "team:board")["id"]
+        status, out, err = self.run_bbs("watch", "alpha", "--once", "--team", "board", "--json")
+        self.assertEqual((status, err), (2, ""))
+        self.assertEqual([m["id"] for m in json.loads(out)], [channel])
+        self.assertEqual(self.run_bbs("watch", "alpha", "--once", "--team", "team:board"), (0, "", ""))
+        self.assertEqual(self.inbox_ids("alpha", "--unread"), [direct])
+        self.assertIn("there is no team 'nope'", self.fails("watch", "alpha", "--once", "--team", "nope"))
+
+    def test_the_reminder_counts_unread_channel_posts(self) -> None:
+        self.ok("inbox", "alpha")  # clears the team's own history lines
+        self.post("beta", "--to", "team:board")
+        self.assertIn("Unread messages for alpha: 1.", self.ok("heartbeat", "alpha"))
 
 
 class InboxTests(BoardTestCase):
