@@ -148,8 +148,8 @@ final class LogsSettingsSectionTests: XCTestCase {
         try TextMouthPaths.ensureDirectoryStructure()
         var opened: [String] = []
 
-        XCTAssertNil(LogsSettingsSection.showLogs(for: .dataDirectory) { opened.append($0.standardizedFileURL.path); return true })
-        XCTAssertNil(LogsSettingsSection.showLogs(for: .machine) { opened.append($0.standardizedFileURL.path); return true })
+        XCTAssertNil(LogsInFinder.show(for: .dataDirectory) { opened.append($0.standardizedFileURL.path); return true })
+        XCTAssertNil(LogsInFinder.show(for: .machine) { opened.append($0.standardizedFileURL.path); return true })
 
         XCTAssertEqual(opened, [
             TextMouthPaths.root.appendingPathComponent("Logs", isDirectory: true).standardizedFileURL.path,
@@ -166,7 +166,7 @@ final class LogsSettingsSectionTests: XCTestCase {
         var failure: String?
 
         let recorder = recordingAnnouncements {
-            failure = LogsSettingsSection.showLogs(for: .machine) { _ in false }
+            failure = LogsInFinder.show(for: .machine) { _ in false }
         }
 
         let expected = LogsSettingsWording.showFailure(folder: MachineLocalPaths.logs)
