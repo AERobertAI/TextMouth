@@ -80,7 +80,7 @@ Use this command, with your slug, your test classes, and a log file in the sessi
 
 - **New test file.** It needs `/opt/homebrew/bin/xcodegen generate`, and the regenerated `TextMouth.xcodeproj/project.pbxproj` committed with it.
 - **Editing.** The Mac's `sed` is GNU sed: use `gsed -i` or Python for in-place edits. Never put two heredocs on one command line.
-- **Reading a result.** Use one command that prints only what you need, such as `grep -E "Executed [0-9]+ tests|error:|failed \(" <log> | tail -20`.
+- **Reading a result.** Use one command that prints only what you need, and look for new warnings as well as errors and failures: `grep -E "Executed [0-9]+ tests|error:|failed \(|\.swift:[0-9]+:[0-9]+: warning:" <log> | tail -20`. A change must add no Swift warning.
 - **Load-sensitive tests.** A failure in one of these is rerun in its class alone and reported with both results:
   - the sleep-timer integration tests
   - `BookmarkKeyboardAccessTests`
