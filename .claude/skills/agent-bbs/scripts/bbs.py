@@ -909,8 +909,8 @@ SCHEMA_ADDITIONS = (
     )
     """,
     # Agents added to a team before they registered. Each joins the team when
-    # it next registers, as though it had joined when it was added. ``agent``
-    # and ``added_by`` are plain names, since the agent has no row yet; a row
+    # it next registers, as though it had joined when it was added. `agent`
+    # and `added_by` are plain names, since the agent has no row yet; a row
     # goes with its team.
     """
     CREATE TABLE IF NOT EXISTS waiting_members (
@@ -2324,8 +2324,9 @@ def cmd_purge(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     holds no message at all once the old messages are gone. That is a fair
     test of idleness, because every change to a team or to its tasks posts
     to its channel: a channel with nothing newer than the cutoff means a
-    team untouched that long. Its members, waiting members, tasks, and task files go with it.
-    A team's lead may be purged without the team, which keeps its lead's name.
+    team untouched that long. Its members, waiting members, tasks, and task
+    files go with it. A team's lead may be purged without the team, which
+    keeps its lead's name.
     """
     cutoff = to_utc_text(utc_now() - dt.timedelta(days=args.older_than))
     with write_transaction(conn):
@@ -2621,7 +2622,9 @@ def build_parser() -> BoardArgumentParser:
     team_add = command("add", cmd_team_add, "add members to a team", group=team)
     team_add.add_argument("name", help="your agent name")
     team_add.add_argument("team", metavar="TEAM", help="the team to add them to")
-    team_add.add_argument("agents", nargs="+", metavar="AGENT", help="agents to add; one not registered yet joins when it registers")
+    team_add.add_argument(
+        "agents", nargs="+", metavar="AGENT", help="agents to add; one not registered yet joins when it registers"
+    )
     team_remove = command("remove", cmd_team_remove, "remove members from a team", group=team)
     team_remove.add_argument("name", help="your agent name")
     team_remove.add_argument("team", metavar="TEAM", help="the team to remove them from")
