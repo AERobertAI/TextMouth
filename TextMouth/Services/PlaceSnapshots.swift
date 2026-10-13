@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // MARK: - A Snapshot of a Book's Old Text and Places
 
@@ -8,7 +9,8 @@ import Foundation
 /// snapshot's text to the new one (`movePlaces(to:at:)`). The moved places
 /// are committed to the book's record with its analysis, and the snapshot is
 /// then discarded. A snapshot a crash or a quit left between the write and
-/// the commit is found at the next launch (`leftovers(in:)`) and finished.
+/// the commit is found at the next launch (`leftovers(in:)`) and finished;
+/// a copy a rebuild in this run is still using is never a leftover.
 ///
 /// It lives in a folder of this Mac's own (`MachineLocalPaths.placeSnapshots`),
 /// never in the data directory, which a cloud library would upload. With the
@@ -21,6 +23,15 @@ struct PlaceSnapshot: Equatable, Sendable {
     /// The name of the record inside a snapshot's folder. It is written last,
     /// so a folder without it was never finished.
     static let recordFileName = "places.json"
+
+    /// The folder names of the copies this run of TextMouth made and has
+    /// not discarded: copies a rebuild is still using, between taking the
+    /// copy and committing the moved places. `leftovers(in:)` neither lists
+    /// nor removes them, so a recovery that runs while a reader rebuilds its
+    /// book (as when the library is rebuilt from Storage settings) never
+    /// takes or sweeps a copy in use. A copy whose commit failed stays this
+    /// run's, and the next launch finishes it.
+    private static let inUse = OSAllocatedUnfairLock(initialState: Set<String>())
 
     /// What a snapshot keeps of a book besides its old text.
     struct Record: Codable, Equatable, Sendable {
@@ -72,8 +83,12 @@ struct PlaceSnapshot: Equatable, Sendable {
         record: Record,
         in folder: URL = MachineLocalPaths.placeSnapshots
     ) throws -> PlaceSnapshot {
-        let snapshotFolder = folder.appendingPathComponent("\(record.bookID.uuidString) \(UUID().uuidString)", isDirectory: true)
+        let name = "\(record.bookID.uuidString) \(UUID().uuidString)"
+        let snapshotFolder = folder.appendingPathComponent(name, isDirectory: true)
         let fileManager = FileManager.default
+        // In use before its folder exists, so a listing meanwhile leaves the
+        // half-made copy alone.
+        inUse.withLock { _ = $0.insert(name) }
         do {
             try fileManager.createDirectory(at: snapshotFolder, withIntermediateDirectories: true)
             // Clones on APFS when source and destination share a volume.
@@ -82,12 +97,14 @@ struct PlaceSnapshot: Equatable, Sendable {
             try data.write(to: recordURL(in: snapshotFolder), options: .atomic)
         } catch {
             try? fileManager.removeItem(at: snapshotFolder)
+            inUse.withLock { _ = $0.remove(name) }
             throw error
         }
         return PlaceSnapshot(folder: snapshotFolder, record: record)
     }
 
-    /// Every finished snapshot in `folder`, oldest first by `record.takenAt`
+    /// Every finished snapshot in `folder` that no rebuild of this run is
+    /// still using (`inUse`), oldest first by `record.takenAt`
     /// (ties by folder name). A folder whose record is missing or cannot be
     /// read, or whose `content.md` is missing, is a copy a stop left
     /// unfinished, and is removed. A missing `folder` holds no snapshots, and
@@ -100,9 +117,12 @@ struct PlaceSnapshot: Equatable, Sendable {
             options: []
         ) else { return [] }
 
+        let busy = inUse.withLock { $0 }
         var finished: [PlaceSnapshot] = []
         for entry in entries {
             guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
+            // A copy this run is still using is no leftover, finished or not.
+            guard !busy.contains(entry.lastPathComponent) else { continue }
             // Named from `folder` rather than taken as listed, which may
             // spell the path differently (/private/var for /var).
             let snapshotFolder = folder.appendingPathComponent(entry.lastPathComponent, isDirectory: true)
@@ -140,9 +160,21 @@ struct PlaceSnapshot: Equatable, Sendable {
         return MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: record.title, bookAuthor: record.author)
     }
 
-    /// Removes the snapshot's folder. A folder already gone is no error.
+    /// Removes the snapshot's folder, which this run then no longer uses. A
+    /// folder already gone is no error.
     func discard() {
         try? FileManager.default.removeItem(at: folder)
+        Self.inUse.withLock { _ = $0.remove(folder.lastPathComponent) }
+    }
+
+    // MARK: Test Seam
+
+    /// Forgets which copies this run is still using, as a quit does: each
+    /// becomes a leftover that `leftovers(in:)` lists and the launch's
+    /// recovery finishes. Tests call it to stand for a stop between a
+    /// rebuild and its commit.
+    static func forgetCopiesInUse() {
+        inUse.withLock { $0.removeAll() }
     }
 
     /// Moves the book's places from the snapshot's old text to `new`, the

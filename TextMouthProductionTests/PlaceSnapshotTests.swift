@@ -139,6 +139,10 @@ final class PlaceSnapshotTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: snapshot.folder.appendingPathComponent("content.md")), try Data(contentsOf: source))
         XCTAssertTrue(FileManager.default.fileExists(atPath: snapshot.folder.appendingPathComponent("places.json").path))
 
+        // In use by this run (a rebuild between its copy and its commit),
+        // it is no leftover; a quit makes it one.
+        XCTAssertEqual(PlaceSnapshot.leftovers(in: folder), [])
+        PlaceSnapshot.forgetCopiesInUse()
         let listed = PlaceSnapshot.leftovers(in: folder)
         XCTAssertEqual(listed.map(\.record), [record], "the listed record is the kept one, places and all")
         XCTAssertEqual(listed.map(\.folder.lastPathComponent), [snapshot.folder.lastPathComponent])
@@ -182,6 +186,8 @@ final class PlaceSnapshotTests: XCTestCase {
         let stray = folder.appendingPathComponent("stray.txt")
         try Data("left alone".utf8).write(to: stray)
 
+        // The finished copy as a quit leaves it.
+        PlaceSnapshot.forgetCopiesInUse()
         XCTAssertEqual(PlaceSnapshot.leftovers(in: folder), [finished])
         XCTAssertFalse(fileManager.fileExists(atPath: onlyText.path))
         XCTAssertFalse(fileManager.fileExists(atPath: unreadable.path))
@@ -210,7 +216,30 @@ final class PlaceSnapshotTests: XCTestCase {
         let older = try PlaceSnapshot.keep(textAt: source, record: first, in: folder)
 
         XCTAssertNotEqual(older.folder, newer.folder)
+        PlaceSnapshot.forgetCopiesInUse()
         XCTAssertEqual(PlaceSnapshot.leftovers(in: folder), [older, newer])
+    }
+
+    /// A copy this run is still using is neither listed nor swept, though it
+    /// looks unfinished (its record not yet written, or gone): a recovery
+    /// running while a rebuild works never takes or removes the rebuild's
+    /// copy. Once discarded it is no longer in use; once a quit forgets it,
+    /// an unfinished one is swept like any other.
+    func testACopyInUseIsNeitherListedNorSwept() throws {
+        let folder = try makeTemporaryFolder()
+        let source = try writeFile("Words.")
+        let half = try PlaceSnapshot.keep(textAt: source, record: try fullRecord(title: "The Mill"), in: folder)
+        try FileManager.default.removeItem(at: half.folder.appendingPathComponent("places.json"))
+        let whole = try PlaceSnapshot.keep(textAt: source, record: try fullRecord(title: "The Mill"), in: folder)
+
+        XCTAssertEqual(PlaceSnapshot.leftovers(in: folder), [])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: half.folder.path), "a copy in use is never swept")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: whole.folder.path))
+
+        whole.discard()
+        PlaceSnapshot.forgetCopiesInUse()
+        XCTAssertEqual(PlaceSnapshot.leftovers(in: folder), [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: half.folder.path), "once forgotten, an unfinished copy is swept")
     }
 
     /// The snapshots' default folder is this Mac's own, inside the machine
