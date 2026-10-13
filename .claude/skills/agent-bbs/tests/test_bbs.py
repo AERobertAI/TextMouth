@@ -1869,6 +1869,143 @@ class SchemaTests(BoardTestCase):
             bbs._created_name("SELECT 1")
 
 
+    # -- The pre-teams script on a board that holds teams, members, tasks, and channel posts --
+
+    def populate(self) -> dict:
+        """Fill the board with the new script; return the ids the compatibility tests need.
+
+        The board gets four agents (``alpha`` claims ``TextMouth/Views/``), team
+        ``board`` led by ``lead`` with ``alpha`` and ``beta`` as members, two
+        channel posts (one tied to alpha's claimed file), and one assigned task.
+        """
+        self.register("lead")
+        self.register("alpha", "TextMouth/Views/")
+        self.register("beta")
+        self.register("gamma")
+        self.ok("team", "create", "lead", "board", "--purpose", "Keep the board in step")
+        self.ok("team", "add", "lead", "board", "alpha")
+        self.ok("register", "beta", "--team", "board")
+        self.ok("post", "lead", "--to", "team:board", "--topic", "Plan for the day")
+        self.ok("post", "beta", "--to", "team:board", "--topic", "Views changed", "--file", "TextMouth/Views/A.swift")
+        brief = self.worktree / "brief.txt"
+        brief.write_text("The brief.\n")
+        self.ok(
+            "task", "add", "lead", "board", "--title", "Wire the channels", "--brief", str(brief),
+            "--files", "a.swift", "b.swift", "--assign", "alpha",
+        )
+        by_topic = {message["topic"]: message["id"] for message in self.ok_json("read")}
+        return {"lead_post": by_topic["Plan for the day"], "beta_post": by_topic["Views changed"]}
+
+    def assert_foreign_keys_hold(self) -> None:
+        """Assert that no row in the board file points at a row that is gone."""
+        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
+            self.assertEqual(conn.execute("PRAGMA foreign_key_check").fetchall(), [])
+
+    def make_agent_stale(self, name: str) -> None:
+        """Set an agent's last-seen time far in the past, with plain SQL."""
+        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
+            conn.execute("UPDATE agents SET last_seen = '2026-01-01T00:00:00Z' WHERE name = ?", (name,))
+            conn.commit()
+
+    def test_the_old_script_reads_channel_posts_on_a_populated_board(self) -> None:
+        ids = self.populate()
+        text = self.old_ok("read")
+        self.assertIn("to team:board", text)
+        self.assertIn("Plan for the day", text)
+        self.assertEqual(json.loads(self.old_ok("read", "--json")), self.ok_json("read"))
+        thread = self.old_ok("thread", str(ids["lead_post"]))
+        self.assertIn("Plan for the day", thread)
+        self.assertIn("team:board", thread)
+        self.assertIn("alpha", self.old_ok("agents"))
+        self.assertIn("TextMouth/Views/", self.old_ok("claims"))
+
+    def test_the_old_inbox_misses_channel_posts_unless_they_touch_a_claimed_file(self) -> None:
+        ids = self.populate()
+        old_ids = {message["id"] for message in json.loads(self.old_ok("inbox", "alpha", "--json"))}
+        self.assertEqual(old_ids, {ids["beta_post"]}, "only the post tied to alpha's file reaches the old inbox")
+        # Read marks are shared: the old inbox marked beta's post as read for the new script.
+        unread = {message["id"] for message in self.ok_json("inbox", "alpha", "--unread", "--peek")}
+        self.assertIn(ids["lead_post"], unread)
+        self.assertNotIn(ids["beta_post"], unread)
+
+    def test_the_new_inbox_holds_both_channel_posts_for_a_member(self) -> None:
+        ids = self.populate()
+        held = {message["id"] for message in self.ok_json("inbox", "alpha", "--peek")}
+        self.assertLessEqual({ids["lead_post"], ids["beta_post"]}, held)
+
+    def test_the_old_script_replies_into_a_channel_by_its_own_rules(self) -> None:
+        ids = self.populate()
+        # A reply from someone else goes back to the author of the parent.
+        self.old_ok("post", "alpha", "--reply-to", str(ids["lead_post"]), "--topic", "Seen")
+        # A reply from the parent's own author goes to the parent's recipient: the channel.
+        self.old_ok("post", "lead", "--reply-to", str(ids["lead_post"]), "--topic", "Also this")
+        messages = {message["topic"]: message for message in self.ok_json("read")}
+        self.assertEqual(messages["Seen"]["to"], "lead")
+        self.assertEqual(messages["Also this"]["to"], "team:board")
+        self.assertEqual(messages["Also this"]["reply_to"], ids["lead_post"])
+        channel = [message["topic"] for message in self.ok_json("read", "--team", "board")]
+        self.assertIn("Also this", channel)
+        self.assertNotIn("Seen", channel)
+        inbox = [message["topic"] for message in self.ok_json("inbox", "beta", "--peek")]
+        self.assertIn("Also this", inbox)
+
+    def test_the_old_script_cannot_address_a_team(self) -> None:
+        self.populate()
+        before = self.ok_json("read")
+        done = self.run_old("post", "alpha", "--to", "team:board", "--topic", "x")
+        self.assertEqual(done.returncode, 1, done.stdout)
+        self.assertEqual(done.stdout, "")
+        self.assertEqual(len(done.stderr.splitlines()), 1, done.stderr)
+        self.assertIn("team:board", done.stderr)
+        self.assertEqual(self.ok_json("read"), before, "the refused post stores nothing")
+
+    def test_the_old_purge_removes_a_stale_member_but_keeps_the_team_and_its_tasks(self) -> None:
+        self.populate()
+        self.make_agent_stale("alpha")
+        self.old_ok("purge", "--older-than", "1")
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["lead"], team["members"]), ("lead", ["beta"]))
+        tasks = self.ok_json("tasks")
+        self.assertEqual(len(tasks), 1)
+        self.assertEqual(tasks[0]["assignee"], "alpha", "a plain name outlives its agent")
+        self.assertEqual(tasks[0]["files"], ["a.swift", "b.swift"])
+        self.assert_foreign_keys_hold()
+
+    def test_the_old_reset_empties_the_agents_and_the_new_reset_clears_the_rest(self) -> None:
+        self.populate()
+        self.old_ok("reset", "--yes")
+        self.assertEqual(self.ok_json("agents"), [])
+        self.assertEqual(self.ok_json("read"), [])
+        self.assertEqual(self.ok_json("claims")["claims"], [])
+        # The old script knows nothing of teams and tasks, so they remain, without members.
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["lead"], team["members"]), ("lead", []))
+        self.assertEqual(len(self.ok_json("tasks")), 1)
+        self.assert_foreign_keys_hold()
+        counts = self.ok_json("reset", "--yes")
+        self.assertEqual((counts["teams"], counts["tasks"]), (1, 1))
+        self.assertEqual(self.ok_json("tasks"), [])
+        self.assert_foreign_keys_hold()
+
+    def test_the_new_script_works_on_a_board_the_old_script_filled(self) -> None:
+        self.old_ok("register", "lead", "--role", "leads", "--branch", "feature/lead")
+        self.old_ok("register", "alpha", "--role", "works", "--branch", "feature/alpha", "--files", "src/a.py")
+        self.old_ok("post", "lead", "--to", "alpha", "--topic", "Old note", "--file", "src/a.py")
+        self.old_ok("post", "alpha", "--topic", "Old broadcast")
+        before = self.ok_json("read")
+        self.ok("team", "create", "lead", "board", "--purpose", "A late team")
+        self.ok("team", "add", "lead", "board", "alpha")
+        self.ok("post", "lead", "--to", "team:board", "--topic", "First channel post")
+        self.ok("task", "add", "lead", "board", "--title", "A late task", "--files", "src/a.py")
+        after = self.ok_json("read")
+        self.assertEqual(after[: len(before)], before, "the old posts are unchanged")
+        self.assertIn("First channel post", [message["topic"] for message in after])
+        # The old script then reads the new channel post as well.
+        self.assertIn("First channel post", self.old_ok("read"))
+        self.assertIn("to team:board", self.old_ok("read"))
+        self.assert_foreign_keys_hold()
+
+
 class TaskTests(BoardTestCase):
     """Task lists: task add, tasks, and the task counts in teams."""
 
