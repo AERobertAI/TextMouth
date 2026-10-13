@@ -605,68 +605,168 @@ enum LibraryPersistenceService {
         guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
 
         return try bookInfoSaveQueue.sync { () throws -> Book? in
-            // A book captured before a data-directory move published names
-            // its file under the old root: both copies get their place under
-            // the current one, where this write resolves the package, so a
-            // move alone never makes the analysis look like other content
-            // (TODO S04).
-            let analyzed = StorageBoundary.shared.rebasedToCurrent(analyzed)
-            let pending = pendingBookInfos[analyzed.id].map { StorageBoundary.shared.rebasedToCurrent($0.book) }
-            // The record is read only when no snapshot waits, and never
-            // downloaded: one only in the cloud leaves nothing to merge into.
-            let stored: StoredBookRecord?
-            if pending == nil {
-                switch storedRecord(of: analyzed) {
-                case .inCloud:
-                    logDroppedAnalysis(of: analyzed, because: "its record is only in the cloud")
-                    return nil
-                case .readable(let record):
-                    stored = record
-                }
-            } else {
-                stored = nil
+            guard let state = latestDurableState(of: analyzed) else {
+                logDroppedAnalysis(of: analyzed, because: "its record is only in the cloud")
+                return nil
             }
-            // The record was read from the analyzed book's package, so that
-            // is where the book it describes lives: in the library's folder
-            // or its feed's, as the analyzed book's location says (FR11).
-            let latest = pending ?? stored.map { stored -> Book in
-                var book = Book(
-                    record: stored.info,
-                    filePath: analyzed.filePath,
-                    folderPath: analyzed.folderPath,
-                    tmbDirectoryName: analyzed.tmbDirectoryName
-                )
-                book.fileLocation = analyzed.fileLocation
-                return book
-            } ?? analyzed
-            if let change = contentChange(from: analyzed, to: latest) {
-                logDroppedAnalysis(of: analyzed, because: change)
+            // Compared as the rebased analyzed book, which names its file
+            // under the current root, so a data-directory move alone never
+            // makes the analysis look like other content (TODO S04).
+            if let change = contentChange(from: state.book, to: state.latest) {
+                logDroppedAnalysis(of: state.book, because: change)
                 return nil
             }
 
-            var merged = latest
+            var merged = state.latest
             merged.applyContentAnalysis(index, cacheFormatVersion: cacheFormatVersion)
             // The places a rebuild moved, each only where the latest state
             // still holds it as it was when the old text was copied aside.
             if let movedPlaces {
                 merged.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
             }
-            // A failed write throws here, leaving any waiting snapshot to its
-            // own debounce, so the newer user state outlives the lost result.
-            guard try writeBookInfo(merged, contentIndex: index, stored: stored) else { return nil }
-            // The waiting snapshot is on disk now, merged with the analysis:
-            // forget it, so its debounce does not write it a second time.
-            cancelQueuedWrites(for: analyzed)
+            guard try writeMerged(merged, contentIndex: index, state: state) else { return nil }
             // The record holds the moved places now: the copy is no longer needed.
             movedPlaces?.discardSnapshot()
-            // That snapshot was the book's latest state, so an earlier failed
-            // write of the book is settled too. A merge into the stored
-            // record alone saved nothing newer and settles nothing.
-            if pending != nil {
-                failureCenter.recordSuccess(.book(analyzed.id))
-            }
             return merged
         }
+    }
+
+    /// Commits the places a rebuild of `book`'s text moved, alone, and
+    /// returns the book as its package now records it, so the caller can give
+    /// the library row the same places; nil when nothing was written. This is
+    /// how a launch finishes the moves a stop left between a rebuild's write
+    /// of the new text and its commit (T06's branch D): the analysis was
+    /// never saved, so the places travel without one.
+    ///
+    /// The moved places merge into the book's latest durable state exactly as
+    /// `saveContentAnalysis` merges an analysis (`latestDurableState(of:)`):
+    /// the snapshot still waiting in the debounce if there is one, otherwise
+    /// the bookInfo.json on disk, never downloaded. Each place is taken only
+    /// where that state still holds it as it was
+    /// (`Book.takeMovedPlaces(original:moved:)`), so a place saved meanwhile
+    /// wins. Nothing else changes, and the package keeps its content index.
+    /// The source's hash, format, and path do not matter: the places move
+    /// between two texts of content.md, whatever source the new one came from.
+    ///
+    /// - A record only in the cloud: nil, and the copy of the old text stays
+    ///   for a later launch.
+    /// - A record of another book, or a book with no package: nil, and the
+    ///   copy is discarded, since it can never be finished.
+    /// - Nothing to change (every place was saved again meanwhile, or is
+    ///   moved already): nothing is written, the copy is discarded, and the
+    ///   latest state is returned.
+    /// - Otherwise the merged book is written and returned, and the copy is
+    ///   discarded. A write that throws keeps the copy and rethrows.
+    @discardableResult
+    static func saveMovedPlaces(_ movedPlaces: MovedPlaces, for book: Book) throws -> Book? {
+        guard !book.tmbDirectoryName.isEmpty else {
+            movedPlaces.discardSnapshot()
+            return nil
+        }
+
+        return try bookInfoSaveQueue.sync { () throws -> Book? in
+            guard let state = latestDurableState(of: book) else { return nil }
+            guard state.latest.id == book.id else {
+                movedPlaces.discardSnapshot()
+                return nil
+            }
+
+            var merged = state.latest
+            guard merged.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved) else {
+                movedPlaces.discardSnapshot()
+                return state.latest
+            }
+            // A waiting snapshot keeps the content index it carries; with
+            // none, the package keeps its own (a nil index is not written).
+            guard try writeMerged(merged, contentIndex: state.pendingContentIndex, state: state) else { return nil }
+            movedPlaces.discardSnapshot()
+            return merged
+        }
+    }
+
+    /// A book's latest durable state, as a merge into it needs it.
+    private struct LatestDurableState {
+        /// The book the merge is for, rebased to the current data root.
+        let book: Book
+        /// The book as its latest durable state holds it.
+        let latest: Book
+        /// The record read from disk; nil when a snapshot waits (then no
+        /// record was read) or the package holds none.
+        let stored: StoredBookRecord?
+        /// Whether a snapshot of the book waits in the debounce.
+        let snapshotWaited: Bool
+        /// The content index the waiting snapshot carries, if any.
+        let pendingContentIndex: BookContentIndex?
+    }
+
+    /// The latest durable state of `book`: the snapshot still waiting in the
+    /// debounce if there is one, otherwise the bookInfo.json on disk, and
+    /// `book` itself only when neither exists (a record that cannot be read
+    /// counts as none, as it does for every save). Nil when the merge would
+    /// have to go into a record only in the cloud (FR02), which is never
+    /// read. Must run on bookInfoSaveQueue.
+    private static func latestDurableState(of book: Book) -> LatestDurableState? {
+        // A book captured before a data-directory move published names its
+        // file under the old root: both copies get their place under the
+        // current one, where a write resolves the package (TODO S04).
+        let book = StorageBoundary.shared.rebasedToCurrent(book)
+        let waiting = pendingBookInfos[book.id]
+        let pending = waiting.map { StorageBoundary.shared.rebasedToCurrent($0.book) }
+        // The record is read only when no snapshot waits, and never
+        // downloaded: one only in the cloud leaves nothing to merge into.
+        let stored: StoredBookRecord?
+        if pending == nil {
+            switch storedRecord(of: book) {
+            case .inCloud:
+                return nil
+            case .readable(let record):
+                stored = record
+            }
+        } else {
+            stored = nil
+        }
+        // The record was read from the book's package, so that is where the
+        // book it describes lives: in the library's folder or its feed's, as
+        // the book's location says (FR11).
+        let latest = pending ?? stored.map { stored -> Book in
+            var latest = Book(
+                record: stored.info,
+                filePath: book.filePath,
+                folderPath: book.folderPath,
+                tmbDirectoryName: book.tmbDirectoryName
+            )
+            latest.fileLocation = book.fileLocation
+            return latest
+        } ?? book
+        return LatestDurableState(
+            book: book,
+            latest: latest,
+            stored: stored,
+            snapshotWaited: pending != nil,
+            pendingContentIndex: waiting?.contentIndex
+        )
+    }
+
+    /// Writes `merged`, a merge into `state`, and settles what the write
+    /// replaces; reports whether it was written. A failed write throws here,
+    /// leaving any waiting snapshot to its own debounce, so the newer user
+    /// state outlives the lost result. Must run on bookInfoSaveQueue.
+    private static func writeMerged(
+        _ merged: Book,
+        contentIndex: BookContentIndex?,
+        state: LatestDurableState
+    ) throws -> Bool {
+        guard try writeBookInfo(merged, contentIndex: contentIndex, stored: state.stored) else { return false }
+        // The waiting snapshot is on disk now, merged: forget it, so its
+        // debounce does not write it a second time.
+        cancelQueuedWrites(for: state.book)
+        // That snapshot was the book's latest state, so an earlier failed
+        // write of the book is settled too. A merge into the stored record
+        // alone saved nothing newer and settles nothing.
+        if state.snapshotWaited {
+            failureCenter.recordSuccess(.book(state.book.id))
+        }
+        return true
     }
 
     /// What changed about the content of `analyzed` by the time its analysis
