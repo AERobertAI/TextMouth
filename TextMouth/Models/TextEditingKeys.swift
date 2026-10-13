@@ -64,15 +64,10 @@ enum TextEditingKeys {
         home, end, pageUp, pageDown,
     ]
 
-    /// The Edit menu's Select All, Copy, Paste, Cut, Undo, and Redo.
-    static let editMenuKeys: Set<KeyBinding> = [
-        KeyBinding(key: "a", command: true),
-        KeyBinding(key: "c", command: true),
-        KeyBinding(key: "v", command: true),
-        KeyBinding(key: "x", command: true),
-        KeyBinding(key: "z", command: true),
-        KeyBinding(key: "z", command: true, shift: true),
-    ]
+    /// The Edit menu's Select All, Copy, Paste, Cut, Undo, and Redo, taken
+    /// from `KeyBinding.editMenuCommands`, where each is written once with
+    /// its name.
+    static let editMenuKeys = Set(KeyBinding.editMenuCommands.keys)
 
     /// The letters AppKit's standard key bindings give a command with
     /// Control held.
