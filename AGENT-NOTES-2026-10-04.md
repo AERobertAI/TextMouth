@@ -2386,3 +2386,34 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
   - A checklist line for code that compares in-memory state with stored state (now in teams-common.md).
   - One verification build per wave instead of three.
   - Shared test fixtures in the earliest brief.
+
+## From the third polish team (team/polish3), Oct 13
+
+**Decisions (the lead's)**
+- **A recorded shortcut keeps its scope.** `ConfigWatcherTests.testShortcutRecordedInSettingsIsSavedToConfig` now expects the object form, since adding a key keeps the scope the user chose.
+- **deadelse went further than six files.** It removed every `canImport(TextMouth)` conditional in twelve legacy files, 782 lines. That includes two `#if !canImport` blocks with no `#else`: old helper copies in `DOCXEdgeCaseTests` and `DAISYAudioTests`. The lead checked the deleted lines by script against its own strip of the original files; they matched in 11 of 12 files, and the twelfth differed by a trailing blank line.
+- **The last commit followed the suite.** ef00b5bd removed two unused values that the suite's build warned about, after that suite ran; the orchestrator's merge suite covers it.
+
+**Unverified**
+- No live VoiceOver check.
+- The Filter sheet's SwiftUI warning count was 0 in the xcodebuild log, which the test host's own console may not reach.
+- The storage-work test holds a boundary made for the test, not a real data-directory move.
+
+**Wording**
+- **README.md**, the data-directory move: "A move also waits for the feed rules' deletion of downloads under way, saying 'Waiting for feed downloads to be deleted...', and a rule's deletion waits while a move copies the library."
+- **ARCHITECTURE.md:**
+  - `StorageWork.removingFeedDownloads`: `FeedCenter.removeDue` removes files on the import queue inside `StorageBoundary.perform`, reads `TextMouthPaths.root` after any wait, and logs `FEED_DOWNLOAD_DELETE_WAITING` while held.
+  - `KeyBinding.editMenuCommands` is the one home of the Edit menu's six keys; `systemCommands` and `TextEditingKeys.editMenuKeys` derive from it.
+  - `BookSettingsWording` (in `ReaderView.swift`) holds every word for a book's own settings.
+  - `MetadataEditorWording.notInLibrary(title:)` is what every metadata editor's save says when the book has left the library.
+  - `TranscriptionPresenter.cleanUp` follows `LibraryAudioCommand.isTranscriptCleanable`.
+  - In the tests, `AccessibilityTestSupport` holds `handleQueuedCallbacks` and `control(labelled:in:)`, `LegacyScenarioHarness.testFileURL(_:)` builds the TestData path, and the legacy scenario files have no `canImport(TextMouth)` conditionals.
+
+**The pattern (the lead's view)**
+- **What worked:** each brief gave exact line ranges, a grep to confirm the item was still open, and a grep that must find nothing when done. Workers then needed 9 to 26 calls, with prompts under 73,000 tokens, and most finished in about 5 minutes.
+- **What it cost:** the lead was about 80% of the team's cost, mostly in checking candidates and finding line ranges.
+- **Where Sonnet needed help:** one question about a test outside its own files, answered in one board round. deadelse missed new warnings because its brief checked only errors; the shared brief now greps for warnings too.
+- **What to change:**
+  - Check mechanical deletions with a script.
+  - Run three workers at once when builds are short and other teams idle.
+  - Let a cheap worker collect line ranges, so the lead's context stays small.
