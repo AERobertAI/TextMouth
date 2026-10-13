@@ -128,6 +128,21 @@ final class ShortcutManagerTests: XCTestCase {
         XCTAssertEqual(store.data(forKey: KeyboardShortcutManager.editsPreference.key), Data("{}".utf8))
     }
 
+    /// The Shortcuts tab's confirmed Reset resets the edits and gives the
+    /// announcer exactly one sentence, whose words are pinned.
+    func testTheTabsResetResetsAndSaysSo() {
+        let (manager, _) = makeManager("reset-says-so")
+        manager.updateBindings(for: .releaseMediaControls, to: [shiftR])
+        manager.addBinding(plainK, to: .whereAmI)
+        var spoken: [String] = []
+
+        KeyboardShortcutsSettingsView.resetEveryShortcut(manager) { spoken.append($0) }
+
+        XCTAssertEqual(manager.edits, ShortcutEdits())
+        XCTAssertEqual(spoken, [ShortcutsSettingsWording.resetDone])
+        XCTAssertEqual(ShortcutsSettingsWording.resetDone, "The keyboard shortcuts are reset to the defaults.")
+    }
+
     // MARK: - Following the Store
 
     /// A manager made before the move to the record ran sees every default,
