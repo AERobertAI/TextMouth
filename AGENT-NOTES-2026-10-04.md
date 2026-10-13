@@ -2203,3 +2203,36 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
 "A place goes to the new text's end only when it was at the old text's end (`TextPlace.restsAtEnd`, which `Book.restsAtEnd` also uses); a place at its chapter's end stays at that chapter's end; a place in a chapter without words goes to the matching chapter without words between its neighbours; a reading position at the very start of the book stays at the start; a place saved without words in a lost chapter is held as the reader opens it (`TextPlace.opening`, which `ReaderViewModel.openingPlace` also uses); a moved position is dated at the move."
 
 - Follow-ups: in the TODO's "Still open after the REV15 fixes merge".
+
+## From the board team (team/board), Oct 12
+
+**Decisions (the lead's)**
+- **No layout version bump.** `user_version` stays 1, because scripts from before teams refuse any higher number. The new tables are created whenever a board lacks them, and a board that has them opens without taking a write lock (a test proves it).
+- **Addressing is `team:NAME`.** Teams and agents may share names, and an old script refuses `team:board` as an agent name rather than misreading it.
+- **Plain names, not references.** A team's lead and a task's assignee are plain names rather than references to agents, because old scripts delete agents with foreign keys on. Member rows and tasks cascade instead.
+- **Who hears a channel.** A lead hears its channel from its registration on; a member, from when it joined.
+- **Replies.** A reply stays in its message's channel; a reply that moves out of a channel, or into one, is refused.
+- **Purge.** It deletes a team created before the cutoff whose channel holds nothing newer.
+- **Assignment.** A task may be assigned to an agent not yet registered, and the output says so.
+- **Compatibility tests.** They are pinned to the script at 780f325d, from before teams, and skip if that commit is missing.
+
+**Unverified**
+- No team had been used for real on the live board before the merge; the t6d team is the first.
+- SKILL.md has not been read through VoiceOver or a braille display.
+- `watch --team` is tested only with `--once`.
+
+**Wording**
+- **README.md:** none needed; the board is development tooling. Its "Working on TextMouth with coding agents" section may say the board has teams.
+- **ARCHITECTURE.md**, if it covers the agent tooling: "The agent board (`.claude/skills/agent-bbs/`) has teams: a lead, members, a channel addressed `team:NAME`, and a task list (`team create/add/remove`, `teams`, `task add/assign/move`, `tasks`, and `--team` on `register`, `read`, `inbox`, and `watch`). Its tables are additions (`SCHEMA_ADDITIONS`, layout version still 1), so copies of the script from before teams keep working on the shared board."
+- **AGENTS.md:** the orchestrator adds the team pattern of `Scripts/agents/briefs/2026-10-12/teams-common.md` after the first wave.
+
+**The pattern (the lead's view)**
+- **What worked:**
+  - Briefs that gave exact functions, wording, and test lists, with a shared design file: seven of eight workers were accepted as written.
+  - A grep command in each brief in place of line numbers, which went stale as earlier tasks landed.
+  - Separate functions for parallel workers.
+- **Where Sonnet needed help:**
+  - Wording heard aloud: every worker's tests pinned "assigned, assigned to".
+  - Small style slips.
+  - Keeping the live-board rule.
+- **Cost:** the lead's growing context, about 420,000 tokens at the end, cost more than all eight workers together. A fresh reviewer with a small context for each diff may be cheaper.
