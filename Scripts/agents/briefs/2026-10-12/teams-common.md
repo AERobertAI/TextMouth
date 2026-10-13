@@ -11,7 +11,7 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
 
 ## The lead's part
 1. **Set up.** `git checkout -b team/<team> main`. Register on the board as `<team>-lead`, with the files your charter names. Read your charter and the code it points to.
-2. **Plan small.** Each task is one logical change: one or two commits, about 150 changed lines at most besides tests, in files no other in-flight task touches. Write each task's brief to `Scripts/agents/briefs/2026-10-12/<team>/<task>.md`. A refactor's brief ends with a completion check, a `grep` that must find nothing once the work is done, so no caller is missed. A verifier's brief gives it the items one per line, split by a script, never long lines of several items. A brief gives the worker what you learned, so it need not explore: the files and functions, with line ranges; the behavior required, as numbered items; the tests to add, and which existing test classes to run; and what not to touch. Commit the briefs on the team branch (`git add -f`, one commit) before you launch workers.
+2. **Plan small.** Each task is one logical change: one or two commits, about 150 changed lines at most besides tests. It works in files no other in-flight task touches, or in regions of a shared file that the briefs name and keep apart (separate functions, test classes, and document lines). Fold a one-line fix into a neighbouring task rather than give it a worker of its own, since each worker costs about 50,000 tokens just to start. Write each task's brief to `Scripts/agents/briefs/2026-10-12/<team>/<task>.md`. A refactor's brief ends with a completion check, a `grep` that must find nothing once the work is done, so no caller is missed. A verifier's brief gives it the items one per line, split by a script, never long lines of several items. A brief gives the worker what you learned, so it need not explore: the files and functions, with line ranges; the behavior required, as numbered items; the tests to add, and which existing test classes to run; and what not to touch. Commit the briefs on the team branch (`git add -f`, one commit) before you launch workers.
 3. **Launch workers** with the Agent tool. Pass `subagent_type: "general-purpose"`, `model: "sonnet"`, `effort: "high"`, `isolation: "worktree"`, and a description naming the task. The prompt names:
    - the worker's slug, `<team>-<task>`;
    - its branch, `<team>/<task>`, made with `git checkout -b <team>/<task> team/<team>`;
@@ -23,7 +23,9 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
 6. **Review every diff yourself** before you take it: `git diff team/<team>...<team>/<task>`, starting with `--stat`, then file by file. Check:
    - the behavior against the brief;
    - the tests, which must pin the behavior and must not trap;
-   - comments on every function, DRY, and the wording a VoiceOver user hears.
+   - comments on every function, DRY, and the wording a VoiceOver user hears;
+   - any comparison of in-memory state with stored state, which must compare as the files store it (dates to the second in the library's JSON);
+   - any existing test the worker changed, and why.
    For a fix, message the worker with SendMessage (its context is intact), or make a small fix yourself in a commit of your own. Drop a worker's work that is wrong at its root, and say so in your report.
 7. **Integrate in a straight line.** First remove the worker's worktree, which holds its branch checked out (`git worktree remove --force --force <path>`). Then rebase the worker's branch onto `team/<team>`, and `git merge --ff-only <team>/<task>` in your worktree. Use `git -C <path>` rather than `cd … &&`: the worktree guard refuses compound commands.
 8. **Finish.**
@@ -39,7 +41,8 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
 3. **Change.** Make the change with its tests, one logical change per commit. Each message ends with `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
 4. **Build and test** only through the wrapper below, with your own build folder. Run only the test classes your brief names, never the full suite: your lead runs that. Start every build in the background, and check on it no more often than every 4 minutes, with one short command.
 5. **Stay in your lane.** Edit no `*.md` file and no file outside your brief. For a problem elsewhere, post a finding with `--file <path>`.
-6. **Finish.**
+6. **A failing existing test means stop and ask.** Post the failure to your lead and wait for the answer. Never edit, weaken, or work around an existing test, or its fixture, to make your change pass; a test that fails may be the only sign of a bug in the app.
+7. **Finish.**
    - Post `done: <branch>` to your lead: `bbs post <slug> --to <team>-lead --topic "done: <branch>"`.
    - Remove your build folder, unregistering its app first (the command is under "Builds" below; it has nothing to do with the board).
    - Release your claims (`bbs release <slug> --all`).
@@ -64,7 +67,7 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
   - **The lead** moves each task to `done` or `dropped` once integrated or let go.
   - **Everyone posts to the team's channel,** `--to team:<team>`, and reads it with `bbs inbox <name> --team <team>` or `bbs read --team <team>`.
   - **The orchestrator** reads the channels. Reach it with `--to orchestrator`.
-  - **Test the board only on a scratch board.** Never run a changed copy of `bbs.py` against the live board: point `TEXTMOUTH_BBS_DIR` at a scratch folder first.
+  - **Test the board only on a scratch board.** Never run a changed copy of `bbs.py` against the live board: point `TEXTMOUTH_BBS_DIR` at a scratch folder first. Since the board2 merge, the script refuses the live board when main has never had its contents. A team that changes `bbs.py` therefore uses main's copy for the live board: `git show main:.claude/skills/agent-bbs/scripts/bbs.py` saved to a read-only scratch file.
 - **Posts.** A post's kind is a flag: `bbs post <name> --tag <kind> --topic "..."`. A topic is at most 200 characters.
 - **Fold the board into commands you run anyway:**
   - `bbs inbox <name> --unread; <build command>`
