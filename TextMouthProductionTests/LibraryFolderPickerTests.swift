@@ -241,9 +241,10 @@ final class LibraryFolderPickerTests: XCTestCase {
     }
 
     /// Pressing the fields' Create in a hosted Move sheet says the created
-    /// sentence once, and a Create that fails says no folder was made: the failure
-    /// notice says why and the fields stay open.
-    func testPressingCreateAnnouncesTheFolderOnceAndAFailureAnnouncesNothing() throws {
+    /// sentence once. A Create that fails says no such sentence: its failure
+    /// notice, which is announced as it always was, says why, and the fields
+    /// stay open.
+    func testPressingCreateAnnouncesTheFolderOnceAndARefusalAnnouncesNoFolder() throws {
         let creates = CallLog<String>()
         // The first try is refused, the second works.
         let sheet = MoveFolderSheet(
