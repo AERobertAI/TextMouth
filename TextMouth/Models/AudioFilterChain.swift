@@ -195,13 +195,9 @@ enum AudioFilterError: LocalizedError, Equatable, Sendable {
         }
     }
 
-    /// `items` as a list in words: "a, b, and c".
+    /// `items` as a list in words ("a, b, and c") through the one joiner,
+    /// `CountWording.list`; "none" for an empty list, the filter messages' own word.
     private static func list(_ items: [String]) -> String {
-        switch items.count {
-        case 0: return "none"
-        case 1: return items[0]
-        case 2: return "\(items[0]) and \(items[1])"
-        default: return items.dropLast().joined(separator: ", ") + ", and " + (items.last ?? "")
-        }
+        items.isEmpty ? "none" : CountWording.list(items)
     }
 }

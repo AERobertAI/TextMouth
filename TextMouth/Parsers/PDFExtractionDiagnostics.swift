@@ -143,7 +143,7 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
                 start += 1
             }
         }
-        return "\(numbers.count == 1 ? "page" : "pages") \(listed(items))"
+        return "\(numbers.count == 1 ? "page" : "pages") \(CountWording.list(items))"
     }
 
     // MARK: Sentence Parts
@@ -168,7 +168,7 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
                 : "All \(total) pages have \(only.description)."
         }
         let parts = counts.map { "\($0.count) \($0.count == 1 ? "has" : "have") \($0.description)" }
-        return "Of \(total) pages, \(Self.listed(parts))."
+        return "Of \(total) pages, \(CountWording.list(parts))."
     }
 
     /// "OCR could not run on 2 of 12 pages", or, when it could not run on
@@ -199,16 +199,6 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
     /// The page numbers of the pages that satisfy `condition`, in order.
     private func pageNumbers(where condition: (PDFPageDiagnosis) -> Bool) -> [Int] {
         pages.filter(condition).map(\.pageNumber)
-    }
-
-    /// Items joined as English lists them: "a", "a and b", "a, b, and c".
-    private static func listed(_ items: [String]) -> String {
-        switch items.count {
-        case 0: return ""
-        case 1: return items[0]
-        case 2: return "\(items[0]) and \(items[1])"
-        default: return items.dropLast().joined(separator: ", ") + ", and " + (items.last ?? "")
-        }
     }
 }
 

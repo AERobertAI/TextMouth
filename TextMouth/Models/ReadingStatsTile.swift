@@ -99,17 +99,7 @@ struct FinishedBookCounts: Equatable {
         ]
         .filter { count, _, _ in count > 0 }
         .map { count, singular, plural in CountWording.phrase(count, singular: singular, plural: plural) }
-        return Self.spokenList(parts)
-    }
-
-    /// `parts` joined as a list is spoken: "a", "a and b", "a, b, and c".
-    private static func spokenList(_ parts: [String]) -> String {
-        switch parts.count {
-        case 0: return ""
-        case 1: return parts[0]
-        case 2: return "\(parts[0]) and \(parts[1])"
-        default: return parts.dropLast().joined(separator: ", ") + ", and " + (parts.last ?? "")
-        }
+        return CountWording.list(parts)
     }
 }
 
