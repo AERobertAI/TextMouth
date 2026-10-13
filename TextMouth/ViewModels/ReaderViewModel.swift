@@ -1189,11 +1189,11 @@ final class ReaderViewModel: ObservableObject {
         let cacheFormatVersion: String?
         /// The moves of the book's places for the reader to take, in order,
         /// on the main actor as it shows the text (`takeMovedPlaces(_:)`).
-        /// First comes a rebuild's during this load (T06's branch D), already
-        /// committed to the book's record; then the check at load's (branch
-        /// E), whose places the reader saves as any change is, each move
-        /// starting from where the one before it ended. Empty when nothing
-        /// moved.
+        /// In order: first an edit's taken as this load began (branch E),
+        /// then a rebuild's during it (branch D), both already committed to
+        /// the book's record; then the check at load's (branch E), whose
+        /// places the reader saves as any change is, each move starting from
+        /// where the one before it ended. Empty when nothing moved.
         var movedPlaces: [MovedPlaces] = []
     }
 
@@ -1259,9 +1259,20 @@ final class ReaderViewModel: ObservableObject {
         // audiobook's transcript text is edited the same way, but its audio
         // still plays while such an edit stands: only its text is left out.
         var holdsTranscriptText = false
+        // The moves of the book's places for the reader to take, in order:
+        // an edit's, a rebuild's, then the check at load's.
+        var movedPlaces: [MovedPlaces] = []
         switch BookTextEditSessions.shared.settlePendingEdit(of: book) {
-        case .readTaken(let committed):
-            book.contentAnalysisFields = committed.contentAnalysisFields
+        case .readTaken(let edit):
+            book.contentAnalysisFields = edit.committed.contentAnalysisFields
+            // The edit moved the book's places in its record, which this
+            // copy of the book (made before the edit was taken) takes too,
+            // so a rebuild's move and the check at load start from them;
+            // the reader takes the same moves first of all (below).
+            if let moved = edit.movedPlaces {
+                book.takeMovedPlaces(original: moved.original, moved: moved.moved)
+                movedPlaces.append(moved)
+            }
         case .hold(let pending):
             guard format.isAudio else { throw pending }
             holdsTranscriptText = true
@@ -1281,7 +1292,6 @@ final class ReaderViewModel: ObservableObject {
         // goes once they are written. When the write fails or is dropped,
         // the copy stays and the next launch finishes the move. The reader
         // takes them into its own copy back on the main actor.
-        var movedPlaces: [MovedPlaces] = []
         if let moved = analysis.movedPlaces {
             _ = try? LibraryPersistenceService.saveContentAnalysis(
                 for: book,

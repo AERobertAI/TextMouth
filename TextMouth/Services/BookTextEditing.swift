@@ -106,8 +106,10 @@ enum BookTextEditSettlement: Sendable {
     /// once the edit is kept beside content.md.
     case readAsUsual
     /// Read the book as its record now records it, with the edit just
-    /// taken, whose analysis the read then goes by.
-    case readTaken(Book)
+    /// taken, whose analysis the read then goes by, and whose moves of the
+    /// book's places (`BookTextEdit.movedPlaces`) the read's reader takes
+    /// into its own copy of the book first (T06's branch E).
+    case readTaken(BookTextEdit)
     /// Read nothing: content.md holds an edit that cannot be taken, which a
     /// read would rebuild over from the book's own file. The read stops
     /// with this error, which says why and where the edit was kept.
@@ -378,7 +380,7 @@ final class BookTextEditSessions: Sendable {
         }
         switch found {
         case .adopted(let edit)?:
-            return .readTaken(edit.committed)
+            return .readTaken(edit)
         case .refused(let refusal, _, let keptCopy)? where refusal.keepsEarlierText:
             return .hold(BookTextEditPending(bookTitle: book.title, refusal: refusal, keptCopy: keptCopy))
         default:
