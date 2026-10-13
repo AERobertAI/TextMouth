@@ -157,6 +157,8 @@ extension ReaderViewModel {
     /// it, starts then (`holdPlayForWhereAmI()`). A Play from the AirPods or
     /// a media key once resumed the book over the announcement, and later,
     /// for a book paused before the announcement, did nothing at all (REV11).
+    /// An audiobook whose play is already under way (`isPlaybackUnderWay`) is
+    /// left as it is.
     func playOrResume() {
         guard !isWhereAmIUnderWay else {
             holdPlayForWhereAmI()
@@ -165,7 +167,13 @@ extension ReaderViewModel {
         if isAudioBook {
             if audioPlaybackService.isPaused {
                 resumeAudioPlayback()
-            } else if !audioPlaybackService.isPlaying {
+            } else if !isPlaybackUnderWay {
+                // The player is known not to be paused here, so this still
+                // starts a stopped book, and leaves a book that is playing,
+                // waiting for its chapter's files, or waiting for the move
+                // of its package (`audioPausedForMove`) as it is. A second
+                // Play during those waits once played the play sound again
+                // and began the chapter's play anew (TODO line 3144).
                 play()
             }
             return
