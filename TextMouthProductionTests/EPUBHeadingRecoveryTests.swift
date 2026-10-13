@@ -17,6 +17,8 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
             XCTAssertEqual(content.chapters.count, 122)
             XCTAssertEqual(content.allHeadings.count, 127)
             XCTAssertEqual(Set(content.allHeadings.map(\.chapterIndex)), Set(0..<122))
+            // Stop here, rather than trap, if the book has fewer than 111 chapters.
+            _ = try XCTUnwrap(content.chapters[safe: 110], "the book has no chapter 111")
             XCTAssertEqual(content.chapters[30].title, "Section 31 from Contents")
             XCTAssertEqual(content.chapters[110].title, "Chapter 111")
             XCTAssertEqual(content.chapters[30].text, "Styled section 31\n\nBody 31.")
@@ -104,6 +106,8 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         ])
         let content = try MarkdownCacheService.loadFromCache(for: book)
         XCTAssertEqual(content.chapters.map(\.title), ["Chapter 1", "A useful title", "Chapter 3"])
+        // Stop here, rather than trap, if the book has fewer than 2 chapters.
+        _ = try XCTUnwrap(content.chapters[safe: 1], "the book has no chapter 2")
         XCTAssertEqual(content.chapters[0].headings.map(\.text), ["Chapter 1", "Later section"])
         XCTAssertEqual(content.chapters[0].headings.map(\.characterOffset), [0, "Opening.\n\n".utf16.count])
         XCTAssertEqual(content.chapters[1].text, "Body.")
@@ -166,6 +170,8 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
             manifest: "<item id='nav' href='../Navigation/nav.xhtml' media-type='application/xhtml+xml' properties='nav'/>"
         )
         let content = try MarkdownCacheService.loadFromCache(for: book)
+        // Stop here, rather than trap, if the book has fewer than 2 chapters.
+        _ = try XCTUnwrap(content.chapters[safe: 1], "the book has no chapter 2")
         XCTAssertEqual(content.chapters[0].headings.map(\.text), ["Chapter 1", "Detail label"])
         XCTAssertEqual(content.chapters[1].headings.map(\.text), ["Recovered title"])
         XCTAssertEqual(content.chapters[1].text, "Original.")
@@ -197,7 +203,7 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         ])
         let content = try MarkdownCacheService.loadFromCache(for: book)
         XCTAssertEqual(content.chapters.count, 2)
-        XCTAssertEqual(content.chapters[0].text, "")
+        XCTAssertEqual(content.chapters[safe: 0]?.text, "")
         XCTAssertEqual(content.allHeadings.map(\.text), ["Chapter 1", "Main"])
         XCTAssertEqual(Set(content.allHeadings.map(\.id)).count, 2)
         XCTAssertEqual(content.globalOffset(chapterIndex: 1, localOffset: 0), 0)
@@ -582,6 +588,8 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
             }
             XCTAssertFalse(content.allHeadings.contains { $0.text.contains("<!--") })
             XCTAssertFalse(content.chapters.contains { $0.title.contains("<!--") })
+            // Stop here, rather than trap, if the book has fewer than 4 chapters.
+            _ = try XCTUnwrap(content.chapters[safe: 3], "the book has no chapter 4")
             XCTAssertEqual(content.chapters[1].text, "1\n\nArrival\n\nOpening words.\n\nMore words on the second page.")
             XCTAssertEqual(content.chapters[2].text, "2\n\nDeparture\n\nLeaving home.\n\nAn interlude begins.")
             XCTAssertEqual(content.chapters[3].text, "Return\n\nComing back.")
@@ -866,6 +874,8 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
             )
         }
         XCTAssertTrue(Set(previous.allHeadings.map(\.id)).isSubset(of: Set(current.allHeadings.map(\.id))))
+        // Stop here, rather than trap, if the book has fewer than 18 chapters.
+        _ = try XCTUnwrap(current.chapters[safe: 17], "the book has no chapter 18")
         XCTAssertTrue(current.chapters[17].title.contains("Death of a Grandfather"))
     }
 
