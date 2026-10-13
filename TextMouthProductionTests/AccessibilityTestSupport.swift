@@ -283,6 +283,12 @@ extension XCTestCase {
         }
         return controls
     }
+
+    /// The control labelled `label` among `controls`; fails the test,
+    /// listing the labels there are, when there is none.
+    func control(labelled label: String, in controls: [AccessibleControl]) throws -> AccessibleControl {
+        try XCTUnwrap(controls.first { $0.label == label }, "no control is labelled \(label): \(controls.map(\.label))")
+    }
 }
 
 // MARK: - Hosted-window accessibility
