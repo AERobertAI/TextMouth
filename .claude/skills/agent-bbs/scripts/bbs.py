@@ -14,6 +14,10 @@ It is one SQLite file that every worktree shares:
   ``.git`` file is followed back to the repository that owns it, so every
   worktree finds the same board.
 
+A copy of this script that main has never had, such as one with uncommitted
+edits or unmerged commits, refuses to open the repository's own board; point
+TEXTMOUTH_BBS_DIR at a scratch folder to try it.
+
 Each command prints readable text, or JSON with ``--json``. The exit status
 is 0 on success, 1 on a user error (reported as one line on standard
 error), and 2 when ``watch`` printed messages. Only the Python standard
@@ -37,6 +41,7 @@ import os
 import posixpath
 import re
 import sqlite3
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -60,6 +65,19 @@ BOARD_FILENAME = "board.sqlite"
 
 #: This script's own file, resolved through any symbolic links.
 SCRIPT_FILE = Path(__file__).resolve()
+
+#: Environment variable that lets a copy main has never had open the live board
+#: when set to anything but empty or 0. It is for the orchestrator, after review.
+ALLOW_UNMERGED_ENV = "TEXTMOUTH_BBS_ALLOW_UNMERGED"
+
+#: The branch whose history decides which copies of this script may open the live board.
+REFERENCE_BRANCH = "refs/heads/main"
+
+#: Where this script lives in the repository, as git names it.
+SCRIPT_PATH_IN_REPOSITORY = ".claude/skills/agent-bbs/scripts/bbs.py"
+
+#: Seconds a git command may take before the guard gives up and lets the copy through.
+GIT_TIMEOUT_SECONDS = 10.0
 
 #: Version of the base table layout, kept in SQLite's user_version header field.
 #: Scripts from before teams refuse a board whose version is higher than theirs,
@@ -673,6 +691,93 @@ def board_directory() -> Path:
     return repository_board_directory(discovery_starts())
 
 
+def live_board_repository(directory: Path) -> Optional[Path]:
+    """Return the repository whose own board ``directory`` is, or None.
+
+    None means ``directory`` is some other board, such as a scratch folder
+    named by ``$TEXTMOUTH_BBS_DIR``. Discovery failing also gives None,
+    because that variable may name a board outside every repository.
+    """
+    try:
+        root = repository_root(discovery_starts())
+    except UserError:
+        return None
+    if (root / DEFAULT_BOARD_SUBDIR).resolve() == directory.resolve():
+        return root
+    return None
+
+
+def run_git(repository: Path, *args: str, stdin: str = "") -> Optional[str]:
+    """Run ``git`` in ``repository`` and return its standard output, or None.
+
+    None means git could not answer: it is missing or cannot start, it did
+    not finish within ``GIT_TIMEOUT_SECONDS``, or it exited with an error.
+    """
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=repository,
+            input=stdin,
+            capture_output=True,
+            text=True,
+            timeout=GIT_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return result.stdout if result.returncode == 0 else None
+
+
+def script_is_unmerged(repository: Path, script: Path = SCRIPT_FILE) -> bool:
+    """Return True only when git shows that main has never had this script's content.
+
+    Every step where git cannot tell (it returns None) answers False, so that
+    the board keeps working for everyone when git is missing, slow, or the
+    repository has no main branch.
+    """
+    # The copy's blob id. With --path, git applies the repository's attributes
+    # exactly as `git add` would, even to a copy outside the repository.
+    copy_id = run_git(repository, "hash-object", f"--path={SCRIPT_PATH_IN_REPOSITORY}", "--", str(script))
+    if copy_id is None:
+        return False
+    copy_id = copy_id.strip()
+    # The usual case in one call: the copy is main's current version. No
+    # answer here only means there is no quick one, so go on to the history.
+    current_id = run_git(
+        repository, "rev-parse", "--verify", "--quiet", f"{REFERENCE_BRANCH}:{SCRIPT_PATH_IN_REPOSITORY}"
+    )
+    if current_id is not None and current_id.strip() == copy_id:
+        return False
+    # Otherwise compare with the script at each commit on main that changed it.
+    commits = run_git(repository, "rev-list", REFERENCE_BRANCH, "--", SCRIPT_PATH_IN_REPOSITORY)
+    if commits is None:  # no main branch, or git failed
+        return False
+    requests = "".join(f"{commit}:{SCRIPT_PATH_IN_REPOSITORY}\n" for commit in commits.split())
+    blob_ids = run_git(repository, "cat-file", "--batch-check=%(objectname)", stdin=requests)
+    if blob_ids is None:
+        return False
+    # If main never had the script at all, the set is empty and the copy is unmerged.
+    return copy_id not in blob_ids.split()
+
+
+def guard_live_board(directory: Path) -> None:
+    """Raise ``UserError`` when a copy that main has never had would open the live board.
+
+    The checks run in order of cost: the override variable, then whether
+    ``directory`` is a repository's own board, then git's verdict.
+    """
+    if os.environ.get(ALLOW_UNMERGED_ENV, "").strip() not in ("", "0"):
+        return
+    repository = live_board_repository(directory)
+    if repository is None:
+        return
+    if script_is_unmerged(repository):
+        raise UserError(
+            f"this copy of {PROG} has changes that are not on main, so it will not open the live board "
+            f"in {directory}; to try it, set {BOARD_DIR_ENV} to a scratch folder, "
+            "and use main's copy of the script for the live board"
+        )
+
+
 # ---------------------------------------------------------------------------
 # The database
 # ---------------------------------------------------------------------------
@@ -805,9 +910,11 @@ def open_board() -> sqlite3.Connection:
     The connection runs in autocommit mode; changes go through
     ``write_transaction``. Several processes may use the board at once:
     write-ahead logging lets readers proceed during a write, and the busy
-    timeout makes a writer wait its turn instead of failing.
+    timeout makes a writer wait its turn instead of failing. A copy of this
+    script that main has never had is refused before it creates anything.
     """
     directory = board_directory()
+    guard_live_board(directory)
     directory.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(
         str(directory / BOARD_FILENAME),

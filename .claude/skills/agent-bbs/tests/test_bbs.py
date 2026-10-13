@@ -1644,6 +1644,158 @@ class ConcurrencyTests(BoardTestCase):
             self.assertEqual(conn.execute("PRAGMA journal_mode").fetchone()[0], "wal")
 
 
+@unittest.skipUnless(shutil.which("git"), "git is not installed")
+class LiveBoardGuardTests(TemporaryDirectoryTestCase):
+    """Only copies of the script that main has had may open a repository's own board."""
+
+    def make_repository(self, branch: str = "main") -> Path:
+        """Create a temporary repository whose one commit holds a copy of this script."""
+        repo = self.make_temp_dir() / "repo"
+        repo.mkdir()
+        git("init", "-q", "-b", branch, cwd=repo)
+        committed = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        committed.parent.mkdir(parents=True)
+        shutil.copyfile(SCRIPT, committed)
+        git("add", bbs.SCRIPT_PATH_IN_REPOSITORY, cwd=repo)
+        git("commit", "-q", "-m", "Add the board script", cwd=repo)
+        return repo
+
+    def edit(self, script: Path) -> None:
+        """Append a comment line that main has never had to a copy of the script."""
+        with script.open("a", encoding="utf-8") as handle:
+            handle.write("# an edit that main has never had\n")
+
+    def run_copy(self, script: Path, cwd: Path, **env_changes: str) -> subprocess.CompletedProcess:
+        """Run ``agents --json`` with a copy of the script, with no board override unless given.
+
+        Two safety checks come first, so that no test can reach this
+        repository's live board: the copy must not be the real script, and
+        the working directory must lie inside the system temporary folder.
+        """
+        self.assertNotEqual(script.resolve(), SCRIPT.resolve())
+        self.assertTrue(cwd.resolve().is_relative_to(Path(tempfile.gettempdir()).resolve()))
+        env = {
+            key: value
+            for key, value in git_environment().items()
+            if key not in (bbs.BOARD_DIR_ENV, bbs.ALLOW_UNMERGED_ENV)
+        }
+        env.update(env_changes)
+        return subprocess.run(
+            [sys.executable, str(script), "agents", "--json"],
+            cwd=cwd, env=env, capture_output=True, text=True, timeout=60,
+        )
+
+    def assert_refused(self, result: subprocess.CompletedProcess, repo: Path) -> None:
+        """Check the one-line refusal, word for word, and that no board folder was created."""
+        directory = repo / ".claude" / "agent-bbs"
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(
+            result.stderr,
+            f"bbs.py: error: this copy of bbs.py has changes that are not on main, so it will not open "
+            f"the live board in {directory}; to try it, set TEXTMOUTH_BBS_DIR to a scratch folder, "
+            "and use main's copy of the script for the live board\n",
+        )
+        self.assertFalse(directory.exists(), "a refused copy must create nothing")
+
+    def test_a_copy_main_has_opens_the_live_board(self) -> None:
+        repo = self.make_repository()
+        result = self.run_copy(repo / bbs.SCRIPT_PATH_IN_REPOSITORY, repo)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        self.assertEqual(json.loads(result.stdout), [])
+        self.assertTrue((repo / ".claude" / "agent-bbs" / "board.sqlite").is_file())
+
+    def test_an_edited_copy_is_refused_before_it_creates_anything(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        self.assert_refused(self.run_copy(script, repo), repo)
+
+    def test_a_commit_on_another_branch_is_refused_until_main_merges_it(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        git("checkout", "-q", "-b", "side", cwd=repo)
+        self.edit(script)
+        git("commit", "-q", "-a", "-m", "Change the script on a side branch", cwd=repo)
+        self.assert_refused(self.run_copy(script, repo), repo)
+        # Once main has merged the branch, the same copy is one main has had.
+        git("checkout", "-q", "main", cwd=repo)
+        git("merge", "-q", "--no-ff", "side", "-m", "Merge side", cwd=repo)
+        merged = self.run_copy(script, repo)
+        self.assertEqual((merged.returncode, merged.stderr), (0, ""))
+        self.assertTrue((repo / ".claude" / "agent-bbs" / "board.sqlite").is_file())
+
+    def test_an_older_copy_from_mains_history_still_opens_the_live_board(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        # Version 1 is kept outside the repository; main then moves on to version 2.
+        outside = self.make_temp_dir() / "v1-bbs.py"
+        shutil.copyfile(script, outside)
+        self.edit(script)
+        git("commit", "-q", "-a", "-m", "Change the script on main", cwd=repo)
+        older = self.run_copy(outside, repo)
+        self.assertEqual((older.returncode, older.stderr), (0, ""))
+        # A copy outside the repository with an edit main never had is refused.
+        # (Editing version 1 once would just rebuild version 2, so edit it twice.)
+        shutil.rmtree(repo / ".claude" / "agent-bbs")
+        self.edit(outside)
+        self.edit(outside)
+        self.assert_refused(self.run_copy(outside, repo), repo)
+
+    def test_a_scratch_board_skips_the_check(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        scratch = self.make_temp_dir() / "scratch-board"
+        result = self.run_copy(script, repo, **{bbs.BOARD_DIR_ENV: str(scratch)})
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        self.assertTrue((scratch / "board.sqlite").is_file())
+        self.assertFalse((repo / ".claude" / "agent-bbs").exists())
+
+    def test_naming_the_live_board_in_the_variable_is_still_checked(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        live = repo / ".claude" / "agent-bbs"
+        self.assert_refused(self.run_copy(script, repo, **{bbs.BOARD_DIR_ENV: str(live)}), repo)
+
+    def test_the_allow_variable_lets_an_unmerged_copy_through(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        # "0" and "" mean off, like unset; anything else lets the copy through.
+        self.assert_refused(self.run_copy(script, repo, **{bbs.ALLOW_UNMERGED_ENV: "0"}), repo)
+        self.assert_refused(self.run_copy(script, repo, **{bbs.ALLOW_UNMERGED_ENV: " "}), repo)
+        allowed = self.run_copy(script, repo, **{bbs.ALLOW_UNMERGED_ENV: "1"})
+        self.assertEqual((allowed.returncode, allowed.stderr), (0, ""))
+
+    def test_without_a_main_branch_the_guard_lets_the_copy_through(self) -> None:
+        repo = self.make_repository(branch="trunk")
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        result = self.run_copy(script, repo)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+
+    def test_when_git_fails_the_guard_lets_the_copy_through(self) -> None:
+        repo = self.make_repository()
+        script = repo / bbs.SCRIPT_PATH_IN_REPOSITORY
+        self.edit(script)
+        self.assertTrue(bbs.script_is_unmerged(repo, script), "the edit is unmerged while git works")
+        for failure in (FileNotFoundError("git"), subprocess.TimeoutExpired("git", 10)):
+            with self.subTest(failure=type(failure).__name__):
+                with mock.patch.object(bbs.subprocess, "run", side_effect=failure):
+                    self.assertFalse(bbs.script_is_unmerged(repo, script))
+
+    def test_live_board_repository_names_only_the_discovered_board(self) -> None:
+        repo = self.make_repository()
+        with mock.patch.object(bbs, "discovery_starts", return_value=[repo]):
+            self.assertEqual(bbs.live_board_repository(repo / ".claude" / "agent-bbs"), repo)
+            self.assertIsNone(bbs.live_board_repository(self.make_temp_dir() / "scratch"))
+
+    def test_the_script_path_constant_names_this_file(self) -> None:
+        self.assertEqual(SCRIPT.relative_to(SKILL_DIR.parents[2]).as_posix(), bbs.SCRIPT_PATH_IN_REPOSITORY)
+
+
 class RepositoryDiscoveryTests(TemporaryDirectoryTestCase):
     """Where the board lives when TEXTMOUTH_BBS_DIR is not set."""
 
@@ -1668,6 +1820,11 @@ class RepositoryDiscoveryTests(TemporaryDirectoryTestCase):
         # End to end: run inside the worktree with no override, then read the
         # board from the main working tree in another process.
         env = environment_without_board_override()
+        # This test is about discovery, and this repository's script is foreign
+        # to the temporary repository, so the live-board guard must stand aside.
+        # (Without this it would pass only because git's built-in default
+        # branch is master, which leaves the guard unable to tell.)
+        env[bbs.ALLOW_UNMERGED_ENV] = "1"
         registered = subprocess.run(
             [sys.executable, str(SCRIPT), "register", "probe", "--role", "probe", "--branch", "side"],
             cwd=nested, env=env, capture_output=True, text=True, timeout=60,
