@@ -196,7 +196,13 @@ struct PlaceSnapshot: Equatable, Sendable {
     /// bytes decoded (`MarkdownCacheService.cacheText(from:at:)`) and parsed
     /// with the book's title and author.
     func oldText() throws -> DocumentContent {
-        let bytes = try textBytes()
+        try oldText(from: try textBytes())
+    }
+
+    /// The old text parsed from `bytes`, the snapshot's kept text already
+    /// read (`textBytes()`), exactly as `oldText()` parses it: a caller that
+    /// has checked the bytes reads them once.
+    func oldText(from bytes: Data) throws -> DocumentContent {
         let markdown = try MarkdownCacheService.cacheText(from: bytes, at: textURL)
         return MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: record.title, bookAuthor: record.author)
     }
