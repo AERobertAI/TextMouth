@@ -634,7 +634,13 @@ extension LibraryViewModel {
             DispatchQueue.main.async { [weak self] in
                 guard let self, !self.isExtracting else { return }
                 self.rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _, _ in
-                    completion?()
+                    // The pass has looked at every book: a copy of an edit's
+                    // old text that a quit left, for a book with nothing
+                    // saved since, is no use. `completion` hears of it only
+                    // once they are gone.
+                    Self.sweepLeftoverEditTexts {
+                        completion?()
+                    }
                 }
             }
         }
@@ -949,11 +955,30 @@ extension LibraryViewModel {
         }
     }
 
+    /// Deletes every copy of an edit's old text that no session of this run
+    /// uses (`PlaceSnapshot.leftovers(in:)` over `editTextSnapshots`), the
+    /// ones a quit left, on a utility queue, then calls `completion` on the
+    /// main actor, so a caller that waits for the cache pass finds them
+    /// gone. The pass has settled every edit saved while TextMouth was
+    /// closed by then (`editSavedWhileClosed(of:access:)`), using the copy of
+    /// its book; one left for a book with nothing saved since is of no use.
+    nonisolated private static func sweepLeftoverEditTexts(then completion: @escaping @MainActor @Sendable () -> Void) {
+        DispatchQueue.global(qos: .utility).async {
+            PlaceSnapshot.leftovers(in: MachineLocalPaths.editTextSnapshots).forEach { $0.discard() }
+            // The main queue is the main actor's executor.
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated { completion() }
+            }
+        }
+    }
+
     /// What the launch's cache pass makes of an edit of `book`'s content.md
     /// saved while TextMouth was closed (FR05,
     /// `BookTextEditSessions.settleEditSavedWhileClosed(of:access:)`): the
     /// summary of the book with the edit taken as its text, committed to
-    /// its record; or nil when there was none to take, or it could not be
+    /// its record, and the book's places moved with it, from the copy of the
+    /// text a quit left when it is the text they were saved in (T06's branch
+    /// E); or nil when there was none to take, or it could not be
     /// taken and was kept beside content.md, so the cache is rebuilt from
     /// the source as before.
     /// - Throws: a refusal for a content.md only in the cloud, which leaves
@@ -964,7 +989,8 @@ extension LibraryViewModel {
     ) throws -> ContentAnalysisSummary? {
         switch BookTextEditSessions.shared.settleEditSavedWhileClosed(of: book, access: access) {
         case .adopted(let edit)?:
-            return ContentAnalysisSummary(committed: edit.committed)
+            // The row takes the moves of the book's places that the record took.
+            return ContentAnalysisSummary(committed: edit.committed, movedPlaces: edit.movedPlaces)
         case .inCloud?:
             throw MaintenanceFileAccess.refusal(of: MarkdownCacheService.cacheURL(for: book))
         default:

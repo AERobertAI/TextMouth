@@ -14,7 +14,8 @@ extension LibraryViewModel {
     /// updates (`LibraryBookUpdates`), so their copies of the book agree
     /// with the text they show.
     func commitTextEdit(_ edit: BookTextEdit) {
-        applyAnalysisSummaries([ContentAnalysisSummary(committed: edit.committed)])
+        // The row takes the moves of the book's places that the record took.
+        applyAnalysisSummaries([ContentAnalysisSummary(committed: edit.committed, movedPlaces: edit.movedPlaces)])
         switch edit.text {
         case .document(let content):
             bookUpdates.textReplaced(bookID: edit.committed.id, with: content)
