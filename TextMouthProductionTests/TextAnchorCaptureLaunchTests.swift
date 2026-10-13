@@ -279,17 +279,6 @@ final class TextAnchorCaptureLaunchTests: FeedItemIndexTestCase {
         return book
     }
 
-    /// Holds `book`'s text in an Edit Text session, as the user's editor
-    /// holds it, until the test ends.
-    private func holdInAnEditSession(_ book: Book) {
-        let baseline = BookTextBaseline(
-            source: nil,
-            cache: FileFingerprint(stamp: FileStamp(byteCount: 0, modificationTimeNanoseconds: 0), digest: "")
-        )
-        BookTextEditSessions.shared.begin(book.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
-        addTeardownBlock { BookTextEditSessions.shared.end(book.id) }
-    }
-
     /// Rewrites `book`'s bookInfo.json as a build before anchors wrote it:
     /// without any "anchor", and without "skippedHeadings", keeping the
     /// heading IDs and every other field as written.

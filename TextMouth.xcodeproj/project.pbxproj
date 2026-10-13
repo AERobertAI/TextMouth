@@ -498,6 +498,7 @@
 		8CD504420AFA8513789CB3BB /* OperationOutcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1839E11D6109CB979BC7EA9 /* OperationOutcome.swift */; };
 		8CD7074F79406D0187048AA1 /* PlaceRelocatorHeadingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC971B7D1BD131286A335906 /* PlaceRelocatorHeadingTests.swift */; };
 		8D101E61072B85DC0EAEFB0D /* ReaderViewModel+CloudDownload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF652E07625EAAA30C3E548 /* ReaderViewModel+CloudDownload.swift */; };
+		8D16E255E7BEB8B5C9EFB64C /* PlaceRelocationAtRebuildTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B709C831333AC03E887ABAFD /* PlaceRelocationAtRebuildTests.swift */; };
 		8D18B59263E74BC33F0AAFBD /* AudioEditorCommandViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8992C23640FFBA82F663984C /* AudioEditorCommandViews.swift */; };
 		8D4E6358C34F1876DFA4A8AD /* TextMouthPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CBAF87A1E9FB623267BB355 /* TextMouthPaths.swift */; };
 		8D73B4B59A4DDDDE5354B6F5 /* ReaderAudioFailureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A17A8A19833C2B6CEC3A390 /* ReaderAudioFailureTests.swift */; };
@@ -651,6 +652,7 @@
 		B6E055DCAE0A9E1E6CD4BA4A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41AA0E0E676B77D10639BD64 /* AppDelegate.swift */; };
 		B6F9AF61A67047F450B686C8 /* FeedItemIndexMoveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3011B398EBE997645DF3E5E /* FeedItemIndexMoveTests.swift */; };
 		B71A3F2D7674987FB849B761 /* ImportDecisionQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3793DB43E75D9F8C91B12B10 /* ImportDecisionQueueTests.swift */; };
+		B81D186912FD3CE661DD953B /* PlaceRelocationTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37D0E7E9D78E85625E44F731 /* PlaceRelocationTestSupport.swift */; };
 		B84E2028895A2043D6A6C2DD /* vbrquantize.c in Sources */ = {isa = PBXBuildFile; fileRef = 22646846170568F7EA58939B /* vbrquantize.c */; };
 		B8E26B1299575D10062B07FA /* BookContentIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A64569FF85BD4A1F7EAF3E /* BookContentIndexTests.swift */; };
 		B8F2FCD0E2C877D98C7A0463 /* RecordingRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12BB9B6A3FA0EE760F38D170 /* RecordingRecoveryTests.swift */; };
@@ -1136,6 +1138,7 @@
 		3793DB43E75D9F8C91B12B10 /* ImportDecisionQueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportDecisionQueueTests.swift; sourceTree = "<group>"; };
 		37C939C3A7C950634850C673 /* AudioFilterChain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFilterChain.swift; sourceTree = "<group>"; };
 		37CF8AF52207BFBEEC15480C /* DataDirectoryCreationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDirectoryCreationTests.swift; sourceTree = "<group>"; };
+		37D0E7E9D78E85625E44F731 /* PlaceRelocationTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceRelocationTestSupport.swift; sourceTree = "<group>"; };
 		38859693987DF570E1E346C8 /* AudioEditorLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorLauncher.swift; sourceTree = "<group>"; };
 		389A9BAD7030EDEEE727F6CD /* TextAnchorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextAnchorTests.swift; sourceTree = "<group>"; };
 		38C3383998011C5B6FB97B86 /* DAISYPackageFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYPackageFixtures.swift; sourceTree = "<group>"; };
@@ -1585,6 +1588,7 @@
 		B5C8DBFF02248C668CCEE864 /* SleepTimerServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerServiceTests.swift; sourceTree = "<group>"; };
 		B67283A117245BD7470B3C49 /* BookExportModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookExportModel.swift; sourceTree = "<group>"; };
 		B6B6D30D85C0A58A0DC21D2F /* HandEditedMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandEditedMetadataTests.swift; sourceTree = "<group>"; };
+		B709C831333AC03E887ABAFD /* PlaceRelocationAtRebuildTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceRelocationAtRebuildTests.swift; sourceTree = "<group>"; };
 		B7193BE2578C776548134DB0 /* AudioPlaybackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlaybackService.swift; sourceTree = "<group>"; };
 		B743126FEBD88AB20BB92DC3 /* FeedNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedNetwork.swift; sourceTree = "<group>"; };
 		B7E9855BCF0C1D3A7E129BE1 /* RemovalWordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemovalWordingTests.swift; sourceTree = "<group>"; };
@@ -2668,6 +2672,8 @@
 				3D2BD0370A3A2872D25105A2 /* PersistenceFailureCenterTests.swift */,
 				69FFF66F8F657601DF2292FD /* PersistenceFailureTestSupport.swift */,
 				F26395ADCD8B217C5D612A70 /* PlaceClockTests.swift */,
+				B709C831333AC03E887ABAFD /* PlaceRelocationAtRebuildTests.swift */,
+				37D0E7E9D78E85625E44F731 /* PlaceRelocationTestSupport.swift */,
 				A77EC88847FF230F822B25B8 /* PlaceRelocatorBookTests.swift */,
 				EC971B7D1BD131286A335906 /* PlaceRelocatorHeadingTests.swift */,
 				16CF390E4F4B3B7800849DB1 /* PlaceRelocatorSharedRuleTests.swift */,
@@ -3427,6 +3433,8 @@
 				559108FF763DE38DD141DB45 /* PersistenceFailureCenterTests.swift in Sources */,
 				DE5AFE41E9957A8D90626A9F /* PersistenceFailureTestSupport.swift in Sources */,
 				0DC7103365B0687A754F1361 /* PlaceClockTests.swift in Sources */,
+				8D16E255E7BEB8B5C9EFB64C /* PlaceRelocationAtRebuildTests.swift in Sources */,
+				B81D186912FD3CE661DD953B /* PlaceRelocationTestSupport.swift in Sources */,
 				E1235604C7EEDD948E8A091C /* PlaceRelocatorBookTests.swift in Sources */,
 				8CD7074F79406D0187048AA1 /* PlaceRelocatorHeadingTests.swift in Sources */,
 				22B0A3681D373AB2C3168C6E /* PlaceRelocatorSharedRuleTests.swift in Sources */,

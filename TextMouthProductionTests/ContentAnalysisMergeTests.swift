@@ -679,33 +679,6 @@ final class ContentAnalysisMergeTests: XCTestCase {
         return replaced
     }
 
-    /// Holds the first cache generation of `book` on the thread doing it,
-    /// once it has chosen where its content.md goes and before it commits
-    /// anything: `reached` is fulfilled there, and the generation goes on
-    /// once `gate` is signaled. The hold ends with the test at the latest.
-    private func holdCacheGeneration(of book: Book) -> (reached: XCTestExpectation, gate: DispatchSemaphore) {
-        let reached = expectation(description: "The batch is at work on the book")
-        let gate = DispatchSemaphore(value: 0)
-        let isClaimed = OSAllocatedUnfairLock(initialState: false)
-        let bookID = book.id
-        MarkdownCacheService.extractionObserver = { generated in
-            guard generated.id == bookID else { return }
-            // Only the first generation is held, so `reached` is fulfilled once.
-            let isFirst = isClaimed.withLock { claimed in
-                defer { claimed = true }
-                return !claimed
-            }
-            guard isFirst else { return }
-            reached.fulfill()
-            gate.wait()
-        }
-        addTeardownBlock {
-            MarkdownCacheService.extractionObserver = nil
-            gate.signal()
-        }
-        return (reached, gate)
-    }
-
     /// A library model listing `books`, without the app's services.
     @MainActor
     private func makeModel(with books: [Book]) -> LibraryViewModel {

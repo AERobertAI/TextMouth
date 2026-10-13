@@ -1,0 +1,187 @@
+import XCTest
+import os
+@testable import TextMouth
+
+// MARK: - A Book Whose Text Was Written by an Older Extraction
+
+/// A book whose saved places were made in the text an older extraction
+/// wrote, with the text this build writes for it (T06's branch D). A rebuild
+/// of the book's text should move each place from the older text to the new
+/// one, onto the same words.
+struct BookInAnOlderText {
+    /// The book as its library row and package record hold it: with the
+    /// places saved in the older text.
+    let book: Book
+    /// The reading text this build's extraction makes for the book.
+    let newText: DocumentContent
+    /// The content.md bytes that extraction writes.
+    let newBytes: Data
+    /// Where the reading position belongs in `newText`: at "Sacks of barley".
+    let position: TextPlace
+    /// Where the bookmark belongs in `newText`: at "counted twice".
+    let bookmark: TextPlace
+    /// The "Notes" heading of `newText`, which the book skips.
+    let notes: Heading
+}
+
+extension CloudMaintenanceTestCase {
+    /// The sentence an older extraction put into the book's text, ahead of
+    /// every place the fixture saves.
+    private static let olderSentence = "An older reading kept this sentence about the weir and its eels.\n\n"
+
+    /// A packaged book (titled `title`) whose content.md is the text an
+    /// older extraction wrote, and whose position, bookmark, and skipped
+    /// heading were saved in that text with their words. This build's
+    /// extraction of the same source lacks the older sentence, so every place
+    /// is past text that is no longer there.
+    ///
+    /// The book's record keeps no fingerprints, and the fixture commits no
+    /// cache: a content.md whose record keeps fingerprints and holds other
+    /// bytes is taken by the batch as an edit saved while TextMouth was
+    /// closed (FR05) and never rebuilt, while an older build's cache, written
+    /// before fingerprints, is rebuilt.
+    func makeBookInAnOlderText(title: String) throws -> BookInAnOlderText {
+        let source = "# The Millrace\n\nWater came down the leat at dawn and turned the wheel before anyone woke.\n\n"
+            + "# The Granary\n\nSacks of barley stood against the north wall, counted twice each evening.\n\n"
+            + "## Notes\n\nThe miller kept a ledger of every sack that left by cart.\n"
+        var book = try makePackagedBook(title: title, text: source)
+
+        // This build's extraction, written as content.md. The book holds no
+        // place yet, so nothing is copied aside.
+        let written = try XCTUnwrap(MarkdownCacheService.generateCacheContent(for: book))
+        XCTAssertNil(written.movedPlaces)
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+        let newBytes = try Data(contentsOf: cacheURL)
+        let newText = try MarkdownCacheService.loadFromCache(for: book)
+
+        // The same text as an older extraction wrote it: one more sentence,
+        // ahead of every place below.
+        let newMarkdown = try XCTUnwrap(String(data: newBytes, encoding: .utf8))
+        let marker = "Sacks of barley"
+        XCTAssertEqual(newMarkdown.components(separatedBy: marker).count, 2, "the marker should stand once")
+        let olderMarkdown = newMarkdown.replacingOccurrences(of: marker, with: Self.olderSentence + marker)
+        try Data(olderMarkdown.utf8).write(to: cacheURL, options: .atomic)
+        let olderText = try MarkdownCacheService.loadFromCache(for: book)
+
+        // The places, saved in the older text with their words.
+        let olderChapters = olderText.chapters.map(\.text)
+        let measure = TextAnchor.measure(ofTextCachedBy: "3.0.3")
+        let olderPosition = try Self.place(of: marker, in: olderChapters)
+        let olderBookmark = try Self.place(of: "counted twice", in: olderChapters)
+        book.readingPosition = ReadingPosition(
+            chapterIndex: olderPosition.chapter,
+            characterOffset: olderPosition.offset,
+            globalCharacterOffset: olderText.globalOffset(chapterIndex: olderPosition.chapter, localOffset: olderPosition.offset),
+            anchor: olderText.anchor(at: olderPosition, measuredIn: measure)
+        )
+        book.bookmarks = [Bookmark(
+            number: 1,
+            chapterIndex: olderBookmark.chapter,
+            characterOffset: olderBookmark.offset,
+            label: "Counted",
+            anchor: olderText.anchor(at: olderBookmark, measuredIn: measure)
+        )]
+        let olderNotes = try Self.notes(of: olderText)
+        let notesStart = TextPlace(chapter: olderNotes.chapterIndex, offset: olderNotes.characterOffset)
+        book.setSkippedHeadings([SkippedHeading(olderNotes, anchor: olderText.anchor(at: notesStart, measuredIn: measure))])
+
+        // The record is written to match, still the older cache version
+        // and without fingerprints.
+        book.cacheFormatVersion = "3.0.3"
+        book.textCacheFingerprint = nil
+        try book.saveBookInfoThrowing()
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertNil(record.state.textCacheFingerprint, "the fixture's record should keep no fingerprints")
+        XCTAssertEqual(record.state.cacheFormatVersion, "3.0.3")
+
+        return BookInAnOlderText(
+            book: book,
+            newText: newText,
+            newBytes: newBytes,
+            position: try Self.place(of: marker, in: newText.chapters.map(\.text)),
+            bookmark: try Self.place(of: "counted twice", in: newText.chapters.map(\.text)),
+            notes: try Self.notes(of: newText)
+        )
+    }
+
+    /// Where `phrase` begins in the chapter of `chapters` that holds it,
+    /// found without a fixed chapter index or a subscript that could trap.
+    private static func place(of phrase: String, in chapters: [String]) throws -> TextPlace {
+        let chapter = try XCTUnwrap(chapters.firstIndex { $0.contains(phrase) }, "no chapter holds \"\(phrase)\"")
+        return try Phrase.place(of: phrase, inChapter: chapter, of: chapters)
+    }
+
+    /// The "Notes" heading of `text`.
+    private static func notes(of text: DocumentContent) throws -> Heading {
+        try XCTUnwrap(text.allHeadings.first { $0.text == "Notes" }, "no Notes heading")
+    }
+
+    /// Asserts that `book` holds the places of `fixture` as they belong in
+    /// its new text: the position and the bookmark at their chapter and
+    /// offset there, and the Notes heading skipped.
+    func assertPlaces(
+        of book: Book,
+        areThoseOf fixture: BookInAnOlderText,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(book.readingPosition?.chapterIndex, fixture.position.chapter, "position's chapter", file: file, line: line)
+        XCTAssertEqual(book.readingPosition?.characterOffset, fixture.position.offset, "position's offset", file: file, line: line)
+        XCTAssertEqual(book.bookmarks.count, 1, "bookmarks", file: file, line: line)
+        XCTAssertEqual(book.bookmarks.first?.chapterIndex, fixture.bookmark.chapter, "bookmark's chapter", file: file, line: line)
+        XCTAssertEqual(book.bookmarks.first?.characterOffset, fixture.bookmark.offset, "bookmark's offset", file: file, line: line)
+        XCTAssertEqual(book.skippedHeadingIDs, [fixture.notes.id], "skipped headings", file: file, line: line)
+    }
+
+    /// Whether the snapshots folder holds a copy of the book `book`: a
+    /// folder whose name begins with "<book ID> ". Read from the folder
+    /// itself, not through `PlaceSnapshot.leftovers()`, which neither lists
+    /// nor removes the copies this run still uses, and so would miss exactly
+    /// the copies a rebuild between its copy and its commit leaves.
+    func snapshotsHoldACopy(of book: Book) -> Bool {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: MachineLocalPaths.placeSnapshots.path)) ?? []
+        return names.contains { $0.hasPrefix("\(book.id.uuidString) ") }
+    }
+}
+
+// MARK: - Shared Test Helpers
+
+extension XCTestCase {
+    /// Holds `book`'s text in an Edit Text session, as the user's editor
+    /// holds it, until the test ends.
+    func holdInAnEditSession(_ book: Book) {
+        let baseline = BookTextBaseline(
+            source: nil,
+            cache: FileFingerprint(stamp: FileStamp(byteCount: 0, modificationTimeNanoseconds: 0), digest: "")
+        )
+        BookTextEditSessions.shared.begin(book.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
+        addTeardownBlock { BookTextEditSessions.shared.end(book.id) }
+    }
+
+    /// Holds the first cache generation of `book` on the thread doing it,
+    /// once it has chosen where its content.md goes and before it commits
+    /// anything: `reached` is fulfilled there, and the generation goes on
+    /// once `gate` is signaled. The hold ends with the test at the latest.
+    func holdCacheGeneration(of book: Book) -> (reached: XCTestExpectation, gate: DispatchSemaphore) {
+        let reached = expectation(description: "The batch is at work on the book")
+        let gate = DispatchSemaphore(value: 0)
+        let isClaimed = OSAllocatedUnfairLock(initialState: false)
+        let bookID = book.id
+        MarkdownCacheService.extractionObserver = { generated in
+            guard generated.id == bookID else { return }
+            // Only the first generation is held, so `reached` is fulfilled once.
+            let isFirst = isClaimed.withLock { claimed in
+                defer { claimed = true }
+                return !claimed
+            }
+            guard isFirst else { return }
+            reached.fulfill()
+            gate.wait()
+        }
+        addTeardownBlock {
+            MarkdownCacheService.extractionObserver = nil
+            gate.signal()
+        }
+        return (reached, gate)
+    }
+}
