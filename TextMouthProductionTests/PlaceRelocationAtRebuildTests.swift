@@ -194,6 +194,109 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
         XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
     }
 
+    // MARK: A Stop After the Commit
+
+    /// What a batch that stopped right after committing a book leaves: the
+    /// book's package record holds the rebuilt analysis and the moved
+    /// places, and the library row (the fixture's book) holds neither.
+    private func commitTheBatchAndStop(for fixture: BookInAnOlderText) throws {
+        var updated = fixture.book
+        let generated = try XCTUnwrap(MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &updated))
+        let moved = try XCTUnwrap(generated.movedPlaces)
+        _ = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: updated,
+            index: generated.content.contentIndex,
+            cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+            movedPlaces: moved
+        ))
+        // The record holds the moved places now.
+        assertPlaces(of: try recordedBook(like: fixture.book), areThoseOf: fixture)
+    }
+
+    /// Runs the next launch's passes over `model` until they end.
+    @MainActor
+    private func runTheNextLaunchsPasses(on model: LibraryViewModel) async {
+        let finished = expectation(description: "The launch's passes ended")
+        model.updateContentCachesAndStatistics(access: .live) { finished.fulfill() }
+        await fulfillment(of: [finished], timeout: 60)
+    }
+
+    /// TextMouth stopped after the batch committed a book's analysis and
+    /// moved places to its record, before the summary reached library.json.
+    /// The next launch recovers the analysis from the record, and the row
+    /// takes the record's places with it, so a later change of the row does
+    /// not write its old places over the moved ones.
+    @MainActor
+    func testAStopAfterTheCommitStillBringsTheMovedPlacesToTheRow() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Stopped \(UUID().uuidString)")
+        try commitTheBatchAndStop(for: fixture)
+
+        // The next launch: library.json's row is the book as it was.
+        let model = makeModel(with: [fixture.book])
+        await runTheNextLaunchsPasses(on: model)
+
+        let row = try XCTUnwrap(model.bookByID(fixture.book.id))
+        XCTAssertEqual(row.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        assertPlaces(of: row, areThoseOf: fixture)
+
+        // Any change of the row writes its places to the record.
+        model.updateEndOfBookBehavior(bookID: fixture.book.id, behavior: "stop")
+        assertPlaces(of: try recordedBook(like: fixture.book), areThoseOf: fixture)
+        XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
+    }
+
+    /// A row whose position was saved after the move keeps it through the
+    /// recovery: the record's moved position is older, and a place saved
+    /// meanwhile wins. The bookmark and the skip, which nothing newer
+    /// changed, take the record's.
+    @MainActor
+    func testARecoveryKeepsARowPositionSavedAfterTheMove() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Saved After \(UUID().uuidString)")
+        try commitTheBatchAndStop(for: fixture)
+
+        // The listener moved on after the move, in a row library.json kept.
+        var row = fixture.book
+        var later = ReadingPosition(chapterIndex: 0, characterOffset: 3)
+        later.lastUpdated = Date().addingTimeInterval(60)
+        row.readingPosition = later
+        let model = makeModel(with: [row])
+        await runTheNextLaunchsPasses(on: model)
+
+        let recovered = try XCTUnwrap(model.bookByID(fixture.book.id))
+        // The launch may give the position the words around it (an anchor),
+        // so its place and date are compared, not the whole position.
+        XCTAssertEqual(recovered.readingPosition?.chapterIndex, later.chapterIndex, "the recovery replaced a newer position")
+        XCTAssertEqual(recovered.readingPosition?.characterOffset, later.characterOffset, "the recovery replaced a newer position")
+        XCTAssertEqual(recovered.readingPosition?.lastUpdated, later.lastUpdated, "the recovery dated the position afresh")
+        XCTAssertEqual(recovered.bookmarks.first?.chapterIndex, fixture.bookmark.chapter)
+        XCTAssertEqual(recovered.bookmarks.first?.characterOffset, fixture.bookmark.offset)
+        XCTAssertEqual(recovered.skippedHeadingIDs, [fixture.notes.id])
+    }
+
+    /// A row bookmark that differs from the record's in more than where it
+    /// is (its label was edited) keeps the row's bookmark, at the row's
+    /// place; the position and the skip still take the record's.
+    @MainActor
+    func testARecoveryKeepsARowBookmarkThatWasEdited() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Edited Label \(UUID().uuidString)")
+        try commitTheBatchAndStop(for: fixture)
+
+        var row = fixture.book
+        let before = try XCTUnwrap(row.bookmarks.first)
+        row.bookmarks[0].label = "Renamed"
+        let model = makeModel(with: [row])
+        await runTheNextLaunchsPasses(on: model)
+
+        let recovered = try XCTUnwrap(model.bookByID(fixture.book.id))
+        XCTAssertEqual(recovered.bookmarks.count, 1)
+        XCTAssertEqual(recovered.bookmarks.first?.label, "Renamed")
+        XCTAssertEqual(recovered.bookmarks.first?.chapterIndex, before.chapterIndex)
+        XCTAssertEqual(recovered.bookmarks.first?.characterOffset, before.characterOffset)
+        XCTAssertEqual(recovered.readingPosition?.chapterIndex, fixture.position.chapter)
+        XCTAssertEqual(recovered.readingPosition?.characterOffset, fixture.position.offset)
+        XCTAssertEqual(recovered.skippedHeadingIDs, [fixture.notes.id])
+    }
+
     // MARK: A Reader's Own Rebuild
 
     /// A reader that opens a book whose text is outdated rebuilds it and

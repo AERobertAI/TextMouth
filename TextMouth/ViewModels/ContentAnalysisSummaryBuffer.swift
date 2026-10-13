@@ -19,7 +19,8 @@ struct ContentAnalysisSummary: Sendable {
     let fields: Book.ContentAnalysisFields
     /// The places the rebuild behind this analysis moved, narrowed to the
     /// moves the record took (`MovedPlaces.taken(by:)`); nil when it moved
-    /// none.
+    /// none. For a book recovered from its record, the moves that bring the
+    /// row to the record's places (`init(recovered:record:)`).
     let movedPlaces: MovedPlaces?
 
     /// The analysis fields of `committed`, the book as its package records
@@ -31,6 +32,74 @@ struct ContentAnalysisSummary: Sendable {
         bookID = committed.id
         fields = committed.contentAnalysisFields
         self.movedPlaces = movedPlaces.map { $0.taken(by: committed) }
+    }
+
+    /// The analysis fields of `recovered`, the library row with the analysis
+    /// an earlier run committed applied, and the places that run moved, which
+    /// `record`, the book as its package record holds it, describes. The
+    /// record describes content.md as it is now, so its places are the
+    /// moved ones, and the row (whose library.json was not written before
+    /// the earlier run stopped) takes them as moves from its own places
+    /// (`placesMoved(to:from:)`). The record is the source of these moves, so
+    /// they are not narrowed to what it took, as a fresh commit's are.
+    init(recovered: Book, record: Book) {
+        bookID = recovered.id
+        fields = recovered.contentAnalysisFields
+        movedPlaces = Self.placesMoved(to: record, from: recovered)
+    }
+
+    /// The moves that bring the places of `row`, the library row, to those
+    /// of `record`, the book's package record; nil when they would change
+    /// nothing. Each place is taken only where the row still holds it as it
+    /// is now (`Book.takeMovedPlaces(original:moved:)`), so a place saved
+    /// meanwhile wins. Places are compared as the files store them (dates to
+    /// the second, `Book.isAsStored`).
+    ///
+    /// - The reading position moves when the record's is at least as new as
+    ///   the row's: a move is dated at the move, so an older position in the
+    ///   record never replaces a newer one of the row's.
+    /// - A bookmark moves when the record's bookmark of its ID differs from
+    ///   the row's only in where it is and its saved words; one that differs
+    ///   otherwise (a label edited on one side) keeps the row's.
+    /// - The skipped headings move as one, as `takeMovedPlaces` takes them.
+    private static func placesMoved(to record: Book, from row: Book) -> MovedPlaces? {
+        let original = row.relocatablePlaces
+        let recorded = record.relocatablePlaces
+        var moved = original
+
+        // The position: the record's, unless the row's is newer or the
+        // record has none.
+        if let recordedPosition = recorded.position {
+            let rowDate = original.position.map { storedSecond(of: $0.lastUpdated) }
+            if rowDate.map({ storedSecond(of: recordedPosition.lastUpdated) >= $0 }) ?? true {
+                moved.position = recordedPosition
+            }
+        }
+
+        // Each bookmark the record also holds, where only its place and
+        // words differ.
+        let recordedBookmarks = Dictionary(recorded.bookmarks.map { ($0.id, $0) }) { first, _ in first }
+        moved.bookmarks = original.bookmarks.map { held in
+            guard let there = recordedBookmarks[held.id] else { return held }
+            var relocated = held
+            relocated.chapterIndex = there.chapterIndex
+            relocated.characterOffset = there.characterOffset
+            relocated.anchor = there.anchor
+            return Book.isAsStored(relocated, there) ? there : held
+        }
+
+        // The skips, as one.
+        moved.skippedHeadings = recorded.skippedHeadings
+        moved.waitingSkippedHeadings = recorded.waitingSkippedHeadings
+
+        guard !Book.isAsStored(moved, original) else { return nil }
+        return MovedPlaces(bookID: row.id, original: original, moved: moved, snapshot: nil)
+    }
+
+    /// `date` as the library's files store it: to the second (ISO 8601),
+    /// so two dates compare as the files would show them.
+    private static func storedSecond(of date: Date) -> TimeInterval {
+        date.timeIntervalSince1970.rounded(.down)
     }
 
     /// Gives `book`, the library row, the committed analysis fields and
@@ -59,9 +128,11 @@ struct ContentAnalysisSummary: Sendable {
 /// and reach the library together, in one change and one save: at most
 /// `flushInterval` after the first of them arrived, when the pass ends, and
 /// when TextMouth quits. A summary a crash loses is not lost work: the
-/// book's package record already holds the analysis, which the next
-/// launch's batch recovers without parsing the book again
-/// (`BookContentAnalysisService.recoveredTextCacheIndex`).
+/// book's package record already holds the analysis and the places the
+/// rebuild moved, which the next launch's batch recovers without parsing
+/// the book again (`BookContentAnalysisService.recoveredTextCache`): the
+/// analysis, and the record's places as moves to the row
+/// (`ContentAnalysisSummary.init(recovered:record:)`).
 @MainActor
 final class ContentAnalysisSummaryBuffer {
     /// The longest a finished book's summary waits to reach the library.

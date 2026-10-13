@@ -898,7 +898,8 @@ extension LibraryViewModel {
 
     /// The work of `updateTextCache(of:force:reading:access:skips:held:)` for
     /// a book whose `files` were on this Mac when it began: recovers the
-    /// cache an earlier run committed, takes an edit of content.md saved
+    /// cache an earlier run committed, with the places that run moved,
+    /// which its record holds and the row may lack, takes an edit of content.md saved
     /// while TextMouth was closed (`editSavedWhileClosed(of:access:)`), or
     /// writes the cache from the source and commits its analysis to the
     /// book's record.
@@ -912,7 +913,7 @@ extension LibraryViewModel {
     ) throws -> ContentAnalysisSummary? {
         let currentVersion = MarkdownCacheService.currentCacheVersion
         if !force {
-            if let savedIndex = try BookContentAnalysisService.recoveredTextCacheIndex(
+            if let saved = try BookContentAnalysisService.recoveredTextCache(
                 for: book,
                 hasher: access.hasher,
                 isDataless: access.isDataless
@@ -921,8 +922,18 @@ extension LibraryViewModel {
                 // the library summary requires no source parsing or writes.
                 // The package records this index with the current version.
                 var recovered = book
-                recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
-                return ContentAnalysisSummary(committed: recovered)
+                recovered.applyContentAnalysis(saved.index, cacheFormatVersion: currentVersion)
+                // The record also holds the places that run moved, which
+                // the row may have missed if TextMouth stopped before its
+                // summary reached library.json; the row takes them where
+                // it still holds its own places as they were.
+                let record = Book(
+                    record: saved.record,
+                    filePath: book.filePath,
+                    folderPath: book.folderPath,
+                    tmbDirectoryName: book.tmbDirectoryName
+                )
+                return ContentAnalysisSummary(recovered: recovered, record: record)
             }
             // The record no longer describes content.md: it may hold an
             // edit saved while TextMouth was closed, taken now when it
