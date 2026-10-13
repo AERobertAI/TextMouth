@@ -58,6 +58,9 @@ DEFAULT_BOARD_SUBDIR = Path(".claude") / "agent-bbs"
 #: File name of the board database inside the board directory.
 BOARD_FILENAME = "board.sqlite"
 
+#: This script's own file, resolved through any symbolic links.
+SCRIPT_FILE = Path(__file__).resolve()
+
 #: Version of the base table layout, kept in SQLite's user_version header field.
 #: Scripts from before teams refuse a board whose version is higher than theirs,
 #: so additive changes never raise it: SCHEMA_ADDITIONS applies them instead.
@@ -622,19 +625,38 @@ def _gitdir_named_by(marker: Path) -> Path:
     raise UserError(f"{marker} has no 'gitdir:' line; set {BOARD_DIR_ENV} to choose a board directory")
 
 
-def repository_board_directory(starts: Iterable[Path]) -> Path:
-    """Return the board directory of the first start inside a git repository.
+def discovery_starts() -> List[Path]:
+    """Return where to look for the repository: the current directory, then this script.
+
+    The current directory comes first and is skipped when it is gone. This
+    script's own location is the fallback, so that a command run from outside
+    any repository still reaches the repository the script belongs to.
+    """
+    starts: List[Path] = []
+    with contextlib.suppress(OSError):  # the current directory may be gone
+        starts.append(Path.cwd())
+    starts.append(SCRIPT_FILE.parent)
+    return starts
+
+
+def repository_root(starts: Iterable[Path]) -> Path:
+    """Return the main working tree of the first start inside a git repository.
 
     Each start is walked upward to its working tree, which is mapped to the
-    repository's main working tree, so every worktree shares one board.
+    repository's main working tree, so every worktree shares one repository.
     """
     for start in starts:
         worktree = find_worktree_root(start)
         if worktree is not None:
-            return main_worktree_root(worktree) / DEFAULT_BOARD_SUBDIR
+            return main_worktree_root(worktree)
     raise UserError(
         f"not inside a git repository; run from a worktree of the repository or set {BOARD_DIR_ENV}"
     )
+
+
+def repository_board_directory(starts: Iterable[Path]) -> Path:
+    """Return the board directory of the first start inside a git repository."""
+    return repository_root(starts) / DEFAULT_BOARD_SUBDIR
 
 
 def board_directory() -> Path:
@@ -648,11 +670,7 @@ def board_directory() -> Path:
     override = os.environ.get(BOARD_DIR_ENV, "").strip()
     if override:
         return Path(override).expanduser().absolute()
-    starts = []
-    with contextlib.suppress(OSError):  # the current directory may be gone
-        starts.append(Path.cwd())
-    starts.append(Path(__file__).resolve().parent)
-    return repository_board_directory(starts)
+    return repository_board_directory(discovery_starts())
 
 
 # ---------------------------------------------------------------------------
@@ -2161,7 +2179,7 @@ def cmd_reset(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 # ---------------------------------------------------------------------------
 
 #: The skill's documentation; the protocol is the text between the markers.
-SKILL_DOCUMENT = Path(__file__).resolve().parent.parent / "SKILL.md"
+SKILL_DOCUMENT = SCRIPT_FILE.parent.parent / "SKILL.md"
 PROTOCOL_BEGIN = "<!-- protocol:begin -->"
 PROTOCOL_END = "<!-- protocol:end -->"
 
