@@ -57,7 +57,9 @@ DEFAULT_BOARD_SUBDIR = Path(".claude") / "agent-bbs"
 #: File name of the board database inside the board directory.
 BOARD_FILENAME = "board.sqlite"
 
-#: Version of the table layout, kept in SQLite's user_version header field.
+#: Version of the base table layout, kept in SQLite's user_version header field.
+#: Scripts from before teams refuse a board whose version is higher than theirs,
+#: so additive changes never raise it: SCHEMA_ADDITIONS applies them instead.
 SCHEMA_VERSION = 1
 
 #: Seconds a command waits for another process's write before giving up.
@@ -692,6 +694,67 @@ SCHEMA = (
     """,
 )
 
+#: Tables and indexes that came after layout 1 shipped. Each is created
+#: whenever it is missing, so older scripts (which ignore them) and newer ones
+#: share one board. Every change here must be additive: a new table or index,
+#: never a changed column. A table that refers to agents or messages must
+#: cascade or hold plain names, because older scripts delete agents and
+#: messages without knowing that the table exists.
+SCHEMA_ADDITIONS = (
+    # Teams. `lead` is a plain agent name rather than a reference to agents,
+    # so purging or resetting agents never fails on it, and never deletes the
+    # team.
+    """
+    CREATE TABLE IF NOT EXISTS teams (
+        name       TEXT PRIMARY KEY,
+        lead       TEXT NOT NULL,
+        purpose    TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )
+    """,
+    # Each team's members besides its lead, and when each joined. A member row
+    # goes with its team, and with its agent when the agent is purged.
+    """
+    CREATE TABLE IF NOT EXISTS team_members (
+        team      TEXT NOT NULL REFERENCES teams(name) ON DELETE CASCADE,
+        agent     TEXT NOT NULL REFERENCES agents(name) ON DELETE CASCADE,
+        joined_at TEXT NOT NULL,
+        PRIMARY KEY (team, agent)
+    )
+    """,
+    # Finds an agent's teams, and lets deleting an agent find its member rows
+    # quickly.
+    "CREATE INDEX IF NOT EXISTS team_members_by_agent ON team_members (agent)",
+    # Each team's tasks. AUTOINCREMENT never reuses an id. `assignee`,
+    # `created_by` and `updated_by` are plain agent names, so a task outlives
+    # its agents; `brief` is a path, or NULL when the task has none.
+    """
+    CREATE TABLE IF NOT EXISTS tasks (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        team       TEXT NOT NULL REFERENCES teams(name) ON DELETE CASCADE,
+        title      TEXT NOT NULL,
+        brief      TEXT,
+        state      TEXT NOT NULL DEFAULT 'open',
+        assignee   TEXT,
+        note       TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        created_by TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        updated_by TEXT NOT NULL
+    )
+    """,
+    # Finds a team's tasks, and lets deleting a team find them quickly.
+    "CREATE INDEX IF NOT EXISTS tasks_by_team ON tasks (team)",
+    # The paths and globs each task touches, in normalize_pattern form.
+    """
+    CREATE TABLE IF NOT EXISTS task_files (
+        task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        path    TEXT NOT NULL,
+        PRIMARY KEY (task_id, path)
+    )
+    """,
+)
+
 
 def open_board() -> sqlite3.Connection:
     """Open the shared board, creating its directory and tables if needed.
@@ -740,9 +803,33 @@ def _use_write_ahead_log(conn: sqlite3.Connection) -> None:
             time.sleep(0.05)
 
 
+def _created_name(statement: str) -> str:
+    """Return the name of the table or index that one CREATE statement makes."""
+    match = re.search(r"IF NOT EXISTS\s+(\w+)", statement)
+    if match is None:  # a programming error: every schema statement says IF NOT EXISTS
+        raise ValueError(f"not a CREATE ... IF NOT EXISTS statement: {statement!r}")
+    return match.group(1)
+
+
+def _board_is_current(conn: sqlite3.Connection) -> bool:
+    """Say whether the board has its version and every added table and index.
+
+    It only reads, so opening a current board takes no write lock.
+    """
+    if conn.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
+        return False
+    present = {row[0] for row in conn.execute("SELECT name FROM sqlite_master")}
+    return all(_created_name(statement) in present for statement in SCHEMA_ADDITIONS)
+
+
 def _create_schema(conn: sqlite3.Connection) -> None:
-    """Create the tables on first use and refuse boards from newer scripts."""
-    if conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION:
+    """Create what the board is missing and refuse boards from newer scripts.
+
+    Layout 1 keeps its version number; the later tables and indexes in
+    SCHEMA_ADDITIONS are created whenever they are missing, so a board made by
+    an older script gains them the first time this script opens it.
+    """
+    if _board_is_current(conn):
         return
     with write_transaction(conn):
         # Read again under the write lock: another process may have just
@@ -753,7 +840,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
                 f"the board uses layout {version} but this {PROG} knows only "
                 f"{SCHEMA_VERSION}; update the agent-bbs skill"
             )
-        for statement in SCHEMA:
+        for statement in SCHEMA + SCHEMA_ADDITIONS:
             conn.execute(statement)
         conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
