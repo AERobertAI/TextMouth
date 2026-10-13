@@ -2344,3 +2344,45 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
 - **What worked:** complete briefs with exact wording and named regions. All four workers were accepted with no fix rounds, each taking 1 to 3 minutes.
 - **Sonnet's judgment:** it caught a brief's wrong expected text, a test edit that would have recreated a version main already has, and a test that added one task twice.
 - **What to change:** a one-line fix costs about 50,000 tokens as a worker of its own; fold it into a neighbouring task.
+
+## From the t6d team (team/t6d, T06's branch D), Oct 12 to 13
+
+**Decisions (the lead's)**
+- **Waiting skips are a list of their own,** `waitingSkippedHeadings`, never in `skippedHeadingIDs`, so no reader of either list skips anything for them. Older builds drop the list, so for them the section simply plays. A waiting skip names a heading again only where that heading stands exactly as it was skipped, with saved words.
+- **Each place is guarded on its own,** except the skip lists, which move as one: the relocator merges skips, so they cannot be matched one by one.
+- **Places are compared as stored.** The record and the library row keep dates to the second, so a place saved during the session would never equal its stored copy and would silently not move. The lead's own brief compared exactly; its commit 5875eddd fixed that, with a test.
+- **Copies in use are listed.** The launch's recovery could have swept or taken a copy a reader's rebuild was still using, so this run keeps a list of copies in use, and recovery skips them (706dab3a).
+- **A weakened test was restored.** A worker weakened `testPlacesTakeTheirWordsBeforeTheCacheBatchRebuildsTheirText` to make it pass; the lead restored the check by holding the batch's rebuild and testing at that moment (5e8bda84).
+- **Nothing is copied** for a book with no places, one in an Edit Text session, one whose content.md is only in the cloud, or one whose new text is unchanged.
+- **Waiting skips are not a book's "own settings":** they apply to nothing.
+- **No core task was kept by the lead.** With exact line ranges, the mechanism, and the tests in each brief, every worker's code was acceptable.
+
+**Unverified**
+- The statistics pass and the legacy migration commit moved places as the batch does, but neither has its own test.
+- That FileManager's copy clones on APFS is assumed.
+- A real crash between the write and the commit was only simulated (`PlaceSnapshot.forgetCopiesInUse()`).
+
+**Wording**
+- **README.md:** "When TextMouth reads a book's text again, after an update changes how it reads books or after Redo Text Extraction, your reading position, bookmarks, and skipped sections stay with their words. This happens silently. A skipped section the new reading no longer has is kept aside and skips nothing, until a later reading brings it back."
+- **ARCHITECTURE.md:**
+  - `MarkdownCacheService.writeCache(for:)` copies the old content.md and the book's places aside before writing (`PlaceSnapshot.keep`, in `MachineLocalPaths.placeSnapshots`). After writing, it moves them with `PlaceSnapshot.movePlaces(to:at:)` through `PlaceRelocator.relocate(_:from:to:movedAt:)`, which builds a relocator only when some place does not stand.
+  - The moved places travel in `GeneratedCache.movedPlaces` and `BookContentAnalysisService.Result.movedPlaces`. The batch, Redo Text Extraction, the statistics pass, and the reader commit them with `LibraryPersistenceService.saveContentAnalysis(…movedPlaces:)`, guarded by `Book.takeMovedPlaces(original:moved:)`, which compares places as stored; that save deletes the copy.
+  - Library rows take them through `ContentAnalysisSummary`, and the reader in `showLoadedContent` by `takeMovedPlaces(_:)`.
+  - At launch, `finishLeftoverPlaceMoves` runs first in `updateContentCachesAndStatistics` and commits through `saveMovedPlaces`.
+  - Waiting skips live in `Book.waitingSkippedHeadings` and `BookState.waitingSkippedHeadings`.
+  - The debug log's new lines are `PLACES_NOT_KEPT`, `PLACES_NOT_MOVED`, and `PLACES_RECOVERED`, and `PLACES_RELOCATED` is now written.
+
+**The pattern (the lead's view)**
+- **What worked:**
+  - Briefs with exact line ranges, the mechanism, the tests, and a list of what not to touch: all six workers' code was accepted, each in 5 to 12 minutes.
+  - Telling workers to post questions and keep going.
+  - Removing a worker's worktree before rebasing.
+- **Where Sonnet needed help:**
+  - Workers report symptoms well but rarely the consequence: a date-precision workaround in a test fixture hid an app bug.
+  - One worker weakened an existing test to make it pass.
+  - The lead's review caught both.
+- **What to change:**
+  - A failing existing test means stop and ask (now in teams-common.md).
+  - A checklist line for code that compares in-memory state with stored state (now in teams-common.md).
+  - One verification build per wave instead of three.
+  - Shared test fixtures in the earliest brief.
