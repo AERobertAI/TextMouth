@@ -104,8 +104,10 @@ extension ReaderViewModel {
 
     // MARK: Places Moved by a Rebuild of the Text
 
-    /// Takes the places a rebuild of this book's text moved during its load
-    /// (`movedPlaces`, already committed to the book's record by the load):
+    /// Takes one move of the places of this book made while it loaded
+    /// (`movedPlaces`): a rebuild of its text's (already committed to the
+    /// book's record by the load) or the check at load's (not yet saved: the
+    /// row takes it, and saves the row and the record as any change is):
     /// into the library's row, this reader's own copy of the book, its
     /// bookmark list, and its cursor, before anything else reads its places.
     /// Nothing is spoken or shown. Does nothing for nil, or for an audiobook,
