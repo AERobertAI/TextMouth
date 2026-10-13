@@ -1929,13 +1929,12 @@ def describe_task(task: dict) -> str:
 
 def describe_task_counts(tasks: List[dict]) -> str:
     """Count tasks in each state, in life order, such as "1 open, 1 in review"; "none" for no tasks."""
-    counts = [
-        # `review` reads better as "in review"; the other states read as they are named.
-        f"{count} {'in review' if state == 'review' else state}"
-        for state in TASK_STATES
-        if (count := sum(1 for task in tasks if task["state"] == state))
+    counts = {state: sum(1 for task in tasks if task["state"] == state) for state in TASK_STATES}
+    # `review` reads better as "in review"; the other states read as they are named.
+    parts = [
+        f"{count} {'in review' if state == 'review' else state}" for state, count in counts.items() if count
     ]
-    return ", ".join(counts) or "none"
+    return ", ".join(parts) or "none"
 
 
 def assignee_reminder(conn: sqlite3.Connection, task: dict) -> str:
