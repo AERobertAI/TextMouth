@@ -166,7 +166,7 @@ extension ReaderViewModel {
         }
         refreshLookAhead()
         warmUpVoice()
-        announceToVoiceOver(BookVoiceSettingsWording.resetDone)
+        announceToVoiceOver(BookSettingsWording.resetDone)
     }
 
     /// Whether this book has local voice/speed/pitch overrides

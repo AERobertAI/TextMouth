@@ -107,11 +107,11 @@ struct PlaybackControlsView: View {
                             .font(.caption2)
                             .foregroundColor(.accentColor)
                     }
-                    .accessibilityLabel(BookVoiceSettingsWording.saveAsDefaultsLabel)
+                    .accessibilityLabel(BookSettingsWording.saveAsDefaultsLabel)
                     .buttonStyle(.plain)
                     // The tooltip, which VoiceOver reads as the hint, says
                     // what saving does rather than repeating the label.
-                    .help(BookVoiceSettingsWording.saveAsDefaultsHint)
+                    .help(BookSettingsWording.saveAsDefaultsHint)
                 }
             }
             } // showSpeedInPlaybackControls
@@ -217,27 +217,4 @@ struct PlaybackControlsView: View {
         .accessibilityHint("Choose separate forward and backward navigation units for this book")
         .help("Change this book's forward and backward navigation units")
     }
-}
-
-// MARK: - Saving a Book's Settings as the Defaults
-
-/// What the two buttons that make a book's voice settings the defaults say:
-/// the playback bar's, beside the speed, and the voice sheet's Save to
-/// Global Settings. Both run `ReaderViewModel.saveSettingsToGlobal()`,
-/// which copies the book's voice, speed, and pitch, so both name all three
-/// (TODO A10; the bar's said "speed" and the sheet's "voice and speed").
-/// The sheet's Reset to Global Settings, which clears all three, says so
-/// too.
-enum BookVoiceSettingsWording {
-    /// The save buttons' VoiceOver label.
-    static let saveAsDefaultsLabel = "Save this book's voice, speed, and pitch as the global defaults"
-    /// The save buttons' hint, and the bar's tooltip: what saving does.
-    static let saveAsDefaultsHint = "Updates the default voice, speed, and pitch for every book without settings of its own."
-    /// The VoiceOver label of the voice sheet's Reset to Global Settings.
-    static let resetToDefaultsLabel = "Reset this book's voice, speed, and pitch to the global defaults"
-    /// Its hint: what resetting does.
-    static let resetToDefaultsHint = "Removes this book's own voice, speed, and pitch, so it uses the global defaults."
-    /// What VoiceOver is told once a text book's reset has run; it names
-    /// all three settings the reset clears, as the button does.
-    static let resetDone = "Using global voice, speed, and pitch settings"
 }

@@ -351,7 +351,7 @@ final class PlaybackSettingsAuditTests: XCTestCase {
             let speedControls = controls.filter { [.slider, .incrementor].contains($0.role) }
             XCTAssertEqual(speedControls.map(\.role), [.slider], "\(controls.map(\.label))")
             let slider = try XCTUnwrap(speedControls.first)
-            XCTAssertEqual(slider.label, BookSettingsSheetWording.audioSpeedLabel)
+            XCTAssertEqual(slider.label, BookSettingsWording.audioSpeedLabel)
             XCTAssertEqual(slider.label, "Audio speed")
             XCTAssertEqual(slider.valueDescription, "1.25 times speed")
             XCTAssertEqual(slider.hint, "Changes the speed in steps of 0.05 times")
@@ -372,20 +372,45 @@ final class PlaybackSettingsAuditTests: XCTestCase {
     /// button, to VoiceOver, and on the sheet, since the sheet holds more
     /// than the speed (TODO A11); a text book's keep their names.
     func testAnAudiobooksSettingsAreNamedAudioSettings() {
-        XCTAssertEqual(BookSettingsSheetWording.buttonTitle(isAudioBook: true), "Audio Settings")
-        XCTAssertEqual(BookSettingsSheetWording.buttonLabel(isAudioBook: true), "Audio Settings")
-        XCTAssertEqual(BookSettingsSheetWording.heading(isAudioBook: true), "Audio Settings for This Book")
+        XCTAssertEqual(BookSettingsWording.buttonTitle(isAudioBook: true), "Audio Settings")
+        XCTAssertEqual(BookSettingsWording.buttonLabel(isAudioBook: true), "Audio Settings")
+        XCTAssertEqual(BookSettingsWording.heading(isAudioBook: true), "Audio Settings for This Book")
         XCTAssertEqual(
-            BookSettingsSheetWording.title(isAudioBook: true, bookTitle: "Canal Survey"),
+            BookSettingsWording.title(isAudioBook: true, bookTitle: "Canal Survey"),
             "Audio Settings: Canal Survey"
         )
 
-        XCTAssertEqual(BookSettingsSheetWording.buttonTitle(isAudioBook: false), "Voice")
-        XCTAssertEqual(BookSettingsSheetWording.buttonLabel(isAudioBook: false), "Change voice for this book")
-        XCTAssertEqual(BookSettingsSheetWording.heading(isAudioBook: false), "Voice & Speed for This Book")
+        XCTAssertEqual(BookSettingsWording.buttonTitle(isAudioBook: false), "Voice")
+        XCTAssertEqual(BookSettingsWording.buttonLabel(isAudioBook: false), "Change voice for this book")
+        XCTAssertEqual(BookSettingsWording.heading(isAudioBook: false), "Voice & Speed for This Book")
         XCTAssertEqual(
-            BookSettingsSheetWording.title(isAudioBook: false, bookTitle: "Canal Survey"),
+            BookSettingsWording.title(isAudioBook: false, bookTitle: "Canal Survey"),
             "Voice & Speed: Canal Survey"
+        )
+    }
+
+    /// The sheet's Save and Reset buttons take their words from the wording
+    /// type, so these words are pinned here: an audiobook's reset names the
+    /// speed it returns to, a text book's names the global settings.
+    func testTheSheetsSaveAndResetButtonsHavePinnedWords() {
+        XCTAssertEqual(BookSettingsWording.saveButtonTitle, "Save to Global Settings")
+
+        XCTAssertEqual(BookSettingsWording.resetButtonTitle(isAudioBook: true), "Reset to Normal Speed")
+        XCTAssertEqual(BookSettingsWording.resetButtonTitle(isAudioBook: false), "Reset to Global Settings")
+
+        XCTAssertEqual(BookSettingsWording.resetLabel(isAudioBook: true), "Reset to normal audio speed")
+        XCTAssertEqual(
+            BookSettingsWording.resetLabel(isAudioBook: false),
+            BookSettingsWording.resetToDefaultsLabel
+        )
+
+        XCTAssertEqual(
+            BookSettingsWording.resetHint(isAudioBook: true),
+            "Resets this book to 1.0 times speed"
+        )
+        XCTAssertEqual(
+            BookSettingsWording.resetHint(isAudioBook: false),
+            BookSettingsWording.resetToDefaultsHint
         )
     }
 

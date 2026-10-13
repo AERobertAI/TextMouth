@@ -141,9 +141,9 @@ struct ReaderView: View {
             // The book's own settings: a text book's voice, or an
             // audiobook's audio settings (TODO A11).
             toolbarButton(
-                LocalizedStringKey(BookSettingsSheetWording.buttonTitle(isAudioBook: viewModel.isAudioBook)),
+                LocalizedStringKey(BookSettingsWording.buttonTitle(isAudioBook: viewModel.isAudioBook)),
                 systemImage: Self.bookSettingsSymbol(isAudioBook: viewModel.isAudioBook),
-                spokenLabel: LocalizedStringKey(BookSettingsSheetWording.buttonLabel(isAudioBook: viewModel.isAudioBook))
+                spokenLabel: LocalizedStringKey(BookSettingsWording.buttonLabel(isAudioBook: viewModel.isAudioBook))
             ) {
                 panels.voice.toggle()
             }
@@ -851,7 +851,7 @@ struct BookVoicePickerView: View {
     var body: some View {
         let _ = ViewBodyCounter.record("BookVoicePickerView")
         VStack(spacing: 16) {
-            Text(BookSettingsSheetWording.heading(isAudioBook: viewModel.isAudioBook))
+            Text(BookSettingsWording.heading(isAudioBook: viewModel.isAudioBook))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
@@ -987,25 +987,21 @@ struct BookVoicePickerView: View {
 
                 Section {
                     if !viewModel.isAudioBook {
-                        Button("Save to Global Settings") {
+                        Button(BookSettingsWording.saveButtonTitle) {
                             viewModel.saveSettingsToGlobal()
                         }
                         // The playback bar's button says the same: both
                         // copy the voice, speed, and pitch (TODO A10).
-                        .accessibilityLabel(BookVoiceSettingsWording.saveAsDefaultsLabel)
-                        .accessibilityHint(BookVoiceSettingsWording.saveAsDefaultsHint)
+                        .accessibilityLabel(BookSettingsWording.saveAsDefaultsLabel)
+                        .accessibilityHint(BookSettingsWording.saveAsDefaultsHint)
                     }
 
                     if viewModel.hasLocalSettings {
-                        Button(viewModel.isAudioBook ? "Reset to Normal Speed" : "Reset to Global Settings") {
+                        Button(BookSettingsWording.resetButtonTitle(isAudioBook: viewModel.isAudioBook)) {
                             viewModel.resetToGlobalSettings()
                         }
-                        .accessibilityLabel(viewModel.isAudioBook ? "Reset to normal audio speed" : BookVoiceSettingsWording.resetToDefaultsLabel)
-                        .accessibilityHint(
-                            viewModel.isAudioBook
-                                ? "Resets this book to \(AudioSpeed.spokenLabel(for: AudioSpeed.normal))"
-                                : BookVoiceSettingsWording.resetToDefaultsHint
-                        )
+                        .accessibilityLabel(BookSettingsWording.resetLabel(isAudioBook: viewModel.isAudioBook))
+                        .accessibilityHint(BookSettingsWording.resetHint(isAudioBook: viewModel.isAudioBook))
                     }
                 }
             }
@@ -1015,7 +1011,7 @@ struct BookVoicePickerView: View {
         }
         .padding()
         .frame(width: 450, height: 600)
-        .navigationTitle(BookSettingsSheetWording.title(isAudioBook: viewModel.isAudioBook, bookTitle: viewModel.book.title))
+        .navigationTitle(BookSettingsWording.title(isAudioBook: viewModel.isAudioBook, bookTitle: viewModel.book.title))
         .onAppear {
             // Default to the current voice's language
             if let voice = viewModel.speechService.currentVoice {
@@ -1045,9 +1041,9 @@ struct BookVoicePickerView: View {
                 .accessibilityHidden(true)
 
             Slider(value: audioSpeedBinding, in: AudioSpeed.range, step: AudioSpeed.fineStep) {
-                Text(BookSettingsSheetWording.audioSpeedLabel)
+                Text(BookSettingsWording.audioSpeedLabel)
             }
-            .accessibilityLabel(BookSettingsSheetWording.audioSpeedLabel)
+            .accessibilityLabel(BookSettingsWording.audioSpeedLabel)
             .accessibilityValue(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
             .accessibilityHint(AudioSpeed.stepHint(AudioSpeed.fineStep))
         }
@@ -1098,13 +1094,21 @@ struct BookVoicePickerView: View {
 /// The voice sheet's only input is its reader (PERF30).
 extension BookVoicePickerView: SheetOverOneReader {}
 
-/// What the reader calls a book's own settings sheet (`BookVoicePickerView`)
-/// and the toolbar button that opens it: a text book's voice, speed, and
-/// pitch, or an audiobook's audio settings. The user asked on October 10
-/// (TODO A11) that the audiobook's be named "audio settings", since the
-/// sheet holds more than the speed it was named for. Its button says the
-/// same words on screen and to VoiceOver.
-enum BookSettingsSheetWording {
+/// Every word a book's own settings say: the reader's settings sheet
+/// (`BookVoicePickerView`), the toolbar button that opens it, the Save and
+/// Reset buttons, and the playback bar's save button.
+///
+/// - The sheet is a text book's voice, speed, and pitch, or an audiobook's
+///   audio settings. The user asked on October 10 (TODO A11) that the
+///   audiobook's be named "audio settings", since the sheet holds more than
+///   the speed it was named for. Its button says the same words on screen
+///   and to VoiceOver.
+/// - The playback bar's save button and the sheet's Save to Global Settings
+///   both run `ReaderViewModel.saveSettingsToGlobal()`, which copies the
+///   book's voice, speed, and pitch, so both name all three (TODO A10; the
+///   bar's said "speed" and the sheet's "voice and speed"). The sheet's
+///   Reset to Global Settings, which clears all three, says so too.
+enum BookSettingsWording {
     /// An audiobook's sheet: the button's title, its VoiceOver label, and
     /// the sheet's name.
     private static let audioSettings = "Audio Settings"
@@ -1139,6 +1143,48 @@ enum BookSettingsSheetWording {
     /// The audiobook speed slider's label, which VoiceOver reads before the
     /// speed: "Audio speed, 1.25 times speed".
     static let audioSpeedLabel = "Audio speed"
+
+    // MARK: Saving and resetting
+
+    /// The sheet's Save to Global Settings button's title (a text book's
+    /// only; an audiobook's sheet has no such button).
+    static let saveButtonTitle = "Save to Global Settings"
+
+    /// The save buttons' VoiceOver label.
+    static let saveAsDefaultsLabel = "Save this book's voice, speed, and pitch as the global defaults"
+
+    /// The save buttons' hint, and the bar's tooltip: what saving does.
+    static let saveAsDefaultsHint = "Updates the default voice, speed, and pitch for every book without settings of its own."
+
+    /// The sheet's Reset button's title: an audiobook's "Reset to Normal
+    /// Speed", or a text book's "Reset to Global Settings".
+    static func resetButtonTitle(isAudioBook: Bool) -> String {
+        isAudioBook ? "Reset to Normal Speed" : "Reset to Global Settings"
+    }
+
+    /// The VoiceOver label of a text book's Reset to Global Settings.
+    static let resetToDefaultsLabel = "Reset this book's voice, speed, and pitch to the global defaults"
+
+    /// A text book's Reset hint: what resetting does.
+    static let resetToDefaultsHint = "Removes this book's own voice, speed, and pitch, so it uses the global defaults."
+
+    /// What VoiceOver calls the sheet's Reset button: an audiobook's "Reset
+    /// to normal audio speed", or a text book's `resetToDefaultsLabel`.
+    static func resetLabel(isAudioBook: Bool) -> String {
+        isAudioBook ? "Reset to normal audio speed" : resetToDefaultsLabel
+    }
+
+    /// The sheet's Reset button's hint: an audiobook's names the speed it
+    /// resets to, a text book's is `resetToDefaultsHint`.
+    static func resetHint(isAudioBook: Bool) -> String {
+        isAudioBook
+            ? "Resets this book to \(AudioSpeed.spokenLabel(for: AudioSpeed.normal))"
+            : resetToDefaultsHint
+    }
+
+    /// What VoiceOver is told once a text book's reset has run; it names
+    /// all three settings the reset clears, as the button does.
+    static let resetDone = "Using global voice, speed, and pitch settings"
 }
 
 // MARK: - Book Info Bar
