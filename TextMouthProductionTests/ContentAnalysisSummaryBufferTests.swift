@@ -185,7 +185,184 @@ final class ContentAnalysisSummaryBufferTests: XCTestCase {
         XCTAssertFalse(model.isExtracting)
     }
 
+    // MARK: - Moves the Record Took
+
+    /// The row takes only the moves its record took: when the record took
+    /// every move, so does the row.
+    func testTheRowTakesEveryMoveTheRecordTook() {
+        let moving = Moving()
+        var row = Self.book(holding: moving.original)
+
+        Self.summary(from: moving.original, to: moving.moved, recordedAs: moving.moved).apply(to: &row)
+
+        XCTAssertEqual(row.relocatablePlaces, moving.moved)
+    }
+
+    /// Another Mac wrote a newer position into the record, which refused the
+    /// position's move: the row keeps the position it had, which the move
+    /// would have dated at the move and made look newer than the other Mac's
+    /// save. The bookmarks and the skips, which the record took, move.
+    func testARefusedPositionStaysWhileTheMovesTheRecordTookMove() {
+        let moving = Moving()
+        var row = Self.book(holding: moving.original)
+        var otherMacs = moving.moved
+        otherMacs.position = Self.position(chapter: 3, offset: 9, savedAt: 1_700_000_600)
+
+        Self.summary(from: moving.original, to: moving.moved, recordedAs: otherMacs).apply(to: &row)
+
+        XCTAssertEqual(row.readingPosition, moving.original.position)
+        XCTAssertEqual(row.bookmarks, moving.moved.bookmarks)
+        XCTAssertEqual(row.skippedHeadings, moving.moved.skippedHeadings)
+        XCTAssertEqual(row.waitingSkippedHeadings, moving.moved.waitingSkippedHeadings)
+    }
+
+    /// The record holds its places as read back from its file, with dates
+    /// cut to whole seconds: the moves are still the ones it took, so the
+    /// row takes them.
+    func testMovesTheRecordHoldsWithDatesToTheSecondAreTaken() {
+        let moving = Moving()
+        var fractional = moving.moved
+        fractional.position?.lastUpdated = Date(timeIntervalSince1970: 1_700_000_200.75)
+        fractional.bookmarks = fractional.bookmarks.map { mark in
+            var dated = mark
+            dated.dateCreated = Date(timeIntervalSince1970: 1_700_000_100.5)
+            return dated
+        }
+        var readBack = fractional
+        readBack.position?.lastUpdated = Date(timeIntervalSince1970: 1_700_000_200)
+        readBack.bookmarks = readBack.bookmarks.map { mark in
+            var dated = mark
+            dated.dateCreated = Date(timeIntervalSince1970: 1_700_000_100)
+            return dated
+        }
+        XCTAssertNotEqual(readBack.position, fractional.position, "the fixture's record should have lost the fractions")
+        var row = Self.book(holding: moving.original)
+
+        Self.summary(from: moving.original, to: fractional, recordedAs: readBack).apply(to: &row)
+
+        XCTAssertEqual(row.readingPosition, fractional.position)
+        XCTAssertEqual(row.bookmarks, fractional.bookmarks)
+    }
+
+    /// Another Mac changed one bookmark in the record (the same ID, another
+    /// note), which refused its move: that bookmark stays as the row has it,
+    /// and the other bookmark, the position, and the skips move.
+    func testABookmarkAnotherMacChangedStaysWhileTheOthersMove() throws {
+        let moving = Moving()
+        var row = Self.book(holding: moving.original)
+        var changed = try XCTUnwrap(moving.moved.bookmarks.first)
+        changed.label = "A, renamed on the other Mac"
+        var otherMacs = moving.moved
+        otherMacs.bookmarks = [changed] + moving.moved.bookmarks.dropFirst()
+
+        Self.summary(from: moving.original, to: moving.moved, recordedAs: otherMacs).apply(to: &row)
+
+        let unchanged = try XCTUnwrap(moving.original.bookmarks.first)
+        XCTAssertEqual(row.bookmarks, [unchanged] + moving.moved.bookmarks.dropFirst())
+        XCTAssertEqual(row.readingPosition, moving.moved.position)
+        XCTAssertEqual(row.skippedHeadings, moving.moved.skippedHeadings)
+    }
+
+    /// The listener toggled a skip in the record, which refused the skips'
+    /// move: both of the row's skip lists stay as they were, and the
+    /// position and the bookmarks move.
+    func testSkipsTheListenerToggledStayWhileTheOtherPlacesMove() {
+        let moving = Moving()
+        var row = Self.book(holding: moving.original)
+        var toggled = moving.moved
+        toggled.skippedHeadings = [SkippedHeading(level: 1, label: "Toggled", chapterIndex: 0, characterOffset: 3)]
+
+        Self.summary(from: moving.original, to: moving.moved, recordedAs: toggled).apply(to: &row)
+
+        XCTAssertEqual(row.skippedHeadings, moving.original.skippedHeadings)
+        XCTAssertEqual(row.waitingSkippedHeadings, moving.original.waitingSkippedHeadings)
+        XCTAssertEqual(row.readingPosition, moving.moved.position)
+        XCTAssertEqual(row.bookmarks, moving.moved.bookmarks)
+    }
+
+    /// A move with no original of its bookmark's ID is not trapped on: the
+    /// bookmark stays as the move has it.
+    func testAMovedBookmarkWithNoOriginalStaysAsMoved() throws {
+        let moving = Moving()
+        let extra = Bookmark(number: 3, chapterIndex: 0, characterOffset: 5, label: "Extra", dateCreated: Date(timeIntervalSince1970: 1_700_000_050))
+        var movedWithExtra = moving.moved
+        movedWithExtra.bookmarks.append(extra)
+        let movedPlaces = MovedPlaces(bookID: UUID(), original: moving.original, moved: movedWithExtra, snapshot: nil)
+
+        let narrowed = movedPlaces.taken(by: Self.book(holding: moving.original))
+
+        XCTAssertEqual(narrowed.moved.bookmarks, moving.original.bookmarks + [extra])
+    }
+
     // MARK: - Fixtures
+
+    /// Places a rebuild moves, and the same places moved: every place in
+    /// `moved` differs from its place in `original`, so a test can tell which
+    /// ones a row took. The bookmarks keep their IDs, as the relocator leaves
+    /// them.
+    private struct Moving {
+        let original = PlaceRelocator.Places(
+            position: ContentAnalysisSummaryBufferTests.position(chapter: 1, offset: 10, savedAt: 1_700_000_000),
+            bookmarks: [
+                Bookmark(number: 1, chapterIndex: 1, characterOffset: 20, label: "A", dateCreated: Date(timeIntervalSince1970: 1_700_000_001)),
+                Bookmark(number: 2, chapterIndex: 2, characterOffset: 30, label: "B", dateCreated: Date(timeIntervalSince1970: 1_700_000_002)),
+            ],
+            skippedHeadings: [SkippedHeading(level: 2, label: "Notes", chapterIndex: 1, characterOffset: 40)],
+            waitingSkippedHeadings: [SkippedHeading(level: 3, label: "Appendix", chapterIndex: 3, characterOffset: 50)]
+        )
+
+        /// The places as the relocator moved them: every place five
+        /// characters on, the position dated at the move.
+        var moved: PlaceRelocator.Places {
+            PlaceRelocator.Places(
+                position: ContentAnalysisSummaryBufferTests.position(chapter: 1, offset: 15, savedAt: 1_700_000_300),
+                bookmarks: original.bookmarks.map { mark in
+                    var shifted = mark
+                    shifted.characterOffset += 5
+                    return shifted
+                },
+                skippedHeadings: [SkippedHeading(level: 2, label: "Notes", chapterIndex: 1, characterOffset: 45)],
+                waitingSkippedHeadings: [SkippedHeading(level: 3, label: "Appendix", chapterIndex: 3, characterOffset: 55)]
+            )
+        }
+    }
+
+    /// A reading position saved at `seconds` since 1970.
+    private nonisolated static func position(chapter: Int, offset: Int, savedAt seconds: TimeInterval) -> ReadingPosition {
+        var position = ReadingPosition(chapterIndex: chapter, characterOffset: offset)
+        position.lastUpdated = Date(timeIntervalSince1970: seconds)
+        return position
+    }
+
+    /// A plain text book holding `places`.
+    private static func book(holding places: PlaceRelocator.Places) -> Book {
+        var book = Book(
+            title: "Moved Places", format: .txt,
+            filePath: "/tmp/\(UUID().uuidString)-moved-places.txt", md5Hash: UUID().uuidString,
+            readingPosition: places.position,
+            bookmarks: places.bookmarks,
+            waitingSkippedHeadings: places.waitingSkippedHeadings
+        )
+        book.setSkippedHeadings(places.skippedHeadings)
+        return book
+    }
+
+    /// The summary of a book whose record holds `recorded` places once the
+    /// analysis is saved, for a rebuild that moved the places `original` to
+    /// `moved`.
+    private static func summary(
+        from original: PlaceRelocator.Places,
+        to moved: PlaceRelocator.Places,
+        recordedAs recorded: PlaceRelocator.Places
+    ) -> ContentAnalysisSummary {
+        let committed = book(holding: recorded)
+        return ContentAnalysisSummary(
+            committed: committed,
+            movedPlaces: MovedPlaces(bookID: committed.id, original: original, moved: moved, snapshot: nil)
+        )
+    }
+
+    // MARK: - Other Fixtures
 
     /// An inert model holding `bookCount` plain text books.
     private func makeModel(bookCount: Int) -> LibraryViewModel {

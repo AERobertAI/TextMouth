@@ -36,8 +36,8 @@ extension ReaderViewModel {
             applyLibraryUpdate(update)
         case .packageMoveEnded:
             resumeAudioAfterPackageMove()
-        case .textReplaced(_, let content):
-            showEditedText(content)
+        case .textReplaced(_, let content, let movedPlaces):
+            showEditedText(content, movedPlaces: movedPlaces)
         case .transcriptReplaced(_, let text):
             showTranscript(text)
         }

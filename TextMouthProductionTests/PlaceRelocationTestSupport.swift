@@ -44,7 +44,88 @@ extension CloudMaintenanceTestCase {
         let source = "# The Millrace\n\nWater came down the leat at dawn and turned the wheel before anyone woke.\n\n"
             + "# The Granary\n\nSacks of barley stood against the north wall, counted twice each evening.\n\n"
             + "## Notes\n\nThe miller kept a ledger of every sack that left by cart.\n"
-        var book = try makePackagedBook(title: title, text: source)
+        let book = try makePackagedBook(title: title, text: source)
+        // The older extraction's text: one more sentence, ahead of every
+        // place below.
+        return try makeFixture(of: book) { newMarkdown in
+            newMarkdown.replacingOccurrences(of: Self.positionPhrase, with: Self.olderSentence + Self.positionPhrase)
+        }
+    }
+
+    /// `makeBookInAnOlderText`'s book as it is when its text changed without
+    /// a rebuild since its places were saved, as when another Mac or an
+    /// editor changed it: its content.md holds the text this build writes
+    /// (`newBytes`), its record describes that content.md as current (this
+    /// cache version, with fingerprints and index), and its places are still
+    /// at the older text's numbers, with their saved words. No load and no
+    /// batch rebuilds it, and the reader's check at load finds its places.
+    func makeBookWhoseTextChangedSinceItsPlaces(title: String) throws -> BookInAnOlderText {
+        try recordingTheCurrentText(of: try makeBookInAnOlderText(title: title))
+    }
+
+    /// A book of about a million UTF-16 units of distinct sentences in
+    /// twenty chapters, packaged as `makeBookInAnOlderText`'s is. The last
+    /// chapter holds, after its sentences, a paragraph and then the
+    /// fixture's phrases and its Notes heading. The position, bookmark, and
+    /// skip were saved with their words in the text without the paragraph,
+    /// and the record describes the text with it (as
+    /// `makeBookWhoseTextChangedSinceItsPlaces` does).
+    func makeLargeBookWhoseTextChangedSinceItsPlaces(title: String) throws -> BookInAnOlderText {
+        let chapterCount = 20
+        let sentencesPerChapter = 1000
+        // Distinct sentences of letters only, so no two of them share words.
+        var chapters: [String] = []
+        for chapter in 0..<chapterCount {
+            var body = "# Chapter \(Self.letters(chapter))\n\n"
+            for sentence in 0..<sentencesPerChapter {
+                let key = chapter * sentencesPerChapter + sentence
+                body += "The barge \(Self.letters(key)) carried \(Self.letters(key * 7 + 3)) crates to the \(Self.letters(key * 13 + 5)) mill.\n\n"
+            }
+            chapters.append(body)
+        }
+        // The last chapter goes on with the new paragraph, the phrases, and Notes.
+        chapters[chapterCount - 1] += Self.largeBookParagraph + "\n\n"
+            + "Sacks of barley stood against the north wall, counted twice each evening.\n\n"
+            + "## Notes\n\nThe miller kept a ledger of every sack that left by cart.\n"
+        let book = try makePackagedBook(title: title, text: chapters.joined())
+        // The text the places were saved in lacks the paragraph.
+        let fixture = try makeFixture(of: book) { newMarkdown in
+            newMarkdown.replacingOccurrences(of: Self.largeBookParagraph + "\n\n", with: "")
+        }
+        // The text is as large as the test claims.
+        XCTAssertGreaterThan(fixture.newText.chapters.reduce(0) { $0 + $1.text.utf16.count }, 900_000)
+        return try recordingTheCurrentText(of: fixture)
+    }
+
+    /// The phrase the fixture's reading position is saved at.
+    private static let positionPhrase = "Sacks of barley"
+
+    /// The phrase the fixture's bookmark is saved at.
+    private static let bookmarkPhrase = "counted twice"
+
+    /// The paragraph that the large book's text holds and its places were
+    /// saved without, ahead of all of them.
+    private static let largeBookParagraph = "A paragraph was put in ahead of the sacks, about the dam and its keepers."
+
+    /// A word of lowercase letters that is different for every `number`.
+    private static func letters(_ number: Int) -> String {
+        var rest = number
+        var word = ""
+        repeat {
+            word.append(Character(UnicodeScalar(UInt8(97 + rest % 26))))
+            rest /= 26
+        } while rest > 0
+        return word
+    }
+
+    /// Makes the fixture of `book`, a packaged book whose source this build
+    /// extracts to the text the fixture calls new: writes that text, makes
+    /// the older text from its Markdown by `makeOlder`, saves the position,
+    /// bookmark, and skipped heading in the older text with their words, and
+    /// leaves the older text as content.md, with a record that is outdated
+    /// and keeps no fingerprints.
+    private func makeFixture(of book: Book, makeOlder: (String) -> String) throws -> BookInAnOlderText {
+        var book = book
 
         // This build's extraction, written as content.md. The book holds no
         // place yet, so nothing is copied aside.
@@ -54,20 +135,19 @@ extension CloudMaintenanceTestCase {
         let newBytes = try Data(contentsOf: cacheURL)
         let newText = try MarkdownCacheService.loadFromCache(for: book)
 
-        // The same text as an older extraction wrote it: one more sentence,
-        // ahead of every place below.
+        // The same text as an older extraction wrote it.
         let newMarkdown = try XCTUnwrap(String(data: newBytes, encoding: .utf8))
-        let marker = "Sacks of barley"
-        XCTAssertEqual(newMarkdown.components(separatedBy: marker).count, 2, "the marker should stand once")
-        let olderMarkdown = newMarkdown.replacingOccurrences(of: marker, with: Self.olderSentence + marker)
+        XCTAssertEqual(newMarkdown.components(separatedBy: Self.positionPhrase).count, 2, "the marker should stand once")
+        let olderMarkdown = makeOlder(newMarkdown)
+        XCTAssertNotEqual(olderMarkdown, newMarkdown, "the older text should differ")
         try Data(olderMarkdown.utf8).write(to: cacheURL, options: .atomic)
         let olderText = try MarkdownCacheService.loadFromCache(for: book)
 
         // The places, saved in the older text with their words.
         let olderChapters = olderText.chapters.map(\.text)
         let measure = TextAnchor.measure(ofTextCachedBy: "3.0.3")
-        let olderPosition = try Self.place(of: marker, in: olderChapters)
-        let olderBookmark = try Self.place(of: "counted twice", in: olderChapters)
+        let olderPosition = try Self.place(of: Self.positionPhrase, in: olderChapters)
+        let olderBookmark = try Self.place(of: Self.bookmarkPhrase, in: olderChapters)
         book.readingPosition = ReadingPosition(
             chapterIndex: olderPosition.chapter,
             characterOffset: olderPosition.offset,
@@ -108,9 +188,50 @@ extension CloudMaintenanceTestCase {
             book: recorded,
             newText: newText,
             newBytes: newBytes,
-            position: try Self.place(of: marker, in: newText.chapters.map(\.text)),
-            bookmark: try Self.place(of: "counted twice", in: newText.chapters.map(\.text)),
+            position: try Self.place(of: Self.positionPhrase, in: newText.chapters.map(\.text)),
+            bookmark: try Self.place(of: Self.bookmarkPhrase, in: newText.chapters.map(\.text)),
             notes: try Self.notes(of: newText)
+        )
+    }
+
+    /// `fixture` with its content.md replaced by the text this build writes
+    /// (`newBytes`) and its record describing that content.md as current:
+    /// this build's cache version, the fingerprints of the source and the
+    /// content.md, and the text's index. The places stay as the fixture
+    /// saved them. Asserts that no rebuild will happen: the cache is not
+    /// outdated, and a load of the book reads content.md as it is, moving
+    /// nothing.
+    private func recordingTheCurrentText(of fixture: BookInAnOlderText) throws -> BookInAnOlderText {
+        // The analysis is made from a copy without places, so writing the
+        // text copies nothing aside (the book's record keeps its places).
+        var bare = fixture.book
+        bare.readingPosition = nil
+        bare.bookmarks = []
+        bare.setSkippedHeadings([])
+        let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &bare))
+        let cacheURL = MarkdownCacheService.cacheURL(for: bare)
+        XCTAssertEqual(try Data(contentsOf: cacheURL), fixture.newBytes, "the text should be what this build writes")
+        _ = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: bare,
+            index: index,
+            cacheFormatVersion: bare.cacheFormatVersion
+        ))
+        let recorded = try recordedBook(like: fixture.book)
+        XCTAssertEqual(recorded.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+
+        // No rebuild: the cache is current, and a load reads it as it is.
+        XCTAssertFalse(MarkdownCacheService.isCacheOutdated(stored: recorded.cacheFormatVersion))
+        let loaded = try BookContentAnalysisService.load(book: recorded, regenerateTextCache: false)
+        XCTAssertNil(loaded.movedPlaces, "a load should not rebuild the text")
+        XCTAssertEqual(try Data(contentsOf: cacheURL), fixture.newBytes, "a load should leave content.md as it is")
+
+        return BookInAnOlderText(
+            book: recorded,
+            newText: fixture.newText,
+            newBytes: fixture.newBytes,
+            position: fixture.position,
+            bookmark: fixture.bookmark,
+            notes: fixture.notes
         )
     }
 
@@ -141,6 +262,45 @@ extension CloudMaintenanceTestCase {
         XCTAssertEqual(book.bookmarks.first?.chapterIndex, fixture.bookmark.chapter, "bookmark's chapter", file: file, line: line)
         XCTAssertEqual(book.bookmarks.first?.characterOffset, fixture.bookmark.offset, "bookmark's offset", file: file, line: line)
         XCTAssertEqual(book.skippedHeadingIDs, [fixture.notes.id], "skipped headings", file: file, line: line)
+    }
+
+    /// The book as its package record holds it, read from disk after every
+    /// queued library write has landed.
+    func recordedBook(like book: Book) throws -> Book {
+        LibraryPersistenceService.flushPendingSave()
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        return Book(
+            record: record,
+            filePath: book.filePath,
+            folderPath: book.folderPath,
+            tmbDirectoryName: book.tmbDirectoryName
+        )
+    }
+
+    /// Runs the launch's cache batch over `model` until its completion.
+    @MainActor
+    func runCacheBatch(on model: LibraryViewModel, access: MaintenanceFileAccess = .live) async {
+        let finished = expectation(description: "The cache batch finished")
+        model.extractMissingContentCaches(access: access) { finished.fulfill() }
+        await fulfillment(of: [finished], timeout: 20)
+    }
+
+    /// Opens a reader on `book` in `model`, with a render queue that renders
+    /// nothing and no notifications or requests shared with other tests, and
+    /// closes it when the test ends.
+    @MainActor
+    func openReader(on book: Book, in model: LibraryViewModel) -> ReaderViewModel {
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: model,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
+            substitutionService: TextSubstitutionService(rules: []),
+            autoplayRequests: ReaderAutoplayRequests(),
+            notificationCenter: NotificationCenter(),
+            renderScheduler: SilentRenderQueue()
+        )
+        addTeardownBlock { @MainActor in reader.close() }
+        return reader
     }
 
     /// Whether the snapshots folder holds a copy of the book `book`: a
@@ -193,5 +353,19 @@ extension XCTestCase {
             gate.signal()
         }
         return (reached, gate)
+    }
+
+    /// Waits until `reader` has loaded its book, yielding the main actor
+    /// between looks, as a test that is itself async must: the load finishes
+    /// on the main queue, which a wait that spins the run loop from inside
+    /// an async test never serves. Fails the test when it takes over ten
+    /// seconds.
+    @MainActor
+    func waitForReaderToLoadYielding(_ reader: ReaderViewModel, file: StaticString = #filePath, line: UInt = #line) async {
+        let deadline = Date().addingTimeInterval(10)
+        while reader.isLoading && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertFalse(reader.isLoading, "\(reader.book.title) never finished loading", file: file, line: line)
     }
 }

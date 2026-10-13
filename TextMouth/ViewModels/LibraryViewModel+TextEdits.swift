@@ -12,12 +12,15 @@ extension LibraryViewModel {
     /// transcribed audiobook, its edited transcript text as the book plays
     /// on. The row's change reaches the readers first, through the usual
     /// updates (`LibraryBookUpdates`), so their copies of the book agree
-    /// with the text they show.
+    /// with the text they show. The edit's moves of the book's saved places
+    /// (`BookTextEdit.movedPlaces`) go to the readers with the text, so each
+    /// reader's cursor, bookmarks, and skipped headings follow their words.
     func commitTextEdit(_ edit: BookTextEdit) {
-        applyAnalysisSummaries([ContentAnalysisSummary(committed: edit.committed)])
+        // The row takes the moves of the book's places that the record took.
+        applyAnalysisSummaries([ContentAnalysisSummary(committed: edit.committed, movedPlaces: edit.movedPlaces)])
         switch edit.text {
         case .document(let content):
-            bookUpdates.textReplaced(bookID: edit.committed.id, with: content)
+            bookUpdates.textReplaced(bookID: edit.committed.id, with: content, movedPlaces: edit.movedPlaces)
         case .transcript(let text):
             bookUpdates.transcriptReplaced(bookID: edit.committed.id, with: text)
         }

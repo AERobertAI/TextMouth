@@ -1523,8 +1523,9 @@ extension Book {
     /// saved during this run holds fractions of a second that its stored
     /// copy has lost, so without this the same place, read back from disk
     /// on one side, would never be "as it was", and would not move. Two
-    /// nils are alike; a nil and a place are not.
-    private static func isAsStored<Place: Encodable & Equatable>(_ held: Place?, _ original: Place?) -> Bool {
+    /// nils are alike; a nil and a place are not. `MovedPlaces.taken(by:)`
+    /// uses it too, to tell the moves a record took from the ones it refused.
+    static func isAsStored<Place: Encodable & Equatable>(_ held: Place?, _ original: Place?) -> Bool {
         if held == original { return true }
         guard let held, let original else { return false }
         let encoder = JSONEncoder()

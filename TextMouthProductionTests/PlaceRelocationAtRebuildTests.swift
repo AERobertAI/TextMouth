@@ -76,27 +76,6 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
 
     // MARK: Committing the Moved Places
 
-    /// The book as its package record holds it, read from disk after every
-    /// queued library write has landed.
-    private func recordedBook(like book: Book) throws -> Book {
-        LibraryPersistenceService.flushPendingSave()
-        let record = try BookInfo.load(from: book.tmbDirectory)
-        return Book(
-            record: record,
-            filePath: book.filePath,
-            folderPath: book.folderPath,
-            tmbDirectoryName: book.tmbDirectoryName
-        )
-    }
-
-    /// Runs the launch's cache batch over `model` until its completion.
-    @MainActor
-    private func runCacheBatch(on model: LibraryViewModel, access: MaintenanceFileAccess = .live) async {
-        let finished = expectation(description: "The cache batch finished")
-        model.extractMissingContentCaches(access: access) { finished.fulfill() }
-        await fulfillment(of: [finished], timeout: 20)
-    }
-
     /// The cache batch rebuilds the older text and commits the moved places
     /// with the analysis: the row and the record hold them, the copy is
     /// gone, and the debug log says once that the places were moved.
@@ -159,6 +138,47 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
         XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
     }
 
+    /// Another Mac wrote a newer position into the book's record (not into
+    /// this Mac's row) before the batch moved the places: the record refuses
+    /// the position's move, and the row must refuse it too. A moved position
+    /// is dated at the move, so a row that took it would look newer than the
+    /// other Mac's save, and the next launch would keep the stale place. The
+    /// bookmark and the skipped heading, which the record took, move in both.
+    @MainActor
+    func testAMoveNeverWinsOverANewerPositionFromAnotherMac() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Newer \(UUID().uuidString)")
+        let model = makeModel(with: [fixture.book])
+        let rowPosition = try XCTUnwrap(fixture.book.readingPosition)
+
+        // The other Mac's save: another place in the older text, a minute
+        // newer, written into the record only, as the fixture writes it.
+        var otherMacsPosition = ReadingPosition(chapterIndex: 0, characterOffset: 3)
+        otherMacsPosition.lastUpdated = rowPosition.lastUpdated.addingTimeInterval(60)
+        var elsewhere = fixture.book
+        elsewhere.readingPosition = otherMacsPosition
+        try elsewhere.saveBookInfoThrowing()
+
+        await runCacheBatch(on: model)
+
+        // The record keeps the other Mac's position, as the file stores it.
+        let record = try recordedBook(like: fixture.book)
+        XCTAssertTrue(Book.isAsStored(record.readingPosition, otherMacsPosition), "the record lost the other Mac's position")
+        // The row keeps the position it had, and is older than the record's.
+        let row = try XCTUnwrap(model.bookByID(fixture.book.id))
+        XCTAssertTrue(Book.isAsStored(row.readingPosition, rowPosition), "the row took the refused move")
+        let rowDate = try XCTUnwrap(row.readingPosition?.lastUpdated)
+        let recordDate = try XCTUnwrap(record.readingPosition?.lastUpdated)
+        XCTAssertLessThan(rowDate, recordDate)
+        // The moves the record took reach the row too.
+        for book in [row, record] {
+            XCTAssertEqual(book.bookmarks.count, 1)
+            XCTAssertEqual(book.bookmarks.first?.chapterIndex, fixture.bookmark.chapter)
+            XCTAssertEqual(book.bookmarks.first?.characterOffset, fixture.bookmark.offset)
+            XCTAssertEqual(book.skippedHeadingIDs, [fixture.notes.id])
+        }
+        XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
+    }
+
     /// A book whose text is only in the cloud is left alone: its places stay
     /// as they were, and nothing is copied.
     @MainActor
@@ -175,24 +195,6 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
     }
 
     // MARK: A Reader's Own Rebuild
-
-    /// Opens a reader on `book` in `model`, with a render queue that renders
-    /// nothing and no notifications or requests shared with other tests, and
-    /// closes it when the test ends.
-    @MainActor
-    private func openReader(on book: Book, in model: LibraryViewModel) -> ReaderViewModel {
-        let reader = ReaderViewModel(
-            book: book,
-            libraryViewModel: model,
-            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
-            substitutionService: TextSubstitutionService(rules: []),
-            autoplayRequests: ReaderAutoplayRequests(),
-            notificationCenter: NotificationCenter(),
-            renderScheduler: SilentRenderQueue()
-        )
-        addTeardownBlock { @MainActor in reader.close() }
-        return reader
-    }
 
     /// A reader that opens a book whose text is outdated rebuilds it and
     /// takes the moved places: its cursor, bookmarks, and skipped headings

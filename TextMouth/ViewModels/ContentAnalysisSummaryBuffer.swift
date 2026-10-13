@@ -3,8 +3,13 @@ import Combine
 import Foundation
 
 /// The analysis fields a batch committed to one book's package record,
-/// and the places a rebuild moved (T06's branch D), on their way to the
-/// book's library row.
+/// and the places a rebuild moved (T06's branch D) that the record took,
+/// on their way to the book's library row.
+///
+/// The row takes only the moves its record took, so a move never wins over a
+/// newer write another Mac left in the record: a moved place is dated at the
+/// move, so a row holding one the record refused would look newer than the
+/// other Mac's save, and the next launch would keep the stale place.
 ///
 /// Small, so it can wait: the full chapter and heading index is already on
 /// disk, released after each book instead of pinning the parser's memory
@@ -12,24 +17,29 @@ import Foundation
 struct ContentAnalysisSummary: Sendable {
     let bookID: UUID
     let fields: Book.ContentAnalysisFields
-    /// The places the rebuild behind this analysis moved and the record
-    /// took; nil when it moved none.
+    /// The places the rebuild behind this analysis moved, narrowed to the
+    /// moves the record took (`MovedPlaces.taken(by:)`); nil when it moved
+    /// none.
     let movedPlaces: MovedPlaces?
 
     /// The analysis fields of `committed`, the book as its package records
     /// it once the analysis is saved (`LibraryPersistenceService.saveContentAnalysis`),
-    /// and the places the rebuild moved, which the record took with them.
+    /// and the places the rebuild moved, narrowed to the moves `committed`
+    /// holds: a move the record refused (a place saved meanwhile, perhaps by
+    /// another Mac) is put back, so the row does not take it either.
     init(committed: Book, movedPlaces: MovedPlaces? = nil) {
         bookID = committed.id
         fields = committed.contentAnalysisFields
-        self.movedPlaces = movedPlaces
+        self.movedPlaces = movedPlaces.map { $0.taken(by: committed) }
     }
 
     /// Gives `book`, the library row, the committed analysis fields and
-    /// the moved places, and nothing else. The row keeps its own reading
-    /// state, settings, and metadata, which are at least as new as its
-    /// package's, except that it takes each moved place as the record did:
-    /// only where it still holds it as it was, so a place saved meanwhile wins.
+    /// the moves its record took, and nothing else. The row keeps its own
+    /// reading state, settings, and metadata, which are at least as new as
+    /// its package's, except that it takes each of those moves as the record
+    /// did: only where it still holds the place as it was, so a place saved
+    /// meanwhile wins. A move the record refused is not taken, so a moved
+    /// place never wins over a newer write another Mac left in the record.
     func apply(to book: inout Book) {
         book.contentAnalysisFields = fields
         if let movedPlaces {

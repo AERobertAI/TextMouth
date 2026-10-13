@@ -162,6 +162,57 @@ final class PlaceSnapshotTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
     }
 
+    /// Keeping bytes writes exactly those bytes as content.md and the record
+    /// as places.json, and the snapshot reads the bytes back as they were
+    /// kept (`textBytes()`), even those a text round trip would change.
+    func testKeepingBytesWritesExactlyThem() throws {
+        let folder = try makeTemporaryFolder()
+        // A byte-order mark, a CR LF, and a byte that is no UTF-8.
+        let bytes = Data([0xEF, 0xBB, 0xBF] + Array("Words.\r\n".utf8) + [0xFF])
+        let record = try fullRecord(title: "The Mill")
+
+        let snapshot = try PlaceSnapshot.keep(text: bytes, record: record, in: folder)
+
+        XCTAssertEqual(snapshot.record, record)
+        XCTAssertEqual(snapshot.folder.deletingLastPathComponent().standardizedFileURL, folder.standardizedFileURL)
+        XCTAssertTrue(snapshot.folder.lastPathComponent.hasPrefix("\(record.bookID.uuidString) "))
+        XCTAssertEqual(try Data(contentsOf: snapshot.folder.appendingPathComponent("content.md")), bytes)
+        XCTAssertEqual(try snapshot.textBytes(), bytes)
+        let storedRecord = try Data(contentsOf: snapshot.folder.appendingPathComponent("places.json"))
+        XCTAssertEqual(try JSONDecoder().decode(PlaceSnapshot.Record.self, from: storedRecord), record)
+
+        // Kept bytes are in use like a kept file: no leftover, until a quit.
+        XCTAssertEqual(PlaceSnapshot.leftovers(in: folder), [])
+        snapshot.discard()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: snapshot.folder.path))
+    }
+
+    /// A snapshot of a file reads back the file's bytes as it kept them.
+    func testTheKeptBytesOfAFileAreReadBack() throws {
+        let folder = try makeTemporaryFolder()
+        let source = try writeFile("\u{FEFF}Words.\r\n")
+        let snapshot = try PlaceSnapshot.keep(textAt: source, record: try fullRecord(title: "The Mill"), in: folder)
+        XCTAssertEqual(try snapshot.textBytes(), try Data(contentsOf: source))
+    }
+
+    /// Keeping into a folder that cannot be made (its path is a file) throws
+    /// and leaves nothing behind, in either form.
+    func testAKeepThatCannotMakeItsFolderLeavesNothing() throws {
+        let parent = try makeTemporaryFolder()
+        let notAFolder = parent.appendingPathComponent("a file")
+        try Data("not a folder".utf8).write(to: notAFolder)
+        let source = try writeFile("Words.")
+        let record = try fullRecord(title: "The Mill")
+
+        XCTAssertThrowsError(try PlaceSnapshot.keep(text: Data("Words.".utf8), record: record, in: notAFolder))
+        XCTAssertThrowsError(try PlaceSnapshot.keep(textAt: source, record: record, in: notAFolder))
+
+        // Nothing was made beside the file, and the file is as it was.
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: parent.path), ["a file"])
+        XCTAssertEqual(try Data(contentsOf: notAFolder), Data("not a folder".utf8))
+        XCTAssertEqual(PlaceSnapshot.leftovers(in: notAFolder), [])
+    }
+
     /// A folder with only content.md (a copy stopped before its record), and
     /// one whose record cannot be read, are removed by the listing, which
     /// shows only the finished snapshot; a stray file is left alone.
@@ -248,6 +299,17 @@ final class PlaceSnapshotTests: XCTestCase {
         let folder = MachineLocalPaths.placeSnapshots
         XCTAssertEqual(folder.lastPathComponent, "Place Snapshots")
         XCTAssertEqual(folder.deletingLastPathComponent().standardizedFileURL, MachineLocalPaths.root.standardizedFileURL)
+    }
+
+    /// The folder of Edit Text sessions' copies is this Mac's own too, named
+    /// for what it holds, and is a sibling of the rebuilds' folder, never
+    /// inside it (whose recovery removes folders it cannot read) nor
+    /// holding it.
+    func testTheEditTextFolderIsApartFromTheRebuildSnapshots() {
+        let folder = MachineLocalPaths.editTextSnapshots
+        XCTAssertEqual(folder.lastPathComponent, "Edit Text Snapshots")
+        XCTAssertEqual(folder.deletingLastPathComponent().standardizedFileURL, MachineLocalPaths.root.standardizedFileURL)
+        XCTAssertNotEqual(folder.standardizedFileURL, MachineLocalPaths.placeSnapshots.standardizedFileURL)
     }
 
     // MARK: - Reading the Old Text

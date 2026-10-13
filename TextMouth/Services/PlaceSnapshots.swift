@@ -83,6 +83,43 @@ struct PlaceSnapshot: Equatable, Sendable {
         record: Record,
         in folder: URL = MachineLocalPaths.placeSnapshots
     ) throws -> PlaceSnapshot {
+        try keep(record: record, in: folder) { textURL in
+            // Clones on APFS when source and destination share a volume.
+            try FileManager.default.copyItem(at: cacheURL, to: textURL)
+        }
+    }
+
+    /// Keeps `text`, the bytes of a content.md, aside with `record`, as
+    /// `keep(textAt:record:in:)` keeps a file: the bytes are written
+    /// atomically as `content.md`. An Edit Text session keeps the text its
+    /// edits replace this way, as TextMouth last took it.
+    /// - Parameters:
+    ///   - text: The text's bytes, exactly as they are to be read back.
+    ///   - record: The book and its places as they are now.
+    ///   - folder: The snapshots folder.
+    static func keep(
+        text: Data,
+        record: Record,
+        in folder: URL = MachineLocalPaths.placeSnapshots
+    ) throws -> PlaceSnapshot {
+        try keep(record: record, in: folder) { textURL in
+            try text.write(to: textURL, options: .atomic)
+        }
+    }
+
+    /// The sequence both forms of `keep` share: makes the snapshot's folder
+    /// (and `folder`) as needed, marks it in use first, has `putText` put
+    /// the text at the URL it is given, and writes the record last. A
+    /// failure removes the folder and unmarks it before it throws.
+    /// - Parameters:
+    ///   - record: The book and its places as they are now.
+    ///   - folder: The snapshots folder.
+    ///   - putText: Puts the old text at the given URL, in the new folder.
+    private static func keep(
+        record: Record,
+        in folder: URL,
+        putText: (URL) throws -> Void
+    ) throws -> PlaceSnapshot {
         let name = "\(record.bookID.uuidString) \(UUID().uuidString)"
         let snapshotFolder = folder.appendingPathComponent(name, isDirectory: true)
         let fileManager = FileManager.default
@@ -91,8 +128,7 @@ struct PlaceSnapshot: Equatable, Sendable {
         inUse.withLock { _ = $0.insert(name) }
         do {
             try fileManager.createDirectory(at: snapshotFolder, withIntermediateDirectories: true)
-            // Clones on APFS when source and destination share a volume.
-            try fileManager.copyItem(at: cacheURL, to: textURL(in: snapshotFolder))
+            try putText(textURL(in: snapshotFolder))
             let data = try JSONEncoder().encode(record)
             try data.write(to: recordURL(in: snapshotFolder), options: .atomic)
         } catch {
@@ -151,11 +187,22 @@ struct PlaceSnapshot: Equatable, Sendable {
 
     // MARK: Using
 
+    /// The bytes of the snapshot's kept text, exactly as they were kept.
+    func textBytes() throws -> Data {
+        try Data(contentsOf: textURL)
+    }
+
     /// The snapshot's old text as this build reads a content.md: the file's
     /// bytes decoded (`MarkdownCacheService.cacheText(from:at:)`) and parsed
     /// with the book's title and author.
     func oldText() throws -> DocumentContent {
-        let bytes = try Data(contentsOf: textURL)
+        try oldText(from: try textBytes())
+    }
+
+    /// The old text parsed from `bytes`, the snapshot's kept text already
+    /// read (`textBytes()`), exactly as `oldText()` parses it: a caller that
+    /// has checked the bytes reads them once.
+    func oldText(from bytes: Data) throws -> DocumentContent {
         let markdown = try MarkdownCacheService.cacheText(from: bytes, at: textURL)
         return MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: record.title, bookAuthor: record.author)
     }
@@ -231,5 +278,48 @@ struct MovedPlaces: Equatable, Sendable {
     /// Discards the snapshot, once the book's record holds the moved places.
     func discardSnapshot() {
         snapshot?.discard()
+    }
+
+    /// These moves narrowed to the ones `committed`, the book as its record
+    /// holds it after the save, took: each move the record did not take is
+    /// put back to its original, so a writer taking the result changes only
+    /// what the record changed. A record refuses a move where another Mac
+    /// (or the listener) saved the place meanwhile; a row that took that
+    /// move anyway would hold a stale place dated at the move, which later
+    /// looks newer than the other Mac's save. Places are compared as the
+    /// record's file stores them (`Book.isAsStored`).
+    ///
+    /// - The position moves when the record holds the moved one.
+    /// - Each bookmark moves when the record holds the moved bookmark of
+    ///   its `id`. A moved bookmark with no original of its `id` stays as it
+    ///   is: nothing was there to put back.
+    /// - The skips move as one, as `Book.takeMovedPlaces` moves them: both
+    ///   lists, or neither.
+    func taken(by committed: Book) -> MovedPlaces {
+        var narrowed = moved
+
+        // The position, back to what it was unless the record took the move.
+        if !Book.isAsStored(committed.readingPosition, moved.position) {
+            narrowed.position = original.position
+        }
+
+        // Each bookmark, back to its original unless the record took it. The
+        // first of any bookmarks sharing an ID answers for it.
+        let originalBookmarks = Dictionary(original.bookmarks.map { ($0.id, $0) }) { first, _ in first }
+        let committedBookmarks = Dictionary(committed.bookmarks.map { ($0.id, $0) }) { first, _ in first }
+        narrowed.bookmarks = moved.bookmarks.map { now in
+            guard !Book.isAsStored(committedBookmarks[now.id], now), let before = originalBookmarks[now.id] else { return now }
+            return before
+        }
+
+        // The skips, as one: both lists moved, or both as they were.
+        let skipsMoved = (committed.skippedHeadings ?? []) == moved.skippedHeadings
+            && (committed.waitingSkippedHeadings ?? []) == moved.waitingSkippedHeadings
+        if !skipsMoved {
+            narrowed.skippedHeadings = original.skippedHeadings
+            narrowed.waitingSkippedHeadings = original.waitingSkippedHeadings
+        }
+
+        return MovedPlaces(bookID: bookID, original: original, moved: narrowed, snapshot: snapshot)
     }
 }

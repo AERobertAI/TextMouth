@@ -607,6 +607,16 @@ enum MachineLocalPaths {
         root.appendingPathComponent("Place Snapshots", isDirectory: true)
     }
 
+    /// The text of each book being edited with Edit Text, as TextMouth last
+    /// took or wrote it, kept with the book's places, from which each edit
+    /// taken moves them (T06's branch E, `PlaceSnapshot`): this Mac's own,
+    /// never in the data directory. It is apart from `placeSnapshots`, whose
+    /// launch recovery finishes rebuilds' leftovers and removes any folder
+    /// there it cannot read. Never nest one folder in the other.
+    static var editTextSnapshots: URL {
+        root.appendingPathComponent("Edit Text Snapshots", isDirectory: true)
+    }
+
     /// Archives being extracted for import, while the data directory is on
     /// the startup volume.
     static var archiveExtraction: URL {

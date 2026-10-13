@@ -436,10 +436,11 @@ final class ReaderViewModel: ObservableObject {
     /// lets the audio go (`letGoOfAudioSetAsideForMove(because:)`), so that
     /// the move's end leaves the book as the listener left it.
     var audioPausedForMove: AudioPausedForMove?
-    /// The book's edited text when the user's edit was taken while this
-    /// reader was still loading the text it had (FR05): shown once loading
-    /// ends (`showEditedTextWaitingForLoad()`); nil the rest of the time.
-    var editedTextWaitingForLoad: DocumentContent?
+    /// The book's edited text, with the moves of its places the edit took,
+    /// when the user's edit was taken while this reader was still loading
+    /// the text it had (FR05): shown once loading ends
+    /// (`showEditedTextWaitingForLoad()`); nil the rest of the time.
+    var editedTextWaitingForLoad: EditedTextWaitingForLoad?
     /// An audiobook's transcript text when it changed while this reader was
     /// still loading (FR05): shown once loading ends
     /// (`showTranscriptWaitingForLoad()`); nil the rest of the time.
@@ -1187,11 +1188,14 @@ final class ReaderViewModel: ObservableObject {
         let shouldPersistContentIndex: Bool
         /// The text cache format version the analysis vouches for.
         let cacheFormatVersion: String?
-        /// The book's places that a rebuild of its text during this load
-        /// moved (T06's branch D), already committed to the book's record,
-        /// for the reader to take on the main actor (`takeMovedPlaces(_:)`).
-        /// Nil when the load rebuilt nothing, or the book had none to move.
-        var movedPlaces: MovedPlaces? = nil
+        /// The moves of the book's places for the reader to take, in order,
+        /// on the main actor as it shows the text (`takeMovedPlaces(_:)`).
+        /// In order: first an edit's taken as this load began (branch E),
+        /// then a rebuild's during it (branch D), both already committed to
+        /// the book's record; then the check at load's (branch E), whose
+        /// places the reader saves as any change is, each move starting from
+        /// where the one before it ended. Empty when nothing moved.
+        var movedPlaces: [MovedPlaces] = []
     }
 
     /// Start getting the book ready to read, showing Loading meanwhile.
@@ -1256,9 +1260,20 @@ final class ReaderViewModel: ObservableObject {
         // audiobook's transcript text is edited the same way, but its audio
         // still plays while such an edit stands: only its text is left out.
         var holdsTranscriptText = false
+        // The moves of the book's places for the reader to take, in order:
+        // an edit's, a rebuild's, then the check at load's.
+        var movedPlaces: [MovedPlaces] = []
         switch BookTextEditSessions.shared.settlePendingEdit(of: book) {
-        case .readTaken(let committed):
-            book.contentAnalysisFields = committed.contentAnalysisFields
+        case .readTaken(let edit):
+            book.contentAnalysisFields = edit.committed.contentAnalysisFields
+            // The edit moved the book's places in its record, which this
+            // copy of the book (made before the edit was taken) takes too,
+            // so a rebuild's move and the check at load start from them;
+            // the reader takes the same moves first of all (below).
+            if let moved = edit.movedPlaces {
+                book.takeMovedPlaces(original: moved.original, moved: moved.moved)
+                movedPlaces.append(moved)
+            }
         case .hold(let pending):
             guard format.isAudio else { throw pending }
             holdsTranscriptText = true
@@ -1285,6 +1300,34 @@ final class ReaderViewModel: ObservableObject {
                 cacheFormatVersion: analysis.cacheFormatVersion,
                 movedPlaces: moved
             )
+            movedPlaces.append(moved)
+        }
+        // The backstop for every path a rebuild did not take (a feed article
+        // downloaded again, another Mac's text, an edit saved while
+        // TextMouth was closed, a rebuild that could not finish): each place
+        // of a text book is checked at the text it now has, and one whose
+        // saved words are not at its numbers is found by them, with a silent
+        // best guess for the rest (T06's branch E). The check starts from the
+        // places as a rebuild's move left them. Nothing is committed here:
+        // the reader takes the move into the row, which saves the row and
+        // the record as any change is. All of it runs off the main thread,
+        // where a large book's places are found.
+        if !format.isAudio {
+            if let moved = analysis.movedPlaces {
+                book.takeMovedPlaces(original: moved.original, moved: moved.moved)
+            }
+            let before = book.relocatablePlaces
+            if let outcome = PlaceRelocator.relocate(before, within: analysis.content, movedAt: Date()) {
+                // Said only when the places changed: a book whose only
+                // place stays as saved (nothing finds it) logs nothing at
+                // each open.
+                if outcome.places != before {
+                    if outcome.counts.anythingMoved {
+                        DiagnosticLog.event(.storage, outcome.counts.logLine(title: book.title))
+                    }
+                    movedPlaces.append(MovedPlaces(bookID: book.id, original: before, moved: outcome.places, snapshot: nil))
+                }
+            }
         }
         // An audiobook with a transcript reads as text too (FR05): the
         // transcript's text is laid over its chapters for the reader to show,
@@ -1318,7 +1361,7 @@ final class ReaderViewModel: ObservableObject {
                 || (!format.isAudio
                     && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion),
             cacheFormatVersion: analysis.cacheFormatVersion,
-            movedPlaces: analysis.movedPlaces
+            movedPlaces: movedPlaces
         )
     }
 
@@ -1358,18 +1401,23 @@ final class ReaderViewModel: ObservableObject {
         showEPUBMetadata()
         audioMetadata = loaded.audioTags.map { book.mergingEditableAudioMetadata($0) }
 
-        // The places a rebuild of the text moved come first, so that the
-        // opening place, the opened place's anchor (`noteLoadedTextForAnchors`),
-        // the anchor capture, and the position the load saves all read the
-        // moved ones, not the old numbers in the new text (T06's branch D).
-        takeMovedPlaces(loaded.movedPlaces)
+        // The places the load moved come first, in order (a rebuild's, then
+        // the check at load's), so that the opening place, the opened
+        // place's anchor (`noteLoadedTextForAnchors`), the anchor capture,
+        // and the position the load saves all read the moved ones, not the
+        // old numbers in the new text (T06's branches D and E).
+        for moved in loaded.movedPlaces {
+            takeMovedPlaces(moved)
+        }
 
         // Bring the saved place into the book as loaded: its chapters and
         // their lengths can change when the book is imported again or its
         // text is extracted or edited anew. A place past its chapter's end
         // opens at that end, which in the last chapter is the book's end, so
         // a finished book opens finished (T06, question 7; see
-        // `openingPlace(of:savedGlobalOffset:in:)`).
+        // `openingPlace(of:savedGlobalOffset:in:)`). A place saved with its
+        // words was found by them first (above); this clamp takes the places
+        // saved without words, which nothing can find without the old text.
         let saved = TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset)
         let opening = Self.openingPlace(of: saved, savedGlobalOffset: savedGlobalOffset(of: saved), in: parsed)
         if opening != saved {

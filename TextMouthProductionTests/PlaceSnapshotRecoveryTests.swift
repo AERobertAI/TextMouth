@@ -8,19 +8,6 @@ import XCTest
 final class PlaceSnapshotRecoveryTests: CloudMaintenanceTestCase {
     // MARK: Helpers
 
-    /// The book as its package record holds it, read from disk after every
-    /// queued library write has landed.
-    private func recordedBook(like book: Book) throws -> Book {
-        LibraryPersistenceService.flushPendingSave()
-        let record = try BookInfo.load(from: book.tmbDirectory)
-        return Book(
-            record: record,
-            filePath: book.filePath,
-            folderPath: book.folderPath,
-            tmbDirectoryName: book.tmbDirectoryName
-        )
-    }
-
     /// Rebuilds `book`'s text and returns the places the rebuild moved,
     /// uncommitted: a stop between the rebuild's write and its commit.
     private func rebuildWithoutCommitting(_ book: Book) throws -> MovedPlaces {

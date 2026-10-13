@@ -65,6 +65,14 @@ struct BookTextEdit: Sendable {
     let committed: Book
     /// The edited text, as a reader shows it.
     let text: Text
+    /// The book's places this edit moved (T06's branch E), narrowed to the
+    /// moves its record took (`MovedPlaces.taken(by:)`); nil when it moved
+    /// none, and for a transcript edit.
+    var movedPlaces: MovedPlaces? = nil
+    /// The edited text, the bytes taken, kept aside for the session's next
+    /// take (`Session.oldText`); nil for a transcript edit, and when none
+    /// could be kept.
+    var textAside: PlaceSnapshot? = nil
 }
 
 /// What checking a book's content.md for an edit found, or what a rebuild
@@ -98,8 +106,10 @@ enum BookTextEditSettlement: Sendable {
     /// once the edit is kept beside content.md.
     case readAsUsual
     /// Read the book as its record now records it, with the edit just
-    /// taken, whose analysis the read then goes by.
-    case readTaken(Book)
+    /// taken, whose analysis the read then goes by, and whose moves of the
+    /// book's places (`BookTextEdit.movedPlaces`) the read's reader takes
+    /// into its own copy of the book first (T06's branch E).
+    case readTaken(BookTextEdit)
     /// Read nothing: content.md holds an edit that cannot be taken, which a
     /// read would rebuild over from the book's own file. The read stops
     /// with this error, which says why and where the edit was kept.
@@ -163,7 +173,10 @@ final class HeldTextEditTally: Sendable {
 /// Text saved in content.md while no session watched it, as while
 /// TextMouth was closed, is taken by the launch's cache pass when it can be
 /// (`settleEditSavedWhileClosed(of:access:)`), and kept beside content.md
-/// before any rebuild otherwise.
+/// before any rebuild otherwise. A session also keeps a copy of the book's
+/// text as TextMouth last took or wrote it (`Session.oldText`), apart from
+/// the rebuilds' snapshots, from which each edit taken will move the book's
+/// places (T06's branch E); it is deleted when the session ends.
 final class BookTextEditSessions: Sendable {
     /// The sessions of the app's Edit Text commands.
     static let shared = BookTextEditSessions()
@@ -184,6 +197,12 @@ final class BookTextEditSessions: Sendable {
         /// is about to replace (`permitTextRebuild(of:writing:)`), reported
         /// once the rebuild is written (`textRebuilt(_:writing:fingerprint:)`).
         var replacedCopy: URL? = nil
+        /// The book's text as TextMouth last took or wrote it, kept aside in
+        /// `MachineLocalPaths.editTextSnapshots` with the book's places, from
+        /// which the next edit taken moves them. Nil before it is kept
+        /// (`keepOldText(of:)`), for an audiobook, and when none could be
+        /// kept. The session owns it: `end(_:)` deletes it.
+        var oldText: PlaceSnapshot? = nil
     }
 
     /// An edit a check could not take: the digest of what content.md held,
@@ -222,14 +241,25 @@ final class BookTextEditSessions: Sendable {
 
     // MARK: Beginning and Ending
 
-    /// Starts, or starts again, the session of the book `bookID`.
+    /// Starts, or starts again, the session of the book `bookID`. A session
+    /// it replaces that holds a copy of the text discards that copy, unless
+    /// the new session holds the same one.
     func begin(_ bookID: UUID, _ session: Session) {
-        sessions.withLock { $0[bookID] = session }
+        let replaced = sessions.withLock { all -> Session? in
+            let previous = all[bookID]
+            all[bookID] = session
+            return previous
+        }
+        if let copy = replaced?.oldText, copy != session.oldText {
+            copy.discard()
+        }
     }
 
-    /// Ends the session of the book `bookID`, if there is one.
+    /// Ends the session of the book `bookID`, if there is one, and deletes
+    /// its copy of the text.
     func end(_ bookID: UUID) {
-        _ = sessions.withLock { $0.removeValue(forKey: bookID) }
+        let ended = sessions.withLock { $0.removeValue(forKey: bookID) }
+        ended?.oldText?.discard()
     }
 
     /// Whether the book `bookID` is being edited.
@@ -245,6 +275,81 @@ final class BookTextEditSessions: Sendable {
     /// The baseline of the book `bookID`, while it is being edited.
     func baseline(of bookID: UUID) -> BookTextBaseline? {
         sessions.withLock { $0[bookID]?.baseline }
+    }
+
+    // MARK: The Session's Copy of Its Old Text
+
+    /// Keeps the text of `book`, as its content.md holds it when the
+    /// session begins, aside with the book's places as the session's copy
+    /// (`Session.oldText`), on the checking queue, as storage work with the
+    /// book as the data directory in use holds it. It runs before any check
+    /// of the session, which runs on the same serial queue.
+    ///
+    /// Nothing is kept for an audiobook, a book without a package, a
+    /// content.md that is missing or only in the cloud (never downloaded for
+    /// this), or a session that has ended or already holds a copy. A copy
+    /// that cannot be made is logged once as `PLACES_NOT_KEPT` and the
+    /// session goes on without one.
+    func keepOldText(of book: Book) {
+        queue.async { [self] in
+            boundary.perform(.contentAnalysis) { _ in
+                let current = boundary.rebasedToCurrent(book)
+                guard !current.format.isAudio, !current.tmbDirectoryName.isEmpty,
+                      let session = sessions.withLock({ $0[current.id] }), session.oldText == nil
+                else { return }
+                let cacheURL = MarkdownCacheService.cacheURL(for: current)
+                guard FileStamp(of: cacheURL) != nil, !access.isInCloud(cacheURL) else { return }
+                do {
+                    let copy = try PlaceSnapshot.keep(
+                        textAt: cacheURL,
+                        record: Self.record(of: current),
+                        in: MachineLocalPaths.editTextSnapshots
+                    )
+                    // Discards the copy at once when the session ended meanwhile.
+                    putOldText(copy, on: current.id)
+                } catch {
+                    Self.logLine("PLACES_NOT_KEPT", about: current, error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    /// The record a copy of `book`'s text is kept with: the book and its
+    /// places as they are now.
+    private static func record(of book: Book) -> PlaceSnapshot.Record {
+        PlaceSnapshot.Record(
+            bookID: book.id, title: book.title, author: book.author,
+            places: book.relocatablePlaces, takenAt: Date()
+        )
+    }
+
+    /// Keeps `bytes`, text TextMouth just took or wrote as `book`'s
+    /// content.md, aside in `MachineLocalPaths.editTextSnapshots` with the
+    /// book's places. A copy that cannot be made is logged once as
+    /// `PLACES_NOT_KEPT` and gives nil.
+    private static func keepOldText(_ bytes: Data, of book: Book) -> PlaceSnapshot? {
+        do {
+            return try PlaceSnapshot.keep(text: bytes, record: record(of: book), in: MachineLocalPaths.editTextSnapshots)
+        } catch {
+            logLine("PLACES_NOT_KEPT", about: book, error.localizedDescription)
+            return nil
+        }
+    }
+
+    /// Puts `copy` on the session of the book `bookID` in place of the copy
+    /// it holds, and deletes whichever is then no longer used: the replaced
+    /// copy, or `copy` itself when the session has ended. A nil `copy`
+    /// leaves the session with none, since the one it held is the text
+    /// before the edit and no longer the text TextMouth last took.
+    private func putOldText(_ copy: PlaceSnapshot?, on bookID: UUID) {
+        let unused = sessions.withLock { all -> PlaceSnapshot? in
+            guard all[bookID] != nil else { return copy }
+            let previous = all[bookID]?.oldText
+            all[bookID]?.oldText = copy
+            return previous == copy ? nil : previous
+        }
+        // Deleted outside the lock: it touches the disk.
+        unused?.discard()
     }
 
     // MARK: Checking
@@ -275,7 +380,7 @@ final class BookTextEditSessions: Sendable {
         }
         switch found {
         case .adopted(let edit)?:
-            return .readTaken(edit.committed)
+            return .readTaken(edit)
         case .refused(let refusal, _, let keptCopy)? where refusal.keepsEarlierText:
             return .hold(BookTextEditPending(bookTitle: book.title, refusal: refusal, keptCopy: keptCopy))
         default:
@@ -300,13 +405,18 @@ final class BookTextEditSessions: Sendable {
         guard let session = sessions.withLock({ $0[bookID] }) else { return nil }
         let found: BookTextEditCheck = boundary.perform(.contentAnalysis) { _ in
             // The baseline is read again: a check that waited for a hold
-            // follows the one before it.
-            let baseline = sessions.withLock { $0[bookID]?.baseline } ?? session.baseline
+            // follows the one before it, and so does the copy of the text it
+            // replaces (the one the last take kept aside).
+            let (baseline, oldText) = sessions.withLock { all in
+                (all[bookID]?.baseline ?? session.baseline, all[bookID]?.oldText)
+            }
             let checked = Self.check(
                 boundary.rebasedToCurrent(book),
                 against: baseline,
                 access: access,
-                readingTexts: readingTexts
+                readingTexts: readingTexts,
+                keepingTextAside: true,
+                placesFrom: oldText
             )
             sessions.withLock { all in
                 guard all[bookID] != nil else { return }
@@ -321,6 +431,10 @@ final class BookTextEditSessions: Sendable {
                 case .inCloud, .missing, .replaced:
                     break
                 }
+            }
+            // The edit taken is the text the next take starts from.
+            if case .adopted(let edit) = checked.found {
+                putOldText(edit.textAside, on: bookID)
             }
             return checked.found
         }
@@ -394,6 +508,11 @@ final class BookTextEditSessions: Sendable {
     /// where it is. `fingerprint` is what the rebuild recorded, when it could.
     func textRebuilt(_ book: Book, writing bytes: Data, fingerprint: TextCacheFingerprint?) {
         guard isEditing(book.id) else { return }
+        // The rebuilt text is the one the next edit taken replaces. An
+        // audiobook's session keeps no copy.
+        if !book.format.isAudio {
+            putOldText(Self.keepOldText(bytes, of: book), on: book.id)
+        }
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let hasher = access.hasher
         guard let cache = fingerprint?.cache
@@ -430,6 +549,18 @@ final class BookTextEditSessions: Sendable {
     /// cache its record no longer describes, at launch and whenever a
     /// library opens.
     ///
+    /// The book's places move with the edit taken, as a session's take
+    /// moves them (T06's branch E), from the newest copy of the text a quit
+    /// left for the book in `MachineLocalPaths.editTextSnapshots`
+    /// (`PlaceSnapshot.leftovers(in:)`, which lists no copy a session of this
+    /// run uses). The copy is used only when it is the text the places were
+    /// saved in, which the record's fingerprint says (see
+    /// `check(_:against:access:readingTexts:keepingTextAside:placesFrom:)`);
+    /// with none, the places stay and a reader's next load finds them by
+    /// their saved words. Once the check found anything but a file in the
+    /// cloud, the session the copies served is over, and every copy of the
+    /// book is deleted.
+    ///
     /// Checked as storage work, with `access` reaching the files (FR02).
     /// - Returns: What the check found; nil for an audiobook, a book without
     ///   a package, a book being edited now, whose session checks it, and a
@@ -440,7 +571,22 @@ final class BookTextEditSessions: Sendable {
             let current = boundary.rebasedToCurrent(book)
             guard let recorded = Self.recordedTextCacheFingerprint(of: current, access: access) else { return nil }
             let baseline = BookTextBaseline(source: recorded.source, cache: recorded.cache)
-            return Self.check(current, against: baseline, access: access, readingTexts: readingTexts).found
+            // Oldest first, so the last is the newest copy of the book.
+            let copies = PlaceSnapshot.leftovers(in: MachineLocalPaths.editTextSnapshots)
+                .filter { $0.record.bookID == current.id }
+            let found = Self.check(
+                current,
+                against: baseline,
+                access: access,
+                readingTexts: readingTexts,
+                placesFrom: copies.last
+            ).found
+            if case .inCloud = found {
+                // Not looked at yet: the copies serve the check that will be.
+            } else {
+                copies.forEach { $0.discard() }
+            }
+            return found
         }
     }
 
@@ -575,13 +721,28 @@ final class BookTextEditSessions: Sendable {
     ///   number of chapters, or of an audiobook whose audio changed since it
     ///   was transcribed, is refused as any other is.
     ///
+    /// - A text book's edit taken is also kept aside when `keepingTextAside`
+    ///   (`BookTextEdit.textAside`): the bytes taken, never content.md read
+    ///   again, which may hold a newer save. A transcript edit keeps nothing.
+    /// - A text book's edit taken moves the book's places (T06's branch E)
+    ///   with the words they were saved by, from `oldText`, a copy of the
+    ///   text the edit replaces (`movedPlaces(of:from:to:against:access:)`),
+    ///   and commits them with the analysis, each only where the record still
+    ///   holds the place as it was. The copy is used only when its bytes have
+    ///   the digest of `baseline`'s cache, the text TextMouth last took or
+    ///   wrote, which the places were saved in; any other copy moves nothing,
+    ///   as does a nil one. A transcript edit moves nothing. The moves are
+    ///   silent, and `BookTextEdit.movedPlaces` holds those the record took.
+    ///
     /// - Returns: What was found, and the baseline from now on when it
     ///   changed.
     static func check(
         _ book: Book,
         against baseline: BookTextBaseline,
         access: MaintenanceFileAccess,
-        readingTexts: ReadingTextCache
+        readingTexts: ReadingTextCache,
+        keepingTextAside: Bool = false,
+        placesFrom oldText: PlaceSnapshot? = nil
     ) -> (found: BookTextEditCheck, baseline: BookTextBaseline?) {
         guard !book.tmbDirectoryName.isEmpty else { return (.missing, nil) }
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
@@ -650,12 +811,17 @@ final class BookTextEditSessions: Sendable {
 
         var index = parsed.contentIndex.replacingFormat(book.format)
         index.textCacheFingerprint = source.map { TextCacheFingerprint(source: $0, cache: cache) }
+        let content = DocumentContent(title: parsed.title, author: parsed.author, chapters: parsed.chapters, contentIndex: index)
+        // The places follow their words into the edited text; they are
+        // committed with the analysis, or not at all.
+        let moved = movedPlaces(of: book, from: oldText, to: content, against: baseline, access: access)
         let committed: Book?
         do {
             committed = try LibraryPersistenceService.saveContentAnalysis(
                 for: book,
                 index: index,
-                cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+                cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+                movedPlaces: moved
             )
         } catch {
             return refuse(.failed(error.localizedDescription), tag: "TEXT_EDIT_FAILED", error.localizedDescription)
@@ -676,8 +842,67 @@ final class BookTextEditSessions: Sendable {
             about: book,
             "\(index.chapters.count) chapter(s), \(index.totalWordCount) word(s), \(index.allHeadings.count) heading(s)"
         )
-        let content = DocumentContent(title: parsed.title, author: parsed.author, chapters: parsed.chapters, contentIndex: index)
-        return (.adopted(BookTextEdit(committed: committed, text: .document(content))), BookTextBaseline(source: source, cache: cache))
+        // The bytes just taken, with the book's places as its record holds
+        // them now.
+        let aside = keepingTextAside ? keepOldText(bytes, of: committed) : nil
+        return (
+            .adopted(BookTextEdit(
+                committed: committed,
+                text: .document(content),
+                // Narrowed to the moves the record took.
+                movedPlaces: moved?.taken(by: committed),
+                textAside: aside
+            )),
+            BookTextBaseline(source: source, cache: cache)
+        )
+    }
+
+    /// Moves `book`'s places from `oldText`, a copy of the text an edit
+    /// replaces, to `content`, the edited text (T06's branch E), with
+    /// `PlaceRelocator.relocate(_:from:to:movedAt:)`: the same diff a rebuild
+    /// of the text uses. Nothing moves, and nil is the result, when
+    /// - the book holds no place to move (`Book.holdsPlacesToMove`), or
+    ///   there is no copy: nothing is logged, a reader's next load finds the
+    ///   places by their saved words;
+    /// - the copy cannot be read, or is not the text the places were saved
+    ///   in: its bytes lack the digest of `baseline`'s cache, the content.md
+    ///   TextMouth last took or wrote. One debug-log line,
+    ///   `PLACES_NOT_MOVED: <title>: its earlier text was not kept as its
+    ///   places knew it`, names the title only, never text;
+    /// - the copy's text cannot be parsed, with the same tag and the reason;
+    /// - the moved places equal the saved ones: there is nothing to write.
+    /// When anything moved, the debug log gets the counts' line
+    /// (`PlaceRelocator.Counts.logLine(title:)`).
+    /// - Returns: The moves, to commit with the analysis; their `snapshot`
+    ///   is nil, since the session owns its copy.
+    private static func movedPlaces(
+        of book: Book,
+        from oldText: PlaceSnapshot?,
+        to content: DocumentContent,
+        against baseline: BookTextBaseline,
+        access: MaintenanceFileAccess
+    ) -> MovedPlaces? {
+        guard book.holdsPlacesToMove, let oldText else { return nil }
+        let original = book.relocatablePlaces
+        // The bytes are read once: digested here, parsed below.
+        guard let oldBytes = try? oldText.textBytes(),
+              access.hasher.digestOfData(oldBytes) == baseline.cache.digest
+        else {
+            logLine("PLACES_NOT_MOVED", about: book, "its earlier text was not kept as its places knew it")
+            return nil
+        }
+        let outcome: PlaceRelocator.Outcome
+        do {
+            outcome = try PlaceRelocator.relocate(original, from: { try oldText.oldText(from: oldBytes) }, to: content, movedAt: Date())
+        } catch {
+            logLine("PLACES_NOT_MOVED", about: book, error.localizedDescription)
+            return nil
+        }
+        if outcome.counts.anythingMoved {
+            DiagnosticLog.event(.storage, outcome.counts.logLine(title: book.title))
+        }
+        guard outcome.places != original else { return nil }
+        return MovedPlaces(bookID: book.id, original: original, moved: outcome.places, snapshot: nil)
     }
 
     /// Takes the edit `parsed`, content.md as the user saved it, holding

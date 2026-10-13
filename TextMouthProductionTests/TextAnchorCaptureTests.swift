@@ -281,9 +281,10 @@ final class TextAnchorCaptureTests: XCTestCase {
     /// one past its chapter's end at that end, a skipped heading its ID
     /// names at the heading's start, and the position through the load's
     /// own save. A bookmark in a chapter the book lacks, and a skipped
-    /// heading whose ID names no heading now, keep none; a bookmark that had
-    /// words keeps them, and the IDs stay as they were. The row, the record,
-    /// and the reader's own copies take them.
+    /// heading whose ID names no heading now, keep none, and that skip waits
+    /// (T06's branch E), skipping nothing; a bookmark that had words keeps
+    /// them, and the other IDs stay as they were. The row, the record, and
+    /// the reader's own copies take them.
     func testPlacesSavedBeforeAnchorsTakeTheirWordsAsTheBookLoads() throws {
         let world = try makeIntegrationWorld("Anchor Capture At Load")
         let book = try world.importBook(from: writeOrchardEPUB())
@@ -312,20 +313,24 @@ final class TextAnchorCaptureTests: XCTestCase {
         let row = try XCTUnwrap(world.library.bookByID(book.id))
         XCTAssertEqual(row.bookmarks.map(\.anchor), [words(1, 33), words(0, firstLength + 6), nil, earlier])
         XCTAssertEqual(row.bookmarks.map(\.characterOffset), [33, firstLength + 6, 4, 12], "a bookmark moved")
+        // T06's branch E: the skip whose ID names no heading and holds no
+        // words waits (the addendum's rule) instead of staying skipped.
         let waiting = try XCTUnwrap(SkippedHeading(id: gone))
         let expectedSkips = [
             SkippedHeading(pressing, anchor: words(pressing.chapterIndex, pressing.characterOffset)),
-            waiting,
         ]
         XCTAssertEqual(row.skippedHeadings, expectedSkips)
-        XCTAssertEqual(row.skippedHeadingIDs, [pressing.id, gone])
+        XCTAssertEqual(row.waitingSkippedHeadings, [waiting])
+        XCTAssertEqual(row.skippedHeadingIDs, [pressing.id])
         XCTAssertEqual(row.readingPosition?.anchor, words(2, 50))
         XCTAssertEqual(reader.bookmarks, row.bookmarks, "the reader's bookmarks lack their words")
         XCTAssertEqual(reader.book.skippedHeadings, expectedSkips, "the reader's skipped headings lack their words")
+        XCTAssertEqual(reader.book.waitingSkippedHeadings, [waiting], "the reader's waiting skip changed")
         LibraryPersistenceService.flushPendingSave()
         let record = try BookInfo.load(from: book.tmbDirectory)
         XCTAssertEqual(record.bookmarks.map(\.anchor), row.bookmarks.map(\.anchor))
         XCTAssertEqual(record.state.skippedHeadings, expectedSkips)
+        XCTAssertEqual(record.state.waitingSkippedHeadings, [waiting])
         XCTAssertEqual(record.state.readingPosition?.anchor, words(2, 50))
     }
 
