@@ -11,9 +11,12 @@ It counts tokens the way humanReports/TOKEN-USAGE-2026-10-10.md did, so its
 figures compare with that report's: each API call once (one response is
 often split across several records sharing a message ID), and tokens of
 different kinds added up in units, one unit being one plain input token's
-worth at Opus 5.5's published prices. That report found that about 6.2
-million units make one point of the weekly limit; the points printed here
-rest on that estimate. It prints counts only, never transcript text.
+worth at Opus 5.5's published prices. A call on another model counts at
+that model's price as a share of Opus's (`MODEL_PRICES`), so a Sonnet 5.5
+call's tokens count half. That report found that about 6.2 million units
+make one point of the weekly limit; the points printed here rest on that
+estimate, and assume the limit weighs each model by its price. It prints
+counts only, never transcript text.
 """
 import collections
 import glob
@@ -23,6 +26,14 @@ import sys
 
 # Price ratios relative to a plain input token (Opus 5.5).
 WEIGHTS = {"inp": 1.0, "cw5": 1.25, "cw1h": 2.0, "cr": 0.05, "out": 5.0}
+# Each model's prices as a share of Opus 5.5's, by the start of its model
+# name (platform.claude.com/docs/en/about-claude/pricing, October 2026):
+# Sonnet 5.5 costs $2 and $10 a million input and output tokens against
+# Opus 5.5's $4 and $20, and its cache writes and reads half as much too
+# (the pricing page's cache read is 5% of a model's input price; Anthropic's
+# launch post gave Sonnet's as $0.20, Opus's price, which would make its
+# cache reads count in full). A model not listed counts as Opus.
+MODEL_PRICES = {"claude-opus": 1.0, "claude-sonnet": 0.5}
 # Units in one point of the weekly limit (the October 10 report's fit).
 UNITS_PER_WEEKLY_POINT = 6.2e6
 # Where Claude Code keeps this project's sessions.
@@ -39,14 +50,23 @@ def transcript_path(ref):
     return matches[0]
 
 
+def price_of(model):
+    """A model's prices as a share of Opus 5.5's (`MODEL_PRICES`); 1 when unknown."""
+    for prefix, share in MODEL_PRICES.items():
+        if (model or "").startswith(prefix):
+            return share
+    return 1.0
+
+
 def calls_of(path):
-    """Each API call's token counts, once per call, and the efforts recorded.
+    """Each API call's token counts and model, once per call, and the efforts recorded.
 
     Records sharing a message ID are one call; their counts are merged by
     taking each field's largest value, as the October 10 audit did.
     """
     calls = {}
     efforts = collections.Counter()
+    models = collections.Counter()
     with open(path, errors="replace") as transcript:
         for line in transcript:
             try:
@@ -69,6 +89,7 @@ def calls_of(path):
                 "cr": usage.get("cache_read_input_tokens") or 0,
                 "out": usage.get("output_tokens") or 0,
                 "think": (usage.get("output_tokens_details") or {}).get("thinking_tokens") or 0,
+                "price": price_of(message.get("model")),
             }
             key = message.get("id") or record.get("requestId")
             if key in calls:
@@ -78,16 +99,19 @@ def calls_of(path):
             else:
                 calls[key] = counts
                 efforts[record.get("effort") or "unrecorded"] += 1
-    return list(calls.values()), efforts
+                models[message.get("model") or "unrecorded"] += 1
+    return list(calls.values()), efforts, models
 
 
-def summary(calls, efforts):
+def summary(calls, efforts, models):
     """One agent's totals, its cost in units and weekly points, and per-call averages."""
     total = {field: sum(call[field] for call in calls) for field in ("inp", "cw5", "cw1h", "cc", "cr", "out", "think")}
-    units = sum(total[field] * weight for field, weight in WEIGHTS.items())
+    # Each call's tokens at its own model's prices.
+    units = sum(call[field] * weight * call["price"] for call in calls for field, weight in WEIGHTS.items())
     count = max(len(calls), 1)
     return {
         "effort": ", ".join("%s %d" % item for item in efforts.most_common()),
+        "models": ", ".join("%s %d" % item for item in models.most_common()),
         "calls": len(calls),
         # A call's prompt is everything it sent: new input, cache writes, and cache reads.
         "largest_prompt": max((call["inp"] + call["cc"] + call["cr"] for call in calls), default=0),
@@ -141,7 +165,7 @@ def main():
             cells.append(fmt % (row[field] / SCALE.get(field, 1)))
         print("  ".join(cells))
     for label, row in rows:
-        print("%s: effort recorded on its calls: %s" % (label, row["effort"]))
+        print("%s: effort recorded on its calls: %s; models: %s" % (label, row["effort"], row["models"]))
 
 
 main()
