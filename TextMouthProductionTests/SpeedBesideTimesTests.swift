@@ -313,6 +313,96 @@ final class SpeedBesideTimesTests: XCTestCase {
         XCTAssertEqual(finished, "Dune | by Frank Herbert | Appendix | Heading 40 of 40 | \(EndOfBookWording.finishedProgress)")
     }
 
+    // MARK: - The Sheet Follows A Speed Change
+
+    /// An audiobook's timing changes when its speed does, so the open
+    /// Headings sheet rebuilds its Durations, and stays the same while
+    /// nothing it depends on moves.
+    func testTheRowTimingFollowsAnAudiobooksSpeed() throws {
+        let audio = Fixtures.makeReader(format: .audio, settings: makeSettings("recordingtime-speed-timing-audio"))
+        defer { audio.close() }
+        audio.content = try Fixtures.audioContent(.oneFile)
+        audio.audioSpeed = 1
+
+        let normal = HeadingNavigatorView.RowTiming(of: audio)
+        XCTAssertEqual(HeadingNavigatorView.RowTiming(of: audio), normal, "An unchanged reader changed its timing")
+        audio.audioSpeed = 2
+        let fast = HeadingNavigatorView.RowTiming(of: audio)
+        XCTAssertNotEqual(fast, normal, "A new audio speed left the timing alone")
+        XCTAssertEqual(fast.listeningSpeed, 2)
+        audio.audioSpeed = 1
+        XCTAssertEqual(HeadingNavigatorView.RowTiming(of: audio), normal, "The timing did not return with the speed")
+    }
+
+    /// A text book's timing changes when its words a minute do, and hears
+    /// its lengths at 1 whatever they are (its clock counts the words).
+    func testTheRowTimingFollowsATextBooksWordsAMinute() {
+        let text = Fixtures.makeReader(format: .txt, settings: makeSettings("recordingtime-speed-timing-text"))
+        defer { text.close() }
+        text.content = Fixtures.textContent()
+        text.speechService.wordsPerMinute = 200
+
+        let slow = HeadingNavigatorView.RowTiming(of: text)
+        text.speechService.wordsPerMinute = 500
+        let fast = HeadingNavigatorView.RowTiming(of: text)
+        XCTAssertNotEqual(fast, slow, "New words a minute left the timing alone")
+        XCTAssertEqual(slow.listeningSpeed, 1)
+        XCTAssertEqual(fast.listeningSpeed, 1)
+        XCTAssertEqual(fast.count, .words(perMinute: 500))
+    }
+
+    /// Flipping the setting that names the speed changes the timing, for an
+    /// audiobook and for a text book; a setting that has nothing to do with
+    /// times does not. The settings are the test's own.
+    func testTheRowTimingFollowsTheSettingAndNoOtherSetting() throws {
+        let settings = makeSettings("recordingtime-speed-timing-setting")
+        let audio = Fixtures.makeReader(format: .audio, settings: settings)
+        defer { audio.close() }
+        audio.content = try Fixtures.audioContent(.oneFile)
+        audio.audioSpeed = 2
+        let text = Fixtures.makeReader(format: .txt, settings: settings)
+        defer { text.close() }
+        text.content = Fixtures.textContent()
+        text.speechService.wordsPerMinute = 500
+
+        let audioOff = HeadingNavigatorView.RowTiming(of: audio)
+        let textOff = HeadingNavigatorView.RowTiming(of: text)
+        XCTAssertNil(audioOff.namedSpeed)
+        XCTAssertNil(textOff.namedSpeed)
+
+        settings.includeSpeedWithTimes = true
+        defer { settings.includeSpeedWithTimes = false }
+        XCTAssertEqual(HeadingNavigatorView.RowTiming(of: audio).namedSpeed, .audio(2))
+        XCTAssertNotEqual(HeadingNavigatorView.RowTiming(of: audio), audioOff)
+        XCTAssertEqual(HeadingNavigatorView.RowTiming(of: text).namedSpeed, .words(perMinute: 500))
+        XCTAssertNotEqual(HeadingNavigatorView.RowTiming(of: text), textOff)
+
+        let audioOn = HeadingNavigatorView.RowTiming(of: audio)
+        settings.showSpeedInPlaybackControls.toggle()
+        XCTAssertEqual(HeadingNavigatorView.RowTiming(of: audio), audioOn, "A setting unrelated to times changed the timing")
+    }
+
+    /// The sheet's snapshot of its reader changes when the speed does, so
+    /// the snapshot republishes and the sheet hears it.
+    func testTheSheetsReaderStateChangesWithTheSpeed() throws {
+        let audio = Fixtures.makeReader(format: .audio, settings: makeSettings("recordingtime-speed-state-audio"))
+        defer { audio.close() }
+        audio.content = try Fixtures.audioContent(.oneFile)
+        audio.audioSpeed = 1
+        let atNormal = HeadingNavigatorView.ReaderState(of: audio)
+        XCTAssertEqual(HeadingNavigatorView.ReaderState(of: audio), atNormal, "An unchanged reader changed its state")
+        audio.audioSpeed = 2
+        XCTAssertNotEqual(HeadingNavigatorView.ReaderState(of: audio), atNormal)
+
+        let text = Fixtures.makeReader(format: .txt, settings: makeSettings("recordingtime-speed-state-text"))
+        defer { text.close() }
+        text.content = Fixtures.textContent()
+        text.speechService.wordsPerMinute = 200
+        let slow = HeadingNavigatorView.ReaderState(of: text)
+        text.speechService.wordsPerMinute = 500
+        XCTAssertNotEqual(HeadingNavigatorView.ReaderState(of: text), slow)
+    }
+
     // MARK: - Helpers
 
     /// Settings without services, on preferences of this test's own, so a
