@@ -1,0 +1,68 @@
+# polish2 candidates, second pass, verified against main 0d801ef1, October 12
+
+Main's code is unchanged since eb66b22f (0d801ef1 adds only documents), so this checks the same code as `candidates.md`. Counts: 8 still open with one right answer, 4 still open and needing the user, 27 already fixed (some lines settle several clauses), 7 too large, 4 skipped lines (covered in `candidates.md`, documents, board, or not a defect). A line of `candidates.md` is cited as `c1:<line>`.
+
+## Still open, one right answer
+
+- L3083 [correctness] The audio editor's Apply Filter sheet logs SwiftUI's "Picker: the selection nil is invalid" at its first draw: `presetID` starts nil (AudioEditorFilterSheet.swift:23, init 31-36) and only `.onAppear` (:101-105) picks the first preset. Fix: in `init`, `_presetID = State(initialValue: presets.presets.first?.id)` and drop the `onAppear`. Size: S. Test: a hosted test that the sheet's first selection is the first preset (no nil frame).
+- L3144 [listener] A package move's end or a chapter download's end in the 0.3 s after Where Am I? ends starts audio over the end sound: `resumeAudioAfterPackageMove` (ReaderViewModel+LibraryUpdates.swift:165) and `downloadDidFinish` (ReaderViewModel+CloudDownload.swift:~622) guard only `isWhereAmISpeaking`, but `isWhereAmIResumePending` is still true then. Fix: guard on `isWhereAmISpeaking || isWhereAmIResumePending` (both set `isChapterHeldByWhereAmI`, which the end sound's resume starts). Size: S. Test: finish a download and a move while `isWhereAmIResumePending`; the chapter plays once, after the end sound.
+- L3144 [listener] A second AirPods Play on an audiobook waiting for its chapter's download plays the play sound again and begins a new chapter play: `playOrResume` (ReaderViewModel+Playback.swift:166-170) calls `play()` when the audio is neither playing nor paused. Fix: add `&& !isPlaybackUnderWay` to that branch (a waiting play is under way, as `playUnlessUnderWay` already says). Size: S. Test: two `playOrResume` calls while the chapter downloads make one play sound.
+- L3120 [correctness] `FeedLifecycle.removeDue` (FeedLifecycle.swift:510) removes files through `FeedDownloadManager.runBesideImports` (FeedDownloadManager.swift:767), which is not storage work, so a data-directory move is not held off while a rule's removal runs. Fix: run the closure inside `StorageBoundary.shared.perform(...)` (a new `StorageWork` case with its waiting wording, or `.importing`). Size: M. Test: a held move makes `removeDue` wait.
+- L3123 [tests] The `everyFieldCustomized` fixture (ConfigTestSupport.swift:71-76) writes shortcuts only as lists and "default:" text, never the object form with `"worksIn"`. Fix: give one action that has several scopes a non-default scope in the fixture, and assert it round-trips. Size: S. Test: the config round-trip tests that use the fixture.
+- L3124 [correctness] `TranscriptionPresentation.cleanUp(_:library:window:)` (TranscriptionPresentation.swift:117) does not refuse a feed item, though nothing offers it one. Fix: return at once for `book.isFeedItem`, as the neighbouring transcript commands do for items they cannot take. Size: S. Test: `cleanUp` on a feed item opens no sheet.
+- L3128 [refactor] Six legacy test files keep dead `#else` branches that cannot compile (they only build into TextMouthProductionTests, project.yml:150-172, where `canImport(TextMouth)` is true): BugRegressionTests (8), DOCXEdgeCaseTests (3), IntegrationTests (3), BookmarkToggleTests (2), MenuVisibilityTests (1), TextSubstitutionTests (1), all in TextMouthTests/Sources/Tests/. Fix: keep each `#if` body and delete the `#if canImport`, `#else` and `#endif` lines. Size: M. Test: the target still builds, the same tests run.
+- L3152 [tests] `TranscriptModelTests` (lines 116-128) mutates `TranscriptFixtures.twoFiles` by index (`files[1]`, `sentences[2]`), safe only while the fixture has two files. Fix: `XCTUnwrap` the files and sentences, or assert the fixture's shape first so a change fails by a message. Size: S. Test: the same class.
+
+## Still open, needs the user
+
+- L3123 Space in a sheet is still Play / Pause (`KeyBinding.dialogKeys`, KeyboardShortcut.swift:680-685 holds Return, Enter, Escape, Command-Period), though with Full Keyboard Access Space presses the focused button. Question: should a sheet's buttons take Space? Recommended: yes, add Space to `dialogKeys` while a dialog is key (a text field keeps its own).
+- L3131 Each repeated finish of a feed item restarts its delete-after-played clock: `FeedLifecycle.bookDidFinish` (FeedLifecycle.swift:67-72) overwrites `playedDate` every time. Question: count from the first finish or the last? Recommended: from the first (set it only when nil), so replaying never postpones deletion.
+- L3131 Go to Percent 100 then Play counts a finish (`clampedNavigationPosition`, ReaderViewModel+Navigation.swift:934-944, lands on the last character). Question: is that a finish? Recommended: leave it, since the listener asked for the end.
+- L3125 Delete Episode leaves a `.replaced-<name>` folder a crash set aside (`FeedItemPackage.setAsideURL`, FeedItemPackage.swift:509-517) in the feed's folder until Delete Feed removes it (Unsubscribe no longer does). Question: should Delete Episode remove the set-aside copy with the package? Recommended: yes, it is the same episode's kept place.
+
+## Already fixed
+
+- L3076 Audiobooks have a sleep timer test of their own: IntegrationSleepTimerTests.swift:19-88 plays real silent audiobooks (`makeSilentAudioBook`) and checks the pause, volume restore and chapter end.
+- L3078, L3079, L3080, L3081 Add Feed and Move: Search keeps Return only while focused and Create then stands down (`createTakesReturn: !searchFocused`, AddFeedSheet.swift:340, 388, 475; LibrarySheetViews.swift:486); the Move sheet's own Return button stands down while the fields show (:677); the name field takes focus (:504). 82fc27ba Give Add Feed one default button at a time.
+- L3093, L3094 A key added by hand to config.json no longer stays on two actions: ShortcutEdits.swift:94-174 (edited actions keep a key, the clashing default goes without) and KeyboardShortcutManager.swift:215-235. (The Shift+Skip and "+" clauses are covered, c1:45.)
+- L3097 One undecodable saved shortcut no longer resets every one: `ShortcutEdits.reading(_:)` (ShortcutEdits.swift:537) leaves out only the entry, logged, and KeyboardShortcutManager.swift:160-165 uses it. b1ab36c0 Keep a record of only the shortcuts the user edited.
+- L3098, L3099 The Shortcuts rows speak and show words, not symbols: `KeyBinding.accessibleDisplayString` (KeyboardShortcut.swift:750-760, "Shift + Command + B") is the recorder button's accessibility label (KeyboardShortcutsSettingsView.swift:~720) and the Remove button's.
+- L3100 #1410 A download's many reports no longer redraw the Library rows: 3fc6f195 Keep the feed downloads' progress in an object only its section observes (`receive(_:)` publishes nothing).
+- L3103 A refused chapter render is retried strictly guarded: AudioEngineService.swift:904-965. ba70b02f Render a refused chapter again with every bracket silent.
+- L3108, L3109 #1498 The reader's metadata saves no longer publish Now Playing for a reader not playing: ReaderViewModel+Bookmarks.swift:339-350 (`guard nowPlayingService.holdsMediaControls`).
+- L3111 `handleKeyEvent` no longer walks a dictionary: ShortcutPressDispatcher.swift:404 looks the stroke up (`[KeyBinding: Actions]`); a held key repeats its single action (:230-238).
+- L3115, L3118, L3119 Unsubscribe (FR11 branch D) keeps the feed and its downloads and deletes the kept packages it says it deletes: FeedCommands.swift:560-600 (`unsubscribeMessage`, `unsubscribed`), `deleteKeptPackages` (FeedLifecycle.swift:309); Move to Library… relies on the join (LibraryViewModel+MoveToLibrary.swift:110).
+- L3117 W within 0.3 s of an announcement's end: ReaderViewModel+WhereAmI.swift:67-68 counts a pending resume as playing.
+- L3118 A test through the app's own deletion path: FeedEndToEndTests.swift:27 (`testAnEpisodeFromItsFeedToTheDeletionOfItsDownload`).
+- L3125 `updateLocalVoiceAndSpeed` keeps the speed in its format's range: LibraryViewModel+BookOperations.swift:848-860 (`SettingsPolicy.validatedLocalSpeed`).
+- L3126 `FeedItemPolicyControls`' note and hint now tell the truth: FeedItemPolicyControls.swift:138-143 (a played item still downloaded stays listed) and :186-189 (the list follows at once).
+- L3129 The Now Playing session counts a play waiting for its chapter: ReaderViewModel.swift:893-899 and `whereAmIWillPlayBook` (ReaderViewModel+WhereAmI.swift:320-323).
+- L3129 A sleep timer started with "start playback" during Where Am I? no longer goes through `togglePlayPause()`: `playUnlessUnderWay` (ReaderViewModel+Playback.swift:180-194).
+- L3129 The feed end-to-end and lifecycle tests no longer race the settling state: FeedEndToEndTests.swift:70-76 and FeedLifecycleTests.swift:200-206 wait for the sweep (`isSweeping`).
+- L3129, L3134 "The legacy `TextMouthTests` target is not in the scheme": no such target exists; project.yml:150-172 compiles its scenario files into TextMouthProductionTests, so they run.
+- L3130 `finishedBookKind(of:)` counts a moved episode: FeedLifecycle.swift:80-107 (`cameFromAFeed` reads the package's `feedLink`).
+- L3130 `feedItemsLeft(titles:)` mentions Move to Library…: LibraryViewModel+BookOperations.swift:1153-1166.
+- L3130 The two test docs describe the new Unsubscribe: FeedRecordTests.swift:337 and LibraryInfoWordingTests.swift:198.
+- L3131 Go to Time's field has a label and a hint of its own: ReaderJumpPanels.swift:~228-231 (REV13).
+- L3134 A Play during Where Am I? for a book it paused is held: `holdPlayForWhereAmI` (ReaderViewModel+WhereAmI.swift:343-351, `isPausedByTheAnnouncement`).
+- L3135, L3142 Hidden `.removing-` holders are swept at launch, and a held-aside refused deletion is put back, not deleted: FeedCenter.swift:476-520 (`sweepRemovalHolders`, `packageWaitingForItsFiles`), FeedItemPackage.swift:262-330.
+- L3138 REV13 finding 8's alias helper: 50c29bf5 Drop the feedEditableFields alias for editableTextFields.
+- L3139, L3140 `FeedKeptProgress` uses `BookRow.timeRemaining(for:wpm:)`: FeedLibraryPresentation.swift:300.
+- L3142 `LibraryFolderPickerTests`' stand-in owner says no owner keeps Escape now: LibraryFolderPickerTests.swift:163-170.
+
+## Too large for one task
+
+- L3135 `finishedBookKind(of:)` reads each audiobook's record once on the main actor (`cameFromAFeed`, FeedLifecycle.swift:97-100): a small local read, cached after; moving it needs the Books Finished call made async.
+- L3131 The player's asset lacks precise timing (`AudioPlaybackService.makeItem(playing:)`, :794-799, plain `AVURLAsset(url:)`), so `seekPlayer` may clamp short for some MP3s: precise timing slows opening long VBR files; unsettled without the audiobook-open benchmark and a sample file.
+- L3131 m4b chapter starts drift by chapter 30 (`chapterStartTime`, ReaderViewModel+Playback.swift:1824-1840, a sum of placeholder character lengths over a fixed rate): the real start times must be stored by the parser; unsettled, needs a sample m4b.
+- L3137 Each reader toolbar item may read as a button holding another with a different name (`toolbarButton`, ReaderView.swift:164-175: title "Headings", spoken label "Show heading navigator"), and the voice sheets' section headings "Audio Speed", "Speed", "Pitch" (ReaderView.swift:863 and after) may be read before a slider of the same name: both need a live VoiceOver check before any fix.
+- L3142 In a cloud library one Mac's launch sweep could take a `.removing-` folder another Mac is filling (`FeedCenter.sweepRemovalHolders`): needs an age or lease rule; two-Mac design.
+- L3148 Delete Episode during a restore can leave two Trash items (`FeedLifecycle.deleteItem`, :279-290), and a refused, stuck download's row says Downloaded until the next launch puts its files back (`FeedItemPackage.removeFileAndText`): rare double failures; unsettled without a repro.
+- L3121 A sleep fade on direct speech goes on from the last word the voice reported, so it may repeat a word: a speech-timing limit, unsettled (no code comment found); needs listening. L3141 `AudioBookParser.parseSegmentedAudio` (clause is a fragment; its sentence is not in the list): unsettled.
+
+## Skipped without checking
+
+- Covered by `candidates.md`: L3073, L3074 (the m4b chapter marker, c1:77); L3076 Return-key helpers (c1:39); L3085 `drain` (c1:78); L3093 key from another action, L3094 Shift+Skip, L3096 Speed's "+" (c1:45); L3100 feed deletions log (c1:46); L3104 both import-progress gaps (c1:89); L3109 `makeSilentAudioBook` and L3116 `waitForResult` backtraces (c1:55); L3116 `clearNowPlaying(ownerID:)` (c1:52); L3114 Shift fallback reach (c1:98); L3134 Play/Pause during Where Am I? (c1:70); L3138 `ShortcutConfigFileTests` wait (c1:72).
+- Documents: L3107 README and ARCHITECTURE on how keys are reassigned (#1422); L3132 agent notes naming `FeedDownloadTimeEstimate`; L3145 the next documentation pass.
+- Board: L3108 board finding #624 "can be closed".
+- Not a defect: L3087 and L3088 (two VoiceOver stops by design, fine and coarse control); L3117 `OffscreenTestWindow` cannot present sheets (a test-harness limit); L3130 a crash between the index write and a kept package's removal leaves the place kept (nothing lost); L3140 Skip Backward after Release Media Controls only moves the cursor (B02's rule, left as it is); the load-sensitive tests L3123 `ReadingCheckpointTests`, L3127 `testADownloadThatStopsPartwayGoesOnFromWhereItStopped`, L3132 `testCancelDownloadStopsIt`.
