@@ -34,7 +34,11 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     // Settings order, which the record of edits, the press index, and the
     // settling of a key two edited actions share all follow (#1528).
     case navigateUpLevel = "Up One Level"
-    case addBookmark = "Add Bookmark"
+    /// Adds a bookmark at the reading position, or removes the one there:
+    /// the Bookmarks menu's item of the same name. It was named Add Bookmark
+    /// in Settings and config.json until October 12, 2026, a name still read
+    /// (`formerNames`, #1937).
+    case addBookmark = "Toggle Bookmark"
     case nextBookmark = "Next Bookmark"
     case previousBookmark = "Previous Bookmark"
     case showBookmarkList = "Show Bookmarks"
@@ -1401,11 +1405,14 @@ extension ShortcutAction {
     /// edits (`named(_:)`, `exactlyNamed(_:)`), so an edit made under a
     /// former name is never lost; TextMouth writes only the names in force.
     /// The Record window's buttons were named under "Recording Window" until
-    /// their group took the window's own name, New Recording (REV11).
+    /// their group took the window's own name, New Recording (REV11). The
+    /// bookmark command was named Add Bookmark until the Bookmarks menu's
+    /// name for it, Toggle Bookmark, became its one name (#1937).
     static let formerNames: [String: ShortcutAction] = [
         "Recording Window: Record": .recordingRecord,
         "Recording Window: Pause or Resume": .recordingPauseOrResume,
         "Recording Window: Stop": .recordingStop,
+        "Add Bookmark": .addBookmark,
     ]
 
     /// `name` as `named(_:)` compares names: in lower case, without an

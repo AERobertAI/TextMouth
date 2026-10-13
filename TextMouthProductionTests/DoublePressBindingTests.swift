@@ -125,8 +125,11 @@ final class DoublePressBindingTests: XCTestCase {
             XCTAssertEqual(manager.bindingsFor(action), defaultsInForce[action], action.rawValue)
         }
         let written = SettingsPolicy.keyboardShortcuts.fileEntries(manager.edits.listings(defaults: ShortcutAction.defaultBindings))
+        // The file may name an action by a former name (the excerpt's Add
+        // Bookmark, #1937); TextMouth writes it back under its current name.
         for (name, entry) in entries {
-            XCTAssertEqual(written[name], entry, name)
+            let currentName = ShortcutAction.exactlyNamed(name)?.rawValue ?? name
+            XCTAssertEqual(written[currentName], entry, name)
         }
     }
 
