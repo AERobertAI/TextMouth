@@ -122,6 +122,83 @@ final class LegacyBookMigrationTests: XCTestCase {
         XCTAssertTrue(migration.warnings.first?.contains(original.path) == true)
     }
 
+    /// A package an interrupted run left holding the text an older
+    /// extraction wrote is rebuilt by the migration's last step, and the
+    /// places the book saved in that older text move onto the same words in
+    /// the new one (T06's branch D): the book the migration returns and its
+    /// record hold them, and no copy of the old text is left.
+    func testTheTextCacheRebuildMovesThePlacesOfAReusedPackage() throws {
+        let sandbox = makeSandbox()
+        let source = "# The Millrace\n\nWater came down the leat at dawn.\n\n"
+            + "# The Granary\n\nSacks of barley stood against the north wall, counted twice each evening.\n\n"
+            + "## Notes\n\nThe miller kept a ledger of every sack.\n"
+        let original = try sandbox.makeFile("book.md", contents: source)
+        var book = try sandbox.legacyBook("Moved In Migration", original: original, format: .markdown)
+        let package = try sandbox.stageUsualPackage(for: book, holding: source)
+
+        // The package's content.md, as an older extraction wrote it: this
+        // build's text with one more sentence ahead of every place below.
+        var staged = book
+        staged.filePath = package.appendingPathComponent("book.md").path
+        staged.tmbDirectoryName = package.lastPathComponent
+        _ = try XCTUnwrap(MarkdownCacheService.generateCacheContent(for: staged))
+        let cacheURL = MarkdownCacheService.cacheURL(for: staged)
+        let newMarkdown = try String(contentsOf: cacheURL, encoding: .utf8)
+        let newText = try MarkdownCacheService.loadFromCache(for: staged)
+        let marker = "Sacks of barley"
+        XCTAssertEqual(newMarkdown.components(separatedBy: marker).count, 2, "the marker should stand once")
+        try Data(newMarkdown.replacingOccurrences(of: marker, with: "An older sentence about the weir.\n\n" + marker).utf8)
+            .write(to: cacheURL, options: .atomic)
+        let olderText = try MarkdownCacheService.loadFromCache(for: staged)
+
+        // The places the book saved in the older text, with their words.
+        let measure = TextAnchor.measure(ofTextCachedBy: "3.0.3")
+        func place(of phrase: String, in text: DocumentContent) throws -> TextPlace {
+            let chapters = text.chapters.map(\.text)
+            let chapter = try XCTUnwrap(chapters.firstIndex { $0.contains(phrase) }, "no chapter holds \"\(phrase)\"")
+            return try Phrase.place(of: phrase, inChapter: chapter, of: chapters)
+        }
+        let olderPosition = try place(of: marker, in: olderText)
+        let olderBookmark = try place(of: "counted twice", in: olderText)
+        book.readingPosition = ReadingPosition(
+            chapterIndex: olderPosition.chapter,
+            characterOffset: olderPosition.offset,
+            anchor: olderText.anchor(at: olderPosition, measuredIn: measure)
+        )
+        book.bookmarks = [Bookmark(
+            number: 1,
+            chapterIndex: olderBookmark.chapter,
+            characterOffset: olderBookmark.offset,
+            label: "Counted",
+            anchor: olderText.anchor(at: olderBookmark, measuredIn: measure)
+        )]
+        book.cacheFormatVersion = "3.0.3"
+        let newPosition = try place(of: marker, in: newText)
+        let newBookmark = try place(of: "counted twice", in: newText)
+        XCTAssertNotEqual(olderPosition, newPosition, "the fixture's places should have to move")
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        XCTAssertEqual(migration.warnings, [])
+        let record = try BookInfo.load(from: package)
+        let recorded = Book(
+            record: record,
+            filePath: migration.book.filePath,
+            folderPath: migration.book.folderPath,
+            tmbDirectoryName: migration.book.tmbDirectoryName
+        )
+        for (name, held) in [("returned book", migration.book), ("record", recorded)] {
+            XCTAssertEqual(held.readingPosition?.chapterIndex, newPosition.chapter, "\(name): position's chapter")
+            XCTAssertEqual(held.readingPosition?.characterOffset, newPosition.offset, "\(name): position's offset")
+            XCTAssertEqual(held.bookmarks.count, 1, "\(name): bookmarks")
+            XCTAssertEqual(held.bookmarks.first?.chapterIndex, newBookmark.chapter, "\(name): bookmark's chapter")
+            XCTAssertEqual(held.bookmarks.first?.characterOffset, newBookmark.offset, "\(name): bookmark's offset")
+        }
+        // The copy of the old text goes once the record holds the places.
+        let copies = (try? FileManager.default.contentsOfDirectory(atPath: MachineLocalPaths.placeSnapshots.path)) ?? []
+        XCTAssertFalse(copies.contains { $0.hasPrefix("\(book.id.uuidString) ") }, "a copy of the old text was left")
+    }
+
     /// A partial copy that an interrupted run left in the book's own package
     /// is detected rather than trusted: the book moves into a new package
     /// with a complete copy, the partial file is left as it was, and the
