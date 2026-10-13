@@ -76,27 +76,6 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
 
     // MARK: Committing the Moved Places
 
-    /// The book as its package record holds it, read from disk after every
-    /// queued library write has landed.
-    private func recordedBook(like book: Book) throws -> Book {
-        LibraryPersistenceService.flushPendingSave()
-        let record = try BookInfo.load(from: book.tmbDirectory)
-        return Book(
-            record: record,
-            filePath: book.filePath,
-            folderPath: book.folderPath,
-            tmbDirectoryName: book.tmbDirectoryName
-        )
-    }
-
-    /// Runs the launch's cache batch over `model` until its completion.
-    @MainActor
-    private func runCacheBatch(on model: LibraryViewModel, access: MaintenanceFileAccess = .live) async {
-        let finished = expectation(description: "The cache batch finished")
-        model.extractMissingContentCaches(access: access) { finished.fulfill() }
-        await fulfillment(of: [finished], timeout: 20)
-    }
-
     /// The cache batch rebuilds the older text and commits the moved places
     /// with the analysis: the row and the record hold them, the copy is
     /// gone, and the debug log says once that the places were moved.
@@ -216,24 +195,6 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
     }
 
     // MARK: A Reader's Own Rebuild
-
-    /// Opens a reader on `book` in `model`, with a render queue that renders
-    /// nothing and no notifications or requests shared with other tests, and
-    /// closes it when the test ends.
-    @MainActor
-    private func openReader(on book: Book, in model: LibraryViewModel) -> ReaderViewModel {
-        let reader = ReaderViewModel(
-            book: book,
-            libraryViewModel: model,
-            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
-            substitutionService: TextSubstitutionService(rules: []),
-            autoplayRequests: ReaderAutoplayRequests(),
-            notificationCenter: NotificationCenter(),
-            renderScheduler: SilentRenderQueue()
-        )
-        addTeardownBlock { @MainActor in reader.close() }
-        return reader
-    }
 
     /// A reader that opens a book whose text is outdated rebuilds it and
     /// takes the moved places: its cursor, bookmarks, and skipped headings
