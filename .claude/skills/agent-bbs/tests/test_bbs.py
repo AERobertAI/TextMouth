@@ -44,6 +44,12 @@ NOON = dt.datetime(2026, 10, 2, 12, 0, 0, tzinfo=dt.timezone.utc)
 #: Stored times look like this: UTC, to the second.
 UTC_TEXT = r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$"
 
+#: The last commit whose bbs.py predates teams. Its script stands in for the
+#: older copies that agents in older worktrees still run beside the new one.
+#: It is pinned to a commit rather than to main, because once teams merge,
+#: main's script is the new one.
+PRE_TEAMS_COMMIT = "780f325dae8e0d2dc8b55f7147dddece9332595b"
+
 
 def run_in_worker(label: int, board_dir: str, workdir: str, commands: List[List[str]], start, results) -> None:
     """Body of a worker process in the concurrency tests.
@@ -69,10 +75,16 @@ def environment_without_board_override() -> dict:
     return {key: value for key, value in os.environ.items() if key != bbs.BOARD_DIR_ENV}
 
 
-def git(*args: str, cwd: Path) -> None:
-    """Run git quietly, ignoring the user's own git configuration."""
+def git_environment() -> dict:
+    """Return an environment for running git: no GIT_* variables, no user configuration."""
     env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
     env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+    return env
+
+
+def git(*args: str, cwd: Path) -> None:
+    """Run git quietly, ignoring the user's own git configuration."""
+    env = git_environment()
     identity = ["-c", "user.name=Board Test", "-c", "user.email=board-test@example.invalid"]
     subprocess.run(["git", *identity, *args], cwd=cwd, env=env, check=True, capture_output=True, text=True)
 
@@ -1103,6 +1115,145 @@ class RepositoryDiscoveryTests(TemporaryDirectoryTestCase):
         chosen = self.make_temp_dir() / "elsewhere"
         with mock.patch.dict(os.environ, {bbs.BOARD_DIR_ENV: str(chosen)}):
             self.assertEqual(bbs.board_directory(), chosen)
+
+
+class SchemaTests(BoardTestCase):
+    """The tables added after layout 1, and the pre-teams script working beside the new one."""
+
+    #: Every table and index that SCHEMA_ADDITIONS creates.
+    ADDED = {"teams", "team_members", "team_members_by_agent", "tasks", "tasks_by_team", "task_files"}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Extract the pre-teams script from the repository's history into a temporary folder."""
+        super().setUpClass()
+        shown = subprocess.run(
+            ["git", "show", f"{PRE_TEAMS_COMMIT}:.claude/skills/agent-bbs/scripts/bbs.py"],
+            cwd=SKILL_DIR,
+            env=git_environment(),
+            capture_output=True,
+            text=True,
+        )
+        if shown.returncode != 0:
+            raise unittest.SkipTest("the pre-teams bbs.py is not in this repository's history")
+        folder = Path(tempfile.mkdtemp(prefix="bbs-old-script-")).resolve()
+        cls.addClassCleanup(shutil.rmtree, folder, ignore_errors=True)
+        cls.old_script = folder / "bbs.py"
+        cls.old_script.write_text(shown.stdout)
+
+    def run_old(self, *args: str) -> subprocess.CompletedProcess:
+        """Run the pre-teams script on this test's board, never on the live one."""
+        env = environment_without_board_override()
+        env[bbs.BOARD_DIR_ENV] = str(self.board_dir)
+        return subprocess.run(
+            [sys.executable, str(self.old_script), *args],
+            cwd=self.worktree,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+    def old_ok(self, *args: str) -> str:
+        """Run a pre-teams command that must succeed silently; return its standard output."""
+        done = self.run_old(*args)
+        self.assertEqual(done.returncode, 0, f"old {args} failed: {done.stderr}")
+        self.assertEqual(done.stderr, "", f"old {args} wrote to standard error")
+        return done.stdout
+
+    def board_objects(self) -> set:
+        """Return the names of every table and index in the board file."""
+        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
+            return {row[0] for row in conn.execute("SELECT name FROM sqlite_master")}
+
+    def user_version(self) -> int:
+        """Return the layout version stored in the board file."""
+        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
+            return conn.execute("PRAGMA user_version").fetchone()[0]
+
+    def test_a_new_board_has_every_added_table_and_index_at_version_one(self) -> None:
+        self.ok("agents")
+        self.assertLessEqual(self.ADDED, self.board_objects())
+        self.assertEqual(self.user_version(), 1)
+
+    def test_a_board_made_by_the_old_script_gains_the_tables_when_the_new_script_opens_it(self) -> None:
+        self.old_ok("register", "alpha", "--role", "first", "--branch", "feature/a", "--files", "src/a.py")
+        self.old_ok("register", "beta", "--role", "second", "--branch", "feature/b")
+        self.old_ok("claim", "beta", "src/b.py")
+        self.old_ok("post", "alpha", "--topic", "Hello everyone", "--body", "Anyone there?")
+        self.old_ok("post", "alpha", "--to", "beta", "--topic", "About b", "--file", "src/b.py")
+        self.old_ok("post", "beta", "--reply-to", "2", "--body", "Got it")
+        self.assertTrue(self.ADDED.isdisjoint(self.board_objects()))
+
+        # The new script reads the old data exactly as the old script does.
+        self.assertEqual(json.loads(self.old_ok("read", "--json")), self.ok_json("read"))
+        self.assertEqual(json.loads(self.old_ok("agents", "--json")), self.ok_json("agents"))
+        self.assertLessEqual(self.ADDED, self.board_objects())
+        self.assertEqual(self.user_version(), 1)
+
+    def test_the_old_script_keeps_working_on_a_board_the_new_script_made(self) -> None:
+        self.register("alpha", "src/a.py")
+        self.old_ok("register", "beta", "--role", "second", "--branch", "feature/b")
+        self.old_ok("heartbeat", "beta")
+        self.old_ok("activity", "beta", "testing", "--note", "the board suite")
+        self.old_ok("claim", "beta", "src/b.py")
+        self.old_ok("claims")
+        self.old_ok("post", "beta", "--topic", "About a", "--file", "src/a.py")
+        self.old_ok("post", "beta", "--reply-to", "1", "--body", "A reply")
+        self.old_ok("read")
+        self.old_ok("thread", "1")
+        self.old_ok("inbox", "beta")
+        self.old_ok("agents")
+        self.old_ok("release", "beta", "--all")
+
+        # watch --once exits with 2, not 0, when it prints something.
+        self.old_ok("post", "alpha", "--to", "beta", "--topic", "Look at this")
+        watched = self.run_old("watch", "beta", "--once")
+        self.assertEqual(watched.returncode, 2, watched.stderr)
+        self.assertIn("Look at this", watched.stdout)
+
+        self.old_ok("purge", "--older-than", "1")
+        self.old_ok("reset", "--yes")
+        self.ok("agents")
+        self.assertLessEqual(self.ADDED, self.board_objects())
+        self.assertEqual(self.user_version(), 1)
+
+    def test_opening_a_current_board_takes_no_write_lock(self) -> None:
+        self.register("alpha")
+        holder = sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME, isolation_level=None)
+        try:
+            holder.execute("BEGIN IMMEDIATE")
+            # If opening the board wrote anything, these would wait for the
+            # lock above, run out of the short timeout, and fail.
+            with mock.patch.object(bbs, "BUSY_TIMEOUT_SECONDS", 0.2):
+                self.ok("agents")
+                self.ok("read")
+        finally:
+            with contextlib.suppress(sqlite3.Error):
+                holder.execute("ROLLBACK")
+            holder.close()
+
+    def test_applying_the_additions_again_changes_nothing(self) -> None:
+        with contextlib.closing(bbs.open_board()):
+            pass
+        before = self.board_objects()
+        with contextlib.closing(bbs.open_board()) as conn:
+            bbs._create_schema(conn)
+        self.assertEqual(self.board_objects(), before)
+        self.assertLessEqual(self.ADDED, before)
+        self.assertEqual(self.user_version(), 1)
+
+    def test_a_board_from_a_newer_script_is_refused(self) -> None:
+        self.register("alpha")
+        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
+            conn.execute("PRAGMA user_version = 2")
+        self.assertIn("update the agent-bbs skill", self.fails("agents"))
+
+    def test_the_name_each_statement_creates_is_found(self) -> None:
+        names = {bbs._created_name(statement) for statement in bbs.SCHEMA_ADDITIONS}
+        self.assertEqual(names, self.ADDED)
+        with self.assertRaises(ValueError):
+            bbs._created_name("SELECT 1")
 
 
 if __name__ == "__main__":
