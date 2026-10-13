@@ -785,6 +785,49 @@ class WatchTests(BoardTestCase):
         self.assertIn("unknown agent", self.fails("watch", "nobody", "--once"))
 
 
+class MessageHelperTests(BoardTestCase):
+    """The small helpers that the team commands share: names, clipping, and storing a message."""
+
+    def test_clip_line_leaves_a_line_of_the_limit_alone(self) -> None:
+        line = "x" * bbs.MAX_LINE_LENGTH
+        self.assertEqual(bbs.clip_line(line), line)
+
+    def test_clip_line_cuts_a_longer_line_to_the_limit_and_ends_it_with_an_ellipsis(self) -> None:
+        clipped = bbs.clip_line("x" * (bbs.MAX_LINE_LENGTH + 1))
+        self.assertEqual(len(clipped), bbs.MAX_LINE_LENGTH)
+        self.assertEqual(clipped, "x" * (bbs.MAX_LINE_LENGTH - 1) + "\u2026")
+
+    def test_agent_name_errors_keep_their_wording(self) -> None:
+        with self.assertRaises(bbs.UserError) as caught:
+            bbs.normalize_name("ALL")
+        self.assertEqual(str(caught.exception), "'all' addresses every agent and cannot be an agent name")
+        with self.assertRaises(bbs.UserError) as caught:
+            bbs.normalize_name("two words")
+        self.assertTrue(str(caught.exception).startswith("invalid agent name 'two words': use 1 to 40"))
+
+    def test_team_name_errors_say_team(self) -> None:
+        with self.assertRaises(bbs.UserError) as caught:
+            bbs.normalize_name("ALL", "team")
+        self.assertEqual(str(caught.exception), "'all' addresses every agent and cannot be a team name")
+        with self.assertRaises(bbs.UserError) as caught:
+            bbs.normalize_name("x" * 41, "team")
+        self.assertTrue(str(caught.exception).startswith("invalid team name 'xxx"))
+        self.assertEqual(bbs.normalize_name("  Board ", "team"), "board")
+
+    def test_insert_message_stores_the_message_its_files_and_its_reply_link(self) -> None:
+        self.register("alpha")
+        with contextlib.closing(bbs.open_board()) as conn, bbs.write_transaction(conn):
+            first = bbs.insert_message(conn, "alpha", "all", "notice", "First")
+            second = bbs.insert_message(
+                conn, "alpha", "all", "finding", "Second", "Body text", reply_to=first, files=["a.py", "b.py"]
+            )
+            row = bbs.require_message(conn, second)
+            paths = [r["path"] for r in conn.execute("SELECT path FROM message_files WHERE message_id = ?", (second,))]
+        self.assertEqual((first, second), (1, 2))
+        self.assertEqual((row["tag"], row["body"], row["reply_to"]), ("finding", "Body text", first))
+        self.assertEqual(sorted(paths), ["a.py", "b.py"])
+
+
 class HousekeepingTests(BoardTestCase):
     """purge and reset."""
 

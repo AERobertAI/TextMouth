@@ -68,6 +68,9 @@ BUSY_TIMEOUT_SECONDS = 30.0
 #: Recipient name that addresses every agent; no agent may register it.
 EVERYONE = "all"
 
+#: Prefix that turns a team's name into the address of its channel, as in "team:board".
+TEAM_PREFIX = "team:"
+
 #: Agent names: lower-case letters, digits, '.', '_' and '-', at most 40.
 NAME_RULE = re.compile(r"[a-z0-9][a-z0-9._-]{0,39}")
 
@@ -225,18 +228,21 @@ def parse_since(text: str) -> Since:
 # ---------------------------------------------------------------------------
 
 
-def normalize_name(raw: str) -> str:
-    """Return the canonical form of an agent name, or raise UserError.
+def normalize_name(raw: str, kind: str = "agent") -> str:
+    """Return the canonical form of an agent or team name, or raise UserError.
 
-    Names are case-insensitive: they are stored and shown in lower case, so
-    "Orchestrator" and "orchestrator" are the same agent.
+    ``kind`` is "agent" or "team" and only shapes the error messages; both
+    follow the same rule. Names are case-insensitive: they are stored and
+    shown in lower case, so "Orchestrator" and "orchestrator" are the same
+    agent.
     """
+    article = "an" if kind == "agent" else "a"
     name = raw.strip().lower()
     if name == EVERYONE:
-        raise UserError(f"'{EVERYONE}' addresses every agent and cannot be an agent name")
+        raise UserError(f"'{EVERYONE}' addresses every agent and cannot be {article} {kind} name")
     if not NAME_RULE.fullmatch(name):
         raise UserError(
-            f"invalid agent name {raw!r}: use 1 to 40 letters, digits, '.', '_' "
+            f"invalid {kind} name {raw!r}: use 1 to 40 letters, digits, '.', '_' "
             "or '-', starting with a letter or digit"
         )
     return name
@@ -250,6 +256,18 @@ def one_line(value: str, field: str, *, allow_empty: bool = False) -> str:
     if len(text) > MAX_LINE_LENGTH:
         raise UserError(f"{field} is {len(text)} characters long; the limit is {MAX_LINE_LENGTH}")
     return text
+
+
+def clip_line(text: str) -> str:
+    """Return ``text`` cut to MAX_LINE_LENGTH characters, ending in "…" when cut.
+
+    For topics that the board writes itself, which can outgrow the limit when
+    they quote a title or list names. A user's own fields go through
+    ``one_line`` instead, which refuses a line that is too long.
+    """
+    if len(text) <= MAX_LINE_LENGTH:
+        return text
+    return text[: MAX_LINE_LENGTH - 1] + "…"
 
 
 # ---------------------------------------------------------------------------
@@ -893,9 +911,13 @@ def require_agent(conn: sqlite3.Connection, raw_name: str, *, touch: bool = True
     return name
 
 
-def _did_you_mean(conn: sqlite3.Connection, name: str) -> str:
-    """Suggest the registered agent name closest to a mistyped one, if any."""
-    names = [row["name"] for row in conn.execute("SELECT name FROM agents")]
+def _did_you_mean(conn: sqlite3.Connection, name: str, table: str = "agents") -> str:
+    """Suggest the registered name closest to a mistyped one, if any.
+
+    ``table`` is "agents" or "teams". It is always a constant from the code,
+    never the user's text, because it is placed in the query as it is.
+    """
+    names = [row["name"] for row in conn.execute(f"SELECT name FROM {table}")]
     close = difflib.get_close_matches(name, names, n=1)
     return f" (did you mean '{close[0]}'?)" if close else ""
 
@@ -1329,6 +1351,34 @@ def reply_topic(topic: str) -> str:
     return topic[:MAX_LINE_LENGTH]
 
 
+def insert_message(
+    conn: sqlite3.Connection,
+    sender: str,
+    recipient: str,
+    tag: str,
+    topic: str,
+    body: str = "",
+    *,
+    reply_to: Optional[int] = None,
+    files: Iterable[str] = (),
+) -> int:
+    """Store one message with the files it is tied to, and return its id.
+
+    Runs inside the caller's write transaction. Everything is already
+    validated; the caller owns the rules, this only writes the rows.
+    """
+    cursor = conn.execute(
+        "INSERT INTO messages (posted_at, sender, recipient, tag, topic, body, reply_to)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (to_utc_text(utc_now()), sender, recipient, tag, topic, body, reply_to),
+    )
+    conn.executemany(
+        "INSERT INTO message_files (message_id, path) VALUES (?, ?)",
+        [(cursor.lastrowid, path) for path in files],
+    )
+    return cursor.lastrowid
+
+
 def cmd_post(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     """Post a message to one agent or to all, optionally tied to files."""
     topic = None if args.topic is None else one_line(args.topic, "topic")
@@ -1342,16 +1392,10 @@ def cmd_post(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
             if parent is None:
                 raise UserError("post needs --topic (only a reply may leave it out)")
             topic = reply_topic(parent["topic"])
-        cursor = conn.execute(
-            "INSERT INTO messages (posted_at, sender, recipient, tag, topic, body, reply_to)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (to_utc_text(utc_now()), sender, recipient, args.tag, topic, body, args.reply_to),
+        message_id = insert_message(
+            conn, sender, recipient, args.tag, topic, body, reply_to=args.reply_to, files=files
         )
-        conn.executemany(
-            "INSERT INTO message_files (message_id, path) VALUES (?, ?)",
-            [(cursor.lastrowid, path) for path in files],
-        )
-        message = require_message(conn, cursor.lastrowid)
+        message = require_message(conn, message_id)
         holders = [
             {"agent": claim["agent"], "pattern": claim["pattern"]}
             for claim in load_claims(conn)
