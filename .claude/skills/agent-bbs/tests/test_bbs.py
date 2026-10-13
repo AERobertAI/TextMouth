@@ -705,7 +705,7 @@ class ChannelTests(BoardTestCase):
                 self.assertEqual([m["id"] for m in self.ok_json("read", "--team", spelling)], expected)
         self.assertIn("did you mean 'board'", self.fails("read", "--team", "bord"))
         self.assertIn("there is no team 'nope'", self.fails("read", "--team", "nope"))
-        # Filters combine: the two team lines are notices, so a tag filter drops none of them.
+        # Filters combine: --tag finding keeps the channel's finding and drops its two notices.
         self.post("alpha", "--to", "team:board", "--tag", "finding")
         self.assertEqual([m["tag"] for m in self.ok_json("read", "--team", "board", "--tag", "finding")], ["finding"])
 
@@ -1359,7 +1359,6 @@ class HousekeepingTests(BoardTestCase):
         self.assertEqual((self.ok_json("agents"), self.ok_json("read")), ([], []))
         self.register("alpha")
         self.assertEqual(self.ok_json("post", "alpha", "--topic", "again")["id"], 2, "ids are never reused")
-
 
     def test_reset_clears_teams_members_tasks_and_task_files(self) -> None:
         self.make_team("board", "alpha")
@@ -2040,9 +2039,7 @@ class TaskTests(BoardTestCase):
 
     def test_tasks_refuses_an_unknown_team_or_state(self) -> None:
         self.assertIn("did you mean 'polish'", self.fails("tasks", "--team", "polsh"))
-        status, _, err = self.run_bbs("tasks", "--state", "nonsense")
-        self.assertNotEqual(status, 0)
-        self.assertIn("nonsense", err)
+        self.assertIn("invalid choice: 'nonsense'", self.fails("tasks", "--state", "nonsense"))
 
     def test_json_is_a_list_of_task_dicts_even_when_empty(self) -> None:
         self.assertEqual(self.ok_json("tasks"), [])
