@@ -2236,3 +2236,47 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
   - Small style slips.
   - Keeping the live-board rule.
 - **Cost:** the lead's growing context, about 420,000 tokens at the end, cost more than all eight workers together. A fresh reviewer with a small context for each diff may be cheaper.
+
+## From the polish team (team/polish), Oct 12
+
+**Decisions (the lead's)**
+- **#2094:** the alert alone, nothing announced, following REV14's feed finding 6.
+- **The resets' wording** follows the filter presets': "The keyboard shortcuts are reset to the defaults." and "The sound effects are reset to the defaults."
+- **A new folder's wording:** "Folder Q3 created. Destination folder: Reports/Q3." in the picker, and "Folder Q3 created in Reports." (or "in Library Root.") from the sheet.
+- **The Continue button** shows and says no time for a finished book, and adds no "Finished" word (question 1 of `humanQuestions/2026-10-12.md`).
+- **`PreferenceStoreTests`** keeps its literal default volume, 0.5, by that file's convention.
+
+**Unverified**
+- Nothing was heard live with VoiceOver; all wording is pinned by tests.
+- The New Folder sheet's announcement is covered only by its sentence test, since the Library window is not hosted.
+
+**Wording**
+- **README.md:**
+  - When Remove Download keeps a download, an alert says why; VoiceOver reads it, and nothing repeats it.
+  - Reset to Defaults in the Shortcuts and Sound Effects tabs says when it is done.
+  - Making a folder with Create is announced.
+  - The Continue button gives no time left for a finished book.
+  - The Headings sheet follows a speed change, or a change of the setting that names the speed, while it is open.
+  - Reset to Global Settings says "Using global voice, speed, and pitch settings".
+- **ARCHITECTURE.md:**
+  - Remove Download follows REV14's alert-only rule.
+  - The Headings sheet's `RowTiming` is in its `ReaderState`, with its own listener on the settings model.
+  - `resetEveryShortcut(_:announce:)`, `resetEverySound(_:announce:)`, and `SoundEffectsSettingsWording` are new.
+  - `Book.isUnopened` and `Library.booksInFolderTree(_:)` are the single definitions of "never opened" and "a folder's tree of books".
+  - `sortSetting(for:)` lives in the test support.
+  - `TextEditingKeys.contains(_:)` matches the Edit menu's keys by stroke.
+  - `CollectionTestSupport.swift` holds the tests' `subscript(safe:)`.
+
+**The pattern (the lead's view)**
+- **What worked:**
+  - All eight tasks were accepted with no fix rounds.
+  - Each worker took 3 to 6 minutes and 62,000 to 90,000 tokens.
+  - Briefs with exact line ranges, and the mechanism spelled out, meant nobody explored.
+  - Workers showed judgment: rev07 found two readers the lead had missed, and subscripts proved 49 indexes safe rather than churning them.
+  - Separate files, two tasks at a time, made every integration a clean fast-forward.
+- **What cost the most:** verifying candidates. The lead checked about 30 follow-ups to find 8 still open, because the TODO's "Still open" lines are not struck when later merges fix them.
+- **Fixes for the common brief:**
+  - Say `lsregister -u` plainly; workers read "unregister" as leaving the board.
+  - Give leads a literal build-folder path, since the worktree guard refused `${TMPDIR}` and compound git commands.
+  - Say "remove the worker's worktree, then rebase its branch".
+  - A cheap Sonnet pass could pre-verify a polish lead's candidates.
