@@ -353,4 +353,11 @@ enum MetadataEditorWording {
         guard handEdits?.contains(field) == true else { return label }
         return "\(label), \(editedByHand)"
     }
+
+    /// When the book titled `title` has left the library, so its edit has
+    /// nowhere to go: "Could not save metadata: “Notes” is no longer in the
+    /// library. Nothing was changed."
+    static func notInLibrary(title: String) -> String {
+        "Could not save metadata: “\(title)” is no longer in the library. Nothing was changed."
+    }
 }

@@ -759,7 +759,7 @@ extension LibraryViewModel {
         writingToFile: Bool,
         writer: EPUBMetadataWriter = .system
     ) -> EPUBMetadataSave {
-        let notInLibrary = EPUBMetadataSaveWording.notInLibrary(title: book.title)
+        let notInLibrary = MetadataEditorWording.notInLibrary(title: book.title)
         guard let row = bookByID(book.id) else {
             return .failed(message: notInLibrary)
         }
