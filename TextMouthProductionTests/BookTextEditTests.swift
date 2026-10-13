@@ -1305,17 +1305,6 @@ final class BookTextEditTests: XCTestCase {
         LibraryPersistenceService.flushPendingSave()
     }
 
-    /// Waits until `reader` has loaded its book, yielding the main actor
-    /// (`eventually`), and fails the test when it never does.
-    private func waitForReaderToLoadYielding(
-        _ reader: ReaderViewModel,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) async {
-        let loaded = await eventually(timeout: 10) { !reader.isLoading }
-        XCTAssertTrue(loaded, "\(reader.book.title) never finished loading", file: file, line: line)
-    }
-
     /// The cursor `EditedTextCursor` gives, as [chapter, offset].
     private func position(_ chapter: Int, _ offset: Int, _ old: [Chapter], _ new: [Chapter]) -> [Int] {
         let found = EditedTextCursor.position(chapterIndex: chapter, characterOffset: offset, in: old, to: new)

@@ -156,21 +156,6 @@ final class PlaceRelocationAtLoadTests: CloudMaintenanceTestCase {
     }
 }
 
-extension PlaceRelocationAtLoadTests {
-    /// Waits until `reader` has finished loading, yielding the main actor
-    /// between looks, as a test that is itself async must: the load finishes
-    /// on the main queue, which a wait that spins the run loop from inside
-    /// an async test never serves. Fails when it takes over ten seconds.
-    @MainActor
-    func waitForReaderToLoadYielding(_ reader: ReaderViewModel, file: StaticString = #filePath, line: UInt = #line) async {
-        let deadline = Date().addingTimeInterval(10)
-        while reader.isLoading && Date() < deadline {
-            try? await Task.sleep(nanoseconds: 20_000_000)
-        }
-        XCTAssertFalse(reader.isLoading, "\(reader.book.title) never finished loading", file: file, line: line)
-    }
-}
-
 /// What a read of a book produced on a background thread, handed back to the
 /// test that waits for it. Written once by the reading thread, before it
 /// fulfills the expectation the test waits on, and read only after.

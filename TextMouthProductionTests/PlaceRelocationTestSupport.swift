@@ -354,4 +354,18 @@ extension XCTestCase {
         }
         return (reached, gate)
     }
+
+    /// Waits until `reader` has loaded its book, yielding the main actor
+    /// between looks, as a test that is itself async must: the load finishes
+    /// on the main queue, which a wait that spins the run loop from inside
+    /// an async test never serves. Fails the test when it takes over ten
+    /// seconds.
+    @MainActor
+    func waitForReaderToLoadYielding(_ reader: ReaderViewModel, file: StaticString = #filePath, line: UInt = #line) async {
+        let deadline = Date().addingTimeInterval(10)
+        while reader.isLoading && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertFalse(reader.isLoading, "\(reader.book.title) never finished loading", file: file, line: line)
+    }
 }
