@@ -25,7 +25,7 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
    - the tests, which must pin the behavior and must not trap;
    - comments on every function, DRY, and the wording a VoiceOver user hears.
    For a fix, message the worker with SendMessage (its context is intact), or make a small fix yourself in a commit of your own. Drop a worker's work that is wrong at its root, and say so in your report.
-7. **Integrate in a straight line.** Rebase the worker's branch onto `team/<team>`, then `git merge --ff-only <team>/<task>` in your worktree. Then remove the worker's worktree (`git worktree remove --force --force <path>`).
+7. **Integrate in a straight line.** First remove the worker's worktree, which holds its branch checked out (`git worktree remove --force --force <path>`). Then rebase the worker's branch onto `team/<team>`, and `git merge --ff-only <team>/<task>` in your worktree. Use `git -C <path>` rather than `cd … &&`: the worktree guard refuses compound commands.
 8. **Finish.**
    - Rebase the team branch onto main.
    - Run the complete suite once.
@@ -41,7 +41,7 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
 5. **Stay in your lane.** Edit no `*.md` file and no file outside your brief. For a problem elsewhere, post a finding with `--file <path>`.
 6. **Finish.**
    - Post `done: <branch>` to your lead: `bbs post <slug> --to <team>-lead --topic "done: <branch>"`.
-   - Unregister your build folder's app and delete the folder.
+   - Remove your build folder, unregistering its app first (the command is under "Builds" below; it has nothing to do with the board).
    - Release your claims (`bbs release <slug> --all`).
    - Reply with a report of at most 15 lines: the branch; each commit's hash and subject; the tests you added and the exact result line of your last run; what you could not verify; and the decisions you made.
 
@@ -86,6 +86,7 @@ Use this command, with your slug, your test classes, and a log file in the sessi
   - the reader-sheet redraw count in `ViewsAndWindowsReaderSheetTests`
   - `FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped`
   - the audiobook-open benchmark, and the performance baselines
+- **A lead's build folder.** The worktree guard refuses `${TMPDIR}` in a lead's commands, so a lead writes the folder's literal path: `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-<slug>`.
 - **Removing a build folder.** First `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "<folder>/Build/Products/Debug/TextMouth.app"`, then `rm -rf "<folder>"`.
 
 ## Usage
