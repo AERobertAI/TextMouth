@@ -1,0 +1,176 @@
+
+// MARK: - REV16 probes (reviewer's reproductions; never committed)
+
+/// REV16's reproductions of T06 branches D and E. Each prints a line that
+/// begins "REV16" with what it saw, and asserts what should happen.
+final class Rev16ProbeTests: CloudMaintenanceTestCase {
+    /// A loaded book whose chapters' texts are `texts`, with `headings`.
+    private func loaded(_ texts: [String], headings: [Heading]) -> DocumentContent {
+        DocumentContent(title: "The Mill", author: "The Mill Society", chapters: texts.enumerated().map { index, text in
+            Chapter(title: "", text: text, headings: headings.filter { $0.chapterIndex == index })
+        })
+    }
+
+    /// Describes `places`' skips for the probes' lines.
+    private func skips(_ places: PlaceRelocator.Places) -> String {
+        "named \(places.skippedHeadings.map(\.id)) waiting \(places.waitingSkippedHeadings.map(\.id))"
+    }
+
+    // MARK: F1: a skip whose section was removed, checked at load
+
+    /// NotesBook: the first "Notes" section, which the listener skipped, is
+    /// removed; the second slides into its numbers. At load, with no old
+    /// text, the skip should wait, as the rebuild's relocator makes it.
+    func testF1aAtLoadARemovedNotesSkipShouldWaitNotNameTheNextNotes() throws {
+        let book = NotesBook()
+        let skip = try SavedPlace.skip(of: book.firstHeading, in: book.both)
+        let places = PlaceRelocator.Places(skippedHeadings: [skip])
+
+        // The rebuild's relocator, with the old text: waits.
+        let rebuilt = PlaceRelocator(
+            oldTexts: book.both, newTexts: book.withoutFirst,
+            oldHeadings: [book.firstHeading, book.secondHeading], newHeadings: [book.slidHeading]
+        ).relocate(places, movedAt: SavedPlace.moveDate)
+        print("REV16 F1a rebuild: \(skips(rebuilt.places)) findings \(rebuilt.skippedHeadingFindings)")
+
+        // The check at load, with the new text alone.
+        let atLoad = try XCTUnwrap(PlaceRelocator.relocate(places, within: loaded(book.withoutFirst, headings: [book.slidHeading]), movedAt: SavedPlace.moveDate))
+        print("REV16 F1a load: \(skips(atLoad.places)) findings \(atLoad.skippedHeadingFindings) anchorAfter=\(atLoad.places.skippedHeadings.first?.anchor?.after.prefix(30) ?? "-")")
+        XCTAssertEqual(rebuilt.places.waitingSkippedHeadings.map(\.id), [skip.id], "REV16 F1a: the rebuild should wait")
+        XCTAssertTrue(atLoad.places.skippedHeadings.isEmpty, "REV16 F1a: at load the skip names \(atLoad.places.skippedHeadings.map(\.id)), the second Notes section")
+    }
+
+    /// One chapter: an opening, the "Pump Repairs" section (skipped), and
+    /// the "Soup" section. "Pump Repairs" is removed. At load the skip
+    /// should wait; the "Soup" section was never skipped.
+    func testF1bAtLoadARemovedSectionsSkipShouldNotPassToTheNextSection() throws {
+        let opening = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask of soup.\n\n"
+        let pump = "Pump Repairs\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
+        let soup = "Soup\n\nHesketh guarded the flask as if it were the parish silver."
+        let old = [opening + pump + soup]
+        let new = [opening + soup]
+        let chapter = Heading(level: 1, text: "CHAPTER I. The Millrace", chapterIndex: 0, characterOffset: 0)
+        let oldPump = Heading(level: 2, text: "Pump Repairs", chapterIndex: 0, characterOffset: opening.utf16.count)
+        let oldSoup = Heading(level: 2, text: "Soup", chapterIndex: 0, characterOffset: opening.utf16.count + pump.utf16.count)
+        let newSoup = Heading(level: 2, text: "Soup", chapterIndex: 0, characterOffset: opening.utf16.count)
+        let skip = try SavedPlace.skip(of: oldPump, in: old)
+        let places = PlaceRelocator.Places(skippedHeadings: [skip])
+
+        let rebuilt = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: [chapter, oldPump, oldSoup], newHeadings: [chapter, newSoup])
+            .relocate(places, movedAt: SavedPlace.moveDate)
+        print("REV16 F1b rebuild: \(skips(rebuilt.places)) findings \(rebuilt.skippedHeadingFindings)")
+        let atLoad = try XCTUnwrap(PlaceRelocator.relocate(places, within: loaded(new, headings: [chapter, newSoup]), movedAt: SavedPlace.moveDate))
+        print("REV16 F1b load: \(skips(atLoad.places)) findings \(atLoad.skippedHeadingFindings)")
+        XCTAssertEqual(rebuilt.places.waitingSkippedHeadings.map(\.id), [skip.id], "REV16 F1b: the rebuild should wait")
+        XCTAssertFalse(atLoad.places.skippedHeadings.map(\.id).contains(newSoup.id), "REV16 F1b: at load the skip passed to Soup")
+    }
+
+    /// Chapters I and II each end with a "Notes" section; only chapter I's
+    /// is skipped, and it is removed. At load the skip should wait, not go
+    /// to chapter II's Notes on its label alone.
+    func testF1cAtLoadARemovedNotesSkipShouldNotGoToAnotherChaptersNotes() throws {
+        let first = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March.\n\n"
+        let firstNotes = "Notes\n\nThe pump belonged to the angling club."
+        let second = "CHAPTER II. The Wheel\n\nThe wheel itself was oak, eleven feet across, its paddles split by frost.\n\n"
+        let secondNotes = "Notes\n\nA carpenter from the valley came on Tuesdays."
+        let old = [first + firstNotes, second + secondNotes]
+        let new = [first, second + secondNotes]
+        let chapters = [
+            Heading(level: 1, text: "CHAPTER I. The Millrace", chapterIndex: 0, characterOffset: 0),
+            Heading(level: 1, text: "CHAPTER II. The Wheel", chapterIndex: 1, characterOffset: 0),
+        ]
+        let oldFirstNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: first.utf16.count)
+        let secondNotesHeading = Heading(level: 2, text: "Notes", chapterIndex: 1, characterOffset: second.utf16.count)
+        let skip = try SavedPlace.skip(of: oldFirstNotes, in: old)
+        let places = PlaceRelocator.Places(skippedHeadings: [skip])
+
+        let rebuilt = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: chapters + [oldFirstNotes, secondNotesHeading], newHeadings: chapters + [secondNotesHeading])
+            .relocate(places, movedAt: SavedPlace.moveDate)
+        print("REV16 F1c rebuild: \(skips(rebuilt.places)) findings \(rebuilt.skippedHeadingFindings)")
+        let atLoad = try XCTUnwrap(PlaceRelocator.relocate(places, within: loaded(new, headings: chapters + [secondNotesHeading]), movedAt: SavedPlace.moveDate))
+        print("REV16 F1c load: \(skips(atLoad.places)) findings \(atLoad.skippedHeadingFindings)")
+        XCTAssertEqual(rebuilt.places.waitingSkippedHeadings.map(\.id), [skip.id], "REV16 F1c: the rebuild should wait")
+        XCTAssertFalse(atLoad.places.skippedHeadings.map(\.id).contains(secondNotesHeading.id), "REV16 F1c: at load the skip went to chapter II's Notes")
+    }
+
+    // MARK: F1 end to end: a reader opening a book whose text changed
+
+    /// The book's Markdown with the "Pump Repairs" section.
+    private static let withPump = "# The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask of soup.\n\n"
+        + "## Pump Repairs\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
+        + "## Soup\n\nHesketh guarded the flask as if it were the parish silver.\n"
+    /// The same Markdown without it, as an editor or another Mac left it.
+    private static let withoutPump = "# The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask of soup.\n\n"
+        + "## Soup\n\nHesketh guarded the flask as if it were the parish silver.\n"
+
+    /// A reader opening a book whose text lost the skipped "Pump Repairs"
+    /// section since the skip was saved (no rebuild moved it: another Mac,
+    /// an edit saved with no copy, a feed article downloaded again) should
+    /// play "Soup". It skips "Soup".
+    @MainActor
+    func testF1dAReaderOpeningTheChangedTextSkipsTheNextSection() throws {
+        var book = try makePackagedBook(title: "Pump \(UUID().uuidString)", text: Self.withPump)
+        // The text as it was, its record current, with the skip saved with its words.
+        book = try commitCache(of: book)
+        let before = try MarkdownCacheService.loadFromCache(for: book)
+        let pump = try XCTUnwrap(before.allHeadings.first { $0.text == "Pump Repairs" })
+        let measure = TextAnchor.measure(ofTextCachedBy: MarkdownCacheService.currentCacheVersion)
+        let start = TextPlace(chapter: pump.chapterIndex, offset: pump.characterOffset)
+        book.setSkippedHeadings([SkippedHeading(pump, anchor: before.anchor(at: start, measuredIn: measure))])
+        try book.saveBookInfoThrowing()
+
+        // The text changes without a rebuild moving the skip: the source and
+        // content.md now lack the section, and the record describes them.
+        try Self.withoutPump.write(to: URL(fileURLWithPath: book.filePath), atomically: true, encoding: .utf8)
+        var bare = try recordedBook(like: book)
+        bare.setSkippedHeadings([])
+        _ = try commitCache(of: bare)
+        let recorded = try recordedBook(like: book)
+        XCTAssertEqual(recorded.skippedHeadingIDs, [pump.id], "the record should still hold the old skip")
+        let after = try MarkdownCacheService.loadFromCache(for: recorded)
+        let soup = try XCTUnwrap(after.allHeadings.first { $0.text == "Soup" })
+        print("REV16 F1d headings now: \(after.allHeadings.map(\.id)); skip \(pump.id)")
+
+        let model = makeModel(with: [recorded])
+        let reader = openReader(on: recorded, in: model)
+        waitForReaderToLoad(reader)
+        LibraryPersistenceService.flushPendingSave()
+        let row = try XCTUnwrap(model.bookByID(recorded.id))
+        let record = try recordedBook(like: recorded)
+        print("REV16 F1d reader skips \(reader.skippedHeadingIDs) soupSkipped=\(reader.isHeadingSkipped(soup)) row named \(row.skippedHeadingIDs ?? []) waiting \(row.waitingSkippedHeadings?.map(\.id) ?? []) record named \(record.skippedHeadingIDs ?? [])")
+        XCTAssertFalse(reader.isHeadingSkipped(soup), "REV16 F1d: the reader skips Soup, which the listener never skipped")
+        XCTAssertFalse((record.skippedHeadingIDs ?? []).contains(soup.id), "REV16 F1d: the record now skips Soup")
+    }
+
+    // MARK: C1: the launch's recovery and a refused move
+
+    /// As `testAMoveNeverWinsOverANewerPositionFromAnotherMac`, but through
+    /// the launch's recovery of a copy a stop left: the record refuses the
+    /// position's move (another Mac's newer save), and the row should too.
+    @MainActor
+    func testC1TheRecoverysRowTakesAMoveItsRecordRefused() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Recovered \(UUID().uuidString)")
+        let rowPosition = try XCTUnwrap(fixture.book.readingPosition)
+        // A rebuild that stopped between its write and its commit.
+        let generated = try XCTUnwrap(MarkdownCacheService.generateCacheContent(for: fixture.book))
+        XCTAssertNotNil(generated.movedPlaces)
+        PlaceSnapshot.forgetCopiesInUse()
+        // The other Mac's save, a minute newer, in the record only.
+        var otherMacsPosition = ReadingPosition(chapterIndex: 0, characterOffset: 3)
+        otherMacsPosition.lastUpdated = rowPosition.lastUpdated.addingTimeInterval(60)
+        var elsewhere = fixture.book
+        elsewhere.readingPosition = otherMacsPosition
+        try elsewhere.saveBookInfoThrowing()
+        let model = makeModel(with: [fixture.book])
+
+        let finished = expectation(description: "The recovery pass finished")
+        model.finishLeftoverPlaceMoves(access: .live) { finished.fulfill() }
+        await fulfillment(of: [finished], timeout: 30)
+
+        let record = try recordedBook(like: fixture.book)
+        let row = try XCTUnwrap(model.bookByID(fixture.book.id))
+        print("REV16 C1 record position \(String(describing: record.readingPosition.map { ($0.chapterIndex, $0.characterOffset, $0.lastUpdated) })) row position \(String(describing: row.readingPosition.map { ($0.chapterIndex, $0.characterOffset, $0.lastUpdated) }))")
+        XCTAssertTrue(Book.isAsStored(record.readingPosition, otherMacsPosition), "REV16 C1: the record lost the other Mac's position")
+        XCTAssertTrue(Book.isAsStored(row.readingPosition, rowPosition), "REV16 C1: the row took the move its record refused")
+    }
+}

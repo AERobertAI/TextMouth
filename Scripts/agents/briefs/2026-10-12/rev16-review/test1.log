@@ -1,0 +1,77 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project TextMouth.xcodeproj -scheme TextMouth -destination platform=macOS CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-rev16 -jobs 4 -parallel-testing-enabled NO "-only-testing:TextMouthProductionTests/Rev16ProbeTests"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    COMPILER_INDEX_STORE_ENABLE = NO
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  SwiftSoup: https://github.com/scinfu/SwiftSoup.git @ 2.13.9
+  cmark-gfm: https://github.com/swiftlang/swift-cmark.git @ 0.9.0
+  ZIPFoundation: https://github.com/weichsel/ZIPFoundation.git @ 0.9.20
+  swift-markdown: https://github.com/swiftlang/swift-markdown.git @ 0.9.0
+
+2026-10-13 02:35:15.991 xcodebuild[32042:62144044] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008122-001248620A86001C, name:My Mac }
+{ platform:macOS, arch:x86_64, id:00008122-001248620A86001C, name:My Mac }
+FEED_ITEM_POLICY_MOVED: keeping 10 entries, with downloads by hand, became everyListedNewestDownloaded counting 5
+SHORTCUT_EDITS_MOVED: made the record of edited shortcuts from nothing saved; edited: none
+2026-10-13 02:35:20.676202-0400 TextMouth[32059:62144273] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/com.textmouth.TextMouth.savedState
+2026-10-13 02:35:21.269527-0400 TextMouth[32059:62144273] BUILD_IDENTITY version=0.1.1 build=1 configuration=Debug commit=unknown builtAt=unknown executable=/private/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-rev16/Build/Products/Debug/TextMouth.app/Contents/MacOS/TextMouth
+BUILD_IDENTITY version=0.1.1 build=1 configuration=Debug commit=unknown builtAt=unknown executable=/private/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-rev16/Build/Products/Debug/TextMouth.app/Contents/MacOS/TextMouth
+Test Suite 'Selected tests' started at 2026-10-13 02:35:22.028.
+Test Suite 'TextMouthProductionTests.xctest' started at 2026-10-13 02:35:22.028.
+Test Suite 'Rev16ProbeTests' started at 2026-10-13 02:35:22.028.
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testC1TheRecoverysRowTakesAMoveItsRecordRefused]' started.
+PLACES_RELOCATED: Recovered 695C8D68-8481-4571-A22B-391A213F720A: unchanged 0, moved by the diff 3, by the saved words 0, guessed 0
+PLACES_RELOCATED: Recovered 695C8D68-8481-4571-A22B-391A213F720A: unchanged 0, moved by the diff 3, by the saved words 0, guessed 0
+PLACES_RECOVERED: finished 1, left 0 for a later launch
+REV16 C1 record position Optional((0, 3, 2026-10-13 06:36:22 +0000)) row position Optional((0, 102, 2026-10-13 06:35:22 +0000))
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:341: error: -[TextMouthProductionTests.Rev16ProbeTests testC1TheRecoverysRowTakesAMoveItsRecordRefused] : XCTAssertTrue failed - REV16 C1: the row took the move its record refused
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testC1TheRecoverysRowTakesAMoveItsRecordRefused]' failed (1.975 seconds).
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testF1aAtLoadARemovedNotesSkipShouldWaitNotNameTheNextNotes]' started.
+REV16 F1a rebuild: named [] waiting ["0-118-2-Notes"] findings []
+REV16 F1a load: named ["0-118-2-Notes"] waiting [] findings [TextMouth.PlaceRelocator.Finding.foundBySavedWords(TextMouth.TextAnchorFinder.Evidence.savedWords(score: 17))] anchorAfter=Notes
+
+A carpenter in the next
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:207: error: -[TextMouthProductionTests.Rev16ProbeTests testF1aAtLoadARemovedNotesSkipShouldWaitNotNameTheNextNotes] : XCTAssertTrue failed - REV16 F1a: at load the skip names ["0-118-2-Notes"], the second Notes section
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testF1aAtLoadARemovedNotesSkipShouldWaitNotNameTheNextNotes]' failed (0.004 seconds).
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testF1bAtLoadARemovedSectionsSkipShouldNotPassToTheNextSection]' started.
+REV16 F1b rebuild: named [] waiting ["0-126-2-Pump Repairs"] findings []
+REV16 F1b load: named ["0-126-2-Soup"] waiting [] findings [TextMouth.PlaceRelocator.Finding.foundBySavedWords(TextMouth.TextAnchorFinder.Evidence.savedWords(score: 12))]
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:232: error: -[TextMouthProductionTests.Rev16ProbeTests testF1bAtLoadARemovedSectionsSkipShouldNotPassToTheNextSection] : XCTAssertFalse failed - REV16 F1b: at load the skip passed to Soup
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testF1bAtLoadARemovedSectionsSkipShouldNotPassToTheNextSection]' failed (0.013 seconds).
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testF1cAtLoadARemovedNotesSkipShouldNotGoToAnotherChaptersNotes]' started.
+REV16 F1c rebuild: named [] waiting ["0-93-2-Notes"] findings []
+REV16 F1c load: named ["1-98-2-Notes"] waiting [] findings [TextMouth.PlaceRelocator.Finding.foundBySavedWords(TextMouth.TextAnchorFinder.Evidence.onlyHeadingWithItsLabel)]
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:260: error: -[TextMouthProductionTests.Rev16ProbeTests testF1cAtLoadARemovedNotesSkipShouldNotGoToAnotherChaptersNotes] : XCTAssertFalse failed - REV16 F1c: at load the skip went to chapter II's Notes
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testF1cAtLoadARemovedNotesSkipShouldNotGoToAnotherChaptersNotes]' failed (0.002 seconds).
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testF1dAReaderOpeningTheChangedTextSkipsTheNextSection]' started.
+REV16 F1d headings now: ["0-0-1-The Millrace", "0-115-2-Soup"]; skip 0-115-2-Pump Repairs
+RESTORE_LAST_DURATION result=missing active=false duration=none remaining=0 fading=false countdownPaused=false owner=none generation=0
+PLACES_RELOCATED: Pump 6D972572-D50E-401E-8DED-33DB45FC9906: unchanged 0, moved by the diff 0, by the saved words 1, guessed 0
+REV16 F1d reader skips ["0-115-2-Soup"] soupSkipped=true row named ["0-115-2-Soup"] waiting [] record named ["0-115-2-Soup"]
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:308: error: -[TextMouthProductionTests.Rev16ProbeTests testF1dAReaderOpeningTheChangedTextSkipsTheNextSection] : XCTAssertFalse failed - REV16 F1d: the reader skips Soup, which the listener never skipped
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:309: error: -[TextMouthProductionTests.Rev16ProbeTests testF1dAReaderOpeningTheChangedTextSkipsTheNextSection] : XCTAssertFalse failed - REV16 F1d: the record now skips Soup
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests testF1dAReaderOpeningTheChangedTextSkipsTheNextSection]' failed (0.073 seconds).
+Test Suite 'Rev16ProbeTests' failed at 2026-10-13 02:35:24.099.
+	 Executed 5 tests, with 6 failures (0 unexpected) in 2.068 (2.071) seconds
+Test Suite 'TextMouthProductionTests.xctest' failed at 2026-10-13 02:35:24.099.
+	 Executed 5 tests, with 6 failures (0 unexpected) in 2.068 (2.071) seconds
+Test Suite 'Selected tests' failed at 2026-10-13 02:35:24.099.
+	 Executed 5 tests, with 6 failures (0 unexpected) in 2.068 (2.071) seconds
+2026-10-13 02:35:45.174 xcodebuild[32042:62144044] [MT] IDETestOperationsObserverDebug: 27.054 elapsed -- Testing started completed.
+2026-10-13 02:35:45.174 xcodebuild[32042:62144044] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-13 02:35:45.174 xcodebuild[32042:62144044] [MT] IDETestOperationsObserverDebug: 27.054 sec, +27.054 sec -- end
+
+Test session results, code coverage, and logs:
+	/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-rev16/Logs/Test/Test-TextMouth-2026.10.13_02-35-16--0400.xcresult
+
+** TEST EXECUTE FAILED **
+
+Testing started
+test exit 65

@@ -1,0 +1,68 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project TextMouth.xcodeproj -scheme TextMouth -destination platform=macOS CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-rev16 -jobs 4 -parallel-testing-enabled NO "-only-testing:TextMouthProductionTests/Rev16ProbeTests2"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    COMPILER_INDEX_STORE_ENABLE = NO
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  swift-markdown: https://github.com/swiftlang/swift-markdown.git @ 0.9.0
+  SwiftSoup: https://github.com/scinfu/SwiftSoup.git @ 2.13.9
+  ZIPFoundation: https://github.com/weichsel/ZIPFoundation.git @ 0.9.20
+  cmark-gfm: https://github.com/swiftlang/swift-cmark.git @ 0.9.0
+
+2026-10-13 02:38:21.361 xcodebuild[32224:62152034] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008122-001248620A86001C, name:My Mac }
+{ platform:macOS, arch:x86_64, id:00008122-001248620A86001C, name:My Mac }
+FEED_ITEM_POLICY_MOVED: keeping 10 entries, with downloads by hand, became everyListedNewestDownloaded counting 5
+SHORTCUT_EDITS_MOVED: made the record of edited shortcuts from nothing saved; edited: none
+2026-10-13 02:38:25.576602-0400 TextMouth[32245:62152233] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/com.textmouth.TextMouth.savedState
+2026-10-13 02:38:26.014095-0400 TextMouth[32245:62152233] BUILD_IDENTITY version=0.1.1 build=1 configuration=Debug commit=unknown builtAt=unknown executable=/private/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-rev16/Build/Products/Debug/TextMouth.app/Contents/MacOS/TextMouth
+BUILD_IDENTITY version=0.1.1 build=1 configuration=Debug commit=unknown builtAt=unknown executable=/private/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-rev16/Build/Products/Debug/TextMouth.app/Contents/MacOS/TextMouth
+Test Suite 'Selected tests' started at 2026-10-13 02:38:26.505.
+Test Suite 'TextMouthProductionTests.xctest' started at 2026-10-13 02:38:26.505.
+Test Suite 'Rev16ProbeTests2' started at 2026-10-13 02:38:26.506.
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests2 testC4ARebuildOfABookInAnEditSessionMovesNoPlaces]' started.
+TEXT_EDIT_KEPT: Session 8E78107F-6A06-4D8E-9F7D-05250E3DE19D: content.md kept as content.md.edited-20261013T063826Z before its text was read again from the book's own file
+REV16 C4 content.md is the new text: true; row position (0,168) bookmark (0,214) skips ["0-243-2-Notes"] waiting []; record position (0,168) bookmark (0,214) skips ["0-243-2-Notes"] waiting []; expected position (0,102) bookmark (0,148) skip 0-177-2-Notes
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:377: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC4ARebuildOfABookInAnEditSessionMovesNoPlaces] : XCTAssertEqual failed: ("Optional(168)") is not equal to ("Optional(102)") - position's offset
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:377: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC4ARebuildOfABookInAnEditSessionMovesNoPlaces] : XCTAssertEqual failed: ("Optional(214)") is not equal to ("Optional(148)") - bookmark's offset
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:377: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC4ARebuildOfABookInAnEditSessionMovesNoPlaces] : XCTAssertEqual failed: ("Optional(["0-243-2-Notes"])") is not equal to ("Optional(["0-177-2-Notes"])") - skipped headings
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:378: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC4ARebuildOfABookInAnEditSessionMovesNoPlaces] : XCTAssertEqual failed: ("Optional(168)") is not equal to ("Optional(102)") - position's offset
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:378: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC4ARebuildOfABookInAnEditSessionMovesNoPlaces] : XCTAssertEqual failed: ("Optional(214)") is not equal to ("Optional(148)") - bookmark's offset
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:378: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC4ARebuildOfABookInAnEditSessionMovesNoPlaces] : XCTAssertEqual failed: ("Optional(["0-243-2-Notes"])") is not equal to ("Optional(["0-177-2-Notes"])") - skipped headings
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests2 testC4ARebuildOfABookInAnEditSessionMovesNoPlaces]' failed (1.947 seconds).
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests2 testC5AStopAfterTheCommitLeavesTheRowWithTheOldPlaces]' started.
+PLACES_RELOCATED: Stopped F448DC0A-98D0-4D57-8960-6A4DFE6B3C89: unchanged 0, moved by the diff 3, by the saved words 0, guessed 0
+REV16 C5 record after the commit: position (0,102) bookmark (0,148) skips ["0-177-2-Notes"] waiting []; copy left false
+METADATA_REFRESH: read 1 book again; replaced 0 fields of 0
+REV16 C5 row after the launch's passes: version 3.0.7 position (0,168) bookmark (0,214) skips ["0-243-2-Notes"] waiting []
+REV16 C5 record after a row change: position (0,168) bookmark (0,214) skips ["0-243-2-Notes"] waiting []
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:412: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC5AStopAfterTheCommitLeavesTheRowWithTheOldPlaces] : XCTAssertEqual failed: ("Optional(168)") is not equal to ("Optional(102)") - position's offset
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:412: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC5AStopAfterTheCommitLeavesTheRowWithTheOldPlaces] : XCTAssertEqual failed: ("Optional(214)") is not equal to ("Optional(148)") - bookmark's offset
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:412: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC5AStopAfterTheCommitLeavesTheRowWithTheOldPlaces] : XCTAssertEqual failed: ("Optional(["0-243-2-Notes"])") is not equal to ("Optional(["0-177-2-Notes"])") - skipped headings
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:413: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC5AStopAfterTheCommitLeavesTheRowWithTheOldPlaces] : XCTAssertEqual failed: ("Optional(168)") is not equal to ("Optional(102)") - position's offset
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:413: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC5AStopAfterTheCommitLeavesTheRowWithTheOldPlaces] : XCTAssertEqual failed: ("Optional(214)") is not equal to ("Optional(148)") - bookmark's offset
+/Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/worktrees/agent-a312124381af1c04d/TextMouthProductionTests/PlaceRelocationAtLoadTests.swift:413: error: -[TextMouthProductionTests.Rev16ProbeTests2 testC5AStopAfterTheCommitLeavesTheRowWithTheOldPlaces] : XCTAssertEqual failed: ("Optional(["0-243-2-Notes"])") is not equal to ("Optional(["0-177-2-Notes"])") - skipped headings
+Test Case '-[TextMouthProductionTests.Rev16ProbeTests2 testC5AStopAfterTheCommitLeavesTheRowWithTheOldPlaces]' failed (0.033 seconds).
+Test Suite 'Rev16ProbeTests2' failed at 2026-10-13 02:38:28.486.
+	 Executed 2 tests, with 12 failures (0 unexpected) in 1.980 (1.981) seconds
+Test Suite 'TextMouthProductionTests.xctest' failed at 2026-10-13 02:38:28.486.
+	 Executed 2 tests, with 12 failures (0 unexpected) in 1.980 (1.981) seconds
+Test Suite 'Selected tests' failed at 2026-10-13 02:38:28.487.
+	 Executed 2 tests, with 12 failures (0 unexpected) in 1.980 (1.981) seconds
+2026-10-13 02:38:49.367 xcodebuild[32224:62152034] [MT] IDETestOperationsObserverDebug: 26.106 elapsed -- Testing started completed.
+2026-10-13 02:38:49.368 xcodebuild[32224:62152034] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-13 02:38:49.368 xcodebuild[32224:62152034] [MT] IDETestOperationsObserverDebug: 26.106 sec, +26.106 sec -- end
+
+Test session results, code coverage, and logs:
+	/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-rev16/Logs/Test/Test-TextMouth-2026.10.13_02-38-21--0400.xcresult
+
+** TEST EXECUTE FAILED **
+
+Testing started
+test exit 65

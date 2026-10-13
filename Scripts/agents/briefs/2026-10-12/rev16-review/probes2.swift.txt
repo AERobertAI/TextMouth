@@ -1,0 +1,72 @@
+
+/// REV16's second round of reproductions.
+final class Rev16ProbeTests2: CloudMaintenanceTestCase {
+    /// The places of `book` as "(chapter, offset)" text for the probes' lines.
+    private func describe(_ book: Book) -> String {
+        "position \(book.readingPosition.map { "(\($0.chapterIndex),\($0.characterOffset))" } ?? "-") "
+            + "bookmark \(book.bookmarks.first.map { "(\($0.chapterIndex),\($0.characterOffset))" } ?? "-") "
+            + "skips \(book.skippedHeadingIDs ?? []) waiting \(book.waitingSkippedHeadings?.map(\.id) ?? [])"
+    }
+
+    /// C4: Redo Text Extraction rebuilds a book that an Edit Text session
+    /// holds (every book opened in Edit Text keeps its session until
+    /// TextMouth quits). Its places should move as any book's do.
+    @MainActor
+    func testC4ARebuildOfABookInAnEditSessionMovesNoPlaces() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Session \(UUID().uuidString)")
+        let book = fixture.book
+        // A session whose baseline is the content.md TextMouth last wrote.
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+        let hasher = MaintenanceFileAccess.live.hasher
+        let cache = try XCTUnwrap(FileFingerprint(of: cacheURL, hasher: hasher))
+        let source = FileFingerprint(of: URL(fileURLWithPath: book.filePath), hasher: hasher)
+        BookTextEditSessions.shared.begin(book.id, BookTextEditSessions.Session(baseline: BookTextBaseline(source: source, cache: cache), report: { _, _ in }))
+        addTeardownBlock { BookTextEditSessions.shared.end(book.id) }
+        let model = makeModel(with: [book])
+
+        let rebuilt = expectation(description: "Redo Text Extraction finished")
+        XCTAssertTrue(model.redoAllTextExtraction(access: .live) { _ in rebuilt.fulfill() })
+        await fulfillment(of: [rebuilt], timeout: 30)
+
+        let row = try XCTUnwrap(model.bookByID(book.id))
+        let record = try recordedBook(like: book)
+        print("REV16 C4 content.md is the new text: \((try? Data(contentsOf: cacheURL)) == fixture.newBytes); row \(describe(row)); record \(describe(record)); expected position (\(fixture.position.chapter),\(fixture.position.offset)) bookmark (\(fixture.bookmark.chapter),\(fixture.bookmark.offset)) skip \(fixture.notes.id)")
+        assertPlaces(of: row, areThoseOf: fixture)
+        assertPlaces(of: record, areThoseOf: fixture)
+    }
+
+    /// C5: the batch commits a book's analysis and moved places to its
+    /// record, and TextMouth stops before the summary reaches the row and
+    /// library.json is written. The next launch's passes recover the
+    /// analysis from the record; the row should get the moved places too.
+    @MainActor
+    func testC5AStopAfterTheCommitLeavesTheRowWithTheOldPlaces() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Stopped \(UUID().uuidString)")
+        var updated = fixture.book
+        let generated = try XCTUnwrap(MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &updated))
+        let moved = try XCTUnwrap(generated.movedPlaces)
+        _ = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: updated,
+            index: generated.content.contentIndex,
+            cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+            movedPlaces: moved
+        ))
+        let committed = try recordedBook(like: fixture.book)
+        print("REV16 C5 record after the commit: \(describe(committed)); copy left \(snapshotsHoldACopy(of: fixture.book))")
+
+        // The next launch: library.json's row is the book as it was.
+        let model = makeModel(with: [fixture.book])
+        let finished = expectation(description: "The launch's passes ended")
+        model.updateContentCachesAndStatistics(access: .live) { finished.fulfill() }
+        await fulfillment(of: [finished], timeout: 60)
+        let row = try XCTUnwrap(model.bookByID(fixture.book.id))
+        print("REV16 C5 row after the launch's passes: version \(row.cacheFormatVersion ?? "-") \(describe(row))")
+
+        // Any change of the row writes its places to the record.
+        model.updateEndOfBookBehavior(bookID: fixture.book.id, behavior: "stop")
+        let record = try recordedBook(like: fixture.book)
+        print("REV16 C5 record after a row change: \(describe(record))")
+        assertPlaces(of: row, areThoseOf: fixture)
+        assertPlaces(of: record, areThoseOf: fixture)
+    }
+}
