@@ -651,13 +651,6 @@ final class RecordingWindowTests: XCTestCase {
     }
 }
 
-private extension Array {
-    /// The element at `index`, or nil when there is none.
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
-    }
-}
-
 /// A reader as the Now Playing coordinator knows one: whether it plays, and
 /// how often it was paused, registered with a coordinator of the test's
 /// own, never the app's. Its handlers hold it weakly, so a coordinator
