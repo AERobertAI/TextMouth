@@ -37,8 +37,8 @@ import Foundation
 ///    else its saved offset held within the chapter, and for a chapter the
 ///    book no longer has, its share of the whole book.
 ///
-/// Skipped headings are found among the headings of their level
-/// (`findHeading`).
+/// Skipped headings are found among the headings of their level, only on
+/// proof (`findHeading`).
 ///
 /// The finder is a value, built once per book's text and read from any
 /// thread. Building it reads the whole book's words and indexes them: in
@@ -77,9 +77,11 @@ struct TextAnchorFinder: Sendable {
         case savedWords(score: Int)
         /// It was at the end of the book, and stays at the end (P07).
         case endOfBook
-        /// A heading whose saved words are too few to place it (as on a
-        /// cover, which has no words), found as the one heading of its level
-        /// with its label.
+        /// A skipped heading's heading found as the one heading of its level
+        /// with its label, where the diff of the old text with the new
+        /// proves it the same section (`PlaceRelocator.relocate(_:)`, rule
+        /// 4): only a rebuild finds a heading so. With no old text, a label
+        /// alone is no proof (`findHeading`).
         case onlyHeadingWithItsLabel
     }
 
@@ -95,9 +97,6 @@ struct TextAnchorFinder: Sendable {
         /// Its saved words fit nowhere: the same share of its chapter, at a
         /// word start.
         case sameShare
-        /// A heading the saved words can't tell: the nearest heading of its
-        /// level with its label.
-        case nearestHeadingWithItsLabel
     }
 
     /// Where a saved place goes, and how it was found.
@@ -137,8 +136,10 @@ struct TextAnchorFinder: Sendable {
     /// The fewest UTF-16 units within which a spot is near where the place
     /// was, for a short book.
     static let localityMinimum = 3_000
-    /// What a heading whose label is unchanged adds to its score.
-    static let labelBonus = 3
+    /// How many of a skipped heading's saved words after it, past its
+    /// label's words, must agree at a heading's start to prove that heading
+    /// its section (`findHeading`): as many as a candidate spot must hold.
+    static let sectionProofWords = seedWords
     /// How many of the quote's words in a row mark a spot for the tolerant
     /// search.
     static let tolerantSeedWords = 3
@@ -276,21 +277,35 @@ struct TextAnchorFinder: Sendable {
 
     /// The heading a skipped heading of `level`, labelled `label`, saved at
     /// `saved` with `anchor` (its anchor at the heading's start) now names,
-    /// and how it was found; nil when nothing names it, so the skip waits,
-    /// applying to no heading, rather than skip another section and hide
-    /// text the listener meant to hear.
+    /// and how it was found; nil when nothing proves which heading it is, so
+    /// the skip waits, applying to no heading, rather than skip another
+    /// section and hide text the listener meant to hear. A heading is named
+    /// only on proof (REV16, finding F1):
     ///
-    /// The measured rules (TEXT-ANCHORS-ADDENDUM-2026-10-10.md, section 5):
-    /// each heading of its level is scored by the saved words at its start,
-    /// plus 3 when its label is unchanged, and the one best that scores 8 or
-    /// more is it, under the tie and locality rules; else, when the saved
-    /// words are too few to score (a cover's), the one heading of its level
-    /// with its label; else, as a best guess, the nearest heading of its
-    /// level with its label. Before them, the direct check: its saved words
-    /// still stand at its saved place, where a heading of its level and its
-    /// label starts. The label is part of that check because a cover's
-    /// anchor holds no words and so stands anywhere: without it, a title
-    /// page put in where the cover was would take its skip.
+    /// 1. **The direct check.** Its saved words still stand at its saved
+    ///    place, where a heading of its level and its label starts. The label
+    ///    is part of the check because a cover's anchor holds no words and so
+    ///    stands anywhere: without it, a title page put in where the cover
+    ///    was would take its skip.
+    /// 2. **Its section's opening words** (`opensItsSection`). Every one of
+    ///    its saved words after the heading agrees, in order, from a
+    ///    heading's first word on, within that heading's chapter, and at
+    ///    least `sectionProofWords` of them lie past the label's words. One
+    ///    such heading of its level is it; of several (sections that open
+    ///    alike), the one with its label, when exactly one has it.
+    ///
+    /// Nothing else names a heading. The measured rules
+    /// (TEXT-ANCHORS-ADDENDUM-2026-10-10.md, section 5) also scored a heading
+    /// by the words before it, added 3 for an unchanged label, and fell back
+    /// on the label alone. REV16 found that with no old text to diff (the
+    /// check at load, `PlaceRelocator.relocate(_:within:movedAt:)`, this
+    /// function's one caller), those handed a removed section's skip to the
+    /// section after it, whose words before are the removed one's, or to
+    /// another chapter's section of the same label. A heading that only moved
+    /// keeps every word after it, so it is still found. One moved and edited
+    /// within its saved words waits, as does a cover that moved, whose skip
+    /// holds no words: a rebuild, which diffs the old text with the new,
+    /// still carries both (`PlaceRelocator.relocate(_:)`).
     func findHeading(level: Int, label: String, anchor: TextAnchor, savedAt saved: TextPlace) -> HeadingResult? {
         let candidates = headings.filter { $0.level == level }
         guard !candidates.isEmpty else { return nil }
@@ -299,37 +314,39 @@ struct TextAnchorFinder: Sendable {
             return HeadingResult(heading: same, finding: .unchanged)
         }
         let quote = Quote(anchor)
-        let expected = anchor.fraction * Double(words.totalLength)
-        let scored = candidates.map { heading in
-            (heading: heading,
-             score: score(at: words.word(at: place(of: heading)), quote) + (heading.text == label ? Self.labelBonus : 0))
+        let skippedLabel = FineWords.keys(in: label)
+        let proven = candidates.filter { opensItsSection(quote, at: $0, skippedLabel: skippedLabel) }
+        // One proven heading is it; of several that open alike, the one
+        // with its label, when only one has it.
+        let provenWithItsLabel = proven.filter { $0.text == label }
+        guard let named = proven.count == 1 ? proven.first : (provenWithItsLabel.count == 1 ? provenWithItsLabel.first : nil) else {
+            return nil
         }
-        let labelled = candidates.filter { $0.text == label }
-        if let best = scored.map(\.score).max(), best >= Self.minimumScore {
-            let top = scored.filter { $0.score == best }
-            let nearWhereItWas = { (heading: Heading) in
-                self.distance(of: self.place(of: heading), from: expected) <= self.localityWindow
-            }
-            // A near heading that scores enough keeps a far best from being
-            // taken; the guess below then decides.
-            let farFromANearRival = !top.contains { nearWhereItWas($0.heading) }
-                && scored.contains { nearWhereItWas($0.heading) && $0.score >= Self.minimumScore }
-            if top.count == 1, let only = top.first, !farFromANearRival {
-                return HeadingResult(heading: only.heading, finding: .found(.savedWords(score: best)))
-            }
-        } else if labelled.count == 1, let only = labelled.first {
-            return HeadingResult(heading: only, finding: .found(.onlyHeadingWithItsLabel))
-        }
-        // The best guess: the nearest heading of its level with its label,
-        // the earlier of two equally near.
-        var nearest: (heading: Heading, distance: Double)?
-        for heading in labelled {
-            let distance = distance(of: place(of: heading), from: expected)
-            if nearest.map({ distance < $0.distance }) ?? true {
-                nearest = (heading, distance)
-            }
-        }
-        return nearest.map { HeadingResult(heading: $0.heading, finding: .guessed(.nearestHeadingWithItsLabel)) }
+        let savedWordsScore = score(at: words.word(at: place(of: named)), quote)
+        return HeadingResult(heading: named, finding: .found(.savedWords(score: savedWordsScore)))
+    }
+
+    /// Whether `heading` opens the skipped heading's section, by `quote`, the
+    /// skip's saved words (rule 2 of `findHeading`): every word of the quote
+    /// after the heading agrees, in order, from the heading's first word on,
+    /// within its chapter, and at least `sectionProofWords` of them lie past
+    /// the label's words. The label's words are the longer run of them the
+    /// quote begins with, by the skip's label (`skippedLabel`, its fine
+    /// words) or by `heading`'s own, so a label alone never proves a section,
+    /// however many of its words agree.
+    private func opensItsSection(_ quote: Quote, at heading: Heading, skippedLabel: [UInt64]) -> Bool {
+        let after = quote.after
+        let labelWords = max(Self.leadingRun(of: skippedLabel, in: after), Self.leadingRun(of: FineWords.keys(in: heading.text), in: after))
+        guard after.count - labelWords >= Self.sectionProofWords,
+              heading.chapterIndex >= 0, heading.chapterIndex < words.chapterCount
+        else { return false }
+        let start = words.word(at: place(of: heading))
+        return start + after.count <= words.chapterFirstWords[heading.chapterIndex + 1] && agrees(after[...], at: start)
+    }
+
+    /// How many of `label`'s words, in order, `run` begins with.
+    private static func leadingRun(of label: [UInt64], in run: [UInt64]) -> Int {
+        zip(label, run).prefix { $0 == $1 }.count
     }
 
     // MARK: - The Saved Words, as the Search Reads Them
@@ -621,11 +638,6 @@ struct TextAnchorFinder: Sendable {
     /// How far word `word` begins from `expected`, in UTF-16 units.
     private func distance(ofWord word: Int, from expected: Double) -> Double {
         abs(Double(words.globalStart(ofWord: word)) - expected)
-    }
-
-    /// How far `place` is from `expected`, in UTF-16 units.
-    private func distance(of place: TextPlace, from expected: Double) -> Double {
-        abs(Double(words.globalOffset(of: place)) - expected)
     }
 
     /// Where `heading` starts.

@@ -1279,9 +1279,12 @@ extension PlaceRelocator {
     ///
     /// Otherwise every place moves at once, by the one outcome builder: a
     /// place that stands stays; one with words that do not stand is found by
-    /// them; and a named skip whose heading is gone is found by its saved
-    /// words, else waits. A skip moves only on proof, as everywhere else: a
-    /// best guess leaves it waiting.
+    /// them; and a named skip whose heading is gone names another heading
+    /// only where every one of its saved words after the heading agrees at
+    /// that heading's start (`TextAnchorFinder.findHeading`), else waits. A
+    /// skip moves only on proof, as everywhere else: neither its label nor
+    /// the words before its heading alone moves it, nor does a best guess
+    /// (REV16, finding F1).
     ///
     /// A reading position or bookmark that nothing finds stays exactly as it
     /// was saved (`keepingPlacesNothingFound(in:of:)`): one saved without
@@ -1455,10 +1458,12 @@ extension PlaceRelocator {
     }
 
     /// The heading a named skip names at load: its `standing` heading when it
-    /// has one; else the heading its saved words find for certain
-    /// (`TextAnchorFinder.findHeading`); nil, so the skip waits, when it has
-    /// no saved words or they find only a best guess (a guess never moves a
-    /// skip onto a heading, `relocate(_:)`).
+    /// has one; else the heading its saved words prove it is
+    /// (`TextAnchorFinder.findHeading`: its saved words after the heading
+    /// agree at that heading's start); nil, so the skip waits, when it has
+    /// no saved words or nothing proves it. The finder makes no guess for a
+    /// heading; the check stands so that none ever moves a skip onto one
+    /// (`relocate(_:)`).
     private static func headingResultAtLoad(for skipped: SkippedHeading, standing: Heading?, finder: TextAnchorFinder) -> HeadingResult? {
         if let standing { return HeadingResult(heading: standing, finding: .unchanged) }
         guard let anchor = skipped.anchor,
