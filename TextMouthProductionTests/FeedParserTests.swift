@@ -79,13 +79,15 @@ final class FeedParserTests: XCTestCase {
         XCTAssertEqual(feed.siteLink?.absoluteString, "https://radio.example/podcasts/ledger-lines")
         XCTAssertEqual(feed.author, "Example Public Radio")
         XCTAssertEqual(feed.items.count, 3)
-        XCTAssertEqual(feed.items[0].duration, 1_780)
-        XCTAssertNil(feed.items[0].content, "content that repeats the description is dropped")
-        XCTAssertNotNil(feed.items[1].content, "content that adds to the description is kept")
-        let enclosure = try XCTUnwrap(feed.items[0].enclosure?.url.absoluteString)
+        let first = try XCTUnwrap(feed.items[safe: 0])
+        let second = try XCTUnwrap(feed.items[safe: 1])
+        XCTAssertEqual(first.duration, 1_780)
+        XCTAssertNil(first.content, "content that repeats the description is dropped")
+        XCTAssertNotNil(second.content, "content that adds to the description is kept")
+        let enclosure = try XCTUnwrap(first.enclosure?.url.absoluteString)
         XCTAssertTrue(enclosure.contains("default.mp3?awCollectionId="))
         XCTAssertTrue(enclosure.contains("&t=podcast&"))
-        XCTAssertEqual(feed.items[0].enclosure?.url.pathExtension, "mp3")
+        XCTAssertEqual(first.enclosure?.url.pathExtension, "mp3")
     }
 
     /// WordPress News: articles with no enclosure, a summary, the whole
@@ -142,7 +144,7 @@ final class FeedParserTests: XCTestCase {
         XCTAssertEqual(feed.author, "Dev Raghunathan")
         XCTAssertEqual(feed.items.count, 2)
 
-        let bread = feed.items[0]
+        let bread = try XCTUnwrap(feed.items[safe: 0])
         XCTAssertEqual(bread.title, "Bread <without> yeast")
         XCTAssertEqual(bread.link?.absoluteString, "https://atom.example/episodes/bread")
         XCTAssertEqual(bread.enclosure?.url.absoluteString, "https://media.example/bread.mp3")
@@ -155,7 +157,7 @@ final class FeedParserTests: XCTestCase {
         XCTAssertTrue(content.text.contains("<p>Mix the <em>flour</em> &amp; soda.</p>"), content.text)
         XCTAssertTrue(content.text.contains("Bake at 200 &lt;degrees&gt;."), content.text)
 
-        let soup = feed.items[1]
+        let soup = try XCTUnwrap(feed.items[safe: 1])
         XCTAssertEqual(soup.title, "Soup for one")
         XCTAssertEqual(soup.enclosure?.kind, .video)
         XCTAssertEqual(soup.published, try Self.date("2026-09-28T07:30:00Z"))
@@ -169,10 +171,11 @@ final class FeedParserTests: XCTestCase {
         XCTAssertEqual(feed.format, .rdf)
         XCTAssertEqual(feed.title, "Slow News, RSS 1.0")
         XCTAssertEqual(feed.items.map(\.title), ["First note", "Second note"])
-        XCTAssertEqual(feed.items[0].published, try Self.date("2026-10-01T09:00:00Z"))
-        XCTAssertEqual(feed.items[0].author, "Margit Huhta")
-        XCTAssertEqual(feed.items[0].summary?.text, "<p>Escaped <b>markup</b>.</p>")
-        XCTAssertEqual(feed.items[0].identity, "link:https://rdf.example/a\u{1F}First note")
+        let first = try XCTUnwrap(feed.items[safe: 0])
+        XCTAssertEqual(first.published, try Self.date("2026-10-01T09:00:00Z"))
+        XCTAssertEqual(first.author, "Margit Huhta")
+        XCTAssertEqual(first.summary?.text, "<p>Escaped <b>markup</b>.</p>")
+        XCTAssertEqual(first.identity, "link:https://rdf.example/a\u{1F}First note")
     }
 
     /// Every namespace under a prefix of its own, Apple's in another letter
@@ -212,7 +215,7 @@ final class FeedParserTests: XCTestCase {
         let feed = try Self.parse("video-podcast.xml")
 
         XCTAssertEqual(feed.items.map { $0.enclosure?.kind }, [.video, nil, .other])
-        XCTAssertTrue(FeedTransport.isInsecure(try XCTUnwrap(feed.items[0].enclosure?.url)))
+        XCTAssertTrue(FeedTransport.isInsecure(try XCTUnwrap(feed.items[safe: 0]?.enclosure?.url)))
     }
 
     // MARK: - Faults
@@ -238,9 +241,9 @@ final class FeedParserTests: XCTestCase {
             XCTAssertEqual(feed.title, "Fault Lines", fault.file)
         }
         let latin1 = try Self.parse("fault-latin1-in-utf8.xml")
-        XCTAssertTrue(latin1.items[0].summary?.text.hasPrefix("Caf") ?? false)
+        XCTAssertTrue(latin1.items[safe: 0]?.summary?.text.hasPrefix("Caf") ?? false)
         let control = try Self.parse("fault-control-character.xml")
-        XCTAssertTrue(control.items[0].summary?.text.hasPrefix("bad") ?? false)
+        XCTAssertTrue(control.items[safe: 0]?.summary?.text.hasPrefix("bad") ?? false)
     }
 
     /// A feed cut short keeps the items it holds whole, and the repair says
@@ -252,7 +255,7 @@ final class FeedParserTests: XCTestCase {
         XCTAssertEqual(repair.itemsBeforeFault, 2)
         XCTAssertGreaterThan(repair.line, 0)
         XCTAssertEqual(Array(feed.items.prefix(2).map(\.guid)), ["ep-1", "ep-2"])
-        XCTAssertEqual(feed.items[1].enclosure?.url.absoluteString, "https://cdn.example/2.mp3")
+        XCTAssertEqual(feed.items[safe: 1]?.enclosure?.url.absoluteString, "https://cdn.example/2.mp3")
     }
 
     /// A DOCTYPE naming a file on this Mac as an entity never brings the
@@ -271,7 +274,7 @@ final class FeedParserTests: XCTestCase {
     func testDeclaredEncodingsAndDoctypesAreRead() throws {
         let netscape = try Self.parse("fault-netscape-doctype.xml")
         XCTAssertEqual(netscape.items.count, 3)
-        XCTAssertFalse(netscape.items[0].summary?.text.contains("&nbsp;") ?? true)
+        XCTAssertFalse(netscape.items[safe: 0]?.summary?.text.contains("&nbsp;") ?? true)
 
         let bom = try Self.parse("encoding-utf8-bom.xml")
         XCTAssertNil(bom.repair)
@@ -336,9 +339,11 @@ final class FeedParserTests: XCTestCase {
         let feed = try FeedParser.parse(Data(markup.utf8), baseURL: nil)
 
         XCTAssertEqual(feed.items.count, 2)
-        XCTAssertNil(feed.items[0].enclosure)
-        XCTAssertEqual(feed.items[1].title, "Only a description, which names the item when the title is missing.")
-        XCTAssertTrue(feed.items[1].identity.hasPrefix("link:"))
+        let local = try XCTUnwrap(feed.items[safe: 0])
+        let described = try XCTUnwrap(feed.items[safe: 1])
+        XCTAssertNil(local.enclosure)
+        XCTAssertEqual(described.title, "Only a description, which names the item when the title is missing.")
+        XCTAssertTrue(described.identity.hasPrefix("link:"))
     }
 
     // MARK: - JSON Feed
@@ -365,7 +370,7 @@ final class FeedParserTests: XCTestCase {
         XCTAssertNil(feed.newFeedURL, "a JSON feed's own feed_url is no move")
         XCTAssertEqual(feed.items.map(\.position), [0, 1, 2])
 
-        let first = feed.items[0]
+        let first = try XCTUnwrap(feed.items[safe: 0])
         XCTAssertEqual(first.guid, "kitchen-table-3")
         XCTAssertEqual(first.identity, "guid:kitchen-table-3")
         XCTAssertEqual(first.title, "Labelling the spice rack")
@@ -382,7 +387,7 @@ final class FeedParserTests: XCTestCase {
         ))
         XCTAssertEqual(first.duration, 1_203)
 
-        let second = feed.items[1]
+        let second = try XCTUnwrap(feed.items[safe: 1])
         XCTAssertNil(second.summary)
         XCTAssertEqual(second.content, FeedTextSource(
             text: "Thermoform or paper?\n\nWe compare both after a month in a busy kitchen.",
@@ -392,7 +397,7 @@ final class FeedParserTests: XCTestCase {
         XCTAssertEqual(second.duration, 905.5)
         XCTAssertNil(second.author)
 
-        let third = feed.items[2]
+        let third = try XCTUnwrap(feed.items[safe: 2])
         XCTAssertEqual(third.guid, "1")
         XCTAssertEqual(third.published, try Self.date("2026-09-16T08:00:00Z"))
         XCTAssertEqual(third.enclosure?.url.absoluteString, "https://media.example/ktb/1.mp3")
@@ -410,13 +415,13 @@ final class FeedParserTests: XCTestCase {
         XCTAssertEqual(feed.title, "Quill Notes")
         XCTAssertEqual(feed.author, "The Quill Team")
         XCTAssertEqual(feed.items.count, 2)
-        let note = feed.items[0]
+        let note = try XCTUnwrap(feed.items[safe: 0])
         XCTAssertEqual(note.title, "Quill 3.2 reads .qnb notebooks aloud, cell by cell, and says which cell failed.")
         XCTAssertEqual(note.guid, "https://quill-lang.example/notes/2026/10/02/")
         XCTAssertEqual(note.link?.absoluteString, "https://quill-lang.example/notes/2026/10/02/")
         XCTAssertEqual(note.published, try Self.date("2026-10-02T10:30:00Z"))
         XCTAssertNil(note.enclosure)
-        let review = feed.items[1]
+        let review = try XCTUnwrap(feed.items[safe: 1])
         XCTAssertEqual(review.title, "A review worth reading")
         XCTAssertEqual(review.link?.absoluteString, "https://other.example/review-of-quill")
         XCTAssertEqual(review.content?.kind, .plain)
