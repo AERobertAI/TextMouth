@@ -77,11 +77,16 @@ NAME_RULE = re.compile(r"[a-z0-9][a-z0-9._-]{0,39}")
 #: Longest accepted one-line field (role, branch, topic, activity note).
 MAX_LINE_LENGTH = 200
 
-#: Kinds of message; `notice` is the default.
-TAGS = ("build", "commit", "finding", "question", "notice", "merge")
+#: Kinds of message; `notice` is the default. `task` marks the lines the board
+#: posts to a team's channel when a task changes.
+TAGS = ("build", "commit", "finding", "question", "notice", "merge", "task")
 
 #: What an agent can say it is doing; shown by `agents`.
 ACTIVITIES = ("building", "testing", "committing", "idle", "merging")
+
+#: A task's states, in the order of its life: `open` (no one has it yet), then
+#: `assigned`, `working`, and `review`, ending `done` or `dropped`.
+TASK_STATES = ("open", "assigned", "working", "review", "done", "dropped")
 
 #: Largest accepted message body, in bytes of UTF-8 (16 KB).
 MAX_BODY_BYTES = 16 * 1024
@@ -1736,6 +1741,128 @@ def cmd_teams(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
 
 # ---------------------------------------------------------------------------
+# Tasks
+# ---------------------------------------------------------------------------
+
+
+def load_tasks(
+    conn: sqlite3.Connection,
+    *,
+    task_id: Optional[int] = None,
+    team: Optional[str] = None,
+    state: Optional[str] = None,
+    assignee: Optional[str] = None,
+) -> List[dict]:
+    """Return tasks as JSON-ready dicts, ordered by id, each with its files.
+
+    Every argument that is given adds one condition. A task's ``assignee``
+    and ``brief`` are None when it has none, and its files come in the order
+    they were stored.
+    """
+    # (condition, value) pairs for the arguments that were given.
+    conditions = [
+        (f"t.{column} = ?", value)
+        for column, value in (("id", task_id), ("team", team), ("state", state), ("assignee", assignee))
+        if value is not None
+    ]
+    clause = " AND ".join(condition for condition, _ in conditions)
+    rows = conn.execute(
+        "SELECT t.*, f.path AS file FROM tasks t"
+        " LEFT JOIN task_files f ON f.task_id = t.id"
+        f"{' WHERE ' + clause if clause else ''}"
+        " ORDER BY t.id, f.rowid",
+        [value for _, value in conditions],
+    )
+    # The join yields one row per file, so gather each task's files.
+    tasks: Dict[int, dict] = {}
+    for row in rows:
+        task = tasks.get(row["id"])
+        if task is None:
+            task = tasks[row["id"]] = {
+                "id": row["id"],
+                "team": row["team"],
+                "title": row["title"],
+                "state": row["state"],
+                "assignee": row["assignee"],
+                "brief": row["brief"],
+                "files": [],
+                "note": row["note"],
+                "created": row["created_at"],
+                "created_by": row["created_by"],
+                "updated": row["updated_at"],
+                "updated_by": row["updated_by"],
+            }
+        if row["file"] is not None:
+            task["files"].append(row["file"])
+    return list(tasks.values())
+
+
+def describe_task(task: dict) -> str:
+    """Describe one task: a first line, then only the detail lines with something to say."""
+    assigned = f", assigned to {task['assignee']}" if task["assignee"] else ""
+    lines = [f"Task {task['id']} in {task['team']}, {task['state']}{assigned}: {task['title']}"]
+    if task["brief"]:
+        lines.append(f"  Brief: {task['brief']}")
+    if task["files"]:
+        lines.append(f"  Files: {', '.join(task['files'])}")
+    if task["note"]:
+        lines.append(f"  Note: {task['note']}")
+    lines.append(f"  Changed: {local_label(task['updated'])} by {task['updated_by']}")
+    return "\n".join(lines)
+
+
+def assignee_reminder(conn: sqlite3.Connection, task: dict) -> str:
+    """Return a line saying the task's assignee has not registered, or "" when there is no need.
+
+    A lead may plan a task for an agent that registers later, so this is a
+    reminder and not an error.
+    """
+    assignee = task["assignee"]
+    if assignee is None or conn.execute("SELECT 1 FROM agents WHERE name = ?", (assignee,)).fetchone():
+        return ""
+    return f"{assignee} has not registered yet."
+
+
+def cmd_task_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Add a task to a team's list and announce it in the team's channel."""
+    title = one_line(args.title, "title")
+    brief = normalize_patterns([args.brief])[0] if args.brief is not None else None
+    files = normalize_patterns(args.files)
+    assignee = normalize_name(args.assign) if args.assign is not None else None
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        team = require_team(conn, args.team)
+        now = to_utc_text(utc_now())
+        cursor = conn.execute(
+            "INSERT INTO tasks (team, title, brief, state, assignee, created_at, created_by, updated_at, updated_by)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (team, title, brief, "open" if assignee is None else "assigned", assignee, now, actor, now, actor),
+        )
+        task_id = cursor.lastrowid
+        conn.executemany("INSERT INTO task_files (task_id, path) VALUES (?, ?)", [(task_id, path) for path in files])
+        for_whom = "" if assignee is None else f" for {assignee}"
+        post_to_team(conn, actor, team, f"Added task {task_id}{for_whom}: {title}", tag="task")
+        task = load_tasks(conn, task_id=task_id)[0]
+        reminder = assignee_reminder(conn, task)
+    lines = [f"Added task {task_id} to team {team}.", describe_task(task)]
+    if reminder:
+        lines.append(reminder)
+    return Outcome(task, "\n".join(lines))
+
+
+def cmd_tasks(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """List tasks, narrowed by team, state, and assignee."""
+    team = require_team(conn, args.team) if args.team is not None else None
+    assignee = normalize_name(args.agent) if args.agent is not None else None
+    tasks = load_tasks(conn, team=team, state=args.state, assignee=assignee)
+    if not tasks:
+        filtered = any(value is not None for value in (team, args.state, assignee))
+        return Outcome(tasks, "No tasks match." if filtered else "No tasks yet.")
+    heading = f"{plural(len(tasks), 'task')}:"
+    return Outcome(tasks, "\n\n".join([heading] + [describe_task(task) for task in tasks]))
+
+
+# ---------------------------------------------------------------------------
 # Housekeeping
 # ---------------------------------------------------------------------------
 
@@ -2015,6 +2142,27 @@ def build_parser() -> BoardArgumentParser:
 
     teams = command("teams", cmd_teams, "list teams with their lead and members, or show one")
     teams.add_argument("team", nargs="?", metavar="TEAM", help="only this team")
+
+    task = command_group("task", "add tasks to a team's list and move them through their states")
+    task_add = command("add", cmd_task_add, "add a task to a team's list", group=task)
+    task_add.add_argument("name", help="your agent name")
+    task_add.add_argument("team", metavar="TEAM", help="the team whose list gets the task")
+    task_add.add_argument("--title", required=True, help="one line saying what the task is")
+    task_add.add_argument("--brief", metavar="PATH", help="the task's brief, relative to the repository root")
+    task_add.add_argument(
+        "--files",
+        nargs="+",
+        action="extend",
+        default=[],
+        metavar="PATH",
+        help="paths or globs the task will touch",
+    )
+    task_add.add_argument("--assign", metavar="AGENT", help="the agent who takes the task; it may register later")
+
+    tasks = command("tasks", cmd_tasks, "list tasks by team, state, or agent")
+    tasks.add_argument("--team", metavar="TEAM", help="only this team's tasks")
+    tasks.add_argument("--state", choices=TASK_STATES, help="only tasks in this state")
+    tasks.add_argument("--agent", metavar="AGENT", help="only tasks assigned to this agent")
 
     purge = command("purge", cmd_purge, "delete old messages and agents not seen for a while")
     purge.add_argument(

@@ -1537,5 +1537,186 @@ class SchemaTests(BoardTestCase):
             bbs._created_name("SELECT 1")
 
 
+class TaskTests(BoardTestCase):
+    """Task lists: task add, tasks, and the task counts in teams."""
+
+    def setUp(self) -> None:
+        """Register a lead and two workers; create teams board (led by lead) and polish (led by beta)."""
+        super().setUp()
+        for name in ("lead", "alpha", "beta"):
+            self.register(name)
+        # These two creations take message ids 1 and 2.
+        self.ok("team", "create", "lead", "board", "--purpose", "Build the board")
+        self.ok("team", "create", "beta", "polish", "--purpose", "Polish the app")
+
+    def add(self, title: str, team: str = "board", *extra: str, actor: str = "lead") -> dict:
+        """Add a task as ``actor`` (with ``extra`` options) and return its JSON."""
+        return self.ok_json("task", "add", actor, team, "--title", title, *extra)
+
+    def channel(self, team: str = "board") -> List[dict]:
+        """Return the messages posted to a team's channel, oldest first."""
+        return [m for m in self.ok_json("read") if m["to"] == f"team:{team}"]
+
+    def test_task_add_reports_every_field_of_the_task(self) -> None:
+        with self.clock(NOON):
+            task = self.add(
+                "  Build   the\nchannels ",
+                "board",
+                "--brief",
+                "./x/../Scripts/a.md",
+                "--files",
+                "./src/../a.py",
+                "b/",
+                "a.py",
+            )
+        self.assertEqual(
+            task,
+            {
+                "id": 1,
+                "team": "board",
+                "title": "Build the channels",
+                "state": "open",
+                "assignee": None,
+                "brief": "Scripts/a.md",
+                "files": ["a.py", "b/"],
+                "note": "",
+                "created": bbs.to_utc_text(NOON),
+                "created_by": "lead",
+                "updated": bbs.to_utc_text(NOON),
+                "updated_by": "lead",
+            },
+        )
+
+    def test_a_task_without_options_has_no_brief_files_or_assignee(self) -> None:
+        task = self.add("Bare")
+        self.assertEqual((task["brief"], task["files"], task["assignee"], task["state"]), (None, [], None, "open"))
+
+    def test_the_text_of_task_add_pins_each_line(self) -> None:
+        with self.clock(NOON):
+            text = self.ok(
+                "task", "add", "lead", "team:Board", "--title", "Channels",
+                "--brief", "briefs/c.md", "--files", "a.py", "b.py",
+            )
+        stamp = bbs.local_label(bbs.to_utc_text(NOON))
+        self.assertEqual(
+            text.splitlines(),
+            [
+                "Added task 1 to team board.",
+                "Task 1 in board, open: Channels",
+                "  Brief: briefs/c.md",
+                "  Files: a.py, b.py",
+                f"  Changed: {stamp} by lead",
+            ],
+        )
+
+    def test_assigning_a_task_on_creation_marks_it_assigned(self) -> None:
+        task = self.add("Channels", "board", "--assign", "Alpha")
+        self.assertEqual((task["state"], task["assignee"]), ("assigned", "alpha"))
+        text = self.ok("task", "add", "lead", "board", "--title", "More", "--assign", "alpha")
+        self.assertIn("Task 2 in board, assigned, assigned to alpha: More", text.splitlines())
+
+    def test_an_assignee_who_has_not_registered_gets_a_reminder_and_a_registered_one_does_not(self) -> None:
+        planned = self.ok("task", "add", "lead", "board", "--title", "Later", "--assign", "nobody-yet")
+        self.assertEqual(planned.splitlines()[-1], "nobody-yet has not registered yet.")
+        registered = self.ok("task", "add", "lead", "board", "--title", "Now", "--assign", "alpha")
+        self.assertNotIn("has not registered", registered)
+
+    def test_adding_a_task_posts_a_task_line_to_the_teams_channel(self) -> None:
+        self.add("Channels")
+        self.add("Housekeeping", "board", "--assign", "alpha", actor="alpha")
+        lines = [m for m in self.channel() if m["tag"] == "task"]
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(
+            [(m["id"], m["from"], m["to"], m["topic"]) for m in lines],
+            [
+                (3, "lead", "team:board", "Added task 1: Channels"),
+                (4, "alpha", "team:board", "Added task 2 for alpha: Housekeeping"),
+            ],
+        )
+        self.assertEqual(len(self.ok_json("read", "--tag", "task")), 2)
+
+    def test_a_long_title_is_kept_whole_on_the_task_and_clipped_in_the_channel(self) -> None:
+        title = "t" * 200
+        self.assertEqual(self.add(title)["title"], title)
+        topic = self.channel()[-1]["topic"]
+        self.assertEqual(len(topic), 200)
+        self.assertTrue(topic.endswith("…"))
+        self.assertTrue(topic.startswith("Added task 1: tt"))
+
+    def test_task_add_refuses_what_it_cannot_store(self) -> None:
+        self.assertIn("did you mean 'board'", self.fails("task", "add", "lead", "bord", "--title", "x"))
+        self.assertIn("unknown agent 'leed'", self.fails("task", "add", "leed", "board", "--title", "x"))
+        self.fails("task", "add", "lead", "board")
+        self.assertIn("title is empty", self.fails("task", "add", "lead", "board", "--title", "   "))
+        self.assertIn("201 characters", self.fails("task", "add", "lead", "board", "--title", "t" * 201))
+        self.fails("task", "add", "lead", "board", "--title", "x", "--brief", "../x.md")
+        self.fails("task", "add", "lead", "board", "--title", "x", "--files", "../x.md")
+        self.fails("task", "add", "lead", "board", "--title", "x", "--assign", "Not A Name")
+        # Nothing was stored or posted by any of those refusals.
+        self.assertEqual(self.ok_json("tasks"), [])
+        self.assertEqual(len(self.ok_json("read", "--tag", "task")), 0)
+
+    def test_ids_count_up_across_teams(self) -> None:
+        self.assertEqual(self.add("First", "board")["id"], 1)
+        self.assertEqual(self.add("Second", "polish")["id"], 2)
+
+    def test_tasks_lists_every_task_in_id_order_with_a_count(self) -> None:
+        self.add("First", "board")
+        self.add("Second", "polish", "--assign", "beta")
+        with self.clock(NOON):
+            lines = self.ok("tasks").splitlines()
+        self.assertEqual(lines[0], "2 tasks:")
+        self.assertIn("Task 1 in board, open: First", lines)
+        self.assertIn("Task 2 in polish, assigned, assigned to beta: Second", lines)
+        self.assertLess(
+            lines.index("Task 1 in board, open: First"),
+            lines.index("Task 2 in polish, assigned, assigned to beta: Second"),
+        )
+        # A blank line follows the heading and separates the two tasks.
+        self.assertEqual(lines.count(""), 2)
+
+    def test_one_task_reads_as_one_task(self) -> None:
+        self.add("Only")
+        self.assertEqual(self.ok("tasks").splitlines()[0], "1 task:")
+
+    def test_tasks_filters_by_team_state_and_agent_alone_and_together(self) -> None:
+        self.add("A", "board", "--assign", "alpha")
+        self.add("B", "board")
+        self.add("C", "polish", "--assign", "alpha")
+
+        def titles(*args: str) -> List[str]:
+            """Return the titles of the tasks that ``tasks`` lists with ``args``."""
+            return [task["title"] for task in self.ok_json("tasks", *args)]
+
+        self.assertEqual(titles("--team", "board"), ["A", "B"])
+        self.assertEqual(titles("--team", "team:Board"), ["A", "B"])
+        self.assertEqual(titles("--state", "open"), ["B"])
+        self.assertEqual(titles("--state", "assigned"), ["A", "C"])
+        self.assertEqual(titles("--agent", "Alpha"), ["A", "C"])
+        self.assertEqual(titles("--team", "board", "--agent", "alpha"), ["A"])
+        self.assertEqual(titles("--team", "polish", "--state", "assigned"), ["C"])
+        self.assertEqual(titles("--team", "board", "--state", "assigned", "--agent", "alpha"), ["A"])
+        self.assertEqual(titles("--team", "polish", "--state", "open"), [])
+
+    def test_tasks_says_when_there_are_none_and_when_none_match(self) -> None:
+        self.assertEqual(self.ok("tasks").strip(), "No tasks yet.")
+        self.assertEqual(self.ok("tasks", "--team", "board").strip(), "No tasks match.")
+        self.add("A")
+        self.assertEqual(self.ok("tasks", "--state", "done").strip(), "No tasks match.")
+        self.assertEqual(self.ok("tasks", "--agent", "alpha").strip(), "No tasks match.")
+
+    def test_tasks_refuses_an_unknown_team_or_state(self) -> None:
+        self.assertIn("did you mean 'polish'", self.fails("tasks", "--team", "polsh"))
+        status, _, err = self.run_bbs("tasks", "--state", "nonsense")
+        self.assertNotEqual(status, 0)
+        self.assertIn("nonsense", err)
+
+    def test_json_is_a_list_of_task_dicts_even_when_empty(self) -> None:
+        self.assertEqual(self.ok_json("tasks"), [])
+        added = self.add("A", "board", "--files", "a.py")
+        self.assertEqual(self.ok_json("tasks"), [added])
+        self.assertEqual(self.ok_json("tasks", "--team", "polish"), [])
+
+
 if __name__ == "__main__":
     unittest.main()
