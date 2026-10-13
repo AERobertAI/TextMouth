@@ -2054,16 +2054,13 @@ class TaskTests(BoardTestCase):
         self.assertIn("  Tasks: 4 open", self.ok("teams", "board").splitlines())
         self.add("E", "board", "--assign", "alpha")
         self.assertIn("  Tasks: 4 open, 1 assigned", self.ok("teams", "board").splitlines())
-        # `task move` comes from a later task, so set the states directly in SQL.
-        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
-            conn.execute("UPDATE tasks SET state = 'working' WHERE id IN (1, 2)")
-            conn.execute("UPDATE tasks SET state = 'review' WHERE id = 3")
-            conn.execute("UPDATE tasks SET state = 'done' WHERE id = 5")
-            conn.commit()
+        # Tasks 1 and 2 go to working, task 3 to review, and task 5 to done; task 4 stays open.
+        moves = ((1, "alpha", "working"), (2, "alpha", "working"), (3, "beta", "review"), (5, "alpha", "done"))
+        for task_id, assignee, state in moves:
+            self.ok("task", "assign", "lead", str(task_id), assignee)
+            self.ok("task", "move", assignee, str(task_id), state)
         self.assertIn("  Tasks: 1 open, 2 working, 1 in review, 1 done", self.ok("teams", "board").splitlines())
-        with contextlib.closing(sqlite3.connect(self.board_dir / bbs.BOARD_FILENAME)) as conn:
-            conn.execute("UPDATE tasks SET state = 'dropped' WHERE id = 4")
-            conn.commit()
+        self.ok("task", "move", "lead", "4", "dropped")
         self.assertIn("  Tasks: 2 working, 1 in review, 1 done, 1 dropped", self.ok("teams", "board").splitlines())
         self.assertIn("  Tasks: none", self.ok("teams", "polish").splitlines())
 
@@ -2074,6 +2071,190 @@ class TaskTests(BoardTestCase):
         self.assertEqual(teams["board"]["tasks"], [first])
         self.assertEqual(teams["polish"]["tasks"], [second])
         self.assertEqual(self.ok_json("teams", "board")[0]["tasks"], [first])
+
+    def assign(self, task_id: int, agent: str, *extra: str, actor: str = "lead") -> dict:
+        """Assign a task as ``actor`` (with ``extra`` options) and return its JSON."""
+        return self.ok_json("task", "assign", actor, str(task_id), agent, *extra)
+
+    def move(self, task_id: int, state: str, *extra: str, actor: str = "lead") -> dict:
+        """Move a task as ``actor`` (with ``extra`` options) and return its JSON."""
+        return self.ok_json("task", "move", actor, str(task_id), state, *extra)
+
+    def test_task_assign_sets_the_assignee_the_state_and_the_note(self) -> None:
+        self.add("Channels")
+        task = self.assign(1, "Alpha", "--note", "  Start   with\nposting ")
+        self.assertEqual((task["state"], task["assignee"], task["note"]), ("assigned", "alpha", "Start with posting"))
+        self.assertEqual(self.ok_json("tasks"), [task])
+
+    def test_task_assign_posts_a_channel_line_with_the_note_as_its_body(self) -> None:
+        self.add("Channels")
+        self.assign(1, "alpha", "--note", "Mind the replies")
+        line = self.channel()[-1]
+        self.assertEqual(
+            (line["id"], line["from"], line["tag"], line["topic"], line["body"]),
+            (4, "lead", "task", "Assigned task 1 to alpha: Channels", "Mind the replies"),
+        )
+
+    def test_the_text_of_task_assign_pins_each_line(self) -> None:
+        self.add("Channels")
+        with self.clock(NOON):
+            text = self.ok("task", "assign", "lead", "1", "alpha", "--note", "Go")
+        stamp = bbs.local_label(bbs.to_utc_text(NOON))
+        self.assertEqual(
+            text.splitlines(),
+            [
+                "Assigned task 1 to alpha.",
+                "Task 1 in board, assigned, assigned to alpha: Channels",
+                "  Note: Go",
+                f"  Changed: {stamp} by lead",
+            ],
+        )
+
+    def test_assigning_to_an_agent_who_has_not_registered_adds_the_reminder(self) -> None:
+        self.add("Channels")
+        text = self.ok("task", "assign", "lead", "1", "Nobody-Yet")
+        self.assertEqual(text.splitlines()[-1], "nobody-yet has not registered yet.")
+        self.assertNotIn("has not registered", self.ok("task", "assign", "lead", "1", "alpha"))
+
+    def test_assigning_again_replaces_the_first_assignee_and_the_note(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        self.assign(1, "alpha", "--note", "First")
+        task = self.assign(1, "beta")
+        self.assertEqual((task["assignee"], task["state"], task["note"]), ("beta", "assigned", ""))
+        self.assertEqual(self.ok_json("tasks", "--agent", "alpha"), [])
+
+    def test_a_finished_or_dropped_task_assigned_again_comes_back_to_life(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        self.add("Housekeeping")
+        self.move(1, "done")
+        self.move(2, "dropped")
+        self.assertEqual(self.assign(1, "beta")["state"], "assigned")
+        self.assertEqual(self.assign(2, "alpha")["state"], "assigned")
+
+    def test_task_move_keeps_the_assignee_in_working_review_and_done(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        for state in ("working", "review", "done", "assigned"):
+            task = self.move(1, state)
+            self.assertEqual((task["state"], task["assignee"]), (state, "alpha"))
+
+    def test_moving_a_task_to_open_clears_its_assignee(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        task = self.move(1, "open")
+        self.assertEqual((task["state"], task["assignee"]), ("open", None))
+        self.assertEqual(self.ok_json("tasks", "--agent", "alpha"), [])
+        self.assertIn("Task 1 in board, open: Channels", self.ok("tasks").splitlines())
+
+    def test_moving_an_unassigned_task_to_a_state_that_needs_a_worker_is_refused(self) -> None:
+        self.add("Channels")
+        for state in ("assigned", "working", "review"):
+            self.assertEqual(
+                self.fails("task", "move", "alpha", "1", state).strip(),
+                "bbs.py: error: task 1 has no assignee; assign it with: bbs.py task assign alpha 1 AGENT",
+            )
+        # Each refusal left the task and the channel as they were.
+        self.assertEqual(self.ok_json("tasks")[0]["state"], "open")
+        self.assertEqual(len([m for m in self.channel() if m["tag"] == "task"]), 1)
+
+    def test_a_task_with_or_without_an_assignee_can_be_dropped_or_done(self) -> None:
+        self.add("Without")
+        self.add("With", "board", "--assign", "alpha")
+        self.assertEqual(self.move(1, "dropped")["assignee"], None)
+        self.assertEqual(self.move(2, "dropped")["assignee"], "alpha")
+        self.assertEqual(self.move(1, "done")["state"], "done")
+
+    def test_task_move_posts_a_channel_line_with_the_note_as_its_body(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        self.move(1, "review", "--note", "Ready to read", actor="alpha")
+        line = self.channel()[-1]
+        self.assertEqual(
+            (line["id"], line["from"], line["tag"], line["topic"], line["body"]),
+            (4, "alpha", "task", "Moved task 1 to review: Channels", "Ready to read"),
+        )
+
+    def test_the_text_of_task_move_pins_each_line(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        with self.clock(NOON):
+            text = self.ok("task", "move", "alpha", "1", "working", "--note", "Under way")
+        stamp = bbs.local_label(bbs.to_utc_text(NOON))
+        self.assertEqual(
+            text.splitlines(),
+            [
+                "Moved task 1 to working.",
+                "Task 1 in board, working, assigned to alpha: Channels",
+                "  Note: Under way",
+                f"  Changed: {stamp} by alpha",
+            ],
+        )
+
+    def test_a_move_without_a_note_clears_the_old_note(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        self.assertEqual(self.move(1, "working", "--note", "Under way")["note"], "Under way")
+        self.assertEqual(self.move(1, "review")["note"], "")
+        self.assertNotIn("Note:", self.ok("tasks"))
+
+    def test_moving_to_the_same_state_again_posts_a_second_line(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        self.move(1, "working", "--note", "Half done", actor="alpha")
+        self.move(1, "working", "--note", "Nearly done", actor="alpha")
+        lines = [m for m in self.channel() if m["topic"].startswith("Moved task 1 to working")]
+        self.assertEqual([m["body"] for m in lines], ["Half done", "Nearly done"])
+
+    def test_every_change_moves_the_updated_stamp_and_never_the_created_one(self) -> None:
+        with self.clock(NOON):
+            self.add("Channels")
+        first = NOON + dt.timedelta(minutes=5)
+        second = NOON + dt.timedelta(minutes=9)
+        with self.clock(first):
+            assigned = self.assign(1, "alpha", actor="beta")
+        with self.clock(second):
+            moved = self.move(1, "working", actor="alpha")
+        for task, stamp, who in ((assigned, first, "beta"), (moved, second, "alpha")):
+            self.assertEqual((task["updated"], task["updated_by"]), (bbs.to_utc_text(stamp), who))
+            self.assertEqual((task["created"], task["created_by"]), (bbs.to_utc_text(NOON), "lead"))
+
+    def test_task_assign_and_move_refuse_what_they_cannot_do(self) -> None:
+        self.add("Channels")
+        self.assertIn("there is no task 9", self.fails("task", "assign", "lead", "9", "alpha"))
+        self.assertIn("list the tasks with: bbs.py tasks", self.fails("task", "move", "lead", "9", "working"))
+        for bad_id in ("0", "x"):
+            self.fails("task", "assign", "lead", bad_id, "alpha")
+            self.fails("task", "move", "lead", bad_id, "done")
+        self.assertIn("invalid choice", self.fails("task", "move", "lead", "1", "finished"))
+        self.assertIn("unknown agent 'leed'", self.fails("task", "assign", "leed", "1", "alpha"))
+        self.assertIn("unknown agent 'leed'", self.fails("task", "move", "leed", "1", "done"))
+        self.fails("task", "assign", "lead", "1", "Not A Name")
+        self.assertIn("201 characters", self.fails("task", "assign", "lead", "1", "alpha", "--note", "n" * 201))
+        self.assertIn("201 characters", self.fails("task", "move", "lead", "1", "done", "--note", "n" * 201))
+        # Nothing changed and nothing was posted by any of those refusals.
+        task = self.ok_json("tasks")[0]
+        self.assertEqual((task["state"], task["assignee"]), ("open", None))
+        self.assertEqual(len(self.ok_json("read", "--tag", "task")), 1)
+
+    def test_the_lists_follow_a_task_through_its_moves(self) -> None:
+        self.add("A", "board", "--assign", "alpha")
+        self.add("B", "board", "--assign", "beta")
+        self.move(1, "working", actor="alpha")
+        self.move(2, "done", actor="beta")
+        self.assertEqual([t["title"] for t in self.ok_json("tasks", "--state", "working")], ["A"])
+        self.assertEqual([t["title"] for t in self.ok_json("tasks", "--state", "done")], ["B"])
+        self.assertIn("  Tasks: 1 working, 1 done", self.ok("teams", "board").splitlines())
+
+    def test_a_workers_day_from_assignment_to_done(self) -> None:
+        self.add("Channels", "board", "--assign", "alpha")
+        self.move(1, "working", actor="alpha")
+        self.move(1, "review", "--note", "Tests pass", actor="alpha")
+        self.move(1, "done", actor="lead")
+        lines = self.ok_json("read", "--team", "board", "--tag", "task")
+        self.assertEqual(
+            [(m["from"], m["topic"], m["body"]) for m in lines],
+            [
+                ("lead", "Added task 1 for alpha: Channels", ""),
+                ("alpha", "Moved task 1 to working: Channels", ""),
+                ("alpha", "Moved task 1 to review: Channels", "Tests pass"),
+                ("lead", "Moved task 1 to done: Channels", ""),
+            ],
+        )
+        self.assertEqual(self.ok_json("tasks")[0]["assignee"], "alpha")
 
 
 if __name__ == "__main__":

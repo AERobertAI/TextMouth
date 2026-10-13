@@ -1976,6 +1976,97 @@ def cmd_task_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     return Outcome(task, "\n".join(lines))
 
 
+def require_task(conn: sqlite3.Connection, task_id: int) -> dict:
+    """Return the task numbered ``task_id`` as a dict, or raise a UserError saying how to list the tasks."""
+    tasks = load_tasks(conn, task_id=task_id)
+    if not tasks:
+        raise UserError(f"there is no task {task_id}; list the tasks with: {PROG} tasks")
+    return tasks[0]
+
+
+def change_task(
+    conn: sqlite3.Connection,
+    actor: str,
+    task: dict,
+    *,
+    state: str,
+    assignee: Optional[str],
+    note: str,
+    topic: str,
+) -> dict:
+    """Give ``task`` a new state, assignee, and note, announce it, and return the task as stored.
+
+    ``topic`` is the line posted to the task's team channel, with the note as
+    its body. The change is stamped with the time and ``actor``; the task's
+    creation stamps stay as they were. Runs inside a write transaction.
+    """
+    conn.execute(
+        "UPDATE tasks SET state = ?, assignee = ?, note = ?, updated_at = ?, updated_by = ? WHERE id = ?",
+        (state, assignee, note, to_utc_text(utc_now()), actor, task["id"]),
+    )
+    post_to_team(conn, actor, task["team"], topic, tag="task", body=note)
+    return load_tasks(conn, task_id=task["id"])[0]
+
+
+def cmd_task_assign(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Give a task to an agent, which marks it assigned from whatever state it was in.
+
+    The agent may register later. A finished or dropped task assigned again
+    comes back to life.
+    """
+    assignee = normalize_name(args.agent)
+    note = one_line(args.note, "note", allow_empty=True) if args.note is not None else ""
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        task = require_task(conn, args.id)
+        task = change_task(
+            conn,
+            actor,
+            task,
+            state="assigned",
+            assignee=assignee,
+            note=note,
+            topic=f"Assigned task {task['id']} to {assignee}: {task['title']}",
+        )
+        reminder = assignee_reminder(conn, task)
+    lines = [f"Assigned task {task['id']} to {assignee}.", describe_task(task)]
+    if reminder:
+        lines.append(reminder)
+    return Outcome(task, "\n".join(lines))
+
+
+def cmd_task_move(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Move a task to another state, or to the same state again to post a progress note.
+
+    ``open`` clears the assignee, because an open task is one that no one has.
+    ``assigned``, ``working``, and ``review`` need an assignee already;
+    ``done`` and ``dropped`` keep whoever the task has. A move without a
+    note clears the old note.
+    """
+    note = one_line(args.note, "note", allow_empty=True) if args.note is not None else ""
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        task = require_task(conn, args.id)
+        if args.state == "open":
+            assignee = None
+        elif args.state in ("assigned", "working", "review") and task["assignee"] is None:
+            raise UserError(
+                f"task {task['id']} has no assignee; assign it with: {PROG} task assign {actor} {task['id']} AGENT"
+            )
+        else:
+            assignee = task["assignee"]
+        task = change_task(
+            conn,
+            actor,
+            task,
+            state=args.state,
+            assignee=assignee,
+            note=note,
+            topic=f"Moved task {task['id']} to {args.state}: {task['title']}",
+        )
+    return Outcome(task, f"Moved task {task['id']} to {args.state}.\n{describe_task(task)}")
+
+
 def cmd_tasks(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     """List tasks, narrowed by team, state, and assignee."""
     team = require_team(conn, args.team) if args.team is not None else None
@@ -2325,6 +2416,18 @@ def build_parser() -> BoardArgumentParser:
         help="paths or globs the task will touch",
     )
     task_add.add_argument("--assign", metavar="AGENT", help="the agent who takes the task; it may register later")
+    task_assign = command("assign", cmd_task_assign, "give a task to an agent", group=task)
+    task_assign.add_argument("name", help="your agent name")
+    task_assign.add_argument("id", type=positive_int, metavar="ID", help="the task's number")
+    task_assign.add_argument(
+        "agent", metavar="AGENT", help="the agent who takes the task; it may register later"
+    )
+    task_assign.add_argument("--note", metavar="ONE LINE", help="one line to go with the change")
+    task_move = command("move", cmd_task_move, "move a task to another state", group=task)
+    task_move.add_argument("name", help="your agent name")
+    task_move.add_argument("id", type=positive_int, metavar="ID", help="the task's number")
+    task_move.add_argument("state", choices=TASK_STATES, help="the task's new state")
+    task_move.add_argument("--note", metavar="ONE LINE", help="one line to go with the change")
 
     tasks = command("tasks", cmd_tasks, "list tasks by team, state, or agent")
     tasks.add_argument("--team", metavar="TEAM", help="only this team's tasks")
