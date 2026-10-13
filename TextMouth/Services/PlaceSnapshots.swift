@@ -83,6 +83,43 @@ struct PlaceSnapshot: Equatable, Sendable {
         record: Record,
         in folder: URL = MachineLocalPaths.placeSnapshots
     ) throws -> PlaceSnapshot {
+        try keep(record: record, in: folder) { textURL in
+            // Clones on APFS when source and destination share a volume.
+            try FileManager.default.copyItem(at: cacheURL, to: textURL)
+        }
+    }
+
+    /// Keeps `text`, the bytes of a content.md, aside with `record`, as
+    /// `keep(textAt:record:in:)` keeps a file: the bytes are written
+    /// atomically as `content.md`. An Edit Text session keeps the text its
+    /// edits replace this way, as TextMouth last took it.
+    /// - Parameters:
+    ///   - text: The text's bytes, exactly as they are to be read back.
+    ///   - record: The book and its places as they are now.
+    ///   - folder: The snapshots folder.
+    static func keep(
+        text: Data,
+        record: Record,
+        in folder: URL = MachineLocalPaths.placeSnapshots
+    ) throws -> PlaceSnapshot {
+        try keep(record: record, in: folder) { textURL in
+            try text.write(to: textURL, options: .atomic)
+        }
+    }
+
+    /// The sequence both forms of `keep` share: makes the snapshot's folder
+    /// (and `folder`) as needed, marks it in use first, has `putText` put
+    /// the text at the URL it is given, and writes the record last. A
+    /// failure removes the folder and unmarks it before it throws.
+    /// - Parameters:
+    ///   - record: The book and its places as they are now.
+    ///   - folder: The snapshots folder.
+    ///   - putText: Puts the old text at the given URL, in the new folder.
+    private static func keep(
+        record: Record,
+        in folder: URL,
+        putText: (URL) throws -> Void
+    ) throws -> PlaceSnapshot {
         let name = "\(record.bookID.uuidString) \(UUID().uuidString)"
         let snapshotFolder = folder.appendingPathComponent(name, isDirectory: true)
         let fileManager = FileManager.default
@@ -91,8 +128,7 @@ struct PlaceSnapshot: Equatable, Sendable {
         inUse.withLock { _ = $0.insert(name) }
         do {
             try fileManager.createDirectory(at: snapshotFolder, withIntermediateDirectories: true)
-            // Clones on APFS when source and destination share a volume.
-            try fileManager.copyItem(at: cacheURL, to: textURL(in: snapshotFolder))
+            try putText(textURL(in: snapshotFolder))
             let data = try JSONEncoder().encode(record)
             try data.write(to: recordURL(in: snapshotFolder), options: .atomic)
         } catch {
@@ -151,11 +187,16 @@ struct PlaceSnapshot: Equatable, Sendable {
 
     // MARK: Using
 
+    /// The bytes of the snapshot's kept text, exactly as they were kept.
+    func textBytes() throws -> Data {
+        try Data(contentsOf: textURL)
+    }
+
     /// The snapshot's old text as this build reads a content.md: the file's
     /// bytes decoded (`MarkdownCacheService.cacheText(from:at:)`) and parsed
     /// with the book's title and author.
     func oldText() throws -> DocumentContent {
-        let bytes = try Data(contentsOf: textURL)
+        let bytes = try textBytes()
         let markdown = try MarkdownCacheService.cacheText(from: bytes, at: textURL)
         return MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: record.title, bookAuthor: record.author)
     }
