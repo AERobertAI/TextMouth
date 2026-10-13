@@ -14,8 +14,11 @@ enum LibraryBookEvent {
     /// The book's text was replaced by an edit the user made in their own
     /// editor (FR05): readers show `content`, the edited text, parsed and
     /// indexed, near where they were reading. The row's new analysis
-    /// arrived before this, as an update.
-    case textReplaced(bookID: UUID, content: DocumentContent)
+    /// arrived before this, as an update. `movedPlaces` holds the moves of
+    /// the book's saved places that the edit took (T06): the readers' own
+    /// copies of those places follow, where each still holds the place as it
+    /// was; nil when the edit moved none.
+    case textReplaced(bookID: UUID, content: DocumentContent, movedPlaces: MovedPlaces?)
     /// An audiobook's transcript text changed (FR05): it was transcribed,
     /// transcribed again, or its transcript deleted, which leaves `text`
     /// nil. Readers show the text as the book plays on, its audio and
@@ -25,7 +28,7 @@ enum LibraryBookEvent {
     /// The book the event is about.
     var bookID: UUID {
         switch self {
-        case .packageWillMove(let bookID), .packageMoveEnded(let bookID), .textReplaced(let bookID, _),
+        case .packageWillMove(let bookID), .packageMoveEnded(let bookID), .textReplaced(let bookID, _, _),
              .transcriptReplaced(let bookID, _):
             return bookID
         case .updated(let update):
@@ -178,9 +181,11 @@ final class LibraryBookUpdates {
     /// text is now `content`, an edit the user made in their own editor
     /// (FR05). Call it after the library holds the book's new analysis, so
     /// the readers' copies of the book agree with the text they show.
-    func textReplaced(bookID: UUID, with content: DocumentContent) {
+    /// `movedPlaces` is what the edit moved of the book's saved places (nil
+    /// for none), which the readers' own copies take too.
+    func textReplaced(bookID: UUID, with content: DocumentContent, movedPlaces: MovedPlaces?) {
         guard watches[bookID] != nil else { return }
-        events.send(.textReplaced(bookID: bookID, content: content))
+        events.send(.textReplaced(bookID: bookID, content: content, movedPlaces: movedPlaces))
     }
 
     /// Tells the readers of the audiobook `bookID`, when it is watched, that

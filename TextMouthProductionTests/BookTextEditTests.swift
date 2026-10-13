@@ -675,49 +675,6 @@ final class BookTextEditTests: XCTestCase {
         XCTAssertEqual(Model.textReextractionOutcome(skippedInCloud: 1), .success("Done. 1 book in the cloud was skipped."))
     }
 
-    // MARK: - Where the Cursor Goes
-
-    /// The cursor keeps its place in an unchanged chapter, follows the
-    /// words it was at when text is added before them, stands after the
-    /// words before it when its own were rewritten, finds its words in
-    /// another chapter, and otherwise keeps its proportion at a word start.
-    func testTheCursorFollowsItsWords() {
-        let old = [
-            Chapter(title: "One", text: "Alpha beta gamma delta epsilon zeta."),
-            Chapter(title: "Two", text: "The harbour lights came on one by one along the quay."),
-        ]
-        let quay = ("The harbour lights came on one by one along the quay." as NSString).range(of: "one by one").location
-
-        XCTAssertEqual(position(1, quay, old, old), [1, quay])
-
-        let added = [old[0], Chapter(title: "Two", text: "Night fell early. The harbour lights came on one by one along the quay.")]
-        XCTAssertEqual(position(1, quay, old, added), [1, quay + "Night fell early. ".utf16.count])
-
-        let rewritten = [old[0], Chapter(title: "Two", text: "The harbour lights came on all at once.")]
-        let afterKept = ("The harbour lights came on " as NSString).length
-        XCTAssertEqual(position(1, quay, old, rewritten), [1, afterKept])
-
-        let split = [
-            old[0],
-            Chapter(title: "Interlude", text: "Gulls."),
-            Chapter(title: "Two", text: "The harbour lights came on one by one along the quay."),
-        ]
-        XCTAssertEqual(position(1, quay, old, split), [2, quay], "the chapter of the same title")
-
-        let moved = [Chapter(title: "One", text: "Alpha beta gamma delta epsilon zeta. The harbour lights came on one by one along the quay.")]
-        let movedOffset = (moved[0].text as NSString).range(of: "one by one").location
-        XCTAssertEqual(position(1, quay, old, moved), [0, movedOffset])
-
-        let unrelated = [old[0], Chapter(title: "Two", text: "Completely different words fill this chapter now, end to end.")]
-        let proportional = position(1, quay, old, unrelated)
-        XCTAssertEqual(proportional.first, 1)
-        let text = unrelated[1].text
-        XCTAssertEqual(proportional.last, ReaderViewModel.snappedWordStart(in: text, at: proportional.last ?? -1))
-
-        XCTAssertEqual(position(9, 4, old, old), [1, 4], "a chapter past the end is clamped")
-        XCTAssertEqual(position(0, 0, old, []), [0, 0])
-    }
-
     // MARK: - The Session's Copy of Its Old Text (T06's branch E)
 
     /// Beginning a session keeps one copy of the book's text in the Edit Text
@@ -1239,6 +1196,158 @@ final class BookTextEditTests: XCTestCase {
         return copy.folder
     }
 
+    // MARK: - An Open Reader Follows an Edit (T06's branch E)
+
+    /// A reader open and paused at its book's saved place follows an edit
+    /// that puts a paragraph before every place: its cursor stands at its
+    /// words in the edited text, its bookmark list and its skipped heading
+    /// follow, the row and the record agree, and the position it saves next
+    /// holds the edited text's words at the cursor.
+    func testAReaderPausedAtItsSavedPlaceFollowsAnEdit() async throws {
+        let world = try makeIntegrationWorld("Edit Reader Paused")
+        let book = try world.importBook(from: writeSource(named: "Pilot Rota Eight.md", Self.twoChapters))
+        let before = try landmarks(in: Self.twoChapters)
+        let after = try landmarks(in: Self.paragraphAdded)
+        XCTAssertNotEqual(before.coordinates, after.coordinates, "the edit moves nothing: the test shows nothing")
+        savePlaces(before, on: book, in: world)
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await waitForChecks(of: editor.sessions)
+        let reader = world.openReader(for: try XCTUnwrap(world.library.bookByID(book.id)))
+        await waitForReaderToLoadYielding(reader)
+        XCTAssertEqual(cursor(of: reader), before.reading, "the reader did not open at its saved place")
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+
+        try await saveEdit(Self.paragraphAdded, of: book, through: editor, in: world)
+
+        try assertReaderFollowed(reader, to: after, book: book, in: world)
+        XCTAssertEqual(cursor(of: reader), after.reading)
+        // The position the reader saves next keeps the edited text's words.
+        reader.savePosition()
+        let saved = try XCTUnwrap(world.library.bookByID(book.id)?.readingPosition)
+        XCTAssertEqual([saved.chapterIndex, saved.characterOffset], [after.reading.chapter, after.reading.offset])
+        XCTAssertEqual(saved.anchor, after.content.anchor(at: after.reading, measuredIn: TextAnchor.currentMeasure))
+        // The moves are silent: only the edit's own announcement is made.
+        XCTAssertEqual(announcements.messages, [BookTextEditWording.updated])
+    }
+
+    /// A cursor moved past the saved place without saving, as while playing,
+    /// follows its own words; the position saved after the edit is the
+    /// cursor's, not the saved place's, and the other places still follow.
+    func testACursorMovedPastTheSavedPlaceFollowsItsOwnWords() async throws {
+        let world = try makeIntegrationWorld("Edit Reader Moved On")
+        let book = try world.importBook(from: writeSource(named: "Pilot Rota Nine.md", Self.twoChapters))
+        let before = try landmarks(in: Self.twoChapters)
+        let after = try landmarks(in: Self.paragraphAdded)
+        savePlaces(before, on: book, in: world)
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await waitForChecks(of: editor.sessions)
+        let reader = world.openReader(for: try XCTUnwrap(world.library.bookByID(book.id)))
+        await waitForReaderToLoadYielding(reader)
+        // The cursor goes on to "The tide", unsaved, as speech moves it.
+        let oldChannel = try XCTUnwrap(before.content.chapters[1].text as NSString?)
+        reader.currentCharacterOffset = oldChannel.range(of: "The tide").location
+
+        try await saveEdit(Self.paragraphAdded, of: book, through: editor, in: world)
+
+        let newChannel = try XCTUnwrap(after.content.chapters[1].text as NSString?)
+        let tide = TextPlace(chapter: 1, offset: newChannel.range(of: "The tide").location)
+        XCTAssertEqual(cursor(of: reader), tide)
+        // The edit saved the cursor's place, with the edited text's words there.
+        let saved = try XCTUnwrap(world.library.bookByID(book.id)?.readingPosition)
+        XCTAssertEqual([saved.chapterIndex, saved.characterOffset], [tide.chapter, tide.offset])
+        XCTAssertEqual(saved.anchor, after.content.anchor(at: tide, measuredIn: TextAnchor.currentMeasure))
+        // The bookmark and the skipped heading followed their words.
+        XCTAssertEqual(reader.bookmarks.map { [$0.chapterIndex, $0.characterOffset] }, [[after.marked.chapter, after.marked.offset]])
+        XCTAssertEqual(reader.book.skippedHeadings?.map { [$0.chapterIndex, $0.characterOffset] }, [[after.shoals.chapterIndex, after.shoals.characterOffset]])
+    }
+
+    /// An edit taken while a reader loads, through the settle a load makes
+    /// of an edit not yet taken: the reader opens on the edited text, its
+    /// cursor, bookmark, and skipped heading at their moved places.
+    func testAReaderLoadingWhenTheEditIsTakenOpensOnTheMovedPlaces() async throws {
+        let world = try makeIntegrationWorld("Edit Reader Loading")
+        let book = try world.importBook(from: writeSource(named: "Pilot Rota Ten.md", Self.twoChapters))
+        let before = try landmarks(in: Self.twoChapters)
+        let after = try landmarks(in: Self.paragraphAdded)
+        savePlaces(before, on: book, in: world)
+        let editor = makeEditor(sessions: .shared)
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await waitForChecks(of: editor.sessions)
+        // The edit is saved but not yet taken when the reader opens.
+        try Self.paragraphAdded.write(to: MarkdownCacheService.cacheURL(for: book), atomically: true, encoding: .utf8)
+        let reader = world.openReader(for: try XCTUnwrap(world.library.bookByID(book.id)))
+
+        await waitForReaderToLoadYielding(reader)
+        // The row may take the edit just after the load: wait until it has.
+        let digest = try FileImportService.md5Hash(of: MarkdownCacheService.cacheURL(for: book))
+        let taken = await eventually(timeout: 10) { world.library.bookByID(book.id)?.textCacheFingerprint?.cache.digest == digest }
+        XCTAssertTrue(taken, "the row never took the edit")
+
+        XCTAssertTrue(reader.content?.chapters[1].text.contains("A pilot boat waits") == true, "the reader opened on the earlier text")
+        XCTAssertEqual(cursor(of: reader), after.reading)
+        try assertReaderFollowed(reader, to: after, book: book, in: world)
+    }
+
+    /// An edit saved while TextMouth was closed, with no session's copy of
+    /// the old text: the launch pass takes it and leaves the places, and a
+    /// reader's open then moves them by their saved words, which the row and
+    /// the record hold afterwards.
+    func testAReaderOpenedAfterAnEditSavedWhileClosedFindsThePlacesByTheirWords() async throws {
+        let world = try makeIntegrationWorld("Edit Reader Closed")
+        let book = try world.importBook(from: writeSource(named: "Pilot Rota Eleven.md", Self.twoChapters))
+        let before = try landmarks(in: Self.twoChapters)
+        let after = try landmarks(in: Self.paragraphAdded)
+        savePlaces(before, on: book, in: world)
+        XCTAssertEqual(editCopies(of: book), [])
+        try Self.paragraphAdded.write(to: MarkdownCacheService.cacheURL(for: book), atomically: true, encoding: .utf8)
+        await runLaunchCachePass(of: world.library)
+        XCTAssertEqual(coordinates(of: try XCTUnwrap(world.library.bookByID(book.id))), before.coordinates, "the launch pass moved the places")
+
+        let reader = world.openReader(for: try XCTUnwrap(world.library.bookByID(book.id)))
+        await waitForReaderToLoadYielding(reader)
+
+        try assertReaderFollowed(reader, to: after, book: book, in: world)
+        XCTAssertEqual(cursor(of: reader), after.reading)
+    }
+
+    /// Where `reader`'s cursor is.
+    private func cursor(of reader: ReaderViewModel) -> TextPlace {
+        TextPlace(chapter: reader.currentChapterIndex, offset: reader.currentCharacterOffset)
+    }
+
+    /// Checks that `reader`, the row, and the record of `book` all hold the
+    /// places of `landmarks` (the text the reader shows): the reader's own
+    /// copy of the book, its bookmark list, and its skipped heading
+    /// (`isHeadingSkipped`, which the reader's filter reads).
+    private func assertReaderFollowed(
+        _ reader: ReaderViewModel,
+        to landmarks: Landmarks,
+        book: Book,
+        in world: IntegrationWorld,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        XCTAssertEqual(coordinates(of: reader.book), landmarks.coordinates, "the reader's copy of the book", file: file, line: line)
+        XCTAssertEqual(
+            reader.bookmarks.map { [$0.chapterIndex, $0.characterOffset] },
+            [[landmarks.marked.chapter, landmarks.marked.offset]],
+            "the reader's bookmark list",
+            file: file,
+            line: line
+        )
+        let shoals = try XCTUnwrap(reader.headings.first { $0.text == "Shoals" }, "no Shoals heading", file: file, line: line)
+        XCTAssertTrue(reader.isHeadingSkipped(shoals), "the skipped heading is not skipped", file: file, line: line)
+        XCTAssertEqual(reader.skippedHeadingIDs, [landmarks.shoals.id], file: file, line: line)
+        XCTAssertEqual(coordinates(of: try XCTUnwrap(world.library.bookByID(book.id))), landmarks.coordinates, "the row", file: file, line: line)
+        XCTAssertEqual(coordinates(of: try recordedBook(like: book)), landmarks.coordinates, "the record", file: file, line: line)
+    }
+
     // MARK: - Fixtures
 
     /// Two chapters, the second with a subheading.
@@ -1303,12 +1412,6 @@ final class BookTextEditTests: XCTestCase {
         let ended = await eventually(timeout: 30) { finished.withLock { $0 } }
         XCTAssertTrue(ended, "the launch's cache pass never ended")
         LibraryPersistenceService.flushPendingSave()
-    }
-
-    /// The cursor `EditedTextCursor` gives, as [chapter, offset].
-    private func position(_ chapter: Int, _ offset: Int, _ old: [Chapter], _ new: [Chapter]) -> [Int] {
-        let found = EditedTextCursor.position(chapterIndex: chapter, characterOffset: offset, in: old, to: new)
-        return [found.chapterIndex, found.characterOffset]
     }
 
     /// Writes `text` as a file named `name` in a sandbox folder of its own,

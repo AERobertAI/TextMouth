@@ -406,8 +406,7 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
         try Phrase.offset(of: "one by one", in: text)
     }
 
-    /// The cursor keeps its place in an unchanged chapter, as
-    /// `EditedTextCursor` did.
+    /// The cursor keeps its place in an unchanged chapter.
     func testTheCursorStaysInAnUnchangedChapter() throws {
         let quay = try quayOffset()
         XCTAssertEqual(carried(1, quay, to: Self.harbour), TextPlace(chapter: 1, offset: quay))
@@ -422,7 +421,7 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
 
     /// The cursor whose own words were rewritten stands after the words
     /// before it that were kept: the relocator's rule for a word replaced in
-    /// local editing, as `EditedTextCursor` answered.
+    /// local editing.
     func testTheCursorWhoseWordsWereRewrittenStandsAfterTheWordsBeforeIt() throws {
         let quay = try quayOffset()
         let rewritten = [Self.harbour[0], "The harbour lights came on all at once."]
@@ -430,8 +429,7 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
     }
 
     /// A chapter split, with an interlude put in before it: the cursor goes
-    /// to the chapter that holds its words (where `EditedTextCursor` found
-    /// the chapter of the same title; the relocator reads no titles).
+    /// to the chapter that holds its words (the relocator reads no titles).
     func testTheCursorFollowsItsWordsToAChapterAfterAnInterlude() throws {
         let quay = try quayOffset()
         let split = [Self.harbour[0], "Gulls.", Self.harbour[1]]
@@ -446,9 +444,7 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
     }
 
     /// A chapter replaced by unrelated text: the cursor stays in its chapter
-    /// at a word's start, a best guess; the relocator keeps its numbers where
-    /// `EditedTextCursor` kept its proportion, so the two may differ by a
-    /// few words.
+    /// at a word's start, a best guess.
     func testTheCursorInUnrelatedTextStaysInItsChapterAtAWordStart() throws {
         let quay = try quayOffset()
         let unrelated = [Self.harbour[0], "Completely different words fill this chapter now, end to end."]
@@ -459,8 +455,7 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
 
     /// A cursor in a chapter past the end opens where the reader would open
     /// it, the last chapter's start (`TextPlace.opening`), and moves from
-    /// there: `EditedTextCursor` kept its offset (chapter 1, offset 4), the
-    /// reader's clamp does not.
+    /// there, as the reader's clamp holds it.
     func testACursorInAChapterPastTheEndIsHeldAsTheReaderHoldsIt() {
         XCTAssertEqual(carried(9, 4, to: Self.harbour), TextPlace(chapter: 1, offset: 0))
         // A last chapter that moved takes the held place with it.

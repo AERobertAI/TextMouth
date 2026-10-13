@@ -436,10 +436,11 @@ final class ReaderViewModel: ObservableObject {
     /// lets the audio go (`letGoOfAudioSetAsideForMove(because:)`), so that
     /// the move's end leaves the book as the listener left it.
     var audioPausedForMove: AudioPausedForMove?
-    /// The book's edited text when the user's edit was taken while this
-    /// reader was still loading the text it had (FR05): shown once loading
-    /// ends (`showEditedTextWaitingForLoad()`); nil the rest of the time.
-    var editedTextWaitingForLoad: DocumentContent?
+    /// The book's edited text, with the moves of its places the edit took,
+    /// when the user's edit was taken while this reader was still loading
+    /// the text it had (FR05): shown once loading ends
+    /// (`showEditedTextWaitingForLoad()`); nil the rest of the time.
+    var editedTextWaitingForLoad: EditedTextWaitingForLoad?
     /// An audiobook's transcript text when it changed while this reader was
     /// still loading (FR05): shown once loading ends
     /// (`showTranscriptWaitingForLoad()`); nil the rest of the time.
