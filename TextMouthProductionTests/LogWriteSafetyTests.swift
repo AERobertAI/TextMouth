@@ -150,7 +150,7 @@ final class LogWriteSafetyTests: XCTestCase {
             if attempts.value == 1 {
                 throw POSIXError(.EBUSY)
             }
-            try LogWriter.renameReplacing(from, to)
+            try SavedFile.renameReplacing(from, to)
         })
         let (log, previous, filler) = try makeFullLog()
 
@@ -229,6 +229,36 @@ final class LogWriteSafetyTests: XCTestCase {
         XCTAssertFalse(fresh.contains("lines in the cloud"), fresh)
     }
 
+    // MARK: - The Shared Rename
+
+    /// `SavedFile.renameReplacing` puts the source's content in place of a
+    /// file already at the destination, in one step, and leaves no source.
+    func testRenameReplacingPutsTheSourceInPlaceOfTheDestination() throws {
+        let source = directory.appendingPathComponent("source.partial")
+        let destination = directory.appendingPathComponent("destination.txt")
+        try "old".write(to: destination, atomically: true, encoding: .utf8)
+        try "new".write(to: source, atomically: true, encoding: .utf8)
+
+        try SavedFile.renameReplacing(source, destination)
+
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "new")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.path), "the source is gone")
+    }
+
+    /// A source that is missing throws the system's own error, `ENOENT`,
+    /// and leaves the destination as it was.
+    func testRenameReplacingThrowsENOENTForAMissingSource() throws {
+        let destination = directory.appendingPathComponent("destination.txt")
+        try "kept".write(to: destination, atomically: true, encoding: .utf8)
+
+        XCTAssertThrowsError(
+            try SavedFile.renameReplacing(directory.appendingPathComponent("missing.partial"), destination)
+        ) { error in
+            XCTAssertEqual((error as? POSIXError)?.code, .ENOENT)
+        }
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "kept")
+    }
+
     // MARK: - Fixtures
 
     /// A log writer of the test's own that writes into `folder`, renaming
@@ -236,7 +266,7 @@ final class LogWriteSafetyTests: XCTestCase {
     /// the cloud: by default the real rename(2), and no file.
     private func makeWriter(
         writingInto folder: URL,
-        rename: @escaping @Sendable (_ from: URL, _ to: URL) throws -> Void = { try LogWriter.renameReplacing($0, $1) },
+        rename: @escaping @Sendable (_ from: URL, _ to: URL) throws -> Void = { try SavedFile.renameReplacing($0, $1) },
         isOnlyInCloud: @escaping @Sendable (_ file: URL) -> Bool = { _ in false }
     ) -> LogWriter {
         LogWriter(environment: .writing(into: { folder }, rename: rename, isOnlyInCloud: isOnlyInCloud))

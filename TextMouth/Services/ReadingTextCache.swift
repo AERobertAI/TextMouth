@@ -1,4 +1,3 @@
-import Darwin
 import Foundation
 
 // A temporary copy of the reading text of a large book this Mac opened
@@ -340,7 +339,7 @@ struct ReadingTextCache: Sendable {
                 throw CocoaError(.fileWriteUnknown)
             }
             try Self.append(chapters, toFileAt: partial)
-            try Self.rename(partial, to: url(for: bookID))
+            try SavedFile.renameReplacing(partial, url(for: bookID))
         } catch {
             try? FileManager.default.removeItem(at: partial)
             throw error
@@ -389,18 +388,6 @@ struct ReadingTextCache: Sendable {
             throw error
         }
         try handle.close()
-    }
-
-    /// Puts the file at `source` in place of any file at `destination`, in
-    /// one step (rename(2)), so a reader finds the old file or the new one.
-    private static func rename(_ source: URL, to destination: URL) throws {
-        let renamed = source.withUnsafeFileSystemRepresentation { from in
-            destination.withUnsafeFileSystemRepresentation { to in
-                guard let from, let to else { return false }
-                return Darwin.rename(from, to) == 0
-            }
-        }
-        guard renamed else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
     }
 
     // MARK: Removing

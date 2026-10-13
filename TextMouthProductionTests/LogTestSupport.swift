@@ -12,7 +12,7 @@ extension LogWriter.Environment {
     /// default the real rename(2), and no file.
     static func writing(
         into folder: @escaping @Sendable () -> URL,
-        rename: @escaping @Sendable (_ from: URL, _ to: URL) throws -> Void = { try LogWriter.renameReplacing($0, $1) },
+        rename: @escaping @Sendable (_ from: URL, _ to: URL) throws -> Void = { try SavedFile.renameReplacing($0, $1) },
         isOnlyInCloud: @escaping @Sendable (_ file: URL) -> Bool = { _ in false }
     ) -> Self {
         Self(
