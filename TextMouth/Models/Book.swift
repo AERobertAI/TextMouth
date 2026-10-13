@@ -143,6 +143,14 @@ struct Book: Identifiable, Codable, Hashable {
     /// holding both keeps the anchor of each heading its IDs name, since
     /// the IDs, which every build writes, say which headings are skipped.
     private(set) var skippedHeadings: [SkippedHeading]?
+    /// The headings skipped during playback for which a rebuild of the
+    /// book's text found no heading (T06's branch D). Each waits, naming no
+    /// heading, so neither this build's reader nor an older build skips
+    /// anything for it, and it is kept so a later rebuild may find its
+    /// heading. Never in `skippedHeadingIDs`; written with the moved places
+    /// (`takeMovedPlaces(original:moved:)`). Nil when there are none, never
+    /// an empty array.
+    var waitingSkippedHeadings: [SkippedHeading]?
     /// Per-book end-of-book behavior override (nil = use global)
     var localEndOfBookBehavior: String?
     /// Per-book forward navigation unit (nil or invalid = use global).
@@ -249,6 +257,7 @@ struct Book: Identifiable, Codable, Hashable {
         localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         skippedHeadings: [SkippedHeading]? = nil,
+        waitingSkippedHeadings: [SkippedHeading]? = nil,
         localEndOfBookBehavior: String? = nil,
         localSkipForwardUnit: String? = nil,
         localSkipBackwardUnit: String? = nil,
@@ -292,6 +301,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
+        self.waitingSkippedHeadings = waitingSkippedHeadings.flatMap { $0.isEmpty ? nil : $0 }
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.localSkipForwardUnit = localSkipForwardUnit
         self.localSkipBackwardUnit = localSkipBackwardUnit
@@ -348,6 +358,10 @@ struct Book: Identifiable, Codable, Hashable {
         // they are put in step with the IDs, which an older build may have
         // changed alone.
         skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
+        // Waiting skips that cannot be read count as none; an empty list is
+        // none too.
+        let waiting: [SkippedHeading]? = fields.optionalValue(.waitingSkippedHeadings) { $0 }
+        waitingSkippedHeadings = waiting.flatMap { $0.isEmpty ? nil : $0 }
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
         localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
@@ -895,6 +909,7 @@ struct Book: Identifiable, Codable, Hashable {
                 localPitch: localPitch,
                 skippedHeadingIDs: skippedHeadingIDs,
                 skippedHeadings: skippedHeadings,
+                waitingSkippedHeadings: waitingSkippedHeadings,
                 localEndOfBookBehavior: localEndOfBookBehavior,
                 localSkipForwardUnit: localSkipForwardUnit,
                 localSkipBackwardUnit: localSkipBackwardUnit,
@@ -943,6 +958,7 @@ struct Book: Identifiable, Codable, Hashable {
             localPitch: state.localPitch,
             skippedHeadingIDs: state.skippedHeadingIDs,
             skippedHeadings: state.skippedHeadings,
+            waitingSkippedHeadings: state.waitingSkippedHeadings,
             localEndOfBookBehavior: state.localEndOfBookBehavior,
             localSkipForwardUnit: state.localSkipForwardUnit,
             localSkipBackwardUnit: state.localSkipBackwardUnit,

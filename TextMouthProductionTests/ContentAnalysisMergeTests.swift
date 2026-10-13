@@ -804,6 +804,12 @@ final class ContentAnalysisMergeTests: XCTestCase {
             level: 1 + seed % 6, label: "Heading \(seed)", chapterIndex: seed, characterOffset: seed * 7,
             anchor: anchor(seed: seed, at: "heading")
         )
+        // A skip that waits (T06's branch D): another level, label, and
+        // place than the named one, so the two lists never hold alike.
+        let waiting = SkippedHeading(
+            level: 1 + (seed + 2) % 6, label: "Waiting \(seed)", chapterIndex: seed + 50, characterOffset: seed * 11,
+            anchor: anchor(seed: seed, at: "waiting heading")
+        )
         return Book(
             id: UUID(),
             title: "Title \(seed)",
@@ -832,6 +838,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
             localPitch: 1 + Double(seed) / 10,
             skippedHeadingIDs: [skipped.id],
             skippedHeadings: [skipped],
+            waitingSkippedHeadings: [waiting],
             localEndOfBookBehavior: "behavior-\(seed)",
             localSkipForwardUnit: "forward-\(seed)",
             localSkipBackwardUnit: "backward-\(seed)",
