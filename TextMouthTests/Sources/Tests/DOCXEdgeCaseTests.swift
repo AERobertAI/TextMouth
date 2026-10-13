@@ -1,15 +1,11 @@
 import Foundation
 import ZIPFoundation
 
-#if canImport(TextMouth)
 @testable import TextMouth
 
 private func legacyListLevel(_ format: String) -> ListLevelFormat {
     ListLevelFormat(numFmt: format)
 }
-#else
-private func legacyListLevel(_ format: String) -> String { format }
-#endif
 
 @MainActor
 func runDOCXEdgeCaseTests() {
@@ -35,18 +31,12 @@ func convertDOCXSnippet(_ bodyXML: String, styles: DOCXStyles = DOCXStyles(),
                          numbering: DOCXNumbering = DOCXNumbering(),
                          relationships: [String: String] = [:]) throws -> String {
     let xml = wrapDocumentXML(bodyXML)
-#if canImport(TextMouth)
     return try DOCXToMarkdownConverter(
         data: Data(xml.utf8),
         styles: styles,
         numbering: numbering,
         relationships: relationships
     ).convert().markdown
-#else
-    let converter = TestDOCXConverter(styles: styles, numbering: numbering,
-                                      relationships: relationships)
-    return converter.convert(xmlString: xml)
-#endif
 }
 
 // Empty document
@@ -391,274 +381,7 @@ test("DOCX readMetadata returns title even without author") {
 
 }
 
-#if !canImport(TextMouth)
-// MARK: - Test DOCX Converter (mirrors app converter for direct XML testing)
-
-/// Minimal DOCX to Markdown converter for tests.
-/// Uses the test target's DOCXStyles and DOCXNumbering types.
-class TestDOCXConverter: NSObject, XMLParserDelegate {
-    private let styles: DOCXStyles
-    private let numbering: DOCXNumbering
-    private let relationships: [String: String]
-
-    private var markdown = ""
-    private var elementStack: [String] = []
-    private var currentParagraphStyle = ""
-    private var currentParagraphText = ""
-    private var paragraphHasContent = false
-    private var isInParagraph = false
-    private var listNumId: String?
-    private var listLevel: Int = 0
-    private var isInRun = false
-    private var runIsBold = false
-    private var runIsItalic = false
-    private var runIsStrikethrough = false
-    private var runText = ""
-    private var isInHyperlink = false
-    private var hyperlinkRelId = ""
-    private var hyperlinkText = ""
-    private var isInTable = false
-    private var isInTableRow = false
-    private var isInTableCell = false
-    private var tableRows: [[String]] = []
-    private var currentRowCells: [String] = []
-    private var currentCellText = ""
-    private var listCounters: [String: [Int: Int]] = [:]
-    private var previousParagraphWasList = false
-
-    init(styles: DOCXStyles, numbering: DOCXNumbering, relationships: [String: String]) {
-        self.styles = styles
-        self.numbering = numbering
-        self.relationships = relationships
-    }
-
-    func convert(xmlString: String) -> String {
-        guard let data = xmlString.data(using: .utf8) else { return "" }
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.shouldProcessNamespaces = false
-        parser.shouldReportNamespacePrefixes = false
-        parser.parse()
-        return normalizeWhitespace(markdown)
-    }
-
-    func parser(_ parser: XMLParser, didStartElement elementName: String,
-                namespaceURI: String?, qualifiedName: String?,
-                attributes: [String: String] = [:]) {
-        let localName = elementName.components(separatedBy: ":").last ?? elementName
-        elementStack.append(localName)
-        switch localName {
-        case "p": startParagraph()
-        case "pStyle": currentParagraphStyle = attributes["w:val"] ?? ""
-        case "ilvl":
-            if let val = attributes["w:val"], let level = Int(val) { listLevel = level }
-        case "numId":
-            let val = attributes["w:val"] ?? "0"
-            if val != "0" { listNumId = val }
-        case "r": startRun()
-        case "b" where isInRun:
-            let val = attributes["w:val"] ?? "true"
-            if val != "0" && val != "false" { runIsBold = true }
-        case "i" where isInRun:
-            let val = attributes["w:val"] ?? "true"
-            if val != "0" && val != "false" { runIsItalic = true }
-        case "strike" where isInRun:
-            let val = attributes["w:val"] ?? "true"
-            if val != "0" && val != "false" { runIsStrikethrough = true }
-        case "br": currentParagraphText += "\n"
-        case "hyperlink":
-            isInHyperlink = true
-            hyperlinkRelId = attributes["r:id"] ?? ""
-            hyperlinkText = ""
-        case "tbl": isInTable = true; tableRows = []
-        case "tr": isInTableRow = true; currentRowCells = []
-        case "tc": isInTableCell = true; currentCellText = ""
-        default: break
-        }
-    }
-
-    func parser(_ parser: XMLParser, foundCharacters string: String) {
-        if let lastElement = elementStack.last, lastElement == "t" {
-            if isInHyperlink { hyperlinkText += string }
-            runText += string
-        }
-    }
-
-    func parser(_ parser: XMLParser, didEndElement elementName: String,
-                namespaceURI: String?, qualifiedName: String?) {
-        let localName = elementName.components(separatedBy: ":").last ?? elementName
-        switch localName {
-        case "r": endRun()
-        case "p": endParagraph()
-        case "hyperlink": endHyperlink()
-        case "tbl": endTable()
-        case "tr":
-            if isInTableRow { tableRows.append(currentRowCells); isInTableRow = false }
-        case "tc":
-            if isInTableCell {
-                currentRowCells.append(currentCellText.trimmingCharacters(in: .whitespacesAndNewlines))
-                isInTableCell = false
-            }
-        default: break
-        }
-        if !elementStack.isEmpty { elementStack.removeLast() }
-    }
-
-    private func startParagraph() {
-        isInParagraph = true; currentParagraphStyle = ""; currentParagraphText = ""
-        paragraphHasContent = false; listNumId = nil; listLevel = 0
-    }
-
-    private func endParagraph() {
-        let text = currentParagraphText.trimmingCharacters(in: .whitespaces)
-        if isInTableCell {
-            if !currentCellText.isEmpty && !text.isEmpty { currentCellText += " " }
-            currentCellText += text; isInParagraph = false; return
-        }
-        guard !text.isEmpty else { markdown += "\n"; isInParagraph = false; return }
-
-        let isListParagraph = listNumId != nil
-            || styles.bulletListStyles.contains(currentParagraphStyle)
-            || styles.numberedListStyles.contains(currentParagraphStyle)
-        if !isListParagraph && previousParagraphWasList { listCounters.removeAll() }
-        previousParagraphWasList = isListParagraph
-
-        if let headingLevel = styles.headingLevels[currentParagraphStyle] {
-            let prefix = String(repeating: "#", count: headingLevel)
-            markdown += "\n\(prefix) \(text)\n\n"
-        } else if let numId = listNumId {
-            // Use the test target's string-based listType
-            let listType = numbering.listType(numId: numId, level: listLevel)
-            let indent = String(repeating: "    ", count: listLevel)
-            if listType == "bullet" {
-                markdown += "\(indent)- \(text)\n"
-            } else {
-                var counter = listCounters[numId] ?? [:]
-                let current = (counter[listLevel] ?? 0) + 1
-                counter[listLevel] = current; listCounters[numId] = counter
-                markdown += "\(indent)\(current). \(text)\n"
-            }
-        } else if styles.bulletListStyles.contains(currentParagraphStyle) {
-            markdown += "- \(text)\n"
-        } else if styles.numberedListStyles.contains(currentParagraphStyle) {
-            let key = "style-\(currentParagraphStyle)"
-            var counter = listCounters[key] ?? [:]
-            let current = (counter[0] ?? 0) + 1
-            counter[0] = current; listCounters[key] = counter
-            markdown += "\(current). \(text)\n"
-        } else {
-            markdown += "\n\(text)\n"
-        }
-        isInParagraph = false
-    }
-
-    private func startRun() {
-        isInRun = true; runIsBold = false; runIsItalic = false
-        runIsStrikethrough = false; runText = ""
-    }
-
-    private func endRun() {
-        guard isInRun else { return }; isInRun = false
-        let text = runText; guard !text.isEmpty else { return }
-        var formatted = text
-        if runIsBold && runIsItalic { formatted = "***\(formatted)***" }
-        else if runIsBold { formatted = "**\(formatted)**" }
-        else if runIsItalic { formatted = "*\(formatted)*" }
-        if runIsStrikethrough { formatted = "~~\(formatted)~~" }
-        currentParagraphText += formatted; paragraphHasContent = true
-    }
-
-    private func endHyperlink() {
-        guard isInHyperlink else { return }; isInHyperlink = false
-        let text = hyperlinkText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        if let target = relationships[hyperlinkRelId], !target.isEmpty {
-            let escaped = target
-                .replacingOccurrences(of: "(", with: "%28")
-                .replacingOccurrences(of: ")", with: "%29")
-            currentParagraphText += "[\(text)](\(escaped))"
-        } else {
-            currentParagraphText += text
-        }
-        paragraphHasContent = true
-    }
-
-    private func endTable() {
-        isInTable = false; guard !tableRows.isEmpty else { return }
-        let colCount = tableRows.map { $0.count }.max() ?? 0
-        guard colCount > 0 else { return }
-        markdown += "\n"
-        for (rowIndex, row) in tableRows.enumerated() {
-            var cells = row
-            while cells.count < colCount { cells.append("") }
-            markdown += "| " + cells.joined(separator: " | ") + " |\n"
-            if rowIndex == 0 {
-                let sep = cells.map { _ in "---" }.joined(separator: " | ")
-                markdown += "| \(sep) |\n"
-            }
-        }
-        markdown += "\n"
-    }
-
-    private func normalizeWhitespace(_ text: String) -> String {
-        var lines = text.components(separatedBy: "\n")
-        lines = lines.map { $0.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression) }
-        var result: [String] = []; var blankCount = 0
-        for line in lines {
-            if line.isEmpty { blankCount += 1; if blankCount <= 2 { result.append(line) } }
-            else { blankCount = 0; result.append(line) }
-        }
-        return result.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-}
-
-/// Parse metadata from a core.xml string (test helper)
-func parseMetadataXML(_ xml: String) -> DOCXMetadata {
-    let parser = TestMetadataParser(xml: xml)
-    return parser.parse()
-}
-
-private class TestMetadataParser: NSObject, XMLParserDelegate {
-    private let xml: String
-    private var title = ""
-    private var author = ""
-    private var currentElement = ""
-    private var currentText = ""
-
-    init(xml: String) { self.xml = xml }
-
-    func parse() -> DOCXMetadata {
-        guard let data = xml.data(using: .utf8) else { return DOCXMetadata(title: "", author: "") }
-        let parser = XMLParser(data: data)
-        parser.delegate = self; parser.parse()
-        return DOCXMetadata(
-            title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-            author: author.trimmingCharacters(in: .whitespacesAndNewlines)
-        )
-    }
-
-    func parser(_ parser: XMLParser, didStartElement elementName: String,
-                namespaceURI: String?, qualifiedName: String?,
-                attributes: [String: String] = [:]) {
-        let local = elementName.components(separatedBy: ":").last ?? elementName
-        currentElement = local; currentText = ""
-    }
-
-    func parser(_ parser: XMLParser, foundCharacters string: String) { currentText += string }
-
-    func parser(_ parser: XMLParser, didEndElement elementName: String,
-                namespaceURI: String?, qualifiedName: String?) {
-        let local = elementName.components(separatedBy: ":").last ?? elementName
-        switch local {
-        case "title": if title.isEmpty { title = currentText }
-        case "creator": if author.isEmpty { author = currentText }
-        default: break
-        }
-    }
-}
-#else
 /// Parse core properties through the production metadata parser.
 func parseMetadataXML(_ xml: String) throws -> DOCXMetadata {
     try DOCXMetadataParser(data: Data(xml.utf8), file: DOCXParser.Part.coreProperties).parse()
 }
-#endif

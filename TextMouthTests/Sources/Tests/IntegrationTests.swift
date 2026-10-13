@@ -1,6 +1,5 @@
 import Foundation
 
-#if canImport(TextMouth)
 @testable import TextMouth
 
 private func parseEPUB(url: URL) throws -> DocumentContent {
@@ -19,11 +18,7 @@ private func parsePlainText(text: String, title: String = "Untitled") -> Documen
     PlainTextParser.parse(text: text, title: title)
 }
 
-#endif
-
-#if canImport(TextMouth)
 @MainActor
-#endif
 func runIntegrationTests() {
 
 // ============================================================
@@ -776,7 +771,6 @@ test("Skipped headings: chapter text excludes skipped heading content") {
 print("\n--- Integration: Sleep Timer + Heading Boundary ---")
 
 test("Sleep timer: end-of-heading ends at its owner's first heading end") {
-#if canImport(TextMouth)
     // Never exercise the production singleton in hosted tests: its reset
     // helper clears persisted timer history. A disposable defaults suite keeps
     // the scenario hermetic and protects the user's restart-timer duration.
@@ -803,20 +797,9 @@ test("Sleep timer: end-of-heading ends at its owner's first heading end") {
     try assertTrue(!timer.isActive, "The ended timer should be inactive")
     try assertTrue(!timer.expireAtHeadingEnd(by: ownerID), "An ended timer should not end again")
     try assertEqual(expiryCallbacks, 0)
-#else
-    // Simulate SleepTimerService behavior for endOfHeading mode: the owner's
-    // first heading end ends the timer.
-    var isActive = true
-    let duration = SleepTimerDuration.endOfHeading
-    if case .endOfHeading = duration {
-        isActive = false
-    }
-    try assertTrue(!isActive, "Should end at the first heading end")
-#endif
 }
 
 test("Sleep timer: formatted output matches duration state") {
-#if canImport(TextMouth)
     // Use a separate disposable suite for this scenario as well; sharing the
     // app singleton would couple the test to live application preferences.
     let timerDefaults = SandboxedPreferences("integration-timer")
@@ -841,25 +824,6 @@ test("Sleep timer: formatted output matches duration state") {
 
     timer.remainingSeconds = 59
     try assertEqual(timer.formattedRemaining, "0:59")
-#else
-    // Simulate formattedRemaining logic for various states
-    func formattedRemaining(isActive: Bool, isFadingOut: Bool, duration: SleepTimerDuration?, remainingSeconds: Int) -> String {
-        guard isActive else { return "" }
-        if isFadingOut { return "Fading out" }
-        if case .endOfHeading = duration { return "End of heading" }
-        if case .endOfBook = duration { return "End of book" }
-        let minutes = remainingSeconds / 60
-        let seconds = remainingSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-
-    try assertEqual(formattedRemaining(isActive: false, isFadingOut: false, duration: nil, remainingSeconds: 0), "")
-    try assertEqual(formattedRemaining(isActive: true, isFadingOut: true, duration: .minutes(5), remainingSeconds: 0), "Fading out")
-    try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .endOfHeading, remainingSeconds: 0), "End of heading")
-    try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .endOfBook, remainingSeconds: 0), "End of book")
-    try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .minutes(15), remainingSeconds: 905), "15:05")
-    try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .minutes(1), remainingSeconds: 59), "0:59")
-#endif
 }
 
 
@@ -995,19 +959,7 @@ test("BookFormat detection matches parser availability for each test file") {
     ]
 
     for (name, expected) in testFiles {
-#if canImport(TextMouth)
         let detected = BookFormat.detect(from: URL(fileURLWithPath: name))?.rawValue
-#else
-        let ext = (name as NSString).pathExtension.lowercased()
-        let formats: [(name: String, extensions: [String])] = [
-            ("epub", ["epub"]),
-            ("txt", ["txt"]),
-            ("markdown", ["md", "markdown"]),
-            ("html", ["html", "htm", "xhtml"]),
-            ("audio", ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac"]),
-        ]
-        let detected = formats.first { $0.extensions.contains(ext) }?.name
-#endif
         try assertEqual(detected, expected, "File \(name) should detect as \(expected)")
     }
 }

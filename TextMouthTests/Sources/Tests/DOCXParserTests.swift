@@ -2,7 +2,6 @@ import CryptoKit
 import Foundation
 import ZIPFoundation
 
-#if canImport(TextMouth)
 @testable import TextMouth
 
 /// Production-backed adapters retaining the legacy scenario bodies and names.
@@ -41,7 +40,6 @@ private func assertPinnedMarkdown(_ name: String, bytes: Int, sha256: String) th
             + "pinned: \(bytes) bytes with SHA-256 \(sha256)"
     )
 }
-#endif
 
 @MainActor
 func runDOCXParserTests() {

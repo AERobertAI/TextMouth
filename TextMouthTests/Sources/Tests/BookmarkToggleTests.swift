@@ -1,7 +1,5 @@
 import Foundation
-#if canImport(TextMouth)
 @testable import TextMouth
-#endif
 
 // Mirror the Bookmark struct for testing proximity logic
 private struct TestBookmark {
@@ -19,7 +17,6 @@ private func nearbyBookmark(
     characterOffset: Int,
     threshold: Int
 ) -> TestBookmark? {
-#if canImport(TextMouth)
     let productionBookmarks = bookmarks.enumerated().map { index, bookmark in
         Bookmark(
             id: bookmark.id,
@@ -37,11 +34,6 @@ private func nearbyBookmark(
         return nil
     }
     return bookmarks.first(where: { $0.id == match.id })
-#else
-    bookmarks
-        .filter { $0.chapterIndex == chapterIndex && abs($0.characterOffset - characterOffset) <= threshold }
-        .min(by: { abs($0.characterOffset - characterOffset) < abs($1.characterOffset - characterOffset) })
-#endif
 }
 
 /// Adjust a bookmark offset so it doesn't land within the proximity zone
@@ -54,7 +46,6 @@ private func adjustedBookmarkOffset(
     characterOffset: Int,
     threshold: Int
 ) -> Int {
-#if canImport(TextMouth)
     let productionBookmarks = bookmarks.enumerated().map { index, bookmark in
         Bookmark(
             id: bookmark.id,
@@ -70,33 +61,6 @@ private func adjustedBookmarkOffset(
         threshold: threshold,
         chapterLength: nil
     )
-#else
-    let sameChapter = bookmarks
-        .filter { $0.chapterIndex == chapterIndex }
-        .sorted(by: { $0.characterOffset < $1.characterOffset })
-
-    guard sameChapter.contains(where: { abs($0.characterOffset - characterOffset) <= threshold }) else {
-        return characterOffset
-    }
-
-    // Try backward nudge first
-    if let first = sameChapter.first(where: { abs($0.characterOffset - characterOffset) <= threshold }),
-       characterOffset < first.characterOffset {
-        let candidate = max(0, first.characterOffset - threshold - 1)
-        if !sameChapter.contains(where: { abs($0.characterOffset - candidate) <= threshold }) {
-            return candidate
-        }
-    }
-
-    // Forward scan: walk through sorted bookmarks, jumping past each conflict
-    var adjusted = characterOffset
-    for bm in sameChapter {
-        if abs(bm.characterOffset - adjusted) <= threshold {
-            adjusted = bm.characterOffset + threshold + 1
-        }
-    }
-    return adjusted
-#endif
 }
 
 @MainActor

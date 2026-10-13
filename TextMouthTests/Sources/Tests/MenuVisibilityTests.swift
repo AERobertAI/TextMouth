@@ -1,69 +1,11 @@
 import Foundation
 import AppKit
 
-#if canImport(TextMouth)
 @testable import TextMouth
-#else
-// MARK: - Mirrored MenuVisibilityManager (static logic only, for testing)
-
-/// Mirrors the static methods from the app's MenuVisibilityManager so we can
-/// test the visibility logic without needing the full app runtime.
-enum MenuVisibilityManager {
-    /// Menu titles that should only appear when a reader window is focused
-    static let readerMenuTitles: Set<String> = ["Playback", "Navigate", "Bookmarks", "Book"]
-
-    /// Menu titles that should only appear when a library window is focused
-    static let libraryMenuTitles: Set<String> = ["Library"]
-
-    /// All context-specific menu titles (union of reader + library sets)
-    static let allContextMenuTitles: Set<String> = readerMenuTitles.union(libraryMenuTitles)
-
-    /// Applies the visibility rules to all items in the given main menu.
-    static func applyVisibility(for windowType: ActiveWindowType?, to mainMenu: NSMenu?) {
-        guard let mainMenu = mainMenu else { return }
-
-        for item in mainMenu.items {
-            let title = item.title
-
-            if readerMenuTitles.contains(title) {
-                item.isHidden = (windowType != .reader)
-            } else if libraryMenuTitles.contains(title) {
-                item.isHidden = (windowType != .library)
-            }
-        }
-    }
-
-    /// Detects window type from an NSWindow (nil for nil input).
-    static func detectWindowType(for window: NSWindow?) -> ActiveWindowType? {
-        guard let window = window else { return nil }
-
-        let identifier = window.identifier?.rawValue ?? ""
-
-        if identifier.contains("book-reader") {
-            return .reader
-        }
-
-        // SwiftUI Settings window has identifier "com_apple_SwiftUI_Settings_window".
-        // Must use exact prefix, not just "Settings", because library window
-        // identifiers contain "SettingsViewModel" in the SwiftUI type chain.
-        if identifier.hasPrefix("com_apple_SwiftUI_Settings") {
-            return nil
-        }
-
-        if window.styleMask.contains(.titled) && !window.styleMask.contains(.utilityWindow) {
-            return .library
-        }
-
-        return nil
-    }
-}
-#endif
 
 // MARK: - Tests
 
-#if canImport(TextMouth)
 @MainActor
-#endif
 func runMenuVisibilityTests() {
 print("\n--- Menu Visibility Tests ---")
 

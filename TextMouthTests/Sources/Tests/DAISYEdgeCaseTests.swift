@@ -1,8 +1,6 @@
 import Foundation
 
-#if canImport(TextMouth)
 @testable import TextMouth
-#endif
 
 @MainActor
 func runDAISYEdgeCaseTests() {
