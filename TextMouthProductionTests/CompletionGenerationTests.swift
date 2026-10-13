@@ -904,15 +904,6 @@ final class CompletionGenerationTests: XCTestCase {
         return speech
     }
 
-    /// Returns once the main queue has run every block queued on it so far:
-    /// the speech service handles each of the synthesizer's callbacks there,
-    /// and a block queued after a callback runs only once it has been.
-    private func handleQueuedCallbacks(file: StaticString = #filePath, line: UInt = #line) {
-        var handled = false
-        DispatchQueue.main.async { handled = true }
-        XCTAssertTrue(eventually { handled }, "The callbacks were never handled", file: file, line: line)
-    }
-
     /// Tell `speech`, on a thread other than the main thread, as the
     /// synthesizer may, that it will speak `range` of `spoken`'s utterance.
     /// Returns once the report is made but before the main queue has handled

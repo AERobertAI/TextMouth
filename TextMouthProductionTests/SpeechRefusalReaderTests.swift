@@ -278,12 +278,4 @@ final class SpeechRefusalReaderTests: XCTestCase {
             recentLines: []
         )
     }
-
-    /// Returns once the main queue has run every block queued on it so far:
-    /// the speech service handles each of the synthesizer's callbacks there.
-    private func handleQueuedCallbacks(file: StaticString = #filePath, line: UInt = #line) {
-        var handled = false
-        DispatchQueue.main.async { handled = true }
-        XCTAssertTrue(waitUntil(timeout: 5) { handled }, "The main queue never ran", file: file, line: line)
-    }
 }
