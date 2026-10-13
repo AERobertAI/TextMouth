@@ -50,7 +50,7 @@ struct SpeechRefusalReportView: View {
 
             // Every line of the report, as Copy Details copies it. Labelled
             // "Details" alone: no heading above it says the word first.
-            FeedReadOnlyText(text: report.text, label: SpeechRefusalWording.detailsLabel)
+            ReadOnlyTextArea(text: report.text, label: SpeechRefusalWording.detailsLabel)
                 .frame(minHeight: 300)
 
             HStack {
@@ -123,9 +123,9 @@ struct SpeechRefusalReportSheet: SheetOverOneReader {
                 logsFolder: TextMouthPaths.logDestination(for: logLocation).folder,
                 logsFailure: logsFailure,
                 onCopy: { Self.copyDetails(of: report, to: .general) },
-                // Storage settings' own Show Logs in Finder, which makes
-                // this Mac's folder first when it is missing.
-                onShowLogs: { logsFailure = LogsSettingsSection.showLogs(for: logLocation) },
+                // The same Show Logs in Finder as Storage settings', which
+                // makes this Mac's folder first when it is missing.
+                onShowLogs: { logsFailure = LogsInFinder.show(for: logLocation) },
                 onClose: { viewModel.closeSpeechRefusalReport() }
             )
         }

@@ -309,7 +309,7 @@ struct FeedInfoSheet: View {
             // Labelled with the feed's title, as Show Description labels its
             // text area with the item's: labelled Description, VoiceOver
             // would say the heading's word twice in a row.
-            FeedReadOnlyText(text: summary, label: FeedWording.descriptionTextLabel(title: feed.title))
+            ReadOnlyTextArea(text: summary, label: FeedWording.descriptionTextLabel(title: feed.title))
                 .frame(height: 120)
         }
     }
@@ -422,109 +422,6 @@ struct FeedInfoValue: View {
     }
 }
 
-// MARK: - Text Read With VoiceOver's Text Navigation
-
-/// A text VoiceOver reads as a text area (FR03): its lines, words, and
-/// letters reached with VoiceOver's text navigation and the arrow keys,
-/// which also move its insertion point, and shown on a braille display as
-/// they are, with selection and copying, but no typing. AppKit's text view
-/// gives all of that, where a SwiftUI text gives a single static element.
-struct FeedReadOnlyText: NSViewRepresentable {
-    /// The text.
-    let text: String
-    /// The text area's spoken label.
-    let label: String
-    /// Whether the text takes keyboard focus as it appears, so VoiceOver
-    /// starts in it.
-    var takesFocus = false
-
-    func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        scrollView.hasVerticalScroller = true
-        scrollView.borderType = .bezelBorder
-        if let textView = scrollView.documentView as? NSTextView {
-            textView.isEditable = false
-            textView.isSelectable = true
-            textView.isRichText = false
-            textView.font = .preferredFont(forTextStyle: .body)
-            textView.textContainerInset = NSSize(width: 6, height: 6)
-            textView.string = text
-            textView.setAccessibilityLabel(label)
-            if takesFocus {
-                // Once the text view is in its window, after the sheet's
-                // own animation.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak textView] in
-                    guard let textView, let window = textView.window else { return }
-                    window.makeFirstResponder(textView)
-                    textView.setSelectedRange(NSRange(location: 0, length: 0))
-                }
-            }
-        }
-        return scrollView
-    }
-
-    func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard let textView = scrollView.documentView as? NSTextView else { return }
-        if textView.string != text {
-            textView.string = text
-        }
-        textView.setAccessibilityLabel(label)
-    }
-}
-
-// MARK: - A Key Equivalent Without a Button
-
-/// A key that does what a button's key equivalent does, with no second
-/// button (FR03): `key`, pressed with no modifier anywhere in the window,
-/// runs `action`. A SwiftUI button carries one shortcut, so Show
-/// Description's Close, whose shortcut is Return, answers Escape through
-/// this. The view takes no space, draws nothing, and is no element to
-/// VoiceOver.
-struct SilentKeyEquivalent: NSViewRepresentable {
-    /// The key.
-    let key: KeyEquivalent
-    /// What pressing it does.
-    let action: () -> Void
-
-    func makeNSView(context: Context) -> SilentKeyEquivalentView {
-        let view = SilentKeyEquivalentView(frame: .zero)
-        view.key = key
-        view.action = action
-        view.setAccessibilityElement(false)
-        return view
-    }
-
-    func updateNSView(_ view: SilentKeyEquivalentView, context: Context) {
-        view.key = key
-        view.action = action
-    }
-
-    /// No space at all, wherever the view is placed.
-    func sizeThatFits(_ proposal: ProposedViewSize, nsView: SilentKeyEquivalentView, context: Context) -> CGSize? {
-        .zero
-    }
-}
-
-/// The view that takes the key. AppKit offers every key pressed in a window
-/// to each of the window's views as a key equivalent before the focused
-/// view sees it, so the key works wherever focus is, as a button's shortcut
-/// does, and before a focused text view can take it.
-final class SilentKeyEquivalentView: NSView {
-    /// The key, Escape until set.
-    var key: KeyEquivalent = .escape
-    /// What pressing it does; nothing until set.
-    var action: () -> Void = {}
-
-    override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
-        guard modifiers.isEmpty, event.charactersIgnoringModifiers == String(key.character) else {
-            return super.performKeyEquivalent(with: event)
-        }
-        action()
-        return true
-    }
-}
-
 // MARK: - Show Description…
 
 /// What Show Description… shows of an item (FR03): its title, its feed and
@@ -579,7 +476,7 @@ struct FeedItemDescriptionSheet: View {
             Text(description.details)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            FeedReadOnlyText(text: description.text, label: FeedWording.descriptionTextLabel(title: description.title), takesFocus: true)
+            ReadOnlyTextArea(text: description.text, label: FeedWording.descriptionTextLabel(title: description.title), takesFocus: true)
                 .frame(minHeight: 240)
             if let link = description.link {
                 FeedInfoValue(label: FeedWording.webPageLabel, value: link.absoluteString)

@@ -82,7 +82,7 @@ final class LiveReadingPositionsTests: XCTestCase {
     /// redraws the row, and the row says the new time left at once. The
     /// library model, which a 10-second tick used to publish so that rows
     /// would refresh, publishes nothing at all.
-    func testARowsTimeLeftFollowsALivePositionWithNoTick() {
+    func testARowsTimeLeftFollowsALivePositionWithNoTick() throws {
         let (model, books) = makeModel()
         let entry = model.livePositions.entry(for: books[0].id)
         var rowRedraws = 0
@@ -99,7 +99,9 @@ final class LiveReadingPositionsTests: XCTestCase {
             let offset = minute * 1_000
             let position = ReadingPosition(chapterIndex: 0, characterOffset: offset, globalCharacterOffset: offset)
             model.updateLiveReadingPosition(bookID: books[0].id, position: position)
-            spoken.append(BookRow(book: model.library.books[0], wpm: 200, livePosition: entry).rowAccessibilityLabel)
+            // Read the library's first book afresh on each pass, failing (not trapping) if it is gone.
+            let libraryBook = try XCTUnwrap(model.library.books[safe: 0], "the library has no first book")
+            spoken.append(BookRow(book: libraryBook, wpm: 200, livePosition: entry).rowAccessibilityLabel)
         }
 
         XCTAssertEqual(spoken, [
@@ -140,11 +142,13 @@ final class LiveReadingPositionsTests: XCTestCase {
 
     /// A live position never hides a newer position the library holds,
     /// however that position got there; with equal times the library's wins.
-    func testALivePositionNeverHidesANewerOrEqualLibraryPosition() {
+    func testALivePositionNeverHidesANewerOrEqualLibraryPosition() throws {
         let (model, books) = makeModel()
         model.updateLiveReadingPosition(bookID: books[0].id, position: Self.halfway)
         var newer = ReadingPosition(chapterIndex: 0, characterOffset: 9_000, globalCharacterOffset: 9_000)
 
+        // One guard covers every position write and read below: nothing here removes a book.
+        _ = try XCTUnwrap(model.library.books[safe: 0], "the library has no first book")
         newer.lastUpdated = Self.halfway.lastUpdated
         model.library.books[0].readingPosition = newer
         XCTAssertEqual(model.livePositions.applied(to: model.library.books[0]).readingPosition, newer)
