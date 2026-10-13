@@ -173,4 +173,88 @@ final class PlaceRelocationAtRebuildTests: CloudMaintenanceTestCase {
         XCTAssertEqual(row.relocatablePlaces, fixture.book.relocatablePlaces)
         XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
     }
+
+    // MARK: A Reader's Own Rebuild
+
+    /// Opens a reader on `book` in `model`, with a render queue that renders
+    /// nothing and no notifications or requests shared with other tests, and
+    /// closes it when the test ends.
+    @MainActor
+    private func openReader(on book: Book, in model: LibraryViewModel) -> ReaderViewModel {
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: model,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
+            substitutionService: TextSubstitutionService(rules: []),
+            autoplayRequests: ReaderAutoplayRequests(),
+            notificationCenter: NotificationCenter(),
+            renderScheduler: SilentRenderQueue()
+        )
+        addTeardownBlock { @MainActor in reader.close() }
+        return reader
+    }
+
+    /// A reader that opens a book whose text is outdated rebuilds it and
+    /// takes the moved places: its cursor, bookmarks, and skipped headings
+    /// are on the same words in the new text, the library's row and the
+    /// record hold them, and no copy of the old text is left.
+    @MainActor
+    func testAReadersRebuildMovesThePlacesItOpensAt() throws {
+        let fixture = try makeBookInAnOlderText(title: "Reader \(UUID().uuidString)")
+        let model = makeModel(with: [fixture.book])
+
+        let reader = openReader(on: fixture.book, in: model)
+        waitForReaderToLoad(reader)
+
+        // What the reader shows and holds.
+        XCTAssertEqual(reader.currentChapterIndex, fixture.position.chapter)
+        XCTAssertEqual(reader.currentCharacterOffset, fixture.position.offset)
+        XCTAssertEqual(reader.bookmarks.count, 1)
+        XCTAssertEqual(reader.bookmarks.first?.chapterIndex, fixture.bookmark.chapter)
+        XCTAssertEqual(reader.bookmarks.first?.characterOffset, fixture.bookmark.offset)
+        XCTAssertTrue(reader.isHeadingSkipped(fixture.notes))
+        XCTAssertEqual(reader.skippedHeadingIDs, [fixture.notes.id])
+
+        // The row and the record: the position may carry the date and
+        // anchor of the save the load makes, so only its numbers are compared.
+        assertPlaces(of: reader.book, areThoseOf: fixture)
+        assertPlaces(of: try XCTUnwrap(model.bookByID(fixture.book.id)), areThoseOf: fixture)
+        assertPlaces(of: try recordedBook(like: fixture.book), areThoseOf: fixture)
+        XCTAssertFalse(snapshotsHoldACopy(of: fixture.book))
+    }
+
+    /// Places moved for a cursor that is not at the place they were saved at
+    /// change nothing: the cursor, the reader's copy, and the library's row
+    /// stay as they are, and the row is not saved again.
+    @MainActor
+    func testMovedPlacesForAPlaceTheReaderLeftAreNotTaken() throws {
+        let fixture = try makeBookInAnOlderText(title: "Left \(UUID().uuidString)")
+        let model = makeModel(with: [fixture.book])
+        let reader = openReader(on: fixture.book, in: model)
+        waitForReaderToLoad(reader)
+        let oldPosition = try XCTUnwrap(fixture.book.readingPosition)
+        let rowPosition = try XCTUnwrap(model.bookByID(fixture.book.id)?.readingPosition)
+        let readerPosition = try XCTUnwrap(reader.book.readingPosition)
+        let cursor = TextPlace(chapter: reader.currentChapterIndex, offset: reader.currentCharacterOffset)
+        XCTAssertNotEqual(
+            TextPlace(chapter: oldPosition.chapterIndex, offset: oldPosition.characterOffset),
+            cursor,
+            "the fixture's old position should differ from where the reader is"
+        )
+
+        // The places as saved at the old position, moved to the book's start.
+        var moved = fixture.book.relocatablePlaces
+        moved.position = ReadingPosition(chapterIndex: 0, characterOffset: 1)
+        reader.takeMovedPlaces(MovedPlaces(
+            bookID: fixture.book.id,
+            original: fixture.book.relocatablePlaces,
+            moved: moved,
+            snapshot: nil
+        ))
+
+        XCTAssertEqual(reader.currentChapterIndex, cursor.chapter)
+        XCTAssertEqual(reader.currentCharacterOffset, cursor.offset)
+        XCTAssertEqual(reader.book.readingPosition, readerPosition)
+        XCTAssertEqual(model.bookByID(fixture.book.id)?.readingPosition, rowPosition)
+    }
 }

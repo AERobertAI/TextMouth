@@ -102,6 +102,51 @@ extension ReaderViewModel {
         book.adoptCapturedAnchors(captured)
     }
 
+    // MARK: Places Moved by a Rebuild of the Text
+
+    /// Takes the places a rebuild of this book's text moved during its load
+    /// (`movedPlaces`, already committed to the book's record by the load):
+    /// into the library's row, this reader's own copy of the book, its
+    /// bookmark list, and its cursor, before anything else reads its places.
+    /// Nothing is spoken or shown. Does nothing for nil, or for an audiobook,
+    /// whose places count time in its recording (P08).
+    ///
+    /// Each take is guarded as the record's was (`Book.takeMovedPlaces(original:moved:)`):
+    /// a place only moves where it is still as it was, so one the listener
+    /// saved meanwhile stays. The cursor follows the position only when it
+    /// was at the place the book was saved at, and the reader's copy took the
+    /// moved position, so a cursor the listener already moved is left alone.
+    func takeMovedPlaces(_ movedPlaces: MovedPlaces?) {
+        guard !isAudioBook, let movedPlaces else { return }
+        let original = movedPlaces.original
+        let moved = movedPlaces.moved
+
+        // Whether the cursor is at the place the book was saved at, noted
+        // before the copies change.
+        let cursorWasAtSavedPlace = original.position.map {
+            $0.chapterIndex == currentChapterIndex && $0.characterOffset == currentCharacterOffset
+        } ?? false
+
+        // The library's row, saved only when taking the places changes it.
+        // A trial copy tells, so an unchanged row is not saved again.
+        let row = libraryViewModel.bookByID(book.id)
+        if var trial = row, trial.takeMovedPlaces(original: original, moved: moved) {
+            libraryViewModel.updateBook(id: book.id) { _ = $0.takeMovedPlaces(original: original, moved: moved) }
+        }
+
+        // This reader's own copy, and the bookmark list it shows: the row's
+        // as the library now holds it (as `captureMissingAnchorsAtLoad`
+        // does), or the reader's own when the book has no row.
+        book.takeMovedPlaces(original: original, moved: moved)
+        bookmarks = row == nil ? book.bookmarks : libraryViewModel.bookmarksForBook(book.id)
+
+        // The cursor, when it was at the saved place and that place moved.
+        if cursorWasAtSavedPlace, let position = moved.position, book.readingPosition == position {
+            currentChapterIndex = position.chapterIndex
+            currentCharacterOffset = position.characterOffset
+        }
+    }
+
     // MARK: Where a Saved Place Opens
 
     /// Where a book saved at `saved` opens in `content`, its text as just
