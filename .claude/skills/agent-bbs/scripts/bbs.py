@@ -2452,7 +2452,8 @@ def positive_number(text: str) -> float:
 def build_parser() -> BoardArgumentParser:
     """Build the parser for every command.
 
-    ``--json`` is accepted before or after the command name. The copy each
+    ``--json`` is accepted before the command name, after it, or between a
+    command group (``team``, ``task``) and its subcommand. The copy each
     command gets defaults to SUPPRESS so that, when left out there, it does
     not overwrite a ``--json`` given before the command.
     """
@@ -2484,7 +2485,9 @@ def build_parser() -> BoardArgumentParser:
 
     def command_group(name: str, summary: str) -> Any:
         """Add a top-level command that only holds subcommands; return their collection."""
-        sub = commands.add_parser(name, help=summary, description=summary, allow_abbrev=False)
+        sub = commands.add_parser(
+            name, help=summary, description=summary, parents=[json_flag], allow_abbrev=False
+        )
         return sub.add_subparsers(dest=f"{name}_command", metavar="SUBCOMMAND", required=True)
 
     register = command("register", cmd_register, "create or update an agent")

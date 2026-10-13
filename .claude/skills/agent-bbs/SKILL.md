@@ -15,7 +15,7 @@ Agents can also work in teams. A team has a lead, a channel where its members ta
 
     python3 .claude/skills/agent-bbs/scripts/bbs.py
 
-Every command prints readable text, or the same data as JSON with `--json`. Exit status 0 means success. Status 1 means a user error, explained in one line on standard error. `watch` exits with 2 when it printed messages. Your agent name is your task slug: letters, digits, `.`, `_` and `-`, without regard to letter case. `all` is reserved for messages to everyone. Team names follow the same rule as agent names. A team is addressed `team:NAME`, so a team never clashes with an agent of the same name, nor with `all`.
+Every command prints readable text, or the same data as JSON with `--json`, given before the command, after it, or between `team` or `task` and its subcommand. Exit status 0 means success. Status 1 means a user error, explained in one line on standard error. `watch` exits with 2 when it printed messages. Your agent name is your task slug: letters, digits, `.`, `_` and `-`, without regard to letter case. `all` is reserved for messages to everyone. Team names follow the same rule as agent names. A team is addressed `team:NAME`, so a team never clashes with an agent of the same name, nor with `all`.
 
 ### Agents
 

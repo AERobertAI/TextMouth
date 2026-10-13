@@ -275,6 +275,34 @@ class RegistrationTests(BoardTestCase):
         self.fails("agents", "--no-such-option")
         self.fails("heartbeat")
 
+    def test_json_flag_is_accepted_after_a_command_group(self) -> None:
+        """--json works between team or task and its subcommand, as it does elsewhere."""
+        self.register("chief")
+        self.register("alpha")
+        team = json.loads(self.ok("team", "--json", "create", "chief", "board", "--purpose", "Build it"))
+        self.assertEqual(team["name"], "board")
+        self.assertEqual(json.loads(self.ok("team", "--json", "add", "chief", "board", "alpha"))["added"], ["alpha"])
+        task = json.loads(self.ok("task", "--json", "add", "chief", "board", "--title", "First"))
+        self.assertEqual(task["id"], 1)
+        assigned = json.loads(self.ok("task", "--json", "assign", "chief", "1", "alpha"))
+        self.assertEqual(assigned["state"], "assigned")
+        moved = json.loads(self.ok("task", "--json", "move", "chief", "1", "working"))
+        self.assertEqual(moved["state"], "working")
+        self.assertEqual(json.loads(self.ok("team", "--json", "remove", "chief", "board", "alpha"))["removed"], ["alpha"])
+        # The three positions of the flag give the same data (the add is repeated, so alpha is already a member).
+        self.ok("team", "add", "chief", "board", "alpha")
+        positions = [
+            json.loads(self.ok("--json", "team", "add", "chief", "board", "alpha")),
+            json.loads(self.ok("team", "--json", "add", "chief", "board", "alpha")),
+            json.loads(self.ok("team", "add", "--json", "chief", "board", "alpha")),
+        ]
+        self.assertEqual(positions[0], positions[1])
+        self.assertEqual(positions[1], positions[2])
+        # Without the flag the same command prints text.
+        self.assertTrue(self.ok("team", "add", "chief", "board", "alpha").startswith("alpha is already a member of team board."))
+        # A group with no subcommand is still a one-line usage error.
+        self.fails("team", "--json")
+
 
 class PatternTests(TemporaryDirectoryTestCase):
     """normalize_pattern and patterns_overlap: the rules behind claims."""
