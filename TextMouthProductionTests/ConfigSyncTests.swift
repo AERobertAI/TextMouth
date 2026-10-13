@@ -1253,6 +1253,19 @@ final class ConfigSyncTests: XCTestCase {
         try jsonObject(from: ConfigService.fileData(for: config))
     }
 
+    /// The fixture every round-trip test of config.json uses writes a
+    /// shortcut in the object form too, as TextMouth writes an action working
+    /// in a kind of window the user chose: Where Am I?, edited to Option-W
+    /// and working in Library windows, is an object with its keys and its
+    /// "worksIn", and that entry survives the file.
+    func testTheFixtureWritesAnActionsScopeAsAnObjectAndItSurvivesTheFile() throws {
+        let expected: ShortcutListing = .object(keys: ["option+w"], worksIn: "Library windows")
+        XCTAssertEqual(ConfigService.AppConfig.everyFieldCustomized.keyboardShortcuts["Where Am I?"], expected)
+
+        let decoded = try ConfigService.decode(ConfigService.fileData(for: .everyFieldCustomized))
+        XCTAssertEqual(decoded.keyboardShortcuts["Where Am I?"], expected)
+    }
+
     /// Parses saved config bytes into a dictionary for field-by-field checks.
     private func jsonObject(from data: Data) throws -> [String: Any] {
         try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
