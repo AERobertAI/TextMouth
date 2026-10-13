@@ -1928,41 +1928,62 @@ def cmd_tasks(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
 
 def cmd_purge(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Delete messages posted, and agents last seen, before a cutoff.
+    """Delete messages posted, agents last seen, and teams idle, before a cutoff.
 
-    A message's files and read marks go with it; an agent's claims and read
-    marks go with it. Ids are never reused, so new messages keep counting
-    up from the highest id the board has ever given.
+    A message's files and read marks go with it; an agent's claims, read
+    marks, and team memberships go with it. Ids are never reused, so new
+    messages keep counting up from the highest id the board has ever given.
+
+    A team is idle when it was created before the cutoff and its channel
+    holds no message at all once the old messages are gone. That is a fair
+    test of idleness, because every change to a team or to its tasks posts
+    to its channel: a channel with nothing newer than the cutoff means a
+    team untouched that long. Its members, tasks, and task files go with it.
+    A team's lead may be purged without the team, which keeps its lead's name.
     """
     cutoff = to_utc_text(utc_now() - dt.timedelta(days=args.older_than))
     with write_transaction(conn):
         messages = conn.execute("DELETE FROM messages WHERE posted_at < ?", (cutoff,)).rowcount
         agents = conn.execute("DELETE FROM agents WHERE last_seen < ?", (cutoff,)).rowcount
+        teams = conn.execute(
+            "DELETE FROM teams WHERE created_at < ? AND NOT EXISTS"
+            " (SELECT 1 FROM messages m WHERE m.recipient = ? || teams.name)",
+            (cutoff, TEAM_PREFIX),
+        ).rowcount
     days = f"{args.older_than:g} day{'' if args.older_than == 1 else 's'}"
-    text = f"Purged {plural(messages, 'message')} and {plural(agents, 'agent')} older than {days}."
-    return Outcome({"messages": messages, "agents": agents, "cutoff": cutoff}, text)
+    text = (
+        f"Purged {plural(messages, 'message')}, {plural(agents, 'agent')}, "
+        f"and {plural(teams, 'team')} older than {days}."
+    )
+    return Outcome({"messages": messages, "agents": agents, "teams": teams, "cutoff": cutoff}, text)
 
 
 def cmd_reset(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Delete every agent, claim, and message; refuses without --yes.
+    """Delete every agent, claim, message, team, and task; refuses without --yes.
 
     Message ids keep counting up afterwards, so an id that an agent
-    remembers for --since never hides a newer message.
+    remembers for --since never hides a newer message. Task ids keep
+    counting up for the same reason.
     """
     if not args.yes:
-        raise UserError("reset deletes every agent, claim, and message on the board; add --yes to confirm")
+        raise UserError(
+            "reset deletes every agent, claim, message, team, and task on the board; add --yes to confirm"
+        )
     with write_transaction(conn):
         counts = {
             table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-            for table in ("agents", "claims", "messages")
+            for table in ("agents", "claims", "messages", "teams", "tasks")
         }
         # Foreign keys cascade: files and read marks go with the messages,
-        # claims and read marks with the agents.
+        # claims, read marks, and memberships with the agents, and members,
+        # tasks, and task files with the teams.
         conn.execute("DELETE FROM messages")
         conn.execute("DELETE FROM agents")
+        conn.execute("DELETE FROM teams")
     text = (
         f"Reset the board: removed {plural(counts['agents'], 'agent')}, "
-        f"{plural(counts['claims'], 'claim')}, and {plural(counts['messages'], 'message')}."
+        f"{plural(counts['claims'], 'claim')}, {plural(counts['messages'], 'message')}, "
+        f"{plural(counts['teams'], 'team')}, and {plural(counts['tasks'], 'task')}."
     )
     return Outcome(counts, text)
 
@@ -2236,16 +2257,19 @@ def build_parser() -> BoardArgumentParser:
     tasks.add_argument("--state", choices=TASK_STATES, help="only tasks in this state")
     tasks.add_argument("--agent", metavar="AGENT", help="only tasks assigned to this agent")
 
-    purge = command("purge", cmd_purge, "delete old messages and agents not seen for a while")
+    purge = command("purge", cmd_purge, "delete old messages, and agents and teams idle for a while")
     purge.add_argument(
         "--older-than",
         type=positive_number,
         required=True,
         metavar="DAYS",
-        help="delete messages posted, and agents last seen, more than DAYS days ago (fractions allowed)",
+        help=(
+            "delete messages posted, agents last seen, and teams last active more than DAYS days ago"
+            " (fractions allowed)"
+        ),
     )
 
-    reset = command("reset", cmd_reset, "delete every agent, claim, and message")
+    reset = command("reset", cmd_reset, "delete every agent, claim, message, team, and task")
     reset.add_argument("--yes", action="store_true", help="confirm that everything should go")
 
     command("protocol", cmd_protocol, "print the protocol agents follow, for an agent brief", needs_board=False)

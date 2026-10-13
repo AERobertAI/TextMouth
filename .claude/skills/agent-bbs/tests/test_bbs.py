@@ -1151,6 +1151,27 @@ class MessageHelperTests(BoardTestCase):
 class HousekeepingTests(BoardTestCase):
     """purge and reset."""
 
+    def insert_task(self, team: str, title: str = "A task", path: str = "TextMouth/A.swift") -> None:
+        """Insert one task and one task file with plain SQL (`task add` comes from another task)."""
+        with contextlib.closing(sqlite3.connect(str(self.board_dir / "board.sqlite"))) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
+            cursor = conn.execute(
+                "INSERT INTO tasks (team, title, created_at, created_by, updated_at, updated_by)"
+                " VALUES (?, ?, ?, 'chief', ?, 'chief')",
+                (team, title, bbs.to_utc_text(NOON), bbs.to_utc_text(NOON)),
+            )
+            conn.execute("INSERT INTO task_files (task_id, path) VALUES (?, ?)", (cursor.lastrowid, path))
+            conn.commit()
+
+    def make_team(self, team: str, *members: str) -> None:
+        """Create ``team`` led by chief, with ``members``, registering the agents it needs."""
+        self.register("chief")
+        for member in members:
+            self.register(member)
+        self.ok("team", "create", "chief", team, "--purpose", "Test it")
+        if members:
+            self.ok("team", "add", "chief", team, *members)
+
     def count_rows(self, table: str) -> int:
         """Count the rows of one board table, read straight from the file."""
         with contextlib.closing(sqlite3.connect(str(self.board_dir / "board.sqlite"))) as conn:
@@ -1182,7 +1203,9 @@ class HousekeepingTests(BoardTestCase):
                 self.ok("post", "alpha", "--topic", f"old {number}")
         with self.clock(NOON):
             self.ok("heartbeat", "alpha")
-            self.assertIn("Purged 3 messages and 0 agents older than 1 day.", self.ok("purge", "--older-than", "1"))
+            self.assertIn(
+                "Purged 3 messages, 0 agents, and 0 teams older than 1 day.", self.ok("purge", "--older-than", "1")
+            )
             self.assertEqual(self.ok_json("post", "alpha", "--topic", "new")["id"], 4)
 
     def test_purge_needs_a_positive_age(self) -> None:
@@ -1195,10 +1218,89 @@ class HousekeepingTests(BoardTestCase):
         self.ok("post", "alpha", "--topic", "hello")
         self.assertIn("add --yes to confirm", self.fails("reset"))
         self.assertEqual(len(self.ok_json("agents")), 1, "nothing is deleted without --yes")
-        self.assertEqual(self.ok_json("reset", "--yes"), {"agents": 1, "claims": 1, "messages": 1})
+        self.assertEqual(
+            self.ok_json("reset", "--yes"),
+            {"agents": 1, "claims": 1, "messages": 1, "teams": 0, "tasks": 0},
+        )
         self.assertEqual((self.ok_json("agents"), self.ok_json("read")), ([], []))
         self.register("alpha")
         self.assertEqual(self.ok_json("post", "alpha", "--topic", "again")["id"], 2, "ids are never reused")
+
+
+    def test_reset_clears_teams_members_tasks_and_task_files(self) -> None:
+        self.make_team("board", "alpha")
+        self.insert_task("board")
+        counts = self.ok_json("reset", "--yes")
+        self.assertEqual(counts, {"agents": 2, "claims": 0, "messages": 2, "teams": 1, "tasks": 1})
+        for table in ("teams", "team_members", "tasks", "task_files"):
+            with self.subTest(table=table):
+                self.assertEqual(self.count_rows(table), 0)
+
+    def test_reset_says_how_many_of_each_it_removed(self) -> None:
+        self.register("alpha", "TextMouth/A.swift")
+        self.ok("team", "create", "alpha", "board", "--purpose", "Test it")
+        self.insert_task("board")
+        self.assertEqual(
+            self.ok("reset", "--yes").strip(),
+            "Reset the board: removed 1 agent, 1 claim, 1 message, 1 team, and 1 task.",
+        )
+
+    def test_reset_refuses_without_yes_and_keeps_the_teams(self) -> None:
+        self.make_team("board")
+        self.assertIn(
+            "reset deletes every agent, claim, message, team, and task on the board; add --yes to confirm",
+            self.fails("reset"),
+        )
+        self.assertEqual(self.count_rows("teams"), 1)
+
+    def test_purge_deletes_an_idle_team_with_its_members_and_tasks_but_keeps_a_busy_or_new_one(self) -> None:
+        with self.clock(NOON - dt.timedelta(days=5)):
+            self.make_team("idle", "alpha", "beta")
+            self.ok("team", "create", "chief", "busy", "--purpose", "Stay")
+            self.insert_task("idle")
+        with self.clock(NOON - dt.timedelta(hours=1)):
+            self.ok("heartbeat", "chief")
+            self.ok("heartbeat", "alpha")
+            self.ok("heartbeat", "beta")
+            # Any change to a team posts to its channel (posting there by hand comes from another task).
+            self.ok("team", "add", "chief", "busy", "beta")
+            self.ok("team", "create", "chief", "fresh", "--purpose", "New")
+        with self.clock(NOON):
+            data = self.ok_json("purge", "--older-than", "2")
+            text = self.ok("purge", "--older-than", "2")
+        self.assertEqual(data["teams"], 1)
+        self.assertIn("and 0 teams older than 2 days.", text)
+        self.assertEqual([t["name"] for t in self.ok_json("teams")], ["busy", "fresh"])
+        self.assertEqual(self.ok_json("teams", "busy")[0]["members"], ["beta"], "only the idle team's members went")
+        for table in ("tasks", "task_files"):
+            with self.subTest(table=table):
+                self.assertEqual(self.count_rows(table), 0, "they went with the idle team")
+
+    def test_purge_text_counts_the_teams_it_deleted(self) -> None:
+        with self.clock(NOON - dt.timedelta(days=5)):
+            self.make_team("idle")
+        with self.clock(NOON):
+            self.ok("heartbeat", "chief")
+            self.assertEqual(
+                self.ok("purge", "--older-than", "2").strip(),
+                "Purged 1 message, 0 agents, and 1 team older than 2 days.",
+            )
+
+    def test_purging_an_agent_takes_its_memberships_but_not_a_team_it_leads(self) -> None:
+        with self.clock(NOON - dt.timedelta(days=5)):
+            self.register("stale")
+            self.register("gone")
+            self.register("fresh")
+        with self.clock(NOON - dt.timedelta(hours=1)):
+            self.ok("team", "create", "fresh", "board", "--purpose", "Test it", "--lead", "stale")
+            self.ok("team", "add", "fresh", "board", "gone")
+        with self.clock(NOON):
+            self.ok("heartbeat", "fresh")
+            data = self.ok_json("purge", "--older-than", "2")
+        self.assertEqual(data["agents"], 2)
+        self.assertEqual([a["name"] for a in self.ok_json("agents")], ["fresh"])
+        team = self.ok_json("teams", "board")[0]
+        self.assertEqual((team["lead"], team["members"]), ("stale", []))
 
 
 class SkillDocumentTests(BoardTestCase):
