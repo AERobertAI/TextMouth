@@ -1984,8 +1984,9 @@ private struct LibraryCloudWindowSupport: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: .stopKeepingOnThisMac)) { notification in
                 performKeepMenuCommand(false, notification)
             }
-            // Why Remove Download kept a book's download, which VoiceOver
-            // has also heard announced.
+            // Why Remove Download kept a book's download. This alert is the
+            // only place the refusal is said: nothing announces it besides
+            // (#2094).
             .alert(refusal?.title ?? "", isPresented: isShowingRefusal, presenting: refusal) { _ in
                 Button("OK", role: .cancel) {}
             } message: { refusal in
