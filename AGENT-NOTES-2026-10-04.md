@@ -2280,3 +2280,40 @@ Documented A11, REV13's app cleanups, FR14, P07, P08, the REV13 feed follow-ups,
   - Give leads a literal build-folder path, since the worktree guard refused `${TMPDIR}` and compound git commands.
   - Say "remove the worker's worktree, then rebase its branch".
   - A cheap Sonnet pass could pre-verify a polish lead's candidates.
+
+## From the second polish team (team/polish2), Oct 12
+
+**Decisions (the lead's)**
+- **cindex went first.** The lead launched the cindex task before the verifier reported, since the newest TODO line named that slice.
+- **A second verify pass** ran after a script showed the first had missed 90 clauses. The first had read long semicolon lines as one item each.
+- **Dropped: the audio over Where Am I?'s end sound.** The verifier's guard would not catch a book waiting for its download. A correct fix needs a new stored flag in `ReaderViewModel.swift`, where the t6d team was working.
+- **The `addBookmark` case keeps its name;** only its raw value changed, to "Toggle Bookmark". Every stored form reads "Add Bookmark" through `ShortcutAction.formerNames`: config.json by `named(_:)`, and the edits record and the old saved map by `ShortcutEdits.reading`, through `exactlyNamed(_:)` (the orchestrator checked all three).
+- **Eight fixes and no more,** to spare the weekly budget.
+
+**Unverified**
+- **Not seen live:** the Bookmarks menu's titles (no test pins them), and Library Not Available in a real cloud library.
+- **The render race** is fixed by construction; its test passed 10 runs in 10, but it had failed only once before, under load.
+
+**Wording**
+- **README.md:**
+  - Library Not Available says "Some of the library's files are in <service> and aren't on this Mac yet."
+  - The bookmark command is Toggle Bookmark in the menu, the Shortcuts tab, and config.json. An "Add Bookmark" entry is still read, and written back as "Toggle Bookmark".
+  - A second Play while an audiobook waits for its chapter's download does nothing, with no second play sound.
+- **ARCHITECTURE.md:**
+  - `SavedFile.renameReplacing(_:_:)` is the one rename(2) helper: the log writer, the reading-text cache, and a filtered render's result.
+  - `CountWording.list(_:)` is the one "a, b, and c" joiner.
+  - `Library.isPath(_:inTreeAt:)`, `hasBooks(inFolderTree:)`, and `booksInFolderTree` are the one folder-tree rule. Delete Folder… and `removeFolderAndContents` share it, so a feed's item that names a folder is neither deleted nor dropped.
+  - The Bookmarks menu titles its items from `ShortcutAction` raw values.
+
+**The pattern (the lead's view)**
+- **What worked:**
+  - With complete briefs, all eight Sonnet fixes were accepted with no fix rounds, each in 3.5 to 8 minutes.
+  - Sonnet judged well where a brief left room: it renamed callers the brief had missed, and extended a guard to the words the cases write.
+- **What did not:**
+  - The first verify pass read long semicolon lines as one item.
+  - The verifier's suggested fixes need checking: two were wrong, and its sizes ran optimistic.
+- **What to change:**
+  - Give the verifier a clause list split by a script.
+  - Put a completion grep in every refactor brief.
+  - Have workers join a team with `register --team`, since `bbs team add` refuses an unregistered agent.
+  - Give workers the literal build path too.
