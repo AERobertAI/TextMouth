@@ -984,7 +984,10 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
     The first registration needs both --role and --branch; later ones may
     give either, and what they leave out is kept. --files adds claims, just
-    like `claim`, and never drops earlier ones.
+    like `claim`, and never drops earlier ones. --team joins existing teams,
+    posting "Joined team ..." to each channel; a team the agent already
+    leads or belongs to changes nothing, and an unknown team undoes the
+    whole registration.
     """
     name = normalize_name(args.name)
     role = None if args.role is None else one_line(args.role, "role")
@@ -1008,6 +1011,7 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
                 (role, branch, now, name),
             )
         add_claims(conn, name, patterns)
+        joined = join_teams(conn, name, args.team)
         agent = load_agents(conn, name=name)[0]
         overlaps = overlaps_involving(conn, name)
         unread, reminder = unread_reminder(conn, name)
@@ -1015,9 +1019,10 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     lines = [f"{verb} {name}.", describe_agent(agent)]
     if agent["claims"]:
         lines.append(describe_overlaps(overlaps, none="No overlaps with other agents' claims."))
+    lines.extend(f"Joined team {team}." for team in joined)
     if reminder:
         lines.append(reminder)
-    data = {"created": created, "agent": agent, "overlaps": overlaps, "unread": unread}
+    data = {"created": created, "agent": agent, "overlaps": overlaps, "joined": joined, "unread": unread}
     return Outcome(data, "\n".join(lines))
 
 
@@ -1687,6 +1692,23 @@ def post_to_team(
     return insert_message(conn, sender, team_address(team), tag, clip_line(topic), body)
 
 
+def join_teams(conn: sqlite3.Connection, agent: str, raw_teams: List[str]) -> List[str]:
+    """Make ``agent`` a member of each named team and return the teams it joined.
+
+    Every name must be an existing team (plain or as an address); repeats
+    are dropped. A team the agent already leads or belongs to is skipped
+    without a post; each team joined gets one "Joined team" line in its
+    channel. Runs inside a write transaction, so an unknown team undoes the
+    joins before it.
+    """
+    joined = []
+    for team in dict.fromkeys(require_team(conn, raw) for raw in raw_teams):
+        if add_member(conn, team, agent):
+            post_to_team(conn, agent, team, f"Joined team {team}")
+            joined.append(team)
+    return joined
+
+
 def cmd_team_create(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     """Create a team with a lead and a purpose, and announce it in its channel."""
     team = normalize_team(args.team)
@@ -1728,6 +1750,31 @@ def cmd_team_add(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
         )
     lines.append(describe_team(details))
     return Outcome({"team": details, "added": added, "already": already}, "\n".join(lines))
+
+
+def cmd_team_remove(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Remove members from a team; strangers and the lead are reported, not removed.
+
+    The agents need not be registered any more, so a member who was purged
+    can still be named. The lead holds no member row, so it is never removed.
+    """
+    agents = list(dict.fromkeys(normalize_name(raw) for raw in args.agents))
+    with write_transaction(conn):
+        actor = require_agent(conn, args.name)
+        team = require_team(conn, args.team)
+        removed = [
+            agent
+            for agent in agents
+            if conn.execute("DELETE FROM team_members WHERE team = ? AND agent = ?", (team, agent)).rowcount == 1
+        ]
+        if removed:
+            post_to_team(conn, actor, team, f"Removed {', '.join(removed)} from team {team}")
+        details = load_teams(conn, name=team)[0]
+    not_members = [agent for agent in agents if agent not in removed]
+    lines = [f"Removed {', '.join(removed)} from team {team}."] if removed else []
+    lines.extend(f"{agent} is not a member of team {team}." for agent in not_members)
+    lines.append(describe_team(details))
+    return Outcome({"team": details, "removed": removed, "not_members": not_members}, "\n".join(lines))
 
 
 def cmd_teams(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
@@ -2044,6 +2091,14 @@ def build_parser() -> BoardArgumentParser:
         metavar="PATH",
         help="paths or globs you expect to edit, relative to the repository root (added to your claims)",
     )
+    register.add_argument(
+        "--team",
+        nargs="+",
+        action="extend",
+        default=[],
+        metavar="TEAM",
+        help="teams to join (TEAM or team:TEAM; the team must exist)",
+    )
 
     heartbeat = command("heartbeat", cmd_heartbeat, "refresh an agent's last-seen time")
     heartbeat.add_argument("name", help="your agent name")
@@ -2152,6 +2207,10 @@ def build_parser() -> BoardArgumentParser:
     team_add.add_argument("name", help="your agent name")
     team_add.add_argument("team", metavar="TEAM", help="the team to add them to")
     team_add.add_argument("agents", nargs="+", metavar="AGENT", help="registered agents to add")
+    team_remove = command("remove", cmd_team_remove, "remove members from a team", group=team)
+    team_remove.add_argument("name", help="your agent name")
+    team_remove.add_argument("team", metavar="TEAM", help="the team to remove them from")
+    team_remove.add_argument("agents", nargs="+", metavar="AGENT", help="members to remove")
 
     teams = command("teams", cmd_teams, "list teams with their lead and members, or show one")
     teams.add_argument("team", nargs="?", metavar="TEAM", help="only this team")

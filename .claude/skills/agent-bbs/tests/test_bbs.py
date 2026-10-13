@@ -1009,6 +1009,101 @@ class TeamTests(BoardTestCase):
         self.assertEqual((team["name"], team["members"], team["channel"]), ("alpha", ["alpha"], "team:alpha"))
         self.assertEqual(self.ok_json("agents")[0]["name"], "alpha")
 
+    def register_into(self, name: str, *teams: str) -> str:
+        """Register ``name`` with the stock role and branch, joining ``teams``; return the text."""
+        return self.ok("register", name, "--role", "newcomer", "--branch", "feature/new", "--team", *teams)
+
+    def test_registering_with_a_team_joins_it_and_says_so_in_text_json_and_channel(self) -> None:
+        self.create()
+        text = self.register_into("newbie", "board")
+        self.assertIn("Joined team board.", text.splitlines())
+        data = self.ok_json("register", "other", "--role", "r", "--branch", "b", "--team", "team:Board")
+        self.assertEqual(data["joined"], ["board"])
+        self.assertEqual(self.ok_json("teams", "board")[0]["members"], ["newbie", "other"])
+        posts = self.channel()
+        self.assertEqual(
+            [(p["from"], p["topic"]) for p in posts[1:]],
+            [("newbie", "Joined team board"), ("other", "Joined team board")],
+        )
+
+    def test_the_joined_lines_follow_the_overlap_line_and_precede_the_unread_reminder(self) -> None:
+        self.create()
+        self.register("newbie")
+        self.ok("post", "alpha", "--topic", "hello", "--to", "newbie")
+        self.ok("claim", "alpha", "TextMouth/New.swift")
+        lines = self.ok(
+            "register", "newbie", "--files", "TextMouth/New.swift", "--team", "board"
+        ).splitlines()
+        position = lines.index("Joined team board.")
+        self.assertIn("alpha claims", lines[position - 1])
+        self.assertIn("unread", lines[position + 1])
+        self.assertEqual(len(lines), position + 2)
+
+    def test_team_may_be_repeated_and_names_each_team_once(self) -> None:
+        self.create("board")
+        self.create("docs")
+        data = self.ok_json(
+            "register", "newbie", "--role", "r", "--branch", "b", "--team", "board", "--team", "team:docs", "BOARD"
+        )
+        self.assertEqual(data["joined"], ["board", "docs"])
+        self.assertEqual(len(self.channel("board")), 2, "the repeat posts nothing more")
+
+    def test_a_later_registration_joins_and_a_team_already_led_or_joined_posts_nothing(self) -> None:
+        self.create()
+        self.assertEqual(self.ok_json("register", "alpha", "--team", "board")["joined"], ["board"])
+        posts_before = len(self.channel())
+        again = self.ok_json("register", "alpha", "--team", "board")
+        led = self.ok_json("register", "chief", "--team", "board")
+        self.assertEqual((again["joined"], led["joined"]), ([], []))
+        self.assertNotIn("Joined team", self.ok("register", "alpha", "--team", "board"))
+        self.assertEqual(len(self.channel()), posts_before)
+        self.assertEqual(self.ok_json("teams", "board")[0]["members"], ["alpha"])
+
+    def test_registering_without_a_team_joins_nothing(self) -> None:
+        self.assertEqual(self.ok_json("register", "alpha")["joined"], [])
+
+    def test_registering_into_an_unknown_team_fails_and_leaves_no_agent_or_post(self) -> None:
+        self.create()
+        error = self.fails("register", "newbie", "--role", "r", "--branch", "b", "--team", "board", "nope")
+        self.assertIn("there is no team 'nope'", error)
+        self.assertEqual([a["name"] for a in self.ok_json("agents")], ["alpha", "beta", "chief", "gamma"])
+        self.assertEqual(len(self.channel()), 1, "the join before the bad name was undone")
+        self.assertEqual(self.ok_json("teams", "board")[0]["members"], [])
+
+    def test_removing_members_posts_one_line_and_they_leave_the_team(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "alpha", "beta", "gamma")
+        text = self.ok("team", "remove", "chief", "board", "Alpha", "beta", "alpha")
+        self.assertEqual(text.splitlines()[0], "Removed alpha, beta from team board.")
+        self.assertIn("  Members: gamma", text.splitlines())
+        posts = self.channel()
+        self.assertEqual((posts[-1]["from"], posts[-1]["topic"]), ("chief", "Removed alpha, beta from team board"))
+        self.assertEqual(len(posts), 3, "one line for the add and one for the removal")
+        self.assertEqual(self.ok_json("teams", "board")[0]["members"], ["gamma"])
+
+    def test_removing_json_lists_the_removed_and_the_strangers(self) -> None:
+        self.create()
+        self.ok("team", "add", "chief", "board", "alpha")
+        result = self.ok_json("team", "remove", "alpha", "board", "alpha", "beta", "chief")
+        self.assertEqual((result["removed"], result["not_members"]), (["alpha"], ["beta", "chief"]))
+        self.assertEqual(result["team"]["members"], [])
+
+    def test_strangers_and_the_lead_are_reported_and_nothing_is_posted(self) -> None:
+        self.create()
+        text = self.ok("team", "remove", "alpha", "board", "beta", "chief")
+        lines = text.splitlines()
+        self.assertEqual(
+            lines[:2], ["beta is not a member of team board.", "chief is not a member of team board."]
+        )
+        self.assertTrue(lines[2].startswith("board: led by chief"), "the team's description follows")
+        self.assertEqual(len(self.channel()), 1)
+
+    def test_team_remove_refuses_an_unknown_actor_and_an_unknown_team(self) -> None:
+        self.create()
+        self.assertIn("unknown agent 'nobody'", self.fails("team", "remove", "nobody", "board", "alpha"))
+        error = self.fails("team", "remove", "chief", "bord", "alpha")
+        self.assertIn("there is no team 'bord' (did you mean 'board'?)", error)
+
 
 class MessageHelperTests(BoardTestCase):
     """The small helpers that the team commands share: names, clipping, and storing a message."""
