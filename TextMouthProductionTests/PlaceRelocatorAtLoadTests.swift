@@ -272,8 +272,15 @@ final class PlaceRelocatorAtLoadTests: XCTestCase {
         XCTAssertEqual(outcome.places.bookmarks.dropFirst().map { place(of: $0) }, [TextPlace(chapter: 1, offset: chapterEnd), TextPlace(chapter: 3, offset: 5)])
         // The words of the places that now stand are captured where they are.
         let words = BookWords(texts: rained)
-        XCTAssertEqual(outcome.places.bookmarks[1].anchor, TextAnchor(capturingAt: TextPlace(chapter: 1, offset: chapterEnd), in: words))
-        XCTAssertEqual(outcome.places.bookmarks[2].anchor, TextAnchor(capturingAt: TextPlace(chapter: 3, offset: 5), in: words))
+        // Read through `dropFirst()`, never by index: a short outcome fails
+        // the assertion instead of trapping the test host.
+        XCTAssertEqual(
+            outcome.places.bookmarks.dropFirst().map(\.anchor),
+            [
+                TextAnchor(capturingAt: TextPlace(chapter: 1, offset: chapterEnd), in: words),
+                TextAnchor(capturingAt: TextPlace(chapter: 3, offset: 5), in: words),
+            ]
+        )
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1, foundBySavedWords: 1, guessed: 1))
     }
 
