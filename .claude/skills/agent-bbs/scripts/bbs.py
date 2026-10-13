@@ -2431,12 +2431,12 @@ def build_parser() -> BoardArgumentParser:
     task_assign.add_argument(
         "agent", metavar="AGENT", help="the agent who takes the task; it may register later"
     )
-    task_assign.add_argument("--note", metavar="ONE LINE", help="one line to go with the change")
+    task_assign.add_argument("--note", help="one line to go with the change")
     task_move = command("move", cmd_task_move, "move a task to another state", group=task)
     task_move.add_argument("name", help="your agent name")
     task_move.add_argument("id", type=positive_int, metavar="ID", help="the task's number")
     task_move.add_argument("state", choices=TASK_STATES, help="the task's new state")
-    task_move.add_argument("--note", metavar="ONE LINE", help="one line to go with the change")
+    task_move.add_argument("--note", help="one line to go with the change")
 
     tasks = command("tasks", cmd_tasks, "list tasks by team, state, or agent")
     tasks.add_argument("--team", metavar="TEAM", help="only this team's tasks")
