@@ -566,6 +566,7 @@
 		9C532EA6012A690D4DDD5CA3 /* IntegrationWindowRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C525F6CC779170339B462DF3 /* IntegrationWindowRoutingTests.swift */; };
 		9CE104AD23659E0970F3B8C5 /* LibraryBookInfoLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152C439DC09826997F7BB9DB /* LibraryBookInfoLoader.swift */; };
 		9CFC9B73072F4091A029EA3A /* LibraryInfoSpeakerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F1EBBEDC2F0CB39D7AA1B2 /* LibraryInfoSpeakerTests.swift */; };
+		9D10AA3F499928A6F5AEDF8A /* SilentKeyEquivalent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F955CAB4B570E631E0AB2E22 /* SilentKeyEquivalent.swift */; };
 		9D3F3B4DDDB545196AF2C12F /* DataDirectoryAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A6213AC26A137FD0A6E782A /* DataDirectoryAvailability.swift */; };
 		9D4BBA7DF1CA65EB3F1C9491 /* PerformanceBaselineRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFBA3CD452228D55645B856 /* PerformanceBaselineRulesTests.swift */; };
 		9DB6B0E37BBF63DCBCA68B9C /* FeedItemIndexWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD7B1876A86E0D89DC89533 /* FeedItemIndexWriterTests.swift */; };
@@ -1829,6 +1830,7 @@
 		F8C3964380B2E93CE8825890 /* TranscriptTextIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptTextIndex.swift; sourceTree = "<group>"; };
 		F912FFA4329F3326B007F314 /* newmdct.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = newmdct.h; sourceTree = "<group>"; };
 		F92E192EEF7CE9CC47DE3CA1 /* AudioEditActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditActivity.swift; sourceTree = "<group>"; };
+		F955CAB4B570E631E0AB2E22 /* SilentKeyEquivalent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilentKeyEquivalent.swift; sourceTree = "<group>"; };
 		F96001B043A17663FBB5ED5B /* ReadingStatsTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStatsTile.swift; sourceTree = "<group>"; };
 		F9B833C55A299E346FB32CA1 /* LibraryFeedCheckpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFeedCheckpointTests.swift; sourceTree = "<group>"; };
 		F9DF8F174372EB9DFDD6F64B /* ReadOnlyTextArea.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadOnlyTextArea.swift; sourceTree = "<group>"; };
@@ -2872,6 +2874,7 @@
 			children = (
 				C67F22AA3696E45373BC65B0 /* ContentView.swift */,
 				F9DF8F174372EB9DFDD6F64B /* ReadOnlyTextArea.swift */,
+				F955CAB4B570E631E0AB2E22 /* SilentKeyEquivalent.swift */,
 				E914A0A7A4E824914D756517 /* ViewBodyCounter.swift */,
 				EFEFCAD9F2462FECFBBEF3DF /* VoiceOverFocus.swift */,
 				0AFC792D742DBFC8427E0BC7 /* AudioEditor */,
@@ -3944,6 +3947,7 @@
 				051C599F9147EB957F1A38FE /* SettingsViewModel.swift in Sources */,
 				E2C14C0E9FF51CF998751C4F /* ShortcutEdits.swift in Sources */,
 				FB34D9868505A6ABBD0171E1 /* ShortcutPressDispatcher.swift in Sources */,
+				9D10AA3F499928A6F5AEDF8A /* SilentKeyEquivalent.swift in Sources */,
 				E92AD474DFE41E5BAB23E353 /* SleepTimerService.swift in Sources */,
 				DFEA4A7750B07D5E886A1404 /* SleepTimerView.swift in Sources */,
 				DF1327ACB24442B9080C3A18 /* SoundEffectService.swift in Sources */,
