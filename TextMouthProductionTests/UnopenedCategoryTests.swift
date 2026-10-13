@@ -239,6 +239,38 @@ final class UnopenedCategoryTests: XCTestCase {
         XCTAssertFalse(Library.isPath("Essay", inTreeAt: "Essays"))
     }
 
+    /// `removeFolderAndContents(id:)` takes the books of the folder's tree
+    /// and returns exactly those it removed; it keeps a book in a folder
+    /// whose name only starts the same and a feed's item that names the
+    /// folder. It drops the folders of the tree and their sort settings,
+    /// and not the lookalike's.
+    func testRemoveFolderAndContentsTakesTheTreeAndKeepsLookalikesAndFeedItems() {
+        let start = Date(timeIntervalSince1970: 1_791_000_000)
+        let top = Self.book("Top", in: "Essays", added: start, opened: nil)
+        let nested = Self.book("Nested", in: "Essays/Travel", added: start, opened: nil)
+        let lookalike = Self.book("Lookalike", in: "Essays Old", added: start, opened: nil)
+        var item = Self.book("Episode", in: "Essays", added: start, opened: nil)
+        item.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:one")
+        let essays = BookFolder(name: "Essays")
+        let sort = FolderSortSetting(sortField: .author, sortAscending: false)
+        var library = Library(
+            books: [top, nested, lookalike, item],
+            folders: [
+                essays,
+                BookFolder(name: "Travel", parentPath: "Essays"),
+                BookFolder(name: "Essays Old")
+            ],
+            folderSortSettings: ["Essays": sort, "Essays/Travel": sort, "Essays Old": sort]
+        )
+
+        let removed = library.removeFolderAndContents(id: essays.id)
+
+        XCTAssertEqual(removed.map(\.title), ["Top", "Nested"])
+        XCTAssertEqual(library.books.map(\.title), ["Lookalike", "Episode"])
+        XCTAssertEqual(library.folders.map(\.fullPath), ["Essays Old"])
+        XCTAssertEqual(Set(library.folderSortSettings.keys), ["Essays Old"])
+    }
+
     // MARK: - What It Lists
 
     /// Unopened lists every book never opened, from the root and every
