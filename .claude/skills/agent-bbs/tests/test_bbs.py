@@ -1868,7 +1868,6 @@ class SchemaTests(BoardTestCase):
         with self.assertRaises(ValueError):
             bbs._created_name("SELECT 1")
 
-
     # -- The pre-teams script on a board that holds teams, members, tasks, and channel posts --
 
     def populate(self) -> dict:
