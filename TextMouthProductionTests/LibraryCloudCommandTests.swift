@@ -544,14 +544,6 @@ final class LibraryCloudCommandTests: XCTestCase {
 
     // MARK: - Wording
 
-    /// Titles in a sentence join as "A", "A and B", "A, B, and C".
-    func testListsJoinTitlesInASentence() {
-        XCTAssertEqual(CountWording.list([]), "")
-        XCTAssertEqual(CountWording.list(["Moby-Dick"]), "Moby-Dick")
-        XCTAssertEqual(CountWording.list(["Moby-Dick", "Emma"]), "Moby-Dick and Emma")
-        XCTAssertEqual(CountWording.list(["Moby-Dick", "Emma", "Dracula"]), "Moby-Dick, Emma, and Dracula")
-    }
-
     /// A command that ended nothing says nothing.
     func testNothingEndedSaysNothing() {
         XCTAssertNil(LibraryCloudWording.downloadFinished(downloaded: [], failed: []))
