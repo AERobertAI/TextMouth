@@ -11,7 +11,7 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
 
 ## The lead's part
 1. **Set up.** `git checkout -b team/<team> main`. Register on the board as `<team>-lead`, with the files your charter names. Read your charter and the code it points to.
-2. **Plan small.** Each task is one logical change: one or two commits, about 150 changed lines at most besides tests, in files no other in-flight task touches. Write each task's brief to `Scripts/agents/briefs/2026-10-12/<team>/<task>.md`. A brief gives the worker what you learned, so it need not explore: the files and functions, with line ranges; the behavior required, as numbered items; the tests to add, and which existing test classes to run; and what not to touch. Commit the briefs on the team branch (`git add -f`, one commit) before you launch workers.
+2. **Plan small.** Each task is one logical change: one or two commits, about 150 changed lines at most besides tests, in files no other in-flight task touches. Write each task's brief to `Scripts/agents/briefs/2026-10-12/<team>/<task>.md`. A refactor's brief ends with a completion check, a `grep` that must find nothing once the work is done, so no caller is missed. A verifier's brief gives it the items one per line, split by a script, never long lines of several items. A brief gives the worker what you learned, so it need not explore: the files and functions, with line ranges; the behavior required, as numbered items; the tests to add, and which existing test classes to run; and what not to touch. Commit the briefs on the team branch (`git add -f`, one commit) before you launch workers.
 3. **Launch workers** with the Agent tool. Pass `subagent_type: "general-purpose"`, `model: "sonnet"`, `effort: "high"`, `isolation: "worktree"`, and a description naming the task. The prompt names:
    - the worker's slug, `<team>-<task>`;
    - its branch, `<team>/<task>`, made with `git checkout -b <team>/<task> team/<team>`;
@@ -35,7 +35,7 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
 
 ## The worker's part
 1. **Branch.** Make your branch from the team branch, as your lead says. Read your brief and the files it names, by line range; read nothing else unless you must.
-2. **Register.** `bbs register <slug> --role "ONE LINE" --branch <branch> --files <files>`.
+2. **Register, joining your team.** `bbs register <slug> --role "ONE LINE" --branch <branch> --team <team> --files <files>`.
 3. **Change.** Make the change with its tests, one logical change per commit. Each message ends with `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
 4. **Build and test** only through the wrapper below, with your own build folder. Run only the test classes your brief names, never the full suite: your lead runs that. Start every build in the background, and check on it no more often than every 4 minutes, with one short command.
 5. **Stay in your lane.** Edit no `*.md` file and no file outside your brief. For a problem elsewhere, post a finding with `--file <path>`.
@@ -58,7 +58,8 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
 `bbs` means `python3 .claude/skills/agent-bbs/scripts/bbs.py`, run from your worktree root.
 - **Teams.** The board has had teams since the board team's merge on October 12: `bbs team --help`, `bbs task --help`, and `SKILL.md`.
   - **A lead,** as its first board step, creates its team: `bbs team create <team>-lead <team> --purpose "ONE LINE" --lead <team>-lead`.
-  - **For each task,** the lead adds it with `bbs task add <team>-lead <team> --title "ONE LINE" --brief <path> --files <paths>` and assigns it with `bbs task assign <team>-lead <id> <slug>`. Before launching the worker, it adds the worker to the team with `bbs team add <team>-lead <team> <slug>`.
+  - **For each task,** the lead adds it with `bbs task add <team>-lead <team> --title "ONE LINE" --brief <path> --files <paths>` and assigns it with `bbs task assign <team>-lead <id> <slug>`.
+  - **Workers join the team as they register:** `bbs register <slug> --role "..." --branch <branch> --team <team> --files <files>`. `bbs team add` refuses an agent that has not registered yet.
   - **Workers** move their task with `bbs task move <slug> <id> working`, then to `review` when they report.
   - **The lead** moves each task to `done` or `dropped` once integrated or let go.
   - **Everyone posts to the team's channel,** `--to team:<team>`, and reads it with `bbs inbox <name> --team <team>` or `bbs read --team <team>`.
@@ -86,7 +87,7 @@ Use this command, with your slug, your test classes, and a log file in the sessi
   - the reader-sheet redraw count in `ViewsAndWindowsReaderSheetTests`
   - `FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped`
   - the audiobook-open benchmark, and the performance baselines
-- **A lead's build folder.** The worktree guard refuses `${TMPDIR}` in a lead's commands, so a lead writes the folder's literal path: `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-<slug>`.
+- **The build folder's path.** The worktree guard refuses `${TMPDIR}` in leads' and workers' commands alike, so write the folder's literal path: `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-<slug>`.
 - **Removing a build folder.** First `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "<folder>/Build/Products/Debug/TextMouth.app"`, then `rm -rf "<folder>"`.
 
 ## Usage
