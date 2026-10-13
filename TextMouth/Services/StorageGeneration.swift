@@ -55,6 +55,9 @@ enum StorageWork: Sendable, CaseIterable {
     /// Writing or removing a feed's record in the data directory's Feeds
     /// folder (FR03).
     case savingFeeds
+    /// The engine's rules deleting feed items' downloaded files: the
+    /// after-playing sweep and the newest-N rule (`FeedCenter.removeDue`).
+    case removingFeedDownloads
 
     /// What a move's status line says while it waits for this work, as the
     /// screen shows it and VoiceOver reads it.
@@ -72,6 +75,8 @@ enum StorageWork: Sendable, CaseIterable {
             return "Waiting for book metadata to be read..."
         case .savingFeeds:
             return "Waiting for feed records to be saved..."
+        case .removingFeedDownloads:
+            return "Waiting for feed downloads to be deleted..."
         }
     }
 }

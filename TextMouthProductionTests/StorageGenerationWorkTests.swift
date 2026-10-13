@@ -87,6 +87,14 @@ final class StorageGenerationWorkTests: XCTestCase {
         XCTAssertEqual(reports, [.importing, .textExtraction])
     }
 
+    /// The deletion of feed items' downloaded files is a kind of work a move
+    /// names in its own words, and the last kind, so a move names every
+    /// older kind first.
+    func testRemovingFeedDownloadsIsTheLastKindAndHasItsOwnWording() {
+        XCTAssertEqual(StorageWork.removingFeedDownloads.waitingMessage, "Waiting for feed downloads to be deleted...")
+        XCTAssertEqual(StorageWork.allCases.last, .removingFeedDownloads)
+    }
+
     /// Work started while a move holds work says so, waits until the hold
     /// is released, and then runs under the generation the move published.
     func testWorkStartedDuringAMoveRunsUnderTheGenerationItPublishes() async throws {
