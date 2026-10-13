@@ -787,9 +787,8 @@ struct Library: Codable {
     /// items are in no folder (FR11), so they never count.
     func folderHasContents(_ folder: BookFolder) -> Bool {
         let path = folder.fullPath
-        let hasBooks = !booksInFolderTree(path).isEmpty
         let hasSubfolders = folders.contains { $0.parentPath == path }
-        return hasBooks || hasSubfolders
+        return hasBooks(inFolderTree: path) || hasSubfolders
     }
 
     /// Count all books recursively inside a folder (including subfolders):
@@ -806,9 +805,30 @@ struct Library: Codable {
     /// as `totalBooksInFolderTree(_:)` has always counted them. The one
     /// place that says what "in a folder's tree" means.
     func booksInFolderTree(_ path: String) -> [Book] {
-        books.filter {
-            !$0.isFeedItem && ($0.folderPath == path || $0.folderPath.hasPrefix(path + "/"))
-        }
+        books.filter { isInFolderTree($0, at: path) }
+    }
+
+    /// Whether any of the library's own books is in the folder at `path` or
+    /// below it, by the rule `booksInFolderTree(_:)` states. It stops at the
+    /// first book it finds, where asking whether that list is empty would
+    /// build the whole list.
+    func hasBooks(inFolderTree path: String) -> Bool {
+        books.contains { isInFolderTree($0, at: path) }
+    }
+
+    /// Whether `path` is `root` itself or a folder below it, at any depth.
+    /// Whole path components only: "Essays Old" is not in the tree of
+    /// "Essays". The one spelling of this rule, for folders, sort settings,
+    /// and books alike.
+    static func isPath(_ path: String, inTreeAt root: String) -> Bool {
+        path == root || path.hasPrefix(root + "/")
+    }
+
+    /// The rule `booksInFolderTree(_:)` states for one book: a library book
+    /// (never a feed's item, which names no folder, FR11) in the folder at
+    /// `path` or below it.
+    private func isInFolderTree(_ book: Book, at path: String) -> Bool {
+        !book.isFeedItem && Self.isPath(book.folderPath, inTreeAt: path)
     }
 
     mutating func updateWordCounts(bookID: UUID, wordCount: Int, charCount: Int) {
