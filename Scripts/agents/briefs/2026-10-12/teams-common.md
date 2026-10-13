@@ -56,16 +56,23 @@ Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, Text
 
 ## The board
 `bbs` means `python3 .claude/skills/agent-bbs/scripts/bbs.py`, run from your worktree root.
-- **Addresses.** Until the board team's work merges, address people by name: workers post to `<team>-lead`, a lead posts to each worker's slug, and anyone can post to `orchestrator`.
+- **Teams.** The board has had teams since the board team's merge on October 12: `bbs team --help`, `bbs task --help`, and `SKILL.md`.
+  - **A lead,** as its first board step, creates its team: `bbs team create <team>-lead <team> --purpose "ONE LINE" --lead <team>-lead`.
+  - **For each task,** the lead adds it with `bbs task add <team>-lead <team> --title "ONE LINE" --brief <path> --files <paths>` and assigns it with `bbs task assign <team>-lead <id> <slug>`. Before launching the worker, it adds the worker to the team with `bbs team add <team>-lead <team> <slug>`.
+  - **Workers** move their task with `bbs task move <slug> <id> working`, then to `review` when they report.
+  - **The lead** moves each task to `done` or `dropped` once integrated or let go.
+  - **Everyone posts to the team's channel,** `--to team:<team>`, and reads it with `bbs inbox <name> --team <team>` or `bbs read --team <team>`.
+  - **The orchestrator** reads the channels. Reach it with `--to orchestrator`.
+  - **Test the board only on a scratch board.** Never run a changed copy of `bbs.py` against the live board: point `TEXTMOUTH_BBS_DIR` at a scratch folder first.
 - **Posts.** A post's kind is a flag: `bbs post <name> --tag <kind> --topic "..."`. A topic is at most 200 characters.
 - **Fold the board into commands you run anyway:**
   - `bbs inbox <name> --unread; <build command>`
   - `git commit -F <file> && bbs post <name> --tag commit --topic "$(git log -1 --format='%h %s')"`
 
 ## Builds
-Use this command, with your slug, your test classes, and a log file in the session's scratchpad (each scratch file prefixed with your slug):
+Use this command, with your slug, your test classes, and a log file in the session's scratchpad (each scratch file prefixed with your slug). `-jobs 4` holds a build's peak memory to about 1.9 GB instead of 2.6 GB, at 13 seconds' cost (measured October 12):
 
-    BBS_AGENT=<slug> .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-<slug>" -only-testing:TextMouthProductionTests/<Class> > <log> 2>&1
+    BBS_AGENT=<slug> .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-<slug>" -only-testing:TextMouthProductionTests/<Class> > <log> 2>&1
 
 - **New test file.** It needs `/opt/homebrew/bin/xcodegen generate`, and the regenerated `TextMouth.xcodeproj/project.pbxproj` committed with it.
 - **Editing.** The Mac's `sed` is GNU sed: use `gsed -i` or Python for in-place edits. Never put two heredocs on one command line.
