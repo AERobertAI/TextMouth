@@ -787,9 +787,7 @@ struct Library: Codable {
     /// items are in no folder (FR11), so they never count.
     func folderHasContents(_ folder: BookFolder) -> Bool {
         let path = folder.fullPath
-        let hasBooks = books.contains {
-            !$0.isFeedItem && ($0.folderPath == path || $0.folderPath.hasPrefix(path + "/"))
-        }
+        let hasBooks = !booksInFolderTree(path).isEmpty
         let hasSubfolders = folders.contains { $0.parentPath == path }
         return hasBooks || hasSubfolders
     }
@@ -799,9 +797,18 @@ struct Library: Codable {
     /// counts as their feeds instead. For the top level ("") it counts the
     /// books there, as it always has; `libraryBookCount` counts them all.
     func totalBooksInFolderTree(_ path: String) -> Int {
+        booksInFolderTree(path).count
+    }
+
+    /// The library's own books in the folder at `path` and in every folder
+    /// below it, in the library's order: never a feed's items, which name
+    /// no folder (FR11). For the top level ("") it is the books there only,
+    /// as `totalBooksInFolderTree(_:)` has always counted them. The one
+    /// place that says what "in a folder's tree" means.
+    func booksInFolderTree(_ path: String) -> [Book] {
         books.filter {
             !$0.isFeedItem && ($0.folderPath == path || $0.folderPath.hasPrefix(path + "/"))
-        }.count
+        }
     }
 
     mutating func updateWordCounts(bookID: UUID, wordCount: Int, charCount: Int) {

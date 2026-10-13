@@ -178,6 +178,37 @@ final class UnopenedCategoryTests: XCTestCase {
         XCTAssertTrue(book.isUnopened)
     }
 
+    /// `booksInFolderTree` lists the library's own books in a folder and in
+    /// every folder below it, at any depth, and none of a feed's items, which
+    /// name no folder; a folder whose name only starts the same is not in it,
+    /// and the top level lists its own books alone. The counts and
+    /// `folderHasContents` read it.
+    func testBooksInFolderTreeCountsNestedBooksAndNoFeedItems() {
+        let start = Date(timeIntervalSince1970: 1_791_000_000)
+        let top = Self.book("Top", in: "Essays", added: start, opened: nil)
+        let nested = Self.book("Nested", in: "Essays/Travel", added: start, opened: nil)
+        let deeper = Self.book("Deeper", in: "Essays/Travel/Rail", added: start, opened: nil)
+        let lookalike = Self.book("Lookalike", in: "Essays Old", added: start, opened: nil)
+        let loose = Self.book("Loose", in: "", added: start, opened: nil)
+        // A feed's item that names the folder all the same.
+        var item = Self.book("Episode", in: "Essays", added: start, opened: nil)
+        item.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:one")
+        let library = Library(
+            books: [top, nested, deeper, lookalike, loose, item],
+            folders: [BookFolder(name: "Essays"), BookFolder(name: "Travel", parentPath: "Essays")]
+        )
+
+        XCTAssertEqual(library.booksInFolderTree("Essays").map(\.title), ["Top", "Nested", "Deeper"])
+        XCTAssertEqual(library.booksInFolderTree("Essays/Travel").map(\.title), ["Nested", "Deeper"])
+        XCTAssertEqual(library.booksInFolderTree("").map(\.title), ["Loose"])
+        XCTAssertEqual(library.totalBooksInFolderTree("Essays"), 3)
+        XCTAssertTrue(library.folderHasContents(BookFolder(name: "Essays")))
+        // A folder with only a feed's item in it is empty.
+        let feedOnly = Library(books: [item], folders: [BookFolder(name: "Essays")])
+        XCTAssertTrue(feedOnly.booksInFolderTree("Essays").isEmpty)
+        XCTAssertFalse(feedOnly.folderHasContents(BookFolder(name: "Essays")))
+    }
+
     // MARK: - What It Lists
 
     /// Unopened lists every book never opened, from the root and every

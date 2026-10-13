@@ -191,7 +191,7 @@ extension FolderInfoFacts {
     @MainActor
     init(_ folder: BookFolder, library: LibraryViewModel, feedFolders: LibraryFeedFolders, wordsPerMinute: Double) {
         let path = folder.fullPath
-        let books = library.library.books.filter { $0.folderPath == path || $0.folderPath.hasPrefix(path + "/") }
+        let books = library.library.booksInFolderTree(path)
         let timesLeft = books.compactMap { library.livePositions.applied(to: $0).estimatedTimeRemaining(wpm: wordsPerMinute) }
         self.init(
             name: folder.name,
