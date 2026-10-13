@@ -2224,7 +2224,7 @@ def build_parser() -> BoardArgumentParser:
 
     team_help = "only messages in this team's channel (TEAM or team:TEAM)"
 
-    post = command("post", cmd_post, "post a message to one agent or to all")
+    post = command("post", cmd_post, "post a message to one agent, a team's channel, or all")
     post.add_argument("sender", metavar="FROM", help="your agent name")
     post.add_argument("--topic", help="a one-line subject (a reply may leave it out)")
     post.add_argument(
