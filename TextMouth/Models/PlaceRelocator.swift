@@ -1251,6 +1251,195 @@ extension PlaceRelocator {
         )
     }
 
+    // MARK: Places Checked at Every Load
+
+    /// Moves a book's places at a load of its text, where there is no old
+    /// text to diff with: each place is checked directly, one whose saved
+    /// words are not at its numbers is found by them, and anything the words
+    /// do not find goes to a silent best guess (TEXT-ANCHORS-ADDENDUM,
+    /// section 9). Nil when every place stands, which is the usual case and
+    /// costs only direct checks on the chapters' texts: no `BookWords`, no
+    /// `TextAnchorFinder`. The caller passes `date` (a position that moved is
+    /// dated then) and logs `counts.logLine(title:)`; nothing is spoken.
+    ///
+    /// A reading position or bookmark stands when:
+    /// - it has no saved words (nothing finds it without the old text; the
+    ///   reader's clamp and its capture of missing words take it);
+    /// - it marks the end of the book and is exactly the end of `content`
+    ///   (`TextPlace.isExactlyTheEnd`); or, marking no end, its words hold no
+    ///   fine word (which stand anywhere, so prove nothing) or stand exactly
+    ///   around its numbers;
+    /// - it is the reading position at the very start of the book (chapter
+    ///   0, offset 0): a book never begun, or begun over, stays at its start
+    ///   whatever was put in before its first words (REV15, finding 14).
+    ///
+    /// A named skip stands when its heading does. The shortcut also needs no
+    /// waiting skip whose heading now stands exactly as it was skipped, since
+    /// that skip must name its heading again.
+    ///
+    /// Otherwise every place moves at once, by the one outcome builder: a
+    /// place that stands stays; one without words goes where the reader's
+    /// clamp opens it (a best guess when that is not where it was); one with
+    /// words that do not stand is found by them; and a named skip whose
+    /// heading is gone is found by its saved words, else waits. A skip moves
+    /// only on proof, as everywhere else: a best guess leaves it waiting.
+    ///
+    /// A text that holds nothing at all moves nothing (nil): a book whose
+    /// text is empty (or not readable yet) has no words to find a place by,
+    /// and its places must wait for the text rather than be sent to its start.
+    static func relocate(_ places: Places, within content: DocumentContent, movedAt date: Date) -> Outcome? {
+        let texts = content.chapters.map(\.text)
+        guard texts.contains(where: { !$0.isEmpty }) else { return nil }
+        let headings = content.allHeadings
+        // Each named skip's heading, as it stands (nil when it does not).
+        let standing = places.skippedHeadings.map { standingHeading(of: $0, among: headings, in: texts) }
+        // A waiting skip whose heading stands again exactly as it was
+        // skipped names it again, so it is no shortcut.
+        let waitingNamedAgain = places.waitingSkippedHeadings.contains {
+            standingHeading(of: $0, among: headings, in: texts, requiringWords: true) != nil
+        }
+        let everyPlaceStands = (places.position.map { standsAtLoad($0, in: content, texts: texts) } ?? true)
+            && places.bookmarks.allSatisfy { standsByWords($0, in: content, texts: texts) }
+            && standing.allSatisfy { $0 != nil }
+            && !waitingNamedAgain
+        guard !everyPlaceStands else { return nil }
+
+        // Some place needs moving: move them all, with the words read once.
+        let words = BookWords(texts: texts)
+        let finder = TextAnchorFinder(words: words, headings: headings)
+        return outcome(
+            of: places,
+            position: places.position.map {
+                resultAtLoad(for: $0, savedGlobalOffset: $0.globalCharacterOffset, startsTheBook: isNeverBegun($0), in: content, texts: texts, finder: finder)
+            },
+            bookmarks: places.bookmarks.map {
+                resultAtLoad(for: $0, savedGlobalOffset: nil, startsTheBook: false, in: content, texts: texts, finder: finder)
+            },
+            skips: zip(places.skippedHeadings, standing).map { headingResultAtLoad(for: $0, standing: $1, finder: finder) },
+            in: words,
+            headings: headings,
+            movedAt: date
+        )
+    }
+
+    /// Where a reader's cursor at `place` in the book `old` goes when Edit
+    /// Text replaces its text with `new`: exactly where a reading position
+    /// saved at `place` in `old`, with its words captured there, would go
+    /// (`relocate(_:from:to:movedAt:)`), so the relocator is built only when
+    /// those words do not stand in `new`, and the start and the end of the
+    /// book are kept. `place` is held within `old` as the reader opens a
+    /// saved place (`TextPlace.opening`); a `new` with no chapters gives
+    /// chapter 0, offset 0. Pure: the position it stands in for is never
+    /// dated, so no clock is read.
+    static func relocate(_ place: TextPlace, from old: DocumentContent, to new: DocumentContent) -> TextPlace {
+        guard !new.chapters.isEmpty else { return TextPlace(chapter: 0, offset: 0) }
+        let held = opening(place, savedGlobalOffset: nil, in: old)
+        // An old text with no chapter holds no words to follow: the place is
+        // clamped in the new text, as the reader opens a place saved without
+        // words.
+        guard let anchor = old.anchor(at: held, measuredIn: nil) else {
+            return opening(place, savedGlobalOffset: nil, in: new)
+        }
+        let cursor = ReadingPosition(chapterIndex: held.chapter, characterOffset: held.offset, anchor: anchor)
+        let outcome = relocate(Places(position: cursor), from: { old }, to: new, movedAt: Date(timeIntervalSinceReferenceDate: 0))
+        return outcome.places.position?.savedPlace ?? held
+    }
+
+    /// Whether the reading position `position` stands at load without the old
+    /// text: it is at the very start of a book never begun (`isNeverBegun`),
+    /// or its words stand (`standsByWords`).
+    private static func standsAtLoad(_ position: ReadingPosition, in content: DocumentContent, texts: [String]) -> Bool {
+        isNeverBegun(position) || standsByWords(position, in: content, texts: texts)
+    }
+
+    /// Whether `place` stands at load by its saved words, without the old
+    /// text: it has none (nothing finds it), it marks the end of the book and
+    /// is exactly the end of `content`, or, marking no end, its words hold no
+    /// fine word or stand exactly around its numbers. A place that marks the
+    /// end is judged by that first, as `stays(_:in:)` has it: words that mark
+    /// the end of the book settle a place whatever they hold.
+    private static func standsByWords<Place: MovablePlace>(_ place: Place, in content: DocumentContent, texts: [String]) -> Bool {
+        guard let anchor = place.anchor else { return true }
+        if anchor.marksEndOfBook { return isEnd(place.savedPlace, in: content) }
+        return holdsNoWords(anchor) || anchor.stands(at: place.savedPlace, in: texts)
+    }
+
+    /// Whether `place` is exactly the end of `content`, by the rule
+    /// `BookWords.isEnd` follows, from the offsets `content` itself keeps.
+    private static func isEnd(_ place: TextPlace, in content: DocumentContent) -> Bool {
+        place.isExactlyTheEnd(
+            chapterCount: content.chapters.count,
+            bookLength: content.totalCharacterCount,
+            chapterStart: content.chapterStartOffset,
+            chapterLength: { content.chapters[$0].text.utf16.count }
+        )
+    }
+
+    /// Whether `position` is at chapter 0, offset 0: a book never begun, or
+    /// begun over, which stays at its start whatever is put in before its
+    /// first words (REV15, finding 14, which `isAtTheStart` keeps for a
+    /// rebuild).
+    private static func isNeverBegun(_ position: ReadingPosition) -> Bool {
+        position.chapterIndex == 0 && position.characterOffset == 0
+    }
+
+    /// Where `place` goes at load when some place does not stand, and how it
+    /// was found. A place without words is clamped where the reader opens it
+    /// (`opening(_:savedGlobalOffset:in:)`), a best guess when that is not
+    /// where it was. A place whose words stand stays. A reading position
+    /// never begun (`startsTheBook`) stays at the start, as the diff keeps
+    /// it. Any other is found by its saved words, with no old text to say
+    /// how long its chapter was.
+    private static func resultAtLoad<Place: MovablePlace>(
+        for place: Place,
+        savedGlobalOffset: Int?,
+        startsTheBook: Bool,
+        in content: DocumentContent,
+        texts: [String],
+        finder: TextAnchorFinder
+    ) -> Result {
+        let saved = place.savedPlace
+        guard let anchor = place.anchor else {
+            let opened = opening(saved, savedGlobalOffset: savedGlobalOffset, in: content)
+            return Result(place: opened, finding: opened == saved ? .unchanged : .guessed(.savedWords(.sameShare)))
+        }
+        if standsByWords(place, in: content, texts: texts) { return Result(place: saved, finding: .unchanged) }
+        if startsTheBook { return Result(place: TextPlace(chapter: 0, offset: 0), finding: .movedByTheDiff(.startOfBook)) }
+        let found = finder.find(anchor, savedAt: saved)
+        return Result(place: found.place, finding: finding(found.finding))
+    }
+
+    /// The heading a named skip names at load: its `standing` heading when it
+    /// has one; else the heading its saved words find for certain
+    /// (`TextAnchorFinder.findHeading`); nil, so the skip waits, when it has
+    /// no saved words or they find only a best guess (a guess never moves a
+    /// skip onto a heading, `relocate(_:)`).
+    private static func headingResultAtLoad(for skipped: SkippedHeading, standing: Heading?, finder: TextAnchorFinder) -> HeadingResult? {
+        if let standing { return HeadingResult(heading: standing, finding: .unchanged) }
+        guard let anchor = skipped.anchor,
+              let found = finder.findHeading(
+                level: skipped.level,
+                label: skipped.label,
+                anchor: anchor,
+                savedAt: TextPlace(chapter: skipped.chapterIndex, offset: skipped.characterOffset)
+              ),
+              !found.isGuess
+        else { return nil }
+        return HeadingResult(heading: found.heading, finding: finding(found.finding))
+    }
+
+    /// `place` held within the book `content` as the reader opens a saved
+    /// place (`TextPlace.opening`, the one rule; `ReaderViewModel.openingPlace`
+    /// follows it too): a reading position's `savedGlobalOffset` says whether
+    /// a place past the last chapter was at the end.
+    private static func opening(_ place: TextPlace, savedGlobalOffset: Int?, in content: DocumentContent) -> TextPlace {
+        place.opening(
+            savedGlobalOffset: savedGlobalOffset,
+            chapterCount: content.chapters.count,
+            bookLength: content.totalCharacterCount
+        ) { content.chapters[$0].text.utf16.count }
+    }
+
     /// Whether `place` stands in `words` as rule 1 settles it as unchanged:
     /// its saved words mark the end of the book and it is at the new end, or
     /// they hold a fine word and stand exactly around its numbers. A place
