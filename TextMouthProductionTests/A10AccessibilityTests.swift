@@ -398,6 +398,8 @@ final class SaveAsDefaultsWordingTests: XCTestCase {
             BookVoiceSettingsWording.resetToDefaultsHint,
             "Removes this book's own voice, speed, and pitch, so it uses the global defaults."
         )
+        // The reset's announcement names pitch too.
+        XCTAssertEqual(BookVoiceSettingsWording.resetDone, "Using global voice, speed, and pitch settings")
     }
 
     /// What the label says is what saving does: a book's own speed, pitch,

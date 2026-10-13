@@ -158,6 +158,18 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         XCTAssertEqual(reader.audioPlaybackService.playbackSpeed, 1)
     }
 
+    /// A text book's reset says it uses the global voice, speed, and pitch,
+    /// the three settings it clears (not "voice and speed" alone).
+    func testATextBooksResetSaysVoiceSpeedAndPitch() {
+        let reader = makeReader(format: .txt, localWPM: 310)
+        defer { reader.close() }
+
+        let recorder = recordingAnnouncements { reader.resetToGlobalSettings() }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Using global voice, speed, and pitch settings"])
+        XCTAssertNil(reader.book.localWPM)
+    }
+
     /// An audio multiplier must never replace a speech WPM preference, even
     /// if an older UI or a future command calls this method directly.
     func testAudioCannotSaveMultiplierAsGlobalWPM() {
