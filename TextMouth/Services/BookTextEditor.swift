@@ -192,6 +192,10 @@ final class BookTextEditor {
             changed: { [weak self] in self?.check(bookID) }
         )
         observeActivation()
+        // The session's copy of the text its edits replace.
+        if let book = library?.bookByID(bookID) {
+            sessions.keepOldText(of: book)
+        }
         return true
     }
 

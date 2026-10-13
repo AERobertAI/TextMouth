@@ -718,6 +718,270 @@ final class BookTextEditTests: XCTestCase {
         XCTAssertEqual(position(0, 0, old, []), [0, 0])
     }
 
+    // MARK: - The Session's Copy of Its Old Text (T06's branch E)
+
+    /// Beginning a session keeps one copy of the book's text in the Edit Text
+    /// snapshots: content.md's exact bytes, with the book's places as the
+    /// library holds them.
+    func testBeginningASessionKeepsACopyOfTheText() async throws {
+        let world = try makeIntegrationWorld("Edit Copy Begin")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        XCTAssertEqual(editCopies(of: book), [], "a copy was kept before the session began")
+
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await waitForChecks(of: editor.sessions)
+
+        let copy = try XCTUnwrap(editCopies(of: book).first, "no copy was kept")
+        XCTAssertEqual(editCopies(of: book).count, 1)
+        XCTAssertEqual(textKept(in: copy), try Data(contentsOf: MarkdownCacheService.cacheURL(for: book)))
+        let record = try recordKept(in: copy)
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(record.bookID, book.id)
+        XCTAssertEqual(record.title, book.title)
+        XCTAssertEqual(record.places, row.relocatablePlaces)
+    }
+
+    /// The copy holds the book's saved places: a bookmark the book holds
+    /// when the copy is kept is in the copy's record.
+    func testTheCopyHoldsTheBooksPlaces() async throws {
+        let world = try makeIntegrationWorld("Edit Copy Places")
+        var book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        book.bookmarks = [Bookmark(number: 1, chapterIndex: 1, characterOffset: 4, label: "Buoys", anchor: nil)]
+        let sessions = BookTextEditSessions()
+        let baseline = try XCTUnwrap(try? BookTextEditSessions.baseline(of: book, access: .live).get())
+        sessions.begin(book.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
+        defer { sessions.end(book.id) }
+
+        sessions.keepOldText(of: book)
+        await waitForChecks(of: sessions)
+
+        let copy = try XCTUnwrap(editCopies(of: book).first, "no copy was kept")
+        let record = try recordKept(in: copy)
+        XCTAssertEqual(record.places.bookmarks.map(\.label), ["Buoys"])
+        XCTAssertEqual(record.places, book.relocatablePlaces)
+        // A session that holds a copy keeps no second.
+        sessions.keepOldText(of: book)
+        await waitForChecks(of: sessions)
+        XCTAssertEqual(editCopies(of: book), [copy])
+    }
+
+    /// An edit taken replaces the copy with exactly the bytes taken, and one
+    /// copy of the book remains: the earlier one is deleted.
+    func testAnEditTakenReplacesTheCopyWithTheBytesTaken() async throws {
+        let world = try makeIntegrationWorld("Edit Copy Taken")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await waitForChecks(of: editor.sessions)
+        let first = try XCTUnwrap(editCopies(of: book).first, "no copy was kept")
+
+        let edited = Data(Self.editedChapters.utf8)
+        try edited.write(to: MarkdownCacheService.cacheURL(for: book))
+        editor.editor.appBecameActive()
+        await waitForChecks(of: editor.sessions)
+
+        let copies = editCopies(of: book)
+        XCTAssertEqual(copies.count, 1, "one copy of the book remains")
+        let second = try XCTUnwrap(copies.first)
+        XCTAssertNotEqual(second, first)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first.path), "the earlier copy was not deleted")
+        XCTAssertEqual(textKept(in: second), edited)
+        XCTAssertEqual(try recordKept(in: second).bookID, book.id)
+    }
+
+    /// A later edit replaces the copy again, so the copy is always the text
+    /// last taken, never one a save before.
+    func testEachEditTakenReplacesTheCopyAgain() async throws {
+        let world = try makeIntegrationWorld("Edit Copy Twice")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+
+        let once = Data(Self.editedChapters.utf8)
+        let twice = Data((Self.editedChapters + "\n\nThe launches return at dusk.").utf8)
+        for bytes in [once, twice] {
+            try bytes.write(to: cache)
+            editor.editor.appBecameActive()
+            await waitForChecks(of: editor.sessions)
+            XCTAssertEqual(editCopies(of: book).count, 1)
+            XCTAssertEqual(editCopies(of: book).first.flatMap(textKept(in:)), bytes)
+        }
+    }
+
+    /// A refused edit leaves the copy as it was.
+    func testARefusedEditLeavesTheCopyAsItWas() async throws {
+        let world = try makeIntegrationWorld("Edit Copy Refused")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await waitForChecks(of: editor.sessions)
+        let before = editCopies(of: book)
+        let bytesBefore = try XCTUnwrap(before.first.flatMap(textKept(in:)))
+
+        // Nothing in it: refused, and kept beside content.md.
+        try Data("   \n\n\t\n".utf8).write(to: MarkdownCacheService.cacheURL(for: book))
+        editor.editor.appBecameActive()
+        await waitForChecks(of: editor.sessions)
+
+        XCTAssertEqual(before.count, 1)
+        XCTAssertEqual(editCopies(of: book), before)
+        XCTAssertEqual(before.first.flatMap(textKept(in:)), bytesBefore)
+    }
+
+    /// Ending the session deletes the copy; a session started again over
+    /// one that holds a copy deletes that copy unless it is the same; both
+    /// are checked without a library.
+    func testEndingOrRestartingASessionDeletesItsCopy() throws {
+        let sessions = BookTextEditSessions()
+        let folder = try makeSandboxDirectory("Edit Copy Folder")
+        let bookID = UUID()
+        let baseline = BookTextBaseline(source: nil, cache: FileFingerprint(stamp: FileStamp(byteCount: 0, modificationTimeNanoseconds: 0), digest: ""))
+        let record = PlaceSnapshot.Record(
+            bookID: bookID, title: "Harbour Pilots", author: "A. Volunteer",
+            places: PlaceRelocator.Places(position: nil, bookmarks: [], skippedHeadings: [], waitingSkippedHeadings: []),
+            takenAt: Date()
+        )
+        func keepCopy() throws -> PlaceSnapshot {
+            try PlaceSnapshot.keep(text: Data("Words.".utf8), record: record, in: folder)
+        }
+        func session(holding copy: PlaceSnapshot?) -> BookTextEditSessions.Session {
+            BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }, oldText: copy)
+        }
+        func exists(_ copy: PlaceSnapshot) -> Bool {
+            FileManager.default.fileExists(atPath: copy.folder.path)
+        }
+
+        let first = try keepCopy()
+        sessions.begin(bookID, session(holding: first))
+        XCTAssertTrue(exists(first))
+        // Started again with the same copy: kept.
+        sessions.begin(bookID, session(holding: first))
+        XCTAssertTrue(exists(first), "the same copy was deleted")
+        // Started again with another: the first is deleted.
+        let second = try keepCopy()
+        sessions.begin(bookID, session(holding: second))
+        XCTAssertFalse(exists(first), "a replaced copy was kept")
+        XCTAssertTrue(exists(second))
+        // Started again with none: the copy it held is deleted.
+        sessions.begin(bookID, session(holding: nil))
+        XCTAssertFalse(exists(second))
+        // Ended: the copy it holds is deleted.
+        let third = try keepCopy()
+        sessions.begin(bookID, session(holding: third))
+        sessions.end(bookID)
+        XCTAssertFalse(exists(third), "an ended session's copy was kept")
+        XCTAssertFalse(sessions.isEditing(bookID))
+        // Ending a session that is not there is no error.
+        sessions.end(bookID)
+    }
+
+    /// Ending the session through the editor deletes the copy it kept.
+    func testEndingTheSessionDeletesTheCopy() async throws {
+        let world = try makeIntegrationWorld("Edit Copy End")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await waitForChecks(of: editor.sessions)
+        XCTAssertEqual(editCopies(of: book).count, 1)
+
+        editor.editor.end(book.id)
+
+        XCTAssertEqual(editCopies(of: book), [])
+    }
+
+    /// A session that ends before its copy is kept leaves no copy behind.
+    func testASessionEndedBeforeItsCopyIsKeptLeavesNone() async throws {
+        let world = try makeIntegrationWorld("Edit Copy Ended Early")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        editor.editor.end(book.id)
+        await waitForChecks(of: editor.sessions)
+        XCTAssertEqual(editCopies(of: book), [])
+
+        // Asked for a book that is not being edited, nothing is kept.
+        editor.sessions.keepOldText(of: book)
+        await waitForChecks(of: editor.sessions)
+        XCTAssertEqual(editCopies(of: book), [])
+    }
+
+    /// A rebuild of the text during the session makes the copy the rebuilt
+    /// bytes, and the earlier copy is deleted.
+    func testARebuildDuringTheSessionMakesTheCopyTheRebuiltText() async throws {
+        let world = try makeIntegrationWorld("Edit Copy Rebuilt")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await waitForChecks(of: editor.sessions)
+        let first = try XCTUnwrap(editCopies(of: book).first, "no copy was kept")
+
+        // A rebuild writes content.md, then tells the session.
+        let rebuilt = Data(Self.editedChapters.utf8)
+        try rebuilt.write(to: MarkdownCacheService.cacheURL(for: book))
+        editor.sessions.textRebuilt(book, writing: rebuilt, fingerprint: nil)
+
+        let copies = editCopies(of: book)
+        XCTAssertEqual(copies.count, 1)
+        XCTAssertNotEqual(copies.first, first)
+        XCTAssertEqual(copies.first.flatMap(textKept(in:)), rebuilt)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first.path))
+    }
+
+    /// A transcribed audiobook's session keeps no copy, at its start or for
+    /// an edit of its transcript.
+    func testATranscribedAudiobooksSessionKeepsNoCopy() async throws {
+        let world = try makeIntegrationWorld("Edit Copy Audiobook")
+        let title = "Breakwater Notes \(UUID().uuidString.prefix(8))"
+        let book = try world.makeSilentAudioBook(title: title, trackDurations: [3, 2])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks), for: book)
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let edited = try String(contentsOf: cache, encoding: .utf8)
+            .replacingOccurrences(of: MarkdownLiteral.escaped("on the pier."), with: MarkdownLiteral.escaped("on the jetty."))
+
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        XCTAssertTrue(editor.sessions.isEditing(book.id), "the session did not begin")
+        await waitForChecks(of: editor.sessions)
+        XCTAssertEqual(editCopies(of: book), [])
+
+        try edited.write(to: cache, atomically: true, encoding: .utf8)
+        editor.editor.appBecameActive()
+        await waitForChecks(of: editor.sessions)
+        XCTAssertEqual(editCopies(of: book), [])
+    }
+
+    /// The rebuilds' recovery never lists a session's copy, and the copy is
+    /// not in the rebuilds' folder.
+    func testTheRebuildRecoveryNeverListsASessionsCopy() async throws {
+        let world = try makeIntegrationWorld("Edit Copy Recovery")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await waitForChecks(of: editor.sessions)
+        let copy = try XCTUnwrap(editCopies(of: book).first, "no copy was kept")
+
+        // As after a quit, when no copy is in use any more.
+        PlaceSnapshot.forgetCopiesInUse()
+        let listed = PlaceSnapshot.leftovers()
+
+        XCTAssertFalse(listed.contains { $0.record.bookID == book.id }, "a session's copy was listed for recovery")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: copy.path), "the recovery removed a session's copy")
+        XCTAssertNotEqual(copy.deletingLastPathComponent().standardizedFileURL, MachineLocalPaths.placeSnapshots.standardizedFileURL)
+        let rebuilds = (try? FileManager.default.contentsOfDirectory(atPath: MachineLocalPaths.placeSnapshots.path)) ?? []
+        XCTAssertFalse(rebuilds.contains { $0.hasPrefix("\(book.id.uuidString) ") })
+    }
+
     // MARK: - Fixtures
 
     /// Two chapters, the second with a subheading.
@@ -878,6 +1142,39 @@ final class BookTextEditTests: XCTestCase {
         }
         _ = await eventually(timeout: 2) { announcements.messages.count > before }
         return Array(announcements.messages.dropFirst(before))
+    }
+
+    /// Waits until the sessions' queue has run everything queued so far: a
+    /// session's copy of its text, and the checks of an app becoming active.
+    private func waitForChecks(of sessions: BookTextEditSessions) async {
+        await withCheckedContinuation { continuation in
+            sessions.queue.async { continuation.resume() }
+        }
+    }
+
+    /// The folders of the Edit Text snapshots that hold a copy of `book`,
+    /// sorted by name. Read from the folder itself, as the snapshots folder
+    /// of the rebuilds is read (`snapshotsHoldACopy(of:)`).
+    private func editCopies(of book: Book) -> [URL] {
+        let root = MachineLocalPaths.editTextSnapshots
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []
+        return names
+            .filter { $0.hasPrefix("\(book.id.uuidString) ") }
+            .sorted()
+            .map { root.appendingPathComponent($0, isDirectory: true) }
+    }
+
+    /// The text a copy's folder holds, as bytes.
+    private func textKept(in copy: URL) -> Data? {
+        try? Data(contentsOf: copy.appendingPathComponent(PlaceSnapshot.textFileName))
+    }
+
+    /// The record a copy's folder holds.
+    private func recordKept(in copy: URL) throws -> PlaceSnapshot.Record {
+        try JSONDecoder().decode(
+            PlaceSnapshot.Record.self,
+            from: Data(contentsOf: copy.appendingPathComponent(PlaceSnapshot.recordFileName))
+        )
     }
 
     /// The copies of the user's text kept beside `book`'s content.md, oldest
