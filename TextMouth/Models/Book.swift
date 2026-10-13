@@ -143,6 +143,14 @@ struct Book: Identifiable, Codable, Hashable {
     /// holding both keeps the anchor of each heading its IDs name, since
     /// the IDs, which every build writes, say which headings are skipped.
     private(set) var skippedHeadings: [SkippedHeading]?
+    /// The headings skipped during playback for which a rebuild of the
+    /// book's text found no heading (T06's branch D). Each waits, naming no
+    /// heading, so neither this build's reader nor an older build skips
+    /// anything for it, and it is kept so a later rebuild may find its
+    /// heading. Never in `skippedHeadingIDs`; written with the moved places
+    /// (`takeMovedPlaces(original:moved:)`). Nil when there are none, never
+    /// an empty array.
+    var waitingSkippedHeadings: [SkippedHeading]?
     /// Per-book end-of-book behavior override (nil = use global)
     var localEndOfBookBehavior: String?
     /// Per-book forward navigation unit (nil or invalid = use global).
@@ -249,6 +257,7 @@ struct Book: Identifiable, Codable, Hashable {
         localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         skippedHeadings: [SkippedHeading]? = nil,
+        waitingSkippedHeadings: [SkippedHeading]? = nil,
         localEndOfBookBehavior: String? = nil,
         localSkipForwardUnit: String? = nil,
         localSkipBackwardUnit: String? = nil,
@@ -292,6 +301,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
+        self.waitingSkippedHeadings = SkippedHeading.stored(waitingSkippedHeadings)
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.localSkipForwardUnit = localSkipForwardUnit
         self.localSkipBackwardUnit = localSkipBackwardUnit
@@ -348,6 +358,9 @@ struct Book: Identifiable, Codable, Hashable {
         // they are put in step with the IDs, which an older build may have
         // changed alone.
         skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
+        // Waiting skips that cannot be read count as none; an empty list is
+        // none too.
+        waitingSkippedHeadings = SkippedHeading.stored(fields.optionalValue(.waitingSkippedHeadings) { $0 })
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
         localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
@@ -895,6 +908,7 @@ struct Book: Identifiable, Codable, Hashable {
                 localPitch: localPitch,
                 skippedHeadingIDs: skippedHeadingIDs,
                 skippedHeadings: skippedHeadings,
+                waitingSkippedHeadings: waitingSkippedHeadings,
                 localEndOfBookBehavior: localEndOfBookBehavior,
                 localSkipForwardUnit: localSkipForwardUnit,
                 localSkipBackwardUnit: localSkipBackwardUnit,
@@ -943,6 +957,7 @@ struct Book: Identifiable, Codable, Hashable {
             localPitch: state.localPitch,
             skippedHeadingIDs: state.skippedHeadingIDs,
             skippedHeadings: state.skippedHeadings,
+            waitingSkippedHeadings: state.waitingSkippedHeadings,
             localEndOfBookBehavior: state.localEndOfBookBehavior,
             localSkipForwardUnit: state.localSkipForwardUnit,
             localSkipBackwardUnit: state.localSkipBackwardUnit,
@@ -1391,7 +1406,13 @@ struct SkippedHeading: Codable, Hashable, Sendable {
             keptByID[heading.id] = heading
         }
         let headings = ids.compactMap { keptByID[$0] ?? SkippedHeading(id: $0) }
-        return headings.isEmpty ? nil : headings
+        return stored(headings)
+    }
+
+    /// `headings` as a book keeps a list of skips: nil when there are
+    /// none, never an empty list.
+    static func stored(_ headings: [SkippedHeading]?) -> [SkippedHeading]? {
+        headings.flatMap { $0.isEmpty ? nil : $0 }
     }
 }
 
@@ -1404,7 +1425,7 @@ extension Book {
     /// them, for the reader's filter and for older builds, which read the
     /// IDs alone. None, or nil, skips nothing and writes neither.
     mutating func setSkippedHeadings(_ headings: [SkippedHeading]?) {
-        let skipped = headings.flatMap { $0.isEmpty ? nil : $0 }
+        let skipped = SkippedHeading.stored(headings)
         // The IDs first: their observer puts the skipped headings in step
         // with them, keeping old anchors, and the headings saved then
         // replace those with their own.
@@ -1422,6 +1443,95 @@ extension Book {
         return position
             + bookmarks.filter { $0.anchor == nil }.count
             + (skippedHeadings ?? []).filter { $0.anchor == nil }.count
+    }
+
+    /// This book's saved places as `PlaceRelocator` takes them (T06's branch
+    /// D): its reading position, its bookmarks, its skipped headings that
+    /// name a heading, and those that wait.
+    var relocatablePlaces: PlaceRelocator.Places {
+        PlaceRelocator.Places(
+            position: readingPosition,
+            bookmarks: bookmarks,
+            skippedHeadings: skippedHeadings ?? [],
+            waitingSkippedHeadings: waitingSkippedHeadings ?? []
+        )
+    }
+
+    /// Whether this book has a place a rebuild of its text could move: a
+    /// reading position past the book's start, a bookmark, a skipped
+    /// heading, or a waiting one. An audiobook has none, since its places
+    /// count time in its recording (P08), and a position at the very start
+    /// stays at the start of any text.
+    var holdsPlacesToMove: Bool {
+        guard !format.isAudio else { return false }
+        let positionPastStart = readingPosition.map { $0.chapterIndex != 0 || $0.characterOffset != 0 } ?? false
+        return positionPastStart
+            || !bookmarks.isEmpty
+            || !(skippedHeadings ?? []).isEmpty
+            || !(waitingSkippedHeadings ?? []).isEmpty
+    }
+
+    /// Takes the places `PlaceRelocator` moved (`moved`), each only where
+    /// this book still holds it exactly as it was when the moves were
+    /// computed (`original`), and returns whether any of the book's places
+    /// changed. The moves are computed from the places as they were when the
+    /// old text was copied aside; by the time they are written, the listener
+    /// may have saved a place again, and a place saved meanwhile wins. The
+    /// moves are silent: nothing is spoken or shown, and nothing else of the
+    /// book changes (no date, no last-opened time, no other field).
+    ///
+    /// - The reading position moves when it is still `original`'s, as it is
+    ///   stored (`isAsStored`): the record keeps dates to the second.
+    /// - Each bookmark moves when this book still holds it, by its `id`,
+    ///   equal to `original`'s; a bookmark added, changed, or removed
+    ///   meanwhile stays as this book has it, and the book's order is kept.
+    /// - The skips move as one: only when both lists are still `original`'s,
+    ///   since the relocator merges skips that come to name one heading, so
+    ///   its lists do not match the old ones skip for skip. A skip toggled
+    ///   meanwhile keeps the listener's whole choice.
+    @discardableResult
+    mutating func takeMovedPlaces(original: PlaceRelocator.Places, moved: PlaceRelocator.Places) -> Bool {
+        let before = relocatablePlaces
+
+        // The position, where it still is as it was.
+        if Self.isAsStored(readingPosition, original.position) {
+            readingPosition = moved.position
+        }
+
+        // Each bookmark, where it still is as it was. The first of any
+        // bookmarks sharing an ID answers for it.
+        let originalBookmarks = Dictionary(original.bookmarks.map { ($0.id, $0) }) { first, _ in first }
+        let movedBookmarks = Dictionary(moved.bookmarks.map { ($0.id, $0) }) { first, _ in first }
+        bookmarks = bookmarks.map { held in
+            guard Self.isAsStored(held, originalBookmarks[held.id]), let now = movedBookmarks[held.id] else { return held }
+            return now
+        }
+
+        // The skips, as one: both lists, or neither.
+        if (skippedHeadings ?? []) == original.skippedHeadings,
+           (waitingSkippedHeadings ?? []) == original.waitingSkippedHeadings {
+            setSkippedHeadings(moved.skippedHeadings)
+            waitingSkippedHeadings = SkippedHeading.stored(moved.waitingSkippedHeadings)
+        }
+
+        return relocatablePlaces != before
+    }
+
+    /// Whether the place `held` is `original` as the library index and the
+    /// package record keep places: equal, or equal once both are written as
+    /// those files write them, with ISO 8601 dates, to the second. A place
+    /// saved during this run holds fractions of a second that its stored
+    /// copy has lost, so without this the same place, read back from disk
+    /// on one side, would never be "as it was", and would not move. Two
+    /// nils are alike; a nil and a place are not.
+    private static func isAsStored<Place: Encodable & Equatable>(_ held: Place?, _ original: Place?) -> Bool {
+        if held == original { return true }
+        guard let held, let original else { return false }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = .sortedKeys
+        guard let heldForm = try? encoder.encode(held), let originalForm = try? encoder.encode(original) else { return false }
+        return heldForm == originalForm
     }
 
     /// Gives each of this book's places that `captured` holds words for

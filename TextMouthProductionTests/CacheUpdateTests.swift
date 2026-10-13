@@ -138,7 +138,7 @@ final class CacheUpdateTests: XCTestCase {
         ]
         for (format, source) in examples {
             let book = try makeBook(format: format, source: source)
-            let generated = try XCTUnwrap(MarkdownCacheService.generateCacheContent(for: book))
+            let generated = try XCTUnwrap(MarkdownCacheService.generateCacheContent(for: book)).content
             let reloaded = try MarkdownCacheService.loadFromCache(for: book)
             XCTAssertEqual(generated.title, reloaded.title)
             XCTAssertEqual(generated.chapters.map(\.text), reloaded.chapters.map(\.text))

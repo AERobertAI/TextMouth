@@ -16,6 +16,12 @@ enum BookContentAnalysisService {
         /// Whether the reading text came from the book's cached reading text
         /// (`ReadingTextCache`) rather than from parsing content.md.
         var readFromReadingTextCache = false
+        /// The book's saved places that the rebuild this load made moved from
+        /// the old text to the new one (T06's branch D); nil when the load
+        /// rebuilt nothing or nothing needed moving. The caller commits them
+        /// with the analysis (`LibraryPersistenceService.saveContentAnalysis`),
+        /// which also discards the copy of the old text they were moved from.
+        var movedPlaces: MovedPlaces? = nil
     }
 
     /// Load `book`'s content with its index. The index saved in the book's
@@ -68,8 +74,8 @@ enum BookContentAnalysisService {
 
         let hadExistingCache = MarkdownCacheService.cacheExists(for: book)
         if regenerateTextCache || !hadExistingCache {
-            if let content = MarkdownCacheService.generateCacheContent(for: book) {
-                return regenerated(content)
+            if let generated = MarkdownCacheService.generateCacheContent(for: book) {
+                return regenerated(generated)
             }
             if !hadExistingCache {
                 let content = try BookParser.parse(url: url, format: book.format)
@@ -104,18 +110,20 @@ enum BookContentAnalysisService {
         )
     }
 
-    /// The result of a load that has just written `content`'s cache.
+    /// The result of a load that has just written `generated`'s cache.
     /// Regeneration already parsed and indexed this exact content, with the
     /// fingerprints of the files it read and wrote; reading content.md
-    /// again would double that work for every book.
-    private static func regenerated(_ content: DocumentContent) -> Result {
+    /// again would double that work for every book. The places the rebuild
+    /// moved ride along for the caller to commit.
+    private static func regenerated(_ generated: MarkdownCacheService.GeneratedCache) -> Result {
         Result(
-            content: content,
-            index: content.contentIndex,
+            content: generated.content,
+            index: generated.content.contentIndex,
             audioFilePaths: nil,
             audioSegments: nil,
             usedPersistedIndex: false,
-            cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+            cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+            movedPlaces: generated.movedPlaces
         )
     }
 

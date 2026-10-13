@@ -200,6 +200,9 @@ struct BookState: Codable {
     /// The headings skipped during playback, in step with
     /// `skippedHeadingIDs` (`Book.skippedHeadings`, T06).
     var skippedHeadings: [SkippedHeading]?
+    /// The skipped headings that wait, naming no heading, kept apart from
+    /// `skippedHeadingIDs` (`Book.waitingSkippedHeadings`, T06's branch D).
+    var waitingSkippedHeadings: [SkippedHeading]?
     /// Per-book end-of-book behavior override (nil = use global setting)
     var localEndOfBookBehavior: String?
     /// Per-book forward navigation unit override (nil = use global setting)
@@ -249,6 +252,7 @@ struct BookState: Codable {
         localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         skippedHeadings: [SkippedHeading]? = nil,
+        waitingSkippedHeadings: [SkippedHeading]? = nil,
         localEndOfBookBehavior: String? = nil,
         localSkipForwardUnit: String? = nil,
         localSkipBackwardUnit: String? = nil,
@@ -272,6 +276,7 @@ struct BookState: Codable {
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
+        self.waitingSkippedHeadings = SkippedHeading.stored(waitingSkippedHeadings)
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.localSkipForwardUnit = localSkipForwardUnit
         self.localSkipBackwardUnit = localSkipBackwardUnit
@@ -307,6 +312,8 @@ struct BookState: Codable {
         // As `Book` decodes them: unreadable ones count as none, and they
         // are put in step with the IDs.
         skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
+        // As `Book` decodes them: unreadable or empty ones count as none.
+        waitingSkippedHeadings = SkippedHeading.stored(fields.optionalValue(.waitingSkippedHeadings) { $0 })
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
         localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)

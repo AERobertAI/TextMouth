@@ -679,33 +679,6 @@ final class ContentAnalysisMergeTests: XCTestCase {
         return replaced
     }
 
-    /// Holds the first cache generation of `book` on the thread doing it,
-    /// once it has chosen where its content.md goes and before it commits
-    /// anything: `reached` is fulfilled there, and the generation goes on
-    /// once `gate` is signaled. The hold ends with the test at the latest.
-    private func holdCacheGeneration(of book: Book) -> (reached: XCTestExpectation, gate: DispatchSemaphore) {
-        let reached = expectation(description: "The batch is at work on the book")
-        let gate = DispatchSemaphore(value: 0)
-        let isClaimed = OSAllocatedUnfairLock(initialState: false)
-        let bookID = book.id
-        MarkdownCacheService.extractionObserver = { generated in
-            guard generated.id == bookID else { return }
-            // Only the first generation is held, so `reached` is fulfilled once.
-            let isFirst = isClaimed.withLock { claimed in
-                defer { claimed = true }
-                return !claimed
-            }
-            guard isFirst else { return }
-            reached.fulfill()
-            gate.wait()
-        }
-        addTeardownBlock {
-            MarkdownCacheService.extractionObserver = nil
-            gate.signal()
-        }
-        return (reached, gate)
-    }
-
     /// A library model listing `books`, without the app's services.
     @MainActor
     private func makeModel(with books: [Book]) -> LibraryViewModel {
@@ -804,6 +777,12 @@ final class ContentAnalysisMergeTests: XCTestCase {
             level: 1 + seed % 6, label: "Heading \(seed)", chapterIndex: seed, characterOffset: seed * 7,
             anchor: anchor(seed: seed, at: "heading")
         )
+        // A skip that waits (T06's branch D): another level, label, and
+        // place than the named one, so the two lists never hold alike.
+        let waiting = SkippedHeading(
+            level: 1 + (seed + 2) % 6, label: "Waiting \(seed)", chapterIndex: seed + 50, characterOffset: seed * 11,
+            anchor: anchor(seed: seed, at: "waiting heading")
+        )
         return Book(
             id: UUID(),
             title: "Title \(seed)",
@@ -832,6 +811,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
             localPitch: 1 + Double(seed) / 10,
             skippedHeadingIDs: [skipped.id],
             skippedHeadings: [skipped],
+            waitingSkippedHeadings: [waiting],
             localEndOfBookBehavior: "behavior-\(seed)",
             localSkipForwardUnit: "forward-\(seed)",
             localSkipBackwardUnit: "backward-\(seed)",

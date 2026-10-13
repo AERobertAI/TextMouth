@@ -164,3 +164,32 @@ struct SeededWords {
         (0..<count).map { _ in word() }
     }
 }
+
+/// One chapter with two "Notes" sections: with the first removed, the
+/// second slides into its numbers, so the new heading has the first one's
+/// ID (REV15, V21), and a reader matching IDs would skip it for a skip of
+/// the first.
+struct NotesBook {
+    /// The chapter's opening, before the first "Notes".
+    let opening = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask.\n\n"
+    /// The first "Notes" section.
+    let first = "Notes\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
+    /// The second "Notes" section.
+    let second = "Notes\n\nA carpenter in the next village turned the offcuts into spoons for the market."
+    /// A sentence put in at the chapter's end, an edit elsewhere.
+    let ending = " The spoons sold out by the autumn fair."
+
+    /// The text with both sections.
+    var both: [String] { [opening + first + second] }
+    /// The text without the first section.
+    var withoutFirst: [String] { [opening + second] }
+    /// The text without the first section, with a sentence added at its end.
+    var edited: [String] { [opening + second + ending] }
+    /// The first "Notes" heading, in the text with both.
+    var firstHeading: Heading { Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count) }
+    /// The second "Notes" heading, in the text with both.
+    var secondHeading: Heading { Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count + first.utf16.count) }
+    /// The only "Notes" heading of the texts without the first section;
+    /// it has the first heading's ID.
+    var slidHeading: Heading { Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count) }
+}

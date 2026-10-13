@@ -137,8 +137,9 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let skipped = try SavedPlace.skip(of: try MillBook.heading(ofChapter: 2, in: old), in: old)
         let outcome = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: MillBook.headings(of: old), newHeadings: MillBook.headings(of: new))
             .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
-        XCTAssertEqual(outcome.places.skippedHeadings, [skipped])
-        XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
+        XCTAssertEqual(outcome.places.waitingSkippedHeadings, [skipped])
+        XCTAssertEqual(outcome.places.skippedHeadings, [])
+        XCTAssertEqual(outcome.skippedHeadingFindings, [])
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(waiting: 1))
         XCTAssertTrue(outcome.counts.anythingMoved)
     }
@@ -153,8 +154,9 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let skipped = SkippedHeading(level: 1, label: "CHAPTER III. The Stones", chapterIndex: 2, characterOffset: 0)
         let outcome = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: MillBook.headings(of: old), newHeadings: MillBook.headings(of: new))
             .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
-        XCTAssertEqual(outcome.places.skippedHeadings, [skipped])
-        XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
+        XCTAssertEqual(outcome.places.waitingSkippedHeadings, [skipped])
+        XCTAssertEqual(outcome.places.skippedHeadings, [])
+        XCTAssertEqual(outcome.skippedHeadingFindings, [])
     }
 
     /// A "Notes" section the new text leaves out does not pass its skip to
@@ -172,8 +174,9 @@ final class PlaceRelocatorBookTests: XCTestCase {
         let outcome = relocator.relocate(PlaceRelocator.Places(
             skippedHeadings: [try SavedPlace.skip(of: firstHeading, in: old), try SavedPlace.skip(of: secondHeading, in: old)]
         ), movedAt: SavedPlace.moveDate)
-        XCTAssertEqual(outcome.skippedHeadingFindings, [nil, .unchanged])
-        XCTAssertEqual(outcome.places.skippedHeadings.map(\.id), [firstHeading.id, secondHeading.id])
+        XCTAssertEqual(outcome.skippedHeadingFindings, [.unchanged])
+        XCTAssertEqual(outcome.places.skippedHeadings.map(\.id), [secondHeading.id])
+        XCTAssertEqual(outcome.places.waitingSkippedHeadings.map(\.id), [firstHeading.id])
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1, waiting: 1))
     }
 
@@ -184,14 +187,12 @@ final class PlaceRelocatorBookTests: XCTestCase {
     /// second skip is kept, and the findings and counts are those of the
     /// skips kept. Two skips that now name one heading are one.
     func testASkipThatNamesAHeadingWinsOverOneThatWaits() throws {
-        let opening = "CHAPTER I. The Millrace\n\nThe volunteers met at the mill on the first dry Saturday of March, with spades and a flask.\n\n"
-        let first = "Notes\n\nThe pump belonged to the angling club and went back with a new washer.\n\n"
-        let second = "Notes\n\nA carpenter in the next village turned the offcuts into spoons for the market."
-        let old = [opening + first + second]
-        let new = [opening + second]
-        let firstNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count)
-        let secondNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count + first.utf16.count)
-        let newNotes = Heading(level: 2, text: "Notes", chapterIndex: 0, characterOffset: opening.utf16.count)
+        let book = NotesBook()
+        let old = book.both
+        let new = book.withoutFirst
+        let firstNotes = book.firstHeading
+        let secondNotes = book.secondHeading
+        let newNotes = book.slidHeading
         XCTAssertEqual(firstNotes.id, newNotes.id, "the second section slid into the first one's numbers")
         let relocator = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: [firstNotes, secondNotes], newHeadings: [newNotes])
         let skips = [try SavedPlace.skip(of: firstNotes, in: old), try SavedPlace.skip(of: secondNotes, in: old)]
@@ -200,7 +201,7 @@ final class PlaceRelocatorBookTests: XCTestCase {
             let outcome = relocator.relocate(PlaceRelocator.Places(skippedHeadings: order), movedAt: SavedPlace.moveDate)
             XCTAssertEqual(outcome.places.skippedHeadings, [try SavedPlace.skip(of: newNotes, in: new)])
             XCTAssertEqual(outcome.skippedHeadingFindings.count, 1)
-            XCTAssertNotNil(outcome.skippedHeadingFindings.first ?? nil)
+            XCTAssertEqual(outcome.places.waitingSkippedHeadings, [])
             XCTAssertEqual(outcome.counts.total, 1)
             XCTAssertEqual(outcome.counts.waiting, 0)
         }
@@ -214,6 +215,268 @@ final class PlaceRelocatorBookTests: XCTestCase {
         XCTAssertEqual(twice.places.skippedHeadings, [current])
         XCTAssertEqual(twice.skippedHeadingFindings, [.unchanged])
         XCTAssertEqual(twice.counts, PlaceRelocator.Counts(unchanged: 1))
+    }
+
+    // MARK: - Skips That Wait
+
+    /// A skip of the first "Notes" whose section is removed waits, naming no
+    /// heading, though the second section slides into its numbers and so has
+    /// its ID; and on the next move, from that text to one edited elsewhere,
+    /// it still waits, unchanged, and still names nothing.
+    func testASkipThatWaitsKeepsWaitingWhileTheNextSectionHasItsID() throws {
+        let book = NotesBook()
+        XCTAssertEqual(book.firstHeading.id, book.slidHeading.id, "the second section slid into the first one's numbers")
+        let skip = try SavedPlace.skip(of: book.firstHeading, in: book.both)
+        let first = PlaceRelocator(oldTexts: book.both, newTexts: book.withoutFirst, oldHeadings: [book.firstHeading, book.secondHeading], newHeadings: [book.slidHeading])
+            .relocate(PlaceRelocator.Places(skippedHeadings: [skip]), movedAt: SavedPlace.moveDate)
+        XCTAssertEqual(first.places.skippedHeadings, [])
+        XCTAssertEqual(first.places.waitingSkippedHeadings, [skip])
+        XCTAssertEqual(first.skippedHeadingFindings, [])
+        XCTAssertEqual(first.counts, PlaceRelocator.Counts(waiting: 1))
+
+        let second = PlaceRelocator(oldTexts: book.withoutFirst, newTexts: book.edited, oldHeadings: [book.slidHeading], newHeadings: [book.slidHeading])
+            .relocate(first.places, movedAt: SavedPlace.moveDate)
+        XCTAssertEqual(second.places.skippedHeadings, [])
+        XCTAssertEqual(second.places.waitingSkippedHeadings, [skip])
+        XCTAssertEqual(second.skippedHeadingFindings, [])
+        XCTAssertEqual(second.counts, PlaceRelocator.Counts(waiting: 1))
+    }
+
+    /// A waiting skip names its heading again when the section comes back
+    /// where it was, its words standing as they were skipped: unchanged, with
+    /// the heading's ID, and nothing waits.
+    func testAWaitingSkipNamesItsHeadingWhenTheSectionComesBack() throws {
+        let book = NotesBook()
+        let skip = try SavedPlace.skip(of: book.firstHeading, in: book.both)
+        let outcome = PlaceRelocator(oldTexts: book.withoutFirst, newTexts: book.both, oldHeadings: [book.slidHeading], newHeadings: [book.firstHeading, book.secondHeading])
+            .relocate(PlaceRelocator.Places(waitingSkippedHeadings: [skip]), movedAt: SavedPlace.moveDate)
+        XCTAssertEqual(outcome.places.skippedHeadings, [skip])
+        XCTAssertEqual(outcome.places.skippedHeadings.first?.id, book.firstHeading.id)
+        XCTAssertEqual(outcome.places.waitingSkippedHeadings, [])
+        XCTAssertEqual(outcome.skippedHeadingFindings, [.unchanged])
+        XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1))
+    }
+
+    /// A waiting skip without saved words never names a heading, though a new
+    /// heading has its ID: nothing proves it is the same section. Nor does
+    /// one whose saved words hold no word, which stand anywhere.
+    func testAWaitingSkipWithoutSavedWordsKeepsWaiting() {
+        let book = NotesBook()
+        let heading = book.slidHeading
+        let bare = SkippedHeading(level: heading.level, label: heading.text, chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
+        var empty = bare
+        empty.anchor = TextAnchor(before: "", after: "", fraction: 0)
+        let relocator = PlaceRelocator(oldTexts: book.withoutFirst, newTexts: book.edited, oldHeadings: [heading], newHeadings: [heading])
+        for waiting in [bare, empty] {
+            XCTAssertEqual(waiting.id, heading.id)
+            let outcome = relocator.relocate(PlaceRelocator.Places(waitingSkippedHeadings: [waiting]), movedAt: SavedPlace.moveDate)
+            XCTAssertEqual(outcome.places.skippedHeadings, [])
+            XCTAssertEqual(outcome.places.waitingSkippedHeadings, [waiting])
+            XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(waiting: 1))
+        }
+    }
+
+    /// A waiting skip whose heading stands again and a named skip of the same
+    /// heading are one skip, the named one, and nothing waits.
+    func testANamedSkipWinsOverAWaitingSkipOfTheSameHeading() throws {
+        let book = NotesBook()
+        let skip = try SavedPlace.skip(of: book.firstHeading, in: book.both)
+        let headings = [book.firstHeading, book.secondHeading]
+        let outcome = PlaceRelocator(oldTexts: book.both, newTexts: book.both, oldHeadings: headings, newHeadings: headings)
+            .relocate(PlaceRelocator.Places(skippedHeadings: [skip], waitingSkippedHeadings: [skip]), movedAt: SavedPlace.moveDate)
+        XCTAssertEqual(outcome.places.skippedHeadings, [skip])
+        XCTAssertEqual(outcome.places.waitingSkippedHeadings, [])
+        XCTAssertEqual(outcome.skippedHeadingFindings, [.unchanged])
+        XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1))
+    }
+
+    /// The places, the skips that wait among them, survive being saved and
+    /// read back.
+    func testPlacesSurviveEncodingAndDecoding() throws {
+        let book = NotesBook()
+        let texts = book.both
+        let place = try Phrase.place(of: "spades", inChapter: 0, of: texts)
+        var position = ReadingPosition(chapterIndex: 0, characterOffset: place.offset, globalCharacterOffset: place.offset, anchor: try SavedPlace.anchor(at: place, in: texts))
+        position.lastUpdated = Date(timeIntervalSince1970: 1_000_000)
+        let places = PlaceRelocator.Places(
+            position: position,
+            bookmarks: [
+                Bookmark(number: 1, chapterIndex: 0, characterOffset: place.offset, label: "the spades", dateCreated: Date(timeIntervalSince1970: 2_000_000),
+                         anchor: try SavedPlace.anchor(at: place, in: texts)),
+                Bookmark(number: 2, chapterIndex: 0, characterOffset: 0, dateCreated: Date(timeIntervalSince1970: 2_000_000)),
+            ],
+            skippedHeadings: [try SavedPlace.skip(of: book.secondHeading, in: texts)],
+            waitingSkippedHeadings: [try SavedPlace.skip(of: book.firstHeading, in: texts)]
+        )
+        let decoded = try JSONDecoder().decode(PlaceRelocator.Places.self, from: try JSONEncoder().encode(places))
+        XCTAssertEqual(decoded, places)
+    }
+
+    // MARK: - Building a Relocator Only When a Place Moved
+
+    /// A loaded book whose chapters' reading texts are `texts`, with
+    /// `headings` (the mill book's by default).
+    private func loaded(_ texts: [String], headings: [Heading]? = nil) -> DocumentContent {
+        let all = headings ?? MillBook.headings(of: texts)
+        return DocumentContent(title: "The Mill", author: "The Mill Society", chapters: texts.enumerated().map { index, text in
+            Chapter(title: "", text: text, headings: all.filter { $0.chapterIndex == index })
+        })
+    }
+
+    /// What moving `places` from the book `old` to the book `new` comes to by
+    /// the static entry point, whether it read the old text, and what the
+    /// full relocator makes of the same places.
+    private func moving(_ places: PlaceRelocator.Places, from old: [String], to new: [String]) -> (outcome: PlaceRelocator.Outcome, oldWasRead: Bool, full: PlaceRelocator.Outcome) {
+        var oldWasRead = false
+        let outcome = PlaceRelocator.relocate(places, from: { oldWasRead = true; return loaded(old) }, to: loaded(new), movedAt: SavedPlace.moveDate)
+        let full = PlaceRelocator(old: loaded(old), new: loaded(new)).relocate(places, movedAt: SavedPlace.moveDate)
+        return (outcome, oldWasRead, full)
+    }
+
+    /// A position in chapter I (with its offset across the book), two
+    /// bookmarks in chapters II and III, and a skip of chapter II's heading,
+    /// each with its words from the mill book.
+    private func placesInTheFirstThreeChapters() throws -> PlaceRelocator.Places {
+        let book = MillBook.chapters
+        let reading = try Phrase.place(of: "spirit level", inChapter: 0, of: book)
+        let carpenter = try Phrase.place(of: "steaming each plank", inChapter: 1, of: book)
+        let marked = try Phrase.place(of: "French burrs", inChapter: 2, of: book)
+        var position = ReadingPosition(chapterIndex: 0, headingIndex: 1, characterOffset: reading.offset,
+                                       globalCharacterOffset: BookWords(texts: book).globalOffset(of: reading), anchor: try SavedPlace.anchor(at: reading, in: book))
+        position.lastUpdated = Date(timeIntervalSince1970: 1_000_000)
+        return PlaceRelocator.Places(
+            position: position,
+            bookmarks: [
+                Bookmark(number: 1, chapterIndex: 1, characterOffset: carpenter.offset, label: "the planks", anchor: try SavedPlace.anchor(at: carpenter, in: book)),
+                Bookmark(number: 2, chapterIndex: 2, characterOffset: marked.offset, label: "the burrs", anchor: try SavedPlace.anchor(at: marked, in: book)),
+            ],
+            skippedHeadings: [try SavedPlace.skip(of: try MillBook.heading(ofChapter: 1, in: book), in: book)]
+        )
+    }
+
+    /// When every place stands, the old text is not read, and the outcome is
+    /// the full relocator's: a sentence added at the end of the last chapter
+    /// moves nothing in the first three.
+    func testWhenEveryPlaceStandsTheOldTextIsNotRead() throws {
+        let places = try placesInTheFirstThreeChapters()
+        let new = Array(MillBook.chapters.dropLast()) + [MillBook.flour + " The grandson was right, and they said so."]
+        let result = moving(places, from: MillBook.chapters, to: new)
+        XCTAssertFalse(result.oldWasRead)
+        XCTAssertEqual(result.outcome, result.full)
+        // Every place keeps its numbers (its words are captured anew, since
+        // the book around them grew by a sentence).
+        XCTAssertEqual(result.outcome.places.position?.characterOffset, places.position?.characterOffset)
+        XCTAssertEqual(result.outcome.places.bookmarks.map(\.characterOffset), places.bookmarks.map(\.characterOffset))
+        XCTAssertEqual(result.outcome.places.skippedHeadings.map(\.id), places.skippedHeadings.map(\.id))
+        XCTAssertEqual(result.outcome.positionFinding, .unchanged)
+        XCTAssertEqual(result.outcome.bookmarkFindings, [.unchanged, .unchanged])
+        XCTAssertEqual(result.outcome.skippedHeadingFindings, [.unchanged])
+        XCTAssertEqual(result.outcome.counts, PlaceRelocator.Counts(unchanged: 4))
+    }
+
+    /// A sentence added to an earlier chapter moves a position in a later
+    /// one, which stands: its offset across the book is the new text's, grown
+    /// by the sentence, and its date is unchanged.
+    func testAPositionStandsWhenAnEarlierChapterGrew() throws {
+        let sentence = " Rain stopped work on the second Tuesday."
+        let old = MillBook.chapters
+        let new = [MillBook.millrace + sentence] + Array(old.dropFirst())
+        let saved = try Phrase.place(of: "French burrs", inChapter: 2, of: old)
+        var position = ReadingPosition(chapterIndex: 2, characterOffset: saved.offset, globalCharacterOffset: BookWords(texts: old).globalOffset(of: saved),
+                                       anchor: try SavedPlace.anchor(at: saved, in: old))
+        position.lastUpdated = Date(timeIntervalSince1970: 1_000_000)
+        let result = moving(PlaceRelocator.Places(position: position), from: old, to: new)
+        let moved = try XCTUnwrap(result.outcome.places.position)
+        XCTAssertFalse(result.oldWasRead)
+        XCTAssertEqual(result.outcome.positionFinding, .unchanged)
+        XCTAssertEqual(TextPlace(chapter: moved.chapterIndex, offset: moved.characterOffset), saved)
+        XCTAssertEqual(moved.globalCharacterOffset, try XCTUnwrap(position.globalCharacterOffset) + sentence.utf16.count)
+        XCTAssertEqual(moved.lastUpdated, position.lastUpdated)
+        XCTAssertEqual(result.outcome, result.full)
+    }
+
+    /// A position at the end of the book stands while the text is unchanged,
+    /// without the old text; with a sentence appended, the end is somewhere
+    /// else, so the old text is read and the position goes to the new end.
+    func testAPositionAtTheEndStandsOnlyWhileTheEndIsTheSame() throws {
+        let old = MillBook.chapters
+        let end = BookWords(texts: old).endPlace
+        let position = ReadingPosition(chapterIndex: end.chapter, characterOffset: end.offset, globalCharacterOffset: BookWords(texts: old).totalLength,
+                                       anchor: try SavedPlace.anchor(at: end, in: old))
+        XCTAssertTrue(try XCTUnwrap(position.anchor).marksEndOfBook)
+        let places = PlaceRelocator.Places(position: position)
+
+        let same = moving(places, from: old, to: old)
+        XCTAssertFalse(same.oldWasRead)
+        XCTAssertEqual(same.outcome.positionFinding, .unchanged)
+        XCTAssertEqual(same.outcome, same.full)
+
+        let appended = Array(old.dropLast()) + [MillBook.flour + " The grandson was right, and they said so."]
+        let grown = moving(places, from: old, to: appended)
+        let newEnd = BookWords(texts: appended).endPlace
+        let moved = try XCTUnwrap(grown.outcome.places.position)
+        XCTAssertTrue(grown.oldWasRead)
+        XCTAssertEqual(TextPlace(chapter: moved.chapterIndex, offset: moved.characterOffset), newEnd)
+        XCTAssertEqual(grown.outcome.positionFinding, .movedByTheDiff(.endOfBook))
+        XCTAssertEqual(grown.outcome, grown.full)
+    }
+
+    /// When one place does not stand (text put in before a bookmark), the old
+    /// text is read, and the outcome is the full relocator's for all the
+    /// places, those that stand among them.
+    func testOnePlaceThatMovedReadsTheOldTextOnce() throws {
+        let places = try placesInTheFirstThreeChapters()
+        let old = MillBook.chapters
+        let new = old.enumerated().map { index, text in
+            index == 1 ? text.replacingOccurrences(of: "steaming each plank", with: "Rain stopped that on the second Tuesday, steaming each plank") : text
+        }
+        var reads = 0
+        let outcome = PlaceRelocator.relocate(places, from: { reads += 1; return loaded(old) }, to: loaded(new), movedAt: SavedPlace.moveDate)
+        let full = PlaceRelocator(old: loaded(old), new: loaded(new)).relocate(places, movedAt: SavedPlace.moveDate)
+        XCTAssertEqual(reads, 1)
+        XCTAssertEqual(outcome, full)
+        XCTAssertEqual(outcome.bookmarkFindings.first, .movedByTheDiff(.linedUp))
+        XCTAssertEqual(outcome.positionFinding, .unchanged)
+    }
+
+    /// A place saved without words needs the old text to be read, so it does
+    /// not stand; and a book with no places reads nothing.
+    func testAPlaceWithoutWordsReadsTheOldTextAndNoPlacesReadNothing() throws {
+        let old = MillBook.chapters
+        let bare = PlaceRelocator.Places(bookmarks: [Bookmark(number: 1, chapterIndex: 0, characterOffset: 0)])
+        let result = moving(bare, from: old, to: old)
+        XCTAssertTrue(result.oldWasRead)
+        XCTAssertEqual(result.outcome, result.full)
+
+        let none = moving(PlaceRelocator.Places(), from: old, to: old)
+        XCTAssertFalse(none.oldWasRead)
+        XCTAssertEqual(none.outcome.places, PlaceRelocator.Places())
+        XCTAssertEqual(none.outcome.counts, PlaceRelocator.Counts())
+    }
+
+    /// A waiting skip never stops the shortcut, and is named again by the
+    /// waiting rule when its heading stands; a named skip whose heading does
+    /// not stand reads the old text.
+    func testWaitingSkipsNeverReadTheOldTextButNamedSkipsThatMovedDo() throws {
+        let book = NotesBook()
+        let skip = try SavedPlace.skip(of: book.firstHeading, in: book.both)
+        var reads = 0
+        let back = PlaceRelocator.relocate(
+            PlaceRelocator.Places(waitingSkippedHeadings: [skip]),
+            from: { reads += 1; return loaded(book.withoutFirst, headings: [book.slidHeading]) },
+            to: loaded(book.both, headings: [book.firstHeading, book.secondHeading]),
+            movedAt: SavedPlace.moveDate
+        )
+        XCTAssertEqual(reads, 0)
+        XCTAssertEqual(back.places.skippedHeadings, [skip])
+        XCTAssertEqual(back.places.waitingSkippedHeadings, [])
+        XCTAssertEqual(back.skippedHeadingFindings, [.unchanged])
+
+        let named = PlaceRelocator.Places(skippedHeadings: [try SavedPlace.skip(of: try MillBook.heading(ofChapter: 2, in: MillBook.chapters), in: MillBook.chapters)])
+        let result = moving(named, from: MillBook.chapters, to: [MillBook.millrace, MillBook.wheel, MillBook.flour])
+        XCTAssertTrue(result.oldWasRead)
+        XCTAssertEqual(result.outcome, result.full)
+        XCTAssertEqual(result.outcome.places.waitingSkippedHeadings, named.skippedHeadings)
     }
 
     // MARK: - The Start of the Book
@@ -290,7 +553,8 @@ final class PlaceRelocatorBookTests: XCTestCase {
         ), movedAt: SavedPlace.moveDate)
         XCTAssertEqual(outcome.positionFinding, .movedByTheDiff(.linedUp))
         XCTAssertEqual(outcome.bookmarkFindings, [.unchanged, .movedByTheDiff(.passageRemoved)])
-        XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
+        XCTAssertEqual(outcome.skippedHeadingFindings, [])
+        XCTAssertEqual(outcome.places.waitingSkippedHeadings.count, 1)
         XCTAssertEqual(outcome.counts, PlaceRelocator.Counts(unchanged: 1, movedByTheDiff: 2, waiting: 1))
         XCTAssertEqual(outcome.places.position?.chapterIndex, 2, "chapter IV is the third chapter now")
         XCTAssertEqual(outcome.places.bookmarks.last.map { TextPlace(chapter: $0.chapterIndex, offset: $0.characterOffset) }, TextPlace(chapter: 2, offset: 0))

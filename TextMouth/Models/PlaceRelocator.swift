@@ -100,7 +100,13 @@ import Foundation
 /// level. Failing that, the one new heading of its level with its label
 /// takes the skip, unless the diff makes it another section; failing that,
 /// the skip waits, applying to no heading, so no section is skipped by
-/// mistake. A guess never moves a skip onto a heading.
+/// mistake. A guess never moves a skip onto a heading. A skip that waits is
+/// kept apart (`Places.waitingSkippedHeadings`), naming no heading, since
+/// its saved ID could become the ID of the next section, which slid into
+/// the removed one's numbers, and the reader, which matches IDs, would skip
+/// it. It names a heading again only where its heading stands exactly as it
+/// was skipped: a heading with its ID whose saved words stand at its place;
+/// never in the old text, nor by its label, nor by its saved words alone.
 ///
 /// These are the measured program's rules, ported, checked against its exact
 /// truth by compiling these files in a standalone harness, and corrected
@@ -116,8 +122,11 @@ import Foundation
 /// text's words. In optimized code that took about 20 ms for a novel of
 /// 750,000 UTF-16 units and 100 to 130 ms for a book of 3.8 million, holding
 /// 25 to 130 MB with the texts; moving a place then takes a few
-/// microseconds. Nothing is said or shown; the counts go to the debug log
-/// (`Counts.logLine`).
+/// microseconds. Most rebuilt books' places still stand, so a caller moving a
+/// whole book's places asks `relocate(_:from:to:movedAt:)`, which checks each
+/// place directly against the new text first and builds a relocator (and
+/// reads the old text) only when some place does not stand. Nothing is said
+/// or shown; the counts go to the debug log (`Counts.logLine`).
 struct PlaceRelocator: Sendable {
     // MARK: - What a Move Comes To
 
@@ -436,10 +445,8 @@ struct PlaceRelocator: Sendable {
     /// the same label, or to the first of a pile of headings, and dropped
     /// the skip of a heading whose label gained or lost a word.
     func relocate(_ skipped: SkippedHeading) -> HeadingResult? {
-        let saved = TextPlace(chapter: skipped.chapterIndex, offset: skipped.characterOffset)
         // 1. Its heading stands.
-        if let same = newHeadings.first(where: { $0.id == skipped.id }),
-           skipped.anchor.map({ $0.stands(at: saved, in: new.texts) }) ?? true {
+        if let same = Self.standingHeading(of: skipped, among: newHeadings, in: new.texts) {
             return HeadingResult(heading: same, finding: .unchanged)
         }
         // 2 and 3. Its heading in the old text, carried by the diff.
@@ -1002,6 +1009,23 @@ struct PlaceRelocator: Sendable {
         return Result(place: found.place, finding: found.isGuess ? Self.finding(found.finding) : .guessed(.savedWords(.sameShare)))
     }
 
+    /// The heading among `headings` that `skipped`'s ID names, when the
+    /// skip's saved words, if it has them, still stand at its place in the
+    /// book whose chapters' reading texts are `texts`: the heading as it was
+    /// skipped (rule 1 of `relocate(_:)` for a skipped heading, and the rule
+    /// of a waiting skip). With `requiringWords`, a skip without saved words,
+    /// or whose words hold no fine word (which stand anywhere, so prove
+    /// nothing), has no such heading: a waiting skip names a heading again
+    /// only on proof that it is the same one. Needs no relocator, so a
+    /// shortcut that builds none may ask it.
+    static func standingHeading(of skipped: SkippedHeading, among headings: [Heading], in texts: [String], requiringWords: Bool = false) -> Heading? {
+        guard let same = headings.first(where: { $0.id == skipped.id }) else { return nil }
+        guard let anchor = skipped.anchor else { return requiringWords ? nil : same }
+        if requiringWords && holdsNoWords(anchor) { return nil }
+        let saved = TextPlace(chapter: skipped.chapterIndex, offset: skipped.characterOffset)
+        return anchor.stands(at: saved, in: texts) ? same : nil
+    }
+
     /// Whether `anchor`'s quotes hold no fine word: saved words that stand
     /// anywhere, and so are no evidence of where a place is.
     private static func holdsNoWords(_ anchor: TextAnchor) -> Bool {
@@ -1036,14 +1060,25 @@ struct PlaceRelocator: Sendable {
 
 extension PlaceRelocator {
     /// A book's saved places in its text, as the relocator moves them
-    /// together.
-    struct Places: Equatable, Sendable {
+    /// together: `Codable`, so that they can be saved beside a copy of the
+    /// book's old text while a rebuild of the text moves them (T06's
+    /// branch D).
+    struct Places: Equatable, Codable, Sendable {
         /// The reading position; nil for a book without one.
         var position: ReadingPosition?
         /// The bookmarks, in order.
         var bookmarks: [Bookmark] = []
-        /// The skipped headings, in order.
+        /// The skipped headings, in order; each names a heading, the one its
+        /// ID (its level, label, and place) says.
         var skippedHeadings: [SkippedHeading] = []
+        /// The skipped headings that wait, in order, naming no heading
+        /// because an earlier move found none for them. They are kept apart
+        /// from `skippedHeadings` because the ID a waiting skip saved could
+        /// become the ID of another section (the next one, slid into the
+        /// removed section's numbers), which a reader matching IDs would then
+        /// skip. A later move gives a waiting skip a heading again only where
+        /// its heading stands exactly as it was skipped.
+        var waitingSkippedHeadings: [SkippedHeading] = []
     }
 
     /// What moving a book's places came to.
@@ -1057,23 +1092,26 @@ extension PlaceRelocator {
         /// copy elsewhere; one that stayed keeps its time. A move is not a
         /// read otherwise: a position's heading index, and a bookmark's
         /// identity, number, note, and date, stay as they were. A skipped
-        /// heading takes its heading's place, level, and label; one that
-        /// waits stays exactly as it was (words read in the old text at its
-        /// numbers would only be the words of whatever stands there now); two
-        /// skips that now name one heading are one, the first kept, and a
-        /// skip that names a heading is kept over one that waits whose saved
-        /// ID that heading now has.
+        /// heading takes its heading's place, level, and label, and is in
+        /// `places.skippedHeadings`; one that waits stays exactly as it was
+        /// (words read in the old text at its numbers would only be the words
+        /// of whatever stands there now), in `places.waitingSkippedHeadings`,
+        /// naming no heading, until its heading stands again exactly as it
+        /// was skipped; two skips that now name one heading are one, the
+        /// first kept, and a skip that names a heading is kept over one that
+        /// waits whose saved ID that heading now has.
         let places: Places
         /// How the position was found; nil for a book without one.
         let positionFinding: Finding?
         /// How each bookmark was found, in order.
         let bookmarkFindings: [Finding]
-        /// How each skipped heading kept in `places` was found, in their
-        /// order; nil for a skip that waits. A skip dropped as one with
-        /// another has no finding here.
-        let skippedHeadingFindings: [Finding?]
+        /// How each skipped heading kept in `places.skippedHeadings` was
+        /// found, in their order: one finding for each. A skip that waits has
+        /// none, and neither has a skip dropped as one with another.
+        let skippedHeadingFindings: [Finding]
         /// The counts, for the debug log's line: the position, the
-        /// bookmarks, and the skipped headings kept in `places`.
+        /// bookmarks, the skipped headings kept in `places.skippedHeadings`,
+        /// and, as waiting, those in `places.waitingSkippedHeadings`.
         let counts: Counts
     }
 
@@ -1088,7 +1126,8 @@ extension PlaceRelocator {
         var foundBySavedWords = 0
         /// Places put at a best guess.
         var guessed = 0
-        /// Skipped headings that nothing names now, whose skips wait.
+        /// Skipped headings that nothing names now, whose skips wait: the
+        /// skips in `Places.waitingSkippedHeadings`.
         var waiting = 0
 
         /// How many places were counted.
@@ -1098,7 +1137,8 @@ extension PlaceRelocator {
         /// gets a line only then.
         var anythingMoved: Bool { unchanged < total }
 
-        /// Counts one place found as `finding`; nil is a skip that waits.
+        /// Counts one place found as `finding`; nil is a skip that waits
+        /// (one in `Places.waitingSkippedHeadings`).
         mutating func count(_ finding: Finding?) {
             switch finding {
             case .unchanged?: unchanged += 1
@@ -1144,65 +1184,163 @@ extension PlaceRelocator {
     /// text (`isAtTheStart`). `date` is when the places are moved, which a
     /// position that moved takes as its time; the relocator reads no clock.
     func relocate(_ places: Places, movedAt date: Date) -> Outcome {
-        var counts = Counts()
-        var moved = places
-
-        var positionFinding: Finding?
+        var positionResult: Result?
         if let position = places.position {
-            var result = relocate(
-                position.anchor,
-                savedAt: TextPlace(chapter: position.chapterIndex, offset: position.characterOffset),
-                savedGlobalOffset: position.globalCharacterOffset
-            )
+            var result = relocate(position.anchor, savedAt: position.savedPlace, savedGlobalOffset: position.globalCharacterOffset)
             // A position at the very start of the book stays at the start.
             if result.finding != .unchanged, isAtTheStart(position) {
                 result = Result(place: TextPlace(chapter: 0, offset: 0), finding: .movedByTheDiff(.startOfBook))
             }
-            moved.position = self.moved(position, to: result, at: date)
-            positionFinding = result.finding
+            positionResult = result
+        }
+        return Self.outcome(
+            of: places,
+            position: positionResult,
+            bookmarks: places.bookmarks.map { relocate($0.anchor, savedAt: $0.savedPlace) },
+            skips: places.skippedHeadings.map { relocate($0) },
+            in: new,
+            headings: newHeadings,
+            movedAt: date
+        )
+    }
+
+    /// Moves a book's places from the old text to `new`, building a
+    /// relocator only when some place does not stand. Most rebuilt books'
+    /// places stand: each is checked directly against the new text (rule 1:
+    /// the end of the book stays the end, and saved words that stand around
+    /// their numbers stay), and the old text is not even read (`old` is not
+    /// called). A relocator reads both texts' fine words, lines them up with
+    /// a patience diff, and indexes both texts: about 20 ms for a novel and
+    /// 100 to 130 ms for a long book (the type's last paragraph), which this
+    /// saves when every place stands; the new text's words are read once
+    /// either way. When some place does not stand, `old` is called once and
+    /// the relocator moves all the places (`relocate(_:movedAt:)`).
+    ///
+    /// A place stands when its saved words are there and settle it as rule 1
+    /// does; a place saved without words needs the old text to be read, so it
+    /// does not stand. A named skip stands when its heading does. Skips that
+    /// wait never stop the shortcut: the waiting rule needs only the new
+    /// text. Either way the outcome is built by one function.
+    static func relocate(_ places: Places, from old: () throws -> DocumentContent, to new: DocumentContent, movedAt date: Date) rethrows -> Outcome {
+        let newWords = BookWords(texts: new.chapters.map(\.text))
+        let newHeadings = new.allHeadings
+        // Each named skip's heading, as it stands in the new text (nil when
+        // it does not).
+        let standing = places.skippedHeadings.map { standingHeading(of: $0, among: newHeadings, in: newWords.texts) }
+        let everyPlaceStands = (places.position.map { stays($0, in: newWords) } ?? true)
+            && places.bookmarks.allSatisfy { stays($0, in: newWords) }
+            && standing.allSatisfy { $0 != nil }
+        guard everyPlaceStands else {
+            let oldContent = try old()
+            return PlaceRelocator(
+                old: BookWords(texts: oldContent.chapters.map(\.text)),
+                new: newWords,
+                oldHeadings: oldContent.allHeadings,
+                newHeadings: newHeadings
+            ).relocate(places, movedAt: date)
+        }
+        // Every place stands: each is unchanged at its saved place.
+        return outcome(
+            of: places,
+            position: places.position.map { Result(place: $0.savedPlace, finding: .unchanged) },
+            bookmarks: places.bookmarks.map { Result(place: $0.savedPlace, finding: .unchanged) },
+            skips: standing.map { $0.map { HeadingResult(heading: $0, finding: .unchanged) } },
+            in: newWords,
+            headings: newHeadings,
+            movedAt: date
+        )
+    }
+
+    /// Whether `place` stands in `words` as rule 1 settles it as unchanged:
+    /// its saved words mark the end of the book and it is at the new end, or
+    /// they hold a fine word and stand exactly around its numbers. A place
+    /// without saved words, or with words that hold no word (which stand
+    /// anywhere), needs the old text, so it does not stand.
+    private static func stays<Place: MovablePlace>(_ place: Place, in words: BookWords) -> Bool {
+        guard let anchor = place.anchor else { return false }
+        if anchor.marksEndOfBook { return words.isEnd(place.savedPlace) }
+        return !holdsNoWords(anchor) && anchor.stands(at: place.savedPlace, in: words.texts)
+    }
+
+    /// The outcome of moving `places`, given how each was found and the new
+    /// text (`new`, with its `headings`): the position's and each bookmark's
+    /// result, and each named skip's heading (nil when nothing names it, so
+    /// the skip waits). Moves each place (`moved`), takes each skip's heading
+    /// (`skip(of:keeping:in:)`), takes the skips that were waiting by the
+    /// waiting rule, keeps each heading ID once, and counts.
+    private static func outcome(
+        of places: Places,
+        position: Result?,
+        bookmarks: [Result],
+        skips: [HeadingResult?],
+        in new: BookWords,
+        headings: [Heading],
+        movedAt date: Date
+    ) -> Outcome {
+        var counts = Counts()
+        var moved = places
+
+        if let saved = places.position, let result = position {
+            moved.position = Self.moved(saved, to: result, at: date, in: new)
             counts.count(result.finding)
         }
-
-        var bookmarkFindings: [Finding] = []
-        moved.bookmarks = places.bookmarks.map { bookmark in
-            let result = relocate(bookmark.anchor, savedAt: TextPlace(chapter: bookmark.chapterIndex, offset: bookmark.characterOffset))
-            bookmarkFindings.append(result.finding)
+        moved.bookmarks = zip(places.bookmarks, bookmarks).map { bookmark, result in
             counts.count(result.finding)
-            return self.moved(bookmark, to: result)
+            return Self.moved(bookmark, to: result, in: new)
         }
 
-        // Each skip as it now is, with how it was found (nil while it waits).
-        let skips = places.skippedHeadings.map { skipped -> (skip: SkippedHeading, finding: Finding?) in
-            let result = relocate(skipped)
-            return (result.map { self.skip(of: $0.heading, keeping: skipped) } ?? skipped, result?.finding)
+        // Each skip as it now is, with how it was found (nil while it
+        // waits): the skips that named a heading first, as found; then the
+        // skips that were waiting, each by the waiting rule.
+        var kept = zip(places.skippedHeadings, skips).map { skipped, result -> (skip: SkippedHeading, finding: Finding?) in
+            (result.map { skip(of: $0.heading, keeping: skipped, in: new) } ?? skipped, result?.finding)
+        }
+        kept += places.waitingSkippedHeadings.map { waiting -> (skip: SkippedHeading, finding: Finding?) in
+            // The waiting rule: the skip names a heading again only when its
+            // heading stands in the new text exactly as it was skipped: a
+            // heading with its ID, the skip's saved words holding a word, and
+            // those words standing at its place. Never found in the old text
+            // (which did not hold its heading, or it would not wait, and where
+            // the next section that slid into its numbers has its ID), nor by
+            // its label, nor by its saved words alone.
+            guard let heading = standingHeading(of: waiting, among: headings, in: new.texts, requiringWords: true) else {
+                return (waiting, nil)
+            }
+            return (skip(of: heading, keeping: waiting, in: new), .unchanged)
         }
         // Each heading ID once: two skips that now name one heading are one,
         // the first kept; and a skip that names a heading wins over one that
         // waits whose saved ID that heading now has (the waiting skip's
         // section was removed, and the next one slid into its numbers).
-        let namingIDs = Set(skips.filter { $0.finding != nil }.map(\.skip.id))
+        let namingIDs = Set(kept.filter { $0.finding != nil }.map(\.skip.id))
         var keptIDs = Set<String>()
-        var skippedHeadingFindings: [Finding?] = []
-        moved.skippedHeadings = skips.compactMap { skip, finding in
-            guard finding != nil || !namingIDs.contains(skip.id), keptIDs.insert(skip.id).inserted else { return nil }
-            skippedHeadingFindings.append(finding)
+        var skippedHeadingFindings: [Finding] = []
+        moved.skippedHeadings = []
+        moved.waitingSkippedHeadings = []
+        for (skip, finding) in kept {
+            guard finding != nil || !namingIDs.contains(skip.id), keptIDs.insert(skip.id).inserted else { continue }
             counts.count(finding)
-            return skip
+            if let finding {
+                moved.skippedHeadings.append(skip)
+                skippedHeadingFindings.append(finding)
+            } else {
+                moved.waitingSkippedHeadings.append(skip)
+            }
         }
 
         return Outcome(
             places: moved,
-            positionFinding: positionFinding,
-            bookmarkFindings: bookmarkFindings,
+            positionFinding: position?.finding,
+            bookmarkFindings: bookmarks.map(\.finding),
             skippedHeadingFindings: skippedHeadingFindings,
             counts: counts
         )
     }
 
-    /// `place` (a reading position or a bookmark) at `result`'s place: its
-    /// chapter and offset, and its anchor captured there (its own when none
-    /// can be); everything else as it was.
-    private func moved<Place: MovablePlace>(_ place: Place, to result: Result) -> Place {
+    /// `place` (a reading position or a bookmark) at `result`'s place in
+    /// `new`: its chapter and offset, and its anchor captured there (its own
+    /// when none can be); everything else as it was.
+    private static func moved<Place: MovablePlace>(_ place: Place, to result: Result, in new: BookWords) -> Place {
         var moved = place
         moved.chapterIndex = result.place.chapter
         moved.characterOffset = result.place.offset
@@ -1210,32 +1348,31 @@ extension PlaceRelocator {
         return moved
     }
 
-    /// `position` at `result`'s place (`moved(_:to:)`), with its offset
-    /// across the whole book worked out anew when it kept one; dated `date`
-    /// when its chapter or offset changed, as `AudioEditPlaces.follow` dates
-    /// a moved position, so that it wins over an older copy in the checkpoint
-    /// journal's adoption or another Mac's index
+    /// `position` at `result`'s place in `new` (`moved(_:to:in:)`), with its
+    /// offset across the whole book worked out anew when it kept one; dated
+    /// `date` when its chapter or offset changed, as `AudioEditPlaces.follow`
+    /// dates a moved position, so that it wins over an older copy in the
+    /// checkpoint journal's adoption or another Mac's index
     /// (TEXT-ANCHORS-RESEARCH-2026-10-10.md); its time as it was when it
     /// stayed, and its heading index as it was.
-    private func moved(_ position: ReadingPosition, to result: Result, at date: Date) -> ReadingPosition {
-        var relocated = self.moved(position, to: result)
+    private static func moved(_ position: ReadingPosition, to result: Result, at date: Date, in new: BookWords) -> ReadingPosition {
+        var relocated = moved(position, to: result, in: new)
         relocated.globalCharacterOffset = position.globalCharacterOffset.map { _ in new.globalOffset(of: result.place) }
-        if result.place != TextPlace(chapter: position.chapterIndex, offset: position.characterOffset) {
+        if result.place != position.savedPlace {
             relocated.lastUpdated = date
         }
         return relocated
     }
 
-    /// The skip of `heading` in the new text, with the anchor at its start;
-    /// `skipped`'s own anchor when none can be captured there.
-    private func skip(of heading: Heading, keeping skipped: SkippedHeading) -> SkippedHeading {
-        let start = Self.start(of: heading)
-        return SkippedHeading(heading, anchor: TextAnchor(capturingAt: start, in: new) ?? skipped.anchor)
+    /// The skip of `heading` in the new text `new`, with the anchor at its
+    /// start; `skipped`'s own anchor when none can be captured there.
+    private static func skip(of heading: Heading, keeping skipped: SkippedHeading, in new: BookWords) -> SkippedHeading {
+        SkippedHeading(heading, anchor: TextAnchor(capturingAt: start(of: heading), in: new) ?? skipped.anchor)
     }
 }
 
 /// The fields a reading position and a bookmark share that moving a place
-/// sets (`PlaceRelocator.moved(_:to:)`), so that one function moves both.
+/// sets (`PlaceRelocator.moved(_:to:in:)`), so that one function moves both.
 fileprivate protocol MovablePlace {
     /// The chapter's index.
     var chapterIndex: Int { get set }
@@ -1243,6 +1380,11 @@ fileprivate protocol MovablePlace {
     var characterOffset: Int { get set }
     /// The place's saved words.
     var anchor: TextAnchor? { get set }
+}
+
+fileprivate extension MovablePlace {
+    /// Where the place was saved: its chapter and offset.
+    var savedPlace: TextPlace { TextPlace(chapter: chapterIndex, offset: characterOffset) }
 }
 
 extension ReadingPosition: MovablePlace {}

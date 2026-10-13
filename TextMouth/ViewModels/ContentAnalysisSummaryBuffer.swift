@@ -3,7 +3,8 @@ import Combine
 import Foundation
 
 /// The analysis fields a batch committed to one book's package record,
-/// on their way to the book's library row.
+/// and the places a rebuild moved (T06's branch D), on their way to the
+/// book's library row.
 ///
 /// Small, so it can wait: the full chapter and heading index is already on
 /// disk, released after each book instead of pinning the parser's memory
@@ -11,19 +12,29 @@ import Foundation
 struct ContentAnalysisSummary: Sendable {
     let bookID: UUID
     let fields: Book.ContentAnalysisFields
+    /// The places the rebuild behind this analysis moved and the record
+    /// took; nil when it moved none.
+    let movedPlaces: MovedPlaces?
 
     /// The analysis fields of `committed`, the book as its package records
-    /// it once the analysis is saved (`LibraryPersistenceService.saveContentAnalysis`).
-    init(committed: Book) {
+    /// it once the analysis is saved (`LibraryPersistenceService.saveContentAnalysis`),
+    /// and the places the rebuild moved, which the record took with them.
+    init(committed: Book, movedPlaces: MovedPlaces? = nil) {
         bookID = committed.id
         fields = committed.contentAnalysisFields
+        self.movedPlaces = movedPlaces
     }
 
     /// Gives `book`, the library row, the committed analysis fields and
-    /// nothing else. The row keeps its own reading state, settings, and
-    /// metadata, which are at least as new as its package's.
+    /// the moved places, and nothing else. The row keeps its own reading
+    /// state, settings, and metadata, which are at least as new as its
+    /// package's, except that it takes each moved place as the record did:
+    /// only where it still holds it as it was, so a place saved meanwhile wins.
     func apply(to book: inout Book) {
         book.contentAnalysisFields = fields
+        if let movedPlaces {
+            book.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
+        }
     }
 }
 

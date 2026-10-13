@@ -64,8 +64,9 @@ final class PlaceRelocatorHeadingTests: XCTestCase {
         XCTAssertNil(PlaceRelocator(oldTexts: mill, newTexts: mill).relocate(skipped))
         let outcome = PlaceRelocator(old: BookWords(texts: mill), new: BookWords(texts: mill))
             .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
-        XCTAssertEqual(outcome.places.skippedHeadings, [skipped])
-        XCTAssertEqual(outcome.skippedHeadingFindings, [nil])
+        XCTAssertEqual(outcome.places.waitingSkippedHeadings, [skipped])
+        XCTAssertEqual(outcome.places.skippedHeadings, [])
+        XCTAssertEqual(outcome.skippedHeadingFindings, [])
     }
 
     // MARK: - Following a Heading
@@ -256,8 +257,9 @@ final class PlaceRelocatorHeadingTests: XCTestCase {
         let skipped = try SavedPlace.skip(of: pumpHeading, in: first)
         let rebuilt = PlaceRelocator(oldTexts: first, newTexts: second, oldHeadings: [pumpHeading] + (try soupHeadings(first)), newHeadings: try soupHeadings(second))
             .relocate(PlaceRelocator.Places(skippedHeadings: [skipped]), movedAt: SavedPlace.moveDate)
-        XCTAssertEqual(rebuilt.places.skippedHeadings, [skipped])
-        XCTAssertEqual(rebuilt.skippedHeadingFindings, [nil])
+        XCTAssertEqual(rebuilt.places.waitingSkippedHeadings, [skipped])
+        XCTAssertEqual(rebuilt.places.skippedHeadings, [])
+        XCTAssertEqual(rebuilt.skippedHeadingFindings, [])
         for (old, new) in [(second, second), (second, third)] {
             let again = PlaceRelocator(oldTexts: old, newTexts: new, oldHeadings: try soupHeadings(old), newHeadings: try soupHeadings(new))
             XCTAssertNil(again.relocate(skipped), "a later rebuild")

@@ -141,7 +141,10 @@ final class TextAnchorCaptureLaunchTests: FeedItemIndexTestCase {
     /// that text, recording that it was measured in it ("3.0.3/1.0.0"),
     /// before the launch's cache batch rebuilds the text with this build's
     /// extraction: the launch's passes give places their words before any
-    /// text is rebuilt (T06, question 9).
+    /// text is rebuilt (T06, question 9): they are the older text's while the
+    /// batch's rebuild of the book is held. The rebuild then moves the place
+    /// onto the new text, which gives it the new text's words (T06's branch
+    /// D).
     @MainActor
     func testPlacesTakeTheirWordsBeforeTheCacheBatchRebuildsTheirText() throws {
         var book = try makePackagedBook(title: "Rebuilt Later", text: Self.ledger, cacheFormatVersion: "3.0.3")
@@ -151,17 +154,36 @@ final class TextAnchorCaptureLaunchTests: FeedItemIndexTestCase {
         book.readingPosition = ReadingPosition(chapterIndex: 0, characterOffset: 40)
         let model = makeModel(with: [book])
         let finished = expectation(description: "The launch's passes ended")
+        let measure = TextAnchor.measure(ofTextCachedBy: "3.0.3")
+        XCTAssertEqual(measure, "3.0.3/\(BookContentIndex.currentVersion)")
+        let held = holdCacheGeneration(of: book)
 
         model.updateContentCachesAndStatistics(access: .live) { finished.fulfill() }
+        // The batch is at work on the book and has not read its source yet:
+        // the place holds the older text's words, measured in it.
+        wait(for: [held.reached], timeout: 30)
+        XCTAssertEqual(
+            model.bookByID(book.id)?.readingPosition?.anchor,
+            oldText.anchor(at: TextPlace(chapter: 0, offset: 40), measuredIn: measure)
+        )
+        held.gate.signal()
         wait(for: [finished], timeout: 30)
 
         let row = try XCTUnwrap(model.bookByID(book.id))
-        let measure = TextAnchor.measure(ofTextCachedBy: "3.0.3")
-        XCTAssertEqual(measure, "3.0.3/\(BookContentIndex.currentVersion)")
-        XCTAssertEqual(row.readingPosition?.anchor, oldText.anchor(at: TextPlace(chapter: 0, offset: 40), measuredIn: measure))
         XCTAssertEqual(row.cacheFormatVersion, MarkdownCacheService.currentCacheVersion, "the cache was not rebuilt")
         let rebuilt = try MarkdownCacheService.loadFromCache(for: book)
         XCTAssertNotEqual(rebuilt.chapters.first?.text, oldText.chapters.first?.text, "the text was not rebuilt")
+        // The rebuild then moved the place (T06's branch D) from the words
+        // it took in the older text onto the new text, where it holds the
+        // new text's words, measured as this build measures.
+        let moved = try XCTUnwrap(row.readingPosition)
+        XCTAssertEqual(
+            moved.anchor,
+            rebuilt.anchor(
+                at: TextPlace(chapter: moved.chapterIndex, offset: moved.characterOffset),
+                measuredIn: TextAnchor.measure(ofTextCachedBy: MarkdownCacheService.currentCacheVersion)
+            )
+        )
     }
 
     // MARK: - Paths That Carry Places
@@ -277,17 +299,6 @@ final class TextAnchorCaptureLaunchTests: FeedItemIndexTestCase {
         var book = try makeTextBook(title: title)
         book.readingPosition = ReadingPosition(chapterIndex: 0, characterOffset: 40)
         return book
-    }
-
-    /// Holds `book`'s text in an Edit Text session, as the user's editor
-    /// holds it, until the test ends.
-    private func holdInAnEditSession(_ book: Book) {
-        let baseline = BookTextBaseline(
-            source: nil,
-            cache: FileFingerprint(stamp: FileStamp(byteCount: 0, modificationTimeNanoseconds: 0), digest: "")
-        )
-        BookTextEditSessions.shared.begin(book.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
-        addTeardownBlock { BookTextEditSessions.shared.end(book.id) }
     }
 
     /// Rewrites `book`'s bookInfo.json as a build before anchors wrote it:

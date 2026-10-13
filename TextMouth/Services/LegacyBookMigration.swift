@@ -673,17 +673,32 @@ extension FileImportService {
     /// The record takes the new cache version and statistics only once both
     /// are saved; otherwise it claims no new cache, so the library's cache
     /// pass builds one later. Returns a warning when that happens.
+    ///
+    /// A rebuild over an older content.md moves the book's saved places to
+    /// the new text (T06's branch D); the record takes them with the index,
+    /// and the copy of the old text goes once that save has succeeded.
     private static func buildTextCache(for book: inout Book) -> String? {
         var cached = book
-        guard let contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &cached) else {
+        let generated: MarkdownCacheService.GeneratedCache?
+        do {
+            generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &cached)
+        } catch {
+            MarkdownCacheService.logGenerationFailure(error, for: cached)
+            generated = nil
+        }
+        guard let generated else {
             return "Its text could not be prepared for reading yet; TextMouth will try again later."
         }
+        if let movedPlaces = generated.movedPlaces {
+            cached.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
+        }
         do {
-            try cached.saveBookInfoThrowing(contentIndex: contentIndex)
+            try cached.saveBookInfoThrowing(contentIndex: generated.content.contentIndex)
         } catch {
             return "Its reading index could not be saved, so TextMouth will build it again later. "
                 + error.localizedDescription
         }
+        generated.movedPlaces?.discardSnapshot()
         book = cached
         return nil
     }

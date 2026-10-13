@@ -1187,6 +1187,11 @@ final class ReaderViewModel: ObservableObject {
         let shouldPersistContentIndex: Bool
         /// The text cache format version the analysis vouches for.
         let cacheFormatVersion: String?
+        /// The book's places that a rebuild of its text during this load
+        /// moved (T06's branch D), already committed to the book's record,
+        /// for the reader to take on the main actor (`takeMovedPlaces(_:)`).
+        /// Nil when the load rebuilt nothing, or the book had none to move.
+        var movedPlaces: MovedPlaces? = nil
     }
 
     /// Start getting the book ready to read, showing Loading meanwhile.
@@ -1267,6 +1272,20 @@ final class ReaderViewModel: ObservableObject {
             regenerateTextCache: cacheOutdated,
             readingTexts: readingTexts
         )
+        // A rebuild of the text moved the book's places (T06's branch D):
+        // the record takes them with the rebuilt text's analysis, each only
+        // where it still holds it as it was, and the copy of the old text
+        // goes once they are written. When the write fails or is dropped,
+        // the copy stays and the next launch finishes the move. The reader
+        // takes them into its own copy back on the main actor.
+        if let moved = analysis.movedPlaces {
+            _ = try? LibraryPersistenceService.saveContentAnalysis(
+                for: book,
+                index: analysis.index,
+                cacheFormatVersion: analysis.cacheFormatVersion,
+                movedPlaces: moved
+            )
+        }
         // An audiobook with a transcript reads as text too (FR05): the
         // transcript's text is laid over its chapters for the reader to show,
         // while the book keeps playing its audio, and its index takes the
@@ -1298,7 +1317,8 @@ final class ReaderViewModel: ObservableObject {
                 || book.contentIndexVersion != BookContentIndex.currentVersion
                 || (!format.isAudio
                     && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion),
-            cacheFormatVersion: analysis.cacheFormatVersion
+            cacheFormatVersion: analysis.cacheFormatVersion,
+            movedPlaces: analysis.movedPlaces
         )
     }
 
@@ -1337,6 +1357,12 @@ final class ReaderViewModel: ObservableObject {
         content = parsed
         showEPUBMetadata()
         audioMetadata = loaded.audioTags.map { book.mergingEditableAudioMetadata($0) }
+
+        // The places a rebuild of the text moved come first, so that the
+        // opening place, the opened place's anchor (`noteLoadedTextForAnchors`),
+        // the anchor capture, and the position the load saves all read the
+        // moved ones, not the old numbers in the new text (T06's branch D).
+        takeMovedPlaces(loaded.movedPlaces)
 
         // Bring the saved place into the book as loaded: its chapters and
         // their lengths can change when the book is imported again or its

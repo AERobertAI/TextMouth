@@ -526,9 +526,10 @@ extension LibraryViewModel {
                 guard let committed = try LibraryPersistenceService.saveContentAnalysis(
                     for: book,
                     index: analysis.index,
-                    cacheFormatVersion: analysis.cacheFormatVersion
+                    cacheFormatVersion: analysis.cacheFormatVersion,
+                    movedPlaces: analysis.movedPlaces
                 ) else { return nil }
-                return ContentAnalysisSummary(committed: committed)
+                return ContentAnalysisSummary(committed: committed, movedPlaces: analysis.movedPlaces)
             }
         } catch where DatalessFiles.isDownloadRefusal(error) {
             skips.record(book)
@@ -540,9 +541,11 @@ extension LibraryViewModel {
     }
 
     /// Bring every book's row and text up to date, each pass on a
-    /// background queue: the metadata refresh first, which reads a book's
-    /// file again when an older reader read it and takes seconds
-    /// (`refreshOutdatedMetadata(access:then:)`), then the words of the
+    /// background queue: first the moves of places a stop left undone,
+    /// before any pass reads a book's places or text
+    /// (`finishLeftoverPlaceMoves(access:then:)`, T06), then the metadata
+    /// refresh, which reads a book's file again when an older reader read it
+    /// and takes seconds (`refreshOutdatedMetadata(access:then:)`), then the words of the
     /// places saved before anchors, from each book's text as it reads before
     /// any is rebuilt (`captureMissingTextAnchors(access:then:)`, T06), then
     /// the text caches, then the statistics, which can use them.
@@ -553,22 +556,28 @@ extension LibraryViewModel {
         access: MaintenanceFileAccess = .live,
         then completion: (@MainActor @Sendable () -> Void)? = nil
     ) {
-        refreshOutdatedMetadata(access: access) { [weak self] in
+        finishLeftoverPlaceMoves(access: access) { [weak self] in
             guard let self else {
                 completion?()
                 return
             }
-            self.captureMissingTextAnchors(access: access) { [weak self] _ in
+            self.refreshOutdatedMetadata(access: access) { [weak self] in
                 guard let self else {
                     completion?()
                     return
                 }
-                self.extractMissingContentCaches(access: access) { [weak self] in
+                self.captureMissingTextAnchors(access: access) { [weak self] _ in
                     guard let self else {
                         completion?()
                         return
                     }
-                    self.calculateMissingBookStats(access: access, then: completion)
+                    self.extractMissingContentCaches(access: access) { [weak self] in
+                        guard let self else {
+                            completion?()
+                            return
+                        }
+                        self.calculateMissingBookStats(access: access, then: completion)
+                    }
                 }
             }
         }
@@ -927,9 +936,12 @@ extension LibraryViewModel {
             // leaves the library version unchanged, so a later pass
             // tries again.
             guard let committed = try LibraryPersistenceService.saveContentAnalysis(
-                for: updatedBook, index: generated.content.contentIndex, cacheFormatVersion: currentVersion
+                for: updatedBook,
+                index: generated.content.contentIndex,
+                cacheFormatVersion: currentVersion,
+                movedPlaces: generated.movedPlaces
             ) else { return nil }
-            return ContentAnalysisSummary(committed: committed)
+            return ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces)
         } catch {
             // Leave the library version unchanged so startup retries
             // a book whose new index could not be committed.

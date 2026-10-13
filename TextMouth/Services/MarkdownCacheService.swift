@@ -60,6 +60,11 @@ enum MarkdownCacheService {
     struct GeneratedCache {
         var content: DocumentContent
         var report: ExtractionReport
+        /// The book's saved places, moved from its old text to the one just
+        /// written (T06's branch D); nil when nothing needed moving. The copy
+        /// of the old text stays until the book's record holds them, so the
+        /// caller commits them (`MovedPlaces.discardSnapshot()` after).
+        var movedPlaces: MovedPlaces? = nil
     }
 
     // MARK: - Cache Generation
@@ -71,12 +76,13 @@ enum MarkdownCacheService {
         generateCacheContent(for: book) != nil
     }
 
-    /// Generate the cache and its reading content together, treating any
-    /// failure as no cache. Chapters the source could not supply are still
-    /// recorded in the debug log (see `generateReportedCacheContent`).
-    static func generateCacheContent(for book: Book) -> DocumentContent? {
+    /// Generate the cache and its reading content together, with the book's
+    /// places moved to the new text, treating any failure as no cache.
+    /// Chapters the source could not supply are still recorded in the debug
+    /// log (see `generateReportedCacheContent`).
+    static func generateCacheContent(for book: Book) -> GeneratedCache? {
         do {
-            return try generateReportedCacheContent(for: book)?.content
+            return try generateReportedCacheContent(for: book)
         } catch {
             logGenerationFailure(error, for: book)
             return nil
@@ -105,6 +111,10 @@ enum MarkdownCacheService {
     /// what the user saved in content.md is kept beside it before anything
     /// replaces it, and an edit not taken is never replaced at all
     /// (`BookTextEditSessions.permitTextRebuild(of:writing:)`).
+    /// Each one also copies the old content.md aside with the book's places
+    /// and moves them to the new text (T06's branch D, `PlaceSnapshot`),
+    /// returned in `movedPlaces` for the caller to commit with the book's
+    /// analysis; the copy stays until the record holds them.
     /// Every generation is storage work (TODO S04): a data-directory move
     /// waits for it, so its cache lands where it chose to write it, and one
     /// started during a move waits until the move has published. A book
@@ -168,7 +178,15 @@ enum MarkdownCacheService {
         // made while the source was read is not missed.
         let edits = BookTextEditSessions.shared
         try edits.permitTextRebuild(of: book, writing: bytes)
-        try bytes.write(to: cachePath, options: .atomic)
+        // The book's places are copied aside with the old text, so they can
+        // be moved to the new one; a failed write leaves no copy behind.
+        let snapshot = keptPlaceSnapshot(of: book, replacing: cachePath, with: bytes)
+        do {
+            try bytes.write(to: cachePath, options: .atomic)
+        } catch {
+            snapshot?.discard()
+            throw error
+        }
         // The reading text this Mac kept for the book was read from the
         // content.md just replaced, so it goes now rather than at the next
         // open, which would find it no longer matches (PERF22).
@@ -181,7 +199,44 @@ enum MarkdownCacheService {
             title: parsed.title, author: parsed.author, chapters: parsed.chapters, contentIndex: index
         )
         logIncompleteContent(extracted.report, of: book)
-        return GeneratedCache(content: content, report: extracted.report)
+        // The places move from the copied old text to the text just written.
+        let movedPlaces = snapshot.flatMap { $0.movePlaces(to: content, at: Date()) }
+        return GeneratedCache(content: content, report: extracted.report, movedPlaces: movedPlaces)
+    }
+
+    /// Copies the book's old content.md aside with its saved places, before
+    /// a rebuild replaces it (T06's branch D), so the places can be moved to
+    /// the new text. Nil, with nothing copied, unless all of these hold,
+    /// checked cheapest first:
+    /// - the book holds a place to move;
+    /// - the book is not held by an Edit Text session, whose places that
+    ///   session moves;
+    /// - the old content.md exists and is on this Mac: one only in the cloud
+    ///   is never downloaded for this;
+    /// - the old content.md differs from `newBytes`: an unchanged text moves
+    ///   nothing.
+    /// A failure to read or copy the old text is logged once as
+    /// `PLACES_NOT_KEPT` and gives nil; the rebuild goes on, and the places
+    /// stay at their numbers, as before branch D.
+    private static func keptPlaceSnapshot(of book: Book, replacing cacheURL: URL, with newBytes: Data) -> PlaceSnapshot? {
+        guard book.holdsPlacesToMove,
+              !BookTextEditSessions.shared.isEditing(book.id),
+              FileManager.default.fileExists(atPath: cacheURL.path),
+              !DatalessFiles.isDataless(cacheURL)
+        else { return nil }
+        do {
+            // Read without asking the cloud to download anything.
+            let oldBytes = try DatalessFiles.withoutDownloading { try Data(contentsOf: cacheURL) }
+            guard oldBytes != newBytes else { return nil }
+            let record = PlaceSnapshot.Record(
+                bookID: book.id, title: book.title, author: book.author,
+                places: book.relocatablePlaces, takenAt: Date()
+            )
+            return try PlaceSnapshot.keep(textAt: cacheURL, record: record)
+        } catch {
+            DiagnosticLog.event(.storage, "PLACES_NOT_KEPT: \(book.title): \(error.localizedDescription)")
+            return nil
+        }
     }
 
     /// The fingerprint of a cache just written as `bytes` to `cacheURL` from

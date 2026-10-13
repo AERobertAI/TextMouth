@@ -599,6 +599,14 @@ enum MachineLocalPaths {
         root.appendingPathComponent("Working Copies", isDirectory: true)
     }
 
+    /// Books' old text, each copied aside with the book's saved places as
+    /// they were while a rebuild of its text moves them to the new text
+    /// (T06's branch D, `PlaceSnapshot`): this Mac's own, never in the data
+    /// directory, which a cloud library would upload.
+    static var placeSnapshots: URL {
+        root.appendingPathComponent("Place Snapshots", isDirectory: true)
+    }
+
     /// Archives being extracted for import, while the data directory is on
     /// the startup volume.
     static var archiveExtraction: URL {
