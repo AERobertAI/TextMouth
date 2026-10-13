@@ -433,24 +433,27 @@ struct LibraryCommands: Commands {
     }
 }
 
+/// The Bookmarks menu. Each item is titled from its action's name, the one
+/// the Shortcuts tab, config.json, and every message use, so the menu and
+/// the Shortcuts tab cannot drift apart again (#1937).
 struct BookmarkCommands: Commands {
     var body: some Commands {
         CommandMenu("Bookmarks") {
-            Button("Toggle Bookmark") {
+            Button(ShortcutAction.addBookmark.rawValue) {
                 NotificationCenter.default.post(name: .addBookmark, object: nil)
             }
 
-            Button("Show Bookmarks") {
+            Button(ShortcutAction.showBookmarkList.rawValue) {
                 NotificationCenter.default.post(name: .showBookmarkList, object: nil)
             }
 
             Divider()
 
-            Button("Next Bookmark") {
+            Button(ShortcutAction.nextBookmark.rawValue) {
                 NotificationCenter.default.post(name: .nextBookmark, object: nil)
             }
 
-            Button("Previous Bookmark") {
+            Button(ShortcutAction.previousBookmark.rawValue) {
                 NotificationCenter.default.post(name: .previousBookmark, object: nil)
             }
         }
