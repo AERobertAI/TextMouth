@@ -246,12 +246,6 @@ final class EPUBMetadataWritebackTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    /// The Alice EPUB in the repository's test data.
-    private static let aliceFixture = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .deletingLastPathComponent()
-        .appendingPathComponent("TestData/alice.epub")
-
     /// A managed EPUB book: a package in the isolated library holding a copy
     /// of the Alice EPUB as “alice.epub” and its bookInfo.json, removed when
     /// the test ends.
@@ -266,7 +260,7 @@ final class EPUBMetadataWritebackTests: XCTestCase {
             try? FileManager.default.removeItem(at: package)
         }
         let file = package.appendingPathComponent("alice.epub")
-        try FileManager.default.copyItem(at: Self.aliceFixture, to: file)
+        try FileManager.default.copyItem(at: requireFile("alice.epub"), to: file)
         let book = Book(
             title: "Alice's Adventures in Wonderland",
             author: "Lewis Carroll",

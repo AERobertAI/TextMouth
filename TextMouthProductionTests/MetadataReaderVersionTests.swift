@@ -47,9 +47,7 @@ final class MetadataReaderVersionTests: XCTestCase {
 
     /// An imported book's row is stamped with the reader that read its file.
     func testAnImportStampsTheRowWithTheReaderThatReadItsFile() throws {
-        let fixture = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("TestData/alice.epub")
+        let fixture = try requireFile("alice.epub")
         let copy = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).epub")
         try FileManager.default.copyItem(at: fixture, to: copy)
         addTeardownBlock { try? FileManager.default.removeItem(at: copy) }

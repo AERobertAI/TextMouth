@@ -235,17 +235,11 @@ final class ReaderEPUBMetadataTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    /// TestData's Alice EPUB.
-    private static let aliceFixture = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .deletingLastPathComponent()
-        .appendingPathComponent("TestData/alice.epub")
-
     /// A copy of the Alice EPUB, imported into `world` as the developer
     /// imports a book, so its row keeps the EPUB's metadata.
     private func importAlice(into world: IntegrationWorld) throws -> Book {
         let copy = try makeSandboxDirectory("Reader EPUB Metadata").appendingPathComponent("alice.epub")
-        try FileManager.default.copyItem(at: Self.aliceFixture, to: copy)
+        try FileManager.default.copyItem(at: requireFile("alice.epub"), to: copy)
         return try world.importBook(from: copy)
     }
 
