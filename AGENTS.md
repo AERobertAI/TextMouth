@@ -87,7 +87,7 @@ Main holds the record of the REV16 fixes, then, from the evening:
 
 - B07, the playback watchdog, memory guard, and sound effects off the main thread (d7f4f527, suite 6259 tests, 67 skipped, 0 failures), by agent `playbackwatch`; and B06, Ogg audio converted to AAC at import and once for the library (70a74208, suite 6284 tests, 64 skipped, 0 failures), by agent `oggtoaac`, after Apple's Vorbis decoder locked up in AVPlayer on October 14 and took the Mac down (see the TODO's B06 and B07). Never play Ogg through Apple's players in any test or experiment.
 
-No agent is in flight. Open from that evening: B08 (rendered speech can crash when the audio output stops cycling).
+B08, rendered speech's crash when the audio output stops cycling, was fixed the same evening (32dc2036, suite 6293 tests, 67 skipped, 0 failures) by a Sonnet agent the orchestrator reviewed. No agent is in flight.
 
 **Pending:**
 - the user's answers in `humanQuestions/2026-10-12.md` (13 small choices);
