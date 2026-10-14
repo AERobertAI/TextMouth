@@ -85,7 +85,9 @@ Main holds the record of the REV16 fixes, then, from the evening:
 
 - FR18, a manifest edited outside TextMouth taken as Edit Manifest takes a save, with a one-time pass keeping earlier hand edits (1744021a, October 14, suite 6230 tests, 67 skipped, 0 failures), by agent `outsideedits`, with its documentation.
 
-No agent is in flight.
+- B07, the playback watchdog, memory guard, and sound effects off the main thread (d7f4f527, suite 6259 tests, 67 skipped, 0 failures), by agent `playbackwatch`; and B06, Ogg audio converted to AAC at import and once for the library (70a74208, suite 6284 tests, 64 skipped, 0 failures), by agent `oggtoaac`, after Apple's Vorbis decoder locked up in AVPlayer on October 14 and took the Mac down (see the TODO's B06 and B07). Never play Ogg through Apple's players in any test or experiment.
+
+No agent is in flight. Open from that evening: B08 (rendered speech can crash when the audio output stops cycling).
 
 **Pending:**
 - the user's answers in `humanQuestions/2026-10-12.md` (13 small choices);
