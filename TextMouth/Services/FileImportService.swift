@@ -1144,7 +1144,9 @@ enum FileImportService {
     /// went (FR11, branch A2) gives the state of the record it replaces in
     /// `replacing` (`writeVerifiedRecord`), and puts the package in place of
     /// the kept one with `publish`, which otherwise renames the staged
-    /// package to its destination (`ImportStaging.publish()`).
+    /// package to its destination (`ImportStaging.publish()`). Ogg audio is
+    /// converted to AAC first, so no book is read or played from Ogg
+    /// (`convertOggAudio(of:in:run:)`, B06).
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
@@ -1154,6 +1156,7 @@ enum FileImportService {
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
+        try convertOggAudio(of: &staged, in: staging, run: &run)
         let content = try readableContent(of: &staged, run: &run)
         let book = staging.published(staged)
 

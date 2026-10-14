@@ -136,8 +136,8 @@ final class AudioDirectoryImportTests: XCTestCase {
     }
 
     /// An archive of real Ogg tracks, one Vorbis and one Opus, imports as
-    /// one audiobook with a heading for each track, each checked and
-    /// measured by AVFoundation as every track is. The fixtures are
+    /// one audiobook with a heading for each track, each converted to AAC,
+    /// checked, and measured by AVFoundation as every track is. The fixtures are
     /// two-second 440 Hz tones, made with ffmpeg 7.1:
     /// `ffmpeg -f lavfi -i "sine=frequency=440:duration=2:sample_rate=22050"
     /// -ac 1 -c:a libvorbis -q:a 0 ogg-vorbis-tone.ogg`, and the same at
@@ -170,6 +170,12 @@ final class AudioDirectoryImportTests: XCTestCase {
         XCTAssertEqual(book.format, .audio)
         XCTAssertEqual(loaded.content.chapters.map(\.title), ["elegy", "two"])
         XCTAssertEqual(loaded.audioFilePaths?.count, 2)
+        // The tracks were converted to AAC as they were imported (B06), so
+        // nothing hands Ogg audio to a player.
+        XCTAssertEqual(
+            loaded.audioFilePaths?.map { URL(fileURLWithPath: $0).lastPathComponent },
+            ["elegy.m4a", "two.m4a"]
+        )
         // Each two-second tone holds about 20 placeholder characters, at
         // 10 a second, whatever its codec's priming adds.
         for chapter in loaded.content.chapters {

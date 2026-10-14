@@ -96,7 +96,21 @@ enum ImportProgressWording {
     /// names the step by (`ImportStep.activity`), begun in lowercase, as in
     /// "reading its text" or "copying it into the library".
     static func step(_ step: ImportStep) -> String {
-        lowercasedFirst(step.activity)
+        let phrase = lowercasedFirst(step.activity)
+        // Converting a book of several tracks counts them, as in
+        // "converting its audio: 12 of 176 tracks"; one file needs no count.
+        guard case let .convertingOggAudio(done, total) = step, total > 1 else { return phrase }
+        return "\(phrase): \(tracks(done: done, of: total))"
+    }
+
+    /// What the tracks of a book being converted from Ogg to AAC are
+    /// counted by (B06).
+    static let trackNoun = CountWording.Noun(singular: "track", plural: "tracks")
+
+    /// The tracks converted of a book's total: "12 of 176 tracks", or "0 of
+    /// 1 track", as an import's line and the library's conversion say it.
+    static func tracks(done: Int, of total: Int) -> String {
+        CountWording.part(done, of: total, trackNoun)
     }
 
     /// `words` with their first letter in lowercase, to follow other words
