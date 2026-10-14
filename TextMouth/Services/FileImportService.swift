@@ -311,6 +311,27 @@ struct ZipImportResult {
     private static func lines(_ entries: [ZipImportFailure]) -> String {
         entries.map { "\($0.fileName): \($0.message)" }.joined(separator: "\n")
     }
+
+    /// The tag that starts the debug-log line recording how a ZIP batch
+    /// ended; tooling searches for it, so it never changes.
+    static let finishedLogTag = "ZIP_IMPORT_FINISHED"
+
+    /// The debug-log line recording how the batch of the archive named
+    /// `archiveName` ended, whatever it brought: its counts, whether a
+    /// cancel stopped it, and the files it passed over, by kind, as in
+    /// `ZIP_IMPORT_FINISHED: Radio.zip: imported=0 duplicates=0 failed=0
+    /// incomplete=0 cancelled=false notBooks=176 (ogg 176)`. Until
+    /// October 13, 2026 a batch that failed nowhere logged nothing, so a
+    /// batch that found no book left no trace to diagnose.
+    func logLine(archiveName: String) -> String {
+        let counts = "imported=\(books.count) duplicates=\(skippedDuplicates) failed=\(failures.count) "
+            + "incomplete=\(incompleteBooks.count) cancelled=\(cancellation != nil) notBooks=\(nonBookFiles.total)"
+        let kinds = nonBookFiles.kinds.map { kind in
+            "\(kind.fileExtension.isEmpty ? "no extension" : kind.fileExtension) \(kind.count)"
+        }
+        let passedOver = kinds.isEmpty ? "" : " (\(kinds.joined(separator: ", ")))"
+        return "\(Self.finishedLogTag): \(archiveName): \(counts)\(passedOver)"
+    }
 }
 
 /// How far a ZIP batch has got, told to the library's import overlay
@@ -1213,6 +1234,7 @@ enum FileImportService {
         if let cancellation = result.cancellation {
             ImportCancellation.log(zipURL.lastPathComponent, stopped: cancellation.logDetail)
         }
+        DiagnosticLog.event(.import, result.logLine(archiveName: zipURL.lastPathComponent))
         return result
     }
 

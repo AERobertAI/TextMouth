@@ -261,10 +261,11 @@ final class ZIPImportTests: XCTestCase {
 
     /// A batch that finds no book counts the files it passed over by
     /// extension, in any case, those in an archive inside it too, but not
-    /// hidden files or the copies macOS keeps in `__MACOSX`. On October 13,
-    /// 2026 a ZIP of 176 radio dramas as Ogg files, before TextMouth played
-    /// Ogg, was extracted, searched, and removed with nothing shown.
-    func testABatchWithoutABookCountsWhatItPassedOver() throws {
+    /// hidden files or the copies macOS keeps in `__MACOSX`, and its end is
+    /// logged whatever it brought. On October 13, 2026 a ZIP of 176 radio
+    /// dramas as Ogg files, before TextMouth played Ogg, was extracted,
+    /// searched, and removed with nothing logged or shown.
+    func testABatchWithoutABookCountsWhatItPassedOverAndLogsItsEnd() throws {
         let inner = try makeTemporaryZip(prefix: "NonBookInner", entries: [
             "cover.jpg": Data("jpeg".utf8),
             "readme": Data("no extension".utf8)
@@ -284,6 +285,15 @@ final class ZIPImportTests: XCTestCase {
 
         XCTAssertTrue(result.foundNoNewBook)
         XCTAssertEqual(result.nonBookFiles.countsByExtension, ["wma": 2, "json": 1, "jpg": 1, "": 1])
+        // Each log line starts with a timestamp; compare from the tag on.
+        let tag = "\(ZipImportResult.finishedLogTag): \(archive.lastPathComponent): "
+        let logged = debugLogLines(containing: tag).compactMap { line in
+            line.range(of: tag).map { String(line[$0.lowerBound...]) }
+        }
+        XCTAssertEqual(logged, [
+            tag + "imported=0 duplicates=0 failed=0 incomplete=0 cancelled=false "
+                + "notBooks=5 (wma 2, no extension 1, jpg 1, json 1)"
+        ])
     }
 
     /// The library alert's title goes back to "Error" once the alert
