@@ -2331,9 +2331,55 @@ extension ReaderViewModel {
         "Playback stopped: the audio stopped responding. Press Play to try again; "
         + "if it stops again, quit and reopen TextMouth."
 
+    /// What the listener is told when the memory guard stopped playback,
+    /// TextMouth's memory having grown to `footprint` bytes while it played
+    /// (B07): "Playback stopped because TextMouth's memory grew to 3.2 GB
+    /// while the audio played, a fault in macOS's audio."
+    nonisolated static func memoryRunawayMessage(footprint: UInt64) -> String {
+        "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB "
+            + "while the audio played, a fault in macOS's audio."
+    }
+
+    /// Stop playback because TextMouth's memory grew to `footprint` bytes
+    /// while it played (`PlaybackMemoryGuard`, B07), and say why.
+    ///
+    /// An audiobook stops through the failure path every audio failure
+    /// takes (`handleAudioPlaybackFailure(_:)`), its player let go of off
+    /// the main thread. Speech, or an audiobook waiting for its chapter with
+    /// no player, stops as Stop stops it, its sleep timer's countdown halted
+    /// as a failure halts it. A reader that is closed, or not playing, is
+    /// left alone.
+    func stopPlaybackForMemoryRunaway(footprint: UInt64) {
+        guard !hasClosed, isPlaybackUnderWay else { return }
+        if isAudioBook, audioPlaybackService.stopForMemoryRunaway(footprint: footprint) {
+            return
+        }
+        stop()
+        sleepTimerService.pauseCountdown(by: readerID)
+        let message = Self.memoryRunawayMessage(footprint: footprint)
+        errorMessage = message
+        announceToVoiceOver(message)
+    }
+
+    /// Tell `memoryGuard`, as this reader starts and stops playing, whether
+    /// it plays: playing and not paused, or waiting to play on. The guard
+    /// reads TextMouth's memory while any reader plays (B07). The reader
+    /// keeps the subscription returned.
+    func followPlaybackForMemoryGuard(_ memoryGuard: PlaybackMemoryGuard = .shared) -> AnyCancellable {
+        $isCurrentlyPlaying
+            .combineLatest($isCurrentlyPaused)
+            .map { isPlaying, isPaused in isPlaying && !isPaused }
+            .removeDuplicates()
+            .sink { [weak self] isPlaying in
+                guard let self else { return }
+                memoryGuard.reader(self, isPlaying: isPlaying, title: self.book.title)
+            }
+    }
+
     /// What the listener is told when a chapter's audio could not be
     /// played: the chapter, the file, what went wrong, and what to do; or,
-    /// when the system's audio stopped responding, that alone.
+    /// when the system's audio stopped responding, or the memory guard
+    /// stopped it, that alone.
     ///
     /// - Parameters:
     ///   - failure: What the audio service reported.
@@ -2351,6 +2397,8 @@ extension ReaderViewModel {
         case .stoppedResponding:
             // Not the file's fault, nor the chapter's: the system's audio.
             return audioStoppedRespondingMessage
+        case .memoryRunaway(let footprint):
+            return memoryRunawayMessage(footprint: footprint)
         case .fileMissing:
             if bookHasPackage {
                 problem += " from the book's package"
@@ -3543,3 +3591,10 @@ final class NextBookHandOver {
         ask()
     }
 }
+
+// MARK: - The Memory Guard
+
+/// A reader is watched by the memory guard (`PlaybackMemoryGuard`, B07),
+/// which stops it (`stopPlaybackForMemoryRunaway(footprint:)`) or saves its
+/// place (`savePosition()`) as TextMouth's memory runs away.
+extension ReaderViewModel: MemoryGuardedReader {}

@@ -488,6 +488,9 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
         /// zero: the system's audio stopped responding, as Apple's Vorbis
         /// decoder did on October 14, 2026, whatever the file (B07).
         case stoppedResponding
+        /// TextMouth's memory grew to `footprint` bytes while the audio
+        /// played, and the memory guard stopped playback (B07).
+        case memoryRunaway(footprint: UInt64)
     }
 
     /// What went wrong.
@@ -547,6 +550,8 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
             return "could not be read quickly enough"
         case .stoppedResponding:
             return "stopped responding"
+        case .memoryRunaway:
+            return "was stopped because TextMouth's memory grew too large"
         }
     }
 }
@@ -1143,6 +1148,21 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             }
             done?(Thread.isMainThread)
         }
+    }
+
+    /// Stop playback because TextMouth's memory grew to `footprint` bytes
+    /// while it played (`PlaybackMemoryGuard`, B07): reported as a
+    /// `.memoryRunaway` failure, through the path every failure takes, and
+    /// the player let go of off the main thread, as a player behind a
+    /// runaway may be stuck.
+    ///
+    /// - Returns: Whether playback was under way and has stopped; false
+    ///   when nothing was loaded to play.
+    @discardableResult
+    func stopForMemoryRunaway(footprint: UInt64) -> Bool {
+        guard isPlaying, let url = loadedURL else { return false }
+        reportFailure(AudioPlaybackFailure(reason: .memoryRunaway(footprint: footprint), url: url), playerMayBeStuck: true)
+        return true
     }
 
     /// Halt playback because of `failure`, then publish it and tell
