@@ -98,7 +98,7 @@ When a manifest has a mistake, the import stops at the first one, and its alert 
 
 - To a ZIP you already have: in Terminal, in the folder holding both, run `zip -j "My Tracks.zip" manifest.json`. The -j stores the manifest at the ZIP's top level. zip writes the whole archive again, which for a large ZIP takes a minute or two and needs as much free space as the ZIP.
 - Or unzip the tracks into a folder, put manifest.json in that folder, and compress the folder with Finder.
-- TextMouth takes the title, author, order, titles, and headings when it imports the ZIP, and reads the pauses again each time the book opens. To change a book you have already imported, edit its manifest with Edit Manifest in Default Editor (below); there is no need to import it again.
+- TextMouth takes the title, author, order, titles, and headings when it imports the ZIP, and reads the pauses again each time the book opens. To change a book you have already imported, edit its manifest with Edit Manifest in Default Editor, or edit it in Finder (both below); there is no need to import it again.
 
 ## Editing an imported book's manifest
 
@@ -109,4 +109,8 @@ When a manifest has a mistake, the import stops at the first one, and its alert 
 - Your place, bookmarks, and skipped headings stay on their tracks, at the same time into each; titles and group headings change only the headings.
 - A book open in a reader shows its new headings at once. One that is playing plays on without a break, then goes on to the next track in the new order.
 - The manifest's title and author are the book's: an edited manifest's become the book's, and a title or author you change in Book Info is written into the manifest at once.
+- The first time this version opens a library, a title or author you changed in Book Info before October 14, 2026, and that is recorded as yours, is written into the book's manifest, so it stays the book's; after that, a title or author changed in the manifest outside TextMouth becomes the book's.
 - A manifest can't add or remove tracks, and can't give segments.
+- You can also edit manifest.json yourself, in any editor, without the command. In Finder, choose Go to Folder… (Command-Shift-G) and go to the data directory, ~/.TextMouth unless you moved it, since a folder whose name starts with a dot is hidden. Open Library and the book's folder, choose Show Package Contents on the book's package (the folder ending in .tmb, named after its title, author, date added, and identifier), and open its audio folder. A book imported from a ZIP whose tracks were in one folder keeps its manifest inside that folder.
+- An edit made that way, in a library in the cloud on another Mac, or while TextMouth was closed, works as well as one made through Edit Manifest, with the same checks, the same announcements, and your place and bookmarks kept on their tracks. TextMouth notices it when the book opens, before it shows, so the book opens rearranged; when TextMouth becomes active while the book is open in a reader, including an edit of its pauses alone; and once at each launch.
+- TextMouth compares the manifest with the book, not its date, so a manifest that arranges the book as it shows, with its title and author, changes nothing. A book whose files are only in the cloud is looked at once they are on this Mac. A manifest that can't be read at all is a mistake, which VoiceOver says once each time TextMouth runs.
