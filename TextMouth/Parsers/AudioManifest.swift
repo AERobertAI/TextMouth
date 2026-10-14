@@ -35,10 +35,15 @@ struct AudioManifest: Codable {
     /// the key.
     var tracks: [AudioManifestEntry]?
 
-    /// The keys of a manifest's object, as manifest.json spells them.
+    /// The keys of a manifest's object, as manifest.json spells them, in
+    /// the order a problem lists them, the ones a person writes first.
     enum CodingKeys: String, CodingKey, CaseIterable {
-        case title, author, chapters, order, segments, pauseBetweenTracksMs, tracks
+        case title, author, tracks, pauseBetweenTracksMs, order, chapters, segments
     }
+
+    /// The pauses a manifest may give, in milliseconds: none at all, up to
+    /// one minute.
+    static let pauseRangeMs: ClosedRange<Double> = 0...60_000
 
     /// Whether `tracks` arranges the book: it is present, and neither
     /// `order` nor `chapters` is, which arranged books before it. An import

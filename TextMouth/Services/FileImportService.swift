@@ -1678,7 +1678,10 @@ enum FileImportService {
     /// bookInfo.json is on disk. The archive is extracted entry by entry
     /// within a budget (`ArchiveLimits`, TODO I05): one past the limits is
     /// refused before anything is written, and one whose sizes lie stops at
-    /// its first excess byte.
+    /// its first excess byte. A manifest.json in the archive is checked
+    /// before the book is read by it, and one with a mistake fails the
+    /// import at `.readingManifest`, saying what is wrong and where
+    /// (`AudioManifestCheck`).
     /// - Parameter observer: told as each step on the staged package begins.
     /// - Throws: an `ImportFailure` naming the archive and the step that
     ///   failed; whatever was staged is removed first.
@@ -1729,11 +1732,15 @@ enum FileImportService {
             )
 
             // A manifest beside the audio, or inside the archive's one
-            // folder, can name the book and its author; it is found where
-            // the book's reading finds it (`AudioManifest.read(inAudioFolder:)`).
+            // folder, can name the book and its author, and arranges its
+            // tracks; it is found where the book's reading finds it. One with
+            // a mistake stops the import here, before the book is read,
+            // saying what is wrong and where (`AudioManifestCheck`).
             var title = zipName
             var author = Book.unknownAuthor
-            if let manifest = AudioManifest.read(inAudioFolder: audioDirectory)?.manifest {
+            if let location = AudioManifestLocation.find(in: audioDirectory) {
+                try run.begin(.readingManifest, in: staging.directory)
+                let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory)
                 if let manifestTitle = manifest.title { title = manifestTitle }
                 if let manifestAuthor = manifest.author { author = manifestAuthor }
             }

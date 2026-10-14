@@ -65,6 +65,12 @@ enum AudioBookParser {
         }
     }
 
+    /// The path from `directory` of each track `audioFiles(in:)` finds
+    /// there, in Finder's order: "Disc 2/03.mp3".
+    static func trackPaths(in directory: URL) throws -> [String] {
+        try audioFiles(in: directory).map { relativeName(of: $0, in: directory) }
+    }
+
     /// Manifest filenames are relative to the audio directory, so tracks with
     /// the same basename on different discs remain distinct.
     private static func relativeName(of file: URL, in directory: URL) -> String {

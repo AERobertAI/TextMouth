@@ -19,6 +19,7 @@ final class ImportProgressWordingTests: XCTestCase {
             (.preparingPackage, "creating its package"),
             (.copying, "copying it into the library"),
             (.extractingArchive, "extracting the archive"),
+            (.readingManifest, "reading its manifest"),
             (.convertingAudio, "converting its DAISY audio"),
             (.checkingPackage, "checking the package"),
             (.readingText, "reading its text"),
