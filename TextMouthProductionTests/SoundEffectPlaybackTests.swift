@@ -31,7 +31,7 @@ final class SoundEffectPlaybackTests: XCTestCase {
         let askTook = ProcessInfo.processInfo.systemUptime - asked
 
         XCTAssertLessThan(askTook, 0.5, "asking for a sound waited for its play")
-        XCTAssertTrue(waitUntil { player.begun.count == 1 }, "the sound never began")
+        XCTAssertTrue(eventually { player.begun.count == 1 }, "the sound never began")
         let begun = try XCTUnwrap(player.begun.first)
         XCTAssertFalse(begun.onMainThread, "the sound played on the main thread")
         XCTAssertEqual(begun.url, SoundEffectService.soundFile(named: "Tink"))
@@ -50,7 +50,7 @@ final class SoundEffectPlaybackTests: XCTestCase {
 
         let lines = logLines(in: .debug) {
             sounds.play(for: .pause)
-            XCTAssertTrue(waitUntil { player.begun.count == 1 }, "the first sound never began")
+            XCTAssertTrue(eventually { player.begun.count == 1 }, "the first sound never began")
             sounds.play(for: .play)
             sounds.play(for: .skipForward)
             sounds.previewSound("Funk")
@@ -63,7 +63,7 @@ final class SoundEffectPlaybackTests: XCTestCase {
         // Released, the held play returns, and nothing queued behind it
         // follows.
         player.release()
-        XCTAssertTrue(waitUntil { !sounds.isPlayUnderWay }, "the held play never returned")
+        XCTAssertTrue(eventually { !sounds.isPlayUnderWay }, "the held play never returned")
         spinMainRunLoop(for: 0.2)
         XCTAssertEqual(player.begun.count, 1, "a dropped sound was queued and played later")
     }
@@ -76,14 +76,14 @@ final class SoundEffectPlaybackTests: XCTestCase {
         defer { player.release() }
         let sounds = makeSounds("sound-effects-play-again", playingThrough: player)
         sounds.play(for: .pause)
-        XCTAssertTrue(waitUntil { player.begun.count == 1 })
+        XCTAssertTrue(eventually { player.begun.count == 1 })
         sounds.play(for: .play)
 
         player.release()
-        XCTAssertTrue(waitUntil { !sounds.isPlayUnderWay }, "the held play never returned")
+        XCTAssertTrue(eventually { !sounds.isPlayUnderWay }, "the held play never returned")
         sounds.play(for: .skipBackward)
 
-        XCTAssertTrue(waitUntil { player.begun.count == 2 }, "no sound played after the stuck one returned")
+        XCTAssertTrue(eventually { player.begun.count == 2 }, "no sound played after the stuck one returned")
         XCTAssertEqual(player.begun.last?.url, SoundEffectService.soundFile(named: "Tink"))
     }
 
@@ -100,12 +100,12 @@ final class SoundEffectPlaybackTests: XCTestCase {
         sounds.assignments[.pause] = "None"
 
         sounds.play(for: .play)
-        XCTAssertTrue(waitUntil { player.begun.count == 1 && !sounds.isPlayUnderWay })
+        XCTAssertTrue(eventually { player.begun.count == 1 && !sounds.isPlayUnderWay })
         sounds.play(for: .pause)
         sounds.soundsEnabled = false
         sounds.play(for: .skipForward)
         sounds.previewSound("Funk")
-        XCTAssertTrue(waitUntil { player.begun.count == 2 && !sounds.isPlayUnderWay })
+        XCTAssertTrue(eventually { player.begun.count == 2 && !sounds.isPlayUnderWay })
         spinMainRunLoop(for: 0.2)
 
         XCTAssertEqual(player.begun.map(\.url.path), ["/System/Library/Sounds/Glass.aiff", "/System/Library/Sounds/Funk.aiff"])
@@ -147,19 +147,6 @@ final class SoundEffectPlaybackTests: XCTestCase {
     /// `player`.
     private func makeSounds(_ label: String, playingThrough player: HeldSoundEffectPlayer) -> SoundEffectService {
         SoundEffectService(preferences: makeSandboxedPreferences(label), player: player)
-    }
-
-    /// Run the main run loop until `condition` holds, for five seconds at
-    /// most.
-    ///
-    /// - Returns: Whether `condition` came to hold.
-    private func waitUntil(_ condition: () -> Bool) -> Bool {
-        let deadline = Date().addingTimeInterval(5)
-        while !condition() {
-            guard Date() < deadline else { return false }
-            RunLoop.main.run(until: Date().addingTimeInterval(0.01))
-        }
-        return true
     }
 }
 
