@@ -65,6 +65,12 @@ enum AudioBookParser {
         }
     }
 
+    /// The path from `directory` of each track `audioFiles(in:)` finds
+    /// there, in Finder's order: "Disc 2/03.mp3".
+    static func trackPaths(in directory: URL) throws -> [String] {
+        try audioFiles(in: directory).map { relativeName(of: $0, in: directory) }
+    }
+
     /// Manifest filenames are relative to the audio directory, so tracks with
     /// the same basename on different discs remain distinct.
     private static func relativeName(of file: URL, in directory: URL) -> String {
@@ -126,7 +132,13 @@ enum AudioBookParser {
     }
 
     /// Parse a directory of audio files as a multi-chapter audio book.
-    /// Files are ordered alphabetically unless a manifest.json is found.
+    /// Files are ordered alphabetically unless a manifest.json is found, at
+    /// the directory's top level or inside its one folder
+    /// (`AudioManifest.read(inAudioFolder:)`); the manifest names tracks by
+    /// their paths from the folder holding it, and arranges them
+    /// (`AudioTrackPlan`). Each track is a chapter, which opens with the
+    /// group heading the manifest begins there, if any, then the track's
+    /// own heading, both at the chapter's start.
     /// - Parameter prober: checks that each file plays and measures it,
     ///   probing each file once; the app's AVFoundation probe unless a test
     ///   stands in for it.
@@ -144,42 +156,39 @@ enum AudioBookParser {
         url: URL,
         prober: AudioMediaProber = .avFoundation
     ) async throws -> (content: DocumentContent, filePaths: [String], segments: [AudioSegment]?) {
-        let fm = FileManager.default
-        var audioFiles = try Self.audioFiles(in: url)
+        let audioFiles = try Self.audioFiles(in: url)
 
         guard !audioFiles.isEmpty else {
             throw AudioParseError.noAudioFiles
         }
+        // Each track's path from `url`, in Finder's order, as the files are.
+        let paths = audioFiles.map { relativeName(of: $0, in: url) }
 
-        // Check for manifest.json
-        let manifestURL = url.appendingPathComponent("manifest.json")
-        var chapterTitles: [String: String] = [:] // filename -> title
-
-        var manifest: AudioManifest?
-        if fm.fileExists(atPath: manifestURL.path),
-           let data = try? Data(contentsOf: manifestURL) {
-            manifest = try? JSONDecoder().decode(AudioManifest.self, from: data)
-            chapterTitles = manifest?.chapters ?? [:]
-            if let order = manifest?.order, !order.isEmpty {
-                // Reorder files according to manifest
-                let filesByName = Dictionary(uniqueKeysWithValues: audioFiles.map {
-                    (relativeName(of: $0, in: url), $0)
-                })
-                audioFiles = orderedFileNames(Array(filesByName.keys), manifestOrder: order)
-                    .compactMap { filesByName[$0] }
-            }
-        }
+        // The manifest, wherever it lies, names each track by its path from
+        // the folder holding it; each name it gives is turned into the
+        // track's path from `url`, as the tracks are named here.
+        let found = AudioManifest.read(inAudioFolder: url)
+        let manifest = found?.manifest
+        let pathOfTrack = { (name: String) in found?.location.path(ofTrackNamed: name) ?? name }
+        let nameOfTrack = { (path: String) in found?.location.name(ofTrackAt: path) ?? path }
 
         let overallTitle = manifest?.title ?? url.lastPathComponent
         let overallAuthor = manifest?.author ?? Book.unknownAuthor
 
         // If manifest has segments (DAISY-style sub-file chapters), use those
-        // instead of the one-file-per-chapter model
+        // instead of the one-file-per-chapter model. Their clips name files
+        // from the manifest's folder too.
         if let segments = manifest?.segments, !segments.isEmpty {
             let result = try await parseSegmentedAudio(
-                segments: segments,
+                segments: segments.map { segment in
+                    segment.mappingClips { clip in
+                        var located = clip
+                        located.file = pathOfTrack(clip.file)
+                        return located
+                    }
+                },
                 audioDir: url,
-                availableFiles: Set(audioFiles.map { relativeName(of: $0, in: url) }),
+                availableFiles: Set(paths),
                 title: overallTitle,
                 author: overallAuthor,
                 prober: prober
@@ -187,29 +196,49 @@ enum AudioBookParser {
             return (content: result.content, filePaths: result.filePaths, segments: result.segments)
         }
 
-        var chapters: [Chapter] = []
-        var filePaths: [String] = []
+        // The tracks in the order the book plays them, each with its title
+        // and headings, as the manifest arranges them; each is found again
+        // by its path from `url`, as every track the plan places is one of
+        // the folder's.
+        let filesByPath = Dictionary(uniqueKeysWithValues: zip(paths, audioFiles))
+        let plan = AudioTrackPlan(arranging: paths.map(nameOfTrack), by: manifest)
+        let tracks = plan.tracks.compactMap { planned -> (planned: AudioTrackPlan.Track, name: String, url: URL)? in
+            let path = pathOfTrack(planned.name)
+            return filesByPath[path].map { (planned: planned, name: path, url: $0) }
+        }
 
         // Every track is checked and measured before any becomes a heading,
         // so a damaged track fails the whole book, by its name in the book.
-        let tracks = audioFiles.map { (name: relativeName(of: $0, in: url), url: $0) }
-        let durations = try await playableDurations(of: tracks, prober: prober)
+        let durations = try await playableDurations(of: tracks.map { (name: $0.name, url: $0.url) }, prober: prober)
 
+        var chapters: [Chapter] = []
+        var filePaths: [String] = []
         for (index, (track, duration)) in zip(tracks, durations).enumerated() {
-            let title = chapterTitles[track.name] ?? track.url.deletingPathExtension().lastPathComponent
             let placeholderText = String(repeating: " ", count: max(1, placeholderLength(for: duration)))
-
-            let heading = Heading(level: 1, text: title, chapterIndex: index, characterOffset: 0)
             chapters.append(Chapter(
-                title: title,
+                title: track.planned.title,
                 text: placeholderText,
-                headings: [heading]
+                headings: Self.headings(of: track.planned, chapterIndex: index)
             ))
             filePaths.append(track.url.path)
         }
 
         let content = DocumentContent(title: overallTitle, author: overallAuthor, chapters: chapters)
         return (content: content, filePaths: filePaths, segments: nil)
+    }
+
+    /// The headings at the start of the chapter, number `chapterIndex`,
+    /// that plays `track`: the group heading the manifest begins there, at
+    /// level 1, then the track's own heading at its level. Both are at the
+    /// chapter's start, the group heading first, which every list of the
+    /// book's headings keeps.
+    static func headings(of track: AudioTrackPlan.Track, chapterIndex: Int) -> [Heading] {
+        var headings: [Heading] = []
+        if let group = track.groupHeading {
+            headings.append(Heading(level: 1, text: group, chapterIndex: chapterIndex, characterOffset: 0))
+        }
+        headings.append(Heading(level: track.level, text: track.title, chapterIndex: chapterIndex, characterOffset: 0))
+        return headings
     }
 
     /// Parse segmented audio where chapters are time ranges within audio files.
@@ -554,24 +583,4 @@ struct AudioSectionName: Equatable, Sendable {
             .trimmingCharacters(in: .whitespaces)
         return oneLine.isEmpty ? "untitled heading \(number)" : "heading “\(oneLine)”"
     }
-}
-
-// MARK: - Manifest
-
-/// Optional JSON manifest for ZIP-based audio books.
-/// Placed as manifest.json in the ZIP alongside audio files.
-struct AudioManifest: Codable {
-    /// Custom title for the audio book
-    var title: String?
-    /// Author/artist
-    var author: String?
-    /// Map of filename -> chapter title
-    var chapters: [String: String]?
-    /// Ordered list of filenames (overrides alphabetical)
-    var order: [String]?
-    /// Sub-file chapter segments for DAISY and other formats where
-    /// chapters are defined as time ranges within audio files rather
-    /// than whole-file boundaries. When present, this overrides the
-    /// simple one-file-per-chapter model.
-    var segments: [AudioSegment]?
 }

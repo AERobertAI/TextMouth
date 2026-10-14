@@ -32,6 +32,21 @@ final class AudioZIPClassificationTests: XCTestCase {
         XCTAssertTrue(LibraryViewModel.isAudioZip(url: zip))
     }
 
+    /// Finder's Compress command puts the tracks and a manifest made beside
+    /// them inside a folder of the archive's own: still one audiobook, which
+    /// the import arranges by the manifest found in that folder.
+    func testZIPWhoseOneFolderHoldsTracksAndAManifestIsClassifiedAsAudio() throws {
+        let zip = try makeZIP(entries: [
+            "Radio Plays/manifest.json": #"{"title": "Harbor Plays"}"#,
+            "Radio Plays/elegy.ogg": "first",
+            "Radio Plays/two.opus": "second"
+        ])
+        defer { try? FileManager.default.removeItem(at: zip) }
+
+        XCTAssertFalse(DAISYParser.isDAISYZip(url: zip))
+        XCTAssertTrue(LibraryViewModel.isAudioZip(url: zip))
+    }
+
     func testZIPMixingAudioAndReadableBookContentIsNotClassifiedAsAudio() throws {
         let zip = try makeZIP(entries: [
             "track1.mp3": "audio",

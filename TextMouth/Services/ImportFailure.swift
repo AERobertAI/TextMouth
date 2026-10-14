@@ -14,6 +14,9 @@ enum ImportStep: Equatable, Sendable {
     case copying
     /// Extracting a ZIP archive's audio into the package.
     case extractingArchive
+    /// Checking the manifest.json an archive of audio tracks carries, before
+    /// the book is read by it (`AudioManifestCheck`).
+    case readingManifest
     /// Converting a DAISY book's audio into TextMouth's audio layout.
     case convertingAudio
     /// Checking a .tmb package and the book it holds.
@@ -38,6 +41,7 @@ enum ImportStep: Equatable, Sendable {
         case .preparingPackage: return "Creating its package"
         case .copying: return "Copying it into the library"
         case .extractingArchive: return "Extracting the archive"
+        case .readingManifest: return "Reading its manifest"
         case .convertingAudio: return "Converting its DAISY audio"
         case .checkingPackage: return "Checking the package"
         case .readingText: return "Reading its text"

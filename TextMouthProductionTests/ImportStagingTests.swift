@@ -58,8 +58,8 @@ final class ImportStagingTests: XCTestCase {
     func testEveryStepIsNamedDistinctly() {
         let steps: [ImportStep] = [
             .checkingFormat, .readingSource, .preparingPackage, .copying, .extractingArchive,
-            .convertingAudio, .checkingPackage, .readingText, .readingAudio, .savingRecord,
-            .publishing, .reinstating
+            .readingManifest, .convertingAudio, .checkingPackage, .readingText, .readingAudio,
+            .savingRecord, .publishing, .reinstating
         ]
         XCTAssertEqual(Set(steps.map(\.activity)).count, steps.count)
         XCTAssertEqual(ImportStep.savingRecord.activity, "Saving its bookInfo.json file")

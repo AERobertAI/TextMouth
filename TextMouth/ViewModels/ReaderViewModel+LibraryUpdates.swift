@@ -134,14 +134,20 @@ extension ReaderViewModel {
     /// end before the move does, the move's end plays it
     /// (`startPlayHeldByWhereAmI()` leaves it to the move). The move once
     /// let it go here and played it as it ended, under the announcement.
+    ///
+    /// A chapter waiting out the pause after the chapter before it
+    /// (`isWaitingOutChapterPause`) would start from the files as they move,
+    /// so it stops waiting, set aside as playing audio is: the move's end
+    /// plays it from its start, at the package's new place.
     private func pauseAudioForPackageMove() {
         guard isAudioBook, audioPausedForMove == nil, !playsFromWorkingCopy else { return }
         let isPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
-        guard isPlaying || isWaitingForChapterDownload else { return }
+        guard isPlaying || isWaitingForChapterDownload || isWaitingOutChapterPause else { return }
         audioPausedForMove = AudioPausedForMove(volume: audioPlaybackService.intendedVolume)
         if !isChapterHeldByWhereAmI {
             stopWaitingForChapterDownload(because: "the book's package is moving")
         }
+        stopWaitingOutChapterPause(because: "the book's package is moving")
         audioPlaybackService.stop()
     }
 

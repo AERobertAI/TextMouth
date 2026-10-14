@@ -282,7 +282,9 @@ extension ReaderViewModel {
         play()
     }
 
-    /// Jump to the next subheading (level >= 2) after the current position
+    /// Jump to the next subheading (level >= 2) after the current position,
+    /// saying every heading that begins there
+    /// (`headingAnnouncement(arrivingAt:in:)`).
     func nextSubheading() {
         guard let content = content else { return }
         let allHeadings = content.allHeadings
@@ -294,11 +296,13 @@ extension ReaderViewModel {
         }) {
             let heading = allHeadings[nextIndex]
             navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
-            announceToVoiceOver("Heading: \(heading.text)")
+            announceToVoiceOver(Self.headingAnnouncement(arrivingAt: heading, in: allHeadings))
         }
     }
 
-    /// Jump to the previous subheading (level >= 2) before the current position
+    /// Jump to the previous subheading (level >= 2) before the current
+    /// position, saying every heading that begins there
+    /// (`headingAnnouncement(arrivingAt:in:)`).
     func previousSubheading() {
         guard let content = content else { return }
         let allHeadings = content.allHeadings
@@ -310,8 +314,30 @@ extension ReaderViewModel {
         }) {
             let heading = allHeadings[prevIndex]
             navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
-            announceToVoiceOver("Heading: \(heading.text)")
+            announceToVoiceOver(Self.headingAnnouncement(arrivingAt: heading, in: allHeadings))
         }
+    }
+
+    /// What VoiceOver hears on arriving at `heading`, one of `headings`, by a
+    /// heading or subheading jump: every heading that begins at its place,
+    /// the outermost first, as in "Heading: Season Two, Where Is
+    /// Everybody?", where a group heading of an audiobook's manifest and
+    /// its first track's heading begin together. A heading alone at its
+    /// place is said as it always was, "Heading: Elegy". Blank headings are
+    /// left out of a place they share; one alone is said as before.
+    nonisolated static func headingAnnouncement(arrivingAt heading: Heading, in headings: [Heading]) -> String {
+        let words = headingsSharingPlace(with: heading, in: headings).compactMap(\.text.nonBlank)
+        return "Heading: " + (words.isEmpty ? heading.text : words.joined(separator: ", "))
+    }
+
+    /// The headings of `headings` that begin where `heading` begins, itself
+    /// among them: the outermost (the lowest level) first, and headings of
+    /// one level in the order the list gives them.
+    nonisolated static func headingsSharingPlace(with heading: Heading, in headings: [Heading]) -> [Heading] {
+        headings.enumerated()
+            .filter { $0.element.chapterIndex == heading.chapterIndex && $0.element.characterOffset == heading.characterOffset }
+            .sorted { ($0.element.level, $0.offset) < ($1.element.level, $1.offset) }
+            .map(\.element)
     }
 
     // MARK: - Sentence Navigation
@@ -792,11 +818,15 @@ extension ReaderViewModel {
         savePosition()
     }
 
-    /// Jump to the next top-level heading after the current position
+    /// Jump to the next heading after the current position, of any level,
+    /// saying every heading that begins there
+    /// (`headingAnnouncement(arrivingAt:in:)`). Headings that share a place
+    /// are one stop: the next jump goes on to the next place.
     func nextHeading() {
         guard let content = content else { return }
+        let allHeadings = content.allHeadings
         if let heading = Self.nextHeading(
-            in: content.allHeadings,
+            in: allHeadings,
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset
         ) {
@@ -804,15 +834,18 @@ extension ReaderViewModel {
                 chapterIndex: heading.chapterIndex,
                 characterOffset: heading.characterOffset
             )
-            announceToVoiceOver("Heading: \(heading.text)")
+            announceToVoiceOver(Self.headingAnnouncement(arrivingAt: heading, in: allHeadings))
         }
     }
 
-    /// Jump to the previous top-level heading before the current position
+    /// Jump to the previous heading before the current position, of any
+    /// level, saying every heading that begins there
+    /// (`headingAnnouncement(arrivingAt:in:)`).
     func previousHeading() {
         guard let content = content else { return }
+        let allHeadings = content.allHeadings
         if let heading = Self.previousHeading(
-            in: content.allHeadings,
+            in: allHeadings,
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset
         ) {
@@ -820,7 +853,7 @@ extension ReaderViewModel {
                 chapterIndex: heading.chapterIndex,
                 characterOffset: heading.characterOffset
             )
-            announceToVoiceOver("Heading: \(heading.text)")
+            announceToVoiceOver(Self.headingAnnouncement(arrivingAt: heading, in: allHeadings))
         }
     }
 
@@ -872,6 +905,10 @@ extension ReaderViewModel {
         let characterOffset = clampedPosition.characterOffset
 
         if isAudioBook {
+            // During the pause between two chapters nothing plays, so a jump
+            // moves only the cursor, and the chapter waiting out the pause
+            // starts from wherever the jump went once the pause is over
+            // (`startCursorChapter(afterPause:)`).
             let wasPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
             if chapterIndex != currentChapterIndex {
                 audioPlaybackService.stop()
