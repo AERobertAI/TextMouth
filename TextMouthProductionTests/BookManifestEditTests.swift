@@ -101,4 +101,293 @@ final class BookManifestEditTests: XCTestCase {
         XCTAssertTrue(store.contains(tracks.id))
         XCTAssertFalse(store.contains(single.id))
     }
+
+    // MARK: - The Commands (Item 2)
+
+    /// The commands, the explanation, and the app chooser are worded as
+    /// Edit Text's are, for a manifest, and VoiceOver hears "Manifest
+    /// updated" when an edit is taken.
+    func testTheCommandsAreWordedForAManifest() {
+        XCTAssertEqual(BookManifestEditWording.editTitle, "Edit Manifest in Default Editor")
+        XCTAssertEqual(BookManifestEditWording.editWithTitle, "Edit Manifest With…")
+        XCTAssertEqual(BookManifestEditWording.explanationTitle(bookTitle: "Tide Tables"), "Edit the Manifest of Tide Tables?")
+        XCTAssertEqual(BookManifestEditWording.appPanelTitle, "Edit Manifest With")
+        XCTAssertEqual(
+            BookManifestEditWording.appPanelMessage(bookTitle: "Tide Tables"),
+            "Choose the app to edit the manifest of Tide Tables with."
+        )
+        XCTAssertEqual(BookManifestEditWording.updated, "Manifest updated")
+        XCTAssertTrue(BookManifestEditWording.explanation.hasSuffix("This explanation appears only once."))
+        XCTAssertTrue(
+            ConfigService.AppConfig.Portability.localStoreKeys.contains(BookManifestEditor.explainedPreference.key),
+            "Whether Edit Manifest explained itself would travel in config.json"
+        )
+    }
+
+    /// The first Edit Manifest explains itself and opens the manifest with
+    /// the default app; the next opens it at once; Edit Manifest With… asks
+    /// for the app and opens it there. The book's manifest is opened as it
+    /// is, never written again.
+    func testEditManifestExplainsItselfOnceThenOpensTheManifest() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Opens")
+        let manifestText = #"{"title": "Tide Tables", "tracks": ["02.wav", "01.wav"]}"#
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [0.2, 0.2], manifest: manifestText)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let manifest = book.bookFileURL.appendingPathComponent(AudioManifest.fileName)
+
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let textEdit = URL(fileURLWithPath: "/System/Applications/TextEdit.app")
+        editor.recorder.chosenApp = textEdit
+        await editor.editor.edit(book, choosingApp: true, in: world.library, from: nil)
+
+        XCTAssertEqual(editor.recorder.explained, ["Tide Tables"], "The explanation was not given once")
+        XCTAssertEqual(editor.recorder.choseAppFor, ["Tide Tables"])
+        XCTAssertEqual(editor.recorder.opened.map(\.file.standardizedFileURL), Array(repeating: manifest.standardizedFileURL, count: 3))
+        XCTAssertEqual(editor.recorder.opened.map(\.app), [nil, nil, textEdit])
+        XCTAssertEqual(try String(contentsOf: manifest, encoding: .utf8), manifestText, "The book's manifest was written again")
+        XCTAssertTrue(editor.sessions.isEditing(book.id))
+    }
+
+    /// Cancelling the explanation, or the app chooser, opens nothing, starts
+    /// no session, and writes no manifest for a book without one.
+    func testCancellingOpensNothingAndWritesNothing() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Cancel")
+        let book = try world.makeSilentAudioBook(title: "Plain Tracks", trackDurations: [0.2, 0.2])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+
+        editor.recorder.goesOn = false
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        editor.recorder.goesOn = true
+        editor.recorder.chosenApp = nil
+        await editor.editor.edit(book, choosingApp: true, in: world.library, from: nil)
+
+        XCTAssertTrue(editor.recorder.opened.isEmpty)
+        XCTAssertFalse(editor.sessions.isEditing(book.id))
+        XCTAssertNil(AudioManifestLocation.find(in: book.bookFileURL), "A manifest was written for a book the user did not edit")
+    }
+
+    /// A book that is no audiobook of tracks says so and opens nothing, and
+    /// an editor that cannot open the manifest says why and ends the
+    /// session it began.
+    func testWhyNothingOpenedIsSaid() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Refused")
+        let single = try world.makeSilentAudioFileBook(title: "Single File", duration: 0.2)
+        let tracks = try world.makeSilentAudioBook(title: "Plain Tracks", trackDurations: [0.2])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+
+        await editor.editor.edit(single, choosingApp: false, in: world.library, from: nil)
+        editor.recorder.openError = CocoaError(.fileReadNoPermission)
+        await editor.editor.edit(tracks, choosingApp: false, in: world.library, from: nil)
+
+        XCTAssertTrue(editor.recorder.opened.isEmpty)
+        XCTAssertFalse(editor.sessions.isEditing(tracks.id), "A session outlived an editor that could not open")
+        XCTAssertEqual(announcements.messages.first, BookManifestEditWording.noManifest(bookTitle: "Single File"))
+        XCTAssertEqual(announcements.messages.count, 2)
+        XCTAssertTrue(announcements.messages.last?.hasPrefix("Couldn't open the manifest of Plain Tracks: ") == true)
+    }
+
+    // MARK: - A Manifest for a Book Without One (Item 3)
+
+    /// A book without a manifest is given one before it opens: its tracks in
+    /// the order they play, each with its heading's title, in the tracks
+    /// format, with its title and author, and no pause between tracks. Read
+    /// as the reader reads it, it changes nothing: the same headings, and
+    /// the tracks still play straight on into each other.
+    func testABookWithoutAManifestIsGivenOneThatChangesNothing() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Written")
+        let book = try world.makeSilentAudioBook(title: "Plain Tracks", trackDurations: [0.2, 0.3, 0.2])
+        let before = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+
+        let location = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL), "No manifest was written")
+        XCTAssertEqual(location.prefix, "")
+        XCTAssertEqual(editor.recorder.opened.map(\.file.standardizedFileURL), [location.url.standardizedFileURL])
+        let written = try AudioManifest.decoded(from: Data(contentsOf: location.url))
+        XCTAssertEqual(written.title, "Plain Tracks")
+        XCTAssertEqual(written.author, book.author)
+        XCTAssertEqual(written.pauseBetweenTracksMs, 0)
+        XCTAssertEqual(written.tracks, [
+            .track(AudioManifestTrack(file: "01.wav", title: "01")),
+            .track(AudioManifestTrack(file: "02.wav", title: "02")),
+            .track(AudioManifestTrack(file: "03.wav", title: "03"))
+        ])
+        XCTAssertNil(written.order)
+        XCTAssertNil(written.chapters)
+
+        let after = try BookContentAnalysisService.analyzeAudio(book: book, url: book.bookFileURL).index
+        XCTAssertEqual(after.allHeadings.map(\.text), before.allHeadings.map(\.text))
+        XCTAssertEqual(after.chapters.map(\.audioFilePath), before.chapters.map(\.audioFilePath))
+        let pauses = ChapterPauses.betweenTracks(of: after, inAudioFolder: book.bookFileURL)
+        XCTAssertEqual((0..<3).map { pauses.after(chapter: $0) }, [0, 0, 0], "The written manifest put pauses between the tracks")
+    }
+
+    /// A folder whose top level holds only one folder is given its manifest
+    /// inside that folder, where Finder's Compress command would have put
+    /// one, naming each track by its own name; the reader finds it there.
+    func testAWrappedFolderIsGivenItsManifestInsideItsOneFolder() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Wrapped")
+        let book = try makeWrappedAudioBook(in: world, title: "Wrapped Tracks", wrapper: "Disc One", tracks: ["b.wav", "a.wav"])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+
+        let location = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL))
+        XCTAssertEqual(location.prefix, "Disc One/")
+        let written = try AudioManifest.decoded(from: Data(contentsOf: location.url))
+        XCTAssertEqual(written.tracks, [
+            .track(AudioManifestTrack(file: "a.wav", title: "a")),
+            .track(AudioManifestTrack(file: "b.wav", title: "b"))
+        ])
+    }
+
+    // MARK: - Taking an Edit (Item 4)
+
+    /// An edit with a problem changes nothing: VoiceOver hears the problem
+    /// in the words an import uses, once for the same bytes, and the next
+    /// save, a good one, is taken: the book's headings are rebuilt in the
+    /// manifest's order, its record and row take them, and VoiceOver hears
+    /// "Manifest updated".
+    func testAnEditWithAProblemChangesNothingAndTheNextSaveIsTaken() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Takes")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.3, 0.4])
+        let indexBefore = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+
+        try save(#"{"titel": "Harbour Pilots"}"#, to: manifest)
+        let refused = await check(with: editor, in: announcements)
+        let problem = try XCTUnwrap(AudioManifestProblem.unknownKeys(["titel"], entry: nil).errorDescription)
+        XCTAssertEqual(refused, [BookManifestEditWording.notTaken(problem: problem, bookTitle: "Harbour Pilots")])
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.allHeadings.map(\.text), indexBefore.allHeadings.map(\.text))
+        let again = await check(with: editor, in: announcements)
+        XCTAssertEqual(again, [], "The same refused bytes were announced twice")
+
+        try save("""
+        {
+          "title": "Harbour Pilots",
+          "tracks": [
+            { "heading": "Night Watch" },
+            { "file": "03.wav", "title": "Third" },
+            "01.wav",
+            { "file": "02.wav", "title": "Second" }
+          ]
+        }
+        """, to: manifest)
+        let taken = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(taken, [BookManifestEditWording.updated])
+        let index = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        XCTAssertEqual(index.allHeadings.map(\.text), ["Night Watch", "Third", "01", "Second"])
+        XCTAssertEqual(index.chapters.map(\.audioFilePath), ["03.wav", "01.wav", "02.wav"])
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.audioDuration ?? 0, 0.9, accuracy: 0.05, "The row lost the book's duration")
+        XCTAssertTrue(editor.sessions.isEditing(book.id), "The session ended with the edit")
+    }
+
+    /// A manifest that would make the book's tracks into sections, as a
+    /// converted DAISY book's does, is refused, and the book keeps its
+    /// headings.
+    func testAnEditGivingSectionsIsRefused() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Sections")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.4, 0.2])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+
+        try save(#"{"segments": [{"title": "One", "file": "01.wav", "startTime": 0, "endTime": 0.2}]}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.notTaken(problem: BookManifestEditWording.sectionsGiven, bookTitle: "Harbour Pilots")])
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["01.wav", "02.wav"])
+    }
+
+    // MARK: - Helpers
+
+    /// An editor of the test's own, with what it was asked to do.
+    struct TestEditor {
+        let editor: BookManifestEditor
+        let recorder: EditorRecorder
+        let sessions: BookManifestEditSessions
+    }
+
+    /// An editor whose explanation, app chooser, and opener are a
+    /// recorder's, remembering its explanation in a sandboxed store, and
+    /// whose sessions are its own.
+    private func makeEditor() -> TestEditor {
+        let recorder = EditorRecorder()
+        let sessions = BookManifestEditSessions()
+        let editor = BookManifestEditor(
+            sessions: sessions,
+            preferences: makeSandboxedPreferences("Edit Manifest"),
+            notificationCenter: NotificationCenter(),
+            explain: { title, _ in recorder.explain(title) },
+            chooseApp: { title, _ in recorder.chooseApp(title) },
+            open: { file, app in try recorder.open(file, app) },
+            isAppActive: { true }
+        )
+        return TestEditor(editor: editor, recorder: recorder, sessions: sessions)
+    }
+
+    /// Saves `text` as the manifest at `url`, as an editor saves it: a new
+    /// file put in its place, a moment later than the last save, so its
+    /// stamp differs.
+    private func save(_ text: String, to url: URL) throws {
+        let later = Date().addingTimeInterval(1)
+        try Data(text.utf8).write(to: url, options: .atomic)
+        try FileManager.default.setAttributes([.modificationDate: later], ofItemAtPath: url.path)
+    }
+
+    /// Checks every book through `editor` as TextMouth becoming active does,
+    /// and returns what VoiceOver heard since, waiting a moment for it.
+    private func check(with editor: TestEditor, in announcements: AnnouncementCapture) async -> [String] {
+        let before = announcements.messages.count
+        editor.editor.appBecameActive()
+        // The check runs on the sessions' queue; a block queued after it
+        // runs once it has, and its report then reaches the main actor.
+        await withCheckedContinuation { continuation in
+            editor.sessions.queue.async { continuation.resume() }
+        }
+        _ = await eventually(timeout: 2) { announcements.messages.count > before }
+        return Array(announcements.messages.dropFirst(before))
+    }
+
+    /// An audiobook whose tracks, named `tracks`, are silent and lie in the
+    /// one folder `wrapper` of its audio folder, as Finder's Compress
+    /// command leaves a ZIP's tracks, indexed and listed in `world`.
+    private func makeWrappedAudioBook(in world: IntegrationWorld, title: String, wrapper: String, tracks: [String]) throws -> Book {
+        let packageName = "\(UUID().uuidString).tmb"
+        let audio = TextMouthPaths.tmbPath(folderPath: world.folder.path, tmbName: packageName)
+            .appendingPathComponent("audio", isDirectory: true)
+        for name in tracks {
+            try AudioTestFixtures.writeSilence(to: audio.appendingPathComponent(wrapper).appendingPathComponent(name), duration: 0.2)
+        }
+        let book = Book(
+            title: title,
+            format: .audio,
+            filePath: audio.path,
+            md5Hash: UUID().uuidString,
+            folderPath: world.folder.path,
+            tmbDirectoryName: packageName
+        )
+        try book.saveBookInfoThrowing(contentIndex: BookContentAnalysisService.load(book: book).index)
+        world.library.library.addBook(book)
+        return book
+    }
 }

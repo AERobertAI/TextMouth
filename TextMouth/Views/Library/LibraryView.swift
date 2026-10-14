@@ -273,6 +273,9 @@ struct LibraryView: View {
     /// Which audiobooks are transcribed or being transcribed (FR05),
     /// observed so the rows' notes follow.
     @ObservedObject private var transcribedBooks = TranscribedBooks.shared
+    /// Which audiobooks play a folder of tracks, whose manifest can be
+    /// edited (FR17).
+    @ObservedObject private var trackFolderBooks = TrackFolderBooks.shared
     /// Whether this Library window has closed. SwiftUI keeps a closed window
     /// and its views for the rest of the session, and every change to the
     /// library would still rebuild this list nobody can see, so a closed
@@ -1141,6 +1144,7 @@ struct LibraryView: View {
             livePosition: libraryViewModel.livePositions.entry(for: book.id),
             audioCommands: LibraryAudioCommand.commands(for: targets, isTranscribed: transcribedBooks.contains),
             transcriptionNote: transcribedBooks.note(for: book.id),
+            isTrackFolder: trackFolderBooks.contains(book.id),
             // The item's commands act on the row's own book alone.
             feedActions: isSelectionRow ? [] : feedActions,
             // Said in every view but the Reading List, where every book is in it.
@@ -1410,6 +1414,12 @@ struct LibraryView: View {
                 let window = hostWindow
                 Task {
                     await BookTextEditor.shared.edit(book, choosingApp: choosingApp, in: libraryViewModel, from: window)
+                }
+            },
+            editManifest: { book, choosingApp in
+                let window = hostWindow
+                Task {
+                    await BookManifestEditor.shared.edit(book, choosingApp: choosingApp, in: libraryViewModel, from: window)
                 }
             },
             performAudioCommand: { command in

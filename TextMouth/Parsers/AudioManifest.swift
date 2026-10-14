@@ -404,6 +404,21 @@ struct AudioManifestLocation: Equatable, Sendable {
         return AudioManifestLocation(url: inside, prefix: wrapper.lastPathComponent + "/")
     }
 
+    /// Where a manifest written for the audiobook folder `folder`, which has
+    /// none, goes so that `find(in:)` finds it (FR17): inside the folder's
+    /// one folder, where Finder's Compress command would have put one, when
+    /// the top level holds only that folder, so the manifest names the
+    /// tracks by their own names; otherwise at the top level.
+    static func forNewManifest(in folder: URL) -> AudioManifestLocation {
+        if let wrapper = onlyVisibleFolder(in: folder) {
+            return AudioManifestLocation(
+                url: wrapper.appendingPathComponent(AudioManifest.fileName),
+                prefix: wrapper.lastPathComponent + "/"
+            )
+        }
+        return AudioManifestLocation(url: folder.appendingPathComponent(AudioManifest.fileName), prefix: "")
+    }
+
     /// The track at `path`, relative to the audiobook's folder, as the
     /// manifest names it: relative to the folder holding the manifest.
     /// Every track lies inside that folder; a path outside it, which none

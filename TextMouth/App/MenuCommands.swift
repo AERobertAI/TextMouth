@@ -474,6 +474,20 @@ extension FocusedValues {
     }
 }
 
+/// Whether the book of the reader whose window is key is an audiobook of
+/// tracks whose manifest Edit Manifest can open (FR17). The reader
+/// publishes it as a scene value (`ReaderBookCommandsSupport`).
+struct CanEditBookManifestKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var canEditBookManifest: Bool? {
+        get { self[CanEditBookManifestKey.self] }
+        set { self[CanEditBookManifestKey.self] = newValue }
+    }
+}
+
 /// Whether the book of the reader whose window is key is an audiobook that
 /// Transcribe Audio… can transcribe (FR05). The reader publishes it as a
 /// scene value (`ReaderBookCommandsSupport`).
@@ -510,7 +524,8 @@ extension FocusedValues {
 /// audiobook's audio, cleans up its transcript, or deletes it, and Edit
 /// Audio… opens an audiobook in the audio editor (FR04);
 /// MenuVisibilityManager shows it only while a reader is in front. Edit
-/// Text is unavailable for an audiobook without a transcript, Transcribe
+/// Text is unavailable for an audiobook without a transcript, Edit Manifest
+/// for any book but an audiobook of tracks (FR17), Transcribe
 /// Audio… and Edit Audio… for a text book, and Clean Up Transcript
 /// (Experimental)… and Delete Transcript… for a book without a transcript.
 /// Move to Library… moves an episode or article out of its feed into a
@@ -518,6 +533,7 @@ extension FocusedValues {
 /// book.
 struct BookCommands: Commands {
     @FocusedValue(\.canEditBookText) var canEditBookText
+    @FocusedValue(\.canEditBookManifest) var canEditBookManifest
     @FocusedValue(\.canTranscribeBookAudio) var canTranscribeBookAudio
     @FocusedValue(\.canCleanUpBookTranscript) var canCleanUpBookTranscript
     @FocusedValue(\.canDeleteBookTranscript) var canDeleteBookTranscript
@@ -543,6 +559,18 @@ struct BookCommands: Commands {
                 NotificationCenter.default.post(name: .editBookTextWith, object: nil)
             }
             .disabled(canEditBookText != true)
+
+            // An audiobook of tracks' manifest.json in the user's own
+            // editor (FR17).
+            Button(BookManifestEditWording.editTitle) {
+                NotificationCenter.default.post(name: .editBookManifest, object: nil)
+            }
+            .disabled(canEditBookManifest != true)
+
+            Button(BookManifestEditWording.editWithTitle) {
+                NotificationCenter.default.post(name: .editBookManifestWith, object: nil)
+            }
+            .disabled(canEditBookManifest != true)
 
             Divider()
 
@@ -820,6 +848,12 @@ extension Notification.Name {
     /// Posted by Book > Edit Text With… (FR05): the key reader asks which
     /// app to open its book's text in.
     static let editBookTextWith = Notification.Name("editBookTextWith")
+    /// Posted by Book > Edit Manifest in Default Editor (FR17): the key
+    /// reader opens its audiobook's manifest.json in the default app for JSON.
+    static let editBookManifest = Notification.Name("editBookManifest")
+    /// Posted by Book > Edit Manifest With… (FR17): the key reader asks
+    /// which app to open its audiobook's manifest.json in.
+    static let editBookManifestWith = Notification.Name("editBookManifestWith")
     /// Posted by Book > Transcribe Audio… (FR05): the key reader opens the
     /// Transcribe Audio sheet for its audiobook.
     static let transcribeBookAudio = Notification.Name("transcribeBookAudio")
