@@ -54,7 +54,7 @@ struct TranscriptCleanupServices {
                 }
             }
             let editor = NSWorkspace.shared.urlForApplication(toOpen: .plainText)
-            try await BookTextEditor.openWithWorkspace(TextMouthPaths.transcriptCleanupRulesFile, app: editor)
+            try await PackageFileEditing.openWithWorkspace(TextMouthPaths.transcriptCleanupRulesFile, app: editor)
             return nil
         } catch {
             return error.localizedDescription
