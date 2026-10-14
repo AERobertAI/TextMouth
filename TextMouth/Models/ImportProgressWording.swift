@@ -253,7 +253,23 @@ enum ImportProgressWording {
     static func noBooksFound(in subject: String, holding files: NonBookFiles) -> String {
         let opening = noNewBooks(in: subject, alreadyInLibrary: 0)
         guard files.total > 0 else { return "\(opening) It holds no files." }
+        return "\(opening) It holds \(kindsHeld(files)), which TextMouth does not import."
+    }
 
+    /// That the folder `name`, chosen to import, holds no DAISY book and no
+    /// audio tracks to import as one book, and what it holds instead, as
+    /// `noBooksFound(in:holding:)` lists an archive's files (FR17): "“Harbor
+    /// Notes” holds no DAISY book and no audio tracks to import as one book.
+    /// It holds 1 .txt file."
+    static func noBookInFolder(named name: String, holding files: NonBookFiles) -> String {
+        let opening = "“\(name)” holds no DAISY book and no audio tracks to import as one book."
+        guard files.total > 0 else { return "\(opening) It holds no files." }
+        return "\(opening) It holds \(kindsHeld(files))."
+    }
+
+    /// The kinds of `files`, most first, as a sentence lists them: up to
+    /// `namedFileKinds` named, and the rest counted together.
+    private static func kindsHeld(_ files: NonBookFiles) -> String {
         let kinds = files.kinds
         var phrases = kinds.prefix(namedFileKinds).map { kind in
             kind.fileExtension.isEmpty
@@ -264,7 +280,7 @@ enum ImportProgressWording {
         if others > 0 {
             phrases.append(CountWording.phrase(others, singular: "other file", plural: "other files"))
         }
-        return "\(opening) It holds \(ListFormatter.localizedString(byJoining: phrases)), which TextMouth does not import."
+        return ListFormatter.localizedString(byJoining: phrases)
     }
 
     /// Announced as the import of one book that ran long ends: "Finished

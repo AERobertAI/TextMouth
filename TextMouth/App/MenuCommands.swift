@@ -270,7 +270,7 @@ struct LibraryCommands: Commands {
     /// The key Library window's selection, which the Remove command's title
     /// names as Delete Download for feed items alone (REV11 F2).
     @FocusedValue(\.libraryRemovalSelection) private var removalSelection
-    /// The shortcuts, observed so Import DAISY Folder's and Add Feed's key
+    /// The shortcuts, observed so Import Folder's and Add Feed's key
     /// equivalents follow a change at once (FR12's branch D).
     @ObservedObject var shortcuts: KeyboardShortcutManager
     /// The window in front, observed so those items act only where their
@@ -774,7 +774,7 @@ extension Notification.Name {
     /// Where Am I? announcement.
     static let whereAmIFull = Notification.Name("whereAmIFull")
     static let openBookFile = Notification.Name("openBookFile")
-    /// Posted by Library > Import DAISY Folder…. One Library window
+    /// Posted by Library > Import Folder…. One Library window
     /// presents the folder-only panel and imports the folders chosen.
     static let importDAISYFolder = Notification.Name("importDAISYFolder")
     static let showBookInfo = Notification.Name("showBookInfo")

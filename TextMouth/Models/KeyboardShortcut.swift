@@ -89,9 +89,12 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// Takes the selected books off the reading list (FR09). It has no key
     /// until the user gives it one in Settings.
     case removeFromReadingList = "Remove from Reading List"
-    /// Library > Import DAISY Folder…, a menu command whose key is its menu
-    /// item's key equivalent (FR12's branch D).
-    case importDAISYFolder = "Import DAISY Folder…"
+    /// Library > Import Folder…, a menu command whose key is its menu item's
+    /// key equivalent (FR12's branch D), for DAISY books and folders of audio
+    /// tracks (FR17). It was Import DAISY Folder… until October 14, 2026,
+    /// a name `formerNames` still reads, so a key the user gave it keeps
+    /// working.
+    case importDAISYFolder = "Import Folder…"
     /// Library > Add Feed…, a menu command whose key is its menu item's key
     /// equivalent (FR12's branch D).
     case addFeed = "Add Feed…"
@@ -1416,12 +1419,15 @@ extension ShortcutAction {
     /// The Record window's buttons were named under "Recording Window" until
     /// their group took the window's own name, New Recording (REV11). The
     /// bookmark command was named Add Bookmark until the Bookmarks menu's
-    /// name for it, Toggle Bookmark, became its one name (#1937).
+    /// name for it, Toggle Bookmark, became its one name (#1937). Import
+    /// Folder… was Import DAISY Folder… until it took folders of audio
+    /// tracks too (FR17).
     static let formerNames: [String: ShortcutAction] = [
         "Recording Window: Record": .recordingRecord,
         "Recording Window: Pause or Resume": .recordingPauseOrResume,
         "Recording Window: Stop": .recordingStop,
         "Add Bookmark": .addBookmark,
+        "Import DAISY Folder…": .importDAISYFolder,
     ]
 
     /// `name` as `named(_:)` compares names: in lower case, without an

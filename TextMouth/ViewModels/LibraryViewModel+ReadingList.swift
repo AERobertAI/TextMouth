@@ -99,7 +99,7 @@ extension LibraryViewModel {
     /// Adds `books`, which an import made with `request` has just put in the
     /// library, to the end of the reading list, in that order, when the
     /// import was made at the Reading List (`ImportRequest.addsToReadingList`,
-    /// FR09): Import Book, Open Book..., Import DAISY Folder…, or New from
+    /// FR09): Import Book, Open Book..., Import Folder…, or New from
     /// Text there. Since the list is no folder, VoiceOver then hears that
     /// they joined it and where the books themselves went
     /// (`ReadingListWording.importedAnnouncement`), at medium priority: it

@@ -178,8 +178,8 @@ final class DAISYPackageImportTests: XCTestCase {
             XCTAssertEqual((error as? ImportFailure)?.step, .checkingFormat)
             XCTAssertEqual(
                 error.localizedDescription,
-                "Could not import “Harbor Notes”. Checking its format failed: The folder is not a DAISY book: "
-                    + "it has no ncc.html or .opf file at its top level."
+                "Could not import “Harbor Notes”. Checking its format failed: “Harbor Notes” holds no DAISY book "
+                    + "and no audio tracks to import as one book. It holds 1 .txt file."
             )
         }
         XCTAssertEqual(try folderEntries(), [])
@@ -571,8 +571,8 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertTrue(eventually(within: 20) { model.showError }, "the import never reported its failure")
         XCTAssertEqual(
             model.errorMessage,
-            "Could not import “Harbor Notes”. Checking its format failed: The folder is not a DAISY book: "
-                + "it has no ncc.html or .opf file at its top level."
+            "Could not import “Harbor Notes”. Checking its format failed: “Harbor Notes” holds no DAISY book "
+                + "and no audio tracks to import as one book. It holds 1 .txt file."
         )
         XCTAssertTrue(model.library.books.isEmpty)
         XCTAssertEqual(try folderEntries(), [])
@@ -596,7 +596,7 @@ final class DAISYPackageImportTests: XCTestCase {
         libraryMenu.delegate?.menuNeedsUpdate?(libraryMenu)
 
         let item = try XCTUnwrap(
-            libraryMenu.items.first { $0.title == "Import DAISY Folder…" },
+            libraryMenu.items.first { $0.title == "Import Folder…" },
             "The Library menu holds \(libraryMenu.items.map(\.title))"
         )
         XCTAssertTrue(item.isEnabled)
@@ -647,11 +647,12 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertFalse(panel.canChooseFiles)
         XCTAssertTrue(panel.allowsMultipleSelection)
         XCTAssertFalse(panel.canCreateDirectories)
-        XCTAssertEqual(panel.title, "Import DAISY Folder")
+        XCTAssertEqual(panel.title, "Import Folder")
         XCTAssertEqual(panel.prompt, "Import")
         XCTAssertEqual(
             panel.message,
-            "Choose the folder of each DAISY book to import: the folder that holds its ncc.html or .opf file."
+            "Choose each folder to import: a DAISY book's folder, which holds its ncc.html or .opf file, "
+                + "or a folder of audio tracks, which becomes one audiobook."
         )
     }
 

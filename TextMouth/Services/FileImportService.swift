@@ -233,6 +233,20 @@ struct NonBookFiles: Equatable, Sendable {
     }
 }
 
+/// Why a folder chosen to import holds no book to import as one (FR17):
+/// neither a DAISY book nor audio tracks. It says what the folder holds,
+/// as a ZIP without a book does (`ImportProgressWording.noBookInFolder`).
+struct FolderWithoutBookError: LocalizedError, Equatable {
+    /// The folder's name.
+    let folderName: String
+    /// The files it holds, by kind.
+    let files: NonBookFiles
+
+    var errorDescription: String? {
+        ImportProgressWording.noBookInFolder(named: folderName, holding: files)
+    }
+}
+
 struct ZipImportResult {
     let books: [Book]
     let failures: [ZipImportFailure]
@@ -778,7 +792,12 @@ enum FileImportService {
         toFolder folderPath: String = "",
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
-        try ImportRun.perform(importing: sourceURL.lastPathComponent, observer: observer) { run in
+        // A folder of audio tracks that is no DAISY book imports as one
+        // audiobook, as a ZIP of the same tracks does (FR17, Part B).
+        if isFolderOfTracks(sourceURL) {
+            return try importAudioFolderWithReport(from: sourceURL, toFolder: folderPath, observer: observer)
+        }
+        return try ImportRun.perform(importing: sourceURL.lastPathComponent, observer: observer) { run in
             guard let format = BookFormat.detect(from: sourceURL) else {
                 throw unsupportedSourceError(for: sourceURL)
             }
@@ -918,18 +937,127 @@ enum FileImportService {
     }
 
     /// Why `source` cannot be imported when no format reads it: a folder
-    /// that is not a DAISY book is told so, in words; any other item's
-    /// extension is not supported. A TextMouth package is not a folder of
-    /// a book here: it is imported as a package, not as a file.
+    /// that is neither a DAISY book nor a folder of audio tracks is told so,
+    /// with what it holds, as a ZIP without a book is (FR17); any other
+    /// item's extension is not supported. A TextMouth package is not a
+    /// folder of a book here: it is imported as a package, not as a file.
     private static func unsupportedSourceError(for source: URL) -> Error {
         let ext = source.pathExtension.lowercased()
         var isDirectory: ObjCBool = false
         if ext != "tmb",
            FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory),
            isDirectory.boolValue {
-            return DAISYPackageError.notAPackage
+            return FolderWithoutBookError(folderName: source.lastPathComponent, files: filesHeld(by: source))
         }
         return FileImportError.unsupportedFormat(ext)
+    }
+
+    /// The visible files anywhere in `folder`, counted by kind: hidden
+    /// files, Finder's __MACOSX folder, and symbolic links are passed over,
+    /// as the tracks' discovery passes over them.
+    private static func filesHeld(by folder: URL) -> NonBookFiles {
+        var files = NonBookFiles()
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: folder,
+            includingPropertiesForKeys: Array(keys),
+            options: [.skipsHiddenFiles]
+        ) else { return files }
+        for case let item as URL in enumerator {
+            let values = try? item.resourceValues(forKeys: keys)
+            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
+                enumerator.skipDescendants()
+                continue
+            }
+            if values?.isRegularFile == true {
+                files.add(item)
+            }
+        }
+        return files
+    }
+
+    // MARK: Folders of Tracks (FR17, Part B)
+
+    /// Whether `source` is a folder holding audio tracks and no book any
+    /// format reads, a DAISY book's folder above all: the folder imports
+    /// as one audiobook (`importAudioFolderWithReport`). A TextMouth
+    /// package is never one.
+    static func isFolderOfTracks(_ source: URL) -> Bool {
+        guard source.pathExtension.lowercased() != "tmb", BookFormat.detect(from: source) == nil else { return false }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            return false
+        }
+        return !((try? AudioBookParser.audioFiles(in: source)) ?? []).isEmpty
+    }
+
+    /// Imports the folder of audio tracks `folder` as one audiobook, as a
+    /// ZIP of the same tracks imports (FR17, Part B): its tracks, and its
+    /// manifest wherever the reader finds it, are copied into the book's
+    /// package, laid out as in the folder; the manifest is checked as an
+    /// import checks one, and names the book, which otherwise takes the
+    /// folder's name; and the book is read as the reader will before it is
+    /// published. The folder itself is never changed. The book is known by
+    /// a checksum of its tracks' names and bytes and its manifest's
+    /// (`folderHash(of:in:)`), so the same folder imported twice is a
+    /// duplicate.
+    /// - Throws: an `ImportFailure` naming the folder and the step that
+    ///   failed; whatever was staged is removed first.
+    static func importAudioFolderWithReport(
+        from folder: URL,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil
+    ) throws -> ImportedBook {
+        try ImportRun.perform(importing: folder.lastPathComponent, observer: observer) { run in
+            try run.begin(.readingSource)
+            var paths = try AudioBookParser.trackPaths(in: folder)
+            if let location = AudioManifestLocation.find(in: folder) {
+                paths.append(location.prefix + AudioManifest.fileName)
+            }
+            let hash = try folderHash(of: paths, in: folder)
+            let bookID = UUID()
+            let dateAdded = Date()
+
+            try run.begin(.preparingPackage)
+            let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
+                title: folder.lastPathComponent,
+                author: Book.unknownAuthor,
+                dateAdded: dateAdded,
+                bookID: bookID,
+                folderPath: folderPath
+            ))
+            defer { staging.discard() }
+
+            try run.begin(.copying, in: staging.directory)
+            let audioDirectory = try makeAudioDirectory(in: staging)
+            for path in paths {
+                let destination = audioDirectory.appendingPathComponent(path)
+                try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try FileManager.default.copyItem(at: folder.appendingPathComponent(path), to: destination)
+            }
+            return try publishTracks(
+                titled: folder.lastPathComponent,
+                in: audioDirectory,
+                of: staging,
+                id: bookID,
+                md5Hash: hash,
+                folderPath: folderPath,
+                dateAdded: dateAdded,
+                source: folder,
+                run: &run
+            )
+        }
+    }
+
+    /// The checksum a folder of tracks is known by: the MD5 of each file's
+    /// path in the folder, `paths`, sorted, with the MD5 of its bytes, so a
+    /// folder holding the same files under the same names has the same one.
+    private static func folderHash(of paths: [String], in folder: URL) throws -> String {
+        var listing = ""
+        for path in paths.sorted() {
+            listing += "\(path)\n\(try md5Hash(of: folder.appendingPathComponent(path)))\n"
+        }
+        return FingerprintHasher.md5.digestOfData(Data(listing.utf8))
     }
 
     /// Imports text the reader typed or pasted as a plain-text book, staged
@@ -1731,36 +1859,61 @@ enum FileImportService {
                 progress: extraction
             )
 
-            // A manifest beside the audio, or inside the archive's one
-            // folder, can name the book and its author, and arranges its
-            // tracks; it is found where the book's reading finds it. One with
-            // a mistake stops the import here, before the book is read,
-            // saying what is wrong and where (`AudioManifestCheck`).
-            var title = zipName
-            var author = Book.unknownAuthor
-            if let location = AudioManifestLocation.find(in: audioDirectory) {
-                try run.begin(.readingManifest, in: staging.directory)
-                let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory)
-                if let manifestTitle = manifest.title { title = manifestTitle }
-                if let manifestAuthor = manifest.author { author = manifestAuthor }
-            }
-
-            // Reading the audio uses the reader's discovery rules (wrapper
-            // folders count; Finder metadata named like audio does not), so
-            // an archive with no playable track fails there.
-            let staged = stagedAudioBook(
+            return try publishTracks(
+                titled: zipName,
+                in: audioDirectory,
+                of: staging,
                 id: bookID,
-                title: title,
-                author: author,
-                audioDirectory: audioDirectory,
                 md5Hash: hash,
                 folderPath: folderPath,
                 dateAdded: dateAdded,
-                staging: staging,
-                source: zipURL
+                source: zipURL,
+                run: &run
             )
-            return try publishReadableBook(staged, from: staging, run: &run)
         }
+    }
+
+    /// The last steps of every import of a folder of tracks, from a ZIP or
+    /// from a folder (FR17), once the tracks lie in `audioDirectory` of
+    /// `staging`: a manifest beside them, or inside their one folder, found
+    /// where the book's reading finds it, can name the book (`title`
+    /// otherwise) and its author, and arranges its tracks. One with a
+    /// mistake stops the import here, before the book is read, saying what
+    /// is wrong and where (`AudioManifestCheck`). Reading the audio uses the
+    /// reader's discovery rules (wrapper folders count; Finder metadata
+    /// named like audio does not), so a folder with no playable track fails
+    /// there, and the book is published once it reads as the reader will.
+    private static func publishTracks(
+        titled title: String,
+        in audioDirectory: URL,
+        of staging: ImportStaging,
+        id bookID: UUID,
+        md5Hash hash: String,
+        folderPath: String,
+        dateAdded: Date,
+        source: URL,
+        run: inout ImportRun
+    ) throws -> ImportedBook {
+        var title = title
+        var author = Book.unknownAuthor
+        if let location = AudioManifestLocation.find(in: audioDirectory) {
+            try run.begin(.readingManifest, in: staging.directory)
+            let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory)
+            if let manifestTitle = manifest.title { title = manifestTitle }
+            if let manifestAuthor = manifest.author { author = manifestAuthor }
+        }
+        let staged = stagedAudioBook(
+            id: bookID,
+            title: title,
+            author: author,
+            audioDirectory: audioDirectory,
+            md5Hash: hash,
+            folderPath: folderPath,
+            dateAdded: dateAdded,
+            staging: staging,
+            source: source
+        )
+        return try publishReadableBook(staged, from: staging, run: &run)
     }
 
     /// Creates the folder an audio archive's tracks go in, inside `staging`.

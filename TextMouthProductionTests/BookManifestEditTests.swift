@@ -828,4 +828,76 @@ final class BookManifestEditTests: XCTestCase {
         world.library.library.addBook(book)
         return book
     }
+
+    // MARK: - Importing a Folder of Tracks (Part B, Item 8)
+
+    /// A folder of audio tracks without a manifest imports as one
+    /// audiobook titled by the folder's name, its tracks copied into the
+    /// book's package and played one per heading, in Finder's order; the
+    /// folder itself is left as it was, and Open Book's sources keep it whole.
+    func testAFolderOfTracksImportsAsOneAudiobook() throws {
+        let world = try makeIntegrationWorld("Folder Import Plain")
+        let folder = try makeSandboxDirectory("Folder Import Sources").appendingPathComponent("Night Ferries", isDirectory: true)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("Track 10.wav"), duration: 0.2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("Track 2.wav"), duration: 0.2)
+        let before = try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
+
+        XCTAssertEqual(LibraryViewModel.importSources(for: folder), [folder])
+        let book = try world.importBook(from: folder)
+
+        XCTAssertEqual(book.title, "Night Ferries")
+        XCTAssertEqual(book.format, .audio)
+        XCTAssertTrue(book.filePath.hasPrefix(book.tmbDirectory.path + "/"), "The tracks were not copied into the package")
+        let index = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        XCTAssertEqual(index.audioLayout, .multiFile)
+        XCTAssertEqual(index.allHeadings.map(\.text), ["Track 2", "Track 10"])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted(), before, "The folder was changed")
+        XCTAssertTrue(BookManifestEditing.hasTrackFolder(book), "The imported book's manifest cannot be edited")
+    }
+
+    /// A folder whose tracks and manifest lie in its one folder imports as
+    /// a ZIP made by Finder's Compress does: the manifest is found there,
+    /// copied with the tracks, and names the book, its author, and its
+    /// headings, in its order.
+    func testAFolderOfTracksTakesItsManifest() throws {
+        let world = try makeIntegrationWorld("Folder Import Manifest")
+        let folder = try makeSandboxDirectory("Folder Import Sources").appendingPathComponent("Downloads", isDirectory: true)
+        let radio = folder.appendingPathComponent("Radio", isDirectory: true)
+        try AudioTestFixtures.writeSilence(to: radio.appendingPathComponent("a.wav"), duration: 0.2)
+        try AudioTestFixtures.writeSilence(to: radio.appendingPathComponent("b.wav"), duration: 0.2)
+        try Data(#"{"title": "Radio Plays", "author": "Kwame Asante", "tracks": [{"file": "b.wav", "title": "Bravo"}, "a.wav"]}"#.utf8)
+            .write(to: radio.appendingPathComponent(AudioManifest.fileName))
+
+        let book = try world.importBook(from: folder)
+
+        XCTAssertEqual(book.title, "Radio Plays")
+        XCTAssertEqual(book.author, "Kwame Asante")
+        XCTAssertEqual(AudioManifestLocation.find(in: book.bookFileURL)?.prefix, "Radio/", "The manifest was not copied with the tracks")
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.allHeadings.map(\.text), ["Bravo", "a"])
+    }
+
+    /// A folder whose manifest has a mistake is refused at the manifest, in
+    /// the words a ZIP's import uses, and nothing is added.
+    func testAFolderWhoseManifestHasAMistakeIsRefusedAtItsManifest() throws {
+        let world = try makeIntegrationWorld("Folder Import Mistake")
+        let folder = try makeSandboxDirectory("Folder Import Sources").appendingPathComponent("Misspelled", isDirectory: true)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 0.2)
+        try Data(#"{"titel": "Misspelled"}"#.utf8).write(to: folder.appendingPathComponent(AudioManifest.fileName))
+
+        XCTAssertThrowsError(try world.importBook(from: folder)) { error in
+            XCTAssertEqual((error as? ImportFailure)?.step, .readingManifest)
+            let problem = AudioManifestProblem.unknownKeys(["titel"], entry: nil).errorDescription ?? "no problem"
+            XCTAssertTrue(error.localizedDescription.hasSuffix(problem), error.localizedDescription)
+        }
+        XCTAssertTrue(world.library.library.books.isEmpty)
+    }
+
+    /// Import DAISY Folder… is Import Folder… now, and the name it had still
+    /// names it, so a key the user gave it keeps working.
+    func testImportFolderKeepsTheKeyGivenToImportDAISYFolder() {
+        XCTAssertEqual(ShortcutAction.importDAISYFolder.title, "Import Folder…")
+        XCTAssertEqual(ShortcutAction.exactlyNamed("Import DAISY Folder…"), .importDAISYFolder)
+        XCTAssertEqual(ShortcutAction.named("import daisy folder"), .importDAISYFolder)
+        XCTAssertEqual(ShortcutAction.named("Import Folder..."), .importDAISYFolder)
+    }
 }
