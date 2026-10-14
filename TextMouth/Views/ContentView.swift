@@ -84,6 +84,20 @@ struct LibraryWindowView: View {
                         )
                     }
                 }
+
+                // The conversion of the library's Ogg audio to AAC, a book at
+                // a time, redrawn alone as each track is converted (B06)
+                ProgressObserver(progress: libraryViewModel.oggConversion) { conversion in
+                    if conversion.isConverting {
+                        ProgressOverlay(
+                            title: OggConversionProgress.title,
+                            current: conversion.current,
+                            total: conversion.total,
+                            message: conversion.message,
+                            itemNoun: OggConversionProgress.itemNoun
+                        )
+                    }
+                }
             }
         }
         .background(WindowAccessor(onWindowFound: { window in

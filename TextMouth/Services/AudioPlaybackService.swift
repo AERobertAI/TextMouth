@@ -883,6 +883,10 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     ) -> AudioPlaybackFailure.Reason? {
         // Every check follows symbolic links, so a broken link is missing.
         guard fileManager.fileExists(atPath: url.path) else { return .fileMissing }
+        // Ogg audio is never handed to a player (B06): Apple's Vorbis
+        // decoder locked up playing it. Every Ogg file is converted to AAC,
+        // and this refuses one that slipped through, as a last guard.
+        guard !OggAudioConverter.isOgg(url) else { return .fileUnreadable }
         let resourceValues = try? url.resolvingSymlinksInPath()
             .resourceValues(forKeys: [.isRegularFileKey])
         guard resourceValues?.isRegularFile == true,

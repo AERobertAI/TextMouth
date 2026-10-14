@@ -219,6 +219,10 @@ final class LibraryViewModel: ObservableObject {
     /// redraws only the views showing it, never this model's observers
     /// (TODO PERF12).
     let textExtraction = TextExtractionProgress()
+    /// The conversion of the library's Ogg audio to AAC (B06): which book
+    /// converts, which its reader refuses to play, and how far it has got,
+    /// which the Library window's overlay shows.
+    let oggConversion = OggConversionProgress()
     /// Whether a text extraction batch runs; a second is refused meanwhile.
     var isExtracting: Bool {
         textExtraction.isExtracting

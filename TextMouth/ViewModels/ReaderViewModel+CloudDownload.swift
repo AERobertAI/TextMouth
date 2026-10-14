@@ -742,8 +742,10 @@ extension ReaderViewModel {
     /// book downloads, with the same view, as a short pause, and the chapter
     /// plays once it is here; the reader shows Playing meanwhile. Offline,
     /// the download fails at once and the reader stops at the chapter with
-    /// the reason and Try Again.
+    /// the reason and Try Again. Before all that, nothing Ogg is handed to
+    /// the player (`chapterAudioIsClearOfOgg()`, B06).
     func chapterFilesReadyToPlay() -> Bool {
+        guard chapterAudioIsClearOfOgg() else { return false }
         guard checksChapterFiles else { return true }
         // A chapter download under way plays the cursor's chapter when it
         // is done.
