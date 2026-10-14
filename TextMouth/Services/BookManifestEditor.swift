@@ -196,6 +196,32 @@ final class BookManifestEditor {
         }
     }
 
+    // MARK: Edits Made Outside a Session (FR18)
+
+    /// Looks at `book`'s manifest for an edit made outside Edit Manifest,
+    /// off the main thread (`BookManifestEditSessions.scheduleLook`), and
+    /// acts on what was found in `library` as on a session's check: for a
+    /// book open in a reader as TextMouth becomes active, `pauses` being the
+    /// pauses the reader keeps between its tracks.
+    func lookForOutsideEdit(of book: Book, showingPauses pauses: ChapterPauses?, in library: LibraryViewModel) {
+        let bookID = book.id
+        sessions.scheduleLook(at: book, showingPauses: pauses) { found in
+            Task { @MainActor [weak self, weak library] in
+                guard let self, let library else { return }
+                self.handle(found, for: bookID, in: library)
+            }
+        }
+    }
+
+    /// Acts on what a look at the book `bookID` of `library` found, as on
+    /// what a session's check found (`handle(_:for:)`): an edit taken is
+    /// given to `library` and announced, and one refused is announced once
+    /// for the same bytes (FR18).
+    func handle(_ found: BookManifestEditCheck, for bookID: UUID, in library: LibraryViewModel) {
+        self.library = library
+        handle(found, for: bookID)
+    }
+
     // MARK: What a Check Found
 
     /// Acts on what a check of the book `bookID` found: an edit taken is

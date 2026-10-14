@@ -467,6 +467,10 @@ final class ReaderViewModel: ObservableObject {
     /// loading (FR17): shown once loading ends
     /// (`showManifestEditWaitingForLoad()`); nil the rest of the time.
     var manifestEditWaitingForLoad: BookManifestEdit?
+    /// The manifest editor that acts on what this reader's looks at its
+    /// audiobook's manifest find (FR18): the app's, unless a test gives
+    /// its own.
+    lazy var manifestEditor: BookManifestEditor = .shared
     /// Whether this reader's last load stopped because the book's content.md
     /// held an edit TextMouth could not take (`BookTextEditPending`, FR05),
     /// so the reader opens the book with the edit taken next
@@ -950,6 +954,12 @@ final class ReaderViewModel: ObservableObject {
     private func setupNotifications() {
         let nc = notificationCenter
 
+        // TextMouth becoming active looks for an edit of an open
+        // audiobook's manifest made meanwhile outside Edit Manifest (FR18).
+        nc.publisher(for: NSApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in self?.lookForOutsideManifestEdit() }
+            .store(in: &cancellables)
+
         nc.publisher(for: .togglePlayback)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
@@ -1222,6 +1232,11 @@ final class ReaderViewModel: ObservableObject {
         /// manifest, read afresh at every load, from the index or not
         /// (`ChapterPauses.betweenTracks(of:inAudioFolder:)`).
         var chapterPauses = ChapterPauses.none
+        /// What the look at an audiobook of tracks' manifest found before
+        /// the book was read (FR18): an edit made outside Edit Manifest,
+        /// taken or refused, for the manifest editor once the book shows;
+        /// nil for every other book.
+        var manifestLook: BookManifestEditCheck? = nil
     }
 
     /// Start getting the book ready to read, showing Loading meanwhile.
@@ -1305,6 +1320,23 @@ final class ReaderViewModel: ObservableObject {
             holdsTranscriptText = true
         case .readAsUsual:
             break
+        }
+        // An audiobook of tracks whose manifest was edited outside Edit
+        // Manifest (in an editor opened from Finder, on another Mac, or
+        // while TextMouth was closed) takes the edit before it is read, as
+        // a save through Edit Manifest is taken, so it opens rearranged
+        // (FR18). The edit is committed to the record, which this copy of
+        // the book follows, so the load reads the new index; the reader
+        // takes the moves of its places as it shows the book.
+        var manifestLook: BookManifestEditCheck?
+        if format.isAudio, BookManifestEditing.mayHaveTrackFolder(book) {
+            let found = BookManifestEditSessions.shared.look(at: book)
+            if case .adopted(let edit) = found {
+                book.contentAnalysisFields = edit.committed.contentAnalysisFields
+                book.title = edit.title ?? book.title
+                book.author = edit.author ?? book.author
+            }
+            manifestLook = found
         }
         let cacheOutdated = !format.isAudio
             && MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
@@ -1390,7 +1422,8 @@ final class ReaderViewModel: ObservableObject {
             movedPlaces: movedPlaces,
             // The manifest is read afresh, so a load from the saved index
             // keeps the pauses a fresh analysis would find.
-            chapterPauses: format.isAudio ? ChapterPauses.betweenTracks(of: analysis.index, inAudioFolder: url) : .none
+            chapterPauses: format.isAudio ? ChapterPauses.betweenTracks(of: analysis.index, inAudioFolder: url) : .none,
+            manifestLook: manifestLook
         )
     }
 
@@ -1438,6 +1471,11 @@ final class ReaderViewModel: ObservableObject {
         // old numbers in the new text (T06's branches D and E).
         for moved in loaded.movedPlaces {
             takeMovedPlaces(moved)
+        }
+        // So do the moves of an audiobook's places to their tracks that an
+        // edit of its manifest made, taken as the book loaded (FR18).
+        if case .adopted(let edit)? = loaded.manifestLook {
+            takeMovedTrackPlaces(edit.movedPlaces)
         }
 
         // Bring the saved place into the book as loaded: its chapters and
@@ -1498,6 +1536,9 @@ final class ReaderViewModel: ObservableObject {
         showEditedTextWaitingForLoad()
         showTranscriptWaitingForLoad()
         showManifestEditWaitingForLoad()
+        // An edit of the manifest the load took, or refused, is given to the
+        // library and announced now that the book shows (FR18).
+        reportManifestLookAtLoad(loaded.manifestLook)
     }
 
     /// Shows why the book at `filePath` could not be read, in place of the

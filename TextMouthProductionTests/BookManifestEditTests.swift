@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 @testable import TextMouth
 
@@ -899,5 +900,344 @@ final class BookManifestEditTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.exactlyNamed("Import DAISY Folder…"), .importDAISYFolder)
         XCTAssertEqual(ShortcutAction.named("import daisy folder"), .importDAISYFolder)
         XCTAssertEqual(ShortcutAction.named("Import Folder..."), .importDAISYFolder)
+    }
+
+    // MARK: - Edits Made Outside a Session (FR18, Item 1)
+
+    /// A manifest written with no session, as in an editor opened from
+    /// Finder, that reorders and retitles the tracks under a new group
+    /// heading and gives a new title and author, differs from its book and
+    /// is taken as a save through Edit Manifest is: the record and the row
+    /// take the new arrangement, title, and author, the position stays on
+    /// its track, and VoiceOver hears "Manifest updated".
+    func testAManifestEditedOutsideASessionIsTakenAsASaveIs() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Taken")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.3, 0.3, 0.3])
+        let offset = AudioBookParser.characterOffset(forTime: 0.2)
+        world.library.updateBook(id: book.id) { row in
+            row.readingPosition = ReadingPosition(chapterIndex: 2, characterOffset: offset)
+        }
+        LibraryPersistenceService.flushPendingSave()
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        try save(#"""
+        {
+          "title": "Tidal Pilots",
+          "author": "Ilse Varga",
+          "tracks": [{ "heading": "Night Watch" }, { "file": "03.wav", "title": "Third" }, "01.wav", "02.wav"]
+        }
+        """#, to: AudioManifestLocation.forNewManifest(in: book.bookFileURL).url)
+
+        let found = editor.sessions.look(at: try XCTUnwrap(world.library.bookByID(book.id)))
+        let heard = await handle(found, for: book.id, with: editor, in: world, announcements: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        let index = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        XCTAssertEqual(index.allHeadings.map(\.text), ["Night Watch", "Third", "01", "02"])
+        XCTAssertEqual(index.chapters.map(\.audioFilePath), ["03.wav", "01.wav", "02.wav"])
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.title, "Tidal Pilots")
+        XCTAssertEqual(row.author, "Ilse Varga")
+        XCTAssertEqual(row.readingPosition?.chapterIndex, 0, "The position left its track")
+        XCTAssertEqual(row.readingPosition?.characterOffset, offset, "The position left its time")
+        guard case .unchanged = editor.sessions.look(at: row) else {
+            return XCTFail("The manifest taken was taken again")
+        }
+    }
+
+    /// A manifest written outside a session with a mistake (a track the
+    /// folder does not hold) changes nothing: the book keeps its headings,
+    /// and VoiceOver hears the problem in the import's words once for the
+    /// same bytes, however often it is looked at.
+    func testAManifestEditedOutsideASessionWithAMistakeIsRefusedOnce() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Refused")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        let location = AudioManifestLocation.forNewManifest(in: book.bookFileURL)
+        try save(#"{"tracks": ["02.wav", "07.wav", "01.wav"]}"#, to: location.url)
+        let problem = try XCTUnwrap(refusal(of: location, in: book), "The import took the mistake")
+
+        var heard: [String] = []
+        for _ in 0..<2 {
+            let found = editor.sessions.look(at: book)
+            heard += await handle(found, for: book.id, with: editor, in: world, announcements: announcements)
+        }
+
+        XCTAssertEqual(heard, [BookManifestEditWording.notTaken(problem: problem, bookTitle: "Harbour Pilots")])
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["01.wav", "02.wav"])
+    }
+
+    /// A manifest that arranges its book as the book shows (the one Edit
+    /// Manifest writes for a book without one, and an older manifest in the
+    /// order and chapters keys) is left alone, its pauses too: nothing is
+    /// taken or announced, and neither the manifest nor the record changes.
+    func testAManifestThatMatchesItsBookTakesNothingAndWritesNothing() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Unchanged")
+        let older = try world.makeSilentAudioBook(
+            title: "Harbour Charts",
+            trackDurations: [0.2, 0.2],
+            manifest: #"{"order": ["02.wav", "01.wav"], "chapters": {"02.wav": "Second"}}"#
+        )
+        let written = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2])
+        try BookManifestFile.write(
+            BookManifestFile.generated(for: written, names: AudioBookParser.trackPaths(in: written.bookFileURL)),
+            at: AudioManifestLocation.forNewManifest(in: written.bookFileURL),
+            of: written.id,
+            sessions: BookManifestEditSessions()
+        )
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+
+        for book in [older, written] {
+            let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+            let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+            let before = try [Data(contentsOf: manifest), Data(contentsOf: record)]
+            let pauses = ChapterPauses.betweenTracks(
+                of: try XCTUnwrap(book.storedBookInfo()?.contentIndex),
+                inAudioFolder: book.bookFileURL
+            )
+            guard case .unchanged = editor.sessions.look(at: book, showingPauses: pauses) else {
+                return XCTFail("\(book.title)'s manifest was taken for an edit")
+            }
+            XCTAssertEqual(try [Data(contentsOf: manifest), Data(contentsOf: record)], before, "\(book.title) was written")
+        }
+    }
+
+    /// A book whose manifest is only in the cloud is left as it is, and
+    /// nothing of it is read (FR02).
+    func testAManifestOnlyInTheCloudIsNotLookedAt() throws {
+        let world = try makeIntegrationWorld("Outside Manifest Cloud")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2])
+        try save(#"{"tracks": ["02.wav", "01.wav"]}"#, to: AudioManifestLocation.forNewManifest(in: book.bookFileURL).url)
+
+        let found = BookManifestEditSessions.look(at: book) { $0.lastPathComponent == AudioManifest.fileName }
+
+        guard case .inCloud = found else { return XCTFail("A manifest only in the cloud was looked at: \(found)") }
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["01.wav", "02.wav"])
+    }
+
+    /// Hands `found`, what a look at the book `bookID` found, to `editor` as
+    /// the app does, and returns what VoiceOver heard since, waiting a moment
+    /// for it.
+    private func handle(
+        _ found: BookManifestEditCheck,
+        for bookID: UUID,
+        with editor: TestEditor,
+        in world: IntegrationWorld,
+        announcements: AnnouncementCapture
+    ) async -> [String] {
+        let before = announcements.messages.count
+        editor.editor.handle(found, for: bookID, in: world.library)
+        _ = await eventually(timeout: 1) { announcements.messages.count > before }
+        return Array(announcements.messages.dropFirst(before))
+    }
+
+    /// The problem an import finds with the manifest at `location` of
+    /// `book`'s tracks, in its words; nil when it finds none.
+    private func refusal(of location: AudioManifestLocation, in book: Book) -> String? {
+        do {
+            _ = try AudioManifestCheck.checkedManifest(at: location, audioFolder: book.bookFileURL)
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
+    // MARK: - When TextMouth Looks (FR18, Item 2)
+
+    /// A manifest rewritten while the book was closed (reordered, retitled,
+    /// under a new group heading, with a new title and author) is taken as
+    /// a reader opens the book, before it shows: the book opens rearranged,
+    /// its cursor and a bookmark on their tracks, the row takes the title
+    /// and author, and VoiceOver hears "Manifest updated".
+    func testAManifestEditedWhileTheBookWasClosedIsTakenAsItOpens() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Open")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.4, 0.4, 0.4])
+        let offset = AudioBookParser.characterOffset(forTime: 0.25)
+        let bookmarkOffset = AudioBookParser.characterOffset(forTime: 0.1)
+        world.library.updateBook(id: book.id) { row in
+            row.readingPosition = ReadingPosition(chapterIndex: 2, characterOffset: offset)
+            row.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: bookmarkOffset, label: "Pilot boat")]
+        }
+        LibraryPersistenceService.flushPendingSave()
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        try save(#"""
+        {
+          "title": "Tidal Pilots",
+          "author": "Ilse Varga",
+          "tracks": [{ "heading": "Night Watch" }, { "file": "03.wav", "title": "Third" }, "01.wav", "02.wav"]
+        }
+        """#, to: AudioManifestLocation.forNewManifest(in: book.bookFileURL).url)
+
+        let reader = world.openReader(for: try XCTUnwrap(world.library.bookByID(book.id)))
+        reader.manifestEditor = editor.editor
+        _ = try await loadedTrackFiles(of: reader, count: 3)
+        _ = await eventually(timeout: 2) { !announcements.messages.isEmpty }
+
+        XCTAssertEqual(reader.content?.contentIndex.allHeadings.map(\.text), ["Night Watch", "Third", "01", "02"])
+        XCTAssertEqual(reader.currentChapterIndex, 0, "The cursor left its track")
+        XCTAssertEqual(reader.currentCharacterOffset, offset, "The cursor left its time")
+        XCTAssertEqual(announcements.messages, [BookManifestEditWording.updated])
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.title, "Tidal Pilots")
+        XCTAssertEqual(row.author, "Ilse Varga")
+        XCTAssertEqual(row.bookmarks.map(\.chapterIndex), [1], "The bookmark left its track")
+        XCTAssertEqual(row.bookmarks.map(\.characterOffset), [bookmarkOffset])
+        XCTAssertEqual(row.readingPosition?.chapterIndex, 0, "The position left its track")
+    }
+
+    /// A manifest with a mistake, written while the book was closed, is
+    /// refused as a reader opens the book: the book opens as it was, and
+    /// VoiceOver hears the problem in the import's words, once.
+    func testAManifestWithAMistakeIsRefusedAsTheBookOpensAndItOpensAsItWas() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Open Refused")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.3, 0.3])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        let location = AudioManifestLocation.forNewManifest(in: book.bookFileURL)
+        try save(#"{"tracks": ["02.wav", "07.wav", "01.wav"]}"#, to: location.url)
+        let problem = try XCTUnwrap(refusal(of: location, in: book), "The import took the mistake")
+
+        let reader = world.openReader(for: book)
+        reader.manifestEditor = editor.editor
+        _ = try await loadedTrackFiles(of: reader, count: 2)
+        _ = await eventually(timeout: 2) { !announcements.messages.isEmpty }
+
+        XCTAssertEqual(reader.content?.contentIndex.chapters.map(\.audioFilePath), ["01.wav", "02.wav"])
+        XCTAssertEqual(announcements.messages, [BookManifestEditWording.notTaken(problem: problem, bookTitle: "Harbour Pilots")])
+    }
+
+    /// A book open while its manifest is edited outside TextMouth is
+    /// rearranged when TextMouth becomes active, and an edit of its pauses
+    /// alone is taken the same way.
+    func testAnOpenBookIsRearrangedWhenTextMouthBecomesActive() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Active")
+        let book = try world.makeSilentAudioBook(title: "Harbour Soundings", trackDurations: [0.4, 0.4, 0.4])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        let reader = world.openReader(for: book)
+        reader.manifestEditor = editor.editor
+        _ = try await loadedTrackFiles(of: reader, count: 3)
+        let manifest = AudioManifestLocation.forNewManifest(in: book.bookFileURL).url
+
+        try save(#"{"tracks": ["03.wav", "01.wav", "02.wav"]}"#, to: manifest)
+        let rearranged = await becomeActive(world) {
+            reader.content?.contentIndex.chapters.map(\.audioFilePath) == ["03.wav", "01.wav", "02.wav"]
+        }
+        XCTAssertTrue(rearranged, "The open book was not rearranged")
+
+        let pausesBefore = reader.chapterPauses
+        try save(#"{"pauseBetweenTracksMs": 2500, "tracks": ["03.wav", "01.wav", "02.wav"]}"#, to: manifest)
+        let index = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        let pauses = ChapterPauses.betweenTracks(of: index, inAudioFolder: book.bookFileURL)
+        XCTAssertNotEqual(pauses, pausesBefore, "The edit changed no pause")
+        let paused = await becomeActive(world) { reader.chapterPauses == pauses }
+        XCTAssertTrue(paused, "The open book's new pauses were not taken")
+        _ = await eventually(timeout: 2) { announcements.messages.count >= 2 }
+        XCTAssertEqual(announcements.messages, [BookManifestEditWording.updated, BookManifestEditWording.updated])
+    }
+
+    /// The launch's look takes an edit of a closed book's manifest, and
+    /// leaves a book whose manifest is only in the cloud as it is (FR02).
+    func testTheLaunchsLookTakesAnEditOfAClosedBook() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Launch")
+        let edited = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2, 0.2])
+        let inCloud = try world.makeSilentAudioBook(title: "Harbour Charts", trackDurations: [0.2, 0.2])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        try save(#"{"tracks": ["02.wav", "03.wav", "01.wav"]}"#, to: AudioManifestLocation.forNewManifest(in: edited.bookFileURL).url)
+        let cloudManifest = AudioManifestLocation.forNewManifest(in: inCloud.bookFileURL).url
+        try save(#"{"tracks": ["02.wav", "01.wav"]}"#, to: cloudManifest)
+        let access = MaintenanceFileAccess(isDataless: { $0.standardizedFileURL == cloudManifest.standardizedFileURL })
+
+        let looked = expectation(description: "The launch's look ended")
+        world.library.takeOutsideManifestEdits(access: access, editor: editor.editor) { looked.fulfill() }
+        await fulfillment(of: [looked], timeout: 10)
+        _ = await eventually(timeout: 2) { !announcements.messages.isEmpty }
+
+        XCTAssertEqual(edited.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["02.wav", "03.wav", "01.wav"])
+        XCTAssertEqual(inCloud.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["01.wav", "02.wav"])
+        XCTAssertEqual(announcements.messages, [BookManifestEditWording.updated])
+    }
+
+    /// Tells `world`'s readers that TextMouth became active, and waits until
+    /// `condition` holds.
+    private func becomeActive(_ world: IntegrationWorld, until condition: @escaping @MainActor () -> Bool) async -> Bool {
+        world.notifications.post(name: NSApplication.didBecomeActiveNotification, object: nil)
+        return await eventually(timeout: 10, condition)
+    }
+
+    // MARK: - Hand Edits Made Before FR17, Kept Once (FR18)
+
+    /// The first launch keeps a title edited by hand before FR17, which the
+    /// row alone held, by writing it into the manifest before the launch's
+    /// look, while a row nobody edited takes the title its manifest was
+    /// given outside TextMouth. A second launch makes no pass, so a later
+    /// edit of the manifest outside TextMouth wins.
+    func testAHandEditedTitleSurvivesTheFirstLaunchAndALaterManifestEditWins() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Hand Edits")
+        let edited = try world.makeSilentAudioBook(
+            title: "Harbour Pilots",
+            trackDurations: [0.2, 0.2],
+            manifest: #"{"title": "Harbour Pilots", "author": "Ilse Varga"}"#
+        )
+        let plain = try world.makeSilentAudioBook(title: "Harbour Charts", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Charts"}"#)
+        world.library.updateBook(id: edited.id) { row in
+            row.title = "Harbour Pilots, Revised"
+            row.markEditedByHand([.title])
+        }
+        let editedManifest = try XCTUnwrap(AudioManifestLocation.find(in: edited.bookFileURL)).url
+        try save(#"{"title": "Harbour Charts, Annotated"}"#, to: try XCTUnwrap(AudioManifestLocation.find(in: plain.bookFileURL)).url)
+        LibraryPersistenceService.flushPendingSave()
+        let preferences = makeSandboxedPreferences("Manifest Hand Edits")
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+
+        let first = await launch(world, editor: editor, preferences: preferences)
+
+        XCTAssertEqual(first, LibraryViewModel.ManifestHandEditsOutcome(kept: 1, waiting: 0))
+        XCTAssertEqual(world.library.bookByID(edited.id)?.title, "Harbour Pilots, Revised", "The hand edit was lost")
+        XCTAssertEqual(try AudioManifest.decoded(from: Data(contentsOf: editedManifest)).title, "Harbour Pilots, Revised")
+        XCTAssertEqual(try AudioManifest.decoded(from: Data(contentsOf: editedManifest)).author, "Ilse Varga")
+        XCTAssertEqual(world.library.bookByID(plain.id)?.title, "Harbour Charts, Annotated", "The manifest's title was not taken")
+
+        try save(#"{"title": "Harbour Pilots, Second Edition", "author": "Ilse Varga"}"#, to: editedManifest)
+        let second = await launch(world, editor: editor, preferences: preferences)
+
+        XCTAssertNil(second, "The one-time pass was made again")
+        XCTAssertEqual(world.library.bookByID(edited.id)?.title, "Harbour Pilots, Second Edition", "The later manifest edit was not taken")
+    }
+
+    /// Makes the launch's one-time pass and then its look at every book of
+    /// tracks, as the launch makes them, waiting for each, and returns what
+    /// the pass did: nil when it was made already.
+    private func launch(_ world: IntegrationWorld, editor: TestEditor, preferences: UserDefaults) async -> LibraryViewModel.ManifestHandEditsOutcome? {
+        let outcome = await withCheckedContinuation { continuation in
+            world.library.keepHandEditedTitlesInManifestsOnce(preferences: preferences, sessions: editor.sessions) { outcome in
+                continuation.resume(returning: outcome)
+            }
+        }
+        await withCheckedContinuation { continuation in
+            world.library.takeOutsideManifestEdits(editor: editor.editor) {
+                continuation.resume()
+            }
+        }
+        return outcome
     }
 }

@@ -38,9 +38,16 @@ enum BookManifestEditing {
     /// its audio, and for a book whose audio folder is not inside its
     /// package. Looks at the disk: call it off the main thread.
     static func hasTrackFolder(_ book: Book, isDataless: (URL) -> Bool = DatalessFiles.isDataless) -> Bool {
-        guard canEditManifest(of: book, isTrackFolder: true),
-              book.filePath.hasPrefix(book.tmbDirectory.path + "/") else { return false }
+        guard mayHaveTrackFolder(book) else { return false }
         return isTrackFolder(book.bookFileURL, isDataless: isDataless) == true
+    }
+
+    /// Whether `book` could play a folder of tracks whose manifest can be
+    /// edited, as its row tells without looking at the disk: a book
+    /// `canEditManifest(of:isTrackFolder:)` offers whatever its audio, whose
+    /// audio folder is inside its package.
+    static func mayHaveTrackFolder(_ book: Book) -> Bool {
+        canEditManifest(of: book, isTrackFolder: true) && book.filePath.hasPrefix(book.tmbDirectory.path + "/")
     }
 
     /// Whether `folder` is a folder of tracks that plays one track per
@@ -307,6 +314,74 @@ enum BookManifestFile {
             }
         }
     }
+
+    // MARK: Hand Edits Made Before FR17
+
+    /// What keeping a book's hand-edited title and author in its manifest
+    /// did (`keepHandEditedTitleAndAuthor(of:sessions:isDataless:)`).
+    enum HandEditKeeping: Equatable, Sendable {
+        /// The manifest was given the row's title, its author, or both.
+        case kept
+        /// Nothing to write: no field edited by hand, no manifest, or a
+        /// manifest that gives no other title or author.
+        case unchanged
+        /// The folder or the manifest is only in the cloud, or the manifest
+        /// could not be written: the book waits for a later launch.
+        case waiting
+    }
+
+    /// Writes into `book`'s manifest the title and the author its row
+    /// records as edited by hand (`Book.handEdits`), each only where the
+    /// manifest gives another that is not blank, through
+    /// `change(manifestAt:of:sessions:_:)`, the one write of a manifest.
+    ///
+    /// Since FR17 a hand edit of a book of tracks' title or author is
+    /// written into its manifest at once, so a row and a manifest that
+    /// disagree about a field edited by hand can only hold an edit made
+    /// before FR17, which the manifest would otherwise win once an edit
+    /// made outside a session is taken (FR18). The one-time pass at launch
+    /// keeps each such edit (`LibraryViewModel.keepHandEditedTitlesInManifestsOnce`),
+    /// and every look does too until the pass is recorded as done
+    /// (`BookManifestEditSessions.keepsHandEditsFirst`). Downloads nothing.
+    /// Storage work, off the main thread, on the manifest sessions' queue.
+    static func keepHandEditedTitleAndAuthor(
+        of book: Book,
+        sessions: BookManifestEditSessions = .shared,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> HandEditKeeping {
+        sessions.boundary.perform(.contentAnalysis) { _ in
+            let current = sessions.boundary.rebasedToCurrent(book)
+            let title = current.handEdits?.contains(.title) == true ? current.title : nil
+            let author = current.handEdits?.contains(.author) == true ? current.author : nil
+            guard title != nil || author != nil, BookManifestEditing.mayHaveTrackFolder(current) else { return .unchanged }
+            let folder = current.bookFileURL
+            guard !isDataless(folder) else { return .waiting }
+            guard let location = AudioManifestLocation.find(in: folder) else { return .unchanged }
+            guard !isDataless(location.url) else { return .waiting }
+            do {
+                let written = try DatalessFiles.withoutDownloading {
+                    try change(manifestAt: location, of: current.id, sessions: sessions) { object in
+                        let keys = AudioManifest.CodingKeys.self
+                        keep(title, at: keys.title.rawValue, in: &object)
+                        keep(author, at: keys.author.rawValue, in: &object)
+                    }
+                }
+                return written ? .kept : .unchanged
+            } catch {
+                if !DatalessFiles.isDownloadRefusal(error) {
+                    DiagnosticLog.event(.storage, "MANIFEST_NOT_WRITTEN: \(current.title): \(error.localizedDescription)")
+                }
+                return .waiting
+            }
+        }
+    }
+
+    /// Gives `key` of `object`, a manifest's JSON object, the row's
+    /// `value`, where the manifest gives another that is not blank.
+    private static func keep(_ value: String?, at key: String, in object: inout [String: Any]) {
+        guard let value, let theirs = (object[key] as? String)?.nonBlank, theirs != value else { return }
+        object[key] = value
+    }
 }
 
 // MARK: - Taking an Edit (FR17)
@@ -509,11 +584,184 @@ final class BookManifestEditSessions: Sendable {
             // Rewritten with the same bytes: nothing was edited.
             return (.unchanged, fingerprint)
         }
+        let found = take(book, manifestAt: location, digest: digest)
+        // Only a taken edit is the baseline from now on: a refused one
+        // keeps the old, so the user's next save is checked again.
+        guard case .adopted = found else { return (found, nil) }
+        return (found, fingerprint)
+    }
+
+    // MARK: Edits Made Outside a Session (FR18)
+
+    /// Looks at `book`'s manifest for an edit made outside Edit Manifest, in
+    /// an editor opened from Finder, on another Mac, or while TextMouth was
+    /// closed (FR18), and takes one found exactly as a session's check takes
+    /// a save (`take(_:manifestAt:digest:)`). The user, October 14, 2026:
+    /// "Would it work if I found the manafest in Finder and edited it
+    /// outside Text Mouth? ... I think ither way should work".
+    ///
+    /// The manifest is compared with the book, never with a date or a
+    /// remembered fingerprint, so an edit made anywhere is found and a
+    /// manifest that matches its book is left alone, read and nothing more
+    /// (`manifest(_:at:arranges:as:tracks:showingPauses:)`). Only an
+    /// audiobook of tracks is looked at: one its record holds as a folder of
+    /// tracks played one per heading, so a manifest edited to give sections
+    /// is refused, as a session refuses it, and a converted DAISY book is
+    /// passed over. Nothing is downloaded (FR02): a book whose record,
+    /// folder, manifest, or any track is only in the cloud is left as it is.
+    /// The look reads only the record, the small manifest, and the audio
+    /// folder's listing; only a take reads the tracks. Runs off the main
+    /// thread, as storage work.
+    ///
+    /// - Parameters:
+    ///   - pauses: The pauses an open reader keeps between the book's
+    ///     tracks, compared with the manifest's too; nil for a book no
+    ///     reader shows yet, whose load reads its pauses afresh.
+    ///   - isDataless: Tells a file only in the cloud; tests stand in for it.
+    static func look(
+        at book: Book,
+        showingPauses pauses: ChapterPauses? = nil,
+        hasher: FingerprintHasher = .md5,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> BookManifestEditCheck {
+        guard BookManifestEditing.mayHaveTrackFolder(book) else { return .missing }
+        let folder = book.bookFileURL
+        guard !isDataless(folder) else { return .inCloud }
+        guard let location = AudioManifestLocation.find(in: folder) else { return .missing }
+        guard !isDataless(location.url) else { return .inCloud }
+        // Read with downloading switched off, so a file that went to the
+        // cloud meanwhile refuses the read rather than download.
+        let read: (record: BookInfo, bytes: Data, tracks: [String])
+        do {
+            read = try DatalessFiles.withoutDownloading {
+                (try BookInfo.load(from: book.tmbDirectory), try Data(contentsOf: location.url), try AudioBookParser.trackPaths(in: folder))
+            }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            return .inCloud
+        } catch {
+            // No record, manifest, or folder to compare: a book without a
+            // record builds its index from the manifest as it loads.
+            return .missing
+        }
+        guard let shown = read.record.contentIndex, shown.audioLayout == .multiFile else { return .missing }
+        if manifest(read.bytes, at: location, arranges: book, as: shown, tracks: read.tracks, showingPauses: pauses) {
+            return .unchanged
+        }
+        // The take reads every track, so it waits until all are on this Mac.
+        guard !read.tracks.contains(where: { isDataless(folder.appendingPathComponent($0)) }) else { return .inCloud }
+        return take(book, manifestAt: location, digest: hasher.digestOfData(read.bytes))
+    }
+
+    /// Whether the manifest `bytes`, at `location` in the audio folder whose
+    /// tracks are `paths` (`AudioBookParser.trackPaths(in:)`), arranges
+    /// `book` as it shows, `shown` being the index its record holds (FR18):
+    /// the tracks in the same order, with the same titles, and the same group
+    /// headings at the same levels, the manifest read as every load of the
+    /// book reads it (`AudioTrackPlan`, `AudioBookParser.headings(of:chapterIndex:)`);
+    /// the title and the author the manifest gives, if any, the book's; and,
+    /// given `pauses`, the pauses an open reader keeps, the ones the manifest
+    /// puts between the tracks (`ChapterPauses.betweenTracks(of:inAudioFolder:)`).
+    ///
+    /// A manifest that cannot be decoded matches no book: TextMouth writes
+    /// none such and an import takes none, so one in a book's package is a
+    /// mistake made since, which the take refuses in the import's words. A
+    /// manifest giving sections matches no book of tracks either.
+    static func manifest(
+        _ bytes: Data,
+        at location: AudioManifestLocation,
+        arranges book: Book,
+        as shown: BookContentIndex,
+        tracks paths: [String],
+        showingPauses pauses: ChapterPauses?
+    ) -> Bool {
+        guard let manifest = try? AudioManifest.decoded(from: bytes), (manifest.segments ?? []).isEmpty else { return false }
+        let plan = AudioTrackPlan(arranging: paths.map(location.name(ofTrackAt:)), by: manifest)
+        let trackPaths = plan.tracks.map { location.path(ofTrackNamed: $0.name) }
+        let headings = plan.tracks.enumerated().flatMap { AudioBookParser.headings(of: $1, chapterIndex: $0) }
+        let shownHeadings = shown.allHeadings
+        guard shown.chapters.map(\.audioFilePath) == trackPaths.map(Optional.some),
+              headings.map(\.text) == shownHeadings.map(\.text),
+              headings.map(\.level) == shownHeadings.map(\.level),
+              headings.map(\.chapterIndex) == shownHeadings.map(\.chapterIndex)
+        else { return false }
+        if let title = manifest.title?.nonBlank, title != book.title {
+            return false
+        }
+        if let author = manifest.author?.nonBlank, author != book.author {
+            return false
+        }
+        if let pauses, pauses != ChapterPauses.betweenTracks(of: shown, inAudioFolder: book.bookFileURL) {
+            return false
+        }
+        return true
+    }
+
+    /// Looks at `book`'s manifest for an edit made outside a session
+    /// (`look(at:showingPauses:hasher:isDataless:)`) now, on the checking
+    /// queue, so it never overlaps a check or a write of the manifest, as
+    /// storage work with its paths under the data directory in use, and
+    /// waits for it: for a caller off the main thread, as a reader's load
+    /// and the launch's look are (FR18). A book being edited in a session is
+    /// left to its session, whose checks take the same edits.
+    func look(at book: Book, showingPauses pauses: ChapterPauses? = nil, isDataless: (URL) -> Bool = DatalessFiles.isDataless) -> BookManifestEditCheck {
+        queue.sync {
+            lookOnQueue(at: book, showingPauses: pauses, isDataless: isDataless)
+        }
+    }
+
+    /// Looks as `look(at:showingPauses:isDataless:)` does, soon, without
+    /// waiting, and hands what was found to `report` on the checking queue:
+    /// for the main thread, as TextMouth becoming active looks (FR18).
+    func scheduleLook(at book: Book, showingPauses pauses: ChapterPauses?, report: @escaping @Sendable (BookManifestEditCheck) -> Void) {
+        queue.async { [self] in
+            report(lookOnQueue(at: book, showingPauses: pauses, isDataless: DatalessFiles.isDataless))
+        }
+    }
+
+    /// Whether each look first keeps the book's hand-edited title and
+    /// author in its manifest (`BookManifestFile.keepHandEditedTitleAndAuthor`):
+    /// from launch until the one-time pass that does so for every book is
+    /// recorded as done, so a look made before the pass reaches a book, or
+    /// at a book the pass left waiting in the cloud, never takes the
+    /// manifest's title over an edit made before FR17. Guarded by the lock.
+    private let keepsHandEditsFirst = OSAllocatedUnfairLock(initialState: false)
+
+    /// Sets whether each look first keeps the book's hand-edited title and
+    /// author in its manifest.
+    func setKeepsHandEditsFirst(_ keeps: Bool) {
+        keepsHandEditsFirst.withLock { $0 = keeps }
+    }
+
+    /// The look of `look(at:showingPauses:isDataless:)`, on the queue.
+    private func lookOnQueue(at book: Book, showingPauses pauses: ChapterPauses?, isDataless: (URL) -> Bool) -> BookManifestEditCheck {
+        guard !isEditing(book.id) else { return .unchanged }
+        if keepsHandEditsFirst.withLock({ $0 }) {
+            _ = BookManifestFile.keepHandEditedTitleAndAuthor(of: book, sessions: self, isDataless: isDataless)
+        }
+        return boundary.perform(.contentAnalysis) { _ in
+            Self.look(at: boundary.rebasedToCurrent(book), showingPauses: pauses, isDataless: isDataless)
+        }
+    }
+
+    // MARK: The Take (FR17)
+
+    /// Takes the manifest at `location`, whose bytes have the digest
+    /// `digest`, as `book`'s arrangement: the one take of an edited
+    /// manifest, whether a session's check found the edit (FR17) or a look
+    /// found the manifest arranging the book otherwise than it shows (FR18,
+    /// `look(at:showingPauses:hasher:isDataless:)`). It checks the manifest as an
+    /// import does, rebuilds the book's headings through the reader's own
+    /// parse, moves the book's places to their tracks, and commits all of it
+    /// to the book's record, or refuses it, changing nothing, with the
+    /// problem in the import's words (see `check(_:against:hasher:isDataless:)`).
+    /// Reads every track: runs off the main thread, as storage work.
+    private static func take(_ book: Book, manifestAt location: AudioManifestLocation, digest: String) -> BookManifestEditCheck {
+        let folder = book.bookFileURL
 
         /// Refuses the edit for `problem`, with one line saying so.
-        func refuse(_ problem: String) -> (found: BookManifestEditCheck, baseline: FileFingerprint?) {
+        func refuse(_ problem: String) -> BookManifestEditCheck {
             DiagnosticLog.event(.storage, "MANIFEST_EDIT_REFUSED: \(book.title): \(problem)")
-            return (.refused(problem: problem, digest: digest), nil)
+            return .refused(problem: problem, digest: digest)
         }
 
         let manifest: AudioManifest
@@ -564,19 +812,16 @@ final class BookManifestEditSessions: Sendable {
         if moved != nil {
             DiagnosticLog.event(.storage, "PLACES_MOVED: \(book.title): followed their tracks into the edited manifest's order")
         }
-        return (
-            .adopted(BookManifestEdit(
-                committed: committed,
-                index: index,
-                pauses: ChapterPauses.betweenTracks(of: index, inAudioFolder: folder),
-                transcript: transcript.text,
-                // Narrowed to the moves the record took.
-                movedPlaces: moved?.taken(by: committed),
-                title: manifest.title?.nonBlank,
-                author: manifest.author?.nonBlank
-            )),
-            fingerprint
-        )
+        return .adopted(BookManifestEdit(
+            committed: committed,
+            index: index,
+            pauses: ChapterPauses.betweenTracks(of: index, inAudioFolder: folder),
+            transcript: transcript.text,
+            // Narrowed to the moves the record took.
+            movedPlaces: moved?.taken(by: committed),
+            title: manifest.title?.nonBlank,
+            author: manifest.author?.nonBlank
+        ))
     }
 
     /// The moves of `book`'s places (`Book.relocatablePlaces`) from the
