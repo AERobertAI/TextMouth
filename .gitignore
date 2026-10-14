@@ -62,6 +62,10 @@ fastlane/test_output
 ## but allowing
 !README.md
 !CHANGELOG.md
+!AGENTS.md
+!ARCHITECTURE.md
+# The documentation's pages (README.md and ARCHITECTURE.md index them)
+!docs/**/*.md
 !docs/getting-started.txt
 
 # Claude Code

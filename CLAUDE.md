@@ -39,9 +39,9 @@ When generating any creative text (game descriptions, placeholder copy, flavor t
 ## Start here (for any new session)
 
 - Read `AGENTS.md` first: where the project's state lives, the user's standing rules, how a task agent works, how the orchestrator merges and records, and where things stood at the end of the last campaign.
-- `README.md` describes the app for its user, `ARCHITECTURE.md` the code's ownership and walkthroughs, `TODO-2026-09-04.md` the record of every merge and the open items, and `AGENT-NOTES-2026-10-04.md` what agents left unverified. The research documents (`*-RESEARCH-*.md`) hold each feature's design and the user's answered questions.
+- `README.md` is the index of the documentation in `docs/` (`docs/user` for the app's user, `docs/developer` for building and testing, `docs/agents` for agents), `ARCHITECTURE.md` the index of `docs/architecture` (the code's ownership and walkthroughs, a page per part, so read only the pages a task touches), `TODO-2026-09-04.md` the record of every merge and the open items, and `AGENT-NOTES-2026-10-04.md` what agents left unverified. The research documents (`*-RESEARCH-*.md`) hold each feature's design and the user's answered questions.
 - Agents coordinate through the message board in `.claude/skills/agent-bbs/` and build only through its `scripts/build-slot-with-bbs.sh` wrapper; the orchestrator merges with `Scripts/agents/merge-chain.sh` and reads agent reports with `Scripts/agents/extract-report.py`.
-- `*.md` files are gitignored except README.md: stage documents with `git add -f`.
+- `*.md` files are gitignored except README.md, AGENTS.md, ARCHITECTURE.md, CLAUDE.md, and the pages under `docs/`: stage other documents with `git add -f`.
 - Questions for the user, with their answers, are in `humanQuestions/` (gitignored): read the newest file before asking anything again, and put new questions in a new file there.
 
 ## Project Specific
