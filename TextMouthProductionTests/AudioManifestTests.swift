@@ -334,7 +334,94 @@ final class AudioManifestTests: XCTestCase {
         ])
     }
 
+    // MARK: - The Pauses Between Tracks
+
+    /// Each track's pause is its own pauseAfterMs, else the book's
+    /// pauseBetweenTracksMs, else a quarter of a second; a track the list
+    /// leaves out takes the book's; a manifest arranging the older way gives
+    /// the book's after every track; without a manifest there is none.
+    func testEachTracksPauseComesFromItsEntryTheBookOrTheDefault() throws {
+        var manifest = try AudioManifest.decoded(from: Data(Self.exampleJSON.utf8))
+        let names = [
+            "where_is_everybody.ogg", "one_for_the_angels.ogg", "mr_denton_on_dooms_day.ogg",
+            "king_nine_will_not_return.ogg", "the_lonely.ogg"
+        ]
+        XCTAssertEqual(AudioTrackPlan(arranging: names, by: manifest).tracks.map(\.pauseAfter), [0.25, 1.5, 0.25, 0.25, 0.25])
+
+        manifest.pauseBetweenTracksMs = 1000
+        XCTAssertEqual(AudioTrackPlan(arranging: names, by: manifest).tracks.map(\.pauseAfter), [1, 1.5, 1, 1, 1])
+        manifest.pauseBetweenTracksMs = nil
+        XCTAssertEqual(AudioTrackPlan(arranging: names, by: manifest).tracks.map(\.pauseAfter), [0.25, 1.5, 0.25, 0.25, 0.25])
+
+        let older = AudioManifest(order: ["b.ogg"], pauseBetweenTracksMs: 500)
+        XCTAssertEqual(AudioTrackPlan(arranging: ["a.ogg", "b.ogg"], by: older).tracks.map(\.pauseAfter), [0.5, 0.5])
+        XCTAssertEqual(AudioTrackPlan(arranging: ["a.ogg", "b.ogg"], by: nil).tracks.map(\.pauseAfter), [0, 0])
+    }
+
+    /// A pause outside 0 to 60000 milliseconds, which only a manifest
+    /// changed after its import can hold, is brought within that range.
+    func testAPauseOutsideItsRangeIsBroughtWithinIt() {
+        var manifest = AudioManifest(pauseBetweenTracksMs: 90_000)
+        XCTAssertEqual(manifest.pause(after: nil), 60)
+        manifest.pauseBetweenTracksMs = -40
+        XCTAssertEqual(manifest.pause(after: nil), 0)
+        XCTAssertEqual(manifest.pause(after: AudioManifestTrack(file: "a.ogg", pauseAfterMs: 1500)), 1.5)
+    }
+
+    /// The pauses between a multi-file book's chapters follow its manifest
+    /// track by track, wherever the manifest lies, with none after the last
+    /// chapter, which nothing follows; a book without a manifest, and a
+    /// segmented book, have none.
+    func testThePausesBetweenChaptersFollowTheManifestTrackByTrack() throws {
+        for name in ["Radio Plays/a.ogg", "Radio Plays/b.ogg", "Radio Plays/c.ogg"] {
+            try write("", to: name)
+        }
+        try write(#"{"tracks": [{"file": "b.ogg", "pauseAfterMs": 1000}, "a.ogg", "c.ogg"]}"#, to: "Radio Plays/manifest.json")
+        let index = multiFileIndex(playing: ["Radio Plays/b.ogg", "Radio Plays/a.ogg", "Radio Plays/c.ogg"])
+
+        let pauses = ChapterPauses.betweenTracks(of: index, inAudioFolder: folder)
+
+        XCTAssertEqual([0, 1, 2, 3].map(pauses.after(chapter:)), [1, 0.25, 0, 0])
+        let segmented = BookContentIndex.build(
+            fromChapters: index.chapters.map { Chapter(title: $0.title, text: String(repeating: " ", count: 10)) },
+            format: .audio,
+            audioSegments: ["a", "b", "c"].map {
+                AudioSegment(title: $0, file: "Radio Plays/\($0).ogg", startTime: 0, endTime: 1)
+            },
+            audioBaseURL: folder
+        )
+        XCTAssertEqual(ChapterPauses.betweenTracks(of: segmented, inAudioFolder: folder), .none)
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("Radio Plays/manifest.json"))
+        XCTAssertEqual(ChapterPauses.betweenTracks(of: index, inAudioFolder: folder), .none)
+    }
+
+    /// The pauses between chapters, from any source, are never below 0,
+    /// and a chapter past the list has none.
+    func testAChaptersPauseIsNeverBelowZero() {
+        let pauses = ChapterPauses(afterEachChapter: [1, -2, .nan, .infinity])
+        XCTAssertEqual([-1, 0, 1, 2, 3, 4].map(pauses.after(chapter:)), [0, 1, 0, 0, 0, 0])
+        XCTAssertEqual(ChapterPauses.none.after(chapter: 0), 0)
+    }
+
     // MARK: - Helpers
+
+    /// The index of a multi-file audiobook in this test's folder whose
+    /// chapters play `paths` (from the folder) in order, a second each.
+    private func multiFileIndex(playing paths: [String]) -> BookContentIndex {
+        let chapters = paths.enumerated().map { number, path in
+            Chapter(
+                title: path,
+                text: String(repeating: " ", count: 10),
+                headings: [Heading(level: 1, text: path, chapterIndex: number, characterOffset: 0)]
+            )
+        }
+        return BookContentIndex.build(
+            fromChapters: chapters,
+            format: .audio,
+            audioFilePaths: paths.map { folder.appendingPathComponent($0).path },
+            audioBaseURL: folder
+        )
+    }
 
     /// A planned track as one line, "name | title | level N | group G",
     /// which compares as a whole and reads clearly in a failure message.

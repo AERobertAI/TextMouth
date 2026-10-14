@@ -905,6 +905,10 @@ extension ReaderViewModel {
         let characterOffset = clampedPosition.characterOffset
 
         if isAudioBook {
+            // During the pause between two chapters nothing plays, so a jump
+            // moves only the cursor, and the chapter waiting out the pause
+            // starts from wherever the jump went once the pause is over
+            // (`startCursorChapter(afterPause:)`).
             let wasPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
             if chapterIndex != currentChapterIndex {
                 audioPlaybackService.stop()

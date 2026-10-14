@@ -128,19 +128,22 @@ final class IntegrationWorld {
     }
 
     /// An audio book of silent WAV tracks, one per entry of `trackDurations`
-    /// (seconds), in a package of its own in the world's folder, indexed as
-    /// an import indexes it and listed in the library. A reader playing it
-    /// is never heard.
+    /// (seconds), named "01.wav", "02.wav", and so on, in a package of its
+    /// own in the world's folder, indexed as an import indexes it and listed
+    /// in the library. A reader playing it is never heard.
     ///
     /// - Parameters:
     ///   - title: The book's title, which also orders it in its folder.
     ///   - savedPosition: Where the book was last read, if anywhere.
     ///   - endOfBook: The book's own end-of-book behavior.
+    ///   - manifest: The text of a manifest.json to put beside the tracks
+    ///     before the book is indexed, exactly as given; nil for none.
     func makeSilentAudioBook(
         title: String,
         trackDurations: [TimeInterval],
         savedPosition: ReadingPosition? = nil,
-        endOfBook: EndOfBookBehavior = .stop
+        endOfBook: EndOfBookBehavior = .stop,
+        manifest: String? = nil
     ) throws -> Book {
         let packageName = "\(UUID().uuidString).tmb"
         let tracks = TextMouthPaths.tmbPath(folderPath: folder.path, tmbName: packageName)
@@ -148,6 +151,9 @@ final class IntegrationWorld {
         for (number, duration) in trackDurations.enumerated() {
             let name = String(format: "%02d.wav", number + 1)
             try AudioTestFixtures.writeSilence(to: tracks.appendingPathComponent(name), duration: duration)
+        }
+        if let manifest {
+            try Data(manifest.utf8).write(to: tracks.appendingPathComponent(AudioManifest.fileName))
         }
         let book = Book(
             title: title,

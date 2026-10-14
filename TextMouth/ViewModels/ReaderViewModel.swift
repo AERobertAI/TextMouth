@@ -292,6 +292,24 @@ final class ReaderViewModel: ObservableObject {
     /// folder, as one chain (see `audioClipChain(forChapterAt:)`).
     var audioSegments: [AudioSegment] = []
 
+    /// The silence the reader keeps after each chapter before it starts the
+    /// next, while the book plays on from one chapter into the next
+    /// (`ChapterPauses`): for now, the pauses a multi-file audiobook's
+    /// manifest puts between its tracks; none for every other book, which
+    /// plays straight on as it always has. Set as the book loads, from the
+    /// manifest, never from the saved index (`LoadedContent.chapterPauses`).
+    /// Accessed from the Playback extension.
+    var chapterPauses = ChapterPauses.none
+
+    /// The start of the cursor's chapter, waiting out the pause after the
+    /// chapter that played to its end (`chapterPauses`); nil the rest of
+    /// the time. Playback is under way while it waits
+    /// (`isPlaybackUnderWay`), and whatever pauses or stops the book, closes
+    /// the reader, or starts playback cancels it
+    /// (`stopWaitingOutChapterPause(because:)`). Accessed from the Playback
+    /// and LibraryUpdates extensions.
+    var chapterStartAfterPause: DispatchWorkItem?
+
     /// Audio playback multiplier, separate from WPM. Always a value returned
     /// by `AudioSpeed.normalized(_:)`; change it through `setAudioSpeed(_:)`.
     @Published var audioSpeed: Double = AudioSpeed.normal
@@ -1196,6 +1214,10 @@ final class ReaderViewModel: ObservableObject {
         /// places the reader saves as any change is, each move starting from
         /// where the one before it ended. Empty when nothing moved.
         var movedPlaces: [MovedPlaces] = []
+        /// The pauses the book keeps between its chapters, from its
+        /// manifest, read afresh at every load, from the index or not
+        /// (`ChapterPauses.betweenTracks(of:inAudioFolder:)`).
+        var chapterPauses = ChapterPauses.none
     }
 
     /// Start getting the book ready to read, showing Loading meanwhile.
@@ -1361,7 +1383,10 @@ final class ReaderViewModel: ObservableObject {
                 || (!format.isAudio
                     && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion),
             cacheFormatVersion: analysis.cacheFormatVersion,
-            movedPlaces: movedPlaces
+            movedPlaces: movedPlaces,
+            // The manifest is read afresh, so a load from the saved index
+            // keeps the pauses a fresh analysis would find.
+            chapterPauses: format.isAudio ? ChapterPauses.betweenTracks(of: analysis.index, inAudioFolder: url) : .none
         )
     }
 
@@ -1396,6 +1421,7 @@ final class ReaderViewModel: ObservableObject {
         if let segs = loaded.audioSegments {
             audioSegments = segs
         }
+        chapterPauses = loaded.chapterPauses
         // Assigning content also publishes its headings.
         content = parsed
         showEPUBMetadata()
@@ -1979,6 +2005,7 @@ final class ReaderViewModel: ObservableObject {
         displayVisibleTextWindow = ""
         audioChapterFiles = []
         audioSegments = []
+        chapterPauses = .none
         // Also empties `headings`, which follow the content.
         content = nil
     }

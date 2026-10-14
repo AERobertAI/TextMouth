@@ -45,6 +45,26 @@ struct AudioManifest: Codable {
     /// one minute.
     static let pauseRangeMs: ClosedRange<Double> = 0...60_000
 
+    /// The silence, in milliseconds, after each track of a book whose
+    /// archive has a manifest, when neither the track nor
+    /// `pauseBetweenTracksMs` gives one: a quarter of a second. A book
+    /// without a manifest plays straight on from track to track, as it
+    /// always has, since many audiobooks split a sentence across two tracks.
+    static let defaultPauseBetweenTracksMs: Double = 250
+
+    /// The silence, in seconds, after `track`, an entry of `tracks` (nil for
+    /// a track the list leaves out, or in a manifest without one), while the
+    /// book plays on into the next track: the track's own `pauseAfterMs`,
+    /// else `pauseBetweenTracksMs`, else the default. It is real time,
+    /// whatever the playback speed. A pause outside the range, which only a
+    /// manifest changed after its import can hold, is brought within it.
+    func pause(after track: AudioManifestTrack?) -> TimeInterval {
+        let milliseconds = track?.pauseAfterMs ?? pauseBetweenTracksMs ?? Self.defaultPauseBetweenTracksMs
+        let range = Self.pauseRangeMs
+        let held = milliseconds.isFinite ? min(max(milliseconds, range.lowerBound), range.upperBound) : 0
+        return held / 1000
+    }
+
     /// Whether `tracks` arranges the book: it is present, and neither
     /// `order` nor `chapters` is, which arranged books before it. An import
     /// refuses a manifest that has both (`AudioManifestCheck`); one read
@@ -191,6 +211,11 @@ struct AudioTrackPlan: Equatable, Sendable {
         /// The level of the track's own heading: 2 under a group heading, 1
         /// otherwise.
         let level: Int
+        /// The silence, in seconds, after the track while the book plays on
+        /// into another (`AudioManifest.pause(after:)`): none without a
+        /// manifest. Nothing follows the book's last track, so the pause
+        /// after it is never kept (`ChapterPauses.betweenTracks`).
+        let pauseAfter: TimeInterval
     }
 
     /// The tracks, in the order the book plays them.
@@ -207,9 +232,17 @@ struct AudioTrackPlan: Equatable, Sendable {
     /// a manifest changed after the import is still read.
     init(arranging names: [String], by manifest: AudioManifest?) {
         guard let manifest, let entries = manifest.tracks, manifest.arrangesByTracks else {
-            // As every book was arranged before the tracks list.
+            // As every book was arranged before the tracks list, with the
+            // manifest's pause, if it has one, after every track.
+            let pause = manifest?.pause(after: nil) ?? 0
             tracks = AudioBookParser.orderedFileNames(names, manifestOrder: manifest?.order).map { name in
-                Track(name: name, title: manifest?.chapters?[name] ?? Self.fileTitle(of: name), groupHeading: nil, level: 1)
+                Track(
+                    name: name,
+                    title: manifest?.chapters?[name] ?? Self.fileTitle(of: name),
+                    groupHeading: nil,
+                    level: 1,
+                    pauseAfter: pause
+                )
             }
             return
         }
@@ -235,13 +268,14 @@ struct AudioTrackPlan: Equatable, Sendable {
                     name: track.file,
                     title: track.title?.nonBlank ?? Self.fileTitle(of: track.file),
                     groupHeading: waitingHeading,
-                    level: groupHasBegun ? 2 : 1
+                    level: groupHasBegun ? 2 : 1,
+                    pauseAfter: manifest.pause(after: track)
                 ))
                 waitingHeading = nil
             }
         }
         let leftOut = AudioBookParser.orderedFileNames(names.filter { !placed.contains($0) }).map { name in
-            Track(name: name, title: Self.fileTitle(of: name), groupHeading: nil, level: 1)
+            Track(name: name, title: Self.fileTitle(of: name), groupHeading: nil, level: 1, pauseAfter: manifest.pause(after: nil))
         }
         tracks = listed + leftOut
     }
@@ -251,6 +285,36 @@ struct AudioTrackPlan: Equatable, Sendable {
     /// every track without a title has always shown.
     static func fileTitle(of name: String) -> String {
         ((name as NSString).lastPathComponent as NSString).deletingPathExtension
+    }
+}
+
+// MARK: - The Pauses Between Tracks
+
+extension ChapterPauses {
+    /// The pauses a multi-file audiobook's manifest puts between its tracks,
+    /// the manifest's part as the source of the reader's pauses between
+    /// chapters: for the chapters `index` records, whose files lie in the
+    /// book's audio folder `folder`, each chapter's track arranged as the
+    /// parser arranges it (`AudioTrackPlan`), so a pause follows the track
+    /// the manifest gives it to, and none follows the last chapter, which
+    /// nothing follows. None at all for a book without a manifest, which
+    /// plays straight on as it always has, and for every other layout: a
+    /// segmented book's sections and the chapters of one file are no
+    /// tracks. Computed from the manifest whenever the book loads, never
+    /// kept in the index, so a load from the index finds the same pauses.
+    /// Reads the manifest from disk: call it off the main thread, as a
+    /// book's load does.
+    static func betweenTracks(of index: BookContentIndex, inAudioFolder folder: URL) -> ChapterPauses {
+        guard index.audioLayout == .multiFile, let found = AudioManifest.read(inAudioFolder: folder) else { return .none }
+        // Every chapter plays one track, or the chapters are not tracks.
+        let paths = index.chapters.compactMap(\.audioFilePath)
+        guard !paths.isEmpty, paths.count == index.chapters.count else { return .none }
+        let names = paths.map(found.location.name(ofTrackAt:))
+        let plan = AudioTrackPlan(arranging: names, by: found.manifest)
+        let pauseAfterTrack = Dictionary(plan.tracks.map { ($0.name, $0.pauseAfter) }) { first, _ in first }
+        return ChapterPauses(afterEachChapter: names.indices.map { chapter in
+            chapter == names.count - 1 ? 0 : pauseAfterTrack[names[chapter]] ?? 0
+        })
     }
 }
 

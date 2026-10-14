@@ -455,13 +455,17 @@ extension ReaderViewModel {
     /// neither resumes the stopped book nor tells Now Playing that it plays.
     /// Audio set aside while the library moves the book's package is let go
     /// (`letGoOfAudioSetAsideForMove(because:)`), so that the move's end
-    /// leaves the stopped book stopped.
+    /// leaves the stopped book stopped; so is the start of a chapter
+    /// waiting out the pause before it (`stopWaitingOutChapterPause(because:)`),
+    /// which closing the reader, through this stop, cancels too.
     func stop() {
         endWhereAmIAsTheBookStops()
         let wasActive: Bool
         if isAudioBook {
-            // Audio set aside for a move counts, as it does for `pause()`.
+            // Audio set aside for a move counts, as it does for `pause()`,
+            // and so does a chapter waiting out the pause before it.
             wasActive = audioPlaybackService.isPlaying || audioPlaybackService.isPaused || audioPausedForMove != nil
+                || isWaitingOutChapterPause
         } else {
             // A play waiting for its chapter's speech counts, as it does
             // for `pause()`.
@@ -473,6 +477,7 @@ extension ReaderViewModel {
         // while audio is still playing causes a brief pop of
         // full-volume audio (same fix pattern as pause()).
         if isAudioBook {
+            stopWaitingOutChapterPause(because: "playback stopped")
             letGoOfAudioSetAsideForMove(because: "playback stopped")
             audioPlaybackService.stop()
         } else {
@@ -793,7 +798,10 @@ extension ReaderViewModel {
     /// the next chapter, or end the book after the last; this reader's sleep
     /// timer set for the end of the heading stops playback here instead,
     /// since an audiobook's chapters are its headings (finding #787,
-    /// `stopForSleepTimerAtChapterEnd`).
+    /// `stopForSleepTimerAtChapterEnd`). When a pause follows the chapter
+    /// (`chapterPauses`), the cursor moves to the next chapter's start at
+    /// once, and the chapter starts once the pause has passed
+    /// (`waitOutPauseBeforeCursorChapter(_:)`).
     private func audioDidFinish(_ play: ChapterPlay) {
         guard endsPlayUnderWay(play, reportedBy: "audio") else { return }
         savePosition()
@@ -809,7 +817,15 @@ extension ReaderViewModel {
         }
         currentChapterIndex = nextIndex
         currentCharacterOffset = 0
-        playAudioChapter()
+        // No file was named to follow a chapter a pause follows
+        // (`fileAfterCurrentChapter`), so the player has stopped at the
+        // chapter's end, and the pause is silence.
+        let pause = pauseAfterChapter(play.chapterIndex)
+        guard pause > 0 else {
+            playAudioChapter()
+            return
+        }
+        waitOutPauseBeforeCursorChapter(pause)
     }
 
     /// What the listener hears when this reader's sleep timer runs out on
@@ -2020,8 +2036,11 @@ extension ReaderViewModel {
     /// on its way is stale.
     func playAudioChapter() {
         // Whatever starts the chapter now, a chapter held for a Where Am I
-        // announcement's end waits no more (`isChapterHeldByWhereAmI`).
+        // announcement's end waits no more (`isChapterHeldByWhereAmI`), and
+        // nor does one waiting out the pause before it, so that nothing
+        // ever starts twice.
         isChapterHeldByWhereAmI = false
+        stopWaitingOutChapterPause(because: "a chapter starts now")
         guard isAudioBook, let content = content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
         listenForAudioEnd(of: beginChapterPlay())
@@ -2159,17 +2178,108 @@ extension ReaderViewModel {
     ///   (`sleepTimerStopsPlaybackAtChapterEnd(beforeChapter:)`);
     /// - when the next chapter's file is only in the cloud, where the player
     ///   would wait on the network, so the chapter downloads first instead
-    ///   (`chapterHasFileOnlyInCloud(_:)`).
+    ///   (`chapterHasFileOnlyInCloud(_:)`);
+    /// - when a pause follows the chapter (`pauseAfterChapter(_:)`), which
+    ///   the reader waits out before it starts the next one itself.
     /// None either in any other layout, whose chapters play a chain of clips
     /// or a stretch of one file, ending where no file ends.
     private var fileAfterCurrentChapter: URL? {
         guard audioLayout == .multiFile, let content else { return nil }
         let nextIndex = currentChapterIndex + 1
         guard nextIndex < content.chapters.count, nextIndex < audioChapterFiles.count,
+              pauseAfterChapter(currentChapterIndex) == 0,
               !sleepTimerStopsPlaybackAtChapterEnd(beforeChapter: nextIndex),
               case .file(let nextFile) = chapterAudioSource(forChapterAt: nextIndex),
               !chapterHasFileOnlyInCloud(nextIndex) else { return nil }
         return nextFile
+    }
+
+    // MARK: - The Pause Between Chapters
+
+    /// The seconds of silence after chapter `chapterIndex` before the next
+    /// one starts, while the book plays on from one into the other: what the
+    /// book's one source of such pauses gives (`chapterPauses`), for now a
+    /// multi-file audiobook's manifest, and none for every other book.
+    func pauseAfterChapter(_ chapterIndex: Int) -> TimeInterval {
+        chapterPauses.after(chapter: chapterIndex)
+    }
+
+    /// Whether the reader waits out the pause after a chapter that played to
+    /// its end before it starts the next one (`chapterStartAfterPause`).
+    /// Playback is under way meanwhile (`isPlaybackUnderWay`).
+    var isWaitingOutChapterPause: Bool {
+        chapterStartAfterPause != nil
+    }
+
+    /// Lets go of the player, which has played the chapter before the
+    /// cursor's to its end, at the volume it played at, which a sleep
+    /// timer's fade may have lowered, then waits out `seconds` before the
+    /// cursor's chapter starts (`startCursorChapter(afterPause:)`). With no
+    /// file loaded, nothing during the pause can act on the one that ended:
+    /// a skip within the cursor's chapter moves only the cursor, rather than
+    /// seek in the ended file and take its time for the cursor's.
+    private func waitOutPauseBeforeCursorChapter(_ seconds: TimeInterval) {
+        let volume = audioPlaybackService.intendedVolume
+        audioPlaybackService.stop()
+        audioPlaybackService.setVolume(volume)
+        startCursorChapter(afterPause: seconds)
+    }
+
+    /// Starts the cursor's chapter once `seconds` have passed, real time,
+    /// whatever the speed: the pause after the chapter that ended, which the
+    /// cursor has left for the start of this one. The start waits as a work
+    /// item on the main queue, which is cancelled
+    /// (`stopWaitingOutChapterPause(because:)`) by whatever pauses the book
+    /// or stops it waiting to play (`stopAudioWaitingToPlay(because:)`: a
+    /// pause, Play/Pause, a sleep timer's stop), by a stop, by closing the
+    /// reader, which stops it, by a move of the book's package, and by any
+    /// start of playback (`playAudioChapter()`), so nothing ever starts
+    /// twice. A book paused during the pause rests at the start of the next
+    /// chapter, which Play then plays from its start.
+    ///
+    /// Navigation during the pause moves the cursor and starts nothing,
+    /// since the player has nothing playing; the start, once the pause is
+    /// over, plays from wherever the listener moved.
+    ///
+    /// The one way the reader waits out a pause between chapters: a pause
+    /// from another source (`ChapterPauses`) waits here too.
+    private func startCursorChapter(afterPause seconds: TimeInterval) {
+        stopWaitingOutChapterPause(because: "another pause began")
+        let start = DispatchWorkItem { [weak self] in
+            self?.startChapterAfterPause()
+        }
+        chapterStartAfterPause = start
+        DiagnosticLog.trace(.playback, "chapter \(currentChapterIndex) starts after a pause of \(seconds) s")
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: start)
+    }
+
+    /// The pause before the cursor's chapter has passed: the chapter plays
+    /// from the cursor, or, while a Where Am I? announcement speaks, waits
+    /// for the announcement's end (`isChapterHeldByWhereAmI`), as a chapter
+    /// whose files arrive during one waits, still counted as playing.
+    private func startChapterAfterPause() {
+        chapterStartAfterPause = nil
+        guard !hasClosed else { return }
+        guard !isWhereAmISpeaking else {
+            isChapterHeldByWhereAmI = true
+            DiagnosticLog.trace(.playback, "the pause before chapter \(currentChapterIndex) ended while Where Am I speaks; it plays as the announcement ends")
+            return
+        }
+        playAudioChapter()
+    }
+
+    /// Stops waiting out the pause before the cursor's chapter, so that the
+    /// chapter does not start once the pause is over.
+    ///
+    /// - Parameter reason: Why, for the log line.
+    /// - Returns: Whether a chapter was waiting.
+    @discardableResult
+    func stopWaitingOutChapterPause(because reason: String) -> Bool {
+        guard let start = chapterStartAfterPause else { return false }
+        start.cancel()
+        chapterStartAfterPause = nil
+        DiagnosticLog.trace(.playback, "chapter \(currentChapterIndex) does not start after its pause: \(reason)")
+        return true
     }
 
     // MARK: - Audio Playback Failures
@@ -3061,14 +3171,17 @@ extension ReaderViewModel {
 
     /// Stops an audiobook waiting to play, so that nothing starts it later:
     /// a chapter whose files download, or which waits for a Where Am I?
-    /// announcement's end (`stopWaitingForChapterDownload(because:)`), and
-    /// audio set aside while the library moves the book's package
+    /// announcement's end (`stopWaitingForChapterDownload(because:)`), a
+    /// chapter waiting out the pause before it
+    /// (`stopWaitingOutChapterPause(because:)`), and audio set aside while
+    /// the library moves the book's package
     /// (`letGoOfAudioSetAsideForMove(because:)`). Playback was paused, or
     /// this reader's sleep timer stopped it.
     ///
     /// - Parameter reason: Why, for the log lines.
     private func stopAudioWaitingToPlay(because reason: String) {
         stopWaitingForChapterDownload(because: reason)
+        stopWaitingOutChapterPause(because: reason)
         letGoOfAudioSetAsideForMove(because: reason)
     }
 
@@ -3090,12 +3203,17 @@ extension ReaderViewModel {
     /// from the moving files and with the play sound, and Where Am I? and
     /// the system's media commands took the book for one not playing
     /// (REV13).
+    ///
+    /// So is an audiobook waiting out the pause between two chapters
+    /// (`isWaitingOutChapterPause`): it still plays, silent for a moment, so
+    /// Play leaves it as it is, Play/Pause pauses it, and the system's media
+    /// commands see a book playing.
     var isPlaybackUnderWay: Bool {
         if isAudioBook {
             return Self.wasActivelyPlaying(
                 isPlaying: audioPlaybackService.isPlaying,
                 isPaused: audioPlaybackService.isPaused
-            ) || isWaitingForChapterDownload || audioPausedForMove != nil
+            ) || isWaitingForChapterDownload || audioPausedForMove != nil || isWaitingOutChapterPause
         }
         return Self.wasActivelyPlaying(isPlaying: speechService.isSpeaking, isPaused: speechService.isPaused)
             || isWaitingForChapterSpeech
