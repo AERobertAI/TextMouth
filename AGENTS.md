@@ -77,13 +77,13 @@ Main holds the record of the REV16 fixes, then, from the evening:
 - the Ogg and Nothing Imported fix (9528b7a5, suite 6124 tests, 64 skipped, 0 failures, no Swift warnings), done by the orchestrator directly: a ZIP of Ogg tracks imports as one audiobook, and a ZIP import that brings nothing in says so in the library's alert;
 - the documentation reorganized into docs/ (this file's older status sections are in `docs/agents/history.md`), with the audiobook manifest's full reference at `docs/user/audiobook-manifest.md`;
 - FR15, FR16, and FR17 in the TODO, with the user's answers from `humanQuestions/2026-10-13.md`.
+- the REV16 fixes' documentation pass (100db7a5).
 
 **In flight:** agent `manifesttracks` (Opus) on `feature/manifest-tracks`, building FR15 from `Scripts/agents/briefs/2026-10-13/manifest-tracks.md`: the manifest's tracks list, group headings, and pauses between tracks. Its report gives documentation wording, and lists where its implementation differs from the manifest reference.
 
 **Pending:**
 - FR17's proposal (an editable manifest in every multi-track audiobook's package, and Edit Manifest…), awaiting the user's answer;
 - the user's answers in `humanQuestions/2026-10-12.md` (13 small choices);
-- a documentation pass for the REV16 fixes, whose wording is in AGENT-NOTES;
 - the user's push and install. Main is far ahead of origin/main, and agents' worktrees start at origin/main.
 
 The weekly window stood at 20% left; the user's floor is about 10%.
