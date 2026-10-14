@@ -350,6 +350,26 @@ enum OggAudioConverter {
         }
     }
 
+    /// About how many bytes `sources` take once converted: each one's length
+    /// at the bit rate it would be written at (`settings(for:bytes:)`), with
+    /// a hundredth more and 64 KB for the file's own tables, or its own size
+    /// when it can't be read. Reads only each file's header; never decodes.
+    static func estimatedSize(of sources: [URL]) async -> Int64 {
+        var total: Int64 = 0
+        for source in sources {
+            let bytes = fileSize(of: source)
+            guard let base = try? await AudioEditBase.load(source, name: source.lastPathComponent) else {
+                total += bytes
+                continue
+            }
+            let settings = settings(for: base, bytes: bytes)
+            let seconds = Double(base.frames) / base.sampleRate
+            let bitRate = Double(settings.bitRate ?? AudioRenderSettings.bitRatePerChannel * settings.channels)
+            total += Int64((seconds * bitRate / 8 * 1.01).rounded(.up)) + 65_536
+        }
+        return total
+    }
+
     // MARK: - A Book's Tracks
 
     /// Renames each converted track of the book whose folder of tracks is
