@@ -791,9 +791,12 @@ final class ImportProgressTests: XCTestCase {
     }
 
     /// A ZIP archive whose books are all in the library already imports
-    /// nothing and raises no alert and no question, so VoiceOver hears what
-    /// it found as soon as it ends, however quickly; until October 10, 2026
-    /// such an import ended in silence.
+    /// nothing and asks no question, so the library's alert, titled
+    /// "Nothing Imported", says what it found as soon as it ends, however
+    /// quickly, and VoiceOver hears it from the alert alone. Until October
+    /// 10, 2026 such an import ended in silence; until October 13 only an
+    /// announcement said it, which is never spoken while TextMouth has no
+    /// window in front.
     func testAnArchiveOfBooksAlreadyInTheLibrarySaysSoAtOnce() throws {
         let folder = makeIntegrationLibraryFolder("Import Progress No New Books")
         let sandbox = try LibraryIndexSandbox.capture()
@@ -825,9 +828,10 @@ final class ImportProgressTests: XCTestCase {
         model.importZipAsync(from: archive, toFolder: folder.path)
 
         let expected = "No new books in “Harbour Notes.zip”: both were already in your library."
-        XCTAssertTrue(waitUntil(timeout: 20) { heard.messages.contains(expected) }, heard.messages.joined(separator: " | "))
-        XCTAssertEqual(heard.messages, [expected])
-        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertTrue(waitUntil(timeout: 20) { model.showError }, "no alert followed the import")
+        XCTAssertEqual(model.errorMessage, expected)
+        XCTAssertEqual(model.errorTitle, ImportProgressWording.nothingImportedTitle)
+        XCTAssertEqual(heard.messages, [], "the alert alone says what the import found")
         XCTAssertEqual(model.library.books.count, 2, "a book was imported")
         XCTAssertNil(model.importDecisions.current, "a question was asked")
     }
@@ -886,9 +890,10 @@ final class ImportProgressTests: XCTestCase {
     }
 
     /// The end of an import that ran long says what came of it: a batch's
-    /// books imported, skipped as duplicates, and failed, or that none was
-    /// found; one book's name; a failure; and nothing for a batch the user
-    /// cancelled, whose alert says where it stopped.
+    /// books imported, skipped as duplicates, and failed; one book's name;
+    /// a failure; and nothing for a batch the user cancelled, whose alert
+    /// says where it stopped, or for one that found no new book, whose
+    /// alert says what it found.
     func testTheEndOfALongImportSaysWhatCameOfIt() {
         let clock = CommandClock()
         let progress = ImportProgress(now: { clock.now })
@@ -933,18 +938,19 @@ final class ImportProgressTests: XCTestCase {
             "Finished importing “Library Export.zip”: 1 book imported, 1 skipped as a duplicate, 1 failed.",
             "Finished importing “Moby Dick.epub”.",
             "Could not import “Too Big.zip”.",
-            "Cancelling after this book...",
-            "No books were found in “Empty.zip”."
+            "Cancelling after this book..."
         ])
     }
 
     /// A batch that found no new book, its every book already in the
-    /// library or none found, and in which nothing failed, says what it
-    /// found however short it was, since no alert or question follows it.
-    /// A short batch with a failure, whose alert speaks for it, a short one
-    /// cancelled, whose alert says where it stopped, and one ended after
-    /// Cancel stay quiet, as every import's end after Cancel does.
-    func testABatchThatFindsNoNewBookSaysSoHoweverShort() {
+    /// library or none found, and in which nothing failed, is not
+    /// announced, however short or long it was: the library's alert says
+    /// what it found (`LibraryViewModel.completeZIPImport`), and VoiceOver
+    /// reads it there. A short batch with a failure, whose alert speaks for
+    /// it, a short one cancelled, whose alert says where it stopped, and
+    /// one ended after Cancel stay quiet too, as every import's end after
+    /// Cancel does.
+    func testABatchThatFindsNoNewBookIsLeftToItsAlert() {
         let clock = CommandClock()
         let progress = ImportProgress(now: { clock.now })
         let failure = ZipImportFailure(fileName: "Knots.docx", message: "Reading its text failed: unreadable")
@@ -964,6 +970,13 @@ final class ImportProgressTests: XCTestCase {
             progress.showArchive("Empty.zip")
             progress.end(.batch(ZipImportResult(books: [], failures: [])))
 
+            // Ten minutes searching 4 GB of files that are not books.
+            progress.showArchive("Radio.zip")
+            clock.advance(by: 600)
+            progress.end(.batch(ZipImportResult(
+                books: [], failures: [], nonBookFiles: NonBookFiles(countsByExtension: ["wma": 176])
+            )))
+
             progress.showArchive("Damaged.zip")
             progress.end(.batch(ZipImportResult(books: [], failures: [failure], skippedDuplicates: 2)))
 
@@ -975,13 +988,9 @@ final class ImportProgressTests: XCTestCase {
             progress.end(.batch(ZipImportResult(books: [], failures: [], skippedDuplicates: 3)))
         }
 
-        XCTAssertEqual(recorder.announcements.map(\.message), [
-            "No new books in “Library Export.zip”: all 24 were already in your library.",
-            "No new books in “Shelf.zip”: its one book was already in your library.",
-            "No books were found in “Empty.zip”.",
-            "Cancelling..."
-        ])
-        XCTAssertEqual(recorder.announcements.map(\.priority), [.high, .high, .high, .high])
+        // Only Cancel itself is heard.
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Cancelling..."])
+        XCTAssertEqual(recorder.announcements.map(\.priority), [.high])
         XCTAssertEqual(progress.state, ImportProgressState(), "the end clears the overlay")
     }
 

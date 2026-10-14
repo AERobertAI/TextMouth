@@ -199,6 +199,40 @@ struct ZipImportFailure: Equatable {
     var missing: Missing = .chapters
 }
 
+/// The files a ZIP batch passed over because they are in no format
+/// TextMouth imports, counted by extension, so the end of a batch that
+/// found no book can say what the archive held instead. Until October 13,
+/// 2026 such a batch said only that it found no books, and only to
+/// VoiceOver: an archive of 176 Ogg radio dramas, before TextMouth played
+/// Ogg, was extracted, searched, and removed without a word on screen.
+struct NonBookFiles: Equatable, Sendable {
+    /// How many files have each extension, lowercased, with "" for files
+    /// without one.
+    var countsByExtension: [String: Int] = [:]
+
+    /// How many files there are in all.
+    var total: Int { countsByExtension.values.reduce(0, +) }
+
+    /// Each extension with its count, most files first, and in alphabetical
+    /// order among extensions with as many, so a message names the same
+    /// kinds in the same order every time.
+    var kinds: [(fileExtension: String, count: Int)] {
+        countsByExtension
+            .map { (fileExtension: $0.key, count: $0.value) }
+            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.fileExtension < $1.fileExtension }
+    }
+
+    /// Counts the file at `url` by its extension.
+    mutating func add(_ url: URL) {
+        countsByExtension[url.pathExtension.lowercased(), default: 0] += 1
+    }
+
+    /// Adds `other`'s counts to `files`'.
+    static func += (files: inout NonBookFiles, other: NonBookFiles) {
+        files.countsByExtension.merge(other.countsByExtension, uniquingKeysWith: +)
+    }
+}
+
 struct ZipImportResult {
     let books: [Book]
     let failures: [ZipImportFailure]
@@ -213,12 +247,15 @@ struct ZipImportResult {
     /// the library or found earlier in the archive: none of them is
     /// imported, and none is a failure.
     var skippedDuplicates = 0
+    /// The files the batch passed over as no book TextMouth imports, which
+    /// the alert of a batch that found no book names by kind.
+    var nonBookFiles = NonBookFiles()
 
     /// Whether the batch ran to its end without bringing a book into the
     /// library and without anything in it failing: every book it found was
-    /// already in the library, or it found none. No alert follows such a
-    /// batch (`failureSummary` is nil) and no question, so only VoiceOver's
-    /// announcement says what it found (FR10).
+    /// already in the library, or it found none. `failureSummary` is nil for
+    /// such a batch and no question follows it, so the library's alert says
+    /// what it found instead (`ImportProgressWording.nothingImported`).
     var foundNoNewBook: Bool {
         books.isEmpty && failures.isEmpty && cancellation == nil
     }
@@ -273,6 +310,27 @@ struct ZipImportResult {
     /// One "file: message" line per entry.
     private static func lines(_ entries: [ZipImportFailure]) -> String {
         entries.map { "\($0.fileName): \($0.message)" }.joined(separator: "\n")
+    }
+
+    /// The tag that starts the debug-log line recording how a ZIP batch
+    /// ended; tooling searches for it, so it never changes.
+    static let finishedLogTag = "ZIP_IMPORT_FINISHED"
+
+    /// The debug-log line recording how the batch of the archive named
+    /// `archiveName` ended, whatever it brought: its counts, whether a
+    /// cancel stopped it, and the files it passed over, by kind, as in
+    /// `ZIP_IMPORT_FINISHED: Radio.zip: imported=0 duplicates=0 failed=0
+    /// incomplete=0 cancelled=false notBooks=176 (ogg 176)`. Until
+    /// October 13, 2026 a batch that failed nowhere logged nothing, so a
+    /// batch that found no book left no trace to diagnose.
+    func logLine(archiveName: String) -> String {
+        let counts = "imported=\(books.count) duplicates=\(skippedDuplicates) failed=\(failures.count) "
+            + "incomplete=\(incompleteBooks.count) cancelled=\(cancellation != nil) notBooks=\(nonBookFiles.total)"
+        let kinds = nonBookFiles.kinds.map { kind in
+            "\(kind.fileExtension.isEmpty ? "no extension" : kind.fileExtension) \(kind.count)"
+        }
+        let passedOver = kinds.isEmpty ? "" : " (\(kinds.joined(separator: ", ")))"
+        return "\(Self.finishedLogTag): \(archiveName): \(counts)\(passedOver)"
     }
 }
 
@@ -340,11 +398,15 @@ struct ImportCandidates: Equatable {
     var books: [URL] = []
     /// The archives inside that could not be searched.
     var failures: [ZipImportFailure] = []
+    /// The files passed over as no book TextMouth imports.
+    var nonBookFiles = NonBookFiles()
 
-    /// Adds `other`'s books and failures to `candidates`'.
+    /// Adds `other`'s books, failures, and files passed over to
+    /// `candidates`'.
     static func += (candidates: inout ImportCandidates, other: ImportCandidates) {
         candidates.books += other.books
         candidates.failures += other.failures
+        candidates.nonBookFiles += other.nonBookFiles
     }
 }
 
@@ -1165,12 +1227,14 @@ enum FileImportService {
                 failures: candidates.failures + imported.failures,
                 incompleteBooks: imported.incompleteBooks,
                 cancellation: imported.cancellation,
-                skippedDuplicates: imported.skippedDuplicates
+                skippedDuplicates: imported.skippedDuplicates,
+                nonBookFiles: candidates.nonBookFiles
             )
         }
         if let cancellation = result.cancellation {
             ImportCancellation.log(zipURL.lastPathComponent, stopped: cancellation.logDetail)
         }
+        DiagnosticLog.event(.import, result.logLine(archiveName: zipURL.lastPathComponent))
         return result
     }
 
@@ -1199,6 +1263,8 @@ enum FileImportService {
     /// - Any other file in a format TextMouth reads is a book. Hidden files
     ///   and the `__MACOSX` folder macOS adds to archives are passed over:
     ///   they hold copies of the archive's files that are not books.
+    /// - Every other file is counted by its extension among the files
+    ///   passed over, which the end of a batch that found no book names.
     /// - Throws: `ArchiveBudgetError` when the batch's budget refuses an
     ///   archive inside, and `ImportCancelled` when the reader cancels while
     ///   one is unpacked.
@@ -1231,6 +1297,8 @@ enum FileImportService {
                 }
             } else if BookFormat.detect(from: url) != nil {
                 found.books.append(url)
+            } else {
+                found.nonBookFiles.add(url)
             }
         }
         found.books.sort { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
@@ -1761,6 +1829,7 @@ enum FileImportService {
             UTType("com.apple.protected-mpeg-4-audio"), // m4b
             UTType("org.xiph.flac"),             // flac
             UTType("public.aac-audio"),          // aac
+            UTType("org.xiph.ogg-audio"),        // ogg, oga, opus
         ].compactMap { $0 })
         // Video, imported as an audiobook whose sound alone plays (FR03).
         types.append(.mpeg4Movie)                // mp4

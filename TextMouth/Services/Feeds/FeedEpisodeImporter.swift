@@ -36,6 +36,10 @@ enum FeedEpisodeImporter {
         "audio/wav": "wav", "audio/x-wav": "wav", "audio/wave": "wav",
         "audio/aiff": "aiff", "audio/x-aiff": "aiff",
         "audio/flac": "flac", "audio/x-flac": "flac",
+        // Ogg audio, which AVFoundation plays from macOS 15.4 on
+        // (`BookFormat.fileExtensions`). "application/ogg" is left out: it
+        // may hold video, which AVFoundation does not play.
+        "audio/ogg": "ogg", "audio/vorbis": "ogg", "audio/opus": "opus",
         "video/mp4": "mp4", "video/x-m4v": "m4v", "video/quicktime": "mov",
     ]
 
@@ -43,7 +47,7 @@ enum FeedEpisodeImporter {
     /// AVFoundation what the file holds: the type the server gave it when
     /// that names one TextMouth plays, else the extension of its address,
     /// else the type the feed gave. Nil when none names a file TextMouth
-    /// plays, such as Ogg audio.
+    /// plays, such as Windows Media Audio.
     static func fileExtension(responseMIMEType: String?, enclosure: FeedEnclosure) -> String? {
         if let fromResponse = responseMIMEType.flatMap(extensionForMIMEType) {
             return fromResponse

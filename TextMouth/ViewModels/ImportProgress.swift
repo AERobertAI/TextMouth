@@ -367,15 +367,16 @@ final class ImportProgress: ObservableObject {
     /// What VoiceOver hears as the import shown ends as `ending`, or nil
     /// when it hears nothing: the import was short, cancelled, or named
     /// neither an archive nor a book. A ZIP batch that found no new book,
-    /// and in which nothing failed, is said however short it was: no alert
-    /// and no question follow it, so nothing else would say what it found
-    /// (`ZipImportResult.foundNoNewBook`).
+    /// and in which nothing failed, is not announced, however long it ran:
+    /// the library's alert says what it found, on screen and to VoiceOver
+    /// (`ImportProgressWording.nothingImported(from:result:)`), and an
+    /// announcement too would say it twice.
     private func endAnnouncement(for ending: Ending) -> String? {
         guard let subject, !state.isCancelling else { return nil }
         let ranLong = hasRunLong(at: now())
         switch ending {
         case .batch(let result):
-            guard result.cancellation == nil, ranLong || result.foundNoNewBook else { return nil }
+            guard result.cancellation == nil, !result.foundNoNewBook, ranLong else { return nil }
             return ImportProgressWording.finished(
                 batch: subject,
                 imported: result.books.count,

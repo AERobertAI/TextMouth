@@ -32,8 +32,9 @@ struct ArchiveEntryLimits: Equatable, Sendable {
     @TaskLocal static var current = ArchiveEntryLimits.standard
 
     /// The extensions of the audio files a book's archive can hold: those
-    /// TextMouth plays as audio books, and Ogg, which DAISY books also use.
-    static let audioExtensions: Set<String> = Set(BookFormat.audio.fileExtensions).union(["ogg"])
+    /// TextMouth plays as audio books, Ogg among them, which DAISY books
+    /// also use.
+    static let audioExtensions: Set<String> = Set(BookFormat.audio.fileExtensions)
 
     /// Whether the entry at `path` inside an archive is an audio file,
     /// judged by its extension, without regard to case.

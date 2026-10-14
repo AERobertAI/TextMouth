@@ -14,6 +14,24 @@ final class AudioZIPClassificationTests: XCTestCase {
         XCTAssertTrue(LibraryViewModel.isAudioZip(url: zip))
     }
 
+    /// An archive of Ogg tracks, under any of Ogg's three extensions, is one
+    /// audiobook, as an archive of MP3s is. Before Ogg was an audio format,
+    /// such an archive fell through to the batch import, which extracted
+    /// it, found no book in it, and ended without a word on screen
+    /// (October 13, 2026: 176 radio dramas as .ogg files in a 4.2 GB ZIP).
+    func testZIPOfOggTracksIsClassifiedAsAudio() throws {
+        let zip = try makeZIP(entries: [
+            "spur_of_the_moment.ogg": "first",
+            "elegy.oga": "second",
+            "two.opus": "third"
+        ])
+        defer { try? FileManager.default.removeItem(at: zip) }
+
+        // ZIP routing checks DAISY before audio, as above.
+        XCTAssertFalse(DAISYParser.isDAISYZip(url: zip))
+        XCTAssertTrue(LibraryViewModel.isAudioZip(url: zip))
+    }
+
     func testZIPMixingAudioAndReadableBookContentIsNotClassifiedAsAudio() throws {
         let zip = try makeZIP(entries: [
             "track1.mp3": "audio",

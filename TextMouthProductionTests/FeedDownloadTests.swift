@@ -224,31 +224,47 @@ final class FeedDownloadTests: XCTestCase {
 
     /// Without room on the library's disk for the episode and the space
     /// TextMouth keeps free, the download fails before anything is fetched;
-    /// a file of a kind TextMouth does not play fails before it is fetched
-    /// too.
+    /// a file of a kind TextMouth does not play, such as Windows Media
+    /// Audio, fails before it is fetched too. (Until October 13, 2026 Ogg
+    /// audio was this test's example; TextMouth plays it now.)
     func testDownloadsThatCannotBeKeptFailBeforeTheyStart() async throws {
         let world = try FeedTestWorld(self, label: "FeedNoRoom")
         world.freeSpace.value = 1_500_000_000
         let items = [
             FeedXML.Item(guid: "big", title: "Big", published: world.day(-1),
                          enclosure: world.server.url("/audio/big.mp3").absoluteString, enclosureLength: 600_000_000),
-            FeedXML.Item(guid: "ogg", title: "Ogg", published: world.day(-2),
-                         enclosure: world.server.url("/audio/talk.ogg").absoluteString, enclosureType: "audio/ogg"),
+            FeedXML.Item(guid: "wma", title: "WMA", published: world.day(-2),
+                         enclosure: world.server.url("/audio/talk.wma").absoluteString, enclosureType: "audio/x-ms-wma"),
         ]
         world.server.serve("/feed.xml", .feed(FeedXML.rss(items: items)))
         let feed = try await world.subscribe("/feed.xml")
 
         world.center.download("guid:big", of: feed.id)
-        world.center.download("guid:ogg", of: feed.id)
+        world.center.download("guid:wma", of: feed.id)
         await waitFor("both downloads fail") {
             world.center.listedItems(of: feed.id).allSatisfy { $0.state.failureReason != nil }
         }
 
         let items2 = world.center.store.record(of: feed.id)
         XCTAssertEqual(items2?.item("guid:big")?.state.failureReason, "There isn't room on this Mac for this episode (600 MB).")
-        XCTAssertEqual(items2?.item("guid:ogg")?.state.failureReason, "TextMouth can't play this kind of file (audio/ogg).")
+        XCTAssertEqual(items2?.item("guid:wma")?.state.failureReason, "TextMouth can't play this kind of file (audio/x-ms-wma).")
         XCTAssertEqual(world.server.requests(to: "/audio/big.mp3"), [])
-        XCTAssertEqual(world.server.requests(to: "/audio/talk.ogg"), [])
+        XCTAssertEqual(world.server.requests(to: "/audio/talk.wma"), [])
+    }
+
+    /// An Ogg episode is kept under an Ogg extension, whether its type or
+    /// its address names it, so AVFoundation reads it as Ogg; a type that
+    /// may hold Ogg video names none.
+    func testAnOggEpisodeIsKeptUnderItsOwnExtension() throws {
+        func kept(_ address: String, type: String?, served: String? = nil) throws -> String? {
+            let enclosure = FeedEnclosure(url: try XCTUnwrap(URL(string: address)), mimeType: type, length: nil)
+            return FeedEpisodeImporter.fileExtension(responseMIMEType: served, enclosure: enclosure)
+        }
+        XCTAssertEqual(try kept("https://radio.example/play?id=7", type: "audio/ogg"), "ogg")
+        XCTAssertEqual(try kept("https://radio.example/play?id=7", type: "audio/ogg; codecs=opus"), "ogg")
+        XCTAssertEqual(try kept("https://radio.example/play?id=7", type: nil, served: "audio/opus"), "opus")
+        XCTAssertEqual(try kept("https://radio.example/elegy.oga", type: nil), "oga")
+        XCTAssertNil(try kept("https://radio.example/play?id=7", type: "application/ogg"))
     }
 
     // MARK: - Articles

@@ -27,6 +27,20 @@ final class BookFormatTests: XCTestCase {
         XCTAssertTrue(BookFormat.docx.fileExtensions.contains("docx"))
     }
 
+    /// Ogg audio is an audiobook format under each of its extensions, in
+    /// any case. The Open Book panel offers it, an archive's entry limits
+    /// count it as audio, and a feed's enclosure named with it is audio,
+    /// all from the one list of audio extensions.
+    func testOggAudioIsAnAudiobookFormat() {
+        for ext in ["ogg", "oga", "opus", "OGG"] {
+            XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/elegy.\(ext)")), .audio, ext)
+            XCTAssertTrue(ArchiveEntryLimits.isAudio("Radio/elegy.\(ext)"), ext)
+        }
+        XCTAssertTrue(FileImportService.supportedTypes.contains { $0.identifier == "org.xiph.ogg-audio" })
+        XCTAssertEqual(ArchiveEntryLimits.audioExtensions, Set(BookFormat.audio.fileExtensions))
+        XCTAssertTrue(FeedMediaKind.audioExtensions.isSuperset(of: ["ogg", "oga", "opus"]))
+    }
+
     func testDuplicateImportDoesNotDeleteOriginalBeforeUserDecision() throws {
         let viewModel = LibraryViewModel()
         let existing = makeBook(hash: "same-content")

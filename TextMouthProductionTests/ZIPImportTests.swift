@@ -10,7 +10,8 @@ final class ZIPImportTests: XCTestCase {
         try verifyOriginalHandling(hasFailure: true, hasBook: true, shouldDelete: false)
     }
 
-    /// Empty and duplicate-only results must preserve the source archive.
+    /// Empty and duplicate-only results must preserve the source archive,
+    /// and the library's alert says why nothing came in.
     @MainActor
     func testImportWithoutAcceptedBooksKeepsOriginalArchive() throws {
         try verifyOriginalHandling(hasFailure: false, hasBook: false, shouldDelete: false)
@@ -82,7 +83,12 @@ final class ZIPImportTests: XCTestCase {
 
         XCTAssertEqual(FileManager.default.fileExists(atPath: original.path), !shouldDelete)
         XCTAssertEqual(viewModel.library.books.count, hasBook ? 1 : 0)
-        XCTAssertEqual(viewModel.showError, hasFailure || hasIncompleteBook)
+        // A failure or a book missing chapters raises an error; a batch
+        // that imported nothing, and lost nothing, says so under its own
+        // title.
+        XCTAssertEqual(viewModel.showError, hasFailure || hasIncompleteBook || !hasBook)
+        let importedNothing = !hasBook && !hasFailure
+        XCTAssertEqual(viewModel.errorTitle, importedNothing ? ImportProgressWording.nothingImportedTitle : nil)
     }
 
     func testSupportedFileLoopReturnsBooksAndPerFileFailures() throws {
@@ -229,7 +235,7 @@ final class ZIPImportTests: XCTestCase {
 
     /// A file already in the library is skipped, counted among the batch's
     /// duplicates, and is no failure; a batch of nothing else found no new
-    /// book, which VoiceOver is told however short it was (FR10).
+    /// book, which the library's alert says, however short it was.
     func testDuplicateFilesAreSkippedWithoutBeingReportedAsFailures() throws {
         let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: file) }
@@ -251,6 +257,59 @@ final class ZIPImportTests: XCTestCase {
         XCTAssertEqual(result.skippedDuplicates, 1)
         XCTAssertTrue(result.foundNoNewBook)
         XCTAssertNil(result.failureSummary, "an alert would follow the batch")
+    }
+
+    /// A batch that finds no book counts the files it passed over by
+    /// extension, in any case, those in an archive inside it too, but not
+    /// hidden files or the copies macOS keeps in `__MACOSX`, and its end is
+    /// logged whatever it brought. On October 13, 2026 a ZIP of 176 radio
+    /// dramas as Ogg files, before TextMouth played Ogg, was extracted,
+    /// searched, and removed with nothing logged or shown.
+    func testABatchWithoutABookCountsWhatItPassedOverAndLogsItsEnd() throws {
+        let inner = try makeTemporaryZip(prefix: "NonBookInner", entries: [
+            "cover.jpg": Data("jpeg".utf8),
+            "readme": Data("no extension".utf8)
+        ])
+        defer { try? FileManager.default.removeItem(at: inner) }
+        let archive = try makeTemporaryZip(prefix: "NonBookOuter", entries: [
+            "Radio/elegy.wma": Data("one".utf8),
+            "Radio/two.WMA": Data("two".utf8),
+            "Radio/notes.json": Data("{}".utf8),
+            "Radio/.hidden.wma": Data("hidden".utf8),
+            "__MACOSX/Radio/._elegy.wma": Data("apple double".utf8),
+            "Radio/extras.zip": try Data(contentsOf: inner)
+        ])
+        defer { try? FileManager.default.removeItem(at: archive) }
+
+        let result = try FileImportService.importZip(from: archive)
+
+        XCTAssertTrue(result.foundNoNewBook)
+        XCTAssertEqual(result.nonBookFiles.countsByExtension, ["wma": 2, "json": 1, "jpg": 1, "": 1])
+        // Each log line starts with a timestamp; compare from the tag on.
+        let tag = "\(ZipImportResult.finishedLogTag): \(archive.lastPathComponent): "
+        let logged = debugLogLines(containing: tag).compactMap { line in
+            line.range(of: tag).map { String(line[$0.lowerBound...]) }
+        }
+        XCTAssertEqual(logged, [
+            tag + "imported=0 duplicates=0 failed=0 incomplete=0 cancelled=false "
+                + "notBooks=5 (wma 2, no extension 1, jpg 1, json 1)"
+        ])
+    }
+
+    /// The library alert's title goes back to "Error" once the alert
+    /// closes, so an alert raised next, anywhere, never shows a title meant
+    /// for another.
+    @MainActor
+    func testTheLibraryAlertsTitleIsClearedAsItCloses() {
+        let viewModel = LibraryViewModel(initializeServices: false)
+        viewModel.errorMessage = "No books were found in “Radio.zip”. It holds no files."
+        viewModel.errorTitle = ImportProgressWording.nothingImportedTitle
+        viewModel.showError = true
+        XCTAssertEqual(viewModel.errorTitle, ImportProgressWording.nothingImportedTitle)
+
+        viewModel.showError = false
+
+        XCTAssertNil(viewModel.errorTitle)
     }
 
     /// A batch found no new book only when it imported none, nothing in it
