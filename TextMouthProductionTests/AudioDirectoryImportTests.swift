@@ -177,9 +177,115 @@ final class AudioDirectoryImportTests: XCTestCase {
         }
     }
 
+    // MARK: - Where the Archive Keeps Its Manifest
+
+    /// Finder's Compress command puts a folder's contents under the
+    /// folder's name, so a manifest made beside the tracks lands inside
+    /// that folder. The import finds it there, and the book takes its
+    /// title, author, order, and titles, the manifest naming each track
+    /// from the folder that holds it; a track it leaves out follows.
+    func testManifestInsideTheArchivesOneFolderArrangesTheBook() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("Radio Plays")
+        for name in ["a.wav", "b.wav", "c.wav"] {
+            try AudioTestFixtures.writeSilence(to: source.appendingPathComponent(name))
+        }
+        try writeManifest(
+            #"{"title": "Harbor Plays", "author": "Wenzel Okafor", "order": ["c.wav", "a.wav"], "chapters": {"c.wav": "Ninth Floor"}}"#,
+            in: source
+        )
+        let archive = directory.appendingPathComponent("Radio Plays.zip")
+        try FileManager.default.zipItem(at: source, to: archive, shouldKeepParent: true)
+
+        let book = try FileImportService.importAudioZip(from: archive)
+        defer { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        let loaded = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertEqual(book.title, "Harbor Plays")
+        XCTAssertEqual(book.author, "Wenzel Okafor")
+        XCTAssertEqual(loaded.content.chapters.map(\.title), ["Ninth Floor", "a", "b"])
+        XCTAssertEqual(
+            loaded.audioFilePaths?.map { URL(fileURLWithPath: $0).pathComponents.suffix(2).joined(separator: "/") },
+            ["Radio Plays/c.wav", "Radio Plays/a.wav", "Radio Plays/b.wav"]
+        )
+    }
+
+    /// A manifest at the archive's top level arranges the book as it always
+    /// has, naming a track in a folder by the folder too.
+    func testManifestAtTheArchivesTopLevelStillArrangesTheBook() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("Harbor Plays")
+        for name in ["Disc 1/01.wav", "Disc 1/02.wav"] {
+            try AudioTestFixtures.writeSilence(to: source.appendingPathComponent(name))
+        }
+        try writeManifest(
+            #"{"title": "Harbor Plays", "order": ["Disc 1/02.wav"], "chapters": {"Disc 1/02.wav": "Ninth Floor"}}"#,
+            in: source
+        )
+        let archive = directory.appendingPathComponent("Harbor Plays.zip")
+        try FileManager.default.zipItem(at: source, to: archive, shouldKeepParent: false)
+
+        let book = try FileImportService.importAudioZip(from: archive)
+        defer { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        let loaded = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertEqual(book.title, "Harbor Plays")
+        XCTAssertEqual(loaded.content.chapters.map(\.title), ["Ninth Floor", "01"])
+    }
+
+    /// Two folders at the archive's top level are no wrapper: a manifest
+    /// inside one of them is not read, and the book is named by its archive
+    /// and its tracks by their files, in Finder's order.
+    func testManifestInsideOneOfTwoFoldersIsNotRead() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("Two Parts")
+        try AudioTestFixtures.writeSilence(to: source.appendingPathComponent("Part One/a.wav"))
+        try AudioTestFixtures.writeSilence(to: source.appendingPathComponent("Part Two/b.wav"))
+        try writeManifest(
+            #"{"title": "Not This Title", "chapters": {"a.wav": "Not This Heading"}}"#,
+            in: source.appendingPathComponent("Part One")
+        )
+        let archive = directory.appendingPathComponent("Two Parts.zip")
+        try FileManager.default.zipItem(at: source, to: archive, shouldKeepParent: false)
+
+        let book = try FileImportService.importAudioZip(from: archive)
+        defer { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        let loaded = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertEqual(book.title, "Two Parts")
+        XCTAssertEqual(loaded.content.chapters.map(\.title), ["a", "b"])
+    }
+
+    /// The sections of a manifest inside the one folder name their files
+    /// from that folder too, and play from inside it.
+    func testSectionsOfAManifestInsideTheOneFolderNameFilesFromIt() async throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("Lectures")
+        try AudioTestFixtures.writeSilence(to: source.appendingPathComponent("a.wav"), duration: 2)
+        try JSONEncoder().encode(AudioManifest(segments: [
+            AudioSegment(title: "Opening", file: "a.wav", startTime: 0, endTime: 1),
+            AudioSegment(title: "Closing", file: "a.wav", startTime: 1, endTime: 0)
+        ])).write(to: source.appendingPathComponent("manifest.json"))
+
+        let parsed = try await AudioBookParser.parseDirectory(url: directory)
+
+        XCTAssertEqual(parsed.content.chapters.map(\.title), ["Opening", "Closing"])
+        XCTAssertEqual(parsed.segments?.map(\.file), ["Lectures/a.wav", "Lectures/a.wav"])
+    }
+
     /// Every fixture lives under a unique temporary directory.
     private func temporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory.resolvingSymlinksInPath()
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    }
+
+    /// Write `json`, exactly as given, as the manifest.json in `folder`.
+    private func writeManifest(_ json: String, in folder: URL) throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data(json.utf8).write(to: folder.appendingPathComponent("manifest.json"))
     }
 }

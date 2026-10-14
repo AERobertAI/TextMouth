@@ -1728,12 +1728,12 @@ enum FileImportService {
                 progress: extraction
             )
 
-            // A manifest beside the audio can name the book and its author.
+            // A manifest beside the audio, or inside the archive's one
+            // folder, can name the book and its author; it is found where
+            // the book's reading finds it (`AudioManifest.read(inAudioFolder:)`).
             var title = zipName
             var author = Book.unknownAuthor
-            let manifestURL = audioDirectory.appendingPathComponent("manifest.json")
-            if let data = try? Data(contentsOf: manifestURL),
-               let manifest = try? JSONDecoder().decode(AudioManifest.self, from: data) {
+            if let manifest = AudioManifest.read(inAudioFolder: audioDirectory)?.manifest {
                 if let manifestTitle = manifest.title { title = manifestTitle }
                 if let manifestAuthor = manifest.author { author = manifestAuthor }
             }

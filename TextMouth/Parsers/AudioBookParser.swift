@@ -126,7 +126,10 @@ enum AudioBookParser {
     }
 
     /// Parse a directory of audio files as a multi-chapter audio book.
-    /// Files are ordered alphabetically unless a manifest.json is found.
+    /// Files are ordered alphabetically unless a manifest.json is found, at
+    /// the directory's top level or inside its one folder
+    /// (`AudioManifest.read(inAudioFolder:)`); the manifest names tracks by
+    /// their paths from the folder holding it.
     /// - Parameter prober: checks that each file plays and measures it,
     ///   probing each file once; the app's AVFoundation probe unless a test
     ///   stands in for it.
@@ -144,40 +147,46 @@ enum AudioBookParser {
         url: URL,
         prober: AudioMediaProber = .avFoundation
     ) async throws -> (content: DocumentContent, filePaths: [String], segments: [AudioSegment]?) {
-        let fm = FileManager.default
         var audioFiles = try Self.audioFiles(in: url)
 
         guard !audioFiles.isEmpty else {
             throw AudioParseError.noAudioFiles
         }
 
-        // Check for manifest.json
-        let manifestURL = url.appendingPathComponent("manifest.json")
-        var chapterTitles: [String: String] = [:] // filename -> title
-
-        var manifest: AudioManifest?
-        if fm.fileExists(atPath: manifestURL.path),
-           let data = try? Data(contentsOf: manifestURL) {
-            manifest = try? JSONDecoder().decode(AudioManifest.self, from: data)
-            chapterTitles = manifest?.chapters ?? [:]
-            if let order = manifest?.order, !order.isEmpty {
-                // Reorder files according to manifest
-                let filesByName = Dictionary(uniqueKeysWithValues: audioFiles.map {
-                    (relativeName(of: $0, in: url), $0)
-                })
-                audioFiles = orderedFileNames(Array(filesByName.keys), manifestOrder: order)
-                    .compactMap { filesByName[$0] }
-            }
+        // The manifest, wherever it lies, names each track by its path from
+        // the folder holding it; every name is turned into the track's path
+        // from `url`, as the tracks are named here.
+        let found = AudioManifest.read(inAudioFolder: url)
+        let manifest = found?.manifest
+        let pathOfTrack = { (name: String) in found?.location.path(ofTrackNamed: name) ?? name }
+        var chapterTitles: [String: String] = [:] // track path -> title
+        for (name, title) in manifest?.chapters ?? [:] {
+            chapterTitles[pathOfTrack(name)] = title
+        }
+        if let order = manifest?.order, !order.isEmpty {
+            // Reorder files according to manifest
+            let filesByName = Dictionary(uniqueKeysWithValues: audioFiles.map {
+                (relativeName(of: $0, in: url), $0)
+            })
+            audioFiles = orderedFileNames(Array(filesByName.keys), manifestOrder: order.map(pathOfTrack))
+                .compactMap { filesByName[$0] }
         }
 
         let overallTitle = manifest?.title ?? url.lastPathComponent
         let overallAuthor = manifest?.author ?? Book.unknownAuthor
 
         // If manifest has segments (DAISY-style sub-file chapters), use those
-        // instead of the one-file-per-chapter model
+        // instead of the one-file-per-chapter model. Their clips name files
+        // from the manifest's folder too.
         if let segments = manifest?.segments, !segments.isEmpty {
             let result = try await parseSegmentedAudio(
-                segments: segments,
+                segments: segments.map { segment in
+                    segment.mappingClips { clip in
+                        var located = clip
+                        located.file = pathOfTrack(clip.file)
+                        return located
+                    }
+                },
                 audioDir: url,
                 availableFiles: Set(audioFiles.map { relativeName(of: $0, in: url) }),
                 title: overallTitle,
