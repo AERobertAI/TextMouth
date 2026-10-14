@@ -567,6 +567,10 @@ private final class RenderedSpeechFeeder: @unchecked Sendable {
     private var bytesScheduled = 0
     /// Told of each slice scheduled; set by hosted tests only.
     private var sliceObserver: SliceObserver?
+    /// How the node is started. Always the node's own `play()` in the app;
+    /// a hosted test swaps in one that raises, as AVFAudio does when the
+    /// Mac's audio output has stopped cycling.
+    private var startPlayer: (AVAudioPlayerNode) -> Void = { $0.play() }
 
     init(node: AVAudioPlayerNode, sliceFrameCount: Int, slicesAhead: Int) {
         precondition(sliceFrameCount > 0 && slicesAhead > 0, "a play schedules at least one frame at a time")
@@ -578,7 +582,10 @@ private final class RenderedSpeechFeeder: @unchecked Sendable {
     /// Feed `play` to the node from its first frame, and start the node.
     ///
     /// - Returns: False when not even the first slice could be made; then
-    ///   nothing was scheduled, and the node was not started.
+    ///   nothing was scheduled, and the node was not started. Also false
+    ///   when the node raised an exception as it started (`playNode()`);
+    ///   then the play has ended and the node is stopped, so nothing stays
+    ///   scheduled.
     func start(_ play: Play) -> Bool {
         let (slices, observer) = queue.sync { () -> ([ScheduledSpeechSlice], SliceObserver?) in
             playNumber += 1
@@ -593,7 +600,13 @@ private final class RenderedSpeechFeeder: @unchecked Sendable {
                 self.play = nil
                 return ([], nil)
             }
-            node.play()
+            guard playNode() else {
+                // The node cannot play: end the play, and clear the slices
+                // it was given, so none stays scheduled over silence.
+                endPlay()
+                stopNodeCatchingExceptions()
+                return ([], nil)
+            }
             return (slices, sliceObserver)
         }
         slices.forEach { observer?($0) }
@@ -624,8 +637,42 @@ private final class RenderedSpeechFeeder: @unchecked Sendable {
     }
 
     /// Start the node again where it paused.
-    func resumeNode() {
-        queue.sync { node.play() }
+    ///
+    /// - Returns: False when the node raised an exception as it started
+    ///   (`playNode()`), and so is not playing.
+    func resumeNode() -> Bool {
+        queue.sync { playNode() }
+    }
+
+    /// Swap how the node is started, or restore the node's own `play()`
+    /// with nil; for hosted tests only.
+    func useNodeStarter(_ starter: ((AVAudioPlayerNode) -> Void)?) {
+        queue.sync { startPlayer = starter ?? { $0.play() } }
+    }
+
+    /// On `queue`: start the node. AVFAudio raises an Objective-C exception
+    /// when the Mac's audio output has stopped cycling ("player did not see
+    /// an IO cycle"), which Swift cannot catch and which would end the app;
+    /// it is caught here and logged as one `SPEECH_PLAYER_EXCEPTION` line.
+    ///
+    /// - Returns: Whether the node started.
+    private func playNode() -> Bool {
+        let node = self.node
+        let starter = startPlayer
+        guard let exception = ObjCException.catching({ starter(node) }) else { return true }
+        DiagnosticLog.event(
+            .playback,
+            ObjCException.logLine(tag: "SPEECH_PLAYER_EXCEPTION", for: exception),
+            in: .speechTransitions
+        )
+        return false
+    }
+
+    /// On `queue`: stop the node after it failed to start, which may raise
+    /// too; whatever it raises is dropped, as the node is already unusable.
+    private func stopNodeCatchingExceptions() {
+        let node = self.node
+        _ = ObjCException.catching { node.stop() }
     }
 
     /// How many frames the node has played since it last started from a
@@ -1229,7 +1276,13 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                 }
             }
         ))
-        guard started else { return }
+        guard started else {
+            // Nothing plays: the listener is not shown playing over silence,
+            // and the caller, which checks `isPlaying`, decides how to go on.
+            isPlaying = false
+            isPaused = false
+            return
+        }
         isPlaying = true
         isPaused = false
     }
@@ -1326,8 +1379,10 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     /// Resume the play under way, restarting the audio engine first when
     /// macOS has stopped it during sleep or an output-device interruption.
-    /// Returns false only when there is no paused playback or the engine
-    /// cannot be restarted, allowing the caller to retain a recoverable state.
+    /// Returns false only when there is no paused playback, the engine
+    /// cannot be restarted, or the player node raises as it starts again
+    /// (`SPEECH_PLAYER_EXCEPTION`), allowing the caller to retain a
+    /// recoverable state.
     ///
     /// Playback whose segment played to its end as it paused has nothing
     /// left to play, so it finishes instead, once this call has returned
@@ -1344,7 +1399,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // Engine restarts can reset mixer state, so preserve the user's
         // current volume just as the normal play path does.
         engine.mainMixerNode.outputVolume = currentVolume
-        feeder.resumeNode()
+        // A node that raises as it starts leaves the play paused and the
+        // caller to go on another way (`SpeechService.resume()`).
+        guard feeder.resumeNode() else { return false }
         isPaused = false
         pausedFrame = nil
         releaseHeldSegmentEnd()
@@ -1646,6 +1703,14 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// the rest, and must not call back into the engine.
     func _observeScheduledSlicesForTesting(_ observer: (@Sendable (ScheduledSpeechSlice) -> Void)?) {
         feeder.observeSlices(observer)
+    }
+
+    /// Starts the player node with `starter` in place of the node's own
+    /// `play()`, so that a test can make the start raise an Objective-C
+    /// exception as AVFAudio does when the audio output stops cycling; nil
+    /// restores `play()`.
+    func _playerStartForTesting(_ starter: ((AVAudioPlayerNode) -> Void)?) {
+        feeder.useNodeStarter(starter)
     }
 
     /// Runs the same interpolation used by production seeking.

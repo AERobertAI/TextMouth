@@ -1,0 +1,8 @@
+// The Clang module Swift imports the exception catcher by:
+// `import ObjCExceptionCatcher`, in TextMouth's ObjCException, the only
+// Swift file that does. The library is the ObjCExceptionCatcher target in
+// project.yml, which the app links.
+module ObjCExceptionCatcher {
+    header "ObjCExceptionCatcher.h"
+    export *
+}

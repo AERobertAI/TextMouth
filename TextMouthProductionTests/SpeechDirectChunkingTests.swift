@@ -1051,6 +1051,122 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertTrue(lines.contains { $0.hasPrefix("DIRECT_RETRY offset=\(start) ") }, "\(lines)")
     }
 
+    // MARK: - A Player Node That Raises
+
+    // The player node is made to raise an Objective-C exception as it
+    // starts, as AVFAudio does when the Mac's audio output has stopped
+    // cycling (`_playerStartForTesting`). Nothing here is heard: the audio
+    // is silence at volume 0.
+
+    /// The exception AVFAudio raises when the output has stopped cycling.
+    private static func outputStoppedException() -> NSException {
+        NSException(
+            name: NSExceptionName("com.apple.coreaudio.avfaudio"),
+            reason: "player did not see an IO cycle",
+            userInfo: nil
+        )
+    }
+
+    /// Make `speech`'s engine silent, and its player node raise as it
+    /// starts.
+    private func makePlayerRaise(in speech: SpeechService) {
+        speech.audioEngine.setVolume(0)
+        speech.audioEngine._playerStartForTesting { _ in Self.outputStoppedException().raise() }
+    }
+
+    /// Silence standing for `text` rendered ahead, as a chapter's
+    /// look-ahead holds it.
+    private func preRenderedSilence(of text: String, for speech: SpeechService) -> AudioEngineService {
+        let rendered = AudioEngineService()
+        rendered._installRenderedAudioForTesting(
+            signature: SpeechRenderRequest(text: text, voice: speech.currentVoice).signature,
+            lasting: 5
+        )
+        return rendered
+    }
+
+    /// A chapter played from pre-rendered audio whose player node raises as
+    /// it starts goes on as direct speech from the same place
+    /// (`PRE_RENDERED_START_FAILED`), after one `SPEECH_PLAYER_EXCEPTION`
+    /// line, rather than showing itself speaking over silence; nothing stays
+    /// scheduled on the node.
+    func testAPreRenderedStartWhosePlayerRaisesSpeaksDirectly() throws {
+        let text = "The ferry left the quay at noon, and the lamps came on along the pier."
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        makePlayerRaise(in: speech)
+        let rendered = preRenderedSilence(of: text, for: speech)
+
+        let logged = logLines(in: .speechTransitions) {
+            speech.usePreRenderedEngine(rendered, text: text, fromCharOffset: 10)
+        }
+
+        XCTAssertFalse(speech.audioEngine.isPlaying)
+        XCTAssertEqual(speech.audioEngine.scheduledSegmentAudioByteCount, 0, "slices stayed scheduled on a node that cannot play")
+        XCTAssertTrue(speech.usingDirectMode, "speech was left on an engine that did not play")
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertEqual(recorder.utterances.count, 1, "nothing was spoken")
+        XCTAssertEqual(
+            logged.filter { $0.hasSuffix("SPEECH_PLAYER_EXCEPTION: com.apple.coreaudio.avfaudio: player did not see an IO cycle") }.count,
+            1,
+            "\(logged)"
+        )
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(
+            lines.contains("PRE_RENDERED_START_FAILED: rendered audio did not start; speaking directly at offset=10"),
+            "\(lines)"
+        )
+    }
+
+    /// A seek that switches to rendered audio whose player raises speaks
+    /// directly from the new place (`SEEK_ENGINE_FAILED`), as for an engine
+    /// that cannot start.
+    func testASeekWhosePlayerRaisesSpeaksDirectlyFromThere() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.speak(Self.longText)
+        installSilentRenderedAudio(of: Self.longText, in: speech)
+        makePlayerRaise(in: speech)
+        report(start: try handedOver(0, by: recorder), to: speech)
+        let handedBeforeTheSeek = recorder.utterances.count
+
+        speech.seek(toCharOffset: 50_000)
+
+        XCTAssertTrue(speech.usingDirectMode)
+        XCTAssertFalse(speech.audioEngine.isPlaying)
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheSeek + 1)
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(lines.contains { $0.hasPrefix("SEEK_ENGINE_FAILED:") }, "\(lines)")
+    }
+
+    /// A resume whose player raises as it starts again falls back to direct
+    /// speech from where speech paused (`ENGINE_RESUME_FAILED`), and says it
+    /// resumed, since speech is audible again.
+    func testAResumeWhosePlayerRaisesGoesOnDirectly() throws {
+        let text = "The ferry left the quay at noon, and the lamps came on along the pier."
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        speech.audioEngine.setVolume(0)
+        speech.usePreRenderedEngine(preRenderedSilence(of: text, for: speech), text: text)
+        XCTAssertTrue(speech.audioEngine.isPlaying, "the silent audio did not start")
+        speech.pause()
+        XCTAssertTrue(speech.isPaused)
+        makePlayerRaise(in: speech)
+
+        let resumed = speech.resume()
+
+        XCTAssertTrue(resumed, "speech did not go on")
+        XCTAssertTrue(speech.usingDirectMode)
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertFalse(speech.audioEngine.isPlaying)
+        XCTAssertEqual(recorder.utterances.count, 1, "nothing was spoken again")
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(lines.contains { $0.hasPrefix("ENGINE_RESUME_FAILED:") }, "\(lines)")
+    }
+
     // MARK: - The Watchdogs
 
     // The watchdogs tick on timers the test ticks by hand

@@ -2014,11 +2014,22 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         audioEngine.setSpeed(wpm: wordsPerMinute)
         audioEngine.setPitch(multiplier: pitchMultiplier)
         audioEngine.play(fromCharOffset: charOffset)
-        startPositionTracking()
 
         audioEngine.onPlaybackFinished = { [weak self] in
             self?.handleEngineFinished()
         }
+
+        // The engine may not play: it could not start, or its player node
+        // raised as it started (`SPEECH_PLAYER_EXCEPTION`). Speech then goes
+        // on directly from here, as a seek's does, rather than showing itself
+        // speaking over silence.
+        guard audioEngine.isPlaying else {
+            transitionLog(.event, "PRE_RENDERED_START_FAILED: rendered audio did not start; speaking directly at offset=\(charOffset)")
+            audioEngine.stop()
+            speakDirect(text, fromCharOffset: charOffset)
+            return
+        }
+        startPositionTracking()
 
         transitionLog(.trace, "PRE_RENDERED_START: playing chapter (\(text.utf16Length) UTF-16 units) from offset \(charOffset)")
     }

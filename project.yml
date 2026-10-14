@@ -62,8 +62,9 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         PRODUCT_NAME: TextMouth
         GENERATE_INFOPLIST_FILE: false
-        # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap).
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include
+        # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap)
+        # and the exception catcher's (Vendor/ObjCExceptionCatcher/include/module.modulemap).
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
       # The Release app, which `make build` packages and `make install`
       # copies, is built to be small. Debug, where the hosted tests run, is
       # left as it is.
@@ -95,6 +96,8 @@ targets:
         product: Markdown
       # The MP3 encoder, linked into the app (MP3Encoder).
       - target: LAME
+      # The Objective-C exception catcher (ObjCException).
+      - target: ObjCExceptionCatcher
   # LAME 3.100's MP3 encoder (FR04), vendored in Vendor/lame and built as a
   # static library the app links, so TextMouth writes MP3 itself
   # (MP3Encoder) rather than only through an installed ffmpeg.
@@ -142,6 +145,26 @@ targets:
         GCC_OPTIMIZATION_LEVEL: s
         GCC_WARN_INHIBIT_ALL_WARNINGS: YES
         SKIP_INSTALL: YES
+  # One C function that runs a block and returns the Objective-C exception it
+  # raised (TMCatchException), for the few framework calls that raise one
+  # Swift cannot catch. Built as LAME is: a static library with a module
+  # map, which the app links. It is a function, with no class or category
+  # for the linker to keep, so the app links it without -ObjC.
+  ObjCExceptionCatcher:
+    type: library.static
+    platform: macOS
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/ObjCExceptionCatcher/ObjCExceptionCatcher.m
+      - path: Vendor/ObjCExceptionCatcher/include/ObjCExceptionCatcher.h
+        headerVisibility: project
+    settings:
+      base:
+        PRODUCT_NAME: ObjCExceptionCatcher
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
+        CLANG_ENABLE_OBJC_ARC: YES
+        SKIP_INSTALL: YES
   TextMouthProductionTests:
     type: bundle.unit-test
     platform: macOS
@@ -177,7 +200,7 @@ targets:
         INFOPLIST_FILE: TextMouthProductionTests/Info.plist
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
-        # The LAME module, which `@testable import TextMouth` may load.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include
+        # The LAME and exception-catcher modules, which `@testable import TextMouth` may load.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
     dependencies:
       - target: TextMouth
