@@ -185,8 +185,10 @@ extension AudioManifestEntry: Codable {
 
 /// A folder of tracks arranged as a book, as its manifest says: the tracks
 /// in the order they play, each with the title its heading shows, the
-/// group heading that begins at it, and its heading's level. The one
-/// arrangement the parser makes chapters and headings from.
+/// group heading that begins at it, its heading's level, and the pause
+/// after it. The one arrangement the parser makes chapters and headings
+/// from, and the reader takes the pauses between tracks from
+/// (`ChapterPauses.betweenTracks(of:inAudioFolder:)`).
 ///
 /// A manifest's `tracks` list (`AudioManifest.arrangesByTracks`) gives the
 /// order and the titles, and its group headings: each a level-1 heading at

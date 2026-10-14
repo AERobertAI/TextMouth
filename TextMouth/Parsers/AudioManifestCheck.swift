@@ -166,10 +166,10 @@ enum AudioManifestProblem: LocalizedError, Equatable {
 
 /// The checks an import makes of an audiobook archive's manifest.json
 /// before it reads the book by it (October 13, 2026). A manifest that
-/// cannot be read was once passed over without a word, and
-/// the book imported in Finder's order, which a person writing JSON by hand,
-/// with a screen reader, cannot tell from success; now its first problem
-/// stops the import, said as `AudioManifestProblem` says it.
+/// cannot be read was once passed over without a word, and the book
+/// imported in Finder's order, which a person writing JSON by hand, with a
+/// screen reader, cannot tell from success; now its first problem stops
+/// the import, said as `AudioManifestProblem` says it.
 ///
 /// The checks run in the order a person fixes things: the file itself, its
 /// JSON, the keys, the kind of each value and each pause, how the book is
