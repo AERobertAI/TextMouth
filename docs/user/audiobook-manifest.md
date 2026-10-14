@@ -8,7 +8,7 @@ This document is the complete reference. It is written so you can also hand it t
 
 ## What works in which version
 
-- **In a build of main from October 14, 2026 or later:** everything this document describes.
+- **In a build of main from October 14, 2026 or later:** everything this document describes, including editing an imported audiobook's manifest where it is, and importing a plain folder of tracks.
 - **In an older build:** TextMouth reads only title, author, order, and chapters. It takes a manifest's title and author, passes over tracks and the pauses, so the book imports in name order, and doesn't look inside the ZIP's one folder. Before October 13, 2026, Ogg tracks don't import at all.
 
 ## Where the manifest goes
@@ -98,4 +98,15 @@ When a manifest has a mistake, the import stops at the first one, and its alert 
 
 - To a ZIP you already have: in Terminal, in the folder holding both, run `zip -j "My Tracks.zip" manifest.json`. The -j stores the manifest at the ZIP's top level. zip writes the whole archive again, which for a large ZIP takes a minute or two and needs as much free space as the ZIP.
 - Or unzip the tracks into a folder, put manifest.json in that folder, and compress the folder with Finder.
-- TextMouth takes the title, author, order, titles, and headings when it imports the ZIP, and reads the pauses again each time the book opens. To change a book you have already imported, edit the manifest and import the ZIP again, then remove the old copy.
+- TextMouth takes the title, author, order, titles, and headings when it imports the ZIP, and reads the pauses again each time the book opens. To change a book you have already imported, edit its manifest with Edit Manifest in Default Editor (below); there is no need to import it again.
+
+## Editing an imported book's manifest
+
+- An audiobook imported from a ZIP or a folder of tracks keeps its tracks and its manifest in its package. To change its order, titles, groups, or pauses, choose Edit Manifest in Default Editor or Edit Manifest With… from its reader's Book menu, or from its row's context menu in the Library window.
+- The first time, TextMouth explains what will happen. The manifest opens in your default app for JSON, or in the app you choose.
+- A book imported without a manifest is given one first: its tracks in the order they play, each with its heading's title, its title and author, and "pauseBetweenTracksMs": 0, so it still plays straight on from track to track.
+- Each time you save, TextMouth checks the manifest as an import does. A mistake changes nothing: VoiceOver says "Manifest not updated" and the mistake, in the import's words, and the book keeps its headings until you save again. A good manifest rearranges the book, and VoiceOver says "Manifest updated", or says it when you come back to TextMouth.
+- Your place, bookmarks, and skipped headings stay on their tracks, at the same time into each; titles and group headings change only the headings.
+- A book open in a reader shows its new headings at once. One that is playing plays on without a break, then goes on to the next track in the new order.
+- The manifest's title and author are the book's: an edited manifest's become the book's, and a title or author you change in Book Info is written into the manifest at once.
+- A manifest can't add or remove tracks, and can't give segments.

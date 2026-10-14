@@ -67,3 +67,4 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
   - Who may write it: +Playback's audioDidFinish begins the wait; stopWaitingOutChapterPause(because:) ends it, called from stopAudioWaitingToPlay, stop(), playAudioChapter(), and +LibraryUpdates' pauseAudioForPackageMove.
   - How others observe it: through isPlaybackUnderWay and isWaitingOutChapterPause.
   - Files: Models/ChapterPauses.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel.swift.
+- A manifest edit taken while the book is open (FR17): LibraryBookEvent.tracksRearranged brings it to the book's readers. showRearrangedTracks (ViewModels/ReaderViewModel+ManifestEdit.swift) maps the cursor by file and swaps the content, chapter files, pauses, and transcript; it then listens again for the end of the play under way, as the play of its track's new chapter in the same generation, and names the next file again. A reader still loading keeps the edit until its load ends.

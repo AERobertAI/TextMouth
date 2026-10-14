@@ -65,3 +65,4 @@ These small types each own one rule that several parts of the app follow; use th
 - AudioTrackPlan (Parsers/AudioManifest.swift): the one arrangement of a multi-file audiobook's tracks, their order, titles, group headings and levels, and the pause after each, used by the parser and by ChapterPauses.
 - ChapterPauses (Models/ChapterPauses.swift): the reader's one source of pauses between chapters.
 - ReaderViewModel.headingAnnouncement(arrivingAt:in:): what a heading jump says, every heading at the place it reaches, the outermost first.
+- PackageFileEditing (Services/PackageFileEditing.swift) holds what Edit Text and Edit Manifest share: the first-use explanation, worded for each kind, the app chooser, the workspace opener, the watcher of a file in a book's package, TextMouth becoming active, and the announcements kept until it does.

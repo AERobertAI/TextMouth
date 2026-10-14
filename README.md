@@ -7,8 +7,8 @@ This file is the index of TextMouth's documentation, whose pages are in the docs
 ## For people using TextMouth
 
 - [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays.
-- [The audiobook manifest](docs/user/audiobook-manifest.md): manifest.json, which orders, titles, groups, and paces a ZIP of audio tracks.
-- [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, DAISY folders, New from Text.
+- [The audiobook manifest](docs/user/audiobook-manifest.md): manifest.json, which orders, titles, groups, and paces a ZIP or folder of audio tracks, and Edit Manifest, which changes it after import.
+- [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, Import Folder… for DAISY books and folders of tracks, New from Text.
 - [The Library window](docs/user/library-window.md): categories, folders, sorting, searching, and the commands on books.
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
 - [Exporting books](docs/user/exporting-books.md): what Export copies out of the library.
