@@ -83,6 +83,8 @@ Main holds the record of the REV16 fixes, then, from the evening:
 
 - FR17, Edit Manifest, the title and author kept in the manifest, the audio editor's fix, and Import Folder… (5d9caee3, October 14, suite 6221 tests, 67 skipped, 0 failures), by agent `editmanifest`, with its documentation.
 
+- FR18, a manifest edited outside TextMouth taken as Edit Manifest takes a save, with a one-time pass keeping earlier hand edits (1744021a, October 14, suite 6230 tests, 67 skipped, 0 failures), by agent `outsideedits`, with its documentation.
+
 No agent is in flight.
 
 **Pending:**
