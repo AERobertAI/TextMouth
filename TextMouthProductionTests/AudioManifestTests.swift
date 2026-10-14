@@ -129,7 +129,219 @@ final class AudioManifestTests: XCTestCase {
         XCTAssertNil(AudioManifest.read(inAudioFolder: folder))
     }
 
+    // MARK: - The Tracks List
+
+    /// The manifest the tracks list was designed with, as a person writes
+    /// it: group headings, tracks with and without titles and pauses, and a
+    /// track given by its name alone.
+    static let exampleJSON = """
+    {
+      "title": "Radio Dramas",
+      "author": "Various",
+      "pauseBetweenTracksMs": 250,
+      "tracks": [
+        { "heading": "Season One" },
+        { "file": "where_is_everybody.ogg", "title": "Where Is Everybody?" },
+        { "file": "one_for_the_angels.ogg", "title": "One for the Angels", "pauseAfterMs": 1500 },
+        "mr_denton_on_dooms_day.ogg",
+        { "heading": "Season Two" },
+        { "file": "king_nine_will_not_return.ogg" }
+      ]
+    }
+    """
+
+    /// Each entry of the tracks list is read as a track or a group heading:
+    /// a string is a track's file alone, and an object a track with its
+    /// title and pause, or a heading.
+    func testTracksAreReadFromStringsAndObjects() throws {
+        let manifest = try AudioManifest.decoded(from: Data(Self.exampleJSON.utf8))
+
+        XCTAssertEqual(manifest.title, "Radio Dramas")
+        XCTAssertEqual(manifest.author, "Various")
+        XCTAssertEqual(manifest.pauseBetweenTracksMs, 250)
+        XCTAssertEqual(manifest.tracks, [
+            .heading("Season One"),
+            .track(AudioManifestTrack(file: "where_is_everybody.ogg", title: "Where Is Everybody?")),
+            .track(AudioManifestTrack(file: "one_for_the_angels.ogg", title: "One for the Angels", pauseAfterMs: 1500)),
+            .track(AudioManifestTrack(file: "mr_denton_on_dooms_day.ogg")),
+            .heading("Season Two"),
+            .track(AudioManifestTrack(file: "king_nine_will_not_return.ogg"))
+        ])
+        XCTAssertTrue(manifest.arrangesByTracks)
+    }
+
+    /// A manifest is written as it is read: a track with nothing but its
+    /// file as the file's name, everything else as an object holding only
+    /// the keys that have values, and no key at all for what is absent.
+    func testTracksAreWrittenAsTheyAreRead() throws {
+        let manifest = try AudioManifest.decoded(from: Data(Self.exampleJSON.utf8))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+
+        let written = try encoder.encode(manifest)
+
+        XCTAssertEqual(
+            String(decoding: written, as: UTF8.self),
+            #"{"author":"Various","pauseBetweenTracksMs":250,"title":"Radio Dramas","tracks":["#
+                + #"{"heading":"Season One"},{"file":"where_is_everybody.ogg","title":"Where Is Everybody?"},"#
+                + #"{"file":"one_for_the_angels.ogg","pauseAfterMs":1500,"title":"One for the Angels"},"#
+                + #""mr_denton_on_dooms_day.ogg",{"heading":"Season Two"},"king_nine_will_not_return.ogg"]}"#
+        )
+        XCTAssertEqual(try AudioManifest.decoded(from: written).tracks, manifest.tracks)
+    }
+
+    /// A manifest without the newer keys, as the DAISY converter writes,
+    /// is written exactly as before they existed.
+    func testManifestWithoutTheNewerKeysIsWrittenAsBefore() throws {
+        let manifest = AudioManifest(
+            title: "Ferry Log",
+            author: "Odile Marchetti",
+            segments: [AudioSegment(title: "Opening", file: "a.wav", startTime: 0, endTime: 1.5)]
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+
+        XCTAssertEqual(
+            String(decoding: try encoder.encode(manifest), as: UTF8.self),
+            #"{"author":"Odile Marchetti","segments":[{"endTime":1.5,"file":"a.wav","startTime":0,"title":"Opening"}],"title":"Ferry Log"}"#
+        )
+    }
+
+    /// The newer keys are read only when they hold what they should, and as
+    /// absent otherwise, so a manifest read before they existed, whatever it
+    /// held under those names, is read as it was: its title still counts.
+    func testNewerKeysOfTheWrongKindAreReadAsAbsent() throws {
+        let manifests = [
+            #"{"title": "Harbor Plays", "pauseBetweenTracksMs": "slow", "tracks": [5]}"#,
+            #"{"title": "Harbor Plays", "tracks": [{"file": "a.ogg", "heading": "Both"}]}"#,
+            #"{"title": "Harbor Plays", "tracks": [{"title": "Neither"}]}"#,
+            #"{"title": "Harbor Plays", "tracks": {"file": "a.ogg"}}"#
+        ]
+        for json in manifests {
+            let manifest = try AudioManifest.decoded(from: Data(json.utf8))
+            XCTAssertEqual(manifest.title, "Harbor Plays", json)
+            XCTAssertNil(manifest.tracks, json)
+            XCTAssertNil(manifest.pauseBetweenTracksMs, json)
+            XCTAssertFalse(manifest.arrangesByTracks, json)
+        }
+    }
+
+    // MARK: - Arranging the Tracks
+
+    /// The tracks list gives the book its order and titles, and its group
+    /// headings, each beginning at the next track listed; every track after
+    /// the first group heading is a level 2 heading under it. A track the
+    /// list leaves out follows, in Finder's order, with a level 1 heading of
+    /// its own, outside any group.
+    func testTracksArrangeOrderTitlesAndGroupHeadings() throws {
+        let manifest = try AudioManifest.decoded(from: Data(Self.exampleJSON.utf8))
+        let names = [
+            "where_is_everybody.ogg", "one_for_the_angels.ogg", "mr_denton_on_dooms_day.ogg",
+            "king_nine_will_not_return.ogg", "the_lonely.ogg", "elegy.ogg"
+        ]
+
+        let plan = AudioTrackPlan(arranging: names, by: manifest)
+
+        XCTAssertEqual(plan.tracks.map(describe), [
+            "where_is_everybody.ogg | Where Is Everybody? | level 2 | group Season One",
+            "one_for_the_angels.ogg | One for the Angels | level 2",
+            "mr_denton_on_dooms_day.ogg | mr_denton_on_dooms_day | level 2",
+            "king_nine_will_not_return.ogg | king_nine_will_not_return | level 2 | group Season Two",
+            "elegy.ogg | elegy | level 1",
+            "the_lonely.ogg | the_lonely | level 1"
+        ])
+    }
+
+    /// Tracks listed before the first group heading keep level 1 headings;
+    /// those after it are level 2, whether or not a heading of their own
+    /// begins at them.
+    func testTracksBeforeTheFirstGroupHeadingKeepLevelOne() throws {
+        let manifest = try AudioManifest.decoded(from: Data(
+            #"{"tracks": ["prologue.ogg", {"heading": "Act One"}, "scene1.ogg", "scene2.ogg"]}"#.utf8
+        ))
+
+        let plan = AudioTrackPlan(arranging: ["scene1.ogg", "prologue.ogg", "scene2.ogg"], by: manifest)
+
+        XCTAssertEqual(plan.tracks.map(describe), [
+            "prologue.ogg | prologue | level 1",
+            "scene1.ogg | scene1 | level 2 | group Act One",
+            "scene2.ogg | scene2 | level 2"
+        ])
+    }
+
+    /// A tracks list without group headings gives every track a level 1
+    /// heading, as a book of tracks has always had.
+    func testTracksWithoutGroupHeadingsAreAllLevelOne() throws {
+        let manifest = try AudioManifest.decoded(from: Data(
+            #"{"tracks": ["b.ogg", {"file": "a.ogg", "title": "First Light"}]}"#.utf8
+        ))
+
+        let plan = AudioTrackPlan(arranging: ["a.ogg", "b.ogg", "c.ogg"], by: manifest)
+
+        XCTAssertEqual(plan.tracks.map(describe), [
+            "b.ogg | b | level 1",
+            "a.ogg | First Light | level 1",
+            "c.ogg | c | level 1"
+        ])
+    }
+
+    /// Without a tracks list, order and chapters arrange the book exactly as
+    /// they always have; so they do in a manifest that has a tracks list
+    /// too, which an import refuses, but which a book imported before the
+    /// list existed may hold.
+    func testOrderAndChaptersArrangeAsBefore() throws {
+        let names = ["Disc 1/01.ogg", "Disc 1/02.ogg", "Disc 2/01.ogg"]
+        let older = AudioManifest(chapters: ["Disc 2/01.ogg": "Night Shift"], order: ["Disc 2/01.ogg", "Disc 2/01.ogg"])
+        var both = older
+        both.tracks = [.heading("Never Used"), .track(AudioManifestTrack(file: "Disc 1/02.ogg"))]
+
+        for manifest in [older, both] {
+            XCTAssertEqual(AudioTrackPlan(arranging: names, by: manifest).tracks.map(describe), [
+                "Disc 2/01.ogg | Night Shift | level 1",
+                "Disc 1/01.ogg | 01 | level 1",
+                "Disc 1/02.ogg | 02 | level 1"
+            ])
+        }
+        XCTAssertEqual(
+            AudioTrackPlan(arranging: names, by: nil).tracks.map(describe),
+            ["Disc 1/01.ogg | 01 | level 1", "Disc 1/02.ogg | 02 | level 1", "Disc 2/01.ogg | 01 | level 1"]
+        )
+    }
+
+    /// A manifest changed after its import is still read as well as it can
+    /// be: a name the folder does not hold, or one given twice, is passed
+    /// over, and the group heading before it waits for the next track
+    /// placed; a blank heading names no group, a heading with no track after
+    /// it begins none, and a blank title shows the file's name.
+    func testEntriesThatCannotBePlacedArePassedOver() throws {
+        let manifest = try AudioManifest.decoded(from: Data(#"""
+        {"tracks": [
+          {"heading": "  "},
+          "a.ogg",
+          {"heading": "Part Two"},
+          "missing.ogg",
+          "a.ogg",
+          {"file": "b.ogg", "title": " "},
+          {"heading": "Nothing Follows"}
+        ]}
+        """#.utf8))
+
+        let plan = AudioTrackPlan(arranging: ["b.ogg", "a.ogg"], by: manifest)
+
+        XCTAssertEqual(plan.tracks.map(describe), [
+            "a.ogg | a | level 1",
+            "b.ogg | b | level 2 | group Part Two"
+        ])
+    }
+
     // MARK: - Helpers
+
+    /// A planned track as one line, "name | title | level N | group G",
+    /// which compares as a whole and reads clearly in a failure message.
+    private func describe(_ track: AudioTrackPlan.Track) -> String {
+        let group = track.groupHeading.map { " | group \($0)" } ?? ""
+        return "\(track.name) | \(track.title) | level \(track.level)\(group)"
+    }
 
     /// Write `text` as UTF-8 to `path` inside this test's folder, making
     /// the folders on the way.

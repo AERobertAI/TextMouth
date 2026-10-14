@@ -259,6 +259,34 @@ final class AudioDirectoryImportTests: XCTestCase {
         XCTAssertEqual(loaded.content.chapters.map(\.title), ["a", "b"])
     }
 
+    /// An archive Finder compressed, its tracks and a manifest with a tracks
+    /// list in one folder, imports arranged by the list, and opens from the
+    /// index the import saved with both headings of each group's first
+    /// track, the group's first.
+    func testTracksListInTheArchivesOneFolderArrangesTheSavedBook() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("Radio Dramas")
+        for name in ["where_is_everybody.wav", "one_for_the_angels.wav", "mr_denton_on_dooms_day.wav", "king_nine_will_not_return.wav"] {
+            try AudioTestFixtures.writeSilence(to: source.appendingPathComponent(name))
+        }
+        try writeManifest(AudioManifestTests.exampleJSON.replacingOccurrences(of: ".ogg", with: ".wav"), in: source)
+        let archive = directory.appendingPathComponent("Radio Dramas.zip")
+        try FileManager.default.zipItem(at: source, to: archive, shouldKeepParent: true)
+
+        let book = try FileImportService.importAudioZip(from: archive)
+        defer { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        let loaded = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertTrue(loaded.usedPersistedIndex)
+        XCTAssertEqual(book.title, "Radio Dramas")
+        XCTAssertEqual(book.author, "Various")
+        XCTAssertEqual(loaded.content.allHeadings.map { "\($0.level) \($0.text) @\($0.chapterIndex)" }, [
+            "1 Season One @0", "2 Where Is Everybody? @0", "2 One for the Angels @1",
+            "2 mr_denton_on_dooms_day @2", "1 Season Two @3", "2 king_nine_will_not_return @3"
+        ])
+    }
+
     /// The sections of a manifest inside the one folder name their files
     /// from that folder too, and play from inside it.
     func testSectionsOfAManifestInsideTheOneFolderNameFilesFromIt() async throws {

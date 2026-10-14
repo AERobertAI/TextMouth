@@ -69,6 +69,54 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertNil(parsed.segments)
     }
 
+    /// A tracks list arranges a folder of tracks: its order and titles,
+    /// and its group headings, each a level 1 heading at the start of the
+    /// next track, at the same place as the track's own heading, which is
+    /// level 2 after the first group heading. A track the list leaves out
+    /// follows, with a level 1 heading of its own. The index an import
+    /// saves keeps both headings of a place, in order, and is sound.
+    func testTracksListArrangesOrderTitlesAndGroupHeadings() async throws {
+        let names = [
+            "where_is_everybody.wav", "one_for_the_angels.wav", "mr_denton_on_dooms_day.wav",
+            "king_nine_will_not_return.wav", "the_lonely.wav"
+        ]
+        for name in names {
+            try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent(name), duration: 1)
+        }
+        let manifest = AudioManifestTests.exampleJSON.replacingOccurrences(of: ".ogg", with: ".wav")
+        try Data(manifest.utf8).write(to: folder.appendingPathComponent("manifest.json"))
+
+        let parsed = try await AudioBookParser.parseDirectory(url: folder)
+
+        XCTAssertEqual(parsed.content.title, "Radio Dramas")
+        XCTAssertEqual(parsed.content.author, "Various")
+        XCTAssertEqual(parsed.content.chapters.map(\.title), [
+            "Where Is Everybody?", "One for the Angels", "mr_denton_on_dooms_day", "king_nine_will_not_return", "the_lonely"
+        ])
+        XCTAssertEqual(
+            parsed.content.chapters.map { $0.headings.map { "\($0.level) \($0.text) @\($0.chapterIndex):\($0.characterOffset)" } },
+            [
+                ["1 Season One @0:0", "2 Where Is Everybody? @0:0"],
+                ["2 One for the Angels @1:0"],
+                ["2 mr_denton_on_dooms_day @2:0"],
+                ["1 Season Two @3:0", "2 king_nine_will_not_return @3:0"],
+                ["1 the_lonely @4:0"]
+            ]
+        )
+        XCTAssertEqual(parsed.filePaths.map { URL(fileURLWithPath: $0).lastPathComponent }, [
+            "where_is_everybody.wav", "one_for_the_angels.wav", "mr_denton_on_dooms_day.wav",
+            "king_nine_will_not_return.wav", "the_lonely.wav"
+        ])
+        XCTAssertNil(parsed.segments)
+
+        let index = BookContentIndex.build(from: parsed.content, format: .audio, audioFilePaths: parsed.filePaths, audioBaseURL: folder)
+        XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: folder))
+        XCTAssertEqual(
+            index.allHeadings.map { "\($0.level) \($0.text)" },
+            parsed.content.chapters.flatMap(\.headings).map { "\($0.level) \($0.text)" }
+        )
+    }
+
     /// A single file without chapter markers is one section, titled by its
     /// file name, as long as the file plays.
     func testValidSingleFileParsesExactlyAsBefore() async throws {
