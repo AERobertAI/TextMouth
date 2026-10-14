@@ -1,6 +1,8 @@
 # The audiobook manifest: manifest.json
 
-A ZIP of audio tracks becomes one audiobook in TextMouth, with a heading for each track. Without a manifest, the headings are the tracks' file names, in the order Finder sorts them. A file named manifest.json in the ZIP lets you name the book, put the tracks in your own order, give each track a proper title, group tracks under headings of their own, and set the pauses between tracks.
+Part of [TextMouth's documentation](../../README.md).
+
+A ZIP of audio tracks becomes one audiobook in TextMouth, with a heading for each track. Without a manifest, each heading is its track's file name without the extension, in the order Finder sorts the names, counting numbers as numbers ("Track 2" before "Track 10"); tracks in folders inside the ZIP count too. A file named manifest.json in the ZIP lets you name the book, put the tracks in your own order, give each track a proper title, group tracks under headings of their own, and set the pauses between tracks.
 
 This document is the complete reference. It is written so you can also hand it to an assistant, with your list of file names, and ask it to write the manifest for you.
 
