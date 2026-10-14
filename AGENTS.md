@@ -81,7 +81,9 @@ Main holds the record of the REV16 fixes, then, from the evening:
 
 - FR15, the manifest's tracks list, group headings, and pauses between tracks (e2ab40d9, October 14, suite 6192 tests, 64 skipped, 0 failures), by agent `manifesttracks`, with its documentation.
 
-**In flight:** agent `editmanifest` (Opus) on `feature/edit-manifest`, building FR17 from `Scripts/agents/briefs/2026-10-13/edit-manifest.md`: Edit Manifest for multi-track audiobooks, the title and author kept in step with the manifest, the audio editor's fix (#2457), and Import Folder….
+- FR17, Edit Manifest, the title and author kept in the manifest, the audio editor's fix, and Import Folder… (5d9caee3, October 14, suite 6221 tests, 67 skipped, 0 failures), by agent `editmanifest`, with its documentation.
+
+No agent is in flight.
 
 **Pending:**
 - the user's answers in `humanQuestions/2026-10-12.md` (13 small choices);
