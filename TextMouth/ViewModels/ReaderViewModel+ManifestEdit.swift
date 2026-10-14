@@ -79,4 +79,32 @@ extension ReaderViewModel {
         manifestEditWaitingForLoad = nil
         showRearrangedTracks(waiting)
     }
+
+    // MARK: Edits Made Outside Edit Manifest (FR18)
+
+    /// Hands what the look at this audiobook's manifest found as it loaded
+    /// (`readContent(of:audioTagsFrom:readingTexts:)`) to the manifest
+    /// editor once the book shows: an edit taken is given to the library,
+    /// which refreshes the book's row and its other open readers, and
+    /// announced, "Manifest updated"; one refused is announced once for the
+    /// same bytes, the book showing as it was. Nothing for nil.
+    func reportManifestLookAtLoad(_ found: BookManifestEditCheck?) {
+        guard let found else { return }
+        manifestEditor.handle(found, for: book.id, in: libraryViewModel)
+    }
+
+    /// Looks for an edit of this audiobook of tracks' manifest made outside
+    /// Edit Manifest while the book is open, as TextMouth becomes active,
+    /// off the main thread: the book as the library holds it, and the
+    /// pauses this reader keeps between its tracks, so an edit of the
+    /// pauses alone is taken too. Nothing while the book loads, since its
+    /// load looks, and nothing for any other book.
+    func lookForOutsideManifestEdit() {
+        guard !hasClosed, !isLoading, content?.contentIndex.audioLayout == .multiFile else { return }
+        manifestEditor.lookForOutsideEdit(
+            of: libraryViewModel.bookByID(book.id) ?? book,
+            showingPauses: chapterPauses,
+            in: libraryViewModel
+        )
+    }
 }

@@ -20,6 +20,47 @@ extension LibraryViewModel {
         bookUpdates.tracksRearranged(bookID: edit.committed.id, by: edit)
     }
 
+    // MARK: Edits Made While TextMouth Was Closed (FR18)
+
+    /// Looks once, at launch, at the manifest of every audiobook that may
+    /// play a folder of tracks, for an edit made outside Edit Manifest while
+    /// TextMouth was closed or on another Mac, and hands what each look
+    /// found to `editor`, which takes an edit as a save through Edit
+    /// Manifest is taken and announces it (`BookManifestEditSessions.look`).
+    /// The looks run one book at a time off the main thread, beside the
+    /// launch's other maintenance of books
+    /// (`updateContentCachesAndStatistics(access:then:)`), each reading only
+    /// a book's record, its manifest, and its audio folder's listing; a book
+    /// whose files are only in the cloud by `access` is left as it is (FR02).
+    /// - Parameter completion: Called on the main actor once every look has
+    ///   been acted on.
+    func takeOutsideManifestEdits(
+        access: MaintenanceFileAccess = .live,
+        editor: BookManifestEditor = .shared,
+        then completion: (@MainActor @Sendable () -> Void)? = nil
+    ) {
+        let books = library.books.filter(BookManifestEditing.mayHaveTrackFolder)
+        guard !books.isEmpty else {
+            completion?()
+            return
+        }
+        let sessions = editor.sessions
+        let isDataless = access.isDataless
+        DispatchQueue.global(qos: .utility).async {
+            let found = books.map { book in
+                (bookID: book.id, found: sessions.look(at: book, isDataless: isDataless))
+            }
+            DispatchQueue.main.async { [weak self] in
+                if let self {
+                    for look in found {
+                        editor.handle(look.found, for: look.bookID, in: self)
+                    }
+                }
+                completion?()
+            }
+        }
+    }
+
     // MARK: Title and Author, Kept in Step
 
     /// The one write of the title and author of an audiobook of tracks
