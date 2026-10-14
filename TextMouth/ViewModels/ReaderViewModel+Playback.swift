@@ -2323,8 +2323,17 @@ extension ReaderViewModel {
         announceToVoiceOver(message)
     }
 
+    /// What the listener is told when the player's time stopped moving
+    /// while it claimed to play, and playback was stopped (B07): no file or
+    /// chapter is at fault, but the system's audio, which a fresh player may
+    /// get past and a fresh launch of TextMouth will.
+    nonisolated static let audioStoppedRespondingMessage =
+        "Playback stopped: the audio stopped responding. Press Play to try again; "
+        + "if it stops again, quit and reopen TextMouth."
+
     /// What the listener is told when a chapter's audio could not be
-    /// played: the chapter, the file, what went wrong, and what to do.
+    /// played: the chapter, the file, what went wrong, and what to do; or,
+    /// when the system's audio stopped responding, that alone.
     ///
     /// - Parameters:
     ///   - failure: What the audio service reported.
@@ -2339,6 +2348,9 @@ extension ReaderViewModel {
         var problem = failure.problem
         let remedy: String
         switch failure.reason {
+        case .stoppedResponding:
+            // Not the file's fault, nor the chapter's: the system's audio.
+            return audioStoppedRespondingMessage
         case .fileMissing:
             if bookHasPackage {
                 problem += " from the book's package"
