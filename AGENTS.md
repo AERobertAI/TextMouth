@@ -79,10 +79,11 @@ Main holds the record of the REV16 fixes, then, from the evening:
 - FR15, FR16, and FR17 in the TODO, with the user's answers from `humanQuestions/2026-10-13.md`.
 - the REV16 fixes' documentation pass (100db7a5).
 
-**In flight:** agent `manifesttracks` (Opus) on `feature/manifest-tracks`, building FR15 from `Scripts/agents/briefs/2026-10-13/manifest-tracks.md`: the manifest's tracks list, group headings, and pauses between tracks. Its report gives documentation wording, and lists where its implementation differs from the manifest reference.
+- FR15, the manifest's tracks list, group headings, and pauses between tracks (e2ab40d9, October 14, suite 6192 tests, 64 skipped, 0 failures), by agent `manifesttracks`, with its documentation.
+
+**In flight:** agent `editmanifest` (Opus) on `feature/edit-manifest`, building FR17 from `Scripts/agents/briefs/2026-10-13/edit-manifest.md`: Edit Manifest for multi-track audiobooks, the title and author kept in step with the manifest, the audio editor's fix (#2457), and Import Folder….
 
 **Pending:**
-- FR17's proposal (an editable manifest in every multi-track audiobook's package, and Edit Manifest…), awaiting the user's answer;
 - the user's answers in `humanQuestions/2026-10-12.md` (13 small choices);
 - the user's push and install. Main is far ahead of origin/main, and agents' worktrees start at origin/main.
 
