@@ -314,6 +314,74 @@ enum BookManifestFile {
             }
         }
     }
+
+    // MARK: Hand Edits Made Before FR17
+
+    /// What keeping a book's hand-edited title and author in its manifest
+    /// did (`keepHandEditedTitleAndAuthor(of:sessions:isDataless:)`).
+    enum HandEditKeeping: Equatable, Sendable {
+        /// The manifest was given the row's title, its author, or both.
+        case kept
+        /// Nothing to write: no field edited by hand, no manifest, or a
+        /// manifest that gives no other title or author.
+        case unchanged
+        /// The folder or the manifest is only in the cloud, or the manifest
+        /// could not be written: the book waits for a later launch.
+        case waiting
+    }
+
+    /// Writes into `book`'s manifest the title and the author its row
+    /// records as edited by hand (`Book.handEdits`), each only where the
+    /// manifest gives another that is not blank, through
+    /// `change(manifestAt:of:sessions:_:)`, the one write of a manifest.
+    ///
+    /// Since FR17 a hand edit of a book of tracks' title or author is
+    /// written into its manifest at once, so a row and a manifest that
+    /// disagree about a field edited by hand can only hold an edit made
+    /// before FR17, which the manifest would otherwise win once an edit
+    /// made outside a session is taken (FR18). The one-time pass at launch
+    /// keeps each such edit (`LibraryViewModel.keepHandEditedTitlesInManifestsOnce`),
+    /// and every look does too until the pass is recorded as done
+    /// (`BookManifestEditSessions.keepsHandEditsFirst`). Downloads nothing.
+    /// Storage work, off the main thread, on the manifest sessions' queue.
+    static func keepHandEditedTitleAndAuthor(
+        of book: Book,
+        sessions: BookManifestEditSessions = .shared,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> HandEditKeeping {
+        sessions.boundary.perform(.contentAnalysis) { _ in
+            let current = sessions.boundary.rebasedToCurrent(book)
+            let title = current.handEdits?.contains(.title) == true ? current.title : nil
+            let author = current.handEdits?.contains(.author) == true ? current.author : nil
+            guard title != nil || author != nil, BookManifestEditing.mayHaveTrackFolder(current) else { return .unchanged }
+            let folder = current.bookFileURL
+            guard !isDataless(folder) else { return .waiting }
+            guard let location = AudioManifestLocation.find(in: folder) else { return .unchanged }
+            guard !isDataless(location.url) else { return .waiting }
+            do {
+                let written = try DatalessFiles.withoutDownloading {
+                    try change(manifestAt: location, of: current.id, sessions: sessions) { object in
+                        let keys = AudioManifest.CodingKeys.self
+                        keep(title, at: keys.title.rawValue, in: &object)
+                        keep(author, at: keys.author.rawValue, in: &object)
+                    }
+                }
+                return written ? .kept : .unchanged
+            } catch {
+                if !DatalessFiles.isDownloadRefusal(error) {
+                    DiagnosticLog.event(.storage, "MANIFEST_NOT_WRITTEN: \(current.title): \(error.localizedDescription)")
+                }
+                return .waiting
+            }
+        }
+    }
+
+    /// Gives `key` of `object`, a manifest's JSON object, the row's
+    /// `value`, where the manifest gives another that is not blank.
+    private static func keep(_ value: String?, at key: String, in object: inout [String: Any]) {
+        guard let value, let theirs = (object[key] as? String)?.nonBlank, theirs != value else { return }
+        object[key] = value
+    }
 }
 
 // MARK: - Taking an Edit (FR17)
@@ -650,9 +718,26 @@ final class BookManifestEditSessions: Sendable {
         }
     }
 
+    /// Whether each look first keeps the book's hand-edited title and
+    /// author in its manifest (`BookManifestFile.keepHandEditedTitleAndAuthor`):
+    /// from launch until the one-time pass that does so for every book is
+    /// recorded as done, so a look made before the pass reaches a book, or
+    /// at a book the pass left waiting in the cloud, never takes the
+    /// manifest's title over an edit made before FR17. Guarded by the lock.
+    private let keepsHandEditsFirst = OSAllocatedUnfairLock(initialState: false)
+
+    /// Sets whether each look first keeps the book's hand-edited title and
+    /// author in its manifest.
+    func setKeepsHandEditsFirst(_ keeps: Bool) {
+        keepsHandEditsFirst.withLock { $0 = keeps }
+    }
+
     /// The look of `look(at:showingPauses:isDataless:)`, on the queue.
     private func lookOnQueue(at book: Book, showingPauses pauses: ChapterPauses?, isDataless: (URL) -> Bool) -> BookManifestEditCheck {
         guard !isEditing(book.id) else { return .unchanged }
+        if keepsHandEditsFirst.withLock({ $0 }) {
+            _ = BookManifestFile.keepHandEditedTitleAndAuthor(of: book, sessions: self, isDataless: isDataless)
+        }
         return boundary.perform(.contentAnalysis) { _ in
             Self.look(at: boundary.rebasedToCurrent(book), showingPauses: pauses, isDataless: isDataless)
         }

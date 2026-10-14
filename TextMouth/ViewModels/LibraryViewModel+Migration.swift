@@ -541,8 +541,12 @@ extension LibraryViewModel {
     }
 
     /// Bring every book's row and text up to date, each pass on a
-    /// background queue: first the moves of places a stop left undone,
-    /// before any pass reads a book's places or text
+    /// background queue: first, once for each library, the titles and
+    /// authors edited by hand before FR17 kept in their books' manifests,
+    /// queued at once on the manifest sessions' queue, so it comes before
+    /// every look at a manifest, a reader's included
+    /// (`keepHandEditedTitlesInManifestsOnce`); then the moves of places a
+    /// stop left undone, before any pass reads a book's places or text
     /// (`finishLeftoverPlaceMoves(access:then:)`, T06), then the edits of
     /// audiobooks' manifests made while TextMouth was closed
     /// (`takeOutsideManifestEdits(access:editor:then:)`, FR18), then the metadata
@@ -558,6 +562,7 @@ extension LibraryViewModel {
         access: MaintenanceFileAccess = .live,
         then completion: (@MainActor @Sendable () -> Void)? = nil
     ) {
+        keepHandEditedTitlesInManifestsOnce(access: access)
         finishLeftoverPlaceMoves(access: access) { [weak self] in
             guard let self else {
                 completion?()

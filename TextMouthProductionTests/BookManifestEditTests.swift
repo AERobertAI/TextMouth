@@ -1180,4 +1180,64 @@ final class BookManifestEditTests: XCTestCase {
         world.notifications.post(name: NSApplication.didBecomeActiveNotification, object: nil)
         return await eventually(timeout: 10, condition)
     }
+
+    // MARK: - Hand Edits Made Before FR17, Kept Once (FR18)
+
+    /// The first launch keeps a title edited by hand before FR17, which the
+    /// row alone held, by writing it into the manifest before the launch's
+    /// look, while a row nobody edited takes the title its manifest was
+    /// given outside TextMouth. A second launch makes no pass, so a later
+    /// edit of the manifest outside TextMouth wins.
+    func testAHandEditedTitleSurvivesTheFirstLaunchAndALaterManifestEditWins() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Hand Edits")
+        let edited = try world.makeSilentAudioBook(
+            title: "Harbour Pilots",
+            trackDurations: [0.2, 0.2],
+            manifest: #"{"title": "Harbour Pilots", "author": "Ilse Varga"}"#
+        )
+        let plain = try world.makeSilentAudioBook(title: "Harbour Charts", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Charts"}"#)
+        world.library.updateBook(id: edited.id) { row in
+            row.title = "Harbour Pilots, Revised"
+            row.markEditedByHand([.title])
+        }
+        let editedManifest = try XCTUnwrap(AudioManifestLocation.find(in: edited.bookFileURL)).url
+        try save(#"{"title": "Harbour Charts, Annotated"}"#, to: try XCTUnwrap(AudioManifestLocation.find(in: plain.bookFileURL)).url)
+        LibraryPersistenceService.flushPendingSave()
+        let preferences = makeSandboxedPreferences("Manifest Hand Edits")
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+
+        let first = await launch(world, editor: editor, preferences: preferences)
+
+        XCTAssertEqual(first, LibraryViewModel.ManifestHandEditsOutcome(kept: 1, waiting: 0))
+        XCTAssertEqual(world.library.bookByID(edited.id)?.title, "Harbour Pilots, Revised", "The hand edit was lost")
+        XCTAssertEqual(try AudioManifest.decoded(from: Data(contentsOf: editedManifest)).title, "Harbour Pilots, Revised")
+        XCTAssertEqual(try AudioManifest.decoded(from: Data(contentsOf: editedManifest)).author, "Ilse Varga")
+        XCTAssertEqual(world.library.bookByID(plain.id)?.title, "Harbour Charts, Annotated", "The manifest's title was not taken")
+
+        try save(#"{"title": "Harbour Pilots, Second Edition", "author": "Ilse Varga"}"#, to: editedManifest)
+        let second = await launch(world, editor: editor, preferences: preferences)
+
+        XCTAssertNil(second, "The one-time pass was made again")
+        XCTAssertEqual(world.library.bookByID(edited.id)?.title, "Harbour Pilots, Second Edition", "The later manifest edit was not taken")
+    }
+
+    /// Makes the launch's one-time pass and then its look at every book of
+    /// tracks, as the launch makes them, waiting for each, and returns what
+    /// the pass did: nil when it was made already.
+    private func launch(_ world: IntegrationWorld, editor: TestEditor, preferences: UserDefaults) async -> LibraryViewModel.ManifestHandEditsOutcome? {
+        let outcome = await withCheckedContinuation { continuation in
+            world.library.keepHandEditedTitlesInManifestsOnce(preferences: preferences, sessions: editor.sessions) { outcome in
+                continuation.resume(returning: outcome)
+            }
+        }
+        await withCheckedContinuation { continuation in
+            world.library.takeOutsideManifestEdits(editor: editor.editor) {
+                continuation.resume()
+            }
+        }
+        return outcome
+    }
 }
