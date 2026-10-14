@@ -181,10 +181,94 @@ enum BookManifestFile {
         sessions: BookManifestEditSessions = .shared,
         hasher: FingerprintHasher = .md5
     ) throws {
-        let data = try encoded(manifest)
+        try write(data: encoded(manifest), at: location, of: bookID, sessions: sessions, hasher: hasher)
+    }
+
+    /// Writes `data`, a manifest's bytes, at `location`, as `write(_:at:of:sessions:hasher:)`
+    /// does: the one place a manifest of a book's package is written.
+    static func write(
+        data: Data,
+        at location: AudioManifestLocation,
+        of bookID: UUID,
+        sessions: BookManifestEditSessions = .shared,
+        hasher: FingerprintHasher = .md5
+    ) throws {
         try data.write(to: location.url, options: .atomic)
         if let stamp = FileStamp(of: location.url) {
             sessions.noteWritten(bookID, FileFingerprint(stamp: stamp, digest: hasher.digestOfData(data)))
+        }
+    }
+
+    /// Changes the manifest at `location` of the book `bookID` with
+    /// `change`, which is given the manifest's one JSON object, and writes
+    /// it back through `write(data:at:of:sessions:hasher:)` when `change`
+    /// changed it. The object is changed as JSON, so every key and value
+    /// the user wrote stays, a key TextMouth does not read included; the
+    /// file is written again indented, with its keys sorted, as TextMouth
+    /// writes every manifest. A manifest that is not one JSON object, as
+    /// while the user is midway through an edit, is left as it is.
+    ///
+    /// - Returns: Whether the manifest was written.
+    @discardableResult
+    static func change(
+        manifestAt location: AudioManifestLocation,
+        of bookID: UUID,
+        sessions: BookManifestEditSessions = .shared,
+        _ change: (inout [String: Any]) -> Void
+    ) throws -> Bool {
+        let data = try Data(contentsOf: location.url)
+        guard var object = (try? JSONSerialization.jsonObject(with: AudioManifest.withoutByteOrderMark(data))) as? [String: Any] else {
+            return false
+        }
+        let options: JSONSerialization.WritingOptions = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        let before = try JSONSerialization.data(withJSONObject: object, options: options)
+        change(&object)
+        let after = try JSONSerialization.data(withJSONObject: object, options: options)
+        guard after != before else { return false }
+        try write(data: after, at: location, of: bookID, sessions: sessions)
+        return true
+    }
+
+    /// Keeps `title` and `author` in the manifest of `book`'s folder of
+    /// tracks, nil leaving either as the manifest has it: the manifest's
+    /// side of the one write of a manifest book's title and author
+    /// (`LibraryViewModel.setTitleAndAuthor(ofManifestBook:title:author:)`).
+    /// A book without a manifest is given one first, from the book as it
+    /// is (`generated(for:names:)`), so its title and author are kept there
+    /// too. Nothing for a book whose audio is no folder of tracks, or is
+    /// only in the cloud, or whose manifest is not one JSON object. Storage
+    /// work, off the main thread.
+    ///
+    /// - Returns: Whether the manifest was written.
+    @discardableResult
+    static func keepTitleAndAuthor(
+        of book: Book,
+        title: String?,
+        author: String?,
+        sessions: BookManifestEditSessions = .shared,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) throws -> Bool {
+        try sessions.boundary.perform(.contentAnalysis) { _ in
+            let current = sessions.boundary.rebasedToCurrent(book)
+            let folder = current.bookFileURL
+            guard BookManifestEditing.isTrackFolder(folder, isDataless: isDataless) == true else { return false }
+            guard let location = AudioManifestLocation.find(in: folder) else {
+                let location = AudioManifestLocation.forNewManifest(in: folder)
+                var manifest = generated(for: current, names: try AudioBookParser.trackPaths(in: folder).map(location.name(ofTrackAt:)))
+                manifest.title = title ?? manifest.title
+                manifest.author = author ?? manifest.author
+                try write(manifest, at: location, of: current.id, sessions: sessions)
+                return true
+            }
+            return try change(manifestAt: location, of: current.id, sessions: sessions) { object in
+                let keys = AudioManifest.CodingKeys.self
+                if let title, object[keys.title.rawValue] as? String != title {
+                    object[keys.title.rawValue] = title
+                }
+                if let author, object[keys.author.rawValue] as? String != author {
+                    object[keys.author.rawValue] = author
+                }
+            }
         }
     }
 }

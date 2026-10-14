@@ -390,4 +390,139 @@ final class BookManifestEditTests: XCTestCase {
         world.library.library.addBook(book)
         return book
     }
+
+    // MARK: - Title and Author, Kept in Step (Item 4)
+
+    /// An edited manifest's title and author become the book's, in its row
+    /// and its record.
+    func testAnEditedManifestsTitleAndAuthorBecomeTheBooks() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Title")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+
+        try save(#"{"title": "Night Pilots", "author": "Ines Okafor", "tracks": ["02.wav", "01.wav"]}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.title, "Night Pilots")
+        XCTAssertEqual(row.author, "Ines Okafor")
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(row.storedBookInfo()?.metadata.title, "Night Pilots", "The record kept the old title")
+        XCTAssertEqual(row.storedBookInfo()?.metadata.author, "Ines Okafor")
+    }
+
+    /// An edit of the book's title and author in a metadata editor is
+    /// written into its manifest at once, changing nothing else the user
+    /// wrote there, a key TextMouth reads leniently included.
+    func testAMetadataEditIsWrittenIntoTheManifest() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Metadata")
+        let book = try world.makeSilentAudioBook(
+            title: "Harbour Pilots",
+            trackDurations: [0.2, 0.2],
+            manifest: #"{"title": "Harbour Pilots", "pauseBetweenTracksMs": 500, "tracks": [{"file": "02.wav", "title": "Ebb"}, "01.wav"]}"#
+        )
+
+        world.library.updateBookMetadata(
+            Book.MetadataEdit(
+                opened: [.title: "Harbour Pilots", .author: book.author],
+                saved: [.title: "Night Pilots", .author: "Ines Okafor"]
+            ),
+            of: book.id
+        )
+        await waitForManifestWrites(of: .shared)
+
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+        let written = try AudioManifest.decoded(from: Data(contentsOf: manifest))
+        XCTAssertEqual(written.title, "Night Pilots")
+        XCTAssertEqual(written.author, "Ines Okafor")
+        XCTAssertEqual(written.pauseBetweenTracksMs, 500)
+        XCTAssertEqual(written.tracks, [.track(AudioManifestTrack(file: "02.wav", title: "Ebb")), .track(AudioManifestTrack(file: "01.wav"))])
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots")
+    }
+
+    /// A metadata edit of a book of tracks without a manifest gives it one,
+    /// holding the new title, and no pause between its tracks.
+    func testAMetadataEditGivesABookWithoutAManifestOne() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Metadata New")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2])
+
+        world.library.updateBookMetadata(
+            Book.MetadataEdit(opened: [.title: "Harbour Pilots"], saved: [.title: "Night Pilots"]),
+            of: book.id
+        )
+        await waitForManifestWrites(of: .shared)
+
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL), "No manifest took the title").url
+        let written = try AudioManifest.decoded(from: Data(contentsOf: manifest))
+        XCTAssertEqual(written.title, "Night Pilots")
+        XCTAssertEqual(written.author, book.author)
+        XCTAssertEqual(written.pauseBetweenTracksMs, 0)
+        XCTAssertEqual(written.tracks?.count, 2)
+    }
+
+    /// TextMouth's own write of the title, while the manifest is being
+    /// edited, is not taken for the user's edit: no "Manifest updated".
+    func testTextMouthsOwnWriteIsNotTakenForAnEdit() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Own Write")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2])
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let baseline = editor.sessions.baseline(of: book.id)
+
+        let written = expectation(description: "The manifest was written")
+        world.library.setTitleAndAuthor(ofManifestBook: book.id, title: "Night Pilots", author: nil, sessions: editor.sessions) { didWrite in
+            XCTAssertTrue(didWrite)
+            written.fulfill()
+        }
+        await fulfillment(of: [written], timeout: 5)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [], "TextMouth's own write was announced as an edit")
+        XCTAssertNotEqual(editor.sessions.baseline(of: book.id), baseline, "The session kept the baseline from before the write")
+    }
+
+    /// The launch's metadata refresh never changes the title or author of a
+    /// book of tracks, which has no tags of its own: the row and the
+    /// manifest keep what they say.
+    func testTheLaunchRefreshLeavesAManifestBooksTitleAndAuthor() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Refresh")
+        let book = try world.makeSilentAudioBook(
+            title: "Harbour Pilots",
+            trackDurations: [0.2],
+            manifest: #"{"title": "Harbour Pilots", "author": "Ines Okafor"}"#
+        )
+        world.library.updateBook(id: book.id) { row in
+            row.author = "Ines Okafor"
+            row.metadataReaderVersion = nil
+            row.handEdits = .noneSinceImport
+        }
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+        let before = try Data(contentsOf: manifest)
+        XCTAssertTrue(LibraryViewModel.needsMetadataRefresh(try XCTUnwrap(world.library.bookByID(book.id))))
+
+        let finished = expectation(description: "The metadata refresh finished")
+        world.library.refreshOutdatedMetadata { finished.fulfill() }
+        await fulfillment(of: [finished], timeout: 10)
+
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.title, "Harbour Pilots")
+        XCTAssertEqual(row.author, "Ines Okafor")
+        XCTAssertEqual(try Data(contentsOf: manifest), before, "The refresh wrote the manifest")
+    }
+
+    /// Waits until the manifest writes queued on `sessions` so far have run.
+    private func waitForManifestWrites(of sessions: BookManifestEditSessions) async {
+        await withCheckedContinuation { continuation in
+            sessions.queue.async { continuation.resume() }
+        }
+    }
 }
