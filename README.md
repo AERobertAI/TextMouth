@@ -33,31 +33,7 @@ This file is the guide to using, building, and testing TextMouth. ARCHITECTURE.m
 
 A ZIP of audio tracks becomes one audiobook with a chapter for each track. Each chapter's heading is its file's name without the extension, and the chapters come in the order Finder sorts the names, counting numbers as numbers ("Track 2" before "Track 10"). Tracks in folders inside the ZIP count too.
 
-A file named manifest.json at the ZIP's top level changes that. It holds one JSON object, and each of its keys is optional:
-
-- title: the book's title, in place of the ZIP's name.
-- author: the book's author, in place of Unknown.
-- order: a list of the tracks in the order the book plays them. Tracks the list leaves out play after the listed ones, in Finder's order.
-- chapters: an object giving tracks the titles their chapters show and VoiceOver speaks, in place of their file names. The files keep their own names.
-
-A track is named by its path inside the ZIP, exactly, with its letters' case and its extension: "elegy.ogg", or "Disc 2/03.mp3" for a track in a folder. For example:
-
-```json
-{
-  "title": "Radio Dramas",
-  "author": "Various",
-  "order": ["where_is_everybody.ogg", "one_for_the_angels.ogg"],
-  "chapters": {
-    "where_is_everybody.ogg": "Where Is Everybody?",
-    "one_for_the_angels.ogg": "One for the Angels"
-  }
-}
-```
-
-- The manifest must be at the ZIP's top level, beside the tracks or beside the one folder holding them. Finder's Compress command puts a folder's contents inside a folder of the same name, so a manifest compressed along with its tracks is not found.
-- A manifest TextMouth can't read, because it isn't valid JSON or a key holds the wrong kind of value (a single name where a list belongs), is passed over without a word, and the book imports in Finder's order, named by its files; a name that matches no track is passed over the same way. JSON needs straight quotation marks; TextEdit's smart quotes make curly ones, which it doesn't accept.
-- To add a manifest to a ZIP you already have, run `zip -j "Radio Dramas.zip" manifest.json` in Terminal, in the folder holding both. The -j stores the manifest at the ZIP's top level. zip writes the whole archive again, which for a large ZIP takes a minute or two and needs as much free space as the ZIP.
-- TextMouth writes a manifest of its own, with a segments list of the stretches of audio each section plays, for an audiobook it converts from a DAISY audio ZIP. Leave segments to TextMouth.
+A file named manifest.json at the ZIP's top level can name the book and its author, put the tracks in another order, and give each chapter a title of its own in place of its file's name; the files keep their names. AUDIOBOOK-MANIFEST.md, beside this file, describes the manifest completely: every key, an example, the mistakes to avoid, how to add a manifest to a ZIP, and how to have an assistant write one. In this version a manifest is found only at the ZIP's top level, and one TextMouth can't read is passed over without a word, so the book imports in name order.
 
 ## Finding your way around
 
