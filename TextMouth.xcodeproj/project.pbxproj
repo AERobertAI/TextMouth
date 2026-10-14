@@ -70,6 +70,7 @@
 		12722018CFC61AB2F078A681 /* LibraryIndexFailureReportingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D997C20EEE20A86719BAFC9 /* LibraryIndexFailureReportingTests.swift */; };
 		129CBC20EF3DFAF2E7CEB779 /* AudioLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BAACF5B4626204168E4630 /* AudioLayoutTests.swift */; };
 		12D505C6ED1F046A0CD10AE4 /* RecordingTimeFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 402B311C2047359E5F608A66 /* RecordingTimeFixtures.swift */; };
+		12EE3B0DB5FA24665FAE3935 /* ObjCExceptionCatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = ADB4F71B7687D98D92EBB2C6 /* ObjCExceptionCatcher.m */; };
 		12F5EEA0E4B1E5FA546D8E40 /* StorageSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90FCAEB685DF6B9C3206D29 /* StorageSettingsView.swift */; };
 		13A4818CC41B1BE5C9FA7B09 /* TranscriptionLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15148A1BBB38382FF7D939B /* TranscriptionLanguage.swift */; };
 		13B8C02B7367CBF10B0D52CB /* AudioZIPClassificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFE5D23C7A2EDD69F7817FAB /* AudioZIPClassificationTests.swift */; };
@@ -444,6 +445,7 @@
 		7BB5AAED282F2863E96C581A /* DOCXMalformedXMLTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6018DC6189219689FF4F390 /* DOCXMalformedXMLTests.swift */; };
 		7BE0CD05C59D84AEAF3D77E8 /* LibraryViewModel+Import.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451BE98605FAB22016B9236C /* LibraryViewModel+Import.swift */; };
 		7D37F47F3FCB72F00E82917C /* AudioMediaImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CC767F35BF5E96B70C5705F /* AudioMediaImportTests.swift */; };
+		7D7A612F89DABBE97D094FE3 /* libObjCExceptionCatcher.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D7A8C1B85C2574767A69992 /* libObjCExceptionCatcher.a */; };
 		7D9FBC30455C0559F4567CCB /* RemovalOutcomeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA06431B0CA64C77B3A3E7EC /* RemovalOutcomeTests.swift */; };
 		7DB4F323B5C23C4B75E68F0D /* ArchiveBudgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9F1A04EC305A46F3412F64 /* ArchiveBudgetTests.swift */; };
 		7DD34AC29169F5F4E45458A2 /* LibraryBookInfoSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E977E832FE80847C86CA3A /* LibraryBookInfoSheetTests.swift */; };
@@ -465,6 +467,7 @@
 		82D2B1956170E11EE0A0BD9B /* TimeEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D636735FC99F6ECEFD7E4696 /* TimeEntry.swift */; };
 		833E26F070A72F578C3B05AC /* AudioEditHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC11C822D96F24617261001 /* AudioEditHistoryStore.swift */; };
 		839A8A4A08E7C9712AF01600 /* ImportConcurrencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D2210724B40BF276058B99 /* ImportConcurrencyTests.swift */; };
+		8410C3A3F194B5F83D063A17 /* ObjCExceptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E9925E2D4BDCF8385F1C0F /* ObjCExceptionTests.swift */; };
 		841351FC036D927D0D55E7BB /* HeadingAnnouncementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42AEA4D419C8003AC0251522 /* HeadingAnnouncementTests.swift */; };
 		84147D3E36C8DC20097A0234 /* MetadataReaderVersionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654A6E284BD07F90C8BCFCCC /* MetadataReaderVersionTests.swift */; };
 		844F51BCE58A3ACF695EA70C /* EPUBParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F896696129C46D31A7579343 /* EPUBParserTests.swift */; };
@@ -725,6 +728,7 @@
 		C4D72687860A2464D827C613 /* LibraryViewModel+ManifestEdits.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D26204F7CFF56EF6832865 /* LibraryViewModel+ManifestEdits.swift */; };
 		C521C32CFE411FCCC42EFECA /* CloudMaintenanceRepairTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13BC176CEB48E185D112BD01 /* CloudMaintenanceRepairTests.swift */; };
 		C56AAD4D18AD241014FFE9C7 /* AudioFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C812719168A7C1781D775CE /* AudioFilterTests.swift */; };
+		C61A5C62122C4BC9157D05A0 /* ObjCException.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD0BA5A284A16E6F31BC0FCA /* ObjCException.swift */; };
 		C6A04164BE15D8577B6B4C4F /* AudioEditorModel+PunchIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1660EE7D2FC5116C79BA7E5 /* AudioEditorModel+PunchIn.swift */; };
 		C6BA2CA3EA8CFCCBBF2086EE /* ContinueToNextBookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB1BEF55AF43238FE6171E2 /* ContinueToNextBookTests.swift */; };
 		C7270C5B201204CF923CEC6B /* LibrarySortState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0265F3A3B8B7ACEACA31A0 /* LibrarySortState.swift */; };
@@ -956,6 +960,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 00E615B453C74D8AECE06BAC;
 			remoteInfo = LAME;
+		};
+		BBFC610342917412F0FA969B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 89F82D94D897820417C98192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 601950955AB559C94D880CC6;
+			remoteInfo = ObjCExceptionCatcher;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -1276,6 +1287,7 @@
 		4CB0E37ED6D34728E1A4487F /* LibraryMoveTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryMoveTransactionTests.swift; sourceTree = "<group>"; };
 		4D09C89D6F6B18D672430867 /* LibraryViewModel+MetadataRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+MetadataRefresh.swift"; sourceTree = "<group>"; };
 		4D7489FDF6FEC26DEB0250B2 /* LibraryViewModel+Migration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+Migration.swift"; sourceTree = "<group>"; };
+		4D7A8C1B85C2574767A69992 /* libObjCExceptionCatcher.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libObjCExceptionCatcher.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		4D8E1221F44EA40DD89EBA41 /* UbiquitousItemStatusProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UbiquitousItemStatusProviderTests.swift; sourceTree = "<group>"; };
 		4D9B46FF46B870E2355B439D /* FeedBookUse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedBookUse.swift; sourceTree = "<group>"; };
 		4DAE4B827D269FA614E95362 /* FeedRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedRows.swift; sourceTree = "<group>"; };
@@ -1309,10 +1321,12 @@
 		56870A0267CF461F00B4389E /* AudioEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorModel.swift; sourceTree = "<group>"; };
 		56A0AE39D456D8BB57808123 /* FeedLibraryPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedLibraryPresentation.swift; sourceTree = "<group>"; };
 		56D3980F605EDCC6AB90A841 /* ReaderViewModel+Transcript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+Transcript.swift"; sourceTree = "<group>"; };
+		56E9925E2D4BDCF8385F1C0F /* ObjCExceptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjCExceptionTests.swift; sourceTree = "<group>"; };
 		5769D95FA9B026AE0E583FFD /* LegacyBookStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyBookStateTests.swift; sourceTree = "<group>"; };
 		5783AD76BC904EFC296FAC29 /* BookManifestEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookManifestEditing.swift; sourceTree = "<group>"; };
 		57A6209616BA7C1FA6F6951B /* AudioEditorWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorWindowTests.swift; sourceTree = "<group>"; };
 		5891B23C0D5F67923B0AB98E /* BookManifestEditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookManifestEditTests.swift; sourceTree = "<group>"; };
+		589D5F5C7514EE6091B24834 /* ObjCExceptionCatcher.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ObjCExceptionCatcher.h; sourceTree = "<group>"; };
 		589E186C9166AF7A454AC586 /* RepeatedSymbolNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepeatedSymbolNames.swift; sourceTree = "<group>"; };
 		593F507CF89D611AE2C62C3D /* FeedRecordTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedRecordTests.swift; sourceTree = "<group>"; };
 		59727A3DFD06B1BF576D41B7 /* LibraryOnlyRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryOnlyRemovalTests.swift; sourceTree = "<group>"; };
@@ -1614,6 +1628,7 @@
 		AD2C598C575141839E3C3C2A /* TMBNameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMBNameTests.swift; sourceTree = "<group>"; };
 		AD70C961AF91F3843BD1F30F /* vbrquantize.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vbrquantize.h; sourceTree = "<group>"; };
 		AD7541C995663E4122E4183C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		ADB4F71B7687D98D92EBB2C6 /* ObjCExceptionCatcher.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ObjCExceptionCatcher.m; sourceTree = "<group>"; };
 		AE823AE6EC7945E3D254B4E6 /* BookCloudStorageServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookCloudStorageServiceTests.swift; sourceTree = "<group>"; };
 		AF06C86B09559F1AB7AA3F7A /* BookSearchModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookSearchModelTests.swift; sourceTree = "<group>"; };
 		AF32AB722E58729CAA93E891 /* SpeechPreparationSubstitutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechPreparationSubstitutionTests.swift; sourceTree = "<group>"; };
@@ -1904,6 +1919,7 @@
 		FC4887ECD2AE9102C8D44278 /* AudioEditorWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorWindowController.swift; sourceTree = "<group>"; };
 		FC7EDCC74508AC75F91D0AC4 /* AudioEditingSettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditingSettingsSection.swift; sourceTree = "<group>"; };
 		FCCE8F84B158523F83B0AA2E /* AudioManifestCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManifestCheckTests.swift; sourceTree = "<group>"; };
+		FD0BA5A284A16E6F31BC0FCA /* ObjCException.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjCException.swift; sourceTree = "<group>"; };
 		FD19246C1262E82F31145B81 /* PlaybackLifecyclePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackLifecyclePolicyTests.swift; sourceTree = "<group>"; };
 		FD1C69C9713E5669A3247A48 /* RecordingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingTestSupport.swift; sourceTree = "<group>"; };
 		FD345AC5DD9D23B1670900A8 /* ReadingStatsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStatsService.swift; sourceTree = "<group>"; };
@@ -1929,6 +1945,7 @@
 				4B5041D21985032528EED9B6 /* SwiftSoup in Frameworks */,
 				32E3EB8DE67D6AE9E93F7467 /* Markdown in Frameworks */,
 				2E9A7020F15B5235B3A214DF /* libLAME.a in Frameworks */,
+				7D7A612F89DABBE97D094FE3 /* libObjCExceptionCatcher.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1956,8 +1973,10 @@
 		186811333DB411ED58703F4D = {
 			isa = PBXGroup;
 			children = (
+				4E2A00CDDD6095FEBE6D9866 /* include */,
 				642F674489807D9D263CD40A /* lame */,
 				9C557EEDF911299FCFA485CE /* libmp3lame */,
+				999574937B10CCD90C9BB075 /* ObjCExceptionCatcher */,
 				58F178BA3996AF3BA44205D8 /* Tests */,
 				56083D0B866F612061656ABF /* TextMouth */,
 				C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */,
@@ -2032,6 +2051,7 @@
 				D34E5358CDF2E44856C258A9 /* MenuVisibilityManager.swift */,
 				BF8D8C98A4DC2012095FBF66 /* NetworkReachability.swift */,
 				B2D187AA27CB277F31962348 /* NowPlayingService.swift */,
+				FD0BA5A284A16E6F31BC0FCA /* ObjCException.swift */,
 				7609C5104C48C023BF2F4EDF /* OffsetMap.swift */,
 				0A773A62A39B2AEE6D56EDCE /* OggAudioConverter.swift */,
 				EA28E05C082A507402EA59A5 /* PackageFileEditing.swift */,
@@ -2107,6 +2127,15 @@
 				3D940238BB91BC631475B5B4 /* SpeechRefusalReportSheet.swift */,
 			);
 			path = Reader;
+			sourceTree = "<group>";
+		};
+		4E2A00CDDD6095FEBE6D9866 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				589D5F5C7514EE6091B24834 /* ObjCExceptionCatcher.h */,
+			);
+			name = include;
+			path = Vendor/ObjCExceptionCatcher/include;
 			sourceTree = "<group>";
 		};
 		56083D0B866F612061656ABF /* TextMouth */ = {
@@ -2303,6 +2332,7 @@
 			isa = PBXGroup;
 			children = (
 				6CBE6B993487DC0C8E2BF968 /* libLAME.a */,
+				4D7A8C1B85C2574767A69992 /* libObjCExceptionCatcher.a */,
 				304A2089880557ADA1ADFB08 /* TextMouth.app */,
 				A9566353F0389A2A9393B2CB /* TextMouthProductionTests.xctest */,
 			);
@@ -2331,6 +2361,15 @@
 				B919A7DA15C276911FBD5D3A /* OPMLImportSheet.swift */,
 			);
 			path = Feeds;
+			sourceTree = "<group>";
+		};
+		999574937B10CCD90C9BB075 /* ObjCExceptionCatcher */ = {
+			isa = PBXGroup;
+			children = (
+				ADB4F71B7687D98D92EBB2C6 /* ObjCExceptionCatcher.m */,
+			);
+			name = ObjCExceptionCatcher;
+			path = Vendor/ObjCExceptionCatcher;
 			sourceTree = "<group>";
 		};
 		9C557EEDF911299FCFA485CE /* libmp3lame */ = {
@@ -2735,6 +2774,7 @@
 				10B5C58B28926F893C3A835F /* NetworkReachabilityTests.swift */,
 				AB6A423633EFCCD2180C0D7B /* NewBookHandEditsTests.swift */,
 				26FEF611CBCDAFC7A40B2BD7 /* NowPlayingOwnershipTests.swift */,
+				56E9925E2D4BDCF8385F1C0F /* ObjCExceptionTests.swift */,
 				82EF6AA631C0D72D6F54B9CA /* OggAudioConverterTests.swift */,
 				401DFE2E2C7CBDB7F6C6B1E4 /* OggImportConversionTests.swift */,
 				CFFB504D6A130FA65547ADDA /* OggLibraryConversionTests.swift */,
@@ -3141,6 +3181,23 @@
 			productReference = A9566353F0389A2A9393B2CB /* TextMouthProductionTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		601950955AB559C94D880CC6 /* ObjCExceptionCatcher */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D03E07339DEB1E02F163C5C3 /* Build configuration list for PBXNativeTarget "ObjCExceptionCatcher" */;
+			buildPhases = (
+				9C18B0CFD29D95864A46E73B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ObjCExceptionCatcher;
+			packageProductDependencies = (
+			);
+			productName = ObjCExceptionCatcher;
+			productReference = 4D7A8C1B85C2574767A69992 /* libObjCExceptionCatcher.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		B6C4B7D013F499991F5B7477 /* TextMouth */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F5316024CE426EBB26E83F40 /* Build configuration list for PBXNativeTarget "TextMouth" */;
@@ -3153,6 +3210,7 @@
 			);
 			dependencies = (
 				8CF5943400F6116DDAA9B65A /* PBXTargetDependency */,
+				BED1B1667B23EFCFC09E796F /* PBXTargetDependency */,
 			);
 			name = TextMouth;
 			packageProductDependencies = (
@@ -3195,6 +3253,7 @@
 			projectRoot = "";
 			targets = (
 				00E615B453C74D8AECE06BAC /* LAME */,
+				601950955AB559C94D880CC6 /* ObjCExceptionCatcher */,
 				B6C4B7D013F499991F5B7477 /* TextMouth */,
 				5D1D9C2BEC95B5C28E83D5C5 /* TextMouthProductionTests */,
 			);
@@ -3519,6 +3578,7 @@
 				249C0FA9E77CCF370AE1A7F2 /* NetworkReachabilityTests.swift in Sources */,
 				1EEA6C144DED4822990A1DB8 /* NewBookHandEditsTests.swift in Sources */,
 				485A6EBB825C2DCE204B3B49 /* NowPlayingOwnershipTests.swift in Sources */,
+				8410C3A3F194B5F83D063A17 /* ObjCExceptionTests.swift in Sources */,
 				D76B14B5FE9FAF0A0FDD891D /* OffsetMapTests.swift in Sources */,
 				718B41AA95AB18966D11B924 /* OggAudioConverterTests.swift in Sources */,
 				7DEFB4111B229D464E6BECDA /* OggImportConversionTests.swift in Sources */,
@@ -3986,6 +4046,7 @@
 				3CB123670FD34FAB38561317 /* NetworkReachability.swift in Sources */,
 				5E41506D5916EE738A08867B /* NowPlayingService.swift in Sources */,
 				D6E8C1A53CA721B7BCDE033F /* OPMLImportSheet.swift in Sources */,
+				C61A5C62122C4BC9157D05A0 /* ObjCException.swift in Sources */,
 				F2702396D27AA83E76B85EBD /* OffsetMap.swift in Sources */,
 				2999B9E35D5BF71EB1F79BEA /* OggAudioConverter.swift in Sources */,
 				F926BD33D7D1A537F0268787 /* OggConversionProgress.swift in Sources */,
@@ -4143,6 +4204,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9C18B0CFD29D95864A46E73B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				12EE3B0DB5FA24665FAE3935 /* ObjCExceptionCatcher.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A83A491E65A719AE410EC808 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -4182,9 +4251,33 @@
 			target = 00E615B453C74D8AECE06BAC /* LAME */;
 			targetProxy = A552452006B507F196667670 /* PBXContainerItemProxy */;
 		};
+		BED1B1667B23EFCFC09E796F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 601950955AB559C94D880CC6 /* ObjCExceptionCatcher */;
+			targetProxy = BBFC610342917412F0FA969B /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		269E47F147FD2D44BDBE8536 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Vendor/ObjCExceptionCatcher/include",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.ObjCExceptionCatcher;
+				PRODUCT_NAME = ObjCExceptionCatcher;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
 		5B73DA46E3F141B7C02179E0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -4268,7 +4361,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = macosx;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include";
 				TEXTMOUTH_BUILD_DATE = unknown;
 				TEXTMOUTH_GIT_COMMIT = unknown;
 			};
@@ -4345,7 +4438,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouthProductionTests;
 				SDKROOT = macosx;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth";
 			};
 			name = Release;
@@ -4387,7 +4480,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouthProductionTests;
 				SDKROOT = macosx;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth";
 			};
 			name = Debug;
@@ -4415,6 +4508,25 @@
 			};
 			name = Release;
 		};
+		C984E4DB9D99966CBE3C553F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Vendor/ObjCExceptionCatcher/include",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.ObjCExceptionCatcher;
+				PRODUCT_NAME = ObjCExceptionCatcher;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
 		E6BA70A6D910CE502571E3F1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -4439,7 +4551,7 @@
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = all;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include";
 				TEXTMOUTH_BUILD_DATE = unknown;
 				TEXTMOUTH_GIT_COMMIT = unknown;
 			};
@@ -4471,6 +4583,15 @@
 			buildConfigurations = (
 				7BEEDAF476DFBE8DF8D664E6 /* Debug */,
 				C112A6CF7F82AB4C8DEBBC48 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D03E07339DEB1E02F163C5C3 /* Build configuration list for PBXNativeTarget "ObjCExceptionCatcher" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C984E4DB9D99966CBE3C553F /* Debug */,
+				269E47F147FD2D44BDBE8536 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
