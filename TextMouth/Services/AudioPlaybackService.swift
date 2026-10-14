@@ -1,5 +1,6 @@
 import AVFoundation
 import Combine
+import os
 
 /// Latest-wins gate for asynchronous AVPlayer seeks. AVPlayer may complete
 /// overlapping seeks out of order; a plain Boolean lets an older completion
@@ -250,6 +251,22 @@ enum AudioStallPolicy {
     ) -> Bool {
         isPlaying && !isPaused && !playerIsAdvancing && !reachedEndOfFile
     }
+
+    /// Whether playback the service believes is running has stopped
+    /// advancing partway through (B07): its rate is above zero, yet its time
+    /// has not moved for `limit` seconds, and it has not simply reached the
+    /// end of its file. Paused or stopped playback never counts, nor does a
+    /// player whose rate is zero, which is not trying to play.
+    static func hasStoppedAdvancing(
+        isPlaying: Bool,
+        isPaused: Bool,
+        rate: Float,
+        secondsWithoutProgress: TimeInterval,
+        limit: TimeInterval,
+        reachedEndOfFile: Bool
+    ) -> Bool {
+        isPlaying && !isPaused && rate > 0 && !reachedEndOfFile && secondsWithoutProgress >= limit
+    }
 }
 
 // MARK: - Clip Chains
@@ -467,6 +484,13 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
         /// Audio stopped arriving, or never started, and playback did not
         /// recover in time.
         case stalled
+        /// The player's time stopped moving partway through, its rate above
+        /// zero: the system's audio stopped responding, as Apple's Vorbis
+        /// decoder did on October 14, 2026, whatever the file (B07).
+        case stoppedResponding
+        /// TextMouth's memory grew to `footprint` bytes while the audio
+        /// played, and the memory guard stopped playback (B07).
+        case memoryRunaway(footprint: UInt64)
     }
 
     /// What went wrong.
@@ -524,6 +548,10 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
             return "failed partway through"
         case .stalled:
             return "could not be read quickly enough"
+        case .stoppedResponding:
+            return "stopped responding"
+        case .memoryRunaway:
+            return "was stopped because TextMouth's memory grew too large"
         }
     }
 }
@@ -702,6 +730,33 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// as a `.stalled` failure. A local file starts within milliseconds, so
     /// the margin is wide; hosted tests shorten it.
     var stallRecoveryTimeout: TimeInterval = 10
+
+    /// How long playback may go on, its rate above zero, without the
+    /// player's time moving, before it is reported as `.stoppedResponding`
+    /// (B07). At the slowest speed the time still moves a quarter of a
+    /// second each second, so eight seconds without a move is a player that
+    /// has stopped responding, never a slow passage. Hosted tests shorten it.
+    var stallLimit: TimeInterval = 8
+
+    /// How often, once a play has passed its start check, the service checks
+    /// that the player's time still moves, for as long as the play lasts.
+    /// Hosted tests shorten it.
+    var progressCheckInterval: TimeInterval = 2
+
+    /// The player's time when it was last seen to move, in seconds into the
+    /// loaded file (nil until seen since the play began), and the system
+    /// uptime it was seen then. A play, resume, seek, or stall recovery
+    /// begins it afresh, as a move.
+    private var lastProgress: (fileTime: TimeInterval?, at: TimeInterval) = (nil, 0)
+
+    /// While set, the progress checks read the player's time as this, as if
+    /// its clock had stopped there: a hosted test's stand-in for a player
+    /// that has stopped responding. The positions published are untouched.
+    var _frozenPlayerTimeForTesting: TimeInterval?
+
+    /// Called on the queue that lets go of a player that may have stopped
+    /// responding, once it has, with whether that was the main thread.
+    var _stuckPlayerLetGoForTesting: (@Sendable (_ onMainThread: Bool) -> Void)?
 
     override init() {
         super.init()
@@ -1025,6 +1080,91 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         endHeldUntilResume = nil
     }
 
+    /// Let go of a player that may have stopped responding, as
+    /// `releasePlayer()` lets go of one, but without calling into it on the
+    /// main thread (B07). A player stuck behind the system's audio can block
+    /// whatever calls into it, its pause, its rate, its observers' removal,
+    /// even its release, so all of that is done on a queue of its own
+    /// (`letGo(of:then:)`), which alone waits should the player never
+    /// answer. The main thread only forgets it; the next play builds a fresh
+    /// player.
+    private func letGoOfPlayerOffTheMainThread() {
+        guard let stuckPlayer = player else {
+            releasePlayer()
+            return
+        }
+        let stuck = StuckPlayer(
+            player: stuckPlayer,
+            timeObserver: timeObserver,
+            observations: [
+                playerStatusObservation, itemStatusObservation, followingItemStatusObservation, arrivalObservation,
+            ].compactMap { $0 }
+        )
+        timeObserver = nil
+        playerStatusObservation = nil
+        itemStatusObservation = nil
+        followingItemStatusObservation = nil
+        arrivalObservation = nil
+        player = nil
+        // A tick still on its way from the stuck player's observer is turned
+        // away, as an earlier player's ticks are.
+        timeObserverGeneration += 1
+        // The bookkeeping, which reaches the player no more.
+        releasePlayer()
+        Self.letGo(of: stuck, then: _stuckPlayerLetGoForTesting)
+    }
+
+    /// A player let go of because it may have stopped responding, with the
+    /// observations that call into it when removed.
+    private struct StuckPlayer {
+        let player: AVQueuePlayer
+        let timeObserver: Any?
+        let observations: [NSKeyValueObservation]
+    }
+
+    /// The queue stuck players are let go of on, one after another, so the
+    /// main thread never waits for one.
+    private static let stuckPlayerQueue = DispatchQueue(label: "TextMouth.audio.stuckPlayers", qos: .utility)
+
+    /// Remove `stuck`'s observations, pause it, and release it, all on
+    /// `stuckPlayerQueue`, then call `done` there with whether that was the
+    /// main thread.
+    private static func letGo(of stuck: StuckPlayer, then done: (@Sendable (_ onMainThread: Bool) -> Void)?) {
+        // The lock carries `stuck` across whole and is emptied on the queue,
+        // so from then on the queue alone holds the player: its unchecked
+        // state is never shared.
+        let handOver = OSAllocatedUnfairLock<StuckPlayer?>(uncheckedState: stuck)
+        stuckPlayerQueue.async {
+            let taken = handOver.withLockUnchecked { held -> StuckPlayer? in
+                defer { held = nil }
+                return held
+            }
+            if let taken {
+                taken.observations.forEach { $0.invalidate() }
+                if let observer = taken.timeObserver {
+                    taken.player.removeTimeObserver(observer)
+                }
+                taken.player.pause()
+            }
+            done?(Thread.isMainThread)
+        }
+    }
+
+    /// Stop playback because TextMouth's memory grew to `footprint` bytes
+    /// while it played (`PlaybackMemoryGuard`, B07): reported as a
+    /// `.memoryRunaway` failure, through the path every failure takes, and
+    /// the player let go of off the main thread, as a player behind a
+    /// runaway may be stuck.
+    ///
+    /// - Returns: Whether playback was under way and has stopped; false
+    ///   when nothing was loaded to play.
+    @discardableResult
+    func stopForMemoryRunaway(footprint: UInt64) -> Bool {
+        guard isPlaying, let url = loadedURL else { return false }
+        reportFailure(AudioPlaybackFailure(reason: .memoryRunaway(footprint: footprint), url: url), playerMayBeStuck: true)
+        return true
+    }
+
     /// Halt playback because of `failure`, then publish it and tell
     /// `onPlaybackFailed`.
     ///
@@ -1032,8 +1172,18 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// again, and without a player the next `load(url:)` of the same file
     /// builds a fresh one. `currentTime` and `duration` keep their values,
     /// so playing the file again can start where this attempt stopped.
-    private func reportFailure(_ failure: AudioPlaybackFailure) {
-        releasePlayer()
+    ///
+    /// - Parameters:
+    ///   - failure: What went wrong.
+    ///   - playerMayBeStuck: Whether the player may have stopped responding,
+    ///     and is let go of off the main thread
+    ///     (`letGoOfPlayerOffTheMainThread()`).
+    private func reportFailure(_ failure: AudioPlaybackFailure, playerMayBeStuck: Bool = false) {
+        if playerMayBeStuck {
+            letGoOfPlayerOffTheMainThread()
+        } else {
+            releasePlayer()
+        }
         isPlaying = false
         isPaused = false
         self.failure = failure
@@ -1221,6 +1371,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         loadDuration(of: following.item, asset: following.asset)
         setupItemObservers()
         stopAtLoadedFileEnd()
+        // The check that playback advances follows it into the new file.
+        scheduleProgressCheck()
         return true
     }
 
@@ -1560,6 +1712,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         // While the player plays another item than the loaded file's, as it
         // does for a moment when it rolls on from one file into the next,
         // its clock tells nothing of the loaded file's play.
+        if player.currentItem === playerItem {
+            noteProgress(atFileTime: seconds)
+        }
         let action: AudioPositionObserverPolicy.Action = player.currentItem !== playerItem
             ? .ignore
             : AudioPositionObserverPolicy.action(
@@ -1864,20 +2019,47 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     }
 
     /// Check, `stallRecoveryTimeout` from now, that playback of the current
-    /// item is really advancing, replacing any check already pending.
+    /// item is really advancing, replacing any check already pending, and
+    /// then keep checking for as long as it plays (`checkProgress(of:judgingStart:)`).
     ///
     /// Asking to start, resume, or seek sets `isPlaying` at once, whether or
     /// not audio ever arrives, and a stall pauses the player without telling
     /// the service. Without this check either would leave the service
-    /// claiming to play in silence.
+    /// claiming to play in silence. So would a player whose time stops
+    /// partway through while it still claims to play (B07).
     private func scheduleProgressCheck() {
         cancelProgressCheck()
         guard let item = playerItem else { return }
+        // Asking to play is a move: the time must move on from here.
+        lastProgress = (nil, Self.uptime())
+        armProgressCheck(of: item, after: stallRecoveryTimeout, judgingStart: true)
+    }
+
+    /// Check `item`'s progress `delay` from now, judging whether it started
+    /// as well when `judgingStart` is true.
+    private func armProgressCheck(of item: AVPlayerItem, after delay: TimeInterval, judgingStart: Bool) {
         let check = DispatchWorkItem { [weak self] in
-            self?.checkProgress(of: item)
+            self?.checkProgress(of: item, judgingStart: judgingStart)
         }
         progressCheck = check
-        DispatchQueue.main.asyncAfter(deadline: .now() + stallRecoveryTimeout, execute: check)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: check)
+    }
+
+    /// The clock progress is measured by: seconds of system uptime, which
+    /// never jumps with the wall clock.
+    private static func uptime() -> TimeInterval {
+        ProcessInfo.processInfo.systemUptime
+    }
+
+    /// Note the loaded file's player at `fileTime`: a time other than the
+    /// one last seen is a move, made now.
+    private func noteProgress(atFileTime fileTime: TimeInterval) {
+        let time = _frozenPlayerTimeForTesting ?? fileTime
+        guard time.isFinite else { return }
+        // A stopped clock reads the same time again; a millisecond's
+        // difference is a move.
+        if let last = lastProgress.fileTime, abs(time - last) < 0.001 { return }
+        lastProgress = (time, Self.uptime())
     }
 
     /// Drop the pending progress check, if any.
@@ -1886,19 +2068,60 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         progressCheck = nil
     }
 
-    /// Report a stall when `item`, still the current item and meant to be
-    /// playing, is not advancing.
-    private func checkProgress(of item: AVPlayerItem) {
+    /// Check that `item`, still the current item and meant to be playing,
+    /// is advancing, and check again `progressCheckInterval` later for as
+    /// long as it plays: the start check, extended to the whole play (B07).
+    ///
+    /// - A start check (`judgingStart`), the first after a play, resume,
+    ///   seek, or stall recovery, reports a `.stalled` failure when the
+    ///   player is not playing at all: its audio never arrived.
+    /// - Every check, a start check too, reports `.stoppedResponding` when
+    ///   the player's time has not moved for `stallLimit` with its rate above
+    ///   zero, and lets go of the player off the main thread, as it may be
+    ///   stuck.
+    ///
+    /// Paused or finished playback is not checked: a pause cancels the
+    /// check, and a resume, seek, or play starts it again. Neither is a play
+    /// at the end of its file, whose end is on its way.
+    private func checkProgress(of item: AVPlayerItem, judgingStart: Bool) {
         guard item === playerItem, let player, let url = loadedURL else { return }
         // Only the newest check runs; scheduling another cancelled this one.
         progressCheck = nil
-        guard AudioStallPolicy.isStalled(
+        let reachedEndOfFile = Self.isAtEndOfFile(item)
+        if judgingStart, AudioStallPolicy.isStalled(
             isPlaying: isPlaying,
             isPaused: isPaused,
             playerIsAdvancing: player.timeControlStatus == .playing,
-            reachedEndOfFile: Self.isAtEndOfFile(item)
-        ) else { return }
-        reportFailure(AudioPlaybackFailure(reason: .stalled, url: url))
+            reachedEndOfFile: reachedEndOfFile
+        ) {
+            reportFailure(AudioPlaybackFailure(reason: .stalled, url: url))
+            return
+        }
+        guard isPlaying, !isPaused else { return }
+        let fileTime = CMTimeGetSeconds(player.currentTime())
+        if player.currentItem === item {
+            noteProgress(atFileTime: fileTime)
+        }
+        let secondsWithoutProgress = Self.uptime() - lastProgress.at
+        let rate = player.rate
+        guard AudioStallPolicy.hasStoppedAdvancing(
+            isPlaying: isPlaying,
+            isPaused: isPaused,
+            rate: rate,
+            secondsWithoutProgress: secondsWithoutProgress,
+            limit: stallLimit,
+            reachedEndOfFile: reachedEndOfFile
+        ) else {
+            armProgressCheck(of: item, after: progressCheckInterval, judgingStart: false)
+            return
+        }
+        DiagnosticLog.event(
+            .playback,
+            "AUDIO_PLAYBACK_STALLED: file=\(DiagnosticLog.loggablePath(url)) "
+                + "time=\(String(format: "%.2f", lastProgress.fileTime ?? fileTime)) "
+                + "secondsWithoutProgress=\(String(format: "%.1f", secondsWithoutProgress)) rate=\(rate)"
+        )
+        reportFailure(AudioPlaybackFailure(reason: .stoppedResponding, url: url), playerMayBeStuck: true)
     }
 
     /// Whether `item`'s playhead stands at or past the end of its file, as

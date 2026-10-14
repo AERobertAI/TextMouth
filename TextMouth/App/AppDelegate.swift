@@ -53,6 +53,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // written whatever state the data directory is in.
         try? TextMouthPaths.ensureDirectoryStructure()
         Self.logBuildIdentity(.current)
+        // A quit to protect the Mac at the last launch is told once (B07).
+        PlaybackMemoryGuard.tellOfAQuitToProtectTheMac()
 
         // Disable automatic window tabbing (prevents "New Tab" menu proliferation)
         NSWindow.allowsAutomaticWindowTabbing = false
@@ -163,6 +165,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    launch, the one under way its resume data (`FeedQuitHold`), and
     ///    then TextMouth quits, after three seconds at most.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        // The memory guard quits to protect the Mac, everything saved,
+        // asking nothing (B07).
+        if PlaybackMemoryGuard.shared.isQuittingToProtectTheMac {
+            return .terminateNow
+        }
         if DataDirectoryMoveProgress.stopForQuit(then: requestTermination) {
             return .terminateCancel
         }

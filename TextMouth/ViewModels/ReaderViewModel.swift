@@ -634,6 +634,8 @@ final class ReaderViewModel: ObservableObject {
         observeLibraryUpdates()
         observeReadingList()
         forwardSpeechState()
+        // TextMouth's memory is watched while this reader plays (B07).
+        followPlaybackForMemoryGuard().store(in: &cancellables)
 
         if isAudioBook {
             setupAudioCallbacks()

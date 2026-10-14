@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import os
 
 /// Events that can have associated sound effects
 enum SoundEvent: String, CaseIterable, Codable, Identifiable {
@@ -13,8 +14,99 @@ enum SoundEvent: String, CaseIterable, Codable, Identifiable {
     var id: String { rawValue }
 }
 
+// MARK: - Playing a Sound, Off the Main Thread
+
+/// Plays a sound effect's file, on the sound effects' own serial queue
+/// (`SoundEffectService`), never on the main thread. A play may take as long
+/// as the system's audio takes to start it, or never return: only that queue
+/// waits for it.
+protocol SoundEffectPlaying: Actor {
+    /// Play the sound in the file at `url` at `volume`, from 0 to 1.
+    func play(contentsOf url: URL, volume: Float)
+}
+
+/// Plays sound effects through AVFoundation's `AVAudioPlayer`, on a serial
+/// queue of its own: the actor's executor (B07).
+///
+/// `AVAudioPlayer` is used because nothing ties it to the main thread.
+/// AppKit's `NSSound`, which played the sounds before, is built on it
+/// (`-[NSSound play]` calls `-[AVAudioPlayer play]`), and AppKit's thread
+/// safety summary names no sound class as safe off the main thread. On
+/// October 14, 2026, with Apple's Vorbis decoder stuck in AudioToolbox, the
+/// pause sound's play waited for good on a lock in `AudioQueuePrime`, on the
+/// main thread, and froze TextMouth's window.
+actor SystemSoundEffectPlayer: SoundEffectPlaying {
+    /// The serial queue every sound effect plays on.
+    private let queue = DispatchSerialQueue(label: "TextMouth.soundEffects", qos: .userInitiated)
+
+    /// Runs the actor's work, every play, on `queue`.
+    nonisolated var unownedExecutor: UnownedSerialExecutor {
+        queue.asUnownedSerialExecutor()
+    }
+
+    /// The players still sounding. A player released while it plays falls
+    /// silent at once, so each is kept until a later play finds it done.
+    private var sounding: [AVAudioPlayer] = []
+
+    func play(contentsOf url: URL, volume: Float) {
+        sounding.removeAll { !$0.isPlaying }
+        guard let player = try? AVAudioPlayer(contentsOf: url) else { return }
+        player.volume = volume
+        player.play()
+        sounding.append(player)
+    }
+}
+
+/// Whether a sound effect's play is under way: handed to the sound queue,
+/// and not yet returned from there. While one is, later sounds are dropped
+/// rather than queued behind it, so a play that never returns holds back
+/// nothing but sounds (B07).
+struct SoundEffectGate: Equatable, Sendable {
+    /// What becomes of a sound asked for.
+    enum Decision: Equatable, Sendable {
+        /// Nothing is under way: the sound plays, and is under way until it
+        /// returns.
+        case play
+        /// A play under way for `seconds` has not returned, so the sound is
+        /// dropped. `isFirstDrop` is true for the first sound dropped behind
+        /// that play, the one the log reports.
+        case drop(seconds: TimeInterval, isFirstDrop: Bool)
+    }
+
+    /// When the play under way was handed over, in seconds of system uptime,
+    /// or nil while none is.
+    private(set) var playHandedOverAt: TimeInterval?
+    /// Whether a sound has been dropped behind the play under way.
+    private(set) var hasDroppedASound = false
+
+    /// Decide what becomes of a sound asked for at `now`, taking it as the
+    /// play under way when it plays.
+    mutating func ask(at now: TimeInterval) -> Decision {
+        guard let handedOverAt = playHandedOverAt else {
+            playHandedOverAt = now
+            hasDroppedASound = false
+            return .play
+        }
+        let isFirstDrop = !hasDroppedASound
+        hasDroppedASound = true
+        return .drop(seconds: max(0, now - handedOverAt), isFirstDrop: isFirstDrop)
+    }
+
+    /// The play under way has returned: the next sound plays.
+    mutating func playReturned() {
+        playHandedOverAt = nil
+        hasDroppedASound = false
+    }
+}
+
 /// Manages playback of short sound effects for UI events.
 /// Uses macOS system sounds from /System/Library/Sounds/ by default.
+///
+/// A sound is handed to a serial queue of its own and played there
+/// (`SoundEffectPlaying`), so the main thread never waits for the system's
+/// audio. While a sound's play has not returned, later sounds are dropped,
+/// never queued behind it, and the first one dropped is logged as
+/// `SOUND_EFFECT_STUCK` (B07).
 ///
 /// The three sound preferences live in the preferences store. The service
 /// saves each change made through it there, and takes up every change made
@@ -83,21 +175,35 @@ class SoundEffectService: ObservableObject {
     /// holds them, so nothing is written back.
     private var isFollowingStore = false
 
-    /// Currently playing sound (kept alive until playback finishes)
-    private var currentSound: NSSound?
+    /// Plays each sound handed over, on the sound queue.
+    private let player: any SoundEffectPlaying
+    /// The play under way, shared by the main thread, which hands sounds
+    /// over, and the sound queue, which returns from them.
+    private let gate = OSAllocatedUnfairLock(initialState: SoundEffectGate())
+
+    /// Whether a sound's play is under way: handed to the sound queue and
+    /// not yet returned. Later sounds are dropped meanwhile.
+    var isPlayUnderWay: Bool {
+        gate.withLock { $0.playHandedOverAt != nil }
+    }
 
     static let systemSoundsPath = "/System/Library/Sounds"
 
     /// Loads the sound preferences from `preferences`, this process's
     /// preferences unless a test passes its own, and follows their changes
     /// there from then on. Missing values fall back to sounds on, half
-    /// volume, and the default assignments.
+    /// volume, and the default assignments. Sounds play through `player`:
+    /// the system's, unless a test passes one that plays nothing aloud.
     ///
     /// Created on the main actor, where the service then follows the store,
     /// like the interface that uses it.
     @MainActor
-    init(preferences: UserDefaults = TextMouthRuntime.current.preferences) {
+    init(
+        preferences: UserDefaults = TextMouthRuntime.current.preferences,
+        player: any SoundEffectPlaying = SystemSoundEffectPlayer()
+    ) {
         self.preferences = preferences
+        self.player = player
         soundsEnabled = Self.enabledPreference.read(from: preferences)
         volume = Self.volumePreference.read(from: preferences)
         assignments = Self.assignmentsPreference.read(from: preferences)
@@ -154,37 +260,59 @@ class SoundEffectService: ObservableObject {
         Dictionary(uniqueKeysWithValues: SoundEvent.allCases.map { ($0, assignments[$0] ?? "None") })
     }
 
-    /// Play the sound effect for a given event
+    /// Play the sound effect for a given event, as the settings say: none
+    /// while sounds are off or the event's sound is None.
     func play(for event: SoundEvent) {
         guard soundsEnabled else { return }
         guard let soundName = assignments[event], soundName != "None" else { return }
-
-        let sound: NSSound?
-        if let systemSound = NSSound(contentsOfFile: "\(Self.systemSoundsPath)/\(soundName).aiff", byReference: true) {
-            sound = systemSound
-        } else {
-            sound = NSSound(named: NSSound.Name(soundName))
-        }
-
-        guard let soundToPlay = sound else { return }
-        soundToPlay.volume = volume
-        soundToPlay.stop()
-        soundToPlay.play()
-        currentSound = soundToPlay
+        hand(soundName, for: "the \(event.rawValue) sound")
     }
 
-    /// Preview a sound by name
+    /// Preview a sound by name, whether or not sounds are on.
     func previewSound(_ name: String) {
-        let sound: NSSound?
-        if let systemSound = NSSound(contentsOfFile: "\(Self.systemSoundsPath)/\(name).aiff", byReference: true) {
-            sound = systemSound
-        } else {
-            sound = NSSound(named: NSSound.Name(name))
+        hand(name, for: "the preview of \(name)")
+    }
+
+    /// The file of the sound named `name`: a system sound, the only kind
+    /// Settings and config.json offer (`SettingsPolicy.soundEffectAssignments`),
+    /// or nil when there is no such sound.
+    static func soundFile(named name: String) -> URL? {
+        let file = URL(fileURLWithPath: systemSoundsPath, isDirectory: true)
+            .appendingPathComponent("\(name).aiff")
+        return FileManager.default.fileExists(atPath: file.path) ? file : nil
+    }
+
+    /// Hand the sound named `name` to the sound queue to play at the volume
+    /// set now, and return at once: the main thread never waits for it.
+    ///
+    /// While an earlier sound's play has not returned, this sound is dropped
+    /// instead, never queued behind it, and the first sound dropped behind
+    /// that play is logged.
+    ///
+    /// - Parameters:
+    ///   - name: The sound's name, such as "Tink".
+    ///   - purpose: What the sound was for, as the log names it.
+    private func hand(_ name: String, for purpose: String) {
+        guard let file = Self.soundFile(named: name) else { return }
+        switch gate.withLock({ $0.ask(at: ProcessInfo.processInfo.systemUptime) }) {
+        case .play:
+            // Only Sendable values cross to the sound queue: the actor that
+            // plays, the lock, and the file and volume.
+            let player = self.player
+            let gate = self.gate
+            let volume = self.volume
+            Task {
+                await player.play(contentsOf: file, volume: volume)
+                gate.withLock { $0.playReturned() }
+            }
+        case .drop(let seconds, let isFirstDrop):
+            guard isFirstDrop else { return }
+            DiagnosticLog.event(
+                .playback,
+                "SOUND_EFFECT_STUCK: dropped \(purpose); the sound before it has not returned from its play after "
+                    + String(format: "%.1f", seconds) + " s, so sounds are dropped until it does"
+            )
         }
-        guard let soundToPlay = sound else { return }
-        soundToPlay.volume = volume
-        soundToPlay.play()
-        currentSound = soundToPlay
     }
 
     /// All available system sound names
