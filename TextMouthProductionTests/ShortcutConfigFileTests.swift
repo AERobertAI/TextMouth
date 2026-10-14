@@ -461,7 +461,7 @@ final class ShortcutConfigFileTests: XCTestCase {
             "Open Book…": "default: command+o",
             "New from Text…": "default in Library windows: shift+command+t",
             "New Recording…": "default: option+command+n",
-            "Import DAISY Folder…": "default in Library windows: shift+command+o",
+            "Import Folder…": "default in Library windows: shift+command+o",
             "Add Feed…": "default in Library windows: shift+command+f",
             "Copy Reading Position": "default in reader windows: shift+command+p",
             "Search in Book": "default in reader windows: command+f",
