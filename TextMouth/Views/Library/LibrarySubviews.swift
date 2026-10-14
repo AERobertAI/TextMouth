@@ -770,6 +770,10 @@ struct LibraryBookRowActions {
     /// true, in an app they choose (FR05). Doing nothing unless the list
     /// supplies it.
     var editText: (Book, _ choosingApp: Bool) -> Void = { _, _ in }
+    /// Opens an audiobook's manifest in the user's own editor, or, when the
+    /// flag is true, in an app they choose (FR17). Doing nothing unless the
+    /// list supplies it.
+    var editManifest: (Book, _ choosingApp: Bool) -> Void = { _, _ in }
     /// Runs an audio command: Edit Audio… (FR04) or a transcription command
     /// (FR05). Doing nothing unless the list supplies it.
     var performAudioCommand: (LibraryAudioCommand) -> Void = { _ in }
@@ -834,6 +838,9 @@ struct LibraryBookListRow: View, Equatable {
     /// The book's transcription note, "Transcribed" or "Transcribing"
     /// (FR05), or nil for none.
     var transcriptionNote: TranscriptionRowNote? = nil
+    /// Whether the book is an audiobook whose audio is a folder of tracks,
+    /// whose manifest Edit Manifest can open (FR17, `TrackFolderBooks`).
+    var isTrackFolder = false
     /// The commands of the feed item the book was downloaded from, in its
     /// feed's folder (FR03); none for any other book.
     var feedActions: [FeedItemAction] = []
@@ -862,6 +869,7 @@ struct LibraryBookListRow: View, Equatable {
             && lhs.livePosition === rhs.livePosition
             && lhs.audioCommands == rhs.audioCommands
             && lhs.transcriptionNote == rhs.transcriptionNote
+            && lhs.isTrackFolder == rhs.isTrackFolder
             && lhs.feedActions == rhs.feedActions
             && lhs.isInReadingList == rhs.isInReadingList
             && lhs.readingListCommands == rhs.readingListCommands
@@ -950,6 +958,15 @@ struct LibraryBookListRow: View, Equatable {
             }
             Button(BookTextEditWording.editWithTitle) {
                 actions.editText(book, true)
+            }
+        }
+        // An audiobook of tracks' manifest in the user's own editor (FR17).
+        if !isMulti && BookManifestEditing.canEditManifest(of: book, isTrackFolder: isTrackFolder) {
+            Button(BookManifestEditWording.editTitle) {
+                actions.editManifest(book, false)
+            }
+            Button(BookManifestEditWording.editWithTitle) {
+                actions.editManifest(book, true)
             }
         }
         // Edit Audio… (FR04) and Transcribe Audio… for an audiobook, and Clean Up

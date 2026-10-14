@@ -404,6 +404,8 @@ final class ReaderRefreshTests: XCTestCase {
                 log?.entries.append("text replaced")
             case .transcriptReplaced:
                 log?.entries.append("transcript replaced")
+            case .tracksRearranged:
+                log?.entries.append("tracks rearranged")
             }
         }
         defer { log.subscription?.cancel() }

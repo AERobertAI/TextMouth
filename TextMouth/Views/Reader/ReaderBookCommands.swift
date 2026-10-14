@@ -39,6 +39,9 @@ struct ReaderBookCommandsSupport: ViewModifier {
     /// Which audiobooks are transcribed (FR05), observed so Edit Text and
     /// Delete Transcript… follow the reader's book.
     @ObservedObject private var transcribedBooks = TranscribedBooks.shared
+    /// Which audiobooks play a folder of tracks, whose manifest can be
+    /// edited (FR17).
+    @ObservedObject private var trackFolderBooks = TrackFolderBooks.shared
 
     /// The commands of `viewModel`'s book, opening the Export dialog through
     /// `exportModel`, Move to Library…'s sheet through `moveToLibrary`
@@ -78,6 +81,14 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 editText(choosingApp: true)
             }
+            .onReceive(NotificationCenter.default.publisher(for: .editBookManifest)) { notification in
+                guard takesCommand(notification) else { return }
+                editManifest(choosingApp: false)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .editBookManifestWith)) { notification in
+                guard takesCommand(notification) else { return }
+                editManifest(choosingApp: true)
+            }
             .onReceive(NotificationCenter.default.publisher(for: .transcribeBookAudio)) { notification in
                 guard takesCommand(notification) else { return }
                 transcribe()
@@ -110,6 +121,10 @@ struct ReaderBookCommandsSupport: ViewModifier {
             .focusedSceneValue(
                 \.canEditBookText,
                 BookTextEditor.canEditText(of: viewModel.book, isTranscribed: transcribedBooks.contains(viewModel.book.id))
+            )
+            .focusedSceneValue(
+                \.canEditBookManifest,
+                BookManifestEditing.canEditManifest(of: viewModel.book, isTrackFolder: trackFolderBooks.contains(viewModel.book.id))
             )
             .focusedSceneValue(\.canTranscribeBookAudio, LibraryAudioCommand.isTranscribable(viewModel.book))
             // An episode's or article's transcript, in its feed, is not
@@ -197,6 +212,17 @@ struct ReaderBookCommandsSupport: ViewModifier {
         let window = viewModel.hostWindow
         Task {
             await BookTextEditor.shared.edit(book, choosingApp: choosingApp, in: library, from: window)
+        }
+    }
+
+    /// Opens the reader's audiobook's manifest in the user's own editor, or
+    /// in an app they choose, as the library holds the book now (FR17).
+    private func editManifest(choosingApp: Bool) {
+        let library = viewModel.libraryViewModel
+        let book = library.bookByID(viewModel.book.id) ?? viewModel.book
+        let window = viewModel.hostWindow
+        Task {
+            await BookManifestEditor.shared.edit(book, choosingApp: choosingApp, in: library, from: window)
         }
     }
 

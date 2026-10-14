@@ -463,6 +463,10 @@ final class ReaderViewModel: ObservableObject {
     /// still loading (FR05): shown once loading ends
     /// (`showTranscriptWaitingForLoad()`); nil the rest of the time.
     var transcriptWaitingForLoad: TranscriptTextChange?
+    /// An edit of an audiobook's manifest taken while this reader was still
+    /// loading (FR17): shown once loading ends
+    /// (`showManifestEditWaitingForLoad()`); nil the rest of the time.
+    var manifestEditWaitingForLoad: BookManifestEdit?
     /// Whether this reader's last load stopped because the book's content.md
     /// held an edit TextMouth could not take (`BookTextEditPending`, FR05),
     /// so the reader opens the book with the edit taken next
@@ -1489,9 +1493,11 @@ final class ReaderViewModel: ObservableObject {
         prepareOpenedChapterSpeech()
         // An edit of the book's text taken while it loaded replaces the
         // text it loaded (FR05), as does an audiobook's transcript text
-        // saved or deleted meanwhile.
+        // saved or deleted meanwhile, and an audiobook's arrangement an
+        // edit of its manifest gave (FR17).
         showEditedTextWaitingForLoad()
         showTranscriptWaitingForLoad()
+        showManifestEditWaitingForLoad()
     }
 
     /// Shows why the book at `filePath` could not be read, in place of the

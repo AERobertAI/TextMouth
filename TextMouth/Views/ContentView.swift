@@ -186,7 +186,7 @@ struct LibraryWindowView: View {
         .sheet(item: movingLibrary) { move in
             DataDirectoryMoveSheet(move: move)
         }
-        // Open Book..., New from Text..., Import DAISY Folder…, Go to Library,
+        // Open Book..., New from Text..., Import Folder…, Go to Library,
         // items opened from Finder, opening a book's reader, and Continue to
         // Next Book are app-wide actions: the router hands each to exactly
         // one window (TODO A05), this one through
@@ -363,7 +363,7 @@ struct LibraryWindowView: View {
         return true
     }
 
-    /// Presents the folder-only panel of Library > Import DAISY Folder… as a
+    /// Presents the folder-only panel of Library > Import Folder… as a
     /// sheet on this Library window (on its own while the window is not yet
     /// known), and imports the folders chosen into the folder being viewed
     /// (TODO I02), or, at the Reading List, into the folder viewed last, the

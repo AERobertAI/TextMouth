@@ -199,34 +199,26 @@ enum AudioEditBookRender {
         )
     }
 
-    /// Follows a track of a book of several, renamed by a render from `old`
-    /// to `new` (paths inside the package), in the manifest.json of the
-    /// book's audio folder `folder`, which is at `folderInPackage` inside the
-    /// package: its order, its chapter titles, and its sections' clips, all
-    /// named relative to the folder. A folder without a manifest, or one not
-    /// naming the track, is left as it is.
-    static func renameTrack(_ old: String, to new: String, inManifestOf folder: URL, folderInPackage: String) throws {
+    /// Follows a track of the book `bookID`, a book of several, renamed by a
+    /// render from `old` to `new` (paths inside the package), in the
+    /// manifest of the book's audio folder `folder`, which is at
+    /// `folderInPackage` inside the package, wherever the reader finds it,
+    /// inside the folder's one folder too (`AudioManifestLocation`): its
+    /// tracks, its order, its chapter titles, and its sections' clips, each
+    /// naming the track as the manifest spells it. So an edited Ogg track,
+    /// which renders to .m4a, keeps its place, its title, and its group
+    /// (FR17, board finding #2457). The manifest is changed as JSON and
+    /// written through the one write of a manifest (`BookManifestFile`),
+    /// which tells an Edit Manifest session of the book. A folder without a
+    /// manifest, or one not naming the track, is left as it is.
+    static func renameTrack(_ old: String, to new: String, inManifestOf folder: URL, folderInPackage: String, bookID: UUID? = nil) throws {
         let prefix = folderInPackage + "/"
-        guard old.hasPrefix(prefix), new.hasPrefix(prefix) else { return }
-        let oldName = String(old.dropFirst(prefix.count))
-        let newName = String(new.dropFirst(prefix.count))
-        let url = folder.appendingPathComponent("manifest.json")
-        guard let data = try? Data(contentsOf: url),
-              var manifest = try? JSONDecoder().decode(AudioManifest.self, from: data) else { return }
-        manifest.order = manifest.order?.map { $0 == oldName ? newName : $0 }
-        if let title = manifest.chapters?.removeValue(forKey: oldName) {
-            manifest.chapters?[newName] = title
+        guard old.hasPrefix(prefix), new.hasPrefix(prefix), let location = AudioManifestLocation.find(in: folder) else { return }
+        let oldName = location.name(ofTrackAt: String(old.dropFirst(prefix.count)))
+        let newName = location.name(ofTrackAt: String(new.dropFirst(prefix.count)))
+        try BookManifestFile.change(manifestAt: location, of: bookID) { object in
+            BookManifestFile.renameTrack(oldName, to: newName, in: &object)
         }
-        manifest.segments = manifest.segments?.map { segment in
-            segment.mappingClips { clip in
-                var renamed = clip
-                if renamed.file == oldName { renamed.file = newName }
-                return renamed
-            }
-        }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        try encoder.encode(manifest).write(to: url, options: .atomic)
     }
 
     /// How far a rendered file's length may differ from the edits' length

@@ -33,65 +33,65 @@ final class BookTextEditor {
 
     /// Explains what Edit Text does, for the book titled with the string,
     /// over the window, and says whether the user goes on.
-    typealias Explainer = @MainActor (_ bookTitle: String, _ window: NSWindow?) async -> Bool
+    typealias Explainer = PackageFileEditing.Explainer
     /// Asks which app to edit the book titled with the string in; nil when
     /// the user cancels.
-    typealias AppChooser = @MainActor (_ bookTitle: String, _ window: NSWindow?) async -> URL?
+    typealias AppChooser = PackageFileEditing.AppChooser
     /// Opens a file in an app, or in the default app for it when nil.
-    typealias Opener = @MainActor (_ file: URL, _ app: URL?) async throws -> Void
+    typealias Opener = PackageFileEditing.Opener
+
+    /// The words of Edit Text's explanation and app chooser.
+    static let wording = PackageFileEditing.Wording(
+        explanationTitle: BookTextEditWording.explanationTitle(bookTitle:),
+        explanation: BookTextEditWording.explanation,
+        appPanelTitle: BookTextEditWording.appPanelTitle,
+        appPanelMessage: BookTextEditWording.appPanelMessage(bookTitle:)
+    )
 
     /// The sessions of the books being edited.
     let sessions: BookTextEditSessions
-    /// Where the explanation is remembered.
-    private let preferences: UserDefaults
-    /// Where TextMouth's becoming active is heard.
-    private let notificationCenter: NotificationCenter
-    /// Explains Edit Text the first time; tests answer for the user.
-    var explain: Explainer
-    /// Chooses the app for Edit Text With…; tests choose without a panel.
-    var chooseApp: AppChooser
-    /// Opens content.md; tests open nothing.
-    var open: Opener
-    /// Whether TextMouth is the active app, so an announcement is heard now
-    /// rather than when it becomes active; tests say it is.
-    var isAppActive: @MainActor () -> Bool
+    /// What Edit Text shares with Edit Manifest (`PackageFileEditing`): the
+    /// explanation, the app chooser, the opener, the watchers, TextMouth
+    /// becoming active, and the announcements.
+    let files: PackageFileEditing
 
     /// The library the books edited belong to, as the last Edit Text gave it.
     private weak var library: LibraryViewModel?
-    /// The watcher of each edited book's content.md, by book ID.
-    private var watchers: [UUID: ContentFileWatcher] = [:]
     /// The edit last refused for each book, so the same refused bytes are
     /// announced once, however often they are checked.
     private var announcedRefusals: [UUID: BookTextEditSessions.RefusedEdit] = [:]
     /// The copies of each book's edited text VoiceOver has been told of, so
     /// a copy a rebuild kept is not announced again.
     private var announcedCopies: [UUID: Set<URL>] = [:]
-    /// What waits to be announced until TextMouth becomes active.
-    private var pendingAnnouncements: [String] = []
-    /// The observation of TextMouth becoming active, while any book is edited.
-    private var activationObserver: NSObjectProtocol?
 
     /// An editor whose sessions are `sessions`, remembering its explanation
     /// in `preferences` and hearing TextMouth become active on
     /// `notificationCenter`: the app's, unless a test passes its own. The
-    /// other arguments stand for the user and the system, as described on
-    /// the properties they set.
+    /// other arguments stand for the user and the system: the first-use
+    /// explanation, the app chooser of Edit Text With…, what opens
+    /// content.md, and whether TextMouth is active (`PackageFileEditing`).
     init(
         sessions: BookTextEditSessions = .shared,
         preferences: UserDefaults = TextMouthRuntime.current.preferences,
         notificationCenter: NotificationCenter = .default,
         explain: @escaping Explainer = BookTextEditor.explainWithAlert,
         chooseApp: @escaping AppChooser = BookTextEditor.chooseAppWithPanel,
-        open: @escaping Opener = BookTextEditor.openWithWorkspace,
+        open: @escaping Opener = PackageFileEditing.openWithWorkspace,
         isAppActive: @escaping @MainActor () -> Bool = { NSApp?.isActive ?? false }
     ) {
         self.sessions = sessions
-        self.preferences = preferences
-        self.notificationCenter = notificationCenter
-        self.explain = explain
-        self.chooseApp = chooseApp
-        self.open = open
-        self.isAppActive = isAppActive
+        files = PackageFileEditing(
+            explainedPreference: Self.explainedPreference,
+            preferences: preferences,
+            notificationCenter: notificationCenter,
+            explain: explain,
+            chooseApp: chooseApp,
+            open: open,
+            isAppActive: isAppActive
+        )
+        files.checkAll = { [weak self] in
+            self?.checkEveryBook()
+        }
     }
 
     // MARK: Editing
@@ -107,7 +107,7 @@ final class BookTextEditor {
     /// announcements appear.
     func edit(_ book: Book, choosingApp: Bool, in library: LibraryViewModel, from window: NSWindow?) async {
         guard await Self.hasText(book) else {
-            announce(BookTextEditWording.noText(bookTitle: book.title), from: window)
+            files.announce(BookTextEditWording.noText(bookTitle: book.title), from: window)
             return
         }
         self.library = library
@@ -116,28 +116,20 @@ final class BookTextEditor {
         let baseline: BookTextBaseline
         switch found {
         case .failure(let failure):
-            announce(BookTextEditWording.cannotBegin(failure, bookTitle: book.title), from: window)
+            files.announce(BookTextEditWording.cannotBegin(failure, bookTitle: book.title), from: window)
             return
         case .success(let current):
             baseline = current
         }
-        if !Self.explainedPreference.read(from: preferences) {
-            guard await explain(book.title, window) else { return }
-            Self.explainedPreference.write(true, to: preferences)
-        }
-        var app: URL?
-        if choosingApp {
-            guard let chosen = await chooseApp(book.title, window) else { return }
-            app = chosen
-        }
+        guard let choice = await files.chooseEditor(bookTitle: book.title, choosingApp: choosingApp, from: window) else { return }
         let startedSession = begin(book.id, baseline: baseline)
         do {
-            try await open(MarkdownCacheService.cacheURL(for: book), app)
+            try await files.open(MarkdownCacheService.cacheURL(for: book), choice.app)
         } catch {
             if startedSession {
                 end(book.id)
             }
-            announce(BookTextEditWording.openFailed(bookTitle: book.title, reason: error.localizedDescription), from: window)
+            files.announce(BookTextEditWording.openFailed(bookTitle: book.title, reason: error.localizedDescription), from: window)
         }
     }
 
@@ -187,11 +179,11 @@ final class BookTextEditor {
                 }
             }
         ))
-        watchers[bookID] = ContentFileWatcher(
+        files.watch(
+            bookID,
             file: { [weak library] in library?.bookByID(bookID).map(MarkdownCacheService.cacheURL(for:)) },
             changed: { [weak self] in self?.check(bookID) }
         )
-        observeActivation()
         // The session's copy of the text its edits replace.
         if let book = library?.bookByID(bookID) {
             sessions.keepOldText(of: book)
@@ -213,41 +205,26 @@ final class BookTextEditor {
     /// edit of it is checked for any more.
     func end(_ bookID: UUID) {
         sessions.end(bookID)
-        watchers.removeValue(forKey: bookID)?.cancel()
+        files.stopWatching(bookID)
         announcedRefusals[bookID] = nil
         announcedCopies[bookID] = nil
-        if sessions.bookIDs.isEmpty, let observer = activationObserver {
-            notificationCenter.removeObserver(observer)
-            activationObserver = nil
-        }
     }
 
     /// Ends every session, as a test does when it ends.
     func endAll() {
-        for bookID in Array(watchers.keys) {
+        for bookID in files.watchedBookIDs {
             end(bookID)
-        }
-    }
-
-    /// Checks every edited book when TextMouth becomes active, after saying
-    /// what waited for it.
-    private func observeActivation() {
-        guard activationObserver == nil else { return }
-        activationObserver = notificationCenter.addObserver(
-            forName: NSApplication.didBecomeActiveNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.appBecameActive()
-            }
         }
     }
 
     /// TextMouth became active: says what waited, and checks every book
     /// being edited for an edit saved meanwhile.
     func appBecameActive() {
-        announcePending()
+        files.appBecameActive()
+    }
+
+    /// Checks every book being edited, as TextMouth becoming active does.
+    private func checkEveryBook() {
         for bookID in sessions.bookIDs {
             check(bookID)
         }
@@ -273,7 +250,7 @@ final class BookTextEditor {
         case .adopted(let edit):
             announcedRefusals[bookID] = nil
             library?.commitTextEdit(edit)
-            announce(BookTextEditWording.updated)
+            files.announce(BookTextEditWording.updated)
         case .refused(let refusal, let digest, let keptCopy):
             let refused = BookTextEditSessions.RefusedEdit(digest: digest, refusal: refusal)
             guard announcedRefusals[bookID] != refused else { return }
@@ -281,111 +258,33 @@ final class BookTextEditor {
             if let keptCopy {
                 announcedCopies[bookID, default: []].insert(keptCopy)
             }
-            announce(BookTextEditWording.notTaken(refusal, bookTitle: title, keptCopy: keptCopy))
+            files.announce(BookTextEditWording.notTaken(refusal, bookTitle: title, keptCopy: keptCopy))
         case .replaced(let keptCopy):
             guard announcedCopies[bookID, default: []].insert(keptCopy).inserted else { return }
             announcedRefusals[bookID] = nil
-            announce(BookTextEditWording.replaced(bookTitle: title, keptCopy: keptCopy))
+            files.announce(BookTextEditWording.replaced(bookTitle: title, keptCopy: keptCopy))
         }
     }
 
-    // MARK: Announcing
+    // MARK: The System's Dialogs
 
-    /// Announces `message` now while TextMouth is active, from `window`
-    /// when given; otherwise keeps it until TextMouth becomes active, so it
-    /// never talks over the user's editing in another app.
-    private func announce(_ message: String, from window: NSWindow? = nil) {
-        guard isAppActive() else {
-            if !pendingAnnouncements.contains(message) {
-                pendingAnnouncements.append(message)
-            }
-            return
-        }
-        VoiceOverAnnouncer.announce(message, from: window)
-    }
-
-    /// Announces what waited for TextMouth to become active, as one message.
-    private func announcePending() {
-        guard !pendingAnnouncements.isEmpty else { return }
-        let message = pendingAnnouncements.joined(separator: ". ")
-        pendingAnnouncements = []
-        VoiceOverAnnouncer.announce(message)
-    }
-
-    // MARK: The System's Dialogs and Workspace
-
-    /// The first-use explanation as an alert over `window` (or the app):
-    /// Continue, which Return presses, and Cancel, which Escape presses.
+    /// Edit Text's first-use explanation, as an alert over `window` (or the
+    /// app): Continue, which Return presses, and Cancel, which Escape presses.
     static func explainWithAlert(bookTitle: String, window: NSWindow?) async -> Bool {
-        let alert = NSAlert()
-        alert.messageText = BookTextEditWording.explanationTitle(bookTitle: bookTitle)
-        alert.informativeText = BookTextEditWording.explanation
-        alert.addButton(withTitle: BookTextEditWording.continueTitle)
-        let cancel = alert.addButton(withTitle: BookTextEditWording.cancelTitle)
-        cancel.keyEquivalent = "\u{1b}"
-        guard let window else {
-            return alert.runModal() == .alertFirstButtonReturn
-        }
-        return await withCheckedContinuation { continuation in
-            alert.beginSheetModal(for: window) { response in
-                continuation.resume(returning: response == .alertFirstButtonReturn)
-            }
-        }
+        await PackageFileEditing.explainWithAlert(wording, bookTitle: bookTitle, window: window)
     }
 
     /// The app chooser of Edit Text With…: an open panel of apps, starting
     /// in Applications, over `window` (or on its own).
     static func chooseAppWithPanel(bookTitle: String, window: NSWindow?) async -> URL? {
-        let panel = NSOpenPanel()
-        panel.title = BookTextEditWording.appPanelTitle
-        panel.message = BookTextEditWording.appPanelMessage(bookTitle: bookTitle)
-        panel.prompt = BookTextEditWording.appPanelPrompt
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [.application]
-        panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
-        let response: NSApplication.ModalResponse
-        if let window {
-            response = await withCheckedContinuation { continuation in
-                panel.beginSheetModal(for: window) { continuation.resume(returning: $0) }
-            }
-        } else {
-            response = panel.runModal()
-        }
-        return response == .OK ? panel.url : nil
-    }
-
-    /// Opens `file` in `app`, or in the default app for Markdown, falling
-    /// back to TextEdit when no app opens Markdown.
-    static func openWithWorkspace(_ file: URL, app: URL?) async throws {
-        let workspace = NSWorkspace.shared
-        let chosen = app
-            ?? workspace.urlForApplication(toOpen: file)
-            ?? workspace.urlForApplication(withBundleIdentifier: "com.apple.TextEdit")
-        guard let chosen else {
-            throw CocoaError(.fileReadUnknown, userInfo: [NSURLErrorKey: file])
-        }
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.activates = true
-        // The workspace reports on a queue of its own; the continuation
-        // hands its answer back here.
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            workspace.open([file], withApplicationAt: chosen, configuration: configuration) { _, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
-        }
+        await PackageFileEditing.chooseAppWithPanel(wording, bookTitle: bookTitle, window: window)
     }
 }
 
 // MARK: - Watching content.md
 
-/// Watches one book's content.md for saves and says when a burst of them
-/// has settled (FR05).
+/// Watches one file of a book's package for saves, its content.md (FR05)
+/// or its manifest.json (FR17), and says when a burst of them has settled.
 ///
 /// An editor's save can replace the file, as TextEdit's does: the watcher
 /// then follows the file to wherever the book now keeps it, which `file`

@@ -24,12 +24,19 @@ enum LibraryBookEvent {
     /// nil. Readers show the text as the book plays on, its audio and
     /// position untouched.
     case transcriptReplaced(bookID: UUID, text: TranscriptText?)
+    /// An audiobook of tracks was rearranged by an edit of its manifest the
+    /// user made in their own editor (FR17), already committed to its
+    /// record: readers show the new headings, with their cursors on the
+    /// same tracks at the same times, and a playing reader plays on. The
+    /// row's new analysis and the moves of its places arrived before this,
+    /// as an update.
+    case tracksRearranged(bookID: UUID, edit: BookManifestEdit)
 
     /// The book the event is about.
     var bookID: UUID {
         switch self {
         case .packageWillMove(let bookID), .packageMoveEnded(let bookID), .textReplaced(let bookID, _, _),
-             .transcriptReplaced(let bookID, _):
+             .transcriptReplaced(let bookID, _), .tracksRearranged(let bookID, _):
             return bookID
         case .updated(let update):
             return update.book.id
@@ -194,6 +201,14 @@ final class LibraryBookUpdates {
     func transcriptReplaced(bookID: UUID, with text: TranscriptText?) {
         guard watches[bookID] != nil else { return }
         events.send(.transcriptReplaced(bookID: bookID, text: text))
+    }
+
+    /// Tells the readers of the audiobook `bookID`, when it is watched, that
+    /// an edit of its manifest rearranged it (FR17). Call it after the
+    /// library holds the book's new analysis.
+    func tracksRearranged(bookID: UUID, by edit: BookManifestEdit) {
+        guard watches[bookID] != nil else { return }
+        events.send(.tracksRearranged(bookID: bookID, edit: edit))
     }
 
     // MARK: - Package Moves

@@ -139,14 +139,14 @@ extension LibraryViewModel {
         }
     }
 
-    /// What the item `url`, chosen with Import DAISY Folder… or in the
-    /// Open Book... panel, or opened from Finder, is imported from, each
-    /// source one book: a folder whose top level holds several DAISY
-    /// books' package files gives each of those files; any other item is
-    /// imported as itself. A folder holding one DAISY book is imported as
-    /// that book's package with every file it needs, and a folder holding
-    /// none is refused, saying why (`FileImportService.importFileWithReport`)
-    /// (TODO I02).
+    /// What the item `url`, chosen with Import Folder… or in the Open
+    /// Book... panel, or opened from Finder, is imported from, each source
+    /// one book: a folder whose top level holds several DAISY books' package
+    /// files gives each of those files; any other item is imported as
+    /// itself. A folder holding one DAISY book is imported as that book's
+    /// package with every file it needs, a folder of audio tracks as one
+    /// audiobook (FR17), and a folder holding neither is refused, saying
+    /// what it holds (`FileImportService.importFileWithReport`) (TODO I02).
     nonisolated static func importSources(for url: URL) -> [URL] {
         let packageFiles = DAISYParser.packageEntryPoints(in: url)
         return packageFiles.count > 1 ? packageFiles : [url]
@@ -210,18 +210,20 @@ extension LibraryViewModel {
         )
     }
 
-    // MARK: - Import DAISY Folder…
+    // MARK: - Import Folder…
 
-    /// The panel the Import DAISY Folder… command presents (TODO I02): it
+    /// The panel the Import Folder… command presents (TODO I02, FR17): it
     /// chooses folders, several at once, and no files, since a DAISY book
-    /// kept as loose files is imported by its folder. Here Return on a
-    /// folder chooses it; the standard Open Book... panel offers files only,
-    /// so Return on a folder there keeps opening the folder. A TextMouth
-    /// package counts as a file, so it cannot be chosen here.
+    /// kept as loose files is imported by its folder, and so is a folder of
+    /// audio tracks, as one audiobook. Here Return on a folder chooses it;
+    /// the standard Open Book... panel offers files only, so Return on a
+    /// folder there keeps opening the folder. A TextMouth package counts as
+    /// a file, so it cannot be chosen here.
     static func makeDAISYFolderPanel() -> NSOpenPanel {
         let panel = NSOpenPanel()
-        panel.title = "Import DAISY Folder"
-        panel.message = "Choose the folder of each DAISY book to import: the folder that holds its ncc.html or .opf file."
+        panel.title = "Import Folder"
+        panel.message = "Choose each folder to import: a DAISY book's folder, which holds its ncc.html or .opf file, "
+            + "or a folder of audio tracks, which becomes one audiobook."
         panel.prompt = "Import"
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
@@ -230,12 +232,13 @@ extension LibraryViewModel {
         return panel
     }
 
-    /// Imports the folders chosen with Import DAISY Folder… into the library
+    /// Imports the folders chosen with Import Folder… into the library
     /// folder `folderPath`, each as the book or books it holds: a folder
     /// holding one DAISY book as that book with every file it needs, a
-    /// folder holding several books' package files as each of them, and a
-    /// folder holding none is refused through the library's alert, which
-    /// says why (TODO I02). The Library window `origin` that presented the
+    /// folder holding several books' package files as each of them, a
+    /// folder of audio tracks as one audiobook (FR17), and a folder holding
+    /// none is refused through the library's alert, which says what it holds
+    /// (TODO I02). The Library window `origin` that presented the
     /// panel asks the imports' questions (TODO I01). With
     /// `addingToReadingList`, as at the Reading List, the books join the
     /// end of the reading list (FR09).

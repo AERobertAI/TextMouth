@@ -31,7 +31,7 @@ final class MenuKeyShortcutTests: XCTestCase {
         let expected: [(action: ShortcutAction, title: String, group: String, key: KeyBinding)] = [
             (.copyReadingPosition, "Copy Reading Position", "Playback", shiftCommandP),
             (.searchInBook, "Search in Book", "Playback", KeyBinding(key: "f", command: true)),
-            (.importDAISYFolder, "Import DAISY Folder…", "Library", KeyBinding(key: "o", command: true, shift: true)),
+            (.importDAISYFolder, "Import Folder…", "Library", KeyBinding(key: "o", command: true, shift: true)),
             (.addFeed, "Add Feed…", "Library", KeyBinding(key: "f", command: true, shift: true)),
             (.openBook, "Open Book…", "File", commandO),
             (.newFromText, "New from Text…", "File", shiftCommandT),

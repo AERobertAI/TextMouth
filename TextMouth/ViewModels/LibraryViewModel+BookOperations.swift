@@ -718,6 +718,15 @@ extension LibraryViewModel {
             }
             saved = book
         }
+        // An audiobook of tracks keeps its title and author in its manifest
+        // too (FR17), through the one write of them.
+        if let saved, saved.title != row.title || saved.author != row.author {
+            setTitleAndAuthor(
+                ofManifestBook: bookID,
+                title: saved.title != row.title ? saved.title : nil,
+                author: saved.author != row.author ? saved.author : nil
+            )
+        }
         return saved
     }
 

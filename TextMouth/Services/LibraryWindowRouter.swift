@@ -423,7 +423,7 @@ enum GlobalAction: Equatable {
     /// File > New from Text...: a Library window presents the sheet that
     /// makes a book from pasted or typed text.
     case newFromText
-    /// Library > Import DAISY Folder…: a Library window presents the
+    /// Library > Import Folder…: a Library window presents the
     /// folder-only panel (TODO I02).
     case importDAISYFolder
     /// Navigate > Go to Library, or its shortcut: a Library window comes to
@@ -498,7 +498,7 @@ enum GlobalAction: Equatable {
         case .newFromText:
             return "New from Text"
         case .importDAISYFolder:
-            return "Import DAISY Folder"
+            return "Import Folder"
         case .goToLibrary:
             return "Go to Library"
         case .openFiles(let items):

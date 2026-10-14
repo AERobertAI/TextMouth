@@ -40,6 +40,8 @@ extension ReaderViewModel {
             showEditedText(content, movedPlaces: movedPlaces)
         case .transcriptReplaced(_, let text):
             showTranscript(text)
+        case .tracksRearranged(_, let edit):
+            showRearrangedTracks(edit)
         }
     }
 

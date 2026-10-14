@@ -22,7 +22,11 @@ enum AudioEditorTracks: Equatable, Sendable {
     case sections
 
     /// The tracks of `book`, read from its package; for a book kept in one
-    /// file, `.oneFile`. Reads the file system: call it off the main thread.
+    /// file, `.oneFile`. A folder's tracks are arranged as the reader's parse
+    /// arranges them (`AudioTrackPlan`), by its manifest wherever it lies,
+    /// inside the folder's one folder too (`AudioManifest.read(inAudioFolder:)`),
+    /// so the chooser lists the reader's headings, in their order (FR17).
+    /// Reads the file system: call it off the main thread.
     /// - Throws: the folder's read errors.
     static func of(_ book: Book) throws -> AudioEditorTracks {
         let folder = book.bookFileURL
@@ -30,26 +34,27 @@ enum AudioEditorTracks: Equatable, Sendable {
         guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder), isFolder.boolValue else {
             return .oneFile
         }
-        let manifestURL = folder.appendingPathComponent("manifest.json")
-        let manifest = (try? Data(contentsOf: manifestURL)).flatMap { try? JSONDecoder().decode(AudioManifest.self, from: $0) }
-        if let segments = manifest?.segments, !segments.isEmpty {
+        let found = AudioManifest.read(inAudioFolder: folder)
+        if let segments = found?.manifest.segments, !segments.isEmpty {
             return .sections
         }
-        // Each track by its name inside the folder, as the manifest names
-        // it, and by its path inside the package, as the edit history does.
+        // Each track by its path from the folder, as the parse names it,
+        // and by its path inside the package, as the edit history does.
         let package = book.tmbDirectory
         let files = try AudioBookParser.audioFiles(in: folder)
-        var pathsByName: [String: String] = [:]
+        var packagePaths: [String: String] = [:]
         for file in files {
             guard let path = AudioEditPackage.path(of: file, in: package),
                   let name = AudioEditPackage.path(of: file, in: folder) else { continue }
-            pathsByName[name] = path
+            packagePaths[name] = path
         }
-        let ordered = AudioBookParser.orderedFileNames(Array(pathsByName.keys), manifestOrder: manifest?.order)
-        return .tracks(ordered.compactMap { name in
-            guard let path = pathsByName[name] else { return nil }
-            let title = manifest?.chapters?[name] ?? ((name as NSString).lastPathComponent as NSString).deletingPathExtension
-            return AudioEditorTrack(path: path, title: title)
+        // The manifest names each track from the folder holding it.
+        let names = packagePaths.keys.map { found?.location.name(ofTrackAt: $0) ?? $0 }
+        let plan = AudioTrackPlan(arranging: names, by: found?.manifest)
+        return .tracks(plan.tracks.compactMap { track in
+            let pathInFolder = found?.location.path(ofTrackNamed: track.name) ?? track.name
+            guard let path = packagePaths[pathInFolder] else { return nil }
+            return AudioEditorTrack(path: path, title: track.title)
         })
     }
 }
