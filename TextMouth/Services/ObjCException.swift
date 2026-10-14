@@ -18,7 +18,7 @@ enum ObjCException {
 
     /// The one-line form of a caught exception for the log, as
     /// `SPEECH_PLAYER_EXCEPTION: <name>: <reason>`: the name and the
-    /// reason, with a reason the exception lacks left out.
+    /// reason, or "no reason given" when the exception has none.
     static func logLine(tag: String, for exception: NSException) -> String {
         "\(tag): \(exception.name.rawValue): \(exception.reason ?? "no reason given")"
     }

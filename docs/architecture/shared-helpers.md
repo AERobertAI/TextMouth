@@ -66,3 +66,4 @@ These small types each own one rule that several parts of the app follow; use th
 - ChapterPauses (Models/ChapterPauses.swift): the reader's one source of pauses between chapters.
 - ReaderViewModel.headingAnnouncement(arrivingAt:in:): what a heading jump says, every heading at the place it reaches, the outermost first.
 - PackageFileEditing (Services/PackageFileEditing.swift) holds what Edit Text and Edit Manifest share: the first-use explanation, worded for each kind, the app chooser, the workspace opener, the watcher of a file in a book's package, TextMouth becoming active, and the announcements kept until it does.
+- ObjCException.catching(_:) (Services/ObjCException.swift) runs a framework call that may raise an Objective-C exception and returns it, so a raise cannot end the app. It wraps the ObjCExceptionCatcher static library in Vendor/, built as LAME is, with a module map; it is the only Swift file that imports it (B08).
