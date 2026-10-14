@@ -73,7 +73,7 @@ enum AudioBookParser {
 
     /// Manifest filenames are relative to the audio directory, so tracks with
     /// the same basename on different discs remain distinct.
-    private static func relativeName(of file: URL, in directory: URL) -> String {
+    static func relativeName(of file: URL, in directory: URL) -> String {
         // Foundation may return /private/var for a directory supplied as /var.
         // Compare canonical paths before removing the base-directory prefix.
         let basePath = directory.resolvingSymlinksInPath().path
