@@ -272,12 +272,17 @@ struct LibraryTranscriptionSupport: ViewModifier {
                 guard Self.asks(acceptance, in: hostWindow), let book = library.bookByID(acceptance.bookID) else { return }
                 presenter.transcribe([book], library: library, window: hostWindow, startsAtOnce: true)
             }
+            // The rows' facts their packages hold: which audiobooks have a
+            // transcript (FR05), and which play a folder of tracks, whose
+            // manifest can be edited (FR17).
             .task(id: library.library.books.count) {
                 await TranscribedBooks.shared.refresh(library.library.books)
+                await TrackFolderBooks.shared.refresh(library.library.books)
             }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
                 Task {
                     await TranscribedBooks.shared.refresh(library.library.books)
+                    await TrackFolderBooks.shared.refresh(library.library.books)
                 }
             }
     }
