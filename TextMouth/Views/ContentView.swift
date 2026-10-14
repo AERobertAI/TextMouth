@@ -136,7 +136,7 @@ struct LibraryWindowView: View {
                 libraryViewModel.showError = true
             }
         }
-        .alert("Error", isPresented: $libraryViewModel.showError) {
+        .alert(libraryViewModel.errorTitle ?? "Error", isPresented: $libraryViewModel.showError) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(libraryViewModel.errorMessage ?? "An unknown error occurred.")

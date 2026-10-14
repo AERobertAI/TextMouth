@@ -624,6 +624,11 @@ extension LibraryViewModel {
     /// behind any already waiting, each holding this archive and these books
     /// and `request` (TODO I01); then, when the offer after importing is on,
     /// whether to transcribe each audiobook among them (FR05).
+    ///
+    /// A batch that brought no new book, and in which nothing failed, asks
+    /// nothing, so the library's alert, titled "Nothing Imported", says what
+    /// it found: that its books were already in the library, or what the
+    /// archive held instead of a book.
     func completeZIPImport(
         _ result: ZipImportResult,
         originalURL: URL,
@@ -641,6 +646,11 @@ extension LibraryViewModel {
         importProgress.end(.batch(result))
         if let failureSummary = result.failureSummary {
             presentImportMessage(failureSummary)
+        } else if result.foundNoNewBook {
+            presentImportMessage(
+                ImportProgressWording.nothingImported(from: originalURL.lastPathComponent, result: result),
+                title: ImportProgressWording.nothingImportedTitle
+            )
         }
         addImportedBooksToReadingList(acceptedBooks, request: request)
         if !result.keepsOriginal, !acceptedBooks.isEmpty, acceptedBooks.count == result.books.count,
@@ -666,10 +676,13 @@ extension LibraryViewModel {
     }
 
     /// Tell the reader about an import through the library's alert: why it
-    /// failed, or what a completed import is missing.
-    private func presentImportMessage(_ message: String) {
+    /// failed, what a completed import is missing, or, under `title`, why
+    /// an import brought nothing in. Without a title the alert says
+    /// "Error".
+    private func presentImportMessage(_ message: String, title: String? = nil) {
         importProgress.clear()
         errorMessage = message
+        errorTitle = title
         showError = true
     }
 

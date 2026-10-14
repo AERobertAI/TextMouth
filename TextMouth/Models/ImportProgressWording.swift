@@ -195,14 +195,14 @@ enum ImportProgressWording {
         return "Finished importing “\(subject)”: \(counts.joined(separator: ", "))."
     }
 
-    /// Announced as a ZIP batch that brought no new book into the library,
-    /// and in which nothing failed, ends, however short it was, since no
-    /// alert and no question follow it to say so: "No new books in “Library
+    /// What a ZIP batch that brought no new book into the library, and in
+    /// which nothing failed, found: "No new books in “Library
     /// Export.zip”: all 24 were already in your library.", "…: both were
     /// already in your library.", "…: its one book was already in your
     /// library.", or, for an archive holding no book TextMouth reads, "No
     /// books were found in “Empty.zip”." `duplicates` counts the books it
-    /// found, each skipped as already in the library.
+    /// found, each skipped as already in the library. The library's alert
+    /// says it as the batch ends (`nothingImported(from:result:)`).
     static func noNewBooks(in subject: String, alreadyInLibrary duplicates: Int) -> String {
         switch duplicates {
         case ...0:
@@ -214,6 +214,57 @@ enum ImportProgressWording {
         default:
             return "No new books in “\(subject)”: all \(duplicates) were already in your library."
         }
+    }
+
+    // MARK: - A Batch That Imported Nothing
+
+    /// The title of the library's alert as a ZIP batch that brought no new
+    /// book ends: nothing failed, so it is no error.
+    static let nothingImportedTitle = "Nothing Imported"
+
+    /// How many kinds of file the alert of a batch that found no book names
+    /// before counting the rest together as other files.
+    static let namedFileKinds = 3
+
+    /// What the library's alert says as a ZIP batch that brought no new
+    /// book, and in which nothing failed, ends (`ZipImportResult
+    /// .foundNoNewBook`): that its books were already in the library, or,
+    /// when it found none, what the archive held instead
+    /// (`noBooksFound(in:holding:)`). `subject` is the archive's name.
+    ///
+    /// Until October 13, 2026 VoiceOver alone was told, and an
+    /// announcement made while TextMouth had no window in front is never
+    /// spoken, so an archive that took minutes to search could end with
+    /// nothing said or shown at all.
+    static func nothingImported(from subject: String, result: ZipImportResult) -> String {
+        result.skippedDuplicates > 0
+            ? noNewBooks(in: subject, alreadyInLibrary: result.skippedDuplicates)
+            : noBooksFound(in: subject, holding: result.nonBookFiles)
+    }
+
+    /// That the archive `subject` holds no book TextMouth reads, and what
+    /// it holds instead, by kind, most files first: "No books were found in
+    /// “Radio.zip”. It holds 176 .ogg files, which TextMouth does not
+    /// import." Up to `namedFileKinds` kinds are named and the rest are
+    /// counted together: "It holds 10 .jpg files, 3 .png files, 2 .gif
+    /// files, and 4 other files, which TextMouth does not import." A file
+    /// without an extension is "a file without an extension", and an
+    /// archive of folders alone "holds no files".
+    static func noBooksFound(in subject: String, holding files: NonBookFiles) -> String {
+        let opening = noNewBooks(in: subject, alreadyInLibrary: 0)
+        guard files.total > 0 else { return "\(opening) It holds no files." }
+
+        let kinds = files.kinds
+        var phrases = kinds.prefix(namedFileKinds).map { kind in
+            kind.fileExtension.isEmpty
+                ? CountWording.phrase(kind.count, singular: "file without an extension", plural: "files without an extension")
+                : CountWording.phrase(kind.count, singular: ".\(kind.fileExtension) file", plural: ".\(kind.fileExtension) files")
+        }
+        let others = kinds.dropFirst(namedFileKinds).reduce(0) { $0 + $1.count }
+        if others > 0 {
+            phrases.append(CountWording.phrase(others, singular: "other file", plural: "other files"))
+        }
+        return "\(opening) It holds \(ListFormatter.localizedString(byJoining: phrases)), which TextMouth does not import."
     }
 
     /// Announced as the import of one book that ran long ends: "Finished

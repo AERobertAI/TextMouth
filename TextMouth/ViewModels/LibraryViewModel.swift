@@ -135,7 +135,18 @@ final class LibraryViewModel: ObservableObject {
     /// publishes this model once a second.
     let livePositions = LiveReadingPositions()
     @Published var errorMessage: String?
-    @Published var showError = false
+    /// The library alert's title, or nil for "Error", which most of its
+    /// messages are. An import that ends without bringing anything in, and
+    /// without failing, has a title of its own (October 13, 2026).
+    @Published var errorTitle: String?
+    /// Whether the library alert shows. Once it closes, however it is
+    /// closed, the title goes back to "Error", so the next alert, raised
+    /// anywhere, is never given a title meant for another.
+    @Published var showError = false {
+        didSet {
+            if !showError { errorTitle = nil }
+        }
+    }
     /// Book IDs currently open in a reader window. A book that leaves it
     /// drops its live position (TODO PERF11): its reader saved its position
     /// to the library as it closed, and the row shows that one again. The

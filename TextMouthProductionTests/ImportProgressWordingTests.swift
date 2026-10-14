@@ -274,4 +274,61 @@ final class ImportProgressWordingTests: XCTestCase {
             "No books were found in “Empty.zip”."
         )
     }
+
+    /// An archive holding no book TextMouth reads says what it holds
+    /// instead, by kind, most files first and alphabetically among kinds
+    /// with as many: up to three kinds named, the rest counted together, a
+    /// file without an extension said so, and one count in the singular.
+    func testAnArchiveWithoutABookSaysWhatItHolds() {
+        func found(_ counts: [String: Int]) -> String {
+            ImportProgressWording.noBooksFound(in: "Radio.zip", holding: NonBookFiles(countsByExtension: counts))
+        }
+        XCTAssertEqual(found([:]), "No books were found in “Radio.zip”. It holds no files.")
+        XCTAssertEqual(
+            found(["ogg": 176]),
+            "No books were found in “Radio.zip”. It holds 176 .ogg files, which TextMouth does not import."
+        )
+        XCTAssertEqual(
+            found(["wma": 1]),
+            "No books were found in “Radio.zip”. It holds 1 .wma file, which TextMouth does not import."
+        )
+        XCTAssertEqual(
+            found(["jpg": 10, "": 1, "png": 3]),
+            "No books were found in “Radio.zip”. It holds 10 .jpg files, 3 .png files, "
+                + "and 1 file without an extension, which TextMouth does not import."
+        )
+        // Files without an extension sort first among kinds with as many.
+        XCTAssertEqual(
+            found(["jpg": 10, "png": 3, "gif": 2, "bmp": 2, "": 2, "heic": 1]),
+            "No books were found in “Radio.zip”. It holds 10 .jpg files, 3 .png files, "
+                + "2 files without an extension, and 5 other files, which TextMouth does not import."
+        )
+        XCTAssertEqual(
+            found(["jpg": 2, "png": 2, "gif": 2, "tif": 1]),
+            "No books were found in “Radio.zip”. It holds 2 .gif files, 2 .jpg files, 2 .png files, "
+                + "and 1 other file, which TextMouth does not import."
+        )
+    }
+
+    /// The alert of a batch that brought no new book says its books were
+    /// already in the library when it found any, and otherwise what the
+    /// archive held, under a title that is not "Error".
+    func testTheAlertOfABatchThatImportedNothingSaysWhy() {
+        let holding = NonBookFiles(countsByExtension: ["ogg": 2])
+        XCTAssertEqual(
+            ImportProgressWording.nothingImported(
+                from: "Shelf.zip",
+                result: ZipImportResult(books: [], failures: [], skippedDuplicates: 2, nonBookFiles: holding)
+            ),
+            "No new books in “Shelf.zip”: both were already in your library."
+        )
+        XCTAssertEqual(
+            ImportProgressWording.nothingImported(
+                from: "Radio.zip",
+                result: ZipImportResult(books: [], failures: [], nonBookFiles: holding)
+            ),
+            "No books were found in “Radio.zip”. It holds 2 .ogg files, which TextMouth does not import."
+        )
+        XCTAssertEqual(ImportProgressWording.nothingImportedTitle, "Nothing Imported")
+    }
 }
