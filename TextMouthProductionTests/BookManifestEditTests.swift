@@ -740,4 +740,92 @@ final class BookManifestEditTests: XCTestCase {
         }
         return files
     }
+
+    // MARK: - The Audio Editor Keeps the Manifest (Item 7)
+
+    /// The audio editor's track chooser lists a book's tracks as the reader
+    /// arranges them: in the manifest's order, with its titles, by a
+    /// manifest inside the folder's one folder too.
+    func testTheAudioEditorListsTheTracksAsTheReaderArrangesThem() throws {
+        let world = try makeIntegrationWorld("Edit Manifest Editor Tracks")
+        let book = try makeRadioBook(in: world, manifestNaming: "b.m4a")
+
+        guard case .tracks(let tracks) = try AudioEditorTracks.of(book) else {
+            return XCTFail("The book's tracks were not listed")
+        }
+        XCTAssertEqual(tracks.map(\.title), ["c", "Bravo", "a"])
+        XCTAssertEqual(tracks.map(\.path), ["audio/Radio/c.wav", "audio/Radio/b.m4a", "audio/Radio/a.wav"])
+    }
+
+    /// An edited Ogg track, which renders to .m4a under a new name, is
+    /// renamed in the manifest wherever the reader finds it, so it keeps its
+    /// place, its title, and its group, and the manifest keeps everything
+    /// else it said.
+    func testAnEditedOggTrackKeepsItsPlaceTitleAndGroup() throws {
+        let world = try makeIntegrationWorld("Edit Manifest Editor Rename")
+        let book = try makeRadioBook(in: world, manifestNaming: "b.ogg")
+        let audio = book.bookFileURL
+
+        try AudioEditBookRender.renameTrack("audio/Radio/b.ogg", to: "audio/Radio/b.m4a", inManifestOf: audio, folderInPackage: "audio", bookID: book.id)
+
+        let found = try XCTUnwrap(AudioManifest.read(inAudioFolder: audio))
+        XCTAssertEqual(found.location.prefix, "Radio/")
+        XCTAssertEqual(found.manifest.tracks, [
+            .heading("Season One"),
+            .track(AudioManifestTrack(file: "c.wav")),
+            .track(AudioManifestTrack(file: "b.m4a", title: "Bravo", pauseAfterMs: 900)),
+            .track(AudioManifestTrack(file: "a.wav"))
+        ])
+        XCTAssertEqual(found.manifest.title, "Radio Plays")
+        let plan = AudioTrackPlan(arranging: try AudioBookParser.trackPaths(in: audio).map(found.location.name(ofTrackAt:)), by: found.manifest)
+        XCTAssertEqual(plan.tracks.map(\.name), ["c.wav", "b.m4a", "a.wav"], "The edited track left its place")
+        XCTAssertEqual(plan.tracks.map(\.title), ["c", "Bravo", "a"], "The edited track lost its title")
+        XCTAssertEqual(plan.tracks.map(\.level), [2, 2, 2], "The edited track left its group")
+    }
+
+    /// The JSON rename follows a track everywhere a manifest of the older
+    /// keys names it, and in a section's clips.
+    func testARenameFollowsTheTrackThroughTheOlderKeysAndSections() {
+        var object: [String: Any] = [
+            "order": ["b.ogg", "a.wav"],
+            "chapters": ["b.ogg": "Bravo"],
+            "segments": [["title": "One", "clips": [["file": "b.ogg", "startTime": 0, "endTime": 1]]]]
+        ]
+
+        BookManifestFile.renameTrack("b.ogg", to: "b.m4a", in: &object)
+
+        XCTAssertEqual(object["order"] as? [String], ["b.m4a", "a.wav"])
+        XCTAssertEqual(object["chapters"] as? [String: String], ["b.m4a": "Bravo"])
+        let clips = ((object["segments"] as? [[String: Any]])?.first?["clips"] as? [[String: Any]]) ?? []
+        XCTAssertEqual(clips.compactMap { $0["file"] as? String }, ["b.m4a"])
+    }
+
+    /// A radio book: silent tracks a.wav, b.m4a, and c.wav in the one
+    /// folder Radio of its audio folder, with a manifest there naming the
+    /// middle track `middle`, under a group heading, with a title and a
+    /// pause of its own; indexed and listed in `world`.
+    private func makeRadioBook(in world: IntegrationWorld, manifestNaming middle: String) throws -> Book {
+        let packageName = "\(UUID().uuidString).tmb"
+        let audio = TextMouthPaths.tmbPath(folderPath: world.folder.path, tmbName: packageName)
+            .appendingPathComponent("audio", isDirectory: true)
+        let radio = audio.appendingPathComponent("Radio", isDirectory: true)
+        try AudioTestFixtures.writeSilence(to: radio.appendingPathComponent("a.wav"), duration: 0.2)
+        try AudioTestFixtures.writeAACSilence(to: radio.appendingPathComponent("b.m4a"), duration: 0.2)
+        try AudioTestFixtures.writeSilence(to: radio.appendingPathComponent("c.wav"), duration: 0.2)
+        let manifest = """
+        {"title": "Radio Plays", "tracks": [{"heading": "Season One"}, "c.wav", \
+        {"file": "\(middle)", "title": "Bravo", "pauseAfterMs": 900}, "a.wav"]}
+        """
+        try Data(manifest.utf8).write(to: radio.appendingPathComponent(AudioManifest.fileName))
+        let book = Book(
+            title: "Radio Plays",
+            format: .audio,
+            filePath: audio.path,
+            md5Hash: UUID().uuidString,
+            folderPath: world.folder.path,
+            tmbDirectoryName: packageName
+        )
+        world.library.library.addBook(book)
+        return book
+    }
 }

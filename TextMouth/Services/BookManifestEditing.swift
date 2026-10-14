@@ -189,12 +189,12 @@ enum BookManifestFile {
     static func write(
         data: Data,
         at location: AudioManifestLocation,
-        of bookID: UUID,
+        of bookID: UUID?,
         sessions: BookManifestEditSessions = .shared,
         hasher: FingerprintHasher = .md5
     ) throws {
         try data.write(to: location.url, options: .atomic)
-        if let stamp = FileStamp(of: location.url) {
+        if let bookID, let stamp = FileStamp(of: location.url) {
             sessions.noteWritten(bookID, FileFingerprint(stamp: stamp, digest: hasher.digestOfData(data)))
         }
     }
@@ -212,7 +212,7 @@ enum BookManifestFile {
     @discardableResult
     static func change(
         manifestAt location: AudioManifestLocation,
-        of bookID: UUID,
+        of bookID: UUID?,
         sessions: BookManifestEditSessions = .shared,
         _ change: (inout [String: Any]) -> Void
     ) throws -> Bool {
@@ -227,6 +227,42 @@ enum BookManifestFile {
         guard after != before else { return false }
         try write(data: after, at: location, of: bookID, sessions: sessions)
         return true
+    }
+
+    /// Renames the track `old` to `new`, both as the manifest spells them,
+    /// everywhere `object`, a manifest's JSON object, names it: an entry of
+    /// tracks (a name alone, or an object's file), order, a key of chapters,
+    /// and the file of a section or of one of its clips.
+    static func renameTrack(_ old: String, to new: String, in object: inout [String: Any]) {
+        /// `value` renamed when it names the track.
+        func renamed(_ value: Any) -> Any {
+            (value as? String) == old ? new : value
+        }
+        /// `value`, an object whose file may name the track, renamed.
+        func renamedFile(_ value: Any) -> Any {
+            guard var entry = value as? [String: Any] else { return renamed(value) }
+            if let file = entry["file"] {
+                entry["file"] = renamed(file)
+            }
+            if let clips = entry["clips"] as? [Any] {
+                entry["clips"] = clips.map(renamedFile)
+            }
+            return entry
+        }
+        let keys = AudioManifest.CodingKeys.self
+        if let tracks = object[keys.tracks.rawValue] as? [Any] {
+            object[keys.tracks.rawValue] = tracks.map(renamedFile)
+        }
+        if let order = object[keys.order.rawValue] as? [Any] {
+            object[keys.order.rawValue] = order.map(renamed)
+        }
+        if var chapters = object[keys.chapters.rawValue] as? [String: Any], let title = chapters.removeValue(forKey: old) {
+            chapters[new] = title
+            object[keys.chapters.rawValue] = chapters
+        }
+        if let segments = object[keys.segments.rawValue] as? [Any] {
+            object[keys.segments.rawValue] = segments.map(renamedFile)
+        }
     }
 
     /// Keeps `title` and `author` in the manifest of `book`'s folder of

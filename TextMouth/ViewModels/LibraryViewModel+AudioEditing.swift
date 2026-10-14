@@ -272,7 +272,8 @@ extension LibraryViewModel {
                 replaced,
                 to: render.audioFile,
                 inManifestOf: request.package.appendingPathComponent(place.bookFile),
-                folderInPackage: place.bookFile
+                folderInPackage: place.bookFile,
+                bookID: book.id
             )
         }
         var analyzed = book
