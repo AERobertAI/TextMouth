@@ -4,6 +4,10 @@ TextMouth is a native macOS application that reads books aloud with the Mac's te
 
 This file is the index of TextMouth's documentation, whose pages are in the docs folder: a page for each part of the app, for the person using it; how to build and test TextMouth; and the notes coding agents work from. ARCHITECTURE.md, in the same folder, is the index of the pages explaining how the code is organized and which part of the app owns each kind of data.
 
+## A note on Ogg audio
+
+TextMouth no longer plays Ogg audio (.ogg, .oga, or .opus) itself. On October 14, 2026 macOS's own Vorbis decoder locked up while TextMouth played an Ogg audiobook; TextMouth's memory then grew until the Mac ran out, and the Mac had to be restarted. So every Ogg file is now converted to AAC in an .m4a file as it is imported, at about the same size and with no audible loss, and the Ogg books already in the library are converted once, a book at a time, at the first launch of this version; the Library window shows the progress, and a book can't be played while it converts. TextMouth also now stops any playback whose audio stops responding, and saves your place and quits before a fault in macOS's audio can exhaust the Mac's memory. See [What TextMouth reads](docs/user/what-textmouth-reads.md) and [Reader windows](docs/user/reader-windows.md).
+
 ## For people using TextMouth
 
 - [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays.

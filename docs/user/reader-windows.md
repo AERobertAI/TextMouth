@@ -24,3 +24,4 @@ Part of [TextMouth's documentation](../../README.md).
 - If an audiobook's audio stops moving while TextMouth shows it playing, TextMouth stops it after about ten seconds and says: "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth."
 - If TextMouth's memory grows past 3 GB while a book plays, which only a fault in macOS's audio causes, playback stops and TextMouth says how large its memory grew. Past 6 GB it saves your place and quits, so the fault can't exhaust the Mac's memory, and the next launch tells you so in an alert.
 - Sound effects never hold up the window: a sound the system can't start is skipped.
+- Play refuses a book whose audio is being converted, saying "This book's audio is being converted from Ogg to AAC. It plays once the conversion ends." A book found still in Ogg is converted at once instead of played.
