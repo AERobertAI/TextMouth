@@ -191,6 +191,25 @@ final class OggLibraryConversionTests: XCTestCase {
         XCTAssertTrue(reader.chapterAudioIsClearOfOgg())
     }
 
+    // MARK: - The Last Guard
+
+    /// The audio service refuses an Ogg file before it makes a player for
+    /// it, as an unreadable file, so nothing can play it.
+    func testTheAudioServiceRefusesAnOggFileBeforeMakingAPlayer() throws {
+        let folder = try AudioTestFixtures.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let ogg = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "elegy.ogg")
+        let opus = try OggTestFixtures.copy(OggTestFixtures.opus, to: folder, as: "two.OPUS")
+        let service = AudioPlaybackService()
+
+        XCTAssertEqual(AudioPlaybackService.fileProblem(at: ogg), .fileUnreadable)
+        XCTAssertEqual(AudioPlaybackService.fileProblem(at: opus), .fileUnreadable)
+        XCTAssertEqual(AudioPlaybackService.fileProblem(at: folder.appendingPathComponent("gone.ogg")), .fileMissing)
+        XCTAssertFalse(service.load(url: ogg))
+        XCTAssertEqual(service.failure?.reason, .fileUnreadable)
+        XCTAssertFalse(service.isPlaying)
+    }
+
     // MARK: - Helpers
 
     /// Makes the one-time conversion as the launch makes it, waiting for it,
