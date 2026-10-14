@@ -1,0 +1,18 @@
+# Task brief: outsideedits — take a manifest edited outside TextMouth (FR18)
+
+Slug `outsideedits`. Branch `feature/outside-manifest-edits` from local `main` (at bae29356 or later, which holds FR15, e2ab40d9, and FR17, 5d9caee3: check `git merge-base --is-ancestor 5d9caee3 HEAD`). Read `common.md` beside this brief, then `docs/user/audiobook-manifest.md` (its section "Editing an imported book's manifest") and FR17's code: `Services/BookManifestEditing.swift` (`BookManifestEditSessions`, the check and the take), `Services/BookManifestEditor.swift`, `ViewModels/LibraryViewModel+ManifestEdits.swift`, `ViewModels/ReaderViewModel+ManifestEdit.swift` (`showRearrangedTracks`), `Models/TrackPlaces.swift`, and `ViewModels/TrackFolderBooks.swift`.
+
+## Why, in the user's words
+October 14, after FR17 merged: "Would it work if I found the manafest in Finder and edited it outside Text Mouth? or do I have to go through the context menu way? I think ither way should work..."
+
+Today it doesn't. An edit is taken only within a session the Edit Manifest command begins. Outside one, the reader reads the pauses afresh at each load (`LoadedContent.chapterPauses`), but the order, titles, and headings come from the saved index, and the title and author from the row. So a manifest edited in Finder half-applies, and places never move. A later rebuild of the index would then apply the order without moving them.
+
+## Required behavior, one commit each, each with its tests
+1. **A manifest that differs from its book is an edit, however it was made.** A book of tracks whose manifest's arrangement (`AudioTrackPlan`: order, titles, group headings and levels, pauses), title, or author differs from what the book shows is taken exactly as a save through Edit Manifest is: the same checks, the same take (places follow their tracks, the row, the record, and open readers updated, and "Manifest updated" announced), and the same refusal ("Manifest not updated: …", announced once for the same bytes, the book keeping its arrangement). Compare contents, not dates or a remembered fingerprint, so an edit made on another Mac, in a library in the cloud, is taken too, and a book whose manifest matches is left alone. Reuse FR17's check and take; do not write a second path.
+2. **When TextMouth looks.** As a reader opens a book of tracks, before it shows the book, so a changed book opens rearranged with its place on its track. Whenever TextMouth becomes active, for the books open in readers. Once at launch, for every book of tracks, off the main thread, beside the launch's other maintenance of books, never for a book whose files are only in the cloud. Each look reads only the small manifest and the audio folder's listing.
+3. **Where the manifest is.** Report the path a user finds it by in Finder: the book's package in the data directory, Show Package Contents, the `audio` folder. Report the wording too, for the manifest page's section, saying that editing it there works as well as through the command, and is noticed when the book opens, when TextMouth becomes active, or at the next launch.
+
+Tests: a manifest rewritten with no session (reorder, retitle, a new group heading, a new title and author) is taken as the book opens, with the position and a bookmark on their tracks; one with a mistake is refused once and the book opens as it was; an unchanged manifest takes nothing and writes nothing; a book open while its manifest changes is rearranged when TextMouth becomes active; the launch's look takes an edit of a closed book.
+
+## Out of scope
+A watcher on every book's manifest; editing a manifest inside a ZIP; FR16.
