@@ -236,6 +236,24 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Ogg Audio</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>ogg</string>
+				<string>oga</string>
+				<string>opus</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.xiph.ogg-audio</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>ALAC Audio</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>

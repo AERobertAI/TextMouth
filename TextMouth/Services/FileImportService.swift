@@ -1761,6 +1761,7 @@ enum FileImportService {
             UTType("com.apple.protected-mpeg-4-audio"), // m4b
             UTType("org.xiph.flac"),             // flac
             UTType("public.aac-audio"),          // aac
+            UTType("org.xiph.ogg-audio"),        // ogg, oga, opus
         ].compactMap { $0 })
         // Video, imported as an audiobook whose sound alone plays (FR03).
         types.append(.mpeg4Movie)                // mp4

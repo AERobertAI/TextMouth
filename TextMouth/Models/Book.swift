@@ -42,6 +42,13 @@ enum BookFormat: String, Codable, CaseIterable {
     /// may be a video file too (MPEG-4, M4V, or QuickTime), whose sound
     /// alone plays, as a video podcast's episode does (FR03): Open Book
     /// takes one, and a video episode's package imports again.
+    ///
+    /// Ogg audio (.ogg, .oga, and .opus, the extensions Core Audio itself
+    /// lists for its Ogg file type, holding Vorbis, Opus, or FLAC) plays
+    /// through AVFoundation from macOS 15.4 on. On an earlier macOS the
+    /// import's playability check (`AudioMediaProbe`) refuses each Ogg file
+    /// by name, saying it cannot be opened as audio, as for any file the Mac
+    /// cannot play.
     var fileExtensions: [String] {
         switch self {
         case .epub: return ["epub"]
@@ -51,7 +58,8 @@ enum BookFormat: String, Codable, CaseIterable {
         case .docx: return ["docx"]
         case .daisy: return ["daisy", "opf"]
         case .pdf: return ["pdf"]
-        case .audio: return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "mp4", "m4v", "mov"]
+        case .audio:
+            return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "ogg", "oga", "opus", "mp4", "m4v", "mov"]
         }
     }
 

@@ -135,6 +135,48 @@ final class AudioDirectoryImportTests: XCTestCase {
         XCTAssertTrue(loaded.usedPersistedIndex)
     }
 
+    /// An archive of real Ogg tracks, one Vorbis and one Opus, imports as
+    /// one audiobook with a heading for each track, each checked and
+    /// measured by AVFoundation as every track is. The fixtures are
+    /// two-second 440 Hz tones, made with ffmpeg 7.1:
+    /// `ffmpeg -f lavfi -i "sine=frequency=440:duration=2:sample_rate=22050"
+    /// -ac 1 -c:a libvorbis -q:a 0 ogg-vorbis-tone.ogg`, and the same at
+    /// 48,000 Hz with `-c:a libopus -b:a 16k ogg-opus-tone.opus`.
+    func testOggAudioZIPImportsOneChapterPerTrack() throws {
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.isOperatingSystemAtLeast(
+                OperatingSystemVersion(majorVersion: 15, minorVersion: 4, patchVersion: 0)
+            ),
+            "AVFoundation plays Ogg audio from macOS 15.4 on."
+        )
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("Radio Dramas")
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(
+            at: try requireFile("audio/ogg-vorbis-tone.ogg"), to: source.appendingPathComponent("elegy.ogg")
+        )
+        try FileManager.default.copyItem(
+            at: try requireFile("audio/ogg-opus-tone.opus"), to: source.appendingPathComponent("two.opus")
+        )
+        let archive = directory.appendingPathComponent("Radio Dramas.zip")
+        try FileManager.default.zipItem(at: source, to: archive, shouldKeepParent: false)
+
+        XCTAssertTrue(LibraryViewModel.isAudioZip(url: archive))
+        let book = try FileImportService.importAudioZip(from: archive)
+        defer { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        let loaded = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertEqual(book.format, .audio)
+        XCTAssertEqual(loaded.content.chapters.map(\.title), ["elegy", "two"])
+        XCTAssertEqual(loaded.audioFilePaths?.count, 2)
+        // Each two-second tone holds about 20 placeholder characters, at
+        // 10 a second, whatever its codec's priming adds.
+        for chapter in loaded.content.chapters {
+            XCTAssertTrue((19...21).contains(chapter.text.count), "\(chapter.title): \(chapter.text.count)")
+        }
+    }
+
     /// Every fixture lives under a unique temporary directory.
     private func temporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory.resolvingSymlinksInPath()
