@@ -425,6 +425,61 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(finishCount, 1)
     }
 
+    /// A player node that raises an Objective-C exception as it starts, as
+    /// AVFAudio does when the audio output has stopped cycling, neither ends
+    /// the app nor leaves the engine showing Playing: the play ends, nothing
+    /// stays scheduled, one `SPEECH_PLAYER_EXCEPTION` line is logged, and
+    /// the engine plays again once the node does.
+    func testAPlayerThatRaisesOnPlayLeavesTheEngineStopped() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let engine = AudioEngineService()
+        defer { engine.stop() }
+        engine.setVolume(0)
+        engine._installRenderedAudioForTesting(lasting: 1)
+        engine._playerStartForTesting { _ in
+            NSException(name: NSExceptionName("AVAudioEngineTestRaise"), reason: "player did not see an IO cycle", userInfo: nil).raise()
+        }
+
+        let lines = logLines(in: .speechTransitions) { engine.play() }
+
+        XCTAssertFalse(engine.isPlaying)
+        XCTAssertFalse(engine.isPaused)
+        XCTAssertEqual(engine.scheduledSegmentAudioByteCount, 0)
+        XCTAssertEqual(
+            lines.filter { $0.hasSuffix("SPEECH_PLAYER_EXCEPTION: AVAudioEngineTestRaise: player did not see an IO cycle") }.count,
+            1,
+            "\(lines)"
+        )
+
+        // The node recovers: the same engine plays.
+        engine._playerStartForTesting(nil)
+        engine.play()
+        XCTAssertTrue(engine.isPlaying)
+    }
+
+    /// A player node that raises as a paused play starts again leaves the
+    /// engine paused, and `resume()` says false, so the caller can go on
+    /// another way.
+    func testAPlayerThatRaisesOnResumeLeavesTheEnginePaused() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let engine = AudioEngineService()
+        defer { engine.stop() }
+        engine.setVolume(0)
+        engine._installRenderedAudioForTesting(lasting: 1)
+        engine.play()
+        engine.pause()
+        engine._playerStartForTesting { _ in
+            NSException(name: NSExceptionName("AVAudioEngineTestRaise"), reason: "player did not see an IO cycle", userInfo: nil).raise()
+        }
+
+        var resumed = true
+        let lines = logLines(in: .speechTransitions) { resumed = engine.resume() }
+
+        XCTAssertFalse(resumed)
+        XCTAssertTrue(engine.isPaused, "the engine forgot it was paused")
+        XCTAssertEqual(lines.filter { $0.contains("SPEECH_PLAYER_EXCEPTION:") }.count, 1, "\(lines)")
+    }
+
     /// A report from a segment that a newer play replaced ends nothing, and
     /// says so in one playback trace line naming both plays.
     func testReportFromAReplacedPlayIsTracedAndEndsNothing() throws {
